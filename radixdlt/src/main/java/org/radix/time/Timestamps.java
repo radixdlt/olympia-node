@@ -17,13 +17,13 @@
 
 package org.radix.time;
 
-public final class Timestamps {
-	public static final String ACTIVE = "active";
-	public static final String BANNED = "banned";
-	public static final String DEFAULT = "default";
-	public static final String PROBED = "probed";
+public enum Timestamps {
+	ACTIVE,
+	BANNED,
+	PROBED;
 
-	private Timestamps() {
-		throw new IllegalStateException("Cannot instantiate");
+	@Override
+	public String toString() {
+		return super.toString().toLowerCase();
 	}
 }

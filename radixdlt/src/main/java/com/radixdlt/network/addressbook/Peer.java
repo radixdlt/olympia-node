@@ -17,9 +17,11 @@
 
 package com.radixdlt.network.addressbook;
 
-import java.util.HashMap;
+import java.util.Collections;
+import java.util.EnumMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
@@ -46,20 +48,34 @@ public abstract class Peer extends BasicContainer {
 
 	public static final int DEFAULT_BANTIME = 60 * 60;
 
+	private static final long DEFAULT_TIMESTAMP = 0L;
+
 	@JsonProperty("ban_reason")
 	@DsonOutput(Output.PERSIST)
-	private String banReason;
+	private volatile String banReason;
 
-	private HashMap<String, Long> timestamps;
+	// Note that this map is fully populated on construction, and the
+	// structure (keys and values) cannot be changed during the object's
+	// lifetime.  Note that the contents of the values are changes, but
+	// not the values themselves.
+	private final Map<Timestamps, AtomicLong> timestamps;
 
 	protected Peer() {
 		banReason = null;
-		timestamps = new HashMap<>();
+		EnumMap<Timestamps, AtomicLong> newTimestamps = new EnumMap<>(Timestamps.class);
+		for (Timestamps t : Timestamps.values()) {
+			newTimestamps.put(t, new AtomicLong(DEFAULT_TIMESTAMP));
+		}
+		this.timestamps = Collections.unmodifiableMap(newTimestamps);
 	}
 
 	protected Peer(Peer toCopy) {
 		this.banReason = toCopy.banReason;
-		this.timestamps = new HashMap<>(toCopy.timestamps);
+		EnumMap<Timestamps, AtomicLong> newTimestamps = new EnumMap<>(Timestamps.class);
+		for (Timestamps t : Timestamps.values()) {
+			newTimestamps.put(t, new AtomicLong(toCopy.getTimestamp(t)));
+		}
+		this.timestamps = Collections.unmodifiableMap(newTimestamps);
 	}
 
 	/**
@@ -159,12 +175,12 @@ public abstract class Peer extends BasicContainer {
 	 */
 	public abstract RadixSystem getSystem();
 
-	public long getTimestamp(String type) {
-		return timestamps.getOrDefault(type, 0L);
+	public long getTimestamp(Timestamps type) {
+		return this.timestamps.get(type).get();
 	}
 
-	public void setTimestamp(String type, long timestamp) {
-		timestamps.put(type, timestamp);
+	public void setTimestamp(Timestamps type, long timestamp) {
+		this.timestamps.get(type).set(timestamp);
 	}
 
 	// Property "timestamps" - 1 getter, 1 setter
@@ -172,10 +188,10 @@ public abstract class Peer extends BasicContainer {
 	@DsonOutput(Output.PERSIST)
 	private Map<String, Long> getJsonTimestamps() {
 		return ImmutableMap.<String, Long>builder()
-				.put("probed", getTimestamp(Timestamps.PROBED))
-				.put("active", getTimestamp(Timestamps.ACTIVE))
-				.put("banned", getTimestamp(Timestamps.BANNED))
-				.build();
+			.put("probed", getTimestamp(Timestamps.PROBED))
+			.put("active", getTimestamp(Timestamps.ACTIVE))
+			.put("banned", getTimestamp(Timestamps.BANNED))
+			.build();
 	}
 
 	@JsonProperty("timestamps")

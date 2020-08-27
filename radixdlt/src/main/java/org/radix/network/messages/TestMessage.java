@@ -47,6 +47,12 @@ public final class TestMessage extends Message {
 		junk = new byte[1000];
 	}
 
+	public TestMessage(int magic, long timestamp) {
+		super(magic, timestamp);
+		testnonce = new SecureRandom().nextLong();
+		junk = new byte[1000];
+	}
+
 	public TestMessage(final int size, int magic) {
 		super(magic);
 		testnonce = new SecureRandom().nextLong();
