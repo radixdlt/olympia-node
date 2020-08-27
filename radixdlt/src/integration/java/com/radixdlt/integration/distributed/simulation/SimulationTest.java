@@ -32,12 +32,13 @@ import com.radixdlt.RadixEngineRxModule;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
-import com.radixdlt.integration.distributed.simulation.application.IncrementalBytesSubmitter;
+import com.radixdlt.integration.distributed.simulation.application.IncrementalBytesSubmittor;
 import com.radixdlt.integration.distributed.simulation.application.CommittedChecker;
 import com.radixdlt.integration.distributed.simulation.application.RadixEngineValidatorRegistrator;
+import com.radixdlt.integration.distributed.simulation.application.RadixEngineValidatorRegistratorAndUnregistrator;
 import com.radixdlt.integration.distributed.simulation.application.RegisteredValidatorChecker;
 import com.radixdlt.integration.distributed.simulation.invariants.epochs.EpochViewInvariant;
-import com.radixdlt.integration.distributed.simulation.application.MempoolPeriodicSubmitter;
+import com.radixdlt.integration.distributed.simulation.application.LocalMempoolPeriodicSubmittor;
 import com.radixdlt.integration.distributed.simulation.network.DroppingLatencyProvider;
 import com.radixdlt.integration.distributed.simulation.network.OneProposalPerViewDropper;
 import com.radixdlt.integration.distributed.simulation.network.RandomLatencyProvider;
@@ -194,12 +195,26 @@ public class SimulationTest {
 		}
 
 		public Builder addMempoolSubmissionsSteadyState(String invariantName) {
-			MempoolPeriodicSubmitter mempoolSubmission = new IncrementalBytesSubmitter();
+			LocalMempoolPeriodicSubmittor mempoolSubmission = new IncrementalBytesSubmittor();
 			CommittedChecker committedChecker
 				= new CommittedChecker(mempoolSubmission.issuedCommands().map(Pair::getFirst));
 			this.runnableBuilder.add(nodes -> mempoolSubmission::run);
 			this.checksBuilder.put(invariantName, nodes -> committedChecker);
 
+			return this;
+		}
+
+		public Builder addRadixEngineValidatorRegisterUnregisterMempoolSubmissions(String submittedInvariantName) {
+			this.runnableBuilder.add(nodes -> {
+				RadixEngineValidatorRegistratorAndUnregistrator randomValidatorSubmittor
+					= new RadixEngineValidatorRegistratorAndUnregistrator(nodes);
+				// TODO: Fix hack, hack required due to lack of Guice
+				this.checksBuilder.put(
+					submittedInvariantName,
+					nodes2 -> new CommittedChecker(randomValidatorSubmittor.issuedCommands().map(Pair::getFirst))
+				);
+				return randomValidatorSubmittor::run;
+			});
 			return this;
 		}
 

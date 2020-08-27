@@ -35,11 +35,11 @@ import java.util.concurrent.TimeUnit;
 /**
  * Contributes to steady state by submitting commands to the mempool every few seconds
  */
-public abstract class MempoolPeriodicSubmitter {
+public abstract class LocalMempoolPeriodicSubmittor {
 	private final PublishSubject<Pair<Command, BFTNode>> commands;
 	private final Random random = new Random();
 
-	public MempoolPeriodicSubmitter() {
+	public LocalMempoolPeriodicSubmittor() {
 		this.commands = PublishSubject.create();
 	}
 
@@ -59,8 +59,6 @@ public abstract class MempoolPeriodicSubmitter {
 			// TODO: Cleanup
 			e.printStackTrace();
 		}
-
-		System.out.println("Submitted " + command + " to " + node);
 
 		return Pair.of(command, node);
 	}

@@ -17,6 +17,8 @@
 
 package com.radixdlt.integration.distributed.simulation.application;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.Atom;
@@ -36,33 +38,39 @@ import com.radixdlt.serialization.SerializationException;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import java.util.List;
-import java.util.Objects;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicLong;
 
-public final class RadixEngineValidatorRegistrator extends LocalMempoolPeriodicSubmittor {
-	private final List<ECKeyPair> nodes;
+public class RadixEngineValidatorRegistratorAndUnregistrator extends LocalMempoolPeriodicSubmittor {
+	private final ImmutableMap<ECKeyPair, AtomicLong> nodeNonces;
 	private final PublishSubject<BFTNode> validatorRegistrationSubmissions;
-	private int current = 0;
+	private final Random random = new Random();
 
-	public RadixEngineValidatorRegistrator(List<ECKeyPair> nodes) {
-		this.nodes = Objects.requireNonNull(nodes);
+	public RadixEngineValidatorRegistratorAndUnregistrator(List<ECKeyPair> nodes) {
+		this.nodeNonces = nodes.stream().collect(ImmutableMap.toImmutableMap(n -> n, n -> new AtomicLong(0L)));
 		this.validatorRegistrationSubmissions = PublishSubject.create();
 	}
 
 	@Override
 	Command nextCommand() {
 		byte magic = 1;
-		ECKeyPair keyPair = nodes.get(current % nodes.size());
-		current++;
+		ImmutableList<ECKeyPair> nodes = nodeNonces.keySet().asList();
+		ECKeyPair keyPair = nodes.get(random.nextInt(nodes.size()));
 		RadixAddress address = new RadixAddress(magic, keyPair.getPublicKey());
+
+		AtomicLong nonce = nodeNonces.get(keyPair);
+		long curNonce = nonce.getAndIncrement();
+		boolean isRegistered = curNonce % 2 == 1;
 		RegisteredValidatorParticle registeredValidatorParticle = new RegisteredValidatorParticle(
-			address, ImmutableSet.of(), 1
+			address, ImmutableSet.of(), isRegistered ? curNonce : curNonce + 1
 		);
 		UnregisteredValidatorParticle unregisteredValidatorParticle = new UnregisteredValidatorParticle(
-			address, 0
+			address, isRegistered ? curNonce + 1 : curNonce
 		);
+
 		ParticleGroup particleGroup = ParticleGroup.builder()
-			.addParticle(unregisteredValidatorParticle, Spin.DOWN)
-			.addParticle(registeredValidatorParticle, Spin.UP)
+			.addParticle(unregisteredValidatorParticle, isRegistered ? Spin.UP : Spin.DOWN)
+			.addParticle(registeredValidatorParticle, isRegistered ? Spin.DOWN : Spin.UP)
 			.build();
 		Atom atom = new Atom();
 		atom.addParticleGroup(particleGroup);
@@ -77,7 +85,6 @@ public final class RadixEngineValidatorRegistrator extends LocalMempoolPeriodicS
 		}
 
 		BFTNode node = BFTNode.create(keyPair.getPublicKey());
-		System.out.println("Registering node " + node);
 		validatorRegistrationSubmissions.onNext(node);
 		return command;
 	}

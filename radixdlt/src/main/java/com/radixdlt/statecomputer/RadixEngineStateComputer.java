@@ -166,7 +166,11 @@ public final class RadixEngineStateComputer implements StateComputer {
 						if (i.getCheckSpin() == Spin.NEUTRAL) {
 							nextValidatorSet.add(nextValidator);
 						} else {
-							nextValidatorSet.remove(nextValidator);
+							// Never let validator set get less than two otherwise bad things can happen
+							// TODO: Fix this limit and implement within radix engine
+							if (nextValidatorSet.size() > 2) {
+								nextValidatorSet.remove(nextValidator);
+							}
 						}
 					});
 

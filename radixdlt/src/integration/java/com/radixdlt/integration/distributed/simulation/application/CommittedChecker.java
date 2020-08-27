@@ -43,5 +43,4 @@ public class CommittedChecker implements TestInvariant {
 						.onErrorReturn(e -> new TestInvariantError(e.getMessage() + " " + command))
 			);
 	}
-
 }
