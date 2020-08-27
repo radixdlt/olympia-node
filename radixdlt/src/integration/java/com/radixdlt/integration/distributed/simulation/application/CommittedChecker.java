@@ -24,6 +24,10 @@ import io.reactivex.rxjava3.core.Observable;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Checks to make sure that commands have been committed in a certain amount
+ * of time
+ */
 public class CommittedChecker implements TestInvariant {
 	private final Observable<Command> submittedCommands;
 

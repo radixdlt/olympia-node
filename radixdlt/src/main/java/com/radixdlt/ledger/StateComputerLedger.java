@@ -43,7 +43,6 @@ import java.util.Set;
  */
 public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	public interface StateComputer {
-		//Optional<BFTValidatorSet> prepare(Vertex vertex);
 		boolean prepare(Vertex vertex);
 		Optional<BFTValidatorSet> commit(Command command, VertexMetadata vertexMetadata);
 	}
@@ -94,13 +93,11 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		final PreparedCommand parent = vertex.getQC().getProposed().getPreparedCommand();
 		final long parentStateVersion = parent.getStateVersion();
 
-		//Optional<BFTValidatorSet> validatorSet = stateComputer.prepare(vertex);
 		boolean isEndOfEpoch = stateComputer.prepare(vertex);
 
 		final int versionIncrement;
 		if (parent.isEndOfEpoch()) {
 			versionIncrement = 0; // Don't execute atom if in process of epoch change
-		//} else if (validatorSet.isPresent()) {
 		} else if (isEndOfEpoch) {
 			versionIncrement = 1;
 		} else {
@@ -111,10 +108,6 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		final Hash timestampedSignaturesHash = vertex.getQC().getTimestampedSignatures().getId();
 
 		return PreparedCommand.create(stateVersion, timestampedSignaturesHash, isEndOfEpoch);
-		/*
-			.map(vset -> PreparedCommand.create(stateVersion, timestampedSignaturesHash, vset))
-			.orElseGet(() -> PreparedCommand.create(stateVersion, timestampedSignaturesHash));
-		 */
 	}
 
 	@Override

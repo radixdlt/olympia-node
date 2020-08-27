@@ -100,7 +100,6 @@ public class StateComputerLedgerTest {
 		when(qc.getTimestampedSignatures()).thenReturn(new TimestampedECDSASignatures());
 
 		PreparedCommand nextPrepared = stateComputerLedger.prepare(vertex);
-		//assertThat(preparedCommand.getNextValidatorSet()).isEmpty();
 		assertThat(nextPrepared.isEndOfEpoch()).isFalse();
 		assertThat(nextPrepared.getStateVersion()).isEqualTo(12345L);
 	}
@@ -140,11 +139,9 @@ public class StateComputerLedgerTest {
 		when(parent.getPreparedCommand()).thenReturn(preparedCommand);
 		when(qc.getProposed()).thenReturn(parent);
 		when(qc.getTimestampedSignatures()).thenReturn(new TimestampedECDSASignatures());
-		//when(stateComputer.prepare(eq(vertex))).thenReturn(Optional.of(mock(BFTValidatorSet.class)));
 		when(stateComputer.prepare(eq(vertex))).thenReturn(true);
 
 		PreparedCommand nextPrepared = stateComputerLedger.prepare(vertex);
-		//assertThat(preparedCommand.getNextValidatorSet()).isNotEmpty();
 		assertThat(nextPrepared.isEndOfEpoch()).isTrue();
 		assertThat(nextPrepared.getStateVersion()).isEqualTo(12346L);
 	}
@@ -166,7 +163,6 @@ public class StateComputerLedgerTest {
 		when(vertex.getCommand()).thenReturn(mock(Command.class));
 
 		PreparedCommand nextPrepared = stateComputerLedger.prepare(vertex);
-		//assertThat(preparedCommand.getNextValidatorSet()).isEmpty();
 		assertThat(nextPrepared.isEndOfEpoch()).isFalse();
 		assertThat(nextPrepared.getStateVersion()).isEqualTo(12346L);
 	}

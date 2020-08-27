@@ -43,7 +43,6 @@ import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.universe.Universe;
-import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
 /**
@@ -62,39 +61,6 @@ public class RadixEngineModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		bind(StateComputer.class).to(RadixEngineStateComputer.class);
-	}
-
-	@Provides
-	@Singleton
-	private Function<Long, BFTValidatorSet> validatorMapping(
-		BFTValidatorSet initialValidatorSet
-	) {
-		/*
-		return (epoch, validators) -> {
-				Builder<BFTValidator> validatorSetBuilder = ImmutableList.builder();
-				Random random = new Random(epoch);
-				List<Integer> indices = IntStream.range(0, validators.size()).boxed().collect(Collectors.toList());
-				// Temporary mechanism to get some deterministic random set of validators
-				for (long i = 0; i < epoch; i++) {
-					random.nextInt(validators.size());
-				}
-				int randInt = random.nextInt(validators.size());
-				int validatorSetSize = randInt + 1;
-
-				for (int i = 0; i < validatorSetSize; i++) {
-					int index = indices.remove(random.nextInt(indices.size()));
-					BFTValidator validator = validators.get(index);
-					validatorSetBuilder.add(validator);
-				}
-
-				ImmutableList<BFTValidator> validatorList = validatorSetBuilder.build();
-
-				return BFTValidatorSet.from(validatorList);
-		}
-		*/
-
-		return epoch -> initialValidatorSet;
-		//genesisVertexMetadata.getValidatorSet().orElseThrow(() -> new IllegalStateException("genesis has no validator set!"));
 	}
 
 	@Provides

@@ -72,7 +72,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private final Serialization serialization;
 	private final RadixEngine<LedgerAtom> radixEngine;
 	private final View epochChangeView;
-
 	private final CommittedCommandsReader committedCommandsReader;
 	private final CommittedAtomSender committedAtomSender;
 	private final Object lock = new Object();
@@ -122,16 +121,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 	}
 
 	@Override
-	//public Optional<BFTValidatorSet> prepare(Vertex vertex) {
 	public boolean prepare(Vertex vertex) {
 		return vertex.getView().compareTo(epochChangeView) >= 0;
-		/*
-		if (vertex.getView().compareTo(epochChangeView) >= 0) {
-			return Optional.of(validatorSetMapping.apply(vertex.getEpoch() + 1));
-		} else {
-			return Optional.empty();
-		}
-		 */
 	}
 
 	@Override
@@ -156,6 +147,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 				// TODO: execute list of commands instead
 				this.radixEngine.checkAndStore(committedAtom);
 
+				// TODO: Move into radix engine
 				clientAtom.getCMInstruction().getMicroInstructions().stream()
 					.filter(i -> i.getParticle() instanceof RegisteredValidatorParticle)
 					.filter(CMMicroInstruction::isCheckSpin)

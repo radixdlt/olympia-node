@@ -44,7 +44,6 @@ public class LedgerModuleTest {
 			bind(CommittedStateSyncSender.class).toInstance(mock(CommittedStateSyncSender.class));
 			bind(SystemCounters.class).toInstance(mock(SystemCounters.class));
 			VertexMetadata vertexMetadata = mock(VertexMetadata.class);
-			//when(vertexMetadata.getValidatorSet()).thenReturn(Optional.of(mock(BFTValidatorSet.class)));
 			bind(VertexMetadata.class).toInstance(vertexMetadata);
 			bind(BFTValidatorSet.class).toInstance(mock(BFTValidatorSet.class));
 			Multibinder.newSetBinder(binder(), CommittedSender.class);

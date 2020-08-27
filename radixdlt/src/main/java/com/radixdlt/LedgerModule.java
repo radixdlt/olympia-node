@@ -73,8 +73,6 @@ public class LedgerModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private EpochChange initialEpoch(VertexMetadata ancestor, BFTValidatorSet validatorSet) {
-		return new EpochChange(ancestor, validatorSet
-			//ancestor.getValidatorSet().orElseThrow(() -> new IllegalStateException("initial epoch must have validator set"))
-		);
+		return new EpochChange(ancestor, validatorSet);
 	}
 }

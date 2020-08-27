@@ -38,6 +38,10 @@ import io.reactivex.rxjava3.subjects.PublishSubject;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * Goes through a list of nodes and registers all of them over some
+ * amount of time.
+ */
 public final class RadixEngineValidatorRegistrator extends LocalMempoolPeriodicSubmittor {
 	private final List<ECKeyPair> nodes;
 	private final PublishSubject<BFTNode> validatorRegistrationSubmissions;

@@ -24,6 +24,10 @@ import io.reactivex.rxjava3.core.Observable;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Checks to make sure that a node has been registered as a validator
+ * in some epoch
+ */
 public class RegisteredValidatorChecker implements TestInvariant {
 	private final Observable<BFTNode> registeringValidators;
 

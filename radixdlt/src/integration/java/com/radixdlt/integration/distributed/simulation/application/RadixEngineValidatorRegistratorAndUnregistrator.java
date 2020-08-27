@@ -41,6 +41,9 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * Randomly registers and unregisters nodes as validators
+ */
 public class RadixEngineValidatorRegistratorAndUnregistrator extends LocalMempoolPeriodicSubmittor {
 	private final ImmutableMap<ECKeyPair, AtomicLong> nodeNonces;
 	private final PublishSubject<BFTNode> validatorRegistrationSubmissions;

@@ -29,6 +29,9 @@ import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
+/**
+ * Randomly registers and unregisters nodes as validators
+ */
 public class RandomValidatorsTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(4)

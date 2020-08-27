@@ -38,7 +38,6 @@ public class PreparedCommandTest {
 	public void testGetters() {
 		assertThat(preparedCommand.getStateVersion()).isEqualTo(12345);
 		assertThat(preparedCommand.getTimestampedSignaturesHash()).isEqualTo(timestampedSignatureHash);
-		//assertThat(preparedCommand.getNextValidatorSet()).isEmpty();
 		assertThat(preparedCommand.isEndOfEpoch()).isFalse();
 	}
 }

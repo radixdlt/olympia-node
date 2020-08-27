@@ -52,6 +52,5 @@ public class AddressBookGenesisVertexMetadataProviderTest {
 
 		VertexMetadata vertexMetadata = validatorSetProvider.getGenesisVertexMetadata();
 		assertThat(vertexMetadata.getPreparedCommand().isEndOfEpoch()).isTrue();
-		//assertThat(vertexMetadata.getValidatorSet()).isNotEmpty();
 	}
 }

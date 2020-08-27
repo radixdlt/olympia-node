@@ -82,7 +82,6 @@ public class RadixEngineStateComputerTest {
 	public void when_prepare_vertex_metadata_equal_to_high_view__then_should_return_validator_set() {
 		Vertex vertex = mock(Vertex.class);
 		when(vertex.getView()).thenReturn(epochHighView);
-		//assertThat(stateComputer.prepare(vertex)).contains(validatorSet);
 		assertThat(stateComputer.prepare(vertex)).isTrue();
 	}
 

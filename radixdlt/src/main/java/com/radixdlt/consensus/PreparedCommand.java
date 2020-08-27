@@ -49,9 +49,8 @@ public final class PreparedCommand {
 	@JsonProperty("isEndOfEpoch")
 	@DsonOutput(Output.ALL)
 	private final boolean isEndOfEpoch;
-	//private final BFTValidatorSet nextValidatorSet;
 
-	//private PreparedCommand(long stateVersion, Hash timestampedSignaturesHash, BFTValidatorSet nextValidatorSet) {
+	// TODO: Replace isEndOfEpoch with nextValidatorSet
 	@JsonCreator
 	private PreparedCommand(
 		@JsonProperty("stateVersion") long stateVersion,
@@ -63,20 +62,10 @@ public final class PreparedCommand {
 		this.timestampedSignaturesHash = timestampedSignaturesHash;
 	}
 
-	/*
-	public static PreparedCommand create(
-		long stateVersion,
-		Hash timestampedSignaturesHash
-	) {
-		return new PreparedCommand(stateVersion, timestampedSignaturesHash, null);
-	}
-	 */
-
 	public static PreparedCommand create(
 		long stateVersion,
 		Hash timestampedSignaturesHash,
 		boolean isEndOfEpoch
-		//BFTValidatorSet nextValidatorSet
 	) {
 		return new PreparedCommand(stateVersion, timestampedSignaturesHash, isEndOfEpoch);
 	}
@@ -85,12 +74,6 @@ public final class PreparedCommand {
 		return stateVersion;
 	}
 
-	/*
-	public Optional<BFTValidatorSet> getNextValidatorSet() {
-		return Optional.ofNullable(nextValidatorSet);
-	}
-	 */
-
 	public boolean isEndOfEpoch() {
 		return isEndOfEpoch;
 	}
@@ -98,28 +81,6 @@ public final class PreparedCommand {
 	public Hash getTimestampedSignaturesHash() {
 		return timestampedSignaturesHash;
 	}
-
-		/*
-	@JsonProperty("validator_set")
-	@DsonOutput(Output.ALL)
-	private Map<String, UInt256> getValidatorSetJson() {
-		if (validatorSet == null) {
-			return null;
-		}
-		return validatorSet.getValidators().stream()
-			.collect(ImmutableMap.toImmutableMap(v -> encodePublicKey(v.getNode()), BFTValidator::getPower));
-	}
-	*/
-
-	/*
-	@JsonProperty("validator_set")
-	private void setValidatorSetJson(Map<String, UInt256> vset) {
-		List<BFTValidator> validators = vset.entrySet().stream()
-			.map(e -> BFTValidator.from(toBFTNode(e.getKey()), e.getValue()))
-			.collect(Collectors.toList());
-		this.validatorSet = BFTValidatorSet.from(validators);
-	}
-	*/
 
 	@Override
 	public int hashCode() {

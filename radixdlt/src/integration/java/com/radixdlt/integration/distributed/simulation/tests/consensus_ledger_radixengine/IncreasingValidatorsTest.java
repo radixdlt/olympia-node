@@ -29,6 +29,9 @@ import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
+/**
+ * Slowly registers more and more validators to the network
+ */
 public class IncreasingValidatorsTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(50)

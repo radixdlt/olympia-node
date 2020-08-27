@@ -49,7 +49,6 @@ public class EpochChangeManagerTest {
 		when(preparedCommand.getStateVersion()).thenReturn(1234L);
 		when(vertexMetadata.getPreparedCommand()).thenReturn(preparedCommand);
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
-		//when(vertexMetadata.getValidatorSet()).thenReturn(Optional.of(validatorSet));
 		CommittedCommand cmd = mock(CommittedCommand.class);
 		when(cmd.getVertexMetadata()).thenReturn(vertexMetadata);
 
