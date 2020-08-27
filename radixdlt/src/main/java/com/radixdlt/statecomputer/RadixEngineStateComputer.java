@@ -20,28 +20,35 @@ package com.radixdlt.statecomputer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
+import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.EUID;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.ledger.CommittedCommand;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
+import com.radixdlt.utils.UInt256;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 /**
  * Wraps the Radix Engine and emits messages based on success or failure
@@ -63,18 +70,18 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 	private final Serialization serialization;
 	private final RadixEngine<LedgerAtom> radixEngine;
-	private final Function<Long, BFTValidatorSet> validatorSetMapping;
 	private final View epochChangeView;
 
 	private final CommittedCommandsReader committedCommandsReader;
 	private final CommittedAtomSender committedAtomSender;
 	private final Object lock = new Object();
 	private final LinkedList<CommittedCommand> unstoredCommittedAtoms = new LinkedList<>();
+	private final Set<BFTValidator> nextValidatorSet;
 
 	public RadixEngineStateComputer(
+		ImmutableSet<BFTValidator> initialNextValidatorSet,
 		Serialization serialization,
 		RadixEngine<LedgerAtom> radixEngine,
-		Function<Long, BFTValidatorSet> validatorSetMapping,
 		View epochChangeView,
 		CommittedCommandsReader committedCommandsReader,
 		CommittedAtomSender committedAtomSender
@@ -83,9 +90,9 @@ public final class RadixEngineStateComputer implements StateComputer {
 			throw new IllegalArgumentException("Epoch change view must not be genesis.");
 		}
 
+		this.nextValidatorSet = new HashSet<>(initialNextValidatorSet);
 		this.serialization = Objects.requireNonNull(serialization);
 		this.radixEngine = Objects.requireNonNull(radixEngine);
-		this.validatorSetMapping = validatorSetMapping;
 		this.epochChangeView = epochChangeView;
 		this.committedCommandsReader = Objects.requireNonNull(committedCommandsReader);
 		this.committedAtomSender = Objects.requireNonNull(committedAtomSender);
@@ -134,9 +141,12 @@ public final class RadixEngineStateComputer implements StateComputer {
 				clientAtom = serialization.fromDson(command.getPayload(), ClientAtom.class);
 			} catch (SerializationException e) {
 				this.unstoredCommittedAtoms.add(new CommittedCommand(null, vertexMetadata));
-				return vertexMetadata.getPreparedCommand().isEndOfEpoch()
-					? Optional.of(validatorSetMapping.apply(vertexMetadata.getEpoch() + 1))
-					: Optional.empty();
+				if (vertexMetadata.getPreparedCommand().isEndOfEpoch()) {
+					BFTValidatorSet validatorSet = BFTValidatorSet.from(nextValidatorSet);
+					return Optional.of(validatorSet);
+				}
+
+				return Optional.empty();
 			}
 
 			CommittedAtom committedAtom = new CommittedAtom(clientAtom, vertexMetadata);
@@ -144,6 +154,22 @@ public final class RadixEngineStateComputer implements StateComputer {
 			try {
 				// TODO: execute list of commands instead
 				this.radixEngine.checkAndStore(committedAtom);
+
+				clientAtom.getCMInstruction().getMicroInstructions().stream()
+					.filter(i -> i.getParticle() instanceof RegisteredValidatorParticle)
+					.forEach(i -> {
+						if (i.isCheckSpin()) {
+							RadixAddress nextValidatorAddress = ((RegisteredValidatorParticle) i.getParticle()).getAddress();
+							BFTNode validatorNode = BFTNode.create(nextValidatorAddress.getPublicKey());
+							BFTValidator nextValidator = BFTValidator.from(validatorNode, UInt256.ONE);
+							if (i.getCheckSpin() == Spin.UP) {
+								nextValidatorSet.add(nextValidator);
+							} else {
+								nextValidatorSet.remove(nextValidator);
+							}
+						}
+					});
+
 			} catch (RadixEngineException e) {
 				// TODO: Don't check for state computer errors for now so that we don't
 				// TODO: have to deal with failing leader proposals
@@ -163,8 +189,11 @@ public final class RadixEngineStateComputer implements StateComputer {
 			throw new IllegalStateException("Should never get here " + command);
 		}
 
-		return vertexMetadata.getPreparedCommand().isEndOfEpoch()
-			? Optional.of(validatorSetMapping.apply(vertexMetadata.getEpoch() + 1))
-			: Optional.empty();
+		if (vertexMetadata.getPreparedCommand().isEndOfEpoch()) {
+			BFTValidatorSet validatorSet = BFTValidatorSet.from(nextValidatorSet);
+			return Optional.of(validatorSet);
+		}
+
+		return Optional.empty();
 	}
 }

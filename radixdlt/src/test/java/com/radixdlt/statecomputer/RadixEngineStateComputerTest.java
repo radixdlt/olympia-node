@@ -26,12 +26,16 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.PreparedCommand;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.AID;
@@ -53,7 +57,6 @@ public class RadixEngineStateComputerTest {
 	private CommittedAtomsStore committedAtomsStore;
 	private RadixEngine<LedgerAtom> radixEngine;
 	private View epochHighView;
-	private Function<Long, BFTValidatorSet> validatorSetMapping;
 	private CommittedAtomSender committedAtomSender;
 
 	@Before
@@ -65,11 +68,10 @@ public class RadixEngineStateComputerTest {
 		// No issues with type checking for mock
 		@SuppressWarnings("unchecked") Function<Long, BFTValidatorSet> vsm = mock(Function.class);
 		this.committedAtomSender = mock(CommittedAtomSender.class);
-		this.validatorSetMapping = vsm;
 		this.stateComputer = new RadixEngineStateComputer(
+			ImmutableSet.of(),
 			serialization,
 			radixEngine,
-			validatorSetMapping,
 			epochHighView,
 			committedAtomsStore,
 			committedAtomSender
@@ -80,8 +82,6 @@ public class RadixEngineStateComputerTest {
 	public void when_prepare_vertex_metadata_equal_to_high_view__then_should_return_validator_set() {
 		Vertex vertex = mock(Vertex.class);
 		when(vertex.getView()).thenReturn(epochHighView);
-		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
-		when(validatorSetMapping.apply(any())).thenReturn(validatorSet);
 		//assertThat(stateComputer.prepare(vertex)).contains(validatorSet);
 		assertThat(stateComputer.prepare(vertex)).isTrue();
 	}
@@ -89,8 +89,12 @@ public class RadixEngineStateComputerTest {
 	@Test
 	public void when_execute_vertex_with_command__then_is_stored_in_engine() throws Exception {
 		ClientAtom clientAtom = mock(ClientAtom.class);
+		CMInstruction cmInstruction = mock(CMInstruction.class);
+		when(cmInstruction.getMicroInstructions()).thenReturn(ImmutableList.of());
+		when(clientAtom.getCMInstruction()).thenReturn(cmInstruction);
 		AID aid = mock(AID.class);
 		when(clientAtom.getAID()).thenReturn(aid);
+
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(vertexMetadata.getView()).then(i -> View.of(50));
 		PreparedCommand preparedCommand = mock(PreparedCommand.class);
@@ -99,9 +103,6 @@ public class RadixEngineStateComputerTest {
 		when(vertexMetadata.getPreparedCommand()).thenReturn(preparedCommand);
 
 		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenReturn(clientAtom);
-
-		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
-		when(validatorSetMapping.apply(any())).thenReturn(validatorSet);
 
 		Command command = mock(Command.class);
 		stateComputer.commit(command, vertexMetadata);
@@ -120,9 +121,6 @@ public class RadixEngineStateComputerTest {
 		when(preparedCommand.getStateVersion()).thenReturn(1L);
 		when(preparedCommand.isEndOfEpoch()).thenReturn(true);
 		when(vertexMetadata.getPreparedCommand()).thenReturn(preparedCommand);
-
-		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
-		when(validatorSetMapping.apply(any())).thenReturn(validatorSet);
 
 		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenReturn(clientAtom);
 		RadixEngineException e = mock(RadixEngineException.class);
@@ -149,8 +147,6 @@ public class RadixEngineStateComputerTest {
 		when(preparedCommand.getStateVersion()).thenReturn(1L);
 		when(preparedCommand.isEndOfEpoch()).thenReturn(true);
 		when(vertexMetadata.getPreparedCommand()).thenReturn(preparedCommand);
-		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
-		when(validatorSetMapping.apply(any())).thenReturn(validatorSet);
 
 		stateComputer.commit(null, vertexMetadata);
 
@@ -169,8 +165,6 @@ public class RadixEngineStateComputerTest {
 		when(preparedCommand.getStateVersion()).thenReturn(1L);
 		when(preparedCommand.isEndOfEpoch()).thenReturn(true);
 		when(vertexMetadata.getPreparedCommand()).thenReturn(preparedCommand);
-		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
-		when(validatorSetMapping.apply(any())).thenReturn(validatorSet);
 
 		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenThrow(new SerializationException(""));
 
@@ -182,6 +176,4 @@ public class RadixEngineStateComputerTest {
 				assertThat(c.getVertexMetadata()).isEqualTo(vertexMetadata);
 			});
 	}
-
-
 }

@@ -27,7 +27,6 @@ import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachine;
@@ -66,7 +65,6 @@ public class RadixEngineModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private Function<Long, BFTValidatorSet> validatorMapping(
-		VertexMetadata genesisVertexMetadata,
 		BFTValidatorSet initialValidatorSet
 	) {
 		/*
@@ -100,16 +98,16 @@ public class RadixEngineModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private RadixEngineStateComputer radixEngineStateComputer(
+		BFTValidatorSet initialValidatorSet,
 		Serialization serialization,
 		RadixEngine<LedgerAtom> radixEngine,
-		Function<Long, BFTValidatorSet> validatorSetMapping,
 		CommittedCommandsReader committedCommandsReader,
 		CommittedAtomSender committedAtomSender
 	) {
 		return new RadixEngineStateComputer(
+			initialValidatorSet.getValidators(),
 			serialization,
 			radixEngine,
-			validatorSetMapping,
 			epochHighView,
 			committedCommandsReader,
 			committedAtomSender

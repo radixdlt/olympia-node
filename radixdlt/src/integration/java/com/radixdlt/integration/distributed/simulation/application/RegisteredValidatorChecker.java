@@ -47,10 +47,10 @@ public class RegisteredValidatorChecker implements TestInvariant {
 				List<Maybe<TestInvariantError>> errors = allEpochChanges.stream()
 					.map(epochChanges -> epochChanges
 						.filter(epochChange -> epochChange.getValidatorSet().containsNode(validator))
-						.timeout(10, TimeUnit.SECONDS)
+						.timeout(20, TimeUnit.SECONDS)
 						.firstOrError()
 						.ignoreElement()
-						.onErrorReturn(e -> new TestInvariantError(e.getMessage() + " " + validator))
+						.onErrorReturn(e -> new TestInvariantError(validator + " was not included in epoch in 20 seconds"))
 					)
 					.collect(Collectors.toList());
 				return Maybe.merge(errors).firstElement();
