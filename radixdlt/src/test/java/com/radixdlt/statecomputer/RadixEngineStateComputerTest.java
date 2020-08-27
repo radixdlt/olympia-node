@@ -29,6 +29,7 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.PreparedCommand;
 import com.radixdlt.consensus.Vertex;
@@ -36,9 +37,14 @@ import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.CMInstruction;
+import com.radixdlt.constraintmachine.CMMicroInstruction;
+import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.identifiers.EUID;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
@@ -47,6 +53,7 @@ import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.utils.TypedMocks;
 
+import java.util.Optional;
 import java.util.function.Function;
 import org.junit.Before;
 import org.junit.Test;
@@ -164,23 +171,53 @@ public class RadixEngineStateComputerTest {
 	}
 
 	@Test
-	public void when_execute_vertex_with_malformed_command__then_is_available_on_query() throws SerializationException {
+	public void when_commit_vertex_with_malformed_command__then_is_available_on_query() throws SerializationException {
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(vertexMetadata.getView()).then(i -> View.of(50));
 		PreparedCommand preparedCommand = mock(PreparedCommand.class);
 		when(preparedCommand.getStateVersion()).thenReturn(1L);
-		when(preparedCommand.isEndOfEpoch()).thenReturn(true);
+		when(preparedCommand.isEndOfEpoch()).thenReturn(false);
 		when(vertexMetadata.getPreparedCommand()).thenReturn(preparedCommand);
 
 		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenThrow(new SerializationException(""));
 
 		Command cmd = new Command(new byte[] {0, 1});
-		stateComputer.commit(cmd, vertexMetadata);
-
+		assertThat(stateComputer.commit(cmd, vertexMetadata)).isEmpty();
 		assertThat(stateComputer.getCommittedCommands(0, 1))
 			.hasOnlyOneElementSatisfying(c -> {
 				assertThat(c.getCommand()).isEqualTo(cmd);
 				assertThat(c.getVertexMetadata()).isEqualTo(vertexMetadata);
 			});
+	}
+
+	@Test
+	public void when_commit_command_with_registered_particle__then_should_be_in_next_validator_set() throws SerializationException {
+		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
+		when(vertexMetadata.getView()).then(i -> View.of(100));
+		PreparedCommand preparedCommand = mock(PreparedCommand.class);
+		when(preparedCommand.getStateVersion()).thenReturn(1L);
+		when(preparedCommand.isEndOfEpoch()).thenReturn(true);
+		when(vertexMetadata.getPreparedCommand()).thenReturn(preparedCommand);
+
+		ClientAtom clientAtom = mock(ClientAtom.class);
+		CMInstruction cmInstruction = mock(CMInstruction.class);
+		RegisteredValidatorParticle registeredValidatorParticle = mock(RegisteredValidatorParticle.class);
+		RadixAddress address = mock(RadixAddress.class);
+		ECPublicKey key = mock(ECPublicKey.class);
+		when(key.euid()).thenReturn(EUID.ONE);
+		when(address.getPublicKey()).thenReturn(key);
+		when(registeredValidatorParticle.getAddress()).thenReturn(address);
+		when(cmInstruction.getMicroInstructions()).thenReturn(
+			ImmutableList.of(CMMicroInstruction.checkSpin(registeredValidatorParticle, Spin.NEUTRAL))
+		);
+		when(clientAtom.getCMInstruction()).thenReturn(cmInstruction);
+		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenReturn(clientAtom);
+
+		Command cmd = new Command(new byte[] {0, 1});
+		Optional<BFTValidatorSet> validatorSet = stateComputer.commit(cmd, vertexMetadata);
+		assertThat(validatorSet).hasValueSatisfying(vset ->
+			assertThat(vset.getValidators())
+				.hasOnlyOneElementSatisfying(v -> assertThat(v.getNode().getKey()).isEqualTo(key))
+		);
 	}
 }
