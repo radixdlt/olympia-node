@@ -68,7 +68,7 @@ public abstract class LocalMempoolPeriodicSubmittor {
 	}
 
 	public void run(RunningNetwork network) {
-		Observable.interval(1, 4, TimeUnit.SECONDS)
+		Observable.interval(1, 10, TimeUnit.SECONDS)
 			.withLatestFrom(network.latestEpochChanges(), (t, e) -> e)
 			.map(e -> this.act(network, e))
 			.subscribe(commands);
