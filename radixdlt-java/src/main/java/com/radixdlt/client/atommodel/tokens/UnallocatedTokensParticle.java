@@ -118,6 +118,7 @@ public class UnallocatedTokensParticle extends Particle implements Accountable, 
 		return Collections.singleton(this.tokenDefinitionReference.getAddress());
 	}
 
+	@Override
 	public RadixAddress getAddress() {
 		return this.tokenDefinitionReference.getAddress();
 	}

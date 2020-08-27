@@ -48,7 +48,7 @@ public class RadixAtomPullerTest {
 
 		RadixAtomPuller radixAtomPuller = new RadixAtomPuller(controller);
 
-		List<TestObserver> observers = Stream.iterate(TestObserver.create(), t -> TestObserver.create()).limit(10)
+		List<TestObserver<?>> observers = Stream.iterate(TestObserver.create(), t -> TestObserver.create()).limit(10)
 			.collect(Collectors.toList());
 
 		List<Disposable> disposables = observers.stream()

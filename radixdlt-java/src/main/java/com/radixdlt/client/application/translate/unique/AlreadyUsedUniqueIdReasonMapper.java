@@ -49,7 +49,7 @@ public class AlreadyUsedUniqueIdReasonMapper implements AtomErrorToExceptionReas
 	public Stream<ActionExecutionExceptionReason> mapAtomErrorToExceptionReasons(Atom atom, JsonObject errorData) {
 		if (errorData.has("pointerToIssue")) {
 			JsonElement pointerToIssueJson = errorData.get("pointerToIssue");
-			Optional<Pair<ParticleGroup, SpunParticle<?>>> particleIssue = this.extractParticleFromPointerToIssue(atom, pointerToIssueJson);
+			Optional<Pair<ParticleGroup, SpunParticle>> particleIssue = this.extractParticleFromPointerToIssue(atom, pointerToIssueJson);
 
 			if (particleIssue.isPresent() && particleIssue.get().getSecond().getParticle() instanceof RRIParticle) {
 				RRIParticle rriParticle = (RRIParticle) particleIssue.get().getSecond().getParticle();
@@ -73,7 +73,7 @@ public class AlreadyUsedUniqueIdReasonMapper implements AtomErrorToExceptionReas
 	 * @param pointerToIssueJson The pointer to issue in Json form returned by the node
 	 * @return The SpunParticle if it could be extracted
 	 */
-	private Optional<Pair<ParticleGroup, SpunParticle<?>>> extractParticleFromPointerToIssue(Atom atom, JsonElement pointerToIssueJson) {
+	private Optional<Pair<ParticleGroup, SpunParticle>> extractParticleFromPointerToIssue(Atom atom, JsonElement pointerToIssueJson) {
 		try {
 			String pointerToIssue = pointerToIssueJson.getAsString();
 			String groupIndexStr = pointerToIssue.split("/")[2];
@@ -85,7 +85,7 @@ public class AlreadyUsedUniqueIdReasonMapper implements AtomErrorToExceptionReas
 			ParticleGroup particleGroup = atom.particleGroups().collect(Collectors.toList()).get(groupIndex);
 
 			return Optional.of(Pair.of(particleGroup,
-				(SpunParticle<?>) particleGroup.spunParticles().collect(Collectors.toList()).get(particleIndex)));
+				particleGroup.spunParticles().collect(Collectors.toList()).get(particleIndex)));
 		} catch (NumberFormatException | ArrayIndexOutOfBoundsException e) {
 			LOGGER.error("Malformed pointerToIssue");
 

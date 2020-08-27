@@ -59,6 +59,7 @@ public class UniqueParticle extends Particle implements Identifiable {
 		return name;
 	}
 
+	@Override
 	public RRI getRRI() {
 		return RRI.of(address, name);
 	}

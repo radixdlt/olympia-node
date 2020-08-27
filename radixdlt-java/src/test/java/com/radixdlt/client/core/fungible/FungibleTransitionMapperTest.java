@@ -24,10 +24,12 @@ public class FungibleTransitionMapperTest {
 			return amt;
 		}
 
+		@Override
 		public int hashCode() {
 			return amt.hashCode();
 		}
 
+		@Override
 		public boolean equals(Object o) {
 			if (!(o instanceof TestParticle)) {
 				return false;

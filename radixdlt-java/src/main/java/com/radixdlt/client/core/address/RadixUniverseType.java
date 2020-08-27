@@ -34,6 +34,10 @@ public enum RadixUniverseType {
 		this.ordinalValue = ordinalValue;
 	}
 
+	public String getName() {
+		return this.name;
+	}
+
 	public final int ordinalValue() {
 		return this.ordinalValue;
 	}

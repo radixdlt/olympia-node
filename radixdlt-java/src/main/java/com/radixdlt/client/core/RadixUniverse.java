@@ -110,7 +110,7 @@ public final class RadixUniverse {
 		final InMemoryAtomStore inMemoryAtomStore = new InMemoryAtomStore();
 		config.getGenesis().forEach(atom ->
 			atom.addresses()
-				.forEach(addr -> inMemoryAtomStore.store(addr, AtomObservation.stored(atom)))
+				.forEach(addr -> inMemoryAtomStore.store(addr, AtomObservation.stored(atom, config.timestamp())))
 		);
 
 		final InMemoryAtomStoreReducer atomStoreReducer = new InMemoryAtomStoreReducer(inMemoryAtomStore);

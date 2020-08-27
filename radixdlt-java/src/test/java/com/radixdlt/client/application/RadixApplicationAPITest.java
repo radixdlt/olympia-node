@@ -137,7 +137,7 @@ public class RadixApplicationAPITest {
 	}
 
 	private void validateSuccessfulStoreDataResult(Result result) {
-		TestObserver completionObserver = TestObserver.create();
+		TestObserver<?> completionObserver = TestObserver.create();
 		TestObserver<SubmitAtomAction> updatesObserver = TestObserver.create();
 		result.toCompletable().subscribe(completionObserver);
 		completionObserver.assertNoErrors();
@@ -225,7 +225,7 @@ public class RadixApplicationAPITest {
 		RadixAddress address = mock(RadixAddress.class);
 		when(address.getPublicKey()).thenReturn(mock(ECPublicKey.class));
 		Atom atom = mock(Atom.class);
-		AtomObservation atomObservation = AtomObservation.stored(atom);
+		AtomObservation atomObservation = AtomObservation.stored(atom, 0L);
 
 		AtomStore atomStore = mock(AtomStore.class);
 		when(atomStore.getAtomObservations(any())).thenReturn(Observable.just(atomObservation, atomObservation, atomObservation));
@@ -326,7 +326,7 @@ public class RadixApplicationAPITest {
 			.addAtomErrorMapper(errorMapper)
 			.build();
 
-		TestObserver testObserver = TestObserver.create();
+		TestObserver<?> testObserver = TestObserver.create();
 		api.execute(action).toCompletable().subscribe(testObserver);
 		testObserver.assertError(ActionExecutionException.class);
 		testObserver.assertError(e -> ((ActionExecutionException) e).getReasons().contains(reason));

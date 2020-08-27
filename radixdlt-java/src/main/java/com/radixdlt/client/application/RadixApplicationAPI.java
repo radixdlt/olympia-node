@@ -946,10 +946,6 @@ public class RadixApplicationAPI {
 		return transaction.commitAndPush(originNode);
 	}
 
-	private long generateTimestamp() {
-		return System.currentTimeMillis();
-	}
-
 	/**
 	 * Returns an unsigned atom with the appropriate fees given a list of
 	 * particle groups to compose the atom.
