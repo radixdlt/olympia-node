@@ -52,9 +52,11 @@ import java.util.function.UnaryOperator;
 public class RadixEngineModule extends AbstractModule {
 	private static final Hash DEFAULT_FEE_TARGET = new Hash("0000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
 	private final View epochHighView;
+	private final boolean skipAtomFeeCheck;
 
-	public RadixEngineModule(View epochHighView) {
+	public RadixEngineModule(View epochHighView, boolean skipAtomFeeCheck) {
 		this.epochHighView = epochHighView;
+		this.skipAtomFeeCheck = skipAtomFeeCheck;
 	}
 
 	@Override
@@ -159,7 +161,7 @@ public class RadixEngineModule extends AbstractModule {
 				() -> universe,
 				powFeeComputer,
 				DEFAULT_FEE_TARGET,
-				true
+				skipAtomFeeCheck
 			);
 
 		return new RadixEngine<>(

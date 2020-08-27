@@ -110,7 +110,7 @@ public class GlobalInjector {
 			new LedgerLocalMempoolModule(mempoolMaxSize),
 
 			// State Computer
-			new RadixEngineModule(epochHighView),
+			new RadixEngineModule(epochHighView, false),
 			new RadixEngineRxModule(),
 			new RadixEngineStoreModule(fixedNodeCount),
 

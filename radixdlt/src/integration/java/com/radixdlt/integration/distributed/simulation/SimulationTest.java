@@ -325,7 +325,7 @@ public class SimulationTest {
 						}
 					});
 					ledgerModules.add(new LedgerEpochChangeModule());
-					ledgerModules.add(new RadixEngineModule(epochHighView));
+					ledgerModules.add(new RadixEngineModule(epochHighView, true));
 					ledgerModules.add(new RadixEngineRxModule());
 					ledgerModules.add(new MockedRadixEngineStoreModule(validatorSet));
 				}
