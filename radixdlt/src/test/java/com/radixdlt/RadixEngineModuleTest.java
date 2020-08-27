@@ -19,7 +19,9 @@ package com.radixdlt;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -46,7 +48,9 @@ public class RadixEngineModuleTest {
 			bind(new TypeLiteral<EngineStore<LedgerAtom>>() { }).toInstance(mock(EngineStore.class));
 			bind(CommittedCommandsReader.class).toInstance(mock(CommittedCommandsReader.class));
 			bind(Integer.class).annotatedWith(Names.named("magic")).toInstance(1);
-			bind(BFTValidatorSet.class).toInstance(mock(BFTValidatorSet.class));
+			BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
+			when(validatorSet.getValidators()).thenReturn(ImmutableSet.of());
+			bind(BFTValidatorSet.class).toInstance(validatorSet);
 		}
 	}
 

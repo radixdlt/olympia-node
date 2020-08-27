@@ -38,7 +38,7 @@ import io.reactivex.rxjava3.subjects.PublishSubject;
 import java.util.List;
 import java.util.Objects;
 
-public final class RadixEngineValidatorRegistrator extends PeriodicMempoolSubmitter {
+public final class RadixEngineValidatorRegistrator extends MempoolPeriodicSubmitter {
 	private final List<ECKeyPair> nodes;
 	private final PublishSubject<BFTNode> validatorRegistrationSubmissions;
 	private int current = 0;
@@ -77,6 +77,7 @@ public final class RadixEngineValidatorRegistrator extends PeriodicMempoolSubmit
 		}
 
 		BFTNode node = BFTNode.create(keyPair.getPublicKey());
+		System.out.println("Registering node " + node);
 		validatorRegistrationSubmissions.onNext(node);
 		return command;
 	}

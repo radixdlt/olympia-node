@@ -20,41 +20,28 @@ package com.radixdlt.integration.distributed.simulation.application;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.integration.distributed.simulation.TestInvariant;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
-import com.radixdlt.ledger.CommittedCommand;
-import com.radixdlt.systeminfo.InfoRx;
-import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Observable;
-import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
-public class MempoolCommittedChecker implements TestInvariant {
+public class CommittedChecker implements TestInvariant {
 	private final Observable<Command> submittedCommands;
 
-	public MempoolCommittedChecker(Observable<Command> submittedCommands) {
+	public CommittedChecker(Observable<Command> submittedCommands) {
 		this.submittedCommands = Objects.requireNonNull(submittedCommands);
 	}
 
 	@Override
 	public Observable<TestInvariantError> check(RunningNetwork network) {
-		Set<Observable<CommittedCommand>> allLedgers
-			= network.getNodes().stream().map(network::getInfo).map(InfoRx::committedCommands).collect(Collectors.toSet());
-
 		return submittedCommands
-			.flatMapMaybe(command -> {
-				List<Maybe<TestInvariantError>> errors = allLedgers.stream()
-					.map(cmds -> cmds
+			.flatMapMaybe(command -> network
+					.committedCommands()
 						.filter(cmd -> Objects.equals(cmd.getCommand(), command))
 						.timeout(10, TimeUnit.SECONDS)
 						.firstOrError()
 						.ignoreElement()
 						.onErrorReturn(e -> new TestInvariantError(e.getMessage() + " " + command))
-					)
-					.collect(Collectors.toList());
-				return Maybe.merge(errors).firstElement();
-			});
+			);
 	}
 
 }

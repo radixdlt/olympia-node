@@ -29,20 +29,20 @@ import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
-public class RadixEngineSanityTest {
+public class IncreasingValidatorsTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
-		.numNodes(4)
+		.numNodes(50)
+		.numInitialValidators(2) // Can't be 1 otherwise epochs move too fast, TODO: Fix with mempool-aware pacemaker
+		.ledgerAndRadixEngine(View.of(10))
 		.checkSafety("safety")
 		.checkLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
 		.checkNoTimeouts("noTimeouts")
 		.checkAllProposalsHaveDirectParents("directParents")
-		.addMempoolSubmissionsSteadyState("mempool");
-		//.addRadixEngineValidatorRegisterMempoolSubmissions("mempoolSubmitted", "epochChanges");
+		.addRadixEngineValidatorRegisterMempoolSubmissions("mempoolSubmitted", "epochChanges");
 
 	@Test
-	public void when_submitting_validator_registration_requests_to_mempool__then_should_eventually_become_part_of_epoch() {
+	public void when_increasing_validators__then_they_should_be_getting_registered() {
 		SimulationTest simulationTest = bftTestBuilder
-			.ledgerAndRadixEngine(View.of(100))
 			.build();
 		Map<String, Optional<TestInvariantError>> results = simulationTest.run(1, TimeUnit.MINUTES);
 		assertThat(results).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());

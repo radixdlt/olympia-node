@@ -33,11 +33,11 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
 import com.radixdlt.integration.distributed.simulation.application.IncrementalBytesSubmitter;
-import com.radixdlt.integration.distributed.simulation.application.MempoolCommittedChecker;
+import com.radixdlt.integration.distributed.simulation.application.CommittedChecker;
 import com.radixdlt.integration.distributed.simulation.application.RadixEngineValidatorRegistrator;
 import com.radixdlt.integration.distributed.simulation.application.RegisteredValidatorChecker;
 import com.radixdlt.integration.distributed.simulation.invariants.epochs.EpochViewInvariant;
-import com.radixdlt.integration.distributed.simulation.application.PeriodicMempoolSubmitter;
+import com.radixdlt.integration.distributed.simulation.application.MempoolPeriodicSubmitter;
 import com.radixdlt.integration.distributed.simulation.network.DroppingLatencyProvider;
 import com.radixdlt.integration.distributed.simulation.network.OneProposalPerViewDropper;
 import com.radixdlt.integration.distributed.simulation.network.RandomLatencyProvider;
@@ -117,6 +117,7 @@ public class SimulationTest {
 		private View epochHighView = null;
 		private Function<Long, IntStream> epochToNodeIndexMapper;
 		private LedgerType ledgerType = LedgerType.MOCKED_LEDGER;
+		private int numInitialValidators = 0;
 
 		private Builder() {
 		}
@@ -130,6 +131,11 @@ public class SimulationTest {
 
 		public Builder pacemakerTimeout(int pacemakerTimeout) {
 			this.pacemakerTimeout = pacemakerTimeout;
+			return this;
+		}
+
+		public Builder numInitialValidators(int numInitialValidators) {
+			this.numInitialValidators = numInitialValidators;
 			return this;
 		}
 
@@ -188,11 +194,11 @@ public class SimulationTest {
 		}
 
 		public Builder addMempoolSubmissionsSteadyState(String invariantName) {
-			PeriodicMempoolSubmitter mempoolSubmission = new IncrementalBytesSubmitter();
-			MempoolCommittedChecker mempoolCommittedChecker
-				= new MempoolCommittedChecker(mempoolSubmission.issuedCommands());
+			MempoolPeriodicSubmitter mempoolSubmission = new IncrementalBytesSubmitter();
+			CommittedChecker committedChecker
+				= new CommittedChecker(mempoolSubmission.issuedCommands().map(Pair::getFirst));
 			this.runnableBuilder.add(nodes -> mempoolSubmission::run);
-			this.checksBuilder.put(invariantName, nodes -> mempoolCommittedChecker);
+			this.checksBuilder.put(invariantName, nodes -> committedChecker);
 
 			return this;
 		}
@@ -203,7 +209,7 @@ public class SimulationTest {
 				// TODO: Fix hack, hack required due to lack of Guice
 				this.checksBuilder.put(
 					submittedInvariantName,
-					nodes2 -> new MempoolCommittedChecker(validatorRegistrator.issuedCommands())
+					nodes2 -> new CommittedChecker(validatorRegistrator.issuedCommands().map(Pair::getFirst))
 				);
 				this.checksBuilder.put(
 					registeredInvariantName,
@@ -264,6 +270,7 @@ public class SimulationTest {
 					nodes.stream()
 						.map(node -> BFTNode.create(node.getPublicKey()))
 						.map(node -> BFTValidator.from(node, UInt256.ONE))
+						.limit(numInitialValidators == 0 ? Long.MAX_VALUE : numInitialValidators)
 						.collect(Collectors.toList())
 				);
 				ConcurrentHashMap<Long, CommittedCommand> sharedCommittedCmds = new ConcurrentHashMap<>();

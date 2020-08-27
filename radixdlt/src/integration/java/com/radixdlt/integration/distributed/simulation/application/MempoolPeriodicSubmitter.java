@@ -17,32 +17,40 @@
 
 package com.radixdlt.integration.distributed.simulation.application;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
+import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 /**
  * Contributes to steady state by submitting commands to the mempool every few seconds
  */
-public abstract class PeriodicMempoolSubmitter {
-	private int count = 0;
-	private final PublishSubject<Command> commands;
+public abstract class MempoolPeriodicSubmitter {
+	private final PublishSubject<Pair<Command, BFTNode>> commands;
+	private final Random random = new Random();
 
-	public PeriodicMempoolSubmitter() {
+	public MempoolPeriodicSubmitter() {
 		this.commands = PublishSubject.create();
 	}
 
 	abstract Command nextCommand();
 
-	private Command act(RunningNetwork network) {
-		BFTNode node = network.getNodes().get(count % network.getNodes().size());
-		count++;
+	private Pair<Command, BFTNode> act(RunningNetwork network, EpochChange lastEpochChange) {
+		ImmutableList<BFTValidator> validators = lastEpochChange.getValidatorSet().getValidators().asList();
+		int validatorSetSize = validators.size();
+		BFTValidator validator = validators.get(random.nextInt(validatorSetSize));
+		BFTNode node = validator.getNode();
+
 		Mempool mempool = network.getMempool(node);
 		Command command = nextCommand();
 		try {
@@ -51,16 +59,20 @@ public abstract class PeriodicMempoolSubmitter {
 			// TODO: Cleanup
 			e.printStackTrace();
 		}
-		return command;
+
+		System.out.println("Submitted " + command + " to " + node);
+
+		return Pair.of(command, node);
 	}
 
-	public Observable<Command> issuedCommands() {
+	public Observable<Pair<Command, BFTNode>> issuedCommands() {
 		return commands;
 	}
 
 	public void run(RunningNetwork network) {
 		Observable.interval(1, 4, TimeUnit.SECONDS)
-			.map(l -> this.act(network))
+			.withLatestFrom(network.latestEpochChanges(), (t, e) -> e)
+			.map(e -> this.act(network, e))
 			.subscribe(commands);
 	}
 }

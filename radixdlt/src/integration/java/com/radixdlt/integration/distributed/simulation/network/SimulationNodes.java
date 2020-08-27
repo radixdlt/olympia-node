@@ -28,13 +28,16 @@ import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.integration.distributed.simulation.MockedCryptoModule;
 import com.radixdlt.integration.distributed.simulation.SimulationNetworkModule;
+import com.radixdlt.ledger.CommittedCommand;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.systeminfo.InfoRx;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.ConsensusRunner;
 
+import io.reactivex.rxjava3.core.Observable;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -85,7 +88,9 @@ public class SimulationNodes {
 
 		List<BFTNode> getNodes();
 
-		EpochChangeRx getEpochChanges(BFTNode node);
+		Observable<EpochChange> latestEpochChanges();
+
+		Observable<CommittedCommand> committedCommands();
 
 		InfoRx getInfo(BFTNode node);
 
@@ -117,9 +122,27 @@ public class SimulationNodes {
 			}
 
 			@Override
-			public EpochChangeRx getEpochChanges(BFTNode node) {
-				int index = nodes.indexOf(node);
-				return nodeInstances.get(index).getInstance(EpochChangeRx.class);
+			public Observable<EpochChange> latestEpochChanges() {
+				Set<Observable<EpochChange>> epochChanges = nodeInstances.stream()
+					.map(i -> i.getInstance(EpochChangeRx.class))
+					.map(EpochChangeRx::epochChanges)
+					.collect(Collectors.toSet());
+
+				return Observable.just(initialEpoch()).concatWith(
+					Observable.merge(epochChanges)
+						.scan((cur, next) -> next.getAncestor().getEpoch() > cur.getAncestor().getEpoch() ? next : cur)
+						.distinctUntilChanged()
+				);
+			}
+
+			@Override
+			public Observable<CommittedCommand> committedCommands() {
+				Set<Observable<CommittedCommand>> commands = nodeInstances.stream()
+					.map(i -> i.getInstance(InfoRx.class))
+					.map(InfoRx::committedCommands)
+					.collect(Collectors.toSet());
+
+				return Observable.merge(commands).distinct();
 			}
 
 			@Override

@@ -17,18 +17,12 @@
 
 package com.radixdlt.integration.distributed.simulation.application;
 
-import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.integration.distributed.simulation.TestInvariant;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
-import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Observable;
-import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 public class RegisteredValidatorChecker implements TestInvariant {
 	private final Observable<BFTNode> registeringValidators;
@@ -39,22 +33,15 @@ public class RegisteredValidatorChecker implements TestInvariant {
 
 	@Override
 	public Observable<TestInvariantError> check(RunningNetwork network) {
-		Set<Observable<EpochChange>> allEpochChanges
-			= network.getNodes().stream().map(network::getEpochChanges).map(EpochChangeRx::epochChanges).collect(Collectors.toSet());
-
 		return registeringValidators
-			.flatMapMaybe(validator -> {
-				List<Maybe<TestInvariantError>> errors = allEpochChanges.stream()
-					.map(epochChanges -> epochChanges
-						.filter(epochChange -> epochChange.getValidatorSet().containsNode(validator))
-						.timeout(20, TimeUnit.SECONDS)
-						.firstOrError()
-						.ignoreElement()
-						.onErrorReturn(e -> new TestInvariantError(validator + " was not included in epoch in 20 seconds"))
-					)
-					.collect(Collectors.toList());
-				return Maybe.merge(errors).firstElement();
-			});
+			.flatMapMaybe(validator ->
+				network.latestEpochChanges()
+					.filter(epochChange -> epochChange.getValidatorSet().containsNode(validator))
+					.timeout(20, TimeUnit.SECONDS)
+					.firstOrError()
+					.ignoreElement()
+					.onErrorReturn(e -> new TestInvariantError(validator + " was not included in any epoch in last 20 seconds"))
+			);
 	}
 
 }

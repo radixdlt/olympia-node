@@ -28,6 +28,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
@@ -157,16 +158,15 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 				clientAtom.getCMInstruction().getMicroInstructions().stream()
 					.filter(i -> i.getParticle() instanceof RegisteredValidatorParticle)
+					.filter(CMMicroInstruction::isCheckSpin)
 					.forEach(i -> {
-						if (i.isCheckSpin()) {
-							RadixAddress nextValidatorAddress = ((RegisteredValidatorParticle) i.getParticle()).getAddress();
-							BFTNode validatorNode = BFTNode.create(nextValidatorAddress.getPublicKey());
-							BFTValidator nextValidator = BFTValidator.from(validatorNode, UInt256.ONE);
-							if (i.getCheckSpin() == Spin.UP) {
-								nextValidatorSet.add(nextValidator);
-							} else {
-								nextValidatorSet.remove(nextValidator);
-							}
+						RadixAddress nextValidatorAddress = ((RegisteredValidatorParticle) i.getParticle()).getAddress();
+						BFTNode validatorNode = BFTNode.create(nextValidatorAddress.getPublicKey());
+						BFTValidator nextValidator = BFTValidator.from(validatorNode, UInt256.ONE);
+						if (i.getCheckSpin() == Spin.NEUTRAL) {
+							nextValidatorSet.add(nextValidator);
+						} else {
+							nextValidatorSet.remove(nextValidator);
 						}
 					});
 

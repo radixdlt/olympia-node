@@ -20,7 +20,7 @@ package com.radixdlt.integration.distributed.simulation.application;
 import com.google.common.primitives.Longs;
 import com.radixdlt.consensus.Command;
 
-public class IncrementalBytesSubmitter extends PeriodicMempoolSubmitter {
+public class IncrementalBytesSubmitter extends MempoolPeriodicSubmitter {
 	private long commandId = 0;
 
 	@Override
