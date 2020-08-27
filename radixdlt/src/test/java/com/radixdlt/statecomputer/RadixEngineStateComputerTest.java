@@ -79,10 +79,17 @@ public class RadixEngineStateComputerTest {
 	}
 
 	@Test
-	public void when_prepare_vertex_metadata_equal_to_high_view__then_should_return_validator_set() {
+	public void when_prepare_vertex_metadata_equal_to_high_view__then_should_return_epoch_change() {
 		Vertex vertex = mock(Vertex.class);
 		when(vertex.getView()).thenReturn(epochHighView);
 		assertThat(stateComputer.prepare(vertex)).isTrue();
+	}
+
+	@Test
+	public void when_prepare_vertex_metadata_lower_to_high_view__then_should_return_not_epoch_change() {
+		Vertex vertex = mock(Vertex.class);
+		when(vertex.getView()).thenReturn(epochHighView.previous());
+		assertThat(stateComputer.prepare(vertex)).isFalse();
 	}
 
 	@Test
@@ -167,11 +174,12 @@ public class RadixEngineStateComputerTest {
 
 		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenThrow(new SerializationException(""));
 
-		stateComputer.commit(new Command(new byte[] {0, 1}), vertexMetadata);
+		Command cmd = new Command(new byte[] {0, 1});
+		stateComputer.commit(cmd, vertexMetadata);
 
 		assertThat(stateComputer.getCommittedCommands(0, 1))
 			.hasOnlyOneElementSatisfying(c -> {
-				assertThat(c.getCommand()).isNull();
+				assertThat(c.getCommand()).isEqualTo(cmd);
 				assertThat(c.getVertexMetadata()).isEqualTo(vertexMetadata);
 			});
 	}

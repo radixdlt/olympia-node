@@ -125,27 +125,24 @@ public final class RadixEngineStateComputer implements StateComputer {
 		return vertex.getView().compareTo(epochChangeView) >= 0;
 	}
 
+	private ClientAtom mapCommand(Command command) {
+		try {
+			return serialization.fromDson(command.getPayload(), ClientAtom.class);
+		} catch (SerializationException e) {
+			return null;
+		}
+	}
+
 	@Override
 	public Optional<BFTValidatorSet> commit(Command command, VertexMetadata vertexMetadata) {
-		if (command != null) {
-			final ClientAtom clientAtom;
-			try {
-				clientAtom = serialization.fromDson(command.getPayload(), ClientAtom.class);
-			} catch (SerializationException e) {
-				this.unstoredCommittedAtoms.add(new CommittedCommand(null, vertexMetadata));
-				if (vertexMetadata.getPreparedCommand().isEndOfEpoch()) {
-					BFTValidatorSet validatorSet = BFTValidatorSet.from(nextValidatorSet);
-					return Optional.of(validatorSet);
-				}
-
-				return Optional.empty();
-			}
-
-			CommittedAtom committedAtom = new CommittedAtom(clientAtom, vertexMetadata);
-
+		boolean storedInRadixEngine = false;
+		final ClientAtom clientAtom = command != null ? this.mapCommand(command) : null;
+		if (clientAtom != null) {
+			final CommittedAtom committedAtom = new CommittedAtom(clientAtom, vertexMetadata);
 			try {
 				// TODO: execute list of commands instead
 				this.radixEngine.checkAndStore(committedAtom);
+				storedInRadixEngine = true;
 
 				// TODO: Move into radix engine
 				clientAtom.getCMInstruction().getMicroInstructions().stream()
@@ -172,17 +169,12 @@ public final class RadixEngineStateComputer implements StateComputer {
 				// TODO: Reinstate this when ProposalGenerator + Mempool can guarantee correct proposals
 
 				// TODO: move VIRTUAL_STATE_CONFLICT to static check
-				this.unstoredCommittedAtoms.add(new CommittedCommand(command, vertexMetadata));
 				committedAtomSender.sendCommittedAtom(CommittedAtoms.error(committedAtom, e));
 			}
-		} else if (vertexMetadata.getPreparedCommand().isEndOfEpoch()) {
-			// TODO: HACK
-			// TODO: Remove and move epoch change logic into RadixEngine
-			this.unstoredCommittedAtoms.add(new CommittedCommand(null, vertexMetadata));
-		} else {
-			// TODO: HACK
-			// TODO: Refactor to remove such illegal states
-			throw new IllegalStateException("Should never get here " + command);
+		}
+
+		if (!storedInRadixEngine) {
+			this.unstoredCommittedAtoms.add(new CommittedCommand(command, vertexMetadata));
 		}
 
 		if (vertexMetadata.getPreparedCommand().isEndOfEpoch()) {
