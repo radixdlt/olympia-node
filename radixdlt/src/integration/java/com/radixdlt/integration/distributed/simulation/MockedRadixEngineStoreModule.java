@@ -19,8 +19,9 @@ package com.radixdlt.integration.distributed.simulation;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.google.inject.name.Named;
+import com.google.inject.Scopes;
+import com.google.inject.TypeLiteral;
+import com.google.inject.name.Names;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.PreparedCommand;
 import com.radixdlt.consensus.VertexMetadata;
@@ -44,21 +45,10 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 			throw new UnsupportedOperationException();
 		});
 		bind(Serialization.class).toInstance(DefaultSerialization.getInstance());
-
+		bind(Integer.class).annotatedWith(Names.named("magic")).toInstance(1);
+		bind(new TypeLiteral<EngineStore<LedgerAtom>>() { }).to(new TypeLiteral<InMemoryEngineStore<LedgerAtom>>() { })
+			.in(Scopes.SINGLETON);
 	}
-
-	@Provides
-	@Named("magic")
-	private int magic() {
-		return 1;
-	}
-
-	@Provides
-	@Singleton
-	public EngineStore<LedgerAtom> engineStore() {
-		return new InMemoryEngineStore<>();
-	}
-
 
 	@Provides
 	private BFTValidatorSet genesisValidatorSet() {

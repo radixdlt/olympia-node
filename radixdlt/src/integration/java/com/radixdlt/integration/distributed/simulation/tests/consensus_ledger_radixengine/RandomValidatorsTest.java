@@ -36,7 +36,7 @@ public class RandomValidatorsTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(4)
 		.numInitialValidators(2)
-		.ledgerAndRadixEngine(View.of(10))
+		.ledgerAndRadixEngineWithEpochHighView(View.of(10))
 		.checkEpochHighView("epochHighView", View.of(100))
 		.checkSafety("safety")
 		.checkLiveness("liveness", 1000, TimeUnit.MILLISECONDS)

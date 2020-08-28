@@ -32,7 +32,7 @@ import org.junit.Test;
 public class SanityTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(4)
-		.ledgerAndRadixEngine(View.of(10))
+		.ledgerAndRadixEngineWithEpochHighView(View.of(10))
 		.checkSafety("safety")
 		.checkLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
 		.checkNoTimeouts("noTimeouts")

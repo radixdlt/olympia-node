@@ -68,7 +68,6 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -78,9 +77,13 @@ import java.util.stream.Stream;
  * High level BFT Simulation Test Runner
  */
 public class SimulationTest {
+	public interface SimulationNetworkActor {
+		void run(RunningNetwork network);
+	}
+
 	private final ImmutableList<BFTNode> nodes;
 	private final LatencyProvider latencyProvider;
-	private final ImmutableSet<Consumer<RunningNetwork>> runners;
+	private final ImmutableSet<SimulationNetworkActor> runners;
 	private final ImmutableMap<String, TestInvariant> checks;
 	private final int pacemakerTimeout;
 	private final boolean getVerticesRPCEnabled;
@@ -93,7 +96,7 @@ public class SimulationTest {
 		boolean getVerticesRPCEnabled,
 		ImmutableList<Module> modules,
 		ImmutableMap<String, TestInvariant> checks,
-		ImmutableSet<Consumer<RunningNetwork>> runners
+		ImmutableSet<SimulationNetworkActor> runners
 	) {
 		this.nodes = nodes;
 		this.latencyProvider = latencyProvider;
@@ -111,7 +114,7 @@ public class SimulationTest {
 
 		private final DroppingLatencyProvider latencyProvider = new DroppingLatencyProvider();
 		private final ImmutableMap.Builder<String, Function<List<ECKeyPair>, TestInvariant>> checksBuilder = ImmutableMap.builder();
-		private final ImmutableList.Builder<Function<List<ECKeyPair>, Consumer<RunningNetwork>>> runnableBuilder = ImmutableList.builder();
+		private final ImmutableList.Builder<Function<List<ECKeyPair>, SimulationNetworkActor>> runnableBuilder = ImmutableList.builder();
 		private ImmutableList<ECKeyPair> nodes = ImmutableList.of(ECKeyPair.generateNew());
 		private int pacemakerTimeout = 12 * SimulationNetwork.DEFAULT_LATENCY;
 		private boolean getVerticesRPCEnabled = true;
@@ -178,7 +181,7 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder ledgerAndRadixEngine(View epochHighView) {
+		public Builder ledgerAndRadixEngineWithEpochHighView(View epochHighView) {
 			this.ledgerType = LedgerType.LEDGER_AND_RADIXENGINE;
 			this.epochHighView = epochHighView;
 			return this;
@@ -331,7 +334,7 @@ public class SimulationTest {
 				}
 			}
 
-			ImmutableSet<Consumer<RunningNetwork>> runners = this.runnableBuilder.build().stream()
+			ImmutableSet<SimulationNetworkActor> runners = this.runnableBuilder.build().stream()
 				.map(f -> f.apply(nodes))
 				.collect(ImmutableSet.toImmutableSet());
 
@@ -389,7 +392,7 @@ public class SimulationTest {
 			.collect(Collectors.toList());
 
 		return Single.merge(results).toObservable()
-			.doOnSubscribe(d -> runners.forEach(c -> c.accept(runningNetwork)));
+			.doOnSubscribe(d -> runners.forEach(c -> c.run(runningNetwork)));
 	}
 
 	/**

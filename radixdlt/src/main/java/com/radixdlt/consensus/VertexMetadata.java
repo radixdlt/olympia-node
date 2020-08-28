@@ -17,12 +17,8 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.crypto.CryptoException;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.utils.Bytes;
 import java.util.Objects;
 
 import javax.annotation.concurrent.Immutable;
@@ -126,20 +122,6 @@ public final class VertexMetadata {
 	public Hash getId() {
 		return id;
 	}
-
-	// TODO: Use base64 over hex
-	private static String encodePublicKey(BFTNode key) {
-		return Bytes.toHexString(key.getKey().getBytes());
-	}
-
-	private static BFTNode toBFTNode(String str) {
-		try {
-			return BFTNode.create(new ECPublicKey(Bytes.fromHexString(str)));
-		} catch (CryptoException e) {
-			throw new IllegalStateException("Error decoding public key", e);
-		}
-	}
-
 
 	@JsonProperty("view")
 	@DsonOutput(Output.ALL)

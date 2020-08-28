@@ -120,7 +120,6 @@ public class StateComputerLedgerTest {
 		when(qc.getTimestampedSignatures()).thenReturn(new TimestampedECDSASignatures());
 
 		PreparedCommand nextPrepared = stateComputerLedger.prepare(vertex);
-		//assertThat(preparedCommand.getNextValidatorSet()).isEmpty();
 		assertThat(nextPrepared.isEndOfEpoch()).isFalse();
 		assertThat(nextPrepared.getStateVersion()).isEqualTo(12345L);
 	}
