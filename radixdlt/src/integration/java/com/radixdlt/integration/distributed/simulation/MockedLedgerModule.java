@@ -17,7 +17,6 @@
 
 package com.radixdlt.integration.distributed.simulation;
 
-import java.time.Instant;
 import java.util.Objects;
 
 import com.google.inject.AbstractModule;
@@ -33,12 +32,11 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.sync.SyncRequestSender;
+import com.radixdlt.universe.Universe;
 import com.radixdlt.consensus.PreparedCommand;
 import io.reactivex.rxjava3.core.Observable;
 
 public class MockedLedgerModule extends AbstractModule {
-	private static final long GENESIS_TIMESTAMP = Instant.parse("2020-01-01T00:00:00Z").toEpochMilli();
-
 	private final BFTValidatorSet validatorSet;
 
 	public MockedLedgerModule(BFTValidatorSet validatorSet) {
@@ -55,8 +53,8 @@ public class MockedLedgerModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	EpochChange initialEpoch(VertexMetadata genesisMetadata) {
-		return new EpochChange(VertexMetadata.ofGenesisAncestor(validatorSet, GENESIS_TIMESTAMP), validatorSet);
+	EpochChange initialEpoch(Universe universe, VertexMetadata genesisMetadata) {
+		return new EpochChange(VertexMetadata.ofGenesisAncestor(validatorSet, universe.getTimestamp()), validatorSet);
 	}
 
 	@Provides
