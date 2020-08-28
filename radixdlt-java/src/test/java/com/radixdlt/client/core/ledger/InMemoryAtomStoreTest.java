@@ -83,7 +83,7 @@ public class InMemoryAtomStoreTest {
 		when(atom.getHash()).thenReturn(hash);
 		when(atom.addresses()).thenAnswer(inv -> Stream.of(address));
 
-		return soft ? AtomObservation.softStored(atom) : AtomObservation.stored(atom, 0L);
+		return soft ? AtomObservation.softStored(atom, 0L) : AtomObservation.stored(atom, 0L);
 	}
 
 	private AtomObservation mockStoredAtom(Atom atom, SpunParticle spun, RadixAddress address) {
@@ -274,7 +274,7 @@ public class InMemoryAtomStoreTest {
 				SpunParticle.up(particle1)
 			)
 		);
-		inMemoryAtomStore.store(someAddress, AtomObservation.softStored(atom0));
+		inMemoryAtomStore.store(someAddress, AtomObservation.softStored(atom0, 0L));
 
 		Particle particle2 = mock(Particle.class);
 		when(particle2.getShardables()).thenReturn(Collections.singleton(someAddress));

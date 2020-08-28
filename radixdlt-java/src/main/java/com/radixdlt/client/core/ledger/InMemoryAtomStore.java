@@ -303,6 +303,9 @@ public class InMemoryAtomStore implements AtomStore {
 				emitter.setCancellable(() -> {
 					synchronized (lock) {
 						observers.remove(emitter);
+						if (observers.isEmpty()) {
+							this.allObservers.remove(address);
+						}
 					}
 				});
 			}

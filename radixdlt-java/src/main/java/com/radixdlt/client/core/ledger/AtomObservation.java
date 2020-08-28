@@ -77,7 +77,7 @@ public final class AtomObservation {
 		this.atom = atom;
 		this.atomTimestamp = atomTimestamp;
 		this.receivedTimestamp = receivedTimestamp;
-		this.updateType = new AtomObservationUpdateType(type, soft);
+		this.updateType = AtomObservationUpdateType.of(type, soft);
 	}
 
 	public Atom getAtom() {
@@ -120,11 +120,11 @@ public final class AtomObservation {
 	 * is stored but can easily be replaced by "harder" state.
 	 *
 	 * @param atom the atom which is soft stored
+	 * @param timestamp the atom timestamp supplied by the node
 	 * @return the atom stored observation
 	 */
-	public static AtomObservation softStored(Atom atom) {
-		long now = System.currentTimeMillis();
-		return new AtomObservation(atom, now, Type.STORE, now, true);
+	public static AtomObservation softStored(Atom atom, long timestamp) {
+		return new AtomObservation(atom, timestamp, Type.STORE, System.currentTimeMillis(), true);
 	}
 
 	public static AtomObservation softDeleted(Atom atom) {
