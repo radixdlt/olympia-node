@@ -17,6 +17,7 @@
 
 package com.radixdlt.engine;
 
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.Particle;
@@ -26,6 +27,7 @@ import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.CMMicroInstruction.CMMicroOp;
 import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.middleware.SpunParticle;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.CMStores;
 import com.radixdlt.store.EngineStore;
@@ -33,7 +35,9 @@ import com.radixdlt.store.SpinStateMachine;
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
 
 /**
@@ -45,6 +49,7 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 	private final EngineStore<T> engineStore;
 	private final AtomChecker<T> checker;
 	private final Object stateUpdateEngineLock = new Object();
+
 
 	public RadixEngine(
 		ConstraintMachine constraintMachine,
@@ -94,6 +99,23 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		synchronized (stateUpdateEngineLock) {
 			// TODO Feature: Return updated state for some given query (e.g. for current validator set)
 			stateCheckAndStoreInternal(atom);
+		}
+	}
+
+	/**
+	 * Deterministically computes a value from a list of spun particles of a given type.
+	 * Must implement this until we get rid of optimistic concurrency.
+	 *
+	 * @param particleClass the particle class to reduce
+	 * @param initial the initial value of the state
+	 * @param reducer reducer of spun particles to the state
+	 * @param <U> the particle class to reduce
+	 * @param <V> the class of the state to reduce to
+	 * @return the computed, reduced state
+	 */
+	public <U extends Particle, V> V compute(Class<U> particleClass, V initial, BiFunction<V, SpunParticle, V> reducer) {
+		synchronized (stateUpdateEngineLock) {
+			return engineStore.compute(particleClass, initial, reducer);
 		}
 	}
 

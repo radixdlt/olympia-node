@@ -23,10 +23,12 @@ import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.CMMicroInstruction.CMMicroOp;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.middleware.SpunParticle;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.SpinStateMachine;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 /**
@@ -65,6 +67,11 @@ public class InMemoryEngineStore implements EngineStore<TicTacToeAtom> {
 
 	@Override
 	public void deleteAtom(AID atom) {
+		throw new UnsupportedOperationException("Deleting is not supported by this engine store.");
+	}
+
+	@Override
+	public <U extends Particle, V> void compute(Class<U> particleClass, V initial, BiFunction<V, SpunParticle, V> reduce) {
 		throw new UnsupportedOperationException("Deleting is not supported by this engine store.");
 	}
 }
