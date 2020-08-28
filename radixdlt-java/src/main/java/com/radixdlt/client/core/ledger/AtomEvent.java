@@ -24,6 +24,7 @@ package com.radixdlt.client.core.ledger;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.annotations.VisibleForTesting;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -57,7 +58,8 @@ public final class AtomEvent {
 	private transient AtomEventType type;
 
 	@JsonCreator
-	private AtomEvent(
+	@VisibleForTesting
+	AtomEvent(
 		@JsonProperty("atom") Atom atom,
 		@JsonProperty("timestamp") long timestamp,
 		@JsonProperty("type") String type
