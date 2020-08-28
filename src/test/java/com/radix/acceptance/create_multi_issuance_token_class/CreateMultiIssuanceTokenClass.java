@@ -175,7 +175,7 @@ public class CreateMultiIssuanceTokenClass {
 	}
 
 	@Then("^I observe the atom being accepted$")
-	public void i_observe_the_atom_being_accepted() throws InterruptedException {
+	public void i_observe_the_atom_being_accepted() {
 		// "the atom" = most recent atom
 		i_can_observe_atom_being_accepted(observers.size());
 	}

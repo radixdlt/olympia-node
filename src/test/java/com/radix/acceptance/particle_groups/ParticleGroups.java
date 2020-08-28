@@ -121,7 +121,7 @@ public class ParticleGroups {
 			.bootstrap(RadixEnv.getBootstrapConfig())
 			.identity(this.identity)
 			.addStatelessParticlesMapper(CreateEmptyGroupAction.class, new CreateEmptyGroupActionToParticleGroupsMapper())
-			.addStatefulParticlesMapper(MergeAction.class, new MergeStatefulActionToParticleGroupsMapper(mapper))
+			.addStatefulParticlesMapper(MergeAction.class, new MergeStatefulActionToParticleGroupsMapper<>(mapper))
 			.build();
 
 		// Reset data

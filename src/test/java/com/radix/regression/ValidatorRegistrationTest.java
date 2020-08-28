@@ -128,7 +128,7 @@ public class ValidatorRegistrationTest {
 		observer.dispose();
 	}
 
-	private TestObserver<AtomStatusEvent> submitAtom(SpunParticle<?>... spunParticles) {
+	private TestObserver<AtomStatusEvent> submitAtom(SpunParticle... spunParticles) {
 		return submitAtom(ImmutableMap.of(), true, Long.toString(System.currentTimeMillis()), spunParticles);
 	}
 
@@ -136,7 +136,7 @@ public class ValidatorRegistrationTest {
 		Map<String, String> metaData,
 		boolean addFee,
 		String timestamp,
-		SpunParticle<?>... spunParticles
+		SpunParticle... spunParticles
 	) {
 		List<ParticleGroup> particleGroups = new ArrayList<>();
 		particleGroups.add(ParticleGroup.of(ImmutableList.copyOf(spunParticles), metaData));
