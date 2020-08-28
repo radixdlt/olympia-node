@@ -42,8 +42,8 @@ public class GetVerticesErrorResponseMessageSerializeTest extends SerializeMessa
 		return new GetVerticesErrorResponseMessage(
 			12345,
 			Hash.random(),
-			QuorumCertificate.ofGenesis(Vertex.createGenesis(VertexMetadata.ofGenesisAncestor(bftValidatorSet))),
-			QuorumCertificate.ofGenesis(Vertex.createGenesis(VertexMetadata.ofGenesisAncestor(bftValidatorSet)))
+			QuorumCertificate.ofGenesis(Vertex.createGenesis(VertexMetadata.ofGenesisAncestor(bftValidatorSet, 123456789L))),
+			QuorumCertificate.ofGenesis(Vertex.createGenesis(VertexMetadata.ofGenesisAncestor(bftValidatorSet, 123456789L)))
 		);
 	}
 }

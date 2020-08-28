@@ -17,6 +17,8 @@
 
 package com.radixdlt.integration.distributed.simulation;
 
+import java.util.Objects;
+
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
@@ -30,7 +32,7 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.sync.SyncRequestSender;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.universe.Universe;
 import com.radixdlt.consensus.PreparedCommand;
 import io.reactivex.rxjava3.core.Observable;
 
@@ -38,17 +40,21 @@ public class MockedLedgerModule extends AbstractModule {
 	private final BFTValidatorSet validatorSet;
 
 	public MockedLedgerModule(BFTValidatorSet validatorSet) {
-		this.validatorSet = validatorSet;
+		this.validatorSet = Objects.requireNonNull(validatorSet);
 	}
 
 	@Override
 	public void configure() {
 		bind(CommittedStateSyncRx.class).toInstance(Observable::never);
 		bind(EpochChangeRx.class).toInstance(Observable::never);
-		EpochChange initialEpoch = new EpochChange(VertexMetadata.ofGenesisAncestor(validatorSet), validatorSet);
-		bind(EpochChange.class).toInstance(initialEpoch);
 		bind(NextCommandGenerator.class).toInstance((view, aids) -> null);
 		bind(SyncRequestSender.class).toInstance(req -> { });
+	}
+
+	@Provides
+	@Singleton
+	EpochChange initialEpoch(Universe universe, VertexMetadata genesisMetadata) {
+		return new EpochChange(VertexMetadata.ofGenesisAncestor(validatorSet, universe.getTimestamp()), validatorSet);
 	}
 
 	@Provides
@@ -57,7 +63,7 @@ public class MockedLedgerModule extends AbstractModule {
 		return new Ledger() {
 			@Override
 			public PreparedCommand prepare(Vertex vertex) {
-				return PreparedCommand.create(0, Hash.ZERO_HASH);
+				return PreparedCommand.create(0, 0L);
 			}
 
 			@Override

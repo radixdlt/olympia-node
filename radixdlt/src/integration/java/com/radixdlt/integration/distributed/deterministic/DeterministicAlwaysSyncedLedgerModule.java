@@ -27,7 +27,6 @@ import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.sync.SyncRequestSender;
-import com.radixdlt.crypto.Hash;
 
 /**
  * A synced executor that is always synced.
@@ -44,7 +43,7 @@ public class DeterministicAlwaysSyncedLedgerModule extends AbstractModule {
 		return new Ledger() {
 			@Override
 			public PreparedCommand prepare(Vertex vertex) {
-				return PreparedCommand.create(0, Hash.ZERO_HASH);
+				return PreparedCommand.create(0, 0L);
 			}
 
 			@Override

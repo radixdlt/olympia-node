@@ -96,6 +96,7 @@ public class AtomStatusEpic {
 				data.put("stateVersion", vertexMetadata.getStateVersion());
 				data.put("epoch",vertexMetadata.getEpoch());
 				data.put("view", vertexMetadata.getView().number());
+				data.put("timestamp", vertexMetadata.timestamp());
 
 				sendAtomSubmissionState.accept(AtomStatus.STORED, data);
 			}

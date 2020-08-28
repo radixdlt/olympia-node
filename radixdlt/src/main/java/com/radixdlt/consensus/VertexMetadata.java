@@ -65,9 +65,9 @@ public final class VertexMetadata {
 
 	private BFTValidatorSet validatorSet;
 
-	@JsonProperty("timestamped_signatures_hash")
+	@JsonProperty("timestamp")
 	@DsonOutput(Output.ALL)
-	private final Hash timestampedSignaturesHash;
+	private final long timestamp;
 
 	VertexMetadata() {
 		// Serializer only
@@ -76,7 +76,7 @@ public final class VertexMetadata {
 		this.stateVersion = 0L;
 		this.epoch = 0L;
 		this.validatorSet = null;
-		this.timestampedSignaturesHash = null;
+		this.timestamp = 0L;
 	}
 
 	// TODO: Move executor data to a more opaque data structure
@@ -86,7 +86,7 @@ public final class VertexMetadata {
 		Hash id, // consensus data
 		long stateVersion, // executor data
 		BFTValidatorSet validatorSet, // executor data
-		Hash timestampedSignaturesHash // executor data
+		long timestamp // executor data
 	) {
 		if (epoch < 0) {
 			throw new IllegalArgumentException("epoch must be >= 0");
@@ -101,17 +101,17 @@ public final class VertexMetadata {
 		this.view = view;
 		this.id = id;
 		this.validatorSet = validatorSet;
-		this.timestampedSignaturesHash = timestampedSignaturesHash;
+		this.timestamp = timestamp;
 	}
 
-	public static VertexMetadata ofGenesisAncestor(BFTValidatorSet initialValidatorSet) {
+	public static VertexMetadata ofGenesisAncestor(BFTValidatorSet initialValidatorSet, long timestamp) {
 		return new VertexMetadata(
 			0,
 			View.genesis(),
 			Hash.ZERO_HASH,
 			0,
 			initialValidatorSet,
-			Hash.ZERO_HASH
+			timestamp
 		);
 	}
 
@@ -122,7 +122,7 @@ public final class VertexMetadata {
 			vertex.getId(),
 			vertex.getQC().getParent().getStateVersion(),
 			null,
-			Hash.ZERO_HASH
+			vertex.getQC().getTimestampedSignatures().weightedTimestamp()
 		);
 	}
 
@@ -133,7 +133,7 @@ public final class VertexMetadata {
 			vertex.getId(),
 			preparedCommand.getStateVersion(),
 			preparedCommand.getNextValidatorSet().orElse(null),
-			preparedCommand.getTimestampedSignaturesHash()
+			preparedCommand.timestamp()
 		);
 	}
 
@@ -159,6 +159,10 @@ public final class VertexMetadata {
 
 	public Hash getId() {
 		return id;
+	}
+
+	public long timestamp() {
+		return this.timestamp;
 	}
 
 	@JsonProperty("validator_set")
@@ -205,7 +209,7 @@ public final class VertexMetadata {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.view, this.id, this.stateVersion, this.validatorSet, this.epoch, this.timestampedSignaturesHash);
+		return Objects.hash(this.timestamp, this.stateVersion, this.epoch, this.view, this.id, this.validatorSet);
 	}
 
 	@Override
@@ -216,12 +220,12 @@ public final class VertexMetadata {
 		if (o instanceof VertexMetadata) {
 			VertexMetadata other = (VertexMetadata) o;
 			return
-				Objects.equals(this.view, other.view)
-				&& Objects.equals(this.id, other.id)
-				&& Objects.equals(this.timestampedSignaturesHash, other.timestampedSignaturesHash)
-				&& Objects.equals(this.validatorSet, other.validatorSet)
+				this.timestamp == other.timestamp
 				&& this.stateVersion == other.stateVersion
-				&& this.epoch == other.epoch;
+				&& this.epoch == other.epoch
+				&& Objects.equals(this.view, other.view)
+				&& Objects.equals(this.id, other.id)
+				&& Objects.equals(this.validatorSet, other.validatorSet);
 		}
 		return false;
 	}
