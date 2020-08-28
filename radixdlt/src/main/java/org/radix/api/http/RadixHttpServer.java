@@ -40,6 +40,10 @@ import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
+import io.undertow.server.handlers.form.FormData;
+import io.undertow.server.handlers.form.FormData.FormValue;
+import io.undertow.server.handlers.form.FormDataParser;
+import io.undertow.server.handlers.form.FormParserFactory;
 import io.undertow.util.Headers;
 import io.undertow.util.Methods;
 import io.undertow.util.StatusCodes;
@@ -77,6 +81,7 @@ public final class RadixHttpServer {
 	private static final Logger logger = LogManager.getLogger();
 
 	private final ConcurrentHashMap<RadixJsonRpcPeer, WebSocketChannel> peers;
+	private final ConsensusRunner consensusRunner;
 	private final AtomsService atomsService;
 	private final RadixJsonRpcServer jsonRpcServer;
 	private final InternalService internalService;
@@ -87,6 +92,7 @@ public final class RadixHttpServer {
 	private final Serialization serialization;
 	private final InMemorySystemInfoManager infoStateRunner;
 	private Undertow server;
+	private final FormParserFactory formParserFactory = FormParserFactory.builder().build();
 
 	public RadixHttpServer(
 		InMemorySystemInfoManager infoStateRunner,
@@ -104,6 +110,7 @@ public final class RadixHttpServer {
 		AddressBook addressBook
 	) {
 		this.infoStateRunner = Objects.requireNonNull(infoStateRunner);
+		this.consensusRunner = Objects.requireNonNull(consensusRunner);
 		this.universe = Objects.requireNonNull(universe);
 		this.serialization = Objects.requireNonNull(serialization);
 		this.apiSerializedUniverse = serialization.toJsonObject(this.universe, DsonOutput.Output.API);
@@ -282,6 +289,8 @@ public final class RadixHttpServer {
 			respond(result, exchange);
 		}, handler);
 
+		addRoute("/api/bft", Methods.PUT_STRING, this::handleBftState, handler);
+
 		// keep-alive
 		addGetRoute("/api/ping", exchange -> {
 			JSONObject obj = new JSONObject();
@@ -360,6 +369,51 @@ public final class RadixHttpServer {
 		result.put("closedCount", peersCopy.size());
 
 		return result;
+	}
+
+	/**
+	 * Handle PUT request for changing BFT state.
+	 * <p>
+	 * Put request takes two parameters:
+	 * <ul>
+	 *   <li><b>id</b> the ID of the BFT instance (must be {@code 0} for now)</li>
+	 *   <li><b>state</b> {@code true} to enable the specified instance id, otherwise
+	 *     the instance is disabled
+	 * </ul>
+	 *
+	 * @param exchange The {@link HttpServerExchange} to use
+	 * @throws IOException if an error occurs parsing form data
+	 */
+	private void handleBftState(HttpServerExchange exchange) throws IOException {
+		try (final FormDataParser formDataParser = this.formParserFactory.createParser(exchange)) {
+			if (formDataParser == null) {
+				exchange.setStatusCode(StatusCodes.BAD_REQUEST);
+				exchange.getResponseSender().send("Can't parse form data");
+				return;
+			}
+			exchange.startBlocking();
+			FormData formData = formDataParser.parseBlocking();
+			FormValue idValue = formData.getFirst("id");
+			FormValue stateValue = formData.getFirst("state");
+			if (idValue == null || stateValue == null) {
+				exchange.setStatusCode(StatusCodes.BAD_REQUEST);
+				exchange.getResponseSender().send("'id' and 'state' must both be specified");
+				return;
+			}
+			int id = Integer.parseInt(idValue.getValue());
+			if (id != 0) {
+				// Only have BFT 0 right now
+				exchange.setStatusCode(StatusCodes.NOT_FOUND);
+				exchange.getResponseSender().send(String.format("No such BFT instance %s", id));
+				return;
+			}
+			if (Boolean.parseBoolean(stateValue.getValue())) {
+				consensusRunner.start();
+			} else {
+				consensusRunner.stop();
+			}
+			exchange.setStatusCode(StatusCodes.OK);
+		}
 	}
 
 	/**
