@@ -81,9 +81,9 @@ public class AddressBookGenesisVertexMetadataProvider {
 			.cache();
 	}
 
-	public VertexMetadata getGenesisVertexMetadata() {
+	public VertexMetadata getGenesisVertexMetadata(long timestamp) {
 		ImmutableList<BFTValidator> validators = validatorList.blockingGet();
 		BFTValidatorSet validatorSet = BFTValidatorSet.from(validators);
-		return VertexMetadata.ofGenesisAncestor(validatorSet);
+		return VertexMetadata.ofGenesisAncestor(validatorSet, timestamp);
 	}
 }

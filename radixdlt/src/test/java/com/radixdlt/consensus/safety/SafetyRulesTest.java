@@ -49,7 +49,8 @@ public class SafetyRulesTest {
 	private static final VertexMetadata genesisAncestor = VertexMetadata.ofGenesisAncestor(
 		BFTValidatorSet.from(
 			ImmutableSet.of(BFTValidator.from(BFTNode.create(ECKeyPair.generateNew().getPublicKey()), UInt256.ONE))
-		)
+		),
+		123456789L
 	);
 	private static final VoteData GENESIS_DATA = new VoteData(genesisAncestor, genesisAncestor, null);
 	private static final QuorumCertificate GENESIS_QC = new QuorumCertificate(GENESIS_DATA, new TimestampedECDSASignatures());
@@ -163,10 +164,10 @@ public class SafetyRulesTest {
 
 		Hash toBeCommitted = mock(Hash.class);
 
-		VertexMetadata committed = new VertexMetadata(0, View.of(1), toBeCommitted, 1, null, Hash.ZERO_HASH);
+		VertexMetadata committed = new VertexMetadata(0, View.of(1), toBeCommitted, 1, null, 0L);
 		VoteData voteData = new VoteData(
-			new VertexMetadata(0, View.of(3), mock(Hash.class), 3, null, Hash.ZERO_HASH),
-			new VertexMetadata(0, View.of(2), mock(Hash.class), 2, null, Hash.ZERO_HASH),
+			new VertexMetadata(0, View.of(3), mock(Hash.class), 3, null, 0L),
+			new VertexMetadata(0, View.of(2), mock(Hash.class), 2, null, 0L),
 			committed
 		);
 

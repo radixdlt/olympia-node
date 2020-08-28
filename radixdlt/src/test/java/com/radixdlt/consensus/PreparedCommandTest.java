@@ -18,26 +18,23 @@
 package com.radixdlt.consensus;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-
-import com.radixdlt.crypto.Hash;
 import org.junit.Before;
 import org.junit.Test;
 
 public class PreparedCommandTest {
 	private PreparedCommand preparedCommand;
-	private Hash timestampedSignatureHash;
+	private long timestamp;
 
 	@Before
 	public void setup() {
-		this.timestampedSignatureHash = mock(Hash.class);
-		this.preparedCommand = PreparedCommand.create(12345, timestampedSignatureHash);
+		this.timestamp = 12345678L;
+		this.preparedCommand = PreparedCommand.create(12345, timestamp);
 	}
 
 	@Test
 	public void testGetters() {
 		assertThat(preparedCommand.getStateVersion()).isEqualTo(12345);
-		assertThat(preparedCommand.getTimestampedSignaturesHash()).isEqualTo(timestampedSignatureHash);
+		assertThat(preparedCommand.timestamp()).isEqualTo(timestamp);
 		assertThat(preparedCommand.getNextValidatorSet()).isEmpty();
 	}
 }

@@ -56,7 +56,8 @@ public class CommittedAtomSerializeTest extends SerializeObject<CommittedAtom> {
 		return new CommittedAtom(clientAtom, VertexMetadata.ofGenesisAncestor(
 			BFTValidatorSet.from(ImmutableSet.of(
 				BFTValidator.from(BFTNode.create(ECKeyPair.generateNew().getPublicKey()), UInt256.ONE)
-			))
+			)),
+			123456789L
 		));
 	}
 

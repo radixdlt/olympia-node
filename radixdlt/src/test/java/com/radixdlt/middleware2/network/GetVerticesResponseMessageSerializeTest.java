@@ -40,7 +40,7 @@ public class GetVerticesResponseMessageSerializeTest extends SerializeMessageObj
 		BFTValidatorSet bftValidatorSet = BFTValidatorSet.from(ImmutableSet.of(
 			BFTValidator.from(BFTNode.create(keyPair.getPublicKey()), UInt256.ONE)
 		));
-		Vertex genesisVertex = Vertex.createGenesis(VertexMetadata.ofGenesisAncestor(bftValidatorSet));
+		Vertex genesisVertex = Vertex.createGenesis(VertexMetadata.ofGenesisAncestor(bftValidatorSet, 123456789L));
 		return new GetVerticesResponseMessage(1234, Hash.random(), ImmutableList.of(genesisVertex));
 	}
 

@@ -29,7 +29,6 @@ import com.radixdlt.consensus.PreparedCommand;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.StateComputerLedger.CommittedStateSyncSender;
 
 /**
@@ -53,7 +52,7 @@ public class DeterministicRandomlySyncedLedgerModule extends AbstractModule {
 		return new Ledger() {
 			@Override
 			public PreparedCommand prepare(Vertex vertex) {
-				return PreparedCommand.create(0, Hash.ZERO_HASH);
+				return PreparedCommand.create(0, 0L);
 			}
 
 			@Override

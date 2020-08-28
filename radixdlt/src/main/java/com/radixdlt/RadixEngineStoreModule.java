@@ -45,6 +45,7 @@ import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.universe.Universe;
+
 import java.util.function.Consumer;
 
 public class RadixEngineStoreModule extends AbstractModule {
@@ -106,6 +107,7 @@ public class RadixEngineStoreModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private VertexMetadata genesisVertexMetadata(
+		Universe universe,
 		AddressBook addressBook,
 		@Named("self") ECKeyPair selfKey
 	) {
@@ -115,7 +117,7 @@ public class RadixEngineStoreModule extends AbstractModule {
 			fixedNodeCount
 		);
 
-		return metadataProvider.getGenesisVertexMetadata();
+		return metadataProvider.getGenesisVertexMetadata(universe.getTimestamp());
 	}
 
 	@Provides

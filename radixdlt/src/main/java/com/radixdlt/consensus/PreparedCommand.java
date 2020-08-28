@@ -18,7 +18,6 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.crypto.Hash;
 import java.util.Optional;
 
 /**
@@ -26,28 +25,28 @@ import java.util.Optional;
  */
 public final class PreparedCommand {
 	private final long stateVersion;
-	private final Hash timestampedSignaturesHash;
+	private final long timestamp;
 	private final BFTValidatorSet nextValidatorSet;
 
-	private PreparedCommand(long stateVersion, Hash timestampedSignaturesHash, BFTValidatorSet nextValidatorSet) {
+	private PreparedCommand(long stateVersion, long timestamp, BFTValidatorSet nextValidatorSet) {
 		this.stateVersion = stateVersion;
 		this.nextValidatorSet = nextValidatorSet;
-		this.timestampedSignaturesHash = timestampedSignaturesHash;
+		this.timestamp = timestamp;
 	}
 
 	public static PreparedCommand create(
 		long stateVersion,
-		Hash timestampedSignaturesHash
+		long timestamp
 	) {
-		return new PreparedCommand(stateVersion, timestampedSignaturesHash, null);
+		return new PreparedCommand(stateVersion, timestamp, null);
 	}
 
 	public static PreparedCommand create(
 		long stateVersion,
-		Hash timestampedSignaturesHash,
+		long timestamp,
 		BFTValidatorSet nextValidatorSet
 	) {
-		return new PreparedCommand(stateVersion, timestampedSignaturesHash, nextValidatorSet);
+		return new PreparedCommand(stateVersion, timestamp, nextValidatorSet);
 	}
 
 	public long getStateVersion() {
@@ -58,7 +57,7 @@ public final class PreparedCommand {
 		return Optional.ofNullable(nextValidatorSet);
 	}
 
-	public Hash getTimestampedSignaturesHash() {
-		return timestampedSignaturesHash;
+	public long timestamp() {
+		return this.timestamp;
 	}
 }

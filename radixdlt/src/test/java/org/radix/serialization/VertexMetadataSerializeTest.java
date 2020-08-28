@@ -40,6 +40,6 @@ public class VertexMetadataSerializeTest extends SerializeObject<VertexMetadata>
 			BFTValidator.from(BFTNode.create(keyPair.getPublicKey()), UInt256.ONE)
 		));
 
-		return new VertexMetadata(0, view, id, 0, bftValidatorSet, Hash.ZERO_HASH);
+		return new VertexMetadata(0, view, id, 0, bftValidatorSet, 0L);
 	}
 }

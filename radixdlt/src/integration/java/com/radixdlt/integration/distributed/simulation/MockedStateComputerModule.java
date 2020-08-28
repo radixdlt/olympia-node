@@ -24,7 +24,11 @@ import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
+import com.radixdlt.universe.Universe;
+
 import java.util.Optional;
+
+import javax.inject.Singleton;
 
 public class MockedStateComputerModule extends AbstractModule {
 	private final BFTValidatorSet validatorSet;
@@ -34,8 +38,9 @@ public class MockedStateComputerModule extends AbstractModule {
 	}
 
 	@Provides
-	private VertexMetadata genesisMetadata() {
-		return VertexMetadata.ofGenesisAncestor(validatorSet);
+	@Singleton
+	private VertexMetadata genesisMetadata(Universe universe) {
+		return VertexMetadata.ofGenesisAncestor(validatorSet, universe.getTimestamp());
 	}
 
 	@Provides

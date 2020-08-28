@@ -42,11 +42,16 @@ public final class AtomEventDto extends BasicContainer {
 	@DsonOutput(Output.ALL)
 	private final Atom atom;
 
+	@JsonProperty("timestamp")
+	@DsonOutput(Output.ALL)
+	private final long timestamp;
+
 	private AtomEventType type;
 
-	public AtomEventDto(AtomEventType type, Atom atom) {
+	public AtomEventDto(AtomEventType type, Atom atom, long timestamp) {
 		this.type = type;
 		this.atom = atom;
+		this.timestamp = timestamp;
 	}
 
 	public Atom getAtom() {

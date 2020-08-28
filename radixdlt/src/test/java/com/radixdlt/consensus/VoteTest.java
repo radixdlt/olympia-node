@@ -38,8 +38,8 @@ public class VoteTest {
 
 	@Before
 	public void setUp() {
-		VertexMetadata parent = new VertexMetadata(0, View.of(1234567890L), Hash.random(), 1, null, Hash.ZERO_HASH);
-		this.voteData = new VoteData(VertexMetadata.ofGenesisAncestor(mock(BFTValidatorSet.class)), parent, null);
+		VertexMetadata parent = new VertexMetadata(0, View.of(1234567890L), Hash.random(), 1, null, 0L);
+		this.voteData = new VoteData(VertexMetadata.ofGenesisAncestor(mock(BFTValidatorSet.class), 0L), parent, null);
 		this.timestampedVoteData = new TimestampedVoteData(this.voteData, 123456L);
 		this.author = mock(BFTNode.class);
 		this.payload = 123456L;

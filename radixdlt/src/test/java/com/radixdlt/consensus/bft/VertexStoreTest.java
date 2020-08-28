@@ -81,7 +81,7 @@ public class VertexStoreTest {
 		BFTValidatorSet bftValidatorSet = BFTValidatorSet.from(ImmutableSet.of(
 			BFTValidator.from(BFTNode.create(keyPair.getPublicKey()), UInt256.ONE)
 		));
-		this.genesisVertex = Vertex.createGenesis(VertexMetadata.ofGenesisAncestor(bftValidatorSet));
+		this.genesisVertex = Vertex.createGenesis(VertexMetadata.ofGenesisAncestor(bftValidatorSet, 123456789L));
 		this.genesisVertexMetadata = VertexMetadata.ofGenesisVertex(genesisVertex);
 		VoteData voteData = new VoteData(genesisVertexMetadata, genesisVertexMetadata, genesisVertexMetadata);
 		this.rootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());

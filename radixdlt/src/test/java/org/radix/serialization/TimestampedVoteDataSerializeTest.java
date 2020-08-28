@@ -31,9 +31,9 @@ public class TimestampedVoteDataSerializeTest extends SerializeObject<Timestampe
 	private static TimestampedVoteData get() {
 		View view = View.of(1234567890L);
 
-		VertexMetadata committed = new VertexMetadata(0, view, Hash.random(), 0, null, Hash.ZERO_HASH);
-		VertexMetadata parent = new VertexMetadata(0, view.next(), Hash.random(), 1, null, Hash.ZERO_HASH);
-		VertexMetadata proposed = new VertexMetadata(0, view.next().next(), Hash.random(), 2, null, Hash.ZERO_HASH);
+		VertexMetadata committed = new VertexMetadata(0, view, Hash.random(), 0, null, 0L);
+		VertexMetadata parent = new VertexMetadata(0, view.next(), Hash.random(), 1, null, 0L);
+		VertexMetadata proposed = new VertexMetadata(0, view.next().next(), Hash.random(), 2, null, 0L);
 		VoteData voteData = new VoteData(proposed, parent, committed);
 		return new TimestampedVoteData(voteData, System.currentTimeMillis());
 	}
