@@ -15,10 +15,11 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_localmempool;
+package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_radixengine;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
@@ -28,12 +29,10 @@ import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
-/**
- * Simple mempool sanity test which runs the mempool submit and commit invariant.
- */
-public class MempoolSanityTest {
+public class SanityTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(4)
+		.ledgerAndRadixEngineWithEpochHighView(View.of(10))
 		.checkSafety("safety")
 		.checkLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
 		.checkNoTimeouts("noTimeouts")
@@ -41,18 +40,8 @@ public class MempoolSanityTest {
 		.addMempoolSubmissionsSteadyState("mempool");
 
 	@Test
-	public void when_submitting_items_to_null_mempool__then_test_should_fail() {
+	public void sanity_tests_should_pass() {
 		SimulationTest simulationTest = bftTestBuilder
-			.ledger()
-			.build();
-		Map<String, Optional<TestInvariantError>> results = simulationTest.run(1, TimeUnit.MINUTES);
-		assertThat(results).hasEntrySatisfying("mempool", error -> assertThat(error).isPresent());
-	}
-
-	@Test
-	public void when_submitting_items_to_mempool__then_they_should_get_executed() {
-		SimulationTest simulationTest = bftTestBuilder
-			.ledgerAndMempool()
 			.build();
 		Map<String, Optional<TestInvariantError>> results = simulationTest.run(1, TimeUnit.MINUTES);
 		assertThat(results).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());

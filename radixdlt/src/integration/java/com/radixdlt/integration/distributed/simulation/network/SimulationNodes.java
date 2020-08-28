@@ -24,17 +24,20 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.SystemInfoRxModule;
-import com.radixdlt.api.CommittedAtomsRx;
+import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.integration.distributed.simulation.MockedCryptoModule;
 import com.radixdlt.integration.distributed.simulation.SimulationNetworkModule;
+import com.radixdlt.ledger.CommittedCommand;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.systeminfo.InfoRx;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.ConsensusRunner;
 
+import io.reactivex.rxjava3.core.Observable;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -85,9 +88,11 @@ public class SimulationNodes {
 
 		List<BFTNode> getNodes();
 
-		InfoRx getInfo(BFTNode node);
+		Observable<EpochChange> latestEpochChanges();
 
-		CommittedAtomsRx getLedger(BFTNode node);
+		Observable<CommittedCommand> committedCommands();
+
+		InfoRx getInfo(BFTNode node);
 
 		Mempool getMempool(BFTNode node);
 
@@ -117,15 +122,33 @@ public class SimulationNodes {
 			}
 
 			@Override
-			public InfoRx getInfo(BFTNode node) {
-				int index = nodes.indexOf(node);
-				return nodeInstances.get(index).getInstance(InfoRx.class);
+			public Observable<EpochChange> latestEpochChanges() {
+				Set<Observable<EpochChange>> epochChanges = nodeInstances.stream()
+					.map(i -> i.getInstance(EpochChangeRx.class))
+					.map(EpochChangeRx::epochChanges)
+					.collect(Collectors.toSet());
+
+				return Observable.just(initialEpoch()).concatWith(
+					Observable.merge(epochChanges)
+						.scan((cur, next) -> next.getAncestor().getEpoch() > cur.getAncestor().getEpoch() ? next : cur)
+						.distinctUntilChanged()
+				);
 			}
 
 			@Override
-			public CommittedAtomsRx getLedger(BFTNode node) {
+			public Observable<CommittedCommand> committedCommands() {
+				Set<Observable<CommittedCommand>> commands = nodeInstances.stream()
+					.map(i -> i.getInstance(InfoRx.class))
+					.map(InfoRx::committedCommands)
+					.collect(Collectors.toSet());
+
+				return Observable.merge(commands).distinct();
+			}
+
+			@Override
+			public InfoRx getInfo(BFTNode node) {
 				int index = nodes.indexOf(node);
-				return nodeInstances.get(index).getInstance(CommittedAtomsRx.class);
+				return nodeInstances.get(index).getInstance(InfoRx.class);
 			}
 
 			@Override

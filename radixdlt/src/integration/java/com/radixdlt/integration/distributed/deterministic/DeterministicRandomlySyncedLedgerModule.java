@@ -52,7 +52,7 @@ public class DeterministicRandomlySyncedLedgerModule extends AbstractModule {
 		return new Ledger() {
 			@Override
 			public PreparedCommand prepare(Vertex vertex) {
-				return PreparedCommand.create(0, 0L);
+				return PreparedCommand.create(0, 0L, false);
 			}
 
 			@Override
@@ -66,7 +66,7 @@ public class DeterministicRandomlySyncedLedgerModule extends AbstractModule {
 					return (notSynced, opaque) -> {
 						if (!synced) {
 							notSynced.run();
-							committedStateSyncSender.sendCommittedStateSync(vertexMetadata.getStateVersion(), opaque);
+							committedStateSyncSender.sendCommittedStateSync(vertexMetadata.getPreparedCommand().getStateVersion(), opaque);
 						}
 					};
 				};

@@ -20,13 +20,13 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.google.inject.name.Named;
 import com.radixdlt.atommodel.message.MessageParticleConstraintScrypt;
 import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
 import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachine;
@@ -43,7 +43,6 @@ import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.universe.Universe;
-import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
 /**
@@ -51,10 +50,12 @@ import java.util.function.UnaryOperator;
  */
 public class RadixEngineModule extends AbstractModule {
 	private static final Hash DEFAULT_FEE_TARGET = new Hash("0000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
-	private final long viewsPerEpoch;
+	private final View epochHighView;
+	private final boolean skipAtomFeeCheck;
 
-	public RadixEngineModule(long viewsPerEpoch) {
-		this.viewsPerEpoch = viewsPerEpoch;
+	public RadixEngineModule(View epochHighView, boolean skipAtomFeeCheck) {
+		this.epochHighView = epochHighView;
+		this.skipAtomFeeCheck = skipAtomFeeCheck;
 	}
 
 	@Override
@@ -64,51 +65,18 @@ public class RadixEngineModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private Function<Long, BFTValidatorSet> validatorMapping(
-		VertexMetadata genesisVertexMetadata
-	) {
-		/*
-		return (epoch, validators) -> {
-				Builder<BFTValidator> validatorSetBuilder = ImmutableList.builder();
-				Random random = new Random(epoch);
-				List<Integer> indices = IntStream.range(0, validators.size()).boxed().collect(Collectors.toList());
-				// Temporary mechanism to get some deterministic random set of validators
-				for (long i = 0; i < epoch; i++) {
-					random.nextInt(validators.size());
-				}
-				int randInt = random.nextInt(validators.size());
-				int validatorSetSize = randInt + 1;
-
-				for (int i = 0; i < validatorSetSize; i++) {
-					int index = indices.remove(random.nextInt(indices.size()));
-					BFTValidator validator = validators.get(index);
-					validatorSetBuilder.add(validator);
-				}
-
-				ImmutableList<BFTValidator> validatorList = validatorSetBuilder.build();
-
-				return BFTValidatorSet.from(validatorList);
-		}
-		*/
-
-		return epoch -> genesisVertexMetadata.getValidatorSet()
-			.orElseThrow(() -> new IllegalStateException("genesis has no validator set!"));
-	}
-
-	@Provides
-	@Singleton
 	private RadixEngineStateComputer radixEngineStateComputer(
+		BFTValidatorSet initialValidatorSet,
 		Serialization serialization,
 		RadixEngine<LedgerAtom> radixEngine,
-		Function<Long, BFTValidatorSet> validatorSetMapping,
 		CommittedCommandsReader committedCommandsReader,
 		CommittedAtomSender committedAtomSender
 	) {
 		return new RadixEngineStateComputer(
+			initialValidatorSet.getValidators(),
 			serialization,
 			radixEngine,
-			validatorSetMapping,
-			View.of(viewsPerEpoch),
+			epochHighView,
 			committedCommandsReader,
 			committedAtomSender
 		);
@@ -116,9 +84,9 @@ public class RadixEngineModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private CMAtomOS buildCMAtomOS(Universe universe) {
+	private CMAtomOS buildCMAtomOS(@Named("magic") int magic) {
 		final CMAtomOS os = new CMAtomOS(addr -> {
-			final int universeMagic = universe.getMagic() & 0xff;
+			final int universeMagic = magic & 0xff;
 			if (addr.getMagic() != universeMagic) {
 				return Result.error("Address magic " + addr.getMagic() + " does not match universe " + universeMagic);
 			}
@@ -159,7 +127,7 @@ public class RadixEngineModule extends AbstractModule {
 				() -> universe,
 				powFeeComputer,
 				DEFAULT_FEE_TARGET,
-				false
+				skipAtomFeeCheck
 			);
 
 		return new RadixEngine<>(

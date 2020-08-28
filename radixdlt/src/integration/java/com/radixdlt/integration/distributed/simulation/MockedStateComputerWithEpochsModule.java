@@ -20,17 +20,15 @@ package com.radixdlt.integration.distributed.simulation;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.PreparedCommand;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
-import com.radixdlt.universe.Universe;
 
 import java.util.Optional;
 import java.util.function.Function;
-
-import javax.inject.Singleton;
 
 public class MockedStateComputerWithEpochsModule extends AbstractModule {
 	private final Function<Long, BFTValidatorSet> validatorSetMapping;
@@ -45,26 +43,31 @@ public class MockedStateComputerWithEpochsModule extends AbstractModule {
 	}
 
 	@Provides
-	@Singleton
-	private VertexMetadata genesisMetadata(Universe universe) {
-		return VertexMetadata.ofGenesisAncestor(validatorSetMapping.apply(1L), universe.getTimestamp());
+	private BFTValidatorSet genesisValidatorSet() {
+		return validatorSetMapping.apply(1L);
+	}
+
+	@Provides
+	private VertexMetadata genesisMetadata() {
+		PreparedCommand preparedCommand = PreparedCommand.create(0, 0L, true);
+		return VertexMetadata.ofGenesisAncestor(preparedCommand);
 	}
 
 	@Provides
 	private StateComputer stateComputer() {
 		return new StateComputer() {
 			@Override
-			public Optional<BFTValidatorSet> prepare(Vertex vertex) {
-				if (vertex.getView().compareTo(epochHighView) >= 0) {
-					return Optional.of(validatorSetMapping.apply(vertex.getEpoch() + 1));
-				} else {
-					return Optional.empty();
-				}
+			public boolean prepare(Vertex vertex) {
+				return vertex.getView().compareTo(epochHighView) >= 0;
 			}
 
 			@Override
-			public void commit(Command command, VertexMetadata vertexMetadata) {
-				// Nothing to do here
+			public Optional<BFTValidatorSet> commit(Command command, VertexMetadata vertexMetadata) {
+				if (vertexMetadata.getPreparedCommand().isEndOfEpoch()) {
+					return Optional.of(validatorSetMapping.apply(vertexMetadata.getEpoch() + 1));
+				} else {
+					return Optional.empty();
+				}
 			}
 		};
 	}

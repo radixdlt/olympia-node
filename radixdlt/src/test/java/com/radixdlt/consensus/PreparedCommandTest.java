@@ -18,6 +18,9 @@
 package com.radixdlt.consensus;
 
 import static org.assertj.core.api.Assertions.assertThat;
+
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -28,13 +31,25 @@ public class PreparedCommandTest {
 	@Before
 	public void setup() {
 		this.timestamp = 12345678L;
-		this.preparedCommand = PreparedCommand.create(12345, timestamp);
+		this.preparedCommand = PreparedCommand.create(12345, timestamp, false);
 	}
 
 	@Test
 	public void testGetters() {
 		assertThat(preparedCommand.getStateVersion()).isEqualTo(12345);
 		assertThat(preparedCommand.timestamp()).isEqualTo(timestamp);
-		assertThat(preparedCommand.getNextValidatorSet()).isEmpty();
+		assertThat(preparedCommand.isEndOfEpoch()).isFalse();
+	}
+
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(PreparedCommand.class)
+			.verify();
+	}
+
+	@Test
+	public void sensibleToString() {
+		String s = this.preparedCommand.toString();
+		AssertionsForClassTypes.assertThat(s).contains("12345");
 	}
 }
