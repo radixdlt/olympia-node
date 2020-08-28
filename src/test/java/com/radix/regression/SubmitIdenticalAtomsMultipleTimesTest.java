@@ -126,7 +126,7 @@ public class SubmitIdenticalAtomsMultipleTimesTest {
 		return observer;
 	}
 
-	private Atom buildAtom(Map<String, String> metaData, boolean addFee, String timestamp, SpunParticle<?>... spunParticles) {
+	private Atom buildAtom(Map<String, String> metaData, boolean addFee, String timestamp, SpunParticle... spunParticles) {
 		List<ParticleGroup> particleGroups = new ArrayList<>();
 		particleGroups.add(ParticleGroup.of(ImmutableList.copyOf(spunParticles), metaData));
 

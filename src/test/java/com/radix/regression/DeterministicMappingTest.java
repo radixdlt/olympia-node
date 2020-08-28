@@ -24,7 +24,6 @@ import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
-import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.ParticleGroup;
@@ -44,7 +43,6 @@ public class DeterministicMappingTest {
 	@Test
 	public void when_building_multiple_identical_transactions__then_their_output_should_match() {
 		int numIterations = 20;
-		RadixIdentity identity1 = RadixIdentities.createNew();
 		RadixIdentity identity2 = RadixIdentities.createNew();
 		RadixApplicationAPI api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
 		RadixAddress address1 = api.getAddress();
@@ -70,7 +68,6 @@ public class DeterministicMappingTest {
 	@Test
 	public void when_building_multiple_atoms_from_the_same_transaction__then_their_output_should_match() {
 		int numIterations = 20;
-		RadixIdentity identity1 = RadixIdentities.createNew();
 		RadixIdentity identity2 = RadixIdentities.createNew();
 		RadixApplicationAPI api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
 		RadixAddress address1 = api.getAddress();

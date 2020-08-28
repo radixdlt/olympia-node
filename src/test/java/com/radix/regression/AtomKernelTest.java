@@ -150,7 +150,7 @@ public class AtomKernelTest {
 		Map<String, String> metaData,
 		boolean addFee,
 		String timestamp,
-		SpunParticle<?>... spunParticles
+		SpunParticle... spunParticles
 	) {
 		List<ParticleGroup> particleGroups = new ArrayList<>();
 		particleGroups.add(ParticleGroup.of(ImmutableList.copyOf(spunParticles), metaData));
@@ -188,7 +188,7 @@ public class AtomKernelTest {
 		Map<String, String> metaData,
 		boolean addFee,
 		String timestamp,
-		SpunParticle<?>... spunParticles
+		SpunParticle... spunParticles
 	) {
 		List<ParticleGroup> particleGroups = new ArrayList<>();
 		particleGroups.add(ParticleGroup.of(ImmutableList.copyOf(spunParticles), metaData));
