@@ -19,6 +19,7 @@ package org.radix.api.http;
 
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.systeminfo.InMemorySystemInfoManager;
+import com.google.common.io.CharStreams;
 import com.radixdlt.api.CommittedAtomsRx;
 import com.radixdlt.api.SubmissionErrorsRx;
 import com.radixdlt.consensus.ConsensusRunner;
@@ -40,10 +41,6 @@ import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
-import io.undertow.server.handlers.form.FormData;
-import io.undertow.server.handlers.form.FormData.FormValue;
-import io.undertow.server.handlers.form.FormDataParser;
-import io.undertow.server.handlers.form.FormParserFactory;
 import io.undertow.util.Headers;
 import io.undertow.util.Methods;
 import io.undertow.util.StatusCodes;
@@ -62,6 +59,9 @@ import org.radix.time.Time;
 import org.radix.universe.system.LocalSystem;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
@@ -92,7 +92,6 @@ public final class RadixHttpServer {
 	private final Serialization serialization;
 	private final InMemorySystemInfoManager infoStateRunner;
 	private Undertow server;
-	private final FormParserFactory formParserFactory = FormParserFactory.builder().build();
 
 	public RadixHttpServer(
 		InMemorySystemInfoManager infoStateRunner,
@@ -289,7 +288,7 @@ public final class RadixHttpServer {
 			respond(result, exchange);
 		}, handler);
 
-		addRoute("/api/bft", Methods.PUT_STRING, this::handleBftState, handler);
+		addRoute("/api/bft/0", Methods.PUT_STRING, this::handleBftState, handler);
 
 		// keep-alive
 		addGetRoute("/api/ping", exchange -> {
@@ -385,35 +384,18 @@ public final class RadixHttpServer {
 	 * @throws IOException if an error occurs parsing form data
 	 */
 	private void handleBftState(HttpServerExchange exchange) throws IOException {
-		try (final FormDataParser formDataParser = this.formParserFactory.createParser(exchange)) {
-			if (formDataParser == null) {
-				exchange.setStatusCode(StatusCodes.BAD_REQUEST);
-				exchange.getResponseSender().send("Can't parse form data");
-				return;
-			}
-			exchange.startBlocking();
-			FormData formData = formDataParser.parseBlocking();
-			FormValue idValue = formData.getFirst("id");
-			FormValue stateValue = formData.getFirst("state");
-			if (idValue == null || stateValue == null) {
-				exchange.setStatusCode(StatusCodes.BAD_REQUEST);
-				exchange.getResponseSender().send("'id' and 'state' must both be specified");
-				return;
-			}
-			int id = Integer.parseInt(idValue.getValue());
-			if (id != 0) {
-				// Only have BFT 0 right now
-				exchange.setStatusCode(StatusCodes.NOT_FOUND);
-				exchange.getResponseSender().send(String.format("No such BFT instance %s", id));
-				return;
-			}
-			if (Boolean.parseBoolean(stateValue.getValue())) {
+		exchange.startBlocking();
+		try (InputStream httpStream = exchange.getInputStream();
+			InputStreamReader httpStreamReader = new InputStreamReader(httpStream, StandardCharsets.UTF_8)) {
+			String requestBody = CharStreams.toString(httpStreamReader);
+			JSONObject values = new JSONObject(requestBody);
+			if (values.getBoolean("state")) {
 				consensusRunner.start();
 			} else {
 				consensusRunner.stop();
 			}
-			exchange.setStatusCode(StatusCodes.OK);
 		}
+		exchange.setStatusCode(StatusCodes.OK);
 	}
 
 	/**
