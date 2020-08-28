@@ -51,7 +51,6 @@ public final class InMemoryAtomStoreReducer {
 			final Atom atom = submitAtomStatusAction.getAtom();
 
 			if (submitAtomStatusAction.getStatusNotification().getAtomStatus() == AtomStatus.STORED) {
-				System.err.println(submitAtomStatusAction.getStatusNotification());
 				long timestamp = submitAtomStatusAction.getStatusNotification().getData().get("timestamp").getAsLong();
 				atom.addresses().forEach(address -> {
 					this.atomStore.store(address, AtomObservation.softStored(atom, timestamp));
