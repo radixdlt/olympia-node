@@ -24,6 +24,7 @@ import com.google.inject.Singleton;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.counters.SystemCounters;
@@ -56,7 +57,7 @@ public class LedgerModule extends AbstractModule {
 		Set<CommittedSender> committedSenders,
 		SystemCounters counters
 	) {
-		CommittedSender committedSender = (cmd, meta) -> committedSenders.forEach(s -> s.sendCommitted(cmd, meta));
+		CommittedSender committedSender = (committed, vset) -> committedSenders.forEach(s -> s.sendCommitted(committed, vset));
 
 		return new StateComputerLedger(
 			0L,
@@ -71,9 +72,7 @@ public class LedgerModule extends AbstractModule {
 	// TODO: Load from storage
 	@Provides
 	@Singleton
-	private EpochChange initialEpoch(VertexMetadata ancestor) {
-		return new EpochChange(ancestor, ancestor.getValidatorSet()
-			.orElseThrow(() -> new IllegalStateException("initial epoch must have validator set"))
-		);
+	private EpochChange initialEpoch(VertexMetadata ancestor, BFTValidatorSet validatorSet) {
+		return new EpochChange(ancestor, validatorSet);
 	}
 }

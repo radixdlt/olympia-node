@@ -110,7 +110,11 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		CommittedCommand committedCommand = new CommittedCommand(command, committedAtom.getVertexMetadata());
 		byte[] binaryAtom = commandToBinaryConverter.toLedgerEntryContent(committedCommand);
 		VertexMetadata vertexMetadata = committedAtom.getVertexMetadata();
-		LedgerEntry ledgerEntry = new LedgerEntry(binaryAtom, vertexMetadata.getStateVersion(), committedAtom.getAID());
+		LedgerEntry ledgerEntry = new LedgerEntry(
+			binaryAtom,
+			vertexMetadata.getPreparedCommand().getStateVersion(),
+			committedAtom.getAID()
+		);
 		EngineAtomIndices engineAtomIndices = atomIndexer.getIndices(committedAtom);
 
 		// TODO: Replace Store + Commit with a single commit

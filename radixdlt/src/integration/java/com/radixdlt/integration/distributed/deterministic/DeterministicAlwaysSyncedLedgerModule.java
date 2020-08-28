@@ -43,7 +43,7 @@ public class DeterministicAlwaysSyncedLedgerModule extends AbstractModule {
 		return new Ledger() {
 			@Override
 			public PreparedCommand prepare(Vertex vertex) {
-				return PreparedCommand.create(0, 0L);
+				return PreparedCommand.create(0, 0L, false);
 			}
 
 			@Override

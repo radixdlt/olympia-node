@@ -29,6 +29,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.PreparedCommand;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECPublicKey;
@@ -55,7 +56,9 @@ public class SyncServiceProcessorTest {
 	private static CommittedCommand buildWithVersion(long version) {
 		CommittedCommand committedCommand = mock(CommittedCommand.class);
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
-		when(vertexMetadata.getStateVersion()).thenReturn(version);
+		PreparedCommand preparedCommand = mock(PreparedCommand.class);
+		when(preparedCommand.getStateVersion()).thenReturn(version);
+		when(vertexMetadata.getPreparedCommand()).thenReturn(preparedCommand);
 		when(committedCommand.getVertexMetadata()).thenReturn(vertexMetadata);
 		return committedCommand;
 	}
@@ -103,7 +106,9 @@ public class SyncServiceProcessorTest {
 		when(peer.hasSystem()).thenReturn(true);
 		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
 		VertexMetadata target = mock(VertexMetadata.class);
-		when(target.getStateVersion()).thenReturn(targetVersion);
+		PreparedCommand preparedCommand = mock(PreparedCommand.class);
+		when(preparedCommand.getStateVersion()).thenReturn(targetVersion);
+		when(target.getPreparedCommand()).thenReturn(preparedCommand);
 		syncServiceProcessor.processVersionUpdate(currentVersion);
 		LocalSyncRequest request = new LocalSyncRequest(target, ImmutableList.of(node));
 		syncServiceProcessor.processLocalSyncRequest(request);
@@ -134,7 +139,9 @@ public class SyncServiceProcessorTest {
 		when(peer.hasSystem()).thenReturn(true);
 		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
 		VertexMetadata target = mock(VertexMetadata.class);
-		when(target.getStateVersion()).thenReturn(targetVersion);
+		PreparedCommand preparedCommand = mock(PreparedCommand.class);
+		when(preparedCommand.getStateVersion()).thenReturn(targetVersion);
+		when(target.getPreparedCommand()).thenReturn(preparedCommand);
 		syncServiceProcessor.processVersionUpdate(currentVersion);
 		LocalSyncRequest request = new LocalSyncRequest(target, ImmutableList.of(node));
 		syncServiceProcessor.processLocalSyncRequest(request);
@@ -145,7 +152,8 @@ public class SyncServiceProcessorTest {
 		newCommands1.add(buildWithVersion(13));
 		newCommands1.add(buildWithVersion(15));
 		syncServiceProcessor.processSyncResponse(newCommands1.build());
-		verify(syncedCommandSender, never()).sendSyncedCommand(argThat(a -> a.getVertexMetadata().getStateVersion() > 11));
+		verify(syncedCommandSender, never())
+			.sendSyncedCommand(argThat(a -> a.getVertexMetadata().getPreparedCommand().getStateVersion() > 11));
 	}
 
 	@Test
@@ -160,7 +168,9 @@ public class SyncServiceProcessorTest {
 		when(peer.hasSystem()).thenReturn(true);
 		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
 		VertexMetadata target = mock(VertexMetadata.class);
-		when(target.getStateVersion()).thenReturn(targetVersion);
+		PreparedCommand preparedCommand = mock(PreparedCommand.class);
+		when(preparedCommand.getStateVersion()).thenReturn(targetVersion);
+		when(target.getPreparedCommand()).thenReturn(preparedCommand);
 		syncServiceProcessor.processVersionUpdate(currentVersion);
 		LocalSyncRequest request = new LocalSyncRequest(target, ImmutableList.of(node));
 		syncServiceProcessor.processLocalSyncRequest(request);
@@ -177,6 +187,7 @@ public class SyncServiceProcessorTest {
 		}
 		syncServiceProcessor.processSyncResponse(newCommands.build());
 
-		verify(syncedCommandSender, times(1)).sendSyncedCommand(argThat(a -> a.getVertexMetadata().getStateVersion() == 1));
+		verify(syncedCommandSender, times(1))
+			.sendSyncedCommand(argThat(a -> a.getVertexMetadata().getPreparedCommand().getStateVersion() == 1));
 	}
 }

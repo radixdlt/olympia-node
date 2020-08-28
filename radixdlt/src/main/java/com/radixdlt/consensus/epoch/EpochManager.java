@@ -271,7 +271,7 @@ public final class EpochManager {
 			epochMessage.append(": EPOCH_CHANGE: ");
 			epochMessage.append(message);
 			epochMessage.append(" new epoch ").append(epochChange.getAncestor().getEpoch() + 1);
-			epochMessage.append(" with validators: ");
+			epochMessage.append(" with ").append(epochChange.getValidatorSet().getValidators().size()).append(" validators: ");
 			Iterator<BFTValidator> i = epochChange.getValidatorSet().getValidators().iterator();
 			if (i.hasNext()) {
 				appendValidator(epochMessage, i.next());

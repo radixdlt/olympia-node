@@ -37,8 +37,7 @@ public class MockedSyncServiceModule extends AbstractModule {
 
 	@ProvidesIntoSet
 	private CommittedSender sync() {
-		return (cmd, vertexMetadata) ->
-			sharedCommittedAtoms.put(vertexMetadata.getStateVersion(), new CommittedCommand(cmd, vertexMetadata));
+		return (cmd, vset) -> sharedCommittedAtoms.put(cmd.getVertexMetadata().getPreparedCommand().getStateVersion(), cmd);
 	}
 
 	@Provides
@@ -51,7 +50,7 @@ public class MockedSyncServiceModule extends AbstractModule {
 
 			@Override
 			public void sendLocalSyncRequest(LocalSyncRequest request) {
-				final long targetVersion = request.getTarget().getStateVersion();
+				final long targetVersion = request.getTarget().getPreparedCommand().getStateVersion();
 				for (long version = currentVersion; version <= targetVersion; version++) {
 					CommittedCommand committedCommand = sharedCommittedAtoms.get(version);
 					ledger.commit(committedCommand.getCommand(), committedCommand.getVertexMetadata());

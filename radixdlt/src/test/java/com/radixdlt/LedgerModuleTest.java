@@ -19,7 +19,6 @@ package com.radixdlt;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -34,7 +33,6 @@ import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.ledger.StateComputerLedger.CommittedSender;
 import com.radixdlt.ledger.StateComputerLedger.CommittedStateSyncSender;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
-import java.util.Optional;
 import org.junit.Test;
 
 public class LedgerModuleTest {
@@ -46,8 +44,8 @@ public class LedgerModuleTest {
 			bind(CommittedStateSyncSender.class).toInstance(mock(CommittedStateSyncSender.class));
 			bind(SystemCounters.class).toInstance(mock(SystemCounters.class));
 			VertexMetadata vertexMetadata = mock(VertexMetadata.class);
-			when(vertexMetadata.getValidatorSet()).thenReturn(Optional.of(mock(BFTValidatorSet.class)));
 			bind(VertexMetadata.class).toInstance(vertexMetadata);
+			bind(BFTValidatorSet.class).toInstance(mock(BFTValidatorSet.class));
 			Multibinder.newSetBinder(binder(), CommittedSender.class);
 		}
 	}

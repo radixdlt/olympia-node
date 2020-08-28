@@ -25,6 +25,7 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.AddressBookGenesisVertexMetadataProvider;
 import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
@@ -106,18 +107,31 @@ public class RadixEngineStoreModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private VertexMetadata genesisVertexMetadata(
-		Universe universe,
+	private AddressBookGenesisVertexMetadataProvider provider(
 		AddressBook addressBook,
 		@Named("self") ECKeyPair selfKey
 	) {
-		AddressBookGenesisVertexMetadataProvider metadataProvider = new AddressBookGenesisVertexMetadataProvider(
+		return new AddressBookGenesisVertexMetadataProvider(
 			selfKey.getPublicKey(),
 			addressBook,
 			fixedNodeCount
 		);
+	}
 
-		return metadataProvider.getGenesisVertexMetadata(universe.getTimestamp());
+	@Provides
+	@Singleton
+	private BFTValidatorSet genesisValidatorSet(
+		AddressBookGenesisVertexMetadataProvider metadataProvider
+	) {
+		return metadataProvider.getGenesisValidatorSet();
+	}
+
+	@Provides
+	@Singleton
+	private VertexMetadata genesisVertexMetadata(
+		AddressBookGenesisVertexMetadataProvider metadataProvider
+	) {
+		return metadataProvider.getGenesisVertexMetadata();
 	}
 
 	@Provides
@@ -143,9 +157,17 @@ public class RadixEngineStoreModule extends AbstractModule {
 			clientAtomToBinaryConverter,
 			atomIndexer
 		);
-		if (store.getNextCommittedLedgerEntries(genesisAtom.getVertexMetadata().getStateVersion() - 1, 1).isEmpty()) {
+		if (store.getNextCommittedLedgerEntries(genesisAtom.getVertexMetadata()
+			.getPreparedCommand().getStateVersion() - 1, 1).isEmpty()
+		) {
 			engineStore.storeAtom(genesisAtom);
 		}
 		return engineStore;
+	}
+
+	@Provides
+	@Named("magic")
+	private int magic(Universe universe) {
+		return universe.getMagic();
 	}
 }

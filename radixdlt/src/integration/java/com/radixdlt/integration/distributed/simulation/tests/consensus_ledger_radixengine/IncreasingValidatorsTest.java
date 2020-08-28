@@ -15,10 +15,11 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_localmempool;
+package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_radixengine;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
@@ -29,30 +30,22 @@ import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
 /**
- * Simple mempool sanity test which runs the mempool submit and commit invariant.
+ * Slowly registers more and more validators to the network
  */
-public class MempoolSanityTest {
+public class IncreasingValidatorsTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
-		.numNodes(4)
+		.numNodes(50)
+		.numInitialValidators(2) // Can't be 1 otherwise epochs move too fast, TODO: Fix with mempool-aware pacemaker
+		.ledgerAndRadixEngineWithEpochHighView(View.of(10))
 		.checkSafety("safety")
 		.checkLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
 		.checkNoTimeouts("noTimeouts")
 		.checkAllProposalsHaveDirectParents("directParents")
-		.addMempoolSubmissionsSteadyState("mempool");
+		.addRadixEngineValidatorRegisterMempoolSubmissions("mempoolSubmitted", "epochChanges");
 
 	@Test
-	public void when_submitting_items_to_null_mempool__then_test_should_fail() {
+	public void when_increasing_validators__then_they_should_be_getting_registered() {
 		SimulationTest simulationTest = bftTestBuilder
-			.ledger()
-			.build();
-		Map<String, Optional<TestInvariantError>> results = simulationTest.run(1, TimeUnit.MINUTES);
-		assertThat(results).hasEntrySatisfying("mempool", error -> assertThat(error).isPresent());
-	}
-
-	@Test
-	public void when_submitting_items_to_mempool__then_they_should_get_executed() {
-		SimulationTest simulationTest = bftTestBuilder
-			.ledgerAndMempool()
 			.build();
 		Map<String, Optional<TestInvariantError>> results = simulationTest.run(1, TimeUnit.MINUTES);
 		assertThat(results).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
