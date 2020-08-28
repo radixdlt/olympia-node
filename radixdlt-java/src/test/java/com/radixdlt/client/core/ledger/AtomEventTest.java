@@ -20,47 +20,20 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-package com.radixdlt.client.atommodel.unique;
+package com.radixdlt.client.core.ledger;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.client.atommodel.Identifiable;
-import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.identifiers.RRI;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.SerializerId2;
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.client.util.SerializeObjectEngine;
 
-@SerializerId2("radix.particles.unique")
-public class UniqueParticle extends Particle implements Identifiable {
-	@JsonProperty("name")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private String name;
+public class AtomEventTest extends SerializeObjectEngine<AtomEvent> {
 
-	@JsonProperty("address")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private RadixAddress address;
-
-	@JsonProperty("nonce")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private long nonce;
-
-	private UniqueParticle() {
-		super();
+	public AtomEventTest() {
+		super(AtomEvent.class, AtomEventTest::get);
 	}
 
-	public UniqueParticle(RadixAddress address, String unique) {
-		super(address.euid());
-		this.address = address;
-		this.name = unique;
-		this.nonce = System.nanoTime();
-	}
-
-	public String getName() {
-		return name;
-	}
-
-	@Override
-	public RRI getRRI() {
-		return RRI.of(address, name);
+	private static AtomEvent get() {
+		Atom atom = Atom.create(ImmutableList.of());
+		return new AtomEvent(atom, 123456L, "store");
 	}
 }

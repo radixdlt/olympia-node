@@ -22,7 +22,9 @@
 
 package com.radixdlt.client.core.ledger;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.annotations.VisibleForTesting;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -30,7 +32,7 @@ import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 @SerializerId2("api.atom_event")
-public class AtomEvent {
+public final class AtomEvent {
 
 	// Placeholder for the serializer ID
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
@@ -47,17 +49,27 @@ public class AtomEvent {
 
 	@JsonProperty("atom")
 	@DsonOutput(Output.ALL)
-	private Atom atom;
+	private final Atom atom;
+
+	@JsonProperty("timestamp")
+	@DsonOutput(Output.ALL)
+	private final long timestamp;
 
 	private transient AtomEventType type;
 
-	private AtomEvent() {
-		this.atom = null;
-		this.type = null;
+	@JsonCreator
+	@VisibleForTesting
+	AtomEvent(
+		@JsonProperty("atom") Atom atom,
+		@JsonProperty("timestamp") long timestamp,
+		@JsonProperty("type") String type
+	) {
+		this(atom, timestamp, AtomEventType.valueOf(type.toUpperCase()));
 	}
 
-	public AtomEvent(Atom atom, AtomEventType type) {
+	public AtomEvent(Atom atom, long timestamp, AtomEventType type) {
 		this.atom = atom;
+		this.timestamp = timestamp;
 		this.type = type;
 	}
 
@@ -69,14 +81,13 @@ public class AtomEvent {
 		return type;
 	}
 
+	public long timestamp() {
+		return this.timestamp;
+	}
+
 	@JsonProperty("type")
 	@DsonOutput(Output.ALL)
 	private String getTypeString() {
 		return this.type.name().toLowerCase();
-	}
-
-	@JsonProperty("type")
-	private void setTypeString(String type) {
-		this.type = AtomEventType.valueOf(type.toUpperCase());
 	}
 }

@@ -140,7 +140,7 @@ public class ParticleGroup {
 	/**
 	 * Get a {@link ParticleGroup} consisting of the given particles
 	 */
-	public static ParticleGroup of(SpunParticle<?>... particles) {
+	public static ParticleGroup of(SpunParticle... particles) {
 		Objects.requireNonNull(particles, "particles is required");
 
 		return new ParticleGroup(Arrays.asList(particles));
@@ -179,7 +179,7 @@ public class ParticleGroup {
 		private ParticleGroupBuilder() {
 		}
 
-		public final ParticleGroupBuilder addParticle(SpunParticle<?> spunParticle) {
+		public final ParticleGroupBuilder addParticle(SpunParticle spunParticle) {
 			Objects.requireNonNull(spunParticle, "spunParticle is required");
 
 			this.particles.add(spunParticle);
@@ -191,7 +191,7 @@ public class ParticleGroup {
 			Objects.requireNonNull(particle, "particle is required");
 			Objects.requireNonNull(spin, "spin is required");
 
-			SpunParticle<?> spunParticle = SpunParticle.of(particle, spin);
+			SpunParticle spunParticle = SpunParticle.of(particle, spin);
 			this.particles.add(spunParticle);
 
 			return this;

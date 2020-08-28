@@ -148,6 +148,10 @@ public class RadixUniverseConfig {
 		return new RadixAddress((byte) (this.magic & 0xff), creator);
 	}
 
+	public long timestamp() {
+		return this.timestamp;
+	}
+
 	public List<Atom> getGenesis() {
 		return genesis;
 	}

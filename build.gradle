@@ -23,7 +23,7 @@
 plugins {
     id 'maven-publish'
     id 'com.adarshr.test-logger' version '1.7.1'
-    id 'org.sonarqube' version '3.0'
+    id 'org.sonarqube' version '2.7.1'
     id 'com.palantir.git-version' version '0.12.3'
 }
 

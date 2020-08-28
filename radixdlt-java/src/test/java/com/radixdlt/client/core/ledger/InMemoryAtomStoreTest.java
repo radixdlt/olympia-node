@@ -47,12 +47,7 @@ public class InMemoryAtomStoreTest {
 		AID hid = mock(AID.class);
 		when(atom.getAid()).thenReturn(hid);
 		when(atom.getHash()).thenReturn(hash);
-		when(atom.addresses()).thenReturn(
-			Stream.of(address),
-			Stream.of(address),
-			Stream.of(address),
-			Stream.of(address)
-		);
+		when(atom.addresses()).thenAnswer(inv -> Stream.of(address));
 
 		return AtomObservation.deleted(atom);
 	}
@@ -62,43 +57,33 @@ public class InMemoryAtomStoreTest {
 		AID hid = mock(AID.class);
 		when(atom.getAid()).thenReturn(hid);
 		when(atom.getHash()).thenReturn(hash);
-		when(atom.addresses()).thenReturn(
-			Stream.of(address),
-			Stream.of(address),
-			Stream.of(address),
-			Stream.of(address)
-		);
+		when(atom.addresses()).thenAnswer(inv -> Stream.of(address));
 
-		return AtomObservation.stored(atom);
+		return AtomObservation.stored(atom, 0L);
 	}
 
 	private AtomObservation mockStoredAtom(Atom atom, SpunParticle spun0, SpunParticle spun1, RadixAddress address) {
 		Hash hash = mock(Hash.class);
 		AID hid = mock(AID.class);
-		when(atom.spunParticles()).thenReturn(
-			Stream.of(spun0, spun1),
-			Stream.of(spun0, spun1),
-			Stream.of(spun0, spun1),
-			Stream.of(spun0, spun1)
-		);
+		when(atom.spunParticles()).thenAnswer(inv -> Stream.of(spun0, spun1));
 		when(atom.particles(any())).thenCallRealMethod().thenCallRealMethod().thenCallRealMethod();
 		when(atom.getAid()).thenReturn(hid);
 		when(atom.getHash()).thenReturn(hash);
-		when(atom.addresses()).thenReturn(Stream.of(address), Stream.of(address), Stream.of(address));
+		when(atom.addresses()).thenAnswer(inv -> Stream.of(address));
 
-		return AtomObservation.stored(atom);
+		return AtomObservation.stored(atom, 0L);
 	}
 
 	private AtomObservation mockStoredAtom(Atom atom, SpunParticle spun, RadixAddress address, boolean soft) {
 		Hash hash = mock(Hash.class);
 		AID hid = mock(AID.class);
-		when(atom.spunParticles()).thenReturn(Stream.of(spun), Stream.of(spun), Stream.of(spun));
+		when(atom.spunParticles()).thenAnswer(inv -> Stream.of(spun));
 		when(atom.particles(any())).thenCallRealMethod().thenCallRealMethod().thenCallRealMethod();
 		when(atom.getAid()).thenReturn(hid);
 		when(atom.getHash()).thenReturn(hash);
-		when(atom.addresses()).thenReturn(Stream.of(address), Stream.of(address), Stream.of(address));
+		when(atom.addresses()).thenAnswer(inv -> Stream.of(address));
 
-		return soft ? AtomObservation.softStored(atom) : AtomObservation.stored(atom);
+		return soft ? AtomObservation.softStored(atom, 0L) : AtomObservation.stored(atom, 0L);
 	}
 
 	private AtomObservation mockStoredAtom(Atom atom, SpunParticle spun, RadixAddress address) {
@@ -289,7 +274,7 @@ public class InMemoryAtomStoreTest {
 				SpunParticle.up(particle1)
 			)
 		);
-		inMemoryAtomStore.store(someAddress, AtomObservation.softStored(atom0));
+		inMemoryAtomStore.store(someAddress, AtomObservation.softStored(atom0, 0L));
 
 		Particle particle2 = mock(Particle.class);
 		when(particle2.getShardables()).thenReturn(Collections.singleton(someAddress));
@@ -299,7 +284,7 @@ public class InMemoryAtomStoreTest {
 				SpunParticle.up(particle2)
 			)
 		);
-		inMemoryAtomStore.store(someAddress, AtomObservation.stored(atom1));
+		inMemoryAtomStore.store(someAddress, AtomObservation.stored(atom1, 0L));
 		Stream<Particle> upParticles = inMemoryAtomStore.getUpParticles(someAddress, null);
 		assertThat(upParticles).containsExactly(particle1);
 	}

@@ -60,7 +60,7 @@ public class InMemoryAtomStoreReducerTest {
 		InMemoryAtomStoreReducer reducer = new InMemoryAtomStoreReducer(atomStore);
 		RadixAddress address = mock(RadixAddress.class);
 		final Atom atom = mock(Atom.class);
-		when(atom.addresses()).thenReturn(Stream.of(address), Stream.of(address));
+		when(atom.addresses()).thenAnswer(inv -> Stream.of(address));
 		RadixNode node = mock(RadixNode.class);
 		RadixNodeAction action = SubmitAtomStatusAction.fromStatusNotification(
 				"different-id",

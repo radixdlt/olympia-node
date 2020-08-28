@@ -30,7 +30,7 @@ import com.radixdlt.serialization.SerializerId2;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @SerializerId2("radix.spun_particle")
-public class SpunParticle<T extends Particle> {
+public class SpunParticle {
 
 	// Placeholder for the serializer ID
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
@@ -43,7 +43,7 @@ public class SpunParticle<T extends Particle> {
 
 	@JsonProperty("particle")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private final T particle;
+	private final Particle particle;
 
 	private transient Spin spin;
 
@@ -51,29 +51,33 @@ public class SpunParticle<T extends Particle> {
 		this.particle = null;
 	}
 
-	private SpunParticle(T particle, Spin spin) {
+	private SpunParticle(Particle particle, Spin spin) {
 		this.particle = particle;
 		this.spin = spin;
 	}
 
-	public static <T extends Particle> SpunParticle<T> up(T particle) {
-		return new SpunParticle<>(particle, Spin.UP);
+	public static SpunParticle up(Particle particle) {
+		return new SpunParticle(particle, Spin.UP);
 	}
 
-	public static <T extends Particle> SpunParticle<T> down(T particle) {
-		return new SpunParticle<>(particle, Spin.DOWN);
+	public static SpunParticle down(Particle particle) {
+		return new SpunParticle(particle, Spin.DOWN);
 	}
 
-	public static <T extends Particle> SpunParticle<T> of(T particle, Spin spin) {
-		return new SpunParticle<>(particle, spin);
+	public static SpunParticle of(Particle particle, Spin spin) {
+		return new SpunParticle(particle, spin);
 	}
 
 	public Spin getSpin() {
 		return spin;
 	}
 
-	public T getParticle() {
+	public Particle getParticle() {
 		return particle;
+	}
+
+	public <T extends Particle> T getParticle(Class<T> cls) {
+		return cls.cast(this.particle);
 	}
 
 	@JsonProperty("spin")

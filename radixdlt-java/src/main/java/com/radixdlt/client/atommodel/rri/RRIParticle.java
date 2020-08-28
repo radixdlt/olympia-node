@@ -44,6 +44,7 @@ public class RRIParticle extends Particle implements Accountable {
 	private long nonce;
 
 	private RRIParticle() {
+		// Nothing to do here
 	}
 
 	public RRIParticle(RRI rri) {
@@ -66,6 +67,7 @@ public class RRIParticle extends Particle implements Accountable {
 		return nonce;
 	}
 
+	@Override
 	public String toString() {
 		return String.format("%s[(%s:%s)]",
 			getClass().getSimpleName(), rri, nonce);

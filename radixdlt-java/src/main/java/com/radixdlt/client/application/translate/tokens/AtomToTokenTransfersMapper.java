@@ -22,7 +22,6 @@
 
 package com.radixdlt.client.application.translate.tokens;
 
-import com.google.gson.JsonParser;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.AtomToExecutedActionsMapper;
 import com.radixdlt.identifiers.RadixAddress;
@@ -46,9 +45,9 @@ import java.util.stream.Collectors;
  * Maps an atom to some number of token transfer actions.
  */
 public class AtomToTokenTransfersMapper implements AtomToExecutedActionsMapper<TokenTransfer> {
-	private static final JsonParser JSON_PARSER = new JsonParser();
 
 	public AtomToTokenTransfersMapper() {
+		// Nothing to do here
 	}
 
 	@Override
@@ -57,8 +56,8 @@ public class AtomToTokenTransfersMapper implements AtomToExecutedActionsMapper<T
 	}
 
 
-	private BigDecimal consumableToAmount(SpunParticle<TransferrableTokensParticle> sp) {
-		BigDecimal amount = TokenUnitConversions.subunitsToUnits(sp.getParticle().getAmount());
+	private BigDecimal consumableToAmount(SpunParticle sp) {
+		BigDecimal amount = TokenUnitConversions.subunitsToUnits(sp.getParticle(TransferrableTokensParticle.class).getAmount());
 		return sp.getSpin() == Spin.DOWN ? amount.negate() : amount;
 	}
 
@@ -68,12 +67,11 @@ public class AtomToTokenTransfersMapper implements AtomToExecutedActionsMapper<T
 			.flatMap(pg -> {
 				Map<RRI, Map<RadixAddress, BigDecimal>> tokenSummary = pg.spunParticles()
 					.filter(sp -> sp.getParticle() instanceof TransferrableTokensParticle)
-					.map(sp -> (SpunParticle<TransferrableTokensParticle>) sp)
 					.collect(
 						Collectors.groupingBy(
-							sp -> sp.getParticle().getTokenDefinitionReference(),
+							sp -> sp.getParticle(TransferrableTokensParticle.class).getTokenDefinitionReference(),
 							Collectors.groupingBy(
-								sp -> sp.getParticle().getAddress(),
+								sp -> sp.getParticle(TransferrableTokensParticle.class).getAddress(),
 								Collectors.reducing(BigDecimal.ZERO, this::consumableToAmount, BigDecimal::add)
 							)
 						)

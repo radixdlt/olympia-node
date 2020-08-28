@@ -69,17 +69,23 @@ public final class AtomObservation {
 	}
 
 	private final Atom atom;
+	private final long atomTimestamp;
 	private final long receivedTimestamp;
 	private final AtomObservationUpdateType updateType;
 
-	private AtomObservation(Atom atom, Type type, long receivedTimestamp, boolean soft) {
+	private AtomObservation(Atom atom, long atomTimestamp, Type type, long receivedTimestamp, boolean soft) {
 		this.atom = atom;
+		this.atomTimestamp = atomTimestamp;
 		this.receivedTimestamp = receivedTimestamp;
-		this.updateType = new AtomObservationUpdateType(type, soft);
+		this.updateType = AtomObservationUpdateType.of(type, soft);
 	}
 
 	public Atom getAtom() {
 		return atom;
+	}
+
+	public long atomTimestamp() {
+		return this.atomTimestamp;
 	}
 
 	public Type getType() {
@@ -104,7 +110,7 @@ public final class AtomObservation {
 
 	public static AtomObservation ofEvent(AtomEvent atomEvent) {
 		final Type type = Type.fromAtomEventType(atomEvent.getType());
-		return new AtomObservation(atomEvent.getAtom(), type, System.currentTimeMillis(), false);
+		return new AtomObservation(atomEvent.getAtom(), atomEvent.timestamp(), type, System.currentTimeMillis(), false);
 	}
 
 	/**
@@ -114,18 +120,20 @@ public final class AtomObservation {
 	 * is stored but can easily be replaced by "harder" state.
 	 *
 	 * @param atom the atom which is soft stored
+	 * @param timestamp the atom timestamp supplied by the node
 	 * @return the atom stored observation
 	 */
-	public static AtomObservation softStored(Atom atom) {
-		return new AtomObservation(atom, Type.STORE, System.currentTimeMillis(), true);
+	public static AtomObservation softStored(Atom atom, long timestamp) {
+		return new AtomObservation(atom, timestamp, Type.STORE, System.currentTimeMillis(), true);
 	}
 
 	public static AtomObservation softDeleted(Atom atom) {
-		return new AtomObservation(atom, Type.DELETE, System.currentTimeMillis(), true);
+		long now = System.currentTimeMillis();
+		return new AtomObservation(atom, now, Type.DELETE, now, true);
 	}
 
-	public static AtomObservation stored(Atom atom) {
-		return new AtomObservation(atom, Type.STORE, System.currentTimeMillis(), false);
+	public static AtomObservation stored(Atom atom, long atomTimestamp) {
+		return new AtomObservation(atom, atomTimestamp, Type.STORE, System.currentTimeMillis(), false);
 	}
 
 	public AtomObservationUpdateType getUpdateType() {
@@ -133,11 +141,13 @@ public final class AtomObservation {
 	}
 
 	public static AtomObservation deleted(Atom atom) {
-		return new AtomObservation(atom, Type.DELETE, System.currentTimeMillis(), false);
+		long now = System.currentTimeMillis();
+		return new AtomObservation(atom, now, Type.DELETE, now, false);
 	}
 
 	public static AtomObservation head() {
-		return new AtomObservation(null, Type.HEAD, System.currentTimeMillis(), false);
+		long now = System.currentTimeMillis();
+		return new AtomObservation(null, now, Type.HEAD, now, false);
 	}
 
 	@Override
