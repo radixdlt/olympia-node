@@ -19,16 +19,13 @@ package com.radixdlt.middleware2.store;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.inject.internal.cglib.core.$ProcessArrayCallback;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
-import com.radixdlt.middleware.SpunParticle;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.store.EngineAtomIndices.IndexType;
 import com.radixdlt.serialization.Serialization;
@@ -49,7 +46,6 @@ import com.radixdlt.store.LedgerEntryStore;
 
 import com.radixdlt.ledger.CommittedCommand;
 import com.radixdlt.store.StoreIndex.LedgerIndexType;
-import com.radixdlt.utils.Pair;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.BiFunction;

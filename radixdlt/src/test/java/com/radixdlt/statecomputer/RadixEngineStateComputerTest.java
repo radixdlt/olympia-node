@@ -18,7 +18,6 @@
 package com.radixdlt.statecomputer;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.in;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -30,8 +29,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.PreparedCommand;
 import com.radixdlt.consensus.Vertex;
@@ -39,14 +36,9 @@ import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.CMInstruction;
-import com.radixdlt.constraintmachine.CMMicroInstruction;
-import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.EUID;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
@@ -55,8 +47,7 @@ import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.utils.TypedMocks;
 
-import java.util.Optional;
-import java.util.function.Function;
+import java.util.stream.Stream;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -74,11 +65,9 @@ public class RadixEngineStateComputerTest {
 		this.radixEngine = TypedMocks.rmock(RadixEngine.class);
 		this.committedAtomsStore = mock(CommittedAtomsStore.class);
 		this.epochHighView = View.of(100);
-		// No issues with type checking for mock
-		@SuppressWarnings("unchecked") Function<Long, BFTValidatorSet> vsm = mock(Function.class);
 		this.committedAtomSender = mock(CommittedAtomSender.class);
 		this.stateComputer = new RadixEngineStateComputer(
-			ImmutableSet.of(),
+			BFTValidatorSet.from(Stream.of()),
 			serialization,
 			radixEngine,
 			epochHighView,

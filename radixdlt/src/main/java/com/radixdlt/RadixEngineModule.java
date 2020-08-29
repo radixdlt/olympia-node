@@ -73,7 +73,7 @@ public class RadixEngineModule extends AbstractModule {
 		CommittedAtomSender committedAtomSender
 	) {
 		return new RadixEngineStateComputer(
-			initialValidatorSet.getValidators(),
+			initialValidatorSet,
 			serialization,
 			radixEngine,
 			epochHighView,

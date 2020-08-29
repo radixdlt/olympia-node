@@ -29,7 +29,6 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.identifiers.AID;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.ClientAtom.LedgerAtomConversionException;
 import com.radixdlt.middleware2.LedgerAtom;
@@ -83,7 +82,12 @@ public class RadixEngineStoreModule extends AbstractModule {
 			}
 
 			@Override
-			public <U extends Particle, V> V compute(Class<U> particleClass, V initial, BiFunction<V, U, V> outputReducer, BiFunction<V, U, V> inputReducer) {
+			public <U extends Particle, V> V compute(
+				Class<U> particleClass,
+				V initial,
+				BiFunction<V, U, V> outputReducer,
+				BiFunction<V, U, V> inputReducer
+			) {
 				return committedAtomsStore.compute(particleClass, initial, outputReducer, inputReducer);
 			}
 
