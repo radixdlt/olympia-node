@@ -47,6 +47,7 @@ import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.universe.Universe;
 
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 public class RadixEngineStoreModule extends AbstractModule {
@@ -82,8 +83,8 @@ public class RadixEngineStoreModule extends AbstractModule {
 			}
 
 			@Override
-			public void deleteAtom(AID aid) {
-				committedAtomsStore.deleteAtom(aid);
+			public <U extends Particle, V> V compute(Class<U> particleClass, V initial, BiFunction<V, U, V> outputReducer, BiFunction<V, U, V> inputReducer) {
+				return committedAtomsStore.compute(particleClass, initial, outputReducer, inputReducer);
 			}
 
 			@Override
@@ -148,14 +149,16 @@ public class RadixEngineStoreModule extends AbstractModule {
 		LedgerEntryStore store,
 		CommandToBinaryConverter commandToBinaryConverter,
 		ClientAtomToBinaryConverter clientAtomToBinaryConverter,
-		AtomIndexer atomIndexer
+		AtomIndexer atomIndexer,
+		Serialization serialization
 	) {
 		final CommittedAtomsStore engineStore = new CommittedAtomsStore(
 			committedAtomSender,
 			store,
 			commandToBinaryConverter,
 			clientAtomToBinaryConverter,
-			atomIndexer
+			atomIndexer,
+			serialization
 		);
 		if (store.getNextCommittedLedgerEntries(genesisAtom.getVertexMetadata()
 			.getPreparedCommand().getStateVersion() - 1, 1).isEmpty()

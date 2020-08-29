@@ -22,45 +22,67 @@ import com.radixdlt.constraintmachine.CMMicroInstruction.CMMicroOp;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.engine.RadixEngineAtom;
-import com.radixdlt.identifiers.AID;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.SpinStateMachine;
 import com.radixdlt.utils.Pair;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 public final class InMemoryEngineStore<T extends RadixEngineAtom> implements EngineStore<T> {
-	private final Map<Particle, Pair<Spin, T>> storedParticles = new ConcurrentHashMap<>();
+	private final Object lock = new Object();
+	private final Map<Particle, Pair<Spin, T>> storedParticles = new HashMap<>();
+	private final List<Pair<Particle, Spin>> inOrderParticles = new ArrayList<>();
 
 	@Override
 	public void getAtomContaining(Particle particle, boolean isInput, Consumer<T> callback) {
-		callback.accept(storedParticles.get(particle).getSecond());
+		synchronized (lock) {
+			callback.accept(storedParticles.get(particle).getSecond());
+		}
 	}
 
 	@Override
 	public void storeAtom(T atom) {
-		for (CMMicroInstruction microInstruction : atom.getCMInstruction().getMicroInstructions()) {
-			if (microInstruction.getMicroOp() == CMMicroOp.PUSH) {
-				storedParticles.put(
-					microInstruction.getParticle(),
-					Pair.of(
-						SpinStateMachine.next(getSpin(microInstruction.getParticle())),
-						atom
-					)
-				);
+		synchronized (lock) {
+			for (CMMicroInstruction microInstruction : atom.getCMInstruction().getMicroInstructions()) {
+				if (microInstruction.getMicroOp() == CMMicroOp.PUSH) {
+					Spin nextSpin = SpinStateMachine.next(getSpin(microInstruction.getParticle()));
+					storedParticles.put(
+						microInstruction.getParticle(),
+						Pair.of(nextSpin, atom)
+					);
+					inOrderParticles.add(Pair.of(microInstruction.getParticle(), nextSpin));
+				}
 			}
 		}
 	}
 
 	@Override
-	public void deleteAtom(AID atomId) {
-		throw new UnsupportedOperationException("Deleting is not supported by this engine store.");
+	public <U extends Particle, V> V compute(Class<U> particleClass, V initial, BiFunction<V, U, V> outputReducer, BiFunction<V, U, V> inputReducer) {
+		V v = initial;
+		synchronized (lock) {
+			for (Pair<Particle, Spin> spinParticle : inOrderParticles) {
+				Particle particle = spinParticle.getFirst();
+				if (particleClass.isInstance(particle)) {
+					if (spinParticle.getSecond().equals(Spin.UP)) {
+						v = outputReducer.apply(v, particleClass.cast(particle));
+					} else {
+						v = inputReducer.apply(v, particleClass.cast(particle));
+					}
+				}
+			}
+		}
+		return v;
 	}
 
 	@Override
 	public Spin getSpin(Particle particle) {
-		Pair<Spin, T> stored = storedParticles.get(particle);
-		return stored == null ? Spin.NEUTRAL : stored.getFirst();
+		synchronized (lock) {
+			Pair<Spin, T> stored = storedParticles.get(particle);
+			return stored == null ? Spin.NEUTRAL : stored.getFirst();
+		}
 	}
 }

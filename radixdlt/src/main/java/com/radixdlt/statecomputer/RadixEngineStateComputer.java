@@ -28,18 +28,17 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.constraintmachine.CMMicroInstruction;
-import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.EUID;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.ledger.CommittedCommand;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
+import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -50,6 +49,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Wraps the Radix Engine and emits messages based on success or failure
@@ -76,7 +77,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private final CommittedAtomSender committedAtomSender;
 	private final Object lock = new Object();
 	private final LinkedList<CommittedCommand> unstoredCommittedAtoms = new LinkedList<>();
-	private final Set<BFTValidator> nextValidatorSet;
+	private final Set<BFTValidator> prevValidatorSet;
 
 	public RadixEngineStateComputer(
 		ImmutableSet<BFTValidator> initialNextValidatorSet,
@@ -90,7 +91,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			throw new IllegalArgumentException("Epoch change view must not be genesis.");
 		}
 
-		this.nextValidatorSet = new HashSet<>(initialNextValidatorSet);
+		this.prevValidatorSet = new HashSet<>(initialNextValidatorSet);
 		this.serialization = Objects.requireNonNull(serialization);
 		this.radixEngine = Objects.requireNonNull(radixEngine);
 		this.epochChangeView = epochChangeView;
@@ -143,26 +144,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 				// TODO: execute list of commands instead
 				this.radixEngine.checkAndStore(committedAtom);
 				storedInRadixEngine = true;
-
-				// TODO: Move into radix engine
-				clientAtom.getCMInstruction().getMicroInstructions().stream()
-					.filter(i -> i.getParticle() instanceof RegisteredValidatorParticle)
-					.filter(CMMicroInstruction::isCheckSpin)
-					.forEach(i -> {
-						RadixAddress nextValidatorAddress = ((RegisteredValidatorParticle) i.getParticle()).getAddress();
-						BFTNode validatorNode = BFTNode.create(nextValidatorAddress.getPublicKey());
-						BFTValidator nextValidator = BFTValidator.from(validatorNode, UInt256.ONE);
-						if (i.getCheckSpin() == Spin.NEUTRAL) {
-							nextValidatorSet.add(nextValidator);
-						} else {
-							// Never let validator set get less than two otherwise bad things can happen
-							// TODO: Fix this limit and implement within radix engine
-							if (nextValidatorSet.size() > 2) {
-								nextValidatorSet.remove(nextValidator);
-							}
-						}
-					});
-
 			} catch (RadixEngineException e) {
 				// TODO: Don't check for state computer errors for now so that we don't
 				// TODO: have to deal with failing leader proposals
@@ -178,7 +159,34 @@ public final class RadixEngineStateComputer implements StateComputer {
 		}
 
 		if (vertexMetadata.getPreparedCommand().isEndOfEpoch()) {
-			BFTValidatorSet validatorSet = BFTValidatorSet.from(nextValidatorSet);
+			Pair<Set<ECPublicKey>, LinkedList<ECPublicKey>> computedAddresses = this.radixEngine.compute(
+				RegisteredValidatorParticle.class,
+				Pair.of(
+					new HashSet<>(prevValidatorSet.stream().map(v -> v.getNode().getKey()).collect(Collectors.toSet())),
+					new LinkedList<>()
+				),
+				(pair, p) -> {
+					pair.getFirst().add(p.getAddress().getPublicKey());
+					return pair;
+				},
+				(pair, p) -> {
+					pair.getFirst().remove(p.getAddress().getPublicKey());
+					if (pair.getSecond().size() == 2) {
+						pair.getSecond().removeFirst();
+					}
+					pair.getSecond().addLast(p.getAddress().getPublicKey());
+					return pair;
+				}
+			);
+			Stream<ECPublicKey> validatorAddresses = computedAddresses.getFirst().size() >= 2
+				? computedAddresses.getFirst().stream()
+				: computedAddresses.getSecond().stream();
+
+			BFTValidatorSet validatorSet = BFTValidatorSet.from(
+				validatorAddresses
+					.map(BFTNode::create)
+					.map(node -> BFTValidator.from(node, UInt256.ONE))
+			);
 			return Optional.of(validatorSet);
 		}
 

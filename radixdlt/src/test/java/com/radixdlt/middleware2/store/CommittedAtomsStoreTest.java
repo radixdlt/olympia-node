@@ -31,6 +31,7 @@ import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.statecomputer.CommandToBinaryConverter;
@@ -54,6 +55,7 @@ public class CommittedAtomsStoreTest {
 	private ClientAtomToBinaryConverter clientAtomToBinaryConverter;
 	private CommittedAtomSender committedAtomSender;
 	private AtomIndexer atomIndexer;
+	private Serialization serialization;
 
 	@Before
 	public void setUp() {
@@ -62,13 +64,15 @@ public class CommittedAtomsStoreTest {
 		this.commandToBinaryConverter = mock(CommandToBinaryConverter.class);
 		this.clientAtomToBinaryConverter = mock(ClientAtomToBinaryConverter.class);
 		this.atomIndexer = mock(AtomIndexer.class);
+		this.serialization = mock(Serialization.class);
 
 		this.committedAtomsStore = new CommittedAtomsStore(
 			committedAtomSender,
 			store,
 			commandToBinaryConverter,
 			clientAtomToBinaryConverter,
-			atomIndexer
+			atomIndexer,
+			serialization
 		);
 	}
 

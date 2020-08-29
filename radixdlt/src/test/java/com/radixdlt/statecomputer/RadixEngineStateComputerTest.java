@@ -18,8 +18,10 @@
 package com.radixdlt.statecomputer;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.in;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -112,7 +114,7 @@ public class RadixEngineStateComputerTest {
 		when(vertexMetadata.getView()).then(i -> View.of(50));
 		PreparedCommand preparedCommand = mock(PreparedCommand.class);
 		when(preparedCommand.getStateVersion()).thenReturn(1L);
-		when(preparedCommand.isEndOfEpoch()).thenReturn(true);
+		when(preparedCommand.isEndOfEpoch()).thenReturn(false);
 		when(vertexMetadata.getPreparedCommand()).thenReturn(preparedCommand);
 
 		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenReturn(clientAtom);
@@ -132,7 +134,7 @@ public class RadixEngineStateComputerTest {
 		when(vertexMetadata.getView()).then(i -> View.of(50));
 		PreparedCommand preparedCommand = mock(PreparedCommand.class);
 		when(preparedCommand.getStateVersion()).thenReturn(1L);
-		when(preparedCommand.isEndOfEpoch()).thenReturn(true);
+		when(preparedCommand.isEndOfEpoch()).thenReturn(false);
 		when(vertexMetadata.getPreparedCommand()).thenReturn(preparedCommand);
 
 		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenReturn(clientAtom);
@@ -161,6 +163,8 @@ public class RadixEngineStateComputerTest {
 		when(preparedCommand.isEndOfEpoch()).thenReturn(true);
 		when(vertexMetadata.getPreparedCommand()).thenReturn(preparedCommand);
 
+		doAnswer(invocation -> invocation.getArgument(1)).when(radixEngine).compute(any(), any(), any(), any());
+
 		stateComputer.commit(null, vertexMetadata);
 
 		assertThat(stateComputer.getCommittedCommands(0, 1))
@@ -188,64 +192,5 @@ public class RadixEngineStateComputerTest {
 				assertThat(c.getCommand()).isEqualTo(cmd);
 				assertThat(c.getVertexMetadata()).isEqualTo(vertexMetadata);
 			});
-	}
-
-	@Test
-	public void when_commit_command_with_registered_particle__then_should_be_in_next_validator_set() throws SerializationException {
-		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
-		when(vertexMetadata.getView()).then(i -> View.of(100));
-		PreparedCommand preparedCommand = mock(PreparedCommand.class);
-		when(preparedCommand.getStateVersion()).thenReturn(1L);
-		when(preparedCommand.isEndOfEpoch()).thenReturn(true);
-		when(vertexMetadata.getPreparedCommand()).thenReturn(preparedCommand);
-
-		ClientAtom clientAtom = mock(ClientAtom.class);
-		CMInstruction cmInstruction = mock(CMInstruction.class);
-		RegisteredValidatorParticle registeredValidatorParticle = mock(RegisteredValidatorParticle.class);
-		RadixAddress address = mock(RadixAddress.class);
-		ECPublicKey key = mock(ECPublicKey.class);
-		when(key.euid()).thenReturn(EUID.ONE);
-		when(address.getPublicKey()).thenReturn(key);
-		when(registeredValidatorParticle.getAddress()).thenReturn(address);
-		when(cmInstruction.getMicroInstructions()).thenReturn(
-			ImmutableList.of(CMMicroInstruction.checkSpin(registeredValidatorParticle, Spin.NEUTRAL))
-		);
-		when(clientAtom.getCMInstruction()).thenReturn(cmInstruction);
-		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenReturn(clientAtom);
-
-		Optional<BFTValidatorSet> validatorSet = stateComputer.commit(mock(Command.class), vertexMetadata);
-		assertThat(validatorSet).hasValueSatisfying(vset ->
-			assertThat(vset.getValidators())
-				.hasOnlyOneElementSatisfying(v -> assertThat(v.getNode().getKey()).isEqualTo(key))
-		);
-	}
-
-	@Test
-	public void when_commit_command_with_unregistered_particle__then_should_not_be_in_next_validator_set() throws SerializationException {
-		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
-		when(vertexMetadata.getView()).then(i -> View.of(100));
-		PreparedCommand preparedCommand = mock(PreparedCommand.class);
-		when(preparedCommand.getStateVersion()).thenReturn(1L);
-		when(preparedCommand.isEndOfEpoch()).thenReturn(true);
-		when(vertexMetadata.getPreparedCommand()).thenReturn(preparedCommand);
-
-		ClientAtom clientAtom = mock(ClientAtom.class);
-		CMInstruction cmInstruction = mock(CMInstruction.class);
-		RegisteredValidatorParticle registeredValidatorParticle = mock(RegisteredValidatorParticle.class);
-		RadixAddress address = mock(RadixAddress.class);
-		ECPublicKey key = mock(ECPublicKey.class);
-		when(key.euid()).thenReturn(EUID.ONE);
-		when(address.getPublicKey()).thenReturn(key);
-		when(registeredValidatorParticle.getAddress()).thenReturn(address);
-		when(cmInstruction.getMicroInstructions()).thenReturn(
-			ImmutableList.of(CMMicroInstruction.checkSpin(registeredValidatorParticle, Spin.UP))
-		);
-		when(clientAtom.getCMInstruction()).thenReturn(cmInstruction);
-		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenReturn(clientAtom);
-
-		Optional<BFTValidatorSet> validatorSet = stateComputer.commit(mock(Command.class), vertexMetadata);
-		assertThat(validatorSet).hasValueSatisfying(vset ->
-			assertThat(vset.getValidators()).isEmpty()
-		);
 	}
 }
