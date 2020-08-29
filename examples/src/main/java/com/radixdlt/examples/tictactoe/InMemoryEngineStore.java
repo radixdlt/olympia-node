@@ -66,12 +66,7 @@ public class InMemoryEngineStore implements EngineStore<TicTacToeAtom> {
 	}
 
 	@Override
-	public void deleteAtom(AID atom) {
-		throw new UnsupportedOperationException("Deleting is not supported by this engine store.");
-	}
-
-	@Override
-	public <U extends Particle, V> void compute(Class<U> particleClass, V initial, BiFunction<V, SpunParticle, V> reduce) {
+	public <U extends Particle, V> V compute(Class<U> particleClass, V initial, BiFunction<V, U, V> inputReducer, BiFunction<V, U, V> outputReducer) {
 		throw new UnsupportedOperationException("Deleting is not supported by this engine store.");
 	}
 }

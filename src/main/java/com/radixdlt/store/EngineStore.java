@@ -45,10 +45,14 @@ public interface EngineStore<T extends RadixEngineAtom> extends CMStore {
 	 *
 	 * @param particleClass the particle class to reduce
 	 * @param initial the initial value of the state
-	 * @param reducer reducer of spun particles to the state
 	 * @param <U> the particle class to reduce
 	 * @param <V> the class of the state to reduce to
 	 * @return the computed, reduced state
 	 */
-	<U extends Particle, V> V compute(Class<U> particleClass, V initial, BiFunction<V, SpunParticle, V> reducer);
+	<U extends Particle, V> V compute(
+		Class<U> particleClass,
+		V initial,
+		BiFunction<V, U, V> inputReducer,
+		BiFunction<V, U, V> outputReducer
+	);
 }

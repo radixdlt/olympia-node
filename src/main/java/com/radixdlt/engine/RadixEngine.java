@@ -108,14 +108,18 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 	 *
 	 * @param particleClass the particle class to reduce
 	 * @param initial the initial value of the state
-	 * @param reducer reducer of spun particles to the state
 	 * @param <U> the particle class to reduce
 	 * @param <V> the class of the state to reduce to
 	 * @return the computed, reduced state
 	 */
-	public <U extends Particle, V> V compute(Class<U> particleClass, V initial, BiFunction<V, SpunParticle, V> reducer) {
+	public <U extends Particle, V>  V compute(
+		Class<U> particleClass,
+		V initial,
+		BiFunction<V, U, V> inputReducer,
+		BiFunction<V, U, V> outputReducer
+	) {
 		synchronized (stateUpdateEngineLock) {
-			return engineStore.compute(particleClass, initial, reducer);
+			return engineStore.compute(particleClass, initial, inputReducer, outputReducer);
 		}
 	}
 
