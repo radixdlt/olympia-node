@@ -45,7 +45,7 @@ public class RandomValidatorsTest {
 		.addRadixEngineValidatorRegisterUnregisterMempoolSubmissions("mempoolSubmitted");
 
 	@Test
-	public void when_increasing_validators__then_they_should_be_getting_registered() {
+	public void when_random_validators__then_sanity_checks_should_pass() {
 		SimulationTest simulationTest = bftTestBuilder
 			.build();
 		Map<String, Optional<TestInvariantError>> results = simulationTest.run(1, TimeUnit.MINUTES);

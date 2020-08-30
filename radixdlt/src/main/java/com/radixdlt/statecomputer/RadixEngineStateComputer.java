@@ -20,7 +20,6 @@ package com.radixdlt.statecomputer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
-import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
@@ -68,10 +67,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private final CommittedAtomSender committedAtomSender;
 	private final Object lock = new Object();
 	private final LinkedList<CommittedCommand> unstoredCommittedAtoms = new LinkedList<>();
-	private final BFTValidatorSet prevValidatorSet;
 
 	public RadixEngineStateComputer(
-		BFTValidatorSet initialNextValidatorSet,
 		Serialization serialization,
 		RadixEngine<LedgerAtom> radixEngine,
 		View epochChangeView,
@@ -82,7 +79,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 			throw new IllegalArgumentException("Epoch change view must not be genesis.");
 		}
 
-		this.prevValidatorSet = initialNextValidatorSet;
 		this.serialization = Objects.requireNonNull(serialization);
 		this.radixEngine = Objects.requireNonNull(radixEngine);
 		this.epochChangeView = epochChangeView;
@@ -150,12 +146,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 		}
 
 		if (vertexMetadata.getPreparedCommand().isEndOfEpoch()) {
-			RadixEngineValidatorSetBuilder validatorSetBuilder = this.radixEngine.compute(
-				RegisteredValidatorParticle.class,
-				new RadixEngineValidatorSetBuilder(prevValidatorSet),
-				(builder, p) -> builder.addValidator(p.getAddress()),
-				(builder, p) -> builder.removeValidator(p.getAddress())
-			);
+			RadixEngineValidatorSetBuilder validatorSetBuilder = this.radixEngine.getComputedState(RadixEngineValidatorSetBuilder.class);
+
 			return Optional.of(validatorSetBuilder.build());
 		}
 

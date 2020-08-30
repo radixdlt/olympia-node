@@ -20,7 +20,6 @@ package com.radixdlt.statecomputer;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -47,7 +46,6 @@ import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.utils.TypedMocks;
 
-import java.util.stream.Stream;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -67,7 +65,6 @@ public class RadixEngineStateComputerTest {
 		this.epochHighView = View.of(100);
 		this.committedAtomSender = mock(CommittedAtomSender.class);
 		this.stateComputer = new RadixEngineStateComputer(
-			BFTValidatorSet.from(Stream.of()),
 			serialization,
 			radixEngine,
 			epochHighView,
@@ -152,7 +149,10 @@ public class RadixEngineStateComputerTest {
 		when(preparedCommand.isEndOfEpoch()).thenReturn(true);
 		when(vertexMetadata.getPreparedCommand()).thenReturn(preparedCommand);
 
-		doAnswer(invocation -> invocation.getArgument(1)).when(radixEngine).compute(any(), any(), any(), any());
+		RadixEngineValidatorSetBuilder validatorSetBuilder = mock(RadixEngineValidatorSetBuilder.class);
+		when(radixEngine.getComputedState(eq(RadixEngineValidatorSetBuilder.class)))
+			.thenReturn(validatorSetBuilder);
+		when(validatorSetBuilder.build()).thenReturn(mock(BFTValidatorSet.class));
 
 		stateComputer.commit(null, vertexMetadata);
 

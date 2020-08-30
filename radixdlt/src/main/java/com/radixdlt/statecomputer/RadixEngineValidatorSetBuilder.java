@@ -35,11 +35,11 @@ public final class RadixEngineValidatorSetBuilder {
 	private final HashSet<ECPublicKey> validators;
 	private final LinkedList<ECPublicKey> lastRemovedValidators = new LinkedList<>();
 
-	RadixEngineValidatorSetBuilder(BFTValidatorSet validatorSet) {
+	public RadixEngineValidatorSetBuilder(BFTValidatorSet validatorSet) {
 		this.validators = validatorSet.getValidators().stream().map(v -> v.getNode().getKey()).collect(Collectors.toCollection(HashSet::new));
 	}
 
-	RadixEngineValidatorSetBuilder removeValidator(RadixAddress validatorAddress) {
+	public RadixEngineValidatorSetBuilder removeValidator(RadixAddress validatorAddress) {
 		this.validators.remove(validatorAddress.getPublicKey());
 		if (lastRemovedValidators.size() == 2) {
 			lastRemovedValidators.removeFirst();
@@ -48,7 +48,7 @@ public final class RadixEngineValidatorSetBuilder {
 		return this;
 	}
 
-	RadixEngineValidatorSetBuilder addValidator(RadixAddress validatorAddress) {
+	public RadixEngineValidatorSetBuilder addValidator(RadixAddress validatorAddress) {
 		this.validators.add(validatorAddress.getPublicKey());
 		return this;
 	}

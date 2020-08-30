@@ -24,6 +24,7 @@ import com.google.inject.name.Named;
 import com.radixdlt.atommodel.message.MessageParticleConstraintScrypt;
 import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
 import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
+import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.Result;
@@ -39,6 +40,7 @@ import com.radixdlt.middleware2.LedgerAtomChecker;
 import com.radixdlt.middleware2.PowFeeComputer;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
+import com.radixdlt.statecomputer.RadixEngineValidatorSetBuilder;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
@@ -66,14 +68,12 @@ public class RadixEngineModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private RadixEngineStateComputer radixEngineStateComputer(
-		BFTValidatorSet initialValidatorSet,
 		Serialization serialization,
 		RadixEngine<LedgerAtom> radixEngine,
 		CommittedCommandsReader committedCommandsReader,
 		CommittedAtomSender committedAtomSender
 	) {
 		return new RadixEngineStateComputer(
-			initialValidatorSet,
 			serialization,
 			radixEngine,
 			epochHighView,
@@ -116,6 +116,7 @@ public class RadixEngineModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private RadixEngine<LedgerAtom> getRadixEngine(
+		BFTValidatorSet initialValidatorSet,
 		ConstraintMachine constraintMachine,
 		UnaryOperator<CMStore> virtualStoreLayer,
 		EngineStore<LedgerAtom> engineStore,
@@ -130,11 +131,19 @@ public class RadixEngineModule extends AbstractModule {
 				skipAtomFeeCheck
 			);
 
-		return new RadixEngine<>(
+		RadixEngine<LedgerAtom> radixEngine = new RadixEngine<>(
 			constraintMachine,
 			virtualStoreLayer,
 			engineStore,
 			ledgerAtomChecker
 		);
+		radixEngine.addStateComputer(
+			RegisteredValidatorParticle.class,
+			new RadixEngineValidatorSetBuilder(initialValidatorSet),
+			(builder, p) -> builder.addValidator(p.getAddress()),
+			(builder, p) -> builder.removeValidator(p.getAddress())
+		);
+
+		return radixEngine;
 	}
 }
