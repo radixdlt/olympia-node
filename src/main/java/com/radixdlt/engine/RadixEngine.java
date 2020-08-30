@@ -17,7 +17,6 @@
 
 package com.radixdlt.engine;
 
-import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.Particle;
@@ -27,15 +26,15 @@ import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.CMMicroInstruction.CMMicroOp;
 import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.middleware.SpunParticle;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.CMStores;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.SpinStateMachine;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
@@ -44,12 +43,46 @@ import java.util.function.UnaryOperator;
  * Top Level Class for the Radix Engine, a real-time, shardable, distributed state machine.
  */
 public final class RadixEngine<T extends RadixEngineAtom> {
+	private class ApplicationStateComputer<U, V extends Particle> {
+		private final Class<V> particleClass;
+		private final BiFunction<U, V, U> outputReducer;
+		private final BiFunction<U, V, U> inputReducer;
+		private U curValue;
+
+		ApplicationStateComputer(
+			Class<V> particleClass,
+			U initialValue,
+			BiFunction<U, V, U> outputReducer,
+			BiFunction<U, V, U> inputReducer
+		) {
+			this.particleClass = particleClass;
+			this.curValue = initialValue;
+			this.outputReducer = outputReducer;
+			this.inputReducer = inputReducer;
+		}
+
+		void initialize() {
+			curValue = engineStore.compute(particleClass, curValue, inputReducer, outputReducer);
+		}
+
+		void processCheckSpin(CMMicroInstruction cmMicroInstruction) {
+			if (particleClass.isInstance(cmMicroInstruction.getParticle())) {
+				V particle = particleClass.cast(cmMicroInstruction.getParticle());
+				if (cmMicroInstruction.getCheckSpin() == Spin.NEUTRAL) {
+					curValue = outputReducer.apply(curValue, particle);
+				} else {
+					curValue = inputReducer.apply(curValue, particle);
+				}
+			}
+		}
+	}
+
 	private final ConstraintMachine constraintMachine;
 	private final CMStore virtualizedCMStore;
 	private final EngineStore<T> engineStore;
 	private final AtomChecker<T> checker;
 	private final Object stateUpdateEngineLock = new Object();
-
+	private final Map<Class<?>, ApplicationStateComputer<?, ?>> stateComputers = new HashMap<>();
 
 	public RadixEngine(
 		ConstraintMachine constraintMachine,
@@ -69,6 +102,26 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		this.virtualizedCMStore = virtualStoreLayer.apply(CMStores.empty());
 		this.engineStore = Objects.requireNonNull(engineStore);
 		this.checker = checker;
+	}
+
+	public <U, V extends Particle> void addStateComputer(
+		Class<U> applicationStateClass,
+		Class<V> particleClass,
+		U initial,
+		BiFunction<U, V, U> outputReducer,
+		BiFunction<U, V, U> inputReducer
+	) {
+		ApplicationStateComputer<U, V> applicationStateComputer = new ApplicationStateComputer<>(
+			particleClass, initial, outputReducer, inputReducer
+		);
+		synchronized (stateUpdateEngineLock) {
+			applicationStateComputer.initialize();
+			stateComputers.put(applicationStateClass, applicationStateComputer);
+		}
+	}
+
+	public <U> U getComputedState(Class<U> applicationStateClass) {
+		return applicationStateClass.cast(stateComputers.get(applicationStateClass).curValue);
 	}
 
 	public void staticCheck(T atom) throws RadixEngineException {
@@ -99,27 +152,6 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		synchronized (stateUpdateEngineLock) {
 			// TODO Feature: Return updated state for some given query (e.g. for current validator set)
 			stateCheckAndStoreInternal(atom);
-		}
-	}
-
-	/**
-	 * Deterministically computes a value from a list of spun particles of a given type.
-	 * Must implement this until we get rid of optimistic concurrency.
-	 *
-	 * @param particleClass the particle class to reduce
-	 * @param initial the initial value of the state
-	 * @param <U> the particle class to reduce
-	 * @param <V> the class of the state to reduce to
-	 * @return the computed, reduced state
-	 */
-	public <U extends Particle, V>  V compute(
-		Class<U> particleClass,
-		V initial,
-		BiFunction<V, U, V> inputReducer,
-		BiFunction<V, U, V> outputReducer
-	) {
-		synchronized (stateUpdateEngineLock) {
-			return engineStore.compute(particleClass, initial, inputReducer, outputReducer);
 		}
 	}
 
@@ -168,6 +200,17 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 			}
 		}
 
+		// Persist
 		engineStore.storeAtom(atom);
+
+		// Non-persisted computed state
+		for (CMMicroInstruction microInstruction : cmInstruction.getMicroInstructions()) {
+			// Treat check spin as the first push for now
+			if (!microInstruction.isCheckSpin()) {
+				continue;
+			}
+
+			stateComputers.forEach((a, computer) -> computer.processCheckSpin(microInstruction));
+		}
 	}
 }
