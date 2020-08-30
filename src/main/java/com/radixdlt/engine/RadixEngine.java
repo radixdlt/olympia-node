@@ -105,7 +105,6 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 	}
 
 	public <U, V extends Particle> void addStateComputer(
-		Class<U> applicationStateClass,
 		Class<V> particleClass,
 		U initial,
 		BiFunction<U, V, U> outputReducer,
@@ -116,7 +115,7 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		);
 		synchronized (stateUpdateEngineLock) {
 			applicationStateComputer.initialize();
-			stateComputers.put(applicationStateClass, applicationStateComputer);
+			stateComputers.put(initial.getClass(), applicationStateComputer);
 		}
 	}
 
