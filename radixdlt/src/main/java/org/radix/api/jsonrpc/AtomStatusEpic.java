@@ -18,11 +18,11 @@
 package org.radix.api.jsonrpc;
 
 import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.engine.AtomStatus;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.middleware2.converters.AtomConversionException;
 import java.util.concurrent.ConcurrentHashMap;
@@ -107,7 +107,8 @@ public class AtomStatusEpic {
 				data.put("aid", committedAtom.getAID());
 				data.put("pointerToIssue", exception.getDataPointer());
 				if (exception.getRelated() != null) {
-					data.put("conflictingWith", exception.getRelated().getAID().toString());
+					LedgerAtom ledgerAtom = (LedgerAtom) exception.getRelated();
+					data.put("conflictingWith", ledgerAtom.getAID().toString());
 				}
 				if (exception.getCmError() != null) {
 					data.put("cmError", exception.getCmError().getErrMsg());

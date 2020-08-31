@@ -15,20 +15,15 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.middleware2;
+package org.radix.api.jsonrpc;
 
-import com.google.common.collect.ImmutableMap;
-import com.radixdlt.crypto.Hash;
-import com.radixdlt.engine.RadixEngineAtom;
-import com.radixdlt.identifiers.AID;
-
-/**
- * An atom to be processed through a BFT stage.
- */
-public interface LedgerAtom extends RadixEngineAtom {
-	ImmutableMap<String, String> getMetaData();
-
-	Hash getPowFeeHash();
-
-	AID getAID();
+public enum AtomStatus {
+	DOES_NOT_EXIST,
+	EVICTED_FAILED_CM_VERIFICATION,
+	EVICTED_CONFLICT_LOSER,
+	PENDING_CM_VERIFICATION,
+	PENDING_DEPENDENCY_VERIFICATION,
+	MISSING_DEPENDENCY,
+	CONFLICT_LOSER,
+	STORED
 }
