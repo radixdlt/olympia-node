@@ -104,6 +104,19 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		this.checker = checker;
 	}
 
+	/**
+	 * Add a deterministic computation engine which maps an ordered list of
+	 * particles which have been created and destroyed to a state.
+	 * Initially runs the computation with all the atoms currently in the store
+	 * and then updates the state value as atoms get stored.
+	 *
+	 * @param particleClass the particle class of the particles to map
+	 * @param initial the initial value of the output
+	 * @param outputReducer deterministic function which computes the next state if a particle has been created
+	 * @param inputReducer deterministic function which computes the next state if a particle has been destroyed
+	 * @param <U> the class of the state
+	 * @param <V> the class of the particles to map
+	 */
 	public <U, V extends Particle> void addStateComputer(
 		Class<V> particleClass,
 		U initial,
@@ -119,8 +132,16 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		}
 	}
 
+	/**
+	 * Retrieves the latest state
+	 * @param applicationStateClass the class of the state to retrieve
+	 * @param <U> the class of the state to retrieve
+	 * @return the current state
+	 */
 	public <U> U getComputedState(Class<U> applicationStateClass) {
-		return applicationStateClass.cast(stateComputers.get(applicationStateClass).curValue);
+		synchronized (stateUpdateEngineLock) {
+			return applicationStateClass.cast(stateComputers.get(applicationStateClass).curValue);
+		}
 	}
 
 	public void staticCheck(T atom) throws RadixEngineException {

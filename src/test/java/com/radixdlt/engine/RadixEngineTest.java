@@ -32,12 +32,14 @@ import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.CMStores;
 import com.radixdlt.store.EngineStore;
+import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
@@ -69,6 +71,19 @@ public class RadixEngineTest {
 			virtualStore,
 			engineStore
 		);
+	}
+
+	@Test
+	public void when_add_state_computer__then_store_is_accessed_for_initial_computation() {
+		Object state = mock(Object.class);
+		when(engineStore.compute(any(), any(), any(), any())).thenReturn(state);
+		radixEngine.addStateComputer(
+			Particle.class,
+			mock(Object.class),
+			(o, p) -> o,
+			(o, p) -> o
+		);
+		assertThat(radixEngine.getComputedState(Object.class)).isEqualTo(state);
 	}
 
 	@Test
