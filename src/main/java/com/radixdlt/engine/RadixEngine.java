@@ -35,7 +35,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
 
@@ -209,11 +208,7 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 			final Spin currentSpin = SpinStateMachine.isAfter(virtualSpin, physicalSpin) ? virtualSpin : physicalSpin;
 			if (!SpinStateMachine.canTransition(currentSpin, nextSpin)) {
 				if (!SpinStateMachine.isBefore(currentSpin, nextSpin)) {
-					// Hack for now
-					// TODO: replace blocking callback with rx
-					final AtomicReference<T> conflictAtom = new AtomicReference<>();
-					engineStore.getAtomContaining(particle, nextSpin == Spin.DOWN, conflictAtom::set);
-					throw new RadixEngineException(RadixEngineErrorCode.STATE_CONFLICT, "State conflict", dp, conflictAtom.get());
+					throw new RadixEngineException(RadixEngineErrorCode.STATE_CONFLICT, "State conflict", dp);
 				} else {
 					throw new RadixEngineException(RadixEngineErrorCode.MISSING_DEPENDENCY, "Missing dependency", dp);
 				}

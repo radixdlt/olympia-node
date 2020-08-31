@@ -29,9 +29,7 @@ public class RadixEngineExceptionTest {
 		RadixEngineErrorCode code = mock(RadixEngineErrorCode.class);
 		DataPointer dp = mock(DataPointer.class);
 		String message = "Error message";
-		RadixEngineAtom related = mock(RadixEngineAtom.class);
-		RadixEngineException e = new RadixEngineException(code, message, dp, related);
-		assertThat(e.getRelated()).isEqualTo(related);
+		RadixEngineException e = new RadixEngineException(code, message, dp);
 		assertThat(e.getMessage()).isEqualTo(message);
 		assertThat(e.getDataPointer()).isEqualTo(dp);
 		assertThat(e.getErrorCode()).isEqualTo(code);

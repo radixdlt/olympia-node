@@ -22,15 +22,12 @@ import com.radixdlt.constraintmachine.CMMicroInstruction.CMMicroOp;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.engine.RadixEngineAtom;
-import com.radixdlt.store.EngineStore;
-import com.radixdlt.store.SpinStateMachine;
 import com.radixdlt.utils.Pair;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
 
 public final class InMemoryEngineStore<T extends RadixEngineAtom> implements EngineStore<T> {
 	private final Object lock = new Object();
