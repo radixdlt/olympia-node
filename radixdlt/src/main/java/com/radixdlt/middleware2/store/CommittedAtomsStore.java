@@ -53,7 +53,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Optional;
-import java.util.function.Consumer;
 
 public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, CommittedCommandsReader {
 	private static final Logger log = LogManager.getLogger();
@@ -83,12 +82,6 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		this.clientAtomToBinaryConverter = Objects.requireNonNull(clientAtomToBinaryConverter);
 		this.atomIndexer = Objects.requireNonNull(atomIndexer);
 		this.serialization = Objects.requireNonNull(serialization);
-	}
-
-	@Override
-	public void getAtomContaining(Particle particle, boolean isInput, Consumer<CommittedAtom> callback) {
-		Optional<CommittedAtom> atomOptional = getAtomByParticle(particle, isInput);
-		atomOptional.ifPresent(callback);
 	}
 
 	private Optional<CommittedAtom> getAtomByParticle(Particle particle, boolean isInput) {

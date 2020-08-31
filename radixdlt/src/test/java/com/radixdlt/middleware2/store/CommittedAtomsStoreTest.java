@@ -30,10 +30,8 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
-import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
-import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.statecomputer.CommandToBinaryConverter;
 import com.radixdlt.middleware2.store.CommittedAtomsStore.AtomIndexer;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
@@ -41,9 +39,7 @@ import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.ledger.CommittedCommand;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.junit.Before;
 import org.junit.Test;
@@ -75,34 +71,6 @@ public class CommittedAtomsStoreTest {
 			serialization
 		);
 	}
-
-	@Test
-	public void when_get_atom_containing__then_should_return_atom() {
-		Particle particle = mock(Particle.class);
-		when(particle.euid()).thenReturn(EUID.ONE);
-		// No type check issues with mocking generic here
-		@SuppressWarnings("unchecked")
-		Consumer<CommittedAtom> callback = mock(Consumer.class);
-		SearchCursor searchCursor = mock(SearchCursor.class);
-		AID aid = mock(AID.class);
-		when(searchCursor.get()).thenReturn(aid);
-		when(store.search(any(), any(), any())).thenReturn(searchCursor);
-		LedgerEntry ledgerEntry = mock(LedgerEntry.class);
-		when(ledgerEntry.getContent()).thenReturn(new byte[0]);
-
-		VertexMetadata vertexMetadata = mock((VertexMetadata.class));
-		Command command = mock(Command.class);
-		ClientAtom clientAtom = mock(ClientAtom.class);
-		when(command.map(any())).thenReturn(clientAtom);
-		CommittedCommand committedCommand = new CommittedCommand(command, vertexMetadata);
-		when(commandToBinaryConverter.toCommand(any())).thenReturn(committedCommand);
-		when(store.get(eq(aid))).thenReturn(Optional.of(ledgerEntry));
-
-		committedAtomsStore.getAtomContaining(particle, true, callback);
-		verify(callback, times(1))
-			.accept(argThat(a -> Objects.equals(a.getClientAtom(), clientAtom) && a.getVertexMetadata().equals(vertexMetadata)));
-	}
-
 
 	@Test
 	public void when_get_spin_and_particle_exists__then_should_return_spin() {

@@ -106,10 +106,6 @@ public class AtomStatusEpic {
 				JSONObject data = new JSONObject();
 				data.put("aid", committedAtom.getAID());
 				data.put("pointerToIssue", exception.getDataPointer());
-				if (exception.getRelated() != null) {
-					LedgerAtom ledgerAtom = (LedgerAtom) exception.getRelated();
-					data.put("conflictingWith", ledgerAtom.getAID().toString());
-				}
 				if (exception.getCmError() != null) {
 					data.put("cmError", exception.getCmError().getErrMsg());
 				}

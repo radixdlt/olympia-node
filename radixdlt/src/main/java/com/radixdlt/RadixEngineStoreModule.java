@@ -47,7 +47,6 @@ import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.universe.Universe;
 
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
 
 public class RadixEngineStoreModule extends AbstractModule {
 	private final int fixedNodeCount;
@@ -66,11 +65,6 @@ public class RadixEngineStoreModule extends AbstractModule {
 	@Singleton
 	private EngineStore<LedgerAtom> engineStore(CommittedAtomsStore committedAtomsStore) {
 		return new EngineStore<LedgerAtom>() {
-			@Override
-			public void getAtomContaining(Particle particle, boolean b, Consumer<LedgerAtom> consumer) {
-				committedAtomsStore.getAtomContaining(particle, b, consumer::accept);
-			}
-
 			@Override
 			public void storeAtom(LedgerAtom ledgerAtom) {
 				if (!(ledgerAtom instanceof CommittedAtom)) {
