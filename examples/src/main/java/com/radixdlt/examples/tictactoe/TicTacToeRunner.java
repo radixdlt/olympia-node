@@ -35,6 +35,7 @@ import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.examples.tictactoe.TicTacToeConstraintScrypt.OToMoveParticle;
 import com.radixdlt.examples.tictactoe.TicTacToeConstraintScrypt.XToMoveParticle;
 import com.radixdlt.store.EngineStore;
+import com.radixdlt.store.InMemoryEngineStore;
 
 import static com.radixdlt.examples.tictactoe.TicTacToeBaseParticle.TicTacToeSquareValue.EMPTY;
 import static com.radixdlt.examples.tictactoe.TicTacToeBaseParticle.TicTacToeSquareValue.O;
@@ -183,7 +184,7 @@ public class TicTacToeRunner {
 			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
 			.setParticleTransitionProcedures(cmAtomOS.buildTransitionProcedures())
 			.build();
-		EngineStore<TicTacToeAtom> engineStore = new InMemoryEngineStore();
+		EngineStore<TicTacToeAtom> engineStore = new InMemoryEngineStore<>();
 		RadixEngine<TicTacToeAtom> engine = new RadixEngine<>(
 			cm,
 			cmAtomOS.buildVirtualLayer(),
