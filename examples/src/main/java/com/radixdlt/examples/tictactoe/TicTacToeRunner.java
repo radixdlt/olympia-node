@@ -169,11 +169,6 @@ public class TicTacToeRunner {
 		}
 
 		@Override
-		public AID getAID() {
-			return aid;
-		}
-
-		@Override
 		public String toString() {
 			return aid + " shouldPass: " + shouldPass;
 		}

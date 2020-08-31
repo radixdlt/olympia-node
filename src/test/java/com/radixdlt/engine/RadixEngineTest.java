@@ -32,7 +32,6 @@ import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.CMStores;
 import com.radixdlt.store.EngineStore;
-import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
 import org.junit.Before;
 import org.junit.Test;

@@ -18,7 +18,6 @@
 package com.radixdlt.engine;
 
 import com.radixdlt.constraintmachine.CMInstruction;
-import com.radixdlt.identifiers.AID;
 
 /**
  * Radix Engine interface for retrieving a sequence of instructions to
