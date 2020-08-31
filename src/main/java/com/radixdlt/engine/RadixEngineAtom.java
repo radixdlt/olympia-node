@@ -31,10 +31,4 @@ public interface RadixEngineAtom {
 	 * @return sequence of instructions
 	 */
 	CMInstruction getCMInstruction();
-
-	/**
-	 * Retrieve the unique id of this atom
-	 * @return unique id of atom
-	 */
-	AID getAID();
 }
