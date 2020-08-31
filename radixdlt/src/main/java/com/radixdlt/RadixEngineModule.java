@@ -137,6 +137,13 @@ public class RadixEngineModule extends AbstractModule {
 			engineStore,
 			ledgerAtomChecker
 		);
+
+		// TODO: Convert to something more like the following:
+		// RadixEngine
+		//   .newStateComputer()
+		//   .ofType(RegisteredValidatorParticle.class)
+		//   .toWindowedSet(initialValidatorSet, RegisteredValidatorParticle.class, p -> p.getAddress(), 2)
+		//   .build();
 		radixEngine.addStateComputer(
 			RegisteredValidatorParticle.class,
 			new RadixEngineValidatorSetBuilder(initialValidatorSet),
