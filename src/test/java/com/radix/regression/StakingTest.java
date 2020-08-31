@@ -13,12 +13,14 @@ import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.utils.UInt256;
 import org.assertj.core.api.Assertions;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.math.BigDecimal;
 
 public class StakingTest {
 	@Test
+	@Ignore
 	public void given_a_registered_validator__then_staking_against_it_should_only_work_if_permitted() {
 		BigDecimal stakedAmount = BigDecimal.valueOf(10000.0);
 		RadixApplicationAPI delegate = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
