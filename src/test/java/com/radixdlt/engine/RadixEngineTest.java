@@ -41,6 +41,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -83,6 +84,42 @@ public class RadixEngineTest {
 			(o, p) -> o
 		);
 		assertThat(radixEngine.getComputedState(Object.class)).isEqualTo(state);
+	}
+
+	@Test
+	public void when_add_state_computer_and_atom_with_particles_stored__then_state_is_updated() throws RadixEngineException {
+		this.virtualStore = store -> p -> Spin.NEUTRAL;
+		this.radixEngine = new RadixEngine<>(
+			constraintMachine,
+			virtualStore,
+			engineStore
+		);
+		Object initialState = mock(Object.class);
+
+		Object state1 = mock(Object.class);
+		Object state2 = mock(Object.class);
+		when(engineStore.compute(any(), any(), any(), any())).thenReturn(initialState);
+		radixEngine.addStateComputer(
+			Particle.class,
+			mock(Object.class),
+			(o, p) -> state1,
+			(o, p) -> state2
+		);
+		assertThat(radixEngine.getComputedState(Object.class)).isEqualTo(initialState);
+		RadixEngineAtom radixEngineAtom = mock(RadixEngineAtom.class);
+		CMInstruction cmInstruction = mock(CMInstruction.class);
+		Particle particle = mock(Particle.class);
+		when(cmInstruction.getMicroInstructions()).thenReturn(ImmutableList.of(
+			CMMicroInstruction.checkSpin(particle, Spin.NEUTRAL),
+			CMMicroInstruction.push(particle),
+			CMMicroInstruction.checkSpin(particle, Spin.UP),
+			CMMicroInstruction.push(particle)
+		));
+		when(engineStore.getSpin(eq(particle))).thenReturn(Spin.NEUTRAL);
+		when(radixEngineAtom.getCMInstruction()).thenReturn(cmInstruction);
+		radixEngine.checkAndStore(radixEngineAtom);
+
+		assertThat(radixEngine.getComputedState(Object.class)).isEqualTo(state2);
 	}
 
 	@Test

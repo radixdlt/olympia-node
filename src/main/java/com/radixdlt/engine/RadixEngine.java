@@ -32,9 +32,11 @@ import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.SpinStateMachine;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
 
@@ -177,6 +179,7 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 	private void stateCheckAndStoreInternal(T atom) throws RadixEngineException {
 		final CMInstruction cmInstruction = atom.getCMInstruction();
 
+		final Set<Particle> checkedParticles = new HashSet<>();
 		long particleIndex = 0;
 		long particleGroupIndex = 0;
 		for (CMMicroInstruction microInstruction : cmInstruction.getMicroInstructions()) {
@@ -192,10 +195,15 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 			}
 
 			final Particle particle = microInstruction.getParticle();
+			// First spin is the only one we need to check
+			// TODO: Implement less memory intensive mechanism for this check
+			if (checkedParticles.contains(particle)) {
+				continue;
+			}
+			checkedParticles.add(particle);
 
 			final DataPointer dp = DataPointer.ofParticle(particleGroupIndex, particleIndex);
 
-			// First spin is the only one we need to check
 			final Spin checkSpin = microInstruction.getCheckSpin();
 			final Spin virtualSpin = virtualizedCMStore.getSpin(particle);
 			// TODO: Move virtual state checks into static check
