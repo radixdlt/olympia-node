@@ -26,10 +26,13 @@ import static org.powermock.api.mockito.PowerMockito.when;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.constraintmachine.CMInstruction;
+import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
+import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.statecomputer.CommandToBinaryConverter;
@@ -39,6 +42,7 @@ import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.ledger.CommittedCommand;
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.junit.Before;
@@ -71,6 +75,56 @@ public class CommittedAtomsStoreTest {
 			serialization
 		);
 	}
+
+	@Test
+	public void when_compute_and_empty__then_should_return_initial_state() {
+		when(serialization.getIdForClass(any())).thenReturn("test");
+		when(store.search(any(), any(), any())).thenReturn(null);
+		Object initial = mock(Object.class);
+		Object result = committedAtomsStore.compute(Particle.class, initial, (o, v) -> {
+			throw new RuntimeException();
+		}, (o, v) -> {
+			throw new RuntimeException();
+		});
+
+		assertThat(result).isEqualTo(initial);
+	}
+
+	@Test
+	public void when_compute_and_not_empty__then_should_scan_and_compute() {
+		when(serialization.getIdForClass(any())).thenReturn("test");
+
+		// TODO: Cleanup this transformation mess
+		SearchCursor searchCursor = mock(SearchCursor.class);
+		when(store.search(any(), any(), any())).thenReturn(searchCursor);
+		AID aid = mock(AID.class);
+		when(searchCursor.get()).thenReturn(aid);
+		LedgerEntry ledgerEntry = mock(LedgerEntry.class);
+		when(store.get(eq(aid))).thenReturn(Optional.of(ledgerEntry));
+		CommittedCommand committedCommand = mock(CommittedCommand.class);
+		Command command = mock(Command.class);
+		ClientAtom clientAtom = mock(ClientAtom.class);
+		CMInstruction cmInstruction = mock(CMInstruction.class);
+		when(clientAtom.getCMInstruction()).thenReturn(cmInstruction);
+		when(cmInstruction.getMicroInstructions())
+			.thenReturn(ImmutableList.of(
+				CMMicroInstruction.checkSpin(mock(Particle.class), Spin.NEUTRAL),
+				CMMicroInstruction.push(mock(Particle.class))
+			));
+		when(command.map(any())).thenReturn(clientAtom);
+		when(committedCommand.getCommand()).thenReturn(command);
+		when(commandToBinaryConverter.toCommand(any())).thenReturn(committedCommand);
+		HashSet<Particle> result = committedAtomsStore.compute(Particle.class, new HashSet<>(), (s, v) -> {
+			s.add(v);
+			return s;
+		}, (s, v) -> {
+			s.remove(v);
+			return s;
+		});
+
+		assertThat(result).hasSize(1);
+	}
+
 
 	@Test
 	public void when_get_spin_and_particle_exists__then_should_return_spin() {
