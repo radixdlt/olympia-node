@@ -166,17 +166,17 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 	private Optional<VertexMetadata> processQC(QuorumCertificate qc) {
 		// commit any newly committable vertices
-		Optional<VertexMetadata> commitMetaDataMaybe = this.safetyRules.process(qc);
-		commitMetaDataMaybe.ifPresent(commitMetaData -> {
-			vertexStore.commitVertex(commitMetaData).ifPresent(vertex -> {
-				log.trace("{}: Committed vertex: {}", this.self::getSimpleName, () -> vertex);
-			});
-		});
+		this.safetyRules.process(qc);
 
 		// proceed to next view if pacemaker feels like it
 		// TODO: should we proceed even if end of epoch?
 		this.pacemaker.processQC(qc.getView())
 			.ifPresent(this::proceedToView);
+
+		Optional<VertexMetadata> commitMetaDataMaybe = qc.getCommitted();
+		commitMetaDataMaybe.flatMap(vertexStore::commitVertex).ifPresent(vertex ->
+			log.trace("{}: Committed vertex: {}", this.self::getSimpleName, () -> vertex)
+		);
 
 		return commitMetaDataMaybe;
 	}

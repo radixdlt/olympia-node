@@ -28,7 +28,6 @@ import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.PreparedCommand;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.crypto.ECKeyPair;
 import org.junit.Before;
 import org.junit.Test;
@@ -145,28 +144,5 @@ public class SafetyRulesTest {
 
 		Vote vote = safetyRules.voteFor(proposal, mock(VertexMetadata.class), 0L, 0L);
 		assertThat(vote.getVoteData().getCommitted()).isEmpty();
-	}
-
-	@Test
-	public void when_process_qc_with_commit_greater_than_current__then_return_commit() {
-		when(safetyState.getLastVotedView()).thenReturn(View.of(0));
-		when(safetyState.getLockedView()).thenReturn(View.of(0));
-		when(safetyState.getCommittedView()).thenReturn(View.of(0));
-		when(safetyState.toBuilder()).thenReturn(mock(Builder.class));
-
-		Hash toBeCommitted = mock(Hash.class);
-
-		VertexMetadata committed = new VertexMetadata(0, View.of(1), toBeCommitted, mock(PreparedCommand.class));
-		VoteData voteData = new VoteData(
-			new VertexMetadata(0, View.of(3), mock(Hash.class), mock(PreparedCommand.class)),
-			new VertexMetadata(0, View.of(2), mock(Hash.class), mock(PreparedCommand.class)),
-			committed
-		);
-
-		QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-
-		assertThat(safetyRules.process(qc)).hasValue(
-			committed
-		);
 	}
 }

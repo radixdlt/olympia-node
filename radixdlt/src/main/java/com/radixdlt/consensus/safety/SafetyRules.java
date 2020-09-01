@@ -35,7 +35,6 @@ import com.radixdlt.crypto.Hash;
 
 import com.radixdlt.utils.Longs;
 import java.util.Objects;
-import java.util.Optional;
 
 /**
  * Manages safety of the protocol.
@@ -62,9 +61,8 @@ public final class SafetyRules {
 	/**
 	 * Process a QC.
 	 * @param qc The quorum certificate
-	 * @return the just-committed vertex id, if any
 	 */
-	public Optional<VertexMetadata> process(QuorumCertificate qc) {
+	public void process(QuorumCertificate qc) {
 		final Builder safetyStateBuilder = this.state.toBuilder();
 
 		// prepare phase on qc's proposed vertex if there is a newer 1-chain
@@ -81,19 +79,7 @@ public final class SafetyRules {
 			safetyStateBuilder.lockedView(qc.getParent().getView());
 		}
 
-		// commit phase for a vertex if it's view is greater than last commit.
-		// otherwise, it must have already been committed
-		final Optional<VertexMetadata> commitMetadata = qc.getCommitted().flatMap(vmd -> {
-			if (vmd.getView().compareTo(this.state.getCommittedView()) > 0) {
-				safetyStateBuilder.committedView(vmd.getView());
-				return Optional.of(vmd);
-			}
-			return Optional.empty();
-		});
-
 		this.state = safetyStateBuilder.build();
-
-		return commitMetadata;
 	}
 
 	/**

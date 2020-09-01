@@ -136,7 +136,6 @@ public class BFTEventReducerTest {
 		verify(safetyRules, never()).process(any());
 		verify(pacemaker, never()).processQC(any());
 
-		when(safetyRules.process(any())).thenReturn(Optional.empty());
 		when(pacemaker.processQC(any())).thenReturn(Optional.empty());
 		reducer.processLocalSync(id);
 		verify(safetyRules, never()).process(eq(qc));
@@ -363,8 +362,8 @@ public class BFTEventReducerTest {
 		when(committedVertexMetadata.getId()).thenReturn(committedVertexId);
 		Vertex committedVertex = mock(Vertex.class);
 		when(committedVertex.getCommand()).thenReturn(mock(Command.class));
+		when(qc.getCommitted()).thenReturn(Optional.of(committedVertexMetadata));
 
-		when(safetyRules.process(eq(qc))).thenReturn(Optional.of(committedVertexMetadata));
 		when(vertexStore.commitVertex(eq(committedVertexMetadata))).thenReturn(Optional.of(committedVertex));
 		when(proposerElection.getProposer(any())).thenReturn(mock(BFTNode.class));
 
