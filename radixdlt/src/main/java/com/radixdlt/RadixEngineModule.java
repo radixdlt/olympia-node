@@ -31,6 +31,7 @@ import com.radixdlt.atomos.Result;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.statecomputer.CommittedCommandsReader;
@@ -45,7 +46,10 @@ import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.universe.Universe;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 
 /**
  * Module which manages execution of commands
@@ -144,9 +148,12 @@ public class RadixEngineModule extends AbstractModule {
 		//   .ofType(RegisteredValidatorParticle.class)
 		//   .toWindowedSet(initialValidatorSet, RegisteredValidatorParticle.class, p -> p.getAddress(), 2)
 		//   .build();
+		Set<ECPublicKey> initialValidatorKeys = initialValidatorSet.getValidators().stream()
+			.map(v -> v.getNode().getKey())
+			.collect(Collectors.toCollection(HashSet::new));
 		radixEngine.addStateComputer(
 			RegisteredValidatorParticle.class,
-			new RadixEngineValidatorSetBuilder(initialValidatorSet),
+			new RadixEngineValidatorSetBuilder(initialValidatorKeys, vset -> vset.size() >= 2), // Require two validators for now
 			(builder, p) -> builder.addValidator(p.getAddress()),
 			(builder, p) -> builder.removeValidator(p.getAddress())
 		);

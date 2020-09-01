@@ -22,7 +22,6 @@ import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.middleware2.converters.AtomConversionException;
 import java.util.concurrent.ConcurrentHashMap;
