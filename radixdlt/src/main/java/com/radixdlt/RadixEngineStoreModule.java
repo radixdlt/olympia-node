@@ -29,7 +29,6 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.identifiers.AID;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.ClientAtom.LedgerAtomConversionException;
 import com.radixdlt.middleware2.LedgerAtom;
@@ -47,7 +46,7 @@ import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.universe.Universe;
 
-import java.util.function.Consumer;
+import java.util.function.BiFunction;
 
 public class RadixEngineStoreModule extends AbstractModule {
 	private final int fixedNodeCount;
@@ -67,11 +66,6 @@ public class RadixEngineStoreModule extends AbstractModule {
 	private EngineStore<LedgerAtom> engineStore(CommittedAtomsStore committedAtomsStore) {
 		return new EngineStore<LedgerAtom>() {
 			@Override
-			public void getAtomContaining(Particle particle, boolean b, Consumer<LedgerAtom> consumer) {
-				committedAtomsStore.getAtomContaining(particle, b, consumer::accept);
-			}
-
-			@Override
 			public void storeAtom(LedgerAtom ledgerAtom) {
 				if (!(ledgerAtom instanceof CommittedAtom)) {
 					throw new IllegalStateException("Should not be storing atoms which aren't committed");
@@ -82,8 +76,13 @@ public class RadixEngineStoreModule extends AbstractModule {
 			}
 
 			@Override
-			public void deleteAtom(AID aid) {
-				committedAtomsStore.deleteAtom(aid);
+			public <U extends Particle, V> V compute(
+				Class<U> particleClass,
+				V initial,
+				BiFunction<V, U, V> outputReducer,
+				BiFunction<V, U, V> inputReducer
+			) {
+				return committedAtomsStore.compute(particleClass, initial, outputReducer, inputReducer);
 			}
 
 			@Override
@@ -148,14 +147,16 @@ public class RadixEngineStoreModule extends AbstractModule {
 		LedgerEntryStore store,
 		CommandToBinaryConverter commandToBinaryConverter,
 		ClientAtomToBinaryConverter clientAtomToBinaryConverter,
-		AtomIndexer atomIndexer
+		AtomIndexer atomIndexer,
+		Serialization serialization
 	) {
 		final CommittedAtomsStore engineStore = new CommittedAtomsStore(
 			committedAtomSender,
 			store,
 			commandToBinaryConverter,
 			clientAtomToBinaryConverter,
-			atomIndexer
+			atomIndexer,
+			serialization
 		);
 		if (store.getNextCommittedLedgerEntries(genesisAtom.getVertexMetadata()
 			.getPreparedCommand().getStateVersion() - 1, 1).isEmpty()

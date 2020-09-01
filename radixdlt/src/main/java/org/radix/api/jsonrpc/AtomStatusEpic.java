@@ -18,7 +18,6 @@
 package org.radix.api.jsonrpc;
 
 import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.engine.AtomStatus;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
@@ -106,9 +105,6 @@ public class AtomStatusEpic {
 				JSONObject data = new JSONObject();
 				data.put("aid", committedAtom.getAID());
 				data.put("pointerToIssue", exception.getDataPointer());
-				if (exception.getRelated() != null) {
-					data.put("conflictingWith", exception.getRelated().getAID().toString());
-				}
 				if (exception.getCmError() != null) {
 					data.put("cmError", exception.getCmError().getErrMsg());
 				}

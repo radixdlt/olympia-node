@@ -30,6 +30,7 @@ import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.CommittedCommandsReader;
 import com.radixdlt.store.EngineStore;
+import com.radixdlt.store.InMemoryEngineStore;
 import java.util.Objects;
 
 public class MockedRadixEngineStoreModule extends AbstractModule {

@@ -21,11 +21,15 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.identifiers.AID;
+import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.middleware2.store.EngineAtomIndices.IndexType;
+import com.radixdlt.serialization.Serialization;
+import com.radixdlt.serialization.SerializationUtils;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.middleware2.LedgerAtom;
@@ -41,17 +45,19 @@ import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
 
 import com.radixdlt.ledger.CommittedCommand;
+import com.radixdlt.store.StoreIndex.LedgerIndexType;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.BiFunction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Optional;
-import java.util.function.Consumer;
 
 public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, CommittedCommandsReader {
 	private static final Logger log = LogManager.getLogger();
 
+	private final Serialization serialization;
 	private final AtomIndexer atomIndexer;
 	private final LedgerEntryStore store;
 	private final CommandToBinaryConverter commandToBinaryConverter;
@@ -67,19 +73,15 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		LedgerEntryStore store,
 		CommandToBinaryConverter commandToBinaryConverter,
 		ClientAtomToBinaryConverter clientAtomToBinaryConverter,
-		AtomIndexer atomIndexer
+		AtomIndexer atomIndexer,
+		Serialization serialization
 	) {
 		this.committedAtomSender = Objects.requireNonNull(committedAtomSender);
 		this.store = Objects.requireNonNull(store);
 		this.commandToBinaryConverter = Objects.requireNonNull(commandToBinaryConverter);
 		this.clientAtomToBinaryConverter = Objects.requireNonNull(clientAtomToBinaryConverter);
 		this.atomIndexer = Objects.requireNonNull(atomIndexer);
-	}
-
-	@Override
-	public void getAtomContaining(Particle particle, boolean isInput, Consumer<CommittedAtom> callback) {
-		Optional<CommittedAtom> atomOptional = getAtomByParticle(particle, isInput);
-		atomOptional.ifPresent(callback);
+		this.serialization = Objects.requireNonNull(serialization);
 	}
 
 	private Optional<CommittedAtom> getAtomByParticle(Particle particle, boolean isInput) {
@@ -130,7 +132,43 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		committedAtomSender.sendCommittedAtom(CommittedAtoms.success(committedAtom, indicies));
     }
 
-    @Override
+	@Override
+	public <U extends Particle, V> V compute(
+		Class<U> particleClass,
+		V initial,
+		BiFunction<V, U, V> outputReducer,
+		BiFunction<V, U, V> inputReducer
+	) {
+		final String idForClass = serialization.getIdForClass(particleClass);
+		final EUID numericClassId = SerializationUtils.stringToNumericID(idForClass);
+		final byte[] indexableBytes = EngineAtomIndices.toByteArray(IndexType.PARTICLE_CLASS, numericClassId);
+		SearchCursor cursor = store.search(LedgerIndexType.DUPLICATE, new StoreIndex(indexableBytes), LedgerSearchMode.EXACT);
+
+		V v = initial;
+		while (cursor != null) {
+			AID aid = cursor.get();
+			Optional<LedgerEntry> ledgerEntry = store.get(aid);
+			if (ledgerEntry.isPresent()) {
+				LedgerEntry entry = ledgerEntry.get();
+				CommittedCommand committedCommand = commandToBinaryConverter.toCommand(entry.getContent());
+				ClientAtom clientAtom = committedCommand.getCommand().map(clientAtomToBinaryConverter::toAtom);
+				for (CMMicroInstruction cmMicroInstruction : clientAtom.getCMInstruction().getMicroInstructions()) {
+					if (particleClass.isInstance(cmMicroInstruction.getParticle())
+						&& cmMicroInstruction.isCheckSpin()) {
+						if (cmMicroInstruction.getCheckSpin() == Spin.NEUTRAL) {
+							v = outputReducer.apply(v, particleClass.cast(cmMicroInstruction.getParticle()));
+						} else {
+							v = inputReducer.apply(v, particleClass.cast(cmMicroInstruction.getParticle()));
+						}
+					}
+				}
+			}
+			cursor = cursor.next();
+		}
+		return v;
+	}
+
+	@Override
 	public List<CommittedCommand> getCommittedCommands(long stateVersion, int limit) {
 		ImmutableList<LedgerEntry> entries = store.getNextCommittedLedgerEntries(stateVersion, limit);
 		return entries
@@ -138,11 +176,6 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 				.map(LedgerEntry::getContent)
 				.map(commandToBinaryConverter::toCommand)
 				.collect(ImmutableList.toImmutableList());
-	}
-
-	@Override
-	public void deleteAtom(AID atomId) {
-		throw new UnsupportedOperationException("Delete operation is not supported by Ledger interface");
 	}
 
 	@Override

@@ -24,12 +24,14 @@ import com.google.inject.name.Named;
 import com.radixdlt.atommodel.message.MessageParticleConstraintScrypt;
 import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
 import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
+import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.statecomputer.CommittedCommandsReader;
@@ -39,11 +41,15 @@ import com.radixdlt.middleware2.LedgerAtomChecker;
 import com.radixdlt.middleware2.PowFeeComputer;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
+import com.radixdlt.statecomputer.RadixEngineValidatorSetBuilder;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.universe.Universe;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 
 /**
  * Module which manages execution of commands
@@ -66,14 +72,12 @@ public class RadixEngineModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private RadixEngineStateComputer radixEngineStateComputer(
-		BFTValidatorSet initialValidatorSet,
 		Serialization serialization,
 		RadixEngine<LedgerAtom> radixEngine,
 		CommittedCommandsReader committedCommandsReader,
 		CommittedAtomSender committedAtomSender
 	) {
 		return new RadixEngineStateComputer(
-			initialValidatorSet.getValidators(),
 			serialization,
 			radixEngine,
 			epochHighView,
@@ -116,6 +120,7 @@ public class RadixEngineModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private RadixEngine<LedgerAtom> getRadixEngine(
+		BFTValidatorSet initialValidatorSet,
 		ConstraintMachine constraintMachine,
 		UnaryOperator<CMStore> virtualStoreLayer,
 		EngineStore<LedgerAtom> engineStore,
@@ -130,11 +135,29 @@ public class RadixEngineModule extends AbstractModule {
 				skipAtomFeeCheck
 			);
 
-		return new RadixEngine<>(
+		RadixEngine<LedgerAtom> radixEngine = new RadixEngine<>(
 			constraintMachine,
 			virtualStoreLayer,
 			engineStore,
 			ledgerAtomChecker
 		);
+
+		// TODO: Convert to something more like the following:
+		// RadixEngine
+		//   .newStateComputer()
+		//   .ofType(RegisteredValidatorParticle.class)
+		//   .toWindowedSet(initialValidatorSet, RegisteredValidatorParticle.class, p -> p.getAddress(), 2)
+		//   .build();
+		Set<ECPublicKey> initialValidatorKeys = initialValidatorSet.getValidators().stream()
+			.map(v -> v.getNode().getKey())
+			.collect(Collectors.toCollection(HashSet::new));
+		radixEngine.addStateComputer(
+			RegisteredValidatorParticle.class,
+			new RadixEngineValidatorSetBuilder(initialValidatorKeys, vset -> vset.size() >= 2), // Require two validators for now
+			(builder, p) -> builder.addValidator(p.getAddress()),
+			(builder, p) -> builder.removeValidator(p.getAddress())
+		);
+
+		return radixEngine;
 	}
 }
