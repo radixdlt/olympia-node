@@ -20,7 +20,7 @@ package org.radix.serialization;
 import com.radixdlt.consensus.CommandOutput;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.CommandHeader;
 import com.radixdlt.crypto.Hash;
 
 public class VoteDataSerializeTest extends SerializeObject<VoteData> {
@@ -32,9 +32,9 @@ public class VoteDataSerializeTest extends SerializeObject<VoteData> {
 		View view = View.of(1234567890L);
 
 		CommandOutput commandOutput = CommandOutput.create(0, 0L, false);
-		VertexMetadata committed = new VertexMetadata(0, view, Hash.random(), commandOutput);
-		VertexMetadata parent = new VertexMetadata(0, view.next(), Hash.random(), commandOutput);
-		VertexMetadata proposed = new VertexMetadata(0, view.next().next(), Hash.random(), commandOutput);
+		CommandHeader committed = new CommandHeader(0, view, Hash.random(), Hash.random(), commandOutput);
+		CommandHeader parent = new CommandHeader(0, view.next(), Hash.random(), Hash.random(), commandOutput);
+		CommandHeader proposed = new CommandHeader(0, view.next().next(), Hash.random(), Hash.random(), commandOutput);
 		return new VoteData(proposed, parent, committed);
 	}
 }

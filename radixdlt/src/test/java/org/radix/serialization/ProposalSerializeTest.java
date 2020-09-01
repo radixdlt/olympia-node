@@ -23,7 +23,7 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.CommandHeader;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -41,9 +41,9 @@ public class ProposalSerializeTest extends SerializeObject<Proposal> {
 		Hash id = Hash.random();
 
 		CommandOutput commandOutput = CommandOutput.create(0, 0L, false);
-		VertexMetadata vertexMetadata = new VertexMetadata(0, view, id, commandOutput);
-		VertexMetadata parent = new VertexMetadata(0, View.of(1234567890L), Hash.random(), commandOutput);
-		VoteData voteData = new VoteData(vertexMetadata, parent, null);
+		CommandHeader commandHeader = new CommandHeader(0, view, id, Hash.random(), commandOutput);
+		CommandHeader parent = new CommandHeader(0, View.of(1234567890L), Hash.random(), Hash.random(), commandOutput);
+		VoteData voteData = new VoteData(commandHeader, parent, null);
 		QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 		Command command = new Command(new byte[] {0, 1, 2, 3});
 

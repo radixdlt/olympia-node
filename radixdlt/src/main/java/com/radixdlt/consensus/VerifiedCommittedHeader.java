@@ -36,15 +36,15 @@ public final class VerifiedCommittedHeader {
 
 	@JsonProperty("opaque0")
 	@DsonOutput(Output.ALL)
-	private final VertexMetadata opaque0;
+	private final CommandHeader opaque0;
 
 	@JsonProperty("opaque1")
 	@DsonOutput(Output.ALL)
-	private final VertexMetadata opaque1;
+	private final CommandHeader opaque1;
 
 	@JsonProperty("header")
 	@DsonOutput(Output.ALL)
-	private final VertexMetadata header;
+	private final CommandHeader header;
 
 	@JsonProperty("signatures")
 	@DsonOutput(Output.ALL)
@@ -52,9 +52,9 @@ public final class VerifiedCommittedHeader {
 
 	@JsonCreator
 	public VerifiedCommittedHeader(
-		@JsonProperty("opaque0") VertexMetadata opaque0,
-		@JsonProperty("opaque1") VertexMetadata opaque1,
-		@JsonProperty("header") VertexMetadata header,
+		@JsonProperty("opaque0") CommandHeader opaque0,
+		@JsonProperty("opaque1") CommandHeader opaque1,
+		@JsonProperty("header") CommandHeader header,
 		@JsonProperty("signatures") TimestampedECDSASignatures signatures
 	) {
 		this.opaque0 = Objects.requireNonNull(opaque0);
@@ -63,7 +63,7 @@ public final class VerifiedCommittedHeader {
 		this.signatures = Objects.requireNonNull(signatures);
 	}
 
-	public VertexMetadata getHeader() {
+	public CommandHeader getHeader() {
 		return header;
 	}
 

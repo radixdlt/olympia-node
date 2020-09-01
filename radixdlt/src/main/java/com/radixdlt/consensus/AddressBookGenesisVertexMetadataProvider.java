@@ -86,8 +86,8 @@ public class AddressBookGenesisVertexMetadataProvider {
 		return BFTValidatorSet.from(validators);
 	}
 
-	public VertexMetadata getGenesisVertexMetadata() {
+	public CommandHeader getGenesisVertexMetadata() {
 		CommandOutput commandOutput = CommandOutput.create(0, 0L, true);
-		return VertexMetadata.ofGenesisAncestor(commandOutput);
+		return CommandHeader.ofGenesisAncestor(commandOutput);
 	}
 }

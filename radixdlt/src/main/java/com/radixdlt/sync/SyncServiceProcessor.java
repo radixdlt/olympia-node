@@ -18,7 +18,7 @@
 package com.radixdlt.sync;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.CommandHeader;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.ledger.VerifiedCommittedCommand;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
@@ -167,7 +167,7 @@ public final class SyncServiceProcessor {
 	}
 
 	public void processLocalSyncRequest(LocalSyncRequest request) {
-		final VertexMetadata target = request.getTarget();
+		final CommandHeader target = request.getTarget();
 		if (target.getPreparedCommand().getStateVersion() <= this.currentVersion) {
 			return;
 		}

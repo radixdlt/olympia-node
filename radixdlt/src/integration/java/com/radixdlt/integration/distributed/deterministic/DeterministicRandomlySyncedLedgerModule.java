@@ -28,7 +28,7 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.CommandOutput;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.CommandHeader;
 import com.radixdlt.ledger.StateComputerLedger.CommittedStateSyncSender;
 
 /**
@@ -56,7 +56,7 @@ public class DeterministicRandomlySyncedLedgerModule extends AbstractModule {
 			}
 
 			@Override
-			public OnSynced ifCommitSynced(VertexMetadata vertexMetadata) {
+			public OnSynced ifCommitSynced(CommandHeader commandHeader) {
 				return onSynced -> {
 					boolean synced = random.nextBoolean();
 					if (synced) {
@@ -66,7 +66,7 @@ public class DeterministicRandomlySyncedLedgerModule extends AbstractModule {
 					return (notSynced, opaque) -> {
 						if (!synced) {
 							notSynced.run();
-							committedStateSyncSender.sendCommittedStateSync(vertexMetadata.getPreparedCommand().getStateVersion(), opaque);
+							committedStateSyncSender.sendCommittedStateSync(commandHeader.getPreparedCommand().getStateVersion(), opaque);
 						}
 					};
 				};

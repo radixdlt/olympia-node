@@ -30,7 +30,7 @@ import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.CommandHeader;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.liveness.Pacemaker;
@@ -83,9 +83,9 @@ public class BFTEventPreprocessorTest {
 		when(newView.getView()).thenReturn(goodView ? View.of(2) : View.of(0));
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		Hash vertexId = mock(Hash.class);
-		VertexMetadata proposed = mock(VertexMetadata.class);
+		CommandHeader proposed = mock(CommandHeader.class);
 		when(qc.getProposed()).thenReturn(proposed);
-		when(proposed.getId()).thenReturn(vertexId);
+		when(proposed.getVertexId()).thenReturn(vertexId);
 		when(newView.getQC()).thenReturn(qc);
 		QuorumCertificate committedQC = mock(QuorumCertificate.class);
 		when(newView.getCommittedQC()).thenReturn(committedQC);
@@ -103,7 +103,7 @@ public class BFTEventPreprocessorTest {
 		when(vertex.getId()).thenReturn(vertexId);
 
 		QuorumCertificate qc = mock(QuorumCertificate.class);
-		VertexMetadata proposed = mock(VertexMetadata.class);
+		CommandHeader proposed = mock(CommandHeader.class);
 		when(qc.getProposed()).thenReturn(proposed);
 		when(vertex.getQC()).thenReturn(qc);
 
@@ -120,9 +120,9 @@ public class BFTEventPreprocessorTest {
 	public void when_process_vote_as_not_proposer__then_vote_gets_thrown_away() {
 		Vote vote = mock(Vote.class);
 		VoteData voteData = mock(VoteData.class);
-		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
-		when(vertexMetadata.getView()).thenReturn(View.of(1));
-		when(voteData.getProposed()).thenReturn(vertexMetadata);
+		CommandHeader commandHeader = mock(CommandHeader.class);
+		when(commandHeader.getView()).thenReturn(View.of(1));
+		when(voteData.getProposed()).thenReturn(commandHeader);
 		when(vote.getVoteData()).thenReturn(voteData);
 		when(proposerElection.getProposer(eq(View.of(1)))).thenReturn(mock(BFTNode.class));
 		preprocessor.processVote(vote);
@@ -133,9 +133,9 @@ public class BFTEventPreprocessorTest {
 	public void when_process_vote__event_gets_forwarded() {
 		Vote vote = mock(Vote.class);
 		VoteData voteData = mock(VoteData.class);
-		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
-		when(vertexMetadata.getView()).thenReturn(View.of(1));
-		when(voteData.getProposed()).thenReturn(vertexMetadata);
+		CommandHeader commandHeader = mock(CommandHeader.class);
+		when(commandHeader.getView()).thenReturn(View.of(1));
+		when(voteData.getProposed()).thenReturn(commandHeader);
 		when(vote.getVoteData()).thenReturn(voteData);
 		when(vote.getSignature()).thenReturn(Optional.of(mock(ECDSASignature.class)));
 		when(vote.getAuthor()).thenReturn(mock(BFTNode.class));

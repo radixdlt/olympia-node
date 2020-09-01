@@ -23,7 +23,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.TimestampedVoteData;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.CommandHeader;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.crypto.Hash;
 
@@ -37,9 +37,9 @@ public class VoteSerializeTest extends SerializeObject<Vote> {
 		Hash id = Hash.random();
 
 		CommandOutput commandOutput = CommandOutput.create(1, 0L, false);
-		VertexMetadata vertexMetadata = new VertexMetadata(0, view, id, commandOutput);
-		VertexMetadata parent = new VertexMetadata(0, View.of(1234567890L), Hash.random(), commandOutput);
-		VoteData voteData = new VoteData(vertexMetadata, parent, null);
+		CommandHeader commandHeader = new CommandHeader(0, view, id, Hash.random(), commandOutput);
+		CommandHeader parent = new CommandHeader(0, View.of(1234567890L), Hash.random(), Hash.random(), commandOutput);
+		VoteData voteData = new VoteData(commandHeader, parent, null);
 		TimestampedVoteData timestampedVoteData = new TimestampedVoteData(voteData, 123456L);
 		BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
 		return new Vote(author, timestampedVoteData, null, 0L);

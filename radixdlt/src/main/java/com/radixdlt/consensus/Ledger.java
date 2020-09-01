@@ -34,10 +34,10 @@ public interface Ledger {
 
 	/**
 	 * Check if the ledger is commit synced at a particular state
-	 * @param vertexMetadata the metadata to sync to
+	 * @param commandHeader the metadata to sync to
 	 * @return Synced handler
 	 */
-	OnSynced ifCommitSynced(VertexMetadata vertexMetadata);
+	OnSynced ifCommitSynced(CommandHeader commandHeader);
 
 	interface OnSynced {
 		OnNotSynced then(Runnable onSynced);

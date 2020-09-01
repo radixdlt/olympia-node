@@ -18,7 +18,7 @@
 package com.radixdlt.sync;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.CommandHeader;
 import com.radixdlt.consensus.bft.BFTNode;
 import java.util.Objects;
 
@@ -26,15 +26,15 @@ import java.util.Objects;
  * A request to sync to a given version
  */
 public final class LocalSyncRequest {
-	private final VertexMetadata target;
+	private final CommandHeader target;
 	private final ImmutableList<BFTNode> targetNodes;
 
-	public LocalSyncRequest(VertexMetadata target, ImmutableList<BFTNode> targetNodes) {
+	public LocalSyncRequest(CommandHeader target, ImmutableList<BFTNode> targetNodes) {
 		this.target = Objects.requireNonNull(target);
 		this.targetNodes = Objects.requireNonNull(targetNodes);
 	}
 
-	public VertexMetadata getTarget() {
+	public CommandHeader getTarget() {
 		return target;
 	}
 

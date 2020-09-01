@@ -17,7 +17,7 @@
 
 package com.radixdlt.consensus.epoch;
 
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.CommandHeader;
 import com.radixdlt.consensus.bft.BFTNode;
 
 /**
@@ -32,7 +32,7 @@ public enum EmptySyncEpochsRPCSender implements EpochManager.SyncEpochsRPCSender
 	}
 
 	@Override
-	public void sendGetEpochResponse(BFTNode node, VertexMetadata ancestor) {
+	public void sendGetEpochResponse(BFTNode node, CommandHeader ancestor) {
 		// No-op
 	}
 }

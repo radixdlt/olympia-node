@@ -25,7 +25,7 @@ import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.CommandHeader;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
@@ -123,7 +123,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private boolean synchedLog = false;
 
 	public interface EndOfEpochSender {
-		void sendEndOfEpoch(VertexMetadata vertexMetadata);
+		void sendEndOfEpoch(CommandHeader commandHeader);
 	}
 
 	public BFTEventReducer(
@@ -189,7 +189,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 				processQC(qc);
 				log.trace("{}: LOCAL_SYNC: processed QC: {}", this.self::getSimpleName, () ->  qc);
 			} else {
-				unsyncedQCs.put(qc.getProposed().getId(), qc);
+				unsyncedQCs.put(qc.getProposed().getVertexId(), qc);
 			}
 		}
 	}
@@ -217,7 +217,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 					log.debug("{}: VOTE: QC Not synced: {}", this.self::getSimpleName, () -> qc);
 					synchedLog = false;
 				}
-				unsyncedQCs.put(qc.getProposed().getId(), qc);
+				unsyncedQCs.put(qc.getProposed().getVertexId(), qc);
 			}
 		});
 	}
@@ -238,7 +238,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			if (highestQC.getProposed().getPreparedCommand().isEndOfEpoch()) {
 				nextCommand = null;
 			} else {
-				final List<Vertex> preparedVertices = vertexStore.getPathFromRoot(highestQC.getProposed().getId());
+				final List<Vertex> preparedVertices = vertexStore.getPathFromRoot(highestQC.getProposed().getVertexId());
 				final Set<Hash> prepared = preparedVertices.stream()
 					.map(Vertex::getCommand)
 					.filter(Objects::nonNull)
@@ -271,9 +271,9 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			return;
 		}
 
-		final VertexMetadata vertexMetadata;
+		final CommandHeader commandHeader;
 		try {
-			vertexMetadata = vertexStore.insertVertex(proposedVertex);
+			commandHeader = vertexStore.insertVertex(proposedVertex);
 		} catch (VertexInsertionException e) {
 			counters.increment(CounterType.BFT_REJECTED);
 
@@ -283,7 +283,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 		final BFTNode currentLeader = this.proposerElection.getProposer(updatedView);
 		try {
-			final Vote vote = safetyRules.voteFor(proposedVertex, vertexMetadata, this.timeSupplier.currentTime(), proposal.getPayload());
+			final Vote vote = safetyRules.voteFor(proposedVertex, commandHeader, this.timeSupplier.currentTime(), proposal.getPayload());
 			log.trace("{}: PROPOSAL: Sending VOTE to {}: {}", this.self::getSimpleName, currentLeader::getSimpleName, () -> vote);
 			sender.sendVote(vote, currentLeader);
 		} catch (SafetyViolationException e) {

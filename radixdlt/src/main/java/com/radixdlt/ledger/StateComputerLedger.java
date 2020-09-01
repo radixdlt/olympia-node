@@ -23,7 +23,7 @@ import com.radixdlt.consensus.CommandOutput;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.CommandHeader;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.counters.SystemCounters;
@@ -111,8 +111,8 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	}
 
 	@Override
-	public OnSynced ifCommitSynced(VertexMetadata vertexMetadata) {
-		final long targetStateVersion = vertexMetadata.getPreparedCommand().getStateVersion();
+	public OnSynced ifCommitSynced(CommandHeader commandHeader) {
+		final long targetStateVersion = commandHeader.getPreparedCommand().getStateVersion();
 		synchronized (lock) {
 			if (targetStateVersion <= this.currentStateVersion) {
 				return onSync -> {
@@ -132,11 +132,11 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	public void commit(VerifiedCommittedCommand verifiedCommittedCommand) {
 		this.counters.increment(CounterType.LEDGER_PROCESSED);
 
-		final VertexMetadata vertexMetadata = verifiedCommittedCommand.getProof().getHeader();
+		final CommandHeader commandHeader = verifiedCommittedCommand.getProof().getHeader();
 		final Command command = verifiedCommittedCommand.getCommand();
 
 		synchronized (lock) {
-			final long stateVersion = vertexMetadata.getPreparedCommand().getStateVersion();
+			final long stateVersion = commandHeader.getPreparedCommand().getStateVersion();
 			// TODO: get this invariant to as low level as possible
 			if (stateVersion != this.currentStateVersion + 1) {
 				return;

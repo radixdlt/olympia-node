@@ -78,7 +78,7 @@ public class SystemInfoModule extends AbstractModule {
 					"highQC", highQC != null ? ImmutableMap.of(
 						"epoch", highQC.getProposed().getEpoch(),
 						"view", highQC.getView().number(),
-						"vertexId", highQC.getProposed().getId()
+						"vertexId", highQC.getProposed().getVertexId()
 					)
 					: ImmutableMap.of(),
 					"currentView", ImmutableMap.of(

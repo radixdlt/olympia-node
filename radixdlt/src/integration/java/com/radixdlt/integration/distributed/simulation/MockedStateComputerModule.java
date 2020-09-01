@@ -21,7 +21,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.radixdlt.consensus.CommandOutput;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.CommandHeader;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 
@@ -42,9 +42,9 @@ public class MockedStateComputerModule extends AbstractModule {
 	}
 
 	@Provides
-	private VertexMetadata genesisMetadata() {
+	private CommandHeader genesisMetadata() {
 		final CommandOutput commandOutput = CommandOutput.create(0, 0L, true);
-		return VertexMetadata.ofGenesisAncestor(commandOutput);
+		return CommandHeader.ofGenesisAncestor(commandOutput);
 	}
 
 	@Provides

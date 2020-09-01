@@ -31,7 +31,7 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.CommandOutput;
 import com.radixdlt.consensus.VerifiedCommittedHeader;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.CommandHeader;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.ledger.VerifiedCommittedCommand;
@@ -56,12 +56,12 @@ public class SyncServiceProcessorTest {
 
 	private static VerifiedCommittedCommand buildWithVersion(long version) {
 		VerifiedCommittedCommand committedCommand = mock(VerifiedCommittedCommand.class);
-		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
+		CommandHeader commandHeader = mock(CommandHeader.class);
 		CommandOutput commandOutput = mock(CommandOutput.class);
 		when(commandOutput.getStateVersion()).thenReturn(version);
-		when(vertexMetadata.getPreparedCommand()).thenReturn(commandOutput);
+		when(commandHeader.getPreparedCommand()).thenReturn(commandOutput);
 		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
-		when(proof.getHeader()).thenReturn(vertexMetadata);
+		when(proof.getHeader()).thenReturn(commandHeader);
 		when(committedCommand.getProof()).thenReturn(proof);
 		return committedCommand;
 	}
@@ -108,7 +108,7 @@ public class SyncServiceProcessorTest {
 		Peer peer = mock(Peer.class);
 		when(peer.hasSystem()).thenReturn(true);
 		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
-		VertexMetadata target = mock(VertexMetadata.class);
+		CommandHeader target = mock(CommandHeader.class);
 		CommandOutput commandOutput = mock(CommandOutput.class);
 		when(commandOutput.getStateVersion()).thenReturn(targetVersion);
 		when(target.getPreparedCommand()).thenReturn(commandOutput);
@@ -141,7 +141,7 @@ public class SyncServiceProcessorTest {
 		Peer peer = mock(Peer.class);
 		when(peer.hasSystem()).thenReturn(true);
 		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
-		VertexMetadata target = mock(VertexMetadata.class);
+		CommandHeader target = mock(CommandHeader.class);
 		CommandOutput commandOutput = mock(CommandOutput.class);
 		when(commandOutput.getStateVersion()).thenReturn(targetVersion);
 		when(target.getPreparedCommand()).thenReturn(commandOutput);
@@ -170,7 +170,7 @@ public class SyncServiceProcessorTest {
 		Peer peer = mock(Peer.class);
 		when(peer.hasSystem()).thenReturn(true);
 		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
-		VertexMetadata target = mock(VertexMetadata.class);
+		CommandHeader target = mock(CommandHeader.class);
 		CommandOutput commandOutput = mock(CommandOutput.class);
 		when(commandOutput.getStateVersion()).thenReturn(targetVersion);
 		when(target.getPreparedCommand()).thenReturn(commandOutput);

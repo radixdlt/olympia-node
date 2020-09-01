@@ -43,36 +43,36 @@ public final class VoteData {
 
 	@JsonProperty("proposed")
 	@DsonOutput(Output.ALL)
-	private final VertexMetadata proposed;
+	private final CommandHeader proposed;
 
 	@JsonProperty("parent")
 	@DsonOutput(Output.ALL)
-	private final VertexMetadata parent;
+	private final CommandHeader parent;
 
 	@JsonProperty("committed")
 	@DsonOutput(Output.ALL)
-	private final VertexMetadata committed;
+	private final CommandHeader committed;
 
 	@JsonCreator
 	public VoteData(
-		@JsonProperty("proposed") VertexMetadata proposed,
-		@JsonProperty("parent") VertexMetadata parent,
-		@JsonProperty("committed") VertexMetadata committed
+		@JsonProperty("proposed") CommandHeader proposed,
+		@JsonProperty("parent") CommandHeader parent,
+		@JsonProperty("committed") CommandHeader committed
 	) {
 		this.proposed = Objects.requireNonNull(proposed);
 		this.parent = Objects.requireNonNull(parent);
 		this.committed = committed;
 	}
 
-	public VertexMetadata getProposed() {
+	public CommandHeader getProposed() {
 		return proposed;
 	}
 
-	public VertexMetadata getParent() {
+	public CommandHeader getParent() {
 		return parent;
 	}
 
-	public Optional<VertexMetadata> getCommitted() {
+	public Optional<CommandHeader> getCommitted() {
 		return Optional.ofNullable(committed);
 	}
 

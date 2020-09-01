@@ -24,7 +24,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.CommandHeader;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.counters.SystemCounters;
@@ -43,8 +43,8 @@ public class LedgerModuleTest {
 			bind(StateComputer.class).toInstance(mock(StateComputer.class));
 			bind(CommittedStateSyncSender.class).toInstance(mock(CommittedStateSyncSender.class));
 			bind(SystemCounters.class).toInstance(mock(SystemCounters.class));
-			VertexMetadata vertexMetadata = mock(VertexMetadata.class);
-			bind(VertexMetadata.class).toInstance(vertexMetadata);
+			CommandHeader commandHeader = mock(CommandHeader.class);
+			bind(CommandHeader.class).toInstance(commandHeader);
 			bind(BFTValidatorSet.class).toInstance(mock(BFTValidatorSet.class));
 			Multibinder.newSetBinder(binder(), CommittedSender.class);
 		}

@@ -25,7 +25,7 @@ import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.CommandHeader;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
@@ -130,7 +130,7 @@ public final class ControlledSender implements DeterministicSender {
 	}
 
 	@Override
-	public void sendGetEpochResponse(BFTNode node, VertexMetadata ancestor) {
+	public void sendGetEpochResponse(BFTNode node, CommandHeader ancestor) {
 		GetEpochResponse getEpochResponse = new GetEpochResponse(node, ancestor);
 		handleMessage(messageRank(getEpochResponse), new ControlledMessage(this.senderIndex, this.network.lookup(node), getEpochResponse));
 	}
@@ -169,12 +169,12 @@ public final class ControlledSender implements DeterministicSender {
 	}
 
 	private MessageRank messageRank(GetEpochResponse getEpochResponse) {
-		VertexMetadata ancestorMetadata = getEpochResponse.getEpochAncestor();
+		CommandHeader ancestorMetadata = getEpochResponse.getEpochAncestor();
 		return MessageRank.of(ancestorMetadata.getEpoch(), ancestorMetadata.getView().number() + 3);
 	}
 
 	private MessageRank messageRank(EpochChange epochChange) {
-		VertexMetadata ancestorMetadata = epochChange.getAncestor();
+		CommandHeader ancestorMetadata = epochChange.getAncestor();
 		return MessageRank.of(ancestorMetadata.getEpoch(), ancestorMetadata.getView().number() + 3);
 	}
 
@@ -186,7 +186,7 @@ public final class ControlledSender implements DeterministicSender {
 		return MessageRank.of(proposal.getEpoch(), proposal.getVertex().getView().number());
 	}
 
-	private MessageRank messageRank(VertexMetadata metadata, long viewIncrement) {
+	private MessageRank messageRank(CommandHeader metadata, long viewIncrement) {
 		return MessageRank.of(metadata.getEpoch(), metadata.getView().number() + viewIncrement);
 	}
 

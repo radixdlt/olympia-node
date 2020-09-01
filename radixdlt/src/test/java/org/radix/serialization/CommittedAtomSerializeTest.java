@@ -22,7 +22,7 @@ import com.radixdlt.atommodel.message.MessageParticle;
 import com.radixdlt.consensus.CommandOutput;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.VerifiedCommittedHeader;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.CommandHeader;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.middleware2.ClientAtom;
@@ -51,9 +51,9 @@ public class CommittedAtomSerializeTest extends SerializeObject<CommittedAtom> {
 		}
 
 		VerifiedCommittedHeader proof = new VerifiedCommittedHeader(
-			VertexMetadata.ofGenesisAncestor(CommandOutput.create(0, 0L, false)),
-			VertexMetadata.ofGenesisAncestor(CommandOutput.create(0, 0L, false)),
-			VertexMetadata.ofGenesisAncestor(CommandOutput.create(0, 0L, false)),
+			CommandHeader.ofGenesisAncestor(CommandOutput.create(0, 0L, false)),
+			CommandHeader.ofGenesisAncestor(CommandOutput.create(0, 0L, false)),
+			CommandHeader.ofGenesisAncestor(CommandOutput.create(0, 0L, false)),
 			new TimestampedECDSASignatures()
 		);
 

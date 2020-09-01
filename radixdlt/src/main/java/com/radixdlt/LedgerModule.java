@@ -23,7 +23,7 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.Ledger;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.CommandHeader;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
@@ -72,7 +72,7 @@ public class LedgerModule extends AbstractModule {
 	// TODO: Load from storage
 	@Provides
 	@Singleton
-	private EpochChange initialEpoch(VertexMetadata ancestor, BFTValidatorSet validatorSet) {
+	private EpochChange initialEpoch(CommandHeader ancestor, BFTValidatorSet validatorSet) {
 		return new EpochChange(ancestor, validatorSet);
 	}
 }

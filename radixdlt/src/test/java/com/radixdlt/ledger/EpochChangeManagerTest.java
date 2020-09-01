@@ -25,7 +25,7 @@ import static org.mockito.Mockito.when;
 
 import com.radixdlt.consensus.CommandOutput;
 import com.radixdlt.consensus.VerifiedCommittedHeader;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.CommandHeader;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import org.junit.Before;
 import org.junit.Test;
@@ -42,24 +42,24 @@ public class EpochChangeManagerTest {
 
 	@Test
 	public void when_sending_committed_atom_with_epoch_change__then_should_send_epoch_change() {
-		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
+		CommandHeader commandHeader = mock(CommandHeader.class);
 		long genesisEpoch = 123;
-		when(vertexMetadata.getEpoch()).thenReturn(genesisEpoch);
+		when(commandHeader.getEpoch()).thenReturn(genesisEpoch);
 		CommandOutput commandOutput = mock(CommandOutput.class);
 		when(commandOutput.isEndOfEpoch()).thenReturn(true);
 		when(commandOutput.getStateVersion()).thenReturn(1234L);
-		when(vertexMetadata.getPreparedCommand()).thenReturn(commandOutput);
+		when(commandHeader.getPreparedCommand()).thenReturn(commandOutput);
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		VerifiedCommittedCommand cmd = mock(VerifiedCommittedCommand.class);
 		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
-		when(proof.getHeader()).thenReturn(vertexMetadata);
+		when(proof.getHeader()).thenReturn(commandHeader);
 		when(cmd.getProof()).thenReturn(proof);
 
 		epochChangeManager.sendCommitted(cmd, validatorSet);
 
 		verify(sender, times(1))
 			.epochChange(
-				argThat(e -> e.getAncestor().equals(vertexMetadata) && e.getValidatorSet().equals(validatorSet))
+				argThat(e -> e.getAncestor().equals(commandHeader) && e.getValidatorSet().equals(validatorSet))
 			);
 	}
 }

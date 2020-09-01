@@ -17,17 +17,17 @@
 
 package com.radixdlt.consensus.epoch;
 
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.CommandHeader;
 import com.radixdlt.consensus.bft.BFTNode;
 
 /**
  * An RPC Response to a GetEpoch request
  */
 public final class GetEpochResponse {
-	private final VertexMetadata epochAncestor;
+	private final CommandHeader epochAncestor;
 	private final BFTNode author;
 
-	public GetEpochResponse(BFTNode author, VertexMetadata epochAncestor) {
+	public GetEpochResponse(BFTNode author, CommandHeader epochAncestor) {
 		this.epochAncestor = epochAncestor;
 		this.author = author;
 	}
@@ -36,7 +36,7 @@ public final class GetEpochResponse {
 		return author;
 	}
 
-	public VertexMetadata getEpochAncestor() {
+	public CommandHeader getEpochAncestor() {
 		return epochAncestor;
 	}
 

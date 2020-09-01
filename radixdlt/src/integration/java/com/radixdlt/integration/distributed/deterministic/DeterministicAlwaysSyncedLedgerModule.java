@@ -24,7 +24,7 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.CommandOutput;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.CommandHeader;
 import com.radixdlt.consensus.sync.SyncRequestSender;
 import com.radixdlt.ledger.VerifiedCommittedCommand;
 
@@ -47,7 +47,7 @@ public class DeterministicAlwaysSyncedLedgerModule extends AbstractModule {
 			}
 
 			@Override
-			public OnSynced ifCommitSynced(VertexMetadata vertexMetadata) {
+			public OnSynced ifCommitSynced(CommandHeader commandHeader) {
 				return onSynced -> {
 					onSynced.run();
 					return (notSynced, opaque) -> { };

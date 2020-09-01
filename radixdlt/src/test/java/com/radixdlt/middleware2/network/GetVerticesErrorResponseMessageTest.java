@@ -24,7 +24,7 @@ import static org.mockito.Mockito.mock;
 import com.radixdlt.consensus.CommandOutput;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.CommandHeader;
 import com.radixdlt.crypto.Hash;
 import org.junit.Test;
 
@@ -32,7 +32,7 @@ public class GetVerticesErrorResponseMessageTest {
 	@Test
 	public void sensibleToString() {
 		Hash vertexId = Hash.random();
-		QuorumCertificate qc = QuorumCertificate.ofGenesis(Vertex.createGenesis(VertexMetadata.ofGenesisAncestor(mock(CommandOutput.class))));
+		QuorumCertificate qc = QuorumCertificate.ofGenesis(Vertex.createGenesis(CommandHeader.ofGenesisAncestor(mock(CommandOutput.class))));
 		GetVerticesErrorResponseMessage msg1 = new GetVerticesErrorResponseMessage(0, vertexId, qc, qc);
 		String s1 = msg1.toString();
 		assertThat(s1, containsString(GetVerticesErrorResponseMessage.class.getSimpleName()));

@@ -30,9 +30,12 @@ import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.serialization.DsonOutput.Output;
 
+/**
+ * The header which gets voted upon by consensus.
+ */
 @Immutable
-@SerializerId2("consensus.vertex_metadata")
-public final class VertexMetadata {
+@SerializerId2("consensus.header")
+public final class CommandHeader {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
@@ -43,52 +46,62 @@ public final class VertexMetadata {
 
 	private View view;
 
-	@JsonProperty("id")
+	@JsonProperty("vertex_id")
 	@DsonOutput(Output.ALL)
-	private final Hash id;
+	private final Hash vertexId;
+
+	@JsonProperty("command_id")
+	@DsonOutput(Output.ALL)
+	private final Hash commandId; // TODO: Change to accumulator
 
 	@JsonProperty("command_output")
 	@DsonOutput(Output.ALL)
 	private final CommandOutput commandOutput;
 
-	VertexMetadata() {
+	CommandHeader() {
 		// Serializer only
 		this.view = null;
-		this.id = null;
 		this.epoch = 0L;
+		this.vertexId = null;
+		this.commandId = null;
 		this.commandOutput = null;
 	}
 
-	// TODO: Move executor data to a more opaque data structure
-	public VertexMetadata(
+	// TODO: Move command output to a more opaque data structure
+	public CommandHeader(
 		long epoch, // consensus data
 		View view, // consensus data
-		Hash id, // consensus data
+		Hash vertexId, // consensus data
+		Hash commandId,
 		CommandOutput commandOutput
 	) {
 		if (epoch < 0) {
 			throw new IllegalArgumentException("epoch must be >= 0");
 		}
 
-		this.commandOutput = commandOutput;
 		this.epoch = epoch;
 		this.view = view;
-		this.id = id;
+		this.vertexId = vertexId;
+		this.commandId = commandId;
+		this.commandOutput = commandOutput;
 	}
 
-	public static VertexMetadata ofGenesisAncestor(CommandOutput commandOutput) {
-		return new VertexMetadata(
+	public static CommandHeader ofGenesisAncestor(CommandOutput commandOutput) {
+		return new CommandHeader(
 			0,
 			View.genesis(),
-			Hash.ZERO_HASH, commandOutput
+			Hash.ZERO_HASH,
+			Hash.ZERO_HASH,
+			commandOutput
 		);
 	}
 
-	public static VertexMetadata ofGenesisVertex(Vertex vertex) {
-		return new VertexMetadata(
+	public static CommandHeader ofGenesisVertex(Vertex vertex) {
+		return new CommandHeader(
 			vertex.getEpoch(),
 			vertex.getView(),
 			vertex.getId(),
+			vertex.getCommand() == null ? null : vertex.getCommand().getHash(),
 			CommandOutput.create(
 				vertex.getQC().getParent().getPreparedCommand().getStateVersion(),
 				0L,
@@ -97,11 +110,13 @@ public final class VertexMetadata {
 		);
 	}
 
-	public static VertexMetadata ofVertex(Vertex vertex, CommandOutput commandOutput) {
-		return new VertexMetadata(
+	public static CommandHeader ofVertex(Vertex vertex, CommandOutput commandOutput) {
+		return new CommandHeader(
 			vertex.getEpoch(),
 			vertex.getView(),
-			vertex.getId(), commandOutput
+			vertex.getId(),
+			vertex.getCommand() == null ? null : vertex.getCommand().getHash(),
+			commandOutput
 		);
 	}
 
@@ -117,8 +132,8 @@ public final class VertexMetadata {
 		return view;
 	}
 
-	public Hash getId() {
-		return id;
+	public Hash getVertexId() {
+		return vertexId;
 	}
 
 	@JsonProperty("view")
@@ -134,7 +149,7 @@ public final class VertexMetadata {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.epoch, this.view, this.id, this.commandOutput);
+		return Objects.hash(this.epoch, this.view, this.vertexId, this.commandId, this.commandOutput);
 	}
 
 	@Override
@@ -142,12 +157,13 @@ public final class VertexMetadata {
 		if (o == this) {
 			return true;
 		}
-		if (o instanceof VertexMetadata) {
-			VertexMetadata other = (VertexMetadata) o;
+		if (o instanceof CommandHeader) {
+			CommandHeader other = (CommandHeader) o;
 			return
 				Objects.equals(this.view, other.view)
-				&& Objects.equals(this.id, other.id)
 				&& this.epoch == other.epoch
+				&& Objects.equals(this.vertexId, other.vertexId)
+				&& Objects.equals(this.commandId, other.commandId)
 				&& Objects.equals(this.commandOutput, other.commandOutput);
 		}
 		return false;
@@ -155,7 +171,7 @@ public final class VertexMetadata {
 
 	@Override
 	public String toString() {
-		return String.format("%s{epoch=%s view=%s prepared=%s}",
+		return String.format("%s{epoch=%s view=%s out=%s}",
 			getClass().getSimpleName(), this.epoch, this.view, this.commandOutput
 		);
 	}

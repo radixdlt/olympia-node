@@ -59,7 +59,7 @@ public final class TimestampedVoteData {
 		return this.voteData;
 	}
 
-	public VertexMetadata getProposed() {
+	public CommandHeader getProposed() {
 		return this.voteData == null ? null : this.voteData.getProposed();
 	}
 

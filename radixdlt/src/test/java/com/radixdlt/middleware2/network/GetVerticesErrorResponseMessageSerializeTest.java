@@ -21,7 +21,7 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.CommandOutput;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.CommandHeader;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -44,8 +44,8 @@ public class GetVerticesErrorResponseMessageSerializeTest extends SerializeMessa
 		return new GetVerticesErrorResponseMessage(
 			12345,
 			Hash.random(),
-			QuorumCertificate.ofGenesis(Vertex.createGenesis(VertexMetadata.ofGenesisAncestor(commandOutput))),
-			QuorumCertificate.ofGenesis(Vertex.createGenesis(VertexMetadata.ofGenesisAncestor(commandOutput)))
+			QuorumCertificate.ofGenesis(Vertex.createGenesis(CommandHeader.ofGenesisAncestor(commandOutput))),
+			QuorumCertificate.ofGenesis(Vertex.createGenesis(CommandHeader.ofGenesisAncestor(commandOutput)))
 		);
 	}
 }

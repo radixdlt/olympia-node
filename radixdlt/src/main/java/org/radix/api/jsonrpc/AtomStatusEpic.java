@@ -17,7 +17,7 @@
 
 package org.radix.api.jsonrpc;
 
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.CommandHeader;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
@@ -91,11 +91,11 @@ public class AtomStatusEpic {
 				JSONObject data = new JSONObject();
 				data.put("aid", committedAtom.getAID());
 				// TODO: serialize vertexMetadata
-				VertexMetadata vertexMetadata = committedAtom.getProof().getHeader();
-				data.put("stateVersion", vertexMetadata.getPreparedCommand().getStateVersion());
-				data.put("epoch",vertexMetadata.getEpoch());
-				data.put("view", vertexMetadata.getView().number());
-				data.put("timestamp", vertexMetadata.getPreparedCommand().timestamp());
+				CommandHeader commandHeader = committedAtom.getProof().getHeader();
+				data.put("stateVersion", commandHeader.getPreparedCommand().getStateVersion());
+				data.put("epoch", commandHeader.getEpoch());
+				data.put("view", commandHeader.getView().number());
+				data.put("timestamp", commandHeader.getPreparedCommand().timestamp());
 
 				sendAtomSubmissionState.accept(AtomStatus.STORED, data);
 			}
@@ -110,10 +110,10 @@ public class AtomStatusEpic {
 				}
 
 				// TODO: serialize vertexMetadata
-				VertexMetadata vertexMetadata = committedAtom.getProof().getHeader();
-				data.put("stateVersion", vertexMetadata.getPreparedCommand().getStateVersion());
-				data.put("epoch", vertexMetadata.getEpoch());
-				data.put("view", vertexMetadata.getView().number());
+				CommandHeader commandHeader = committedAtom.getProof().getHeader();
+				data.put("stateVersion", commandHeader.getPreparedCommand().getStateVersion());
+				data.put("epoch", commandHeader.getEpoch());
+				data.put("view", commandHeader.getView().number());
 
 				final AtomStatus atomStatus;
 				switch (exception.getErrorCode()) {

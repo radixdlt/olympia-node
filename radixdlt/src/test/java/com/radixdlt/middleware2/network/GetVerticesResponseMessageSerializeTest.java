@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.CommandOutput;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.CommandHeader;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -42,7 +42,7 @@ public class GetVerticesResponseMessageSerializeTest extends SerializeMessageObj
 			BFTValidator.from(BFTNode.create(keyPair.getPublicKey()), UInt256.ONE)
 		));
 		CommandOutput commandOutput = CommandOutput.create(0, 0L, false);
-		Vertex genesisVertex = Vertex.createGenesis(VertexMetadata.ofGenesisAncestor(commandOutput));
+		Vertex genesisVertex = Vertex.createGenesis(CommandHeader.ofGenesisAncestor(commandOutput));
 		return new GetVerticesResponseMessage(1234, Hash.random(), ImmutableList.of(genesisVertex));
 	}
 

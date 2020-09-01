@@ -19,18 +19,18 @@ package org.radix.serialization;
 
 import com.radixdlt.consensus.CommandOutput;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.CommandHeader;
 import com.radixdlt.crypto.Hash;
 
-public class VertexMetadataSerializeTest extends SerializeObject<VertexMetadata> {
-	public VertexMetadataSerializeTest() {
-		super(VertexMetadata.class, VertexMetadataSerializeTest::get);
+public class CommandHeaderSerializeTest extends SerializeObject<CommandHeader> {
+	public CommandHeaderSerializeTest() {
+		super(CommandHeader.class, CommandHeaderSerializeTest::get);
 	}
 
-	private static VertexMetadata get() {
+	private static CommandHeader get() {
 		View view = View.of(1234567890L);
 		Hash id = Hash.random();
 		CommandOutput commandOutput = CommandOutput.create(0, 0L, false);
-		return new VertexMetadata(0, view, id, commandOutput);
+		return new CommandHeader(0, view, id, Hash.random(), commandOutput);
 	}
 }

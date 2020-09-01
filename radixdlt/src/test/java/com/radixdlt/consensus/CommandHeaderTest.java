@@ -27,23 +27,25 @@ import static org.mockito.Mockito.mock;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 
-public class VertexMetadataTest {
+public class CommandHeaderTest {
 
-	private VertexMetadata testObject;
+	private CommandHeader testObject;
 	private Hash id;
+	private Hash commandId;
 	private CommandOutput commandOutput;
 
 	@Before
 	public void setUp() {
 		View view = View.of(1234567890L);
 		this.id = Hash.random();
+		this.commandId = Hash.random();
 		this.commandOutput = mock(CommandOutput.class);
-		this.testObject = new VertexMetadata(0, view, id, commandOutput);
+		this.testObject = new CommandHeader(0, view, id, commandId, commandOutput);
 	}
 
 	@Test
 	public void equalsContract() {
-		EqualsVerifier.forClass(VertexMetadata.class)
+		EqualsVerifier.forClass(CommandHeader.class)
 			.verify();
 	}
 
@@ -51,18 +53,18 @@ public class VertexMetadataTest {
 	public void testGetters() {
 		assertThat(View.of(1234567890L)).isEqualTo(this.testObject.getView());
 
-		assertThat(id).isEqualTo(this.testObject.getId());
+		assertThat(id).isEqualTo(this.testObject.getVertexId());
 		assertThat(commandOutput).isEqualTo(this.testObject.getPreparedCommand());
 	}
 
 	@Test
 	public void testSerializerConstructor() {
 		// Don't want to see any exceptions here
-		assertThat(new VertexMetadata()).isNotNull();
+		assertThat(new CommandHeader()).isNotNull();
 	}
 
 	@Test
 	public void testToString() {
-		assertThat(this.testObject.toString()).contains(VertexMetadata.class.getSimpleName());
+		assertThat(this.testObject.toString()).contains(CommandHeader.class.getSimpleName());
 	}
 }

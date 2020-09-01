@@ -22,7 +22,7 @@ import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.CommandHeader;
 import com.radixdlt.consensus.VertexStoreEventProcessor;
 import com.radixdlt.consensus.CommandOutput;
 import com.radixdlt.consensus.sync.SyncRequestSender;
@@ -170,16 +170,16 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	}
 
 	private void rebuild(Vertex rootVertex, QuorumCertificate rootQC, QuorumCertificate rootCommitQC, List<Vertex> vertices) {
-		if (!rootQC.getProposed().getId().equals(rootVertex.getId())) {
+		if (!rootQC.getProposed().getVertexId().equals(rootVertex.getId())) {
 			throw new IllegalStateException(String.format("rootQC=%s does not match rootVertex=%s", rootQC, rootVertex));
 		}
 
-		final Optional<VertexMetadata> commitMetadata = rootCommitQC.getCommitted();
+		final Optional<CommandHeader> commitMetadata = rootCommitQC.getCommitted();
 		if (!commitMetadata.isPresent()) {
 			if (!rootQC.getView().isGenesis() || !rootQC.equals(rootCommitQC)) {
 				throw new IllegalStateException(String.format("rootCommit=%s does not have commit", rootCommitQC));
 			}
-		} else if (!commitMetadata.get().getId().equals(rootVertex.getId())) {
+		} else if (!commitMetadata.get().getVertexId().equals(rootVertex.getId())) {
 			throw new IllegalStateException(String.format("rootCommitQC=%s does not match rootVertex=%s", rootCommitQC, rootVertex));
 		}
 
@@ -214,7 +214,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		private final Hash localSyncId;
 		private final QuorumCertificate qc;
 		private final QuorumCertificate committedQC;
-		private final VertexMetadata committedVertexMetadata;
+		private final CommandHeader committedCommandHeader;
 		private final BFTNode author;
 		private SyncStage syncStage;
 		private final LinkedList<Vertex> fetched = new LinkedList<>();
@@ -223,9 +223,9 @@ public final class VertexStore implements VertexStoreEventProcessor {
 			this.localSyncId = localSyncId;
 
 			if (committedQC.getView().equals(View.genesis())) {
-				this.committedVertexMetadata = committedQC.getProposed();
+				this.committedCommandHeader = committedQC.getProposed();
 			} else {
-				this.committedVertexMetadata = committedQC.getCommitted()
+				this.committedCommandHeader = committedQC.getCommitted()
 					.orElseThrow(() -> new IllegalStateException("committedQC must have a commit"));
 			}
 
@@ -250,8 +250,8 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	}
 
 	private boolean requiresCommittedStateSync(SyncState syncState) {
-		final VertexMetadata committedMetadata = syncState.committedVertexMetadata;
-		if (!vertices.containsKey(committedMetadata.getId())) {
+		final CommandHeader committedMetadata = syncState.committedCommandHeader;
+		if (!vertices.containsKey(committedMetadata.getVertexId())) {
 			View rootView = this.getRoot().getView();
 			return rootView.compareTo(committedMetadata.getView()) < 0;
 		}
@@ -310,12 +310,12 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		ImmutableList<BFTNode> signers = ImmutableList.of(syncState.author);
 		syncState.fetched.addAll(response.getVertices());
 
-		ledger.ifCommitSynced(syncState.committedVertexMetadata)
+		ledger.ifCommitSynced(syncState.committedCommandHeader)
 			.then(() -> rebuildAndSyncQC(syncState))
 			.elseExecuteAndSendMessageOnSync(() -> {
 				syncState.setSyncStage(SyncStage.SYNC_TO_COMMIT);
 				LocalSyncRequest localSyncRequest = new LocalSyncRequest(
-					syncState.committedVertexMetadata,
+					syncState.committedCommandHeader,
 					signers
 				);
 				syncRequestSender.sendLocalSyncRequest(localSyncRequest);
@@ -325,7 +325,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	private void processVerticesResponseForQCSync(Hash syncTo, SyncState syncState, GetVerticesResponse response) {
 		Vertex vertex = response.getVertices().get(0);
 		syncState.fetched.addFirst(vertex);
-		Hash nextVertexId = vertex.getQC().getProposed().getId();
+		Hash nextVertexId = vertex.getQC().getProposed().getVertexId();
 
 		if (vertices.containsKey(nextVertexId)) {
 			for (Vertex v: syncState.fetched) {
@@ -391,11 +391,11 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	private void doQCSync(SyncState syncState) {
 		syncState.setSyncStage(SyncStage.GET_QC_VERTICES);
 		log.debug("SYNC_VERTICES: QC: Sending initial GetVerticesRequest for sync={}", syncState);
-		syncVerticesRPCSender.sendGetVerticesRequest(syncState.qc.getProposed().getId(), syncState.author, 1, syncState.localSyncId);
+		syncVerticesRPCSender.sendGetVerticesRequest(syncState.qc.getProposed().getVertexId(), syncState.author, 1, syncState.localSyncId);
 	}
 
 	private void doCommittedSync(SyncState syncState) {
-		final Hash committedQCId = syncState.getCommittedQC().getProposed().getId();
+		final Hash committedQCId = syncState.getCommittedQC().getProposed().getVertexId();
 		syncState.setSyncStage(SyncStage.GET_COMMITTED_VERTICES);
 		log.debug("SYNC_VERTICES: Committed: Sending initial GetVerticesRequest for sync={}", syncState);
 		// Retrieve the 3 vertices preceding the committedQC so we can create a valid committed root
@@ -429,7 +429,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 
 		log.debug("SYNC_TO_QC: Need sync: {} {}", qc, committedQC);
 
-		final Hash vertexId = qc.getProposed().getId();
+		final Hash vertexId = qc.getProposed().getVertexId();
 		if (syncing.containsKey(vertexId)) {
 			// TODO: what if this committedQC is greater than the one currently in the queue
 			// TODO: then should possibly replace the current one
@@ -456,7 +456,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	}
 
 	private boolean addQC(QuorumCertificate qc) {
-		if (!vertices.containsKey(qc.getProposed().getId())) {
+		if (!vertices.containsKey(qc.getProposed().getVertexId())) {
 			return false;
 		}
 
@@ -466,7 +466,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		}
 
 		qc.getCommitted().ifPresent(vertexMetadata -> {
-			Optional<VertexMetadata> highest = this.highestCommittedQC.getCommitted();
+			Optional<CommandHeader> highest = this.highestCommittedQC.getCommitted();
 			if (!highest.isPresent() && !this.highestCommittedQC.getView().isGenesis()) {
 				throw new IllegalStateException(String.format("Highest Committed does not have a commit: %s", this.highestCommittedQC));
 			}
@@ -479,7 +479,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		return true;
 	}
 
-	private VertexMetadata insertVertexInternal(Vertex vertex) throws VertexInsertionException {
+	private CommandHeader insertVertexInternal(Vertex vertex) throws VertexInsertionException {
 		if (!vertices.containsKey(vertex.getParentId())) {
 			throw new MissingParentException(vertex.getParentId());
 		}
@@ -502,10 +502,10 @@ public final class VertexStore implements VertexStoreEventProcessor {
 			this.syncedVertexSender.sendSyncedVertex(vertex);
 		}
 
-		return VertexMetadata.ofVertex(vertex, commandOutput);
+		return CommandHeader.ofVertex(vertex, commandOutput);
 	}
 
-	public VertexMetadata insertVertex(Vertex vertex) throws VertexInsertionException {
+	public CommandHeader insertVertex(Vertex vertex) throws VertexInsertionException {
 		return insertVertexInternal(vertex);
 	}
 
@@ -522,7 +522,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 			return Optional.empty();
 		}
 
-		final Hash vertexId = committedProof.getHeader().getId();
+		final Hash vertexId = committedProof.getHeader().getVertexId();
 		final Vertex tipVertex = vertices.get(vertexId);
 		if (tipVertex == null) {
 			throw new IllegalStateException("Committing vertex not in store: " + committedProof.getHeader());
@@ -543,7 +543,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 			this.vertexStoreEventSender.sendCommittedVertex(committedVertex);
 		}
 
-		rootId = committedProof.getHeader().getId();
+		rootId = committedProof.getHeader().getVertexId();
 
 		updateVertexStoreSize();
 		return Optional.of(tipVertex);

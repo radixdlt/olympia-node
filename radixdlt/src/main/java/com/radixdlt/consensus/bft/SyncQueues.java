@@ -65,7 +65,7 @@ public final class SyncQueues {
 				return null;
 			}
 
-			if (vertexId != null && !e.getQC().getProposed().getId().equals(vertexId)) {
+			if (vertexId != null && !e.getQC().getProposed().getVertexId().equals(vertexId)) {
 				return null;
 			}
 

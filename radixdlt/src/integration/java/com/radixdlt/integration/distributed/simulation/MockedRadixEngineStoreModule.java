@@ -24,7 +24,7 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.CommandOutput;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.CommandHeader;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.serialization.Serialization;
@@ -56,8 +56,8 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 	}
 
 	@Provides
-	public VertexMetadata genesisVertexMetadata() {
+	public CommandHeader genesisVertexMetadata() {
 		final CommandOutput commandOutput = CommandOutput.create(0, 0, true);
-		return VertexMetadata.ofGenesisAncestor(commandOutput);
+		return CommandHeader.ofGenesisAncestor(commandOutput);
 	}
 }

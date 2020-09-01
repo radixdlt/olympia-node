@@ -27,7 +27,7 @@ import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.CommandHeader;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
@@ -47,7 +47,7 @@ public class MockedLedgerModule extends AbstractModule {
 		bind(CommittedStateSyncRx.class).toInstance(Observable::never);
 		bind(EpochChangeRx.class).toInstance(Observable::never);
 		CommandOutput commandOutput = CommandOutput.create(0, 0L, true);
-		EpochChange initialEpoch = new EpochChange(VertexMetadata.ofGenesisAncestor(commandOutput), validatorSet);
+		EpochChange initialEpoch = new EpochChange(CommandHeader.ofGenesisAncestor(commandOutput), validatorSet);
 		bind(EpochChange.class).toInstance(initialEpoch);
 		bind(NextCommandGenerator.class).toInstance((view, aids) -> null);
 		bind(SyncRequestSender.class).toInstance(req -> { });
@@ -63,7 +63,7 @@ public class MockedLedgerModule extends AbstractModule {
 			}
 
 			@Override
-			public OnSynced ifCommitSynced(VertexMetadata vertexMetadata) {
+			public OnSynced ifCommitSynced(CommandHeader commandHeader) {
 				return onSynced -> {
 					onSynced.run();
 					return (notSynced, opaque) -> { };

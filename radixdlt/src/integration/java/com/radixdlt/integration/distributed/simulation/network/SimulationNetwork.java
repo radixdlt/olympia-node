@@ -24,7 +24,7 @@ import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.CommandHeader;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
@@ -270,7 +270,7 @@ public class SimulationNetwork {
 		}
 
 		@Override
-		public void sendGetEpochResponse(BFTNode node, VertexMetadata ancestor) {
+		public void sendGetEpochResponse(BFTNode node, CommandHeader ancestor) {
 			GetEpochResponse getEpochResponse = new GetEpochResponse(thisNode, ancestor);
 			receivedMessages.onNext(MessageInTransit.newMessage(getEpochResponse, thisNode, node));
 		}
