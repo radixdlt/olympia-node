@@ -19,7 +19,6 @@ package com.radixdlt.integration.distributed.simulation;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.PreparedCommand;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
@@ -27,6 +26,7 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 
+import com.radixdlt.ledger.VerifiedCommittedCommand;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -62,9 +62,9 @@ public class MockedStateComputerWithEpochsModule extends AbstractModule {
 			}
 
 			@Override
-			public Optional<BFTValidatorSet> commit(Command command, VertexMetadata vertexMetadata) {
-				if (vertexMetadata.getPreparedCommand().isEndOfEpoch()) {
-					return Optional.of(validatorSetMapping.apply(vertexMetadata.getEpoch() + 1));
+			public Optional<BFTValidatorSet> commit(VerifiedCommittedCommand command) {
+				if (command.getProof().getHeader().getPreparedCommand().isEndOfEpoch()) {
+					return Optional.of(validatorSetMapping.apply(command.getProof().getHeader().getEpoch() + 1));
 				} else {
 					return Optional.empty();
 				}

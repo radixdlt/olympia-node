@@ -82,7 +82,7 @@ public class SyncCommittedServiceModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private SyncedCommandSender syncedAtomSender(StateComputerLedger stateComputerLedger) {
-		return syncCmd -> stateComputerLedger.commit(syncCmd.getCommand(), syncCmd.getVertexMetadata());
+		return stateComputerLedger::commit;
 	}
 
 	@Provides

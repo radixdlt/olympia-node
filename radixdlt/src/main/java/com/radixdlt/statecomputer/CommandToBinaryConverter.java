@@ -21,7 +21,7 @@ import com.google.inject.Inject;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
-import com.radixdlt.ledger.CommittedCommand;
+import com.radixdlt.ledger.VerifiedCommittedCommand;
 import java.util.Objects;
 
 public final class CommandToBinaryConverter {
@@ -32,7 +32,7 @@ public final class CommandToBinaryConverter {
 		this.serializer = Objects.requireNonNull(serializer);
 	}
 
-	public byte[] toLedgerEntryContent(CommittedCommand command) {
+	public byte[] toLedgerEntryContent(VerifiedCommittedCommand command) {
 		try {
 			return serializer.toDson(command, DsonOutput.Output.PERSIST);
 		} catch (SerializationException e) {
@@ -40,9 +40,9 @@ public final class CommandToBinaryConverter {
 		}
 	}
 
-	public CommittedCommand toCommand(byte[] ledgerEntryContent) {
+	public VerifiedCommittedCommand toCommand(byte[] ledgerEntryContent) {
 		try {
-			return serializer.fromDson(ledgerEntryContent, CommittedCommand.class);
+			return serializer.fromDson(ledgerEntryContent, VerifiedCommittedCommand.class);
 		} catch (SerializationException e) {
 			throw new IllegalStateException("Deserialization of Command failed", e);
 		}

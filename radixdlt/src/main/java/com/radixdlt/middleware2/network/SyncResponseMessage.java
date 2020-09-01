@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.ledger.CommittedCommand;
+import com.radixdlt.ledger.VerifiedCommittedCommand;
 import org.radix.network.messaging.Message;
 
 /**
@@ -32,7 +32,7 @@ import org.radix.network.messaging.Message;
 public final class SyncResponseMessage extends Message {
 	@JsonProperty("commands")
 	@DsonOutput(Output.ALL)
-	private final ImmutableList<CommittedCommand> commands;
+	private final ImmutableList<VerifiedCommittedCommand> commands;
 
 	SyncResponseMessage() {
 		// Serializer only
@@ -40,12 +40,12 @@ public final class SyncResponseMessage extends Message {
 		this.commands = null;
 	}
 
-	public SyncResponseMessage(int magic, ImmutableList<CommittedCommand> commands) {
+	public SyncResponseMessage(int magic, ImmutableList<VerifiedCommittedCommand> commands) {
 		super(magic);
 		this.commands = commands;
 	}
 
-	public ImmutableList<CommittedCommand> getCommands() {
+	public ImmutableList<VerifiedCommittedCommand> getCommands() {
 		return commands == null ? ImmutableList.of() : commands;
 	}
 

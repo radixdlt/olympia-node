@@ -22,6 +22,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.junit.Assert.assertNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -37,6 +38,7 @@ import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.Ledger.OnNotSynced;
 import com.radixdlt.consensus.Ledger.OnSynced;
 import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.VerifiedCommittedHeader;
 import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
@@ -232,7 +234,9 @@ public class VertexStoreTest {
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(vertexMetadata.getView()).thenReturn(View.of(2));
 		when(vertexMetadata.getId()).thenReturn(mock(Hash.class));
-		assertThatThrownBy(() -> vertexStore.commitVertex(vertexMetadata))
+		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
+		when(proof.getHeader()).thenReturn(vertexMetadata);
+		assertThatThrownBy(() -> vertexStore.commit(proof))
 			.isInstanceOf(IllegalStateException.class);
 	}
 
@@ -258,11 +262,14 @@ public class VertexStoreTest {
 			);
 
 		VertexMetadata vertexMetadata2 = VertexMetadata.ofVertex(vertex2, mock(PreparedCommand.class));
-		vertexStore.commitVertex(vertexMetadata2);
-		assertThat(vertexStore.commitVertex(vertexMetadata2)).isPresent();
+		VerifiedCommittedHeader proof2 = mock(VerifiedCommittedHeader.class);
+		when(proof2.getHeader()).thenReturn(vertexMetadata2);
+		assertThat(vertexStore.commit(proof2)).isPresent();
 
 		VertexMetadata vertexMetadata1 = VertexMetadata.ofVertex(vertex1, mock(PreparedCommand.class));
-		assertThat(vertexStore.commitVertex(vertexMetadata1)).isNotPresent();
+		VerifiedCommittedHeader proof1 = mock(VerifiedCommittedHeader.class);
+		when(proof1.getHeader()).thenReturn(vertexMetadata1);
+		assertThat(vertexStore.commit(proof1)).isNotPresent();
 	}
 
 	@Test
@@ -272,7 +279,7 @@ public class VertexStoreTest {
 		vertexStore.insertVertex(nextVertex);
 
 		verify(vertexStoreEventSender, never()).sendCommittedVertex(any());
-		verify(ledger, times(0)).commit(any(), any()); // not stored
+		verify(ledger, times(0)).commit(any()); // not stored
 	}
 
 	@Test
@@ -283,12 +290,14 @@ public class VertexStoreTest {
 		vertexStore.insertVertex(nextVertex);
 
 		VertexMetadata vertexMetadata = VertexMetadata.ofVertex(nextVertex, mock(PreparedCommand.class));
-		assertThat(vertexStore.commitVertex(vertexMetadata)).hasValue(nextVertex);
+		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
+		when(proof.getHeader()).thenReturn(vertexMetadata);
+		assertThat(vertexStore.commit(proof)).hasValue(nextVertex);
 
 		verify(vertexStoreEventSender, times(1))
 			.sendCommittedVertex(eq(nextVertex));
 		verify(ledger, times(1))
-			.commit(eq(command), eq(vertexMetadata)); // next atom stored
+			.commit(argThat(c -> c.getCommand().equals(command) && c.getProof().equals(proof))); // next atom stored
 	}
 
 	@Test
@@ -308,7 +317,9 @@ public class VertexStoreTest {
 		vertexStore.insertVertex(vertex);
 
 		VertexMetadata vertexMetadata = VertexMetadata.ofVertex(vertex, mock(PreparedCommand.class));
-		assertThat(vertexStore.commitVertex(vertexMetadata)).hasValue(vertex);
+		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
+		when(proof.getHeader()).thenReturn(vertexMetadata);
+		assertThat(vertexStore.commit(proof)).hasValue(vertex);
 		verify(vertexStoreEventSender, times(1)).sendCommittedVertex(eq(vertex));
 		assertThat(vertexStore.getSize()).isEqualTo(1);
 	}
@@ -320,12 +331,16 @@ public class VertexStoreTest {
 		Vertex nextVertex1 = nextVertex.get();
 		vertexStore.insertVertex(nextVertex1);
 		VertexMetadata vertexMetadata = VertexMetadata.ofVertex(nextVertex1, mock(PreparedCommand.class));
-		vertexStore.commitVertex(vertexMetadata);
+		VerifiedCommittedHeader proof1 = mock(VerifiedCommittedHeader.class);
+		when(proof1.getHeader()).thenReturn(vertexMetadata);
+		vertexStore.commit(proof1);
 
 		Vertex nextVertex2 = nextVertex.get();
 		vertexStore.insertVertex(nextVertex2);
 		VertexMetadata vertexMetadata2 = VertexMetadata.ofVertex(nextVertex2, mock(PreparedCommand.class));
-		vertexStore.commitVertex(vertexMetadata2);
+		VerifiedCommittedHeader proof2 = mock(VerifiedCommittedHeader.class);
+		when(proof2.getHeader()).thenReturn(vertexMetadata2);
+		vertexStore.commit(proof2);
 
 		verify(vertexStoreEventSender, times(1)).sendCommittedVertex(eq(nextVertex1));
 		verify(vertexStoreEventSender, times(1)).sendCommittedVertex(eq(nextVertex2));
@@ -350,8 +365,10 @@ public class VertexStoreTest {
 		VertexMetadata vertexMetadata2 = mock(VertexMetadata.class);
 		when(vertexMetadata2.getId()).thenReturn(nextVertex2.getId());
 		when(vertexMetadata2.getView()).thenReturn(nextVertex2.getView());
+		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
+		when(proof.getHeader()).thenReturn(vertexMetadata2);
 
-		vertexStore.commitVertex(vertexMetadata2);
+		vertexStore.commit(proof);
 		verify(vertexStoreEventSender, times(1)).sendCommittedVertex(eq(nextVertex1));
 		verify(vertexStoreEventSender, times(1)).sendCommittedVertex(eq(nextVertex2));
 		assertThat(vertexStore.getSize()).isEqualTo(1);

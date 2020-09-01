@@ -21,12 +21,12 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.PreparedCommand;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.sync.SyncRequestSender;
+import com.radixdlt.ledger.VerifiedCommittedCommand;
 
 /**
  * A synced executor that is always synced.
@@ -55,7 +55,7 @@ public class DeterministicAlwaysSyncedLedgerModule extends AbstractModule {
 			}
 
 			@Override
-			public void commit(Command command, VertexMetadata vertexMetadata) {
+			public void commit(VerifiedCommittedCommand command) {
 				// Nothing to do here
 			}
 		};

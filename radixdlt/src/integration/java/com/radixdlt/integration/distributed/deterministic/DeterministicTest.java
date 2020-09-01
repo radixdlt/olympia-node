@@ -34,7 +34,7 @@ import com.radixdlt.integration.distributed.deterministic.network.MessageSelecto
 import com.radixdlt.integration.distributed.simulation.MockedStateComputerWithEpochsModule;
 import com.radixdlt.integration.distributed.simulation.MockedStateComputerModule;
 import com.radixdlt.integration.distributed.simulation.MockedSyncServiceModule;
-import com.radixdlt.ledger.CommittedCommand;
+import com.radixdlt.ledger.VerifiedCommittedCommand;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.EUID;
@@ -143,7 +143,7 @@ public final class DeterministicTest {
 				? epoch -> completeEqualWeightValidatorSet(this.nodes)
 				: epoch -> partialMixedWeightValidatorSet(epoch, this.nodes, this.epochNodeWeightMapping);
 
-			ConcurrentMap<Long, CommittedCommand> sharedCommittedAtoms = new ConcurrentHashMap<>();
+			ConcurrentMap<Long, VerifiedCommittedCommand> sharedCommittedAtoms = new ConcurrentHashMap<>();
 			ImmutableList.Builder<Module> modules = ImmutableList.builder();
 			modules.add(new LedgerModule());
 			modules.add(new LedgerLocalMempoolModule(10));

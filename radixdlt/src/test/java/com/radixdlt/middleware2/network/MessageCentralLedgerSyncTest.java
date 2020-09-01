@@ -27,7 +27,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.ledger.CommittedCommand;
+import com.radixdlt.ledger.VerifiedCommittedCommand;
 import com.radixdlt.sync.SyncRequest;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.messaging.MessageCentral;
@@ -92,10 +92,10 @@ public class MessageCentralLedgerSyncTest {
 			return null;
 		}).when(messageCentral).addListener(eq(SyncResponseMessage.class), any());
 
-		TestObserver<ImmutableList<CommittedCommand>> testObserver = this.messageCentralLedgerSync.syncResponses().test();
+		TestObserver<ImmutableList<VerifiedCommittedCommand>> testObserver = this.messageCentralLedgerSync.syncResponses().test();
 		Peer peer = mock(Peer.class);
 		SyncResponseMessage syncResponseMessage = mock(SyncResponseMessage.class);
-		ImmutableList<CommittedCommand> commands = ImmutableList.of(mock(CommittedCommand.class));
+		ImmutableList<VerifiedCommittedCommand> commands = ImmutableList.of(mock(VerifiedCommittedCommand.class));
 		when(syncResponseMessage.getCommands()).thenReturn(commands);
 		messageListenerAtomicReference.get().handleMessage(peer, syncResponseMessage);
 		testObserver.awaitCount(1);

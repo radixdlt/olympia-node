@@ -15,12 +15,10 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.ledger;
+package com.radixdlt.consensus;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -29,59 +27,61 @@ import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
 
-/**
- * A command which has been committed on ledger
- */
 @Immutable
-@SerializerId2("ledger.committed_command")
-public final class CommittedCommand {
+@SerializerId2("ledger.verified_committed_header")
+public final class VerifiedCommittedHeader {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("command")
+	@JsonProperty("opaque0")
 	@DsonOutput(Output.ALL)
-	private final Command command;
+	private final VertexMetadata opaque0;
 
-	@JsonProperty("vertex_metadata")
+	@JsonProperty("opaque1")
 	@DsonOutput(Output.ALL)
-	private final VertexMetadata vertexMetadata;
+	private final VertexMetadata opaque1;
+
+	@JsonProperty("header")
+	@DsonOutput(Output.ALL)
+	private final VertexMetadata header;
+
+	@JsonProperty("signatures")
+	@DsonOutput(Output.ALL)
+	private final TimestampedECDSASignatures signatures;
 
 	@JsonCreator
-	public CommittedCommand(
-		@JsonProperty("command") Command command,
-		@JsonProperty("vertex_metadata") VertexMetadata vertexMetadata
+	public VerifiedCommittedHeader(
+		@JsonProperty("opaque0") VertexMetadata opaque0,
+		@JsonProperty("opaque1") VertexMetadata opaque1,
+		@JsonProperty("header") VertexMetadata header,
+		@JsonProperty("signatures") TimestampedECDSASignatures signatures
 	) {
-		this.command = command;
-		this.vertexMetadata = Objects.requireNonNull(vertexMetadata);
+		this.opaque0 = Objects.requireNonNull(opaque0);
+		this.opaque1 = Objects.requireNonNull(opaque1);
+		this.header = Objects.requireNonNull(header);
+		this.signatures = Objects.requireNonNull(signatures);
 	}
 
-	public Command getCommand() {
-		return command;
-	}
-
-	public VertexMetadata getVertexMetadata() {
-		return vertexMetadata;
+	public VertexMetadata getHeader() {
+		return header;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(command, vertexMetadata);
+		return Objects.hash(opaque0, opaque1, header, signatures);
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof CommittedCommand)) {
+		if (!(o instanceof VerifiedCommittedHeader)) {
 			return false;
 		}
 
-		CommittedCommand other = (CommittedCommand) o;
-		return Objects.equals(this.command, other.command)
-			&& Objects.equals(this.vertexMetadata, other.vertexMetadata);
-	}
-
-	@Override
-	public String toString() {
-		return String.format("%s{cmd=%s meta=%s}", this.getClass().getSimpleName(), command, vertexMetadata);
+		VerifiedCommittedHeader other = (VerifiedCommittedHeader) o;
+		return Objects.equals(this.opaque0, other.opaque0)
+			&& Objects.equals(this.opaque1, other.opaque1)
+			&& Objects.equals(this.header, other.header)
+			&& Objects.equals(this.signatures, other.signatures);
 	}
 }

@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus.bft;
 
+import com.radixdlt.consensus.VerifiedCommittedHeader;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Ledger;
@@ -30,6 +31,7 @@ import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.ledger.VerifiedCommittedCommand;
 import com.radixdlt.sync.LocalSyncRequest;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -512,18 +514,18 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	 * the Vertex if commit was successful. If the store is ahead of
 	 * what is to be committed, returns an empty optional
 	 *
-	 * @param commitMetadata the metadata of the vertex to commit
+	 * @param committedProof the proof of commit
 	 * @return the vertex if sucessful, otherwise an empty optional if vertex was already committed
 	 */
-	public Optional<Vertex> commitVertex(VertexMetadata commitMetadata) {
-		if (commitMetadata.getView().compareTo(this.getRoot().getView()) < 0) {
+	public Optional<Vertex> commit(VerifiedCommittedHeader committedProof) {
+		if (committedProof.getHeader().getView().compareTo(this.getRoot().getView()) < 0) {
 			return Optional.empty();
 		}
 
-		final Hash vertexId = commitMetadata.getId();
+		final Hash vertexId = committedProof.getHeader().getId();
 		final Vertex tipVertex = vertices.get(vertexId);
 		if (tipVertex == null) {
-			throw new IllegalStateException("Committing vertex not in store: " + commitMetadata);
+			throw new IllegalStateException("Committing vertex not in store: " + committedProof.getHeader());
 		}
 		final LinkedList<Vertex> path = new LinkedList<>();
 		Vertex vertex = tipVertex;
@@ -532,14 +534,16 @@ public final class VertexStore implements VertexStoreEventProcessor {
 			vertex = vertices.remove(vertex.getParentId());
 		}
 
-		for (Vertex committed : path) {
+		for (Vertex committedVertex : path) {
 			this.counters.increment(CounterType.BFT_PROCESSED);
-			ledger.commit(committed.getCommand(), commitMetadata);
-
-			this.vertexStoreEventSender.sendCommittedVertex(committed);
+			VerifiedCommittedCommand verifiedCommittedCommand = new VerifiedCommittedCommand(
+				committedVertex.getCommand(), committedProof
+			);
+			this.ledger.commit(verifiedCommittedCommand);
+			this.vertexStoreEventSender.sendCommittedVertex(committedVertex);
 		}
 
-		rootId = commitMetadata.getId();
+		rootId = committedProof.getHeader().getId();
 
 		updateVertexStoreSize();
 		return Optional.of(tipVertex);

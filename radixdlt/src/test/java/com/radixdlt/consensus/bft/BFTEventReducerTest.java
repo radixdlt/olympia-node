@@ -335,38 +335,4 @@ public class BFTEventReducerTest {
 		verify(sender, times(1)).sendVote(eq(vote), any());
 		verify(sender, times(0)).sendNewView(any(), any());
 	}
-
-
-	@Test
-	public void when_processing_valid_stored_proposal_and_there_exists_a_new_commit__the_new_commit_atom_is_removed_from_mempool() {
-		View currentView = View.of(123);
-
-		when(pacemaker.processQC(any())).thenReturn(Optional.empty());
-		when(pacemaker.getCurrentView()).thenReturn(currentView);
-
-		Vertex proposalVertex = mock(Vertex.class);
-		Hash proposalVertexId = mock(Hash.class);
-		when(proposalVertex.getId()).thenReturn(proposalVertexId);
-		QuorumCertificate qc = mock(QuorumCertificate.class);
-		when(qc.getView()).thenReturn(mock(View.class));
-		when(proposalVertex.getQC()).thenReturn(qc);
-		when(proposalVertex.getView()).thenReturn(currentView);
-		VertexMetadata parent = mock(VertexMetadata.class);
-		when(proposalVertex.getParentMetadata()).thenReturn(parent);
-
-		Proposal proposal = mock(Proposal.class);
-		when(proposal.getVertex()).thenReturn(proposalVertex);
-
-		VertexMetadata committedVertexMetadata = mock(VertexMetadata.class);
-		Hash committedVertexId = mock(Hash.class);
-		when(committedVertexMetadata.getId()).thenReturn(committedVertexId);
-		Vertex committedVertex = mock(Vertex.class);
-		when(committedVertex.getCommand()).thenReturn(mock(Command.class));
-		when(qc.getCommitted()).thenReturn(Optional.of(committedVertexMetadata));
-
-		when(vertexStore.commitVertex(eq(committedVertexMetadata))).thenReturn(Optional.of(committedVertex));
-		when(proposerElection.getProposer(any())).thenReturn(mock(BFTNode.class));
-
-		reducer.processProposal(proposal);
-	}
 }

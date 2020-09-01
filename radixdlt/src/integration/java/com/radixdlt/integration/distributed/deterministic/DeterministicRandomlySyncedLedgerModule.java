@@ -19,12 +19,12 @@ package com.radixdlt.integration.distributed.deterministic;
 
 import com.google.inject.Provides;
 import com.radixdlt.consensus.sync.SyncRequestSender;
+import com.radixdlt.ledger.VerifiedCommittedCommand;
 import java.util.Random;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.PreparedCommand;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.Vertex;
@@ -73,7 +73,7 @@ public class DeterministicRandomlySyncedLedgerModule extends AbstractModule {
 			}
 
 			@Override
-			public void commit(Command command, VertexMetadata vertexMetadata) {
+			public void commit(VerifiedCommittedCommand command) {
 				// Nothing to do here
 			}
 		};

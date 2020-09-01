@@ -29,7 +29,7 @@ import com.radixdlt.mempool.SubmissionControl;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomWithResult;
-import com.radixdlt.ledger.CommittedCommand;
+import com.radixdlt.ledger.VerifiedCommittedCommand;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import com.radixdlt.middleware2.ClientAtom;
@@ -224,7 +224,7 @@ public class AtomsService {
 		Optional<LedgerEntry> ledgerEntryOptional = store.get(atomId);
 		if (ledgerEntryOptional.isPresent()) {
 			LedgerEntry ledgerEntry = ledgerEntryOptional.get();
-			CommittedCommand committedCommand = commandToBinaryConverter.toCommand(ledgerEntry.getContent());
+			VerifiedCommittedCommand committedCommand = commandToBinaryConverter.toCommand(ledgerEntry.getContent());
 			ClientAtom clientAtom = committedCommand.getCommand().map(clientAtomToBinaryConverter::toAtom);
 			Atom apiAtom = ClientAtom.convertToApiAtom(clientAtom);
 			return serialization.toJsonObject(apiAtom, DsonOutput.Output.API);

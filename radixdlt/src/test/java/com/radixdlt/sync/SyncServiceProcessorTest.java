@@ -30,10 +30,11 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.PreparedCommand;
+import com.radixdlt.consensus.VerifiedCommittedHeader;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.ledger.CommittedCommand;
+import com.radixdlt.ledger.VerifiedCommittedCommand;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.network.addressbook.AddressBook;
@@ -53,13 +54,15 @@ public class SyncServiceProcessorTest {
 	private SyncedCommandSender syncedCommandSender;
 	private SyncTimeoutScheduler syncTimeoutScheduler;
 
-	private static CommittedCommand buildWithVersion(long version) {
-		CommittedCommand committedCommand = mock(CommittedCommand.class);
+	private static VerifiedCommittedCommand buildWithVersion(long version) {
+		VerifiedCommittedCommand committedCommand = mock(VerifiedCommittedCommand.class);
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		PreparedCommand preparedCommand = mock(PreparedCommand.class);
 		when(preparedCommand.getStateVersion()).thenReturn(version);
 		when(vertexMetadata.getPreparedCommand()).thenReturn(preparedCommand);
-		when(committedCommand.getVertexMetadata()).thenReturn(vertexMetadata);
+		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
+		when(proof.getHeader()).thenReturn(vertexMetadata);
+		when(committedCommand.getProof()).thenReturn(proof);
 		return committedCommand;
 	}
 
@@ -113,12 +116,12 @@ public class SyncServiceProcessorTest {
 		LocalSyncRequest request = new LocalSyncRequest(target, ImmutableList.of(node));
 		syncServiceProcessor.processLocalSyncRequest(request);
 
-		ImmutableList.Builder<CommittedCommand> newCommands1 = ImmutableList.builder();
+		ImmutableList.Builder<VerifiedCommittedCommand> newCommands1 = ImmutableList.builder();
 		for (int i = 7; i <= 12; i++) {
 			newCommands1.add(buildWithVersion(i));
 		}
 		syncServiceProcessor.processSyncResponse(newCommands1.build());
-		ImmutableList.Builder<CommittedCommand> newAtoms2 = ImmutableList.builder();
+		ImmutableList.Builder<VerifiedCommittedCommand> newAtoms2 = ImmutableList.builder();
 		for (int i = 10; i <= 18; i++) {
 			newAtoms2.add(buildWithVersion(i));
 		}
@@ -145,7 +148,7 @@ public class SyncServiceProcessorTest {
 		syncServiceProcessor.processVersionUpdate(currentVersion);
 		LocalSyncRequest request = new LocalSyncRequest(target, ImmutableList.of(node));
 		syncServiceProcessor.processLocalSyncRequest(request);
-		ImmutableList.Builder<CommittedCommand> newCommands1 = ImmutableList.builder();
+		ImmutableList.Builder<VerifiedCommittedCommand> newCommands1 = ImmutableList.builder();
 		for (int i = 7; i <= 11; i++) {
 			newCommands1.add(buildWithVersion(i));
 		}
@@ -153,7 +156,7 @@ public class SyncServiceProcessorTest {
 		newCommands1.add(buildWithVersion(15));
 		syncServiceProcessor.processSyncResponse(newCommands1.build());
 		verify(syncedCommandSender, never())
-			.sendSyncedCommand(argThat(a -> a.getVertexMetadata().getPreparedCommand().getStateVersion() > 11));
+			.sendSyncedCommand(argThat(a -> a.getProof().getHeader().getPreparedCommand().getStateVersion() > 11));
 	}
 
 	@Test
@@ -181,13 +184,13 @@ public class SyncServiceProcessorTest {
 
 	@Test
 	public void atomsListPruning() {
-		ImmutableList.Builder<CommittedCommand> newCommands = ImmutableList.builder();
+		ImmutableList.Builder<VerifiedCommittedCommand> newCommands = ImmutableList.builder();
 		for (int i = 1000; i >= 1; i--) {
 			newCommands.add(buildWithVersion(i));
 		}
 		syncServiceProcessor.processSyncResponse(newCommands.build());
 
 		verify(syncedCommandSender, times(1))
-			.sendSyncedCommand(argThat(a -> a.getVertexMetadata().getPreparedCommand().getStateVersion() == 1));
+			.sendSyncedCommand(argThat(a -> a.getProof().getHeader().getPreparedCommand().getStateVersion() == 1));
 	}
 }

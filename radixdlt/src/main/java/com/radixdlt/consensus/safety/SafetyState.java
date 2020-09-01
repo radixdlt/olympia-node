@@ -47,7 +47,6 @@ public final class SafetyState {
 		private final SafetyState original;
 		private View lastVotedView;
 		private View lockedView;
-		private View committedView;
 		private QuorumCertificate genericQC;
 		private boolean changed = false;
 
@@ -63,12 +62,6 @@ public final class SafetyState {
 
 		public Builder lockedView(View lockedView) {
 			this.lockedView = lockedView;
-			this.changed = true;
-			return this;
-		}
-
-		public Builder committedView(View committedView) {
-			this.committedView = committedView;
 			this.changed = true;
 			return this;
 		}

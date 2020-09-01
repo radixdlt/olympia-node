@@ -83,6 +83,15 @@ public final class QuorumCertificate {
 		return voteData.getCommitted();
 	}
 
+	public Optional<VerifiedCommittedHeader> toProof() {
+		return voteData.getCommitted().map(committed -> new VerifiedCommittedHeader(
+			voteData.getProposed(),
+			voteData.getParent(),
+			committed,
+			signatures
+		));
+	}
+
 	public VoteData getVoteData() {
 		return voteData;
 	}

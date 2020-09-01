@@ -91,7 +91,7 @@ public class AtomStatusEpic {
 				JSONObject data = new JSONObject();
 				data.put("aid", committedAtom.getAID());
 				// TODO: serialize vertexMetadata
-				VertexMetadata vertexMetadata = committedAtom.getVertexMetadata();
+				VertexMetadata vertexMetadata = committedAtom.getProof().getHeader();
 				data.put("stateVersion", vertexMetadata.getPreparedCommand().getStateVersion());
 				data.put("epoch",vertexMetadata.getEpoch());
 				data.put("view", vertexMetadata.getView().number());
@@ -110,7 +110,7 @@ public class AtomStatusEpic {
 				}
 
 				// TODO: serialize vertexMetadata
-				VertexMetadata vertexMetadata = committedAtom.getVertexMetadata();
+				VertexMetadata vertexMetadata = committedAtom.getProof().getHeader();
 				data.put("stateVersion", vertexMetadata.getPreparedCommand().getStateVersion());
 				data.put("epoch", vertexMetadata.getEpoch());
 				data.put("view", vertexMetadata.getView().number());

@@ -34,6 +34,7 @@ import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.PreparedCommand;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
+import com.radixdlt.consensus.VerifiedCommittedHeader;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.View;
@@ -179,8 +180,13 @@ public class StateComputerLedgerTest {
 		when(vertexMetadata.getView()).then(i -> View.of(50));
 		when(vertexMetadata.getPreparedCommand()).thenReturn(preparedCommand);
 
-		stateComputerLedger.commit(command, vertexMetadata);
-		verify(stateComputer, never()).commit(any(), any());
+		VerifiedCommittedCommand verified = mock(VerifiedCommittedCommand.class);
+		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
+		when(proof.getHeader()).thenReturn(vertexMetadata);
+		when(verified.getProof()).thenReturn(proof);
+
+		stateComputerLedger.commit(verified);
+		verify(stateComputer, never()).commit(any());
 		verify(mempool, never()).removeCommitted(any());
 		verify(committedSender, never()).sendCommitted(any(), any());
 	}
@@ -198,8 +204,14 @@ public class StateComputerLedgerTest {
 		when(vertexMetadata.getView()).then(i -> View.of(50));
 		when(vertexMetadata.getPreparedCommand()).thenReturn(preparedCommand);
 
-		stateComputerLedger.commit(command, vertexMetadata);
-		verify(stateComputer, times(1)).commit(eq(command), eq(vertexMetadata));
+		VerifiedCommittedCommand verified = mock(VerifiedCommittedCommand.class);
+		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
+		when(proof.getHeader()).thenReturn(vertexMetadata);
+		when(verified.getProof()).thenReturn(proof);
+		when(verified.getCommand()).thenReturn(command);
+
+		stateComputerLedger.commit(verified);
+		verify(stateComputer, times(1)).commit(eq(verified));
 		verify(mempool, times(1)).removeCommitted(eq(hash));
 		verify(committedSender, times(1)).sendCommitted(any(), any());
 	}
@@ -240,7 +252,12 @@ public class StateComputerLedgerTest {
 		verify(onSynced, never()).run();
 		verify(onNotSynced, times(1)).run();
 
-		stateComputerLedger.commit(mock(Command.class), nextVertexMetadata);
+		VerifiedCommittedCommand verified = mock(VerifiedCommittedCommand.class);
+		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
+		when(proof.getHeader()).thenReturn(nextVertexMetadata);
+		when(verified.getProof()).thenReturn(proof);
+
+		stateComputerLedger.commit(verified);
 
 		verify(committedStateSyncSender, timeout(5000).atLeast(1)).sendCommittedStateSync(anyLong(), any());
 	}

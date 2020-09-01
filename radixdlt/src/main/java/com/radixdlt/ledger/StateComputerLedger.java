@@ -44,12 +44,12 @@ import java.util.Set;
 public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	public interface StateComputer {
 		boolean prepare(Vertex vertex);
-		Optional<BFTValidatorSet> commit(Command command, VertexMetadata vertexMetadata);
+		Optional<BFTValidatorSet> commit(VerifiedCommittedCommand verifiedCommittedCommand);
 	}
 
 	public interface CommittedSender {
 		// TODO: batch these
-		void sendCommitted(CommittedCommand committedCommand, BFTValidatorSet validatorSet);
+		void sendCommitted(VerifiedCommittedCommand committedCommand, BFTValidatorSet validatorSet);
 	}
 
 	public interface CommittedStateSyncSender {
@@ -129,8 +129,11 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	}
 
 	@Override
-	public void commit(Command command, VertexMetadata vertexMetadata) {
+	public void commit(VerifiedCommittedCommand verifiedCommittedCommand) {
 		this.counters.increment(CounterType.LEDGER_PROCESSED);
+
+		final VertexMetadata vertexMetadata = verifiedCommittedCommand.getProof().getHeader();
+		final Command command = verifiedCommittedCommand.getCommand();
 
 		synchronized (lock) {
 			final long stateVersion = vertexMetadata.getPreparedCommand().getStateVersion();
@@ -143,13 +146,12 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			this.counters.set(CounterType.LEDGER_STATE_VERSION, this.currentStateVersion);
 
 			// persist
-			Optional<BFTValidatorSet> validatorSet = this.stateComputer.commit(command, vertexMetadata);
+			Optional<BFTValidatorSet> validatorSet = this.stateComputer.commit(verifiedCommittedCommand);
 			// TODO: move all of the following to post-persist event handling
 			if (command != null) {
 				this.mempool.removeCommitted(command.getHash());
 			}
-			CommittedCommand committedCommand = new CommittedCommand(command, vertexMetadata);
-			committedSender.sendCommitted(committedCommand, validatorSet.orElse(null));
+			committedSender.sendCommitted(verifiedCommittedCommand, validatorSet.orElse(null));
 
 			Set<Object> opaqueObjects = this.committedStateSyncers.remove(this.currentStateVersion);
 			if (opaqueObjects != null) {

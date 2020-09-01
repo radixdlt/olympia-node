@@ -19,6 +19,7 @@ package com.radixdlt.consensus.bft;
 
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.VerifiedCommittedHeader;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.Proposal;
@@ -164,7 +165,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		this.infoSender.sendCurrentView(nextView);
 	}
 
-	private Optional<VertexMetadata> processQC(QuorumCertificate qc) {
+	private Optional<VerifiedCommittedHeader> processQC(QuorumCertificate qc) {
 		// commit any newly committable vertices
 		this.safetyRules.process(qc);
 
@@ -173,12 +174,9 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		this.pacemaker.processQC(qc.getView())
 			.ifPresent(this::proceedToView);
 
-		Optional<VertexMetadata> commitMetaDataMaybe = qc.getCommitted();
-		commitMetaDataMaybe.flatMap(vertexStore::commitVertex).ifPresent(vertex ->
-			log.trace("{}: Committed vertex: {}", this.self::getSimpleName, () -> vertex)
-		);
-
-		return commitMetaDataMaybe;
+		Optional<VerifiedCommittedHeader> committedProof = qc.toProof();
+		committedProof.ifPresent(vertexStore::commit);
+		return committedProof;
 	}
 
 	@Override
@@ -209,9 +207,9 @@ public final class BFTEventReducer implements BFTEventProcessor {
 					synchedLog = true;
 				}
 				// TODO: Remove isEndOfEpoch knowledge from consensus
-				processQC(qc).ifPresent(commitMetaData -> {
-					if (commitMetaData.getPreparedCommand().isEndOfEpoch()) {
-						this.endOfEpochSender.sendEndOfEpoch(commitMetaData);
+				processQC(qc).ifPresent(committedProof -> {
+					if (committedProof.getHeader().getPreparedCommand().isEndOfEpoch()) {
+						this.endOfEpochSender.sendEndOfEpoch(committedProof.getHeader());
 					}
 				});
 			} else {

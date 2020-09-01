@@ -21,7 +21,7 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.epoch.EpochView;
-import com.radixdlt.ledger.CommittedCommand;
+import com.radixdlt.ledger.VerifiedCommittedCommand;
 import io.reactivex.rxjava3.core.Observable;
 
 /**
@@ -52,5 +52,5 @@ public interface InfoRx {
 	 */
 	Observable<Vertex> committedVertices();
 
-	Observable<CommittedCommand> committedCommands();
+	Observable<VerifiedCommittedCommand> committedCommands();
 }

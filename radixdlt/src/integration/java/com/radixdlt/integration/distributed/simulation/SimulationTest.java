@@ -56,7 +56,7 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.LatencyProvider;
-import com.radixdlt.ledger.CommittedCommand;
+import com.radixdlt.ledger.VerifiedCommittedCommand;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.core.Observable;
@@ -291,7 +291,7 @@ public class SimulationTest {
 						.limit(numInitialValidators == 0 ? Long.MAX_VALUE : numInitialValidators)
 						.collect(Collectors.toList())
 				);
-				ConcurrentHashMap<Long, CommittedCommand> sharedCommittedCmds = new ConcurrentHashMap<>();
+				ConcurrentHashMap<Long, VerifiedCommittedCommand> sharedCommittedCmds = new ConcurrentHashMap<>();
 				ledgerModules.add(new LedgerModule());
 				ledgerModules.add(new LedgerRxModule());
 				ledgerModules.add(new LedgerEpochChangeRxModule());

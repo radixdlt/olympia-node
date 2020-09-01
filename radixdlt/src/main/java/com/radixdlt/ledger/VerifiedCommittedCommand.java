@@ -15,16 +15,12 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.statecomputer;
+package com.radixdlt.ledger;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableMap;
+import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedCommittedHeader;
-import com.radixdlt.constraintmachine.CMInstruction;
-import com.radixdlt.crypto.Hash;
-import com.radixdlt.identifiers.AID;
-import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -34,39 +30,34 @@ import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
 
 /**
- * An atom which has been committed by the BFT
- *
- * TODO: add commit signature proof
+ * A command which has been committed on ledger
  */
 @Immutable
-@SerializerId2("consensus.committed_atom")
-public final class CommittedAtom implements LedgerAtom {
+@SerializerId2("ledger.verified_committed_command")
+public final class VerifiedCommittedCommand {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("atom")
+	@JsonProperty("command")
 	@DsonOutput(Output.ALL)
-	private final ClientAtom clientAtom;
+	private final Command command;
 
-	// TODO: include commit signature proof
 	@JsonProperty("proof")
 	@DsonOutput(Output.ALL)
 	private final VerifiedCommittedHeader proof;
 
-	CommittedAtom() {
-		// Serializer only
-		this.clientAtom = null;
-		this.proof = null;
-	}
-
-	public CommittedAtom(ClientAtom clientAtom, VerifiedCommittedHeader proof) {
-		this.clientAtom = clientAtom;
+	@JsonCreator
+	public VerifiedCommittedCommand(
+		@JsonProperty("command") Command command,
+		@JsonProperty("proof") VerifiedCommittedHeader proof
+	) {
+		this.command = command;
 		this.proof = Objects.requireNonNull(proof);
 	}
 
-	public ClientAtom getClientAtom() {
-		return clientAtom;
+	public Command getCommand() {
+		return command;
 	}
 
 	public VerifiedCommittedHeader getProof() {
@@ -74,45 +65,23 @@ public final class CommittedAtom implements LedgerAtom {
 	}
 
 	@Override
-	public CMInstruction getCMInstruction() {
-		return clientAtom.getCMInstruction();
-	}
-
-	@Override
-	public AID getAID() {
-		return clientAtom.getAID();
-	}
-
-	@Override
 	public int hashCode() {
-		return Objects.hash(this.clientAtom, this.proof);
+		return Objects.hash(command, proof);
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof CommittedAtom)) {
+		if (!(o instanceof VerifiedCommittedCommand)) {
 			return false;
 		}
 
-		CommittedAtom other = (CommittedAtom) o;
-		return Objects.equals(other.clientAtom, this.clientAtom)
-			&& Objects.equals(other.proof, this.proof);
-	}
-
-	@Override
-	public ImmutableMap<String, String> getMetaData() {
-		return clientAtom.getMetaData();
-	}
-
-	@Override
-	public Hash getPowFeeHash() {
-		return clientAtom.getPowFeeHash();
+		VerifiedCommittedCommand other = (VerifiedCommittedCommand) o;
+		return Objects.equals(this.command, other.command)
+			&& Objects.equals(this.proof, other.proof);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{atom=%s, proof=%s}",
-			getClass().getSimpleName(), clientAtom != null ? clientAtom.getAID() : null, this.proof);
+		return String.format("%s{cmd=%s meta=%s}", this.getClass().getSimpleName(), command, proof);
 	}
 }
-

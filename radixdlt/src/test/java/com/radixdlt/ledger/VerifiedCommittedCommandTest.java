@@ -21,32 +21,32 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.VerifiedCommittedHeader;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
 import org.junit.Test;
 
-public class CommittedCommandTest {
+public class VerifiedCommittedCommandTest {
 	private Command command;
-	private VertexMetadata vertexMetadata;
-	private CommittedCommand committedCommand;
+	private VerifiedCommittedHeader proof;
+	private VerifiedCommittedCommand committedCommand;
 
 	@Before
 	public void setUp() {
 		this.command = mock(Command.class);
-		this.vertexMetadata = mock(VertexMetadata.class);
-		this.committedCommand = new CommittedCommand(command, vertexMetadata);
+		this.proof = mock(VerifiedCommittedHeader.class);
+		this.committedCommand = new VerifiedCommittedCommand(command, proof);
 	}
 
 	@Test
 	public void testGetters() {
 		assertThat(this.committedCommand.getCommand()).isEqualTo(command);
-		assertThat(this.committedCommand.getVertexMetadata()).isEqualTo(vertexMetadata);
+		assertThat(this.committedCommand.getProof()).isEqualTo(proof);
 	}
 
 	@Test
 	public void equalsContract() {
-		EqualsVerifier.forClass(CommittedCommand.class)
+		EqualsVerifier.forClass(VerifiedCommittedCommand.class)
 			.verify();
 	}
 

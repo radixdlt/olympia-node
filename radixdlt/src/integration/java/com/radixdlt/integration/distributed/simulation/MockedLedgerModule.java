@@ -17,12 +17,12 @@
 
 package com.radixdlt.integration.distributed.simulation;
 
+import com.radixdlt.ledger.VerifiedCommittedCommand;
 import java.util.Objects;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.Ledger;
@@ -71,7 +71,7 @@ public class MockedLedgerModule extends AbstractModule {
 			}
 
 			@Override
-			public void commit(Command command, VertexMetadata vertexMetadata) {
+			public void commit(VerifiedCommittedCommand command) {
 				// Nothing to do here
 			}
 		};

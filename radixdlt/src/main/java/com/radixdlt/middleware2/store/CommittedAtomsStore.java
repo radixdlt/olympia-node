@@ -44,7 +44,7 @@ import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
 
-import com.radixdlt.ledger.CommittedCommand;
+import com.radixdlt.ledger.VerifiedCommittedCommand;
 import com.radixdlt.store.StoreIndex.LedgerIndexType;
 import java.util.List;
 import java.util.Objects;
@@ -94,9 +94,9 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 			return store.get(cursor.get())
 				.flatMap(ledgerEntry ->  {
 					// TODO: Remove serialization/deserialization
-					CommittedCommand committedCommand = commandToBinaryConverter.toCommand(ledgerEntry.getContent());
+					VerifiedCommittedCommand committedCommand = commandToBinaryConverter.toCommand(ledgerEntry.getContent());
 					ClientAtom clientAtom = committedCommand.getCommand().map(clientAtomToBinaryConverter::toAtom);
-					return Optional.of(new CommittedAtom(clientAtom, committedCommand.getVertexMetadata()));
+					return Optional.of(new CommittedAtom(clientAtom, committedCommand.getProof()));
 				});
 		} else {
 			log.debug("getAtomByParticle returned empty result");
@@ -109,9 +109,9 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		// TODO: Remove serialization/deserialization
 		byte[] payload = clientAtomToBinaryConverter.toLedgerEntryContent(committedAtom.getClientAtom());
 		Command command = new Command(payload);
-		CommittedCommand committedCommand = new CommittedCommand(command, committedAtom.getVertexMetadata());
+		VerifiedCommittedCommand committedCommand = new VerifiedCommittedCommand(command, committedAtom.getProof());
 		byte[] binaryAtom = commandToBinaryConverter.toLedgerEntryContent(committedCommand);
-		VertexMetadata vertexMetadata = committedAtom.getVertexMetadata();
+		VertexMetadata vertexMetadata = committedAtom.getProof().getHeader();
 		LedgerEntry ledgerEntry = new LedgerEntry(
 			binaryAtom,
 			vertexMetadata.getPreparedCommand().getStateVersion(),
@@ -150,7 +150,7 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 			Optional<LedgerEntry> ledgerEntry = store.get(aid);
 			if (ledgerEntry.isPresent()) {
 				LedgerEntry entry = ledgerEntry.get();
-				CommittedCommand committedCommand = commandToBinaryConverter.toCommand(entry.getContent());
+				VerifiedCommittedCommand committedCommand = commandToBinaryConverter.toCommand(entry.getContent());
 				ClientAtom clientAtom = committedCommand.getCommand().map(clientAtomToBinaryConverter::toAtom);
 				for (CMMicroInstruction cmMicroInstruction : clientAtom.getCMInstruction().getMicroInstructions()) {
 					if (particleClass.isInstance(cmMicroInstruction.getParticle())
@@ -169,7 +169,7 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 	}
 
 	@Override
-	public List<CommittedCommand> getCommittedCommands(long stateVersion, int limit) {
+	public List<VerifiedCommittedCommand> getCommittedCommands(long stateVersion, int limit) {
 		ImmutableList<LedgerEntry> entries = store.getNextCommittedLedgerEntries(stateVersion, limit);
 		return entries
 				.stream()

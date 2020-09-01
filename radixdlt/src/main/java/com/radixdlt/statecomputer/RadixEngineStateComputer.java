@@ -21,8 +21,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.VerifiedCommittedHeader;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.engine.RadixEngine;
@@ -32,7 +32,7 @@ import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.middleware2.LedgerAtom;
-import com.radixdlt.ledger.CommittedCommand;
+import com.radixdlt.ledger.VerifiedCommittedCommand;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -66,7 +66,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private final CommittedCommandsReader committedCommandsReader;
 	private final CommittedAtomSender committedAtomSender;
 	private final Object lock = new Object();
-	private final LinkedList<CommittedCommand> unstoredCommittedAtoms = new LinkedList<>();
+	private final LinkedList<VerifiedCommittedCommand> unstoredCommittedAtoms = new LinkedList<>();
 
 	public RadixEngineStateComputer(
 		Serialization serialization,
@@ -87,24 +87,24 @@ public final class RadixEngineStateComputer implements StateComputer {
 	}
 
 	// TODO Move this to a different class class when unstored committed atoms is fixed
-	public List<CommittedCommand> getCommittedCommands(long stateVersion, int batchSize) {
+	public List<VerifiedCommittedCommand> getCommittedCommands(long stateVersion, int batchSize) {
 		// TODO: This may still return an empty list as we still count state versions for atoms which
 		// TODO: never make it into the radix engine due to state errors. This is because we only check
 		// TODO: validity on commit rather than on proposal/prepare.
 		// TODO: remove 100 hardcode limit
-		List<CommittedCommand> storedCommittedAtoms = committedCommandsReader.getCommittedCommands(stateVersion, batchSize);
+		List<VerifiedCommittedCommand> storedCommittedAtoms = committedCommandsReader.getCommittedCommands(stateVersion, batchSize);
 
 		// TODO: Remove
-		final List<CommittedCommand> copy;
+		final List<VerifiedCommittedCommand> copy;
 		synchronized (lock) {
 			copy = new ArrayList<>(unstoredCommittedAtoms);
 		}
 
 		return Streams.concat(
 			storedCommittedAtoms.stream(),
-			copy.stream().filter(a -> a.getVertexMetadata().getPreparedCommand().getStateVersion() > stateVersion)
+			copy.stream().filter(a -> a.getProof().getHeader().getPreparedCommand().getStateVersion() > stateVersion)
 		)
-			.sorted(Comparator.comparingLong(a -> a.getVertexMetadata().getPreparedCommand().getStateVersion()))
+			.sorted(Comparator.comparingLong(a -> a.getProof().getHeader().getPreparedCommand().getStateVersion()))
 			.collect(ImmutableList.toImmutableList());
 	}
 
@@ -122,11 +122,13 @@ public final class RadixEngineStateComputer implements StateComputer {
 	}
 
 	@Override
-	public Optional<BFTValidatorSet> commit(Command command, VertexMetadata vertexMetadata) {
+	public Optional<BFTValidatorSet> commit(VerifiedCommittedCommand verifiedCommittedCommand) {
+		final Command command = verifiedCommittedCommand.getCommand();
+		final VerifiedCommittedHeader proof = verifiedCommittedCommand.getProof();
 		boolean storedInRadixEngine = false;
 		final ClientAtom clientAtom = command != null ? this.mapCommand(command) : null;
 		if (clientAtom != null) {
-			final CommittedAtom committedAtom = new CommittedAtom(clientAtom, vertexMetadata);
+			final CommittedAtom committedAtom = new CommittedAtom(clientAtom, proof);
 			try {
 				// TODO: execute list of commands instead
 				this.radixEngine.checkAndStore(committedAtom);
@@ -142,10 +144,10 @@ public final class RadixEngineStateComputer implements StateComputer {
 		}
 
 		if (!storedInRadixEngine) {
-			this.unstoredCommittedAtoms.add(new CommittedCommand(command, vertexMetadata));
+			this.unstoredCommittedAtoms.add(verifiedCommittedCommand);
 		}
 
-		if (vertexMetadata.getPreparedCommand().isEndOfEpoch()) {
+		if (proof.getHeader().getPreparedCommand().isEndOfEpoch()) {
 			RadixEngineValidatorSetBuilder validatorSetBuilder = this.radixEngine.getComputedState(RadixEngineValidatorSetBuilder.class);
 
 			return Optional.of(validatorSetBuilder.build());

@@ -23,21 +23,21 @@ import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.sync.SyncRequestSender;
-import com.radixdlt.ledger.CommittedCommand;
+import com.radixdlt.ledger.VerifiedCommittedCommand;
 import com.radixdlt.ledger.StateComputerLedger.CommittedSender;
 import com.radixdlt.sync.LocalSyncRequest;
 import java.util.concurrent.ConcurrentMap;
 
 public class MockedSyncServiceModule extends AbstractModule {
-	private final ConcurrentMap<Long, CommittedCommand> sharedCommittedAtoms;
+	private final ConcurrentMap<Long, VerifiedCommittedCommand> sharedCommittedAtoms;
 
-	public MockedSyncServiceModule(ConcurrentMap<Long, CommittedCommand> sharedCommittedAtoms) {
+	public MockedSyncServiceModule(ConcurrentMap<Long, VerifiedCommittedCommand> sharedCommittedAtoms) {
 		this.sharedCommittedAtoms = sharedCommittedAtoms;
 	}
 
 	@ProvidesIntoSet
 	private CommittedSender sync() {
-		return (cmd, vset) -> sharedCommittedAtoms.put(cmd.getVertexMetadata().getPreparedCommand().getStateVersion(), cmd);
+		return (cmd, vset) -> sharedCommittedAtoms.put(cmd.getProof().getHeader().getPreparedCommand().getStateVersion(), cmd);
 	}
 
 	@Provides
@@ -52,8 +52,8 @@ public class MockedSyncServiceModule extends AbstractModule {
 			public void sendLocalSyncRequest(LocalSyncRequest request) {
 				final long targetVersion = request.getTarget().getPreparedCommand().getStateVersion();
 				for (long version = currentVersion; version <= targetVersion; version++) {
-					CommittedCommand committedCommand = sharedCommittedAtoms.get(version);
-					ledger.commit(committedCommand.getCommand(), committedCommand.getVertexMetadata());
+					VerifiedCommittedCommand committedCommand = sharedCommittedAtoms.get(version);
+					ledger.commit(committedCommand);
 				}
 				currentVersion = targetVersion;
 			}

@@ -20,7 +20,7 @@ package com.radixdlt.sync;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.ledger.CommittedCommand;
+import com.radixdlt.ledger.VerifiedCommittedCommand;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
@@ -43,7 +43,7 @@ import org.apache.logging.log4j.Logger;
 @NotThreadSafe
 public final class SyncServiceProcessor {
 	public interface SyncedCommandSender {
-		void sendSyncedCommand(CommittedCommand committedCommand);
+		void sendSyncedCommand(VerifiedCommittedCommand committedCommand);
 	}
 
 	public static final class SyncInProgress {
@@ -69,8 +69,8 @@ public final class SyncServiceProcessor {
 	private final long patienceMilliseconds;
 	private final AddressBook addressBook;
 	private final StateSyncNetwork stateSyncNetwork;
-	private final TreeSet<CommittedCommand> committedCommands = new TreeSet<>(
-		Comparator.comparingLong(a -> a.getVertexMetadata().getPreparedCommand().getStateVersion())
+	private final TreeSet<VerifiedCommittedCommand> committedCommands = new TreeSet<>(
+		Comparator.comparingLong(a -> a.getProof().getHeader().getPreparedCommand().getStateVersion())
 	);
 
 	private long syncInProgressId = 0;
@@ -117,23 +117,23 @@ public final class SyncServiceProcessor {
 		// TODO: This may still return an empty list as we still count state versions for atoms which
 		// TODO: never make it into the radix engine due to state errors. This is because we only check
 		// TODO: validity on commit rather than on proposal/prepare.
-		List<CommittedCommand> committedCommands = stateComputer.getCommittedCommands(stateVersion, batchSize);
+		List<VerifiedCommittedCommand> committedCommands = stateComputer.getCommittedCommands(stateVersion, batchSize);
 		log.debug("SYNC_REQUEST: SENDING_RESPONSE size: {}", committedCommands.size());
 		stateSyncNetwork.sendSyncResponse(peer, committedCommands);
 	}
 
-	public void processSyncResponse(ImmutableList<CommittedCommand> commands) {
+	public void processSyncResponse(ImmutableList<VerifiedCommittedCommand> commands) {
 		// TODO: Check validity of response
 		log.debug("SYNC_RESPONSE: size: {}", commands.size());
-		for (CommittedCommand command : commands) {
-			long stateVersion = command.getVertexMetadata().getPreparedCommand().getStateVersion();
+		for (VerifiedCommittedCommand command : commands) {
+			long stateVersion = command.getProof().getHeader().getPreparedCommand().getStateVersion();
 			if (stateVersion > this.currentVersion) {
 				if (committedCommands.size() < maxAtomsQueueSize) { // check if there is enough space
 					committedCommands.add(command);
 				} else { // not enough space available
-					CommittedCommand last = committedCommands.last();
+					VerifiedCommittedCommand last = committedCommands.last();
 					// will added it only if it must be applied BEFORE the most recent atom we have
-					if (last.getVertexMetadata().getPreparedCommand().getStateVersion() > stateVersion) {
+					if (last.getProof().getHeader().getPreparedCommand().getStateVersion() > stateVersion) {
 						committedCommands.pollLast(); // remove the most recent available
 						committedCommands.add(command);
 					}
@@ -141,10 +141,10 @@ public final class SyncServiceProcessor {
 			}
 		}
 
-		Iterator<CommittedCommand> it = committedCommands.iterator();
+		Iterator<VerifiedCommittedCommand> it = committedCommands.iterator();
 		while (it.hasNext()) {
-			CommittedCommand command = it.next();
-			long stateVersion = command.getVertexMetadata().getPreparedCommand().getStateVersion();
+			VerifiedCommittedCommand command = it.next();
+			long stateVersion = command.getProof().getHeader().getPreparedCommand().getStateVersion();
 			if (stateVersion <= currentVersion) {
 				it.remove();
 			} else if (stateVersion == currentVersion + 1) {

@@ -17,7 +17,7 @@
 
 package com.radixdlt.sync;
 
-import com.radixdlt.ledger.CommittedCommand;
+import com.radixdlt.ledger.VerifiedCommittedCommand;
 import com.radixdlt.sync.SyncServiceRunner.LocalSyncRequestsRx;
 import com.radixdlt.sync.SyncServiceRunner.SyncTimeoutsRx;
 import com.radixdlt.sync.SyncServiceRunner.VersionUpdatesRx;
@@ -47,7 +47,7 @@ public class SyncServiceRunnerTest {
 	private VersionUpdatesRx versionUpdatesRx;
 	private Subject<Long> versionUpdatesSubject;
 	private Subject<SyncRequest> requestsSubject;
-	private Subject<ImmutableList<CommittedCommand>> responsesSubject;
+	private Subject<ImmutableList<VerifiedCommittedCommand>> responsesSubject;
 
 	@Before
 	public void setUp() {
@@ -98,7 +98,7 @@ public class SyncServiceRunnerTest {
 
 	@Test
 	public void when_sync_response__then_it_is_processed() {
-		ImmutableList<CommittedCommand> committedCommands = ImmutableList.of(mock(CommittedCommand.class));
+		ImmutableList<VerifiedCommittedCommand> committedCommands = ImmutableList.of(mock(VerifiedCommittedCommand.class));
 		syncServiceRunner.start();
 		responsesSubject.onNext(committedCommands);
 		verify(syncServiceProcessor, timeout(1000).times(1)).processSyncResponse(eq(committedCommands));

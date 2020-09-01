@@ -30,6 +30,7 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.PreparedCommand;
+import com.radixdlt.consensus.VerifiedCommittedHeader;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -38,6 +39,7 @@ import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.ledger.VerifiedCommittedCommand;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
@@ -105,8 +107,13 @@ public class RadixEngineStateComputerTest {
 
 		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenReturn(clientAtom);
 
-		Command command = mock(Command.class);
-		stateComputer.commit(command, vertexMetadata);
+		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
+		when(proof.getHeader()).thenReturn(vertexMetadata);
+		VerifiedCommittedCommand command = mock(VerifiedCommittedCommand.class);
+		when(command.getProof()).thenReturn(proof);
+		when(command.getCommand()).thenReturn(mock(Command.class));
+
+		stateComputer.commit(command);
 		verify(radixEngine, times(1)).checkAndStore(any());
 		verify(committedAtomSender, never()).sendCommittedAtom(any());
 	}
@@ -127,14 +134,16 @@ public class RadixEngineStateComputerTest {
 		RadixEngineException e = mock(RadixEngineException.class);
 		doThrow(e).when(radixEngine).checkAndStore(any());
 
-		Command command = mock(Command.class);
-		stateComputer.commit(command, vertexMetadata);
+		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
+		when(proof.getHeader()).thenReturn(vertexMetadata);
+		VerifiedCommittedCommand command = mock(VerifiedCommittedCommand.class);
+		when(command.getProof()).thenReturn(proof);
+		when(command.getCommand()).thenReturn(mock(Command.class));
+
+		stateComputer.commit(command);
 
 		assertThat(stateComputer.getCommittedCommands(0, 1))
-			.hasOnlyOneElementSatisfying(c -> {
-				assertThat(c.getCommand()).isEqualTo(command);
-				assertThat(c.getVertexMetadata()).isEqualTo(vertexMetadata);
-			});
+			.hasOnlyOneElementSatisfying(c -> assertThat(c).isEqualTo(command));
 	}
 
 	@Test
@@ -154,13 +163,15 @@ public class RadixEngineStateComputerTest {
 			.thenReturn(validatorSetBuilder);
 		when(validatorSetBuilder.build()).thenReturn(mock(BFTValidatorSet.class));
 
-		stateComputer.commit(null, vertexMetadata);
+		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
+		when(proof.getHeader()).thenReturn(vertexMetadata);
+		VerifiedCommittedCommand command = mock(VerifiedCommittedCommand.class);
+		when(command.getProof()).thenReturn(proof);
+
+		stateComputer.commit(command);
 
 		assertThat(stateComputer.getCommittedCommands(0, 1))
-			.hasOnlyOneElementSatisfying(c -> {
-				assertThat(c.getCommand()).isNull();
-				assertThat(c.getVertexMetadata()).isEqualTo(vertexMetadata);
-			});
+			.hasOnlyOneElementSatisfying(c -> assertThat(c).isEqualTo(command));
 	}
 
 	@Test
@@ -175,11 +186,14 @@ public class RadixEngineStateComputerTest {
 		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenThrow(new SerializationException(""));
 
 		Command cmd = new Command(new byte[] {0, 1});
-		assertThat(stateComputer.commit(cmd, vertexMetadata)).isEmpty();
+		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
+		when(proof.getHeader()).thenReturn(vertexMetadata);
+		VerifiedCommittedCommand command = mock(VerifiedCommittedCommand.class);
+		when(command.getProof()).thenReturn(proof);
+		when(command.getCommand()).thenReturn(cmd);
+
+		assertThat(stateComputer.commit(command)).isEmpty();
 		assertThat(stateComputer.getCommittedCommands(0, 1))
-			.hasOnlyOneElementSatisfying(c -> {
-				assertThat(c.getCommand()).isEqualTo(cmd);
-				assertThat(c.getVertexMetadata()).isEqualTo(vertexMetadata);
-			});
+			.hasOnlyOneElementSatisfying(c -> assertThat(c).isEqualTo(command));
 	}
 }
