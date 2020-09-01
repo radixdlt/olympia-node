@@ -31,7 +31,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.PreparedCommand;
+import com.radixdlt.consensus.CommandOutput;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.VerifiedCommittedHeader;
@@ -91,16 +91,16 @@ public class StateComputerLedgerTest {
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		when(vertex.getQC()).thenReturn(qc);
 
-		PreparedCommand preparedCommand = mock(PreparedCommand.class);
-		when(preparedCommand.isEndOfEpoch()).thenReturn(false);
-		when(preparedCommand.getStateVersion()).thenReturn(12345L);
+		CommandOutput commandOutput = mock(CommandOutput.class);
+		when(commandOutput.isEndOfEpoch()).thenReturn(false);
+		when(commandOutput.getStateVersion()).thenReturn(12345L);
 
 		VertexMetadata parent = mock(VertexMetadata.class);
-		when(parent.getPreparedCommand()).thenReturn(preparedCommand);
+		when(parent.getPreparedCommand()).thenReturn(commandOutput);
 		when(qc.getProposed()).thenReturn(parent);
 		when(qc.getTimestampedSignatures()).thenReturn(new TimestampedECDSASignatures());
 
-		PreparedCommand nextPrepared = stateComputerLedger.prepare(vertex);
+		CommandOutput nextPrepared = stateComputerLedger.prepare(vertex);
 		assertThat(nextPrepared.isEndOfEpoch()).isFalse();
 		assertThat(nextPrepared.getStateVersion()).isEqualTo(12345L);
 	}
@@ -111,16 +111,16 @@ public class StateComputerLedgerTest {
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		when(vertex.getQC()).thenReturn(qc);
 
-		PreparedCommand preparedCommand = mock(PreparedCommand.class);
-		when(preparedCommand.isEndOfEpoch()).thenReturn(false);
-		when(preparedCommand.getStateVersion()).thenReturn(12345L);
+		CommandOutput commandOutput = mock(CommandOutput.class);
+		when(commandOutput.isEndOfEpoch()).thenReturn(false);
+		when(commandOutput.getStateVersion()).thenReturn(12345L);
 
 		VertexMetadata parent = mock(VertexMetadata.class);
-		when(parent.getPreparedCommand()).thenReturn(preparedCommand);
+		when(parent.getPreparedCommand()).thenReturn(commandOutput);
 		when(qc.getProposed()).thenReturn(parent);
 		when(qc.getTimestampedSignatures()).thenReturn(new TimestampedECDSASignatures());
 
-		PreparedCommand nextPrepared = stateComputerLedger.prepare(vertex);
+		CommandOutput nextPrepared = stateComputerLedger.prepare(vertex);
 		assertThat(nextPrepared.isEndOfEpoch()).isFalse();
 		assertThat(nextPrepared.getStateVersion()).isEqualTo(12345L);
 	}
@@ -131,17 +131,17 @@ public class StateComputerLedgerTest {
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		when(vertex.getQC()).thenReturn(qc);
 
-		PreparedCommand preparedCommand = mock(PreparedCommand.class);
-		when(preparedCommand.isEndOfEpoch()).thenReturn(false);
-		when(preparedCommand.getStateVersion()).thenReturn(12345L);
+		CommandOutput commandOutput = mock(CommandOutput.class);
+		when(commandOutput.isEndOfEpoch()).thenReturn(false);
+		when(commandOutput.getStateVersion()).thenReturn(12345L);
 
 		VertexMetadata parent = mock(VertexMetadata.class);
-		when(parent.getPreparedCommand()).thenReturn(preparedCommand);
+		when(parent.getPreparedCommand()).thenReturn(commandOutput);
 		when(qc.getProposed()).thenReturn(parent);
 		when(qc.getTimestampedSignatures()).thenReturn(new TimestampedECDSASignatures());
 		when(stateComputer.prepare(eq(vertex))).thenReturn(true);
 
-		PreparedCommand nextPrepared = stateComputerLedger.prepare(vertex);
+		CommandOutput nextPrepared = stateComputerLedger.prepare(vertex);
 		assertThat(nextPrepared.isEndOfEpoch()).isTrue();
 		assertThat(nextPrepared.getStateVersion()).isEqualTo(12346L);
 	}
@@ -152,17 +152,17 @@ public class StateComputerLedgerTest {
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		when(vertex.getQC()).thenReturn(qc);
 
-		PreparedCommand preparedCommand = mock(PreparedCommand.class);
-		when(preparedCommand.isEndOfEpoch()).thenReturn(false);
-		when(preparedCommand.getStateVersion()).thenReturn(12345L);
+		CommandOutput commandOutput = mock(CommandOutput.class);
+		when(commandOutput.isEndOfEpoch()).thenReturn(false);
+		when(commandOutput.getStateVersion()).thenReturn(12345L);
 
 		VertexMetadata parent = mock(VertexMetadata.class);
-		when(parent.getPreparedCommand()).thenReturn(preparedCommand);
+		when(parent.getPreparedCommand()).thenReturn(commandOutput);
 		when(qc.getProposed()).thenReturn(parent);
 		when(qc.getTimestampedSignatures()).thenReturn(new TimestampedECDSASignatures());
 		when(vertex.getCommand()).thenReturn(mock(Command.class));
 
-		PreparedCommand nextPrepared = stateComputerLedger.prepare(vertex);
+		CommandOutput nextPrepared = stateComputerLedger.prepare(vertex);
 		assertThat(nextPrepared.isEndOfEpoch()).isFalse();
 		assertThat(nextPrepared.getStateVersion()).isEqualTo(12346L);
 	}
@@ -173,12 +173,12 @@ public class StateComputerLedgerTest {
 		Hash hash = mock(Hash.class);
 		when(command.getHash()).thenReturn(hash);
 
-		PreparedCommand preparedCommand = mock(PreparedCommand.class);
-		when(preparedCommand.getStateVersion()).thenReturn(1233L);
+		CommandOutput commandOutput = mock(CommandOutput.class);
+		when(commandOutput.getStateVersion()).thenReturn(1233L);
 
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(vertexMetadata.getView()).then(i -> View.of(50));
-		when(vertexMetadata.getPreparedCommand()).thenReturn(preparedCommand);
+		when(vertexMetadata.getPreparedCommand()).thenReturn(commandOutput);
 
 		VerifiedCommittedCommand verified = mock(VerifiedCommittedCommand.class);
 		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
@@ -197,12 +197,12 @@ public class StateComputerLedgerTest {
 		Hash hash = mock(Hash.class);
 		when(command.getHash()).thenReturn(hash);
 
-		PreparedCommand preparedCommand = mock(PreparedCommand.class);
-		when(preparedCommand.getStateVersion()).thenReturn(1234L);
+		CommandOutput commandOutput = mock(CommandOutput.class);
+		when(commandOutput.getStateVersion()).thenReturn(1234L);
 
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(vertexMetadata.getView()).then(i -> View.of(50));
-		when(vertexMetadata.getPreparedCommand()).thenReturn(preparedCommand);
+		when(vertexMetadata.getPreparedCommand()).thenReturn(commandOutput);
 
 		VerifiedCommittedCommand verified = mock(VerifiedCommittedCommand.class);
 		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
@@ -218,11 +218,11 @@ public class StateComputerLedgerTest {
 
 	@Test
 	public void when_check_sync_and_synced__then_return_sync_handler() {
-		PreparedCommand preparedCommand = mock(PreparedCommand.class);
-		when(preparedCommand.getStateVersion()).thenReturn(1230L);
+		CommandOutput commandOutput = mock(CommandOutput.class);
+		when(commandOutput.getStateVersion()).thenReturn(1230L);
 
 		VertexMetadata nextVertexMetadata = mock(VertexMetadata.class);
-		when(nextVertexMetadata.getPreparedCommand()).thenReturn(preparedCommand);
+		when(nextVertexMetadata.getPreparedCommand()).thenReturn(commandOutput);
 
 		Runnable onSynced = mock(Runnable.class);
 		Runnable onNotSynced = mock(Runnable.class);
@@ -236,11 +236,11 @@ public class StateComputerLedgerTest {
 
 	@Test
 	public void when_check_sync__will_complete_when_higher_or_equal_state_version() {
-		PreparedCommand preparedCommand = mock(PreparedCommand.class);
-		when(preparedCommand.getStateVersion()).thenReturn(1234L);
+		CommandOutput commandOutput = mock(CommandOutput.class);
+		when(commandOutput.getStateVersion()).thenReturn(1234L);
 
 		VertexMetadata nextVertexMetadata = mock(VertexMetadata.class);
-		when(nextVertexMetadata.getPreparedCommand()).thenReturn(preparedCommand);
+		when(nextVertexMetadata.getPreparedCommand()).thenReturn(commandOutput);
 
 		Runnable onSynced = mock(Runnable.class);
 		Runnable onNotSynced = mock(Runnable.class);

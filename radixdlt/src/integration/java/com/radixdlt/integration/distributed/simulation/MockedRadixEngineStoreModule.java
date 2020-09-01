@@ -23,7 +23,7 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.consensus.PreparedCommand;
+import com.radixdlt.consensus.CommandOutput;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.middleware2.LedgerAtom;
@@ -57,7 +57,7 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 
 	@Provides
 	public VertexMetadata genesisVertexMetadata() {
-		final PreparedCommand preparedCommand = PreparedCommand.create(0, 0, true);
-		return VertexMetadata.ofGenesisAncestor(preparedCommand);
+		final CommandOutput commandOutput = CommandOutput.create(0, 0, true);
+		return VertexMetadata.ofGenesisAncestor(commandOutput);
 	}
 }

@@ -31,14 +31,14 @@ public class VertexMetadataTest {
 
 	private VertexMetadata testObject;
 	private Hash id;
-	private PreparedCommand preparedCommand;
+	private CommandOutput commandOutput;
 
 	@Before
 	public void setUp() {
 		View view = View.of(1234567890L);
 		this.id = Hash.random();
-		this.preparedCommand = mock(PreparedCommand.class);
-		this.testObject = new VertexMetadata(0, view, id, preparedCommand);
+		this.commandOutput = mock(CommandOutput.class);
+		this.testObject = new VertexMetadata(0, view, id, commandOutput);
 	}
 
 	@Test
@@ -52,7 +52,7 @@ public class VertexMetadataTest {
 		assertThat(View.of(1234567890L)).isEqualTo(this.testObject.getView());
 
 		assertThat(id).isEqualTo(this.testObject.getId());
-		assertThat(preparedCommand).isEqualTo(this.testObject.getPreparedCommand());
+		assertThat(commandOutput).isEqualTo(this.testObject.getPreparedCommand());
 	}
 
 	@Test

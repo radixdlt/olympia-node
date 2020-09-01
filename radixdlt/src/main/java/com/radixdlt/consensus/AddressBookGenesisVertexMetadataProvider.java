@@ -87,7 +87,7 @@ public class AddressBookGenesisVertexMetadataProvider {
 	}
 
 	public VertexMetadata getGenesisVertexMetadata() {
-		PreparedCommand preparedCommand = PreparedCommand.create(0, 0L, true);
-		return VertexMetadata.ofGenesisAncestor(preparedCommand);
+		CommandOutput commandOutput = CommandOutput.create(0, 0L, true);
+		return VertexMetadata.ofGenesisAncestor(commandOutput);
 	}
 }

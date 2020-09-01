@@ -29,7 +29,7 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.PreparedCommand;
+import com.radixdlt.consensus.CommandOutput;
 import com.radixdlt.consensus.VerifiedCommittedHeader;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
@@ -100,10 +100,10 @@ public class RadixEngineStateComputerTest {
 
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(vertexMetadata.getView()).then(i -> View.of(50));
-		PreparedCommand preparedCommand = mock(PreparedCommand.class);
-		when(preparedCommand.getStateVersion()).thenReturn(1L);
-		when(preparedCommand.isEndOfEpoch()).thenReturn(false);
-		when(vertexMetadata.getPreparedCommand()).thenReturn(preparedCommand);
+		CommandOutput commandOutput = mock(CommandOutput.class);
+		when(commandOutput.getStateVersion()).thenReturn(1L);
+		when(commandOutput.isEndOfEpoch()).thenReturn(false);
+		when(vertexMetadata.getPreparedCommand()).thenReturn(commandOutput);
 
 		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenReturn(clientAtom);
 
@@ -125,10 +125,10 @@ public class RadixEngineStateComputerTest {
 		when(clientAtom.getAID()).thenReturn(aid);
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(vertexMetadata.getView()).then(i -> View.of(50));
-		PreparedCommand preparedCommand = mock(PreparedCommand.class);
-		when(preparedCommand.getStateVersion()).thenReturn(1L);
-		when(preparedCommand.isEndOfEpoch()).thenReturn(false);
-		when(vertexMetadata.getPreparedCommand()).thenReturn(preparedCommand);
+		CommandOutput commandOutput = mock(CommandOutput.class);
+		when(commandOutput.getStateVersion()).thenReturn(1L);
+		when(commandOutput.isEndOfEpoch()).thenReturn(false);
+		when(vertexMetadata.getPreparedCommand()).thenReturn(commandOutput);
 
 		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenReturn(clientAtom);
 		RadixEngineException e = mock(RadixEngineException.class);
@@ -153,10 +153,10 @@ public class RadixEngineStateComputerTest {
 		when(committedAtom.getAID()).thenReturn(aid);
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(vertexMetadata.getView()).then(i -> View.of(50));
-		PreparedCommand preparedCommand = mock(PreparedCommand.class);
-		when(preparedCommand.getStateVersion()).thenReturn(1L);
-		when(preparedCommand.isEndOfEpoch()).thenReturn(true);
-		when(vertexMetadata.getPreparedCommand()).thenReturn(preparedCommand);
+		CommandOutput commandOutput = mock(CommandOutput.class);
+		when(commandOutput.getStateVersion()).thenReturn(1L);
+		when(commandOutput.isEndOfEpoch()).thenReturn(true);
+		when(vertexMetadata.getPreparedCommand()).thenReturn(commandOutput);
 
 		RadixEngineValidatorSetBuilder validatorSetBuilder = mock(RadixEngineValidatorSetBuilder.class);
 		when(radixEngine.getComputedState(eq(RadixEngineValidatorSetBuilder.class)))
@@ -178,10 +178,10 @@ public class RadixEngineStateComputerTest {
 	public void when_commit_vertex_with_malformed_command__then_is_available_on_query() throws SerializationException {
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(vertexMetadata.getView()).then(i -> View.of(50));
-		PreparedCommand preparedCommand = mock(PreparedCommand.class);
-		when(preparedCommand.getStateVersion()).thenReturn(1L);
-		when(preparedCommand.isEndOfEpoch()).thenReturn(false);
-		when(vertexMetadata.getPreparedCommand()).thenReturn(preparedCommand);
+		CommandOutput commandOutput = mock(CommandOutput.class);
+		when(commandOutput.getStateVersion()).thenReturn(1L);
+		when(commandOutput.isEndOfEpoch()).thenReturn(false);
+		when(vertexMetadata.getPreparedCommand()).thenReturn(commandOutput);
 
 		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenThrow(new SerializationException(""));
 

@@ -17,7 +17,7 @@
 
 package org.radix.serialization;
 
-import com.radixdlt.consensus.PreparedCommand;
+import com.radixdlt.consensus.CommandOutput;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.crypto.Hash;
@@ -30,7 +30,7 @@ public class VertexMetadataSerializeTest extends SerializeObject<VertexMetadata>
 	private static VertexMetadata get() {
 		View view = View.of(1234567890L);
 		Hash id = Hash.random();
-		PreparedCommand preparedCommand = PreparedCommand.create(0, 0L, false);
-		return new VertexMetadata(0, view, id, preparedCommand);
+		CommandOutput commandOutput = CommandOutput.create(0, 0L, false);
+		return new VertexMetadata(0, view, id, commandOutput);
 	}
 }

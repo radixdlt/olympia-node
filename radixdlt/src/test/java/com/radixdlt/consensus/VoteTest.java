@@ -37,8 +37,8 @@ public class VoteTest {
 
 	@Before
 	public void setUp() {
-		VertexMetadata parent = new VertexMetadata(0, View.of(1234567890L), Hash.random(), mock(PreparedCommand.class));
-		this.voteData = new VoteData(VertexMetadata.ofGenesisAncestor(mock(PreparedCommand.class)), parent, null);
+		VertexMetadata parent = new VertexMetadata(0, View.of(1234567890L), Hash.random(), mock(CommandOutput.class));
+		this.voteData = new VoteData(VertexMetadata.ofGenesisAncestor(mock(CommandOutput.class)), parent, null);
 		this.timestampedVoteData = new TimestampedVoteData(this.voteData, 123456L);
 		this.author = mock(BFTNode.class);
 		this.payload = 123456L;

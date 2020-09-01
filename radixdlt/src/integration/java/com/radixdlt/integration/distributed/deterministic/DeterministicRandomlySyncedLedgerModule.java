@@ -25,7 +25,7 @@ import java.util.Random;
 import com.google.inject.AbstractModule;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.PreparedCommand;
+import com.radixdlt.consensus.CommandOutput;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
@@ -51,8 +51,8 @@ public class DeterministicRandomlySyncedLedgerModule extends AbstractModule {
 	Ledger syncedExecutor(CommittedStateSyncSender committedStateSyncSender) {
 		return new Ledger() {
 			@Override
-			public PreparedCommand prepare(Vertex vertex) {
-				return PreparedCommand.create(0, 0L, false);
+			public CommandOutput prepare(Vertex vertex) {
+				return CommandOutput.create(0, 0L, false);
 			}
 
 			@Override

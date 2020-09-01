@@ -52,7 +52,7 @@ import com.radixdlt.consensus.sync.SyncRequestSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.consensus.PreparedCommand;
+import com.radixdlt.consensus.CommandOutput;
 import com.radixdlt.utils.UInt256;
 import java.util.Arrays;
 import java.util.Collections;
@@ -83,14 +83,14 @@ public class VertexStoreTest {
 		BFTValidatorSet bftValidatorSet = BFTValidatorSet.from(ImmutableSet.of(
 			BFTValidator.from(BFTNode.create(keyPair.getPublicKey()), UInt256.ONE)
 		));
-		this.genesisVertex = Vertex.createGenesis(VertexMetadata.ofGenesisAncestor(mock(PreparedCommand.class)));
+		this.genesisVertex = Vertex.createGenesis(VertexMetadata.ofGenesisAncestor(mock(CommandOutput.class)));
 		this.genesisVertexMetadata = VertexMetadata.ofGenesisVertex(genesisVertex);
 		VoteData voteData = new VoteData(genesisVertexMetadata, genesisVertexMetadata, genesisVertexMetadata);
 		this.rootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 		// No type check issues with mocking generic here
 		Ledger ssc = mock(Ledger.class);
 		this.ledger = ssc;
-		when(this.ledger.prepare(any())).thenReturn(mock(PreparedCommand.class));
+		when(this.ledger.prepare(any())).thenReturn(mock(CommandOutput.class));
 		this.syncVerticesRPCSender = mock(SyncVerticesRPCSender.class);
 		this.vertexStoreEventSender = mock(VertexStoreEventSender.class);
 		this.counters = mock(SystemCounters.class);
@@ -112,7 +112,7 @@ public class VertexStoreTest {
 			Vertex parentVertex = lastVertex.get();
 			final QuorumCertificate qc;
 			if (!parentVertex.getView().equals(View.genesis())) {
-				VertexMetadata parent = VertexMetadata.ofVertex(parentVertex, mock(PreparedCommand.class));
+				VertexMetadata parent = VertexMetadata.ofVertex(parentVertex, mock(CommandOutput.class));
 				VoteData data = new VoteData(parent, parentVertex.getQC().getProposed(), skipOne ? null : parentVertex.getQC().getParent());
 				qc = new QuorumCertificate(data, new TimestampedECDSASignatures());
 			} else {
@@ -137,7 +137,7 @@ public class VertexStoreTest {
 	@Test
 	public void when_vertex_store_created_with_incorrect_roots__then_exception_is_thrown() {
 		Vertex nextVertex = this.nextVertex.get();
-		VertexMetadata nextVertexMetadata = VertexMetadata.ofVertex(nextVertex, mock(PreparedCommand.class));
+		VertexMetadata nextVertexMetadata = VertexMetadata.ofVertex(nextVertex, mock(CommandOutput.class));
 
 		VoteData voteData = new VoteData(nextVertexMetadata, genesisVertexMetadata, null);
 		QuorumCertificate badRootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
@@ -193,7 +193,7 @@ public class VertexStoreTest {
 	@Test
 	public void when_vertex_retriever_succeeds__then_vertex_is_inserted() {
 		Vertex vertex = this.nextVertex.get();
-		VoteData voteData = new VoteData(VertexMetadata.ofVertex(vertex, mock(PreparedCommand.class)), genesisVertexMetadata, null);
+		VoteData voteData = new VoteData(VertexMetadata.ofVertex(vertex, mock(CommandOutput.class)), genesisVertexMetadata, null);
 		QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(vertexMetadata.getId()).thenReturn(vertex.getId());
@@ -261,12 +261,12 @@ public class VertexStoreTest {
 				counters
 			);
 
-		VertexMetadata vertexMetadata2 = VertexMetadata.ofVertex(vertex2, mock(PreparedCommand.class));
+		VertexMetadata vertexMetadata2 = VertexMetadata.ofVertex(vertex2, mock(CommandOutput.class));
 		VerifiedCommittedHeader proof2 = mock(VerifiedCommittedHeader.class);
 		when(proof2.getHeader()).thenReturn(vertexMetadata2);
 		assertThat(vertexStore.commit(proof2)).isPresent();
 
-		VertexMetadata vertexMetadata1 = VertexMetadata.ofVertex(vertex1, mock(PreparedCommand.class));
+		VertexMetadata vertexMetadata1 = VertexMetadata.ofVertex(vertex1, mock(CommandOutput.class));
 		VerifiedCommittedHeader proof1 = mock(VerifiedCommittedHeader.class);
 		when(proof1.getHeader()).thenReturn(vertexMetadata1);
 		assertThat(vertexStore.commit(proof1)).isNotPresent();
@@ -289,7 +289,7 @@ public class VertexStoreTest {
 		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), command);
 		vertexStore.insertVertex(nextVertex);
 
-		VertexMetadata vertexMetadata = VertexMetadata.ofVertex(nextVertex, mock(PreparedCommand.class));
+		VertexMetadata vertexMetadata = VertexMetadata.ofVertex(nextVertex, mock(CommandOutput.class));
 		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
 		when(proof.getHeader()).thenReturn(vertexMetadata);
 		assertThat(vertexStore.commit(proof)).hasValue(nextVertex);
@@ -316,7 +316,7 @@ public class VertexStoreTest {
 		Vertex vertex = nextVertex.get();
 		vertexStore.insertVertex(vertex);
 
-		VertexMetadata vertexMetadata = VertexMetadata.ofVertex(vertex, mock(PreparedCommand.class));
+		VertexMetadata vertexMetadata = VertexMetadata.ofVertex(vertex, mock(CommandOutput.class));
 		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
 		when(proof.getHeader()).thenReturn(vertexMetadata);
 		assertThat(vertexStore.commit(proof)).hasValue(vertex);
@@ -330,14 +330,14 @@ public class VertexStoreTest {
 
 		Vertex nextVertex1 = nextVertex.get();
 		vertexStore.insertVertex(nextVertex1);
-		VertexMetadata vertexMetadata = VertexMetadata.ofVertex(nextVertex1, mock(PreparedCommand.class));
+		VertexMetadata vertexMetadata = VertexMetadata.ofVertex(nextVertex1, mock(CommandOutput.class));
 		VerifiedCommittedHeader proof1 = mock(VerifiedCommittedHeader.class);
 		when(proof1.getHeader()).thenReturn(vertexMetadata);
 		vertexStore.commit(proof1);
 
 		Vertex nextVertex2 = nextVertex.get();
 		vertexStore.insertVertex(nextVertex2);
-		VertexMetadata vertexMetadata2 = VertexMetadata.ofVertex(nextVertex2, mock(PreparedCommand.class));
+		VertexMetadata vertexMetadata2 = VertexMetadata.ofVertex(nextVertex2, mock(CommandOutput.class));
 		VerifiedCommittedHeader proof2 = mock(VerifiedCommittedHeader.class);
 		when(proof2.getHeader()).thenReturn(vertexMetadata2);
 		vertexStore.commit(proof2);

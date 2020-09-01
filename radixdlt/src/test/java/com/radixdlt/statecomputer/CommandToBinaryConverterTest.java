@@ -19,7 +19,7 @@ package com.radixdlt.statecomputer;
 
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.PreparedCommand;
+import com.radixdlt.consensus.CommandOutput;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.VerifiedCommittedHeader;
 import com.radixdlt.consensus.VertexMetadata;
@@ -41,11 +41,11 @@ public class CommandToBinaryConverterTest {
 
 	@Test
 	public void test_atom_content_transformation_to_byte_array_and_back() {
-		PreparedCommand preparedCommand = PreparedCommand.create(0, 0L, false);
+		CommandOutput commandOutput = CommandOutput.create(0, 0L, false);
 		VerifiedCommittedHeader proof = new VerifiedCommittedHeader(
-			new VertexMetadata(0, View.of(1), Hash.random(), preparedCommand),
-			new VertexMetadata(0, View.of(1), Hash.random(), preparedCommand),
-			new VertexMetadata(0, View.of(1), Hash.random(), preparedCommand),
+			new VertexMetadata(0, View.of(1), Hash.random(), commandOutput),
+			new VertexMetadata(0, View.of(1), Hash.random(), commandOutput),
+			new VertexMetadata(0, View.of(1), Hash.random(), commandOutput),
 			new TimestampedECDSASignatures()
 		);
 		VerifiedCommittedCommand committedCommand = new VerifiedCommittedCommand(

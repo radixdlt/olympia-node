@@ -30,7 +30,7 @@ public interface Ledger {
 	 * @param vertex the vertex to compute
 	 * @return the results of executing the prepare stage
 	 */
-	PreparedCommand prepare(Vertex vertex);
+	CommandOutput prepare(Vertex vertex);
 
 	/**
 	 * Check if the ledger is commit synced at a particular state

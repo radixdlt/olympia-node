@@ -24,32 +24,32 @@ import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Before;
 import org.junit.Test;
 
-public class PreparedCommandTest {
-	private PreparedCommand preparedCommand;
+public class CommandOutputTest {
+	private CommandOutput commandOutput;
 	private long timestamp;
 
 	@Before
 	public void setup() {
 		this.timestamp = 12345678L;
-		this.preparedCommand = PreparedCommand.create(12345, timestamp, false);
+		this.commandOutput = CommandOutput.create(12345, timestamp, false);
 	}
 
 	@Test
 	public void testGetters() {
-		assertThat(preparedCommand.getStateVersion()).isEqualTo(12345);
-		assertThat(preparedCommand.timestamp()).isEqualTo(timestamp);
-		assertThat(preparedCommand.isEndOfEpoch()).isFalse();
+		assertThat(commandOutput.getStateVersion()).isEqualTo(12345);
+		assertThat(commandOutput.timestamp()).isEqualTo(timestamp);
+		assertThat(commandOutput.isEndOfEpoch()).isFalse();
 	}
 
 	@Test
 	public void equalsContract() {
-		EqualsVerifier.forClass(PreparedCommand.class)
+		EqualsVerifier.forClass(CommandOutput.class)
 			.verify();
 	}
 
 	@Test
 	public void sensibleToString() {
-		String s = this.preparedCommand.toString();
+		String s = this.commandOutput.toString();
 		AssertionsForClassTypes.assertThat(s).contains("12345");
 	}
 }

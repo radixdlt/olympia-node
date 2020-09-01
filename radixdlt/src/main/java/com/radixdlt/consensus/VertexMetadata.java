@@ -47,16 +47,16 @@ public final class VertexMetadata {
 	@DsonOutput(Output.ALL)
 	private final Hash id;
 
-	@JsonProperty("prepared_command")
+	@JsonProperty("command_output")
 	@DsonOutput(Output.ALL)
-	private final PreparedCommand preparedCommand;
+	private final CommandOutput commandOutput;
 
 	VertexMetadata() {
 		// Serializer only
 		this.view = null;
 		this.id = null;
 		this.epoch = 0L;
-		this.preparedCommand = null;
+		this.commandOutput = null;
 	}
 
 	// TODO: Move executor data to a more opaque data structure
@@ -64,24 +64,23 @@ public final class VertexMetadata {
 		long epoch, // consensus data
 		View view, // consensus data
 		Hash id, // consensus data
-		PreparedCommand preparedCommand
+		CommandOutput commandOutput
 	) {
 		if (epoch < 0) {
 			throw new IllegalArgumentException("epoch must be >= 0");
 		}
 
-		this.preparedCommand = preparedCommand;
+		this.commandOutput = commandOutput;
 		this.epoch = epoch;
 		this.view = view;
 		this.id = id;
 	}
 
-	public static VertexMetadata ofGenesisAncestor(PreparedCommand preparedCommand) {
+	public static VertexMetadata ofGenesisAncestor(CommandOutput commandOutput) {
 		return new VertexMetadata(
 			0,
 			View.genesis(),
-			Hash.ZERO_HASH,
-			preparedCommand
+			Hash.ZERO_HASH, commandOutput
 		);
 	}
 
@@ -90,7 +89,7 @@ public final class VertexMetadata {
 			vertex.getEpoch(),
 			vertex.getView(),
 			vertex.getId(),
-			PreparedCommand.create(
+			CommandOutput.create(
 				vertex.getQC().getParent().getPreparedCommand().getStateVersion(),
 				0L,
 				false
@@ -98,17 +97,16 @@ public final class VertexMetadata {
 		);
 	}
 
-	public static VertexMetadata ofVertex(Vertex vertex, PreparedCommand preparedCommand) {
+	public static VertexMetadata ofVertex(Vertex vertex, CommandOutput commandOutput) {
 		return new VertexMetadata(
 			vertex.getEpoch(),
 			vertex.getView(),
-			vertex.getId(),
-			preparedCommand
+			vertex.getId(), commandOutput
 		);
 	}
 
-	public PreparedCommand getPreparedCommand() {
-		return preparedCommand;
+	public CommandOutput getPreparedCommand() {
+		return commandOutput;
 	}
 
 	public long getEpoch() {
@@ -136,7 +134,7 @@ public final class VertexMetadata {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.epoch, this.view, this.id, this.preparedCommand);
+		return Objects.hash(this.epoch, this.view, this.id, this.commandOutput);
 	}
 
 	@Override
@@ -150,7 +148,7 @@ public final class VertexMetadata {
 				Objects.equals(this.view, other.view)
 				&& Objects.equals(this.id, other.id)
 				&& this.epoch == other.epoch
-				&& Objects.equals(this.preparedCommand, other.preparedCommand);
+				&& Objects.equals(this.commandOutput, other.commandOutput);
 		}
 		return false;
 	}
@@ -158,7 +156,7 @@ public final class VertexMetadata {
 	@Override
 	public String toString() {
 		return String.format("%s{epoch=%s view=%s prepared=%s}",
-			getClass().getSimpleName(), this.epoch, this.view, this.preparedCommand
+			getClass().getSimpleName(), this.epoch, this.view, this.commandOutput
 		);
 	}
 }

@@ -23,7 +23,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.consensus.PreparedCommand;
+import com.radixdlt.consensus.CommandOutput;
 import com.radixdlt.consensus.VerifiedCommittedHeader;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -45,10 +45,10 @@ public class EpochChangeManagerTest {
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		long genesisEpoch = 123;
 		when(vertexMetadata.getEpoch()).thenReturn(genesisEpoch);
-		PreparedCommand preparedCommand = mock(PreparedCommand.class);
-		when(preparedCommand.isEndOfEpoch()).thenReturn(true);
-		when(preparedCommand.getStateVersion()).thenReturn(1234L);
-		when(vertexMetadata.getPreparedCommand()).thenReturn(preparedCommand);
+		CommandOutput commandOutput = mock(CommandOutput.class);
+		when(commandOutput.isEndOfEpoch()).thenReturn(true);
+		when(commandOutput.getStateVersion()).thenReturn(1234L);
+		when(vertexMetadata.getPreparedCommand()).thenReturn(commandOutput);
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		VerifiedCommittedCommand cmd = mock(VerifiedCommittedCommand.class);
 		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);

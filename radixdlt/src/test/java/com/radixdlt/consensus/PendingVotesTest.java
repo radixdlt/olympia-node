@@ -154,8 +154,8 @@ public class PendingVotesTest {
 
 	private Vote makeVoteWithoutSignatureFor(BFTNode author, View parentView, Hash vertexId) {
 		Vote vote = mock(Vote.class);
-		VertexMetadata proposed = new VertexMetadata(0, parentView.next(), vertexId, mock(PreparedCommand.class));
-		VertexMetadata parent = new VertexMetadata(0, parentView, Hash.random(), mock(PreparedCommand.class));
+		VertexMetadata proposed = new VertexMetadata(0, parentView.next(), vertexId, mock(CommandOutput.class));
+		VertexMetadata parent = new VertexMetadata(0, parentView, Hash.random(), mock(CommandOutput.class));
 		VoteData voteData = new VoteData(proposed, parent, null);
 		TimestampedVoteData timestampedVoteData = new TimestampedVoteData(voteData, 123456L);
 		when(vote.getVoteData()).thenReturn(voteData);

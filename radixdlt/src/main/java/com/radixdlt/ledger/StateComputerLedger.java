@@ -19,7 +19,7 @@ package com.radixdlt.ledger;
 
 import com.google.common.collect.Sets;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.PreparedCommand;
+import com.radixdlt.consensus.CommandOutput;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.Vertex;
@@ -89,8 +89,8 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	}
 
 	@Override
-	public PreparedCommand prepare(Vertex vertex) {
-		final PreparedCommand parent = vertex.getQC().getProposed().getPreparedCommand();
+	public CommandOutput prepare(Vertex vertex) {
+		final CommandOutput parent = vertex.getQC().getProposed().getPreparedCommand();
 		final long parentStateVersion = parent.getStateVersion();
 
 		boolean isEndOfEpoch = stateComputer.prepare(vertex);
@@ -107,7 +107,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		final long stateVersion = parentStateVersion + versionIncrement;
 		final long timestamp = vertex.getQC().getTimestampedSignatures().weightedTimestamp();
 
-		return PreparedCommand.create(stateVersion, timestamp, isEndOfEpoch);
+		return CommandOutput.create(stateVersion, timestamp, isEndOfEpoch);
 	}
 
 	@Override

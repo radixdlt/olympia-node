@@ -17,7 +17,7 @@
 
 package com.radixdlt.middleware2.network;
 
-import com.radixdlt.consensus.PreparedCommand;
+import com.radixdlt.consensus.CommandOutput;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECKeyPair;
@@ -30,7 +30,7 @@ public class GetEpochResponseMessageSerializeTest extends SerializeMessageObject
 
 	private static GetEpochResponseMessage get() {
 		BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
-		PreparedCommand preparedCommand = PreparedCommand.create(0, 0L, false);
-		return new GetEpochResponseMessage(author, 12345, VertexMetadata.ofGenesisAncestor(preparedCommand));
+		CommandOutput commandOutput = CommandOutput.create(0, 0L, false);
+		return new GetEpochResponseMessage(author, 12345, VertexMetadata.ofGenesisAncestor(commandOutput));
 	}
 }
