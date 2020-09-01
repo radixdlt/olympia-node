@@ -26,9 +26,7 @@ import com.radixdlt.constraintmachine.Spin;
 public interface CMStore {
 
 	/**
-	 * Get the current spin of a particle. Must call supports() to see if this
-	 * store supports the given particle. If not, the return value of getSpin() is
-	 * undefined.
+	 * Get the current spin of a particle.
 	 *
 	 * @param particle the particle to get the spin of
 	 * @return the current spin of a particle

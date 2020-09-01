@@ -18,7 +18,6 @@
 package com.radixdlt.engine;
 
 import com.radixdlt.constraintmachine.CMInstruction;
-import com.radixdlt.identifiers.AID;
 
 /**
  * Radix Engine interface for retrieving a sequence of instructions to
@@ -31,10 +30,4 @@ public interface RadixEngineAtom {
 	 * @return sequence of instructions
 	 */
 	CMInstruction getCMInstruction();
-
-	/**
-	 * Retrieve the unique id of this atom
-	 * @return unique id of atom
-	 */
-	AID getAID();
 }
