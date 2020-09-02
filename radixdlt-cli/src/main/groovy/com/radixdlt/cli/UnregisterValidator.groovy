@@ -38,6 +38,7 @@ class UnregisterValidator implements Runnable {
 	@Override
 	void run() {
 		RadixApplicationAPI api = Utils.getAPI(identityInfo)
+		api.pullOnce(api.getAddress()).blockingAwait()
 		api.unregisterValidator(api.getAddress()).blockUntilComplete()
 		println("unregistered ${api.getAddress()} as a validator")
 	}
