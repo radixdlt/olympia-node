@@ -39,7 +39,8 @@ class SendMessage implements Runnable {
     @CommandLine.Option(names = ["-d", "--address"], paramLabel = "ADDRESS", description = "Address to which message is sent", required = true)
     String addressString
 
-    void run() {
+    @Override
+	void run() {
 
         RadixApplicationAPI api = Utils.getAPI(identityInfo)
         RadixAddress address = RadixAddress.from(addressString)

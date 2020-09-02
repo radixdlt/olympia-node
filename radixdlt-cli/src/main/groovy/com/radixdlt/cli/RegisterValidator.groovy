@@ -41,6 +41,7 @@ class RegisterValidator implements Runnable {
 	@CommandLine.Option(names = ["-a", "--allow-delegators"], paramLabel = "ALLOWED_DELEGATORS", description = "addresses to allow as delegators to this validator", required = false)
 	String[] allowedDelegators
 
+	@Override
 	void run() {
 		def allowedDelegators = Arrays.stream(allowedDelegators)
 				.map(RadixAddress.&from)

@@ -31,7 +31,8 @@ class GetDetails implements Runnable {
     @CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
     Composite.IdentityInfo identityInfo
 
-    void run() {
+    @Override
+	void run() {
 
         RadixApplicationAPI api = Utils.getAPI(identityInfo)
 
