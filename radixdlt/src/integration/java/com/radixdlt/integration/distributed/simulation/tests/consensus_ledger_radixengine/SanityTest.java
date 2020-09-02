@@ -33,10 +33,11 @@ public class SanityTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(4)
 		.ledgerAndRadixEngineWithEpochHighView(View.of(10))
-		.checkSafety("safety")
-		.checkLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
-		.checkNoTimeouts("noTimeouts")
-		.checkAllProposalsHaveDirectParents("directParents")
+		.checkConsensusSafety("safety")
+		.checkConsensusLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
+		.checkConsensusNoTimeouts("noTimeouts")
+		.checkConsensusAllProposalsHaveDirectParents("directParents")
+		.checkLedgerSyncedInOrder("syncedInOrder")
 		.addMempoolSubmissionsSteadyState("mempool");
 
 	@Test

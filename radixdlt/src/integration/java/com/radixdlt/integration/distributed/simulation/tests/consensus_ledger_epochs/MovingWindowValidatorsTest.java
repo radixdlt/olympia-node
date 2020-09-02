@@ -34,9 +34,10 @@ import org.junit.Test;
 public class MovingWindowValidatorsTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(4)
-		.checkSafety("safety")
-		.checkNoTimeouts("noTimeouts")
-		.checkAllProposalsHaveDirectParents("directParents");
+		.checkConsensusSafety("safety")
+		.checkConsensusNoTimeouts("noTimeouts")
+		.checkLedgerSyncedInOrder("syncedInOrder")
+		.checkConsensusAllProposalsHaveDirectParents("directParents");
 
 	private static Function<Long, IntStream> windowedEpochToNodesMapper(int windowSize, int totalValidatorCount) {
 		return epoch -> IntStream.range(0, windowSize).map(index -> (int) (epoch + index) % totalValidatorCount);
@@ -47,8 +48,8 @@ public class MovingWindowValidatorsTest {
 		SimulationTest bftTest = bftTestBuilder
 			.ledgerAndEpochs(View.of(100), windowedEpochToNodesMapper(1, 4))
 			.pacemakerTimeout(5000)
-			.checkLiveness("liveness", 5000, TimeUnit.MILLISECONDS)
-			.checkEpochHighView("epochHighView", View.of(100))
+			.checkConsensusLiveness("liveness", 5000, TimeUnit.MILLISECONDS)
+			.checkEpochsHighViewCorrect("epochHighView", View.of(100))
 			.build();
 		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
 		assertThat(results).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
@@ -59,8 +60,8 @@ public class MovingWindowValidatorsTest {
 		SimulationTest bftTest = bftTestBuilder
 			.ledgerAndEpochs(View.of(100), windowedEpochToNodesMapper(3, 4))
 			.pacemakerTimeout(1000)
-			.checkLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
-			.checkEpochHighView("epochHighView", View.of(100))
+			.checkConsensusLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
+			.checkEpochsHighViewCorrect("epochHighView", View.of(100))
 			.build();
 		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
 		assertThat(results).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
@@ -72,8 +73,8 @@ public class MovingWindowValidatorsTest {
 			.numNodes(100)
 			.ledgerAndEpochs(View.of(100), windowedEpochToNodesMapper(25, 50))
 			.pacemakerTimeout(5000)
-			.checkLiveness("liveness", 5000, TimeUnit.MILLISECONDS) // High timeout to make Travis happy
-			.checkEpochHighView("epochHighView", View.of(100))
+			.checkConsensusLiveness("liveness", 5000, TimeUnit.MILLISECONDS) // High timeout to make Travis happy
+			.checkEpochsHighViewCorrect("epochHighView", View.of(100))
 			.build();
 		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
 		assertThat(results).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
@@ -85,8 +86,8 @@ public class MovingWindowValidatorsTest {
 			.numNodes(100)
 			.ledgerAndEpochs(View.of(1), windowedEpochToNodesMapper(25, 50))
 			.pacemakerTimeout(5000)
-			.checkLiveness("liveness", 5000, TimeUnit.MILLISECONDS) // High timeout to make Travis happy
-			.checkEpochHighView("epochHighView", View.of(1))
+			.checkConsensusLiveness("liveness", 5000, TimeUnit.MILLISECONDS) // High timeout to make Travis happy
+			.checkEpochsHighViewCorrect("epochHighView", View.of(1))
 			.build();
 		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
 		assertThat(results).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());

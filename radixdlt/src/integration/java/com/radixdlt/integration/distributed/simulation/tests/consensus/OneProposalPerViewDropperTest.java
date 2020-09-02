@@ -31,7 +31,7 @@ import org.junit.Test;
  * Simulation with a communication adversary which drops a random proposal message in every
  * round.
  */
-public class OneProposalDropperTest {
+public class OneProposalPerViewDropperTest {
 	private final int minLatency = 10;
 	private final int maxLatency = 200;
 	private final int trips = 20;
@@ -40,9 +40,9 @@ public class OneProposalDropperTest {
 		.numNodes(4)
 		.randomLatency(minLatency, maxLatency)
 		.pacemakerTimeout(synchronousTimeout)
-		.addProposalDropper()
-		.checkSafety("safety")
-		.checkNoTimeouts("noTimeouts");
+		.addOneProposalPerViewDropper()
+		.checkConsensusSafety("safety")
+		.checkConsensusNoTimeouts("noTimeouts");
 
 	/**
 	 * Tests a configuration of 4 nodes with a dropping proposal adversary

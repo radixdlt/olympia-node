@@ -35,8 +35,8 @@ public class OneOutOfBoundsTest {
 	// TODO: Add 1 timeout check
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.pacemakerTimeout(synchronousTimeout)
-		.checkLiveness("liveness", 2 * synchronousTimeout, TimeUnit.MILLISECONDS)
-		.checkSafety("safety");
+		.checkConsensusLiveness("liveness", 2 * synchronousTimeout, TimeUnit.MILLISECONDS)
+		.checkConsensusSafety("safety");
 
 	/**
 	 * Tests a configuration of 1 out of 4 nodes out of synchrony bounds

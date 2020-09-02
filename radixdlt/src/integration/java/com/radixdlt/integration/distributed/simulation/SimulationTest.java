@@ -39,6 +39,7 @@ import com.radixdlt.integration.distributed.simulation.application.RadixEngineVa
 import com.radixdlt.integration.distributed.simulation.application.RegisteredValidatorChecker;
 import com.radixdlt.integration.distributed.simulation.invariants.epochs.EpochViewInvariant;
 import com.radixdlt.integration.distributed.simulation.application.LocalMempoolPeriodicSubmittor;
+import com.radixdlt.integration.distributed.simulation.invariants.ledger.SyncedInOrderInvariant;
 import com.radixdlt.integration.distributed.simulation.network.DroppingLatencyProvider;
 import com.radixdlt.integration.distributed.simulation.network.OneProposalPerViewDropper;
 import com.radixdlt.integration.distributed.simulation.network.RandomLatencyProvider;
@@ -46,11 +47,11 @@ import com.radixdlt.integration.distributed.simulation.network.SimulationNodes;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.mempool.LocalMempool;
 import com.radixdlt.mempool.Mempool;
-import com.radixdlt.integration.distributed.simulation.invariants.bft.AllProposalsHaveDirectParentsInvariant;
-import com.radixdlt.integration.distributed.simulation.invariants.bft.LivenessInvariant;
-import com.radixdlt.integration.distributed.simulation.invariants.bft.NoTimeoutsInvariant;
-import com.radixdlt.integration.distributed.simulation.invariants.bft.NoneCommittedInvariant;
-import com.radixdlt.integration.distributed.simulation.invariants.bft.SafetyInvariant;
+import com.radixdlt.integration.distributed.simulation.invariants.consensus.AllProposalsHaveDirectParentsInvariant;
+import com.radixdlt.integration.distributed.simulation.invariants.consensus.LivenessInvariant;
+import com.radixdlt.integration.distributed.simulation.invariants.consensus.NoTimeoutsInvariant;
+import com.radixdlt.integration.distributed.simulation.invariants.consensus.NoneCommittedInvariant;
+import com.radixdlt.integration.distributed.simulation.invariants.consensus.SafetyInvariant;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECKeyPair;
@@ -126,7 +127,7 @@ public class SimulationTest {
 		private Builder() {
 		}
 
-		public Builder addProposalDropper() {
+		public Builder addOneProposalPerViewDropper() {
 			ImmutableList<BFTNode> bftNodes = nodes.stream().map(kp -> BFTNode.create(kp.getPublicKey()))
 				.collect(ImmutableList.toImmutableList());
 			this.latencyProvider.addDropper(new OneProposalPerViewDropper(bftNodes, new Random()));
@@ -238,37 +239,42 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder checkLiveness(String invariantName) {
+		public Builder checkConsensusLiveness(String invariantName) {
 			this.checksBuilder.put(invariantName, nodes -> new LivenessInvariant(8 * SimulationNetwork.DEFAULT_LATENCY, TimeUnit.MILLISECONDS));
 			return this;
 		}
 
-		public Builder checkLiveness(String invariantName, long duration, TimeUnit timeUnit) {
+		public Builder checkConsensusLiveness(String invariantName, long duration, TimeUnit timeUnit) {
 			this.checksBuilder.put(invariantName, nodes -> new LivenessInvariant(duration, timeUnit));
 			return this;
 		}
 
-		public Builder checkSafety(String invariantName) {
+		public Builder checkConsensusSafety(String invariantName) {
 			this.checksBuilder.put(invariantName, nodes -> new SafetyInvariant());
 			return this;
 		}
 
-		public Builder checkNoTimeouts(String invariantName) {
+		public Builder checkConsensusNoTimeouts(String invariantName) {
 			this.checksBuilder.put(invariantName, nodes -> new NoTimeoutsInvariant());
 			return this;
 		}
 
-		public Builder checkAllProposalsHaveDirectParents(String invariantName) {
+		public Builder checkConsensusAllProposalsHaveDirectParents(String invariantName) {
 			this.checksBuilder.put(invariantName, nodes -> new AllProposalsHaveDirectParentsInvariant());
 			return this;
 		}
 
-		public Builder checkNoneCommitted(String invariantName) {
+		public Builder checkConsensusNoneCommitted(String invariantName) {
 			this.checksBuilder.put(invariantName, nodes -> new NoneCommittedInvariant());
 			return this;
 		}
 
-		public Builder checkEpochHighView(String invariantName, View epochHighView) {
+		public Builder checkLedgerSyncedInOrder(String invariantName) {
+			this.checksBuilder.put(invariantName, nodes -> new SyncedInOrderInvariant());
+			return this;
+		}
+
+		public Builder checkEpochsHighViewCorrect(String invariantName, View epochHighView) {
 			this.checksBuilder.put(invariantName, nodes -> new EpochViewInvariant(epochHighView));
 			return this;
 		}

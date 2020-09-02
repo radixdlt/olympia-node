@@ -15,30 +15,38 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.simulation.invariants.bft;
+package com.radixdlt.integration.distributed.simulation.invariants.consensus;
 
-import com.radixdlt.consensus.Timeout;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.integration.distributed.simulation.TestInvariant;
+import com.radixdlt.consensus.ConsensusEventsRx;
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
-import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Checks that no local timeouts are occurring.
- * Only makes sense to check in networks where there are no failing nodes.
+ * Check that every proposal on the network has a direct parent.
+ * This check only makes sense in networks where there are no failing nodes.
  */
-public class NoTimeoutsInvariant implements TestInvariant {
+public class AllProposalsHaveDirectParentsInvariant implements TestInvariant {
 
 	@Override
 	public Observable<TestInvariantError> check(RunningNetwork network) {
-		List<Observable<Pair<BFTNode, Timeout>>> timeouts = network.getNodes().stream()
-			.map(n -> network.getInfo(n).timeouts().map(t -> Pair.of(n, t)))
+		List<Observable<Vertex>> correctProposals = network.getNodes().stream()
+			.map(network.getUnderlyingNetwork()::getNetworkRx)
+			.map(ConsensusEventsRx::consensusEvents)
+			.map(p -> p.ofType(Proposal.class).map(Proposal::getVertex))
 			.collect(Collectors.toList());
 
-		return Observable.merge(timeouts)
-			.map(pair -> new TestInvariantError("Timeout at node " + pair.getFirst().getSimpleName() + " " + pair.getSecond()));
+		return Observable.merge(correctProposals)
+			.concatMap(v -> {
+				if (!v.hasDirectParent()) {
+					return Observable.just(new TestInvariantError(String.format("Vertex %s has no direct parent", v)));
+				} else {
+					return Observable.empty();
+				}
+			});
 	}
 }

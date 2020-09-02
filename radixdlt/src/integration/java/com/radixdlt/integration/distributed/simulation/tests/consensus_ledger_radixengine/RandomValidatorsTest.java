@@ -37,11 +37,12 @@ public class RandomValidatorsTest {
 		.numNodes(4)
 		.numInitialValidators(2)
 		.ledgerAndRadixEngineWithEpochHighView(View.of(10))
-		.checkEpochHighView("epochHighView", View.of(100))
-		.checkSafety("safety")
-		.checkLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
-		.checkNoTimeouts("noTimeouts")
-		.checkAllProposalsHaveDirectParents("directParents")
+		.checkEpochsHighViewCorrect("epochHighView", View.of(100))
+		.checkConsensusSafety("safety")
+		.checkConsensusLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
+		.checkConsensusNoTimeouts("noTimeouts")
+		.checkConsensusAllProposalsHaveDirectParents("directParents")
+		.checkLedgerSyncedInOrder("syncedInOrder")
 		.addRadixEngineValidatorRegisterUnregisterMempoolSubmissions("mempoolSubmitted");
 
 	@Test
