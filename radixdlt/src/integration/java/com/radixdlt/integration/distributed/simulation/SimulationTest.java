@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
+import com.radixdlt.LedgerCommandGeneratorModule;
 import com.radixdlt.LedgerEpochChangeModule;
 import com.radixdlt.LedgerEpochChangeRxModule;
 import com.radixdlt.LedgerModule;
@@ -304,9 +305,11 @@ public class SimulationTest {
 				ledgerModules.add(new MockedSyncServiceModule(sharedCommittedCmds));
 
 				if (ledgerType == LedgerType.LEDGER) {
+					ledgerModules.add(new MockedCommandGeneratorModule());
 					ledgerModules.add(new MockedMempoolModule());
 					ledgerModules.add(new MockedStateComputerModule(validatorSet));
 				} else if (ledgerType == LedgerType.LEDGER_AND_EPOCHS) {
+					ledgerModules.add(new LedgerCommandGeneratorModule());
 					ledgerModules.add(new MockedMempoolModule());
 					ledgerModules.add(new LedgerEpochChangeModule());
 					Function<Long, BFTValidatorSet> epochToValidatorSetMapping =
@@ -317,6 +320,7 @@ public class SimulationTest {
 								.collect(Collectors.toList())));
 					ledgerModules.add(new MockedStateComputerWithEpochsModule(epochHighView, epochToValidatorSetMapping));
 				} else if (ledgerType == LedgerType.LEDGER_AND_LOCALMEMPOOL) {
+					ledgerModules.add(new LedgerCommandGeneratorModule());
 					ledgerModules.add(new LedgerLocalMempoolModule(10));
 					ledgerModules.add(new AbstractModule() {
 						@Override
@@ -326,6 +330,7 @@ public class SimulationTest {
 					});
 					ledgerModules.add(new MockedStateComputerModule(validatorSet));
 				} else if (ledgerType == LedgerType.LEDGER_AND_RADIXENGINE) {
+					ledgerModules.add(new LedgerCommandGeneratorModule());
 					ledgerModules.add(new LedgerLocalMempoolModule(10));
 					ledgerModules.add(new AbstractModule() {
 						@Override

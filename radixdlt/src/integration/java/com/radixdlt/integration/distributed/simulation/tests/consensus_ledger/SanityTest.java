@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_localmempool;
+package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
@@ -28,35 +28,19 @@ import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
-/**
- * Simple mempool sanity test which runs the mempool submit and commit invariant.
- */
-public class MempoolSanityTest {
+public class SanityTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(4)
-		.checkLedgerSyncedInOrder("syncedInOrder")
+		.ledger()
 		.checkConsensusSafety("safety")
 		.checkConsensusLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
 		.checkConsensusNoTimeouts("noTimeouts")
 		.checkConsensusAllProposalsHaveDirectParents("directParents")
-		.addMempoolSubmissionsSteadyState("mempool");
-
-	/**
-	 * TODO: This is more of a test for mempoolSubmissionSteadyState, should move somewhere else
-	 */
-	@Test
-	public void when_submitting_items_to_null_mempool__then_test_should_fail() {
-		SimulationTest simulationTest = bftTestBuilder
-			.ledger()
-			.build();
-		Map<String, Optional<TestInvariantError>> results = simulationTest.run(1, TimeUnit.MINUTES);
-		assertThat(results).hasEntrySatisfying("mempool", error -> assertThat(error).isPresent());
-	}
+		.checkLedgerSyncedInOrder("syncedInOrder");
 
 	@Test
-	public void when_submitting_items_to_mempool__then_they_should_get_executed() {
+	public void sanity_tests_should_pass() {
 		SimulationTest simulationTest = bftTestBuilder
-			.ledgerAndMempool()
 			.build();
 		Map<String, Optional<TestInvariantError>> results = simulationTest.run(1, TimeUnit.MINUTES);
 		assertThat(results).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
