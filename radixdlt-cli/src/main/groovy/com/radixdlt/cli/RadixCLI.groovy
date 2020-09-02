@@ -38,7 +38,7 @@ import picocli.CommandLine.Command
 class RadixCLI implements Runnable {
 
     @Override
-	void run() {
+    void run() {
         print "Running Radix CLI"
     }
 

@@ -34,7 +34,7 @@ class ShowValidatorConfig implements Runnable {
 	Composite.IdentityInfo identityInfo
 
 	@Override
-	void run() {
+    void run() {
 
 		RadixApplicationAPI api = Utils.getAPI(identityInfo)
 		api.pullOnce(api.getAddress())

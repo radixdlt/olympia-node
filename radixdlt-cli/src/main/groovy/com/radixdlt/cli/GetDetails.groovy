@@ -32,7 +32,7 @@ class GetDetails implements Runnable {
     Composite.IdentityInfo identityInfo
 
     @Override
-	void run() {
+    void run() {
 
         RadixApplicationAPI api = Utils.getAPI(identityInfo)
 

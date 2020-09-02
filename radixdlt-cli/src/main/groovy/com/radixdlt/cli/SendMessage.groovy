@@ -40,7 +40,7 @@ class SendMessage implements Runnable {
     String addressString
 
     @Override
-	void run() {
+    void run() {
 
         RadixApplicationAPI api = Utils.getAPI(identityInfo)
         RadixAddress address = RadixAddress.from(addressString)
