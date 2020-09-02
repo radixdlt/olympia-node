@@ -23,6 +23,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.addressbook.PeersAddedEvent;
@@ -87,7 +88,7 @@ public class AddressBookGenesisVertexMetadataProvider {
 	}
 
 	public Header getGenesisVertexMetadata() {
-		LedgerState ledgerState = LedgerState.create(0, 0L, true);
+		LedgerState ledgerState = LedgerState.create(0, Hash.ZERO_HASH, 0L, true);
 		return Header.ofGenesisAncestor(ledgerState);
 	}
 }

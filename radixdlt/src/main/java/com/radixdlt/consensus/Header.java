@@ -50,10 +50,6 @@ public final class Header {
 	@DsonOutput(Output.ALL)
 	private final Hash vertexId;
 
-	@JsonProperty("last_command_id")
-	@DsonOutput(Output.ALL)
-	private final Hash lastCommandId; // TODO: Change to accumulator
-
 	@JsonProperty("ledger_state")
 	@DsonOutput(Output.ALL)
 	private final LedgerState ledgerState;
@@ -63,7 +59,6 @@ public final class Header {
 		this.view = null;
 		this.epoch = 0L;
 		this.vertexId = null;
-		this.lastCommandId = null;
 		this.ledgerState = null;
 	}
 
@@ -72,7 +67,6 @@ public final class Header {
 		long epoch, // consensus data
 		View view, // consensus data
 		Hash vertexId, // consensus data
-		Hash lastCommandId,
 		LedgerState ledgerState
 	) {
 		if (epoch < 0) {
@@ -82,7 +76,6 @@ public final class Header {
 		this.epoch = epoch;
 		this.view = view;
 		this.vertexId = vertexId;
-		this.lastCommandId = lastCommandId;
 		this.ledgerState = ledgerState;
 	}
 
@@ -91,7 +84,7 @@ public final class Header {
 			0,
 			View.genesis(),
 			Hash.ZERO_HASH,
-			Hash.ZERO_HASH, ledgerState
+			ledgerState
 		);
 	}
 
@@ -100,9 +93,9 @@ public final class Header {
 			vertex.getEpoch(),
 			vertex.getView(),
 			vertex.getId(),
-			vertex.getCommand() == null ? null : vertex.getCommand().getHash(),
 			LedgerState.create(
 				vertex.getQC().getParent().getPreparedCommand().getStateVersion(),
+				Hash.ZERO_HASH,
 				0L,
 				false
 			)
@@ -114,7 +107,7 @@ public final class Header {
 			vertex.getEpoch(),
 			vertex.getView(),
 			vertex.getId(),
-			vertex.getCommand() == null ? null : vertex.getCommand().getHash(), ledgerState
+			ledgerState
 		);
 	}
 
@@ -147,7 +140,7 @@ public final class Header {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.epoch, this.view, this.vertexId, this.lastCommandId, this.ledgerState);
+		return Objects.hash(this.epoch, this.view, this.vertexId, this.ledgerState);
 	}
 
 	@Override
@@ -161,7 +154,6 @@ public final class Header {
 				Objects.equals(this.view, other.view)
 				&& this.epoch == other.epoch
 				&& Objects.equals(this.vertexId, other.vertexId)
-				&& Objects.equals(this.lastCommandId, other.lastCommandId)
 				&& Objects.equals(this.ledgerState, other.ledgerState);
 		}
 		return false;

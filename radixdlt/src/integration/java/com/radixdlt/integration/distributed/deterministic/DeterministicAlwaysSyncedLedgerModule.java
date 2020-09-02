@@ -26,6 +26,7 @@ import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.Header;
 import com.radixdlt.consensus.sync.SyncRequestSender;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.VerifiedCommittedCommand;
 
 /**
@@ -43,7 +44,7 @@ public class DeterministicAlwaysSyncedLedgerModule extends AbstractModule {
 		return new Ledger() {
 			@Override
 			public LedgerState prepare(Vertex vertex) {
-				return LedgerState.create(0, 0L, false);
+				return LedgerState.create(0, Hash.ZERO_HASH, 0L, false);
 			}
 
 			@Override

@@ -19,6 +19,7 @@ package com.radixdlt.integration.distributed.deterministic;
 
 import com.google.inject.Provides;
 import com.radixdlt.consensus.sync.SyncRequestSender;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.VerifiedCommittedCommand;
 import java.util.Random;
 
@@ -52,7 +53,7 @@ public class DeterministicRandomlySyncedLedgerModule extends AbstractModule {
 		return new Ledger() {
 			@Override
 			public LedgerState prepare(Vertex vertex) {
-				return LedgerState.create(0, 0L, false);
+				return LedgerState.create(0, Hash.ZERO_HASH, 0L, false);
 			}
 
 			@Override

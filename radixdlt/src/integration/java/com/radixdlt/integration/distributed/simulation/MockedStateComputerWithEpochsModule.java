@@ -24,6 +24,7 @@ import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.Header;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 
 import com.radixdlt.ledger.VerifiedCommittedCommand;
@@ -49,7 +50,7 @@ public class MockedStateComputerWithEpochsModule extends AbstractModule {
 
 	@Provides
 	private Header genesisMetadata() {
-		LedgerState ledgerState = LedgerState.create(0, 0L, true);
+		LedgerState ledgerState = LedgerState.create(0, Hash.ZERO_HASH, 0L, true);
 		return Header.ofGenesisAncestor(ledgerState);
 	}
 

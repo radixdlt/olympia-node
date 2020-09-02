@@ -24,6 +24,7 @@ import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.VerifiedCommittedHeader;
 import com.radixdlt.consensus.Header;
 import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.ClientAtom.LedgerAtomConversionException;
@@ -51,9 +52,9 @@ public class CommittedAtomSerializeTest extends SerializeObject<CommittedAtom> {
 		}
 
 		VerifiedCommittedHeader proof = new VerifiedCommittedHeader(
-			Header.ofGenesisAncestor(LedgerState.create(0, 0L, false)),
-			Header.ofGenesisAncestor(LedgerState.create(0, 0L, false)),
-			Header.ofGenesisAncestor(LedgerState.create(0, 0L, false)),
+			Header.ofGenesisAncestor(LedgerState.create(0, Hash.random(), 0L, false)),
+			Header.ofGenesisAncestor(LedgerState.create(0, Hash.random(), 0L, false)),
+			Header.ofGenesisAncestor(LedgerState.create(0, Hash.random(), 0L, false)),
 			new TimestampedECDSASignatures()
 		);
 

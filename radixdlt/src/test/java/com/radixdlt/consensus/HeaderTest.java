@@ -31,16 +31,14 @@ public class HeaderTest {
 
 	private Header testObject;
 	private Hash id;
-	private Hash commandId;
 	private LedgerState ledgerState;
 
 	@Before
 	public void setUp() {
 		View view = View.of(1234567890L);
 		this.id = Hash.random();
-		this.commandId = Hash.random();
 		this.ledgerState = mock(LedgerState.class);
-		this.testObject = new Header(0, view, id, commandId, ledgerState);
+		this.testObject = new Header(0, view, id, ledgerState);
 	}
 
 	@Test

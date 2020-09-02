@@ -18,7 +18,9 @@
 package com.radixdlt.consensus;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
+import com.radixdlt.crypto.Hash;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Before;
@@ -27,11 +29,13 @@ import org.junit.Test;
 public class LedgerStateTest {
 	private LedgerState ledgerState;
 	private long timestamp;
+	private Hash commandId;
 
 	@Before
 	public void setup() {
 		this.timestamp = 12345678L;
-		this.ledgerState = LedgerState.create(12345, timestamp, false);
+		this.commandId = mock(Hash.class);
+		this.ledgerState = LedgerState.create(12345, commandId, timestamp, false);
 	}
 
 	@Test
@@ -39,6 +43,8 @@ public class LedgerStateTest {
 		assertThat(ledgerState.getStateVersion()).isEqualTo(12345);
 		assertThat(ledgerState.timestamp()).isEqualTo(timestamp);
 		assertThat(ledgerState.isEndOfEpoch()).isFalse();
+		assertThat(ledgerState.getStateVersion());
+		assertThat(ledgerState.getCommandId()).isEqualTo(commandId);
 	}
 
 	@Test

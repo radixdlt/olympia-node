@@ -37,7 +37,7 @@ public class VoteTest {
 
 	@Before
 	public void setUp() {
-		Header parent = new Header(0, View.of(1234567890L), Hash.random(), Hash.random(), mock(LedgerState.class));
+		Header parent = new Header(0, View.of(1234567890L), Hash.random(), mock(LedgerState.class));
 		this.voteData = new VoteData(Header.ofGenesisAncestor(mock(LedgerState.class)), parent, null);
 		this.timestampedVoteData = new TimestampedVoteData(this.voteData, 123456L);
 		this.author = mock(BFTNode.class);

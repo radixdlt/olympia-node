@@ -19,6 +19,7 @@ package com.radixdlt.consensus;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -41,9 +42,13 @@ public final class LedgerState {
 	@DsonOutput(Output.ALL)
 	private final long stateVersion;
 
+	@JsonProperty("command_id")
+	@DsonOutput(Output.ALL)
+	private final Hash commandId; // TODO: Change to accumulator
+
 	@JsonProperty("timestamp")
 	@DsonOutput(Output.ALL)
-	private final long timestamp;
+	private final long timestamp; // TODO: Move into command accumulator
 
 	@JsonProperty("isEndOfEpoch")
 	@DsonOutput(Output.ALL)
@@ -53,20 +58,27 @@ public final class LedgerState {
 	@JsonCreator
 	private LedgerState(
 		@JsonProperty("stateVersion") long stateVersion,
+		@JsonProperty("command_id") Hash commandId,
 		@JsonProperty("timestamp") long timestamp,
 		@JsonProperty("isEndOfEpoch") boolean isEndOfEpoch
 	) {
 		this.stateVersion = stateVersion;
+		this.commandId = commandId;
 		this.isEndOfEpoch = isEndOfEpoch;
 		this.timestamp = timestamp;
 	}
 
 	public static LedgerState create(
 		long stateVersion,
+		Hash commandId,
 		long timestamp,
 		boolean isEndOfEpoch
 	) {
-		return new LedgerState(stateVersion, timestamp, isEndOfEpoch);
+		return new LedgerState(stateVersion, commandId, timestamp, isEndOfEpoch);
+	}
+
+	public Hash getCommandId() {
+		return commandId;
 	}
 
 	public long getStateVersion() {
@@ -83,7 +95,7 @@ public final class LedgerState {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.stateVersion, this.timestamp, this.isEndOfEpoch);
+		return Objects.hash(this.stateVersion, this.commandId, this.timestamp, this.isEndOfEpoch);
 	}
 
 	@Override
@@ -95,6 +107,7 @@ public final class LedgerState {
 			LedgerState other = (LedgerState) o;
 			return this.timestamp == other.timestamp
 				&& this.stateVersion == other.stateVersion
+				&& Objects.equals(this.commandId, other.commandId)
 				&& this.isEndOfEpoch == other.isEndOfEpoch;
 		}
 		return false;

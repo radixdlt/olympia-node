@@ -107,7 +107,12 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		final long stateVersion = parentStateVersion + versionIncrement;
 		final long timestamp = vertex.getQC().getTimestampedSignatures().weightedTimestamp();
 
-		return LedgerState.create(stateVersion, timestamp, isEndOfEpoch);
+		return LedgerState.create(
+			stateVersion,
+			vertex.getCommand() == null ? null : vertex.getCommand().getHash(),
+			timestamp,
+			isEndOfEpoch
+		);
 	}
 
 	@Override

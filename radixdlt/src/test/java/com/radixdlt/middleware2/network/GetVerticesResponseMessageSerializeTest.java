@@ -41,7 +41,7 @@ public class GetVerticesResponseMessageSerializeTest extends SerializeMessageObj
 		BFTValidatorSet bftValidatorSet = BFTValidatorSet.from(ImmutableSet.of(
 			BFTValidator.from(BFTNode.create(keyPair.getPublicKey()), UInt256.ONE)
 		));
-		LedgerState ledgerState = LedgerState.create(0, 0L, false);
+		LedgerState ledgerState = LedgerState.create(0, Hash.random(), 0L, false);
 		Vertex genesisVertex = Vertex.createGenesis(Header.ofGenesisAncestor(ledgerState));
 		return new GetVerticesResponseMessage(1234, Hash.random(), ImmutableList.of(genesisVertex));
 	}

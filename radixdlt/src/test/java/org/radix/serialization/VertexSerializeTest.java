@@ -34,11 +34,9 @@ public class VertexSerializeTest extends SerializeObject<Vertex> {
 
 	private static Vertex get() {
 		View view = View.of(1234567891L);
-		Hash id = Hash.random();
-
-		LedgerState ledgerState = LedgerState.create(0, 0L, false);
-		Header header = new Header(0, view, id, Hash.random(), ledgerState);
-		Header parent = new Header(0, View.of(1234567890L), Hash.random(), Hash.random(), ledgerState);
+		LedgerState ledgerState = LedgerState.create(0, Hash.random(), 0L, false);
+		Header header = new Header(0, view, Hash.random(), ledgerState);
+		Header parent = new Header(0, View.of(1234567890L), Hash.random(), ledgerState);
 		VoteData voteData = new VoteData(header, parent, null);
 
 		QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
