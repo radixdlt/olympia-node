@@ -46,7 +46,8 @@ class CreateAndMintToken implements Runnable {
     String tokenDescription = "Token description not provided"
 
 
-    void run() {
+    @Override
+	void run() {
 
         RadixApplicationAPI api = Utils.getAPI(identityInfo)
         RRI tokenRRI = RRI.of(api.getAddress(), tokenName)

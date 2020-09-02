@@ -48,12 +48,12 @@ import java.util.function.BiFunction;
  */
 public final class RadixJsonRpcMethodEpic<T extends JsonRpcMethodAction> implements RadixNetworkEpic {
 	private final WebSockets webSockets;
-	private final BiFunction<RadixJsonRpcClient, T, Single<JsonRpcResultAction>> methodCall;
+	private final BiFunction<RadixJsonRpcClient, T, Single<JsonRpcResultAction<?>>> methodCall;
 	private final Class<T> methodClass;
 
 	public RadixJsonRpcMethodEpic(
 		WebSockets webSockets,
-		BiFunction<RadixJsonRpcClient, T, Single<JsonRpcResultAction>> methodCall,
+		BiFunction<RadixJsonRpcClient, T, Single<JsonRpcResultAction<?>>> methodCall,
 		Class<T> methodClass) {
 		this.webSockets = webSockets;
 		this.methodCall = methodCall;

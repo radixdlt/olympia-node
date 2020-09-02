@@ -32,6 +32,8 @@ import okhttp3.Response;
 import okhttp3.WebSocket;
 import org.junit.Test;
 
+import com.radixdlt.test.util.TypedMocks;
+
 public class WebSocketClientTest {
 	@Test
 	public void testConnect() {
@@ -72,7 +74,7 @@ public class WebSocketClientTest {
 			return webSocket;
 		});
 
-		Consumer<String> listener = mock(Consumer.class);
+		Consumer<String> listener = TypedMocks.rmock(Consumer.class);
 		client.addListener(listener);
 		client.connect();
 		verify(listener, times(1)).accept("hello");
@@ -90,7 +92,7 @@ public class WebSocketClientTest {
 			return webSocket;
 		});
 
-		Consumer<String> listener = mock(Consumer.class);
+		Consumer<String> listener = TypedMocks.rmock(Consumer.class);
 		client.addListener(listener);
 		client.connect();
 		verify(listener, times(1)).accept("hello");

@@ -35,6 +35,7 @@ class UnregisterValidator implements Runnable {
 	@CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
 	Composite.IdentityInfo identityInfo
 
+	@Override
 	void run() {
 		RadixApplicationAPI api = Utils.getAPI(identityInfo)
 		api.pullOnce(api.getAddress()).blockingAwait()

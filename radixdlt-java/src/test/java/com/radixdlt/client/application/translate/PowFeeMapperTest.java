@@ -31,6 +31,7 @@ import static org.mockito.Mockito.when;
 
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.test.util.TypedMocks;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.crypto.Hash;
@@ -57,7 +58,7 @@ public class PowFeeMapperTest {
 		when(builder.build(anyInt(), any(), anyInt())).thenReturn(pow);
 		when(pow.getNonce()).thenReturn(1L);
 
-		Function<Atom, Hash> hasher = mock(Function.class);
+		Function<Atom, Hash> hasher = TypedMocks.rmock(Function.class);
 		when(hasher.apply(any())).thenReturn(hash);
 		PowFeeMapper powFeeMapper = new PowFeeMapper(hasher, builder);
 
