@@ -82,6 +82,7 @@ public final class BitcoinJHDKeyPairDerivation implements HDKeyPairDerivation {
 		return Bytes.toHexString(bip32ExtendedRootKey.getPubKey());
 	}
 
+	@Override
 	public HDKeyPair deriveKeyAtPath(HDPath path) {
 		DeterministicKey childKey = deriveKeyForHDPath(path);
 		try {

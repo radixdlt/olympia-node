@@ -103,7 +103,7 @@ final class BitcoinJBIP32Path implements HDPath {
 
 	@Override
 	public long index() {
-		long index = (long) lastComponent().num();
+		long index = lastComponent().num();
 		if (!isHardened()) {
 			return index;
 		}

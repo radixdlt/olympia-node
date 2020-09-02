@@ -46,14 +46,12 @@ public class BIP39Tests {
 
 	@Test
 	public void when_validating_a_non_checksummed_mnemonic_requiring_it_to_be_checksum_test_then_it_is_invalid() {
-		@SuppressWarnings("checkstyle:linelength")
 		String nonChecksummedMnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon above";
 		assertFalse(DefaultMnemonicToSeedConverter.isValidMnemonicString(nonChecksummedMnemonic));
 	}
 
 	@Test
 	public void when_validating_a_checksummed_mnemonic_without_checksum_test_then_it_is_valid() {
-		@SuppressWarnings("checkstyle:linelength")
 		String checksummedMnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 		assertTrue(DefaultMnemonicToSeedConverter.isValidMnemonicString(checksummedMnemonic));
 	}

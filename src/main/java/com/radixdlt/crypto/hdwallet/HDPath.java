@@ -29,6 +29,7 @@ public interface HDPath {
 	 * @return a string representation of the BIP32 path, using standard notation "'" for hardened components, e.g.
 	 * "m/44'/536'/2'/1/4
 	 */
+	@Override
 	String toString();
 
 	/**

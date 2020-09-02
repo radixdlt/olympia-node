@@ -30,11 +30,11 @@ public class DefaultHDKeyPairDerivationStaticMethodTests {
 
 	static String mnemonicString = "equip will roof matter pink blind book anxiety banner elbow sun young";
 
-	@SuppressWarnings("checkstyle:linelength")
-	static List<String> mnemonicWords = Arrays.asList("equip", "will", "roof", "matter", "pink", "blind", "book", "anxiety", "banner", "elbow", "sun", "young");
+	static List<String> mnemonicWords =
+		Arrays.asList("equip", "will", "roof", "matter", "pink", "blind", "book", "anxiety", "banner", "elbow", "sun", "young");
 
-	@SuppressWarnings("checkstyle:linelength")
-	static String seedHex = "ed2f664e65b5ef0dd907ae15a2788cfc98e41970bc9fcb46f5900f6919862075e721f37212304a56505dab99b001cc8907ef093b7c5016a46b50c01cc3ec1cac";
+	static String seedHex =
+		"ed2f664e65b5ef0dd907ae15a2788cfc98e41970bc9fcb46f5900f6919862075e721f37212304a56505dab99b001cc8907ef093b7c5016a46b50c01cc3ec1cac";
 	static byte[] seedBytes = Bytes.fromHexString(seedHex);
 
 	@Test
