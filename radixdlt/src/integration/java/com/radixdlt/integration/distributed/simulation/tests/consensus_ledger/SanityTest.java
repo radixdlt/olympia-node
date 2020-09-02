@@ -36,7 +36,8 @@ public class SanityTest {
 		.checkConsensusLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
 		.checkConsensusNoTimeouts("noTimeouts")
 		.checkConsensusAllProposalsHaveDirectParents("directParents")
-		.checkLedgerSyncedInOrder("syncedInOrder");
+		.checkLedgerSyncedInOrder("syncedInOrder")
+		.checkLedgerProcessesConsensusCommitted("consensusToLedger");
 
 	@Test
 	public void sanity_tests_should_pass() {

@@ -42,6 +42,7 @@ public class IncreasingValidatorsTest {
 		.checkConsensusNoTimeouts("noTimeouts")
 		.checkConsensusAllProposalsHaveDirectParents("directParents")
 		.checkLedgerSyncedInOrder("syncedInOrder")
+		.checkLedgerProcessesConsensusCommitted("consensusToLedger")
 		.addRadixEngineValidatorRegisterMempoolSubmissions("mempoolSubmitted", "epochChanges");
 
 	@Test

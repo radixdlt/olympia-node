@@ -19,12 +19,14 @@ package com.radixdlt.integration.distributed.simulation.network;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.SystemInfoRxModule;
 import com.radixdlt.consensus.EpochChangeRx;
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.integration.distributed.simulation.MockedCryptoModule;
 import com.radixdlt.integration.distributed.simulation.SimulationNetworkModule;
@@ -34,6 +36,7 @@ import com.radixdlt.systeminfo.InfoRx;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.ConsensusRunner;
 
+import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.List;
 import java.util.Objects;
@@ -74,6 +77,12 @@ public class SimulationNodes {
 
 	private Injector createBFTInstance(BFTNode self) {
 		List<Module> modules = ImmutableList.of(
+			new AbstractModule() {
+				@Override
+				public void configure() {
+					bind(BFTNode.class).toInstance(self);
+				}
+			},
 			new ConsensusModule(pacemakerTimeout),
 			new SystemInfoRxModule(),
 			new MockedCryptoModule(),
@@ -90,7 +99,9 @@ public class SimulationNodes {
 
 		Observable<EpochChange> latestEpochChanges();
 
-		Observable<VerifiedCommittedCommand> committedCommands();
+		Observable<Pair<BFTNode, Vertex>> committedVertices();
+
+		Observable<Pair<BFTNode, VerifiedCommittedCommand>> committedCommands();
 
 		InfoRx getInfo(BFTNode node);
 
@@ -136,13 +147,29 @@ public class SimulationNodes {
 			}
 
 			@Override
-			public Observable<VerifiedCommittedCommand> committedCommands() {
-				Set<Observable<VerifiedCommittedCommand>> commands = nodeInstances.stream()
-					.map(i -> i.getInstance(InfoRx.class))
-					.map(InfoRx::committedCommands)
+			public Observable<Pair<BFTNode, Vertex>> committedVertices() {
+				Set<Observable<Pair<BFTNode, Vertex>>> committedVertices = nodeInstances.stream()
+					.map(i -> {
+						BFTNode node = i.getInstance(BFTNode.class);
+						return i.getInstance(InfoRx.class).committedVertices()
+							.map(v -> Pair.of(node, v));
+					})
 					.collect(Collectors.toSet());
 
-				return Observable.merge(commands).distinct();
+				return Observable.merge(committedVertices);
+			}
+
+			@Override
+			public Observable<Pair<BFTNode, VerifiedCommittedCommand>> committedCommands() {
+				Set<Observable<Pair<BFTNode, VerifiedCommittedCommand>>> committedCommands = nodeInstances.stream()
+					.map(i -> {
+						BFTNode node = i.getInstance(BFTNode.class);
+						return i.getInstance(InfoRx.class).committedCommands()
+							.map(v -> Pair.of(node, v));
+					})
+					.collect(Collectors.toSet());
+
+				return Observable.merge(committedCommands);
 			}
 
 			@Override

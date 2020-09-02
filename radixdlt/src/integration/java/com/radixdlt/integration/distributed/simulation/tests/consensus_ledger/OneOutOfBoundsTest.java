@@ -15,11 +15,10 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_radixengine;
+package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
@@ -29,29 +28,30 @@ import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
-/**
- * Randomly registers and unregisters nodes as validators
- */
-public class RandomValidatorsTest {
+public class OneOutOfBoundsTest {
+	private final int latency = 50;
+	private final int synchronousTimeout = 8 * latency;
+	private final int outOfBoundsLatency = synchronousTimeout;
+	// TODO: Add 1 timeout check
 	private final Builder bftTestBuilder = SimulationTest.builder()
-		.numNodes(4)
-		.numInitialValidators(2)
-		.ledgerAndRadixEngineWithEpochHighView(View.of(10))
-		.checkEpochsHighViewCorrect("epochHighView", View.of(100))
+		.ledger()
+		.pacemakerTimeout(synchronousTimeout)
+		.checkConsensusLiveness("liveness", 2 * synchronousTimeout, TimeUnit.MILLISECONDS)
 		.checkConsensusSafety("safety")
-		.checkConsensusLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
-		.checkConsensusNoTimeouts("noTimeouts")
-		.checkConsensusAllProposalsHaveDirectParents("directParents")
 		.checkLedgerSyncedInOrder("syncedInOrder")
-		.checkLedgerProcessesConsensusCommitted("consensusToLedger")
-		.addRadixEngineValidatorRegisterUnregisterMempoolSubmissions("mempoolSubmitted");
+		.checkLedgerProcessesConsensusCommitted("consensusToLedger");
 
+	/**
+	 * Tests a configuration of 1 out of 4 nodes out of synchrony bounds
+	 */
 	@Test
-	public void when_random_validators__then_sanity_checks_should_pass() {
-		SimulationTest simulationTest = bftTestBuilder
+	public void given_1_out_of_4_nodes_out_of_synchrony_bounds() {
+		SimulationTest test = bftTestBuilder
+			.numNodesAndLatencies(4, latency, latency, latency, outOfBoundsLatency)
 			.build();
-		Map<String, Optional<TestInvariantError>> results = simulationTest.run(1, TimeUnit.MINUTES);
-		assertThat(results).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+
+		Map<String, Optional<TestInvariantError>> results = test.run(1, TimeUnit.MINUTES);
+		assertThat(results).allSatisfy((name, error) -> AssertionsForClassTypes.assertThat(error).isNotPresent());
 	}
 
 }

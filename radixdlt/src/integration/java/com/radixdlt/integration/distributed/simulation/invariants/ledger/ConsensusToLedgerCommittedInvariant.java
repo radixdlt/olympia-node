@@ -15,36 +15,37 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.simulation.application;
+package com.radixdlt.integration.distributed.simulation.invariants.ledger;
 
-import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.integration.distributed.simulation.TestInvariant;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
+import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Checks to make sure that commands have been committed in a certain amount
- * of time
+ * Checks to make sure that everything committed by consensus eventually makes it to the ledger
+ * of atleast one node (TODO: test for every node)
  */
-public class CommittedChecker implements TestInvariant {
-	private final Observable<Command> submittedCommands;
-
-	public CommittedChecker(Observable<Command> submittedCommands) {
-		this.submittedCommands = Objects.requireNonNull(submittedCommands);
-	}
+public class ConsensusToLedgerCommittedInvariant implements TestInvariant {
 
 	@Override
 	public Observable<TestInvariantError> check(RunningNetwork network) {
-		return submittedCommands
+		return network.committedVertices()
+			.map(Pair::getSecond)
+			.filter(v -> v.getCommand() != null)
+			.map(Vertex::getCommand)
 			.flatMapMaybe(command -> network
-					.committedCommands()
-						.filter(nodeAndCmd -> Objects.equals(nodeAndCmd.getSecond().getCommand(), command))
-						.timeout(10, TimeUnit.SECONDS)
-						.firstOrError()
-						.ignoreElement()
-						.onErrorReturn(e -> new TestInvariantError(e.getMessage() + " " + command))
+				.committedCommands()
+				.filter(nodeAndCmd -> Objects.equals(nodeAndCmd.getSecond().getCommand(), command))
+				.timeout(10, TimeUnit.SECONDS)
+				.firstOrError()
+				.ignoreElement()
+				.onErrorReturn(e -> new TestInvariantError(
+					"Committed vertex " + command + " has not been inserted into the ledger after 10 seconds")
+				)
 			);
 	}
 }

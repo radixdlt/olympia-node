@@ -82,6 +82,6 @@ public final class VerifiedCommittedCommand {
 
 	@Override
 	public String toString() {
-		return String.format("%s{cmd=%s meta=%s}", this.getClass().getSimpleName(), command, proof);
+		return String.format("%s{cmd=%s proof=%s}", this.getClass().getSimpleName(), command, proof);
 	}
 }

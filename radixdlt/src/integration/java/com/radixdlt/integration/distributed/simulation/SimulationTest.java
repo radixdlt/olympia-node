@@ -40,6 +40,7 @@ import com.radixdlt.integration.distributed.simulation.application.RadixEngineVa
 import com.radixdlt.integration.distributed.simulation.application.RegisteredValidatorChecker;
 import com.radixdlt.integration.distributed.simulation.invariants.epochs.EpochViewInvariant;
 import com.radixdlt.integration.distributed.simulation.application.LocalMempoolPeriodicSubmittor;
+import com.radixdlt.integration.distributed.simulation.invariants.ledger.ConsensusToLedgerCommittedInvariant;
 import com.radixdlt.integration.distributed.simulation.invariants.ledger.SyncedInOrderInvariant;
 import com.radixdlt.integration.distributed.simulation.network.DroppingLatencyProvider;
 import com.radixdlt.integration.distributed.simulation.network.OneProposalPerViewDropper;
@@ -267,6 +268,11 @@ public class SimulationTest {
 
 		public Builder checkConsensusNoneCommitted(String invariantName) {
 			this.checksBuilder.put(invariantName, nodes -> new NoneCommittedInvariant());
+			return this;
+		}
+
+		public Builder checkLedgerProcessesConsensusCommitted(String invariantName) {
+			this.checksBuilder.put(invariantName, nodes -> new ConsensusToLedgerCommittedInvariant());
 			return this;
 		}
 

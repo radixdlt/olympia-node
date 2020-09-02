@@ -55,8 +55,10 @@ public class SyncedInOrderInvariant implements TestInvariant {
 			VerifiedCommittedCommand cmd = nodeAndCommand.getSecond();
 			List<VerifiedCommittedCommand> nodeCommands = commandsPerNode.get(node);
 			nodeCommands.add(cmd);
+
 			return commandsPerNode.values().stream()
-				.filter(list -> list.size() > nodeCommands.size())
+				.filter(list -> nodeCommands != list)
+				.filter(list -> list.size() >= nodeCommands.size())
 				.findFirst() // Only need to check one node, if passes, guaranteed to pass the others
 				.flatMap(list -> {
 					if (Collections.indexOfSubList(list, nodeCommands) != 0) {

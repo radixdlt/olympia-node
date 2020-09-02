@@ -36,8 +36,9 @@ public class MovingWindowValidatorsTest {
 		.numNodes(4)
 		.checkConsensusSafety("safety")
 		.checkConsensusNoTimeouts("noTimeouts")
+		.checkConsensusAllProposalsHaveDirectParents("directParents")
 		.checkLedgerSyncedInOrder("syncedInOrder")
-		.checkConsensusAllProposalsHaveDirectParents("directParents");
+		.checkLedgerProcessesConsensusCommitted("consensusToLedger");
 
 	private static Function<Long, IntStream> windowedEpochToNodesMapper(int windowSize, int totalValidatorCount) {
 		return epoch -> IntStream.range(0, windowSize).map(index -> (int) (epoch + index) % totalValidatorCount);

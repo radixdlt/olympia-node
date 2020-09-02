@@ -38,6 +38,7 @@ public class SanityTest {
 		.checkConsensusNoTimeouts("noTimeouts")
 		.checkConsensusAllProposalsHaveDirectParents("directParents")
 		.checkLedgerSyncedInOrder("syncedInOrder")
+		.checkLedgerProcessesConsensusCommitted("consensusToLedger")
 		.addMempoolSubmissionsSteadyState("mempool");
 
 	@Test

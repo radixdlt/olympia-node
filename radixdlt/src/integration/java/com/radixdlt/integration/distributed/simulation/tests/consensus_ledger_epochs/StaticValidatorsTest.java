@@ -32,11 +32,12 @@ import org.junit.Test;
 public class StaticValidatorsTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(4)
-		.checkLedgerSyncedInOrder("syncedInOrder")
 		.checkConsensusSafety("safety")
 		.checkConsensusLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
 		.checkConsensusNoTimeouts("noTimeouts")
-		.checkConsensusAllProposalsHaveDirectParents("directParents");
+		.checkConsensusAllProposalsHaveDirectParents("directParents")
+		.checkLedgerSyncedInOrder("syncedInOrder")
+		.checkLedgerProcessesConsensusCommitted("consensusToLedger");
 
 	@Test
 	public void given_correct_bft_with_changing_epochs_every_view__then_should_pass_bft_and_epoch_invariants() {
