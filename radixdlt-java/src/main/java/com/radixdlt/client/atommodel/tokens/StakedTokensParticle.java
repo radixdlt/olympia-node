@@ -24,6 +24,7 @@ package com.radixdlt.client.atommodel.tokens;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.client.atommodel.Accountable;
 import com.radixdlt.client.atommodel.Ownable;
 import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
@@ -35,7 +36,6 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.utils.UInt256;
 
-import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -128,7 +128,7 @@ public final class StakedTokensParticle extends Particle implements Accountable,
 
 	@Override
 	public Set<RadixAddress> getAddresses() {
-		return Collections.singleton(this.address);
+		return ImmutableSet.of(this.address, this.delegateAddress);
 	}
 
 	@Override

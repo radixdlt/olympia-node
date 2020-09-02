@@ -55,6 +55,8 @@ import com.radixdlt.client.application.translate.tokens.MintTokensAction;
 import com.radixdlt.client.application.translate.tokens.MintTokensActionMapper;
 import com.radixdlt.client.application.translate.tokens.StakeTokensAction;
 import com.radixdlt.client.application.translate.tokens.StakeTokensMapper;
+import com.radixdlt.client.application.translate.tokens.StakedTokenBalanceReducer;
+import com.radixdlt.client.application.translate.tokens.StakedTokenBalanceState;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceReducer;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceState;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionsReducer;
@@ -165,6 +167,7 @@ public class RadixApplicationAPI {
 			.addStatefulParticlesMapper(UnregisterValidatorAction.class, new UnregisterValidatorActionMapper())
 			.addReducer(new TokenDefinitionsReducer())
 			.addReducer(new TokenBalanceReducer())
+			.addReducer(new StakedTokenBalanceReducer())
 			.addAtomMapper(new AtomToDecryptedMessageMapper())
 			.addAtomMapper(new AtomToTokenTransfersMapper())
 			.addAtomErrorMapper(new AlreadyUsedUniqueIdReasonMapper());
@@ -518,6 +521,18 @@ public class RadixApplicationAPI {
 
 		return observeBalances(address)
 			.map(balances -> Optional.ofNullable(balances.get(token)).orElse(BigDecimal.ZERO));
+	}
+
+	/**
+	 * Returns a stream of the latest stake balance at a given address.
+	 * pull() must be called to continually retrieve the latest balances.
+	 *
+	 * @return a cold observable of the latest stake balances at an address
+	 */
+	public Observable<Map<RRI, BigDecimal>> observeStake(RadixAddress address) {
+		Objects.requireNonNull(address);
+		return observeState(StakedTokenBalanceState.class, address)
+			.map(StakedTokenBalanceState::getBalance);
 	}
 
 	/**

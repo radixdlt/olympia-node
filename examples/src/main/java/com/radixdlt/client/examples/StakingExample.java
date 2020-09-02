@@ -68,6 +68,10 @@ public class StakingExample {
 		api.observeBalance(tokenRRI)
 			.subscribe(balance -> System.out.println("My Balance: " + balance));
 
+		// Observe current and future staking balance
+		api.observeStake(api.getAddress())
+			.subscribe(balance -> System.out.println("My Stake: " + balance));
+
 		// Create token and mint
 		Transaction transaction = api.createTransaction();
 		transaction.stage(CreateTokenAction.create(
