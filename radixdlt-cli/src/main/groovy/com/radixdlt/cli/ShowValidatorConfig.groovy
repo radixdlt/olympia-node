@@ -37,7 +37,6 @@ class ShowValidatorConfig implements Runnable {
 	@CommandLine.Option(names = ["-d", "--address"], paramLabel = "ADDRESS", description = "Validator address to show config of", required = false)
 	String addressString
 
-	@Override
 	void run() {
 		RadixApplicationAPI api = Utils.getAPI(identityInfo)
 		RadixAddress address = addressString == null ? api.getAddress() : RadixAddress.from(addressString)
