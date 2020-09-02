@@ -90,7 +90,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 
 	@Override
 	public LedgerState prepare(Vertex vertex) {
-		final LedgerState parent = vertex.getQC().getProposed().getPreparedCommand();
+		final LedgerState parent = vertex.getQC().getProposed().getLedgerState();
 		final long parentStateVersion = parent.getStateVersion();
 
 		boolean isEndOfEpoch = stateComputer.prepare(vertex);
@@ -117,7 +117,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 
 	@Override
 	public OnSynced ifCommitSynced(Header header) {
-		final long targetStateVersion = header.getPreparedCommand().getStateVersion();
+		final long targetStateVersion = header.getLedgerState().getStateVersion();
 		synchronized (lock) {
 			if (targetStateVersion <= this.currentStateVersion) {
 				return onSync -> {
@@ -141,7 +141,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		final Command command = verifiedCommittedCommand.getCommand();
 
 		synchronized (lock) {
-			final long stateVersion = header.getPreparedCommand().getStateVersion();
+			final long stateVersion = header.getLedgerState().getStateVersion();
 			// TODO: get this invariant to as low level as possible
 			if (stateVersion != this.currentStateVersion + 1) {
 				return;

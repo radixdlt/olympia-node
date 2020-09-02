@@ -49,6 +49,6 @@ public class AddressBookGenesisHeaderProviderTest {
 		when(addressBook.peers()).thenAnswer(inv -> Stream.of(peer));
 
 		Header header = validatorSetProvider.getGenesisVertexMetadata();
-		assertThat(header.getPreparedCommand().isEndOfEpoch()).isTrue();
+		assertThat(header.getLedgerState().isEndOfEpoch()).isTrue();
 	}
 }

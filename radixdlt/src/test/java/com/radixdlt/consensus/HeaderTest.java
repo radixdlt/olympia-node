@@ -52,7 +52,7 @@ public class HeaderTest {
 		assertThat(View.of(1234567890L)).isEqualTo(this.testObject.getView());
 
 		assertThat(id).isEqualTo(this.testObject.getVertexId());
-		assertThat(ledgerState).isEqualTo(this.testObject.getPreparedCommand());
+		assertThat(ledgerState).isEqualTo(this.testObject.getLedgerState());
 	}
 
 	@Test

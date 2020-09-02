@@ -45,6 +45,10 @@ public final class CommittedAtom implements LedgerAtom {
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
+	@JsonProperty("state_version")
+	@DsonOutput(Output.ALL)
+	private final long stateVersion;
+
 	@JsonProperty("atom")
 	@DsonOutput(Output.ALL)
 	private final ClientAtom clientAtom;
@@ -58,11 +62,17 @@ public final class CommittedAtom implements LedgerAtom {
 		// Serializer only
 		this.clientAtom = null;
 		this.proof = null;
+		this.stateVersion = 0L;
 	}
 
-	public CommittedAtom(ClientAtom clientAtom, VerifiedCommittedHeader proof) {
+	public CommittedAtom(ClientAtom clientAtom, long stateVersion, VerifiedCommittedHeader proof) {
 		this.clientAtom = clientAtom;
+		this.stateVersion = stateVersion;
 		this.proof = Objects.requireNonNull(proof);
+	}
+
+	public long getStateVersion() {
+		return stateVersion;
 	}
 
 	public ClientAtom getClientAtom() {
@@ -85,7 +95,7 @@ public final class CommittedAtom implements LedgerAtom {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.clientAtom, this.proof);
+		return Objects.hash(this.clientAtom, this.stateVersion, this.proof);
 	}
 
 	@Override
@@ -96,6 +106,7 @@ public final class CommittedAtom implements LedgerAtom {
 
 		CommittedAtom other = (CommittedAtom) o;
 		return Objects.equals(other.clientAtom, this.clientAtom)
+			&& other.stateVersion == this.stateVersion
 			&& Objects.equals(other.proof, this.proof);
 	}
 
@@ -111,8 +122,8 @@ public final class CommittedAtom implements LedgerAtom {
 
 	@Override
 	public String toString() {
-		return String.format("%s{atom=%s, proof=%s}",
-			getClass().getSimpleName(), clientAtom != null ? clientAtom.getAID() : null, this.proof);
+		return String.format("%s{atom=%s, stateVersion=%s proof=%s}",
+			getClass().getSimpleName(), stateVersion, clientAtom != null ? clientAtom.getAID() : null, this.proof);
 	}
 }
 

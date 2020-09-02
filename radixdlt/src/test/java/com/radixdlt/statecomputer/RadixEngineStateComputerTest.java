@@ -103,7 +103,7 @@ public class RadixEngineStateComputerTest {
 		LedgerState ledgerState = mock(LedgerState.class);
 		when(ledgerState.getStateVersion()).thenReturn(1L);
 		when(ledgerState.isEndOfEpoch()).thenReturn(false);
-		when(header.getPreparedCommand()).thenReturn(ledgerState);
+		when(header.getLedgerState()).thenReturn(ledgerState);
 
 		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenReturn(clientAtom);
 
@@ -128,7 +128,7 @@ public class RadixEngineStateComputerTest {
 		LedgerState ledgerState = mock(LedgerState.class);
 		when(ledgerState.getStateVersion()).thenReturn(1L);
 		when(ledgerState.isEndOfEpoch()).thenReturn(false);
-		when(header.getPreparedCommand()).thenReturn(ledgerState);
+		when(header.getLedgerState()).thenReturn(ledgerState);
 
 		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenReturn(clientAtom);
 		RadixEngineException e = mock(RadixEngineException.class);
@@ -156,7 +156,7 @@ public class RadixEngineStateComputerTest {
 		LedgerState ledgerState = mock(LedgerState.class);
 		when(ledgerState.getStateVersion()).thenReturn(1L);
 		when(ledgerState.isEndOfEpoch()).thenReturn(true);
-		when(header.getPreparedCommand()).thenReturn(ledgerState);
+		when(header.getLedgerState()).thenReturn(ledgerState);
 
 		RadixEngineValidatorSetBuilder validatorSetBuilder = mock(RadixEngineValidatorSetBuilder.class);
 		when(radixEngine.getComputedState(eq(RadixEngineValidatorSetBuilder.class)))
@@ -181,7 +181,7 @@ public class RadixEngineStateComputerTest {
 		LedgerState ledgerState = mock(LedgerState.class);
 		when(ledgerState.getStateVersion()).thenReturn(1L);
 		when(ledgerState.isEndOfEpoch()).thenReturn(false);
-		when(header.getPreparedCommand()).thenReturn(ledgerState);
+		when(header.getLedgerState()).thenReturn(ledgerState);
 
 		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenThrow(new SerializationException(""));
 

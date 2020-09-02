@@ -210,7 +210,7 @@ public class BFTEventReducerTest {
 		when(proposerElection.getProposer(any())).thenReturn(self);
 		QuorumCertificate highQC = mock(QuorumCertificate.class);
 		Header header = mock(Header.class);
-		when(header.getPreparedCommand()).thenReturn(mock(LedgerState.class));
+		when(header.getLedgerState()).thenReturn(mock(LedgerState.class));
 		when(highQC.getProposed()).thenReturn(header);
 		when(vertexStore.getHighestQC()).thenReturn(highQC);
 		when(nextCommandGenerator.generateNextCommand(eq(View.of(1L)), any())).thenReturn(mock(Command.class));

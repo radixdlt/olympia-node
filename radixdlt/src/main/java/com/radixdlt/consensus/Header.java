@@ -94,7 +94,7 @@ public final class Header {
 			vertex.getView(),
 			vertex.getId(),
 			LedgerState.create(
-				vertex.getQC().getParent().getPreparedCommand().getStateVersion(),
+				vertex.getQC().getParent().getLedgerState().getStateVersion(),
 				Hash.ZERO_HASH,
 				0L,
 				false
@@ -111,7 +111,7 @@ public final class Header {
 		);
 	}
 
-	public LedgerState getPreparedCommand() {
+	public LedgerState getLedgerState() {
 		return ledgerState;
 	}
 

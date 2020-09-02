@@ -605,7 +605,7 @@ public class VertexStoreTest {
 		assertThat(vertexStore.getHighestCommittedQC()).isEqualTo(vertex4.getQC());
 
 		CommittedStateSync committedStateSync = new CommittedStateSync(
-			vertexMetadataAtomicReference.get().getPreparedCommand().getStateVersion(), stateOpaque.get()
+			vertexMetadataAtomicReference.get().getLedgerState().getStateVersion(), stateOpaque.get()
 		);
 		vertexStore.processCommittedStateSync(committedStateSync);
 

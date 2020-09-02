@@ -218,7 +218,7 @@ public class EpochManagerTest {
 
 		Header ancestor = mock(Header.class);
 		when(ancestor.getEpoch()).thenReturn(1L);
-		when(ancestor.getPreparedCommand()).thenReturn(mock(LedgerState.class));
+		when(ancestor.getLedgerState()).thenReturn(mock(LedgerState.class));
 
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		when(validatorSet.containsNode(any())).thenReturn(true);
@@ -258,7 +258,7 @@ public class EpochManagerTest {
 		Header ancestor = mock(Header.class);
 		when(ancestor.getEpoch()).thenReturn(1L);
 		LedgerState ledgerState = mock(LedgerState.class);
-		when(ancestor.getPreparedCommand()).thenReturn(ledgerState);
+		when(ancestor.getLedgerState()).thenReturn(ledgerState);
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		when(validatorSet.containsNode(any())).thenReturn(true);
 
@@ -373,7 +373,7 @@ public class EpochManagerTest {
 
 		Header ancestor = mock(Header.class);
 		when(ancestor.getEpoch()).thenReturn(1L);
-		when(ancestor.getPreparedCommand()).thenReturn(mock(LedgerState.class));
+		when(ancestor.getLedgerState()).thenReturn(mock(LedgerState.class));
 
 		EpochChange epochChange = mock(EpochChange.class);
 		when(epochChange.getAncestor()).thenReturn(ancestor);
@@ -426,7 +426,7 @@ public class EpochManagerTest {
 
 		Header header = mock(Header.class);
 		when(header.getEpoch()).thenReturn(1L);
-		when(header.getPreparedCommand()).thenReturn(mock(LedgerState.class));
+		when(header.getLedgerState()).thenReturn(mock(LedgerState.class));
 
 		EpochChange epochChange = mock(EpochChange.class);
 		when(epochChange.getAncestor()).thenReturn(header);

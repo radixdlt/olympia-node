@@ -47,11 +47,12 @@ public class CommittedAtomTest {
 		when(clientAtom.getPowFeeHash()).thenReturn(mock(Hash.class));
 		when(clientAtom.getMetaData()).thenReturn(TypedMocks.rmock(ImmutableMap.class));
 		this.proof = mock(VerifiedCommittedHeader.class);
-		this.committedAtom = new CommittedAtom(clientAtom, proof);
+		this.committedAtom = new CommittedAtom(clientAtom, 12345L, proof);
 	}
 
 	@Test
 	public void testGetters() {
+		assertThat(committedAtom.getStateVersion()).isEqualTo(12345L);
 		assertThat(committedAtom.getClientAtom()).isEqualTo(clientAtom);
 		assertThat(committedAtom.getAID()).isEqualTo(clientAtom.getAID());
 		assertThat(committedAtom.getCMInstruction()).isEqualTo(clientAtom.getCMInstruction());

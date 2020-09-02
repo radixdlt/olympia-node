@@ -59,7 +59,7 @@ public class SyncServiceProcessorTest {
 		Header header = mock(Header.class);
 		LedgerState ledgerState = mock(LedgerState.class);
 		when(ledgerState.getStateVersion()).thenReturn(version);
-		when(header.getPreparedCommand()).thenReturn(ledgerState);
+		when(header.getLedgerState()).thenReturn(ledgerState);
 		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
 		when(proof.getHeader()).thenReturn(header);
 		when(committedCommand.getProof()).thenReturn(proof);
@@ -111,7 +111,7 @@ public class SyncServiceProcessorTest {
 		Header target = mock(Header.class);
 		LedgerState ledgerState = mock(LedgerState.class);
 		when(ledgerState.getStateVersion()).thenReturn(targetVersion);
-		when(target.getPreparedCommand()).thenReturn(ledgerState);
+		when(target.getLedgerState()).thenReturn(ledgerState);
 		syncServiceProcessor.processVersionUpdate(currentVersion);
 		LocalSyncRequest request = new LocalSyncRequest(target, ImmutableList.of(node));
 		syncServiceProcessor.processLocalSyncRequest(request);
@@ -144,7 +144,7 @@ public class SyncServiceProcessorTest {
 		Header target = mock(Header.class);
 		LedgerState ledgerState = mock(LedgerState.class);
 		when(ledgerState.getStateVersion()).thenReturn(targetVersion);
-		when(target.getPreparedCommand()).thenReturn(ledgerState);
+		when(target.getLedgerState()).thenReturn(ledgerState);
 		syncServiceProcessor.processVersionUpdate(currentVersion);
 		LocalSyncRequest request = new LocalSyncRequest(target, ImmutableList.of(node));
 		syncServiceProcessor.processLocalSyncRequest(request);
@@ -156,7 +156,7 @@ public class SyncServiceProcessorTest {
 		newCommands1.add(buildWithVersion(15));
 		syncServiceProcessor.processSyncResponse(newCommands1.build());
 		verify(syncedCommandSender, never())
-			.sendSyncedCommand(argThat(a -> a.getProof().getHeader().getPreparedCommand().getStateVersion() > 11));
+			.sendSyncedCommand(argThat(a -> a.getProof().getHeader().getLedgerState().getStateVersion() > 11));
 	}
 
 	@Test
@@ -173,7 +173,7 @@ public class SyncServiceProcessorTest {
 		Header target = mock(Header.class);
 		LedgerState ledgerState = mock(LedgerState.class);
 		when(ledgerState.getStateVersion()).thenReturn(targetVersion);
-		when(target.getPreparedCommand()).thenReturn(ledgerState);
+		when(target.getLedgerState()).thenReturn(ledgerState);
 		syncServiceProcessor.processVersionUpdate(currentVersion);
 		LocalSyncRequest request = new LocalSyncRequest(target, ImmutableList.of(node));
 		syncServiceProcessor.processLocalSyncRequest(request);
@@ -191,6 +191,6 @@ public class SyncServiceProcessorTest {
 		syncServiceProcessor.processSyncResponse(newCommands.build());
 
 		verify(syncedCommandSender, times(1))
-			.sendSyncedCommand(argThat(a -> a.getProof().getHeader().getPreparedCommand().getStateVersion() == 1));
+			.sendSyncedCommand(argThat(a -> a.getProof().getHeader().getLedgerState().getStateVersion() == 1));
 	}
 }

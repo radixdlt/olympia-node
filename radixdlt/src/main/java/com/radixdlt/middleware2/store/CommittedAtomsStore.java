@@ -20,7 +20,6 @@ package com.radixdlt.middleware2.store;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.Header;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
@@ -96,7 +95,8 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 					// TODO: Remove serialization/deserialization
 					VerifiedCommittedCommand committedCommand = commandToBinaryConverter.toCommand(ledgerEntry.getContent());
 					ClientAtom clientAtom = committedCommand.getCommand().map(clientAtomToBinaryConverter::toAtom);
-					return Optional.of(new CommittedAtom(clientAtom, committedCommand.getProof()));
+					long stateVersion = ledgerEntry.getStateVersion();
+					return Optional.of(new CommittedAtom(clientAtom, stateVersion, committedCommand.getProof()));
 				});
 		} else {
 			log.debug("getAtomByParticle returned empty result");
@@ -111,10 +111,9 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		Command command = new Command(payload);
 		VerifiedCommittedCommand committedCommand = new VerifiedCommittedCommand(command, committedAtom.getProof());
 		byte[] binaryAtom = commandToBinaryConverter.toLedgerEntryContent(committedCommand);
-		Header header = committedAtom.getProof().getHeader();
 		LedgerEntry ledgerEntry = new LedgerEntry(
 			binaryAtom,
-			header.getPreparedCommand().getStateVersion(),
+			committedAtom.getStateVersion(),
 			committedAtom.getAID()
 		);
 		EngineAtomIndices engineAtomIndices = atomIndexer.getIndices(committedAtom);

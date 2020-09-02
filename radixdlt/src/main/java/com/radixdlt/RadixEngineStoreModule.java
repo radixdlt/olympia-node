@@ -106,7 +106,7 @@ public class RadixEngineStoreModule extends AbstractModule {
 		final VerifiedCommittedHeader proof = new VerifiedCommittedHeader(genesisHeader, genesisHeader, genesisHeader,
 			new TimestampedECDSASignatures()
 		);
-		return new CommittedAtom(genesisAtom, proof);
+		return new CommittedAtom(genesisAtom, genesisHeader.getLedgerState().getStateVersion(), proof);
 	}
 
 	@Provides
@@ -164,7 +164,7 @@ public class RadixEngineStoreModule extends AbstractModule {
 			serialization
 		);
 		if (store.getNextCommittedLedgerEntries(genesisAtom.getProof().getHeader()
-			.getPreparedCommand().getStateVersion() - 1, 1).isEmpty()
+			.getLedgerState().getStateVersion() - 1, 1).isEmpty()
 		) {
 			engineStore.storeAtom(genesisAtom);
 		}

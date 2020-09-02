@@ -208,7 +208,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 				}
 				// TODO: Remove isEndOfEpoch knowledge from consensus
 				processQC(qc).ifPresent(committedProof -> {
-					if (committedProof.getHeader().getPreparedCommand().isEndOfEpoch()) {
+					if (committedProof.getHeader().getLedgerState().isEndOfEpoch()) {
 						this.endOfEpochSender.sendEndOfEpoch(committedProof.getHeader());
 					}
 				});
@@ -235,7 +235,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 			// Propose null atom in the case that we are at the end of the epoch
 			// TODO: Remove isEndOfEpoch knowledge from consensus
-			if (highestQC.getProposed().getPreparedCommand().isEndOfEpoch()) {
+			if (highestQC.getProposed().getLedgerState().isEndOfEpoch()) {
 				nextCommand = null;
 			} else {
 				final List<Vertex> preparedVertices = vertexStore.getPathFromRoot(highestQC.getProposed().getVertexId());
