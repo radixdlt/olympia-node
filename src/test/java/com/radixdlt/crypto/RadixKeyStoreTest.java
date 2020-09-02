@@ -63,6 +63,7 @@ public class RadixKeyStoreTest {
 		File file = newFile(TEST_KS_FILENAME);
 		try (RadixKeyStore ks = RadixKeyStore.fromFile(file, null, true)) {
 			assertTrue(file.exists());
+			assertTrue(ks.toString().contains(file.toString()));
 		}
 	}
 
@@ -120,6 +121,7 @@ public class RadixKeyStoreTest {
 		File file = newFile(TEST_KS_FILENAME);
 		try (RadixKeyStore ks = RadixKeyStore.fromFile(file, "secret1".toCharArray(), true)) {
 			assertTrue(file.exists());
+			assertTrue(ks.toString().contains(file.toString()));
 		}
 		assertThatThrownBy(() -> RadixKeyStore.fromFile(file, "secret2".toCharArray(), false))
 			.isInstanceOf(IOException.class)
