@@ -46,6 +46,13 @@ allprojects {
     repositories {
         maven { url 'https://jitpack.io' }
     }
+    gradle.projectsEvaluated {
+        tasks.withType(JavaCompile) {
+            options.compilerArgs << "-Xlint:all" << "-Werror"
+            options.compilerArgs << "-Xlint:-processing"    // Not really a useful warning
+            options.compilerArgs << "-Xlint:-serial"        // Not using Java serialization
+        }
+    }
 }
 
 checkstyle {
