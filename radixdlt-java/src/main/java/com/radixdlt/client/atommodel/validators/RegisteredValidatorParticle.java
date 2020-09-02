@@ -52,7 +52,7 @@ public class RegisteredValidatorParticle extends Particle implements Accountable
 	@DsonOutput(DsonOutput.Output.ALL)
 	private long nonce;
 
-	private RegisteredValidatorParticle() {
+	RegisteredValidatorParticle() {
 		// for serializer
 	}
 

@@ -65,6 +65,7 @@ import com.radixdlt.client.application.translate.data.AtomToDecryptedMessageMapp
 import com.radixdlt.client.application.translate.data.DecryptedMessage;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceReducer;
 import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.test.util.TypedMocks;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.ledger.AtomObservation;
@@ -211,7 +212,7 @@ public class RadixApplicationAPITest {
 		when(address.euid()).thenReturn(EUID.ONE);
 
 		Result result = api.sendMessage(address, new byte[0], false);
-		Observable observable = result.toObservable();
+		Observable<?> observable = result.toObservable();
 		observable.subscribe();
 		observable.subscribe();
 		observable.subscribe();
@@ -312,7 +313,7 @@ public class RadixApplicationAPITest {
 		when(universe.getAtomStore()).thenReturn(mock(AtomStore.class));
 		Action action = mock(Action.class);
 
-		StatelessActionToParticleGroupsMapper actionMapper = mock(StatelessActionToParticleGroupsMapper.class);
+		StatelessActionToParticleGroupsMapper<Action> actionMapper = TypedMocks.rmock(StatelessActionToParticleGroupsMapper.class);
 		when(actionMapper.mapToParticleGroups(eq(action))).thenReturn(Collections.singletonList(ParticleGroup.of(SpunParticle.up(particle))));
 		AtomErrorToExceptionReasonMapper errorMapper = mock(AtomErrorToExceptionReasonMapper.class);
 		ActionExecutionExceptionReason reason = mock(ActionExecutionExceptionReason.class);

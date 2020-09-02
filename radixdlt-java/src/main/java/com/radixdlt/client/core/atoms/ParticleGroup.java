@@ -70,7 +70,8 @@ public class ParticleGroup {
 	private final ImmutableMap<String, String> metaData;
 
 
-	private ParticleGroup() {
+	ParticleGroup() {
+		// Serializer only
 		this.particles = ImmutableList.of();
 		this.metaData = ImmutableMap.of();
 	}

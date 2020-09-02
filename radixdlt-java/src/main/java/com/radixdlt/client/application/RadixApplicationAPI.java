@@ -172,8 +172,8 @@ public class RadixApplicationAPI {
 
 	private final RadixIdentity identity;
 	private final RadixUniverse universe;
-	private final Map<Class<?>, AtomToExecutedActionsMapper> actionStores;
-	private final Map<Class<? extends ApplicationState>, ParticleReducer> applicationStores;
+	private final Map<Class<?>, AtomToExecutedActionsMapper<?>> actionStores;
+	private final Map<Class<? extends ApplicationState>, ParticleReducer<?>> applicationStores;
 	private final ImmutableMap<Class<? extends Action>, Function<Action, Set<ShardedParticleStateId>>> requiredStateMappers;
 	private final ImmutableMap<Class<? extends Action>, BiFunction<Action, Stream<Particle>, List<ParticleGroup>>> actionMappers;
 	/**
@@ -215,7 +215,9 @@ public class RadixApplicationAPI {
 	}
 
 	private <T extends ApplicationState> ParticleReducer<T> getStateReducer(Class<T> storeClass) {
-		ParticleReducer<T> store = this.applicationStores.get(storeClass);
+		// Type safety ensured by mapping from class to reducer with class type argument
+		@SuppressWarnings("unchecked")
+		ParticleReducer<T> store = (ParticleReducer<T>) this.applicationStores.get(storeClass);
 		if (store == null) {
 			throw new IllegalArgumentException("No store available for class: " + storeClass);
 		}
@@ -223,7 +225,9 @@ public class RadixApplicationAPI {
 	}
 
 	private <T> AtomToExecutedActionsMapper<T> getActionMapper(Class<T> actionClass) {
-		AtomToExecutedActionsMapper<T> store = actionStores.get(actionClass);
+		// Type safety ensured by mapping from class to mapper with class type argument
+		@SuppressWarnings("unchecked")
+		AtomToExecutedActionsMapper<T> store = (AtomToExecutedActionsMapper<T>) actionStores.get(actionClass);
 		if (store == null) {
 			throw new IllegalArgumentException("No store available for class: " + actionClass);
 		}
@@ -1164,7 +1168,7 @@ public class RadixApplicationAPI {
 		}
 
 		public <T extends Action> RadixApplicationAPIBuilder addStatelessParticlesMapper(
-			Class<T> actionClass,
+			Class<? extends T> actionClass,
 			StatelessActionToParticleGroupsMapper<T> mapper
 		) {
 			this.requiredStateMappers.put(actionClass, a -> ImmutableSet.of());

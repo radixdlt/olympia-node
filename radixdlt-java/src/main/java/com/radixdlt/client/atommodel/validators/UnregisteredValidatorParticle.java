@@ -44,7 +44,7 @@ public class UnregisteredValidatorParticle extends Particle implements Accountab
 	@DsonOutput(DsonOutput.Output.ALL)
 	private long nonce;
 
-	private UnregisteredValidatorParticle() {
+	UnregisteredValidatorParticle() {
 		// for serializer
 	}
 

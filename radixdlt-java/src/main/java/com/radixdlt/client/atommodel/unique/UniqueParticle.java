@@ -44,8 +44,8 @@ public class UniqueParticle extends Particle implements Identifiable {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private long nonce;
 
-	private UniqueParticle() {
-		super();
+	UniqueParticle() {
+		// Serializer only
 	}
 
 	public UniqueParticle(RadixAddress address, String unique) {

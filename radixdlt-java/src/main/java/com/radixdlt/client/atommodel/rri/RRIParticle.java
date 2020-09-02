@@ -43,8 +43,8 @@ public class RRIParticle extends Particle implements Accountable {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private long nonce;
 
-	private RRIParticle() {
-		// Nothing to do here
+	RRIParticle() {
+		// Serializer only
 	}
 
 	public RRIParticle(RRI rri) {

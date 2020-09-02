@@ -32,6 +32,7 @@ import org.junit.Test;
 
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.test.util.TypedMocks;
 import com.radixdlt.client.core.atoms.Atom;
 
 import static org.mockito.Mockito.mock;
@@ -51,7 +52,7 @@ public class AtomToTokenTransferActionsMapperTest {
 		when(tokenDefinitionReference.getAddress()).thenReturn(RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor"));
 
 		TransferrableTokensParticle ttp = new TransferrableTokensParticle(
-			UInt256.ONE, UInt256.ONE, myAddress, 0, tokenDefinitionReference, mock(Map.class)
+			UInt256.ONE, UInt256.ONE, myAddress, 0, tokenDefinitionReference, TypedMocks.rmock(Map.class)
 		);
 
 		ParticleGroup pg = ParticleGroup.of(SpunParticle.down(ttp), SpunParticle.up(ttp));
