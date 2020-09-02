@@ -34,11 +34,11 @@ class ShowValidatorConfig implements Runnable {
 	@CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
 	Composite.IdentityInfo identityInfo
 
-    @CommandLine.Option(names = ["-d", "--address"], paramLabel = "ADDRESS", description = "Validator address to show config of", required = false)
-    String addressString
+	@CommandLine.Option(names = ["-d", "--address"], paramLabel = "ADDRESS", description = "Validator address to show config of", required = false)
+	String addressString
 
-    @Override
-    void run() {
+	@Override
+	void run() {
 		RadixApplicationAPI api = Utils.getAPI(identityInfo)
 		RadixAddress address = addressString == null ? api.getAddress() : RadixAddress.from(addressString)
 		api.pullOnce(api.getAddress()).blockingAwait()
