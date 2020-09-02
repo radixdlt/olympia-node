@@ -62,8 +62,8 @@ public final class QuorumCertificate {
 			throw new IllegalArgumentException(String.format("Vertex is not genesis: %s", genesisVertex));
 		}
 
-		CommandHeader commandHeader = CommandHeader.ofGenesisVertex(genesisVertex);
-		final VoteData voteData = new VoteData(commandHeader, commandHeader, commandHeader);
+		Header header = Header.ofGenesisVertex(genesisVertex);
+		final VoteData voteData = new VoteData(header, header, header);
 		return new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 	}
 
@@ -71,15 +71,15 @@ public final class QuorumCertificate {
 		return voteData.getProposed().getView();
 	}
 
-	public CommandHeader getProposed() {
+	public Header getProposed() {
 		return voteData.getProposed();
 	}
 
-	public CommandHeader getParent() {
+	public Header getParent() {
 		return voteData.getParent();
 	}
 
-	public Optional<CommandHeader> getCommitted() {
+	public Optional<Header> getCommitted() {
 		return voteData.getCommitted();
 	}
 

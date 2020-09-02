@@ -27,12 +27,12 @@ import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.CommandHeader;
+import com.radixdlt.consensus.Header;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.sync.SyncRequestSender;
-import com.radixdlt.consensus.CommandOutput;
+import com.radixdlt.consensus.LedgerState;
 import io.reactivex.rxjava3.core.Observable;
 
 public class MockedLedgerModule extends AbstractModule {
@@ -46,8 +46,8 @@ public class MockedLedgerModule extends AbstractModule {
 	public void configure() {
 		bind(CommittedStateSyncRx.class).toInstance(Observable::never);
 		bind(EpochChangeRx.class).toInstance(Observable::never);
-		CommandOutput commandOutput = CommandOutput.create(0, 0L, true);
-		EpochChange initialEpoch = new EpochChange(CommandHeader.ofGenesisAncestor(commandOutput), validatorSet);
+		LedgerState ledgerState = LedgerState.create(0, 0L, true);
+		EpochChange initialEpoch = new EpochChange(Header.ofGenesisAncestor(ledgerState), validatorSet);
 		bind(EpochChange.class).toInstance(initialEpoch);
 		bind(NextCommandGenerator.class).toInstance((view, aids) -> null);
 		bind(SyncRequestSender.class).toInstance(req -> { });
@@ -58,12 +58,12 @@ public class MockedLedgerModule extends AbstractModule {
 	Ledger syncedLedger() {
 		return new Ledger() {
 			@Override
-			public CommandOutput prepare(Vertex vertex) {
-				return CommandOutput.create(0, 0L, false);
+			public LedgerState prepare(Vertex vertex) {
+				return LedgerState.create(0, 0L, false);
 			}
 
 			@Override
-			public OnSynced ifCommitSynced(CommandHeader commandHeader) {
+			public OnSynced ifCommitSynced(Header header) {
 				return onSynced -> {
 					onSynced.run();
 					return (notSynced, opaque) -> { };

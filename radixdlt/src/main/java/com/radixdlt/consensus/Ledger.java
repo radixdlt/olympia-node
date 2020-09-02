@@ -30,14 +30,14 @@ public interface Ledger {
 	 * @param vertex the vertex to compute
 	 * @return the results of executing the prepare stage
 	 */
-	CommandOutput prepare(Vertex vertex);
+	LedgerState prepare(Vertex vertex);
 
 	/**
 	 * Check if the ledger is commit synced at a particular state
-	 * @param commandHeader the metadata to sync to
+	 * @param header the metadata to sync to
 	 * @return Synced handler
 	 */
-	OnSynced ifCommitSynced(CommandHeader commandHeader);
+	OnSynced ifCommitSynced(Header header);
 
 	interface OnSynced {
 		OnNotSynced then(Runnable onSynced);

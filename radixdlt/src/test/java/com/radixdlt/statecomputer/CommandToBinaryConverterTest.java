@@ -19,10 +19,10 @@ package com.radixdlt.statecomputer;
 
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.CommandOutput;
+import com.radixdlt.consensus.LedgerState;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.VerifiedCommittedHeader;
-import com.radixdlt.consensus.CommandHeader;
+import com.radixdlt.consensus.Header;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.VerifiedCommittedCommand;
@@ -41,11 +41,11 @@ public class CommandToBinaryConverterTest {
 
 	@Test
 	public void test_atom_content_transformation_to_byte_array_and_back() {
-		CommandOutput commandOutput = CommandOutput.create(0, 0L, false);
+		LedgerState ledgerState = LedgerState.create(0, 0L, false);
 		VerifiedCommittedHeader proof = new VerifiedCommittedHeader(
-			new CommandHeader(0, View.of(1), Hash.random(), Hash.random(), commandOutput),
-			new CommandHeader(0, View.of(1), Hash.random(), Hash.random(), commandOutput),
-			new CommandHeader(0, View.of(1), Hash.random(), Hash.random(), commandOutput),
+			new Header(0, View.of(1), Hash.random(), Hash.random(), ledgerState),
+			new Header(0, View.of(1), Hash.random(), Hash.random(), ledgerState),
+			new Header(0, View.of(1), Hash.random(), Hash.random(), ledgerState),
 			new TimestampedECDSASignatures()
 		);
 		VerifiedCommittedCommand committedCommand = new VerifiedCommittedCommand(

@@ -29,9 +29,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.CommandOutput;
+import com.radixdlt.consensus.LedgerState;
 import com.radixdlt.consensus.VerifiedCommittedHeader;
-import com.radixdlt.consensus.CommandHeader;
+import com.radixdlt.consensus.Header;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.ledger.VerifiedCommittedCommand;
@@ -56,12 +56,12 @@ public class SyncServiceProcessorTest {
 
 	private static VerifiedCommittedCommand buildWithVersion(long version) {
 		VerifiedCommittedCommand committedCommand = mock(VerifiedCommittedCommand.class);
-		CommandHeader commandHeader = mock(CommandHeader.class);
-		CommandOutput commandOutput = mock(CommandOutput.class);
-		when(commandOutput.getStateVersion()).thenReturn(version);
-		when(commandHeader.getPreparedCommand()).thenReturn(commandOutput);
+		Header header = mock(Header.class);
+		LedgerState ledgerState = mock(LedgerState.class);
+		when(ledgerState.getStateVersion()).thenReturn(version);
+		when(header.getPreparedCommand()).thenReturn(ledgerState);
 		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
-		when(proof.getHeader()).thenReturn(commandHeader);
+		when(proof.getHeader()).thenReturn(header);
 		when(committedCommand.getProof()).thenReturn(proof);
 		return committedCommand;
 	}
@@ -108,10 +108,10 @@ public class SyncServiceProcessorTest {
 		Peer peer = mock(Peer.class);
 		when(peer.hasSystem()).thenReturn(true);
 		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
-		CommandHeader target = mock(CommandHeader.class);
-		CommandOutput commandOutput = mock(CommandOutput.class);
-		when(commandOutput.getStateVersion()).thenReturn(targetVersion);
-		when(target.getPreparedCommand()).thenReturn(commandOutput);
+		Header target = mock(Header.class);
+		LedgerState ledgerState = mock(LedgerState.class);
+		when(ledgerState.getStateVersion()).thenReturn(targetVersion);
+		when(target.getPreparedCommand()).thenReturn(ledgerState);
 		syncServiceProcessor.processVersionUpdate(currentVersion);
 		LocalSyncRequest request = new LocalSyncRequest(target, ImmutableList.of(node));
 		syncServiceProcessor.processLocalSyncRequest(request);
@@ -141,10 +141,10 @@ public class SyncServiceProcessorTest {
 		Peer peer = mock(Peer.class);
 		when(peer.hasSystem()).thenReturn(true);
 		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
-		CommandHeader target = mock(CommandHeader.class);
-		CommandOutput commandOutput = mock(CommandOutput.class);
-		when(commandOutput.getStateVersion()).thenReturn(targetVersion);
-		when(target.getPreparedCommand()).thenReturn(commandOutput);
+		Header target = mock(Header.class);
+		LedgerState ledgerState = mock(LedgerState.class);
+		when(ledgerState.getStateVersion()).thenReturn(targetVersion);
+		when(target.getPreparedCommand()).thenReturn(ledgerState);
 		syncServiceProcessor.processVersionUpdate(currentVersion);
 		LocalSyncRequest request = new LocalSyncRequest(target, ImmutableList.of(node));
 		syncServiceProcessor.processLocalSyncRequest(request);
@@ -170,10 +170,10 @@ public class SyncServiceProcessorTest {
 		Peer peer = mock(Peer.class);
 		when(peer.hasSystem()).thenReturn(true);
 		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
-		CommandHeader target = mock(CommandHeader.class);
-		CommandOutput commandOutput = mock(CommandOutput.class);
-		when(commandOutput.getStateVersion()).thenReturn(targetVersion);
-		when(target.getPreparedCommand()).thenReturn(commandOutput);
+		Header target = mock(Header.class);
+		LedgerState ledgerState = mock(LedgerState.class);
+		when(ledgerState.getStateVersion()).thenReturn(targetVersion);
+		when(target.getPreparedCommand()).thenReturn(ledgerState);
 		syncServiceProcessor.processVersionUpdate(currentVersion);
 		LocalSyncRequest request = new LocalSyncRequest(target, ImmutableList.of(node));
 		syncServiceProcessor.processLocalSyncRequest(request);

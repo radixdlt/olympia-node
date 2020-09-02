@@ -30,7 +30,7 @@ import java.util.stream.Stream;
 import org.junit.Test;
 import org.radix.universe.system.RadixSystem;
 
-public class AddressBookGenesisCommandHeaderProviderTest {
+public class AddressBookGenesisHeaderProviderTest {
 	@Test
 	public void when_quorum_size_is_one__then_should_emit_self() {
 		ECPublicKey self = mock(ECPublicKey.class);
@@ -48,7 +48,7 @@ public class AddressBookGenesisCommandHeaderProviderTest {
 		when(peer.getSystem()).thenReturn(system);
 		when(addressBook.peers()).thenAnswer(inv -> Stream.of(peer));
 
-		CommandHeader commandHeader = validatorSetProvider.getGenesisVertexMetadata();
-		assertThat(commandHeader.getPreparedCommand().isEndOfEpoch()).isTrue();
+		Header header = validatorSetProvider.getGenesisVertexMetadata();
+		assertThat(header.getPreparedCommand().isEndOfEpoch()).isTrue();
 	}
 }

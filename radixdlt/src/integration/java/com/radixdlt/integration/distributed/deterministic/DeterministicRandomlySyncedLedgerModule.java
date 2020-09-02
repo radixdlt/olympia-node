@@ -25,10 +25,10 @@ import java.util.Random;
 import com.google.inject.AbstractModule;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.CommandOutput;
+import com.radixdlt.consensus.LedgerState;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.CommandHeader;
+import com.radixdlt.consensus.Header;
 import com.radixdlt.ledger.StateComputerLedger.CommittedStateSyncSender;
 
 /**
@@ -51,12 +51,12 @@ public class DeterministicRandomlySyncedLedgerModule extends AbstractModule {
 	Ledger syncedExecutor(CommittedStateSyncSender committedStateSyncSender) {
 		return new Ledger() {
 			@Override
-			public CommandOutput prepare(Vertex vertex) {
-				return CommandOutput.create(0, 0L, false);
+			public LedgerState prepare(Vertex vertex) {
+				return LedgerState.create(0, 0L, false);
 			}
 
 			@Override
-			public OnSynced ifCommitSynced(CommandHeader commandHeader) {
+			public OnSynced ifCommitSynced(Header header) {
 				return onSynced -> {
 					boolean synced = random.nextBoolean();
 					if (synced) {
@@ -66,7 +66,7 @@ public class DeterministicRandomlySyncedLedgerModule extends AbstractModule {
 					return (notSynced, opaque) -> {
 						if (!synced) {
 							notSynced.run();
-							committedStateSyncSender.sendCommittedStateSync(commandHeader.getPreparedCommand().getStateVersion(), opaque);
+							committedStateSyncSender.sendCommittedStateSync(header.getPreparedCommand().getStateVersion(), opaque);
 						}
 					};
 				};

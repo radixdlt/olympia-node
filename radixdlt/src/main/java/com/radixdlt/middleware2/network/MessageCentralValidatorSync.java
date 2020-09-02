@@ -23,7 +23,7 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
-import com.radixdlt.consensus.CommandHeader;
+import com.radixdlt.consensus.Header;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
@@ -205,7 +205,7 @@ public class MessageCentralValidatorSync implements SyncVerticesRPCSender, SyncV
 	}
 
 	@Override
-	public void sendGetEpochResponse(BFTNode node, CommandHeader ancestor) {
+	public void sendGetEpochResponse(BFTNode node, Header ancestor) {
 		final Optional<Peer> peer = this.addressBook.peer(node.getKey().euid());
 		if (!peer.isPresent()) {
 			log.warn("{}: Peer {} not in address book when sending GetEpochResponse", this.self, node);

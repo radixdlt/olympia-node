@@ -17,11 +17,11 @@
 
 package org.radix.serialization;
 
-import com.radixdlt.consensus.CommandOutput;
+import com.radixdlt.consensus.LedgerState;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.TimestampedVoteData;
-import com.radixdlt.consensus.CommandHeader;
+import com.radixdlt.consensus.Header;
 import com.radixdlt.crypto.Hash;
 
 public class TimestampedVoteDataSerializeTest extends SerializeObject<TimestampedVoteData> {
@@ -32,10 +32,10 @@ public class TimestampedVoteDataSerializeTest extends SerializeObject<Timestampe
 	private static TimestampedVoteData get() {
 		View view = View.of(1234567890L);
 
-		CommandOutput commandOutput = CommandOutput.create(0, 0L, false);
-		CommandHeader committed = new CommandHeader(0, view, Hash.random(), Hash.random(), commandOutput);
-		CommandHeader parent = new CommandHeader(0, view.next(), Hash.random(), Hash.random(), commandOutput);
-		CommandHeader proposed = new CommandHeader(0, view.next().next(), Hash.random(), Hash.random(), commandOutput);
+		LedgerState ledgerState = LedgerState.create(0, 0L, false);
+		Header committed = new Header(0, view, Hash.random(), Hash.random(), ledgerState);
+		Header parent = new Header(0, view.next(), Hash.random(), Hash.random(), ledgerState);
+		Header proposed = new Header(0, view.next().next(), Hash.random(), Hash.random(), ledgerState);
 		VoteData voteData = new VoteData(proposed, parent, committed);
 		return new TimestampedVoteData(voteData, System.currentTimeMillis());
 	}

@@ -18,7 +18,7 @@
 package com.radixdlt.integration.distributed.simulation.invariants.consensus;
 
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.CommandHeader;
+import com.radixdlt.consensus.Header;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochView;
@@ -86,7 +86,7 @@ public class SafetyInvariant implements TestInvariant {
 					if (parent == null) {
 						Entry<EpochView, Vertex> higherCommitted = committedVertices.higherEntry(parentEpochView);
 						if (higherCommitted != null) {
-							CommandHeader higherParentMetadata = higherCommitted.getValue().getParentMetadata();
+							Header higherParentMetadata = higherCommitted.getValue().getParentMetadata();
 							EpochView higherCommittedParentEpochView = EpochView.of(higherParentMetadata.getEpoch(), higherParentMetadata.getView());
 							if (epochView.compareTo(higherCommittedParentEpochView) > 0) {
 								return brokenChainError(vertex, higherCommitted.getValue());

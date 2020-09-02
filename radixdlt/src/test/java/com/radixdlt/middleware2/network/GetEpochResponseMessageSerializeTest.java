@@ -17,8 +17,8 @@
 
 package com.radixdlt.middleware2.network;
 
-import com.radixdlt.consensus.CommandOutput;
-import com.radixdlt.consensus.CommandHeader;
+import com.radixdlt.consensus.LedgerState;
+import com.radixdlt.consensus.Header;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECKeyPair;
 import org.radix.serialization.SerializeMessageObject;
@@ -30,7 +30,7 @@ public class GetEpochResponseMessageSerializeTest extends SerializeMessageObject
 
 	private static GetEpochResponseMessage get() {
 		BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
-		CommandOutput commandOutput = CommandOutput.create(0, 0L, false);
-		return new GetEpochResponseMessage(author, 12345, CommandHeader.ofGenesisAncestor(commandOutput));
+		LedgerState ledgerState = LedgerState.create(0, 0L, false);
+		return new GetEpochResponseMessage(author, 12345, Header.ofGenesisAncestor(ledgerState));
 	}
 }

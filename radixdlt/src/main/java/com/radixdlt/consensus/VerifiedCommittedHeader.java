@@ -36,15 +36,15 @@ public final class VerifiedCommittedHeader {
 
 	@JsonProperty("opaque0")
 	@DsonOutput(Output.ALL)
-	private final CommandHeader opaque0;
+	private final Header opaque0;
 
 	@JsonProperty("opaque1")
 	@DsonOutput(Output.ALL)
-	private final CommandHeader opaque1;
+	private final Header opaque1;
 
 	@JsonProperty("header")
 	@DsonOutput(Output.ALL)
-	private final CommandHeader header;
+	private final Header header;
 
 	@JsonProperty("signatures")
 	@DsonOutput(Output.ALL)
@@ -52,9 +52,9 @@ public final class VerifiedCommittedHeader {
 
 	@JsonCreator
 	public VerifiedCommittedHeader(
-		@JsonProperty("opaque0") CommandHeader opaque0,
-		@JsonProperty("opaque1") CommandHeader opaque1,
-		@JsonProperty("header") CommandHeader header,
+		@JsonProperty("opaque0") Header opaque0,
+		@JsonProperty("opaque1") Header opaque1,
+		@JsonProperty("header") Header header,
 		@JsonProperty("signatures") TimestampedECDSASignatures signatures
 	) {
 		this.opaque0 = Objects.requireNonNull(opaque0);
@@ -63,7 +63,7 @@ public final class VerifiedCommittedHeader {
 		this.signatures = Objects.requireNonNull(signatures);
 	}
 
-	public CommandHeader getHeader() {
+	public Header getHeader() {
 		return header;
 	}
 

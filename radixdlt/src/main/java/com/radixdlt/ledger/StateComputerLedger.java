@@ -19,11 +19,11 @@ package com.radixdlt.ledger;
 
 import com.google.common.collect.Sets;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.CommandOutput;
+import com.radixdlt.consensus.LedgerState;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.CommandHeader;
+import com.radixdlt.consensus.Header;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.counters.SystemCounters;
@@ -89,8 +89,8 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	}
 
 	@Override
-	public CommandOutput prepare(Vertex vertex) {
-		final CommandOutput parent = vertex.getQC().getProposed().getPreparedCommand();
+	public LedgerState prepare(Vertex vertex) {
+		final LedgerState parent = vertex.getQC().getProposed().getPreparedCommand();
 		final long parentStateVersion = parent.getStateVersion();
 
 		boolean isEndOfEpoch = stateComputer.prepare(vertex);
@@ -107,12 +107,12 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		final long stateVersion = parentStateVersion + versionIncrement;
 		final long timestamp = vertex.getQC().getTimestampedSignatures().weightedTimestamp();
 
-		return CommandOutput.create(stateVersion, timestamp, isEndOfEpoch);
+		return LedgerState.create(stateVersion, timestamp, isEndOfEpoch);
 	}
 
 	@Override
-	public OnSynced ifCommitSynced(CommandHeader commandHeader) {
-		final long targetStateVersion = commandHeader.getPreparedCommand().getStateVersion();
+	public OnSynced ifCommitSynced(Header header) {
+		final long targetStateVersion = header.getPreparedCommand().getStateVersion();
 		synchronized (lock) {
 			if (targetStateVersion <= this.currentStateVersion) {
 				return onSync -> {
@@ -132,11 +132,11 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	public void commit(VerifiedCommittedCommand verifiedCommittedCommand) {
 		this.counters.increment(CounterType.LEDGER_PROCESSED);
 
-		final CommandHeader commandHeader = verifiedCommittedCommand.getProof().getHeader();
+		final Header header = verifiedCommittedCommand.getProof().getHeader();
 		final Command command = verifiedCommittedCommand.getCommand();
 
 		synchronized (lock) {
-			final long stateVersion = commandHeader.getPreparedCommand().getStateVersion();
+			final long stateVersion = header.getPreparedCommand().getStateVersion();
 			// TODO: get this invariant to as low level as possible
 			if (stateVersion != this.currentStateVersion + 1) {
 				return;

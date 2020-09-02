@@ -26,7 +26,7 @@ import com.google.inject.name.Named;
 import com.radixdlt.consensus.AddressBookGenesisVertexMetadataProvider;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.VerifiedCommittedHeader;
-import com.radixdlt.consensus.CommandHeader;
+import com.radixdlt.consensus.Header;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
@@ -100,10 +100,10 @@ public class RadixEngineStoreModule extends AbstractModule {
 	@Singleton
 	private CommittedAtom genesisAtom(
 		Universe universe,
-		CommandHeader genesisCommandHeader
+		Header genesisHeader
 	) throws LedgerAtomConversionException {
 		final ClientAtom genesisAtom = ClientAtom.convertFromApiAtom(universe.getGenesis().get(0));
-		final VerifiedCommittedHeader proof = new VerifiedCommittedHeader(genesisCommandHeader, genesisCommandHeader, genesisCommandHeader,
+		final VerifiedCommittedHeader proof = new VerifiedCommittedHeader(genesisHeader, genesisHeader, genesisHeader,
 			new TimestampedECDSASignatures()
 		);
 		return new CommittedAtom(genesisAtom, proof);
@@ -132,7 +132,7 @@ public class RadixEngineStoreModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private CommandHeader genesisVertexMetadata(
+	private Header genesisVertexMetadata(
 		AddressBookGenesisVertexMetadataProvider metadataProvider
 	) {
 		return metadataProvider.getGenesisVertexMetadata();

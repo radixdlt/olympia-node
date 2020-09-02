@@ -18,7 +18,7 @@
 package com.radixdlt.sync;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.CommandHeader;
+import com.radixdlt.consensus.Header;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.ledger.VerifiedCommittedCommand;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
@@ -167,7 +167,7 @@ public final class SyncServiceProcessor {
 	}
 
 	public void processLocalSyncRequest(LocalSyncRequest request) {
-		final CommandHeader target = request.getTarget();
+		final Header target = request.getTarget();
 		if (target.getPreparedCommand().getStateVersion() <= this.currentVersion) {
 			return;
 		}

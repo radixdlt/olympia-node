@@ -19,9 +19,9 @@ package com.radixdlt.integration.distributed.simulation;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.radixdlt.consensus.CommandOutput;
+import com.radixdlt.consensus.LedgerState;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.CommandHeader;
+import com.radixdlt.consensus.Header;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
@@ -48,9 +48,9 @@ public class MockedStateComputerWithEpochsModule extends AbstractModule {
 	}
 
 	@Provides
-	private CommandHeader genesisMetadata() {
-		CommandOutput commandOutput = CommandOutput.create(0, 0L, true);
-		return CommandHeader.ofGenesisAncestor(commandOutput);
+	private Header genesisMetadata() {
+		LedgerState ledgerState = LedgerState.create(0, 0L, true);
+		return Header.ofGenesisAncestor(ledgerState);
 	}
 
 	@Provides

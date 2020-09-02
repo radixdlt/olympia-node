@@ -28,11 +28,11 @@ import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
 
 /**
- * Results from a prepared stage execution. All fields will be persisted on ledger.
+ * Ledger state
  */
 @Immutable
-@SerializerId2("consensus.command_output")
-public final class CommandOutput {
+@SerializerId2("consensus.ledger_state")
+public final class LedgerState {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
@@ -51,7 +51,7 @@ public final class CommandOutput {
 
 	// TODO: Replace isEndOfEpoch with nextValidatorSet
 	@JsonCreator
-	private CommandOutput(
+	private LedgerState(
 		@JsonProperty("stateVersion") long stateVersion,
 		@JsonProperty("timestamp") long timestamp,
 		@JsonProperty("isEndOfEpoch") boolean isEndOfEpoch
@@ -61,12 +61,12 @@ public final class CommandOutput {
 		this.timestamp = timestamp;
 	}
 
-	public static CommandOutput create(
+	public static LedgerState create(
 		long stateVersion,
 		long timestamp,
 		boolean isEndOfEpoch
 	) {
-		return new CommandOutput(stateVersion, timestamp, isEndOfEpoch);
+		return new LedgerState(stateVersion, timestamp, isEndOfEpoch);
 	}
 
 	public long getStateVersion() {
@@ -91,8 +91,8 @@ public final class CommandOutput {
 		if (o == this) {
 			return true;
 		}
-		if (o instanceof CommandOutput) {
-			CommandOutput other = (CommandOutput) o;
+		if (o instanceof LedgerState) {
+			LedgerState other = (LedgerState) o;
 			return this.timestamp == other.timestamp
 				&& this.stateVersion == other.stateVersion
 				&& this.isEndOfEpoch == other.isEndOfEpoch;

@@ -24,32 +24,32 @@ import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Before;
 import org.junit.Test;
 
-public class CommandOutputTest {
-	private CommandOutput commandOutput;
+public class LedgerStateTest {
+	private LedgerState ledgerState;
 	private long timestamp;
 
 	@Before
 	public void setup() {
 		this.timestamp = 12345678L;
-		this.commandOutput = CommandOutput.create(12345, timestamp, false);
+		this.ledgerState = LedgerState.create(12345, timestamp, false);
 	}
 
 	@Test
 	public void testGetters() {
-		assertThat(commandOutput.getStateVersion()).isEqualTo(12345);
-		assertThat(commandOutput.timestamp()).isEqualTo(timestamp);
-		assertThat(commandOutput.isEndOfEpoch()).isFalse();
+		assertThat(ledgerState.getStateVersion()).isEqualTo(12345);
+		assertThat(ledgerState.timestamp()).isEqualTo(timestamp);
+		assertThat(ledgerState.isEndOfEpoch()).isFalse();
 	}
 
 	@Test
 	public void equalsContract() {
-		EqualsVerifier.forClass(CommandOutput.class)
+		EqualsVerifier.forClass(LedgerState.class)
 			.verify();
 	}
 
 	@Test
 	public void sensibleToString() {
-		String s = this.commandOutput.toString();
+		String s = this.ledgerState.toString();
 		AssertionsForClassTypes.assertThat(s).contains("12345");
 	}
 }

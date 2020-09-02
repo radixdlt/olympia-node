@@ -39,9 +39,9 @@ public class VertexTest {
 		View baseView = View.of(1234567890L);
 		Hash id = Hash.random();
 
-		CommandHeader commandHeader = new CommandHeader(0, baseView.next(), id, Hash.random(), mock(CommandOutput.class));
-		CommandHeader parent = new CommandHeader(0, baseView, Hash.random(), Hash.random(), mock(CommandOutput.class));
-		VoteData voteData = new VoteData(commandHeader, parent, parent);
+		Header header = new Header(0, baseView.next(), id, Hash.random(), mock(LedgerState.class));
+		Header parent = new Header(0, baseView, Hash.random(), Hash.random(), mock(LedgerState.class));
+		VoteData voteData = new VoteData(header, parent, parent);
 
 		this.qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 		this.command = mock(Command.class);
@@ -64,9 +64,9 @@ public class VertexTest {
 		View baseView = View.of(1234567890L);
 		Hash id = Hash.random();
 
-		CommandHeader commandHeader = new CommandHeader(0, baseView.next(), id, Hash.random(), mock(CommandOutput.class));
-		CommandHeader parent = new CommandHeader(0, baseView, Hash.random(), Hash.random(), mock(CommandOutput.class));
-		VoteData voteData = new VoteData(commandHeader, parent, null);
+		Header header = new Header(0, baseView.next(), id, Hash.random(), mock(LedgerState.class));
+		Header parent = new Header(0, baseView, Hash.random(), Hash.random(), mock(LedgerState.class));
+		VoteData voteData = new VoteData(header, parent, null);
 		QuorumCertificate qc2 = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 
 		Vertex v = Vertex.createVertex(qc2, baseView.next().next().next(), null);

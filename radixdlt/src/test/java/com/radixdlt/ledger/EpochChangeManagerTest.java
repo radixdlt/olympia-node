@@ -23,9 +23,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.consensus.CommandOutput;
+import com.radixdlt.consensus.LedgerState;
 import com.radixdlt.consensus.VerifiedCommittedHeader;
-import com.radixdlt.consensus.CommandHeader;
+import com.radixdlt.consensus.Header;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import org.junit.Before;
 import org.junit.Test;
@@ -42,24 +42,24 @@ public class EpochChangeManagerTest {
 
 	@Test
 	public void when_sending_committed_atom_with_epoch_change__then_should_send_epoch_change() {
-		CommandHeader commandHeader = mock(CommandHeader.class);
+		Header header = mock(Header.class);
 		long genesisEpoch = 123;
-		when(commandHeader.getEpoch()).thenReturn(genesisEpoch);
-		CommandOutput commandOutput = mock(CommandOutput.class);
-		when(commandOutput.isEndOfEpoch()).thenReturn(true);
-		when(commandOutput.getStateVersion()).thenReturn(1234L);
-		when(commandHeader.getPreparedCommand()).thenReturn(commandOutput);
+		when(header.getEpoch()).thenReturn(genesisEpoch);
+		LedgerState ledgerState = mock(LedgerState.class);
+		when(ledgerState.isEndOfEpoch()).thenReturn(true);
+		when(ledgerState.getStateVersion()).thenReturn(1234L);
+		when(header.getPreparedCommand()).thenReturn(ledgerState);
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		VerifiedCommittedCommand cmd = mock(VerifiedCommittedCommand.class);
 		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
-		when(proof.getHeader()).thenReturn(commandHeader);
+		when(proof.getHeader()).thenReturn(header);
 		when(cmd.getProof()).thenReturn(proof);
 
 		epochChangeManager.sendCommitted(cmd, validatorSet);
 
 		verify(sender, times(1))
 			.epochChange(
-				argThat(e -> e.getAncestor().equals(commandHeader) && e.getValidatorSet().equals(validatorSet))
+				argThat(e -> e.getAncestor().equals(header) && e.getValidatorSet().equals(validatorSet))
 			);
 	}
 }

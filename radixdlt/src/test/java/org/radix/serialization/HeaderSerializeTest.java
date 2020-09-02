@@ -17,20 +17,20 @@
 
 package org.radix.serialization;
 
-import com.radixdlt.consensus.CommandOutput;
+import com.radixdlt.consensus.LedgerState;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.CommandHeader;
+import com.radixdlt.consensus.Header;
 import com.radixdlt.crypto.Hash;
 
-public class CommandHeaderSerializeTest extends SerializeObject<CommandHeader> {
-	public CommandHeaderSerializeTest() {
-		super(CommandHeader.class, CommandHeaderSerializeTest::get);
+public class HeaderSerializeTest extends SerializeObject<Header> {
+	public HeaderSerializeTest() {
+		super(Header.class, HeaderSerializeTest::get);
 	}
 
-	private static CommandHeader get() {
+	private static Header get() {
 		View view = View.of(1234567890L);
 		Hash id = Hash.random();
-		CommandOutput commandOutput = CommandOutput.create(0, 0L, false);
-		return new CommandHeader(0, view, id, Hash.random(), commandOutput);
+		LedgerState ledgerState = LedgerState.create(0, 0L, false);
+		return new Header(0, view, id, Hash.random(), ledgerState);
 	}
 }

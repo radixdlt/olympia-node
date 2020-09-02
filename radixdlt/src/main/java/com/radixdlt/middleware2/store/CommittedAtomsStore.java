@@ -20,7 +20,7 @@ package com.radixdlt.middleware2.store;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.CommandHeader;
+import com.radixdlt.consensus.Header;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
@@ -111,10 +111,10 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		Command command = new Command(payload);
 		VerifiedCommittedCommand committedCommand = new VerifiedCommittedCommand(command, committedAtom.getProof());
 		byte[] binaryAtom = commandToBinaryConverter.toLedgerEntryContent(committedCommand);
-		CommandHeader commandHeader = committedAtom.getProof().getHeader();
+		Header header = committedAtom.getProof().getHeader();
 		LedgerEntry ledgerEntry = new LedgerEntry(
 			binaryAtom,
-			commandHeader.getPreparedCommand().getStateVersion(),
+			header.getPreparedCommand().getStateVersion(),
 			committedAtom.getAID()
 		);
 		EngineAtomIndices engineAtomIndices = atomIndexer.getIndices(committedAtom);

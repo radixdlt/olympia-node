@@ -21,10 +21,10 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.CommandOutput;
+import com.radixdlt.consensus.LedgerState;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.CommandHeader;
+import com.radixdlt.consensus.Header;
 import com.radixdlt.consensus.sync.SyncRequestSender;
 import com.radixdlt.ledger.VerifiedCommittedCommand;
 
@@ -42,12 +42,12 @@ public class DeterministicAlwaysSyncedLedgerModule extends AbstractModule {
 	Ledger syncedExecutor() {
 		return new Ledger() {
 			@Override
-			public CommandOutput prepare(Vertex vertex) {
-				return CommandOutput.create(0, 0L, false);
+			public LedgerState prepare(Vertex vertex) {
+				return LedgerState.create(0, 0L, false);
 			}
 
 			@Override
-			public OnSynced ifCommitSynced(CommandHeader commandHeader) {
+			public OnSynced ifCommitSynced(Header header) {
 				return onSynced -> {
 					onSynced.run();
 					return (notSynced, opaque) -> { };

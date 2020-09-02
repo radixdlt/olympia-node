@@ -27,25 +27,25 @@ import static org.mockito.Mockito.mock;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 
-public class CommandHeaderTest {
+public class HeaderTest {
 
-	private CommandHeader testObject;
+	private Header testObject;
 	private Hash id;
 	private Hash commandId;
-	private CommandOutput commandOutput;
+	private LedgerState ledgerState;
 
 	@Before
 	public void setUp() {
 		View view = View.of(1234567890L);
 		this.id = Hash.random();
 		this.commandId = Hash.random();
-		this.commandOutput = mock(CommandOutput.class);
-		this.testObject = new CommandHeader(0, view, id, commandId, commandOutput);
+		this.ledgerState = mock(LedgerState.class);
+		this.testObject = new Header(0, view, id, commandId, ledgerState);
 	}
 
 	@Test
 	public void equalsContract() {
-		EqualsVerifier.forClass(CommandHeader.class)
+		EqualsVerifier.forClass(Header.class)
 			.verify();
 	}
 
@@ -54,17 +54,17 @@ public class CommandHeaderTest {
 		assertThat(View.of(1234567890L)).isEqualTo(this.testObject.getView());
 
 		assertThat(id).isEqualTo(this.testObject.getVertexId());
-		assertThat(commandOutput).isEqualTo(this.testObject.getPreparedCommand());
+		assertThat(ledgerState).isEqualTo(this.testObject.getPreparedCommand());
 	}
 
 	@Test
 	public void testSerializerConstructor() {
 		// Don't want to see any exceptions here
-		assertThat(new CommandHeader()).isNotNull();
+		assertThat(new Header()).isNotNull();
 	}
 
 	@Test
 	public void testToString() {
-		assertThat(this.testObject.toString()).contains(CommandHeader.class.getSimpleName());
+		assertThat(this.testObject.toString()).contains(Header.class.getSimpleName());
 	}
 }

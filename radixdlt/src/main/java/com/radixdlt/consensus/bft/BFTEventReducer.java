@@ -25,7 +25,7 @@ import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.CommandHeader;
+import com.radixdlt.consensus.Header;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
@@ -123,7 +123,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private boolean synchedLog = false;
 
 	public interface EndOfEpochSender {
-		void sendEndOfEpoch(CommandHeader commandHeader);
+		void sendEndOfEpoch(Header header);
 	}
 
 	public BFTEventReducer(
@@ -271,9 +271,9 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			return;
 		}
 
-		final CommandHeader commandHeader;
+		final Header header;
 		try {
-			commandHeader = vertexStore.insertVertex(proposedVertex);
+			header = vertexStore.insertVertex(proposedVertex);
 		} catch (VertexInsertionException e) {
 			counters.increment(CounterType.BFT_REJECTED);
 
@@ -283,7 +283,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 		final BFTNode currentLeader = this.proposerElection.getProposer(updatedView);
 		try {
-			final Vote vote = safetyRules.voteFor(proposedVertex, commandHeader, this.timeSupplier.currentTime(), proposal.getPayload());
+			final Vote vote = safetyRules.voteFor(proposedVertex, header, this.timeSupplier.currentTime(), proposal.getPayload());
 			log.trace("{}: PROPOSAL: Sending VOTE to {}: {}", this.self::getSimpleName, currentLeader::getSimpleName, () -> vote);
 			sender.sendVote(vote, currentLeader);
 		} catch (SafetyViolationException e) {

@@ -35,7 +35,7 @@ import com.radixdlt.serialization.DsonOutput.Output;
  */
 @Immutable
 @SerializerId2("consensus.header")
-public final class CommandHeader {
+public final class Header {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
@@ -50,30 +50,30 @@ public final class CommandHeader {
 	@DsonOutput(Output.ALL)
 	private final Hash vertexId;
 
-	@JsonProperty("command_id")
+	@JsonProperty("last_command_id")
 	@DsonOutput(Output.ALL)
-	private final Hash commandId; // TODO: Change to accumulator
+	private final Hash lastCommandId; // TODO: Change to accumulator
 
-	@JsonProperty("command_output")
+	@JsonProperty("ledger_state")
 	@DsonOutput(Output.ALL)
-	private final CommandOutput commandOutput;
+	private final LedgerState ledgerState;
 
-	CommandHeader() {
+	Header() {
 		// Serializer only
 		this.view = null;
 		this.epoch = 0L;
 		this.vertexId = null;
-		this.commandId = null;
-		this.commandOutput = null;
+		this.lastCommandId = null;
+		this.ledgerState = null;
 	}
 
 	// TODO: Move command output to a more opaque data structure
-	public CommandHeader(
+	public Header(
 		long epoch, // consensus data
 		View view, // consensus data
 		Hash vertexId, // consensus data
-		Hash commandId,
-		CommandOutput commandOutput
+		Hash lastCommandId,
+		LedgerState ledgerState
 	) {
 		if (epoch < 0) {
 			throw new IllegalArgumentException("epoch must be >= 0");
@@ -82,27 +82,26 @@ public final class CommandHeader {
 		this.epoch = epoch;
 		this.view = view;
 		this.vertexId = vertexId;
-		this.commandId = commandId;
-		this.commandOutput = commandOutput;
+		this.lastCommandId = lastCommandId;
+		this.ledgerState = ledgerState;
 	}
 
-	public static CommandHeader ofGenesisAncestor(CommandOutput commandOutput) {
-		return new CommandHeader(
+	public static Header ofGenesisAncestor(LedgerState ledgerState) {
+		return new Header(
 			0,
 			View.genesis(),
 			Hash.ZERO_HASH,
-			Hash.ZERO_HASH,
-			commandOutput
+			Hash.ZERO_HASH, ledgerState
 		);
 	}
 
-	public static CommandHeader ofGenesisVertex(Vertex vertex) {
-		return new CommandHeader(
+	public static Header ofGenesisVertex(Vertex vertex) {
+		return new Header(
 			vertex.getEpoch(),
 			vertex.getView(),
 			vertex.getId(),
 			vertex.getCommand() == null ? null : vertex.getCommand().getHash(),
-			CommandOutput.create(
+			LedgerState.create(
 				vertex.getQC().getParent().getPreparedCommand().getStateVersion(),
 				0L,
 				false
@@ -110,18 +109,17 @@ public final class CommandHeader {
 		);
 	}
 
-	public static CommandHeader ofVertex(Vertex vertex, CommandOutput commandOutput) {
-		return new CommandHeader(
+	public static Header ofVertex(Vertex vertex, LedgerState ledgerState) {
+		return new Header(
 			vertex.getEpoch(),
 			vertex.getView(),
 			vertex.getId(),
-			vertex.getCommand() == null ? null : vertex.getCommand().getHash(),
-			commandOutput
+			vertex.getCommand() == null ? null : vertex.getCommand().getHash(), ledgerState
 		);
 	}
 
-	public CommandOutput getPreparedCommand() {
-		return commandOutput;
+	public LedgerState getPreparedCommand() {
+		return ledgerState;
 	}
 
 	public long getEpoch() {
@@ -149,7 +147,7 @@ public final class CommandHeader {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.epoch, this.view, this.vertexId, this.commandId, this.commandOutput);
+		return Objects.hash(this.epoch, this.view, this.vertexId, this.lastCommandId, this.ledgerState);
 	}
 
 	@Override
@@ -157,14 +155,14 @@ public final class CommandHeader {
 		if (o == this) {
 			return true;
 		}
-		if (o instanceof CommandHeader) {
-			CommandHeader other = (CommandHeader) o;
+		if (o instanceof Header) {
+			Header other = (Header) o;
 			return
 				Objects.equals(this.view, other.view)
 				&& this.epoch == other.epoch
 				&& Objects.equals(this.vertexId, other.vertexId)
-				&& Objects.equals(this.commandId, other.commandId)
-				&& Objects.equals(this.commandOutput, other.commandOutput);
+				&& Objects.equals(this.lastCommandId, other.lastCommandId)
+				&& Objects.equals(this.ledgerState, other.ledgerState);
 		}
 		return false;
 	}
@@ -172,7 +170,7 @@ public final class CommandHeader {
 	@Override
 	public String toString() {
 		return String.format("%s{epoch=%s view=%s out=%s}",
-			getClass().getSimpleName(), this.epoch, this.view, this.commandOutput
+			getClass().getSimpleName(), this.epoch, this.view, this.ledgerState
 		);
 	}
 }

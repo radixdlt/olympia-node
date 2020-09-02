@@ -81,7 +81,7 @@ public final class Vertex {
 		this.command = command;
 	}
 
-	public static Vertex createGenesis(CommandHeader ancestorMetadata) {
+	public static Vertex createGenesis(Header ancestorMetadata) {
 		Objects.requireNonNull(ancestorMetadata);
 		final VoteData voteData = new VoteData(ancestorMetadata, ancestorMetadata, ancestorMetadata);
 		final QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
@@ -114,11 +114,11 @@ public final class Vertex {
 		return qc.getProposed().getVertexId();
 	}
 
-	public CommandHeader getGrandParentMetadata() {
+	public Header getGrandParentMetadata() {
 		return qc.getParent();
 	}
 
-	public CommandHeader getParentMetadata() {
+	public Header getParentMetadata() {
 		return qc.getProposed();
 	}
 

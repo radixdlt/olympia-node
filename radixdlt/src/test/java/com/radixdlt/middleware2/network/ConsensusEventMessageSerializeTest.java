@@ -18,10 +18,10 @@
 package com.radixdlt.middleware2.network;
 
 import com.radixdlt.consensus.NewView;
-import com.radixdlt.consensus.CommandOutput;
+import com.radixdlt.consensus.LedgerState;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.consensus.CommandHeader;
+import com.radixdlt.consensus.Header;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -36,10 +36,10 @@ public class ConsensusEventMessageSerializeTest extends SerializeMessageObject<C
 	}
 
 	private static ConsensusEventMessage get() {
-		CommandOutput commandOutput = CommandOutput.create(0, 0L, false);
-		CommandHeader commandHeader = new CommandHeader(0, View.of(1), Hash.ZERO_HASH, Hash.ZERO_HASH, commandOutput);
-		CommandHeader parent = new CommandHeader(0, View.of(0), Hash.ZERO_HASH, Hash.ZERO_HASH, commandOutput);
-		VoteData voteData = new VoteData(commandHeader, parent, null);
+		LedgerState ledgerState = LedgerState.create(0, 0L, false);
+		Header header = new Header(0, View.of(1), Hash.ZERO_HASH, Hash.ZERO_HASH, ledgerState);
+		Header parent = new Header(0, View.of(0), Hash.ZERO_HASH, Hash.ZERO_HASH, ledgerState);
+		VoteData voteData = new VoteData(header, parent, null);
 		QuorumCertificate quorumCertificate = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 		BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
 		NewView testView = new NewView(author, View.of(1234567890L), quorumCertificate, quorumCertificate, null);

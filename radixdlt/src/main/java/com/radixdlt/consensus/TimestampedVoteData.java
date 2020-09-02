@@ -59,7 +59,7 @@ public final class TimestampedVoteData {
 		return this.voteData;
 	}
 
-	public CommandHeader getProposed() {
+	public Header getProposed() {
 		return this.voteData == null ? null : this.voteData.getProposed();
 	}
 

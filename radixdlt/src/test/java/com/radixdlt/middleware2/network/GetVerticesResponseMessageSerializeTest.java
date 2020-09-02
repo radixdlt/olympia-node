@@ -20,9 +20,9 @@ package com.radixdlt.middleware2.network;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.consensus.CommandOutput;
+import com.radixdlt.consensus.LedgerState;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.CommandHeader;
+import com.radixdlt.consensus.Header;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -41,8 +41,8 @@ public class GetVerticesResponseMessageSerializeTest extends SerializeMessageObj
 		BFTValidatorSet bftValidatorSet = BFTValidatorSet.from(ImmutableSet.of(
 			BFTValidator.from(BFTNode.create(keyPair.getPublicKey()), UInt256.ONE)
 		));
-		CommandOutput commandOutput = CommandOutput.create(0, 0L, false);
-		Vertex genesisVertex = Vertex.createGenesis(CommandHeader.ofGenesisAncestor(commandOutput));
+		LedgerState ledgerState = LedgerState.create(0, 0L, false);
+		Vertex genesisVertex = Vertex.createGenesis(Header.ofGenesisAncestor(ledgerState));
 		return new GetVerticesResponseMessage(1234, Hash.random(), ImmutableList.of(genesisVertex));
 	}
 

@@ -21,14 +21,14 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 
-import com.radixdlt.consensus.CommandHeader;
+import com.radixdlt.consensus.Header;
 import com.radixdlt.consensus.bft.BFTNode;
 import org.junit.Test;
 
 public class GetEpochResponseMessageTest {
 	@Test
 	public void sensibleToString() {
-		CommandHeader ancestor = mock(CommandHeader.class);
+		Header ancestor = mock(Header.class);
 		GetEpochResponseMessage msg = new GetEpochResponseMessage(mock(BFTNode.class), 12345, ancestor);
 		String s1 = msg.toString();
 		assertThat(s1, containsString(GetEpochResponseMessage.class.getSimpleName()));

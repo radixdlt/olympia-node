@@ -23,8 +23,8 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.consensus.CommandOutput;
-import com.radixdlt.consensus.CommandHeader;
+import com.radixdlt.consensus.LedgerState;
+import com.radixdlt.consensus.Header;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.serialization.Serialization;
@@ -56,8 +56,8 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 	}
 
 	@Provides
-	public CommandHeader genesisVertexMetadata() {
-		final CommandOutput commandOutput = CommandOutput.create(0, 0, true);
-		return CommandHeader.ofGenesisAncestor(commandOutput);
+	public Header genesisVertexMetadata() {
+		final LedgerState ledgerState = LedgerState.create(0, 0, true);
+		return Header.ofGenesisAncestor(ledgerState);
 	}
 }

@@ -21,11 +21,11 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.PendingVotes;
-import com.radixdlt.consensus.CommandOutput;
+import com.radixdlt.consensus.LedgerState;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.CommandHeader;
+import com.radixdlt.consensus.Header;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
@@ -126,10 +126,10 @@ public class BFTEventReducerTest {
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		View view = mock(View.class);
 		when(qc.getView()).thenReturn(view);
-		CommandHeader commandHeader = mock(CommandHeader.class);
+		Header header = mock(Header.class);
 		Hash id = mock(Hash.class);
-		when(commandHeader.getVertexId()).thenReturn(id);
-		when(qc.getProposed()).thenReturn(commandHeader);
+		when(header.getVertexId()).thenReturn(id);
+		when(qc.getProposed()).thenReturn(header);
 		when(pendingVotes.insertVote(eq(vote), eq(validatorSet))).thenReturn(Optional.of(qc));
 		when(vertexStore.syncToQC(eq(qc), any(), any())).thenReturn(false);
 		reducer.processVote(vote);
@@ -145,8 +145,8 @@ public class BFTEventReducerTest {
 	@Test
 	public void when_processing_vote_as_not_proposer__then_nothing_happens() {
 		Vote voteMessage = mock(Vote.class);
-		CommandHeader proposal = new CommandHeader(0, View.of(2), Hash.random(), Hash.random(), mock(CommandOutput.class));
-		CommandHeader parent = new CommandHeader(0, View.of(1), Hash.random(), Hash.random(), mock(CommandOutput.class));
+		Header proposal = new Header(0, View.of(2), Hash.random(), Hash.random(), mock(LedgerState.class));
+		Header parent = new Header(0, View.of(1), Hash.random(), Hash.random(), mock(LedgerState.class));
 		VoteData voteData = new VoteData(proposal, parent, null);
 		when(voteMessage.getVoteData()).thenReturn(voteData);
 
@@ -160,8 +160,8 @@ public class BFTEventReducerTest {
 		when(proposerElection.getProposer(any())).thenReturn(this.self);
 
 		Vote vote = mock(Vote.class);
-		CommandHeader proposal = new CommandHeader(0, View.of(2), Hash.random(), Hash.random(), mock(CommandOutput.class));
-		CommandHeader parent = new CommandHeader(0, View.of(1), Hash.random(), Hash.random(), mock(CommandOutput.class));
+		Header proposal = new Header(0, View.of(2), Hash.random(), Hash.random(), mock(LedgerState.class));
+		Header parent = new Header(0, View.of(1), Hash.random(), Hash.random(), mock(LedgerState.class));
 		VoteData voteData = new VoteData(proposal, parent, null);
 		when(vote.getVoteData()).thenReturn(voteData);
 		when(vote.getAuthor()).thenReturn(mock(BFTNode.class));
@@ -209,9 +209,9 @@ public class BFTEventReducerTest {
 		when(pacemaker.processNewView(any(), any())).thenReturn(Optional.of(View.of(1L)));
 		when(proposerElection.getProposer(any())).thenReturn(self);
 		QuorumCertificate highQC = mock(QuorumCertificate.class);
-		CommandHeader commandHeader = mock(CommandHeader.class);
-		when(commandHeader.getPreparedCommand()).thenReturn(mock(CommandOutput.class));
-		when(highQC.getProposed()).thenReturn(commandHeader);
+		Header header = mock(Header.class);
+		when(header.getPreparedCommand()).thenReturn(mock(LedgerState.class));
+		when(highQC.getProposed()).thenReturn(header);
 		when(vertexStore.getHighestQC()).thenReturn(highQC);
 		when(nextCommandGenerator.generateNextCommand(eq(View.of(1L)), any())).thenReturn(mock(Command.class));
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of());
@@ -227,7 +227,7 @@ public class BFTEventReducerTest {
 		Vertex proposedVertex = mock(Vertex.class);
 		when(proposedVertex.getCommand()).thenReturn(mock(Command.class));
 		when(proposedVertex.getQC()).thenReturn(mock(QuorumCertificate.class));
-		CommandHeader parent = mock(CommandHeader.class);
+		Header parent = mock(Header.class);
 		when(proposedVertex.getParentMetadata()).thenReturn(parent);
 		when(proposedVertex.getView()).thenReturn(currentView);
 
@@ -254,7 +254,7 @@ public class BFTEventReducerTest {
 		when(qc.getView()).thenReturn(qcView);
 		when(proposedVertex.getQC()).thenReturn(qc);
 		when(proposedVertex.getView()).thenReturn(currentView);
-		CommandHeader parent = mock(CommandHeader.class);
+		Header parent = mock(Header.class);
 		when(proposedVertex.getParentMetadata()).thenReturn(parent);
 
 		Proposal proposal = mock(Proposal.class);
@@ -287,7 +287,7 @@ public class BFTEventReducerTest {
 		when(qc.getView()).thenReturn(qcView);
 		when(proposedVertex.getQC()).thenReturn(qc);
 		when(proposedVertex.getView()).thenReturn(currentView);
-		CommandHeader parent = mock(CommandHeader.class);
+		Header parent = mock(Header.class);
 		when(proposedVertex.getParentMetadata()).thenReturn(parent);
 
 		Proposal proposal = mock(Proposal.class);
@@ -318,7 +318,7 @@ public class BFTEventReducerTest {
 		when(qc.getView()).thenReturn(qcView);
 		when(proposedVertex.getQC()).thenReturn(qc);
 		when(proposedVertex.getView()).thenReturn(currentView);
-		CommandHeader parent = mock(CommandHeader.class);
+		Header parent = mock(Header.class);
 		when(proposedVertex.getParentMetadata()).thenReturn(parent);
 
 		Proposal proposal = mock(Proposal.class);
