@@ -17,7 +17,7 @@
 
 package com.radixdlt.statecomputer;
 
-import com.radixdlt.ledger.VerifiedCommittedCommand;
+import com.radixdlt.middleware2.store.StoredCommittedCommand;
 import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
 import java.util.TreeMap;
 
@@ -29,5 +29,5 @@ public interface CommittedCommandsReader {
 	 * @param limit limit to number of atoms to return
 	 * @return list of committed commands
 	 */
-	TreeMap<Long, VerifiedCommittedCommand> getNextCommittedCommands(long stateVersion, int limit) throws NextCommittedLimitReachedException;
+	TreeMap<Long, StoredCommittedCommand> getNextCommittedCommands(long stateVersion, int limit) throws NextCommittedLimitReachedException;
 }

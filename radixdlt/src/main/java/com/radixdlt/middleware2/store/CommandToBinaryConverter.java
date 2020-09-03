@@ -15,13 +15,12 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.statecomputer;
+package com.radixdlt.middleware2.store;
 
 import com.google.inject.Inject;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
-import com.radixdlt.ledger.VerifiedCommittedCommand;
 import java.util.Objects;
 
 public final class CommandToBinaryConverter {
@@ -32,7 +31,7 @@ public final class CommandToBinaryConverter {
 		this.serializer = Objects.requireNonNull(serializer);
 	}
 
-	public byte[] toLedgerEntryContent(VerifiedCommittedCommand command) {
+	public byte[] toLedgerEntryContent(StoredCommittedCommand command) {
 		try {
 			return serializer.toDson(command, DsonOutput.Output.PERSIST);
 		} catch (SerializationException e) {
@@ -40,9 +39,9 @@ public final class CommandToBinaryConverter {
 		}
 	}
 
-	public VerifiedCommittedCommand toCommand(byte[] ledgerEntryContent) {
+	public StoredCommittedCommand toCommand(byte[] ledgerEntryContent) {
 		try {
-			return serializer.fromDson(ledgerEntryContent, VerifiedCommittedCommand.class);
+			return serializer.fromDson(ledgerEntryContent, StoredCommittedCommand.class);
 		} catch (SerializationException e) {
 			throw new IllegalStateException("Deserialization of Command failed", e);
 		}

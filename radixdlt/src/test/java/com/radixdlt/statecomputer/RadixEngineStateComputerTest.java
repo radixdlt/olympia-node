@@ -135,14 +135,14 @@ public class RadixEngineStateComputerTest {
 		when(ledgerState.isEndOfEpoch()).thenReturn(false);
 		when(proof.getLedgerState()).thenReturn(ledgerState);
 
-		VerifiedCommittedCommand command = mock(VerifiedCommittedCommand.class);
-		when(command.getProof()).thenReturn(proof);
-		when(command.getCommand()).thenReturn(mock(Command.class));
+		VerifiedCommittedCommand committedCommand = mock(VerifiedCommittedCommand.class);
+		when(committedCommand.getProof()).thenReturn(proof);
+		when(committedCommand.getCommand()).thenReturn(mock(Command.class));
 
-		stateComputer.commit(command);
+		stateComputer.commit(committedCommand);
 
 		assertThat(stateComputer.getCommittedCommands(0, 1))
-			.hasOnlyOneElementSatisfying(c -> assertThat(c).isEqualTo(command));
+			.hasOnlyOneElementSatisfying(c -> assertThat(c.getProof()).isEqualTo(proof));
 	}
 
 	@Test
@@ -150,7 +150,6 @@ public class RadixEngineStateComputerTest {
 		ClientAtom committedAtom = mock(ClientAtom.class);
 		AID aid = mock(AID.class);
 		when(committedAtom.getAID()).thenReturn(aid);
-
 
 		RadixEngineValidatorSetBuilder validatorSetBuilder = mock(RadixEngineValidatorSetBuilder.class);
 		when(radixEngine.getComputedState(eq(RadixEngineValidatorSetBuilder.class)))
@@ -163,13 +162,12 @@ public class RadixEngineStateComputerTest {
 		when(ledgerState.getStateVersion()).thenReturn(1L);
 		when(ledgerState.isEndOfEpoch()).thenReturn(true);
 		when(proof.getLedgerState()).thenReturn(ledgerState);
-		VerifiedCommittedCommand command = mock(VerifiedCommittedCommand.class);
-		when(command.getProof()).thenReturn(proof);
 
-		stateComputer.commit(command);
-
+		VerifiedCommittedCommand committedCommand = mock(VerifiedCommittedCommand.class);
+		when(committedCommand.getProof()).thenReturn(proof);
+		stateComputer.commit(committedCommand);
 		assertThat(stateComputer.getCommittedCommands(0, 1))
-			.hasOnlyOneElementSatisfying(c -> assertThat(c).isEqualTo(command));
+			.hasOnlyOneElementSatisfying(c -> assertThat(c.getProof()).isEqualTo(proof));
 	}
 
 	@Test
@@ -190,6 +188,6 @@ public class RadixEngineStateComputerTest {
 
 		assertThat(stateComputer.commit(command)).isEmpty();
 		assertThat(stateComputer.getCommittedCommands(0, 1))
-			.hasOnlyOneElementSatisfying(c -> assertThat(c).isEqualTo(command));
+			.hasOnlyOneElementSatisfying(c -> assertThat(c.getProof()).isEqualTo(proof));
 	}
 }

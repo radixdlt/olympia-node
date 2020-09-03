@@ -35,7 +35,6 @@ import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
-import com.radixdlt.statecomputer.CommandToBinaryConverter;
 import com.radixdlt.middleware2.store.CommittedAtomsStore.AtomIndexer;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.store.LedgerEntry;
@@ -43,7 +42,6 @@ import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
 import java.util.HashSet;
-import com.radixdlt.ledger.VerifiedCommittedCommand;
 import java.util.Optional;
 import java.util.stream.LongStream;
 import org.junit.Before;
@@ -102,7 +100,7 @@ public class CommittedAtomsStoreTest {
 		when(searchCursor.get()).thenReturn(aid);
 		LedgerEntry ledgerEntry = mock(LedgerEntry.class);
 		when(store.get(eq(aid))).thenReturn(Optional.of(ledgerEntry));
-		VerifiedCommittedCommand committedCommand = mock(VerifiedCommittedCommand.class);
+		StoredCommittedCommand committedCommand = mock(StoredCommittedCommand.class);
 		Command command = mock(Command.class);
 		ClientAtom clientAtom = mock(ClientAtom.class);
 		CMInstruction cmInstruction = mock(CMInstruction.class);
@@ -137,8 +135,10 @@ public class CommittedAtomsStoreTest {
 		when(store.search(any(), any(), any())).thenReturn(searchCursor);
 		LedgerEntry ledgerEntry = mock(LedgerEntry.class);
 		when(ledgerEntry.getContent()).thenReturn(new byte[0]);
-		VerifiedCommittedCommand committedCommand = mock(VerifiedCommittedCommand.class);
-		when(committedCommand.getCommand()).thenReturn(mock(Command.class));
+		StoredCommittedCommand committedCommand = mock(StoredCommittedCommand.class);
+		Command command = mock(Command.class);
+		when(command.map(any())).thenReturn(mock(ClientAtom.class));
+		when(committedCommand.getCommand()).thenReturn(command);
 		when(committedCommand.getProof()).thenReturn(mock(VerifiedCommittedHeader.class));
 		when(commandToBinaryConverter.toCommand(any())).thenReturn(committedCommand);
 		when(store.get(eq(aid))).thenReturn(Optional.of(ledgerEntry));
@@ -159,7 +159,7 @@ public class CommittedAtomsStoreTest {
 		for (int i = 0; i < aids.size(); i++) {
 			when(this.store.get(eq(aids.get(i)))).thenReturn(Optional.of(entries.get(i)));
 			when(entries.get(i).getContent()).thenReturn(new byte[i]);
-			when(this.commandToBinaryConverter.toCommand(any())).thenReturn(mock(VerifiedCommittedCommand.class));
+			when(this.commandToBinaryConverter.toCommand(any())).thenReturn(mock(StoredCommittedCommand.class));
 		}
 
 		assertThat(this.committedAtomsStore.getNextCommittedCommands(3, 4)).hasSize(4);

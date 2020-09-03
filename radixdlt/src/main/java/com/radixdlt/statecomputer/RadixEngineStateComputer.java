@@ -28,6 +28,7 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.middleware2.store.StoredCommittedCommand;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.middleware2.LedgerAtom;
@@ -66,7 +67,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private final CommittedCommandsReader committedCommandsReader;
 	private final CommittedAtomSender committedAtomSender;
 	private final Object lock = new Object();
-	private final TreeMap<Long, VerifiedCommittedCommand> unstoredCommittedAtoms = new TreeMap<>();
+	private final TreeMap<Long, StoredCommittedCommand> unstoredCommittedAtoms = new TreeMap<>();
 
 	public RadixEngineStateComputer(
 		Serialization serialization,
@@ -91,13 +92,13 @@ public final class RadixEngineStateComputer implements StateComputer {
 		// TODO: This may still return an empty list as we still count state versions for atoms which
 		// TODO: never make it into the radix engine due to state errors. This is because we only check
 		// TODO: validity on commit rather than on proposal/prepare.
-		TreeMap<Long, VerifiedCommittedCommand> storedCommittedAtoms = committedCommandsReader
+		TreeMap<Long, StoredCommittedCommand> storedCommittedAtoms = committedCommandsReader
 			.getNextCommittedCommands(stateVersion, batchSize);
 		final VerifiedCommittedHeader nextProof;
 		if (storedCommittedAtoms.firstEntry() != null) {
 			nextProof = storedCommittedAtoms.firstEntry().getValue().getProof();
 		} else {
-			Entry<Long, VerifiedCommittedCommand> uncommittedEntry = unstoredCommittedAtoms.higherEntry(stateVersion);
+			Entry<Long, StoredCommittedCommand> uncommittedEntry = unstoredCommittedAtoms.higherEntry(stateVersion);
 			if (uncommittedEntry == null) {
 				return ImmutableList.of();
 			}
@@ -106,12 +107,14 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 		synchronized (lock) {
 			final long proofStateVersion = nextProof.getLedgerState().getStateVersion();
-			Map<Long, VerifiedCommittedCommand> unstoredToReturn
+			Map<Long, StoredCommittedCommand> unstoredToReturn
 				= unstoredCommittedAtoms.subMap(stateVersion, false, proofStateVersion, true);
 			storedCommittedAtoms.putAll(unstoredToReturn);
 		}
 
-		return storedCommittedAtoms.values().stream().collect(ImmutableList.toImmutableList());
+		return storedCommittedAtoms.values().stream()
+			.map(s -> new VerifiedCommittedCommand(s.getCommand(), s.getProof()))
+			.collect(ImmutableList.toImmutableList());
 	}
 
 	@Override
@@ -153,7 +156,11 @@ public final class RadixEngineStateComputer implements StateComputer {
 		}
 
 		if (!storedInRadixEngine) {
-			this.unstoredCommittedAtoms.put(stateVersion, verifiedCommittedCommand);
+			StoredCommittedCommand storedCommittedCommand = new StoredCommittedCommand(
+				verifiedCommittedCommand.getCommand(),
+				verifiedCommittedCommand.getProof()
+			);
+			this.unstoredCommittedAtoms.put(stateVersion, storedCommittedCommand);
 		}
 
 		if (proof.getLedgerState().isEndOfEpoch()) {

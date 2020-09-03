@@ -26,10 +26,10 @@ import com.radixdlt.atommodel.Atom;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.mempool.SubmissionControl;
 
+import com.radixdlt.middleware2.store.StoredCommittedCommand;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomWithResult;
-import com.radixdlt.ledger.VerifiedCommittedCommand;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import com.radixdlt.middleware2.ClientAtom;
@@ -43,7 +43,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import com.radixdlt.statecomputer.CommandToBinaryConverter;
+import com.radixdlt.middleware2.store.CommandToBinaryConverter;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.LedgerEntry;
@@ -224,7 +224,7 @@ public class AtomsService {
 		Optional<LedgerEntry> ledgerEntryOptional = store.get(atomId);
 		if (ledgerEntryOptional.isPresent()) {
 			LedgerEntry ledgerEntry = ledgerEntryOptional.get();
-			VerifiedCommittedCommand committedCommand = commandToBinaryConverter.toCommand(ledgerEntry.getContent());
+			StoredCommittedCommand committedCommand = commandToBinaryConverter.toCommand(ledgerEntry.getContent());
 			ClientAtom clientAtom = committedCommand.getCommand().map(clientAtomToBinaryConverter::toAtom);
 			Atom apiAtom = ClientAtom.convertToApiAtom(clientAtom);
 			return serialization.toJsonObject(apiAtom, DsonOutput.Output.API);

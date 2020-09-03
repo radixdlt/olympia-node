@@ -24,19 +24,19 @@ import com.radixdlt.atommodel.Atom;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.middleware2.store.StoredCommittedCommand;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.store.LedgerSearchMode;
-import com.radixdlt.statecomputer.CommandToBinaryConverter;
+import com.radixdlt.middleware2.store.CommandToBinaryConverter;
 import com.radixdlt.middleware2.store.EngineAtomIndices;
 
 import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
 
-import com.radixdlt.ledger.VerifiedCommittedCommand;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.api.AtomQuery;
@@ -167,7 +167,7 @@ public class AtomEventObserver {
 					Optional<LedgerEntry> ledgerEntry = store.get(aid);
 					ledgerEntry.ifPresent(
 						entry -> {
-							VerifiedCommittedCommand committedCommand = commandToBinaryConverter.toCommand(entry.getContent());
+							StoredCommittedCommand committedCommand = commandToBinaryConverter.toCommand(entry.getContent());
 							long timestamp = committedCommand.getProof().getLedgerState().timestamp();
 							ClientAtom clientAtom = committedCommand.getCommand().map(clientAtomToBinaryConverter::toAtom);
 							atoms.add(Pair.of(clientAtom, timestamp));

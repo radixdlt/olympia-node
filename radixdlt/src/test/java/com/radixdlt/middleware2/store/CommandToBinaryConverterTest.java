@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.statecomputer;
+package com.radixdlt.middleware2.store;
 
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.Command;
@@ -25,7 +25,6 @@ import com.radixdlt.consensus.VerifiedCommittedHeader;
 import com.radixdlt.consensus.Header;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.ledger.VerifiedCommittedCommand;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -48,13 +47,13 @@ public class CommandToBinaryConverterTest {
 			new Header(0, View.of(1), Hash.random(), ledgerState),
 			new TimestampedECDSASignatures()
 		);
-		VerifiedCommittedCommand committedCommand = new VerifiedCommittedCommand(
+		StoredCommittedCommand committedCommand = new StoredCommittedCommand(
 			new Command(new byte[] {0, 1, 2, 3}),
 			proof
 		);
 
 		byte[] serializedCommand = commandToBinaryConverter.toLedgerEntryContent(committedCommand);
-		VerifiedCommittedCommand deserializedCommand = commandToBinaryConverter.toCommand(serializedCommand);
+		StoredCommittedCommand deserializedCommand = commandToBinaryConverter.toCommand(serializedCommand);
 		assertEquals(committedCommand, deserializedCommand);
 	}
 }
