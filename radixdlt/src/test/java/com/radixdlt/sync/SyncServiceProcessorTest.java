@@ -181,8 +181,6 @@ public class SyncServiceProcessorTest {
 		LocalSyncRequest request = new LocalSyncRequest(verifiedCommittedHeader, ImmutableList.of(node));
 		syncServiceProcessor.processLocalSyncRequest(request);
 		verify(stateSyncNetwork, times(1)).sendSyncRequest(any(), eq(10L));
-		verify(stateSyncNetwork, times(1)).sendSyncRequest(any(), eq(12L));
-		verify(stateSyncNetwork, times(1)).sendSyncRequest(any(), eq(14L));
 	}
 
 	@Test

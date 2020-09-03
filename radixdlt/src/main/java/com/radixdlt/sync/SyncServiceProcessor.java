@@ -47,11 +47,19 @@ public final class SyncServiceProcessor {
 	}
 
 	public static final class SyncInProgress {
-		private final long id;
-		private final List<BFTNode> target;
-		private SyncInProgress(long id, List<BFTNode> target) {
-			this.id = id;
-			this.target = target;
+		private final VerifiedCommittedHeader targetHeader;
+		private final List<BFTNode> targetNodes;
+		private SyncInProgress(VerifiedCommittedHeader targetHeader, List<BFTNode> targetNodes) {
+			this.targetHeader = targetHeader;
+			this.targetNodes = targetNodes;
+		}
+
+		private List<BFTNode> getTargetNodes() {
+			return targetNodes;
+		}
+
+		private VerifiedCommittedHeader getTargetHeader() {
+			return targetHeader;
 		}
 	}
 
@@ -73,8 +81,6 @@ public final class SyncServiceProcessor {
 		Comparator.comparingLong(a -> a.getProof().getLedgerState().getStateVersion())
 	);
 
-	private long syncInProgressId = 0;
-	private boolean isSyncInProgress = false;
 	private VerifiedCommittedHeader targetHeader;
 	private long currentVersion;
 
@@ -97,8 +103,6 @@ public final class SyncServiceProcessor {
 		if (batchSize <= 0) {
 			throw new IllegalArgumentException();
 		}
-		this.currentVersion = current.getLedgerState().getStateVersion();
-		this.targetHeader = current;
 		this.stateComputer = Objects.requireNonNull(stateComputer);
 		this.stateSyncNetwork = Objects.requireNonNull(stateSyncNetwork);
 		this.addressBook = Objects.requireNonNull(addressBook);
@@ -108,6 +112,9 @@ public final class SyncServiceProcessor {
 		this.patienceMilliseconds = patienceMilliseconds;
 		// we limit the size of the queue in order to avoid memory issues
 		this.maxAtomsQueueSize = MAX_REQUESTS_TO_SEND * batchSize * 2;
+
+		this.currentVersion = current.getLedgerState().getStateVersion();
+		this.targetHeader = current;
 	}
 
 	public void processSyncRequest(SyncRequest syncRequest) {
@@ -155,9 +162,6 @@ public final class SyncServiceProcessor {
 				break;
 			}
 		}
-
-		// TODO: Need to check if this response actually corresponds to sync-in-progress
-		isSyncInProgress = false;
 	}
 
 	public void processVersionUpdate(long updatedCurrentVersion) {
@@ -168,45 +172,32 @@ public final class SyncServiceProcessor {
 
 	public void processLocalSyncRequest(LocalSyncRequest request) {
 		final VerifiedCommittedHeader targetHeader = request.getTarget();
-		if (targetHeader.getLedgerState().getStateVersion() <= this.currentVersion) {
+		final long targetVersionRequest = targetHeader.getLedgerState().getStateVersion();
+		if (targetVersionRequest <= this.targetHeader.getLedgerState().getStateVersion()) {
 			return;
 		}
 
 		this.targetHeader = targetHeader;
-		sendSyncRequests(request.getTargetNodes());
+		SyncInProgress syncInProgress = new SyncInProgress(request.getTarget(), request.getTargetNodes());
+		this.sendRequests(syncInProgress);
 	}
 
 	public void processSyncTimeout(SyncInProgress syncInProgress) {
-		if (syncInProgress.id == syncInProgressId && isSyncInProgress) {
-			this.sendSyncRequests(syncInProgress.target);
-		}
-	}
-
-	private void sendSyncRequests(List<BFTNode> target) {
-		final long targetVersion = this.targetHeader.getLedgerState().getStateVersion();
-
-		if (currentVersion >= targetVersion) {
+		final long targetVersion = syncInProgress.getTargetHeader().getLedgerState().getStateVersion();
+		if (targetVersion <= currentVersion) {
 			return;
 		}
 
+		this.sendRequests(syncInProgress);
+	}
 
-		long size = ((targetVersion - currentVersion) / batchSize);
-		if ((targetVersion - currentVersion) % batchSize > 0) {
-			size += 1;
-		}
-		size = Math.min(size, MAX_REQUESTS_TO_SEND);
-		for (long i = 0; i < size; i++) {
-			sendSyncRequest(currentVersion + batchSize * i, target);
-		}
-
-		syncInProgressId++;
-		isSyncInProgress = true;
-		SyncInProgress syncInProgress = new SyncInProgress(syncInProgressId, target);
+	private void sendRequests(SyncInProgress syncInProgress) {
+		sendSyncRequest(currentVersion, syncInProgress.getTargetNodes());
 		syncTimeoutScheduler.scheduleTimeout(syncInProgress, patienceMilliseconds);
 	}
 
-	private void sendSyncRequest(long version, List<BFTNode> target) {
-		List<Peer> peers = target.stream()
+	private void sendSyncRequest(long version, List<BFTNode> targetNodes) {
+		List<Peer> peers = targetNodes.stream()
 			.map(BFTNode::getKey)
 			.map(pk -> addressBook.peer(pk.euid()))
 			.filter(Optional::isPresent)

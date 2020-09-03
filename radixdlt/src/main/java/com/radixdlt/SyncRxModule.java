@@ -24,10 +24,17 @@ import com.radixdlt.consensus.sync.SyncRequestSender;
 import com.radixdlt.ledger.VerifiedCommittedCommand;
 import com.radixdlt.ledger.StateComputerLedger.CommittedSender;
 import com.radixdlt.sync.LocalSyncRequest;
+import com.radixdlt.sync.SyncServiceProcessor.SyncInProgress;
+import com.radixdlt.sync.SyncServiceProcessor.SyncTimeoutScheduler;
 import com.radixdlt.sync.SyncServiceRunner.LocalSyncRequestsRx;
+import com.radixdlt.sync.SyncServiceRunner.SyncTimeoutsRx;
 import com.radixdlt.sync.SyncServiceRunner.VersionUpdatesRx;
+import com.radixdlt.utils.ScheduledSenderToRx;
 import com.radixdlt.utils.SenderToRx;
+import com.radixdlt.utils.ThreadFactories;
 import com.radixdlt.utils.TwoSenderToRx;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * Module which handles message passing to the sync services
@@ -44,5 +51,10 @@ public class SyncRxModule extends AbstractModule {
 		Multibinder<CommittedSender> committedSenderBinder = Multibinder.newSetBinder(binder(), CommittedSender.class);
 		committedSenderBinder.addBinding().toInstance(committedCommands::send);
 		bind(VersionUpdatesRx.class).toInstance(committedCommands::rx);
+
+		ScheduledExecutorService ses = Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("SyncTimeoutSender"));
+		ScheduledSenderToRx<SyncInProgress> syncsInProgress = new ScheduledSenderToRx<>(ses);
+		bind(SyncTimeoutScheduler.class).toInstance(syncsInProgress::scheduleSend);
+		bind(SyncTimeoutsRx.class).toInstance(syncsInProgress::messages);
 	}
 }
