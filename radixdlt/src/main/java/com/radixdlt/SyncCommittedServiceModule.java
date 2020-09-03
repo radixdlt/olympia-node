@@ -20,6 +20,7 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.radixdlt.consensus.VerifiedCommittedHeader;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.middleware2.network.MessageCentralLedgerSync;
 import com.radixdlt.network.addressbook.AddressBook;
@@ -44,6 +45,7 @@ public class SyncCommittedServiceModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private SyncServiceProcessor syncServiceProcessor(
+		VerifiedCommittedHeader header,
 		RadixEngineStateComputer executor,
 		StateSyncNetwork stateSyncNetwork,
 		AddressBook addressBook,
@@ -55,7 +57,7 @@ public class SyncCommittedServiceModule extends AbstractModule {
 			stateSyncNetwork,
 			addressBook, syncedCommandSender,
 			syncTimeoutScheduler,
-			0,
+			header,
 			BATCH_SIZE,
 			10
 		);

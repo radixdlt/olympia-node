@@ -18,6 +18,7 @@
 package com.radixdlt.statecomputer;
 
 import com.radixdlt.ledger.VerifiedCommittedCommand;
+import com.radixdlt.utils.Pair;
 import java.util.List;
 
 public interface CommittedCommandsReader {
@@ -28,5 +29,5 @@ public interface CommittedCommandsReader {
 	 * @param limit limit to number of atoms to return
 	 * @return list of committed commands
 	 */
-	List<VerifiedCommittedCommand> getCommittedCommands(long stateVersion, int limit);
+	List<Pair<Long, VerifiedCommittedCommand>> getCommittedCommands(long stateVersion, int limit);
 }

@@ -34,6 +34,7 @@ import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.ledger.VerifiedCommittedCommand;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
+import com.radixdlt.utils.Pair;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedList;
@@ -66,7 +67,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private final CommittedCommandsReader committedCommandsReader;
 	private final CommittedAtomSender committedAtomSender;
 	private final Object lock = new Object();
-	private final LinkedList<VerifiedCommittedCommand> unstoredCommittedAtoms = new LinkedList<>();
+	private final LinkedList<Pair<Long, VerifiedCommittedCommand>> unstoredCommittedAtoms = new LinkedList<>();
 
 	public RadixEngineStateComputer(
 		Serialization serialization,
@@ -92,19 +93,21 @@ public final class RadixEngineStateComputer implements StateComputer {
 		// TODO: never make it into the radix engine due to state errors. This is because we only check
 		// TODO: validity on commit rather than on proposal/prepare.
 		// TODO: remove 100 hardcode limit
-		List<VerifiedCommittedCommand> storedCommittedAtoms = committedCommandsReader.getCommittedCommands(stateVersion, batchSize);
+		List<Pair<Long, VerifiedCommittedCommand>> storedCommittedAtoms = committedCommandsReader
+			.getCommittedCommands(stateVersion, batchSize);
 
 		// TODO: Remove
-		final List<VerifiedCommittedCommand> copy;
+		final List<Pair<Long, VerifiedCommittedCommand>> copy;
 		synchronized (lock) {
 			copy = new ArrayList<>(unstoredCommittedAtoms);
 		}
 
 		return Streams.concat(
 			storedCommittedAtoms.stream(),
-			copy.stream().filter(a -> a.getProof().getLedgerState().getStateVersion() > stateVersion)
+			copy.stream().filter(a -> a.getFirst() > stateVersion)
 		)
-			.sorted(Comparator.comparingLong(a -> a.getProof().getLedgerState().getStateVersion()))
+			.sorted(Comparator.comparingLong(Pair::getFirst))
+			.map(Pair::getSecond)
 			.collect(ImmutableList.toImmutableList());
 	}
 
@@ -127,10 +130,10 @@ public final class RadixEngineStateComputer implements StateComputer {
 		final VerifiedCommittedHeader proof = verifiedCommittedCommand.getProof();
 		boolean storedInRadixEngine = false;
 		final ClientAtom clientAtom = command != null ? this.mapCommand(command) : null;
-		if (clientAtom != null) {
-			// TODO: Fix the following as it is incorrect
-			long stateVersion = verifiedCommittedCommand.getProof().getLedgerState().getStateVersion();
+		// TODO: Fix the following as it is incorrect
+		long stateVersion = verifiedCommittedCommand.getProof().getLedgerState().getStateVersion();
 
+		if (clientAtom != null) {
 			final CommittedAtom committedAtom = new CommittedAtom(clientAtom, stateVersion, proof);
 			try {
 				// TODO: execute list of commands instead
@@ -147,7 +150,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		}
 
 		if (!storedInRadixEngine) {
-			this.unstoredCommittedAtoms.add(verifiedCommittedCommand);
+			this.unstoredCommittedAtoms.add(Pair.of(stateVersion, verifiedCommittedCommand));
 		}
 
 		if (proof.getLedgerState().isEndOfEpoch()) {

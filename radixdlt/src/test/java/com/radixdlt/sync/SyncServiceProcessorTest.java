@@ -65,7 +65,7 @@ public class SyncServiceProcessorTest {
 
 	@Before
 	public void setUp() {
-		final long currentVersion = 0;
+
 		this.stateSyncNetwork = mock(StateSyncNetwork.class);
 		this.addressBook = mock(AddressBook.class);
 		this.stateComputer = mock(RadixEngineStateComputer.class);
@@ -77,7 +77,7 @@ public class SyncServiceProcessorTest {
 			addressBook,
 			syncedCommandSender,
 			syncTimeoutScheduler,
-			currentVersion,
+			VerifiedCommittedHeader.ofGenesisAncestor(mock(LedgerState.class)),
 			2,
 			1
 		);

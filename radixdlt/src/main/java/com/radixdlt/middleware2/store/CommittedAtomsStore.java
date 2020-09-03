@@ -45,6 +45,7 @@ import com.radixdlt.store.LedgerEntryStore;
 
 import com.radixdlt.ledger.VerifiedCommittedCommand;
 import com.radixdlt.store.StoreIndex.LedgerIndexType;
+import com.radixdlt.utils.Pair;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.BiFunction;
@@ -168,12 +169,16 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 	}
 
 	@Override
-	public List<VerifiedCommittedCommand> getCommittedCommands(long stateVersion, int limit) {
+	public List<Pair<Long, VerifiedCommittedCommand>> getCommittedCommands(long stateVersion, int limit) {
 		ImmutableList<LedgerEntry> entries = store.getNextCommittedLedgerEntries(stateVersion, limit);
 		return entries
 				.stream()
-				.map(LedgerEntry::getContent)
-				.map(commandToBinaryConverter::toCommand)
+				.map(e -> {
+					long entryVersion = e.getStateVersion();
+					byte[] payload = e.getContent();
+					VerifiedCommittedCommand cmd = commandToBinaryConverter.toCommand(payload);
+					return Pair.of(entryVersion, cmd);
+				})
 				.collect(ImmutableList.toImmutableList());
 	}
 

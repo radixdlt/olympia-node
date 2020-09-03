@@ -75,7 +75,7 @@ public final class SyncServiceProcessor {
 
 	private long syncInProgressId = 0;
 	private boolean isSyncInProgress = false;
-	private long syncToTargetVersion;
+	private VerifiedCommittedHeader targetHeader;
 	private long currentVersion;
 
 	public SyncServiceProcessor(
@@ -84,7 +84,7 @@ public final class SyncServiceProcessor {
 		AddressBook addressBook,
 		SyncedCommandSender syncedCommandSender,
 		SyncTimeoutScheduler syncTimeoutScheduler,
-		long currentVersion,
+		VerifiedCommittedHeader current,
 		int batchSize,
 		long patienceMilliseconds
 	) {
@@ -97,8 +97,8 @@ public final class SyncServiceProcessor {
 		if (batchSize <= 0) {
 			throw new IllegalArgumentException();
 		}
-		this.currentVersion = currentVersion;
-		this.syncToTargetVersion = currentVersion;
+		this.currentVersion = current.getLedgerState().getStateVersion();
+		this.targetHeader = current;
 		this.stateComputer = Objects.requireNonNull(stateComputer);
 		this.stateSyncNetwork = Objects.requireNonNull(stateSyncNetwork);
 		this.addressBook = Objects.requireNonNull(addressBook);
@@ -167,11 +167,12 @@ public final class SyncServiceProcessor {
 	}
 
 	public void processLocalSyncRequest(LocalSyncRequest request) {
-		final VerifiedCommittedHeader target = request.getTarget();
-		if (target.getLedgerState().getStateVersion() <= this.currentVersion) {
+		final VerifiedCommittedHeader targetHeader = request.getTarget();
+		if (targetHeader.getLedgerState().getStateVersion() <= this.currentVersion) {
 			return;
 		}
-		this.syncToTargetVersion = target.getLedgerState().getStateVersion();
+
+		this.targetHeader = targetHeader;
 		sendSyncRequests(request.getTargetNodes());
 	}
 
@@ -182,11 +183,15 @@ public final class SyncServiceProcessor {
 	}
 
 	private void sendSyncRequests(List<BFTNode> target) {
-		if (currentVersion >= syncToTargetVersion) {
+		final long targetVersion = this.targetHeader.getLedgerState().getStateVersion();
+
+		if (currentVersion >= targetVersion) {
 			return;
 		}
-		long size = ((syncToTargetVersion - currentVersion) / batchSize);
-		if ((syncToTargetVersion - currentVersion) % batchSize > 0) {
+
+
+		long size = ((targetVersion - currentVersion) / batchSize);
+		if ((targetVersion - currentVersion) % batchSize > 0) {
 			size += 1;
 		}
 		size = Math.min(size, MAX_REQUESTS_TO_SEND);
