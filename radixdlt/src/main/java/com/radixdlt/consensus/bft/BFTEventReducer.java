@@ -208,7 +208,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 				}
 				// TODO: Remove isEndOfEpoch knowledge from consensus
 				processQC(qc).ifPresent(committedProof -> {
-					if (committedProof.getHeader().getLedgerState().isEndOfEpoch()) {
+					if (committedProof.getLedgerState().isEndOfEpoch()) {
 						this.endOfEpochSender.sendEndOfEpoch(committedProof.getHeader());
 					}
 				});

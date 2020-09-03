@@ -102,9 +102,9 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 		return Streams.concat(
 			storedCommittedAtoms.stream(),
-			copy.stream().filter(a -> a.getProof().getHeader().getLedgerState().getStateVersion() > stateVersion)
+			copy.stream().filter(a -> a.getProof().getLedgerState().getStateVersion() > stateVersion)
 		)
-			.sorted(Comparator.comparingLong(a -> a.getProof().getHeader().getLedgerState().getStateVersion()))
+			.sorted(Comparator.comparingLong(a -> a.getProof().getLedgerState().getStateVersion()))
 			.collect(ImmutableList.toImmutableList());
 	}
 
@@ -129,7 +129,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		final ClientAtom clientAtom = command != null ? this.mapCommand(command) : null;
 		if (clientAtom != null) {
 			// TODO: Fix the following as it is incorrect
-			long stateVersion = verifiedCommittedCommand.getProof().getHeader().getLedgerState().getStateVersion();
+			long stateVersion = verifiedCommittedCommand.getProof().getLedgerState().getStateVersion();
 
 			final CommittedAtom committedAtom = new CommittedAtom(clientAtom, stateVersion, proof);
 			try {
@@ -150,7 +150,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			this.unstoredCommittedAtoms.add(verifiedCommittedCommand);
 		}
 
-		if (proof.getHeader().getLedgerState().isEndOfEpoch()) {
+		if (proof.getLedgerState().isEndOfEpoch()) {
 			RadixEngineValidatorSetBuilder validatorSetBuilder = this.radixEngine.getComputedState(RadixEngineValidatorSetBuilder.class);
 
 			return Optional.of(validatorSetBuilder.build());

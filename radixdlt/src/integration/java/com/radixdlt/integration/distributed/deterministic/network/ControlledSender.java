@@ -171,12 +171,12 @@ public final class ControlledSender implements DeterministicSender {
 
 	private MessageRank messageRank(GetEpochResponse getEpochResponse) {
 		VerifiedCommittedHeader ancestorMetadata = getEpochResponse.getEpochAncestor();
-		return MessageRank.of(ancestorMetadata.getHeader().getEpoch(), ancestorMetadata.getHeader().getView().number() + 3);
+		return MessageRank.of(ancestorMetadata.getEpoch(), ancestorMetadata.getView().number() + 3);
 	}
 
 	private MessageRank messageRank(EpochChange epochChange) {
 		VerifiedCommittedHeader ancestorMetadata = epochChange.getAncestor();
-		return MessageRank.of(ancestorMetadata.getHeader().getEpoch(), ancestorMetadata.getHeader().getView().number() + 3);
+		return MessageRank.of(ancestorMetadata.getEpoch(), ancestorMetadata.getView().number() + 3);
 	}
 
 	private MessageRank messageRank(NewView newView) {

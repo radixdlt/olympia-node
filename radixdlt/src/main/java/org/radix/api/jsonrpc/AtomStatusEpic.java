@@ -18,6 +18,7 @@
 package org.radix.api.jsonrpc;
 
 import com.radixdlt.consensus.Header;
+import com.radixdlt.consensus.VerifiedCommittedHeader;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
@@ -91,7 +92,7 @@ public class AtomStatusEpic {
 				JSONObject data = new JSONObject();
 				data.put("aid", committedAtom.getAID());
 				// TODO: serialize vertexMetadata
-				Header header = committedAtom.getProof().getHeader();
+				VerifiedCommittedHeader header = committedAtom.getProof();
 				data.put("stateVersion", header.getLedgerState().getStateVersion());
 				data.put("epoch", header.getEpoch());
 				data.put("view", header.getView().number());
@@ -110,7 +111,7 @@ public class AtomStatusEpic {
 				}
 
 				// TODO: serialize vertexMetadata
-				Header header = committedAtom.getProof().getHeader();
+				VerifiedCommittedHeader header = committedAtom.getProof();
 				data.put("stateVersion", header.getLedgerState().getStateVersion());
 				data.put("epoch", header.getEpoch());
 				data.put("view", header.getView().number());

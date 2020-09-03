@@ -18,7 +18,7 @@
 package com.radixdlt.sync;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.Header;
+import com.radixdlt.consensus.VerifiedCommittedHeader;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.ledger.VerifiedCommittedCommand;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
@@ -70,7 +70,7 @@ public final class SyncServiceProcessor {
 	private final AddressBook addressBook;
 	private final StateSyncNetwork stateSyncNetwork;
 	private final TreeSet<VerifiedCommittedCommand> committedCommands = new TreeSet<>(
-		Comparator.comparingLong(a -> a.getProof().getHeader().getLedgerState().getStateVersion())
+		Comparator.comparingLong(a -> a.getProof().getLedgerState().getStateVersion())
 	);
 
 	private long syncInProgressId = 0;
@@ -126,14 +126,14 @@ public final class SyncServiceProcessor {
 		// TODO: Check validity of response
 		log.debug("SYNC_RESPONSE: size: {}", commands.size());
 		for (VerifiedCommittedCommand command : commands) {
-			long stateVersion = command.getProof().getHeader().getLedgerState().getStateVersion();
+			long stateVersion = command.getProof().getLedgerState().getStateVersion();
 			if (stateVersion > this.currentVersion) {
 				if (committedCommands.size() < maxAtomsQueueSize) { // check if there is enough space
 					committedCommands.add(command);
 				} else { // not enough space available
 					VerifiedCommittedCommand last = committedCommands.last();
 					// will added it only if it must be applied BEFORE the most recent atom we have
-					if (last.getProof().getHeader().getLedgerState().getStateVersion() > stateVersion) {
+					if (last.getProof().getLedgerState().getStateVersion() > stateVersion) {
 						committedCommands.pollLast(); // remove the most recent available
 						committedCommands.add(command);
 					}
@@ -144,7 +144,7 @@ public final class SyncServiceProcessor {
 		Iterator<VerifiedCommittedCommand> it = committedCommands.iterator();
 		while (it.hasNext()) {
 			VerifiedCommittedCommand command = it.next();
-			long stateVersion = command.getProof().getHeader().getLedgerState().getStateVersion();
+			long stateVersion = command.getProof().getLedgerState().getStateVersion();
 			if (stateVersion <= currentVersion) {
 				it.remove();
 			} else if (stateVersion == currentVersion + 1) {
@@ -167,7 +167,7 @@ public final class SyncServiceProcessor {
 	}
 
 	public void processLocalSyncRequest(LocalSyncRequest request) {
-		final Header target = request.getTarget().getHeader();
+		final VerifiedCommittedHeader target = request.getTarget();
 		if (target.getLedgerState().getStateVersion() <= this.currentVersion) {
 			return;
 		}

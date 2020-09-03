@@ -17,12 +17,11 @@
 
 package com.radixdlt.middleware2.network;
 
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.LedgerState;
+import com.radixdlt.consensus.VerifiedCommittedHeader;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.Header;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -42,7 +41,7 @@ public class GetVerticesResponseMessageSerializeTest extends SerializeMessageObj
 			BFTValidator.from(BFTNode.create(keyPair.getPublicKey()), UInt256.ONE)
 		));
 		LedgerState ledgerState = LedgerState.create(0, Hash.random(), 0L, false);
-		Vertex genesisVertex = Vertex.createGenesis(Header.ofGenesisAncestor(ledgerState));
+		Vertex genesisVertex = Vertex.createGenesis(VerifiedCommittedHeader.ofGenesisAncestor(ledgerState));
 		return new GetVerticesResponseMessage(1234, Hash.random(), ImmutableList.of(genesisVertex));
 	}
 

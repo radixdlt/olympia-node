@@ -24,7 +24,6 @@ import com.radixdlt.consensus.VerifiedCommittedHeader;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.Header;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.counters.SystemCounters;
@@ -118,7 +117,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 
 	@Override
 	public OnSynced ifCommitSynced(VerifiedCommittedHeader committedHeader) {
-		final long targetStateVersion = committedHeader.getHeader().getLedgerState().getStateVersion();
+		final long targetStateVersion = committedHeader.getLedgerState().getStateVersion();
 		synchronized (lock) {
 			if (targetStateVersion <= this.currentStateVersion) {
 				return onSync -> {
@@ -138,7 +137,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	public void commit(VerifiedCommittedCommand verifiedCommittedCommand) {
 		this.counters.increment(CounterType.LEDGER_PROCESSED);
 
-		final Header header = verifiedCommittedCommand.getProof().getHeader();
+		final VerifiedCommittedHeader header = verifiedCommittedCommand.getProof();
 		final Command command = verifiedCommittedCommand.getCommand();
 
 		synchronized (lock) {

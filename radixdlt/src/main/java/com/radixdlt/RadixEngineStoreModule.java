@@ -101,7 +101,7 @@ public class RadixEngineStoreModule extends AbstractModule {
 		VerifiedCommittedHeader genesisHeader
 	) throws LedgerAtomConversionException {
 		final ClientAtom genesisAtom = ClientAtom.convertFromApiAtom(universe.getGenesis().get(0));
-		return new CommittedAtom(genesisAtom, genesisHeader.getHeader().getLedgerState().getStateVersion(), genesisHeader);
+		return new CommittedAtom(genesisAtom, genesisHeader.getLedgerState().getStateVersion(), genesisHeader);
 	}
 
 	@Provides
@@ -158,7 +158,7 @@ public class RadixEngineStoreModule extends AbstractModule {
 			atomIndexer,
 			serialization
 		);
-		if (store.getNextCommittedLedgerEntries(genesisAtom.getProof().getHeader()
+		if (store.getNextCommittedLedgerEntries(genesisAtom.getProof()
 			.getLedgerState().getStateVersion() - 1, 1).isEmpty()
 		) {
 			engineStore.storeAtom(genesisAtom);

@@ -81,11 +81,12 @@ public final class Vertex {
 		this.command = command;
 	}
 
-	public static Vertex createGenesis(Header ancestorMetadata) {
-		Objects.requireNonNull(ancestorMetadata);
-		final VoteData voteData = new VoteData(ancestorMetadata, ancestorMetadata, ancestorMetadata);
+	public static Vertex createGenesis(VerifiedCommittedHeader ancestor) {
+		Objects.requireNonNull(ancestor);
+		Header header = ancestor.getHeader();
+		final VoteData voteData = new VoteData(header, header, header);
 		final QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-		return new Vertex(ancestorMetadata.getEpoch() + 1, qc, View.genesis(), null);
+		return new Vertex(ancestor.getEpoch() + 1, qc, View.genesis(), null);
 	}
 
 	public static Vertex createVertex(QuorumCertificate qc, View view, Command command) {

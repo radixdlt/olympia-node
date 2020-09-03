@@ -245,9 +245,9 @@ public final class VertexStore implements VertexStoreEventProcessor {
 
 	private boolean requiresCommittedStateSync(SyncState syncState) {
 		final VerifiedCommittedHeader committedHeader = syncState.committedHeader;
-		if (!vertices.containsKey(committedHeader.getHeader().getVertexId())) {
+		if (!vertices.containsKey(committedHeader.getVertexId())) {
 			View rootView = this.getRoot().getView();
-			return rootView.compareTo(committedHeader.getHeader().getView()) < 0;
+			return rootView.compareTo(committedHeader.getView()) < 0;
 		}
 
 		return false;
@@ -512,14 +512,14 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	 * @return the vertex if sucessful, otherwise an empty optional if vertex was already committed
 	 */
 	public Optional<Vertex> commit(VerifiedCommittedHeader committedProof) {
-		if (committedProof.getHeader().getView().compareTo(this.getRoot().getView()) < 0) {
+		if (committedProof.getView().compareTo(this.getRoot().getView()) < 0) {
 			return Optional.empty();
 		}
 
-		final Hash vertexId = committedProof.getHeader().getVertexId();
+		final Hash vertexId = committedProof.getVertexId();
 		final Vertex tipVertex = vertices.get(vertexId);
 		if (tipVertex == null) {
-			throw new IllegalStateException("Committing vertex not in store: " + committedProof.getHeader());
+			throw new IllegalStateException("Committing vertex not in store: " + committedProof);
 		}
 		final LinkedList<Vertex> path = new LinkedList<>();
 		Vertex vertex = tipVertex;
@@ -537,7 +537,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 			this.vertexStoreEventSender.sendCommittedVertex(committedVertex);
 		}
 
-		rootId = committedProof.getHeader().getVertexId();
+		rootId = committedProof.getVertexId();
 
 		updateVertexStoreSize();
 		return Optional.of(tipVertex);

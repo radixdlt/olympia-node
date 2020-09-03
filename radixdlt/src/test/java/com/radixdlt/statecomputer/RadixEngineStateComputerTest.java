@@ -32,7 +32,6 @@ import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerState;
 import com.radixdlt.consensus.VerifiedCommittedHeader;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.Header;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.CMInstruction;
@@ -98,17 +97,16 @@ public class RadixEngineStateComputerTest {
 		AID aid = mock(AID.class);
 		when(clientAtom.getAID()).thenReturn(aid);
 
-		Header header = mock(Header.class);
-		when(header.getView()).then(i -> View.of(50));
-		LedgerState ledgerState = mock(LedgerState.class);
-		when(ledgerState.getStateVersion()).thenReturn(1L);
-		when(ledgerState.isEndOfEpoch()).thenReturn(false);
-		when(header.getLedgerState()).thenReturn(ledgerState);
+
 
 		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenReturn(clientAtom);
 
 		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
-		when(proof.getHeader()).thenReturn(header);
+		when(proof.getView()).then(i -> View.of(50));
+		LedgerState ledgerState = mock(LedgerState.class);
+		when(ledgerState.getStateVersion()).thenReturn(1L);
+		when(ledgerState.isEndOfEpoch()).thenReturn(false);
+		when(proof.getLedgerState()).thenReturn(ledgerState);
 		VerifiedCommittedCommand command = mock(VerifiedCommittedCommand.class);
 		when(command.getProof()).thenReturn(proof);
 		when(command.getCommand()).thenReturn(mock(Command.class));
@@ -123,19 +121,19 @@ public class RadixEngineStateComputerTest {
 		ClientAtom clientAtom = mock(ClientAtom.class);
 		AID aid = mock(AID.class);
 		when(clientAtom.getAID()).thenReturn(aid);
-		Header header = mock(Header.class);
-		when(header.getView()).then(i -> View.of(50));
-		LedgerState ledgerState = mock(LedgerState.class);
-		when(ledgerState.getStateVersion()).thenReturn(1L);
-		when(ledgerState.isEndOfEpoch()).thenReturn(false);
-		when(header.getLedgerState()).thenReturn(ledgerState);
+
 
 		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenReturn(clientAtom);
 		RadixEngineException e = mock(RadixEngineException.class);
 		doThrow(e).when(radixEngine).checkAndStore(any());
 
 		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
-		when(proof.getHeader()).thenReturn(header);
+		when(proof.getView()).then(i -> View.of(50));
+		LedgerState ledgerState = mock(LedgerState.class);
+		when(ledgerState.getStateVersion()).thenReturn(1L);
+		when(ledgerState.isEndOfEpoch()).thenReturn(false);
+		when(proof.getLedgerState()).thenReturn(ledgerState);
+
 		VerifiedCommittedCommand command = mock(VerifiedCommittedCommand.class);
 		when(command.getProof()).thenReturn(proof);
 		when(command.getCommand()).thenReturn(mock(Command.class));
@@ -151,12 +149,7 @@ public class RadixEngineStateComputerTest {
 		ClientAtom committedAtom = mock(ClientAtom.class);
 		AID aid = mock(AID.class);
 		when(committedAtom.getAID()).thenReturn(aid);
-		Header header = mock(Header.class);
-		when(header.getView()).then(i -> View.of(50));
-		LedgerState ledgerState = mock(LedgerState.class);
-		when(ledgerState.getStateVersion()).thenReturn(1L);
-		when(ledgerState.isEndOfEpoch()).thenReturn(true);
-		when(header.getLedgerState()).thenReturn(ledgerState);
+
 
 		RadixEngineValidatorSetBuilder validatorSetBuilder = mock(RadixEngineValidatorSetBuilder.class);
 		when(radixEngine.getComputedState(eq(RadixEngineValidatorSetBuilder.class)))
@@ -164,7 +157,11 @@ public class RadixEngineStateComputerTest {
 		when(validatorSetBuilder.build()).thenReturn(mock(BFTValidatorSet.class));
 
 		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
-		when(proof.getHeader()).thenReturn(header);
+		when(proof.getView()).then(i -> View.of(50));
+		LedgerState ledgerState = mock(LedgerState.class);
+		when(ledgerState.getStateVersion()).thenReturn(1L);
+		when(ledgerState.isEndOfEpoch()).thenReturn(true);
+		when(proof.getLedgerState()).thenReturn(ledgerState);
 		VerifiedCommittedCommand command = mock(VerifiedCommittedCommand.class);
 		when(command.getProof()).thenReturn(proof);
 
@@ -176,18 +173,17 @@ public class RadixEngineStateComputerTest {
 
 	@Test
 	public void when_commit_vertex_with_malformed_command__then_is_available_on_query() throws SerializationException {
-		Header header = mock(Header.class);
-		when(header.getView()).then(i -> View.of(50));
-		LedgerState ledgerState = mock(LedgerState.class);
-		when(ledgerState.getStateVersion()).thenReturn(1L);
-		when(ledgerState.isEndOfEpoch()).thenReturn(false);
-		when(header.getLedgerState()).thenReturn(ledgerState);
+
 
 		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenThrow(new SerializationException(""));
 
 		Command cmd = new Command(new byte[] {0, 1});
 		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
-		when(proof.getHeader()).thenReturn(header);
+		when(proof.getView()).then(i -> View.of(50));
+		LedgerState ledgerState = mock(LedgerState.class);
+		when(ledgerState.getStateVersion()).thenReturn(1L);
+		when(ledgerState.isEndOfEpoch()).thenReturn(false);
+		when(proof.getLedgerState()).thenReturn(ledgerState);
 		VerifiedCommittedCommand command = mock(VerifiedCommittedCommand.class);
 		when(command.getProof()).thenReturn(proof);
 		when(command.getCommand()).thenReturn(cmd);

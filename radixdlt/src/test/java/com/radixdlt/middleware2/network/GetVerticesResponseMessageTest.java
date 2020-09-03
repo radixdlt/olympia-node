@@ -23,14 +23,13 @@ import static org.mockito.Mockito.mock;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.Header;
 import com.radixdlt.crypto.Hash;
 import org.junit.Test;
 
 public class GetVerticesResponseMessageTest {
 	@Test
 	public void sensibleToString() {
-		Vertex genesisVertex = Vertex.createGenesis(mock(Header.class));
+		Vertex genesisVertex = mock(Vertex.class);
 		GetVerticesResponseMessage msg1 = new GetVerticesResponseMessage(0, Hash.random(), ImmutableList.of(genesisVertex));
 		String s1 = msg1.toString();
 		assertThat(s1, containsString(GetVerticesResponseMessage.class.getSimpleName()));

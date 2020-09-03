@@ -165,7 +165,7 @@ public final class EpochManager {
 
 	private void updateEpochState() {
 		BFTValidatorSet validatorSet = this.currentEpoch.getValidatorSet();
-		Header ancestorHeader = this.currentEpoch.getAncestor().getHeader();
+		VerifiedCommittedHeader ancestorHeader = this.currentEpoch.getAncestor();
 
 		final BFTEventProcessor bftEventProcessor;
 		final VertexStoreEventProcessor vertexStoreEventProcessor;
@@ -223,14 +223,14 @@ public final class EpochManager {
 	}
 
 	private long currentEpoch() {
-		return this.currentEpoch.getAncestor().getHeader().getEpoch() + 1;
+		return this.currentEpoch.getAncestor().getEpoch() + 1;
 	}
 
 	public void processEpochChange(EpochChange epochChange) {
 		log.trace("{}: EPOCH_CHANGE: {}", this.self, epochChange);
 		BFTValidatorSet validatorSet = epochChange.getValidatorSet();
 		VerifiedCommittedHeader ancestor = epochChange.getAncestor();
-		Vertex genesisVertex = Vertex.createGenesis(ancestor.getHeader());
+		Vertex genesisVertex = Vertex.createGenesis(ancestor);
 		final long nextEpoch = genesisVertex.getEpoch();
 
 		// Sanity check
@@ -240,7 +240,7 @@ public final class EpochManager {
 
 		// If constructed the end of the previous epoch then broadcast new epoch to new validator set
 		// TODO: Move this into when lastConstructed is set
-		if (lastConstructed != null && lastConstructed.getEpoch() == ancestor.getHeader().getEpoch()) {
+		if (lastConstructed != null && lastConstructed.getEpoch() == ancestor.getEpoch()) {
 			log.info("{}: EPOCH_CHANGE: broadcasting next epoch", this.self);
 			for (BFTValidator validator : validatorSet.getValidators()) {
 				if (!validator.getNode().equals(self)) {
@@ -271,7 +271,7 @@ public final class EpochManager {
 			StringBuilder epochMessage = new StringBuilder(this.self.getSimpleName());
 			epochMessage.append(": EPOCH_CHANGE: ");
 			epochMessage.append(message);
-			epochMessage.append(" new epoch ").append(epochChange.getAncestor().getHeader().getEpoch() + 1);
+			epochMessage.append(" new epoch ").append(epochChange.getAncestor().getEpoch() + 1);
 			epochMessage.append(" with ").append(epochChange.getValidatorSet().getValidators().size()).append(" validators: ");
 			Iterator<BFTValidator> i = epochChange.getValidatorSet().getValidators().iterator();
 			if (i.hasNext()) {
@@ -327,7 +327,7 @@ public final class EpochManager {
 		}
 
 		final VerifiedCommittedHeader ancestor = response.getEpochAncestor();
-		if (ancestor.getHeader().getEpoch() >= this.currentEpoch()) {
+		if (ancestor.getEpoch() >= this.currentEpoch()) {
 			syncRequestSender.sendLocalSyncRequest(new LocalSyncRequest(ancestor, ImmutableList.of(response.getAuthor())));
 		} else {
 			log.info("{}: Ignoring old epoch {}", this.self, response);

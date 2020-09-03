@@ -19,6 +19,8 @@ package com.radixdlt.consensus;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.consensus.bft.View;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -71,6 +73,22 @@ public final class VerifiedCommittedHeader {
 			header,
 			new TimestampedECDSASignatures()
 		);
+	}
+
+	public LedgerState getLedgerState() {
+		return header.getLedgerState();
+	}
+
+	public long getEpoch() {
+		return header.getEpoch();
+	}
+
+	public View getView() {
+		return header.getView();
+	}
+
+	public Hash getVertexId() {
+		return header.getVertexId();
 	}
 
 	public Header getHeader() {

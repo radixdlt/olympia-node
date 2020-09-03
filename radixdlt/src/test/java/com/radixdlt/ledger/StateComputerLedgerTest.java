@@ -176,13 +176,10 @@ public class StateComputerLedgerTest {
 		LedgerState ledgerState = mock(LedgerState.class);
 		when(ledgerState.getStateVersion()).thenReturn(1233L);
 
-		Header header = mock(Header.class);
-		when(header.getView()).then(i -> View.of(50));
-		when(header.getLedgerState()).thenReturn(ledgerState);
-
 		VerifiedCommittedCommand verified = mock(VerifiedCommittedCommand.class);
 		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
-		when(proof.getHeader()).thenReturn(header);
+		when(proof.getView()).then(i -> View.of(50));
+		when(proof.getLedgerState()).thenReturn(ledgerState);
 		when(verified.getProof()).thenReturn(proof);
 
 		stateComputerLedger.commit(verified);
@@ -200,13 +197,10 @@ public class StateComputerLedgerTest {
 		LedgerState ledgerState = mock(LedgerState.class);
 		when(ledgerState.getStateVersion()).thenReturn(1234L);
 
-		Header header = mock(Header.class);
-		when(header.getView()).then(i -> View.of(50));
-		when(header.getLedgerState()).thenReturn(ledgerState);
-
 		VerifiedCommittedCommand verified = mock(VerifiedCommittedCommand.class);
 		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
-		when(proof.getHeader()).thenReturn(header);
+		when(proof.getView()).then(i -> View.of(50));
+		when(proof.getLedgerState()).thenReturn(ledgerState);
 		when(verified.getProof()).thenReturn(proof);
 		when(verified.getCommand()).thenReturn(command);
 
@@ -221,10 +215,8 @@ public class StateComputerLedgerTest {
 		LedgerState ledgerState = mock(LedgerState.class);
 		when(ledgerState.getStateVersion()).thenReturn(1230L);
 
-		Header nextHeader = mock(Header.class);
-		when(nextHeader.getLedgerState()).thenReturn(ledgerState);
 		VerifiedCommittedHeader verifiedCommittedHeader = mock(VerifiedCommittedHeader.class);
-		when(verifiedCommittedHeader.getHeader()).thenReturn(nextHeader);
+		when(verifiedCommittedHeader.getLedgerState()).thenReturn(ledgerState);
 
 		Runnable onSynced = mock(Runnable.class);
 		Runnable onNotSynced = mock(Runnable.class);
@@ -241,10 +233,8 @@ public class StateComputerLedgerTest {
 		LedgerState ledgerState = mock(LedgerState.class);
 		when(ledgerState.getStateVersion()).thenReturn(1234L);
 
-		Header nextHeader = mock(Header.class);
-		when(nextHeader.getLedgerState()).thenReturn(ledgerState);
 		VerifiedCommittedHeader verifiedCommittedHeader = mock(VerifiedCommittedHeader.class);
-		when(verifiedCommittedHeader.getHeader()).thenReturn(nextHeader);
+		when(verifiedCommittedHeader.getLedgerState()).thenReturn(ledgerState);
 
 		Runnable onSynced = mock(Runnable.class);
 		Runnable onNotSynced = mock(Runnable.class);
@@ -258,7 +248,7 @@ public class StateComputerLedgerTest {
 
 		VerifiedCommittedCommand verified = mock(VerifiedCommittedCommand.class);
 		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
-		when(proof.getHeader()).thenReturn(nextHeader);
+		when(proof.getLedgerState()).thenReturn(ledgerState);
 		when(verified.getProof()).thenReturn(proof);
 
 		stateComputerLedger.commit(verified);
