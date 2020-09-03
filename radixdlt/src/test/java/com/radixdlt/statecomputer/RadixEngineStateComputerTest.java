@@ -45,6 +45,7 @@ import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
+import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
 import com.radixdlt.utils.TypedMocks;
 
 import org.junit.Before;
@@ -145,7 +146,7 @@ public class RadixEngineStateComputerTest {
 	}
 
 	@Test
-	public void when_execute_vertex_is_end_of_epoch_with_null_command__then_is_available_on_query() {
+	public void when_execute_vertex_is_end_of_epoch_with_null_command__then_is_available_on_query() throws NextCommittedLimitReachedException {
 		ClientAtom committedAtom = mock(ClientAtom.class);
 		AID aid = mock(AID.class);
 		when(committedAtom.getAID()).thenReturn(aid);
@@ -172,9 +173,8 @@ public class RadixEngineStateComputerTest {
 	}
 
 	@Test
-	public void when_commit_vertex_with_malformed_command__then_is_available_on_query() throws SerializationException {
-
-
+	public void when_commit_vertex_with_malformed_command__then_is_available_on_query()
+		throws SerializationException, NextCommittedLimitReachedException {
 		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenThrow(new SerializationException(""));
 
 		Command cmd = new Command(new byte[] {0, 1});

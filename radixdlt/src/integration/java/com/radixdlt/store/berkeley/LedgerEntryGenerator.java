@@ -60,9 +60,11 @@ public class LedgerEntryGenerator {
         try {
             LedgerEntry ledgerEntry = new LedgerEntry(
                 DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.API),
-                stateVersion++,
+                stateVersion,
+                stateVersion,
                 AID.from(pKey)
             );
+            stateVersion++;
             return ledgerEntry;
         } catch (SerializationException e) {
             throw new RuntimeException(e);

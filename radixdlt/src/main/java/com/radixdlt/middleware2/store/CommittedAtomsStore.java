@@ -45,10 +45,11 @@ import com.radixdlt.store.LedgerEntryStore;
 
 import com.radixdlt.ledger.VerifiedCommittedCommand;
 import com.radixdlt.store.StoreIndex.LedgerIndexType;
-import com.radixdlt.utils.Pair;
-import java.util.List;
+import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
 import java.util.Objects;
+import java.util.TreeMap;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -115,6 +116,7 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		LedgerEntry ledgerEntry = new LedgerEntry(
 			binaryAtom,
 			committedAtom.getStateVersion(),
+			committedAtom.getProof().getLedgerState().getStateVersion(),
 			committedAtom.getAID()
 		);
 		EngineAtomIndices engineAtomIndices = atomIndexer.getIndices(committedAtom);
@@ -169,17 +171,17 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 	}
 
 	@Override
-	public List<Pair<Long, VerifiedCommittedCommand>> getCommittedCommands(long stateVersion, int limit) {
+	public TreeMap<Long, VerifiedCommittedCommand> getNextCommittedCommands(long stateVersion, int limit) throws NextCommittedLimitReachedException {
 		ImmutableList<LedgerEntry> entries = store.getNextCommittedLedgerEntries(stateVersion, limit);
-		return entries
-				.stream()
-				.map(e -> {
-					long entryVersion = e.getStateVersion();
-					byte[] payload = e.getContent();
-					VerifiedCommittedCommand cmd = commandToBinaryConverter.toCommand(payload);
-					return Pair.of(entryVersion, cmd);
-				})
-				.collect(ImmutableList.toImmutableList());
+		return entries.stream()
+			.collect(Collectors.toMap(
+				LedgerEntry::getStateVersion,
+				e -> commandToBinaryConverter.toCommand(e.getContent()),
+				(o, n) -> {
+					throw new IllegalStateException("Duplicate keys found!");
+				},
+				TreeMap::new
+			));
 	}
 
 	@Override

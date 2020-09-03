@@ -20,6 +20,7 @@ package com.radixdlt.store;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.identifiers.AID;
 
+import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
 import java.util.Optional;
 import java.util.Set;
 
@@ -88,5 +89,5 @@ public interface LedgerEntryStoreView {
 	 * @param limit the maximum count of ledger entries to return
 	 * @return ledger entries satisfying the constraints
 	 */
-	ImmutableList<LedgerEntry> getNextCommittedLedgerEntries(long stateVersion, int limit);
+	ImmutableList<LedgerEntry> getNextCommittedLedgerEntries(long stateVersion, int limit) throws NextCommittedLimitReachedException;
 }

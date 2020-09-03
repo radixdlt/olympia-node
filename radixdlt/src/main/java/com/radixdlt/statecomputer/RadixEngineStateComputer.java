@@ -19,7 +19,6 @@ package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Streams;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedCommittedHeader;
 import com.radixdlt.consensus.Vertex;
@@ -34,13 +33,13 @@ import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.ledger.VerifiedCommittedCommand;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
-import com.radixdlt.utils.Pair;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.LinkedList;
+import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.function.Consumer;
 
 /**
@@ -67,7 +66,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private final CommittedCommandsReader committedCommandsReader;
 	private final CommittedAtomSender committedAtomSender;
 	private final Object lock = new Object();
-	private final LinkedList<Pair<Long, VerifiedCommittedCommand>> unstoredCommittedAtoms = new LinkedList<>();
+	private final TreeMap<Long, VerifiedCommittedCommand> unstoredCommittedAtoms = new TreeMap<>();
 
 	public RadixEngineStateComputer(
 		Serialization serialization,
@@ -88,27 +87,31 @@ public final class RadixEngineStateComputer implements StateComputer {
 	}
 
 	// TODO Move this to a different class class when unstored committed atoms is fixed
-	public List<VerifiedCommittedCommand> getCommittedCommands(long stateVersion, int batchSize) {
+	public List<VerifiedCommittedCommand> getCommittedCommands(long stateVersion, int batchSize) throws NextCommittedLimitReachedException {
 		// TODO: This may still return an empty list as we still count state versions for atoms which
 		// TODO: never make it into the radix engine due to state errors. This is because we only check
 		// TODO: validity on commit rather than on proposal/prepare.
-		// TODO: remove 100 hardcode limit
-		List<Pair<Long, VerifiedCommittedCommand>> storedCommittedAtoms = committedCommandsReader
-			.getCommittedCommands(stateVersion, batchSize);
-
-		// TODO: Remove
-		final List<Pair<Long, VerifiedCommittedCommand>> copy;
-		synchronized (lock) {
-			copy = new ArrayList<>(unstoredCommittedAtoms);
+		TreeMap<Long, VerifiedCommittedCommand> storedCommittedAtoms = committedCommandsReader
+			.getNextCommittedCommands(stateVersion, batchSize);
+		final VerifiedCommittedHeader nextProof;
+		if (storedCommittedAtoms.firstEntry() != null) {
+			nextProof = storedCommittedAtoms.firstEntry().getValue().getProof();
+		} else {
+			Entry<Long, VerifiedCommittedCommand> uncommittedEntry = unstoredCommittedAtoms.higherEntry(stateVersion);
+			if (uncommittedEntry == null) {
+				return ImmutableList.of();
+			}
+			nextProof = uncommittedEntry.getValue().getProof();
 		}
 
-		return Streams.concat(
-			storedCommittedAtoms.stream(),
-			copy.stream().filter(a -> a.getFirst() > stateVersion)
-		)
-			.sorted(Comparator.comparingLong(Pair::getFirst))
-			.map(Pair::getSecond)
-			.collect(ImmutableList.toImmutableList());
+		synchronized (lock) {
+			final long proofStateVersion = nextProof.getLedgerState().getStateVersion();
+			Map<Long, VerifiedCommittedCommand> unstoredToReturn
+				= unstoredCommittedAtoms.subMap(stateVersion, false, proofStateVersion, true);
+			storedCommittedAtoms.putAll(unstoredToReturn);
+		}
+
+		return storedCommittedAtoms.values().stream().collect(ImmutableList.toImmutableList());
 	}
 
 	@Override
@@ -150,7 +153,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		}
 
 		if (!storedInRadixEngine) {
-			this.unstoredCommittedAtoms.add(Pair.of(stateVersion, verifiedCommittedCommand));
+			this.unstoredCommittedAtoms.put(stateVersion, verifiedCommittedCommand);
 		}
 
 		if (proof.getLedgerState().isEndOfEpoch()) {

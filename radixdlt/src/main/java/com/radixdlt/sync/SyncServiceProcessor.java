@@ -24,6 +24,7 @@ import com.radixdlt.ledger.VerifiedCommittedCommand;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
+import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
@@ -124,9 +125,14 @@ public final class SyncServiceProcessor {
 		// TODO: This may still return an empty list as we still count state versions for atoms which
 		// TODO: never make it into the radix engine due to state errors. This is because we only check
 		// TODO: validity on commit rather than on proposal/prepare.
-		List<VerifiedCommittedCommand> committedCommands = stateComputer.getCommittedCommands(stateVersion, batchSize);
-		log.debug("SYNC_REQUEST: SENDING_RESPONSE size: {}", committedCommands.size());
-		stateSyncNetwork.sendSyncResponse(peer, committedCommands);
+		try {
+			List<VerifiedCommittedCommand> committedCommands = stateComputer.getCommittedCommands(stateVersion, batchSize);
+
+			log.debug("SYNC_REQUEST: SENDING_RESPONSE size: {}", committedCommands.size());
+			stateSyncNetwork.sendSyncResponse(peer, committedCommands);
+		} catch (NextCommittedLimitReachedException e) {
+			log.error(e.getMessage(), e);
+		}
 	}
 
 	public void processSyncResponse(ImmutableList<VerifiedCommittedCommand> commands) {

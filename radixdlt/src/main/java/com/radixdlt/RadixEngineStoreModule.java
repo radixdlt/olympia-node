@@ -44,6 +44,7 @@ import com.radixdlt.statecomputer.CommittedCommandsReader;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LedgerEntryStore;
+import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
 import com.radixdlt.universe.Universe;
 
 import java.util.function.BiFunction;
@@ -149,7 +150,7 @@ public class RadixEngineStoreModule extends AbstractModule {
 		ClientAtomToBinaryConverter clientAtomToBinaryConverter,
 		AtomIndexer atomIndexer,
 		Serialization serialization
-	) {
+	) throws NextCommittedLimitReachedException {
 		final CommittedAtomsStore engineStore = new CommittedAtomsStore(
 			committedAtomSender,
 			store,

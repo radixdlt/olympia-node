@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,19 +15,11 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.store;
+package com.radixdlt.store.berkeley;
 
-import com.radixdlt.identifiers.AID;
-import com.radixdlt.crypto.Hash;
-import org.radix.serialization.SerializeMessageObject;
+public class NextCommittedLimitReachedException extends Exception {
 
-public class LedgerEntrySerializeTest extends SerializeMessageObject<LedgerEntry> {
-	public LedgerEntrySerializeTest() {
-		super(LedgerEntry.class, () -> new LedgerEntry(
-			"{\"test\":\"test\"}".getBytes(),
-			0,
-			0,
-			AID.from(Hash.ZERO_HASH.toByteArray())
-		));
+	public NextCommittedLimitReachedException(int limit) {
+		super("Greater than " + limit + " atoms required to get to next proof.");
 	}
 }

@@ -460,7 +460,8 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 
 	// TODO missing shardspace check, should be added?
 	@Override
-	public ImmutableList<LedgerEntry> getNextCommittedLedgerEntries(long stateVersion, int limit) {
+	public ImmutableList<LedgerEntry> getNextCommittedLedgerEntries(long stateVersion, int limit) throws NextCommittedLimitReachedException {
+		long proofVersion = -1;
 		// when querying committed atoms, no need to worry about transaction as they aren't going away
 		try (Cursor atomCursor = this.atoms.openCursor(null, null);
 			 Cursor uqCursor = this.uniqueIndices.openCursor(null, null)) {
@@ -469,13 +470,12 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 			DatabaseEntry atomSearchKey = toPKey(PREFIX_COMMITTED, stateVersion + 1);
 			OperationStatus atomCursorStatus = atomCursor.getSearchKeyRange(atomSearchKey, null, LockMode.DEFAULT);
 			int size = 0;
-			while (atomCursorStatus == OperationStatus.SUCCESS && size < limit) {
+			while (atomCursorStatus == OperationStatus.SUCCESS && size <= limit) {
 				if (atomSearchKey.getData()[0] != PREFIX_COMMITTED) {
 					// if we've gone beyond committed keys, abort, as this is only for committed atoms
 					break;
 				}
 				AID atomId = getAidFromPKey(atomSearchKey);
-				LedgerEntry ledgerEntry = null;
 				try {
 					DatabaseEntry key = new DatabaseEntry(StoreIndex.from(ENTRY_INDEX_PREFIX, atomId.getBytes()));
 					DatabaseEntry value = new DatabaseEntry();
@@ -483,7 +483,13 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 
 					// TODO when uqCursor fails to fetch value, which means some form of DB corruption has occurred, how should we handle it?
 					if (uqCursorStatus == OperationStatus.SUCCESS) {
-						ledgerEntry = serialization.fromDson(value.getData(), LedgerEntry.class);
+						LedgerEntry ledgerEntry = serialization.fromDson(value.getData(), LedgerEntry.class);
+						if (proofVersion == -1) {
+							proofVersion = ledgerEntry.getProofVersion();
+						} else if (ledgerEntry.getProofVersion() != proofVersion) {
+							break;
+						}
+
 						ledgerEntries.add(ledgerEntry);
 						++size;
 					}
@@ -493,6 +499,11 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 				}
 				atomCursorStatus = atomCursor.getNext(atomSearchKey, null, LockMode.DEFAULT);
 			}
+
+			if (size > limit) {
+				throw new NextCommittedLimitReachedException(limit);
+			}
+
 			return ledgerEntries.build();
 		}
 	}

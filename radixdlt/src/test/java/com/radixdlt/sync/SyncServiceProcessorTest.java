@@ -38,6 +38,7 @@ import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
+import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
 import com.radixdlt.sync.SyncServiceProcessor.SyncTimeoutScheduler;
 import com.radixdlt.sync.SyncServiceProcessor.SyncedCommandSender;
 import java.util.Optional;
@@ -84,7 +85,7 @@ public class SyncServiceProcessorTest {
 	}
 
 	@Test
-	public void when_remote_sync_request__then_process_it() {
+	public void when_remote_sync_request__then_process_it() throws NextCommittedLimitReachedException {
 		SyncRequest syncRequest = mock(SyncRequest.class);
 		Peer peer = mock(Peer.class);
 		when(syncRequest.getPeer()).thenReturn(peer);
