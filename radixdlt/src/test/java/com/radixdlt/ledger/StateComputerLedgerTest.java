@@ -223,11 +223,13 @@ public class StateComputerLedgerTest {
 
 		Header nextHeader = mock(Header.class);
 		when(nextHeader.getLedgerState()).thenReturn(ledgerState);
+		VerifiedCommittedHeader verifiedCommittedHeader = mock(VerifiedCommittedHeader.class);
+		when(verifiedCommittedHeader.getHeader()).thenReturn(nextHeader);
 
 		Runnable onSynced = mock(Runnable.class);
 		Runnable onNotSynced = mock(Runnable.class);
 		stateComputerLedger
-			.ifCommitSynced(nextHeader)
+			.ifCommitSynced(verifiedCommittedHeader)
 			.then(onSynced)
 			.elseExecuteAndSendMessageOnSync(onNotSynced, mock(Object.class));
 		verify(onSynced, times(1)).run();
@@ -241,11 +243,13 @@ public class StateComputerLedgerTest {
 
 		Header nextHeader = mock(Header.class);
 		when(nextHeader.getLedgerState()).thenReturn(ledgerState);
+		VerifiedCommittedHeader verifiedCommittedHeader = mock(VerifiedCommittedHeader.class);
+		when(verifiedCommittedHeader.getHeader()).thenReturn(nextHeader);
 
 		Runnable onSynced = mock(Runnable.class);
 		Runnable onNotSynced = mock(Runnable.class);
 		stateComputerLedger
-			.ifCommitSynced(nextHeader)
+			.ifCommitSynced(verifiedCommittedHeader)
 			.then(onSynced)
 			.elseExecuteAndSendMessageOnSync(onNotSynced, mock(Object.class));
 		verify(committedStateSyncSender, never()).sendCommittedStateSync(anyLong(), any());

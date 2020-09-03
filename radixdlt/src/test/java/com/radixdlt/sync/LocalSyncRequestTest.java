@@ -22,7 +22,7 @@ import static org.mockito.Mockito.mock;
 import static com.radixdlt.utils.TypedMocks.rmock;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.Header;
+import com.radixdlt.consensus.VerifiedCommittedHeader;
 import com.radixdlt.consensus.bft.BFTNode;
 import org.junit.Before;
 import org.junit.Test;
@@ -30,12 +30,12 @@ import org.junit.Test;
 public class LocalSyncRequestTest {
 	private LocalSyncRequest request;
 	private ImmutableList<BFTNode> targetNodes;
-	private Header target;
+	private VerifiedCommittedHeader target;
 
 	@Before
 	public void setup() {
 		this.targetNodes = rmock(ImmutableList.class);
-		this.target = mock(Header.class);
+		this.target = mock(VerifiedCommittedHeader.class);
 		request = new LocalSyncRequest(target, targetNodes);
 	}
 

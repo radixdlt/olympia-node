@@ -46,7 +46,7 @@ public class LivenessInvariant implements TestInvariant {
 
 	@Override
 	public Observable<TestInvariantError> check(RunningNetwork network) {
-		final Header genesisAncestor = network.initialEpoch().getAncestor();
+		final Header genesisAncestor = network.initialEpoch().getAncestor().getHeader();
 		AtomicReference<Pair<Header, Long>> highestVertexMetadata = new AtomicReference<>(
 			Pair.of(genesisAncestor, 0L)
 		);

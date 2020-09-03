@@ -18,6 +18,7 @@
 package com.radixdlt.integration.distributed.deterministic;
 
 import com.google.inject.Provides;
+import com.radixdlt.consensus.VerifiedCommittedHeader;
 import com.radixdlt.consensus.sync.SyncRequestSender;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.VerifiedCommittedCommand;
@@ -29,7 +30,6 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.LedgerState;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.Header;
 import com.radixdlt.ledger.StateComputerLedger.CommittedStateSyncSender;
 
 /**
@@ -57,7 +57,7 @@ public class DeterministicRandomlySyncedLedgerModule extends AbstractModule {
 			}
 
 			@Override
-			public OnSynced ifCommitSynced(Header header) {
+			public OnSynced ifCommitSynced(VerifiedCommittedHeader header) {
 				return onSynced -> {
 					boolean synced = random.nextBoolean();
 					if (synced) {
@@ -67,7 +67,7 @@ public class DeterministicRandomlySyncedLedgerModule extends AbstractModule {
 					return (notSynced, opaque) -> {
 						if (!synced) {
 							notSynced.run();
-							committedStateSyncSender.sendCommittedStateSync(header.getLedgerState().getStateVersion(), opaque);
+							committedStateSyncSender.sendCommittedStateSync(header.getHeader().getLedgerState().getStateVersion(), opaque);
 						}
 					};
 				};

@@ -17,6 +17,7 @@
 
 package com.radixdlt.integration.distributed.deterministic.network;
 
+import com.radixdlt.consensus.VerifiedCommittedHeader;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
@@ -130,7 +131,7 @@ public final class ControlledSender implements DeterministicSender {
 	}
 
 	@Override
-	public void sendGetEpochResponse(BFTNode node, Header ancestor) {
+	public void sendGetEpochResponse(BFTNode node, VerifiedCommittedHeader ancestor) {
 		GetEpochResponse getEpochResponse = new GetEpochResponse(node, ancestor);
 		handleMessage(messageRank(getEpochResponse), new ControlledMessage(this.senderIndex, this.network.lookup(node), getEpochResponse));
 	}
@@ -169,13 +170,13 @@ public final class ControlledSender implements DeterministicSender {
 	}
 
 	private MessageRank messageRank(GetEpochResponse getEpochResponse) {
-		Header ancestorMetadata = getEpochResponse.getEpochAncestor();
-		return MessageRank.of(ancestorMetadata.getEpoch(), ancestorMetadata.getView().number() + 3);
+		VerifiedCommittedHeader ancestorMetadata = getEpochResponse.getEpochAncestor();
+		return MessageRank.of(ancestorMetadata.getHeader().getEpoch(), ancestorMetadata.getHeader().getView().number() + 3);
 	}
 
 	private MessageRank messageRank(EpochChange epochChange) {
-		Header ancestorMetadata = epochChange.getAncestor();
-		return MessageRank.of(ancestorMetadata.getEpoch(), ancestorMetadata.getView().number() + 3);
+		VerifiedCommittedHeader ancestorMetadata = epochChange.getAncestor();
+		return MessageRank.of(ancestorMetadata.getHeader().getEpoch(), ancestorMetadata.getHeader().getView().number() + 3);
 	}
 
 	private MessageRank messageRank(NewView newView) {

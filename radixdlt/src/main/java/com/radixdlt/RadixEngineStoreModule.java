@@ -23,10 +23,8 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.name.Named;
-import com.radixdlt.consensus.AddressBookGenesisVertexMetadataProvider;
-import com.radixdlt.consensus.TimestampedECDSASignatures;
+import com.radixdlt.consensus.AddressBookGenesisHeaderProvider;
 import com.radixdlt.consensus.VerifiedCommittedHeader;
-import com.radixdlt.consensus.Header;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
@@ -100,22 +98,19 @@ public class RadixEngineStoreModule extends AbstractModule {
 	@Singleton
 	private CommittedAtom genesisAtom(
 		Universe universe,
-		Header genesisHeader
+		VerifiedCommittedHeader genesisHeader
 	) throws LedgerAtomConversionException {
 		final ClientAtom genesisAtom = ClientAtom.convertFromApiAtom(universe.getGenesis().get(0));
-		final VerifiedCommittedHeader proof = new VerifiedCommittedHeader(genesisHeader, genesisHeader, genesisHeader,
-			new TimestampedECDSASignatures()
-		);
-		return new CommittedAtom(genesisAtom, genesisHeader.getLedgerState().getStateVersion(), proof);
+		return new CommittedAtom(genesisAtom, genesisHeader.getHeader().getLedgerState().getStateVersion(), genesisHeader);
 	}
 
 	@Provides
 	@Singleton
-	private AddressBookGenesisVertexMetadataProvider provider(
+	private AddressBookGenesisHeaderProvider provider(
 		AddressBook addressBook,
 		@Named("self") ECKeyPair selfKey
 	) {
-		return new AddressBookGenesisVertexMetadataProvider(
+		return new AddressBookGenesisHeaderProvider(
 			selfKey.getPublicKey(),
 			addressBook,
 			fixedNodeCount
@@ -125,17 +120,17 @@ public class RadixEngineStoreModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private BFTValidatorSet genesisValidatorSet(
-		AddressBookGenesisVertexMetadataProvider metadataProvider
+		AddressBookGenesisHeaderProvider metadataProvider
 	) {
 		return metadataProvider.getGenesisValidatorSet();
 	}
 
 	@Provides
 	@Singleton
-	private Header genesisVertexMetadata(
-		AddressBookGenesisVertexMetadataProvider metadataProvider
+	private VerifiedCommittedHeader genesisVertexMetadata(
+		AddressBookGenesisHeaderProvider metadataProvider
 	) {
-		return metadataProvider.getGenesisVertexMetadata();
+		return metadataProvider.getGenesisHeader();
 	}
 
 	@Provides

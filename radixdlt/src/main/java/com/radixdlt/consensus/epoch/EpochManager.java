@@ -30,6 +30,7 @@ import com.radixdlt.consensus.ProposerElectionFactory;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.Timeout;
+import com.radixdlt.consensus.VerifiedCommittedHeader;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.Header;
 import com.radixdlt.consensus.VertexStoreEventProcessor;
@@ -96,7 +97,7 @@ public final class EpochManager {
 		 * @param node the peer to send to
 		 * @param ancestor the ancestor of the epoch
 		 */
-		void sendGetEpochResponse(BFTNode node, Header ancestor);
+		void sendGetEpochResponse(BFTNode node, VerifiedCommittedHeader ancestor);
 	}
 
 	public interface EpochInfoSender {
@@ -164,7 +165,7 @@ public final class EpochManager {
 
 	private void updateEpochState() {
 		BFTValidatorSet validatorSet = this.currentEpoch.getValidatorSet();
-		Header ancestorMetadata = this.currentEpoch.getAncestor();
+		Header ancestorHeader = this.currentEpoch.getAncestor().getHeader();
 
 		final BFTEventProcessor bftEventProcessor;
 		final VertexStoreEventProcessor vertexStoreEventProcessor;
@@ -176,7 +177,7 @@ public final class EpochManager {
 		} else {
 			logEpochChange(this.currentEpoch, "included in");
 
-			Vertex genesisVertex = Vertex.createGenesis(ancestorMetadata);
+			Vertex genesisVertex = Vertex.createGenesis(ancestorHeader);
 			final long nextEpoch = genesisVertex.getEpoch();
 
 			ProposerElection proposerElection = proposerElectionFactory.create(validatorSet);
@@ -222,14 +223,14 @@ public final class EpochManager {
 	}
 
 	private long currentEpoch() {
-		return this.currentEpoch.getAncestor().getEpoch() + 1;
+		return this.currentEpoch.getAncestor().getHeader().getEpoch() + 1;
 	}
 
 	public void processEpochChange(EpochChange epochChange) {
 		log.trace("{}: EPOCH_CHANGE: {}", this.self, epochChange);
 		BFTValidatorSet validatorSet = epochChange.getValidatorSet();
-		Header ancestorMetadata = epochChange.getAncestor();
-		Vertex genesisVertex = Vertex.createGenesis(ancestorMetadata);
+		VerifiedCommittedHeader ancestor = epochChange.getAncestor();
+		Vertex genesisVertex = Vertex.createGenesis(ancestor.getHeader());
 		final long nextEpoch = genesisVertex.getEpoch();
 
 		// Sanity check
@@ -239,11 +240,11 @@ public final class EpochManager {
 
 		// If constructed the end of the previous epoch then broadcast new epoch to new validator set
 		// TODO: Move this into when lastConstructed is set
-		if (lastConstructed != null && lastConstructed.getEpoch() == ancestorMetadata.getEpoch()) {
+		if (lastConstructed != null && lastConstructed.getEpoch() == ancestor.getHeader().getEpoch()) {
 			log.info("{}: EPOCH_CHANGE: broadcasting next epoch", this.self);
 			for (BFTValidator validator : validatorSet.getValidators()) {
 				if (!validator.getNode().equals(self)) {
-					epochsRPCSender.sendGetEpochResponse(validator.getNode(), ancestorMetadata);
+					epochsRPCSender.sendGetEpochResponse(validator.getNode(), ancestor);
 				}
 			}
 		}
@@ -270,7 +271,7 @@ public final class EpochManager {
 			StringBuilder epochMessage = new StringBuilder(this.self.getSimpleName());
 			epochMessage.append(": EPOCH_CHANGE: ");
 			epochMessage.append(message);
-			epochMessage.append(" new epoch ").append(epochChange.getAncestor().getEpoch() + 1);
+			epochMessage.append(" new epoch ").append(epochChange.getAncestor().getHeader().getEpoch() + 1);
 			epochMessage.append(" with ").append(epochChange.getValidatorSet().getValidators().size()).append(" validators: ");
 			Iterator<BFTValidator> i = epochChange.getValidatorSet().getValidators().iterator();
 			if (i.hasNext()) {
@@ -325,8 +326,8 @@ public final class EpochManager {
 			return;
 		}
 
-		final Header ancestor = response.getEpochAncestor();
-		if (ancestor.getEpoch() >= this.currentEpoch()) {
+		final VerifiedCommittedHeader ancestor = response.getEpochAncestor();
+		if (ancestor.getHeader().getEpoch() >= this.currentEpoch()) {
 			syncRequestSender.sendLocalSyncRequest(new LocalSyncRequest(ancestor, ImmutableList.of(response.getAuthor())));
 		} else {
 			log.info("{}: Ignoring old epoch {}", this.self, response);

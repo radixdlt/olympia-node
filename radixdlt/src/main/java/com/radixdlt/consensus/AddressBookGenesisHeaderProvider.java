@@ -45,11 +45,11 @@ import org.radix.universe.system.RadixSystem;
  * Temporary epoch management which given a fixed quorum size retrieves the first set of peers which
  * matches the size and used as the validator set.
  */
-public class AddressBookGenesisVertexMetadataProvider {
+public class AddressBookGenesisHeaderProvider {
 	private static final Logger log = LogManager.getLogger();
 	private final Single<ImmutableList<BFTValidator>> validatorList;
 
-	public AddressBookGenesisVertexMetadataProvider(
+	public AddressBookGenesisHeaderProvider(
 		ECPublicKey selfKey,
 		AddressBook addressBook,
 		int fixedNodeCount
@@ -87,8 +87,14 @@ public class AddressBookGenesisVertexMetadataProvider {
 		return BFTValidatorSet.from(validators);
 	}
 
-	public Header getGenesisVertexMetadata() {
+	public VerifiedCommittedHeader getGenesisHeader() {
 		LedgerState ledgerState = LedgerState.create(0, Hash.ZERO_HASH, 0L, true);
-		return Header.ofGenesisAncestor(ledgerState);
+		Header header = Header.ofGenesisAncestor(ledgerState);
+		return new VerifiedCommittedHeader(
+			header,
+			header,
+			header,
+			new TimestampedECDSASignatures()
+		);
 	}
 }

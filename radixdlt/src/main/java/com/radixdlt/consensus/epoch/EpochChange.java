@@ -17,7 +17,7 @@
 
 package com.radixdlt.consensus.epoch;
 
-import com.radixdlt.consensus.Header;
+import com.radixdlt.consensus.VerifiedCommittedHeader;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import java.util.Objects;
 
@@ -25,15 +25,15 @@ import java.util.Objects;
  * An epoch change message to consensus
  */
 public final class EpochChange {
-	private final Header ancestor;
+	private final VerifiedCommittedHeader ancestor;
 	private final BFTValidatorSet validatorSet;
 
-	public EpochChange(Header ancestor, BFTValidatorSet validatorSet) {
+	public EpochChange(VerifiedCommittedHeader ancestor, BFTValidatorSet validatorSet) {
 		this.ancestor = Objects.requireNonNull(ancestor);
 		this.validatorSet = Objects.requireNonNull(validatorSet);
 	}
 
-	public Header getAncestor() {
+	public VerifiedCommittedHeader getAncestor() {
 		return ancestor;
 	}
 

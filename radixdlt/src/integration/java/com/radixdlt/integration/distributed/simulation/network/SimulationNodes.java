@@ -141,7 +141,7 @@ public class SimulationNodes {
 
 				return Observable.just(initialEpoch()).concatWith(
 					Observable.merge(epochChanges)
-						.scan((cur, next) -> next.getAncestor().getEpoch() > cur.getAncestor().getEpoch() ? next : cur)
+						.scan((cur, next) -> next.getAncestor().getHeader().getEpoch() > cur.getAncestor().getHeader().getEpoch() ? next : cur)
 						.distinctUntilChanged()
 				);
 			}

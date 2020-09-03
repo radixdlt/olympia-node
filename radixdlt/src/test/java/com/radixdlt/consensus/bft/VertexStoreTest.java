@@ -582,7 +582,7 @@ public class VertexStoreTest {
 		}).when(syncVerticesRPCSender).sendGetVerticesRequest(eq(vertex7.getId()), any(), eq(3), any());
 
 		AtomicReference<Object> stateOpaque = new AtomicReference<>();
-		AtomicReference<Header> vertexMetadataAtomicReference = new AtomicReference<>();
+		AtomicReference<VerifiedCommittedHeader> vertexMetadataAtomicReference = new AtomicReference<>();
 
 		OnSynced onSynced = mock(OnSynced.class);
 		OnNotSynced onNotSynced = mock(OnNotSynced.class);
@@ -605,7 +605,7 @@ public class VertexStoreTest {
 		assertThat(vertexStore.getHighestCommittedQC()).isEqualTo(vertex4.getQC());
 
 		CommittedStateSync committedStateSync = new CommittedStateSync(
-			vertexMetadataAtomicReference.get().getLedgerState().getStateVersion(), stateOpaque.get()
+			vertexMetadataAtomicReference.get().getHeader().getLedgerState().getStateVersion(), stateOpaque.get()
 		);
 		vertexStore.processCommittedStateSync(committedStateSync);
 

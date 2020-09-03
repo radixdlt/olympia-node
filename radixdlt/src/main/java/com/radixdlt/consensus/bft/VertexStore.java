@@ -214,21 +214,15 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		private final Hash localSyncId;
 		private final QuorumCertificate qc;
 		private final QuorumCertificate committedQC;
-		private final Header committedHeader;
+		private final VerifiedCommittedHeader committedHeader;
 		private final BFTNode author;
 		private SyncStage syncStage;
 		private final LinkedList<Vertex> fetched = new LinkedList<>();
 
 		SyncState(Hash localSyncId, QuorumCertificate qc, QuorumCertificate committedQC, BFTNode author) {
 			this.localSyncId = localSyncId;
-
-			if (committedQC.getView().equals(View.genesis())) {
-				this.committedHeader = committedQC.getProposed();
-			} else {
-				this.committedHeader = committedQC.getCommitted()
-					.orElseThrow(() -> new IllegalStateException("committedQC must have a commit"));
-			}
-
+			this.committedHeader = committedQC.toProof()
+				.orElseThrow(() -> new IllegalStateException("committedQC must have a commit"));
 			this.qc = qc;
 			this.committedQC = committedQC;
 			this.author = author;
@@ -250,10 +244,10 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	}
 
 	private boolean requiresCommittedStateSync(SyncState syncState) {
-		final Header committedMetadata = syncState.committedHeader;
-		if (!vertices.containsKey(committedMetadata.getVertexId())) {
+		final VerifiedCommittedHeader committedHeader = syncState.committedHeader;
+		if (!vertices.containsKey(committedHeader.getHeader().getVertexId())) {
 			View rootView = this.getRoot().getView();
-			return rootView.compareTo(committedMetadata.getView()) < 0;
+			return rootView.compareTo(committedHeader.getHeader().getView()) < 0;
 		}
 
 		return false;

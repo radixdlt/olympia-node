@@ -50,7 +50,7 @@ public class MockedSyncServiceModule extends AbstractModule {
 
 			@Override
 			public void sendLocalSyncRequest(LocalSyncRequest request) {
-				final long targetVersion = request.getTarget().getLedgerState().getStateVersion();
+				final long targetVersion = request.getTarget().getHeader().getLedgerState().getStateVersion();
 				for (long version = currentVersion; version <= targetVersion; version++) {
 					VerifiedCommittedCommand committedCommand = sharedCommittedAtoms.get(version);
 					ledger.commit(committedCommand);

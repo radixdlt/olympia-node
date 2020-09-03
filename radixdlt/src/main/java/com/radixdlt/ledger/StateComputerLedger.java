@@ -20,6 +20,7 @@ package com.radixdlt.ledger;
 import com.google.common.collect.Sets;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerState;
+import com.radixdlt.consensus.VerifiedCommittedHeader;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.Vertex;
@@ -116,8 +117,8 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	}
 
 	@Override
-	public OnSynced ifCommitSynced(Header header) {
-		final long targetStateVersion = header.getLedgerState().getStateVersion();
+	public OnSynced ifCommitSynced(VerifiedCommittedHeader committedHeader) {
+		final long targetStateVersion = committedHeader.getHeader().getLedgerState().getStateVersion();
 		synchronized (lock) {
 			if (targetStateVersion <= this.currentStateVersion) {
 				return onSync -> {

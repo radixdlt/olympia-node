@@ -23,8 +23,8 @@ import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.LedgerState;
 import com.radixdlt.consensus.Ledger;
+import com.radixdlt.consensus.VerifiedCommittedHeader;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.Header;
 import com.radixdlt.consensus.sync.SyncRequestSender;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.VerifiedCommittedCommand;
@@ -48,7 +48,7 @@ public class DeterministicAlwaysSyncedLedgerModule extends AbstractModule {
 			}
 
 			@Override
-			public OnSynced ifCommitSynced(Header header) {
+			public OnSynced ifCommitSynced(VerifiedCommittedHeader header) {
 				return onSynced -> {
 					onSynced.run();
 					return (notSynced, opaque) -> { };

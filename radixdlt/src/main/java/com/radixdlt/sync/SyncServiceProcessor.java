@@ -167,7 +167,7 @@ public final class SyncServiceProcessor {
 	}
 
 	public void processLocalSyncRequest(LocalSyncRequest request) {
-		final Header target = request.getTarget();
+		final Header target = request.getTarget().getHeader();
 		if (target.getLedgerState().getStateVersion() <= this.currentVersion) {
 			return;
 		}

@@ -19,6 +19,7 @@ package com.radixdlt.integration.distributed.deterministic;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Module;
+import com.radixdlt.LedgerCommandGeneratorModule;
 import com.radixdlt.LedgerEpochChangeModule;
 import com.radixdlt.LedgerLocalMempoolModule;
 import com.radixdlt.LedgerModule;
@@ -146,6 +147,7 @@ public final class DeterministicTest {
 			ConcurrentMap<Long, VerifiedCommittedCommand> sharedCommittedAtoms = new ConcurrentHashMap<>();
 			ImmutableList.Builder<Module> modules = ImmutableList.builder();
 			modules.add(new LedgerModule());
+			modules.add(new LedgerCommandGeneratorModule());
 			modules.add(new LedgerLocalMempoolModule(10));
 			modules.add(new DeterministicMempoolModule());
 

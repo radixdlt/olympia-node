@@ -36,7 +36,7 @@ public class AddressBookGenesisHeaderProviderTest {
 		ECPublicKey self = mock(ECPublicKey.class);
 		when(self.euid()).thenReturn(EUID.ONE);
 		AddressBook addressBook = mock(AddressBook.class);
-		AddressBookGenesisVertexMetadataProvider validatorSetProvider = new AddressBookGenesisVertexMetadataProvider(
+		AddressBookGenesisHeaderProvider validatorSetProvider = new AddressBookGenesisHeaderProvider(
 			self,
 			addressBook,
 			1
@@ -48,7 +48,7 @@ public class AddressBookGenesisHeaderProviderTest {
 		when(peer.getSystem()).thenReturn(system);
 		when(addressBook.peers()).thenAnswer(inv -> Stream.of(peer));
 
-		Header header = validatorSetProvider.getGenesisVertexMetadata();
-		assertThat(header.getLedgerState().isEndOfEpoch()).isTrue();
+		VerifiedCommittedHeader header = validatorSetProvider.getGenesisHeader();
+		assertThat(header.getHeader().getLedgerState().isEndOfEpoch()).isTrue();
 	}
 }

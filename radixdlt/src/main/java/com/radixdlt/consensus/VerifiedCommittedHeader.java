@@ -63,6 +63,16 @@ public final class VerifiedCommittedHeader {
 		this.signatures = Objects.requireNonNull(signatures);
 	}
 
+	public static VerifiedCommittedHeader ofGenesisAncestor(LedgerState ledgerState) {
+		Header header = Header.ofGenesisAncestor(ledgerState);
+		return new VerifiedCommittedHeader(
+			header,
+			header,
+			header,
+			new TimestampedECDSASignatures()
+		);
+	}
+
 	public Header getHeader() {
 		return header;
 	}
