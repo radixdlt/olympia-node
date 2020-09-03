@@ -40,7 +40,7 @@ public class CommandToBinaryConverterTest {
 
 	@Test
 	public void test_atom_content_transformation_to_byte_array_and_back() {
-		LedgerState ledgerState = LedgerState.create(0, Hash.random(), 0L, false);
+		LedgerState ledgerState = LedgerState.create(0, 0, Hash.random(), 0L, false);
 		VerifiedCommittedHeader proof = new VerifiedCommittedHeader(
 			new Header(0, View.of(1), Hash.random(), ledgerState),
 			new Header(0, View.of(1), Hash.random(), ledgerState),

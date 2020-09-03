@@ -17,6 +17,7 @@
 
 package com.radixdlt.ledger;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerState;
@@ -30,7 +31,9 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.mempool.Mempool;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -105,6 +108,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		final long timestamp = vertex.getQC().getTimestampedSignatures().weightedTimestamp();
 
 		return LedgerState.create(
+			vertex.getEpoch(),
 			stateVersion,
 			vertex.getCommand() == null ? null : vertex.getCommand().getHash(),
 			timestamp,
@@ -116,7 +120,11 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	public OnSynced ifCommitSynced(VerifiedCommittedHeader committedHeader) {
 		final LedgerState targetLedgerState = committedHeader.getLedgerState();
 		synchronized (lock) {
-			if (targetLedgerState.compareTo(this.currentLedgerState) <= 0) {
+			if (targetLedgerState.getStateVersion() <= this.currentLedgerState.getStateVersion()) {
+				if (targetLedgerState.compareTo(this.currentLedgerState) > 0) {
+					// Can happen on epoch changes
+					this.commit(new VerifiedCommittedCommands(ImmutableList.of(), committedHeader));
+				}
 				return onSync -> {
 					onSync.run();
 					return (onNotSynced, opaque) -> { };
@@ -154,15 +162,15 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			commandsToStore.getCommands().forEach(cmd -> this.mempool.removeCommitted(cmd.getHash()));
 			committedSender.sendCommitted(commandsToStore, validatorSet.orElse(null));
 
-			Set<Long> statesListenedTo = this.committedStateSyncers.headMap(this.currentLedgerState.getStateVersion(), true)
-				.keySet();
-			for (Long stateListenedTo : statesListenedTo) {
-				Set<Object> opaqueObjects = this.committedStateSyncers.remove(stateListenedTo);
-				if (opaqueObjects != null) {
-					for (Object opaque : opaqueObjects) {
-						committedStateSyncSender.sendCommittedStateSync(this.currentLedgerState.getStateVersion(), opaque);
-					}
+			Collection<Set<Object>> listeners = this.committedStateSyncers.headMap(this.currentLedgerState.getStateVersion(), true)
+				.values();
+			Iterator<Set<Object>> listenersIterator = listeners.iterator();
+			while (listenersIterator.hasNext()) {
+				Set<Object> opaqueObjects = listenersIterator.next();
+				for (Object opaque : opaqueObjects) {
+					committedStateSyncSender.sendCommittedStateSync(this.currentLedgerState.getStateVersion(), opaque);
 				}
+				listenersIterator.remove();
 			}
 		}
 	}

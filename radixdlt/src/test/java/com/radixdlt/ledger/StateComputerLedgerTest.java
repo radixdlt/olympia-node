@@ -234,6 +234,8 @@ public class StateComputerLedgerTest {
 	@Test
 	public void when_check_sync__will_complete_when_higher_or_equal_state_version() {
 		LedgerState ledgerState = mock(LedgerState.class);
+		when(ledgerState.getStateVersion()).thenReturn(1L);
+		when(currentLedgerState.getStateVersion()).thenReturn(0L);
 		when(ledgerState.compareTo(currentLedgerState)).thenReturn(1);
 
 		VerifiedCommittedHeader verifiedCommittedHeader = mock(VerifiedCommittedHeader.class);

@@ -88,7 +88,7 @@ public class AddressBookGenesisHeaderProvider {
 	}
 
 	public VerifiedCommittedHeader getGenesisHeader() {
-		LedgerState ledgerState = LedgerState.create(0, Hash.ZERO_HASH, 0L, true);
+		LedgerState ledgerState = LedgerState.create(0, 0, Hash.ZERO_HASH, 0L, true);
 		Header header = Header.ofGenesisAncestor(ledgerState);
 		return new VerifiedCommittedHeader(
 			header,

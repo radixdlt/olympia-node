@@ -30,6 +30,7 @@ import com.radixdlt.LedgerRxModule;
 import com.radixdlt.LedgerLocalMempoolModule;
 import com.radixdlt.RadixEngineModule;
 import com.radixdlt.RadixEngineRxModule;
+import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
@@ -59,7 +60,6 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.LatencyProvider;
-import com.radixdlt.ledger.VerifiedCommittedCommands;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.core.Observable;
@@ -304,7 +304,7 @@ public class SimulationTest {
 						.limit(numInitialValidators == 0 ? Long.MAX_VALUE : numInitialValidators)
 						.collect(Collectors.toList())
 				);
-				ConcurrentHashMap<Long, VerifiedCommittedCommands> sharedCommittedCmds = new ConcurrentHashMap<>();
+				ConcurrentHashMap<Long, Command> sharedCommittedCmds = new ConcurrentHashMap<>();
 				ledgerModules.add(new LedgerModule());
 				ledgerModules.add(new LedgerRxModule());
 				ledgerModules.add(new LedgerEpochChangeRxModule());

@@ -40,7 +40,7 @@ public class ProposalSerializeTest extends SerializeObject<Proposal> {
 		View view = View.of(1234567891L);
 		Hash id = Hash.random();
 
-		LedgerState ledgerState = LedgerState.create(0, Hash.random(), 0L, false);
+		LedgerState ledgerState = LedgerState.create(0, 0, Hash.random(), 0L, false);
 		Header header = new Header(0, view, id, ledgerState);
 		Header parent = new Header(0, View.of(1234567890L), Hash.random(), ledgerState);
 		VoteData voteData = new VoteData(header, parent, null);

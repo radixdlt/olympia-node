@@ -94,6 +94,7 @@ public final class Header {
 			vertex.getView(),
 			vertex.getId(),
 			LedgerState.create(
+				vertex.getEpoch(),
 				vertex.getQC().getParent().getLedgerState().getStateVersion(),
 				Hash.ZERO_HASH,
 				0L,

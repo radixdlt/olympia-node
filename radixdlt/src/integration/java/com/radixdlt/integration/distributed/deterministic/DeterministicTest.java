@@ -23,6 +23,7 @@ import com.radixdlt.LedgerCommandGeneratorModule;
 import com.radixdlt.LedgerEpochChangeModule;
 import com.radixdlt.LedgerLocalMempoolModule;
 import com.radixdlt.LedgerModule;
+import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -35,7 +36,6 @@ import com.radixdlt.integration.distributed.deterministic.network.MessageSelecto
 import com.radixdlt.integration.distributed.simulation.MockedStateComputerWithEpochsModule;
 import com.radixdlt.integration.distributed.simulation.MockedStateComputerModule;
 import com.radixdlt.integration.distributed.simulation.MockedSyncServiceModule;
-import com.radixdlt.ledger.VerifiedCommittedCommands;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.EUID;
@@ -144,7 +144,7 @@ public final class DeterministicTest {
 				? epoch -> completeEqualWeightValidatorSet(this.nodes)
 				: epoch -> partialMixedWeightValidatorSet(epoch, this.nodes, this.epochNodeWeightMapping);
 
-			ConcurrentMap<Long, VerifiedCommittedCommands> sharedCommittedAtoms = new ConcurrentHashMap<>();
+			ConcurrentMap<Long, Command> sharedCommittedCommands = new ConcurrentHashMap<>();
 			ImmutableList.Builder<Module> modules = ImmutableList.builder();
 			modules.add(new LedgerModule());
 			modules.add(new LedgerCommandGeneratorModule());
@@ -159,7 +159,7 @@ public final class DeterministicTest {
 				// TODO: adapter from LongFunction<BFTValidatorSet> to Function<Long, BFTValidatorSet> shouldn't be needed
 				Function<Long, BFTValidatorSet> epochToValidatorSetMapping = validatorSetMapping::apply;
 				modules.add(new LedgerEpochChangeModule());
-				modules.add(new MockedSyncServiceModule(sharedCommittedAtoms));
+				modules.add(new MockedSyncServiceModule(sharedCommittedCommands));
 				modules.add(new MockedStateComputerWithEpochsModule(epochHighView, epochToValidatorSetMapping));
 			}
 			return new DeterministicTest(

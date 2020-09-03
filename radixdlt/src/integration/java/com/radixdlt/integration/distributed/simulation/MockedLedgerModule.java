@@ -47,7 +47,7 @@ public class MockedLedgerModule extends AbstractModule {
 	public void configure() {
 		bind(CommittedStateSyncRx.class).toInstance(Observable::never);
 		bind(EpochChangeRx.class).toInstance(Observable::never);
-		LedgerState ledgerState = LedgerState.create(0, Hash.ZERO_HASH, 0L, true);
+		LedgerState ledgerState = LedgerState.create(0, 0, Hash.ZERO_HASH, 0L, true);
 		EpochChange initialEpoch = new EpochChange(VerifiedCommittedHeader.ofGenesisAncestor(ledgerState), validatorSet);
 		bind(EpochChange.class).toInstance(initialEpoch);
 		bind(NextCommandGenerator.class).toInstance((view, aids) -> null);
@@ -56,11 +56,11 @@ public class MockedLedgerModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	Ledger syncedLedger() {
+	Ledger syncedLedger(EpochChange initialEpoch) {
 		return new Ledger() {
 			@Override
 			public LedgerState prepare(Vertex vertex) {
-				return LedgerState.create(0, Hash.ZERO_HASH, 0L, false);
+				return LedgerState.create(initialEpoch.getAncestor().getEpoch() + 1, 0, Hash.ZERO_HASH, 0L, false);
 			}
 
 			@Override

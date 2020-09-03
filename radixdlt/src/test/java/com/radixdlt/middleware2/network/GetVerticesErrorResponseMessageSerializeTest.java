@@ -40,7 +40,7 @@ public class GetVerticesErrorResponseMessageSerializeTest extends SerializeMessa
 		BFTValidatorSet bftValidatorSet = BFTValidatorSet.from(ImmutableSet.of(
 			BFTValidator.from(BFTNode.create(keyPair.getPublicKey()), UInt256.ONE)
 		));
-		LedgerState ledgerState = LedgerState.create(0, Hash.random(), 0L, false);
+		LedgerState ledgerState = LedgerState.create(0, 0, Hash.random(), 0L, false);
 		return new GetVerticesErrorResponseMessage(
 			12345,
 			Hash.random(),

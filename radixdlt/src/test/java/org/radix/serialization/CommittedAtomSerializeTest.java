@@ -52,9 +52,9 @@ public class CommittedAtomSerializeTest extends SerializeObject<CommittedAtom> {
 		}
 
 		VerifiedCommittedHeader proof = new VerifiedCommittedHeader(
-			Header.ofGenesisAncestor(LedgerState.create(0, Hash.random(), 0L, false)),
-			Header.ofGenesisAncestor(LedgerState.create(0, Hash.random(), 0L, false)),
-			Header.ofGenesisAncestor(LedgerState.create(0, Hash.random(), 0L, false)),
+			Header.ofGenesisAncestor(LedgerState.create(0, 0, Hash.random(), 0L, false)),
+			Header.ofGenesisAncestor(LedgerState.create(0, 0, Hash.random(), 0L, false)),
+			Header.ofGenesisAncestor(LedgerState.create(0, 0, Hash.random(), 0L, false)),
 			new TimestampedECDSASignatures()
 		);
 

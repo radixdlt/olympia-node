@@ -58,7 +58,7 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 
 	@Provides
 	public VerifiedCommittedHeader genesisVertexMetadata() {
-		final LedgerState ledgerState = LedgerState.create(0, Hash.ZERO_HASH, 0, true);
+		final LedgerState ledgerState = LedgerState.create(0, 0, Hash.ZERO_HASH, 0, true);
 		return VerifiedCommittedHeader.ofGenesisAncestor(ledgerState);
 	}
 }

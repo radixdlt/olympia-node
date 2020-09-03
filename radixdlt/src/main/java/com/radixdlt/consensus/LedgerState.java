@@ -42,6 +42,10 @@ public final class LedgerState implements Comparable<LedgerState> {
 	@DsonOutput(Output.ALL)
 	private final long stateVersion;
 
+	@JsonProperty("epoch")
+	@DsonOutput(Output.ALL)
+	private final long epoch;
+
 	@JsonProperty("command_id")
 	@DsonOutput(Output.ALL)
 	private final Hash commandId; // TODO: Change to accumulator
@@ -57,11 +61,13 @@ public final class LedgerState implements Comparable<LedgerState> {
 	// TODO: Replace isEndOfEpoch with nextValidatorSet
 	@JsonCreator
 	private LedgerState(
+		@JsonProperty("epoch") long epoch,
 		@JsonProperty("stateVersion") long stateVersion,
 		@JsonProperty("command_id") Hash commandId,
 		@JsonProperty("timestamp") long timestamp,
 		@JsonProperty("isEndOfEpoch") boolean isEndOfEpoch
 	) {
+		this.epoch = epoch;
 		this.stateVersion = stateVersion;
 		this.commandId = commandId;
 		this.isEndOfEpoch = isEndOfEpoch;
@@ -69,12 +75,13 @@ public final class LedgerState implements Comparable<LedgerState> {
 	}
 
 	public static LedgerState create(
+		long epoch,
 		long stateVersion,
 		Hash commandId,
 		long timestamp,
 		boolean isEndOfEpoch
 	) {
-		return new LedgerState(stateVersion, commandId, timestamp, isEndOfEpoch);
+		return new LedgerState(epoch, stateVersion, commandId, timestamp, isEndOfEpoch);
 	}
 
 	public Hash getCommandId() {
@@ -95,7 +102,7 @@ public final class LedgerState implements Comparable<LedgerState> {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.stateVersion, this.commandId, this.timestamp, this.isEndOfEpoch);
+		return Objects.hash(this.stateVersion, this.commandId, this.timestamp, this.epoch, this.isEndOfEpoch);
 	}
 
 	@Override
@@ -108,6 +115,7 @@ public final class LedgerState implements Comparable<LedgerState> {
 			return this.timestamp == other.timestamp
 				&& this.stateVersion == other.stateVersion
 				&& Objects.equals(this.commandId, other.commandId)
+				&& this.epoch == other.epoch
 				&& this.isEndOfEpoch == other.isEndOfEpoch;
 		}
 		return false;
@@ -115,13 +123,17 @@ public final class LedgerState implements Comparable<LedgerState> {
 
 	@Override
 	public String toString() {
-		return String.format("%s{stateVersion=%s timestamp=%s isEndOfEpoch=%s}",
-			getClass().getSimpleName(), this.stateVersion, this.timestamp, this.isEndOfEpoch
+		return String.format("%s{stateVersion=%s timestamp=%s epoch=%s, isEndOfEpoch=%s}",
+			getClass().getSimpleName(), this.stateVersion, this.timestamp, this.epoch, this.isEndOfEpoch
 		);
 	}
 
 	@Override
 	public int compareTo(LedgerState o) {
+		if (o.epoch != this.epoch) {
+			return this.epoch > o.epoch ? 1 : -1;
+		}
+
 		if (o.stateVersion != this.stateVersion) {
 			return this.stateVersion > o.stateVersion ? 1 : -1;
 		}

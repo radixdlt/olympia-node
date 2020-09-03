@@ -31,7 +31,7 @@ public class GetEpochResponseMessageSerializeTest extends SerializeMessageObject
 
 	private static GetEpochResponseMessage get() {
 		BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
-		LedgerState ledgerState = LedgerState.create(0, Hash.random(), 0L, false);
+		LedgerState ledgerState = LedgerState.create(0, 0, Hash.random(), 0L, false);
 		return new GetEpochResponseMessage(author, 12345, VerifiedCommittedHeader.ofGenesisAncestor(ledgerState));
 	}
 }

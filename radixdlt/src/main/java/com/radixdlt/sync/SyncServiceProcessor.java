@@ -132,7 +132,7 @@ public final class SyncServiceProcessor {
 		}
 
 		// TODO: Check validity of response
-		this.syncedCommandSender.sendSyncedCommand(commands.truncateFromVersion(this.currentState.getStateVersion()));
+		this.syncedCommandSender.sendSyncedCommand(commands);
 		this.currentState = responseLedgerState;
 	}
 

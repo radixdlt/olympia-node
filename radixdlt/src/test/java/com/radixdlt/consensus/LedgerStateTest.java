@@ -35,7 +35,7 @@ public class LedgerStateTest {
 	public void setup() {
 		this.timestamp = 12345678L;
 		this.commandId = mock(Hash.class);
-		this.ledgerState = LedgerState.create(12345, commandId, timestamp, false);
+		this.ledgerState = LedgerState.create(0, 12345, commandId, timestamp, false);
 	}
 
 	@Test

@@ -44,7 +44,7 @@ public class MockedStateComputerModule extends AbstractModule {
 
 	@Provides
 	private VerifiedCommittedHeader genesisMetadata() {
-		final LedgerState ledgerState = LedgerState.create(0, Hash.ZERO_HASH, 0L, true);
+		final LedgerState ledgerState = LedgerState.create(0, 0, Hash.ZERO_HASH, 0L, true);
 		return VerifiedCommittedHeader.ofGenesisAncestor(ledgerState);
 	}
 

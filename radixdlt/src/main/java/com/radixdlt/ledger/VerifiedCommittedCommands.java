@@ -29,6 +29,7 @@ import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
+import java.util.OptionalLong;
 import java.util.stream.IntStream;
 import javax.annotation.concurrent.Immutable;
 
@@ -57,6 +58,14 @@ public final class VerifiedCommittedCommands {
 	) {
 		this.commands = commands;
 		this.proof = Objects.requireNonNull(proof);
+	}
+
+	public OptionalLong getFirstVersion() {
+		if (commands.isEmpty()) {
+			return OptionalLong.empty();
+		}
+
+		return OptionalLong.of(proof.getLedgerState().getStateVersion() - commands.size() + 1);
 	}
 
 	public VerifiedCommittedCommands truncateFromVersion(long version) {

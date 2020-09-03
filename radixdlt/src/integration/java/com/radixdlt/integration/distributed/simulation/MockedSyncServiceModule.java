@@ -17,27 +17,35 @@
 
 package com.radixdlt.integration.distributed.simulation;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.sync.SyncRequestSender;
 import com.radixdlt.ledger.VerifiedCommittedCommands;
 import com.radixdlt.ledger.StateComputerLedger.CommittedSender;
 import com.radixdlt.sync.LocalSyncRequest;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.LongStream;
 
 public class MockedSyncServiceModule extends AbstractModule {
-	private final ConcurrentMap<Long, VerifiedCommittedCommands> sharedCommittedAtoms;
+	private final ConcurrentMap<Long, Command> sharedCommittedCommands;
 
-	public MockedSyncServiceModule(ConcurrentMap<Long, VerifiedCommittedCommands> sharedCommittedAtoms) {
-		this.sharedCommittedAtoms = sharedCommittedAtoms;
+	public MockedSyncServiceModule(ConcurrentMap<Long, Command> sharedCommittedCommands) {
+		this.sharedCommittedCommands = sharedCommittedCommands;
 	}
 
 	@ProvidesIntoSet
 	private CommittedSender sync() {
-		return (cmd, vset) -> sharedCommittedAtoms.put(cmd.getProof().getLedgerState().getStateVersion(), cmd);
+		return (cmd, vset) ->
+			cmd.getFirstVersion().ifPresent(version -> {
+				for (int i = 0; i < cmd.getCommands().size(); i++) {
+					sharedCommittedCommands.put(version + i, cmd.getCommands().get(i));
+				}
+			});
 	}
 
 	@Provides
@@ -46,15 +54,15 @@ public class MockedSyncServiceModule extends AbstractModule {
 		Ledger ledger
 	) {
 		return new SyncRequestSender() {
-			long currentVersion = 1;
+			long currentVersion = 0;
 
 			@Override
 			public void sendLocalSyncRequest(LocalSyncRequest request) {
 				final long targetVersion = request.getTarget().getLedgerState().getStateVersion();
-				for (long version = currentVersion; version <= targetVersion; version++) {
-					VerifiedCommittedCommands committedCommand = sharedCommittedAtoms.get(version);
-					ledger.commit(committedCommand);
-				}
+				ImmutableList<Command> commands = LongStream.range(currentVersion + 1, targetVersion)
+					.mapToObj(sharedCommittedCommands::get)
+					.collect(ImmutableList.toImmutableList());
+				ledger.commit(new VerifiedCommittedCommands(commands, request.getTarget()));
 				currentVersion = targetVersion;
 			}
 		};

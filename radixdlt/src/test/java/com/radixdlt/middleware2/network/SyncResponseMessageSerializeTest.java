@@ -30,7 +30,7 @@ public class SyncResponseMessageSerializeTest extends SerializeMessageObject<Syn
 	}
 
 	private static SyncResponseMessage get() {
-		LedgerState ledgerState = LedgerState.create(0, Hash.ZERO_HASH, 0, false);
+		LedgerState ledgerState = LedgerState.create(0, 0, Hash.ZERO_HASH, 0, false);
 		return new SyncResponseMessage(1234, new VerifiedCommittedCommands(
 			ImmutableList.of(), VerifiedCommittedHeader.ofGenesisAncestor(ledgerState)
 		));
