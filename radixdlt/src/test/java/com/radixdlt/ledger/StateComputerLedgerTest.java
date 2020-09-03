@@ -22,6 +22,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anySet;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -30,6 +31,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerState;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -55,7 +57,7 @@ public class StateComputerLedgerTest {
 	private StateComputerLedger stateComputerLedger;
 	private CommittedStateSyncSender committedStateSyncSender;
 	private CommittedSender committedSender;
-
+	private LedgerState currentLedgerState;
 	private SystemCounters counters;
 
 	@Before
@@ -66,9 +68,10 @@ public class StateComputerLedgerTest {
 		this.committedStateSyncSender = mock(CommittedStateSyncSender.class);
 		this.counters = mock(SystemCounters.class);
 		this.committedSender = mock(CommittedSender.class);
+		this.currentLedgerState = mock(LedgerState.class);
 
 		this.stateComputerLedger = new StateComputerLedger(
-			1233,
+			currentLedgerState,
 			mempool,
 			stateComputer,
 			committedStateSyncSender,
@@ -126,7 +129,7 @@ public class StateComputerLedgerTest {
 	}
 
 	@Test
-	public void when_prepare_with_no_command_and_end_of_epoch__then_should_return_next_state_version() {
+	public void when_prepare_with_no_command_and_end_of_epoch__then_should_return_same_state_version() {
 		Vertex vertex = mock(Vertex.class);
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		when(vertex.getQC()).thenReturn(qc);
@@ -143,7 +146,7 @@ public class StateComputerLedgerTest {
 
 		LedgerState nextPrepared = stateComputerLedger.prepare(vertex);
 		assertThat(nextPrepared.isEndOfEpoch()).isTrue();
-		assertThat(nextPrepared.getStateVersion()).isEqualTo(12346L);
+		assertThat(nextPrepared.getStateVersion()).isEqualTo(12345L);
 	}
 
 	@Test
@@ -174,9 +177,9 @@ public class StateComputerLedgerTest {
 		when(command.getHash()).thenReturn(hash);
 
 		LedgerState ledgerState = mock(LedgerState.class);
-		when(ledgerState.getStateVersion()).thenReturn(1233L);
+		when(ledgerState.compareTo(eq(currentLedgerState))).thenReturn(-1);
 
-		VerifiedCommittedCommand verified = mock(VerifiedCommittedCommand.class);
+		VerifiedCommittedCommands verified = mock(VerifiedCommittedCommands.class);
 		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
 		when(proof.getView()).then(i -> View.of(50));
 		when(proof.getLedgerState()).thenReturn(ledgerState);
@@ -195,17 +198,17 @@ public class StateComputerLedgerTest {
 		when(command.getHash()).thenReturn(hash);
 
 		LedgerState ledgerState = mock(LedgerState.class);
-		when(ledgerState.getStateVersion()).thenReturn(1234L);
+		when(ledgerState.compareTo(eq(currentLedgerState))).thenReturn(1);
 
-		VerifiedCommittedCommand verified = mock(VerifiedCommittedCommand.class);
+		VerifiedCommittedCommands verified = mock(VerifiedCommittedCommands.class);
 		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
-		when(proof.getView()).then(i -> View.of(50));
 		when(proof.getLedgerState()).thenReturn(ledgerState);
 		when(verified.getProof()).thenReturn(proof);
-		when(verified.getCommand()).thenReturn(command);
+		when(verified.getCommands()).thenReturn(ImmutableList.of(command));
+		when(verified.truncateFromVersion(anyLong())).thenReturn(verified);
 
 		stateComputerLedger.commit(verified);
-		verify(stateComputer, times(1)).commit(eq(verified));
+		verify(stateComputer, times(1)).commit(argThat(v -> v.getProof().equals(proof)));
 		verify(mempool, times(1)).removeCommitted(eq(hash));
 		verify(committedSender, times(1)).sendCommitted(any(), any());
 	}
@@ -213,7 +216,7 @@ public class StateComputerLedgerTest {
 	@Test
 	public void when_check_sync_and_synced__then_return_sync_handler() {
 		LedgerState ledgerState = mock(LedgerState.class);
-		when(ledgerState.getStateVersion()).thenReturn(1230L);
+		when(ledgerState.compareTo(currentLedgerState)).thenReturn(0);
 
 		VerifiedCommittedHeader verifiedCommittedHeader = mock(VerifiedCommittedHeader.class);
 		when(verifiedCommittedHeader.getLedgerState()).thenReturn(ledgerState);
@@ -231,7 +234,7 @@ public class StateComputerLedgerTest {
 	@Test
 	public void when_check_sync__will_complete_when_higher_or_equal_state_version() {
 		LedgerState ledgerState = mock(LedgerState.class);
-		when(ledgerState.getStateVersion()).thenReturn(1234L);
+		when(ledgerState.compareTo(currentLedgerState)).thenReturn(1);
 
 		VerifiedCommittedHeader verifiedCommittedHeader = mock(VerifiedCommittedHeader.class);
 		when(verifiedCommittedHeader.getLedgerState()).thenReturn(ledgerState);
@@ -246,10 +249,12 @@ public class StateComputerLedgerTest {
 		verify(onSynced, never()).run();
 		verify(onNotSynced, times(1)).run();
 
-		VerifiedCommittedCommand verified = mock(VerifiedCommittedCommand.class);
+		VerifiedCommittedCommands verified = mock(VerifiedCommittedCommands.class);
 		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
 		when(proof.getLedgerState()).thenReturn(ledgerState);
 		when(verified.getProof()).thenReturn(proof);
+		when(verified.getCommands()).thenReturn(ImmutableList.of());
+		when(verified.truncateFromVersion(anyLong())).thenReturn(verified);
 
 		stateComputerLedger.commit(verified);
 

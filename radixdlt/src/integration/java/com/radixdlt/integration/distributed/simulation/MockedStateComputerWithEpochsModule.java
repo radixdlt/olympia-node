@@ -27,7 +27,7 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 
-import com.radixdlt.ledger.VerifiedCommittedCommand;
+import com.radixdlt.ledger.VerifiedCommittedCommands;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -63,7 +63,7 @@ public class MockedStateComputerWithEpochsModule extends AbstractModule {
 			}
 
 			@Override
-			public Optional<BFTValidatorSet> commit(VerifiedCommittedCommand command) {
+			public Optional<BFTValidatorSet> commit(VerifiedCommittedCommands command) {
 				if (command.getProof().getLedgerState().isEndOfEpoch()) {
 					return Optional.of(validatorSetMapping.apply(command.getProof().getEpoch() + 1));
 				} else {

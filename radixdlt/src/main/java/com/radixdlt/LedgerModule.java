@@ -48,6 +48,7 @@ public class LedgerModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private StateComputerLedger ledger(
+		VerifiedCommittedHeader genesisHeader,
 		Mempool mempool,
 		StateComputer stateComputer,
 		CommittedStateSyncSender committedStateSyncSender,
@@ -57,7 +58,7 @@ public class LedgerModule extends AbstractModule {
 		CommittedSender committedSender = (committed, vset) -> committedSenders.forEach(s -> s.sendCommitted(committed, vset));
 
 		return new StateComputerLedger(
-			0L,
+			genesisHeader.getLedgerState(),
 			mempool,
 			stateComputer,
 			committedStateSyncSender,

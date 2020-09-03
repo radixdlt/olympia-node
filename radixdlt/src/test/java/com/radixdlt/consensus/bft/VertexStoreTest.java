@@ -295,7 +295,7 @@ public class VertexStoreTest {
 		verify(vertexStoreEventSender, times(1))
 			.sendCommittedVertex(eq(nextVertex));
 		verify(ledger, times(1))
-			.commit(argThat(c -> c.getCommand().equals(command) && c.getProof().equals(proof))); // next atom stored
+			.commit(argThat(c -> c.getCommands().contains(command) && c.getProof().equals(proof))); // next atom stored
 	}
 
 	@Test

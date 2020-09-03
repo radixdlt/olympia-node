@@ -21,7 +21,7 @@ import com.google.inject.Provides;
 import com.radixdlt.consensus.VerifiedCommittedHeader;
 import com.radixdlt.consensus.sync.SyncRequestSender;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.ledger.VerifiedCommittedCommand;
+import com.radixdlt.ledger.VerifiedCommittedCommands;
 import java.util.Random;
 
 import com.google.inject.AbstractModule;
@@ -74,7 +74,7 @@ public class DeterministicRandomlySyncedLedgerModule extends AbstractModule {
 			}
 
 			@Override
-			public void commit(VerifiedCommittedCommand command) {
+			public void commit(VerifiedCommittedCommands command) {
 				// Nothing to do here
 			}
 		};

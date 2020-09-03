@@ -27,7 +27,7 @@ import com.radixdlt.consensus.VerifiedCommittedHeader;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.sync.SyncRequestSender;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.ledger.VerifiedCommittedCommand;
+import com.radixdlt.ledger.VerifiedCommittedCommands;
 
 /**
  * A synced executor that is always synced.
@@ -56,7 +56,7 @@ public class DeterministicAlwaysSyncedLedgerModule extends AbstractModule {
 			}
 
 			@Override
-			public void commit(VerifiedCommittedCommand command) {
+			public void commit(VerifiedCommittedCommands command) {
 				// Nothing to do here
 			}
 		};

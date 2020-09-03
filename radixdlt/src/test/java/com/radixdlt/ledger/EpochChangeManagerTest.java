@@ -46,7 +46,7 @@ public class EpochChangeManagerTest {
 		when(ledgerState.isEndOfEpoch()).thenReturn(true);
 		when(ledgerState.getStateVersion()).thenReturn(1234L);
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
-		VerifiedCommittedCommand cmd = mock(VerifiedCommittedCommand.class);
+		VerifiedCommittedCommands cmd = mock(VerifiedCommittedCommands.class);
 		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
 		when(proof.getEpoch()).thenReturn(genesisEpoch);
 		when(proof.getLedgerState()).thenReturn(ledgerState);

@@ -17,7 +17,8 @@
 
 package com.radixdlt.sync;
 
-import com.radixdlt.ledger.VerifiedCommittedCommand;
+import com.radixdlt.consensus.LedgerState;
+import com.radixdlt.ledger.VerifiedCommittedCommands;
 import com.radixdlt.sync.SyncServiceRunner.LocalSyncRequestsRx;
 import com.radixdlt.sync.SyncServiceRunner.SyncTimeoutsRx;
 import com.radixdlt.sync.SyncServiceRunner.VersionUpdatesRx;
@@ -28,8 +29,6 @@ import io.reactivex.rxjava3.subjects.Subject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import com.google.common.collect.ImmutableList;
 
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -45,9 +44,9 @@ public class SyncServiceRunnerTest {
 	private StateSyncNetwork stateSyncNetwork;
 	private SyncServiceProcessor syncServiceProcessor;
 	private VersionUpdatesRx versionUpdatesRx;
-	private Subject<Long> versionUpdatesSubject;
+	private Subject<LedgerState> versionUpdatesSubject;
 	private Subject<SyncRequest> requestsSubject;
-	private Subject<ImmutableList<VerifiedCommittedCommand>> responsesSubject;
+	private Subject<VerifiedCommittedCommands> responsesSubject;
 
 	@Before
 	public void setUp() {
@@ -98,7 +97,7 @@ public class SyncServiceRunnerTest {
 
 	@Test
 	public void when_sync_response__then_it_is_processed() {
-		ImmutableList<VerifiedCommittedCommand> committedCommands = ImmutableList.of(mock(VerifiedCommittedCommand.class));
+		VerifiedCommittedCommands committedCommands = mock(VerifiedCommittedCommands.class);
 		syncServiceRunner.start();
 		responsesSubject.onNext(committedCommands);
 		verify(syncServiceProcessor, timeout(1000).times(1)).processSyncResponse(eq(committedCommands));

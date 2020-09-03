@@ -19,7 +19,7 @@ package com.radixdlt.integration.distributed.simulation;
 
 import com.radixdlt.consensus.VerifiedCommittedHeader;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.ledger.VerifiedCommittedCommand;
+import com.radixdlt.ledger.VerifiedCommittedCommands;
 import java.util.Objects;
 
 import com.google.inject.AbstractModule;
@@ -72,7 +72,7 @@ public class MockedLedgerModule extends AbstractModule {
 			}
 
 			@Override
-			public void commit(VerifiedCommittedCommand command) {
+			public void commit(VerifiedCommittedCommands command) {
 				// Nothing to do here
 			}
 		};

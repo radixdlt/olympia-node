@@ -19,9 +19,10 @@ package com.radixdlt;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.Multibinder;
+import com.radixdlt.consensus.LedgerState;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.sync.SyncRequestSender;
-import com.radixdlt.ledger.VerifiedCommittedCommand;
+import com.radixdlt.ledger.VerifiedCommittedCommands;
 import com.radixdlt.ledger.StateComputerLedger.CommittedSender;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.SyncServiceProcessor.SyncInProgress;
@@ -46,8 +47,8 @@ public class SyncRxModule extends AbstractModule {
 		bind(SyncRequestSender.class).toInstance(syncRequests::send);
 		bind(LocalSyncRequestsRx.class).toInstance(syncRequests::rx);
 
-		TwoSenderToRx<VerifiedCommittedCommand, BFTValidatorSet, Long> committedCommands
-			= new TwoSenderToRx<>((cmd, vset) -> cmd.getProof().getLedgerState().getStateVersion());
+		TwoSenderToRx<VerifiedCommittedCommands, BFTValidatorSet, LedgerState> committedCommands
+			= new TwoSenderToRx<>((cmd, vset) -> cmd.getProof().getLedgerState());
 		Multibinder<CommittedSender> committedSenderBinder = Multibinder.newSetBinder(binder(), CommittedSender.class);
 		committedSenderBinder.addBinding().toInstance(committedCommands::send);
 		bind(VersionUpdatesRx.class).toInstance(committedCommands::rx);

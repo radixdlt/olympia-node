@@ -26,7 +26,7 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 
-import com.radixdlt.ledger.VerifiedCommittedCommand;
+import com.radixdlt.ledger.VerifiedCommittedCommands;
 import java.util.Optional;
 
 public class MockedStateComputerModule extends AbstractModule {
@@ -57,7 +57,7 @@ public class MockedStateComputerModule extends AbstractModule {
 			}
 
 			@Override
-			public Optional<BFTValidatorSet> commit(VerifiedCommittedCommand command) {
+			public Optional<BFTValidatorSet> commit(VerifiedCommittedCommands command) {
 				return Optional.empty();
 			}
 		};

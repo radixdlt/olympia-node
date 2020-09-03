@@ -19,7 +19,9 @@ package com.radixdlt.ledger;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.LedgerState;
 import com.radixdlt.consensus.VerifiedCommittedHeader;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -27,37 +29,52 @@ import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
+import java.util.stream.IntStream;
 import javax.annotation.concurrent.Immutable;
 
 /**
  * A command which has been committed on ledger
  */
 @Immutable
-@SerializerId2("ledger.verified_committed_command")
-public final class VerifiedCommittedCommand {
+@SerializerId2("ledger.verified_committed_commands")
+public final class VerifiedCommittedCommands {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("command")
+	@JsonProperty("commands")
 	@DsonOutput(Output.ALL)
-	private final Command command;
+	private final ImmutableList<Command> commands;
 
 	@JsonProperty("proof")
 	@DsonOutput(Output.ALL)
 	private final VerifiedCommittedHeader proof;
 
 	@JsonCreator
-	public VerifiedCommittedCommand(
-		@JsonProperty("command") Command command,
+	public VerifiedCommittedCommands(
+		@JsonProperty("commands") ImmutableList<Command> commands,
 		@JsonProperty("proof") VerifiedCommittedHeader proof
 	) {
-		this.command = command;
+		this.commands = commands;
 		this.proof = Objects.requireNonNull(proof);
 	}
 
-	public Command getCommand() {
-		return command;
+	public VerifiedCommittedCommands truncateFromVersion(long version) {
+		LedgerState ledgerState = proof.getLedgerState();
+		long startVersion = ledgerState.getStateVersion() - commands.size() + 1;
+
+		if (version < startVersion) {
+			return this;
+		}
+
+		int startIndex = (int) (version + 1 - startVersion);
+		ImmutableList<Command> truncated = IntStream.range(startIndex, commands.size())
+			.mapToObj(commands::get).collect(ImmutableList.toImmutableList());
+		return new VerifiedCommittedCommands(truncated, proof);
+	}
+
+	public ImmutableList<Command> getCommands() {
+		return commands;
 	}
 
 	public VerifiedCommittedHeader getProof() {
@@ -66,22 +83,22 @@ public final class VerifiedCommittedCommand {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(command, proof);
+		return Objects.hash(commands, proof);
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof VerifiedCommittedCommand)) {
+		if (!(o instanceof VerifiedCommittedCommands)) {
 			return false;
 		}
 
-		VerifiedCommittedCommand other = (VerifiedCommittedCommand) o;
-		return Objects.equals(this.command, other.command)
+		VerifiedCommittedCommands other = (VerifiedCommittedCommands) o;
+		return Objects.equals(this.commands, other.commands)
 			&& Objects.equals(this.proof, other.proof);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{cmd=%s proof=%s}", this.getClass().getSimpleName(), command, proof);
+		return String.format("%s{cmds=%s proof=%s}", this.getClass().getSimpleName(), commands, proof);
 	}
 }

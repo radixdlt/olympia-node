@@ -20,33 +20,34 @@ package com.radixdlt.ledger;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedCommittedHeader;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
 import org.junit.Test;
 
-public class VerifiedCommittedCommandTest {
+public class VerifiedCommittedCommandsTest {
 	private Command command;
 	private VerifiedCommittedHeader proof;
-	private VerifiedCommittedCommand committedCommand;
+	private VerifiedCommittedCommands committedCommand;
 
 	@Before
 	public void setUp() {
 		this.command = mock(Command.class);
 		this.proof = mock(VerifiedCommittedHeader.class);
-		this.committedCommand = new VerifiedCommittedCommand(command, proof);
+		this.committedCommand = new VerifiedCommittedCommands(ImmutableList.of(command), proof);
 	}
 
 	@Test
 	public void testGetters() {
-		assertThat(this.committedCommand.getCommand()).isEqualTo(command);
+		assertThat(this.committedCommand.getCommands()).containsExactly(command);
 		assertThat(this.committedCommand.getProof()).isEqualTo(proof);
 	}
 
 	@Test
 	public void equalsContract() {
-		EqualsVerifier.forClass(VerifiedCommittedCommand.class)
+		EqualsVerifier.forClass(VerifiedCommittedCommands.class)
 			.verify();
 	}
 

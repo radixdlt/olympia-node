@@ -17,11 +17,9 @@
 
 package com.radixdlt.sync;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.ledger.VerifiedCommittedCommand;
+import com.radixdlt.ledger.VerifiedCommittedCommands;
 import com.radixdlt.network.addressbook.Peer;
 import io.reactivex.rxjava3.core.Observable;
-import java.util.List;
 
 /**
  * Network interface for state syncing
@@ -32,7 +30,7 @@ public interface StateSyncNetwork {
 	 * Retrieve stream of sync responses
 	 * @return an unending Observable of sync responses
 	 */
-	Observable<ImmutableList<VerifiedCommittedCommand>> syncResponses();
+	Observable<VerifiedCommittedCommands> syncResponses();
 
 	/**
 	 * Retrieve stream of sync requests
@@ -53,5 +51,5 @@ public interface StateSyncNetwork {
 	 * @param peer peer to send response to
 	 * @param atoms list of atoms in the response
 	 */
-	void sendSyncResponse(Peer peer, List<VerifiedCommittedCommand> atoms);
+	void sendSyncResponse(Peer peer, VerifiedCommittedCommands atoms);
 }

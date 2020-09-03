@@ -32,13 +32,12 @@ import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerState;
 import com.radixdlt.consensus.VerifiedCommittedHeader;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.ledger.VerifiedCommittedCommand;
+import com.radixdlt.ledger.VerifiedCommittedCommands;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
@@ -98,8 +97,6 @@ public class RadixEngineStateComputerTest {
 		AID aid = mock(AID.class);
 		when(clientAtom.getAID()).thenReturn(aid);
 
-
-
 		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenReturn(clientAtom);
 
 		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
@@ -108,9 +105,9 @@ public class RadixEngineStateComputerTest {
 		when(ledgerState.getStateVersion()).thenReturn(1L);
 		when(ledgerState.isEndOfEpoch()).thenReturn(false);
 		when(proof.getLedgerState()).thenReturn(ledgerState);
-		VerifiedCommittedCommand command = mock(VerifiedCommittedCommand.class);
+		VerifiedCommittedCommands command = mock(VerifiedCommittedCommands.class);
 		when(command.getProof()).thenReturn(proof);
-		when(command.getCommand()).thenReturn(mock(Command.class));
+		when(command.getCommands()).thenReturn(ImmutableList.of(mock(Command.class)));
 
 		stateComputer.commit(command);
 		verify(radixEngine, times(1)).checkAndStore(any());
@@ -123,51 +120,25 @@ public class RadixEngineStateComputerTest {
 		AID aid = mock(AID.class);
 		when(clientAtom.getAID()).thenReturn(aid);
 
-
 		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenReturn(clientAtom);
 		RadixEngineException e = mock(RadixEngineException.class);
 		doThrow(e).when(radixEngine).checkAndStore(any());
 
 		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
-		when(proof.getView()).then(i -> View.of(50));
 		LedgerState ledgerState = mock(LedgerState.class);
 		when(ledgerState.getStateVersion()).thenReturn(1L);
 		when(ledgerState.isEndOfEpoch()).thenReturn(false);
 		when(proof.getLedgerState()).thenReturn(ledgerState);
 
-		VerifiedCommittedCommand committedCommand = mock(VerifiedCommittedCommand.class);
+		VerifiedCommittedCommands committedCommand = mock(VerifiedCommittedCommands.class);
 		when(committedCommand.getProof()).thenReturn(proof);
-		when(committedCommand.getCommand()).thenReturn(mock(Command.class));
+		when(committedCommand.getCommands()).thenReturn(ImmutableList.of(mock(Command.class)));
 
 		stateComputer.commit(committedCommand);
 
-		assertThat(stateComputer.getCommittedCommands(0, 1))
-			.hasOnlyOneElementSatisfying(c -> assertThat(c.getProof()).isEqualTo(proof));
-	}
-
-	@Test
-	public void when_execute_vertex_is_end_of_epoch_with_null_command__then_is_available_on_query() throws NextCommittedLimitReachedException {
-		ClientAtom committedAtom = mock(ClientAtom.class);
-		AID aid = mock(AID.class);
-		when(committedAtom.getAID()).thenReturn(aid);
-
-		RadixEngineValidatorSetBuilder validatorSetBuilder = mock(RadixEngineValidatorSetBuilder.class);
-		when(radixEngine.getComputedState(eq(RadixEngineValidatorSetBuilder.class)))
-			.thenReturn(validatorSetBuilder);
-		when(validatorSetBuilder.build()).thenReturn(mock(BFTValidatorSet.class));
-
-		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
-		when(proof.getView()).then(i -> View.of(50));
-		LedgerState ledgerState = mock(LedgerState.class);
-		when(ledgerState.getStateVersion()).thenReturn(1L);
-		when(ledgerState.isEndOfEpoch()).thenReturn(true);
-		when(proof.getLedgerState()).thenReturn(ledgerState);
-
-		VerifiedCommittedCommand committedCommand = mock(VerifiedCommittedCommand.class);
-		when(committedCommand.getProof()).thenReturn(proof);
-		stateComputer.commit(committedCommand);
-		assertThat(stateComputer.getCommittedCommands(0, 1))
-			.hasOnlyOneElementSatisfying(c -> assertThat(c.getProof()).isEqualTo(proof));
+		VerifiedCommittedCommands commands = stateComputer.getNextCommittedCommands(0, 1);
+		assertThat(commands).isNotNull();
+		assertThat(commands.getProof()).isEqualTo(proof);
 	}
 
 	@Test
@@ -182,12 +153,14 @@ public class RadixEngineStateComputerTest {
 		when(ledgerState.getStateVersion()).thenReturn(1L);
 		when(ledgerState.isEndOfEpoch()).thenReturn(false);
 		when(proof.getLedgerState()).thenReturn(ledgerState);
-		VerifiedCommittedCommand command = mock(VerifiedCommittedCommand.class);
+
+		VerifiedCommittedCommands command = mock(VerifiedCommittedCommands.class);
 		when(command.getProof()).thenReturn(proof);
-		when(command.getCommand()).thenReturn(cmd);
+		when(command.getCommands()).thenReturn(ImmutableList.of(cmd));
 
 		assertThat(stateComputer.commit(command)).isEmpty();
-		assertThat(stateComputer.getCommittedCommands(0, 1))
-			.hasOnlyOneElementSatisfying(c -> assertThat(c.getProof()).isEqualTo(proof));
+		VerifiedCommittedCommands commands = stateComputer.getNextCommittedCommands(0, 1);
+		assertThat(commands).isNotNull();
+		assertThat(commands.getProof()).isEqualTo(proof);
 	}
 }

@@ -18,19 +18,17 @@
 package com.radixdlt.sync;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.LedgerState;
 import com.radixdlt.consensus.VerifiedCommittedHeader;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.ledger.VerifiedCommittedCommand;
+import com.radixdlt.ledger.VerifiedCommittedCommands;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
-import java.util.Comparator;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.TreeSet;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import javax.annotation.concurrent.NotThreadSafe;
@@ -44,7 +42,7 @@ import org.apache.logging.log4j.Logger;
 @NotThreadSafe
 public final class SyncServiceProcessor {
 	public interface SyncedCommandSender {
-		void sendSyncedCommand(VerifiedCommittedCommand committedCommand);
+		void sendSyncedCommand(VerifiedCommittedCommands committedCommand);
 	}
 
 	public static final class SyncInProgress {
@@ -73,17 +71,12 @@ public final class SyncServiceProcessor {
 	private final RadixEngineStateComputer stateComputer;
 	private final SyncedCommandSender syncedCommandSender;
 	private final int batchSize;
-	private final int maxAtomsQueueSize;
 	private final SyncTimeoutScheduler syncTimeoutScheduler;
 	private final long patienceMilliseconds;
 	private final AddressBook addressBook;
 	private final StateSyncNetwork stateSyncNetwork;
-	private final TreeSet<VerifiedCommittedCommand> committedCommands = new TreeSet<>(
-		Comparator.comparingLong(a -> a.getProof().getLedgerState().getStateVersion())
-	);
-
 	private VerifiedCommittedHeader targetHeader;
-	private long currentVersion;
+	private LedgerState currentState;
 
 	public SyncServiceProcessor(
 		RadixEngineStateComputer stateComputer,
@@ -95,9 +88,6 @@ public final class SyncServiceProcessor {
 		int batchSize,
 		long patienceMilliseconds
 	) {
-		if (currentVersion < 0) {
-			throw new IllegalArgumentException(String.format("current version must be >= 0 but was %s", currentVersion));
-		}
 		if (patienceMilliseconds <= 0) {
 			throw new IllegalArgumentException();
 		}
@@ -111,10 +101,7 @@ public final class SyncServiceProcessor {
 		this.syncTimeoutScheduler = Objects.requireNonNull(syncTimeoutScheduler);
 		this.batchSize = batchSize;
 		this.patienceMilliseconds = patienceMilliseconds;
-		// we limit the size of the queue in order to avoid memory issues
-		this.maxAtomsQueueSize = MAX_REQUESTS_TO_SEND * batchSize * 2;
-
-		this.currentVersion = current.getLedgerState().getStateVersion();
+		this.currentState = current.getLedgerState();
 		this.targetHeader = current;
 	}
 
@@ -126,60 +113,40 @@ public final class SyncServiceProcessor {
 		// TODO: never make it into the radix engine due to state errors. This is because we only check
 		// TODO: validity on commit rather than on proposal/prepare.
 		try {
-			List<VerifiedCommittedCommand> committedCommands = stateComputer.getCommittedCommands(stateVersion, batchSize);
+			VerifiedCommittedCommands committedCommands = stateComputer.getNextCommittedCommands(stateVersion, batchSize);
+			if (committedCommands == null) {
+				return;
+			}
 
-			log.debug("SYNC_REQUEST: SENDING_RESPONSE size: {}", committedCommands.size());
+			log.debug("SYNC_REQUEST: SENDING_RESPONSE size: {}", committedCommands.getCommands().size());
 			stateSyncNetwork.sendSyncResponse(peer, committedCommands);
 		} catch (NextCommittedLimitReachedException e) {
 			log.error(e.getMessage(), e);
 		}
 	}
 
-	public void processSyncResponse(ImmutableList<VerifiedCommittedCommand> commands) {
+	public void processSyncResponse(VerifiedCommittedCommands commands) {
+		final LedgerState responseLedgerState = commands.getProof().getLedgerState();
+		if (responseLedgerState.compareTo(this.currentState) <= 0) {
+			return;
+		}
+
 		// TODO: Check validity of response
-		log.debug("SYNC_RESPONSE: size: {}", commands.size());
-		for (VerifiedCommittedCommand command : commands) {
-			long stateVersion = command.getProof().getLedgerState().getStateVersion();
-			if (stateVersion > this.currentVersion) {
-				if (committedCommands.size() < maxAtomsQueueSize) { // check if there is enough space
-					committedCommands.add(command);
-				} else { // not enough space available
-					VerifiedCommittedCommand last = committedCommands.last();
-					// will added it only if it must be applied BEFORE the most recent atom we have
-					if (last.getProof().getLedgerState().getStateVersion() > stateVersion) {
-						committedCommands.pollLast(); // remove the most recent available
-						committedCommands.add(command);
-					}
-				}
-			}
-		}
+		this.syncedCommandSender.sendSyncedCommand(commands.truncateFromVersion(this.currentState.getStateVersion()));
+		this.currentState = responseLedgerState;
+	}
 
-		Iterator<VerifiedCommittedCommand> it = committedCommands.iterator();
-		while (it.hasNext()) {
-			VerifiedCommittedCommand command = it.next();
-			long stateVersion = command.getProof().getLedgerState().getStateVersion();
-			if (stateVersion <= currentVersion) {
-				it.remove();
-			} else if (stateVersion == currentVersion + 1) {
-				this.syncedCommandSender.sendSyncedCommand(command);
-				this.currentVersion = this.currentVersion + 1;
-				it.remove();
-			} else {
-				break;
-			}
+	public void processVersionUpdate(LedgerState updatedCurrentState) {
+		if (updatedCurrentState.compareTo(this.currentState) > 0) {
+			this.currentState = updatedCurrentState;
 		}
 	}
 
-	public void processVersionUpdate(long updatedCurrentVersion) {
-		if (updatedCurrentVersion > this.currentVersion) {
-			this.currentVersion = updatedCurrentVersion;
-		}
-	}
-
+	// TODO: Handle epoch changes with same state version
 	public void processLocalSyncRequest(LocalSyncRequest request) {
 		final VerifiedCommittedHeader targetHeader = request.getTarget();
-		final long targetVersionRequest = targetHeader.getLedgerState().getStateVersion();
-		if (targetVersionRequest <= this.targetHeader.getLedgerState().getStateVersion()) {
+		final LedgerState targetLedgerState = targetHeader.getLedgerState();
+		if (targetLedgerState.compareTo(this.targetHeader.getLedgerState()) <= 0) {
 			return;
 		}
 
@@ -189,20 +156,31 @@ public final class SyncServiceProcessor {
 	}
 
 	public void processSyncTimeout(SyncInProgress syncInProgress) {
-		final long targetVersion = syncInProgress.getTargetHeader().getLedgerState().getStateVersion();
-		if (targetVersion <= currentVersion) {
-			return;
-		}
-
 		this.sendRequests(syncInProgress);
 	}
 
 	private void sendRequests(SyncInProgress syncInProgress) {
-		sendSyncRequest(currentVersion, syncInProgress.getTargetNodes());
+		final LedgerState targetLedgerState = syncInProgress.getTargetHeader().getLedgerState();
+		if (targetLedgerState.compareTo(this.currentState) <= 0) {
+			return;
+		}
+
+		if (targetLedgerState.getStateVersion() == this.currentState.getStateVersion()) {
+			// Already command synced just need to update header
+			// TODO: Move this to a more appropriate place
+			VerifiedCommittedCommands verifiedCommittedCommands = new VerifiedCommittedCommands(
+				ImmutableList.of(),
+				syncInProgress.getTargetHeader()
+			);
+			this.syncedCommandSender.sendSyncedCommand(verifiedCommittedCommands);
+			return;
+		}
+
+		sendSyncRequest(syncInProgress.getTargetNodes());
 		syncTimeoutScheduler.scheduleTimeout(syncInProgress, patienceMilliseconds);
 	}
 
-	private void sendSyncRequest(long version, List<BFTNode> targetNodes) {
+	private void sendSyncRequest(List<BFTNode> targetNodes) {
 		List<Peer> peers = targetNodes.stream()
 			.map(BFTNode::getKey)
 			.map(pk -> addressBook.peer(pk.euid()))
@@ -215,6 +193,8 @@ public final class SyncServiceProcessor {
 			throw new IllegalStateException("Unable to find peer");
 		}
 		Peer peer = peers.get(ThreadLocalRandom.current().nextInt(peers.size()));
+
+		final long version = this.currentState.getStateVersion();
 		stateSyncNetwork.sendSyncRequest(peer, version);
 	}
 }

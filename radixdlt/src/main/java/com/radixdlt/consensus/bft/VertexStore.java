@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus.bft;
 
+import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedCommittedHeader;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -31,7 +32,7 @@ import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.ledger.VerifiedCommittedCommand;
+import com.radixdlt.ledger.VerifiedCommittedCommands;
 import com.radixdlt.sync.LocalSyncRequest;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -528,14 +529,18 @@ public final class VertexStore implements VertexStoreEventProcessor {
 			vertex = vertices.remove(vertex.getParentId());
 		}
 
+		ImmutableList.Builder<Command> commandsToCommitBuilder = ImmutableList.builder();
 		for (Vertex committedVertex : path) {
 			this.counters.increment(CounterType.BFT_PROCESSED);
-			VerifiedCommittedCommand verifiedCommittedCommand = new VerifiedCommittedCommand(
-				committedVertex.getCommand(), committedProof
-			);
-			this.ledger.commit(verifiedCommittedCommand);
 			this.vertexStoreEventSender.sendCommittedVertex(committedVertex);
+			if (committedVertex.getCommand() != null) {
+				commandsToCommitBuilder.add(committedVertex.getCommand());
+			}
 		}
+		VerifiedCommittedCommands verifiedCommittedCommands = new VerifiedCommittedCommands(
+			commandsToCommitBuilder.build(), committedProof
+		);
+		this.ledger.commit(verifiedCommittedCommands);
 
 		rootId = committedProof.getVertexId();
 

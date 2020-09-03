@@ -18,11 +18,10 @@
 package com.radixdlt.middleware2.network;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableList;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.ledger.VerifiedCommittedCommand;
+import com.radixdlt.ledger.VerifiedCommittedCommands;
 import org.radix.network.messaging.Message;
 
 /**
@@ -32,7 +31,7 @@ import org.radix.network.messaging.Message;
 public final class SyncResponseMessage extends Message {
 	@JsonProperty("commands")
 	@DsonOutput(Output.ALL)
-	private final ImmutableList<VerifiedCommittedCommand> commands;
+	private final VerifiedCommittedCommands commands;
 
 	SyncResponseMessage() {
 		// Serializer only
@@ -40,13 +39,13 @@ public final class SyncResponseMessage extends Message {
 		this.commands = null;
 	}
 
-	public SyncResponseMessage(int magic, ImmutableList<VerifiedCommittedCommand> commands) {
+	public SyncResponseMessage(int magic, VerifiedCommittedCommands commands) {
 		super(magic);
 		this.commands = commands;
 	}
 
-	public ImmutableList<VerifiedCommittedCommand> getCommands() {
-		return commands == null ? ImmutableList.of() : commands;
+	public VerifiedCommittedCommands getCommands() {
+		return commands;
 	}
 
 	@Override

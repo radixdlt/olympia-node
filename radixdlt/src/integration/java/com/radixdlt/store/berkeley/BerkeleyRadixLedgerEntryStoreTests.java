@@ -114,7 +114,8 @@ public class BerkeleyRadixLedgerEntryStoreTests extends RadixTestWithStores {
                 }
 
                 // verify that five atoms in total have been committed and can be returned
-                softly.assertThat(ledgerStore.getNextCommittedLedgerEntries(ledgerEntries.get(0).getStateVersion() - 1, 10)).size().isEqualTo(5);
+                softly.assertThat(ledgerStore.getNextCommittedLedgerEntries(ledgerEntries.get(0).getStateVersion() - 1, 10))
+                    .size().isEqualTo(1);
             } catch (NextCommittedLimitReachedException e) {
                 throw new IllegalStateException();
             }

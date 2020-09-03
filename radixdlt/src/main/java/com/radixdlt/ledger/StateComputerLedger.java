@@ -31,12 +31,11 @@ import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.mempool.Mempool;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 
 /**
  * Synchronizes execution
@@ -44,12 +43,12 @@ import java.util.Set;
 public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	public interface StateComputer {
 		boolean prepare(Vertex vertex);
-		Optional<BFTValidatorSet> commit(VerifiedCommittedCommand verifiedCommittedCommand);
+		Optional<BFTValidatorSet> commit(VerifiedCommittedCommands verifiedCommittedCommands);
 	}
 
 	public interface CommittedSender {
 		// TODO: batch these
-		void sendCommitted(VerifiedCommittedCommand committedCommand, BFTValidatorSet validatorSet);
+		void sendCommitted(VerifiedCommittedCommands committedCommand, BFTValidatorSet validatorSet);
 	}
 
 	public interface CommittedStateSyncSender {
@@ -63,18 +62,18 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	private final SystemCounters counters;
 
 	private final Object lock = new Object();
-	private long currentStateVersion;
-	private final Map<Long, Set<Object>> committedStateSyncers = new HashMap<>();
+	private LedgerState currentLedgerState;
+	private final TreeMap<Long, Set<Object>> committedStateSyncers = new TreeMap<>();
 
 	public StateComputerLedger(
-		long initialStateVersion,
+		LedgerState initialLedgerState,
 		Mempool mempool,
 		StateComputer stateComputer,
 		CommittedStateSyncSender committedStateSyncSender,
 		CommittedSender committedSender,
 		SystemCounters counters
 	) {
-		this.currentStateVersion = initialStateVersion;
+		this.currentLedgerState = initialLedgerState;
 		this.mempool = Objects.requireNonNull(mempool);
 		this.stateComputer = Objects.requireNonNull(stateComputer);
 		this.committedStateSyncSender = Objects.requireNonNull(committedStateSyncSender);
@@ -98,8 +97,6 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		final int versionIncrement;
 		if (parent.isEndOfEpoch()) {
 			versionIncrement = 0; // Don't execute atom if in process of epoch change
-		} else if (isEndOfEpoch) {
-			versionIncrement = 1;
 		} else {
 			versionIncrement = vertex.getCommand() != null ? 1 : 0;
 		}
@@ -117,16 +114,16 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 
 	@Override
 	public OnSynced ifCommitSynced(VerifiedCommittedHeader committedHeader) {
-		final long targetStateVersion = committedHeader.getLedgerState().getStateVersion();
+		final LedgerState targetLedgerState = committedHeader.getLedgerState();
 		synchronized (lock) {
-			if (targetStateVersion <= this.currentStateVersion) {
+			if (targetLedgerState.compareTo(this.currentLedgerState) <= 0) {
 				return onSync -> {
 					onSync.run();
 					return (onNotSynced, opaque) -> { };
 				};
 			} else {
 				return onSync -> (onNotSynced, opaque) -> {
-					this.committedStateSyncers.merge(targetStateVersion, Collections.singleton(opaque), Sets::union);
+					this.committedStateSyncers.merge(targetLedgerState.getStateVersion(), Collections.singleton(opaque), Sets::union);
 					onNotSynced.run();
 				};
 			}
@@ -134,34 +131,37 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	}
 
 	@Override
-	public void commit(VerifiedCommittedCommand verifiedCommittedCommand) {
+	public void commit(VerifiedCommittedCommands verifiedCommittedCommands) {
 		this.counters.increment(CounterType.LEDGER_PROCESSED);
-
-		final VerifiedCommittedHeader header = verifiedCommittedCommand.getProof();
-		final Command command = verifiedCommittedCommand.getCommand();
-
 		synchronized (lock) {
-			final long stateVersion = header.getLedgerState().getStateVersion();
-			// TODO: get this invariant to as low level as possible
-			if (stateVersion != this.currentStateVersion + 1) {
+			final VerifiedCommittedHeader header = verifiedCommittedCommands.getProof();
+			final LedgerState nextLedgerState = header.getLedgerState();
+			if (nextLedgerState.compareTo(this.currentLedgerState) <= 0) {
 				return;
 			}
 
-			this.currentStateVersion = stateVersion;
-			this.counters.set(CounterType.LEDGER_STATE_VERSION, this.currentStateVersion);
+			// Remove commands which have already been committed
+			VerifiedCommittedCommands commandsToStore = verifiedCommittedCommands
+				.truncateFromVersion(this.currentLedgerState.getStateVersion());
 
 			// persist
-			Optional<BFTValidatorSet> validatorSet = this.stateComputer.commit(verifiedCommittedCommand);
-			// TODO: move all of the following to post-persist event handling
-			if (command != null) {
-				this.mempool.removeCommitted(command.getHash());
-			}
-			committedSender.sendCommitted(verifiedCommittedCommand, validatorSet.orElse(null));
+			Optional<BFTValidatorSet> validatorSet = this.stateComputer.commit(commandsToStore);
 
-			Set<Object> opaqueObjects = this.committedStateSyncers.remove(this.currentStateVersion);
-			if (opaqueObjects != null) {
-				for (Object opaque : opaqueObjects) {
-					committedStateSyncSender.sendCommittedStateSync(this.currentStateVersion, opaque);
+			// TODO: move all of the following to post-persist event handling
+			this.currentLedgerState = header.getLedgerState();
+			this.counters.set(CounterType.LEDGER_STATE_VERSION, this.currentLedgerState.getStateVersion());
+
+			commandsToStore.getCommands().forEach(cmd -> this.mempool.removeCommitted(cmd.getHash()));
+			committedSender.sendCommitted(commandsToStore, validatorSet.orElse(null));
+
+			Set<Long> statesListenedTo = this.committedStateSyncers.headMap(this.currentLedgerState.getStateVersion(), true)
+				.keySet();
+			for (Long stateListenedTo : statesListenedTo) {
+				Set<Object> opaqueObjects = this.committedStateSyncers.remove(stateListenedTo);
+				if (opaqueObjects != null) {
+					for (Object opaque : opaqueObjects) {
+						committedStateSyncSender.sendCommittedStateSync(this.currentLedgerState.getStateVersion(), opaque);
+					}
 				}
 			}
 		}

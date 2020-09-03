@@ -22,7 +22,6 @@ import com.radixdlt.integration.distributed.simulation.TestInvariant;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -39,7 +38,7 @@ public class ConsensusToLedgerCommittedInvariant implements TestInvariant {
 			.map(Vertex::getCommand)
 			.flatMapMaybe(command -> network
 				.committedCommands()
-				.filter(nodeAndCmd -> Objects.equals(nodeAndCmd.getSecond().getCommand(), command))
+				.filter(nodeAndCmd -> nodeAndCmd.getSecond().getCommands().contains(command))
 				.timeout(10, TimeUnit.SECONDS)
 				.firstOrError()
 				.ignoreElement()

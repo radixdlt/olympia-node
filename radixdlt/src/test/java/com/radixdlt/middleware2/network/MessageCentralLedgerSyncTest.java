@@ -26,15 +26,13 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.ledger.VerifiedCommittedCommand;
+import com.radixdlt.ledger.VerifiedCommittedCommands;
 import com.radixdlt.sync.SyncRequest;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageListener;
 import com.radixdlt.universe.Universe;
 import io.reactivex.rxjava3.observers.TestObserver;
-import java.util.Collections;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;
 import org.junit.Test;
@@ -61,7 +59,7 @@ public class MessageCentralLedgerSyncTest {
 	@Test
 	public void when_send_sync_response__then_magic_should_be_same_as_universe() {
 		Peer peer = mock(Peer.class);
-		messageCentralLedgerSync.sendSyncResponse(peer, Collections.emptyList());
+		messageCentralLedgerSync.sendSyncResponse(peer, mock(VerifiedCommittedCommands.class));
 		verify(messageCentral, times(1)).send(eq(peer), argThat(msg -> msg.getMagic() == 123));
 	}
 
@@ -92,10 +90,10 @@ public class MessageCentralLedgerSyncTest {
 			return null;
 		}).when(messageCentral).addListener(eq(SyncResponseMessage.class), any());
 
-		TestObserver<ImmutableList<VerifiedCommittedCommand>> testObserver = this.messageCentralLedgerSync.syncResponses().test();
+		TestObserver<VerifiedCommittedCommands> testObserver = this.messageCentralLedgerSync.syncResponses().test();
 		Peer peer = mock(Peer.class);
 		SyncResponseMessage syncResponseMessage = mock(SyncResponseMessage.class);
-		ImmutableList<VerifiedCommittedCommand> commands = ImmutableList.of(mock(VerifiedCommittedCommand.class));
+		VerifiedCommittedCommands commands = mock(VerifiedCommittedCommands.class);
 		when(syncResponseMessage.getCommands()).thenReturn(commands);
 		messageListenerAtomicReference.get().handleMessage(peer, syncResponseMessage);
 		testObserver.awaitCount(1);

@@ -17,7 +17,7 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.ledger.VerifiedCommittedCommand;
+import com.radixdlt.ledger.VerifiedCommittedCommands;
 
 /**
  * A distributed computer which manages the computed state in a BFT.
@@ -49,7 +49,7 @@ public interface Ledger {
 
 	/**
 	 * Commit a command
-	 * @param verifiedCommittedCommand the command to commit
+	 * @param verifiedCommittedCommands the command to commit
 	 */
-	void commit(VerifiedCommittedCommand verifiedCommittedCommand);
+	void commit(VerifiedCommittedCommands verifiedCommittedCommands);
 }

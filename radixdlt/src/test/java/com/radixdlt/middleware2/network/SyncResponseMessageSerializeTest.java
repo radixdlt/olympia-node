@@ -18,6 +18,10 @@
 package com.radixdlt.middleware2.network;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.LedgerState;
+import com.radixdlt.consensus.VerifiedCommittedHeader;
+import com.radixdlt.crypto.Hash;
+import com.radixdlt.ledger.VerifiedCommittedCommands;
 import org.radix.serialization.SerializeMessageObject;
 
 public class SyncResponseMessageSerializeTest extends SerializeMessageObject<SyncResponseMessage> {
@@ -26,6 +30,9 @@ public class SyncResponseMessageSerializeTest extends SerializeMessageObject<Syn
 	}
 
 	private static SyncResponseMessage get() {
-		return new SyncResponseMessage(1234, ImmutableList.of());
+		LedgerState ledgerState = LedgerState.create(0, Hash.ZERO_HASH, 0, false);
+		return new SyncResponseMessage(1234, new VerifiedCommittedCommands(
+			ImmutableList.of(), VerifiedCommittedHeader.ofGenesisAncestor(ledgerState)
+		));
 	}
 }

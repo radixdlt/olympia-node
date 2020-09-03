@@ -17,8 +17,7 @@
 
 package com.radixdlt.middleware2.network;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.ledger.VerifiedCommittedCommand;
+import com.radixdlt.ledger.VerifiedCommittedCommands;
 import com.radixdlt.sync.StateSyncNetwork;
 import com.radixdlt.sync.SyncRequest;
 import com.radixdlt.network.addressbook.Peer;
@@ -26,7 +25,6 @@ import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageListener;
 import com.radixdlt.universe.Universe;
 import io.reactivex.rxjava3.core.Observable;
-import java.util.List;
 import java.util.Objects;
 import javax.inject.Inject;
 
@@ -47,7 +45,7 @@ public final class MessageCentralLedgerSync implements StateSyncNetwork {
 	}
 
 	@Override
-	public Observable<ImmutableList<VerifiedCommittedCommand>> syncResponses() {
+	public Observable<VerifiedCommittedCommands> syncResponses() {
 		return Observable.create(emitter -> {
 			MessageListener<SyncResponseMessage> listener = (src, msg) -> emitter.onNext(msg.getCommands());
 			this.messageCentral.addListener(SyncResponseMessage.class, listener);
@@ -71,8 +69,8 @@ public final class MessageCentralLedgerSync implements StateSyncNetwork {
 	}
 
 	@Override
-	public void sendSyncResponse(Peer peer, List<VerifiedCommittedCommand> commands) {
-		final SyncResponseMessage syncResponseMessage = new SyncResponseMessage(this.magic, ImmutableList.copyOf(commands));
+	public void sendSyncResponse(Peer peer, VerifiedCommittedCommands commands) {
+		final SyncResponseMessage syncResponseMessage = new SyncResponseMessage(this.magic, commands);
 		this.messageCentral.send(peer, syncResponseMessage);
 	}
 }
