@@ -37,8 +37,8 @@ import com.radixdlt.identifiers.AID;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import java.util.function.Function;
 import org.junit.Before;
@@ -150,7 +150,7 @@ public class RadixEngineStateComputerTest {
 		when(vertexMetadata.getStateVersion()).then(i -> 1L);
 		when(vertexMetadata.isEndOfEpoch()).thenReturn(true);
 
-		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenThrow(new SerializationException(""));
+		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenThrow(new DeserializeException(""));
 
 		stateComputer.commit(new Command(new byte[] {0, 1}), vertexMetadata);
 

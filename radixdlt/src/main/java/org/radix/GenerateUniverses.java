@@ -43,7 +43,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.universe.Universe.UniverseType;
 import com.radixdlt.utils.RadixConstants;
@@ -86,7 +85,7 @@ public final class GenerateUniverses {
 		this(false, properties);
 	}
 
-	public List<Universe> generateUniverses() throws SerializationException, CryptoException {
+	public List<Universe> generateUniverses() throws CryptoException {
 		if (standalone) {
 			LOGGER.info("UNIVERSE KEY PUBLIC: {}", () -> Bytes.toHexString(universeKey.getPublicKey().getBytes()));
 		}
@@ -109,7 +108,7 @@ public final class GenerateUniverses {
 		String description,
 		UniverseType type,
 		long timestamp
-	) throws SerializationException, CryptoException {
+	) throws CryptoException {
 		LOGGER.info("------------------ Start of Universe: {} ------------------", type);
 		byte universeMagic = (byte) (Universe.computeMagic(universeKey.getPublicKey(), timestamp, port, type) & 0xFF);
 		Atom universeAtom = createGenesisAtom(universeMagic);
@@ -137,7 +136,7 @@ public final class GenerateUniverses {
 		return universe;
 	}
 
-	private Atom createGenesisAtom(byte magic) throws CryptoException, SerializationException {
+	private Atom createGenesisAtom(byte magic) throws CryptoException {
 		RadixAddress universeAddress = new RadixAddress(magic, universeKey.getPublicKey());
 		UInt256 genesisAmount = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 + 9); // 10^9 = 1,000,000,000 pieces of eight, please
 		FixedSupplyTokenDefinitionParticle xrdDefinition = createTokenDefinition(magic, "XRD", "Rads", "Radix Native Tokens", genesisAmount);

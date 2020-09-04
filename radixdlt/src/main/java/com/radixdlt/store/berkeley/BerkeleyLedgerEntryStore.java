@@ -28,9 +28,9 @@ import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
 import com.radixdlt.store.StoreIndex.LedgerIndexType;
 import com.radixdlt.store.LedgerSearchMode;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.consensus.tempo.TempoException;
 import com.radixdlt.store.LedgerEntryConflict;
@@ -257,7 +257,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 	public Set<StoreIndex> getUniqueIndices(AID aid) {
 		try {
 			return doGetIndices(null, aid, new DatabaseEntry()).getUniqueIndices();
-		} catch (SerializationException e) {
+		} catch (DeserializeException e) {
 			fail("Get unique indices of '" + aid + "' failed");
 		}
 		throw new IllegalStateException("Should never reach here");
@@ -338,7 +338,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 		Set<StoreIndex> uniqueIndices,
 		Set<StoreIndex> duplicateIndices,
 		Transaction transaction
-	) throws SerializationException {
+	) throws DeserializeException {
 		byte[] atomData = serialization.toDson(entry, Output.PERSIST);
 		LedgerEntryIndices indices = LedgerEntryIndices.from(entry, uniqueIndices, duplicateIndices);
 		doAddPending(entry.getAID(), entry.getStateVersion(), transaction);
@@ -352,7 +352,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 		byte[] ledgerEntryData,
 		LedgerEntryIndices indices,
 		Transaction transaction
-	) throws SerializationException {
+	) throws DeserializeException {
 		try {
 			DatabaseEntry pKey = toPKey(prefix, logicalClock, aid);
 			DatabaseEntry pData = new DatabaseEntry(ledgerEntryData);
@@ -405,7 +405,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 		return conflictingAtoms.build();
 	}
 
-	private boolean doDelete(AID aid, Transaction transaction) throws SerializationException {
+	private boolean doDelete(AID aid, Transaction transaction) throws DeserializeException {
 		if (!isPending(aid)) {
 			fail("Attempted to delete committed atom '" + aid + "'");
 		}
@@ -428,7 +428,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 		}
 	}
 
-	private LedgerEntryIndices doGetIndices(Transaction transaction, AID aid, DatabaseEntry pKey) throws SerializationException {
+	private LedgerEntryIndices doGetIndices(Transaction transaction, AID aid, DatabaseEntry pKey) throws DeserializeException {
 		DatabaseEntry key = new DatabaseEntry(StoreIndex.from(ENTRY_INDEX_PREFIX, aid.getBytes()));
 		DatabaseEntry value = new DatabaseEntry();
 

@@ -32,9 +32,9 @@ import com.radixdlt.crypto.Hash;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware.SpunParticle;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
@@ -99,7 +99,7 @@ public final class ClientAtom implements LedgerAtom {
 			this.metaData = ImmutableMap.copyOf(atom.getMetaData());
 			this.cmInstruction = convertToCMInstruction(atom);
 			this.powFeeHash = atom.copyExcludingMetadata(Atom.METADATA_POW_NONCE_KEY).getHash();
-		} catch (SerializationException | LedgerAtomConversionException e) {
+		} catch (DeserializeException | LedgerAtomConversionException e) {
 			throw new IllegalStateException("Failed to deserialize atomBytes");
 		}
 	}
@@ -205,7 +205,7 @@ public final class ClientAtom implements LedgerAtom {
 	public static Atom convertToApiAtom(ClientAtom atom) {
 		try {
 			return DefaultSerialization.getInstance().fromDson(atom.rawAtom, Atom.class);
-		} catch (SerializationException e) {
+		} catch (DeserializeException e) {
 			throw new IllegalStateException("Could not convert back to api atom " + atom);
 		}
 	}
@@ -218,12 +218,7 @@ public final class ClientAtom implements LedgerAtom {
 	 * @throws LedgerAtomConversionException on conversion errors
 	 */
 	public static ClientAtom convertFromApiAtom(Atom atom) throws LedgerAtomConversionException {
-		final byte[] rawAtom;
-		try {
-			rawAtom = DefaultSerialization.getInstance().toDson(atom, Output.PERSIST);
-		} catch (SerializationException e) {
-			throw new IllegalStateException("Could not compute size", e);
-		}
+		final byte[] rawAtom = DefaultSerialization.getInstance().toDson(atom, Output.PERSIST);
 		final int computedSize = rawAtom.length;
 
 		if (computedSize > MAX_ATOM_SIZE) {

@@ -27,9 +27,9 @@ import org.radix.containers.BasicContainer;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.CryptoException;
 
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.serialization.SerializerId2;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -143,11 +143,11 @@ public class RadixSystem extends BasicContainer
 	}
 
 	@JsonProperty("key")
-	void setJsonKey(byte[] newKey) throws SerializationException {
+	void setJsonKey(byte[] newKey) throws DeserializeException {
 		try {
 			key = new ECPublicKey(newKey);
 		} catch (CryptoException cex) {
-			throw new SerializationException("Invalid key", cex);
+			throw new DeserializeException("Invalid key", cex);
 		}
 	}
 
