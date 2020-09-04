@@ -227,7 +227,7 @@ public final class RadixHttpServer {
 				respond(errorJson, exchange);
 			} else {
 				JSONObject highestQCJson = new JSONObject();
-				highestQCJson.put("epoch", highestQC.getProposed().getEpoch());
+				highestQCJson.put("epoch", highestQC.getProposed().getLedgerState().getEpoch());
 				highestQCJson.put("view", highestQC.getView());
 				highestQCJson.put("vertexId", highestQC.getProposed().getVertexId());
 				respond(highestQCJson, exchange);

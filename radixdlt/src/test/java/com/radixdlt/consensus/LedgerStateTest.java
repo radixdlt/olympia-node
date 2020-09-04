@@ -44,7 +44,6 @@ public class LedgerStateTest {
 		assertThat(ledgerState.timestamp()).isEqualTo(timestamp);
 		assertThat(ledgerState.isEndOfEpoch()).isFalse();
 		assertThat(ledgerState.getStateVersion());
-		assertThat(ledgerState.getCommandId()).isEqualTo(commandId);
 	}
 
 	@Test

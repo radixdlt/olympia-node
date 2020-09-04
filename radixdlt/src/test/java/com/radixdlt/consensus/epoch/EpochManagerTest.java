@@ -127,12 +127,8 @@ public class EpochManagerTest {
 		when(validatorSet.containsNode(eq(self))).thenReturn(false);
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of());
 		when(epochChange.getValidatorSet()).thenReturn(validatorSet);
-
-		VerifiedCommittedHeader verifiedCommittedHeader = mock(VerifiedCommittedHeader.class);
-		when(verifiedCommittedHeader.getHeader()).thenReturn(mock(Header.class));
-		when(verifiedCommittedHeader.getEpoch()).thenReturn(1L);
-
-		when(epochChange.getAncestor()).thenReturn(verifiedCommittedHeader);
+		when(epochChange.getLedgerState()).thenReturn(mock(LedgerState.class));
+		when(epochChange.getEpoch()).thenReturn(2L);
 		epochManager.processEpochChange(epochChange);
 
 		verify(bftFactory, never()).create(any(), any(), any(), any(), any(), any());
@@ -156,15 +152,16 @@ public class EpochManagerTest {
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of());
 		EpochChange epochChange = mock(EpochChange.class);
-		VerifiedCommittedHeader verifiedCommittedHeader = mock(VerifiedCommittedHeader.class);
-		when(verifiedCommittedHeader.getHeader()).thenReturn(mock(Header.class));
-		when(verifiedCommittedHeader.getEpoch()).thenReturn(1L);
-		when(epochChange.getAncestor()).thenReturn(verifiedCommittedHeader);
+		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
+		when(epochChange.getProof()).thenReturn(proof);
 		when(epochChange.getValidatorSet()).thenReturn(validatorSet);
+		when(epochChange.getEpoch()).thenReturn(2L);
 		epochManager.processEpochChange(epochChange);
+
 		BFTNode sender = mock(BFTNode.class);
 		epochManager.processGetEpochRequest(new GetEpochRequest(sender, 1L));
-		verify(syncEpochsRPCSender, times(1)).sendGetEpochResponse(eq(sender), eq(verifiedCommittedHeader));
+
+		verify(syncEpochsRPCSender, times(1)).sendGetEpochResponse(eq(sender), eq(proof));
 	}
 
 	@Test
@@ -177,38 +174,36 @@ public class EpochManagerTest {
 	@Test
 	public void when_receive_epoch_response__then_should_sync_state_computer() {
 		GetEpochResponse response = mock(GetEpochResponse.class);
-		VerifiedCommittedHeader verifiedCommittedHeader = mock(VerifiedCommittedHeader.class);
-		when(verifiedCommittedHeader.getEpoch()).thenReturn(1L);
-		when(response.getEpochAncestor()).thenReturn(verifiedCommittedHeader);
+		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
+		when(proof.getEpoch()).thenReturn(1L);
+		when(response.getEpochProof()).thenReturn(proof);
 		when(response.getAuthor()).thenReturn(mock(BFTNode.class));
 		epochManager.processGetEpochResponse(response);
 		verify(syncRequestSender, times(1))
-			.sendLocalSyncRequest(argThat(req -> req.getTarget().equals(verifiedCommittedHeader)));
+			.sendLocalSyncRequest(argThat(req -> req.getTarget().equals(proof)));
 	}
 
 	@Test
 	public void when_receive_null_epoch_response__then_should_do_nothing() {
 		GetEpochResponse response = mock(GetEpochResponse.class);
-		when(response.getEpochAncestor()).thenReturn(null);
+		when(response.getEpochProof()).thenReturn(null);
 		epochManager.processGetEpochResponse(response);
 		verify(syncRequestSender, never()).sendLocalSyncRequest(any());
 	}
 
 	@Test
 	public void when_receive_old_epoch_response__then_should_do_nothing() {
-		VerifiedCommittedHeader verifiedCommittedHeader = mock(VerifiedCommittedHeader.class);
-		when(verifiedCommittedHeader.getHeader()).thenReturn(mock(Header.class));
-		when(verifiedCommittedHeader.getEpoch()).thenReturn(1L);
-
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of());
 		EpochChange epochChange = mock(EpochChange.class);
-		when(epochChange.getAncestor()).thenReturn(verifiedCommittedHeader);
 		when(epochChange.getValidatorSet()).thenReturn(validatorSet);
+		when(epochChange.getEpoch()).thenReturn(2L);
 		epochManager.processEpochChange(epochChange);
 
 		GetEpochResponse response = mock(GetEpochResponse.class);
-		when(response.getEpochAncestor()).thenReturn(verifiedCommittedHeader);
+		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
+		when(proof.getEpoch()).thenReturn(1L);
+		when(response.getEpochProof()).thenReturn(proof);
 		epochManager.processGetEpochResponse(response);
 		verify(syncRequestSender, never()).sendLocalSyncRequest(any());
 	}
@@ -222,13 +217,6 @@ public class EpochManagerTest {
 			return eventProcessor;
 		}).when(bftFactory).create(any(), any(), any(), any(), any(), any());
 
-		VerifiedCommittedHeader verifiedCommittedHeader = mock(VerifiedCommittedHeader.class);
-		Header header = mock(Header.class);
-		when(header.getLedgerState()).thenReturn(mock(LedgerState.class));
-		when(verifiedCommittedHeader.getHeader()).thenReturn(header);
-		when(verifiedCommittedHeader.getEpoch()).thenReturn(1L);
-		when(verifiedCommittedHeader.getLedgerState()).thenReturn(mock(LedgerState.class));
-
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		when(validatorSet.containsNode(any())).thenReturn(true);
 
@@ -241,23 +229,27 @@ public class EpochManagerTest {
 
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of(selfValidator, validator));
 		EpochChange epochChange0 = mock(EpochChange.class);
+		when(epochChange0.getEpoch()).thenReturn(2L);
 		when(epochChange0.getValidatorSet()).thenReturn(validatorSet);
-		when(epochChange0.getAncestor()).thenReturn(verifiedCommittedHeader);
+		when(epochChange0.getLedgerState()).thenReturn(mock(LedgerState.class));
 		epochManager.processEpochChange(epochChange0);
 
 		Header nextAncestor = mock(Header.class);
-		when(nextAncestor.getEpoch()).thenReturn(2L);
+		LedgerState ledgerState = mock(LedgerState.class);
+		when(ledgerState.getEpoch()).thenReturn(2L);
+		when(nextAncestor.getLedgerState()).thenReturn(ledgerState);
 		VerifiedCommittedHeader verifiedNext = mock(VerifiedCommittedHeader.class);
 		when(verifiedNext.getEpoch()).thenReturn(2L);
+		when(verifiedNext.getLedgerState()).thenReturn(ledgerState);
 		when(verifiedNext.getHeader()).thenReturn(nextAncestor);
 
 		endOfEpochSender.get().sendEndOfEpoch(nextAncestor);
 
 		EpochChange epochChange = mock(EpochChange.class);
-		when(epochChange.getAncestor()).thenReturn(verifiedNext);
 		BFTValidatorSet vs = mock(BFTValidatorSet.class);
 		when(vs.getValidators()).thenReturn(ImmutableSet.of());
 		when(epochChange.getValidatorSet()).thenReturn(vs);
+		when(epochChange.getEpoch()).thenReturn(3L);
 		epochManager.processEpochChange(epochChange);
 	}
 
@@ -266,11 +258,6 @@ public class EpochManagerTest {
 	public void when_epoch_change_and_then_epoch_events__then_should_execute_events() {
 		BFTEventProcessor eventProcessor = mock(BFTEventProcessor.class);
 		when(bftFactory.create(any(), any(), any(), any(), any(), any())).thenReturn(eventProcessor);
-
-		VerifiedCommittedHeader verifiedCommittedHeader = mock(VerifiedCommittedHeader.class);
-		when(verifiedCommittedHeader.getEpoch()).thenReturn(1L);
-		LedgerState ledgerState = mock(LedgerState.class);
-		when(verifiedCommittedHeader.getLedgerState()).thenReturn(ledgerState);
 
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		when(validatorSet.containsNode(any())).thenReturn(true);
@@ -284,11 +271,9 @@ public class EpochManagerTest {
 
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of(selfValidator, validator));
 		EpochChange epochChange = mock(EpochChange.class);
-		when(epochChange.getAncestor()).thenReturn(verifiedCommittedHeader);
-		Header header = mock(Header.class);
-		when(header.getLedgerState()).thenReturn(mock(LedgerState.class));
-		when(verifiedCommittedHeader.getHeader()).thenReturn(header);
+		when(epochChange.getEpoch()).thenReturn(2L);
 		when(epochChange.getValidatorSet()).thenReturn(validatorSet);
+		when(epochChange.getLedgerState()).thenReturn(mock(LedgerState.class));
 		epochManager.processEpochChange(epochChange);
 
 		verify(eventProcessor, times(1)).start();
@@ -387,15 +372,9 @@ public class EpochManagerTest {
 		when(validatorSet.containsNode(any())).thenReturn(true);
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of(validator, authorValidator));
 
-		VerifiedCommittedHeader verifiedCommittedHeader = mock(VerifiedCommittedHeader.class);
-		when(verifiedCommittedHeader.getEpoch()).thenReturn(1L);
-		when(verifiedCommittedHeader.getLedgerState()).thenReturn(mock(LedgerState.class));
-		Header header = mock(Header.class);
-		when(header.getLedgerState()).thenReturn(mock(LedgerState.class));
-		when(verifiedCommittedHeader.getHeader()).thenReturn(header);
-
 		EpochChange epochChange = mock(EpochChange.class);
-		when(epochChange.getAncestor()).thenReturn(verifiedCommittedHeader);
+		when(epochChange.getEpoch()).thenReturn(2L);
+		when(epochChange.getLedgerState()).thenReturn(mock(LedgerState.class));
 		when(epochChange.getValidatorSet()).thenReturn(validatorSet);
 
 		epochManager.processEpochChange(epochChange);
@@ -412,10 +391,6 @@ public class EpochManagerTest {
 		epochManager.processConsensusEvent(proposal);
 		assertThat(systemCounters.get(CounterType.EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS)).isEqualTo(1);
 
-		VerifiedCommittedHeader verifiedCommittedHeader = mock(VerifiedCommittedHeader.class);
-		when(verifiedCommittedHeader.getEpoch()).thenReturn(1L);
-		when(verifiedCommittedHeader.getHeader()).thenReturn(mock(Header.class));
-
 		BFTValidator validator = mock(BFTValidator.class);
 		when(validator.getNode()).thenReturn(mock(BFTNode.class));
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
@@ -423,7 +398,8 @@ public class EpochManagerTest {
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of());
 
 		EpochChange epochChange = mock(EpochChange.class);
-		when(epochChange.getAncestor()).thenReturn(verifiedCommittedHeader);
+		when(epochChange.getLedgerState()).thenReturn(mock(LedgerState.class));
+		when(epochChange.getEpoch()).thenReturn(2L);
 		when(epochChange.getValidatorSet()).thenReturn(validatorSet);
 
 		epochManager.processEpochChange(epochChange);
@@ -444,16 +420,10 @@ public class EpochManagerTest {
 		when(validatorSet.containsNode(any())).thenReturn(true);
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of(validator));
 
-		VerifiedCommittedHeader verifiedCommittedHeader = mock(VerifiedCommittedHeader.class);
-		when(verifiedCommittedHeader.getEpoch()).thenReturn(1L);
-		when(verifiedCommittedHeader.getLedgerState()).thenReturn(mock(LedgerState.class));
-		Header header = mock(Header.class);
-		when(header.getLedgerState()).thenReturn(mock(LedgerState.class));
-		when(verifiedCommittedHeader.getHeader()).thenReturn(header);
-
 		EpochChange epochChange = mock(EpochChange.class);
-		when(epochChange.getAncestor()).thenReturn(verifiedCommittedHeader);
+		when(epochChange.getEpoch()).thenReturn(2L);
 		when(epochChange.getValidatorSet()).thenReturn(validatorSet);
+		when(epochChange.getLedgerState()).thenReturn(mock(LedgerState.class));
 		epochManager.processEpochChange(epochChange);
 
 		GetVerticesRequest getVerticesRequest = mock(GetVerticesRequest.class);

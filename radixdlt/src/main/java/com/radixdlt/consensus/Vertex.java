@@ -81,12 +81,11 @@ public final class Vertex {
 		this.command = command;
 	}
 
-	public static Vertex createGenesis(VerifiedCommittedHeader ancestor) {
-		Objects.requireNonNull(ancestor);
-		Header header = ancestor.getHeader();
+	public static Vertex createGenesis(long epoch, LedgerState ledgerState) {
+		Header header = Header.ofGenesisAncestor(ledgerState);
 		final VoteData voteData = new VoteData(header, header, header);
 		final QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-		return new Vertex(ancestor.getEpoch() + 1, qc, View.genesis(), null);
+		return new Vertex(epoch, qc, View.genesis(), null);
 	}
 
 	public static Vertex createVertex(QuorumCertificate qc, View view, Command command) {
@@ -96,7 +95,7 @@ public final class Vertex {
 			throw new IllegalArgumentException("Only genesis can have view 0.");
 		}
 
-		return new Vertex(qc.getProposed().getEpoch(), qc, view, command);
+		return new Vertex(qc.getProposed().getLedgerState().getEpoch(), qc, view, command);
 	}
 
 	private Hash doGetHash() {

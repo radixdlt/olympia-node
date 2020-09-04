@@ -18,16 +18,9 @@
 package com.radixdlt.middleware2.network;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.LedgerState;
-import com.radixdlt.consensus.VerifiedCommittedHeader;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.utils.UInt256;
 import org.radix.serialization.SerializeMessageObject;
 
 public class GetVerticesResponseMessageSerializeTest extends SerializeMessageObject<GetVerticesResponseMessage> {
@@ -36,12 +29,8 @@ public class GetVerticesResponseMessageSerializeTest extends SerializeMessageObj
 	}
 
 	private static GetVerticesResponseMessage get() {
-		ECKeyPair keyPair = ECKeyPair.generateNew();
-		BFTValidatorSet bftValidatorSet = BFTValidatorSet.from(ImmutableSet.of(
-			BFTValidator.from(BFTNode.create(keyPair.getPublicKey()), UInt256.ONE)
-		));
 		LedgerState ledgerState = LedgerState.create(0, 0, Hash.random(), 0L, false);
-		Vertex genesisVertex = Vertex.createGenesis(VerifiedCommittedHeader.ofGenesisAncestor(ledgerState));
+		Vertex genesisVertex = Vertex.createGenesis(1L, ledgerState);
 		return new GetVerticesResponseMessage(1234, Hash.random(), ImmutableList.of(genesisVertex));
 	}
 

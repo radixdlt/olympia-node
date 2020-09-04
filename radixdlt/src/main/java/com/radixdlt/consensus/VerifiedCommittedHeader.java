@@ -80,7 +80,7 @@ public final class VerifiedCommittedHeader {
 	}
 
 	public long getEpoch() {
-		return header.getEpoch();
+		return header.getLedgerState().getEpoch();
 	}
 
 	public View getView() {

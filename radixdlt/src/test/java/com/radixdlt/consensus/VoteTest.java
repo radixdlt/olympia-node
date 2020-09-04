@@ -53,7 +53,7 @@ public class VoteTest {
 
 	@Test
 	public void testGetters() {
-		assertEquals(this.testObject.getEpoch(), voteData.getProposed().getEpoch());
+		assertEquals(this.testObject.getEpoch(), voteData.getProposed().getLedgerState().getEpoch());
 		assertEquals(this.voteData, this.testObject.getVoteData());
 		assertEquals(this.author, this.testObject.getAuthor());
 		assertEquals(this.payload, this.testObject.getPayload());

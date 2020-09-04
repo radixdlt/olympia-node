@@ -39,7 +39,7 @@ public class GetEpochResponseTest {
 
 	@Test
 	public void testGetters() {
-		assertThat(this.response.getEpochAncestor()).isEqualTo(this.ancestor);
+		assertThat(this.response.getEpochProof()).isEqualTo(this.ancestor);
 		assertThat(this.response.getAuthor()).isEqualTo(this.sender);
 	}
 

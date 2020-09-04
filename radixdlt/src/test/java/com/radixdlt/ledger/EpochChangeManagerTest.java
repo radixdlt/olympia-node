@@ -56,7 +56,7 @@ public class EpochChangeManagerTest {
 
 		verify(sender, times(1))
 			.epochChange(
-				argThat(e -> e.getAncestor().equals(proof) && e.getValidatorSet().equals(validatorSet))
+				argThat(e -> e.getProof().equals(proof) && e.getValidatorSet().equals(validatorSet))
 			);
 	}
 }

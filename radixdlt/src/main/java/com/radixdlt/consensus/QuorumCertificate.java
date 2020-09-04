@@ -57,12 +57,12 @@ public final class QuorumCertificate {
 	 * @param genesisVertex the vertex to create a qc for
 	 * @return a mocked QC
 	 */
-	public static QuorumCertificate ofGenesis(Vertex genesisVertex) {
+	public static QuorumCertificate ofGenesis(Vertex genesisVertex, LedgerState ledgerState) {
 		if (!genesisVertex.getView().isGenesis()) {
 			throw new IllegalArgumentException(String.format("Vertex is not genesis: %s", genesisVertex));
 		}
 
-		Header header = Header.ofGenesisVertex(genesisVertex);
+		Header header = Header.ofVertex(genesisVertex, ledgerState);
 		final VoteData voteData = new VoteData(header, header, header);
 		return new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 	}

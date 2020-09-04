@@ -247,6 +247,6 @@ public class MessageCentralValidatorSyncTest {
 
 		TestObserver<GetEpochResponse> testObserver = sync.epochResponses().test();
 		testObserver.awaitCount(1);
-		testObserver.assertValueAt(0, r -> r.getEpochAncestor().equals(ancestor) && r.getAuthor().equals(author));
+		testObserver.assertValueAt(0, r -> r.getEpochProof().equals(ancestor) && r.getAuthor().equals(author));
 	}
 }

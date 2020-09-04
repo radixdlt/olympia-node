@@ -88,21 +88,6 @@ public final class Header {
 		);
 	}
 
-	public static Header ofGenesisVertex(Vertex vertex) {
-		return new Header(
-			vertex.getEpoch(),
-			vertex.getView(),
-			vertex.getId(),
-			LedgerState.create(
-				vertex.getEpoch(),
-				vertex.getQC().getParent().getLedgerState().getStateVersion(),
-				Hash.ZERO_HASH,
-				0L,
-				false
-			)
-		);
-	}
-
 	public static Header ofVertex(Vertex vertex, LedgerState ledgerState) {
 		return new Header(
 			vertex.getEpoch(),

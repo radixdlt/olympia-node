@@ -83,10 +83,9 @@ public class VertexStoreTest {
 		BFTValidatorSet bftValidatorSet = BFTValidatorSet.from(ImmutableSet.of(
 			BFTValidator.from(BFTNode.create(keyPair.getPublicKey()), UInt256.ONE)
 		));
-		this.genesisVertex = Vertex.createGenesis(VerifiedCommittedHeader.ofGenesisAncestor(mock(LedgerState.class)));
-		this.genesisHeader = Header.ofGenesisVertex(genesisVertex);
-		VoteData voteData = new VoteData(genesisHeader, genesisHeader, genesisHeader);
-		this.rootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
+		this.genesisVertex = Vertex.createGenesis(1L, mock(LedgerState.class));
+		this.genesisHeader = Header.ofGenesisAncestor(mock(LedgerState.class));
+		this.rootQC = QuorumCertificate.ofGenesis(genesisVertex, mock(LedgerState.class));
 		// No type check issues with mocking generic here
 		Ledger ssc = mock(Ledger.class);
 		this.ledger = ssc;

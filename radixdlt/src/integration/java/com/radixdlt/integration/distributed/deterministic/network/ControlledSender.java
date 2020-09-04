@@ -170,12 +170,12 @@ public final class ControlledSender implements DeterministicSender {
 	}
 
 	private MessageRank messageRank(GetEpochResponse getEpochResponse) {
-		VerifiedCommittedHeader ancestorMetadata = getEpochResponse.getEpochAncestor();
+		VerifiedCommittedHeader ancestorMetadata = getEpochResponse.getEpochProof();
 		return MessageRank.of(ancestorMetadata.getEpoch(), ancestorMetadata.getView().number() + 3);
 	}
 
 	private MessageRank messageRank(EpochChange epochChange) {
-		VerifiedCommittedHeader ancestorMetadata = epochChange.getAncestor();
+		VerifiedCommittedHeader ancestorMetadata = epochChange.getProof();
 		return MessageRank.of(ancestorMetadata.getEpoch(), ancestorMetadata.getView().number() + 3);
 	}
 
@@ -188,7 +188,7 @@ public final class ControlledSender implements DeterministicSender {
 	}
 
 	private MessageRank messageRank(Header metadata, long viewIncrement) {
-		return MessageRank.of(metadata.getEpoch(), metadata.getView().number() + viewIncrement);
+		return MessageRank.of(metadata.getLedgerState().getEpoch(), metadata.getView().number() + viewIncrement);
 	}
 
 	private MessageRank messageRank(LocalTimeout localTimeout) {

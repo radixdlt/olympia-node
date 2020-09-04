@@ -46,9 +46,11 @@ public final class LedgerState implements Comparable<LedgerState> {
 	@DsonOutput(Output.ALL)
 	private final long epoch;
 
+	// Not used for anything now
+	// TODO: Change to accumulator
 	@JsonProperty("command_id")
 	@DsonOutput(Output.ALL)
-	private final Hash commandId; // TODO: Change to accumulator
+	private final Hash commandId;
 
 	@JsonProperty("timestamp")
 	@DsonOutput(Output.ALL)
@@ -84,8 +86,8 @@ public final class LedgerState implements Comparable<LedgerState> {
 		return new LedgerState(epoch, stateVersion, commandId, timestamp, isEndOfEpoch);
 	}
 
-	public Hash getCommandId() {
-		return commandId;
+	public long getEpoch() {
+		return epoch;
 	}
 
 	public long getStateVersion() {

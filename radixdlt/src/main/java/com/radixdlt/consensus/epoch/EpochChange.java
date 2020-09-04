@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus.epoch;
 
+import com.radixdlt.consensus.LedgerState;
 import com.radixdlt.consensus.VerifiedCommittedHeader;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import java.util.Objects;
@@ -25,16 +26,24 @@ import java.util.Objects;
  * An epoch change message to consensus
  */
 public final class EpochChange {
-	private final VerifiedCommittedHeader ancestor;
+	private final VerifiedCommittedHeader proof;
 	private final BFTValidatorSet validatorSet;
 
-	public EpochChange(VerifiedCommittedHeader ancestor, BFTValidatorSet validatorSet) {
-		this.ancestor = Objects.requireNonNull(ancestor);
+	public EpochChange(VerifiedCommittedHeader proof, BFTValidatorSet validatorSet) {
+		this.proof = Objects.requireNonNull(proof);
 		this.validatorSet = Objects.requireNonNull(validatorSet);
 	}
 
-	public VerifiedCommittedHeader getAncestor() {
-		return ancestor;
+	public long getEpoch() {
+		return proof.getEpoch() + 1;
+	}
+
+	public LedgerState getLedgerState() {
+		return proof.getLedgerState();
+	}
+
+	public VerifiedCommittedHeader getProof() {
+		return proof;
 	}
 
 	public BFTValidatorSet getValidatorSet() {
@@ -44,7 +53,7 @@ public final class EpochChange {
 	@Override
 	public String toString() {
 		return String.format(
-			"%s{ancestor=%s validatorSet=%s}", this.getClass().getSimpleName(), ancestor, validatorSet
+			"%s{proof=%s validatorSet=%s}", this.getClass().getSimpleName(), proof, validatorSet
 		);
 	}
 }

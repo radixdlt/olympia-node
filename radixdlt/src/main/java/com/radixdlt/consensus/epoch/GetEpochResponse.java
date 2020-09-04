@@ -24,11 +24,11 @@ import com.radixdlt.consensus.bft.BFTNode;
  * An RPC Response to a GetEpoch request
  */
 public final class GetEpochResponse {
-	private final VerifiedCommittedHeader epochAncestor;
+	private final VerifiedCommittedHeader proof;
 	private final BFTNode author;
 
-	public GetEpochResponse(BFTNode author, VerifiedCommittedHeader epochAncestor) {
-		this.epochAncestor = epochAncestor;
+	public GetEpochResponse(BFTNode author, VerifiedCommittedHeader proof) {
+		this.proof = proof;
 		this.author = author;
 	}
 
@@ -36,12 +36,12 @@ public final class GetEpochResponse {
 		return author;
 	}
 
-	public VerifiedCommittedHeader getEpochAncestor() {
-		return epochAncestor;
+	public VerifiedCommittedHeader getEpochProof() {
+		return proof;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{author=%s ancestor=%s}", this.getClass().getSimpleName(), this.author.getSimpleName(), this.epochAncestor);
+		return String.format("%s{author=%s proof=%s}", this.getClass().getSimpleName(), this.author.getSimpleName(), this.proof);
 	}
 }

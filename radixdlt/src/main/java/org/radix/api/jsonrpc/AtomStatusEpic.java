@@ -94,8 +94,7 @@ public class AtomStatusEpic {
 				// TODO: serialize vertexMetadata
 				VerifiedCommittedHeader header = committedAtom.getProof();
 				data.put("stateVersion", header.getLedgerState().getStateVersion());
-				data.put("epoch", header.getEpoch());
-				data.put("view", header.getView().number());
+				data.put("epoch", header.getLedgerState().getEpoch());
 				data.put("timestamp", header.getLedgerState().timestamp());
 
 				sendAtomSubmissionState.accept(AtomStatus.STORED, data);

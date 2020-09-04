@@ -24,6 +24,7 @@ import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.EmptyVertexStoreEventProcessor;
+import com.radixdlt.consensus.LedgerState;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.ProposerElectionFactory;
@@ -165,7 +166,7 @@ public final class EpochManager {
 
 	private void updateEpochState() {
 		BFTValidatorSet validatorSet = this.currentEpoch.getValidatorSet();
-		VerifiedCommittedHeader ancestorHeader = this.currentEpoch.getAncestor();
+		VerifiedCommittedHeader proof = this.currentEpoch.getProof();
 
 		final BFTEventProcessor bftEventProcessor;
 		final VertexStoreEventProcessor vertexStoreEventProcessor;
@@ -175,17 +176,23 @@ public final class EpochManager {
 			bftEventProcessor =  EmptyBFTEventProcessor.INSTANCE;
 			vertexStoreEventProcessor = EmptyVertexStoreEventProcessor.INSTANCE;
 		} else {
+			final long nextEpoch = this.currentEpoch.getEpoch();
 			logEpochChange(this.currentEpoch, "included in");
-
-			Vertex genesisVertex = Vertex.createGenesis(ancestorHeader);
-			final long nextEpoch = genesisVertex.getEpoch();
+			Vertex genesisVertex = Vertex.createGenesis(nextEpoch, this.currentEpoch.getLedgerState());
 
 			ProposerElection proposerElection = proposerElectionFactory.create(validatorSet);
 			TimeoutSender sender = (view, ms) -> localTimeoutSender.scheduleTimeout(new LocalTimeout(nextEpoch, view), ms);
 			Pacemaker pacemaker = pacemakerFactory.create(sender);
 
 			// TODO: Recover VertexStore
-			QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(genesisVertex);
+			LedgerState ledgerState = LedgerState.create(
+				this.currentEpoch.getEpoch(),
+				this.currentEpoch.getLedgerState().getStateVersion(),
+				Hash.ZERO_HASH,
+				0L,
+				false
+			);
+			QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(genesisVertex, ledgerState);
 			VertexStore vertexStore = vertexStoreFactory.create(genesisVertex, genesisQC, ledger);
 			vertexStoreEventProcessor = vertexStore;
 
@@ -223,28 +230,25 @@ public final class EpochManager {
 	}
 
 	private long currentEpoch() {
-		return this.currentEpoch.getAncestor().getEpoch() + 1;
+		return this.currentEpoch.getEpoch();
 	}
 
 	public void processEpochChange(EpochChange epochChange) {
-		log.trace("{}: EPOCH_CHANGE: {}", this.self, epochChange);
-		BFTValidatorSet validatorSet = epochChange.getValidatorSet();
-		VerifiedCommittedHeader ancestor = epochChange.getAncestor();
-		Vertex genesisVertex = Vertex.createGenesis(ancestor);
-		final long nextEpoch = genesisVertex.getEpoch();
-
 		// Sanity check
-		if (nextEpoch <= this.currentEpoch()) {
+		if (epochChange.getEpoch() <= this.currentEpoch()) {
 			throw new IllegalStateException("Epoch change has already occurred: " + epochChange);
 		}
 
+		log.trace("{}: EPOCH_CHANGE: {}", this.self, epochChange);
+
 		// If constructed the end of the previous epoch then broadcast new epoch to new validator set
 		// TODO: Move this into when lastConstructed is set
-		if (lastConstructed != null && lastConstructed.getEpoch() == ancestor.getEpoch()) {
+		if (lastConstructed != null && lastConstructed.getLedgerState().getEpoch() == epochChange.getEpoch() - 1) {
 			log.info("{}: EPOCH_CHANGE: broadcasting next epoch", this.self);
+			BFTValidatorSet validatorSet = epochChange.getValidatorSet();
 			for (BFTValidator validator : validatorSet.getValidators()) {
 				if (!validator.getNode().equals(self)) {
-					epochsRPCSender.sendGetEpochResponse(validator.getNode(), ancestor);
+					epochsRPCSender.sendGetEpochResponse(validator.getNode(), epochChange.getProof());
 				}
 			}
 		}
@@ -254,14 +258,14 @@ public final class EpochManager {
 		this.bftEventProcessor.start();
 
 		// Execute any queued up consensus events
-		final List<ConsensusEvent> queuedEventsForEpoch = queuedEvents.getOrDefault(nextEpoch, Collections.emptyList());
+		final List<ConsensusEvent> queuedEventsForEpoch = queuedEvents.getOrDefault(epochChange.getEpoch(), Collections.emptyList());
 		for (ConsensusEvent consensusEvent : queuedEventsForEpoch) {
 			this.processConsensusEventInternal(consensusEvent);
 		}
 
 		numQueuedConsensusEvents -= queuedEventsForEpoch.size();
 		counters.set(CounterType.EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS, numQueuedConsensusEvents);
-		queuedEvents.remove(nextEpoch);
+		queuedEvents.remove(epochChange.getEpoch());
 	}
 
 	private void logEpochChange(EpochChange epochChange, String message) {
@@ -271,7 +275,7 @@ public final class EpochManager {
 			StringBuilder epochMessage = new StringBuilder(this.self.getSimpleName());
 			epochMessage.append(": EPOCH_CHANGE: ");
 			epochMessage.append(message);
-			epochMessage.append(" new epoch ").append(epochChange.getAncestor().getEpoch() + 1);
+			epochMessage.append(" new epoch ").append(epochChange.getEpoch());
 			epochMessage.append(" with ").append(epochChange.getValidatorSet().getValidators().size()).append(" validators: ");
 			Iterator<BFTValidator> i = epochChange.getValidatorSet().getValidators().iterator();
 			if (i.hasNext()) {
@@ -293,7 +297,7 @@ public final class EpochManager {
 
 	private void processEndOfEpoch(Header header) {
 		log.trace("{}: END_OF_EPOCH: {}", this.self, header);
-		if (this.lastConstructed == null || this.lastConstructed.getEpoch() < header.getEpoch()) {
+		if (this.lastConstructed == null || this.lastConstructed.getLedgerState().getEpoch() < header.getLedgerState().getEpoch()) {
 			this.lastConstructed = header;
 
 			// Stop processing new events if end of epoch
@@ -306,7 +310,7 @@ public final class EpochManager {
 		log.trace("{}: GET_EPOCH_REQUEST: {}", this.self, request);
 
 		if (this.currentEpoch() > request.getEpoch()) {
-			epochsRPCSender.sendGetEpochResponse(request.getAuthor(), this.currentEpoch.getAncestor());
+			epochsRPCSender.sendGetEpochResponse(request.getAuthor(), this.currentEpoch.getProof());
 		} else {
 			log.warn("{}: GET_EPOCH_REQUEST: {} but currently on epoch: {}",
 				this.self::getSimpleName, () -> request, this::currentEpoch
@@ -320,13 +324,13 @@ public final class EpochManager {
 	public void processGetEpochResponse(GetEpochResponse response) {
 		log.trace("{}: GET_EPOCH_RESPONSE: {}", this.self, response);
 
-		if (response.getEpochAncestor() == null) {
+		if (response.getEpochProof() == null) {
 			log.warn("{}: Received empty GetEpochResponse {}", this.self, response);
 			// TODO: retry
 			return;
 		}
 
-		final VerifiedCommittedHeader ancestor = response.getEpochAncestor();
+		final VerifiedCommittedHeader ancestor = response.getEpochProof();
 		if (ancestor.getEpoch() >= this.currentEpoch()) {
 			syncRequestSender.sendLocalSyncRequest(new LocalSyncRequest(ancestor, ImmutableList.of(response.getAuthor())));
 		} else {

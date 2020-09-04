@@ -76,7 +76,7 @@ public final class Vote implements ConsensusEvent {
 
 	@Override
 	public long getEpoch() {
-		return voteData.getVoteData().getProposed().getEpoch();
+		return voteData.getVoteData().getProposed().getLedgerState().getEpoch();
 	}
 
 	@Override

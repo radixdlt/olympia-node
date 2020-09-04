@@ -60,7 +60,7 @@ public class MockedLedgerModule extends AbstractModule {
 		return new Ledger() {
 			@Override
 			public LedgerState prepare(Vertex vertex) {
-				return LedgerState.create(initialEpoch.getAncestor().getEpoch() + 1, 0, Hash.ZERO_HASH, 0L, false);
+				return LedgerState.create(initialEpoch.getProof().getEpoch() + 1, 0, Hash.ZERO_HASH, 0L, false);
 			}
 
 			@Override

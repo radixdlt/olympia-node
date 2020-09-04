@@ -86,8 +86,11 @@ public class SafetyInvariant implements TestInvariant {
 					if (parent == null) {
 						Entry<EpochView, Vertex> higherCommitted = committedVertices.higherEntry(parentEpochView);
 						if (higherCommitted != null) {
-							Header higherParentMetadata = higherCommitted.getValue().getParentMetadata();
-							EpochView higherCommittedParentEpochView = EpochView.of(higherParentMetadata.getEpoch(), higherParentMetadata.getView());
+							Header higherParentHeader = higherCommitted.getValue().getParentMetadata();
+							EpochView higherCommittedParentEpochView = EpochView.of(
+								higherParentHeader.getLedgerState().getEpoch(),
+								higherParentHeader.getView()
+							);
 							if (epochView.compareTo(higherCommittedParentEpochView) > 0) {
 								return brokenChainError(vertex, higherCommitted.getValue());
 							}
