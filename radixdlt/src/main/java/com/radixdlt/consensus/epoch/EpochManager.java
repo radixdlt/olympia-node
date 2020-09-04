@@ -32,7 +32,7 @@ import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.VerifiedCommittedHeader;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.Header;
+import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.VertexStoreEventProcessor;
 import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.bft.View;
@@ -127,7 +127,7 @@ public final class EpochManager {
 	private final EpochInfoSender epochInfoSender;
 	private final SyncRequestSender syncRequestSender;
 
-	private Header lastConstructed = null;
+	private BFTHeader lastConstructed = null;
 	private EpochChange currentEpoch;
 	private VertexStoreEventProcessor vertexStoreEventProcessor;
 	private BFTEventProcessor bftEventProcessor;
@@ -286,7 +286,7 @@ public final class EpochManager {
 		msg.append(v.getNode().getSimpleName()).append(':').append(v.getPower());
 	}
 
-	private void processEndOfEpoch(Header header) {
+	private void processEndOfEpoch(BFTHeader header) {
 		log.trace("{}: END_OF_EPOCH: {}", this.self, header);
 		if (this.lastConstructed == null || this.lastConstructed.getLedgerState().getEpoch() < header.getLedgerState().getEpoch()) {
 			this.lastConstructed = header;

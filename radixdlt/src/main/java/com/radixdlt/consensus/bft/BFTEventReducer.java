@@ -25,7 +25,7 @@ import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.Header;
+import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
@@ -36,6 +36,7 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.network.TimeSupplier;
+import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.RTTStatistics;
 
 import java.util.EnumMap;
@@ -123,7 +124,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private boolean synchedLog = false;
 
 	public interface EndOfEpochSender {
-		void sendEndOfEpoch(Header header);
+		void sendEndOfEpoch(BFTHeader header);
 	}
 
 	public BFTEventReducer(
@@ -174,9 +175,10 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		this.pacemaker.processQC(qc.getView())
 			.ifPresent(this::proceedToView);
 
-		Optional<VerifiedCommittedHeader> committedProof = qc.toProof();
-		committedProof.ifPresent(vertexStore::commit);
-		return committedProof;
+		qc.getCommittedAndLedgerStateProof()
+			.ifPresent(pair -> vertexStore.commit(pair.getFirst(), pair.getSecond()));
+
+		return qc.getCommittedAndLedgerStateProof().map(Pair::getSecond);
 	}
 
 	@Override
@@ -271,7 +273,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			return;
 		}
 
-		final Header header;
+		final BFTHeader header;
 		try {
 			header = vertexStore.insertVertex(proposedVertex);
 		} catch (VertexInsertionException e) {

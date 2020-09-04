@@ -43,7 +43,7 @@ import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.Header;
+import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.bft.VertexStore.SyncedVertexSender;
@@ -67,7 +67,7 @@ public class VertexStoreTest {
 	private Vertex genesisVertex;
 	private Supplier<Vertex> nextVertex;
 	private Function<Boolean, Vertex> nextSkippableVertex;
-	private Header genesisHeader;
+	private BFTHeader genesisHeader;
 	private QuorumCertificate rootQC;
 	private VertexStore vertexStore;
 	private Ledger ledger;
@@ -84,7 +84,7 @@ public class VertexStoreTest {
 			BFTValidator.from(BFTNode.create(keyPair.getPublicKey()), UInt256.ONE)
 		));
 		this.genesisVertex = Vertex.createGenesis(mock(LedgerState.class));
-		this.genesisHeader = Header.ofGenesisAncestor(mock(LedgerState.class));
+		this.genesisHeader = BFTHeader.ofGenesisAncestor(mock(LedgerState.class));
 		this.rootQC = QuorumCertificate.ofGenesis(genesisVertex, mock(LedgerState.class));
 		// No type check issues with mocking generic here
 		Ledger ssc = mock(Ledger.class);
@@ -111,7 +111,7 @@ public class VertexStoreTest {
 			Vertex parentVertex = lastVertex.get();
 			final QuorumCertificate qc;
 			if (!parentVertex.getView().equals(View.genesis())) {
-				Header parent = Header.ofVertex(parentVertex, mock(LedgerState.class));
+				BFTHeader parent = BFTHeader.ofVertex(parentVertex, mock(LedgerState.class));
 				VoteData data = new VoteData(parent, parentVertex.getQC().getProposed(), skipOne ? null : parentVertex.getQC().getParent());
 				qc = new QuorumCertificate(data, new TimestampedECDSASignatures());
 			} else {
@@ -136,7 +136,7 @@ public class VertexStoreTest {
 	@Test
 	public void when_vertex_store_created_with_incorrect_roots__then_exception_is_thrown() {
 		Vertex nextVertex = this.nextVertex.get();
-		Header nextHeader = Header.ofVertex(nextVertex, mock(LedgerState.class));
+		BFTHeader nextHeader = BFTHeader.ofVertex(nextVertex, mock(LedgerState.class));
 
 		VoteData voteData = new VoteData(nextHeader, genesisHeader, null);
 		QuorumCertificate badRootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
@@ -192,9 +192,9 @@ public class VertexStoreTest {
 	@Test
 	public void when_vertex_retriever_succeeds__then_vertex_is_inserted() {
 		Vertex vertex = this.nextVertex.get();
-		VoteData voteData = new VoteData(Header.ofVertex(vertex, mock(LedgerState.class)), genesisHeader, null);
+		VoteData voteData = new VoteData(BFTHeader.ofVertex(vertex, mock(LedgerState.class)), genesisHeader, null);
 		QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-		Header header = mock(Header.class);
+		BFTHeader header = mock(BFTHeader.class);
 		when(header.getVertexId()).thenReturn(vertex.getId());
 
 		BFTNode author = mock(BFTNode.class);
@@ -230,10 +230,10 @@ public class VertexStoreTest {
 
 	@Test
 	public void when_committing_vertex_which_was_not_inserted__then_illegal_state_exception_is_thrown() {
-		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
-		when(proof.getView()).thenReturn(View.of(2));
-		when(proof.getVertexId()).thenReturn(mock(Hash.class));
-		assertThatThrownBy(() -> vertexStore.commit(proof))
+		BFTHeader header = mock(BFTHeader.class);
+		when(header.getView()).thenReturn(View.of(2));
+		when(header.getVertexId()).thenReturn(mock(Hash.class));
+		assertThatThrownBy(() -> vertexStore.commit(header, mock(VerifiedCommittedHeader.class)))
 			.isInstanceOf(IllegalStateException.class);
 	}
 
@@ -258,15 +258,15 @@ public class VertexStoreTest {
 				counters
 			);
 
-		VerifiedCommittedHeader proof2 = mock(VerifiedCommittedHeader.class);
-		when(proof2.getView()).thenReturn(vertex2.getView());
-		when(proof2.getVertexId()).thenReturn(vertex2.getId());
-		assertThat(vertexStore.commit(proof2)).isPresent();
+		BFTHeader header = mock(BFTHeader.class);
+		when(header.getView()).thenReturn(vertex2.getView());
+		when(header.getVertexId()).thenReturn(vertex2.getId());
+		assertThat(vertexStore.commit(header, mock(VerifiedCommittedHeader.class))).isPresent();
 
-		VerifiedCommittedHeader proof1 = mock(VerifiedCommittedHeader.class);
-		when(proof1.getView()).thenReturn(vertex1.getView());
-		when(proof1.getVertexId()).thenReturn(vertex1.getId());
-		assertThat(vertexStore.commit(proof1)).isNotPresent();
+		BFTHeader header1 = mock(BFTHeader.class);
+		when(header1.getView()).thenReturn(vertex1.getView());
+		when(header1.getVertexId()).thenReturn(vertex1.getId());
+		assertThat(vertexStore.commit(header1, mock(VerifiedCommittedHeader.class))).isNotPresent();
 	}
 
 	@Test
@@ -287,9 +287,11 @@ public class VertexStoreTest {
 		vertexStore.insertVertex(nextVertex);
 
 		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
-		when(proof.getView()).thenReturn(nextVertex.getView());
-		when(proof.getVertexId()).thenReturn(nextVertex.getId());
-		assertThat(vertexStore.commit(proof)).hasValue(nextVertex);
+
+		BFTHeader header = mock(BFTHeader.class);
+		when(header.getView()).thenReturn(nextVertex.getView());
+		when(header.getVertexId()).thenReturn(nextVertex.getId());
+		assertThat(vertexStore.commit(header, proof)).hasValue(nextVertex);
 
 		verify(vertexStoreEventSender, times(1))
 			.sendCommittedVertex(eq(nextVertex));
@@ -313,10 +315,10 @@ public class VertexStoreTest {
 		Vertex vertex = nextVertex.get();
 		vertexStore.insertVertex(vertex);
 
-		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
-		when(proof.getView()).thenReturn(vertex.getView());
-		when(proof.getVertexId()).thenReturn(vertex.getId());
-		assertThat(vertexStore.commit(proof)).hasValue(vertex);
+		BFTHeader header = mock(BFTHeader.class);
+		when(header.getView()).thenReturn(vertex.getView());
+		when(header.getVertexId()).thenReturn(vertex.getId());
+		assertThat(vertexStore.commit(header, mock(VerifiedCommittedHeader.class))).hasValue(vertex);
 		verify(vertexStoreEventSender, times(1)).sendCommittedVertex(eq(vertex));
 		assertThat(vertexStore.getSize()).isEqualTo(1);
 	}
@@ -327,17 +329,17 @@ public class VertexStoreTest {
 
 		Vertex nextVertex1 = nextVertex.get();
 		vertexStore.insertVertex(nextVertex1);
-		VerifiedCommittedHeader proof1 = mock(VerifiedCommittedHeader.class);
-		when(proof1.getView()).thenReturn(nextVertex1.getView());
-		when(proof1.getVertexId()).thenReturn(nextVertex1.getId());
-		vertexStore.commit(proof1);
+		BFTHeader header = mock(BFTHeader.class);
+		when(header.getView()).thenReturn(nextVertex1.getView());
+		when(header.getVertexId()).thenReturn(nextVertex1.getId());
+		vertexStore.commit(header, mock(VerifiedCommittedHeader.class));
 
 		Vertex nextVertex2 = nextVertex.get();
 		vertexStore.insertVertex(nextVertex2);
-		VerifiedCommittedHeader proof2 = mock(VerifiedCommittedHeader.class);
-		when(proof2.getView()).thenReturn(nextVertex2.getView());
-		when(proof2.getVertexId()).thenReturn(nextVertex2.getId());
-		vertexStore.commit(proof2);
+		BFTHeader header2 = mock(BFTHeader.class);
+		when(header2.getView()).thenReturn(nextVertex2.getView());
+		when(header2.getVertexId()).thenReturn(nextVertex2.getId());
+		vertexStore.commit(header2, mock(VerifiedCommittedHeader.class));
 
 		verify(vertexStoreEventSender, times(1)).sendCommittedVertex(eq(nextVertex1));
 		verify(vertexStoreEventSender, times(1)).sendCommittedVertex(eq(nextVertex2));
@@ -352,18 +354,18 @@ public class VertexStoreTest {
 		vertexStore.insertVertex(nextVertex1);
 
 		QuorumCertificate qc = mock(QuorumCertificate.class);
-		Header header1 = mock(Header.class);
+		BFTHeader header1 = mock(BFTHeader.class);
 		when(header1.getVertexId()).thenReturn(nextVertex1.getId());
 		when(header1.getView()).thenReturn(nextVertex1.getView());
 		when(qc.getProposed()).thenReturn(header1);
 
 		Vertex nextVertex2 = nextVertex.get();
 		vertexStore.insertVertex(nextVertex2);
-		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
-		when(proof.getVertexId()).thenReturn(nextVertex2.getId());
-		when(proof.getView()).thenReturn(nextVertex2.getView());
+		BFTHeader header = mock(BFTHeader.class);
+		when(header.getVertexId()).thenReturn(nextVertex2.getId());
+		when(header.getView()).thenReturn(nextVertex2.getView());
 
-		vertexStore.commit(proof);
+		vertexStore.commit(header, mock(VerifiedCommittedHeader.class));
 		verify(vertexStoreEventSender, times(1)).sendCommittedVertex(eq(nextVertex1));
 		verify(vertexStoreEventSender, times(1)).sendCommittedVertex(eq(nextVertex2));
 		assertThat(vertexStore.getSize()).isEqualTo(1);
@@ -374,7 +376,7 @@ public class VertexStoreTest {
 		Vertex vertex = nextVertex.get();
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 
-		Header header = mock(Header.class);
+		BFTHeader header = mock(BFTHeader.class);
 		when(header.getVertexId()).thenReturn(vertex.getId());
 		when(header.getView()).thenReturn(vertex.getView());
 		when(qc.getProposed()).thenReturn(header);
@@ -392,7 +394,7 @@ public class VertexStoreTest {
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		when(qc.getView()).thenReturn(View.of(1));
 
-		Header header = mock(Header.class);
+		BFTHeader header = mock(BFTHeader.class);
 		when(header.getVertexId()).thenReturn(vertex.getId());
 		when(header.getView()).thenReturn(vertex.getView());
 
@@ -406,7 +408,7 @@ public class VertexStoreTest {
 		Vertex vertex = nextVertex.get();
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 
-		Header header = mock(Header.class);
+		BFTHeader header = mock(BFTHeader.class);
 		when(header.getVertexId()).thenReturn(vertex.getId());
 		when(header.getView()).thenReturn(vertex.getView());
 		when(qc.getProposed()).thenReturn(header);

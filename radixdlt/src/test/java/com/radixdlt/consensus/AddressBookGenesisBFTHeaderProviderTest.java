@@ -30,7 +30,7 @@ import java.util.stream.Stream;
 import org.junit.Test;
 import org.radix.universe.system.RadixSystem;
 
-public class AddressBookGenesisHeaderProviderTest {
+public class AddressBookGenesisBFTHeaderProviderTest {
 	@Test
 	public void when_quorum_size_is_one__then_should_emit_self() {
 		ECPublicKey self = mock(ECPublicKey.class);

@@ -43,7 +43,7 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedCommittedHeader;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.Header;
+import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.Vote;
@@ -234,7 +234,7 @@ public class EpochManagerTest {
 		when(epochChange0.getNextLedgerState()).thenReturn(mock(LedgerState.class));
 		epochManager.processEpochChange(epochChange0);
 
-		Header nextAncestor = mock(Header.class);
+		BFTHeader nextAncestor = mock(BFTHeader.class);
 		LedgerState ledgerState = mock(LedgerState.class);
 		when(ledgerState.getEpoch()).thenReturn(2L);
 		when(nextAncestor.getLedgerState()).thenReturn(ledgerState);
@@ -304,7 +304,7 @@ public class EpochManagerTest {
 
 		Vote vote = mock(Vote.class);
 		VoteData voteData = mock(VoteData.class);
-		Header proposed = mock(Header.class);
+		BFTHeader proposed = mock(BFTHeader.class);
 		when(proposed.getView()).thenReturn(View.of(1));
 		when(voteData.getProposed()).thenReturn(proposed);
 		when(vote.getVoteData()).thenReturn(voteData);

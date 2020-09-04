@@ -24,7 +24,7 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.Header;
+import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.crypto.Hash;
 
 public class VertexSerializeTest extends SerializeObject<Vertex> {
@@ -35,8 +35,8 @@ public class VertexSerializeTest extends SerializeObject<Vertex> {
 	private static Vertex get() {
 		View view = View.of(1234567891L);
 		LedgerState ledgerState = LedgerState.create(0, 0, Hash.random(), 0L, false);
-		Header header = new Header(view, Hash.random(), ledgerState);
-		Header parent = new Header(View.of(1234567890L), Hash.random(), ledgerState);
+		BFTHeader header = new BFTHeader(view, Hash.random(), ledgerState);
+		BFTHeader parent = new BFTHeader(View.of(1234567890L), Hash.random(), ledgerState);
 		VoteData voteData = new VoteData(header, parent, null);
 
 		QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());

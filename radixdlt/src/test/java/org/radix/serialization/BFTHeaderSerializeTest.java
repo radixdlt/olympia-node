@@ -19,17 +19,17 @@ package org.radix.serialization;
 
 import com.radixdlt.consensus.LedgerState;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.Header;
+import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.crypto.Hash;
 
-public class HeaderSerializeTest extends SerializeObject<Header> {
-	public HeaderSerializeTest() {
-		super(Header.class, HeaderSerializeTest::get);
+public class BFTHeaderSerializeTest extends SerializeObject<BFTHeader> {
+	public BFTHeaderSerializeTest() {
+		super(BFTHeader.class, BFTHeaderSerializeTest::get);
 	}
 
-	private static Header get() {
+	private static BFTHeader get() {
 		View view = View.of(1234567890L);
 		LedgerState ledgerState = LedgerState.create(0, 0, Hash.random(), 0L, false);
-		return new Header(view, Hash.random(), ledgerState);
+		return new BFTHeader(view, Hash.random(), ledgerState);
 	}
 }

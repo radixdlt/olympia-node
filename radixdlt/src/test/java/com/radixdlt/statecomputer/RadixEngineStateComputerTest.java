@@ -102,7 +102,6 @@ public class RadixEngineStateComputerTest {
 		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenReturn(clientAtom);
 
 		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
-		when(proof.getView()).then(i -> View.of(50));
 		LedgerState ledgerState = mock(LedgerState.class);
 		when(ledgerState.getStateVersion()).thenReturn(1L);
 		when(ledgerState.isEndOfEpoch()).thenReturn(false);
@@ -158,7 +157,6 @@ public class RadixEngineStateComputerTest {
 
 		Command cmd = new Command(new byte[] {0, 1});
 		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
-		when(proof.getView()).then(i -> View.of(50));
 		LedgerState ledgerState = mock(LedgerState.class);
 		when(ledgerState.getStateVersion()).thenReturn(1L);
 		when(ledgerState.isEndOfEpoch()).thenReturn(false);

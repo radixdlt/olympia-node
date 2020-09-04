@@ -18,7 +18,7 @@
 package com.radixdlt.integration.distributed.simulation.invariants.consensus;
 
 import com.google.common.collect.Ordering;
-import com.radixdlt.consensus.Header;
+import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.integration.distributed.simulation.TestInvariant;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
@@ -36,8 +36,8 @@ import java.util.stream.Collectors;
 public class LivenessInvariant implements TestInvariant {
 	private final long duration;
 	private final TimeUnit timeUnit;
-	private final Comparator<Header> vertexMetadataComparator =
-		Comparator.<Header>comparingLong(h -> h.getLedgerState().getEpoch()).thenComparing(Header::getView);
+	private final Comparator<BFTHeader> vertexMetadataComparator =
+		Comparator.<BFTHeader>comparingLong(h -> h.getLedgerState().getEpoch()).thenComparing(BFTHeader::getView);
 
 	public LivenessInvariant(long duration, TimeUnit timeUnit) {
 		this.duration = duration;
@@ -46,12 +46,12 @@ public class LivenessInvariant implements TestInvariant {
 
 	@Override
 	public Observable<TestInvariantError> check(RunningNetwork network) {
-		final Header genesisAncestor = network.initialEpoch().getProof().getHeader();
-		AtomicReference<Pair<Header, Long>> highestVertexMetadata = new AtomicReference<>(
+		final BFTHeader genesisAncestor = network.initialEpoch().getProof().getHeader();
+		AtomicReference<Pair<BFTHeader, Long>> highestVertexMetadata = new AtomicReference<>(
 			Pair.of(genesisAncestor, 0L)
 		);
 
-		Observable<Header> highest = Observable.merge(
+		Observable<BFTHeader> highest = Observable.merge(
 			network.getNodes().stream()
 				.map(network::getInfo)
 				.map(eventsRx -> eventsRx.highQCs().map(QuorumCertificate::getProposed))

@@ -23,7 +23,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.TimestampedVoteData;
-import com.radixdlt.consensus.Header;
+import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.crypto.Hash;
 
@@ -37,8 +37,8 @@ public class VoteSerializeTest extends SerializeObject<Vote> {
 		Hash id = Hash.random();
 
 		LedgerState ledgerState = LedgerState.create(0, 1, Hash.random(), 0L, false);
-		Header header = new Header(view, id, ledgerState);
-		Header parent = new Header(View.of(1234567890L), Hash.random(), ledgerState);
+		BFTHeader header = new BFTHeader(view, id, ledgerState);
+		BFTHeader parent = new BFTHeader(View.of(1234567890L), Hash.random(), ledgerState);
 		VoteData voteData = new VoteData(header, parent, null);
 		TimestampedVoteData timestampedVoteData = new TimestampedVoteData(voteData, 123456L);
 		BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());

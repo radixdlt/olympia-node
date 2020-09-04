@@ -43,36 +43,36 @@ public final class VoteData {
 
 	@JsonProperty("proposed")
 	@DsonOutput(Output.ALL)
-	private final Header proposed;
+	private final BFTHeader proposed;
 
 	@JsonProperty("parent")
 	@DsonOutput(Output.ALL)
-	private final Header parent;
+	private final BFTHeader parent;
 
 	@JsonProperty("committed")
 	@DsonOutput(Output.ALL)
-	private final Header committed;
+	private final BFTHeader committed;
 
 	@JsonCreator
 	public VoteData(
-		@JsonProperty("proposed") Header proposed,
-		@JsonProperty("parent") Header parent,
-		@JsonProperty("committed") Header committed
+		@JsonProperty("proposed") BFTHeader proposed,
+		@JsonProperty("parent") BFTHeader parent,
+		@JsonProperty("committed") BFTHeader committed
 	) {
 		this.proposed = Objects.requireNonNull(proposed);
 		this.parent = Objects.requireNonNull(parent);
 		this.committed = committed;
 	}
 
-	public Header getProposed() {
+	public BFTHeader getProposed() {
 		return proposed;
 	}
 
-	public Header getParent() {
+	public BFTHeader getParent() {
 		return parent;
 	}
 
-	public Optional<Header> getCommitted() {
+	public Optional<BFTHeader> getCommitted() {
 		return Optional.ofNullable(committed);
 	}
 

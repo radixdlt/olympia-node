@@ -38,7 +38,7 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.VerifiedCommittedHeader;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.Header;
+import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
@@ -99,7 +99,7 @@ public class StateComputerLedgerTest {
 		when(ledgerState.isEndOfEpoch()).thenReturn(false);
 		when(ledgerState.getStateVersion()).thenReturn(12345L);
 
-		Header parent = mock(Header.class);
+		BFTHeader parent = mock(BFTHeader.class);
 		when(parent.getLedgerState()).thenReturn(ledgerState);
 		when(qc.getProposed()).thenReturn(parent);
 		when(qc.getTimestampedSignatures()).thenReturn(new TimestampedECDSASignatures());
@@ -119,7 +119,7 @@ public class StateComputerLedgerTest {
 		when(ledgerState.isEndOfEpoch()).thenReturn(false);
 		when(ledgerState.getStateVersion()).thenReturn(12345L);
 
-		Header parent = mock(Header.class);
+		BFTHeader parent = mock(BFTHeader.class);
 		when(parent.getLedgerState()).thenReturn(ledgerState);
 		when(qc.getProposed()).thenReturn(parent);
 		when(qc.getTimestampedSignatures()).thenReturn(new TimestampedECDSASignatures());
@@ -139,7 +139,7 @@ public class StateComputerLedgerTest {
 		when(ledgerState.isEndOfEpoch()).thenReturn(false);
 		when(ledgerState.getStateVersion()).thenReturn(12345L);
 
-		Header parent = mock(Header.class);
+		BFTHeader parent = mock(BFTHeader.class);
 		when(parent.getLedgerState()).thenReturn(ledgerState);
 		when(qc.getProposed()).thenReturn(parent);
 		when(qc.getTimestampedSignatures()).thenReturn(new TimestampedECDSASignatures());
@@ -160,7 +160,7 @@ public class StateComputerLedgerTest {
 		when(ledgerState.isEndOfEpoch()).thenReturn(false);
 		when(ledgerState.getStateVersion()).thenReturn(12345L);
 
-		Header parent = mock(Header.class);
+		BFTHeader parent = mock(BFTHeader.class);
 		when(parent.getLedgerState()).thenReturn(ledgerState);
 		when(qc.getProposed()).thenReturn(parent);
 		when(qc.getTimestampedSignatures()).thenReturn(new TimestampedECDSASignatures());
@@ -182,7 +182,6 @@ public class StateComputerLedgerTest {
 
 		VerifiedCommittedCommands verified = mock(VerifiedCommittedCommands.class);
 		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
-		when(proof.getView()).then(i -> View.of(50));
 		when(proof.getLedgerState()).thenReturn(ledgerState);
 		when(verified.getProof()).thenReturn(proof);
 

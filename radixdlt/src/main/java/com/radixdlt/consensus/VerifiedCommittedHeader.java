@@ -19,7 +19,6 @@ package com.radixdlt.consensus;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -38,15 +37,15 @@ public final class VerifiedCommittedHeader {
 
 	@JsonProperty("opaque0")
 	@DsonOutput(Output.ALL)
-	private final Header opaque0;
+	private final BFTHeader opaque0;
 
 	@JsonProperty("opaque1")
 	@DsonOutput(Output.ALL)
-	private final Header opaque1;
+	private final BFTHeader opaque1;
 
 	@JsonProperty("header")
 	@DsonOutput(Output.ALL)
-	private final Header header;
+	private final BFTHeader header;
 
 	@JsonProperty("signatures")
 	@DsonOutput(Output.ALL)
@@ -54,9 +53,9 @@ public final class VerifiedCommittedHeader {
 
 	@JsonCreator
 	public VerifiedCommittedHeader(
-		@JsonProperty("opaque0") Header opaque0,
-		@JsonProperty("opaque1") Header opaque1,
-		@JsonProperty("header") Header header,
+		@JsonProperty("opaque0") BFTHeader opaque0,
+		@JsonProperty("opaque1") BFTHeader opaque1,
+		@JsonProperty("header") BFTHeader header,
 		@JsonProperty("signatures") TimestampedECDSASignatures signatures
 	) {
 		this.opaque0 = Objects.requireNonNull(opaque0);
@@ -66,7 +65,7 @@ public final class VerifiedCommittedHeader {
 	}
 
 	public static VerifiedCommittedHeader ofGenesisAncestor(LedgerState ledgerState) {
-		Header header = Header.ofGenesisAncestor(ledgerState);
+		BFTHeader header = BFTHeader.ofGenesisAncestor(ledgerState);
 		return new VerifiedCommittedHeader(
 			header,
 			header,
@@ -83,15 +82,11 @@ public final class VerifiedCommittedHeader {
 		return header.getLedgerState().getEpoch();
 	}
 
-	public View getView() {
-		return header.getView();
-	}
-
 	public Hash getVertexId() {
 		return header.getVertexId();
 	}
 
-	public Header getHeader() {
+	public BFTHeader getHeader() {
 		return header;
 	}
 

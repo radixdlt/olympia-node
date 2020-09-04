@@ -31,11 +31,11 @@ import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.serialization.DsonOutput.Output;
 
 /**
- * The header which gets voted upon by consensus.
+ * The bft header which gets voted upon by consensus.
  */
 @Immutable
-@SerializerId2("consensus.header")
-public final class Header {
+@SerializerId2("consensus.bft_header")
+public final class BFTHeader {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
@@ -50,7 +50,7 @@ public final class Header {
 	@DsonOutput(Output.ALL)
 	private final LedgerState ledgerState;
 
-	Header() {
+	BFTHeader() {
 		// Serializer only
 		this.view = null;
 		this.vertexId = null;
@@ -58,7 +58,7 @@ public final class Header {
 	}
 
 	// TODO: Move command output to a more opaque data structure
-	public Header(
+	public BFTHeader(
 		View view, // consensus data
 		Hash vertexId, // consensus data
 		LedgerState ledgerState
@@ -68,16 +68,16 @@ public final class Header {
 		this.ledgerState = ledgerState;
 	}
 
-	public static Header ofGenesisAncestor(LedgerState ledgerState) {
-		return new Header(
+	public static BFTHeader ofGenesisAncestor(LedgerState ledgerState) {
+		return new BFTHeader(
 			View.genesis(),
 			Hash.ZERO_HASH,
 			ledgerState
 		);
 	}
 
-	public static Header ofVertex(Vertex vertex, LedgerState ledgerState) {
-		return new Header(
+	public static BFTHeader ofVertex(Vertex vertex, LedgerState ledgerState) {
+		return new BFTHeader(
 			vertex.getView(),
 			vertex.getId(),
 			ledgerState
@@ -117,8 +117,8 @@ public final class Header {
 		if (o == this) {
 			return true;
 		}
-		if (o instanceof Header) {
-			Header other = (Header) o;
+		if (o instanceof BFTHeader) {
+			BFTHeader other = (BFTHeader) o;
 			return
 				Objects.equals(this.view, other.view)
 				&& Objects.equals(this.vertexId, other.vertexId)

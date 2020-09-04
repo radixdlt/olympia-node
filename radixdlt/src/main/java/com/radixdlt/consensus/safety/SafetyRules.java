@@ -24,7 +24,7 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimestampedVoteData;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.Header;
+import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
@@ -94,12 +94,12 @@ public final class SafetyRules {
 		return new Proposal(proposedVertex, highestCommittedQC, this.self, signature, payload);
 	}
 
-	private static VoteData constructVoteData(Vertex proposedVertex, Header proposedHeader) {
-		final Header parent = proposedVertex.getQC().getProposed();
+	private static VoteData constructVoteData(Vertex proposedVertex, BFTHeader proposedHeader) {
+		final BFTHeader parent = proposedVertex.getQC().getProposed();
 
 		// Add a vertex to commit if creating a quorum for the proposed vertex would
 		// create three consecutive qcs.
-		final Header toCommit;
+		final BFTHeader toCommit;
 		if (proposedVertex.getView().equals(proposedVertex.getParentHeader().getView().next())
 			&& !proposedVertex.getParentHeader().getView().isGenesis() && !proposedVertex.getGrandParentHeader().getView().isGenesis()
 			&& proposedVertex.getParentHeader().getView().equals(proposedVertex.getGrandParentHeader().getView().next())
@@ -140,7 +140,7 @@ public final class SafetyRules {
 	 * @return A vote result containing the vote and any committed vertices
 	 * @throws SafetyViolationException In case the vertex would violate a safety invariant
 	 */
-	public Vote voteFor(Vertex proposedVertex, Header proposedHeader, long timestamp, long payload) throws SafetyViolationException {
+	public Vote voteFor(Vertex proposedVertex, BFTHeader proposedHeader, long timestamp, long payload) throws SafetyViolationException {
 		// ensure vertex does not violate earlier votes
 		if (proposedVertex.getView().compareTo(this.state.getLastVotedView()) <= 0) {
 			throw new SafetyViolationException(proposedVertex, this.state, String.format(

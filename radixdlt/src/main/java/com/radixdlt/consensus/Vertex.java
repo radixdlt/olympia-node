@@ -72,7 +72,7 @@ public final class Vertex {
 	}
 
 	public static Vertex createGenesis(LedgerState ledgerState) {
-		Header header = Header.ofGenesisAncestor(ledgerState);
+		BFTHeader header = BFTHeader.ofGenesisAncestor(ledgerState);
 		final VoteData voteData = new VoteData(header, header, header);
 		final QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 		return new Vertex(qc, View.genesis(), null);
@@ -104,11 +104,11 @@ public final class Vertex {
 		return qc.getProposed().getVertexId();
 	}
 
-	public Header getGrandParentHeader() {
+	public BFTHeader getGrandParentHeader() {
 		return qc.getParent();
 	}
 
-	public Header getParentHeader() {
+	public BFTHeader getParentHeader() {
 		return qc.getProposed();
 	}
 

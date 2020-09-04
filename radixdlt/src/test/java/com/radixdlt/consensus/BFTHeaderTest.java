@@ -27,9 +27,9 @@ import static org.mockito.Mockito.mock;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 
-public class HeaderTest {
+public class BFTHeaderTest {
 
-	private Header testObject;
+	private BFTHeader testObject;
 	private Hash id;
 	private LedgerState ledgerState;
 
@@ -38,12 +38,12 @@ public class HeaderTest {
 		View view = View.of(1234567890L);
 		this.id = Hash.random();
 		this.ledgerState = mock(LedgerState.class);
-		this.testObject = new Header(view, id, ledgerState);
+		this.testObject = new BFTHeader(view, id, ledgerState);
 	}
 
 	@Test
 	public void equalsContract() {
-		EqualsVerifier.forClass(Header.class)
+		EqualsVerifier.forClass(BFTHeader.class)
 			.verify();
 	}
 
@@ -58,11 +58,11 @@ public class HeaderTest {
 	@Test
 	public void testSerializerConstructor() {
 		// Don't want to see any exceptions here
-		assertThat(new Header()).isNotNull();
+		assertThat(new BFTHeader()).isNotNull();
 	}
 
 	@Test
 	public void testToString() {
-		assertThat(this.testObject.toString()).contains(Header.class.getSimpleName());
+		assertThat(this.testObject.toString()).contains(BFTHeader.class.getSimpleName());
 	}
 }
