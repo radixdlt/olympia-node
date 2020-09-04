@@ -21,7 +21,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.LedgerState;
 import com.radixdlt.consensus.VerifiedCommittedHeader;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -29,7 +28,7 @@ import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
-import java.util.OptionalLong;
+import java.util.function.BiConsumer;
 import java.util.stream.IntStream;
 import javax.annotation.concurrent.Immutable;
 
@@ -60,30 +59,44 @@ public final class VerifiedCommittedCommands {
 		this.proof = Objects.requireNonNull(proof);
 	}
 
-	public OptionalLong getFirstVersion() {
+	public long getFirstVersion() {
 		if (commands.isEmpty()) {
-			return OptionalLong.empty();
+			return proof.getLedgerState().getStateVersion();
 		}
 
-		return OptionalLong.of(proof.getLedgerState().getStateVersion() - commands.size() + 1);
+		return proof.getLedgerState().getStateVersion() - commands.size() + 1;
+	}
+
+	public void forEach(BiConsumer<Long, Command> consumer) {
+		long firstVersion = getFirstVersion();
+		for (int i = 0; i < commands.size(); i++) {
+			consumer.accept(firstVersion + i, commands.get(i));
+		}
 	}
 
 	public VerifiedCommittedCommands truncateFromVersion(long version) {
-		LedgerState ledgerState = proof.getLedgerState();
-		long startVersion = ledgerState.getStateVersion() - commands.size() + 1;
+		long firstVersion = getFirstVersion();
 
-		if (version < startVersion) {
+		if (version + 1 < firstVersion) {
+			throw new IllegalArgumentException("firstVersion is " + firstVersion + " but want " + version);
+		}
+
+		if (version + 1 == firstVersion) {
 			return this;
 		}
 
-		int startIndex = (int) (version + 1 - startVersion);
+		int startIndex = (int) (version + 1 - firstVersion);
 		ImmutableList<Command> truncated = IntStream.range(startIndex, commands.size())
 			.mapToObj(commands::get).collect(ImmutableList.toImmutableList());
 		return new VerifiedCommittedCommands(truncated, proof);
 	}
 
-	public ImmutableList<Command> getCommands() {
-		return commands;
+	public int size() {
+		return commands.size();
+	}
+
+	public boolean contains(Command command) {
+		return commands.contains(command);
 	}
 
 	public VerifiedCommittedHeader getProof() {

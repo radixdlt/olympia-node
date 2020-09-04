@@ -148,6 +148,12 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 				return;
 			}
 
+			// Callers of commit() should be aware of currentLedgerState.getStateVersion()
+			// and only call commit with a first version <= currentVersion + 1
+			if (currentLedgerState.getStateVersion() + 1 < verifiedCommittedCommands.getFirstVersion()) {
+				throw new IllegalStateException();
+			}
+
 			// Remove commands which have already been committed
 			VerifiedCommittedCommands commandsToStore = verifiedCommittedCommands
 				.truncateFromVersion(this.currentLedgerState.getStateVersion());
@@ -159,7 +165,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			this.currentLedgerState = header.getLedgerState();
 			this.counters.set(CounterType.LEDGER_STATE_VERSION, this.currentLedgerState.getStateVersion());
 
-			commandsToStore.getCommands().forEach(cmd -> this.mempool.removeCommitted(cmd.getHash()));
+			commandsToStore.forEach((v, cmd) -> this.mempool.removeCommitted(cmd.getHash()));
 			committedSender.sendCommitted(commandsToStore, validatorSet.orElse(null));
 
 			Collection<Set<Object>> listeners = this.committedStateSyncers.headMap(this.currentLedgerState.getStateVersion(), true)

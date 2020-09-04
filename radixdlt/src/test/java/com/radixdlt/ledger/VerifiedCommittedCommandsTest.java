@@ -41,7 +41,6 @@ public class VerifiedCommittedCommandsTest {
 
 	@Test
 	public void testGetters() {
-		assertThat(this.committedCommand.getCommands()).containsExactly(command);
 		assertThat(this.committedCommand.getProof()).isEqualTo(proof);
 	}
 

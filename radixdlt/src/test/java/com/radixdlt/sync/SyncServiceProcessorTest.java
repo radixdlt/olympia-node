@@ -78,7 +78,6 @@ public class SyncServiceProcessorTest {
 		Peer peer = mock(Peer.class);
 		when(syncRequest.getPeer()).thenReturn(peer);
 		VerifiedCommittedCommands verifiedCommittedCommands = mock(VerifiedCommittedCommands.class);
-		when(verifiedCommittedCommands.getCommands()).thenReturn(ImmutableList.of());
 		when(stateComputer.getNextCommittedCommands(anyLong(), anyInt())).thenReturn(verifiedCommittedCommands);
 		syncServiceProcessor.processSyncRequest(syncRequest);
 		verify(stateSyncNetwork, times(1)).sendSyncResponse(eq(peer), any());

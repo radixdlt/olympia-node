@@ -130,44 +130,42 @@ public final class RadixEngineStateComputer implements StateComputer {
 		}
 	}
 
-	@Override
-	public Optional<BFTValidatorSet> commit(VerifiedCommittedCommands verifiedCommittedCommands) {
-		final VerifiedCommittedHeader proof = verifiedCommittedCommands.getProof();
-		final ImmutableList<Command> commandsToStore = verifiedCommittedCommands.getCommands();
-		long headerStateVersion = proof.getLedgerState().getStateVersion();
-		for (int i = 0; i < commandsToStore.size(); i++) {
-			Command command = commandsToStore.get(i);
-			long stateVersion = headerStateVersion - commandsToStore.size() + i + 1;
-			boolean storedInRadixEngine = false;
-			final ClientAtom clientAtom = this.mapCommand(command);
-			if (clientAtom != null) {
-				final CommittedAtom committedAtom = new CommittedAtom(clientAtom, stateVersion, proof);
-				try {
-					// TODO: execute list of commands instead
-					this.radixEngine.checkAndStore(committedAtom);
-					storedInRadixEngine = true;
-				} catch (RadixEngineException e) {
-					// TODO: Don't check for state computer errors for now so that we don't
-					// TODO: have to deal with failing leader proposals
-					// TODO: Reinstate this when ProposalGenerator + Mempool can guarantee correct proposals
+	private void commitCommand(long version, Command command, VerifiedCommittedHeader proof) {
+		boolean storedInRadixEngine = false;
+		final ClientAtom clientAtom = this.mapCommand(command);
+		if (clientAtom != null) {
+			final CommittedAtom committedAtom = new CommittedAtom(clientAtom, version, proof);
+			try {
+				// TODO: execute list of commands instead
+				this.radixEngine.checkAndStore(committedAtom);
+				storedInRadixEngine = true;
+			} catch (RadixEngineException e) {
+				// TODO: Don't check for state computer errors for now so that we don't
+				// TODO: have to deal with failing leader proposals
+				// TODO: Reinstate this when ProposalGenerator + Mempool can guarantee correct proposals
 
-					// TODO: move VIRTUAL_STATE_CONFLICT to static check
-					committedAtomSender.sendCommittedAtom(CommittedAtoms.error(committedAtom, e));
-				}
-			}
-
-			if (!storedInRadixEngine) {
-				StoredCommittedCommand storedCommittedCommand = new StoredCommittedCommand(
-					command,
-					verifiedCommittedCommands.getProof()
-				);
-				this.unstoredCommittedAtoms.put(stateVersion, storedCommittedCommand);
+				// TODO: move VIRTUAL_STATE_CONFLICT to static check
+				committedAtomSender.sendCommittedAtom(CommittedAtoms.error(committedAtom, e));
 			}
 		}
 
+		if (!storedInRadixEngine) {
+			StoredCommittedCommand storedCommittedCommand = new StoredCommittedCommand(
+				command,
+				proof
+			);
+			this.unstoredCommittedAtoms.put(version, storedCommittedCommand);
+		}
+	}
+
+	@Override
+	public Optional<BFTValidatorSet> commit(VerifiedCommittedCommands verifiedCommittedCommands) {
+		final VerifiedCommittedHeader proof = verifiedCommittedCommands.getProof();
+
+		verifiedCommittedCommands.forEach((version, command) -> this.commitCommand(version, command, proof));
+
 		if (proof.getLedgerState().isEndOfEpoch()) {
 			RadixEngineValidatorSetBuilder validatorSetBuilder = this.radixEngine.getComputedState(RadixEngineValidatorSetBuilder.class);
-
 			return Optional.of(validatorSetBuilder.build());
 		}
 

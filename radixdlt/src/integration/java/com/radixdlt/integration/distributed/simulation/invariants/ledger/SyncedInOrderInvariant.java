@@ -17,6 +17,7 @@
 
 package com.radixdlt.integration.distributed.simulation.invariants.ledger;
 
+import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.integration.distributed.simulation.TestInvariant;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
@@ -47,14 +48,14 @@ public class SyncedInOrderInvariant implements TestInvariant {
 					.collect(Collectors.toSet())
 		);
 
-		Map<BFTNode, List<VerifiedCommittedCommands>> commandsPerNode = new HashMap<>();
+		Map<BFTNode, List<Command>> commandsPerNode = new HashMap<>();
 		network.getNodes().forEach(n -> commandsPerNode.put(n, new ArrayList<>()));
 
 		return commands.flatMap(nodeAndCommand -> {
 			BFTNode node = nodeAndCommand.getFirst();
 			VerifiedCommittedCommands cmd = nodeAndCommand.getSecond();
-			List<VerifiedCommittedCommands> nodeCommands = commandsPerNode.get(node);
-			nodeCommands.add(cmd);
+			List<Command> nodeCommands = commandsPerNode.get(node);
+			cmd.forEach((v, command) -> nodeCommands.add(command));
 
 			return commandsPerNode.values().stream()
 				.filter(list -> nodeCommands != list)

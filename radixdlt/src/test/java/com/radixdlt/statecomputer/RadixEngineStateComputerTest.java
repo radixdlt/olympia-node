@@ -20,6 +20,7 @@ package com.radixdlt.statecomputer;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -47,6 +48,7 @@ import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
 import com.radixdlt.utils.TypedMocks;
 
+import java.util.function.BiConsumer;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -107,7 +109,11 @@ public class RadixEngineStateComputerTest {
 		when(proof.getLedgerState()).thenReturn(ledgerState);
 		VerifiedCommittedCommands command = mock(VerifiedCommittedCommands.class);
 		when(command.getProof()).thenReturn(proof);
-		when(command.getCommands()).thenReturn(ImmutableList.of(mock(Command.class)));
+		doAnswer(invocation -> {
+			BiConsumer<Long, Command> consumer = invocation.getArgument(0);
+			consumer.accept(1L, mock(Command.class));
+			return null;
+		}).when(command).forEach(any());
 
 		stateComputer.commit(command);
 		verify(radixEngine, times(1)).checkAndStore(any());
@@ -132,7 +138,11 @@ public class RadixEngineStateComputerTest {
 
 		VerifiedCommittedCommands committedCommand = mock(VerifiedCommittedCommands.class);
 		when(committedCommand.getProof()).thenReturn(proof);
-		when(committedCommand.getCommands()).thenReturn(ImmutableList.of(mock(Command.class)));
+		doAnswer(invocation -> {
+			BiConsumer<Long, Command> consumer = invocation.getArgument(0);
+			consumer.accept(1L, mock(Command.class));
+			return null;
+		}).when(committedCommand).forEach(any());
 
 		stateComputer.commit(committedCommand);
 
@@ -156,7 +166,11 @@ public class RadixEngineStateComputerTest {
 
 		VerifiedCommittedCommands command = mock(VerifiedCommittedCommands.class);
 		when(command.getProof()).thenReturn(proof);
-		when(command.getCommands()).thenReturn(ImmutableList.of(cmd));
+		doAnswer(invocation -> {
+			BiConsumer<Long, Command> consumer = invocation.getArgument(0);
+			consumer.accept(1L, cmd);
+			return null;
+		}).when(command).forEach(any());
 
 		assertThat(stateComputer.commit(command)).isEmpty();
 		VerifiedCommittedCommands commands = stateComputer.getNextCommittedCommands(0, 1);

@@ -118,7 +118,7 @@ public final class SyncServiceProcessor {
 				return;
 			}
 
-			log.debug("SYNC_REQUEST: SENDING_RESPONSE size: {}", committedCommands.getCommands().size());
+			log.debug("SYNC_REQUEST: SENDING_RESPONSE size: {}", committedCommands.size());
 			stateSyncNetwork.sendSyncResponse(peer, committedCommands);
 		} catch (NextCommittedLimitReachedException e) {
 			log.error(e.getMessage(), e);

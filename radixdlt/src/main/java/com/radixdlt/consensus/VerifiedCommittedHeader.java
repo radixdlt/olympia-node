@@ -112,4 +112,9 @@ public final class VerifiedCommittedHeader {
 			&& Objects.equals(this.header, other.header)
 			&& Objects.equals(this.signatures, other.signatures);
 	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{header=%s}", this.getClass().getSimpleName(), this.header);
+	}
 }

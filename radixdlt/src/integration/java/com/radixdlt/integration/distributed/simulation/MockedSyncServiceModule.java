@@ -40,12 +40,7 @@ public class MockedSyncServiceModule extends AbstractModule {
 
 	@ProvidesIntoSet
 	private CommittedSender sync() {
-		return (cmd, vset) ->
-			cmd.getFirstVersion().ifPresent(version -> {
-				for (int i = 0; i < cmd.getCommands().size(); i++) {
-					sharedCommittedCommands.put(version + i, cmd.getCommands().get(i));
-				}
-			});
+		return (cmd, vset) -> cmd.forEach(sharedCommittedCommands::put);
 	}
 
 	@Provides
@@ -59,7 +54,7 @@ public class MockedSyncServiceModule extends AbstractModule {
 			@Override
 			public void sendLocalSyncRequest(LocalSyncRequest request) {
 				final long targetVersion = request.getTarget().getLedgerState().getStateVersion();
-				ImmutableList<Command> commands = LongStream.range(currentVersion + 1, targetVersion)
+				ImmutableList<Command> commands = LongStream.range(currentVersion + 1, targetVersion + 1)
 					.mapToObj(sharedCommittedCommands::get)
 					.collect(ImmutableList.toImmutableList());
 				ledger.commit(new VerifiedCommittedCommands(commands, request.getTarget()));

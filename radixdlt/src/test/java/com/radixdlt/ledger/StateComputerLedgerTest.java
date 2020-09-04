@@ -24,6 +24,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
@@ -31,7 +32,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerState;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -47,6 +47,7 @@ import com.radixdlt.ledger.StateComputerLedger.CommittedStateSyncSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.mempool.Mempool;
 import java.util.Collections;
+import java.util.function.BiConsumer;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -204,8 +205,12 @@ public class StateComputerLedgerTest {
 		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
 		when(proof.getLedgerState()).thenReturn(ledgerState);
 		when(verified.getProof()).thenReturn(proof);
-		when(verified.getCommands()).thenReturn(ImmutableList.of(command));
 		when(verified.truncateFromVersion(anyLong())).thenReturn(verified);
+		doAnswer(invocation -> {
+			BiConsumer<Long, Command> consumer = invocation.getArgument(0);
+			consumer.accept(1L, command);
+			return null;
+		}).when(verified).forEach(any());
 
 		stateComputerLedger.commit(verified);
 		verify(stateComputer, times(1)).commit(argThat(v -> v.getProof().equals(proof)));
@@ -255,7 +260,6 @@ public class StateComputerLedgerTest {
 		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
 		when(proof.getLedgerState()).thenReturn(ledgerState);
 		when(verified.getProof()).thenReturn(proof);
-		when(verified.getCommands()).thenReturn(ImmutableList.of());
 		when(verified.truncateFromVersion(anyLong())).thenReturn(verified);
 
 		stateComputerLedger.commit(verified);
