@@ -102,13 +102,12 @@ public class Serialization {
 	 * @param o The object to serialize
 	 * @param output The output mode to serialize for
 	 * @return The serialized object as a DSON byte array
-	 * @throws SerializationException if something goes wrong with serialization
 	 */
-	public byte[] toDson(Object o, DsonOutput.Output output) throws SerializationException {
+	public byte[] toDson(Object o, DsonOutput.Output output) {
 		try {
 			return dsonMapper(output).writeValueAsBytes(o);
 		} catch (JsonProcessingException ex) {
-			throw new SerializationException("Error converting to DSON", ex);
+			throw new IllegalStateException(assembleMessage(o, "DSON"), ex);
 		}
 	}
 
@@ -119,13 +118,12 @@ public class Serialization {
 	 * @param o The object to serialize
 	 * @param output The output mode to serialize for
 	 * @return The serialized object as a JSON string
-	 * @throws SerializationException if something goes wrong with serialization
 	 */
-	public String toJson(Object o, DsonOutput.Output output) throws SerializationException {
+	public String toJson(Object o, DsonOutput.Output output) {
 		try {
 			return jsonMapper(output).writeValueAsString(o);
 		} catch (JsonProcessingException ex) {
-			throw new SerializationException("Error converting to JSON", ex);
+			throw new IllegalStateException(assembleMessage(o, "JSON"), ex);
 		}
 	}
 
@@ -148,13 +146,13 @@ public class Serialization {
 	 * @param bytes The DSON encoded object to deserialize
 	 * @param valueType The class of the object to deserialize
 	 * @return The deserialized object
-	 * @throws SerializationException if something goes wrong with serialization
+	 * @throws DeserializeException if something goes wrong with serialization
 	 */
-	public <T> T fromDson(byte[] bytes, Class<T> valueType) throws SerializationException {
+	public <T> T fromDson(byte[] bytes, Class<T> valueType) throws DeserializeException {
 		try {
 			return dsonMapper(Output.ALL).readValue(bytes, valueType);
 		} catch (IOException ex) {
-			throw new SerializationException("Error converting from DSON", ex);
+			throw new DeserializeException("Error converting from DSON", ex);
 		}
 	}
 
@@ -165,13 +163,13 @@ public class Serialization {
 	 * @param bytes The DSON encoded object to deserialize
 	 * @param valueType The class of the object to deserialize
 	 * @return The deserialized object
-	 * @throws SerializationException if something goes wrong with serialization
+	 * @throws DeserializeException if something goes wrong with serialization
 	 */
-	public <T> T fromDson(byte[] bytes, DsonJavaType valueType) throws SerializationException {
+	public <T> T fromDson(byte[] bytes, DsonJavaType valueType) throws DeserializeException {
 		try {
 			return dsonMapper(Output.ALL).readValue(bytes, valueType.javaType());
 		} catch (IOException ex) {
-			throw new SerializationException("Error converting from DSON", ex);
+			throw new DeserializeException("Error converting from DSON", ex);
 		}
 	}
 
@@ -182,13 +180,13 @@ public class Serialization {
 	 * @param json The JSON encoded object to deserialize
 	 * @param valueType The class of the object to deserialize
 	 * @return The deserialized object
-	 * @throws SerializationException if something goes wrong with serialization
+	 * @throws DeserializeException if something goes wrong with serialization
 	 */
-	public <T> T fromJson(String json, Class<T> valueType) throws SerializationException {
+	public <T> T fromJson(String json, Class<T> valueType) throws DeserializeException {
 		try {
 			return jsonMapper(Output.ALL).readValue(json, valueType);
 		} catch (IOException ex) {
-			throw new SerializationException("Error converting from JSON", ex);
+			throw new DeserializeException("Error converting from JSON", ex);
 		}
 	}
 
@@ -199,13 +197,13 @@ public class Serialization {
 	 * @param json The JSON encoded object to deserialize
 	 * @param valueType The class of the object to deserialize
 	 * @return The deserialized object
-	 * @throws SerializationException if something goes wrong with serialization
+	 * @throws DeserializeException if something goes wrong with serialization
 	 */
-	public <T> T fromJson(String json, JsonJavaType valueType) throws SerializationException {
+	public <T> T fromJson(String json, JsonJavaType valueType) throws DeserializeException {
 		try {
 			return jsonMapper(Output.ALL).readValue(json, valueType.javaType());
 		} catch (IOException ex) {
-			throw new SerializationException("Error converting from JSON", ex);
+			throw new DeserializeException("Error converting from JSON", ex);
 		}
 	}
 
@@ -285,5 +283,10 @@ public class Serialization {
 				}
 			}
 		}, downstream.combiner(), downstream.finisher(), downstream.characteristics().toArray(new Collector.Characteristics[0]));
+	}
+
+	private String assembleMessage(Object o, String type) {
+		String className = o == null ? "(null)" : o.getClass().getName();
+		return "Error converting to " + type + ". Check registration for " + className;
 	}
 }
