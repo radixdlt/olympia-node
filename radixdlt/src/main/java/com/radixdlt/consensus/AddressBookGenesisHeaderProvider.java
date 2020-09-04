@@ -22,6 +22,7 @@ import com.google.common.collect.Streams;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.network.addressbook.AddressBook;
@@ -87,10 +88,10 @@ public class AddressBookGenesisHeaderProvider {
 		return BFTValidatorSet.from(validators);
 	}
 
-	public VerifiedCommittedHeader getGenesisHeader() {
-		LedgerState ledgerState = LedgerState.create(0, 0, Hash.ZERO_HASH, 0L, true);
+	public VerifiedCommittedLedgerState getGenesisHeader() {
+		LedgerState ledgerState = LedgerState.create(0, View.genesis(), 0, Hash.ZERO_HASH, 0L, true);
 		BFTHeader header = BFTHeader.ofGenesisAncestor(ledgerState);
-		return new VerifiedCommittedHeader(
+		return new VerifiedCommittedLedgerState(
 			header,
 			header,
 			header,

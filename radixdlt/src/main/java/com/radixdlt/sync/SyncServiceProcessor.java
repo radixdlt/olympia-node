@@ -18,8 +18,7 @@
 package com.radixdlt.sync;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.LedgerState;
-import com.radixdlt.consensus.VerifiedCommittedHeader;
+import com.radixdlt.consensus.VerifiedCommittedLedgerState;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.ledger.VerifiedCommittedCommands;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
@@ -46,9 +45,9 @@ public final class SyncServiceProcessor {
 	}
 
 	public static final class SyncInProgress {
-		private final VerifiedCommittedHeader targetHeader;
+		private final VerifiedCommittedLedgerState targetHeader;
 		private final List<BFTNode> targetNodes;
-		private SyncInProgress(VerifiedCommittedHeader targetHeader, List<BFTNode> targetNodes) {
+		private SyncInProgress(VerifiedCommittedLedgerState targetHeader, List<BFTNode> targetNodes) {
 			this.targetHeader = targetHeader;
 			this.targetNodes = targetNodes;
 		}
@@ -57,7 +56,7 @@ public final class SyncServiceProcessor {
 			return targetNodes;
 		}
 
-		private VerifiedCommittedHeader getTargetHeader() {
+		private VerifiedCommittedLedgerState getTargetState() {
 			return targetHeader;
 		}
 	}
@@ -67,7 +66,6 @@ public final class SyncServiceProcessor {
 	}
 
 	private static final Logger log = LogManager.getLogger();
-	private static final int MAX_REQUESTS_TO_SEND = 20;
 	private final RadixEngineStateComputer stateComputer;
 	private final SyncedCommandSender syncedCommandSender;
 	private final int batchSize;
@@ -75,8 +73,8 @@ public final class SyncServiceProcessor {
 	private final long patienceMilliseconds;
 	private final AddressBook addressBook;
 	private final StateSyncNetwork stateSyncNetwork;
-	private VerifiedCommittedHeader targetHeader;
-	private LedgerState currentState;
+	private VerifiedCommittedLedgerState targetHeader;
+	private VerifiedCommittedLedgerState currentState;
 
 	public SyncServiceProcessor(
 		RadixEngineStateComputer stateComputer,
@@ -84,7 +82,7 @@ public final class SyncServiceProcessor {
 		AddressBook addressBook,
 		SyncedCommandSender syncedCommandSender,
 		SyncTimeoutScheduler syncTimeoutScheduler,
-		VerifiedCommittedHeader current,
+		VerifiedCommittedLedgerState current,
 		int batchSize,
 		long patienceMilliseconds
 	) {
@@ -101,7 +99,7 @@ public final class SyncServiceProcessor {
 		this.syncTimeoutScheduler = Objects.requireNonNull(syncTimeoutScheduler);
 		this.batchSize = batchSize;
 		this.patienceMilliseconds = patienceMilliseconds;
-		this.currentState = current.getLedgerState();
+		this.currentState = current;
 		this.targetHeader = current;
 	}
 
@@ -126,17 +124,16 @@ public final class SyncServiceProcessor {
 	}
 
 	public void processSyncResponse(VerifiedCommittedCommands commands) {
-		final LedgerState responseLedgerState = commands.getProof().getLedgerState();
-		if (responseLedgerState.compareTo(this.currentState) <= 0) {
+		if (commands.getLedgerState().compareTo(this.currentState) <= 0) {
 			return;
 		}
 
 		// TODO: Check validity of response
 		this.syncedCommandSender.sendSyncedCommand(commands);
-		this.currentState = responseLedgerState;
+		this.currentState = commands.getLedgerState();
 	}
 
-	public void processVersionUpdate(LedgerState updatedCurrentState) {
+	public void processVersionUpdate(VerifiedCommittedLedgerState updatedCurrentState) {
 		if (updatedCurrentState.compareTo(this.currentState) > 0) {
 			this.currentState = updatedCurrentState;
 		}
@@ -144,13 +141,12 @@ public final class SyncServiceProcessor {
 
 	// TODO: Handle epoch changes with same state version
 	public void processLocalSyncRequest(LocalSyncRequest request) {
-		final VerifiedCommittedHeader targetHeader = request.getTarget();
-		final LedgerState targetLedgerState = targetHeader.getLedgerState();
-		if (targetLedgerState.compareTo(this.targetHeader.getLedgerState()) <= 0) {
+		final VerifiedCommittedLedgerState nextTargetState = request.getTarget();
+		if (nextTargetState.compareTo(this.targetHeader) <= 0) {
 			return;
 		}
 
-		this.targetHeader = targetHeader;
+		this.targetHeader = nextTargetState;
 		SyncInProgress syncInProgress = new SyncInProgress(request.getTarget(), request.getTargetNodes());
 		this.sendRequests(syncInProgress);
 	}
@@ -160,17 +156,16 @@ public final class SyncServiceProcessor {
 	}
 
 	private void sendRequests(SyncInProgress syncInProgress) {
-		final LedgerState targetLedgerState = syncInProgress.getTargetHeader().getLedgerState();
-		if (targetLedgerState.compareTo(this.currentState) <= 0) {
+		if (syncInProgress.getTargetState().compareTo(this.currentState) <= 0) {
 			return;
 		}
 
-		if (targetLedgerState.getStateVersion() == this.currentState.getStateVersion()) {
+		if (syncInProgress.getTargetState().getStateVersion() == this.currentState.getStateVersion()) {
 			// Already command synced just need to update header
 			// TODO: Move this to a more appropriate place
 			VerifiedCommittedCommands verifiedCommittedCommands = new VerifiedCommittedCommands(
 				ImmutableList.of(),
-				syncInProgress.getTargetHeader()
+				syncInProgress.getTargetState()
 			);
 			this.syncedCommandSender.sendSyncedCommand(verifiedCommittedCommands);
 			return;

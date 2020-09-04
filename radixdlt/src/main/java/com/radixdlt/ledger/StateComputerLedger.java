@@ -21,7 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerState;
-import com.radixdlt.consensus.VerifiedCommittedHeader;
+import com.radixdlt.consensus.VerifiedCommittedLedgerState;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.Vertex;
@@ -65,11 +65,11 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	private final SystemCounters counters;
 
 	private final Object lock = new Object();
-	private LedgerState currentLedgerState;
+	private VerifiedCommittedLedgerState currentLedgerState;
 	private final TreeMap<Long, Set<Object>> committedStateSyncers = new TreeMap<>();
 
 	public StateComputerLedger(
-		LedgerState initialLedgerState,
+		VerifiedCommittedLedgerState initialLedgerState,
 		Mempool mempool,
 		StateComputer stateComputer,
 		CommittedStateSyncSender committedStateSyncSender,
@@ -109,6 +109,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 
 		return LedgerState.create(
 			parent.getEpoch(),
+			vertex.getView(),
 			stateVersion,
 			vertex.getCommand() == null ? null : vertex.getCommand().getHash(),
 			timestamp,
@@ -117,13 +118,12 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	}
 
 	@Override
-	public OnSynced ifCommitSynced(VerifiedCommittedHeader committedHeader) {
-		final LedgerState targetLedgerState = committedHeader.getLedgerState();
+	public OnSynced ifCommitSynced(VerifiedCommittedLedgerState committedLedgerState) {
 		synchronized (lock) {
-			if (targetLedgerState.getStateVersion() <= this.currentLedgerState.getStateVersion()) {
-				if (targetLedgerState.compareTo(this.currentLedgerState) > 0) {
+			if (committedLedgerState.getStateVersion() <= this.currentLedgerState.getStateVersion()) {
+				if (committedLedgerState.compareTo(this.currentLedgerState) > 0) {
 					// Can happen on epoch changes
-					this.commit(new VerifiedCommittedCommands(ImmutableList.of(), committedHeader));
+					this.commit(new VerifiedCommittedCommands(ImmutableList.of(), committedLedgerState));
 				}
 				return onSync -> {
 					onSync.run();
@@ -131,7 +131,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 				};
 			} else {
 				return onSync -> (onNotSynced, opaque) -> {
-					this.committedStateSyncers.merge(targetLedgerState.getStateVersion(), Collections.singleton(opaque), Sets::union);
+					this.committedStateSyncers.merge(committedLedgerState.getStateVersion(), Collections.singleton(opaque), Sets::union);
 					onNotSynced.run();
 				};
 			}
@@ -142,9 +142,8 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	public void commit(VerifiedCommittedCommands verifiedCommittedCommands) {
 		this.counters.increment(CounterType.LEDGER_PROCESSED);
 		synchronized (lock) {
-			final VerifiedCommittedHeader header = verifiedCommittedCommands.getProof();
-			final LedgerState nextLedgerState = header.getLedgerState();
-			if (nextLedgerState.compareTo(this.currentLedgerState) <= 0) {
+			final VerifiedCommittedLedgerState committedState = verifiedCommittedCommands.getLedgerState();
+			if (committedState.compareTo(this.currentLedgerState) <= 0) {
 				return;
 			}
 
@@ -162,7 +161,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			Optional<BFTValidatorSet> validatorSet = this.stateComputer.commit(commandsToStore);
 
 			// TODO: move all of the following to post-persist event handling
-			this.currentLedgerState = header.getLedgerState();
+			this.currentLedgerState = committedState;
 			this.counters.set(CounterType.LEDGER_STATE_VERSION, this.currentLedgerState.getStateVersion());
 
 			commandsToStore.forEach((v, cmd) -> this.mempool.removeCommitted(cmd.getHash()));

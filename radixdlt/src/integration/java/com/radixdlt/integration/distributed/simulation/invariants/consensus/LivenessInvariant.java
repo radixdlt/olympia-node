@@ -18,13 +18,13 @@
 package com.radixdlt.integration.distributed.simulation.invariants.consensus;
 
 import com.google.common.collect.Ordering;
-import com.radixdlt.consensus.BFTHeader;
+import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.integration.distributed.simulation.TestInvariant;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
-import java.util.Comparator;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -36,8 +36,6 @@ import java.util.stream.Collectors;
 public class LivenessInvariant implements TestInvariant {
 	private final long duration;
 	private final TimeUnit timeUnit;
-	private final Comparator<BFTHeader> vertexMetadataComparator =
-		Comparator.<BFTHeader>comparingLong(h -> h.getLedgerState().getEpoch()).thenComparing(BFTHeader::getView);
 
 	public LivenessInvariant(long duration, TimeUnit timeUnit) {
 		this.duration = duration;
@@ -46,33 +44,35 @@ public class LivenessInvariant implements TestInvariant {
 
 	@Override
 	public Observable<TestInvariantError> check(RunningNetwork network) {
-		final BFTHeader genesisAncestor = network.initialEpoch().getProof().getHeader();
-		AtomicReference<Pair<BFTHeader, Long>> highestVertexMetadata = new AtomicReference<>(
-			Pair.of(genesisAncestor, 0L)
+		AtomicReference<Pair<EpochView, Long>> highestHeader = new AtomicReference<>(
+			Pair.of(EpochView.of(0, View.genesis()), 0L)
 		);
 
-		Observable<BFTHeader> highest = Observable.merge(
+		Observable<EpochView> highest = Observable.merge(
 			network.getNodes().stream()
 				.map(network::getInfo)
-				.map(eventsRx -> eventsRx.highQCs().map(QuorumCertificate::getProposed))
+				.map(eventsRx -> eventsRx.highQCs()
+					.map(QuorumCertificate::getProposed)
+					.map(header -> EpochView.of(header.getLedgerState().getEpoch(), header.getView()))
+				)
 				.collect(Collectors.toList())
-		).scan(genesisAncestor, Ordering.from(vertexMetadataComparator)::max);
+		).scan(EpochView.of(0, View.genesis()), Ordering.natural()::max);
 
 		return Observable.combineLatest(
 			highest,
 			Observable.interval(duration * 2, duration, timeUnit),
 			Pair::of
 		)
-			.filter(pair -> pair.getSecond() > highestVertexMetadata.get().getSecond())
+			.filter(pair -> pair.getSecond() > highestHeader.get().getSecond())
 			.concatMap(pair -> {
-				if (vertexMetadataComparator.compare(pair.getFirst(), highestVertexMetadata.get().getFirst()) <= 0) {
+				if (pair.getFirst().compareTo(highestHeader.get().getFirst()) <= 0) {
 					return Observable.just(
 						new TestInvariantError(
-							String.format("Highest QC hasn't increased from %s after %s %s", highestVertexMetadata.get(), duration, timeUnit)
+							String.format("Highest QC hasn't increased from %s after %s %s", highestHeader.get(), duration, timeUnit)
 						)
 					);
 				} else {
-					highestVertexMetadata.set(pair);
+					highestHeader.set(pair);
 					return Observable.empty();
 				}
 			});

@@ -18,7 +18,7 @@
 package com.radixdlt.middleware2.network;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.consensus.VerifiedCommittedHeader;
+import com.radixdlt.consensus.VerifiedCommittedLedgerState;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECPublicKey;
@@ -32,7 +32,7 @@ import org.radix.network.messaging.Message;
 public class GetEpochResponseMessage extends Message {
 	@JsonProperty("ancestor")
 	@DsonOutput(Output.ALL)
-	private final VerifiedCommittedHeader ancestor;
+	private final VerifiedCommittedLedgerState ancestor;
 
 	private BFTNode author;
 
@@ -43,7 +43,7 @@ public class GetEpochResponseMessage extends Message {
 		this.ancestor = null;
 	}
 
-	GetEpochResponseMessage(BFTNode author, int magic, VerifiedCommittedHeader ancestor) {
+	GetEpochResponseMessage(BFTNode author, int magic, VerifiedCommittedLedgerState ancestor) {
 		super(magic);
 		this.author = Objects.requireNonNull(author);
 		this.ancestor = ancestor;
@@ -64,7 +64,7 @@ public class GetEpochResponseMessage extends Message {
 		return author;
 	}
 
-	public VerifiedCommittedHeader getAncestor() {
+	public VerifiedCommittedLedgerState getAncestor() {
 		return ancestor;
 	}
 

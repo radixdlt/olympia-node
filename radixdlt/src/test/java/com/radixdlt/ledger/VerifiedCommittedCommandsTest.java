@@ -22,26 +22,26 @@ import static org.mockito.Mockito.mock;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.VerifiedCommittedHeader;
+import com.radixdlt.consensus.VerifiedCommittedLedgerState;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
 import org.junit.Test;
 
 public class VerifiedCommittedCommandsTest {
 	private Command command;
-	private VerifiedCommittedHeader proof;
+	private VerifiedCommittedLedgerState proof;
 	private VerifiedCommittedCommands committedCommand;
 
 	@Before
 	public void setUp() {
 		this.command = mock(Command.class);
-		this.proof = mock(VerifiedCommittedHeader.class);
+		this.proof = mock(VerifiedCommittedLedgerState.class);
 		this.committedCommand = new VerifiedCommittedCommands(ImmutableList.of(command), proof);
 	}
 
 	@Test
 	public void testGetters() {
-		assertThat(this.committedCommand.getProof()).isEqualTo(proof);
+		assertThat(this.committedCommand.getLedgerState()).isEqualTo(proof);
 	}
 
 	@Test

@@ -24,7 +24,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.consensus.VerifiedCommittedHeader;
+import com.radixdlt.consensus.VerifiedCommittedLedgerState;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.counters.SystemCounters;
@@ -43,8 +43,8 @@ public class LedgerModuleTest {
 			bind(StateComputer.class).toInstance(mock(StateComputer.class));
 			bind(CommittedStateSyncSender.class).toInstance(mock(CommittedStateSyncSender.class));
 			bind(SystemCounters.class).toInstance(mock(SystemCounters.class));
-			VerifiedCommittedHeader verifiedCommittedHeader = mock(VerifiedCommittedHeader.class);
-			bind(VerifiedCommittedHeader.class).toInstance(verifiedCommittedHeader);
+			VerifiedCommittedLedgerState verifiedCommittedLedgerState = mock(VerifiedCommittedLedgerState.class);
+			bind(VerifiedCommittedLedgerState.class).toInstance(verifiedCommittedLedgerState);
 			bind(BFTValidatorSet.class).toInstance(mock(BFTValidatorSet.class));
 			Multibinder.newSetBinder(binder(), CommittedSender.class);
 		}

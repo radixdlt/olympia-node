@@ -53,7 +53,7 @@ public class MockedSyncServiceModule extends AbstractModule {
 
 			@Override
 			public void sendLocalSyncRequest(LocalSyncRequest request) {
-				final long targetVersion = request.getTarget().getLedgerState().getStateVersion();
+				final long targetVersion = request.getTarget().getStateVersion();
 				ImmutableList<Command> commands = LongStream.range(currentVersion + 1, targetVersion + 1)
 					.mapToObj(sharedCommittedCommands::get)
 					.collect(ImmutableList.toImmutableList());

@@ -19,6 +19,7 @@ package com.radixdlt.consensus;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -29,8 +30,8 @@ import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
 
 @Immutable
-@SerializerId2("ledger.verified_committed_header")
-public final class VerifiedCommittedHeader {
+@SerializerId2("ledger.verified_committed_ledger_state")
+public final class VerifiedCommittedLedgerState implements Comparable<VerifiedCommittedLedgerState> {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
@@ -52,7 +53,7 @@ public final class VerifiedCommittedHeader {
 	private final TimestampedECDSASignatures signatures;
 
 	@JsonCreator
-	public VerifiedCommittedHeader(
+	public VerifiedCommittedLedgerState(
 		@JsonProperty("opaque0") BFTHeader opaque0,
 		@JsonProperty("opaque1") BFTHeader opaque1,
 		@JsonProperty("header") BFTHeader header,
@@ -64,9 +65,9 @@ public final class VerifiedCommittedHeader {
 		this.signatures = Objects.requireNonNull(signatures);
 	}
 
-	public static VerifiedCommittedHeader ofGenesisAncestor(LedgerState ledgerState) {
+	public static VerifiedCommittedLedgerState ofGenesisAncestor(LedgerState ledgerState) {
 		BFTHeader header = BFTHeader.ofGenesisAncestor(ledgerState);
-		return new VerifiedCommittedHeader(
+		return new VerifiedCommittedLedgerState(
 			header,
 			header,
 			header,
@@ -74,7 +75,7 @@ public final class VerifiedCommittedHeader {
 		);
 	}
 
-	public LedgerState getLedgerState() {
+	public LedgerState getRaw() {
 		return header.getLedgerState();
 	}
 
@@ -82,12 +83,24 @@ public final class VerifiedCommittedHeader {
 		return header.getLedgerState().getEpoch();
 	}
 
-	public Hash getVertexId() {
-		return header.getVertexId();
+	public View getView() {
+		return header.getLedgerState().getView();
 	}
 
-	public BFTHeader getHeader() {
-		return header;
+	public long getStateVersion() {
+		return header.getLedgerState().getStateVersion();
+	}
+
+	public Hash getCommandId() {
+		return header.getLedgerState().getCommandId();
+	}
+
+	public long timestamp() {
+		return header.getLedgerState().timestamp();
+	}
+
+	public boolean isEndOfEpoch() {
+		return header.getLedgerState().isEndOfEpoch();
 	}
 
 	@Override
@@ -97,11 +110,11 @@ public final class VerifiedCommittedHeader {
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof VerifiedCommittedHeader)) {
+		if (!(o instanceof VerifiedCommittedLedgerState)) {
 			return false;
 		}
 
-		VerifiedCommittedHeader other = (VerifiedCommittedHeader) o;
+		VerifiedCommittedLedgerState other = (VerifiedCommittedLedgerState) o;
 		return Objects.equals(this.opaque0, other.opaque0)
 			&& Objects.equals(this.opaque1, other.opaque1)
 			&& Objects.equals(this.header, other.header)
@@ -111,5 +124,22 @@ public final class VerifiedCommittedHeader {
 	@Override
 	public String toString() {
 		return String.format("%s{header=%s}", this.getClass().getSimpleName(), this.header);
+	}
+
+	@Override
+	public int compareTo(VerifiedCommittedLedgerState o) {
+		if (o.getEpoch() != this.getEpoch()) {
+			return this.getEpoch() > o.getEpoch() ? 1 : -1;
+		}
+
+		if (o.getStateVersion() != this.getStateVersion()) {
+			return this.getStateVersion() > o.getStateVersion() ? 1 : -1;
+		}
+
+		if (o.isEndOfEpoch() != this.isEndOfEpoch()) {
+			return this.isEndOfEpoch() ? 1 : -1;
+		}
+
+		return 0;
 	}
 }

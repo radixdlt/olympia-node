@@ -22,7 +22,7 @@ import static org.mockito.Mockito.mock;
 import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.consensus.VerifiedCommittedHeader;
+import com.radixdlt.consensus.VerifiedCommittedLedgerState;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.identifiers.AID;
@@ -37,7 +37,7 @@ import org.junit.Test;
 public class CommittedAtomTest {
 	private CommittedAtom committedAtom;
 	private ClientAtom clientAtom;
-	private VerifiedCommittedHeader proof;
+	private VerifiedCommittedLedgerState proof;
 
 	@Before
 	public void setUp() {
@@ -46,7 +46,7 @@ public class CommittedAtomTest {
 		when(clientAtom.getCMInstruction()).thenReturn(mock(CMInstruction.class));
 		when(clientAtom.getPowFeeHash()).thenReturn(mock(Hash.class));
 		when(clientAtom.getMetaData()).thenReturn(TypedMocks.rmock(ImmutableMap.class));
-		this.proof = mock(VerifiedCommittedHeader.class);
+		this.proof = mock(VerifiedCommittedLedgerState.class);
 		this.committedAtom = new CommittedAtom(clientAtom, 12345L, proof);
 	}
 

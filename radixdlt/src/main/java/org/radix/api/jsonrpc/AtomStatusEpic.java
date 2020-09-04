@@ -17,7 +17,7 @@
 
 package org.radix.api.jsonrpc;
 
-import com.radixdlt.consensus.VerifiedCommittedHeader;
+import com.radixdlt.consensus.VerifiedCommittedLedgerState;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
@@ -91,10 +91,10 @@ public class AtomStatusEpic {
 				JSONObject data = new JSONObject();
 				data.put("aid", committedAtom.getAID());
 				// TODO: serialize vertexMetadata
-				VerifiedCommittedHeader header = committedAtom.getProof();
-				data.put("stateVersion", header.getLedgerState().getStateVersion());
-				data.put("epoch", header.getLedgerState().getEpoch());
-				data.put("timestamp", header.getLedgerState().timestamp());
+				VerifiedCommittedLedgerState ledgerState = committedAtom.getStateAndProof();
+				data.put("stateVersion", ledgerState.getStateVersion());
+				data.put("epoch", ledgerState.getEpoch());
+				data.put("timestamp", ledgerState.timestamp());
 
 				sendAtomSubmissionState.accept(AtomStatus.STORED, data);
 			}
@@ -109,9 +109,9 @@ public class AtomStatusEpic {
 				}
 
 				// TODO: serialize vertexMetadata
-				VerifiedCommittedHeader header = committedAtom.getProof();
-				data.put("stateVersion", header.getLedgerState().getStateVersion());
-				data.put("epoch", header.getLedgerState().getEpoch());
+				VerifiedCommittedLedgerState ledgerState = committedAtom.getStateAndProof();
+				data.put("stateVersion", ledgerState.getStateVersion());
+				data.put("epoch", ledgerState.getEpoch());
 
 				final AtomStatus atomStatus;
 				switch (exception.getErrorCode()) {

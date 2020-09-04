@@ -17,7 +17,7 @@
 
 package com.radixdlt.integration.distributed.deterministic.network;
 
-import com.radixdlt.consensus.VerifiedCommittedHeader;
+import com.radixdlt.consensus.VerifiedCommittedLedgerState;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
@@ -131,7 +131,7 @@ public final class ControlledSender implements DeterministicSender {
 	}
 
 	@Override
-	public void sendGetEpochResponse(BFTNode node, VerifiedCommittedHeader ancestor) {
+	public void sendGetEpochResponse(BFTNode node, VerifiedCommittedLedgerState ancestor) {
 		GetEpochResponse getEpochResponse = new GetEpochResponse(node, ancestor);
 		handleMessage(messageRank(getEpochResponse), new ControlledMessage(this.senderIndex, this.network.lookup(node), getEpochResponse));
 	}
@@ -170,13 +170,13 @@ public final class ControlledSender implements DeterministicSender {
 	}
 
 	private MessageRank messageRank(GetEpochResponse getEpochResponse) {
-		VerifiedCommittedHeader proof = getEpochResponse.getEpochProof();
-		return MessageRank.of(proof.getEpoch(), Long.MAX_VALUE);
+		VerifiedCommittedLedgerState proof = getEpochResponse.getEpochProof();
+		return MessageRank.of(proof.getEpoch(), proof.getView().number() + 3);
 	}
 
 	private MessageRank messageRank(EpochChange epochChange) {
-		VerifiedCommittedHeader proof = epochChange.getProof();
-		return MessageRank.of(proof.getEpoch(), Long.MAX_VALUE);
+		VerifiedCommittedLedgerState proof = epochChange.getProof();
+		return MessageRank.of(proof.getEpoch(), proof.getView().number() + 3);
 	}
 
 	private MessageRank messageRank(NewView newView) {
@@ -187,8 +187,8 @@ public final class ControlledSender implements DeterministicSender {
 		return MessageRank.of(proposal.getEpoch(), proposal.getVertex().getView().number());
 	}
 
-	private MessageRank messageRank(BFTHeader metadata, long viewIncrement) {
-		return MessageRank.of(metadata.getLedgerState().getEpoch(), metadata.getView().number() + viewIncrement);
+	private MessageRank messageRank(BFTHeader header, long viewIncrement) {
+		return MessageRank.of(header.getLedgerState().getEpoch(), header.getView().number() + viewIncrement);
 	}
 
 	private MessageRank messageRank(LocalTimeout localTimeout) {

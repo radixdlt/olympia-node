@@ -20,6 +20,7 @@ package com.radixdlt.consensus;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.assertj.core.api.AssertionsForClassTypes;
@@ -35,7 +36,7 @@ public class LedgerStateTest {
 	public void setup() {
 		this.timestamp = 12345678L;
 		this.commandId = mock(Hash.class);
-		this.ledgerState = LedgerState.create(0, 12345, commandId, timestamp, false);
+		this.ledgerState = LedgerState.create(0, View.genesis(), 12345, commandId, timestamp, false);
 	}
 
 	@Test

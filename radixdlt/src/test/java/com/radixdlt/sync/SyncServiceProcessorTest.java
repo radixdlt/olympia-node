@@ -28,7 +28,7 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.LedgerState;
-import com.radixdlt.consensus.VerifiedCommittedHeader;
+import com.radixdlt.consensus.VerifiedCommittedLedgerState;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.ledger.VerifiedCommittedCommands;
@@ -66,7 +66,7 @@ public class SyncServiceProcessorTest {
 			addressBook,
 			syncedCommandSender,
 			syncTimeoutScheduler,
-			VerifiedCommittedHeader.ofGenesisAncestor(mock(LedgerState.class)),
+			VerifiedCommittedLedgerState.ofGenesisAncestor(mock(LedgerState.class)),
 			2,
 			1
 		);
@@ -95,24 +95,21 @@ public class SyncServiceProcessorTest {
 		when(peer.hasSystem()).thenReturn(true);
 		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
 
-		VerifiedCommittedHeader verifiedCommittedHeader = mock(VerifiedCommittedHeader.class);
-		LedgerState ledgerState = mock(LedgerState.class);
-		when(ledgerState.getStateVersion()).thenReturn(targetVersion);
-		when(verifiedCommittedHeader.getLedgerState()).thenReturn(ledgerState);
+		VerifiedCommittedLedgerState verifiedCommittedLedgerState = mock(VerifiedCommittedLedgerState.class);
+		when(verifiedCommittedLedgerState.getStateVersion()).thenReturn(targetVersion);
 
-		LedgerState currentState = mock(LedgerState.class);
+		VerifiedCommittedLedgerState currentState = mock(VerifiedCommittedLedgerState.class);
 		when(currentState.getStateVersion()).thenReturn(6L);
 
 		syncServiceProcessor.processVersionUpdate(currentState);
-		LocalSyncRequest request = new LocalSyncRequest(verifiedCommittedHeader, ImmutableList.of(node));
+		LocalSyncRequest request = new LocalSyncRequest(verifiedCommittedLedgerState, ImmutableList.of(node));
 		syncServiceProcessor.processLocalSyncRequest(request);
 
 		VerifiedCommittedCommands commands = mock(VerifiedCommittedCommands.class);
-		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
+		VerifiedCommittedLedgerState proof = mock(VerifiedCommittedLedgerState.class);
 		LedgerState proofLedgerState = mock(LedgerState.class);
 		when(proofLedgerState.getStateVersion()).thenReturn(15L);
-		when(proof.getLedgerState()).thenReturn(ledgerState);
-		when(commands.getProof()).thenReturn(proof);
+		when(commands.getLedgerState()).thenReturn(proof);
 		syncServiceProcessor.processSyncResponse(commands);
 
 		verify(syncedCommandSender, times(1)).sendSyncedCommand(eq(commands));
@@ -129,16 +126,14 @@ public class SyncServiceProcessorTest {
 		when(peer.hasSystem()).thenReturn(true);
 		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
 
-		VerifiedCommittedHeader verifiedCommittedHeader = mock(VerifiedCommittedHeader.class);
-		LedgerState ledgerState = mock(LedgerState.class);
-		when(ledgerState.getStateVersion()).thenReturn(targetVersion);
-		when(verifiedCommittedHeader.getLedgerState()).thenReturn(ledgerState);
+		VerifiedCommittedLedgerState verifiedCommittedLedgerState = mock(VerifiedCommittedLedgerState.class);
+		when(verifiedCommittedLedgerState.getStateVersion()).thenReturn(targetVersion);
 
-		LedgerState currentLedgerState = mock(LedgerState.class);
+		VerifiedCommittedLedgerState currentLedgerState = mock(VerifiedCommittedLedgerState.class);
 		when(currentLedgerState.getStateVersion()).thenReturn(10L);
 
 		syncServiceProcessor.processVersionUpdate(currentLedgerState);
-		LocalSyncRequest request = new LocalSyncRequest(verifiedCommittedHeader, ImmutableList.of(node));
+		LocalSyncRequest request = new LocalSyncRequest(verifiedCommittedLedgerState, ImmutableList.of(node));
 		syncServiceProcessor.processLocalSyncRequest(request);
 		verify(stateSyncNetwork, times(1)).sendSyncRequest(any(), eq(10L));
 	}

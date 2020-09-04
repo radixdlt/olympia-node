@@ -19,6 +19,7 @@ package com.radixdlt.consensus;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -46,6 +47,9 @@ public final class LedgerState implements Comparable<LedgerState> {
 	@DsonOutput(Output.ALL)
 	private final long epoch;
 
+	// TODO: remove this
+	private final View view;
+
 	// Not used for anything now
 	// TODO: Change to accumulator
 	@JsonProperty("command_id")
@@ -64,12 +68,25 @@ public final class LedgerState implements Comparable<LedgerState> {
 	@JsonCreator
 	private LedgerState(
 		@JsonProperty("epoch") long epoch,
+		@JsonProperty("view") long view,
 		@JsonProperty("stateVersion") long stateVersion,
 		@JsonProperty("command_id") Hash commandId,
 		@JsonProperty("timestamp") long timestamp,
 		@JsonProperty("isEndOfEpoch") boolean isEndOfEpoch
 	) {
+		this(epoch, View.of(view), stateVersion, commandId, timestamp, isEndOfEpoch);
+	}
+
+	private LedgerState(
+		long epoch,
+		View view,
+		long stateVersion,
+		Hash commandId,
+		long timestamp,
+		boolean isEndOfEpoch
+	) {
 		this.epoch = epoch;
+		this.view = view;
 		this.stateVersion = stateVersion;
 		this.commandId = commandId;
 		this.isEndOfEpoch = isEndOfEpoch;
@@ -78,12 +95,23 @@ public final class LedgerState implements Comparable<LedgerState> {
 
 	public static LedgerState create(
 		long epoch,
+		View view,
 		long stateVersion,
 		Hash commandId,
 		long timestamp,
 		boolean isEndOfEpoch
 	) {
-		return new LedgerState(epoch, stateVersion, commandId, timestamp, isEndOfEpoch);
+		return new LedgerState(epoch, view, stateVersion, commandId, timestamp, isEndOfEpoch);
+	}
+
+	@JsonProperty("view")
+	@DsonOutput(Output.ALL)
+	private Long getSerializerView() {
+		return this.view == null ? null : this.view.number();
+	}
+
+	public View getView() {
+		return view;
 	}
 
 	public Hash getCommandId() {
@@ -108,7 +136,7 @@ public final class LedgerState implements Comparable<LedgerState> {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.stateVersion, this.commandId, this.timestamp, this.epoch, this.isEndOfEpoch);
+		return Objects.hash(this.stateVersion, this.commandId, this.timestamp, this.epoch, this.view, this.isEndOfEpoch);
 	}
 
 	@Override
@@ -122,6 +150,7 @@ public final class LedgerState implements Comparable<LedgerState> {
 				&& this.stateVersion == other.stateVersion
 				&& Objects.equals(this.commandId, other.commandId)
 				&& this.epoch == other.epoch
+				&& Objects.equals(this.view, other.view)
 				&& this.isEndOfEpoch == other.isEndOfEpoch;
 		}
 		return false;

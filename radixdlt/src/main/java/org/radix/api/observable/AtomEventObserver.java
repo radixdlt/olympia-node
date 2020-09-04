@@ -124,7 +124,7 @@ public class AtomEventObserver {
 			return;
 		}
 
-		final long timestamp = committedAtom.getProof().getLedgerState().timestamp();
+		final long timestamp = committedAtom.getStateAndProof().timestamp();
 		final Atom rawAtom = ClientAtom.convertToApiAtom(committedAtom.getClientAtom());
 		final AtomEventDto atomEventDto = new AtomEventDto(AtomEventType.STORE, rawAtom, timestamp);
 		synchronized (this) {
@@ -168,7 +168,7 @@ public class AtomEventObserver {
 					ledgerEntry.ifPresent(
 						entry -> {
 							StoredCommittedCommand committedCommand = commandToBinaryConverter.toCommand(entry.getContent());
-							long timestamp = committedCommand.getProof().getLedgerState().timestamp();
+							long timestamp = committedCommand.getStateAndProof().timestamp();
 							ClientAtom clientAtom = committedCommand.getCommand().map(clientAtomToBinaryConverter::toAtom);
 							atoms.add(Pair.of(clientAtom, timestamp));
 						}

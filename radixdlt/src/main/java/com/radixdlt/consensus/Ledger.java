@@ -37,7 +37,7 @@ public interface Ledger {
 	 * @param header the metadata to sync to
 	 * @return Synced handler
 	 */
-	OnSynced ifCommitSynced(VerifiedCommittedHeader header);
+	OnSynced ifCommitSynced(VerifiedCommittedLedgerState header);
 
 	interface OnSynced {
 		OnNotSynced then(Runnable onSynced);

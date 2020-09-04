@@ -24,8 +24,9 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.LedgerState;
-import com.radixdlt.consensus.VerifiedCommittedHeader;
+import com.radixdlt.consensus.VerifiedCommittedLedgerState;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.serialization.Serialization;
@@ -57,8 +58,8 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 	}
 
 	@Provides
-	public VerifiedCommittedHeader genesisVertexMetadata() {
-		final LedgerState ledgerState = LedgerState.create(0, 0, Hash.ZERO_HASH, 0, true);
-		return VerifiedCommittedHeader.ofGenesisAncestor(ledgerState);
+	public VerifiedCommittedLedgerState genesisVertexMetadata() {
+		final LedgerState ledgerState = LedgerState.create(0, View.genesis(), 0, Hash.ZERO_HASH, 0, true);
+		return VerifiedCommittedLedgerState.ofGenesisAncestor(ledgerState);
 	}
 }

@@ -21,7 +21,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.VerifiedCommittedHeader;
+import com.radixdlt.consensus.VerifiedCommittedLedgerState;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -48,23 +48,23 @@ public final class VerifiedCommittedCommands {
 
 	@JsonProperty("proof")
 	@DsonOutput(Output.ALL)
-	private final VerifiedCommittedHeader proof;
+	private final VerifiedCommittedLedgerState stateAndProof;
 
 	@JsonCreator
 	public VerifiedCommittedCommands(
 		@JsonProperty("commands") ImmutableList<Command> commands,
-		@JsonProperty("proof") VerifiedCommittedHeader proof
+		@JsonProperty("proof") VerifiedCommittedLedgerState stateAndProof
 	) {
 		this.commands = commands;
-		this.proof = Objects.requireNonNull(proof);
+		this.stateAndProof = Objects.requireNonNull(stateAndProof);
 	}
 
 	public long getFirstVersion() {
 		if (commands.isEmpty()) {
-			return proof.getLedgerState().getStateVersion();
+			return stateAndProof.getStateVersion();
 		}
 
-		return proof.getLedgerState().getStateVersion() - commands.size() + 1;
+		return stateAndProof.getStateVersion() - commands.size() + 1;
 	}
 
 	public void forEach(BiConsumer<Long, Command> consumer) {
@@ -88,7 +88,7 @@ public final class VerifiedCommittedCommands {
 		int startIndex = (int) (version + 1 - firstVersion);
 		ImmutableList<Command> truncated = IntStream.range(startIndex, commands.size())
 			.mapToObj(commands::get).collect(ImmutableList.toImmutableList());
-		return new VerifiedCommittedCommands(truncated, proof);
+		return new VerifiedCommittedCommands(truncated, stateAndProof);
 	}
 
 	public int size() {
@@ -99,13 +99,13 @@ public final class VerifiedCommittedCommands {
 		return commands.contains(command);
 	}
 
-	public VerifiedCommittedHeader getProof() {
-		return proof;
+	public VerifiedCommittedLedgerState getLedgerState() {
+		return stateAndProof;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(commands, proof);
+		return Objects.hash(commands, stateAndProof);
 	}
 
 	@Override
@@ -116,11 +116,11 @@ public final class VerifiedCommittedCommands {
 
 		VerifiedCommittedCommands other = (VerifiedCommittedCommands) o;
 		return Objects.equals(this.commands, other.commands)
-			&& Objects.equals(this.proof, other.proof);
+			&& Objects.equals(this.stateAndProof, other.stateAndProof);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{cmds=%s proof=%s}", this.getClass().getSimpleName(), commands, proof);
+		return String.format("%s{cmds=%s stateAndProof=%s}", this.getClass().getSimpleName(), commands, stateAndProof);
 	}
 }

@@ -20,9 +20,10 @@ package com.radixdlt.integration.distributed.simulation;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.radixdlt.consensus.LedgerState;
-import com.radixdlt.consensus.VerifiedCommittedHeader;
+import com.radixdlt.consensus.VerifiedCommittedLedgerState;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 
@@ -43,9 +44,9 @@ public class MockedStateComputerModule extends AbstractModule {
 	}
 
 	@Provides
-	private VerifiedCommittedHeader genesisMetadata() {
-		final LedgerState ledgerState = LedgerState.create(0, 0, Hash.ZERO_HASH, 0L, true);
-		return VerifiedCommittedHeader.ofGenesisAncestor(ledgerState);
+	private VerifiedCommittedLedgerState genesisMetadata() {
+		final LedgerState ledgerState = LedgerState.create(0, View.genesis(), 0, Hash.ZERO_HASH, 0L, true);
+		return VerifiedCommittedLedgerState.ofGenesisAncestor(ledgerState);
 	}
 
 	@Provides

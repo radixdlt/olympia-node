@@ -23,8 +23,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.consensus.LedgerState;
-import com.radixdlt.consensus.VerifiedCommittedHeader;
+import com.radixdlt.consensus.VerifiedCommittedLedgerState;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import org.junit.Before;
 import org.junit.Test;
@@ -42,15 +41,13 @@ public class EpochChangeManagerTest {
 	@Test
 	public void when_sending_committed_atom_with_epoch_change__then_should_send_epoch_change() {
 		long genesisEpoch = 123;
-		LedgerState ledgerState = mock(LedgerState.class);
-		when(ledgerState.isEndOfEpoch()).thenReturn(true);
-		when(ledgerState.getStateVersion()).thenReturn(1234L);
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		VerifiedCommittedCommands cmd = mock(VerifiedCommittedCommands.class);
-		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
+		VerifiedCommittedLedgerState proof = mock(VerifiedCommittedLedgerState.class);
 		when(proof.getEpoch()).thenReturn(genesisEpoch);
-		when(proof.getLedgerState()).thenReturn(ledgerState);
-		when(cmd.getProof()).thenReturn(proof);
+		when(proof.isEndOfEpoch()).thenReturn(true);
+		when(proof.getStateVersion()).thenReturn(1234L);
+		when(cmd.getLedgerState()).thenReturn(proof);
 
 		epochChangeManager.sendCommitted(cmd, validatorSet);
 

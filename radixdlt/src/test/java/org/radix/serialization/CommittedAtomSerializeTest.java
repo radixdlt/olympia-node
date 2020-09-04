@@ -21,8 +21,9 @@ import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atommodel.message.MessageParticle;
 import com.radixdlt.consensus.LedgerState;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.consensus.VerifiedCommittedHeader;
+import com.radixdlt.consensus.VerifiedCommittedLedgerState;
 import com.radixdlt.consensus.BFTHeader;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.identifiers.RadixAddress;
@@ -51,10 +52,10 @@ public class CommittedAtomSerializeTest extends SerializeObject<CommittedAtom> {
 			throw new IllegalStateException();
 		}
 
-		VerifiedCommittedHeader proof = new VerifiedCommittedHeader(
-			BFTHeader.ofGenesisAncestor(LedgerState.create(0, 0, Hash.random(), 0L, false)),
-			BFTHeader.ofGenesisAncestor(LedgerState.create(0, 0, Hash.random(), 0L, false)),
-			BFTHeader.ofGenesisAncestor(LedgerState.create(0, 0, Hash.random(), 0L, false)),
+		VerifiedCommittedLedgerState proof = new VerifiedCommittedLedgerState(
+			BFTHeader.ofGenesisAncestor(LedgerState.create(0, View.genesis(), 0, Hash.random(), 0L, false)),
+			BFTHeader.ofGenesisAncestor(LedgerState.create(0, View.genesis(), 0, Hash.random(), 0L, false)),
+			BFTHeader.ofGenesisAncestor(LedgerState.create(0, View.genesis(), 0, Hash.random(), 0L, false)),
 			new TimestampedECDSASignatures()
 		);
 

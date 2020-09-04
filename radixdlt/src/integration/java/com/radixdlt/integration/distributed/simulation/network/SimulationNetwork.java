@@ -20,7 +20,7 @@ package com.radixdlt.integration.distributed.simulation.network;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.ConsensusEventsRx;
-import com.radixdlt.consensus.VerifiedCommittedHeader;
+import com.radixdlt.consensus.VerifiedCommittedLedgerState;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
@@ -270,7 +270,7 @@ public class SimulationNetwork {
 		}
 
 		@Override
-		public void sendGetEpochResponse(BFTNode node, VerifiedCommittedHeader ancestor) {
+		public void sendGetEpochResponse(BFTNode node, VerifiedCommittedLedgerState ancestor) {
 			GetEpochResponse getEpochResponse = new GetEpochResponse(thisNode, ancestor);
 			receivedMessages.onNext(MessageInTransit.newMessage(getEpochResponse, thisNode, node));
 		}

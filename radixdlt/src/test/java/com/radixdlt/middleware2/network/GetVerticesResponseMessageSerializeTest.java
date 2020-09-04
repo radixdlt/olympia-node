@@ -20,6 +20,7 @@ package com.radixdlt.middleware2.network;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.LedgerState;
 import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
 import org.radix.serialization.SerializeMessageObject;
 
@@ -29,7 +30,7 @@ public class GetVerticesResponseMessageSerializeTest extends SerializeMessageObj
 	}
 
 	private static GetVerticesResponseMessage get() {
-		LedgerState ledgerState = LedgerState.create(0, 0, Hash.random(), 0L, false);
+		LedgerState ledgerState = LedgerState.create(0, View.genesis(), 0, Hash.random(), 0L, false);
 		Vertex genesisVertex = Vertex.createGenesis(ledgerState);
 		return new GetVerticesResponseMessage(1234, Hash.random(), ImmutableList.of(genesisVertex));
 	}

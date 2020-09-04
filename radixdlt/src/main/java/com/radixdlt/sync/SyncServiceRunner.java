@@ -17,7 +17,7 @@
 
 package com.radixdlt.sync;
 
-import com.radixdlt.consensus.LedgerState;
+import com.radixdlt.consensus.VerifiedCommittedLedgerState;
 import com.radixdlt.sync.SyncServiceProcessor.SyncInProgress;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Scheduler;
@@ -43,7 +43,7 @@ public final class SyncServiceRunner {
 	}
 
 	public interface VersionUpdatesRx {
-		Observable<LedgerState> ledgerStateUpdates();
+		Observable<VerifiedCommittedLedgerState> ledgerStateUpdates();
 	}
 
 	private final StateSyncNetwork stateSyncNetwork;

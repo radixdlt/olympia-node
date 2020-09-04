@@ -30,9 +30,8 @@ import com.radixdlt.consensus.ProposerElectionFactory;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.Timeout;
-import com.radixdlt.consensus.VerifiedCommittedHeader;
+import com.radixdlt.consensus.VerifiedCommittedLedgerState;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.VertexStoreEventProcessor;
 import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.bft.View;
@@ -97,7 +96,7 @@ public final class EpochManager {
 		 * @param node the peer to send to
 		 * @param ancestor the ancestor of the epoch
 		 */
-		void sendGetEpochResponse(BFTNode node, VerifiedCommittedHeader ancestor);
+		void sendGetEpochResponse(BFTNode node, VerifiedCommittedLedgerState ancestor);
 	}
 
 	public interface EpochInfoSender {
@@ -127,7 +126,7 @@ public final class EpochManager {
 	private final EpochInfoSender epochInfoSender;
 	private final SyncRequestSender syncRequestSender;
 
-	private BFTHeader lastConstructed = null;
+	private VerifiedCommittedLedgerState lastConstructed = null;
 	private EpochChange currentEpoch;
 	private VertexStoreEventProcessor vertexStoreEventProcessor;
 	private BFTEventProcessor bftEventProcessor;
@@ -234,7 +233,7 @@ public final class EpochManager {
 
 		// If constructed the end of the previous epoch then broadcast new epoch to new validator set
 		// TODO: Move this into when lastConstructed is set
-		if (lastConstructed != null && lastConstructed.getLedgerState().getEpoch() == epochChange.getEpoch() - 1) {
+		if (lastConstructed != null && lastConstructed.getEpoch() == epochChange.getEpoch() - 1) {
 			log.info("{}: EPOCH_CHANGE: broadcasting next epoch", this.self);
 			BFTValidatorSet validatorSet = epochChange.getValidatorSet();
 			for (BFTValidator validator : validatorSet.getValidators()) {
@@ -286,10 +285,10 @@ public final class EpochManager {
 		msg.append(v.getNode().getSimpleName()).append(':').append(v.getPower());
 	}
 
-	private void processEndOfEpoch(BFTHeader header) {
-		log.trace("{}: END_OF_EPOCH: {}", this.self, header);
-		if (this.lastConstructed == null || this.lastConstructed.getLedgerState().getEpoch() < header.getLedgerState().getEpoch()) {
-			this.lastConstructed = header;
+	private void processEndOfEpoch(VerifiedCommittedLedgerState ledgerState) {
+		log.trace("{}: END_OF_EPOCH: {}", this.self, ledgerState);
+		if (this.lastConstructed == null || this.lastConstructed.getEpoch() < ledgerState.getEpoch()) {
+			this.lastConstructed = ledgerState;
 
 			// Stop processing new events if end of epoch
 			// but keep VertexStore alive to help others in vertex syncing
@@ -321,7 +320,7 @@ public final class EpochManager {
 			return;
 		}
 
-		final VerifiedCommittedHeader ancestor = response.getEpochProof();
+		final VerifiedCommittedLedgerState ancestor = response.getEpochProof();
 		if (ancestor.getEpoch() >= this.currentEpoch()) {
 			syncRequestSender.sendLocalSyncRequest(new LocalSyncRequest(ancestor, ImmutableList.of(response.getAuthor())));
 		} else {

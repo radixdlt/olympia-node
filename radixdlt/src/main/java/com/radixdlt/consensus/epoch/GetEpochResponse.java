@@ -17,17 +17,17 @@
 
 package com.radixdlt.consensus.epoch;
 
-import com.radixdlt.consensus.VerifiedCommittedHeader;
+import com.radixdlt.consensus.VerifiedCommittedLedgerState;
 import com.radixdlt.consensus.bft.BFTNode;
 
 /**
  * An RPC Response to a GetEpoch request
  */
 public final class GetEpochResponse {
-	private final VerifiedCommittedHeader proof;
+	private final VerifiedCommittedLedgerState proof;
 	private final BFTNode author;
 
-	public GetEpochResponse(BFTNode author, VerifiedCommittedHeader proof) {
+	public GetEpochResponse(BFTNode author, VerifiedCommittedLedgerState proof) {
 		this.proof = proof;
 		this.author = author;
 	}
@@ -36,7 +36,7 @@ public final class GetEpochResponse {
 		return author;
 	}
 
-	public VerifiedCommittedHeader getEpochProof() {
+	public VerifiedCommittedLedgerState getEpochProof() {
 		return proof;
 	}
 

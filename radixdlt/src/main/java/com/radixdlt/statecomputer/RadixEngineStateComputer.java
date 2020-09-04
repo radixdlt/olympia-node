@@ -20,7 +20,7 @@ package com.radixdlt.statecomputer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.VerifiedCommittedHeader;
+import com.radixdlt.consensus.VerifiedCommittedLedgerState;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
@@ -93,19 +93,19 @@ public final class RadixEngineStateComputer implements StateComputer {
 		// TODO: validity on commit rather than on proposal/prepare.
 		TreeMap<Long, StoredCommittedCommand> storedCommittedAtoms = committedCommandsReader
 			.getNextCommittedCommands(stateVersion, batchSize);
-		final VerifiedCommittedHeader nextProof;
+		final VerifiedCommittedLedgerState nextState;
 		if (storedCommittedAtoms.firstEntry() != null) {
-			nextProof = storedCommittedAtoms.firstEntry().getValue().getProof();
+			nextState = storedCommittedAtoms.firstEntry().getValue().getStateAndProof();
 		} else {
 			Entry<Long, StoredCommittedCommand> uncommittedEntry = unstoredCommittedAtoms.higherEntry(stateVersion);
 			if (uncommittedEntry == null) {
 				return null;
 			}
-			nextProof = uncommittedEntry.getValue().getProof();
+			nextState = uncommittedEntry.getValue().getStateAndProof();
 		}
 
 		synchronized (lock) {
-			final long proofStateVersion = nextProof.getLedgerState().getStateVersion();
+			final long proofStateVersion = nextState.getStateVersion();
 			Map<Long, StoredCommittedCommand> unstoredToReturn
 				= unstoredCommittedAtoms.subMap(stateVersion, false, proofStateVersion, true);
 			storedCommittedAtoms.putAll(unstoredToReturn);
@@ -113,7 +113,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 		return new VerifiedCommittedCommands(
 			storedCommittedAtoms.values().stream().map(StoredCommittedCommand::getCommand).collect(ImmutableList.toImmutableList()),
-			nextProof
+			nextState
 		);
 	}
 
@@ -130,7 +130,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		}
 	}
 
-	private void commitCommand(long version, Command command, VerifiedCommittedHeader proof) {
+	private void commitCommand(long version, Command command, VerifiedCommittedLedgerState proof) {
 		boolean storedInRadixEngine = false;
 		final ClientAtom clientAtom = this.mapCommand(command);
 		if (clientAtom != null) {
@@ -160,11 +160,11 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 	@Override
 	public Optional<BFTValidatorSet> commit(VerifiedCommittedCommands verifiedCommittedCommands) {
-		final VerifiedCommittedHeader proof = verifiedCommittedCommands.getProof();
+		final VerifiedCommittedLedgerState stateAndProof = verifiedCommittedCommands.getLedgerState();
 
-		verifiedCommittedCommands.forEach((version, command) -> this.commitCommand(version, command, proof));
+		verifiedCommittedCommands.forEach((version, command) -> this.commitCommand(version, command, stateAndProof));
 
-		if (proof.getLedgerState().isEndOfEpoch()) {
+		if (stateAndProof.isEndOfEpoch()) {
 			RadixEngineValidatorSetBuilder validatorSetBuilder = this.radixEngine.getComputedState(RadixEngineValidatorSetBuilder.class);
 			return Optional.of(validatorSetBuilder.build());
 		}

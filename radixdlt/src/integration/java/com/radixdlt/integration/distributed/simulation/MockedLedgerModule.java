@@ -17,7 +17,8 @@
 
 package com.radixdlt.integration.distributed.simulation;
 
-import com.radixdlt.consensus.VerifiedCommittedHeader;
+import com.radixdlt.consensus.VerifiedCommittedLedgerState;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.VerifiedCommittedCommands;
 import java.util.Objects;
@@ -47,8 +48,8 @@ public class MockedLedgerModule extends AbstractModule {
 	public void configure() {
 		bind(CommittedStateSyncRx.class).toInstance(Observable::never);
 		bind(EpochChangeRx.class).toInstance(Observable::never);
-		LedgerState ledgerState = LedgerState.create(0, 0, Hash.ZERO_HASH, 0L, true);
-		EpochChange initialEpoch = new EpochChange(VerifiedCommittedHeader.ofGenesisAncestor(ledgerState), validatorSet);
+		LedgerState ledgerState = LedgerState.create(0, View.genesis(), 0, Hash.ZERO_HASH, 0L, true);
+		EpochChange initialEpoch = new EpochChange(VerifiedCommittedLedgerState.ofGenesisAncestor(ledgerState), validatorSet);
 		bind(EpochChange.class).toInstance(initialEpoch);
 		bind(NextCommandGenerator.class).toInstance((view, aids) -> null);
 		bind(SyncRequestSender.class).toInstance(req -> { });
@@ -60,11 +61,18 @@ public class MockedLedgerModule extends AbstractModule {
 		return new Ledger() {
 			@Override
 			public LedgerState prepare(Vertex vertex) {
-				return LedgerState.create(initialEpoch.getProof().getEpoch() + 1, 0, Hash.ZERO_HASH, 0L, false);
+				return LedgerState.create(
+					initialEpoch.getProof().getEpoch() + 1,
+					vertex.getView(),
+					0,
+					Hash.ZERO_HASH,
+					0L,
+					false
+				);
 			}
 
 			@Override
-			public OnSynced ifCommitSynced(VerifiedCommittedHeader header) {
+			public OnSynced ifCommitSynced(VerifiedCommittedLedgerState header) {
 				return onSynced -> {
 					onSynced.run();
 					return (notSynced, opaque) -> { };

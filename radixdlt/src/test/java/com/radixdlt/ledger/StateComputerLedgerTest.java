@@ -36,7 +36,7 @@ import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerState;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.consensus.VerifiedCommittedHeader;
+import com.radixdlt.consensus.VerifiedCommittedLedgerState;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.bft.View;
@@ -58,7 +58,7 @@ public class StateComputerLedgerTest {
 	private StateComputerLedger stateComputerLedger;
 	private CommittedStateSyncSender committedStateSyncSender;
 	private CommittedSender committedSender;
-	private LedgerState currentLedgerState;
+	private VerifiedCommittedLedgerState currentLedgerState;
 	private SystemCounters counters;
 
 	@Before
@@ -69,7 +69,7 @@ public class StateComputerLedgerTest {
 		this.committedStateSyncSender = mock(CommittedStateSyncSender.class);
 		this.counters = mock(SystemCounters.class);
 		this.committedSender = mock(CommittedSender.class);
-		this.currentLedgerState = mock(LedgerState.class);
+		this.currentLedgerState = mock(VerifiedCommittedLedgerState.class);
 
 		this.stateComputerLedger = new StateComputerLedger(
 			currentLedgerState,
@@ -177,13 +177,10 @@ public class StateComputerLedgerTest {
 		Hash hash = mock(Hash.class);
 		when(command.getHash()).thenReturn(hash);
 
-		LedgerState ledgerState = mock(LedgerState.class);
-		when(ledgerState.compareTo(eq(currentLedgerState))).thenReturn(-1);
-
 		VerifiedCommittedCommands verified = mock(VerifiedCommittedCommands.class);
-		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
-		when(proof.getLedgerState()).thenReturn(ledgerState);
-		when(verified.getProof()).thenReturn(proof);
+		VerifiedCommittedLedgerState proof = mock(VerifiedCommittedLedgerState.class);
+		when(proof.compareTo(eq(currentLedgerState))).thenReturn(-1);
+		when(verified.getLedgerState()).thenReturn(proof);
 
 		stateComputerLedger.commit(verified);
 		verify(stateComputer, never()).commit(any());
@@ -197,13 +194,10 @@ public class StateComputerLedgerTest {
 		Hash hash = mock(Hash.class);
 		when(command.getHash()).thenReturn(hash);
 
-		LedgerState ledgerState = mock(LedgerState.class);
-		when(ledgerState.compareTo(eq(currentLedgerState))).thenReturn(1);
-
 		VerifiedCommittedCommands verified = mock(VerifiedCommittedCommands.class);
-		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
-		when(proof.getLedgerState()).thenReturn(ledgerState);
-		when(verified.getProof()).thenReturn(proof);
+		VerifiedCommittedLedgerState proof = mock(VerifiedCommittedLedgerState.class);
+		when(proof.compareTo(eq(currentLedgerState))).thenReturn(1);
+		when(verified.getLedgerState()).thenReturn(proof);
 		when(verified.truncateFromVersion(anyLong())).thenReturn(verified);
 		doAnswer(invocation -> {
 			BiConsumer<Long, Command> consumer = invocation.getArgument(0);
@@ -212,23 +206,20 @@ public class StateComputerLedgerTest {
 		}).when(verified).forEach(any());
 
 		stateComputerLedger.commit(verified);
-		verify(stateComputer, times(1)).commit(argThat(v -> v.getProof().equals(proof)));
+		verify(stateComputer, times(1)).commit(argThat(v -> v.getLedgerState().equals(proof)));
 		verify(mempool, times(1)).removeCommitted(eq(hash));
 		verify(committedSender, times(1)).sendCommitted(any(), any());
 	}
 
 	@Test
 	public void when_check_sync_and_synced__then_return_sync_handler() {
-		LedgerState ledgerState = mock(LedgerState.class);
-		when(ledgerState.compareTo(currentLedgerState)).thenReturn(0);
-
-		VerifiedCommittedHeader verifiedCommittedHeader = mock(VerifiedCommittedHeader.class);
-		when(verifiedCommittedHeader.getLedgerState()).thenReturn(ledgerState);
+		VerifiedCommittedLedgerState verifiedCommittedLedgerState = mock(VerifiedCommittedLedgerState.class);
+		when(verifiedCommittedLedgerState.compareTo(currentLedgerState)).thenReturn(0);
 
 		Runnable onSynced = mock(Runnable.class);
 		Runnable onNotSynced = mock(Runnable.class);
 		stateComputerLedger
-			.ifCommitSynced(verifiedCommittedHeader)
+			.ifCommitSynced(verifiedCommittedLedgerState)
 			.then(onSynced)
 			.elseExecuteAndSendMessageOnSync(onNotSynced, mock(Object.class));
 		verify(onSynced, times(1)).run();
@@ -237,18 +228,14 @@ public class StateComputerLedgerTest {
 
 	@Test
 	public void when_check_sync__will_complete_when_higher_or_equal_state_version() {
-		LedgerState ledgerState = mock(LedgerState.class);
-		when(ledgerState.getStateVersion()).thenReturn(1L);
 		when(currentLedgerState.getStateVersion()).thenReturn(0L);
-		when(ledgerState.compareTo(currentLedgerState)).thenReturn(1);
-
-		VerifiedCommittedHeader verifiedCommittedHeader = mock(VerifiedCommittedHeader.class);
-		when(verifiedCommittedHeader.getLedgerState()).thenReturn(ledgerState);
+		VerifiedCommittedLedgerState verifiedCommittedLedgerState = mock(VerifiedCommittedLedgerState.class);
+		when(verifiedCommittedLedgerState.getStateVersion()).thenReturn(1L);
 
 		Runnable onSynced = mock(Runnable.class);
 		Runnable onNotSynced = mock(Runnable.class);
 		stateComputerLedger
-			.ifCommitSynced(verifiedCommittedHeader)
+			.ifCommitSynced(verifiedCommittedLedgerState)
 			.then(onSynced)
 			.elseExecuteAndSendMessageOnSync(onNotSynced, mock(Object.class));
 		verify(committedStateSyncSender, never()).sendCommittedStateSync(anyLong(), any());
@@ -256,9 +243,10 @@ public class StateComputerLedgerTest {
 		verify(onNotSynced, times(1)).run();
 
 		VerifiedCommittedCommands verified = mock(VerifiedCommittedCommands.class);
-		VerifiedCommittedHeader proof = mock(VerifiedCommittedHeader.class);
-		when(proof.getLedgerState()).thenReturn(ledgerState);
-		when(verified.getProof()).thenReturn(proof);
+		VerifiedCommittedLedgerState proof = mock(VerifiedCommittedLedgerState.class);
+		when(proof.getStateVersion()).thenReturn(1L);
+		when(proof.compareTo(any())).thenReturn(1);
+		when(verified.getLedgerState()).thenReturn(proof);
 		when(verified.truncateFromVersion(anyLong())).thenReturn(verified);
 
 		stateComputerLedger.commit(verified);

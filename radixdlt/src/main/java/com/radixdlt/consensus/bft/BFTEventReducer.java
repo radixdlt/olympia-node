@@ -19,7 +19,7 @@ package com.radixdlt.consensus.bft;
 
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.VerifiedCommittedHeader;
+import com.radixdlt.consensus.VerifiedCommittedLedgerState;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.Proposal;
@@ -124,7 +124,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private boolean synchedLog = false;
 
 	public interface EndOfEpochSender {
-		void sendEndOfEpoch(BFTHeader header);
+		void sendEndOfEpoch(VerifiedCommittedLedgerState header);
 	}
 
 	public BFTEventReducer(
@@ -166,7 +166,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		this.infoSender.sendCurrentView(nextView);
 	}
 
-	private Optional<VerifiedCommittedHeader> processQC(QuorumCertificate qc) {
+	private Optional<VerifiedCommittedLedgerState> processQC(QuorumCertificate qc) {
 		// commit any newly committable vertices
 		this.safetyRules.process(qc);
 
@@ -210,8 +210,8 @@ public final class BFTEventReducer implements BFTEventProcessor {
 				}
 				// TODO: Remove isEndOfEpoch knowledge from consensus
 				processQC(qc).ifPresent(committedProof -> {
-					if (committedProof.getLedgerState().isEndOfEpoch()) {
-						this.endOfEpochSender.sendEndOfEpoch(committedProof.getHeader());
+					if (committedProof.isEndOfEpoch()) {
+						this.endOfEpochSender.sendEndOfEpoch(committedProof);
 					}
 				});
 			} else {

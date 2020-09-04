@@ -29,7 +29,7 @@ public class BFTHeaderSerializeTest extends SerializeObject<BFTHeader> {
 
 	private static BFTHeader get() {
 		View view = View.of(1234567890L);
-		LedgerState ledgerState = LedgerState.create(0, 0, Hash.random(), 0L, false);
+		LedgerState ledgerState = LedgerState.create(0, View.genesis(), 0, Hash.random(), 0L, false);
 		return new BFTHeader(view, Hash.random(), ledgerState);
 	}
 }

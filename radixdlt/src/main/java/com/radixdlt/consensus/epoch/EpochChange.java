@@ -18,18 +18,19 @@
 package com.radixdlt.consensus.epoch;
 
 import com.radixdlt.consensus.LedgerState;
-import com.radixdlt.consensus.VerifiedCommittedHeader;
+import com.radixdlt.consensus.VerifiedCommittedLedgerState;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.View;
 import java.util.Objects;
 
 /**
  * An epoch change message to consensus
  */
 public final class EpochChange {
-	private final VerifiedCommittedHeader proof;
+	private final VerifiedCommittedLedgerState proof;
 	private final BFTValidatorSet validatorSet;
 
-	public EpochChange(VerifiedCommittedHeader proof, BFTValidatorSet validatorSet) {
+	public EpochChange(VerifiedCommittedLedgerState proof, BFTValidatorSet validatorSet) {
 		this.proof = Objects.requireNonNull(proof);
 		this.validatorSet = Objects.requireNonNull(validatorSet);
 	}
@@ -39,20 +40,21 @@ public final class EpochChange {
 	}
 
 	public LedgerState getPrevLedgerState() {
-		return proof.getLedgerState();
+		return proof.getRaw();
 	}
 
 	public LedgerState getNextLedgerState() {
 		return LedgerState.create(
 			proof.getEpoch() + 1,
-			proof.getLedgerState().getStateVersion(),
-			proof.getLedgerState().getCommandId(),
-			proof.getLedgerState().timestamp(),
+			View.genesis(),
+			proof.getStateVersion(),
+			proof.getCommandId(),
+			proof.timestamp(),
 			false
 		);
 	}
 
-	public VerifiedCommittedHeader getProof() {
+	public VerifiedCommittedLedgerState getProof() {
 		return proof;
 	}
 
