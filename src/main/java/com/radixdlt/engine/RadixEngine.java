@@ -146,14 +146,12 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 	}
 
 	public void staticCheck(T atom) throws RadixEngineException {
-		final Optional<CMError> error = constraintMachine.validate(atom.getCMInstruction());
-		if (error.isPresent()) {
-			CMError e = error.get();
-			throw new RadixEngineException(RadixEngineErrorCode.CM_ERROR, e.getErrorDescription(), e.getDataPointer(), e);
-		}
+		Set<Particle> outputParticles = constraintMachine.validate(atom.getCMInstruction())
+			.orElseThrow(e ->
+				new RadixEngineException(RadixEngineErrorCode.CM_ERROR, e.getErrorDescription(), e.getDataPointer(), e));
 
 		if (checker != null) {
-			Result hookResult = checker.check(atom);
+			Result hookResult = checker.check(atom, outputParticles);
 			if (hookResult.isError()) {
 				throw new RadixEngineException(RadixEngineErrorCode.HOOK_ERROR, "Checker failed", DataPointer.ofAtom());
 			}
