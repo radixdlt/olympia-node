@@ -31,7 +31,7 @@ public class GetVerticesErrorResponseMessageTest {
 	@Test
 	public void sensibleToString() {
 		Hash vertexId = Hash.random();
-		QuorumCertificate qc = QuorumCertificate.ofGenesis(Vertex.createGenesis(1L, mock(LedgerState.class)), mock(LedgerState.class));
+		QuorumCertificate qc = QuorumCertificate.ofGenesis(Vertex.createGenesis(mock(LedgerState.class)), mock(LedgerState.class));
 		GetVerticesErrorResponseMessage msg1 = new GetVerticesErrorResponseMessage(0, vertexId, qc, qc);
 		String s1 = msg1.toString();
 		assertThat(s1, containsString(GetVerticesErrorResponseMessage.class.getSimpleName()));

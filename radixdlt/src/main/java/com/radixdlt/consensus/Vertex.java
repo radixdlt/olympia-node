@@ -44,10 +44,6 @@ public final class Vertex {
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("epoch")
-	@DsonOutput(Output.ALL)
-	private final long epoch;
-
 	@JsonProperty("qc")
 	@DsonOutput(Output.ALL)
 	private final QuorumCertificate qc;
@@ -63,29 +59,23 @@ public final class Vertex {
 	@JsonCreator
 	Vertex(
 		@JsonProperty("qc") QuorumCertificate qc,
-		@JsonProperty("epoch") long epoch,
 		@JsonProperty("view") Long viewId,
 		@JsonProperty("command") Command command
 	) {
-		this(epoch, qc, viewId != null ? View.of(viewId) : null, command);
+		this(qc, viewId != null ? View.of(viewId) : null, command);
 	}
 
-	public Vertex(long epoch, QuorumCertificate qc, View view, Command command) {
-		if (epoch < 0) {
-			throw new IllegalArgumentException("epoch must be >= 0");
-		}
-
-		this.epoch = epoch;
+	public Vertex(QuorumCertificate qc, View view, Command command) {
 		this.qc = Objects.requireNonNull(qc);
 		this.view = Objects.requireNonNull(view);
 		this.command = command;
 	}
 
-	public static Vertex createGenesis(long epoch, LedgerState ledgerState) {
+	public static Vertex createGenesis(LedgerState ledgerState) {
 		Header header = Header.ofGenesisAncestor(ledgerState);
 		final VoteData voteData = new VoteData(header, header, header);
 		final QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-		return new Vertex(epoch, qc, View.genesis(), null);
+		return new Vertex(qc, View.genesis(), null);
 	}
 
 	public static Vertex createVertex(QuorumCertificate qc, View view, Command command) {
@@ -95,7 +85,7 @@ public final class Vertex {
 			throw new IllegalArgumentException("Only genesis can have view 0.");
 		}
 
-		return new Vertex(qc.getProposed().getLedgerState().getEpoch(), qc, view, command);
+		return new Vertex(qc, view, command);
 	}
 
 	private Hash doGetHash() {
@@ -114,11 +104,11 @@ public final class Vertex {
 		return qc.getProposed().getVertexId();
 	}
 
-	public Header getGrandParentMetadata() {
+	public Header getGrandParentHeader() {
 		return qc.getParent();
 	}
 
-	public Header getParentMetadata() {
+	public Header getParentHeader() {
 		return qc.getProposed();
 	}
 
@@ -127,11 +117,7 @@ public final class Vertex {
 	}
 
 	public boolean hasDirectParent() {
-		return this.view.number() == this.getParentMetadata().getView().number() + 1;
-	}
-
-	public long getEpoch() {
-		return epoch;
+		return this.view.number() == this.getParentHeader().getView().number() + 1;
 	}
 
 	public View getView() {
@@ -160,12 +146,12 @@ public final class Vertex {
 
 	@Override
 	public String toString() {
-		return String.format("Vertex{epoch=%s view=%s, qc=%s, cmd=%s}", epoch, view, qc, command);
+		return String.format("Vertex{view=%s, qc=%s, cmd=%s}", view, qc, command);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(qc, view, command, epoch);
+		return Objects.hash(qc, view, command);
 	}
 
 	@Override
@@ -177,7 +163,6 @@ public final class Vertex {
 		Vertex v = (Vertex) o;
 		return Objects.equals(v.view, this.view)
 			&& Objects.equals(v.command, this.command)
-			&& Objects.equals(v.qc, this.qc)
-			&& v.epoch == this.epoch;
+			&& Objects.equals(v.qc, this.qc);
 	}
 }

@@ -228,7 +228,7 @@ public class BFTEventReducerTest {
 		when(proposedVertex.getCommand()).thenReturn(mock(Command.class));
 		when(proposedVertex.getQC()).thenReturn(mock(QuorumCertificate.class));
 		Header parent = mock(Header.class);
-		when(proposedVertex.getParentMetadata()).thenReturn(parent);
+		when(proposedVertex.getParentHeader()).thenReturn(parent);
 		when(proposedVertex.getView()).thenReturn(currentView);
 
 		Proposal proposal = mock(Proposal.class);
@@ -255,7 +255,7 @@ public class BFTEventReducerTest {
 		when(proposedVertex.getQC()).thenReturn(qc);
 		when(proposedVertex.getView()).thenReturn(currentView);
 		Header parent = mock(Header.class);
-		when(proposedVertex.getParentMetadata()).thenReturn(parent);
+		when(proposedVertex.getParentHeader()).thenReturn(parent);
 
 		Proposal proposal = mock(Proposal.class);
 		when(proposal.getVertex()).thenReturn(proposedVertex);
@@ -288,7 +288,7 @@ public class BFTEventReducerTest {
 		when(proposedVertex.getQC()).thenReturn(qc);
 		when(proposedVertex.getView()).thenReturn(currentView);
 		Header parent = mock(Header.class);
-		when(proposedVertex.getParentMetadata()).thenReturn(parent);
+		when(proposedVertex.getParentHeader()).thenReturn(parent);
 
 		Proposal proposal = mock(Proposal.class);
 		when(proposal.getVertex()).thenReturn(proposedVertex);
@@ -319,7 +319,7 @@ public class BFTEventReducerTest {
 		when(proposedVertex.getQC()).thenReturn(qc);
 		when(proposedVertex.getView()).thenReturn(currentView);
 		Header parent = mock(Header.class);
-		when(proposedVertex.getParentMetadata()).thenReturn(parent);
+		when(proposedVertex.getParentHeader()).thenReturn(parent);
 
 		Proposal proposal = mock(Proposal.class);
 		when(proposal.getVertex()).thenReturn(proposedVertex);

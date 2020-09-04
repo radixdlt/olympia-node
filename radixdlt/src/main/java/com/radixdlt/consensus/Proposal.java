@@ -80,7 +80,7 @@ public final class Proposal implements RequiresSyncConsensusEvent {
 
 	@Override
 	public long getEpoch() {
-		return vertex.getEpoch();
+		return vertex.getQC().getProposed().getLedgerState().getEpoch();
 	}
 
 	@Override

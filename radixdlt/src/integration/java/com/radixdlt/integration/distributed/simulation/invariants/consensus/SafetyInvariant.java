@@ -73,7 +73,10 @@ public class SafetyInvariant implements TestInvariant {
 			.flatMap(nodeAndVertex -> {
 				final BFTNode node = nodeAndVertex.getFirst();
 				final Vertex vertex = nodeAndVertex.getSecond();
-				final EpochView epochView = EpochView.of(vertex.getEpoch(), vertex.getView());
+				final EpochView epochView = EpochView.of(
+					vertex.getQC().getProposed().getLedgerState().getEpoch(),
+					vertex.getView()
+				);
 
 				final Vertex currentVertexAtView = committedVertices.get(epochView);
 				if (currentVertexAtView != null) {
@@ -81,12 +84,15 @@ public class SafetyInvariant implements TestInvariant {
 						return conflictingVerticesError(vertex, currentVertexAtView);
 					}
 				} else {
-					EpochView parentEpochView = EpochView.of(vertex.getEpoch(), vertex.getParentMetadata().getView());
+					EpochView parentEpochView = EpochView.of(
+						vertex.getQC().getProposed().getLedgerState().getEpoch(),
+						vertex.getParentHeader().getView()
+					);
 					Vertex parent = committedVertices.get(parentEpochView);
 					if (parent == null) {
 						Entry<EpochView, Vertex> higherCommitted = committedVertices.higherEntry(parentEpochView);
 						if (higherCommitted != null) {
-							Header higherParentHeader = higherCommitted.getValue().getParentMetadata();
+							Header higherParentHeader = higherCommitted.getValue().getParentHeader();
 							EpochView higherCommittedParentEpochView = EpochView.of(
 								higherParentHeader.getLedgerState().getEpoch(),
 								higherParentHeader.getView()

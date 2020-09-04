@@ -86,6 +86,10 @@ public final class LedgerState implements Comparable<LedgerState> {
 		return new LedgerState(epoch, stateVersion, commandId, timestamp, isEndOfEpoch);
 	}
 
+	public Hash getCommandId() {
+		return commandId;
+	}
+
 	public long getEpoch() {
 		return epoch;
 	}

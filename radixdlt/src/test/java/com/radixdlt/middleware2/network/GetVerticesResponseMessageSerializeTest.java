@@ -30,7 +30,7 @@ public class GetVerticesResponseMessageSerializeTest extends SerializeMessageObj
 
 	private static GetVerticesResponseMessage get() {
 		LedgerState ledgerState = LedgerState.create(0, 0, Hash.random(), 0L, false);
-		Vertex genesisVertex = Vertex.createGenesis(1L, ledgerState);
+		Vertex genesisVertex = Vertex.createGenesis(ledgerState);
 		return new GetVerticesResponseMessage(1234, Hash.random(), ImmutableList.of(genesisVertex));
 	}
 

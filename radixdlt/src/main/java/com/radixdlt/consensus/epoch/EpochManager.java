@@ -24,7 +24,6 @@ import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.EmptyVertexStoreEventProcessor;
-import com.radixdlt.consensus.LedgerState;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.ProposerElectionFactory;
@@ -166,7 +165,6 @@ public final class EpochManager {
 
 	private void updateEpochState() {
 		BFTValidatorSet validatorSet = this.currentEpoch.getValidatorSet();
-		VerifiedCommittedHeader proof = this.currentEpoch.getProof();
 
 		final BFTEventProcessor bftEventProcessor;
 		final VertexStoreEventProcessor vertexStoreEventProcessor;
@@ -178,21 +176,14 @@ public final class EpochManager {
 		} else {
 			final long nextEpoch = this.currentEpoch.getEpoch();
 			logEpochChange(this.currentEpoch, "included in");
-			Vertex genesisVertex = Vertex.createGenesis(nextEpoch, this.currentEpoch.getLedgerState());
 
 			ProposerElection proposerElection = proposerElectionFactory.create(validatorSet);
 			TimeoutSender sender = (view, ms) -> localTimeoutSender.scheduleTimeout(new LocalTimeout(nextEpoch, view), ms);
 			Pacemaker pacemaker = pacemakerFactory.create(sender);
 
 			// TODO: Recover VertexStore
-			LedgerState ledgerState = LedgerState.create(
-				this.currentEpoch.getEpoch(),
-				this.currentEpoch.getLedgerState().getStateVersion(),
-				Hash.ZERO_HASH,
-				0L,
-				false
-			);
-			QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(genesisVertex, ledgerState);
+			Vertex genesisVertex = Vertex.createGenesis(this.currentEpoch.getPrevLedgerState());
+			QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(genesisVertex, this.currentEpoch.getNextLedgerState());
 			VertexStore vertexStore = vertexStoreFactory.create(genesisVertex, genesisQC, ledger);
 			vertexStoreEventProcessor = vertexStore;
 

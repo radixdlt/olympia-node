@@ -100,9 +100,9 @@ public final class SafetyRules {
 		// Add a vertex to commit if creating a quorum for the proposed vertex would
 		// create three consecutive qcs.
 		final Header toCommit;
-		if (proposedVertex.getView().equals(proposedVertex.getParentMetadata().getView().next())
-			&& !proposedVertex.getParentMetadata().getView().isGenesis() && !proposedVertex.getGrandParentMetadata().getView().isGenesis()
-			&& proposedVertex.getParentMetadata().getView().equals(proposedVertex.getGrandParentMetadata().getView().next())
+		if (proposedVertex.getView().equals(proposedVertex.getParentHeader().getView().next())
+			&& !proposedVertex.getParentHeader().getView().isGenesis() && !proposedVertex.getGrandParentHeader().getView().isGenesis()
+			&& proposedVertex.getParentHeader().getView().equals(proposedVertex.getGrandParentHeader().getView().next())
 		) {
 			toCommit = proposedVertex.getQC().getParent();
 		} else {

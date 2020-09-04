@@ -38,8 +38,18 @@ public final class EpochChange {
 		return proof.getEpoch() + 1;
 	}
 
-	public LedgerState getLedgerState() {
+	public LedgerState getPrevLedgerState() {
 		return proof.getLedgerState();
+	}
+
+	public LedgerState getNextLedgerState() {
+		return LedgerState.create(
+			proof.getEpoch() + 1,
+			proof.getLedgerState().getStateVersion(),
+			proof.getLedgerState().getCommandId(),
+			proof.getLedgerState().timestamp(),
+			false
+		);
 	}
 
 	public VerifiedCommittedHeader getProof() {
