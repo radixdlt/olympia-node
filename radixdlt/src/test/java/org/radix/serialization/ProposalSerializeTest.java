@@ -41,8 +41,8 @@ public class ProposalSerializeTest extends SerializeObject<Proposal> {
 		Hash id = Hash.random();
 
 		LedgerState ledgerState = LedgerState.create(0, 0, Hash.random(), 0L, false);
-		Header header = new Header(0, view, id, ledgerState);
-		Header parent = new Header(0, View.of(1234567890L), Hash.random(), ledgerState);
+		Header header = new Header(view, id, ledgerState);
+		Header parent = new Header(View.of(1234567890L), Hash.random(), ledgerState);
 		VoteData voteData = new VoteData(header, parent, null);
 		QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 		Command command = new Command(new byte[] {0, 1, 2, 3});

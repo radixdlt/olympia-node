@@ -30,6 +30,6 @@ public class HeaderSerializeTest extends SerializeObject<Header> {
 	private static Header get() {
 		View view = View.of(1234567890L);
 		LedgerState ledgerState = LedgerState.create(0, 0, Hash.random(), 0L, false);
-		return new Header(0, view, Hash.random(), ledgerState);
+		return new Header(view, Hash.random(), ledgerState);
 	}
 }

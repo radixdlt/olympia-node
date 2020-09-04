@@ -32,9 +32,9 @@ public class TimestampedVoteDataSerializeTest extends SerializeObject<Timestampe
 	private static TimestampedVoteData get() {
 		View view = View.of(1234567890L);
 		LedgerState ledgerState = LedgerState.create(0, 0, Hash.random(), 0L, false);
-		Header committed = new Header(0, view, Hash.random(), ledgerState);
-		Header parent = new Header(0, view.next(), Hash.random(), ledgerState);
-		Header proposed = new Header(0, view.next().next(), Hash.random(), ledgerState);
+		Header committed = new Header(view, Hash.random(), ledgerState);
+		Header parent = new Header(view.next(), Hash.random(), ledgerState);
+		Header proposed = new Header(view.next().next(), Hash.random(), ledgerState);
 		VoteData voteData = new VoteData(proposed, parent, committed);
 		return new TimestampedVoteData(voteData, System.currentTimeMillis());
 	}

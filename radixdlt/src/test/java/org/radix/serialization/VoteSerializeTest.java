@@ -37,8 +37,8 @@ public class VoteSerializeTest extends SerializeObject<Vote> {
 		Hash id = Hash.random();
 
 		LedgerState ledgerState = LedgerState.create(0, 1, Hash.random(), 0L, false);
-		Header header = new Header(0, view, id, ledgerState);
-		Header parent = new Header(0, View.of(1234567890L), Hash.random(), ledgerState);
+		Header header = new Header(view, id, ledgerState);
+		Header parent = new Header(View.of(1234567890L), Hash.random(), ledgerState);
 		VoteData voteData = new VoteData(header, parent, null);
 		TimestampedVoteData timestampedVoteData = new TimestampedVoteData(voteData, 123456L);
 		BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());

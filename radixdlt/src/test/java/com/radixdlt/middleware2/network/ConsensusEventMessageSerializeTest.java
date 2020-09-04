@@ -37,8 +37,8 @@ public class ConsensusEventMessageSerializeTest extends SerializeMessageObject<C
 
 	private static ConsensusEventMessage get() {
 		LedgerState ledgerState = LedgerState.create(0, 0, Hash.ZERO_HASH, 0L, false);
-		Header header = new Header(0, View.of(1), Hash.ZERO_HASH, ledgerState);
-		Header parent = new Header(0, View.of(0), Hash.ZERO_HASH, ledgerState);
+		Header header = new Header(View.of(1), Hash.ZERO_HASH, ledgerState);
+		Header parent = new Header(View.of(0), Hash.ZERO_HASH, ledgerState);
 		VoteData voteData = new VoteData(header, parent, null);
 		QuorumCertificate quorumCertificate = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 		BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());

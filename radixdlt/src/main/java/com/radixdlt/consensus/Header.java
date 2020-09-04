@@ -40,10 +40,6 @@ public final class Header {
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("epoch")
-	@DsonOutput(Output.ALL)
-	private final long epoch;
-
 	private View view;
 
 	@JsonProperty("vertex_id")
@@ -57,23 +53,16 @@ public final class Header {
 	Header() {
 		// Serializer only
 		this.view = null;
-		this.epoch = 0L;
 		this.vertexId = null;
 		this.ledgerState = null;
 	}
 
 	// TODO: Move command output to a more opaque data structure
 	public Header(
-		long epoch, // consensus data
 		View view, // consensus data
 		Hash vertexId, // consensus data
 		LedgerState ledgerState
 	) {
-		if (epoch < 0) {
-			throw new IllegalArgumentException("epoch must be >= 0");
-		}
-
-		this.epoch = epoch;
 		this.view = view;
 		this.vertexId = vertexId;
 		this.ledgerState = ledgerState;
@@ -81,7 +70,6 @@ public final class Header {
 
 	public static Header ofGenesisAncestor(LedgerState ledgerState) {
 		return new Header(
-			0,
 			View.genesis(),
 			Hash.ZERO_HASH,
 			ledgerState
@@ -90,7 +78,6 @@ public final class Header {
 
 	public static Header ofVertex(Vertex vertex, LedgerState ledgerState) {
 		return new Header(
-			vertex.getEpoch(),
 			vertex.getView(),
 			vertex.getId(),
 			ledgerState
@@ -99,10 +86,6 @@ public final class Header {
 
 	public LedgerState getLedgerState() {
 		return ledgerState;
-	}
-
-	public long getEpoch() {
-		return epoch;
 	}
 
 	public View getView() {
@@ -126,7 +109,7 @@ public final class Header {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.epoch, this.view, this.vertexId, this.ledgerState);
+		return Objects.hash(this.view, this.vertexId, this.ledgerState);
 	}
 
 	@Override
@@ -138,7 +121,6 @@ public final class Header {
 			Header other = (Header) o;
 			return
 				Objects.equals(this.view, other.view)
-				&& this.epoch == other.epoch
 				&& Objects.equals(this.vertexId, other.vertexId)
 				&& Objects.equals(this.ledgerState, other.ledgerState);
 		}
@@ -147,8 +129,8 @@ public final class Header {
 
 	@Override
 	public String toString() {
-		return String.format("%s{epoch=%s view=%s out=%s}",
-			getClass().getSimpleName(), this.epoch, this.view, this.ledgerState
+		return String.format("%s{view=%s ledger=%s}",
+			getClass().getSimpleName(), this.view, this.ledgerState
 		);
 	}
 }
