@@ -19,7 +19,7 @@ package com.radixdlt.consensus.bft;
 
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.VerifiedLedgerStateAndProof;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.Proposal;
@@ -124,7 +124,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private boolean synchedLog = false;
 
 	public interface EndOfEpochSender {
-		void sendEndOfEpoch(VerifiedLedgerStateAndProof header);
+		void sendEndOfEpoch(VerifiedLedgerHeaderAndProof header);
 	}
 
 	public BFTEventReducer(
@@ -166,7 +166,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		this.infoSender.sendCurrentView(nextView);
 	}
 
-	private Optional<VerifiedLedgerStateAndProof> processQC(QuorumCertificate qc) {
+	private Optional<VerifiedLedgerHeaderAndProof> processQC(QuorumCertificate qc) {
 		// commit any newly committable vertices
 		this.safetyRules.process(qc);
 

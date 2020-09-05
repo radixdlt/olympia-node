@@ -27,8 +27,8 @@ import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Before;
 import org.junit.Test;
 
-public class LedgerStateTest {
-	private LedgerState ledgerState;
+public class LedgerHeaderTest {
+	private LedgerHeader ledgerHeader;
 	private long timestamp;
 	private Hash commandId;
 
@@ -36,26 +36,26 @@ public class LedgerStateTest {
 	public void setup() {
 		this.timestamp = 12345678L;
 		this.commandId = mock(Hash.class);
-		this.ledgerState = LedgerState.create(0, View.genesis(), 12345, commandId, timestamp, false);
+		this.ledgerHeader = LedgerHeader.create(0, View.genesis(), 12345, commandId, timestamp, false);
 	}
 
 	@Test
 	public void testGetters() {
-		assertThat(ledgerState.getStateVersion()).isEqualTo(12345);
-		assertThat(ledgerState.timestamp()).isEqualTo(timestamp);
-		assertThat(ledgerState.isEndOfEpoch()).isFalse();
-		assertThat(ledgerState.getStateVersion());
+		assertThat(ledgerHeader.getStateVersion()).isEqualTo(12345);
+		assertThat(ledgerHeader.timestamp()).isEqualTo(timestamp);
+		assertThat(ledgerHeader.isEndOfEpoch()).isFalse();
+		assertThat(ledgerHeader.getStateVersion());
 	}
 
 	@Test
 	public void equalsContract() {
-		EqualsVerifier.forClass(LedgerState.class)
+		EqualsVerifier.forClass(LedgerHeader.class)
 			.verify();
 	}
 
 	@Test
 	public void sensibleToString() {
-		String s = this.ledgerState.toString();
+		String s = this.ledgerHeader.toString();
 		AssertionsForClassTypes.assertThat(s).contains("12345");
 	}
 }

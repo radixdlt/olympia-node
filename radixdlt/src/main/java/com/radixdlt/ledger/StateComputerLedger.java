@@ -20,8 +20,8 @@ package com.radixdlt.ledger;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.LedgerState;
-import com.radixdlt.consensus.VerifiedLedgerStateAndProof;
+import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.Vertex;
@@ -65,11 +65,11 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	private final SystemCounters counters;
 
 	private final Object lock = new Object();
-	private VerifiedLedgerStateAndProof currentLedgerState;
+	private VerifiedLedgerHeaderAndProof currentLedgerState;
 	private final TreeMap<Long, Set<Object>> committedStateSyncers = new TreeMap<>();
 
 	public StateComputerLedger(
-		VerifiedLedgerStateAndProof initialLedgerState,
+		VerifiedLedgerHeaderAndProof initialLedgerState,
 		Mempool mempool,
 		StateComputer stateComputer,
 		CommittedStateSyncSender committedStateSyncSender,
@@ -91,8 +91,8 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	}
 
 	@Override
-	public LedgerState prepare(Vertex vertex) {
-		final LedgerState parent = vertex.getQC().getProposed().getLedgerState();
+	public LedgerHeader prepare(Vertex vertex) {
+		final LedgerHeader parent = vertex.getQC().getProposed().getLedgerState();
 		final long parentStateVersion = parent.getStateVersion();
 
 		boolean isEndOfEpoch = stateComputer.prepare(vertex);
@@ -107,7 +107,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		final long stateVersion = parentStateVersion + versionIncrement;
 		final long timestamp = vertex.getQC().getTimestampedSignatures().weightedTimestamp();
 
-		return LedgerState.create(
+		return LedgerHeader.create(
 			parent.getEpoch(),
 			vertex.getView(),
 			stateVersion,
@@ -118,7 +118,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	}
 
 	@Override
-	public OnSynced ifCommitSynced(VerifiedLedgerStateAndProof committedLedgerState) {
+	public OnSynced ifCommitSynced(VerifiedLedgerHeaderAndProof committedLedgerState) {
 		synchronized (lock) {
 			if (committedLedgerState.getStateVersion() <= this.currentLedgerState.getStateVersion()) {
 				if (committedLedgerState.compareTo(this.currentLedgerState) > 0) {
@@ -142,7 +142,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	public void commit(VerifiedCommandsAndProof verifiedCommandsAndProof) {
 		this.counters.increment(CounterType.LEDGER_PROCESSED);
 		synchronized (lock) {
-			final VerifiedLedgerStateAndProof committedState = verifiedCommandsAndProof.getLedgerState();
+			final VerifiedLedgerHeaderAndProof committedState = verifiedCommandsAndProof.getLedgerState();
 			if (committedState.compareTo(this.currentLedgerState) <= 0) {
 				return;
 			}

@@ -31,7 +31,7 @@ public class QuorumCertificateTest {
 	public void when_create_genesis_qc_with_non_genesis_vertex__then_should_throw_exception() {
 		Vertex vertex = mock(Vertex.class);
 		when(vertex.getView()).thenReturn(View.of(1));
-		assertThatThrownBy(() -> QuorumCertificate.ofGenesis(vertex, mock(LedgerState.class)))
+		assertThatThrownBy(() -> QuorumCertificate.ofGenesis(vertex, mock(LedgerHeader.class)))
 			.isInstanceOf(IllegalArgumentException.class);
 	}
 

@@ -19,7 +19,7 @@ package com.radixdlt.consensus.epoch;
 
 import static org.mockito.Mockito.mock;
 
-import com.radixdlt.consensus.VerifiedLedgerStateAndProof;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import org.junit.Test;
 
@@ -27,7 +27,7 @@ public class EmptySyncEpochsRPCSenderTest {
 	@Test
 	public void when_send_request_and_response__then_no_exception_occurs() {
 		EmptySyncEpochsRPCSender.INSTANCE.sendGetEpochRequest(mock(BFTNode.class), 12345L);
-		EmptySyncEpochsRPCSender.INSTANCE.sendGetEpochResponse(mock(BFTNode.class), mock(VerifiedLedgerStateAndProof.class));
+		EmptySyncEpochsRPCSender.INSTANCE.sendGetEpochResponse(mock(BFTNode.class), mock(VerifiedLedgerHeaderAndProof.class));
 	}
 
 }

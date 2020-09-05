@@ -39,8 +39,8 @@ public class VertexTest {
 		View baseView = View.of(1234567890L);
 		Hash id = Hash.random();
 
-		BFTHeader header = new BFTHeader(baseView.next(), id, mock(LedgerState.class));
-		BFTHeader parent = new BFTHeader(baseView, Hash.random(), mock(LedgerState.class));
+		BFTHeader header = new BFTHeader(baseView.next(), id, mock(LedgerHeader.class));
+		BFTHeader parent = new BFTHeader(baseView, Hash.random(), mock(LedgerHeader.class));
 		VoteData voteData = new VoteData(header, parent, parent);
 
 		this.qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
@@ -64,8 +64,8 @@ public class VertexTest {
 		View baseView = View.of(1234567890L);
 		Hash id = Hash.random();
 
-		BFTHeader header = new BFTHeader(baseView.next(), id, mock(LedgerState.class));
-		BFTHeader parent = new BFTHeader(baseView, Hash.random(), mock(LedgerState.class));
+		BFTHeader header = new BFTHeader(baseView.next(), id, mock(LedgerHeader.class));
+		BFTHeader parent = new BFTHeader(baseView, Hash.random(), mock(LedgerHeader.class));
 		VoteData voteData = new VoteData(header, parent, null);
 		QuorumCertificate qc2 = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 

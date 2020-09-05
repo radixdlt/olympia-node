@@ -58,12 +58,12 @@ public final class QuorumCertificate {
 	 * @param genesisVertex the vertex to create a qc for
 	 * @return a mocked QC
 	 */
-	public static QuorumCertificate ofGenesis(Vertex genesisVertex, LedgerState ledgerState) {
+	public static QuorumCertificate ofGenesis(Vertex genesisVertex, LedgerHeader ledgerHeader) {
 		if (!genesisVertex.getView().isGenesis()) {
 			throw new IllegalArgumentException(String.format("Vertex is not genesis: %s", genesisVertex));
 		}
 
-		BFTHeader header = BFTHeader.ofVertex(genesisVertex, ledgerState);
+		BFTHeader header = BFTHeader.ofVertex(genesisVertex, ledgerHeader);
 		final VoteData voteData = new VoteData(header, header, header);
 		return new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 	}
@@ -80,9 +80,9 @@ public final class QuorumCertificate {
 		return voteData.getParent();
 	}
 
-	public Optional<Pair<BFTHeader, VerifiedLedgerStateAndProof>> getCommittedAndLedgerStateProof() {
+	public Optional<Pair<BFTHeader, VerifiedLedgerHeaderAndProof>> getCommittedAndLedgerStateProof() {
 		return voteData.getCommitted().map(committed -> {
-			VerifiedLedgerStateAndProof ledgerStateProof = new VerifiedLedgerStateAndProof(
+			VerifiedLedgerHeaderAndProof ledgerStateProof = new VerifiedLedgerHeaderAndProof(
 				voteData.getProposed(),
 				voteData.getParent(),
 				committed.getView().number(),

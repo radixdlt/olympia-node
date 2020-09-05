@@ -21,7 +21,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.VerifiedLedgerStateAndProof;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -48,12 +48,12 @@ public final class VerifiedCommandsAndProof {
 
 	@JsonProperty("proof")
 	@DsonOutput(Output.ALL)
-	private final VerifiedLedgerStateAndProof stateAndProof;
+	private final VerifiedLedgerHeaderAndProof stateAndProof;
 
 	@JsonCreator
 	public VerifiedCommandsAndProof(
 		@JsonProperty("commands") ImmutableList<Command> commands,
-		@JsonProperty("proof") VerifiedLedgerStateAndProof stateAndProof
+		@JsonProperty("proof") VerifiedLedgerHeaderAndProof stateAndProof
 	) {
 		this.commands = commands == null ? ImmutableList.of() : commands;
 		this.stateAndProof = Objects.requireNonNull(stateAndProof);
@@ -99,7 +99,7 @@ public final class VerifiedCommandsAndProof {
 		return commands.contains(command);
 	}
 
-	public VerifiedLedgerStateAndProof getLedgerState() {
+	public VerifiedLedgerHeaderAndProof getLedgerState() {
 		return stateAndProof;
 	}
 

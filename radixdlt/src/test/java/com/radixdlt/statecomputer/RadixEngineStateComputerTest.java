@@ -30,7 +30,7 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.VerifiedLedgerStateAndProof;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.CMInstruction;
@@ -100,7 +100,7 @@ public class RadixEngineStateComputerTest {
 
 		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenReturn(clientAtom);
 
-		VerifiedLedgerStateAndProof proof = mock(VerifiedLedgerStateAndProof.class);
+		VerifiedLedgerHeaderAndProof proof = mock(VerifiedLedgerHeaderAndProof.class);
 		when(proof.getStateVersion()).thenReturn(1L);
 		when(proof.isEndOfEpoch()).thenReturn(false);
 		VerifiedCommandsAndProof command = mock(VerifiedCommandsAndProof.class);
@@ -126,7 +126,7 @@ public class RadixEngineStateComputerTest {
 		RadixEngineException e = mock(RadixEngineException.class);
 		doThrow(e).when(radixEngine).checkAndStore(any());
 
-		VerifiedLedgerStateAndProof proof = mock(VerifiedLedgerStateAndProof.class);
+		VerifiedLedgerHeaderAndProof proof = mock(VerifiedLedgerHeaderAndProof.class);
 		when(proof.getStateVersion()).thenReturn(1L);
 		when(proof.isEndOfEpoch()).thenReturn(false);
 
@@ -151,7 +151,7 @@ public class RadixEngineStateComputerTest {
 		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenThrow(new SerializationException(""));
 
 		Command cmd = new Command(new byte[] {0, 1});
-		VerifiedLedgerStateAndProof proof = mock(VerifiedLedgerStateAndProof.class);
+		VerifiedLedgerHeaderAndProof proof = mock(VerifiedLedgerHeaderAndProof.class);
 		when(proof.getStateVersion()).thenReturn(1L);
 		when(proof.isEndOfEpoch()).thenReturn(false);
 

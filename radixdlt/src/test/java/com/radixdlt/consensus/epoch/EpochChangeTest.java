@@ -21,19 +21,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.consensus.VerifiedLedgerStateAndProof;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import org.junit.Before;
 import org.junit.Test;
 
 public class EpochChangeTest {
-	private VerifiedLedgerStateAndProof proof;
+	private VerifiedLedgerHeaderAndProof proof;
 	private BFTValidatorSet validatorSet;
 	private EpochChange epochChange;
 
 	@Before
 	public void setup() {
-		this.proof = mock(VerifiedLedgerStateAndProof.class);
+		this.proof = mock(VerifiedLedgerHeaderAndProof.class);
 		when(proof.getEpoch()).thenReturn(323L);
 		this.validatorSet = mock(BFTValidatorSet.class);
 

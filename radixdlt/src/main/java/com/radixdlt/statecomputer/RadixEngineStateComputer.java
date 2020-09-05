@@ -20,7 +20,7 @@ package com.radixdlt.statecomputer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.VerifiedLedgerStateAndProof;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
@@ -93,7 +93,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		// TODO: validity on commit rather than on proposal/prepare.
 		TreeMap<Long, StoredCommittedCommand> storedCommittedAtoms = committedCommandsReader
 			.getNextCommittedCommands(stateVersion, batchSize);
-		final VerifiedLedgerStateAndProof nextState;
+		final VerifiedLedgerHeaderAndProof nextState;
 		if (storedCommittedAtoms.firstEntry() != null) {
 			nextState = storedCommittedAtoms.firstEntry().getValue().getStateAndProof();
 		} else {
@@ -130,7 +130,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		}
 	}
 
-	private void commitCommand(long version, Command command, VerifiedLedgerStateAndProof proof) {
+	private void commitCommand(long version, Command command, VerifiedLedgerHeaderAndProof proof) {
 		boolean storedInRadixEngine = false;
 		final ClientAtom clientAtom = this.mapCommand(command);
 		if (clientAtom != null) {
@@ -160,7 +160,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 	@Override
 	public Optional<BFTValidatorSet> commit(VerifiedCommandsAndProof verifiedCommandsAndProof) {
-		final VerifiedLedgerStateAndProof stateAndProof = verifiedCommandsAndProof.getLedgerState();
+		final VerifiedLedgerHeaderAndProof stateAndProof = verifiedCommandsAndProof.getLedgerState();
 
 		verifiedCommandsAndProof.forEach((version, command) -> this.commitCommand(version, command, stateAndProof));
 

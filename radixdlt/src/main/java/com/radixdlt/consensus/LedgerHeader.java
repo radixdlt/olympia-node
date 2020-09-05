@@ -30,11 +30,11 @@ import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
 
 /**
- * Ledger state
+ * Ledger accumulator which gets voted and agreed upon
  */
 @Immutable
-@SerializerId2("consensus.ledger_state")
-public final class LedgerState {
+@SerializerId2("consensus.ledger_header")
+public final class LedgerHeader {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
@@ -66,7 +66,7 @@ public final class LedgerState {
 
 	// TODO: Replace isEndOfEpoch with nextValidatorSet
 	@JsonCreator
-	private LedgerState(
+	private LedgerHeader(
 		@JsonProperty("epoch") long epoch,
 		@JsonProperty("view") long view,
 		@JsonProperty("stateVersion") long stateVersion,
@@ -77,7 +77,7 @@ public final class LedgerState {
 		this(epoch, View.of(view), stateVersion, commandId, timestamp, isEndOfEpoch);
 	}
 
-	private LedgerState(
+	private LedgerHeader(
 		long epoch,
 		View view,
 		long stateVersion,
@@ -93,7 +93,7 @@ public final class LedgerState {
 		this.timestamp = timestamp;
 	}
 
-	public static LedgerState create(
+	public static LedgerHeader create(
 		long epoch,
 		View view,
 		long stateVersion,
@@ -101,7 +101,7 @@ public final class LedgerState {
 		long timestamp,
 		boolean isEndOfEpoch
 	) {
-		return new LedgerState(epoch, view, stateVersion, commandId, timestamp, isEndOfEpoch);
+		return new LedgerHeader(epoch, view, stateVersion, commandId, timestamp, isEndOfEpoch);
 	}
 
 	@JsonProperty("view")
@@ -144,8 +144,8 @@ public final class LedgerState {
 		if (o == this) {
 			return true;
 		}
-		if (o instanceof LedgerState) {
-			LedgerState other = (LedgerState) o;
+		if (o instanceof LedgerHeader) {
+			LedgerHeader other = (LedgerHeader) o;
 			return this.timestamp == other.timestamp
 				&& this.stateVersion == other.stateVersion
 				&& Objects.equals(this.commandId, other.commandId)

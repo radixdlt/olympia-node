@@ -17,7 +17,7 @@
 
 package com.radixdlt.integration.distributed.deterministic.network;
 
-import com.radixdlt.consensus.VerifiedLedgerStateAndProof;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
@@ -131,7 +131,7 @@ public final class ControlledSender implements DeterministicSender {
 	}
 
 	@Override
-	public void sendGetEpochResponse(BFTNode node, VerifiedLedgerStateAndProof ancestor) {
+	public void sendGetEpochResponse(BFTNode node, VerifiedLedgerHeaderAndProof ancestor) {
 		GetEpochResponse getEpochResponse = new GetEpochResponse(node, ancestor);
 		handleMessage(messageRank(getEpochResponse), new ControlledMessage(this.senderIndex, this.network.lookup(node), getEpochResponse));
 	}
@@ -170,12 +170,12 @@ public final class ControlledSender implements DeterministicSender {
 	}
 
 	private MessageRank messageRank(GetEpochResponse getEpochResponse) {
-		VerifiedLedgerStateAndProof proof = getEpochResponse.getEpochProof();
+		VerifiedLedgerHeaderAndProof proof = getEpochResponse.getEpochProof();
 		return MessageRank.of(proof.getEpoch(), proof.getView().number() + 3);
 	}
 
 	private MessageRank messageRank(EpochChange epochChange) {
-		VerifiedLedgerStateAndProof proof = epochChange.getProof();
+		VerifiedLedgerHeaderAndProof proof = epochChange.getProof();
 		return MessageRank.of(proof.getEpoch(), proof.getView().number() + 3);
 	}
 

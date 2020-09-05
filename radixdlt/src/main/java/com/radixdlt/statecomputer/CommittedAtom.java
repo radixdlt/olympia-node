@@ -19,7 +19,7 @@ package com.radixdlt.statecomputer;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.consensus.VerifiedLedgerStateAndProof;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.identifiers.AID;
@@ -56,7 +56,7 @@ public final class CommittedAtom implements LedgerAtom {
 	// TODO: include commit signature proof
 	@JsonProperty("proof")
 	@DsonOutput(Output.ALL)
-	private final VerifiedLedgerStateAndProof proof;
+	private final VerifiedLedgerHeaderAndProof proof;
 
 	CommittedAtom() {
 		// Serializer only
@@ -65,7 +65,7 @@ public final class CommittedAtom implements LedgerAtom {
 		this.stateVersion = 0L;
 	}
 
-	public CommittedAtom(ClientAtom clientAtom, long stateVersion, VerifiedLedgerStateAndProof proof) {
+	public CommittedAtom(ClientAtom clientAtom, long stateVersion, VerifiedLedgerHeaderAndProof proof) {
 		this.clientAtom = clientAtom;
 		this.stateVersion = stateVersion;
 		this.proof = Objects.requireNonNull(proof);
@@ -79,7 +79,7 @@ public final class CommittedAtom implements LedgerAtom {
 		return clientAtom;
 	}
 
-	public VerifiedLedgerStateAndProof getStateAndProof() {
+	public VerifiedLedgerHeaderAndProof getStateAndProof() {
 		return proof;
 	}
 

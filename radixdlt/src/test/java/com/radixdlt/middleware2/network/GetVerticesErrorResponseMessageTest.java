@@ -21,7 +21,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 
-import com.radixdlt.consensus.LedgerState;
+import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.crypto.Hash;
@@ -31,7 +31,7 @@ public class GetVerticesErrorResponseMessageTest {
 	@Test
 	public void sensibleToString() {
 		Hash vertexId = Hash.random();
-		QuorumCertificate qc = QuorumCertificate.ofGenesis(Vertex.createGenesis(mock(LedgerState.class)), mock(LedgerState.class));
+		QuorumCertificate qc = QuorumCertificate.ofGenesis(Vertex.createGenesis(mock(LedgerHeader.class)), mock(LedgerHeader.class));
 		GetVerticesErrorResponseMessage msg1 = new GetVerticesErrorResponseMessage(0, vertexId, qc, qc);
 		String s1 = msg1.toString();
 		assertThat(s1, containsString(GetVerticesErrorResponseMessage.class.getSimpleName()));

@@ -17,7 +17,7 @@
 
 package com.radixdlt.sync;
 
-import com.radixdlt.consensus.VerifiedLedgerStateAndProof;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.sync.SyncServiceRunner.LocalSyncRequestsRx;
 import com.radixdlt.sync.SyncServiceRunner.SyncTimeoutsRx;
@@ -44,7 +44,7 @@ public class SyncServiceRunnerTest {
 	private StateSyncNetwork stateSyncNetwork;
 	private SyncServiceProcessor syncServiceProcessor;
 	private VersionUpdatesRx versionUpdatesRx;
-	private Subject<VerifiedLedgerStateAndProof> versionUpdatesSubject;
+	private Subject<VerifiedLedgerHeaderAndProof> versionUpdatesSubject;
 	private Subject<SyncRequest> requestsSubject;
 	private Subject<VerifiedCommandsAndProof> responsesSubject;
 

@@ -29,7 +29,7 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.VerifiedLedgerStateAndProof;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import java.util.function.BiConsumer;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
@@ -37,14 +37,14 @@ import org.junit.Test;
 
 public class VerifiedCommandsAndProofTest {
 	private Command command;
-	private VerifiedLedgerStateAndProof stateAndProof;
+	private VerifiedLedgerHeaderAndProof stateAndProof;
 	private VerifiedCommandsAndProof singleCommandAndProof;
 	private VerifiedCommandsAndProof emptyCommandsAndProof;
 	private final long stateVersion = 232L;
 
 	@Before
 	public void setUp() {
-		this.stateAndProof = mock(VerifiedLedgerStateAndProof.class);
+		this.stateAndProof = mock(VerifiedLedgerHeaderAndProof.class);
 		when(stateAndProof.getStateVersion()).thenReturn(stateVersion);
 
 		this.emptyCommandsAndProof = new VerifiedCommandsAndProof(ImmutableList.of(), stateAndProof);

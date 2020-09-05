@@ -31,14 +31,14 @@ public class BFTHeaderTest {
 
 	private BFTHeader testObject;
 	private Hash id;
-	private LedgerState ledgerState;
+	private LedgerHeader ledgerHeader;
 
 	@Before
 	public void setUp() {
 		View view = View.of(1234567890L);
 		this.id = Hash.random();
-		this.ledgerState = mock(LedgerState.class);
-		this.testObject = new BFTHeader(view, id, ledgerState);
+		this.ledgerHeader = mock(LedgerHeader.class);
+		this.testObject = new BFTHeader(view, id, ledgerHeader);
 	}
 
 	@Test
@@ -52,7 +52,7 @@ public class BFTHeaderTest {
 		assertThat(View.of(1234567890L)).isEqualTo(this.testObject.getView());
 
 		assertThat(id).isEqualTo(this.testObject.getVertexId());
-		assertThat(ledgerState).isEqualTo(this.testObject.getLedgerState());
+		assertThat(ledgerHeader).isEqualTo(this.testObject.getLedgerState());
 	}
 
 	@Test

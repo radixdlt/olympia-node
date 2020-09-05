@@ -20,20 +20,20 @@ package com.radixdlt.consensus.epoch;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mock;
 
-import com.radixdlt.consensus.VerifiedLedgerStateAndProof;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import org.junit.Before;
 import org.junit.Test;
 
 public class GetEpochResponseTest {
 	private BFTNode sender;
-	private VerifiedLedgerStateAndProof ancestor;
+	private VerifiedLedgerHeaderAndProof ancestor;
 	private GetEpochResponse response;
 
 	@Before
 	public void setUp() {
 		this.sender = mock(BFTNode.class);
-		this.ancestor = mock(VerifiedLedgerStateAndProof.class);
+		this.ancestor = mock(VerifiedLedgerHeaderAndProof.class);
 		this.response = new GetEpochResponse(this.sender, this.ancestor);
 	}
 

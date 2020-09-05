@@ -29,9 +29,12 @@ import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
 
+/**
+ * Ledger header with proof
+ */
 @Immutable
-@SerializerId2("ledger.verified_ledger_state_and_proof")
-public final class VerifiedLedgerStateAndProof implements Comparable<VerifiedLedgerStateAndProof> {
+@SerializerId2("ledger.verified_ledger_header_and_proof")
+public final class VerifiedLedgerHeaderAndProof implements Comparable<VerifiedLedgerHeaderAndProof> {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
@@ -54,96 +57,95 @@ public final class VerifiedLedgerStateAndProof implements Comparable<VerifiedLed
 
 	@JsonProperty("ledgerState")
 	@DsonOutput(Output.ALL)
-	private final LedgerState ledgerState;
+	private final LedgerHeader ledgerHeader;
 
 	@JsonProperty("signatures")
 	@DsonOutput(Output.ALL)
 	private final TimestampedECDSASignatures signatures;
 
 	@JsonCreator
-	public VerifiedLedgerStateAndProof(
+	public VerifiedLedgerHeaderAndProof(
 		@JsonProperty("opaque0") BFTHeader opaque0,
 		@JsonProperty("opaque1") BFTHeader opaque1,
 		@JsonProperty("opaque2") long opaque2,
 		@JsonProperty("opaque3") Hash opaque3,
-		@JsonProperty("ledgerState") LedgerState ledgerState,
+		@JsonProperty("ledgerState") LedgerHeader ledgerHeader,
 		@JsonProperty("signatures") TimestampedECDSASignatures signatures
 	) {
 		this.opaque0 = Objects.requireNonNull(opaque0);
 		this.opaque1 = Objects.requireNonNull(opaque1);
 		this.opaque2 = opaque2;
 		this.opaque3 = Objects.requireNonNull(opaque3);
-		this.ledgerState = Objects.requireNonNull(ledgerState);
+		this.ledgerHeader = Objects.requireNonNull(ledgerHeader);
 		this.signatures = Objects.requireNonNull(signatures);
 	}
 
-	public static VerifiedLedgerStateAndProof ofGenesisAncestor(LedgerState ledgerState) {
-		BFTHeader header = BFTHeader.ofGenesisAncestor(ledgerState);
-		return new VerifiedLedgerStateAndProof(
+	public static VerifiedLedgerHeaderAndProof ofGenesisAncestor(LedgerHeader ledgerHeader) {
+		BFTHeader header = BFTHeader.ofGenesisAncestor(ledgerHeader);
+		return new VerifiedLedgerHeaderAndProof(
 			header,
 			header,
 			0,
-			Hash.ZERO_HASH,
-			ledgerState,
+			Hash.ZERO_HASH, ledgerHeader,
 			new TimestampedECDSASignatures()
 		);
 	}
 
-	public LedgerState getRaw() {
-		return ledgerState;
+	public LedgerHeader getRaw() {
+		return ledgerHeader;
 	}
 
 	public long getEpoch() {
-		return ledgerState.getEpoch();
+		return ledgerHeader.getEpoch();
 	}
 
 	public View getView() {
-		return ledgerState.getView();
+		return ledgerHeader.getView();
 	}
 
 	public long getStateVersion() {
-		return ledgerState.getStateVersion();
+		return ledgerHeader.getStateVersion();
 	}
 
 	public Hash getCommandId() {
-		return ledgerState.getCommandId();
+		return ledgerHeader.getCommandId();
 	}
 
 	public long timestamp() {
-		return ledgerState.timestamp();
+		return ledgerHeader.timestamp();
 	}
 
 	public boolean isEndOfEpoch() {
-		return ledgerState.isEndOfEpoch();
+		return ledgerHeader.isEndOfEpoch();
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(opaque0, opaque1, opaque2, opaque3, ledgerState, signatures);
+		return Objects.hash(opaque0, opaque1, opaque2, opaque3, ledgerHeader, signatures);
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof VerifiedLedgerStateAndProof)) {
+		if (!(o instanceof VerifiedLedgerHeaderAndProof)) {
 			return false;
 		}
 
-		VerifiedLedgerStateAndProof other = (VerifiedLedgerStateAndProof) o;
+		VerifiedLedgerHeaderAndProof other = (VerifiedLedgerHeaderAndProof) o;
 		return Objects.equals(this.opaque0, other.opaque0)
 			&& Objects.equals(this.opaque1, other.opaque1)
 			&& this.opaque2 == other.opaque2
 			&& Objects.equals(this.opaque3, other.opaque3)
-			&& Objects.equals(this.ledgerState, other.ledgerState)
+			&& Objects.equals(this.ledgerHeader, other.ledgerHeader)
 			&& Objects.equals(this.signatures, other.signatures);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{ledger=%s}", this.getClass().getSimpleName(), this.ledgerState);
+		return String.format("%s{ledger=%s}", this.getClass().getSimpleName(), this.ledgerHeader);
 	}
 
 	@Override
-	public int compareTo(VerifiedLedgerStateAndProof o) {
+	public int compareTo(VerifiedLedgerHeaderAndProof o) {
 		if (o.getEpoch() != this.getEpoch()) {
 			return this.getEpoch() > o.getEpoch() ? 1 : -1;
 		}

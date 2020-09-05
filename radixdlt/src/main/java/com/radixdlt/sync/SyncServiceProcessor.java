@@ -18,7 +18,7 @@
 package com.radixdlt.sync;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.VerifiedLedgerStateAndProof;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
@@ -45,9 +45,9 @@ public final class SyncServiceProcessor {
 	}
 
 	public static final class SyncInProgress {
-		private final VerifiedLedgerStateAndProof targetHeader;
+		private final VerifiedLedgerHeaderAndProof targetHeader;
 		private final List<BFTNode> targetNodes;
-		private SyncInProgress(VerifiedLedgerStateAndProof targetHeader, List<BFTNode> targetNodes) {
+		private SyncInProgress(VerifiedLedgerHeaderAndProof targetHeader, List<BFTNode> targetNodes) {
 			this.targetHeader = targetHeader;
 			this.targetNodes = targetNodes;
 		}
@@ -56,7 +56,7 @@ public final class SyncServiceProcessor {
 			return targetNodes;
 		}
 
-		private VerifiedLedgerStateAndProof getTargetState() {
+		private VerifiedLedgerHeaderAndProof getTargetState() {
 			return targetHeader;
 		}
 	}
@@ -73,8 +73,8 @@ public final class SyncServiceProcessor {
 	private final long patienceMilliseconds;
 	private final AddressBook addressBook;
 	private final StateSyncNetwork stateSyncNetwork;
-	private VerifiedLedgerStateAndProof targetHeader;
-	private VerifiedLedgerStateAndProof currentState;
+	private VerifiedLedgerHeaderAndProof targetHeader;
+	private VerifiedLedgerHeaderAndProof currentState;
 
 	public SyncServiceProcessor(
 		RadixEngineStateComputer stateComputer,
@@ -82,7 +82,7 @@ public final class SyncServiceProcessor {
 		AddressBook addressBook,
 		SyncedCommandSender syncedCommandSender,
 		SyncTimeoutScheduler syncTimeoutScheduler,
-		VerifiedLedgerStateAndProof current,
+		VerifiedLedgerHeaderAndProof current,
 		int batchSize,
 		long patienceMilliseconds
 	) {
@@ -133,7 +133,7 @@ public final class SyncServiceProcessor {
 		this.currentState = commands.getLedgerState();
 	}
 
-	public void processVersionUpdate(VerifiedLedgerStateAndProof updatedCurrentState) {
+	public void processVersionUpdate(VerifiedLedgerHeaderAndProof updatedCurrentState) {
 		if (updatedCurrentState.compareTo(this.currentState) > 0) {
 			this.currentState = updatedCurrentState;
 		}
@@ -141,7 +141,7 @@ public final class SyncServiceProcessor {
 
 	// TODO: Handle epoch changes with same state version
 	public void processLocalSyncRequest(LocalSyncRequest request) {
-		final VerifiedLedgerStateAndProof nextTargetState = request.getTarget();
+		final VerifiedLedgerHeaderAndProof nextTargetState = request.getTarget();
 		if (nextTargetState.compareTo(this.targetHeader) <= 0) {
 			return;
 		}

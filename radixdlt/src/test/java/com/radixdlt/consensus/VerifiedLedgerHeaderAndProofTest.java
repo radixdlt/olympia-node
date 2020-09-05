@@ -25,25 +25,25 @@ import com.radixdlt.crypto.Hash;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
-public class VerifiedLedgerStateAndProofTest {
+public class VerifiedLedgerHeaderAndProofTest {
 	@Test
 	public void equalsContract() {
-		EqualsVerifier.forClass(VerifiedLedgerStateAndProof.class)
+		EqualsVerifier.forClass(VerifiedLedgerHeaderAndProof.class)
 			.verify();
 	}
 
 	@Test
 	public void testComparsionBetweenDifferentEpochs() {
-		LedgerState l0 = mock(LedgerState.class);
+		LedgerHeader l0 = mock(LedgerHeader.class);
 		when(l0.getEpoch()).thenReturn(1L);
-		VerifiedLedgerStateAndProof s0 = new VerifiedLedgerStateAndProof(
+		VerifiedLedgerHeaderAndProof s0 = new VerifiedLedgerHeaderAndProof(
 			mock(BFTHeader.class), mock(BFTHeader.class), 0, mock(Hash.class),
 			l0,
 			mock(TimestampedECDSASignatures.class)
 		);
-		LedgerState l1 = mock(LedgerState.class);
+		LedgerHeader l1 = mock(LedgerHeader.class);
 		when(l1.getEpoch()).thenReturn(2L);
-		VerifiedLedgerStateAndProof s1 = new VerifiedLedgerStateAndProof(
+		VerifiedLedgerHeaderAndProof s1 = new VerifiedLedgerHeaderAndProof(
 			mock(BFTHeader.class), mock(BFTHeader.class), 0, mock(Hash.class),
 			l1,
 			mock(TimestampedECDSASignatures.class)
@@ -53,18 +53,18 @@ public class VerifiedLedgerStateAndProofTest {
 
 	@Test
 	public void testComparsionBetweenDifferentStateVersions() {
-		LedgerState l0 = mock(LedgerState.class);
+		LedgerHeader l0 = mock(LedgerHeader.class);
 		when(l0.getEpoch()).thenReturn(2L);
 		when(l0.getStateVersion()).thenReturn(2L);
-		VerifiedLedgerStateAndProof s0 = new VerifiedLedgerStateAndProof(
+		VerifiedLedgerHeaderAndProof s0 = new VerifiedLedgerHeaderAndProof(
 			mock(BFTHeader.class), mock(BFTHeader.class), 0, mock(Hash.class),
 			l0,
 			mock(TimestampedECDSASignatures.class)
 		);
-		LedgerState l1 = mock(LedgerState.class);
+		LedgerHeader l1 = mock(LedgerHeader.class);
 		when(l1.getEpoch()).thenReturn(2L);
 		when(l1.getEpoch()).thenReturn(3L);
-		VerifiedLedgerStateAndProof s1 = new VerifiedLedgerStateAndProof(
+		VerifiedLedgerHeaderAndProof s1 = new VerifiedLedgerHeaderAndProof(
 			mock(BFTHeader.class), mock(BFTHeader.class), 0, mock(Hash.class),
 			l1,
 			mock(TimestampedECDSASignatures.class)
@@ -74,20 +74,20 @@ public class VerifiedLedgerStateAndProofTest {
 
 	@Test
 	public void testComparsionWithEndOfEpoch() {
-		LedgerState l0 = mock(LedgerState.class);
+		LedgerHeader l0 = mock(LedgerHeader.class);
 		when(l0.getEpoch()).thenReturn(2L);
 		when(l0.getStateVersion()).thenReturn(3L);
 		when(l0.isEndOfEpoch()).thenReturn(false);
-		VerifiedLedgerStateAndProof s0 = new VerifiedLedgerStateAndProof(
+		VerifiedLedgerHeaderAndProof s0 = new VerifiedLedgerHeaderAndProof(
 			mock(BFTHeader.class), mock(BFTHeader.class), 0, mock(Hash.class),
 			l0,
 			mock(TimestampedECDSASignatures.class)
 		);
-		LedgerState l1 = mock(LedgerState.class);
+		LedgerHeader l1 = mock(LedgerHeader.class);
 		when(l1.getEpoch()).thenReturn(2L);
 		when(l1.getEpoch()).thenReturn(3L);
 		when(l1.isEndOfEpoch()).thenReturn(true);
-		VerifiedLedgerStateAndProof s1 = new VerifiedLedgerStateAndProof(
+		VerifiedLedgerHeaderAndProof s1 = new VerifiedLedgerHeaderAndProof(
 			mock(BFTHeader.class), mock(BFTHeader.class), 0, mock(Hash.class),
 			l1,
 			mock(TimestampedECDSASignatures.class)
@@ -97,20 +97,20 @@ public class VerifiedLedgerStateAndProofTest {
 
 	@Test
 	public void testComparsionEqual() {
-		LedgerState l0 = mock(LedgerState.class);
+		LedgerHeader l0 = mock(LedgerHeader.class);
 		when(l0.getEpoch()).thenReturn(2L);
 		when(l0.getStateVersion()).thenReturn(3L);
 		when(l0.isEndOfEpoch()).thenReturn(true);
-		VerifiedLedgerStateAndProof s0 = new VerifiedLedgerStateAndProof(
+		VerifiedLedgerHeaderAndProof s0 = new VerifiedLedgerHeaderAndProof(
 			mock(BFTHeader.class), mock(BFTHeader.class), 0, mock(Hash.class),
 			l0,
 			mock(TimestampedECDSASignatures.class)
 		);
-		LedgerState l1 = mock(LedgerState.class);
+		LedgerHeader l1 = mock(LedgerHeader.class);
 		when(l1.getEpoch()).thenReturn(2L);
 		when(l1.getEpoch()).thenReturn(3L);
 		when(l1.isEndOfEpoch()).thenReturn(true);
-		VerifiedLedgerStateAndProof s1 = new VerifiedLedgerStateAndProof(
+		VerifiedLedgerHeaderAndProof s1 = new VerifiedLedgerHeaderAndProof(
 			mock(BFTHeader.class), mock(BFTHeader.class), 0, mock(Hash.class),
 			l1,
 			mock(TimestampedECDSASignatures.class)

@@ -18,8 +18,8 @@
 package com.radixdlt.middleware2.network;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.LedgerState;
-import com.radixdlt.consensus.VerifiedLedgerStateAndProof;
+import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
@@ -31,9 +31,9 @@ public class SyncResponseMessageSerializeTest extends SerializeMessageObject<Syn
 	}
 
 	private static SyncResponseMessage get() {
-		LedgerState ledgerState = LedgerState.create(0, View.genesis(), 0, Hash.ZERO_HASH, 0, false);
+		LedgerHeader ledgerHeader = LedgerHeader.create(0, View.genesis(), 0, Hash.ZERO_HASH, 0, false);
 		return new SyncResponseMessage(1234, new VerifiedCommandsAndProof(
-			ImmutableList.of(), VerifiedLedgerStateAndProof.ofGenesisAncestor(ledgerState)
+			ImmutableList.of(), VerifiedLedgerHeaderAndProof.ofGenesisAncestor(ledgerHeader)
 		));
 	}
 }

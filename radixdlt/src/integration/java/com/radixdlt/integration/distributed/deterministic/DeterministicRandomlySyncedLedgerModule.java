@@ -18,7 +18,7 @@
 package com.radixdlt.integration.distributed.deterministic;
 
 import com.google.inject.Provides;
-import com.radixdlt.consensus.VerifiedLedgerStateAndProof;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.sync.SyncRequestSender;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
@@ -27,7 +27,7 @@ import java.util.Random;
 import com.google.inject.AbstractModule;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.LedgerState;
+import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.ledger.StateComputerLedger.CommittedStateSyncSender;
@@ -52,8 +52,8 @@ public class DeterministicRandomlySyncedLedgerModule extends AbstractModule {
 	Ledger syncedExecutor(CommittedStateSyncSender committedStateSyncSender) {
 		return new Ledger() {
 			@Override
-			public LedgerState prepare(Vertex vertex) {
-				return LedgerState.create(
+			public LedgerHeader prepare(Vertex vertex) {
+				return LedgerHeader.create(
 					0,
 					vertex.getView(),
 					0,
@@ -64,7 +64,7 @@ public class DeterministicRandomlySyncedLedgerModule extends AbstractModule {
 			}
 
 			@Override
-			public OnSynced ifCommitSynced(VerifiedLedgerStateAndProof ledgerState) {
+			public OnSynced ifCommitSynced(VerifiedLedgerHeaderAndProof ledgerState) {
 				return onSynced -> {
 					boolean synced = random.nextBoolean();
 					if (synced) {

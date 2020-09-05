@@ -17,7 +17,7 @@
 
 package org.radix.serialization;
 
-import com.radixdlt.consensus.LedgerState;
+import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.crypto.Hash;
@@ -29,7 +29,7 @@ public class BFTHeaderSerializeTest extends SerializeObject<BFTHeader> {
 
 	private static BFTHeader get() {
 		View view = View.of(1234567890L);
-		LedgerState ledgerState = LedgerState.create(0, View.genesis(), 0, Hash.random(), 0L, false);
-		return new BFTHeader(view, Hash.random(), ledgerState);
+		LedgerHeader ledgerHeader = LedgerHeader.create(0, View.genesis(), 0, Hash.random(), 0L, false);
+		return new BFTHeader(view, Hash.random(), ledgerHeader);
 	}
 }

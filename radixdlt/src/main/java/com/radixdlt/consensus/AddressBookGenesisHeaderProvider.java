@@ -88,15 +88,14 @@ public class AddressBookGenesisHeaderProvider {
 		return BFTValidatorSet.from(validators);
 	}
 
-	public VerifiedLedgerStateAndProof getGenesisHeader() {
-		LedgerState ledgerState = LedgerState.create(0, View.genesis(), 0, Hash.ZERO_HASH, 0L, true);
-		BFTHeader header = BFTHeader.ofGenesisAncestor(ledgerState);
-		return new VerifiedLedgerStateAndProof(
+	public VerifiedLedgerHeaderAndProof getGenesisHeader() {
+		LedgerHeader ledgerHeader = LedgerHeader.create(0, View.genesis(), 0, Hash.ZERO_HASH, 0L, true);
+		BFTHeader header = BFTHeader.ofGenesisAncestor(ledgerHeader);
+		return new VerifiedLedgerHeaderAndProof(
 			header,
 			header,
 			0L,
-			Hash.ZERO_HASH,
-			ledgerState,
+			Hash.ZERO_HASH, ledgerHeader,
 			new TimestampedECDSASignatures()
 		);
 	}

@@ -29,7 +29,7 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.VerifiedLedgerStateAndProof;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
@@ -217,7 +217,7 @@ public class MessageCentralValidatorSyncTest {
 	@Test
 	public void when_send_get_epoch_response__then_message_central_will_send_get_epoch_response() {
 		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(mock(Peer.class)));
-		sync.sendGetEpochResponse(self, mock(VerifiedLedgerStateAndProof.class));
+		sync.sendGetEpochResponse(self, mock(VerifiedLedgerHeaderAndProof.class));
 		verify(messageCentral, times(1)).send(any(), any(GetEpochResponseMessage.class));
 	}
 
@@ -238,7 +238,7 @@ public class MessageCentralValidatorSyncTest {
 	@Test
 	public void when_subscribed_to_epoch_responses__then_should_receive_responses() {
 		BFTNode author = mock(BFTNode.class);
-		VerifiedLedgerStateAndProof ancestor = mock(VerifiedLedgerStateAndProof.class);
+		VerifiedLedgerHeaderAndProof ancestor = mock(VerifiedLedgerHeaderAndProof.class);
 		doAnswer(inv -> {
 			MessageListener<GetEpochResponseMessage> messageListener = inv.getArgument(1);
 			messageListener.handleMessage(mock(Peer.class), new GetEpochResponseMessage(author, 12345, ancestor));

@@ -24,14 +24,14 @@ import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.EmptyVertexStoreEventProcessor;
-import com.radixdlt.consensus.LedgerState;
+import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.ProposerElectionFactory;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.Timeout;
-import com.radixdlt.consensus.VerifiedLedgerStateAndProof;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexStoreEventProcessor;
 import com.radixdlt.consensus.VertexStoreFactory;
@@ -97,7 +97,7 @@ public final class EpochManager {
 		 * @param node the peer to send to
 		 * @param ancestor the ancestor of the epoch
 		 */
-		void sendGetEpochResponse(BFTNode node, VerifiedLedgerStateAndProof ancestor);
+		void sendGetEpochResponse(BFTNode node, VerifiedLedgerHeaderAndProof ancestor);
 	}
 
 	public interface EpochInfoSender {
@@ -127,7 +127,7 @@ public final class EpochManager {
 	private final EpochInfoSender epochInfoSender;
 	private final SyncRequestSender syncRequestSender;
 
-	private VerifiedLedgerStateAndProof lastConstructed = null;
+	private VerifiedLedgerHeaderAndProof lastConstructed = null;
 	private EpochChange currentEpoch;
 	private VertexStoreEventProcessor vertexStoreEventProcessor;
 	private BFTEventProcessor bftEventProcessor;
@@ -174,8 +174,8 @@ public final class EpochManager {
 			bftEventProcessor =  EmptyBFTEventProcessor.INSTANCE;
 			vertexStoreEventProcessor = EmptyVertexStoreEventProcessor.INSTANCE;
 		} else {
-			LedgerState nextLedgerState = this.currentEpoch.getNextLedgerState();
-			final long nextEpoch = nextLedgerState.getEpoch();
+			LedgerHeader nextLedgerHeader = this.currentEpoch.getNextLedgerState();
+			final long nextEpoch = nextLedgerHeader.getEpoch();
 			logEpochChange(this.currentEpoch, "included in");
 
 			ProposerElection proposerElection = proposerElectionFactory.create(validatorSet);
@@ -184,7 +184,7 @@ public final class EpochManager {
 
 			// TODO: Recover VertexStore
 			Vertex genesisVertex = Vertex.createGenesis(this.currentEpoch.getPrevLedgerState());
-			QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(genesisVertex, nextLedgerState);
+			QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
 			VertexStore vertexStore = vertexStoreFactory.create(genesisVertex, genesisQC, ledger);
 			vertexStoreEventProcessor = vertexStore;
 
@@ -287,7 +287,7 @@ public final class EpochManager {
 		msg.append(v.getNode().getSimpleName()).append(':').append(v.getPower());
 	}
 
-	private void processEndOfEpoch(VerifiedLedgerStateAndProof ledgerState) {
+	private void processEndOfEpoch(VerifiedLedgerHeaderAndProof ledgerState) {
 		log.trace("{}: END_OF_EPOCH: {}", this.self, ledgerState);
 		if (this.lastConstructed == null || this.lastConstructed.getEpoch() < ledgerState.getEpoch()) {
 			this.lastConstructed = ledgerState;
@@ -322,7 +322,7 @@ public final class EpochManager {
 			return;
 		}
 
-		final VerifiedLedgerStateAndProof ancestor = response.getEpochProof();
+		final VerifiedLedgerHeaderAndProof ancestor = response.getEpochProof();
 		if (ancestor.getEpoch() >= this.currentEpoch()) {
 			syncRequestSender.sendLocalSyncRequest(new LocalSyncRequest(ancestor, ImmutableList.of(response.getAuthor())));
 		} else {

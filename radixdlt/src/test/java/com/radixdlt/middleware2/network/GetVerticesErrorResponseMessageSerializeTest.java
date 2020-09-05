@@ -17,7 +17,7 @@
 
 package com.radixdlt.middleware2.network;
 
-import com.radixdlt.consensus.LedgerState;
+import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.View;
@@ -30,12 +30,12 @@ public class GetVerticesErrorResponseMessageSerializeTest extends SerializeMessa
 	}
 
 	private static GetVerticesErrorResponseMessage get() {
-		LedgerState ledgerState = LedgerState.create(0, View.genesis(), 0, Hash.random(), 0L, false);
+		LedgerHeader ledgerHeader = LedgerHeader.create(0, View.genesis(), 0, Hash.random(), 0L, false);
 		return new GetVerticesErrorResponseMessage(
 			12345,
 			Hash.random(),
-			QuorumCertificate.ofGenesis(Vertex.createGenesis(ledgerState), ledgerState),
-			QuorumCertificate.ofGenesis(Vertex.createGenesis(ledgerState), ledgerState)
+			QuorumCertificate.ofGenesis(Vertex.createGenesis(ledgerHeader), ledgerHeader),
+			QuorumCertificate.ofGenesis(Vertex.createGenesis(ledgerHeader), ledgerHeader)
 		);
 	}
 }

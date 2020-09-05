@@ -71,8 +71,8 @@ public final class Vertex {
 		this.command = command;
 	}
 
-	public static Vertex createGenesis(LedgerState ledgerState) {
-		BFTHeader header = BFTHeader.ofGenesisAncestor(ledgerState);
+	public static Vertex createGenesis(LedgerHeader ledgerHeader) {
+		BFTHeader header = BFTHeader.ofGenesisAncestor(ledgerHeader);
 		final VoteData voteData = new VoteData(header, header, header);
 		final QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 		return new Vertex(qc, View.genesis(), null);

@@ -20,7 +20,7 @@ package com.radixdlt.middleware2.store;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.VerifiedLedgerStateAndProof;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
@@ -110,7 +110,7 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		byte[] payload = clientAtomToBinaryConverter.toLedgerEntryContent(committedAtom.getClientAtom());
 		Command command = new Command(payload);
 
-		final VerifiedLedgerStateAndProof proof = committedAtom.getStateAndProof();
+		final VerifiedLedgerHeaderAndProof proof = committedAtom.getStateAndProof();
 		// TODO: Only save proof once
 		/*
 		if (committedAtom.getStateVersion() == committedAtom.getProof().getLedgerState().getStateVersion()) {

@@ -25,7 +25,7 @@ import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.VerifiedLedgerStateAndProof;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
@@ -139,7 +139,7 @@ public class CommittedAtomsStoreTest {
 		Command command = mock(Command.class);
 		when(command.map(any())).thenReturn(mock(ClientAtom.class));
 		when(committedCommand.getCommand()).thenReturn(command);
-		when(committedCommand.getStateAndProof()).thenReturn(mock(VerifiedLedgerStateAndProof.class));
+		when(committedCommand.getStateAndProof()).thenReturn(mock(VerifiedLedgerHeaderAndProof.class));
 		when(commandToBinaryConverter.toCommand(any())).thenReturn(committedCommand);
 		when(store.get(eq(aid))).thenReturn(Optional.of(ledgerEntry));
 

@@ -48,44 +48,42 @@ public final class BFTHeader {
 
 	@JsonProperty("ledger_state")
 	@DsonOutput(Output.ALL)
-	private final LedgerState ledgerState;
+	private final LedgerHeader ledgerHeader;
 
 	BFTHeader() {
 		// Serializer only
 		this.view = null;
 		this.vertexId = null;
-		this.ledgerState = null;
+		this.ledgerHeader = null;
 	}
 
 	// TODO: Move command output to a more opaque data structure
 	public BFTHeader(
 		View view, // consensus data
 		Hash vertexId, // consensus data
-		LedgerState ledgerState
+		LedgerHeader ledgerHeader
 	) {
 		this.view = view;
 		this.vertexId = vertexId;
-		this.ledgerState = ledgerState;
+		this.ledgerHeader = ledgerHeader;
 	}
 
-	public static BFTHeader ofGenesisAncestor(LedgerState ledgerState) {
+	public static BFTHeader ofGenesisAncestor(LedgerHeader ledgerHeader) {
 		return new BFTHeader(
 			View.genesis(),
-			Hash.ZERO_HASH,
-			ledgerState
+			Hash.ZERO_HASH, ledgerHeader
 		);
 	}
 
-	public static BFTHeader ofVertex(Vertex vertex, LedgerState ledgerState) {
+	public static BFTHeader ofVertex(Vertex vertex, LedgerHeader ledgerHeader) {
 		return new BFTHeader(
 			vertex.getView(),
-			vertex.getId(),
-			ledgerState
+			vertex.getId(), ledgerHeader
 		);
 	}
 
-	public LedgerState getLedgerState() {
-		return ledgerState;
+	public LedgerHeader getLedgerState() {
+		return ledgerHeader;
 	}
 
 	public View getView() {
@@ -109,7 +107,7 @@ public final class BFTHeader {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.view, this.vertexId, this.ledgerState);
+		return Objects.hash(this.view, this.vertexId, this.ledgerHeader);
 	}
 
 	@Override
@@ -122,7 +120,7 @@ public final class BFTHeader {
 			return
 				Objects.equals(this.view, other.view)
 				&& Objects.equals(this.vertexId, other.vertexId)
-				&& Objects.equals(this.ledgerState, other.ledgerState);
+				&& Objects.equals(this.ledgerHeader, other.ledgerHeader);
 		}
 		return false;
 	}
@@ -130,7 +128,7 @@ public final class BFTHeader {
 	@Override
 	public String toString() {
 		return String.format("%s{view=%s ledger=%s}",
-			getClass().getSimpleName(), this.view, this.ledgerState
+			getClass().getSimpleName(), this.view, this.ledgerHeader
 		);
 	}
 }
