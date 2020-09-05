@@ -32,20 +32,17 @@ import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.engine.AtomChecker;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.statecomputer.CommittedCommandsReader;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.middleware2.LedgerAtom;
-import com.radixdlt.middleware2.LedgerAtomChecker;
-import com.radixdlt.middleware2.PowFeeComputer;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.statecomputer.RadixEngineValidatorSetBuilder;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
-import com.radixdlt.universe.Universe;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.UnaryOperator;
@@ -55,13 +52,10 @@ import java.util.stream.Collectors;
  * Module which manages execution of commands
  */
 public class RadixEngineModule extends AbstractModule {
-	private static final Hash DEFAULT_FEE_TARGET = new Hash("0000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
 	private final View epochHighView;
-	private final boolean skipAtomFeeCheck;
 
-	public RadixEngineModule(View epochHighView, boolean skipAtomFeeCheck) {
+	public RadixEngineModule(View epochHighView) {
 		this.epochHighView = epochHighView;
-		this.skipAtomFeeCheck = skipAtomFeeCheck;
 	}
 
 	@Override
@@ -124,17 +118,8 @@ public class RadixEngineModule extends AbstractModule {
 		ConstraintMachine constraintMachine,
 		UnaryOperator<CMStore> virtualStoreLayer,
 		EngineStore<LedgerAtom> engineStore,
-		Universe universe
+		AtomChecker<LedgerAtom> ledgerAtomChecker
 	) {
-		final PowFeeComputer powFeeComputer = new PowFeeComputer(() -> universe);
-		final LedgerAtomChecker ledgerAtomChecker =
-			new LedgerAtomChecker(
-				() -> universe,
-				powFeeComputer,
-				DEFAULT_FEE_TARGET,
-				skipAtomFeeCheck
-			);
-
 		RadixEngine<LedgerAtom> radixEngine = new RadixEngine<>(
 			constraintMachine,
 			virtualStoreLayer,

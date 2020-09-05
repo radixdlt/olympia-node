@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *  http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,22 +15,24 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.middleware2;
+package com.radixdlt.fees;
 
-import com.google.common.collect.ImmutableMap;
-import com.radixdlt.crypto.Hash;
-import com.radixdlt.engine.RadixEngineAtom;
-import com.radixdlt.identifiers.AID;
+import java.util.Set;
+
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.utils.UInt256;
 
 /**
- * An atom to be processed through a BFT stage.
+ * Fee entry.
  */
-public interface LedgerAtom extends RadixEngineAtom {
-	ImmutableMap<String, String> getMetaData();
-
-	Hash getPowFeeHash();
-
-	AID getAID();
-
-	int size();
+public interface FeeEntry {
+	/**
+	 * Compute the fee for the specified atom with the specified outputs.
+	 *
+	 * @param atom The atom to compute the partial fee for
+	 * @param outputs The atom's output particles
+	 * @return The fee
+	 */
+	UInt256 feeFor(LedgerAtom atom, Set<Particle> outputs);
 }

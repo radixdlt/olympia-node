@@ -47,7 +47,6 @@ import com.radixdlt.consensus.bft.VertexStore.SyncedVertexSender;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.sync.SyncRequestSender;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.consensus.LedgerHeader;
 import java.util.Arrays;
@@ -75,7 +74,6 @@ public class VertexStoreTest {
 
 	@Before
 	public void setUp() {
-		ECKeyPair keyPair = ECKeyPair.generateNew();
 		// No type check issues with mocking generic here
 		Ledger ssc = mock(Ledger.class);
 		this.ledger = ssc;
@@ -427,7 +425,7 @@ public class VertexStoreTest {
 	@Test
 	public void when_sync_to_qc_with_no_author_and_not_synced__then_should_throw_illegal_state_exception() {
 		Hash id = mock(Hash.class);
-		VerifiedVertex vertex = nextVertex.apply(id);
+		nextVertex.apply(id);
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 
 		BFTHeader header = mock(BFTHeader.class);

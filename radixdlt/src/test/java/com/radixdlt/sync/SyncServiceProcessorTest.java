@@ -35,6 +35,8 @@ import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
 import com.radixdlt.sync.SyncServiceProcessor.SyncTimeoutScheduler;
 import com.radixdlt.sync.SyncServiceProcessor.SyncedCommandSender;
+import com.radixdlt.utils.TypedMocks;
+
 import java.util.Comparator;
 import org.junit.Before;
 import org.junit.Test;
@@ -55,7 +57,7 @@ public class SyncServiceProcessorTest {
 		this.syncedCommandSender = mock(SyncedCommandSender.class);
 		this.syncTimeoutScheduler = mock(SyncTimeoutScheduler.class);
 		this.currentHeader = mock(VerifiedLedgerHeaderAndProof.class);
-		this.headerComparator = mock(Comparator.class);
+		this.headerComparator = TypedMocks.rmock(Comparator.class);
 		this.syncServiceProcessor = new SyncServiceProcessor(
 			stateComputer,
 			stateSyncNetwork,

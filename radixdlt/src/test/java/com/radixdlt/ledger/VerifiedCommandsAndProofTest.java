@@ -30,6 +30,8 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.utils.TypedMocks;
+
 import java.util.function.BiConsumer;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
@@ -65,14 +67,14 @@ public class VerifiedCommandsAndProofTest {
 
 	@Test
 	public void when_empty_command_for_each__then_should_consume_appropriately() {
-		BiConsumer<Long, Command> consumer = mock(BiConsumer.class);
+		BiConsumer<Long, Command> consumer = TypedMocks.rmock(BiConsumer.class);
 		emptyCommandsAndProof.forEach(consumer);
 		verify(consumer, never()).accept(any(), any());
 	}
 
 	@Test
 	public void when_single_command_for_each__then_should_consume_appropriately() {
-		BiConsumer<Long, Command> consumer = mock(BiConsumer.class);
+		BiConsumer<Long, Command> consumer = TypedMocks.rmock(BiConsumer.class);
 		singleCommandAndProof.forEach(consumer);
 		verify(consumer, times(1)).accept(eq(stateVersion), eq(command));
 	}

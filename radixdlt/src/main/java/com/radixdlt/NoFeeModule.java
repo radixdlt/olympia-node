@@ -15,22 +15,22 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.middleware2;
+package com.radixdlt;
 
-import com.google.common.collect.ImmutableMap;
-import com.radixdlt.crypto.Hash;
-import com.radixdlt.engine.RadixEngineAtom;
-import com.radixdlt.identifiers.AID;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import com.radixdlt.atomos.Result;
+import com.radixdlt.engine.AtomChecker;
+import com.radixdlt.middleware2.LedgerAtom;
 
 /**
- * An atom to be processed through a BFT stage.
+ * Module which provides an atom checker that does not require fees.
  */
-public interface LedgerAtom extends RadixEngineAtom {
-	ImmutableMap<String, String> getMetaData();
-
-	Hash getPowFeeHash();
-
-	AID getAID();
-
-	int size();
+public class NoFeeModule extends AbstractModule {
+	@Provides
+	@Singleton
+	private AtomChecker<LedgerAtom> noFeeLedgerAtomChecker() {
+		return (atom, outputParticles) -> Result.success();
+	}
 }

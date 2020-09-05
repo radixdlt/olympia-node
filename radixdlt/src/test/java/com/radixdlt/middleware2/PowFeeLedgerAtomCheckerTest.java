@@ -19,6 +19,7 @@ package com.radixdlt.middleware2;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.crypto.Hash;
@@ -34,8 +35,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class LedgerAtomCheckerTest {
-	private LedgerAtomChecker checker;
+public class PowFeeLedgerAtomCheckerTest {
+	private PowFeeLedgerAtomChecker checker;
 	private Universe universe;
 	private PowFeeComputer powFeeComputer;
 	private Hash target;
@@ -46,11 +47,10 @@ public class LedgerAtomCheckerTest {
 		when(universe.getGenesis()).thenReturn(Collections.emptyList());
 		this.powFeeComputer = mock(PowFeeComputer.class);
 		this.target = mock(Hash.class);
-		this.checker = new LedgerAtomChecker(
-			() -> universe,
+		this.checker = new PowFeeLedgerAtomChecker(
+			universe,
 			powFeeComputer,
-			target,
-			false
+			target
 		);
 	}
 
@@ -72,7 +72,7 @@ public class LedgerAtomCheckerTest {
 		Hash powSpent = mock(Hash.class);
 		when(powFeeComputer.computePowSpent(eq(ledgerAtom), eq(0L))).thenReturn(powSpent);
 		when(powSpent.compareTo(eq(target))).thenReturn(-1);
-		assertThat(checker.check(ledgerAtom).isSuccess()).isTrue();
+		assertThat(checker.check(ledgerAtom, ImmutableSet.of()).isSuccess()).isTrue();
 	}
 
 	@Test
@@ -85,7 +85,7 @@ public class LedgerAtomCheckerTest {
 		when(ledgerAtom.getCMInstruction()).thenReturn(cmInstruction);
 		when(ledgerAtom.getMetaData()).thenReturn(ImmutableMap.of("timestamp", "0"));
 
-		assertThat(checker.check(ledgerAtom).getErrorMessage())
+		assertThat(checker.check(ledgerAtom, ImmutableSet.of()).getErrorMessage())
 			.contains("instructions");
 	}
 
@@ -99,7 +99,7 @@ public class LedgerAtomCheckerTest {
 		when(ledgerAtom.getCMInstruction()).thenReturn(cmInstruction);
 		when(ledgerAtom.getMetaData()).thenReturn(ImmutableMap.of());
 
-		assertThat(checker.check(ledgerAtom).getErrorMessage())
+		assertThat(checker.check(ledgerAtom, ImmutableSet.of()).getErrorMessage())
 			.contains("metadata does not contain");
 	}
 }

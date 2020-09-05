@@ -33,6 +33,7 @@ import com.radixdlt.LedgerEpochChangeModule;
 import com.radixdlt.LedgerEpochChangeRxModule;
 import com.radixdlt.LedgerLocalMempoolModule;
 import com.radixdlt.PersistenceModule;
+import com.radixdlt.PowFeeModule;
 import com.radixdlt.RadixEngineModule;
 import com.radixdlt.RadixEngineRxModule;
 import com.radixdlt.RadixEngineStoreModule;
@@ -116,9 +117,12 @@ public class GlobalInjector {
 			new LedgerLocalMempoolModule(mempoolMaxSize),
 
 			// State Computer
-			new RadixEngineModule(epochHighView, false),
+			new RadixEngineModule(epochHighView),
 			new RadixEngineRxModule(),
 			new RadixEngineStoreModule(fixedNodeCount),
+
+			// Fees
+			new PowFeeModule(),
 
 			new PersistenceModule(),
 
