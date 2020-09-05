@@ -38,7 +38,7 @@ import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.Ledger.OnNotSynced;
 import com.radixdlt.consensus.Ledger.OnSynced;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.VerifiedCommittedLedgerState;
+import com.radixdlt.consensus.VerifiedLedgerStateAndProof;
 import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
@@ -233,7 +233,7 @@ public class VertexStoreTest {
 		BFTHeader header = mock(BFTHeader.class);
 		when(header.getView()).thenReturn(View.of(2));
 		when(header.getVertexId()).thenReturn(mock(Hash.class));
-		assertThatThrownBy(() -> vertexStore.commit(header, mock(VerifiedCommittedLedgerState.class)))
+		assertThatThrownBy(() -> vertexStore.commit(header, mock(VerifiedLedgerStateAndProof.class)))
 			.isInstanceOf(IllegalStateException.class);
 	}
 
@@ -261,12 +261,12 @@ public class VertexStoreTest {
 		BFTHeader header = mock(BFTHeader.class);
 		when(header.getView()).thenReturn(vertex2.getView());
 		when(header.getVertexId()).thenReturn(vertex2.getId());
-		assertThat(vertexStore.commit(header, mock(VerifiedCommittedLedgerState.class))).isPresent();
+		assertThat(vertexStore.commit(header, mock(VerifiedLedgerStateAndProof.class))).isPresent();
 
 		BFTHeader header1 = mock(BFTHeader.class);
 		when(header1.getView()).thenReturn(vertex1.getView());
 		when(header1.getVertexId()).thenReturn(vertex1.getId());
-		assertThat(vertexStore.commit(header1, mock(VerifiedCommittedLedgerState.class))).isNotPresent();
+		assertThat(vertexStore.commit(header1, mock(VerifiedLedgerStateAndProof.class))).isNotPresent();
 	}
 
 	@Test
@@ -286,7 +286,7 @@ public class VertexStoreTest {
 		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), command);
 		vertexStore.insertVertex(nextVertex);
 
-		VerifiedCommittedLedgerState proof = mock(VerifiedCommittedLedgerState.class);
+		VerifiedLedgerStateAndProof proof = mock(VerifiedLedgerStateAndProof.class);
 
 		BFTHeader header = mock(BFTHeader.class);
 		when(header.getView()).thenReturn(nextVertex.getView());
@@ -318,7 +318,7 @@ public class VertexStoreTest {
 		BFTHeader header = mock(BFTHeader.class);
 		when(header.getView()).thenReturn(vertex.getView());
 		when(header.getVertexId()).thenReturn(vertex.getId());
-		assertThat(vertexStore.commit(header, mock(VerifiedCommittedLedgerState.class))).hasValue(vertex);
+		assertThat(vertexStore.commit(header, mock(VerifiedLedgerStateAndProof.class))).hasValue(vertex);
 		verify(vertexStoreEventSender, times(1)).sendCommittedVertex(eq(vertex));
 		assertThat(vertexStore.getSize()).isEqualTo(1);
 	}
@@ -332,14 +332,14 @@ public class VertexStoreTest {
 		BFTHeader header = mock(BFTHeader.class);
 		when(header.getView()).thenReturn(nextVertex1.getView());
 		when(header.getVertexId()).thenReturn(nextVertex1.getId());
-		vertexStore.commit(header, mock(VerifiedCommittedLedgerState.class));
+		vertexStore.commit(header, mock(VerifiedLedgerStateAndProof.class));
 
 		Vertex nextVertex2 = nextVertex.get();
 		vertexStore.insertVertex(nextVertex2);
 		BFTHeader header2 = mock(BFTHeader.class);
 		when(header2.getView()).thenReturn(nextVertex2.getView());
 		when(header2.getVertexId()).thenReturn(nextVertex2.getId());
-		vertexStore.commit(header2, mock(VerifiedCommittedLedgerState.class));
+		vertexStore.commit(header2, mock(VerifiedLedgerStateAndProof.class));
 
 		verify(vertexStoreEventSender, times(1)).sendCommittedVertex(eq(nextVertex1));
 		verify(vertexStoreEventSender, times(1)).sendCommittedVertex(eq(nextVertex2));
@@ -365,7 +365,7 @@ public class VertexStoreTest {
 		when(header.getVertexId()).thenReturn(nextVertex2.getId());
 		when(header.getView()).thenReturn(nextVertex2.getView());
 
-		vertexStore.commit(header, mock(VerifiedCommittedLedgerState.class));
+		vertexStore.commit(header, mock(VerifiedLedgerStateAndProof.class));
 		verify(vertexStoreEventSender, times(1)).sendCommittedVertex(eq(nextVertex1));
 		verify(vertexStoreEventSender, times(1)).sendCommittedVertex(eq(nextVertex2));
 		assertThat(vertexStore.getSize()).isEqualTo(1);
@@ -579,7 +579,7 @@ public class VertexStoreTest {
 		}).when(syncVerticesRPCSender).sendGetVerticesRequest(eq(vertex7.getId()), any(), eq(3), any());
 
 		AtomicReference<Object> stateOpaque = new AtomicReference<>();
-		AtomicReference<VerifiedCommittedLedgerState> vertexMetadataAtomicReference = new AtomicReference<>();
+		AtomicReference<VerifiedLedgerStateAndProof> vertexMetadataAtomicReference = new AtomicReference<>();
 
 		OnSynced onSynced = mock(OnSynced.class);
 		OnNotSynced onNotSynced = mock(OnNotSynced.class);

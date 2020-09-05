@@ -80,9 +80,9 @@ public final class QuorumCertificate {
 		return voteData.getParent();
 	}
 
-	public Optional<Pair<BFTHeader, VerifiedCommittedLedgerState>> getCommittedAndLedgerStateProof() {
+	public Optional<Pair<BFTHeader, VerifiedLedgerStateAndProof>> getCommittedAndLedgerStateProof() {
 		return voteData.getCommitted().map(committed -> {
-			VerifiedCommittedLedgerState ledgerStateProof = new VerifiedCommittedLedgerState(
+			VerifiedLedgerStateAndProof ledgerStateProof = new VerifiedLedgerStateAndProof(
 				voteData.getProposed(),
 				voteData.getParent(),
 				committed,

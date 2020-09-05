@@ -17,35 +17,36 @@
 
 package com.radixdlt.consensus.epoch;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.radixdlt.consensus.VerifiedLedgerStateAndProof;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import org.junit.Before;
 import org.junit.Test;
 
-public class GetEpochResponseTest {
-	private BFTNode sender;
-	private VerifiedLedgerStateAndProof ancestor;
-	private GetEpochResponse response;
+public class EpochChangeTest {
+	private VerifiedLedgerStateAndProof proof;
+	private BFTValidatorSet validatorSet;
+	private EpochChange epochChange;
 
 	@Before
-	public void setUp() {
-		this.sender = mock(BFTNode.class);
-		this.ancestor = mock(VerifiedLedgerStateAndProof.class);
-		this.response = new GetEpochResponse(this.sender, this.ancestor);
+	public void setup() {
+		this.proof = mock(VerifiedLedgerStateAndProof.class);
+		when(proof.getEpoch()).thenReturn(323L);
+		this.validatorSet = mock(BFTValidatorSet.class);
+
+		this.epochChange = new EpochChange(proof, validatorSet);
 	}
 
 	@Test
-	public void testGetters() {
-		assertThat(this.response.getEpochProof()).isEqualTo(this.ancestor);
-		assertThat(this.response.getAuthor()).isEqualTo(this.sender);
+	public void when_get_next_epoch__then_should_be_epoch_after_proof() {
+		assertThat(epochChange.getEpoch()).isEqualTo(324L);
 	}
 
 	@Test
-	public void testToString() {
-		assertThat(this.response.toString()).isNotNull();
+	public void when_get_next_ledger_state__then_should_be_epoch_after_proof() {
+		assertThat(epochChange.getNextLedgerState().getEpoch()).isEqualTo(324L);
 	}
-
 }

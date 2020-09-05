@@ -30,8 +30,8 @@ import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
 
 @Immutable
-@SerializerId2("ledger.verified_committed_ledger_state")
-public final class VerifiedCommittedLedgerState implements Comparable<VerifiedCommittedLedgerState> {
+@SerializerId2("ledger.verified_ledger_state_and_proof")
+public final class VerifiedLedgerStateAndProof implements Comparable<VerifiedLedgerStateAndProof> {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
@@ -53,7 +53,7 @@ public final class VerifiedCommittedLedgerState implements Comparable<VerifiedCo
 	private final TimestampedECDSASignatures signatures;
 
 	@JsonCreator
-	public VerifiedCommittedLedgerState(
+	public VerifiedLedgerStateAndProof(
 		@JsonProperty("opaque0") BFTHeader opaque0,
 		@JsonProperty("opaque1") BFTHeader opaque1,
 		@JsonProperty("header") BFTHeader header,
@@ -65,9 +65,9 @@ public final class VerifiedCommittedLedgerState implements Comparable<VerifiedCo
 		this.signatures = Objects.requireNonNull(signatures);
 	}
 
-	public static VerifiedCommittedLedgerState ofGenesisAncestor(LedgerState ledgerState) {
+	public static VerifiedLedgerStateAndProof ofGenesisAncestor(LedgerState ledgerState) {
 		BFTHeader header = BFTHeader.ofGenesisAncestor(ledgerState);
-		return new VerifiedCommittedLedgerState(
+		return new VerifiedLedgerStateAndProof(
 			header,
 			header,
 			header,
@@ -110,11 +110,11 @@ public final class VerifiedCommittedLedgerState implements Comparable<VerifiedCo
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof VerifiedCommittedLedgerState)) {
+		if (!(o instanceof VerifiedLedgerStateAndProof)) {
 			return false;
 		}
 
-		VerifiedCommittedLedgerState other = (VerifiedCommittedLedgerState) o;
+		VerifiedLedgerStateAndProof other = (VerifiedLedgerStateAndProof) o;
 		return Objects.equals(this.opaque0, other.opaque0)
 			&& Objects.equals(this.opaque1, other.opaque1)
 			&& Objects.equals(this.header, other.header)
@@ -127,7 +127,7 @@ public final class VerifiedCommittedLedgerState implements Comparable<VerifiedCo
 	}
 
 	@Override
-	public int compareTo(VerifiedCommittedLedgerState o) {
+	public int compareTo(VerifiedLedgerStateAndProof o) {
 		if (o.getEpoch() != this.getEpoch()) {
 			return this.getEpoch() > o.getEpoch() ? 1 : -1;
 		}

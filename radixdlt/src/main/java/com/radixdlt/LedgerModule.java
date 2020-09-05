@@ -23,7 +23,7 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.Ledger;
-import com.radixdlt.consensus.VerifiedCommittedLedgerState;
+import com.radixdlt.consensus.VerifiedLedgerStateAndProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.counters.SystemCounters;
@@ -48,7 +48,7 @@ public class LedgerModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private StateComputerLedger ledger(
-		VerifiedCommittedLedgerState genesisLedgerState,
+		VerifiedLedgerStateAndProof genesisLedgerState,
 		Mempool mempool,
 		StateComputer stateComputer,
 		CommittedStateSyncSender committedStateSyncSender,
@@ -69,7 +69,7 @@ public class LedgerModule extends AbstractModule {
 
 	// TODO: Load from storage
 	@Provides
-	private EpochChange initialEpoch(VerifiedCommittedLedgerState ancestor, BFTValidatorSet validatorSet) {
+	private EpochChange initialEpoch(VerifiedLedgerStateAndProof ancestor, BFTValidatorSet validatorSet) {
 		return new EpochChange(ancestor, validatorSet);
 	}
 }

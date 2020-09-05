@@ -17,8 +17,8 @@
 
 package com.radixdlt.sync;
 
-import com.radixdlt.consensus.VerifiedCommittedLedgerState;
-import com.radixdlt.ledger.VerifiedCommittedCommands;
+import com.radixdlt.consensus.VerifiedLedgerStateAndProof;
+import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.sync.SyncServiceRunner.LocalSyncRequestsRx;
 import com.radixdlt.sync.SyncServiceRunner.SyncTimeoutsRx;
 import com.radixdlt.sync.SyncServiceRunner.VersionUpdatesRx;
@@ -44,9 +44,9 @@ public class SyncServiceRunnerTest {
 	private StateSyncNetwork stateSyncNetwork;
 	private SyncServiceProcessor syncServiceProcessor;
 	private VersionUpdatesRx versionUpdatesRx;
-	private Subject<VerifiedCommittedLedgerState> versionUpdatesSubject;
+	private Subject<VerifiedLedgerStateAndProof> versionUpdatesSubject;
 	private Subject<SyncRequest> requestsSubject;
-	private Subject<VerifiedCommittedCommands> responsesSubject;
+	private Subject<VerifiedCommandsAndProof> responsesSubject;
 
 	@Before
 	public void setUp() {
@@ -97,7 +97,7 @@ public class SyncServiceRunnerTest {
 
 	@Test
 	public void when_sync_response__then_it_is_processed() {
-		VerifiedCommittedCommands committedCommands = mock(VerifiedCommittedCommands.class);
+		VerifiedCommandsAndProof committedCommands = mock(VerifiedCommandsAndProof.class);
 		syncServiceRunner.start();
 		responsesSubject.onNext(committedCommands);
 		verify(syncServiceProcessor, timeout(1000).times(1)).processSyncResponse(eq(committedCommands));

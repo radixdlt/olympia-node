@@ -18,7 +18,7 @@
 package com.radixdlt.consensus.bft;
 
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.VerifiedCommittedLedgerState;
+import com.radixdlt.consensus.VerifiedLedgerStateAndProof;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Ledger;
@@ -32,7 +32,7 @@ import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.ledger.VerifiedCommittedCommands;
+import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.utils.Pair;
 import java.util.ArrayList;
@@ -217,17 +217,17 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		private final QuorumCertificate qc;
 		private final QuorumCertificate committedQC;
 		private final BFTHeader committedHeader;
-		private final VerifiedCommittedLedgerState verifiedCommittedLedgerState;
+		private final VerifiedLedgerStateAndProof verifiedLedgerStateAndProof;
 		private final BFTNode author;
 		private SyncStage syncStage;
 		private final LinkedList<Vertex> fetched = new LinkedList<>();
 
 		SyncState(Hash localSyncId, QuorumCertificate qc, QuorumCertificate committedQC, BFTNode author) {
 			this.localSyncId = localSyncId;
-			Pair<BFTHeader, VerifiedCommittedLedgerState> pair = committedQC.getCommittedAndLedgerStateProof()
+			Pair<BFTHeader, VerifiedLedgerStateAndProof> pair = committedQC.getCommittedAndLedgerStateProof()
 				.orElseThrow(() -> new IllegalStateException("committedQC must have a commit"));
 			this.committedHeader = pair.getFirst();
-			this.verifiedCommittedLedgerState = pair.getSecond();
+			this.verifiedLedgerStateAndProof = pair.getSecond();
 			this.qc = qc;
 			this.committedQC = committedQC;
 			this.author = author;
@@ -309,12 +309,12 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		ImmutableList<BFTNode> signers = ImmutableList.of(syncState.author);
 		syncState.fetched.addAll(response.getVertices());
 
-		ledger.ifCommitSynced(syncState.verifiedCommittedLedgerState)
+		ledger.ifCommitSynced(syncState.verifiedLedgerStateAndProof)
 			.then(() -> rebuildAndSyncQC(syncState))
 			.elseExecuteAndSendMessageOnSync(() -> {
 				syncState.setSyncStage(SyncStage.SYNC_TO_COMMIT);
 				LocalSyncRequest localSyncRequest = new LocalSyncRequest(
-					syncState.verifiedCommittedLedgerState,
+					syncState.verifiedLedgerStateAndProof,
 					signers
 				);
 				syncRequestSender.sendLocalSyncRequest(localSyncRequest);
@@ -517,7 +517,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	 * @param header the proof of commit
 	 * @return the vertex if sucessful, otherwise an empty optional if vertex was already committed
 	 */
-	public Optional<Vertex> commit(BFTHeader header, VerifiedCommittedLedgerState ledgerStateWithProof) {
+	public Optional<Vertex> commit(BFTHeader header, VerifiedLedgerStateAndProof ledgerStateWithProof) {
 		if (header.getView().compareTo(this.getRoot().getView()) < 0) {
 			return Optional.empty();
 		}
@@ -542,10 +542,10 @@ public final class VertexStore implements VertexStoreEventProcessor {
 				commandsToCommitBuilder.add(committedVertex.getCommand());
 			}
 		}
-		VerifiedCommittedCommands verifiedCommittedCommands = new VerifiedCommittedCommands(
+		VerifiedCommandsAndProof verifiedCommandsAndProof = new VerifiedCommandsAndProof(
 			commandsToCommitBuilder.build(), ledgerStateWithProof
 		);
-		this.ledger.commit(verifiedCommittedCommands);
+		this.ledger.commit(verifiedCommandsAndProof);
 
 		rootId = header.getVertexId();
 

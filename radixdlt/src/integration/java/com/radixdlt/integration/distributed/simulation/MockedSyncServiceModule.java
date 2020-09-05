@@ -25,7 +25,7 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.sync.SyncRequestSender;
-import com.radixdlt.ledger.VerifiedCommittedCommands;
+import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.ledger.StateComputerLedger.CommittedSender;
 import com.radixdlt.sync.LocalSyncRequest;
 import java.util.concurrent.ConcurrentMap;
@@ -57,7 +57,7 @@ public class MockedSyncServiceModule extends AbstractModule {
 				ImmutableList<Command> commands = LongStream.range(currentVersion + 1, targetVersion + 1)
 					.mapToObj(sharedCommittedCommands::get)
 					.collect(ImmutableList.toImmutableList());
-				ledger.commit(new VerifiedCommittedCommands(commands, request.getTarget()));
+				ledger.commit(new VerifiedCommandsAndProof(commands, request.getTarget()));
 				currentVersion = targetVersion;
 			}
 		};

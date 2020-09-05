@@ -30,7 +30,7 @@ import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.integration.distributed.simulation.MockedCryptoModule;
 import com.radixdlt.integration.distributed.simulation.SimulationNetworkModule;
-import com.radixdlt.ledger.VerifiedCommittedCommands;
+import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.systeminfo.InfoRx;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -101,7 +101,7 @@ public class SimulationNodes {
 
 		Observable<Pair<BFTNode, Vertex>> committedVertices();
 
-		Observable<Pair<BFTNode, VerifiedCommittedCommands>> committedCommands();
+		Observable<Pair<BFTNode, VerifiedCommandsAndProof>> committedCommands();
 
 		InfoRx getInfo(BFTNode node);
 
@@ -160,8 +160,8 @@ public class SimulationNodes {
 			}
 
 			@Override
-			public Observable<Pair<BFTNode, VerifiedCommittedCommands>> committedCommands() {
-				Set<Observable<Pair<BFTNode, VerifiedCommittedCommands>>> committedCommands = nodeInstances.stream()
+			public Observable<Pair<BFTNode, VerifiedCommandsAndProof>> committedCommands() {
+				Set<Observable<Pair<BFTNode, VerifiedCommandsAndProof>>> committedCommands = nodeInstances.stream()
 					.map(i -> {
 						BFTNode node = i.getInstance(BFTNode.class);
 						return i.getInstance(InfoRx.class).committedCommands()

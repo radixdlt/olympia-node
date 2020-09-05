@@ -23,7 +23,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.consensus.VerifiedCommittedLedgerState;
+import com.radixdlt.consensus.VerifiedLedgerStateAndProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import org.junit.Before;
 import org.junit.Test;
@@ -42,8 +42,8 @@ public class EpochChangeManagerTest {
 	public void when_sending_committed_atom_with_epoch_change__then_should_send_epoch_change() {
 		long genesisEpoch = 123;
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
-		VerifiedCommittedCommands cmd = mock(VerifiedCommittedCommands.class);
-		VerifiedCommittedLedgerState proof = mock(VerifiedCommittedLedgerState.class);
+		VerifiedCommandsAndProof cmd = mock(VerifiedCommandsAndProof.class);
+		VerifiedLedgerStateAndProof proof = mock(VerifiedLedgerStateAndProof.class);
 		when(proof.getEpoch()).thenReturn(genesisEpoch);
 		when(proof.isEndOfEpoch()).thenReturn(true);
 		when(proof.getStateVersion()).thenReturn(1234L);

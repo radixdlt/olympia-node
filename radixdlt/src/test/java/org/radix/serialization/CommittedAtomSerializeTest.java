@@ -21,7 +21,7 @@ import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atommodel.message.MessageParticle;
 import com.radixdlt.consensus.LedgerState;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.consensus.VerifiedCommittedLedgerState;
+import com.radixdlt.consensus.VerifiedLedgerStateAndProof;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.Spin;
@@ -52,7 +52,7 @@ public class CommittedAtomSerializeTest extends SerializeObject<CommittedAtom> {
 			throw new IllegalStateException();
 		}
 
-		VerifiedCommittedLedgerState proof = new VerifiedCommittedLedgerState(
+		VerifiedLedgerStateAndProof proof = new VerifiedLedgerStateAndProof(
 			BFTHeader.ofGenesisAncestor(LedgerState.create(0, View.genesis(), 0, Hash.random(), 0L, false)),
 			BFTHeader.ofGenesisAncestor(LedgerState.create(0, View.genesis(), 0, Hash.random(), 0L, false)),
 			BFTHeader.ofGenesisAncestor(LedgerState.create(0, View.genesis(), 0, Hash.random(), 0L, false)),

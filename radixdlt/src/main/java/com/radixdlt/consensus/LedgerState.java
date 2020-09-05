@@ -34,7 +34,7 @@ import javax.annotation.concurrent.Immutable;
  */
 @Immutable
 @SerializerId2("consensus.ledger_state")
-public final class LedgerState implements Comparable<LedgerState> {
+public final class LedgerState {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
@@ -161,22 +161,5 @@ public final class LedgerState implements Comparable<LedgerState> {
 		return String.format("%s{stateVersion=%s timestamp=%s epoch=%s, isEndOfEpoch=%s}",
 			getClass().getSimpleName(), this.stateVersion, this.timestamp, this.epoch, this.isEndOfEpoch
 		);
-	}
-
-	@Override
-	public int compareTo(LedgerState o) {
-		if (o.epoch != this.epoch) {
-			return this.epoch > o.epoch ? 1 : -1;
-		}
-
-		if (o.stateVersion != this.stateVersion) {
-			return this.stateVersion > o.stateVersion ? 1 : -1;
-		}
-
-		if (o.isEndOfEpoch != this.isEndOfEpoch) {
-			return this.isEndOfEpoch ? 1 : -1;
-		}
-
-		return 0;
 	}
 }

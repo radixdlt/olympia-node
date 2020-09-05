@@ -20,14 +20,14 @@ package com.radixdlt.integration.distributed.simulation;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.radixdlt.consensus.LedgerState;
-import com.radixdlt.consensus.VerifiedCommittedLedgerState;
+import com.radixdlt.consensus.VerifiedLedgerStateAndProof;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 
-import com.radixdlt.ledger.VerifiedCommittedCommands;
+import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -49,9 +49,9 @@ public class MockedStateComputerWithEpochsModule extends AbstractModule {
 	}
 
 	@Provides
-	private VerifiedCommittedLedgerState genesisMetadata() {
+	private VerifiedLedgerStateAndProof genesisMetadata() {
 		LedgerState ledgerState = LedgerState.create(0, View.genesis(), 0, Hash.ZERO_HASH, 0L, true);
-		return VerifiedCommittedLedgerState.ofGenesisAncestor(ledgerState);
+		return VerifiedLedgerStateAndProof.ofGenesisAncestor(ledgerState);
 	}
 
 	@Provides
@@ -63,7 +63,7 @@ public class MockedStateComputerWithEpochsModule extends AbstractModule {
 			}
 
 			@Override
-			public Optional<BFTValidatorSet> commit(VerifiedCommittedCommands command) {
+			public Optional<BFTValidatorSet> commit(VerifiedCommandsAndProof command) {
 				if (command.getLedgerState().isEndOfEpoch()) {
 					return Optional.of(validatorSetMapping.apply(command.getLedgerState().getEpoch() + 1));
 				} else {

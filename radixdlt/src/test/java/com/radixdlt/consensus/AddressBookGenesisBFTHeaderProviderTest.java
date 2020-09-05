@@ -48,7 +48,7 @@ public class AddressBookGenesisBFTHeaderProviderTest {
 		when(peer.getSystem()).thenReturn(system);
 		when(addressBook.peers()).thenAnswer(inv -> Stream.of(peer));
 
-		VerifiedCommittedLedgerState header = validatorSetProvider.getGenesisHeader();
+		VerifiedLedgerStateAndProof header = validatorSetProvider.getGenesisHeader();
 		assertThat(header.isEndOfEpoch()).isTrue();
 	}
 }

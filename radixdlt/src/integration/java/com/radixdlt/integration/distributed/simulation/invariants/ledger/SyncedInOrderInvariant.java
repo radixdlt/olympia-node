@@ -21,7 +21,7 @@ import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.integration.distributed.simulation.TestInvariant;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
-import com.radixdlt.ledger.VerifiedCommittedCommands;
+import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.ArrayList;
@@ -40,7 +40,7 @@ public class SyncedInOrderInvariant implements TestInvariant {
 
 	@Override
 	public Observable<TestInvariantError> check(RunningNetwork network) {
-		Observable<Pair<BFTNode, VerifiedCommittedCommands>> commands
+		Observable<Pair<BFTNode, VerifiedCommandsAndProof>> commands
 			= Observable.merge(
 				network.getNodes()
 					.stream()
@@ -53,7 +53,7 @@ public class SyncedInOrderInvariant implements TestInvariant {
 
 		return commands.flatMap(nodeAndCommand -> {
 			BFTNode node = nodeAndCommand.getFirst();
-			VerifiedCommittedCommands cmd = nodeAndCommand.getSecond();
+			VerifiedCommandsAndProof cmd = nodeAndCommand.getSecond();
 			List<Command> nodeCommands = commandsPerNode.get(node);
 			cmd.forEach((v, command) -> nodeCommands.add(command));
 

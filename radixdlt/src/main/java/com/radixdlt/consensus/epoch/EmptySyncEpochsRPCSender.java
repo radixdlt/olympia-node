@@ -17,7 +17,7 @@
 
 package com.radixdlt.consensus.epoch;
 
-import com.radixdlt.consensus.VerifiedCommittedLedgerState;
+import com.radixdlt.consensus.VerifiedLedgerStateAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 
 /**
@@ -32,7 +32,7 @@ public enum EmptySyncEpochsRPCSender implements EpochManager.SyncEpochsRPCSender
 	}
 
 	@Override
-	public void sendGetEpochResponse(BFTNode node, VerifiedCommittedLedgerState ancestor) {
+	public void sendGetEpochResponse(BFTNode node, VerifiedLedgerStateAndProof ancestor) {
 		// No-op
 	}
 }

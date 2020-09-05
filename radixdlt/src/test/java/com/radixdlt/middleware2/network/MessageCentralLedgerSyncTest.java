@@ -26,7 +26,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.ledger.VerifiedCommittedCommands;
+import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.sync.SyncRequest;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.messaging.MessageCentral;
@@ -59,7 +59,7 @@ public class MessageCentralLedgerSyncTest {
 	@Test
 	public void when_send_sync_response__then_magic_should_be_same_as_universe() {
 		Peer peer = mock(Peer.class);
-		messageCentralLedgerSync.sendSyncResponse(peer, mock(VerifiedCommittedCommands.class));
+		messageCentralLedgerSync.sendSyncResponse(peer, mock(VerifiedCommandsAndProof.class));
 		verify(messageCentral, times(1)).send(eq(peer), argThat(msg -> msg.getMagic() == 123));
 	}
 
@@ -90,10 +90,10 @@ public class MessageCentralLedgerSyncTest {
 			return null;
 		}).when(messageCentral).addListener(eq(SyncResponseMessage.class), any());
 
-		TestObserver<VerifiedCommittedCommands> testObserver = this.messageCentralLedgerSync.syncResponses().test();
+		TestObserver<VerifiedCommandsAndProof> testObserver = this.messageCentralLedgerSync.syncResponses().test();
 		Peer peer = mock(Peer.class);
 		SyncResponseMessage syncResponseMessage = mock(SyncResponseMessage.class);
-		VerifiedCommittedCommands commands = mock(VerifiedCommittedCommands.class);
+		VerifiedCommandsAndProof commands = mock(VerifiedCommandsAndProof.class);
 		when(syncResponseMessage.getCommands()).thenReturn(commands);
 		messageListenerAtomicReference.get().handleMessage(peer, syncResponseMessage);
 		testObserver.awaitCount(1);

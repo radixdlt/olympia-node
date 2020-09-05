@@ -18,10 +18,10 @@
 package com.radixdlt.integration.distributed.deterministic;
 
 import com.google.inject.Provides;
-import com.radixdlt.consensus.VerifiedCommittedLedgerState;
+import com.radixdlt.consensus.VerifiedLedgerStateAndProof;
 import com.radixdlt.consensus.sync.SyncRequestSender;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.ledger.VerifiedCommittedCommands;
+import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import java.util.Random;
 
 import com.google.inject.AbstractModule;
@@ -64,7 +64,7 @@ public class DeterministicRandomlySyncedLedgerModule extends AbstractModule {
 			}
 
 			@Override
-			public OnSynced ifCommitSynced(VerifiedCommittedLedgerState ledgerState) {
+			public OnSynced ifCommitSynced(VerifiedLedgerStateAndProof ledgerState) {
 				return onSynced -> {
 					boolean synced = random.nextBoolean();
 					if (synced) {
@@ -81,7 +81,7 @@ public class DeterministicRandomlySyncedLedgerModule extends AbstractModule {
 			}
 
 			@Override
-			public void commit(VerifiedCommittedCommands command) {
+			public void commit(VerifiedCommandsAndProof command) {
 				// Nothing to do here
 			}
 		};

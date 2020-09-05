@@ -25,7 +25,7 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.consensus.epoch.EpochView;
-import com.radixdlt.ledger.VerifiedCommittedCommands;
+import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.ledger.StateComputerLedger.CommittedSender;
 import com.radixdlt.systeminfo.InfoRx;
 import com.radixdlt.consensus.Timeout;
@@ -45,7 +45,7 @@ public final class SystemInfoRxModule extends AbstractModule {
 		SenderToRx<Timeout, Timeout> timeouts = new SenderToRx<>(i -> i);
 		SenderToRx<EpochView, EpochView> currentViews = new SenderToRx<>(i -> i);
 
-		TwoSenderToRx<VerifiedCommittedCommands, BFTValidatorSet, VerifiedCommittedCommands> committedCommands
+		TwoSenderToRx<VerifiedCommandsAndProof, BFTValidatorSet, VerifiedCommandsAndProof> committedCommands
 			= new TwoSenderToRx<>((committed, vset) -> committed);
 		Multibinder<CommittedSender> committedSenderBinder = Multibinder.newSetBinder(binder(), CommittedSender.class);
 		committedSenderBinder.addBinding().toInstance(committedCommands::send);
@@ -96,7 +96,7 @@ public final class SystemInfoRxModule extends AbstractModule {
 			}
 
 			@Override
-			public Observable<VerifiedCommittedCommands> committedCommands() {
+			public Observable<VerifiedCommandsAndProof> committedCommands() {
 				return committedCommands.rx();
 			}
 		};

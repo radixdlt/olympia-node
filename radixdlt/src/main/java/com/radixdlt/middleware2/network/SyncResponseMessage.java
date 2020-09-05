@@ -21,7 +21,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.ledger.VerifiedCommittedCommands;
+import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import org.radix.network.messaging.Message;
 
 /**
@@ -31,7 +31,7 @@ import org.radix.network.messaging.Message;
 public final class SyncResponseMessage extends Message {
 	@JsonProperty("commands")
 	@DsonOutput(Output.ALL)
-	private final VerifiedCommittedCommands commands;
+	private final VerifiedCommandsAndProof commands;
 
 	SyncResponseMessage() {
 		// Serializer only
@@ -39,12 +39,12 @@ public final class SyncResponseMessage extends Message {
 		this.commands = null;
 	}
 
-	public SyncResponseMessage(int magic, VerifiedCommittedCommands commands) {
+	public SyncResponseMessage(int magic, VerifiedCommandsAndProof commands) {
 		super(magic);
 		this.commands = commands;
 	}
 
-	public VerifiedCommittedCommands getCommands() {
+	public VerifiedCommandsAndProof getCommands() {
 		return commands;
 	}
 

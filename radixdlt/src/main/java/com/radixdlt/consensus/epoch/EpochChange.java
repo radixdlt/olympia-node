@@ -18,7 +18,7 @@
 package com.radixdlt.consensus.epoch;
 
 import com.radixdlt.consensus.LedgerState;
-import com.radixdlt.consensus.VerifiedCommittedLedgerState;
+import com.radixdlt.consensus.VerifiedLedgerStateAndProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import java.util.Objects;
@@ -27,10 +27,10 @@ import java.util.Objects;
  * An epoch change message to consensus
  */
 public final class EpochChange {
-	private final VerifiedCommittedLedgerState proof;
+	private final VerifiedLedgerStateAndProof proof;
 	private final BFTValidatorSet validatorSet;
 
-	public EpochChange(VerifiedCommittedLedgerState proof, BFTValidatorSet validatorSet) {
+	public EpochChange(VerifiedLedgerStateAndProof proof, BFTValidatorSet validatorSet) {
 		this.proof = Objects.requireNonNull(proof);
 		this.validatorSet = Objects.requireNonNull(validatorSet);
 	}
@@ -54,7 +54,7 @@ public final class EpochChange {
 		);
 	}
 
-	public VerifiedCommittedLedgerState getProof() {
+	public VerifiedLedgerStateAndProof getProof() {
 		return proof;
 	}
 

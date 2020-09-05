@@ -18,7 +18,7 @@
 package com.radixdlt.sync;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.VerifiedCommittedLedgerState;
+import com.radixdlt.consensus.VerifiedLedgerStateAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import java.util.Objects;
 
@@ -26,15 +26,15 @@ import java.util.Objects;
  * A request to sync to a given version
  */
 public final class LocalSyncRequest {
-	private final VerifiedCommittedLedgerState target;
+	private final VerifiedLedgerStateAndProof target;
 	private final ImmutableList<BFTNode> targetNodes;
 
-	public LocalSyncRequest(VerifiedCommittedLedgerState target, ImmutableList<BFTNode> targetNodes) {
+	public LocalSyncRequest(VerifiedLedgerStateAndProof target, ImmutableList<BFTNode> targetNodes) {
 		this.target = Objects.requireNonNull(target);
 		this.targetNodes = Objects.requireNonNull(targetNodes);
 	}
 
-	public VerifiedCommittedLedgerState getTarget() {
+	public VerifiedLedgerStateAndProof getTarget() {
 		return target;
 	}
 

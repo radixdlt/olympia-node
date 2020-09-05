@@ -36,7 +36,7 @@ import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerState;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.consensus.VerifiedCommittedLedgerState;
+import com.radixdlt.consensus.VerifiedLedgerStateAndProof;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.bft.View;
@@ -58,7 +58,7 @@ public class StateComputerLedgerTest {
 	private StateComputerLedger stateComputerLedger;
 	private CommittedStateSyncSender committedStateSyncSender;
 	private CommittedSender committedSender;
-	private VerifiedCommittedLedgerState currentLedgerState;
+	private VerifiedLedgerStateAndProof currentLedgerState;
 	private SystemCounters counters;
 
 	@Before
@@ -69,7 +69,7 @@ public class StateComputerLedgerTest {
 		this.committedStateSyncSender = mock(CommittedStateSyncSender.class);
 		this.counters = mock(SystemCounters.class);
 		this.committedSender = mock(CommittedSender.class);
-		this.currentLedgerState = mock(VerifiedCommittedLedgerState.class);
+		this.currentLedgerState = mock(VerifiedLedgerStateAndProof.class);
 
 		this.stateComputerLedger = new StateComputerLedger(
 			currentLedgerState,
@@ -177,8 +177,8 @@ public class StateComputerLedgerTest {
 		Hash hash = mock(Hash.class);
 		when(command.getHash()).thenReturn(hash);
 
-		VerifiedCommittedCommands verified = mock(VerifiedCommittedCommands.class);
-		VerifiedCommittedLedgerState proof = mock(VerifiedCommittedLedgerState.class);
+		VerifiedCommandsAndProof verified = mock(VerifiedCommandsAndProof.class);
+		VerifiedLedgerStateAndProof proof = mock(VerifiedLedgerStateAndProof.class);
 		when(proof.compareTo(eq(currentLedgerState))).thenReturn(-1);
 		when(verified.getLedgerState()).thenReturn(proof);
 
@@ -194,8 +194,8 @@ public class StateComputerLedgerTest {
 		Hash hash = mock(Hash.class);
 		when(command.getHash()).thenReturn(hash);
 
-		VerifiedCommittedCommands verified = mock(VerifiedCommittedCommands.class);
-		VerifiedCommittedLedgerState proof = mock(VerifiedCommittedLedgerState.class);
+		VerifiedCommandsAndProof verified = mock(VerifiedCommandsAndProof.class);
+		VerifiedLedgerStateAndProof proof = mock(VerifiedLedgerStateAndProof.class);
 		when(proof.compareTo(eq(currentLedgerState))).thenReturn(1);
 		when(verified.getLedgerState()).thenReturn(proof);
 		when(verified.truncateFromVersion(anyLong())).thenReturn(verified);
@@ -213,13 +213,13 @@ public class StateComputerLedgerTest {
 
 	@Test
 	public void when_check_sync_and_synced__then_return_sync_handler() {
-		VerifiedCommittedLedgerState verifiedCommittedLedgerState = mock(VerifiedCommittedLedgerState.class);
-		when(verifiedCommittedLedgerState.compareTo(currentLedgerState)).thenReturn(0);
+		VerifiedLedgerStateAndProof verifiedLedgerStateAndProof = mock(VerifiedLedgerStateAndProof.class);
+		when(verifiedLedgerStateAndProof.compareTo(currentLedgerState)).thenReturn(0);
 
 		Runnable onSynced = mock(Runnable.class);
 		Runnable onNotSynced = mock(Runnable.class);
 		stateComputerLedger
-			.ifCommitSynced(verifiedCommittedLedgerState)
+			.ifCommitSynced(verifiedLedgerStateAndProof)
 			.then(onSynced)
 			.elseExecuteAndSendMessageOnSync(onNotSynced, mock(Object.class));
 		verify(onSynced, times(1)).run();
@@ -229,21 +229,21 @@ public class StateComputerLedgerTest {
 	@Test
 	public void when_check_sync__will_complete_when_higher_or_equal_state_version() {
 		when(currentLedgerState.getStateVersion()).thenReturn(0L);
-		VerifiedCommittedLedgerState verifiedCommittedLedgerState = mock(VerifiedCommittedLedgerState.class);
-		when(verifiedCommittedLedgerState.getStateVersion()).thenReturn(1L);
+		VerifiedLedgerStateAndProof verifiedLedgerStateAndProof = mock(VerifiedLedgerStateAndProof.class);
+		when(verifiedLedgerStateAndProof.getStateVersion()).thenReturn(1L);
 
 		Runnable onSynced = mock(Runnable.class);
 		Runnable onNotSynced = mock(Runnable.class);
 		stateComputerLedger
-			.ifCommitSynced(verifiedCommittedLedgerState)
+			.ifCommitSynced(verifiedLedgerStateAndProof)
 			.then(onSynced)
 			.elseExecuteAndSendMessageOnSync(onNotSynced, mock(Object.class));
 		verify(committedStateSyncSender, never()).sendCommittedStateSync(anyLong(), any());
 		verify(onSynced, never()).run();
 		verify(onNotSynced, times(1)).run();
 
-		VerifiedCommittedCommands verified = mock(VerifiedCommittedCommands.class);
-		VerifiedCommittedLedgerState proof = mock(VerifiedCommittedLedgerState.class);
+		VerifiedCommandsAndProof verified = mock(VerifiedCommandsAndProof.class);
+		VerifiedLedgerStateAndProof proof = mock(VerifiedLedgerStateAndProof.class);
 		when(proof.getStateVersion()).thenReturn(1L);
 		when(proof.compareTo(any())).thenReturn(1);
 		when(verified.getLedgerState()).thenReturn(proof);

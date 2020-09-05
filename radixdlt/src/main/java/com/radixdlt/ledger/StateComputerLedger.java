@@ -21,7 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerState;
-import com.radixdlt.consensus.VerifiedCommittedLedgerState;
+import com.radixdlt.consensus.VerifiedLedgerStateAndProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.Vertex;
@@ -46,12 +46,12 @@ import java.util.TreeMap;
 public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	public interface StateComputer {
 		boolean prepare(Vertex vertex);
-		Optional<BFTValidatorSet> commit(VerifiedCommittedCommands verifiedCommittedCommands);
+		Optional<BFTValidatorSet> commit(VerifiedCommandsAndProof verifiedCommandsAndProof);
 	}
 
 	public interface CommittedSender {
 		// TODO: batch these
-		void sendCommitted(VerifiedCommittedCommands committedCommand, BFTValidatorSet validatorSet);
+		void sendCommitted(VerifiedCommandsAndProof committedCommand, BFTValidatorSet validatorSet);
 	}
 
 	public interface CommittedStateSyncSender {
@@ -65,11 +65,11 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	private final SystemCounters counters;
 
 	private final Object lock = new Object();
-	private VerifiedCommittedLedgerState currentLedgerState;
+	private VerifiedLedgerStateAndProof currentLedgerState;
 	private final TreeMap<Long, Set<Object>> committedStateSyncers = new TreeMap<>();
 
 	public StateComputerLedger(
-		VerifiedCommittedLedgerState initialLedgerState,
+		VerifiedLedgerStateAndProof initialLedgerState,
 		Mempool mempool,
 		StateComputer stateComputer,
 		CommittedStateSyncSender committedStateSyncSender,
@@ -118,12 +118,12 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	}
 
 	@Override
-	public OnSynced ifCommitSynced(VerifiedCommittedLedgerState committedLedgerState) {
+	public OnSynced ifCommitSynced(VerifiedLedgerStateAndProof committedLedgerState) {
 		synchronized (lock) {
 			if (committedLedgerState.getStateVersion() <= this.currentLedgerState.getStateVersion()) {
 				if (committedLedgerState.compareTo(this.currentLedgerState) > 0) {
 					// Can happen on epoch changes
-					this.commit(new VerifiedCommittedCommands(ImmutableList.of(), committedLedgerState));
+					this.commit(new VerifiedCommandsAndProof(ImmutableList.of(), committedLedgerState));
 				}
 				return onSync -> {
 					onSync.run();
@@ -139,22 +139,22 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	}
 
 	@Override
-	public void commit(VerifiedCommittedCommands verifiedCommittedCommands) {
+	public void commit(VerifiedCommandsAndProof verifiedCommandsAndProof) {
 		this.counters.increment(CounterType.LEDGER_PROCESSED);
 		synchronized (lock) {
-			final VerifiedCommittedLedgerState committedState = verifiedCommittedCommands.getLedgerState();
+			final VerifiedLedgerStateAndProof committedState = verifiedCommandsAndProof.getLedgerState();
 			if (committedState.compareTo(this.currentLedgerState) <= 0) {
 				return;
 			}
 
 			// Callers of commit() should be aware of currentLedgerState.getStateVersion()
 			// and only call commit with a first version <= currentVersion + 1
-			if (currentLedgerState.getStateVersion() + 1 < verifiedCommittedCommands.getFirstVersion()) {
+			if (currentLedgerState.getStateVersion() + 1 < verifiedCommandsAndProof.getFirstVersion()) {
 				throw new IllegalStateException();
 			}
 
 			// Remove commands which have already been committed
-			VerifiedCommittedCommands commandsToStore = verifiedCommittedCommands
+			VerifiedCommandsAndProof commandsToStore = verifiedCommandsAndProof
 				.truncateFromVersion(this.currentLedgerState.getStateVersion());
 
 			// persist

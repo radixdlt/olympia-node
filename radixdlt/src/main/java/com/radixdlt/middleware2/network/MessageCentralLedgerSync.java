@@ -17,7 +17,7 @@
 
 package com.radixdlt.middleware2.network;
 
-import com.radixdlt.ledger.VerifiedCommittedCommands;
+import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.sync.StateSyncNetwork;
 import com.radixdlt.sync.SyncRequest;
 import com.radixdlt.network.addressbook.Peer;
@@ -45,7 +45,7 @@ public final class MessageCentralLedgerSync implements StateSyncNetwork {
 	}
 
 	@Override
-	public Observable<VerifiedCommittedCommands> syncResponses() {
+	public Observable<VerifiedCommandsAndProof> syncResponses() {
 		return Observable.create(emitter -> {
 			MessageListener<SyncResponseMessage> listener = (src, msg) -> emitter.onNext(msg.getCommands());
 			this.messageCentral.addListener(SyncResponseMessage.class, listener);
@@ -69,7 +69,7 @@ public final class MessageCentralLedgerSync implements StateSyncNetwork {
 	}
 
 	@Override
-	public void sendSyncResponse(Peer peer, VerifiedCommittedCommands commands) {
+	public void sendSyncResponse(Peer peer, VerifiedCommandsAndProof commands) {
 		final SyncResponseMessage syncResponseMessage = new SyncResponseMessage(this.magic, commands);
 		this.messageCentral.send(peer, syncResponseMessage);
 	}

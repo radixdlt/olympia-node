@@ -28,10 +28,10 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.LedgerState;
-import com.radixdlt.consensus.VerifiedCommittedLedgerState;
+import com.radixdlt.consensus.VerifiedLedgerStateAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.ledger.VerifiedCommittedCommands;
+import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.network.addressbook.AddressBook;
@@ -66,7 +66,7 @@ public class SyncServiceProcessorTest {
 			addressBook,
 			syncedCommandSender,
 			syncTimeoutScheduler,
-			VerifiedCommittedLedgerState.ofGenesisAncestor(mock(LedgerState.class)),
+			VerifiedLedgerStateAndProof.ofGenesisAncestor(mock(LedgerState.class)),
 			2,
 			1
 		);
@@ -77,8 +77,8 @@ public class SyncServiceProcessorTest {
 		SyncRequest syncRequest = mock(SyncRequest.class);
 		Peer peer = mock(Peer.class);
 		when(syncRequest.getPeer()).thenReturn(peer);
-		VerifiedCommittedCommands verifiedCommittedCommands = mock(VerifiedCommittedCommands.class);
-		when(stateComputer.getNextCommittedCommands(anyLong(), anyInt())).thenReturn(verifiedCommittedCommands);
+		VerifiedCommandsAndProof verifiedCommandsAndProof = mock(VerifiedCommandsAndProof.class);
+		when(stateComputer.getNextCommittedCommands(anyLong(), anyInt())).thenReturn(verifiedCommandsAndProof);
 		syncServiceProcessor.processSyncRequest(syncRequest);
 		verify(stateSyncNetwork, times(1)).sendSyncResponse(eq(peer), any());
 	}
@@ -95,18 +95,18 @@ public class SyncServiceProcessorTest {
 		when(peer.hasSystem()).thenReturn(true);
 		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
 
-		VerifiedCommittedLedgerState verifiedCommittedLedgerState = mock(VerifiedCommittedLedgerState.class);
-		when(verifiedCommittedLedgerState.getStateVersion()).thenReturn(targetVersion);
+		VerifiedLedgerStateAndProof verifiedLedgerStateAndProof = mock(VerifiedLedgerStateAndProof.class);
+		when(verifiedLedgerStateAndProof.getStateVersion()).thenReturn(targetVersion);
 
-		VerifiedCommittedLedgerState currentState = mock(VerifiedCommittedLedgerState.class);
+		VerifiedLedgerStateAndProof currentState = mock(VerifiedLedgerStateAndProof.class);
 		when(currentState.getStateVersion()).thenReturn(6L);
 
 		syncServiceProcessor.processVersionUpdate(currentState);
-		LocalSyncRequest request = new LocalSyncRequest(verifiedCommittedLedgerState, ImmutableList.of(node));
+		LocalSyncRequest request = new LocalSyncRequest(verifiedLedgerStateAndProof, ImmutableList.of(node));
 		syncServiceProcessor.processLocalSyncRequest(request);
 
-		VerifiedCommittedCommands commands = mock(VerifiedCommittedCommands.class);
-		VerifiedCommittedLedgerState proof = mock(VerifiedCommittedLedgerState.class);
+		VerifiedCommandsAndProof commands = mock(VerifiedCommandsAndProof.class);
+		VerifiedLedgerStateAndProof proof = mock(VerifiedLedgerStateAndProof.class);
 		LedgerState proofLedgerState = mock(LedgerState.class);
 		when(proofLedgerState.getStateVersion()).thenReturn(15L);
 		when(commands.getLedgerState()).thenReturn(proof);
@@ -126,14 +126,14 @@ public class SyncServiceProcessorTest {
 		when(peer.hasSystem()).thenReturn(true);
 		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
 
-		VerifiedCommittedLedgerState verifiedCommittedLedgerState = mock(VerifiedCommittedLedgerState.class);
-		when(verifiedCommittedLedgerState.getStateVersion()).thenReturn(targetVersion);
+		VerifiedLedgerStateAndProof verifiedLedgerStateAndProof = mock(VerifiedLedgerStateAndProof.class);
+		when(verifiedLedgerStateAndProof.getStateVersion()).thenReturn(targetVersion);
 
-		VerifiedCommittedLedgerState currentLedgerState = mock(VerifiedCommittedLedgerState.class);
+		VerifiedLedgerStateAndProof currentLedgerState = mock(VerifiedLedgerStateAndProof.class);
 		when(currentLedgerState.getStateVersion()).thenReturn(10L);
 
 		syncServiceProcessor.processVersionUpdate(currentLedgerState);
-		LocalSyncRequest request = new LocalSyncRequest(verifiedCommittedLedgerState, ImmutableList.of(node));
+		LocalSyncRequest request = new LocalSyncRequest(verifiedLedgerStateAndProof, ImmutableList.of(node));
 		syncServiceProcessor.processLocalSyncRequest(request);
 		verify(stateSyncNetwork, times(1)).sendSyncRequest(any(), eq(10L));
 	}

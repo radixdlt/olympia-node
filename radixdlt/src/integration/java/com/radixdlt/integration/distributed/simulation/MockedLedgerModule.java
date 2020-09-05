@@ -17,10 +17,10 @@
 
 package com.radixdlt.integration.distributed.simulation;
 
-import com.radixdlt.consensus.VerifiedCommittedLedgerState;
+import com.radixdlt.consensus.VerifiedLedgerStateAndProof;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.ledger.VerifiedCommittedCommands;
+import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import java.util.Objects;
 
 import com.google.inject.AbstractModule;
@@ -49,7 +49,7 @@ public class MockedLedgerModule extends AbstractModule {
 		bind(CommittedStateSyncRx.class).toInstance(Observable::never);
 		bind(EpochChangeRx.class).toInstance(Observable::never);
 		LedgerState ledgerState = LedgerState.create(0, View.genesis(), 0, Hash.ZERO_HASH, 0L, true);
-		EpochChange initialEpoch = new EpochChange(VerifiedCommittedLedgerState.ofGenesisAncestor(ledgerState), validatorSet);
+		EpochChange initialEpoch = new EpochChange(VerifiedLedgerStateAndProof.ofGenesisAncestor(ledgerState), validatorSet);
 		bind(EpochChange.class).toInstance(initialEpoch);
 		bind(NextCommandGenerator.class).toInstance((view, aids) -> null);
 		bind(SyncRequestSender.class).toInstance(req -> { });
@@ -72,7 +72,7 @@ public class MockedLedgerModule extends AbstractModule {
 			}
 
 			@Override
-			public OnSynced ifCommitSynced(VerifiedCommittedLedgerState header) {
+			public OnSynced ifCommitSynced(VerifiedLedgerStateAndProof header) {
 				return onSynced -> {
 					onSynced.run();
 					return (notSynced, opaque) -> { };
@@ -80,7 +80,7 @@ public class MockedLedgerModule extends AbstractModule {
 			}
 
 			@Override
-			public void commit(VerifiedCommittedCommands command) {
+			public void commit(VerifiedCommandsAndProof command) {
 				// Nothing to do here
 			}
 		};

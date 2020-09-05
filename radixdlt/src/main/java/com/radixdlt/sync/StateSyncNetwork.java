@@ -17,7 +17,7 @@
 
 package com.radixdlt.sync;
 
-import com.radixdlt.ledger.VerifiedCommittedCommands;
+import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.network.addressbook.Peer;
 import io.reactivex.rxjava3.core.Observable;
 
@@ -30,7 +30,7 @@ public interface StateSyncNetwork {
 	 * Retrieve stream of sync responses
 	 * @return an unending Observable of sync responses
 	 */
-	Observable<VerifiedCommittedCommands> syncResponses();
+	Observable<VerifiedCommandsAndProof> syncResponses();
 
 	/**
 	 * Retrieve stream of sync requests
@@ -51,5 +51,5 @@ public interface StateSyncNetwork {
 	 * @param peer peer to send response to
 	 * @param atoms list of atoms in the response
 	 */
-	void sendSyncResponse(Peer peer, VerifiedCommittedCommands atoms);
+	void sendSyncResponse(Peer peer, VerifiedCommandsAndProof atoms);
 }

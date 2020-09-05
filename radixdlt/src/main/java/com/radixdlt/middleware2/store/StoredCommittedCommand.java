@@ -20,7 +20,7 @@ package com.radixdlt.middleware2.store;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.VerifiedCommittedLedgerState;
+import com.radixdlt.consensus.VerifiedLedgerStateAndProof;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -42,12 +42,12 @@ public class StoredCommittedCommand {
 
 	@JsonProperty("proof")
 	@DsonOutput(Output.ALL)
-	private final VerifiedCommittedLedgerState proof;
+	private final VerifiedLedgerStateAndProof proof;
 
 	@JsonCreator
 	public StoredCommittedCommand(
 		@JsonProperty("command") Command command,
-		@JsonProperty("proof") VerifiedCommittedLedgerState proof
+		@JsonProperty("proof") VerifiedLedgerStateAndProof proof
 	) {
 		this.command = command;
 		this.proof = Objects.requireNonNull(proof);
@@ -57,7 +57,7 @@ public class StoredCommittedCommand {
 		return command;
 	}
 
-	public VerifiedCommittedLedgerState getStateAndProof() {
+	public VerifiedLedgerStateAndProof getStateAndProof() {
 		return proof;
 	}
 

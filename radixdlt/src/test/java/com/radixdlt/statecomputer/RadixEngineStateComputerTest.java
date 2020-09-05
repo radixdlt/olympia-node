@@ -30,14 +30,14 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.VerifiedCommittedLedgerState;
+import com.radixdlt.consensus.VerifiedLedgerStateAndProof;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.ledger.VerifiedCommittedCommands;
+import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
@@ -100,10 +100,10 @@ public class RadixEngineStateComputerTest {
 
 		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenReturn(clientAtom);
 
-		VerifiedCommittedLedgerState proof = mock(VerifiedCommittedLedgerState.class);
+		VerifiedLedgerStateAndProof proof = mock(VerifiedLedgerStateAndProof.class);
 		when(proof.getStateVersion()).thenReturn(1L);
 		when(proof.isEndOfEpoch()).thenReturn(false);
-		VerifiedCommittedCommands command = mock(VerifiedCommittedCommands.class);
+		VerifiedCommandsAndProof command = mock(VerifiedCommandsAndProof.class);
 		when(command.getLedgerState()).thenReturn(proof);
 		doAnswer(invocation -> {
 			BiConsumer<Long, Command> consumer = invocation.getArgument(0);
@@ -126,11 +126,11 @@ public class RadixEngineStateComputerTest {
 		RadixEngineException e = mock(RadixEngineException.class);
 		doThrow(e).when(radixEngine).checkAndStore(any());
 
-		VerifiedCommittedLedgerState proof = mock(VerifiedCommittedLedgerState.class);
+		VerifiedLedgerStateAndProof proof = mock(VerifiedLedgerStateAndProof.class);
 		when(proof.getStateVersion()).thenReturn(1L);
 		when(proof.isEndOfEpoch()).thenReturn(false);
 
-		VerifiedCommittedCommands committedCommand = mock(VerifiedCommittedCommands.class);
+		VerifiedCommandsAndProof committedCommand = mock(VerifiedCommandsAndProof.class);
 		when(committedCommand.getLedgerState()).thenReturn(proof);
 		doAnswer(invocation -> {
 			BiConsumer<Long, Command> consumer = invocation.getArgument(0);
@@ -140,7 +140,7 @@ public class RadixEngineStateComputerTest {
 
 		stateComputer.commit(committedCommand);
 
-		VerifiedCommittedCommands commands = stateComputer.getNextCommittedCommands(0, 1);
+		VerifiedCommandsAndProof commands = stateComputer.getNextCommittedCommands(0, 1);
 		assertThat(commands).isNotNull();
 		assertThat(commands.getLedgerState()).isEqualTo(proof);
 	}
@@ -151,11 +151,11 @@ public class RadixEngineStateComputerTest {
 		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenThrow(new SerializationException(""));
 
 		Command cmd = new Command(new byte[] {0, 1});
-		VerifiedCommittedLedgerState proof = mock(VerifiedCommittedLedgerState.class);
+		VerifiedLedgerStateAndProof proof = mock(VerifiedLedgerStateAndProof.class);
 		when(proof.getStateVersion()).thenReturn(1L);
 		when(proof.isEndOfEpoch()).thenReturn(false);
 
-		VerifiedCommittedCommands command = mock(VerifiedCommittedCommands.class);
+		VerifiedCommandsAndProof command = mock(VerifiedCommandsAndProof.class);
 		when(command.getLedgerState()).thenReturn(proof);
 		doAnswer(invocation -> {
 			BiConsumer<Long, Command> consumer = invocation.getArgument(0);
@@ -164,7 +164,7 @@ public class RadixEngineStateComputerTest {
 		}).when(command).forEach(any());
 
 		assertThat(stateComputer.commit(command)).isEmpty();
-		VerifiedCommittedCommands commands = stateComputer.getNextCommittedCommands(0, 1);
+		VerifiedCommandsAndProof commands = stateComputer.getNextCommittedCommands(0, 1);
 		assertThat(commands).isNotNull();
 		assertThat(commands.getLedgerState()).isEqualTo(proof);
 	}
