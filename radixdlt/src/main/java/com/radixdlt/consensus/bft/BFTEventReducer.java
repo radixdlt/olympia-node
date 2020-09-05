@@ -208,7 +208,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 					log.debug("{}: VOTE: QC Synced: {}", this.self::getSimpleName, () -> qc);
 					synchedLog = true;
 				}
-				// TODO: Remove isEndOfEpoch knowledge from consensus
 				processQC(qc).ifPresent(committedProof -> {
 					if (committedProof.isEndOfEpoch()) {
 						this.endOfEpochSender.sendEndOfEpoch(committedProof);

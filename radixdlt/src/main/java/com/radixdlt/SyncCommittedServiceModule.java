@@ -48,14 +48,13 @@ public class SyncCommittedServiceModule extends AbstractModule {
 		VerifiedLedgerHeaderAndProof header,
 		RadixEngineStateComputer executor,
 		StateSyncNetwork stateSyncNetwork,
-		AddressBook addressBook,
 		SyncedCommandSender syncedCommandSender,
 		SyncTimeoutScheduler syncTimeoutScheduler
 	) {
 		return new SyncServiceProcessor(
 			executor,
 			stateSyncNetwork,
-			addressBook, syncedCommandSender,
+			syncedCommandSender,
 			syncTimeoutScheduler,
 			header,
 			BATCH_SIZE,
@@ -91,10 +90,12 @@ public class SyncCommittedServiceModule extends AbstractModule {
 	@Singleton
 	private StateSyncNetwork stateSyncNetwork(
 		Universe universe,
+		AddressBook addressBook,
 		MessageCentral messageCentral
 	) {
 		return new MessageCentralLedgerSync(
 			universe,
+			addressBook,
 			messageCentral
 		);
 	}

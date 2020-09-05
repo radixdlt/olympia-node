@@ -17,8 +17,8 @@
 
 package com.radixdlt.sync;
 
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.network.addressbook.Peer;
 import io.reactivex.rxjava3.core.Observable;
 
 /**
@@ -39,17 +39,17 @@ public interface StateSyncNetwork {
 	Observable<SyncRequest> syncRequests();
 
 	/**
-	 * Sends a sync request to a peer
+	 * Sends a sync request to a peer node
 	 *
-	 * @param peer peer to send request to
+	 * @param node node to send request to
 	 * @param stateVersion this nodes current stateVersion
 	 */
-	void sendSyncRequest(Peer peer, long stateVersion);
+	void sendSyncRequest(BFTNode node, long stateVersion);
 
 	/**
-	 * Sends a sync response to a peer
-	 * @param peer peer to send response to
+	 * Sends a sync response to a peer node
+	 * @param node node to send response to
 	 * @param atoms list of atoms in the response
 	 */
-	void sendSyncResponse(Peer peer, VerifiedCommandsAndProof atoms);
+	void sendSyncResponse(BFTNode node, VerifiedCommandsAndProof atoms);
 }

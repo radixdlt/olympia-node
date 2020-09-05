@@ -30,40 +30,30 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
-import com.radixdlt.identifiers.EUID;
-import com.radixdlt.network.addressbook.AddressBook;
-import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
 import com.radixdlt.sync.SyncServiceProcessor.SyncTimeoutScheduler;
 import com.radixdlt.sync.SyncServiceProcessor.SyncedCommandSender;
-import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
 
 public class SyncServiceProcessorTest {
-
 	private StateSyncNetwork stateSyncNetwork;
 	private SyncServiceProcessor syncServiceProcessor;
-	private AddressBook addressBook;
 	private RadixEngineStateComputer stateComputer;
 	private SyncedCommandSender syncedCommandSender;
 	private SyncTimeoutScheduler syncTimeoutScheduler;
 
 	@Before
 	public void setUp() {
-
 		this.stateSyncNetwork = mock(StateSyncNetwork.class);
-		this.addressBook = mock(AddressBook.class);
 		this.stateComputer = mock(RadixEngineStateComputer.class);
 		this.syncedCommandSender = mock(SyncedCommandSender.class);
 		this.syncTimeoutScheduler = mock(SyncTimeoutScheduler.class);
 		this.syncServiceProcessor = new SyncServiceProcessor(
 			stateComputer,
 			stateSyncNetwork,
-			addressBook,
 			syncedCommandSender,
 			syncTimeoutScheduler,
 			VerifiedLedgerHeaderAndProof.ofGenesisAncestor(mock(LedgerHeader.class)),
@@ -75,12 +65,12 @@ public class SyncServiceProcessorTest {
 	@Test
 	public void when_remote_sync_request__then_process_it() throws NextCommittedLimitReachedException {
 		SyncRequest syncRequest = mock(SyncRequest.class);
-		Peer peer = mock(Peer.class);
-		when(syncRequest.getPeer()).thenReturn(peer);
+		BFTNode node = mock(BFTNode.class);
+		when(syncRequest.getNode()).thenReturn(node);
 		VerifiedCommandsAndProof verifiedCommandsAndProof = mock(VerifiedCommandsAndProof.class);
 		when(stateComputer.getNextCommittedCommands(anyLong(), anyInt())).thenReturn(verifiedCommandsAndProof);
 		syncServiceProcessor.processSyncRequest(syncRequest);
-		verify(stateSyncNetwork, times(1)).sendSyncResponse(eq(peer), any());
+		verify(stateSyncNetwork, times(1)).sendSyncResponse(eq(node), any());
 	}
 
 	@Test
@@ -88,13 +78,6 @@ public class SyncServiceProcessorTest {
 		final long targetVersion = 15;
 
 		BFTNode node = mock(BFTNode.class);
-		ECPublicKey key = mock(ECPublicKey.class);
-		when(key.euid()).thenReturn(mock(EUID.class));
-		when(node.getKey()).thenReturn(key);
-		Peer peer = mock(Peer.class);
-		when(peer.hasSystem()).thenReturn(true);
-		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
-
 		VerifiedLedgerHeaderAndProof verifiedLedgerHeaderAndProof = mock(VerifiedLedgerHeaderAndProof.class);
 		when(verifiedLedgerHeaderAndProof.getStateVersion()).thenReturn(targetVersion);
 
@@ -119,13 +102,6 @@ public class SyncServiceProcessorTest {
 	public void requestSent() {
 		final long targetVersion = 15;
 		BFTNode node = mock(BFTNode.class);
-		ECPublicKey key = mock(ECPublicKey.class);
-		when(key.euid()).thenReturn(mock(EUID.class));
-		when(node.getKey()).thenReturn(key);
-		Peer peer = mock(Peer.class);
-		when(peer.hasSystem()).thenReturn(true);
-		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
-
 		VerifiedLedgerHeaderAndProof verifiedLedgerHeaderAndProof = mock(VerifiedLedgerHeaderAndProof.class);
 		when(verifiedLedgerHeaderAndProof.getStateVersion()).thenReturn(targetVersion);
 

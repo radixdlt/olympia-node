@@ -26,40 +26,60 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.sync.SyncRequest;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageListener;
 import com.radixdlt.universe.Universe;
 import io.reactivex.rxjava3.observers.TestObserver;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;
 import org.junit.Test;
+import org.radix.universe.system.RadixSystem;
 
 public class MessageCentralLedgerSyncTest {
 	private MessageCentralLedgerSync messageCentralLedgerSync;
 	private MessageCentral messageCentral;
+	private AddressBook addressBook;
 
 	@Before
 	public void setup() {
 		Universe universe = mock(Universe.class);
 		when(universe.getMagic()).thenReturn(123);
 		this.messageCentral = mock(MessageCentral.class);
-		this.messageCentralLedgerSync = new MessageCentralLedgerSync(universe, messageCentral);
+		this.addressBook = mock(AddressBook.class);
+		this.messageCentralLedgerSync = new MessageCentralLedgerSync(universe, addressBook, messageCentral);
 	}
 
 	@Test
 	public void when_send_sync_request__then_magic_should_be_same_as_universe() {
+		BFTNode node = mock(BFTNode.class);
+		ECPublicKey key = mock(ECPublicKey.class);
+		when(key.euid()).thenReturn(EUID.ONE);
+		when(node.getKey()).thenReturn(key);
 		Peer peer = mock(Peer.class);
-		messageCentralLedgerSync.sendSyncRequest(peer, 1);
+		when(peer.hasSystem()).thenReturn(true);
+		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
+		messageCentralLedgerSync.sendSyncRequest(node, 1);
 		verify(messageCentral, times(1)).send(eq(peer), argThat(msg -> msg.getMagic() == 123));
 	}
 
 	@Test
 	public void when_send_sync_response__then_magic_should_be_same_as_universe() {
+		BFTNode node = mock(BFTNode.class);
+		ECPublicKey key = mock(ECPublicKey.class);
+		when(key.euid()).thenReturn(EUID.ONE);
+		when(node.getKey()).thenReturn(key);
 		Peer peer = mock(Peer.class);
-		messageCentralLedgerSync.sendSyncResponse(peer, mock(VerifiedCommandsAndProof.class));
+		when(peer.hasSystem()).thenReturn(true);
+		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
+		messageCentralLedgerSync.sendSyncResponse(node, mock(VerifiedCommandsAndProof.class));
 		verify(messageCentral, times(1)).send(eq(peer), argThat(msg -> msg.getMagic() == 123));
 	}
 
@@ -73,12 +93,18 @@ public class MessageCentralLedgerSyncTest {
 
 		TestObserver<SyncRequest> testObserver = this.messageCentralLedgerSync.syncRequests().test();
 		Peer peer = mock(Peer.class);
+		when(peer.hasSystem()).thenReturn(true);
+		RadixSystem system = mock(RadixSystem.class);
+		ECPublicKey key = mock(ECPublicKey.class);
+		when(key.euid()).thenReturn(EUID.ONE);
+		when(system.getKey()).thenReturn(key);
+		when(peer.getSystem()).thenReturn(system);
 		SyncRequestMessage syncRequestMessage = mock(SyncRequestMessage.class);
 		when(syncRequestMessage.getStateVersion()).thenReturn(12345L);
 		messageListenerAtomicReference.get().handleMessage(peer, syncRequestMessage);
 		testObserver.awaitCount(1);
 		testObserver.assertValue(syncRequest ->
-			syncRequest.getStateVersion() == 12345L && syncRequest.getPeer().equals(peer)
+			syncRequest.getStateVersion() == 12345L && syncRequest.getNode().getKey().equals(key)
 		);
 	}
 

@@ -22,14 +22,10 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
-import com.radixdlt.network.addressbook.AddressBook;
-import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.stream.Collectors;
 import javax.annotation.concurrent.NotThreadSafe;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -71,7 +67,6 @@ public final class SyncServiceProcessor {
 	private final int batchSize;
 	private final SyncTimeoutScheduler syncTimeoutScheduler;
 	private final long patienceMilliseconds;
-	private final AddressBook addressBook;
 	private final StateSyncNetwork stateSyncNetwork;
 	private VerifiedLedgerHeaderAndProof targetHeader;
 	private VerifiedLedgerHeaderAndProof currentHeader;
@@ -79,7 +74,6 @@ public final class SyncServiceProcessor {
 	public SyncServiceProcessor(
 		RadixEngineStateComputer stateComputer,
 		StateSyncNetwork stateSyncNetwork,
-		AddressBook addressBook,
 		SyncedCommandSender syncedCommandSender,
 		SyncTimeoutScheduler syncTimeoutScheduler,
 		VerifiedLedgerHeaderAndProof current,
@@ -94,7 +88,6 @@ public final class SyncServiceProcessor {
 		}
 		this.stateComputer = Objects.requireNonNull(stateComputer);
 		this.stateSyncNetwork = Objects.requireNonNull(stateSyncNetwork);
-		this.addressBook = Objects.requireNonNull(addressBook);
 		this.syncedCommandSender = Objects.requireNonNull(syncedCommandSender);
 		this.syncTimeoutScheduler = Objects.requireNonNull(syncTimeoutScheduler);
 		this.batchSize = batchSize;
@@ -105,7 +98,6 @@ public final class SyncServiceProcessor {
 
 	public void processSyncRequest(SyncRequest syncRequest) {
 		log.debug("SYNC_REQUEST: {}", syncRequest);
-		Peer peer = syncRequest.getPeer();
 		long stateVersion = syncRequest.getStateVersion();
 		try {
 			VerifiedCommandsAndProof committedCommands = stateComputer.getNextCommittedCommands(stateVersion, batchSize);
@@ -114,7 +106,7 @@ public final class SyncServiceProcessor {
 			}
 
 			log.debug("SYNC_REQUEST: SENDING_RESPONSE size: {}", committedCommands.size());
-			stateSyncNetwork.sendSyncResponse(peer, committedCommands);
+			stateSyncNetwork.sendSyncResponse(syncRequest.getNode(), committedCommands);
 		} catch (NextCommittedLimitReachedException e) {
 			log.error(e.getMessage(), e);
 		}
@@ -172,20 +164,8 @@ public final class SyncServiceProcessor {
 	}
 
 	private void sendSyncRequest(List<BFTNode> targetNodes) {
-		List<Peer> peers = targetNodes.stream()
-			.map(BFTNode::getKey)
-			.map(pk -> addressBook.peer(pk.euid()))
-			.filter(Optional::isPresent)
-			.map(Optional::get)
-			.filter(Peer::hasSystem)
-			.collect(Collectors.toList());
-		// TODO: Remove this exception
-		if (peers.isEmpty()) {
-			throw new IllegalStateException("Unable to find peer");
-		}
-		Peer peer = peers.get(ThreadLocalRandom.current().nextInt(peers.size()));
-
+		BFTNode node = targetNodes.get(ThreadLocalRandom.current().nextInt(targetNodes.size()));
 		final long version = this.currentHeader.getStateVersion();
-		stateSyncNetwork.sendSyncRequest(peer, version);
+		stateSyncNetwork.sendSyncRequest(node, version);
 	}
 }
