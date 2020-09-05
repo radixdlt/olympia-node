@@ -160,11 +160,11 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 	@Override
 	public Optional<BFTValidatorSet> commit(VerifiedCommandsAndProof verifiedCommandsAndProof) {
-		final VerifiedLedgerHeaderAndProof stateAndProof = verifiedCommandsAndProof.getLedgerState();
+		final VerifiedLedgerHeaderAndProof headerAndProof = verifiedCommandsAndProof.getHeader();
 
-		verifiedCommandsAndProof.forEach((version, command) -> this.commitCommand(version, command, stateAndProof));
+		verifiedCommandsAndProof.forEach((version, command) -> this.commitCommand(version, command, headerAndProof));
 
-		if (stateAndProof.isEndOfEpoch()) {
+		if (headerAndProof.isEndOfEpoch()) {
 			RadixEngineValidatorSetBuilder validatorSetBuilder = this.radixEngine.getComputedState(RadixEngineValidatorSetBuilder.class);
 			return Optional.of(validatorSetBuilder.build());
 		}

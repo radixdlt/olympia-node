@@ -48,23 +48,23 @@ public final class VerifiedCommandsAndProof {
 
 	@JsonProperty("proof")
 	@DsonOutput(Output.ALL)
-	private final VerifiedLedgerHeaderAndProof stateAndProof;
+	private final VerifiedLedgerHeaderAndProof headerAndProof;
 
 	@JsonCreator
 	public VerifiedCommandsAndProof(
 		@JsonProperty("commands") ImmutableList<Command> commands,
-		@JsonProperty("proof") VerifiedLedgerHeaderAndProof stateAndProof
+		@JsonProperty("proof") VerifiedLedgerHeaderAndProof headerAndProof
 	) {
 		this.commands = commands == null ? ImmutableList.of() : commands;
-		this.stateAndProof = Objects.requireNonNull(stateAndProof);
+		this.headerAndProof = Objects.requireNonNull(headerAndProof);
 	}
 
 	public long getFirstVersion() {
 		if (commands.isEmpty()) {
-			return stateAndProof.getStateVersion();
+			return headerAndProof.getStateVersion();
 		}
 
-		return stateAndProof.getStateVersion() - commands.size() + 1;
+		return headerAndProof.getStateVersion() - commands.size() + 1;
 	}
 
 	public void forEach(BiConsumer<Long, Command> consumer) {
@@ -88,7 +88,7 @@ public final class VerifiedCommandsAndProof {
 		int startIndex = (int) (version + 1 - firstVersion);
 		ImmutableList<Command> truncated = IntStream.range(startIndex, commands.size())
 			.mapToObj(commands::get).collect(ImmutableList.toImmutableList());
-		return new VerifiedCommandsAndProof(truncated, stateAndProof);
+		return new VerifiedCommandsAndProof(truncated, headerAndProof);
 	}
 
 	public int size() {
@@ -99,13 +99,13 @@ public final class VerifiedCommandsAndProof {
 		return commands.contains(command);
 	}
 
-	public VerifiedLedgerHeaderAndProof getLedgerState() {
-		return stateAndProof;
+	public VerifiedLedgerHeaderAndProof getHeader() {
+		return headerAndProof;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(commands, stateAndProof);
+		return Objects.hash(commands, headerAndProof);
 	}
 
 	@Override
@@ -116,11 +116,11 @@ public final class VerifiedCommandsAndProof {
 
 		VerifiedCommandsAndProof other = (VerifiedCommandsAndProof) o;
 		return Objects.equals(this.commands, other.commands)
-			&& Objects.equals(this.stateAndProof, other.stateAndProof);
+			&& Objects.equals(this.headerAndProof, other.headerAndProof);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{cmds=%s stateAndProof=%s}", this.getClass().getSimpleName(), commands, stateAndProof);
+		return String.format("%s{cmds=%s stateAndProof=%s}", this.getClass().getSimpleName(), commands, headerAndProof);
 	}
 }

@@ -104,7 +104,7 @@ public class RadixEngineStateComputerTest {
 		when(proof.getStateVersion()).thenReturn(1L);
 		when(proof.isEndOfEpoch()).thenReturn(false);
 		VerifiedCommandsAndProof command = mock(VerifiedCommandsAndProof.class);
-		when(command.getLedgerState()).thenReturn(proof);
+		when(command.getHeader()).thenReturn(proof);
 		doAnswer(invocation -> {
 			BiConsumer<Long, Command> consumer = invocation.getArgument(0);
 			consumer.accept(1L, mock(Command.class));
@@ -131,7 +131,7 @@ public class RadixEngineStateComputerTest {
 		when(proof.isEndOfEpoch()).thenReturn(false);
 
 		VerifiedCommandsAndProof committedCommand = mock(VerifiedCommandsAndProof.class);
-		when(committedCommand.getLedgerState()).thenReturn(proof);
+		when(committedCommand.getHeader()).thenReturn(proof);
 		doAnswer(invocation -> {
 			BiConsumer<Long, Command> consumer = invocation.getArgument(0);
 			consumer.accept(1L, mock(Command.class));
@@ -142,7 +142,7 @@ public class RadixEngineStateComputerTest {
 
 		VerifiedCommandsAndProof commands = stateComputer.getNextCommittedCommands(0, 1);
 		assertThat(commands).isNotNull();
-		assertThat(commands.getLedgerState()).isEqualTo(proof);
+		assertThat(commands.getHeader()).isEqualTo(proof);
 	}
 
 	@Test
@@ -156,7 +156,7 @@ public class RadixEngineStateComputerTest {
 		when(proof.isEndOfEpoch()).thenReturn(false);
 
 		VerifiedCommandsAndProof command = mock(VerifiedCommandsAndProof.class);
-		when(command.getLedgerState()).thenReturn(proof);
+		when(command.getHeader()).thenReturn(proof);
 		doAnswer(invocation -> {
 			BiConsumer<Long, Command> consumer = invocation.getArgument(0);
 			consumer.accept(1L, cmd);
@@ -166,6 +166,6 @@ public class RadixEngineStateComputerTest {
 		assertThat(stateComputer.commit(command)).isEmpty();
 		VerifiedCommandsAndProof commands = stateComputer.getNextCommittedCommands(0, 1);
 		assertThat(commands).isNotNull();
-		assertThat(commands.getLedgerState()).isEqualTo(proof);
+		assertThat(commands.getHeader()).isEqualTo(proof);
 	}
 }

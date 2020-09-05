@@ -35,7 +35,7 @@ public final class EpochChangeManager implements CommittedSender {
 	@Override
 	public void sendCommitted(VerifiedCommandsAndProof committedCommand, BFTValidatorSet validatorSet) {
 		if (validatorSet != null) {
-			EpochChange epochChange = new EpochChange(committedCommand.getLedgerState(), validatorSet);
+			EpochChange epochChange = new EpochChange(committedCommand.getHeader(), validatorSet);
 			this.epochChangeSender.epochChange(epochChange);
 		}
 	}

@@ -180,7 +180,7 @@ public class StateComputerLedgerTest {
 		VerifiedCommandsAndProof verified = mock(VerifiedCommandsAndProof.class);
 		VerifiedLedgerHeaderAndProof proof = mock(VerifiedLedgerHeaderAndProof.class);
 		when(proof.compareTo(eq(currentLedgerState))).thenReturn(-1);
-		when(verified.getLedgerState()).thenReturn(proof);
+		when(verified.getHeader()).thenReturn(proof);
 
 		stateComputerLedger.commit(verified);
 		verify(stateComputer, never()).commit(any());
@@ -197,7 +197,7 @@ public class StateComputerLedgerTest {
 		VerifiedCommandsAndProof verified = mock(VerifiedCommandsAndProof.class);
 		VerifiedLedgerHeaderAndProof proof = mock(VerifiedLedgerHeaderAndProof.class);
 		when(proof.compareTo(eq(currentLedgerState))).thenReturn(1);
-		when(verified.getLedgerState()).thenReturn(proof);
+		when(verified.getHeader()).thenReturn(proof);
 		when(verified.truncateFromVersion(anyLong())).thenReturn(verified);
 		doAnswer(invocation -> {
 			BiConsumer<Long, Command> consumer = invocation.getArgument(0);
@@ -206,7 +206,7 @@ public class StateComputerLedgerTest {
 		}).when(verified).forEach(any());
 
 		stateComputerLedger.commit(verified);
-		verify(stateComputer, times(1)).commit(argThat(v -> v.getLedgerState().equals(proof)));
+		verify(stateComputer, times(1)).commit(argThat(v -> v.getHeader().equals(proof)));
 		verify(mempool, times(1)).removeCommitted(eq(hash));
 		verify(committedSender, times(1)).sendCommitted(any(), any());
 	}
@@ -246,7 +246,7 @@ public class StateComputerLedgerTest {
 		VerifiedLedgerHeaderAndProof proof = mock(VerifiedLedgerHeaderAndProof.class);
 		when(proof.getStateVersion()).thenReturn(1L);
 		when(proof.compareTo(any())).thenReturn(1);
-		when(verified.getLedgerState()).thenReturn(proof);
+		when(verified.getHeader()).thenReturn(proof);
 		when(verified.truncateFromVersion(anyLong())).thenReturn(verified);
 
 		stateComputerLedger.commit(verified);

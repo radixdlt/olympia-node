@@ -115,7 +115,7 @@ public class VerifiedCommandsAndProofTest {
 
 	@Test
 	public void testGetters() {
-		assertThat(this.emptyCommandsAndProof.getLedgerState()).isEqualTo(stateAndProof);
+		assertThat(this.emptyCommandsAndProof.getHeader()).isEqualTo(stateAndProof);
 	}
 
 	@Test

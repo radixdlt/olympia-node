@@ -47,7 +47,7 @@ public class EpochChangeManagerTest {
 		when(proof.getEpoch()).thenReturn(genesisEpoch);
 		when(proof.isEndOfEpoch()).thenReturn(true);
 		when(proof.getStateVersion()).thenReturn(1234L);
-		when(cmd.getLedgerState()).thenReturn(proof);
+		when(cmd.getHeader()).thenReturn(proof);
 
 		epochChangeManager.sendCommitted(cmd, validatorSet);
 

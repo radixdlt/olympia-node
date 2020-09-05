@@ -48,7 +48,7 @@ public class SyncRxModule extends AbstractModule {
 		bind(LocalSyncRequestsRx.class).toInstance(syncRequests::rx);
 
 		TwoSenderToRx<VerifiedCommandsAndProof, BFTValidatorSet, VerifiedLedgerHeaderAndProof> committedCommands
-			= new TwoSenderToRx<>((cmd, vset) -> cmd.getLedgerState());
+			= new TwoSenderToRx<>((cmd, vset) -> cmd.getHeader());
 		Multibinder<CommittedSender> committedSenderBinder = Multibinder.newSetBinder(binder(), CommittedSender.class);
 		committedSenderBinder.addBinding().toInstance(committedCommands::send);
 		bind(VersionUpdatesRx.class).toInstance(committedCommands::rx);

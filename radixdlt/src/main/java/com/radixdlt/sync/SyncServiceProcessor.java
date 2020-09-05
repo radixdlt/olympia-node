@@ -56,7 +56,7 @@ public final class SyncServiceProcessor {
 			return targetNodes;
 		}
 
-		private VerifiedLedgerHeaderAndProof getTargetState() {
+		private VerifiedLedgerHeaderAndProof getTargetHeader() {
 			return targetHeader;
 		}
 	}
@@ -74,7 +74,7 @@ public final class SyncServiceProcessor {
 	private final AddressBook addressBook;
 	private final StateSyncNetwork stateSyncNetwork;
 	private VerifiedLedgerHeaderAndProof targetHeader;
-	private VerifiedLedgerHeaderAndProof currentState;
+	private VerifiedLedgerHeaderAndProof currentHeader;
 
 	public SyncServiceProcessor(
 		RadixEngineStateComputer stateComputer,
@@ -99,7 +99,7 @@ public final class SyncServiceProcessor {
 		this.syncTimeoutScheduler = Objects.requireNonNull(syncTimeoutScheduler);
 		this.batchSize = batchSize;
 		this.patienceMilliseconds = patienceMilliseconds;
-		this.currentState = current;
+		this.currentHeader = current;
 		this.targetHeader = current;
 	}
 
@@ -107,9 +107,6 @@ public final class SyncServiceProcessor {
 		log.debug("SYNC_REQUEST: {}", syncRequest);
 		Peer peer = syncRequest.getPeer();
 		long stateVersion = syncRequest.getStateVersion();
-		// TODO: This may still return an empty list as we still count state versions for atoms which
-		// TODO: never make it into the radix engine due to state errors. This is because we only check
-		// TODO: validity on commit rather than on proposal/prepare.
 		try {
 			VerifiedCommandsAndProof committedCommands = stateComputer.getNextCommittedCommands(stateVersion, batchSize);
 			if (committedCommands == null) {
@@ -124,29 +121,28 @@ public final class SyncServiceProcessor {
 	}
 
 	public void processSyncResponse(VerifiedCommandsAndProof commands) {
-		if (commands.getLedgerState().compareTo(this.currentState) <= 0) {
+		// TODO: Check validity of response
+		if (commands.getHeader().compareTo(this.currentHeader) <= 0) {
 			return;
 		}
-
-		// TODO: Check validity of response
 		this.syncedCommandSender.sendSyncedCommand(commands);
-		this.currentState = commands.getLedgerState();
+		this.currentHeader = commands.getHeader();
 	}
 
-	public void processVersionUpdate(VerifiedLedgerHeaderAndProof updatedCurrentState) {
-		if (updatedCurrentState.compareTo(this.currentState) > 0) {
-			this.currentState = updatedCurrentState;
+	public void processVersionUpdate(VerifiedLedgerHeaderAndProof updatedHeader) {
+		if (updatedHeader.compareTo(this.currentHeader) > 0) {
+			this.currentHeader = updatedHeader;
 		}
 	}
 
 	// TODO: Handle epoch changes with same state version
 	public void processLocalSyncRequest(LocalSyncRequest request) {
-		final VerifiedLedgerHeaderAndProof nextTargetState = request.getTarget();
-		if (nextTargetState.compareTo(this.targetHeader) <= 0) {
+		final VerifiedLedgerHeaderAndProof nextTargetHeader = request.getTarget();
+		if (nextTargetHeader.compareTo(this.targetHeader) <= 0) {
 			return;
 		}
 
-		this.targetHeader = nextTargetState;
+		this.targetHeader = nextTargetHeader;
 		SyncInProgress syncInProgress = new SyncInProgress(request.getTarget(), request.getTargetNodes());
 		this.sendRequests(syncInProgress);
 	}
@@ -156,16 +152,16 @@ public final class SyncServiceProcessor {
 	}
 
 	private void sendRequests(SyncInProgress syncInProgress) {
-		if (syncInProgress.getTargetState().compareTo(this.currentState) <= 0) {
+		if (syncInProgress.getTargetHeader().compareTo(this.currentHeader) <= 0) {
 			return;
 		}
 
-		if (syncInProgress.getTargetState().getStateVersion() == this.currentState.getStateVersion()) {
+		if (syncInProgress.getTargetHeader().getStateVersion() == this.currentHeader.getStateVersion()) {
 			// Already command synced just need to update header
 			// TODO: Move this to a more appropriate place
 			VerifiedCommandsAndProof verifiedCommandsAndProof = new VerifiedCommandsAndProof(
 				ImmutableList.of(),
-				syncInProgress.getTargetState()
+				syncInProgress.getTargetHeader()
 			);
 			this.syncedCommandSender.sendSyncedCommand(verifiedCommandsAndProof);
 			return;
@@ -189,7 +185,7 @@ public final class SyncServiceProcessor {
 		}
 		Peer peer = peers.get(ThreadLocalRandom.current().nextInt(peers.size()));
 
-		final long version = this.currentState.getStateVersion();
+		final long version = this.currentHeader.getStateVersion();
 		stateSyncNetwork.sendSyncRequest(peer, version);
 	}
 }

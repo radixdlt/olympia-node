@@ -109,7 +109,7 @@ public class SyncServiceProcessorTest {
 		VerifiedLedgerHeaderAndProof proof = mock(VerifiedLedgerHeaderAndProof.class);
 		LedgerHeader proofLedgerHeader = mock(LedgerHeader.class);
 		when(proofLedgerHeader.getStateVersion()).thenReturn(15L);
-		when(commands.getLedgerState()).thenReturn(proof);
+		when(commands.getHeader()).thenReturn(proof);
 		syncServiceProcessor.processSyncResponse(commands);
 
 		verify(syncedCommandSender, times(1)).sendSyncedCommand(eq(commands));

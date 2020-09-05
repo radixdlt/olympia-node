@@ -49,6 +49,7 @@ public class VerifiedLedgerHeaderAndProofTest {
 			mock(TimestampedECDSASignatures.class)
 		);
 		assertThat(s0).isLessThan(s1);
+		assertThat(s0.compareTo(s1)).isLessThan(0);
 	}
 
 	@Test
@@ -70,6 +71,7 @@ public class VerifiedLedgerHeaderAndProofTest {
 			mock(TimestampedECDSASignatures.class)
 		);
 		assertThat(s0).isLessThan(s1);
+		assertThat(s0.compareTo(s1)).isLessThan(0);
 	}
 
 	@Test
@@ -93,6 +95,7 @@ public class VerifiedLedgerHeaderAndProofTest {
 			mock(TimestampedECDSASignatures.class)
 		);
 		assertThat(s0).isLessThan(s1);
+		assertThat(s0.compareTo(s1)).isLessThan(0);
 	}
 
 	@Test
@@ -108,13 +111,14 @@ public class VerifiedLedgerHeaderAndProofTest {
 		);
 		LedgerHeader l1 = mock(LedgerHeader.class);
 		when(l1.getEpoch()).thenReturn(2L);
-		when(l1.getEpoch()).thenReturn(3L);
+		when(l1.getStateVersion()).thenReturn(3L);
 		when(l1.isEndOfEpoch()).thenReturn(true);
 		VerifiedLedgerHeaderAndProof s1 = new VerifiedLedgerHeaderAndProof(
 			mock(BFTHeader.class), mock(BFTHeader.class), 0, mock(Hash.class),
 			l1,
 			mock(TimestampedECDSASignatures.class)
 		);
-		assertThat(s0).isLessThan(s1);
+		assertThat(s0).isEqualByComparingTo(s1);
+		assertThat(s0.compareTo(s1)).isEqualTo(0);
 	}
 }

@@ -123,6 +123,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			if (committedLedgerState.getStateVersion() <= this.currentLedgerState.getStateVersion()) {
 				if (committedLedgerState.compareTo(this.currentLedgerState) > 0) {
 					// Can happen on epoch changes
+					// TODO: Need to cleanup this logic, can't skip epochs
 					this.commit(new VerifiedCommandsAndProof(ImmutableList.of(), committedLedgerState));
 				}
 				return onSync -> {
@@ -142,7 +143,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	public void commit(VerifiedCommandsAndProof verifiedCommandsAndProof) {
 		this.counters.increment(CounterType.LEDGER_PROCESSED);
 		synchronized (lock) {
-			final VerifiedLedgerHeaderAndProof committedState = verifiedCommandsAndProof.getLedgerState();
+			final VerifiedLedgerHeaderAndProof committedState = verifiedCommandsAndProof.getHeader();
 			if (committedState.compareTo(this.currentLedgerState) <= 0) {
 				return;
 			}
