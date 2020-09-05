@@ -52,10 +52,11 @@ public class CommittedAtomSerializeTest extends SerializeObject<CommittedAtom> {
 			throw new IllegalStateException();
 		}
 
+		LedgerState ledgerState = LedgerState.create(0, View.genesis(), 0, Hash.random(), 0L, false);
 		VerifiedLedgerStateAndProof proof = new VerifiedLedgerStateAndProof(
-			BFTHeader.ofGenesisAncestor(LedgerState.create(0, View.genesis(), 0, Hash.random(), 0L, false)),
-			BFTHeader.ofGenesisAncestor(LedgerState.create(0, View.genesis(), 0, Hash.random(), 0L, false)),
-			BFTHeader.ofGenesisAncestor(LedgerState.create(0, View.genesis(), 0, Hash.random(), 0L, false)),
+			BFTHeader.ofGenesisAncestor(ledgerState),
+			BFTHeader.ofGenesisAncestor(ledgerState),
+			0L, Hash.random(), ledgerState,
 			new TimestampedECDSASignatures()
 		);
 

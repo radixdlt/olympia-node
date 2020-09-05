@@ -85,7 +85,9 @@ public final class QuorumCertificate {
 			VerifiedLedgerStateAndProof ledgerStateProof = new VerifiedLedgerStateAndProof(
 				voteData.getProposed(),
 				voteData.getParent(),
-				committed,
+				committed.getView().number(),
+				committed.getVertexId(),
+				committed.getLedgerState(),
 				signatures
 			);
 			return Pair.of(committed, ledgerStateProof);

@@ -44,7 +44,9 @@ public class CommandToBinaryConverterTest {
 		VerifiedLedgerStateAndProof proof = new VerifiedLedgerStateAndProof(
 			new BFTHeader(View.of(1), Hash.random(), ledgerState),
 			new BFTHeader(View.of(1), Hash.random(), ledgerState),
-			new BFTHeader(View.of(1), Hash.random(), ledgerState),
+			1L,
+			Hash.random(),
+			ledgerState,
 			new TimestampedECDSASignatures()
 		);
 		StoredCommittedCommand committedCommand = new StoredCommittedCommand(

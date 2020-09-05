@@ -44,9 +44,17 @@ public final class VerifiedLedgerStateAndProof implements Comparable<VerifiedLed
 	@DsonOutput(Output.ALL)
 	private final BFTHeader opaque1;
 
-	@JsonProperty("header")
+	@JsonProperty("opaque2")
 	@DsonOutput(Output.ALL)
-	private final BFTHeader header;
+	private final long opaque2;
+
+	@JsonProperty("opaque3")
+	@DsonOutput(Output.ALL)
+	private final Hash opaque3;
+
+	@JsonProperty("ledgerState")
+	@DsonOutput(Output.ALL)
+	private final LedgerState ledgerState;
 
 	@JsonProperty("signatures")
 	@DsonOutput(Output.ALL)
@@ -56,12 +64,16 @@ public final class VerifiedLedgerStateAndProof implements Comparable<VerifiedLed
 	public VerifiedLedgerStateAndProof(
 		@JsonProperty("opaque0") BFTHeader opaque0,
 		@JsonProperty("opaque1") BFTHeader opaque1,
-		@JsonProperty("header") BFTHeader header,
+		@JsonProperty("opaque2") long opaque2,
+		@JsonProperty("opaque3") Hash opaque3,
+		@JsonProperty("ledgerState") LedgerState ledgerState,
 		@JsonProperty("signatures") TimestampedECDSASignatures signatures
 	) {
 		this.opaque0 = Objects.requireNonNull(opaque0);
 		this.opaque1 = Objects.requireNonNull(opaque1);
-		this.header = Objects.requireNonNull(header);
+		this.opaque2 = opaque2;
+		this.opaque3 = Objects.requireNonNull(opaque3);
+		this.ledgerState = Objects.requireNonNull(ledgerState);
 		this.signatures = Objects.requireNonNull(signatures);
 	}
 
@@ -70,42 +82,44 @@ public final class VerifiedLedgerStateAndProof implements Comparable<VerifiedLed
 		return new VerifiedLedgerStateAndProof(
 			header,
 			header,
-			header,
+			0,
+			Hash.ZERO_HASH,
+			ledgerState,
 			new TimestampedECDSASignatures()
 		);
 	}
 
 	public LedgerState getRaw() {
-		return header.getLedgerState();
+		return ledgerState;
 	}
 
 	public long getEpoch() {
-		return header.getLedgerState().getEpoch();
+		return ledgerState.getEpoch();
 	}
 
 	public View getView() {
-		return header.getLedgerState().getView();
+		return ledgerState.getView();
 	}
 
 	public long getStateVersion() {
-		return header.getLedgerState().getStateVersion();
+		return ledgerState.getStateVersion();
 	}
 
 	public Hash getCommandId() {
-		return header.getLedgerState().getCommandId();
+		return ledgerState.getCommandId();
 	}
 
 	public long timestamp() {
-		return header.getLedgerState().timestamp();
+		return ledgerState.timestamp();
 	}
 
 	public boolean isEndOfEpoch() {
-		return header.getLedgerState().isEndOfEpoch();
+		return ledgerState.isEndOfEpoch();
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(opaque0, opaque1, header, signatures);
+		return Objects.hash(opaque0, opaque1, opaque2, opaque3, ledgerState, signatures);
 	}
 
 	@Override
@@ -117,13 +131,15 @@ public final class VerifiedLedgerStateAndProof implements Comparable<VerifiedLed
 		VerifiedLedgerStateAndProof other = (VerifiedLedgerStateAndProof) o;
 		return Objects.equals(this.opaque0, other.opaque0)
 			&& Objects.equals(this.opaque1, other.opaque1)
-			&& Objects.equals(this.header, other.header)
+			&& this.opaque2 == other.opaque2
+			&& Objects.equals(this.opaque3, other.opaque3)
+			&& Objects.equals(this.ledgerState, other.ledgerState)
 			&& Objects.equals(this.signatures, other.signatures);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{header=%s}", this.getClass().getSimpleName(), this.header);
+		return String.format("%s{ledger=%s}", this.getClass().getSimpleName(), this.ledgerState);
 	}
 
 	@Override

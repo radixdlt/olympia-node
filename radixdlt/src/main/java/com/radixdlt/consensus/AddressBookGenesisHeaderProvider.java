@@ -94,7 +94,9 @@ public class AddressBookGenesisHeaderProvider {
 		return new VerifiedLedgerStateAndProof(
 			header,
 			header,
-			header,
+			0L,
+			Hash.ZERO_HASH,
+			ledgerState,
 			new TimestampedECDSASignatures()
 		);
 	}
