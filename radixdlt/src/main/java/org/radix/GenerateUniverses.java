@@ -17,25 +17,31 @@
 
 package org.radix;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
+import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.atommodel.Atom;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.atommodel.message.MessageParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.identifiers.RRI;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.radix.utils.IOUtils;
+
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.keys.Keys;
+import com.radixdlt.middleware.ParticleGroup;
+import com.radixdlt.middleware.SpunParticle;
 import com.radixdlt.properties.RuntimeProperties;
 
 import org.apache.commons.cli.ParseException;
@@ -67,6 +73,13 @@ public final class GenerateUniverses {
 	private final boolean standalone;
 	private final RuntimeProperties properties;
 	private final ECKeyPair universeKey;
+
+	private static final ImmutableMap<MutableSupplyTokenDefinitionParticle.TokenTransition, TokenPermission> XRD_TOKEN_PERMISSIONS =
+		ImmutableMap.of(
+			MutableSupplyTokenDefinitionParticle.TokenTransition.BURN, TokenPermission.ALL,
+			MutableSupplyTokenDefinitionParticle.TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY
+		);
+
 
 	public GenerateUniverses(boolean standalone, RuntimeProperties properties) throws IOException, CryptoException {
 		this.standalone = standalone;
@@ -139,18 +152,12 @@ public final class GenerateUniverses {
 	private Atom createGenesisAtom(byte magic) throws CryptoException {
 		RadixAddress universeAddress = new RadixAddress(magic, universeKey.getPublicKey());
 		UInt256 genesisAmount = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 + 9); // 10^9 = 1,000,000,000 pieces of eight, please
-		FixedSupplyTokenDefinitionParticle xrdDefinition = createTokenDefinition(magic, "XRD", "Rads", "Radix Native Tokens", genesisAmount);
+		List<SpunParticle> xrdParticles = createTokenDefinition(magic, "XRD", "Rads", "Radix Native Tokens", genesisAmount);
 		MessageParticle helloUniverseMessage = createHelloMessage(universeAddress);
-		RRIParticle rriParticle = new RRIParticle(xrdDefinition.getRRI());
-		TransferrableTokensParticle mintXrdTokens = createGenesisXRDMint(universeAddress, "XRD", genesisAmount);
 
 		Atom genesisAtom = new Atom();
 		genesisAtom.addParticleGroupWith(helloUniverseMessage, Spin.UP);
-		genesisAtom.addParticleGroupWith(
-			rriParticle, Spin.DOWN,
-			xrdDefinition, Spin.UP,
-			mintXrdTokens, Spin.UP
-		);
+		genesisAtom.addParticleGroup(ParticleGroup.of(xrdParticles));
 		genesisAtom.sign(universeKey);
 
 		if (standalone) {
@@ -175,39 +182,47 @@ public final class GenerateUniverses {
 		return new MessageParticle(address, address, "Radix... just imagine!".getBytes(RadixConstants.STANDARD_CHARSET));
 	}
 
-	private static TransferrableTokensParticle createGenesisXRDMint(
-		RadixAddress address,
-		String symbol,
-		UInt256 amount
-	) {
-		return new TransferrableTokensParticle(
-			address,
-			amount,
-			UInt256.ONE,
-			RRI.of(address, symbol),
-			ImmutableMap.of()
-		);
-	}
-
 	/*
 	 * Create a token definition as a genesis token with the radix icon and granularity of 1
 	 */
-	private FixedSupplyTokenDefinitionParticle createTokenDefinition(
+	private ImmutableList<SpunParticle> createTokenDefinition(
 		byte magic,
 		String symbol,
 		String name,
 		String description,
-		UInt256 supply
+		UInt256 initialSupply
 	) {
-		return new FixedSupplyTokenDefinitionParticle(
-			RRI.of(new RadixAddress(magic, universeKey.getPublicKey()), symbol),
+		RadixAddress universeAddress = new RadixAddress(magic, this.universeKey.getPublicKey());
+		RRI tokenRRI = RRI.of(universeAddress, symbol);
+
+		ImmutableList.Builder<SpunParticle> particles = ImmutableList.builder();
+
+		particles.add(SpunParticle.down(new RRIParticle(tokenRRI)));
+		particles.add(SpunParticle.up(new MutableSupplyTokenDefinitionParticle(
+			tokenRRI,
 			name,
 			description,
-			supply,
 			UInt256.ONE,
 			RADIX_ICON_URL,
-			RADIX_TOKEN_URL
-		);
+			RADIX_TOKEN_URL,
+			XRD_TOKEN_PERMISSIONS
+		)));
+		particles.add(SpunParticle.up(new TransferrableTokensParticle(
+			universeAddress,
+			initialSupply,
+			UInt256.ONE,
+			tokenRRI,
+			XRD_TOKEN_PERMISSIONS
+		)));
+		if (!initialSupply.equals(UInt256.MAX_VALUE)) {
+			particles.add(SpunParticle.up(new UnallocatedTokensParticle(
+				UInt256.MAX_VALUE.subtract(initialSupply),
+				UInt256.ONE,
+				tokenRRI,
+				XRD_TOKEN_PERMISSIONS
+			)));
+		}
+		return particles.build();
 	}
 
 	public static void main(String[] arguments) throws IOException, CryptoException {

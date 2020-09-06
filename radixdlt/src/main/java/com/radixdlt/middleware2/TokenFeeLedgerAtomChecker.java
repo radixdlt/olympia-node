@@ -34,16 +34,13 @@ import java.util.Set;
 public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 	private final FeeTable feeTable;
 	private final RRI feeTokenRri;
-	private final boolean skipAtomFeeCheck;
 
 	public TokenFeeLedgerAtomChecker(
 		FeeTable feeTable,
-		RRI feeTokenRri,
-		boolean skipAtomFeeCheck
+		RRI feeTokenRri
 	) {
 		this.feeTable = feeTable;
 		this.feeTokenRri = feeTokenRri;
-		this.skipAtomFeeCheck = skipAtomFeeCheck;
 	}
 
 	@Override
@@ -52,13 +49,11 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 			return Result.error("atom has no instructions");
 		}
 
-		if (!this.skipAtomFeeCheck) {
-			UInt256 requiredMinimumFee = feeTable.feeFor(atom, outputParticles);
-			UInt256 feePaid = computeFeePaid(outputParticles);
-			if (feePaid.compareTo(requiredMinimumFee) < 0) {
-				String message = String.format("atom fee invalid: '%s' is less than required minimum '%s'", feePaid, requiredMinimumFee);
-				return Result.error(message);
-			}
+		UInt256 requiredMinimumFee = feeTable.feeFor(atom, outputParticles);
+		UInt256 feePaid = computeFeePaid(outputParticles);
+		if (feePaid.compareTo(requiredMinimumFee) < 0) {
+			String message = String.format("atom fee invalid: '%s' is less than required minimum '%s'", feePaid, requiredMinimumFee);
+			return Result.error(message);
 		}
 
 		return Result.success();

@@ -40,12 +40,6 @@ import com.radixdlt.utils.UInt256;
  * Module which provides a token fee checker
  */
 public class TokenFeeModule extends AbstractModule {
-	private final boolean skipAtomFeeCheck;
-
-	public TokenFeeModule(boolean skipAtomFeeCheck) {
-		this.skipAtomFeeCheck = skipAtomFeeCheck;
-	}
-
 	@Provides
 	@Singleton
 	private RRI nativeTokenRri(Universe universe) {
@@ -90,7 +84,7 @@ public class TokenFeeModule extends AbstractModule {
 		FeeTable feeTable,
 		RRI feeTokenRri
 	) {
-		return new TokenFeeLedgerAtomChecker(feeTable, feeTokenRri, this.skipAtomFeeCheck);
+		return new TokenFeeLedgerAtomChecker(feeTable, feeTokenRri);
 	}
 
 	private UInt256 radCents(long count) {

@@ -37,6 +37,7 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.statecomputer.CommittedCommandsReader;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.statecomputer.RadixEngineValidatorSetBuilder;
@@ -45,6 +46,7 @@ import com.radixdlt.store.EngineStore;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
@@ -118,8 +120,10 @@ public class RadixEngineModule extends AbstractModule {
 		ConstraintMachine constraintMachine,
 		UnaryOperator<CMStore> virtualStoreLayer,
 		EngineStore<LedgerAtom> engineStore,
-		AtomChecker<LedgerAtom> ledgerAtomChecker
+		AtomChecker<LedgerAtom> ledgerAtomChecker,
+		RuntimeProperties properties
 	) {
+		final int minValidators = properties.get("consensus.min_validators", 1); // Default 1 so can debug in IDE
 		RadixEngine<LedgerAtom> radixEngine = new RadixEngine<>(
 			constraintMachine,
 			virtualStoreLayer,
@@ -138,11 +142,32 @@ public class RadixEngineModule extends AbstractModule {
 			.collect(Collectors.toCollection(HashSet::new));
 		radixEngine.addStateComputer(
 			RegisteredValidatorParticle.class,
-			new RadixEngineValidatorSetBuilder(initialValidatorKeys, vset -> vset.size() >= 2), // Require two validators for now
+			new RadixEngineValidatorSetBuilder(initialValidatorKeys, new AtLeastNValidators(minValidators)),
 			(builder, p) -> builder.addValidator(p.getAddress()),
 			(builder, p) -> builder.removeValidator(p.getAddress())
 		);
 
 		return radixEngine;
+	}
+
+	private static final class AtLeastNValidators implements Predicate<Set<ECPublicKey>> {
+		private final int n;
+
+		private AtLeastNValidators(int n) {
+			if (n < 1) {
+				throw new IllegalArgumentException("Minimum number of validators must be at least 1: " + n);
+			}
+			this.n = n;
+		}
+
+		@Override
+		public boolean test(Set<ECPublicKey> vset) {
+			return vset.size() >= this.n;
+		}
+
+		@Override
+		public String toString() {
+			return String.format("At least %s validators", this.n);
+		}
 	}
 }
