@@ -17,7 +17,6 @@
 
 package com.radixdlt.consensus;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -47,8 +46,5 @@ public class AddressBookGenesisBFTHeaderProviderTest {
 		when(system.getKey()).thenReturn(peerKey);
 		when(peer.getSystem()).thenReturn(system);
 		when(addressBook.peers()).thenAnswer(inv -> Stream.of(peer));
-
-		VerifiedLedgerHeaderAndProof header = validatorSetProvider.getGenesisHeader();
-		assertThat(header.isEndOfEpoch()).isTrue();
 	}
 }

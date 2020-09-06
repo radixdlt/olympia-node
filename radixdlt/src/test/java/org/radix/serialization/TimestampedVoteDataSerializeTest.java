@@ -31,7 +31,7 @@ public class TimestampedVoteDataSerializeTest extends SerializeObject<Timestampe
 
 	private static TimestampedVoteData get() {
 		View view = View.of(1234567890L);
-		LedgerHeader ledgerHeader = LedgerHeader.create(0, View.genesis(), 0, Hash.random(), 0L, false);
+		LedgerHeader ledgerHeader = LedgerHeader.genesis(Hash.ZERO_HASH);
 		BFTHeader committed = new BFTHeader(view, Hash.random(), ledgerHeader);
 		BFTHeader parent = new BFTHeader(view.next(), Hash.random(), ledgerHeader);
 		BFTHeader proposed = new BFTHeader(view.next().next(), Hash.random(), ledgerHeader);

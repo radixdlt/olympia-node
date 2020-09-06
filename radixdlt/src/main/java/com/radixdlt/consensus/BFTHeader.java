@@ -71,14 +71,16 @@ public final class BFTHeader {
 	public static BFTHeader ofGenesisAncestor(LedgerHeader ledgerHeader) {
 		return new BFTHeader(
 			View.genesis(),
-			Hash.ZERO_HASH, ledgerHeader
+			Hash.ZERO_HASH,
+			ledgerHeader
 		);
 	}
 
 	public static BFTHeader ofVertex(Vertex vertex, LedgerHeader ledgerHeader) {
 		return new BFTHeader(
 			vertex.getView(),
-			vertex.getId(), ledgerHeader
+			vertex.getId(),
+			ledgerHeader
 		);
 	}
 

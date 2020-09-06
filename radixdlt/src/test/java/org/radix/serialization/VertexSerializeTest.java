@@ -34,7 +34,7 @@ public class VertexSerializeTest extends SerializeObject<Vertex> {
 
 	private static Vertex get() {
 		View view = View.of(1234567891L);
-		LedgerHeader ledgerHeader = LedgerHeader.create(0, View.genesis(), 0, Hash.random(), 0L, false);
+		LedgerHeader ledgerHeader = LedgerHeader.genesis(Hash.ZERO_HASH);
 		BFTHeader header = new BFTHeader(view, Hash.random(), ledgerHeader);
 		BFTHeader parent = new BFTHeader(View.of(1234567890L), Hash.random(), ledgerHeader);
 		VoteData voteData = new VoteData(header, parent, null);

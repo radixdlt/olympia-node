@@ -105,7 +105,7 @@ public class EpochManagerTest {
 
 		this.epochManager = new EpochManager(
 			this.self,
-			new EpochChange(VerifiedLedgerHeaderAndProof.ofGenesisAncestor(mock(LedgerHeader.class)), BFTValidatorSet.from(ImmutableSet.of())),
+			new EpochChange(VerifiedLedgerHeaderAndProof.genesis(mock(Hash.class)), BFTValidatorSet.from(ImmutableSet.of())),
 			this.ledger,
 			this.syncEpochsRPCSender,
 			mock(LocalTimeoutSender.class),

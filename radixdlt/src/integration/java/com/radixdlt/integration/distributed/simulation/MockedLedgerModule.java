@@ -18,7 +18,6 @@
 package com.radixdlt.integration.distributed.simulation;
 
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import java.util.Objects;
@@ -48,8 +47,7 @@ public class MockedLedgerModule extends AbstractModule {
 	public void configure() {
 		bind(CommittedStateSyncRx.class).toInstance(Observable::never);
 		bind(EpochChangeRx.class).toInstance(Observable::never);
-		LedgerHeader ledgerHeader = LedgerHeader.create(0, View.genesis(), 0, Hash.ZERO_HASH, 0L, true);
-		EpochChange initialEpoch = new EpochChange(VerifiedLedgerHeaderAndProof.ofGenesisAncestor(ledgerHeader), validatorSet);
+		EpochChange initialEpoch = new EpochChange(VerifiedLedgerHeaderAndProof.genesis(Hash.ZERO_HASH), validatorSet);
 		bind(EpochChange.class).toInstance(initialEpoch);
 		bind(NextCommandGenerator.class).toInstance((view, aids) -> null);
 		bind(SyncRequestSender.class).toInstance(req -> { });
