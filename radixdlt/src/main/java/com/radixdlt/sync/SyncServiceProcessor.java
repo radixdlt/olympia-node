@@ -23,7 +23,6 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 import javax.annotation.concurrent.NotThreadSafe;
@@ -42,13 +41,13 @@ public final class SyncServiceProcessor {
 
 	public static final class SyncInProgress {
 		private final VerifiedLedgerHeaderAndProof targetHeader;
-		private final List<BFTNode> targetNodes;
-		private SyncInProgress(VerifiedLedgerHeaderAndProof targetHeader, List<BFTNode> targetNodes) {
+		private final ImmutableList<BFTNode> targetNodes;
+		private SyncInProgress(VerifiedLedgerHeaderAndProof targetHeader, ImmutableList<BFTNode> targetNodes) {
 			this.targetHeader = targetHeader;
 			this.targetNodes = targetNodes;
 		}
 
-		private List<BFTNode> getTargetNodes() {
+		private ImmutableList<BFTNode> getTargetNodes() {
 			return targetNodes;
 		}
 
@@ -136,21 +135,21 @@ public final class SyncServiceProcessor {
 
 		this.targetHeader = nextTargetHeader;
 		SyncInProgress syncInProgress = new SyncInProgress(request.getTarget(), request.getTargetNodes());
-		this.sendRequests(syncInProgress);
+		this.sendRequest(syncInProgress);
 	}
 
 	public void processSyncTimeout(SyncInProgress syncInProgress) {
-		this.sendRequests(syncInProgress);
+		this.sendRequest(syncInProgress);
 	}
 
-	private void sendRequests(SyncInProgress syncInProgress) {
+	private void sendRequest(SyncInProgress syncInProgress) {
 		if (syncInProgress.getTargetHeader().compareTo(this.currentHeader) <= 0) {
 			return;
 		}
 
 		if (syncInProgress.getTargetHeader().getStateVersion() == this.currentHeader.getStateVersion()) {
 			// Already command synced just need to update header
-			// TODO: Move this to a more appropriate place
+			// TODO: Need to check epochs to make sure we're not skipping epochs
 			VerifiedCommandsAndProof verifiedCommandsAndProof = new VerifiedCommandsAndProof(
 				ImmutableList.of(),
 				syncInProgress.getTargetHeader()
@@ -159,13 +158,10 @@ public final class SyncServiceProcessor {
 			return;
 		}
 
-		sendSyncRequest(syncInProgress.getTargetNodes());
-		syncTimeoutScheduler.scheduleTimeout(syncInProgress, patienceMilliseconds);
-	}
-
-	private void sendSyncRequest(List<BFTNode> targetNodes) {
+		ImmutableList<BFTNode> targetNodes = syncInProgress.getTargetNodes();
 		BFTNode node = targetNodes.get(ThreadLocalRandom.current().nextInt(targetNodes.size()));
 		final long version = this.currentHeader.getStateVersion();
 		stateSyncNetwork.sendSyncRequest(node, version);
+		syncTimeoutScheduler.scheduleTimeout(syncInProgress, patienceMilliseconds);
 	}
 }

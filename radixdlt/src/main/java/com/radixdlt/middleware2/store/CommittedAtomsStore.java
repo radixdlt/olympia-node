@@ -104,6 +104,7 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		}
 	}
 
+	// TODO: Save proof in a separate index
 	@Override
 	public void storeAtom(CommittedAtom committedAtom) {
 		// TODO: Remove serialization/deserialization
@@ -111,15 +112,6 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		Command command = new Command(payload);
 
 		final VerifiedLedgerHeaderAndProof proof = committedAtom.getStateAndProof();
-		// TODO: Only save proof once
-		/*
-		if (committedAtom.getStateVersion() == committedAtom.getProof().getLedgerState().getStateVersion()) {
-			proof = committedAtom.getProof();
-		} else {
-			proof = null;
-		}
-		*/
-
 		StoredCommittedCommand storedCommittedCommand = new StoredCommittedCommand(command, proof);
 		byte[] binaryAtom = commandToBinaryConverter.toLedgerEntryContent(storedCommittedCommand);
 		LedgerEntry ledgerEntry = new LedgerEntry(
