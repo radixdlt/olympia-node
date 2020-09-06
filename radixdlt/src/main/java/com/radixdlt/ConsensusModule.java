@@ -23,16 +23,12 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.BFTBuilder;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.consensus.bft.VertexStore.SyncedVertexSender;
 import com.radixdlt.consensus.epoch.EpochManager;
-import com.radixdlt.consensus.VertexSyncRx;
-import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.ProposerElectionFactory;
@@ -42,20 +38,12 @@ import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
 import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
-import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
-import com.radixdlt.consensus.liveness.PacemakerRx;
 import com.radixdlt.consensus.sync.SyncRequestSender;
-import com.radixdlt.utils.ScheduledSenderToRx;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.network.TimeSupplier;
-import com.radixdlt.utils.SenderToRx;
-import com.radixdlt.utils.ThreadFactories;
 import java.util.Comparator;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * Module responsible for running BFT validator logic
@@ -69,20 +57,8 @@ public final class ConsensusModule extends AbstractModule {
 	}
 
 	@Override
-	protected void configure() {
-		ScheduledExecutorService ses = Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("TimeoutSender"));
-		ScheduledSenderToRx<LocalTimeout> localTimeouts = new ScheduledSenderToRx<>(ses);
-		// Timed local messages
-		bind(PacemakerRx.class).toInstance(localTimeouts::messages);
-		bind(LocalTimeoutSender.class).toInstance(localTimeouts::scheduleSend);
-
-		// Local messages
-		SenderToRx<Vertex, Hash> syncedVertices = new SenderToRx<>(Vertex::getId);
-		bind(VertexSyncRx.class).toInstance(syncedVertices::rx);
-		bind(SyncedVertexSender.class).toInstance(syncedVertices::send);
-
+	public void configure() {
 		bind(EpochManager.class).in(Scopes.SINGLETON);
-		bind(ConsensusRunner.class).in(Scopes.SINGLETON);
 	}
 
 	// TODO: Change Factory -> Provider

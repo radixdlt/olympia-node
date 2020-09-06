@@ -24,6 +24,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.radixdlt.ConsensusModule;
+import com.radixdlt.ConsensusRxModule;
 import com.radixdlt.SystemInfoRxModule;
 import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.Vertex;
@@ -84,6 +85,7 @@ public class SimulationNodes {
 				}
 			},
 			new ConsensusModule(pacemakerTimeout),
+			new ConsensusRxModule(),
 			new SystemInfoRxModule(),
 			new MockedCryptoModule(),
 			new SimulationNetworkModule(getVerticesRPCEnabled, self, underlyingNetwork)

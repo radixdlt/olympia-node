@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
+import com.radixdlt.ConsensusRunnerModule;
 import com.radixdlt.LedgerCommandGeneratorModule;
 import com.radixdlt.LedgerEpochChangeModule;
 import com.radixdlt.LedgerEpochChangeRxModule;
@@ -288,6 +289,8 @@ public class SimulationTest {
 
 		public SimulationTest build() {
 			ImmutableList.Builder<Module> ledgerModules = ImmutableList.builder();
+			ledgerModules.add(new ConsensusRunnerModule());
+
 			if (ledgerType == LedgerType.MOCKED_LEDGER) {
 				BFTValidatorSet validatorSet = BFTValidatorSet.from(
 					nodes.stream()

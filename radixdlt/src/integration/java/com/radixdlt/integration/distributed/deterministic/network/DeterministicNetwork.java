@@ -24,6 +24,7 @@ import com.google.common.collect.Streams;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
+import com.radixdlt.ConsensusModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
@@ -32,7 +33,6 @@ import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.integration.distributed.deterministic.DeterministicConsensusModule;
 import com.radixdlt.integration.distributed.deterministic.DeterministicConsensusRunner;
 import com.radixdlt.integration.distributed.deterministic.DeterministicNetworkModule;
 import com.radixdlt.integration.distributed.simulation.MockedCryptoModule;
@@ -156,7 +156,9 @@ public final class DeterministicNetwork {
 
 	private Injector createBFTInstance(BFTNode self, int index, Collection<Module> syncExecutionModules) {
 		List<Module> modules = ImmutableList.of(
-			new DeterministicConsensusModule(),
+			// An arbitrary timeout for the pacemaker, as time is handled differently
+			// in a deterministic test.
+			new ConsensusModule(5000),
 			new MockedCryptoModule(),
 			new DeterministicNetworkModule(self, createSender(index))
 		);

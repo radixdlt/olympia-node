@@ -55,12 +55,12 @@ public class MockedLedgerModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	Ledger syncedLedger(EpochChange initialEpoch) {
+	Ledger syncedLedger() {
 		return new Ledger() {
 			@Override
 			public LedgerHeader prepare(Vertex vertex) {
 				return LedgerHeader.create(
-					initialEpoch.getProof().getEpoch() + 1,
+					vertex.getQC().getProposed().getLedgerState().getEpoch(),
 					vertex.getView(),
 					0,
 					Hash.ZERO_HASH,
