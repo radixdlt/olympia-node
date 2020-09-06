@@ -29,9 +29,12 @@ import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
 
+/**
+ * A class simply for storing a ledger entry with proof
+ */
 @Immutable
 @SerializerId2("store.stored_committed_command")
-public class StoredCommittedCommand {
+public final class StoredCommittedCommand {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;

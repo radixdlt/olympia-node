@@ -28,6 +28,10 @@ import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
+/**
+ * Runs checks with a consensus and ledger module across 4 nodes with a single
+ * node out of bounds and verifies sanity checks are maintained
+ */
 public class OneOutOfBoundsTest {
 	private final int latency = 50;
 	private final int synchronousTimeout = 8 * latency;

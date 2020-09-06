@@ -28,6 +28,10 @@ import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
+/**
+ * Runs a consensus and ledger module across 4 nodes and verifies the base
+ * case required conditions
+ */
 public class SanityTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(4)

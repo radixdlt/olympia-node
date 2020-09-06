@@ -15,17 +15,15 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.simulation;
+package com.radixdlt.middleware2.store;
 
-import com.google.inject.AbstractModule;
-import com.radixdlt.consensus.liveness.NextCommandGenerator;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
 
-/**
- * Module which provides a random hash command generator
- */
-public class MockedCommandGeneratorModule extends AbstractModule {
-	@Override
-	protected void configure() {
-		bind(NextCommandGenerator.class).to(RandomHashCommandGenerator.class);
+public class StoredCommittedCommandTest {
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(StoredCommittedCommand.class)
+			.verify();
 	}
 }

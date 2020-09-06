@@ -17,8 +17,11 @@
 
 package com.radixdlt.store.berkeley;
 
+/**
+ * Indicates that the maximum number of committed atoms to retrieve has been exceeded
+ * based on some predetermined limit.
+ */
 public class NextCommittedLimitReachedException extends Exception {
-
 	public NextCommittedLimitReachedException(int limit) {
 		super("Greater than " + limit + " atoms required to get to next proof.");
 	}

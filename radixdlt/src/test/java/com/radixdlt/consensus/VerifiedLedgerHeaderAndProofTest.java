@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
@@ -30,6 +31,30 @@ public class VerifiedLedgerHeaderAndProofTest {
 	public void equalsContract() {
 		EqualsVerifier.forClass(VerifiedLedgerHeaderAndProof.class)
 			.verify();
+	}
+
+	@Test
+	public void testGetters() {
+		LedgerHeader l0 = mock(LedgerHeader.class);
+		Hash commandId = mock(Hash.class);
+		View view = mock(View.class);
+		when(l0.getCommandId()).thenReturn(commandId);
+		when(l0.getEpoch()).thenReturn(3L);
+		when(l0.getStateVersion()).thenReturn(12345L);
+		when(l0.getView()).thenReturn(view);
+		when(l0.timestamp()).thenReturn(2468L);
+		when(l0.isEndOfEpoch()).thenReturn(true);
+		VerifiedLedgerHeaderAndProof ledgerHeaderAndProof = new VerifiedLedgerHeaderAndProof(
+			mock(BFTHeader.class), mock(BFTHeader.class), 0, mock(Hash.class),
+			l0,
+			mock(TimestampedECDSASignatures.class)
+		);
+		assertThat(ledgerHeaderAndProof.getCommandId()).isEqualTo(commandId);
+		assertThat(ledgerHeaderAndProof.getEpoch()).isEqualTo(3L);
+		assertThat(ledgerHeaderAndProof.getStateVersion()).isEqualTo(12345L);
+		assertThat(ledgerHeaderAndProof.getView()).isEqualTo(view);
+		assertThat(ledgerHeaderAndProof.timestamp()).isEqualTo(2468L);
+		assertThat(ledgerHeaderAndProof.isEndOfEpoch()).isEqualTo(true);
 	}
 
 	@Test
@@ -50,6 +75,7 @@ public class VerifiedLedgerHeaderAndProofTest {
 		);
 		assertThat(s0).isLessThan(s1);
 		assertThat(s0.compareTo(s1)).isLessThan(0);
+		assertThat(s1.compareTo(s0)).isGreaterThan(0);
 	}
 
 	@Test
@@ -64,7 +90,7 @@ public class VerifiedLedgerHeaderAndProofTest {
 		);
 		LedgerHeader l1 = mock(LedgerHeader.class);
 		when(l1.getEpoch()).thenReturn(2L);
-		when(l1.getEpoch()).thenReturn(3L);
+		when(l1.getStateVersion()).thenReturn(3L);
 		VerifiedLedgerHeaderAndProof s1 = new VerifiedLedgerHeaderAndProof(
 			mock(BFTHeader.class), mock(BFTHeader.class), 0, mock(Hash.class),
 			l1,
@@ -72,6 +98,7 @@ public class VerifiedLedgerHeaderAndProofTest {
 		);
 		assertThat(s0).isLessThan(s1);
 		assertThat(s0.compareTo(s1)).isLessThan(0);
+		assertThat(s1.compareTo(s0)).isGreaterThan(0);
 	}
 
 	@Test
@@ -87,7 +114,7 @@ public class VerifiedLedgerHeaderAndProofTest {
 		);
 		LedgerHeader l1 = mock(LedgerHeader.class);
 		when(l1.getEpoch()).thenReturn(2L);
-		when(l1.getEpoch()).thenReturn(3L);
+		when(l1.getStateVersion()).thenReturn(3L);
 		when(l1.isEndOfEpoch()).thenReturn(true);
 		VerifiedLedgerHeaderAndProof s1 = new VerifiedLedgerHeaderAndProof(
 			mock(BFTHeader.class), mock(BFTHeader.class), 0, mock(Hash.class),
@@ -96,6 +123,7 @@ public class VerifiedLedgerHeaderAndProofTest {
 		);
 		assertThat(s0).isLessThan(s1);
 		assertThat(s0.compareTo(s1)).isLessThan(0);
+		assertThat(s1.compareTo(s0)).isGreaterThan(0);
 	}
 
 	@Test
@@ -120,5 +148,6 @@ public class VerifiedLedgerHeaderAndProofTest {
 		);
 		assertThat(s0).isEqualByComparingTo(s1);
 		assertThat(s0.compareTo(s1)).isEqualTo(0);
+		assertThat(s1.compareTo(s0)).isEqualTo(0);
 	}
 }

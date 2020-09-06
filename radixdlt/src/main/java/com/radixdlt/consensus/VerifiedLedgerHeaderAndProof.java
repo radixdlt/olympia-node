@@ -144,18 +144,19 @@ public final class VerifiedLedgerHeaderAndProof implements Comparable<VerifiedLe
 		return String.format("%s{ledger=%s}", this.getClass().getSimpleName(), this.ledgerHeader);
 	}
 
+	// TODO: The following logic needs to be replaced where only comparison of state version is required
 	@Override
 	public int compareTo(VerifiedLedgerHeaderAndProof o) {
-		if (o.getEpoch() != this.getEpoch()) {
-			return this.getEpoch() > o.getEpoch() ? 1 : -1;
+		if (o.ledgerHeader.getEpoch() != this.ledgerHeader.getEpoch()) {
+			return this.ledgerHeader.getEpoch() > o.ledgerHeader.getEpoch() ? 1 : -1;
 		}
 
-		if (o.getStateVersion() != this.getStateVersion()) {
-			return this.getStateVersion() > o.getStateVersion() ? 1 : -1;
+		if (o.ledgerHeader.getStateVersion() != this.ledgerHeader.getStateVersion()) {
+			return this.ledgerHeader.getStateVersion() > o.ledgerHeader.getStateVersion() ? 1 : -1;
 		}
 
-		if (o.isEndOfEpoch() != this.isEndOfEpoch()) {
-			return this.isEndOfEpoch() ? 1 : -1;
+		if (o.ledgerHeader.isEndOfEpoch() != this.ledgerHeader.isEndOfEpoch()) {
+			return this.ledgerHeader.isEndOfEpoch() ? 1 : -1;
 		}
 
 		return 0;
