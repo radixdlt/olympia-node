@@ -17,6 +17,8 @@
 
 package com.radixdlt;
 
+import javax.inject.Named;
+
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
@@ -33,6 +35,7 @@ import com.radixdlt.fees.PerParticleFeeEntry;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.TokenFeeLedgerAtomChecker;
+import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.UInt256;
 
@@ -42,7 +45,8 @@ import com.radixdlt.utils.UInt256;
 public class TokenFeeModule extends AbstractModule {
 	@Provides
 	@Singleton
-	private RRI nativeTokenRri(Universe universe) {
+	@Named("feeToken")
+	private RRI feeTokenRri(Universe universe) {
 		final String tokenName = TokenDefinitionUtils.getNativeTokenShortCode();
 		ImmutableList<RRI> rris = universe.getGenesis().stream()
 			.flatMap(a -> a.particles(Spin.UP))
@@ -69,9 +73,9 @@ public class TokenFeeModule extends AbstractModule {
 			// 10,000 rad cents per 10kb beyond the first one
 			PerBytesFeeEntry.of(10240, 0, radCents(1000L)),
 			// 100 rad cents per fixed supply token definition
-			PerParticleFeeEntry.of(0, FixedSupplyTokenDefinitionParticle.class, radCents(100L)),
+			PerParticleFeeEntry.of(FixedSupplyTokenDefinitionParticle.class, 0, radCents(100L)),
 			// 100 rad cents per mutable supply token definition
-			PerParticleFeeEntry.of(0, MutableSupplyTokenDefinitionParticle.class, radCents(100L))
+			PerParticleFeeEntry.of(MutableSupplyTokenDefinitionParticle.class, 0, radCents(100L))
 		);
 
 		// Minimum fee of 4 rad cents
@@ -82,9 +86,10 @@ public class TokenFeeModule extends AbstractModule {
 	@Singleton
 	private AtomChecker<LedgerAtom> tokenFeeLedgerAtomChecker(
 		FeeTable feeTable,
-		RRI feeTokenRri
+		@Named("feeToken") RRI feeTokenRri,
+		Serialization serialization
 	) {
-		return new TokenFeeLedgerAtomChecker(feeTable, feeTokenRri);
+		return new TokenFeeLedgerAtomChecker(feeTable, feeTokenRri, serialization);
 	}
 
 	private UInt256 radCents(long count) {

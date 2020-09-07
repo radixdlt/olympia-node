@@ -34,12 +34,15 @@ public final class PerParticleFeeEntry implements FeeEntry {
 	private final UInt256 fee;
 
 	private PerParticleFeeEntry(long threshold, Class<? extends Particle> particleType, UInt256 fee) {
+		if (threshold < 0) {
+			throw new IllegalArgumentException("Threshold must be non-negative: " + threshold);
+		}
 		this.threshold = threshold;
 		this.particleType = Objects.requireNonNull(particleType);
 		this.fee = Objects.requireNonNull(fee);
 	}
 
-	public static PerParticleFeeEntry of(long threshold, Class<? extends Particle> particleType, UInt256 fee) {
+	public static PerParticleFeeEntry of(Class<? extends Particle> particleType, long threshold, UInt256 fee) {
 		return new PerParticleFeeEntry(threshold, particleType, fee);
 	}
 
@@ -56,7 +59,7 @@ public final class PerParticleFeeEntry implements FeeEntry {
 	}
 
 	@Override
-	public UInt256 feeFor(LedgerAtom a, Set<Particle> outputs) {
+	public UInt256 feeFor(LedgerAtom a, int feeSize, Set<Particle> outputs) {
 		long particleCount = outputs.stream()
 			.filter(this.particleType::isInstance)
 			.count();
@@ -66,7 +69,7 @@ public final class PerParticleFeeEntry implements FeeEntry {
 		long overThresholdParticles = particleCount - this.threshold;
 		UInt384 totalFee = UInt384.from(this.fee).multiply(UInt256.from(overThresholdParticles));
 		if (!totalFee.getHigh().isZero()) {
-			throw new ArithmeticException("Fee is too high for provided atom");
+			throw new ArithmeticException("Fee overflow");
 		}
 		return totalFee.getLow();
 	}

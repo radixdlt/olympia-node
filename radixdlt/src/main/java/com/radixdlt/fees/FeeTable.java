@@ -50,13 +50,13 @@ public final class FeeTable {
 		return this.feeEntries;
 	}
 
-	public UInt256 feeFor(LedgerAtom atom, Set<Particle> outputs) {
+	public UInt256 feeFor(LedgerAtom atom, Set<Particle> outputs, int feeSize) {
 		UInt384 incrementalFees = UInt384.ZERO;
 		for (FeeEntry entry : this.feeEntries) {
-			incrementalFees = incrementalFees.add(entry.feeFor(atom, outputs));
+			incrementalFees = incrementalFees.add(entry.feeFor(atom, feeSize, outputs));
 		}
 		if (!incrementalFees.getHigh().isZero()) {
-			throw new ArithmeticException("Required fee for atoms exceeds maximum");
+			throw new ArithmeticException("Fee overflow");
 		}
 		UInt256 incrementalFeeRequired = incrementalFees.getLow();
 		return this.minimumFee.compareTo(incrementalFeeRequired) > 0 ? this.minimumFee : incrementalFeeRequired;

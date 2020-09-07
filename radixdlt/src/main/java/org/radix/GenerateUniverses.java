@@ -152,7 +152,13 @@ public final class GenerateUniverses {
 	private Atom createGenesisAtom(byte magic) throws CryptoException {
 		RadixAddress universeAddress = new RadixAddress(magic, universeKey.getPublicKey());
 		UInt256 genesisAmount = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 + 9); // 10^9 = 1,000,000,000 pieces of eight, please
-		List<SpunParticle> xrdParticles = createTokenDefinition(magic, "XRD", "Rads", "Radix Native Tokens", genesisAmount);
+		List<SpunParticle> xrdParticles = createTokenDefinition(
+			magic,
+			TokenDefinitionUtils.getNativeTokenShortCode(),
+			"Rads",
+			"Radix Native Tokens",
+			genesisAmount
+		);
 		MessageParticle helloUniverseMessage = createHelloMessage(universeAddress);
 
 		Atom genesisAtom = new Atom();

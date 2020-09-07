@@ -31,8 +31,9 @@ public interface FeeEntry {
 	 * Compute the fee for the specified atom with the specified outputs.
 	 *
 	 * @param atom The atom to compute the partial fee for
+	 * @param feeSize The size of the atom for fee calculation purposes
 	 * @param outputs The atom's output particles
 	 * @return The fee
 	 */
-	UInt256 feeFor(LedgerAtom atom, Set<Particle> outputs);
+	UInt256 feeFor(LedgerAtom atom, int feeSize, Set<Particle> outputs);
 }

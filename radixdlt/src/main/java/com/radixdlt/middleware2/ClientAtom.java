@@ -125,11 +125,6 @@ public final class ClientAtom implements LedgerAtom {
 	}
 
 	@Override
-	public int size() {
-		return this.rawAtom.length;
-	}
-
-	@Override
 	public int hashCode() {
 		return Objects.hash(Arrays.hashCode(rawAtom));
 	}

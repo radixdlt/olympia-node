@@ -37,7 +37,6 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.statecomputer.CommittedCommandsReader;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.middleware2.LedgerAtom;
-import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.statecomputer.RadixEngineValidatorSetBuilder;
@@ -120,10 +119,10 @@ public class RadixEngineModule extends AbstractModule {
 		ConstraintMachine constraintMachine,
 		UnaryOperator<CMStore> virtualStoreLayer,
 		EngineStore<LedgerAtom> engineStore,
-		AtomChecker<LedgerAtom> ledgerAtomChecker,
-		RuntimeProperties properties
+		AtomChecker<LedgerAtom> ledgerAtomChecker
 	) {
-		final int minValidators = properties.get("consensus.min_validators", 1); // Default 1 so can debug in IDE
+		final int minValidators = 1; // Default 1 so can debug in IDE, possibly from properties at some point
+
 		RadixEngine<LedgerAtom> radixEngine = new RadixEngine<>(
 			constraintMachine,
 			virtualStoreLayer,

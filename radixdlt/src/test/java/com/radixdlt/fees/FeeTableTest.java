@@ -17,11 +17,16 @@
 
 package com.radixdlt.fees;
 
+import java.nio.charset.StandardCharsets;
+
+import org.junit.Test;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atommodel.message.MessageParticle;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.RadixAddress;
@@ -29,24 +34,18 @@ import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware.SpunParticle;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.ClientAtom.LedgerAtomConversionException;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-
-import nl.jqno.equalsverifier.EqualsVerifier;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
-
 import com.radixdlt.utils.UInt256;
 
-import java.nio.charset.StandardCharsets;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.Assert.assertEquals;
 
-import org.junit.Test;
+import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class FeeTableTest {
     private static final UInt256 MINIMUM_FEE = UInt256.FIVE;
 	private static final ImmutableList<FeeEntry> FEE_ENTRIES = ImmutableList.of(
-		PerParticleFeeEntry.of(0, MessageParticle.class, UInt256.THREE)
+		PerParticleFeeEntry.of(MessageParticle.class, 0, UInt256.THREE)
 	);
 
 	@Test
@@ -73,7 +72,7 @@ public class FeeTableTest {
     	);
     	Atom a = new Atom(particleGroups, ImmutableMap.of(), ImmutableMap.of());
     	ClientAtom ca = ClientAtom.convertFromApiAtom(a);
-    	UInt256 fee = ft.feeFor(ca, a.particles(Spin.UP).collect(ImmutableSet.toImmutableSet()));
+    	UInt256 fee = ft.feeFor(ca, a.particles(Spin.UP).collect(ImmutableSet.toImmutableSet()), 0);
     	assertEquals(UInt256.SIX, fee);
     }
 
@@ -82,33 +81,35 @@ public class FeeTableTest {
     	FeeTable ft = get();
     	Atom a = new Atom(ImmutableList.of(), ImmutableMap.of(), ImmutableMap.of());
     	ClientAtom ca = ClientAtom.convertFromApiAtom(a);
-    	UInt256 fee = ft.feeFor(ca, ImmutableSet.of());
+    	UInt256 fee = ft.feeFor(ca, ImmutableSet.of(), 0);
     	assertEquals(UInt256.FIVE, fee);
     }
 
-    @Test(expected = ArithmeticException.class)
+    @Test
     public void testFeeOverflow() throws LedgerAtomConversionException {
     	ImmutableList<FeeEntry> feeEntries = ImmutableList.of(
-			PerParticleFeeEntry.of(0, MessageParticle.class, UInt256.MAX_VALUE)
+			PerParticleFeeEntry.of(MessageParticle.class, 0, UInt256.MAX_VALUE),
+			PerBytesFeeEntry.of(1, 0, UInt256.MAX_VALUE)
 		);
     	FeeTable ft = FeeTable.from(MINIMUM_FEE, feeEntries);
     	RadixAddress from = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
     	RadixAddress to = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
     	ImmutableList<ParticleGroup> particleGroups = ImmutableList.of(
-    		ParticleGroup.of(SpunParticle.up(new MessageParticle(from, to, "test message 3".getBytes(StandardCharsets.UTF_8)))),
-    		ParticleGroup.of(SpunParticle.up(new MessageParticle(from, to, "test message 4".getBytes(StandardCharsets.UTF_8))))
+    		ParticleGroup.of(SpunParticle.up(new MessageParticle(from, to, "test message 3".getBytes(StandardCharsets.UTF_8))))
     	);
     	Atom a = new Atom(particleGroups, ImmutableMap.of(), ImmutableMap.of());
     	ClientAtom ca = ClientAtom.convertFromApiAtom(a);
-    	ft.feeFor(ca, a.particles(Spin.UP).collect(ImmutableSet.toImmutableSet()));
-    	fail();
+    	ImmutableSet<Particle> outputs = a.particles(Spin.UP).collect(ImmutableSet.toImmutableSet());
+    	assertThatThrownBy(() -> ft.feeFor(ca, outputs, 1))
+    		.isInstanceOf(ArithmeticException.class)
+    		.hasMessageStartingWith("Fee overflow");
     }
 
 
     @Test
     public void testToString() {
     	String s = get().toString();
-    	assertThat(s, containsString(FeeTable.class.getSimpleName()));
+    	assertThat(s).contains(FeeTable.class.getSimpleName());
     }
 
     private static FeeTable get() {

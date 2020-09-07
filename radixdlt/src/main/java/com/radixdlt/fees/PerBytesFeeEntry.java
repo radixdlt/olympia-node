@@ -64,15 +64,15 @@ public final class PerBytesFeeEntry implements FeeEntry {
 	}
 
 	@Override
-	public UInt256 feeFor(LedgerAtom a, Set<Particle> outputs) {
-		long numberOfUnits = a.size() / this.units;
+	public UInt256 feeFor(LedgerAtom a, int feeSize, Set<Particle> outputs) {
+		long numberOfUnits = feeSize / this.units;
 		if (numberOfUnits <= this.threshold) {
 			return UInt256.ZERO;
 		}
 		long overThresholdUnits = numberOfUnits - this.threshold;
 		UInt384 totalFee = UInt384.from(this.fee).multiply(UInt256.from(overThresholdUnits));
 		if (!totalFee.getHigh().isZero()) {
-			throw new ArithmeticException("Fee is too high for provided atom");
+			throw new ArithmeticException("Fee overflow");
 		}
 		return totalFee.getLow();
 	}

@@ -39,7 +39,7 @@ public final class PerAtomFeeEntry implements FeeEntry {
 	}
 
 	@Override
-	public UInt256 feeFor(LedgerAtom a, Set<Particle> outputs) {
+	public UInt256 feeFor(LedgerAtom a, int feeSize, Set<Particle> outputs) {
 		return this.fee;
 	}
 

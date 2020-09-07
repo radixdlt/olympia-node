@@ -31,6 +31,4 @@ public interface LedgerAtom extends RadixEngineAtom {
 	Hash getPowFeeHash();
 
 	AID getAID();
-
-	int size();
 }
