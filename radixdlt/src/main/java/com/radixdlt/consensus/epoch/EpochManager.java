@@ -202,6 +202,7 @@ public final class EpochManager {
 			};
 
 			bftEventProcessor = bftFactory.create(
+				self,
 				this::processEndOfEpoch,
 				pacemaker,
 				vertexStore,

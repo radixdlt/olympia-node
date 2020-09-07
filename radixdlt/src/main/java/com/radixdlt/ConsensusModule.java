@@ -19,13 +19,10 @@ package com.radixdlt;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.google.inject.name.Named;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.bft.BFTBuilder;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.BFTFactory;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStore.SyncedVertexSender;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.HashSigner;
@@ -54,11 +51,8 @@ public final class ConsensusModule extends AbstractModule {
 		this.pacemakerTimeout = pacemakerTimeout;
 	}
 
-	// TODO: Change Factory -> Provider
 	@Provides
-	@Singleton
 	private BFTFactory bftFactory(
-		@Named("self") BFTNode self,
 		BFTEventSender bftEventSender,
 		NextCommandGenerator nextCommandGenerator,
 		Hasher hasher,
@@ -68,6 +62,7 @@ public final class ConsensusModule extends AbstractModule {
 		SystemCounters counters
 	) {
 		return (
+			self,
 			endOfEpochSender,
 			pacemaker,
 			vertexStore,
@@ -94,7 +89,6 @@ public final class ConsensusModule extends AbstractModule {
 	}
 
 	@Provides
-	@Singleton
 	private ProposerElectionFactory proposerElectionFactory() {
 		return validatorSet -> new WeightedRotatingLeaders(
 			validatorSet,
@@ -104,13 +98,11 @@ public final class ConsensusModule extends AbstractModule {
 	}
 
 	@Provides
-	@Singleton
 	private PacemakerFactory pacemakerFactory() {
 		return timeoutSender -> new FixedTimeoutPacemaker(pacemakerTimeout, timeoutSender);
 	}
 
 	@Provides
-	@Singleton
 	private VertexStoreFactory vertexStoreFactory(
 		SyncVerticesRPCSender syncVerticesRPCSender,
 		VertexStoreEventSender vertexStoreEventSender,

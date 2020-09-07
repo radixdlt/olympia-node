@@ -88,6 +88,7 @@ public class MockedLedgerModule extends AbstractModule {
 	@Provides
 	@Singleton
 	public BFTEventProcessor eventProcessor(
+		BFTNode self,
 		BFTFactory bftFactory,
 		PacemakerFactory pacemakerFactory,
 		VertexStore vertexStore,
@@ -97,6 +98,7 @@ public class MockedLedgerModule extends AbstractModule {
 		BFTInfoSender infoSender
 	) {
 		return bftFactory.create(
+			self,
 			header -> { },
 			pacemakerFactory.create((view, ms) -> localTimeoutSender.scheduleTimeout(new LocalTimeout(1, view), ms)),
 			vertexStore,
