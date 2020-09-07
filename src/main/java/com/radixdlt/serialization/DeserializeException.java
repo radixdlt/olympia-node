@@ -20,7 +20,7 @@ package com.radixdlt.serialization;
 import java.io.IOException;
 
 /**
- * General exception raised for failures during deserialization.
+ * General exception raised for failures which may happen during deserialization.
  */
 public class DeserializeException extends IOException {
 	private static final long serialVersionUID = -4590727289547107895L;
