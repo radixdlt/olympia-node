@@ -28,26 +28,16 @@ import javax.annotation.Nullable;
 public final class RadixEngineException extends Exception {
 	private final RadixEngineErrorCode errorCode;
 	private final DataPointer dp;
-	private final RadixEngineAtom related;
 	private final CMError cmError;
 
 	RadixEngineException(RadixEngineErrorCode errorCode, String message, DataPointer dp) {
-		this(errorCode, message, dp, null, null);
+		this(errorCode, message, dp, null);
 	}
 
 	RadixEngineException(RadixEngineErrorCode errorCode, String message, DataPointer dp, CMError cmError) {
-		this(errorCode, message, dp, null, cmError);
-	}
-
-	RadixEngineException(RadixEngineErrorCode errorCode, String message, DataPointer dp, RadixEngineAtom related) {
-		this(errorCode, message, dp, related, null);
-	}
-
-	RadixEngineException(RadixEngineErrorCode errorCode, String message, DataPointer dp, RadixEngineAtom related, CMError cmError) {
 		super(message);
 		this.errorCode = Objects.requireNonNull(errorCode);
 		this.dp = dp;
-		this.related = related;
 		this.cmError = cmError;
 	}
 
@@ -66,17 +56,6 @@ public final class RadixEngineException extends Exception {
 	 */
 	public RadixEngineErrorCode getErrorCode() {
 		return this.errorCode;
-	}
-
-	/**
-	 * Get the atom which is related to this exception
-	 * (e.g. the conflict atom on conflict exceptions)
-	 *
-	 * @return the related atom
-	 */
-	@Nullable
-	public RadixEngineAtom getRelated() {
-		return this.related;
 	}
 
 	/**
