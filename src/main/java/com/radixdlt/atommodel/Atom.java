@@ -45,6 +45,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -123,6 +124,15 @@ public class Atom {
 			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
 		return new Atom(this.particleGroups, this.signatures, filteredMetaData);
+	}
+
+	// Primarily used for excluding fee groups in fee calculations
+	public Atom copyExcludingGroups(Predicate<ParticleGroup> exclusions) {
+		List<ParticleGroup> newParticleGroups = this.particleGroups.stream()
+			.filter(pg -> !exclusions.test(pg))
+			.collect(Collectors.toList());
+
+		return new Atom(newParticleGroups, this.signatures, this.metaData);
 	}
 
 	/**
