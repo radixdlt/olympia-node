@@ -38,7 +38,7 @@ import java.util.Comparator;
 import java.util.Set;
 
 /**
- * Module which manages synchronized execution
+ * Module which manages ledger state and synchronization of updates to ledger state
  */
 public class LedgerModule extends AbstractModule {
 	@Override
