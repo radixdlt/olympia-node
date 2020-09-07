@@ -67,6 +67,9 @@ public class TokenFeeModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private FeeTable feeTable() {
+		// WARNING: There is a duplicate fee table in RadixApplicationAPI in the Java library.
+		// Possibly also the Javascript library too.
+		// If you update this fee table, you will need to change the ones there also.
 		ImmutableList<FeeEntry> feeEntries = ImmutableList.of(
 			// 2 rad cents per kilobyte beyond the first one
 			PerBytesFeeEntry.of(1024,  0, radCents(2L)),
