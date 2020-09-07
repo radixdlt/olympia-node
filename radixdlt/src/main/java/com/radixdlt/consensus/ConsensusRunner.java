@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 
@@ -42,7 +43,7 @@ import org.apache.logging.log4j.Logger;
  * Subscription Manager (Start/Stop) to the processing of Consensus events under
  * a single BFT Consensus node instance
  */
-public final class ConsensusRunner {
+public final class ConsensusRunner implements ModuleRunner {
 	private static final Logger log = LogManager.getLogger();
 
 	public enum EventType {
@@ -179,6 +180,7 @@ public final class ConsensusRunner {
 	 * calls will not affect execution, only one event handling stream will ever
 	 * occur.
 	 */
+	@Override
 	public void start() {
 		boolean started = false;
 		synchronized (lock) {
@@ -196,6 +198,7 @@ public final class ConsensusRunner {
 	/**
 	 * Stop processing events.
 	 */
+	@Override
 	public void stop() {
 		boolean stopped = false;
 		synchronized (lock) {
@@ -226,15 +229,5 @@ public final class ConsensusRunner {
 				Thread.currentThread().interrupt();
 			}
 		}
-	}
-
-	/**
-	 * For testing primarily, a way to retrieve events which have been
-	 * processed.
-	 *
-	 * @return hot observable of the events which are being processed
-	 */
-	public Observable<Event> events() {
-		return this.events;
 	}
 }

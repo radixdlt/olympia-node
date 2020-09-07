@@ -25,6 +25,7 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.ConsensusRxModule;
+import com.radixdlt.ModuleRunner;
 import com.radixdlt.SystemInfoRxModule;
 import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.Vertex;
@@ -35,7 +36,6 @@ import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.systeminfo.InfoRx;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.ConsensusRunner;
 
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
@@ -114,11 +114,11 @@ public class SimulationNodes {
 
 	public RunningNetwork start() {
 
-		List<ConsensusRunner> consensusRunners = this.nodeInstances.stream()
-			.map(i -> i.getInstance(ConsensusRunner.class))
+		List<ModuleRunner> consensusRunners = this.nodeInstances.stream()
+			.map(i -> i.getInstance(ModuleRunner.class))
 			.collect(Collectors.toList());
 
-		for (ConsensusRunner consensusRunner : consensusRunners) {
+		for (ModuleRunner consensusRunner : consensusRunners) {
 			consensusRunner.start();
 		}
 
@@ -194,6 +194,6 @@ public class SimulationNodes {
 	}
 
 	public void stop() {
-		this.nodeInstances.forEach(i -> i.getInstance(ConsensusRunner.class).stop());
+		this.nodeInstances.forEach(i -> i.getInstance(ModuleRunner.class).stop());
 	}
 }

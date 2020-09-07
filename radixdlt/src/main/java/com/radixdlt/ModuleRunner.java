@@ -17,13 +17,8 @@
 
 package com.radixdlt;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.radixdlt.consensus.ConsensusRunner;
+public interface ModuleRunner {
+	void start();
 
-public class ConsensusRunnerModule extends AbstractModule {
-	@Override
-	public void configure() {
-		bind(ModuleRunner.class).to(ConsensusRunner.class).in(Scopes.SINGLETON);
-	}
+	void stop();
 }
