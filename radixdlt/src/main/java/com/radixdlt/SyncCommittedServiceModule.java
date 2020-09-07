@@ -35,6 +35,7 @@ import com.radixdlt.sync.SyncServiceRunner.SyncTimeoutsRx;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.sync.SyncServiceRunner.VersionUpdatesRx;
 import com.radixdlt.universe.Universe;
+import java.util.Comparator;
 
 /**
  * Module which manages synchronization of committed atoms across of nodes
@@ -45,6 +46,7 @@ public class SyncCommittedServiceModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private SyncServiceProcessor syncServiceProcessor(
+		Comparator<VerifiedLedgerHeaderAndProof> headerComparator,
 		VerifiedLedgerHeaderAndProof header,
 		RadixEngineStateComputer executor,
 		StateSyncNetwork stateSyncNetwork,
@@ -56,6 +58,7 @@ public class SyncCommittedServiceModule extends AbstractModule {
 			stateSyncNetwork,
 			syncedCommandSender,
 			syncTimeoutScheduler,
+			headerComparator,
 			header,
 			BATCH_SIZE,
 			10

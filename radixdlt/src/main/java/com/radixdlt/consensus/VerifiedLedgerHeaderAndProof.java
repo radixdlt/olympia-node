@@ -26,6 +26,7 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
+import java.util.Comparator;
 import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
 
@@ -34,27 +35,32 @@ import javax.annotation.concurrent.Immutable;
  */
 @Immutable
 @SerializerId2("ledger.verified_ledger_header_and_proof")
-public final class VerifiedLedgerHeaderAndProof implements Comparable<VerifiedLedgerHeaderAndProof> {
+public final class VerifiedLedgerHeaderAndProof {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
+	// proposed
 	@JsonProperty("opaque0")
 	@DsonOutput(Output.ALL)
 	private final BFTHeader opaque0;
 
+	// parent
 	@JsonProperty("opaque1")
 	@DsonOutput(Output.ALL)
 	private final BFTHeader opaque1;
 
+	// committed view
 	@JsonProperty("opaque2")
 	@DsonOutput(Output.ALL)
 	private final long opaque2;
 
+	// committed vertexId
 	@JsonProperty("opaque3")
 	@DsonOutput(Output.ALL)
 	private final Hash opaque3;
 
+	// committed ledgerState
 	@JsonProperty("ledgerState")
 	@DsonOutput(Output.ALL)
 	private final LedgerHeader ledgerHeader;
@@ -91,6 +97,25 @@ public final class VerifiedLedgerHeaderAndProof implements Comparable<VerifiedLe
 			genesisLedgerHeader,
 			new TimestampedECDSASignatures()
 		);
+	}
+
+	public static final class OrderByEpochAndVersionComparator implements Comparator<VerifiedLedgerHeaderAndProof> {
+		@Override
+		public int compare(VerifiedLedgerHeaderAndProof p0, VerifiedLedgerHeaderAndProof p1) {
+			if (p0.ledgerHeader.getEpoch() != p1.ledgerHeader.getEpoch()) {
+				return p0.ledgerHeader.getEpoch() > p1.ledgerHeader.getEpoch() ? 1 : -1;
+			}
+
+			if (p0.ledgerHeader.getStateVersion() != p1.ledgerHeader.getStateVersion()) {
+				return p0.ledgerHeader.getStateVersion() > p1.ledgerHeader.getStateVersion() ? 1 : -1;
+			}
+
+			if (p0.ledgerHeader.isEndOfEpoch() != p1.ledgerHeader.isEndOfEpoch()) {
+				return p0.ledgerHeader.isEndOfEpoch() ? 1 : -1;
+			}
+
+			return 0;
+		}
 	}
 
 	public LedgerHeader getRaw() {
@@ -144,23 +169,5 @@ public final class VerifiedLedgerHeaderAndProof implements Comparable<VerifiedLe
 	@Override
 	public String toString() {
 		return String.format("%s{ledger=%s}", this.getClass().getSimpleName(), this.ledgerHeader);
-	}
-
-	// TODO: The following logic needs to be replaced where only comparison of state version is required
-	@Override
-	public int compareTo(VerifiedLedgerHeaderAndProof o) {
-		if (o.ledgerHeader.getEpoch() != this.ledgerHeader.getEpoch()) {
-			return this.ledgerHeader.getEpoch() > o.ledgerHeader.getEpoch() ? 1 : -1;
-		}
-
-		if (o.ledgerHeader.getStateVersion() != this.ledgerHeader.getStateVersion()) {
-			return this.ledgerHeader.getStateVersion() > o.ledgerHeader.getStateVersion() ? 1 : -1;
-		}
-
-		if (o.ledgerHeader.isEndOfEpoch() != this.ledgerHeader.isEndOfEpoch()) {
-			return this.ledgerHeader.isEndOfEpoch() ? 1 : -1;
-		}
-
-		return 0;
 	}
 }

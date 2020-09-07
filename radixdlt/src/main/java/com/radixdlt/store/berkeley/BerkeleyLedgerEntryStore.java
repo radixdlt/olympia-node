@@ -458,7 +458,6 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 		}
 	}
 
-	// TODO missing shardspace check, should be added?
 	@Override
 	public ImmutableList<LedgerEntry> getNextCommittedLedgerEntries(long stateVersion, int limit) throws NextCommittedLimitReachedException {
 		long proofVersion = -1;

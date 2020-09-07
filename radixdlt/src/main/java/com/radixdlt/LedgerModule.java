@@ -21,9 +21,11 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
+import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof.OrderByEpochAndVersionComparator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.counters.SystemCounters;
@@ -32,10 +34,11 @@ import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.ledger.StateComputerLedger.CommittedSender;
 import com.radixdlt.ledger.StateComputerLedger.CommittedStateSyncSender;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
+import java.util.Comparator;
 import java.util.Set;
 
 /**
- * Module which manages synchronized execution
+ * Module which manages ledger state and synchronization of updates to ledger state
  */
 public class LedgerModule extends AbstractModule {
 	@Override
@@ -43,11 +46,13 @@ public class LedgerModule extends AbstractModule {
 		bind(Ledger.class).to(StateComputerLedger.class).in(Scopes.SINGLETON);
 		// These multibindings are part of our dependency graph, so create the modules here
 		Multibinder.newSetBinder(binder(), CommittedSender.class);
+		bind(new TypeLiteral<Comparator<VerifiedLedgerHeaderAndProof>>() { }).to(OrderByEpochAndVersionComparator.class).in(Scopes.SINGLETON);
 	}
 
 	@Provides
 	@Singleton
 	private StateComputerLedger ledger(
+		Comparator<VerifiedLedgerHeaderAndProof> headerComparator,
 		VerifiedLedgerHeaderAndProof genesisLedgerState,
 		Mempool mempool,
 		StateComputer stateComputer,
@@ -58,6 +63,7 @@ public class LedgerModule extends AbstractModule {
 		CommittedSender committedSender = (committed, vset) -> committedSenders.forEach(s -> s.sendCommitted(committed, vset));
 
 		return new StateComputerLedger(
+			headerComparator,
 			genesisLedgerState,
 			mempool,
 			stateComputer,

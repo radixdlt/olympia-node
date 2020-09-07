@@ -21,12 +21,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof.OrderByEpochAndVersionComparator;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
 import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Before;
 import org.junit.Test;
 
 public class VerifiedLedgerHeaderAndProofTest {
+	private OrderByEpochAndVersionComparator headerComparator;
+
+	@Before
+	public void setup() {
+		this.headerComparator = new OrderByEpochAndVersionComparator();
+	}
+
 	@Test
 	public void equalsContract() {
 		EqualsVerifier.forClass(VerifiedLedgerHeaderAndProof.class)
@@ -54,7 +63,7 @@ public class VerifiedLedgerHeaderAndProofTest {
 		assertThat(ledgerHeaderAndProof.getStateVersion()).isEqualTo(12345L);
 		assertThat(ledgerHeaderAndProof.getView()).isEqualTo(view);
 		assertThat(ledgerHeaderAndProof.timestamp()).isEqualTo(2468L);
-		assertThat(ledgerHeaderAndProof.isEndOfEpoch()).isEqualTo(true);
+		assertThat(ledgerHeaderAndProof.isEndOfEpoch()).isTrue();
 	}
 
 	@Test
@@ -73,9 +82,8 @@ public class VerifiedLedgerHeaderAndProofTest {
 			l1,
 			mock(TimestampedECDSASignatures.class)
 		);
-		assertThat(s0).isLessThan(s1);
-		assertThat(s0.compareTo(s1)).isLessThan(0);
-		assertThat(s1.compareTo(s0)).isGreaterThan(0);
+		assertThat(headerComparator.compare(s0, s1)).isNegative();
+		assertThat(headerComparator.compare(s1, s0)).isPositive();
 	}
 
 	@Test
@@ -96,9 +104,8 @@ public class VerifiedLedgerHeaderAndProofTest {
 			l1,
 			mock(TimestampedECDSASignatures.class)
 		);
-		assertThat(s0).isLessThan(s1);
-		assertThat(s0.compareTo(s1)).isLessThan(0);
-		assertThat(s1.compareTo(s0)).isGreaterThan(0);
+		assertThat(headerComparator.compare(s0, s1)).isNegative();
+		assertThat(headerComparator.compare(s1, s0)).isPositive();
 	}
 
 	@Test
@@ -121,9 +128,8 @@ public class VerifiedLedgerHeaderAndProofTest {
 			l1,
 			mock(TimestampedECDSASignatures.class)
 		);
-		assertThat(s0).isLessThan(s1);
-		assertThat(s0.compareTo(s1)).isLessThan(0);
-		assertThat(s1.compareTo(s0)).isGreaterThan(0);
+		assertThat(headerComparator.compare(s0, s1)).isNegative();
+		assertThat(headerComparator.compare(s1, s0)).isPositive();
 	}
 
 	@Test
@@ -146,8 +152,7 @@ public class VerifiedLedgerHeaderAndProofTest {
 			l1,
 			mock(TimestampedECDSASignatures.class)
 		);
-		assertThat(s0).isEqualByComparingTo(s1);
-		assertThat(s0.compareTo(s1)).isEqualTo(0);
-		assertThat(s1.compareTo(s0)).isEqualTo(0);
+		assertThat(headerComparator.compare(s0, s1)).isZero();
+		assertThat(headerComparator.compare(s1, s0)).isZero();
 	}
 }

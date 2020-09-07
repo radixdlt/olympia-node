@@ -35,6 +35,7 @@ import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
 import com.radixdlt.sync.SyncServiceProcessor.SyncTimeoutScheduler;
 import com.radixdlt.sync.SyncServiceProcessor.SyncedCommandSender;
+import java.util.Comparator;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -45,6 +46,7 @@ public class SyncServiceProcessorTest {
 	private SyncedCommandSender syncedCommandSender;
 	private SyncTimeoutScheduler syncTimeoutScheduler;
 	private VerifiedLedgerHeaderAndProof currentHeader;
+	private Comparator<VerifiedLedgerHeaderAndProof> headerComparator;
 
 	@Before
 	public void setUp() {
@@ -53,11 +55,13 @@ public class SyncServiceProcessorTest {
 		this.syncedCommandSender = mock(SyncedCommandSender.class);
 		this.syncTimeoutScheduler = mock(SyncTimeoutScheduler.class);
 		this.currentHeader = mock(VerifiedLedgerHeaderAndProof.class);
+		this.headerComparator = mock(Comparator.class);
 		this.syncServiceProcessor = new SyncServiceProcessor(
 			stateComputer,
 			stateSyncNetwork,
 			syncedCommandSender,
 			syncTimeoutScheduler,
+			headerComparator,
 			currentHeader,
 			2,
 			1
@@ -92,7 +96,7 @@ public class SyncServiceProcessorTest {
 	public void given_some_current_header__when_response_with_higher_header__then_should_send_sync() {
 		VerifiedCommandsAndProof commands = mock(VerifiedCommandsAndProof.class);
 		VerifiedLedgerHeaderAndProof ledgerHeader = mock(VerifiedLedgerHeaderAndProof.class);
-		when(ledgerHeader.compareTo(currentHeader)).thenReturn(1);
+		when(headerComparator.compare(ledgerHeader, currentHeader)).thenReturn(1);
 		when(commands.getHeader()).thenReturn(ledgerHeader);
 		syncServiceProcessor.processSyncResponse(commands);
 
@@ -103,7 +107,7 @@ public class SyncServiceProcessorTest {
 	public void given_some_current_header__when_response_with_lower_version__then_should_not_send_sync() {
 		VerifiedCommandsAndProof commands = mock(VerifiedCommandsAndProof.class);
 		VerifiedLedgerHeaderAndProof ledgerHeader = mock(VerifiedLedgerHeaderAndProof.class);
-		when(ledgerHeader.compareTo(currentHeader)).thenReturn(-1);
+		when(headerComparator.compare(ledgerHeader, currentHeader)).thenReturn(-1);
 		when(commands.getHeader()).thenReturn(ledgerHeader);
 		syncServiceProcessor.processSyncResponse(commands);
 
@@ -113,7 +117,7 @@ public class SyncServiceProcessorTest {
 	@Test
 	public void given_some_current_header__when_local_request_has_equal_target__then_should_do_nothing() {
 		VerifiedLedgerHeaderAndProof targetHeader = mock(VerifiedLedgerHeaderAndProof.class);
-		when(targetHeader.compareTo(currentHeader)).thenReturn(0);
+		when(headerComparator.compare(targetHeader, currentHeader)).thenReturn(0);
 		LocalSyncRequest request = mock(LocalSyncRequest.class);
 		when(request.getTarget()).thenReturn(targetHeader);
 		syncServiceProcessor.processLocalSyncRequest(request);
@@ -127,7 +131,7 @@ public class SyncServiceProcessorTest {
 		when(currentHeader.getStateVersion()).thenReturn(1L);
 		VerifiedLedgerHeaderAndProof targetHeader = mock(VerifiedLedgerHeaderAndProof.class);
 		when(targetHeader.getStateVersion()).thenReturn(2L);
-		when(targetHeader.compareTo(currentHeader)).thenReturn(1);
+		when(headerComparator.compare(targetHeader, currentHeader)).thenReturn(1);
 		LocalSyncRequest request = mock(LocalSyncRequest.class);
 		when(request.getTarget()).thenReturn(targetHeader);
 		when(request.getTargetNodes()).thenReturn(ImmutableList.of(mock(BFTNode.class)));
@@ -144,7 +148,7 @@ public class SyncServiceProcessorTest {
 		when(currentHeader.getStateVersion()).thenReturn(1L);
 		VerifiedLedgerHeaderAndProof targetHeader = mock(VerifiedLedgerHeaderAndProof.class);
 		when(targetHeader.getStateVersion()).thenReturn(1L);
-		when(targetHeader.compareTo(currentHeader)).thenReturn(1);
+		when(headerComparator.compare(targetHeader, currentHeader)).thenReturn(1);
 		LocalSyncRequest request = mock(LocalSyncRequest.class);
 		when(request.getTarget()).thenReturn(targetHeader);
 		when(request.getTargetNodes()).thenReturn(ImmutableList.of(mock(BFTNode.class)));
