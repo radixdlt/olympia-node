@@ -24,22 +24,14 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.CommittedCommandsReader;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
-import java.util.Objects;
 
 public class MockedRadixEngineStoreModule extends AbstractModule {
-	private final BFTValidatorSet validatorSet;
-
-	public MockedRadixEngineStoreModule(BFTValidatorSet validatorSet) {
-		this.validatorSet = Objects.requireNonNull(validatorSet);
-	}
-
 	public void configure() {
 		bind(CommittedCommandsReader.class).toInstance((stateVersion, limit) -> {
 			throw new UnsupportedOperationException();
@@ -48,11 +40,6 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 		bind(Integer.class).annotatedWith(Names.named("magic")).toInstance(1);
 		bind(new TypeLiteral<EngineStore<LedgerAtom>>() { }).to(new TypeLiteral<InMemoryEngineStore<LedgerAtom>>() { })
 			.in(Scopes.SINGLETON);
-	}
-
-	@Provides
-	private BFTValidatorSet genesisValidatorSet() {
-		return validatorSet;
 	}
 
 	@Provides

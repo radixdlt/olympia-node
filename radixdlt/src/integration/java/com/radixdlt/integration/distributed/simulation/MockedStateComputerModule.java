@@ -29,18 +29,6 @@ import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import java.util.Optional;
 
 public class MockedStateComputerModule extends AbstractModule {
-	private final BFTValidatorSet validatorSet;
-
-	public MockedStateComputerModule(BFTValidatorSet validatorSet) {
-		this.validatorSet = validatorSet;
-	}
-
-
-	@Provides
-	private BFTValidatorSet genesisValidatorSet() {
-		return validatorSet;
-	}
-
 	@Provides
 	private VerifiedLedgerHeaderAndProof genesisMetadata() {
 		return VerifiedLedgerHeaderAndProof.genesis(Hash.ZERO_HASH);
