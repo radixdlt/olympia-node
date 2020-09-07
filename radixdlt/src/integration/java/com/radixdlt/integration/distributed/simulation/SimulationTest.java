@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
+import com.google.inject.Provides;
 import com.radixdlt.ConsensusRunnerModule;
 import com.radixdlt.LedgerCommandGeneratorModule;
 import com.radixdlt.LedgerEpochChangeModule;
@@ -32,8 +33,12 @@ import com.radixdlt.LedgerLocalMempoolModule;
 import com.radixdlt.RadixEngineModule;
 import com.radixdlt.RadixEngineRxModule;
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
 import com.radixdlt.integration.distributed.simulation.application.IncrementalBytesSubmittor;
 import com.radixdlt.integration.distributed.simulation.application.CommittedChecker;
@@ -289,16 +294,30 @@ public class SimulationTest {
 
 		public SimulationTest build() {
 			ImmutableList.Builder<Module> ledgerModules = ImmutableList.builder();
-			ledgerModules.add(new ConsensusRunnerModule());
 
 			if (ledgerType == LedgerType.MOCKED_LEDGER) {
-				BFTValidatorSet validatorSet = BFTValidatorSet.from(
-					nodes.stream()
-						.map(node -> BFTNode.create(node.getPublicKey()))
-						.map(node -> BFTValidator.from(node, UInt256.ONE))
-						.collect(Collectors.toList())
-				);
-				ledgerModules.add(new MockedLedgerModule(validatorSet));
+				ledgerModules.add(new AbstractModule() {
+					@Provides
+					BFTValidatorSet validatorSet() {
+						return BFTValidatorSet.from(
+							nodes.stream()
+								.map(node -> BFTNode.create(node.getPublicKey()))
+								.map(node -> BFTValidator.from(node, UInt256.ONE))
+								.collect(Collectors.toList())
+						);
+					}
+
+					@Provides
+					Vertex genesisVertex() {
+						return Vertex.createGenesis(LedgerHeader.genesis(Hash.ZERO_HASH));
+					}
+
+					@Provides
+					QuorumCertificate genesisQC(Vertex genesis) {
+						return QuorumCertificate.ofGenesis(genesis, LedgerHeader.genesis(Hash.ZERO_HASH));
+					}
+				});
+				ledgerModules.add(new MockedLedgerModule());
 			} else {
 				BFTValidatorSet validatorSet = BFTValidatorSet.from(
 					nodes.stream()
@@ -308,6 +327,7 @@ public class SimulationTest {
 						.collect(Collectors.toList())
 				);
 				ConcurrentHashMap<Long, Command> sharedCommittedCmds = new ConcurrentHashMap<>();
+				ledgerModules.add(new ConsensusRunnerModule());
 				ledgerModules.add(new LedgerModule());
 				ledgerModules.add(new LedgerRxModule());
 				ledgerModules.add(new LedgerEpochChangeRxModule());

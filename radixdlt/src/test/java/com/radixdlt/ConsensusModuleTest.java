@@ -34,10 +34,6 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
 import com.radixdlt.consensus.bft.VertexStore.SyncedVertexSender;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
-import com.radixdlt.consensus.epoch.EpochChange;
-import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
-import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
-import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.sync.SyncRequestSender;
 import com.radixdlt.counters.SystemCounters;
@@ -49,21 +45,17 @@ public class ConsensusModuleTest {
 		@Override
 		protected void configure() {
 			bind(SyncedVertexSender.class).toInstance(mock(SyncedVertexSender.class));
-			bind(LocalTimeoutSender.class).toInstance(mock(LocalTimeoutSender.class));
 			bind(Ledger.class).toInstance(mock(Ledger.class));
+			bind(SyncRequestSender.class).toInstance(mock(SyncRequestSender.class));
 			bind(BFTEventSender.class).toInstance(mock(BFTEventSender.class));
 			bind(SyncVerticesRPCSender.class).toInstance(mock(SyncVerticesRPCSender.class));
 			bind(VertexStoreEventSender.class).toInstance(mock(VertexStoreEventSender.class));
-			bind(EpochInfoSender.class).toInstance(mock(EpochInfoSender.class));
-			bind(SyncEpochsRPCSender.class).toInstance(mock(SyncEpochsRPCSender.class));
 			bind(NextCommandGenerator.class).toInstance(mock(NextCommandGenerator.class));
 			bind(SystemCounters.class).toInstance(mock(SystemCounters.class));
 			bind(TimeSupplier.class).toInstance(mock(TimeSupplier.class));
 			bind(Hasher.class).toInstance(mock(Hasher.class));
 			bind(HashVerifier.class).toInstance(mock(HashVerifier.class));
 			bind(HashSigner.class).toInstance(mock(HashSigner.class));
-			bind(EpochChange.class).toInstance(mock(EpochChange.class));
-			bind(SyncRequestSender.class).toInstance(mock(SyncRequestSender.class));
 			bind(BFTNode.class).annotatedWith(Names.named("self")).toInstance(mock(BFTNode.class));
 		}
 	}

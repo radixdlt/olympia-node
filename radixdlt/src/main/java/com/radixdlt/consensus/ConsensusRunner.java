@@ -45,40 +45,7 @@ import org.apache.logging.log4j.Logger;
  */
 public final class ConsensusRunner implements ModuleRunner {
 	private static final Logger log = LogManager.getLogger();
-
-	public enum EventType {
-		EPOCH_CHANGE,
-		LOCAL_TIMEOUT,
-		LOCAL_SYNC,
-		COMMITTED_STATE_SYNC,
-		CONSENSUS_EVENT,
-		GET_VERTICES_REQUEST,
-		GET_VERTICES_RESPONSE,
-		GET_VERTICES_ERROR_RESPONSE,
-		GET_EPOCH_REQUEST,
-		GET_EPOCH_RESPONSE,
-	}
-
-	public static class Event {
-		private final EventType eventType;
-		private final Object eventObject;
-
-		private Event(EventType eventType, Object eventObject) {
-			this.eventType = eventType;
-			this.eventObject = eventObject;
-		}
-
-		public EventType getEventType() {
-			return eventType;
-		}
-
-		@Override
-		public String toString() {
-			return eventType + ": " + eventObject;
-		}
-	}
-
-	private final ConnectableObservable<Event> events;
+	private final ConnectableObservable<Object> events;
 	private final Object lock = new Object();
 	private final ExecutorService singleThreadExecutor;
 	private final Scheduler singleThreadScheduler;
@@ -102,67 +69,37 @@ public final class ConsensusRunner implements ModuleRunner {
 
 		// It is important that all of these events are executed on the same thread
 		// as all logic is dependent on this assumption
-		final Observable<Event> eventCoordinatorEvents = Observable.merge(Arrays.asList(
+		final Observable<Object> eventCoordinatorEvents = Observable.merge(Arrays.asList(
 			epochChangeRx.epochChanges()
 				.observeOn(singleThreadScheduler)
-				.map(e -> {
-					epochManager.processEpochChange(e);
-					return new Event(EventType.EPOCH_CHANGE, e);
-				}),
+				.doOnNext(epochManager::processEpochChange),
 			pacemakerRx.localTimeouts()
 				.observeOn(singleThreadScheduler)
-				.map(e -> {
-					epochManager.processLocalTimeout(e);
-					return new Event(EventType.LOCAL_TIMEOUT, e);
-				}),
+				.doOnNext(epochManager::processLocalTimeout),
 			networkRx.consensusEvents()
 				.observeOn(singleThreadScheduler)
-				.map(e -> {
-					epochManager.processConsensusEvent(e);
-					return new Event(EventType.CONSENSUS_EVENT, e);
-				}),
+				.doOnNext(epochManager::processConsensusEvent),
 			rpcRx.requests()
 				.observeOn(singleThreadScheduler)
-				.map(e -> {
-					epochManager.processGetVerticesRequest(e);
-					return new Event(EventType.GET_VERTICES_REQUEST, e);
-				}),
+				.doOnNext(epochManager::processGetVerticesRequest),
 			rpcRx.responses()
 				.observeOn(singleThreadScheduler)
-				.map(e -> {
-					epochManager.processGetVerticesResponse(e);
-					return new Event(EventType.GET_VERTICES_RESPONSE, e);
-				}),
+				.doOnNext(epochManager::processGetVerticesResponse),
 			rpcRx.errorResponses()
 				.observeOn(singleThreadScheduler)
-				.map(e -> {
-					epochManager.processGetVerticesErrorResponse(e);
-					return new Event(EventType.GET_VERTICES_ERROR_RESPONSE, e);
-				}),
+				.doOnNext(epochManager::processGetVerticesErrorResponse),
 			epochsRPCRx.epochRequests()
 				.observeOn(singleThreadScheduler)
-				.map(e -> {
-					epochManager.processGetEpochRequest(e);
-					return new Event(EventType.GET_EPOCH_REQUEST, e);
-				}),
+				.doOnNext(epochManager::processGetEpochRequest),
 			epochsRPCRx.epochResponses()
 				.observeOn(singleThreadScheduler)
-				.map(e -> {
-					epochManager.processGetEpochResponse(e);
-					return new Event(EventType.GET_EPOCH_RESPONSE, e);
-				}),
+				.doOnNext(epochManager::processGetEpochResponse),
 			vertexSyncRx.syncedVertices()
 				.observeOn(singleThreadScheduler)
-				.map(e -> {
-					epochManager.processLocalSync(e);
-					return new Event(EventType.LOCAL_SYNC, e);
-				}),
+				.doOnNext(epochManager::processLocalSync),
 			committedStateSyncRx.committedStateSyncs()
 				.observeOn(singleThreadScheduler)
-				.map(e -> {
-					epochManager.processCommittedStateSync(e);
-					return new Event(EventType.COMMITTED_STATE_SYNC, e);
-				})
+				.doOnNext(epochManager::processCommittedStateSync)
 		));
 
 		this.events = eventCoordinatorEvents

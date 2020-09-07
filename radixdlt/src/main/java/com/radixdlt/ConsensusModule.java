@@ -19,7 +19,6 @@ package com.radixdlt;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.HashVerifier;
@@ -28,7 +27,6 @@ import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStore.SyncedVertexSender;
-import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.ProposerElectionFactory;
@@ -54,11 +52,6 @@ public final class ConsensusModule extends AbstractModule {
 
 	public ConsensusModule(int pacemakerTimeout) {
 		this.pacemakerTimeout = pacemakerTimeout;
-	}
-
-	@Override
-	public void configure() {
-		bind(EpochManager.class).in(Scopes.SINGLETON);
 	}
 
 	// TODO: Change Factory -> Provider
