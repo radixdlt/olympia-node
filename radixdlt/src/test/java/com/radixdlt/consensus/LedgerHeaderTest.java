@@ -44,7 +44,6 @@ public class LedgerHeaderTest {
 		assertThat(ledgerHeader.getStateVersion()).isEqualTo(12345);
 		assertThat(ledgerHeader.timestamp()).isEqualTo(timestamp);
 		assertThat(ledgerHeader.isEndOfEpoch()).isFalse();
-		assertThat(ledgerHeader.getStateVersion());
 	}
 
 	@Test

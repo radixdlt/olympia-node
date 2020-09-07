@@ -47,6 +47,7 @@ import com.radixdlt.ledger.StateComputerLedger.CommittedStateSyncSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.mempool.Mempool;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.function.BiConsumer;
 import org.junit.Before;
 import org.junit.Test;
@@ -58,8 +59,9 @@ public class StateComputerLedgerTest {
 	private StateComputerLedger stateComputerLedger;
 	private CommittedStateSyncSender committedStateSyncSender;
 	private CommittedSender committedSender;
-	private VerifiedLedgerHeaderAndProof currentLedgerState;
+	private VerifiedLedgerHeaderAndProof currentLedgerHeader;
 	private SystemCounters counters;
+	private Comparator<VerifiedLedgerHeaderAndProof> headerComparator;
 
 	@Before
 	public void setup() {
@@ -69,10 +71,12 @@ public class StateComputerLedgerTest {
 		this.committedStateSyncSender = mock(CommittedStateSyncSender.class);
 		this.counters = mock(SystemCounters.class);
 		this.committedSender = mock(CommittedSender.class);
-		this.currentLedgerState = mock(VerifiedLedgerHeaderAndProof.class);
+		this.currentLedgerHeader = mock(VerifiedLedgerHeaderAndProof.class);
+		this.headerComparator = mock(Comparator.class);
 
 		this.stateComputerLedger = new StateComputerLedger(
-			currentLedgerState,
+			headerComparator,
+			currentLedgerHeader,
 			mempool,
 			stateComputer,
 			committedStateSyncSender,
@@ -179,7 +183,7 @@ public class StateComputerLedgerTest {
 
 		VerifiedCommandsAndProof verified = mock(VerifiedCommandsAndProof.class);
 		VerifiedLedgerHeaderAndProof proof = mock(VerifiedLedgerHeaderAndProof.class);
-		when(proof.compareTo(eq(currentLedgerState))).thenReturn(-1);
+		when(headerComparator.compare(eq(proof), eq(currentLedgerHeader))).thenReturn(-1);
 		when(verified.getHeader()).thenReturn(proof);
 
 		stateComputerLedger.commit(verified);
@@ -196,7 +200,7 @@ public class StateComputerLedgerTest {
 
 		VerifiedCommandsAndProof verified = mock(VerifiedCommandsAndProof.class);
 		VerifiedLedgerHeaderAndProof proof = mock(VerifiedLedgerHeaderAndProof.class);
-		when(proof.compareTo(eq(currentLedgerState))).thenReturn(1);
+		when(headerComparator.compare(eq(proof), eq(currentLedgerHeader))).thenReturn(1);
 		when(verified.getHeader()).thenReturn(proof);
 		when(verified.truncateFromVersion(anyLong())).thenReturn(verified);
 		doAnswer(invocation -> {
@@ -213,13 +217,13 @@ public class StateComputerLedgerTest {
 
 	@Test
 	public void when_check_sync_and_synced__then_return_sync_handler() {
-		VerifiedLedgerHeaderAndProof verifiedLedgerHeaderAndProof = mock(VerifiedLedgerHeaderAndProof.class);
-		when(verifiedLedgerHeaderAndProof.compareTo(currentLedgerState)).thenReturn(0);
+		VerifiedLedgerHeaderAndProof header = mock(VerifiedLedgerHeaderAndProof.class);
+		when(headerComparator.compare(eq(header), eq(currentLedgerHeader))).thenReturn(0);
 
 		Runnable onSynced = mock(Runnable.class);
 		Runnable onNotSynced = mock(Runnable.class);
 		stateComputerLedger
-			.ifCommitSynced(verifiedLedgerHeaderAndProof)
+			.ifCommitSynced(header)
 			.then(onSynced)
 			.elseExecuteAndSendMessageOnSync(onNotSynced, mock(Object.class));
 		verify(onSynced, times(1)).run();
@@ -228,7 +232,7 @@ public class StateComputerLedgerTest {
 
 	@Test
 	public void when_check_sync__will_complete_when_higher_or_equal_state_version() {
-		when(currentLedgerState.getStateVersion()).thenReturn(0L);
+		when(currentLedgerHeader.getStateVersion()).thenReturn(0L);
 		VerifiedLedgerHeaderAndProof verifiedLedgerHeaderAndProof = mock(VerifiedLedgerHeaderAndProof.class);
 		when(verifiedLedgerHeaderAndProof.getStateVersion()).thenReturn(1L);
 
@@ -245,7 +249,7 @@ public class StateComputerLedgerTest {
 		VerifiedCommandsAndProof verified = mock(VerifiedCommandsAndProof.class);
 		VerifiedLedgerHeaderAndProof proof = mock(VerifiedLedgerHeaderAndProof.class);
 		when(proof.getStateVersion()).thenReturn(1L);
-		when(proof.compareTo(any())).thenReturn(1);
+		when(headerComparator.compare(eq(proof), any())).thenReturn(1);
 		when(verified.getHeader()).thenReturn(proof);
 		when(verified.truncateFromVersion(anyLong())).thenReturn(verified);
 

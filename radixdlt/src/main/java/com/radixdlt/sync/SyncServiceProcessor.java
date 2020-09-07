@@ -23,6 +23,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
+import java.util.Comparator;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 import javax.annotation.concurrent.NotThreadSafe;
@@ -67,6 +68,7 @@ public final class SyncServiceProcessor {
 	private final SyncTimeoutScheduler syncTimeoutScheduler;
 	private final long patienceMilliseconds;
 	private final StateSyncNetwork stateSyncNetwork;
+	private final Comparator<VerifiedLedgerHeaderAndProof> headerComparator;
 	private VerifiedLedgerHeaderAndProof targetHeader;
 	private VerifiedLedgerHeaderAndProof currentHeader;
 
@@ -75,6 +77,7 @@ public final class SyncServiceProcessor {
 		StateSyncNetwork stateSyncNetwork,
 		SyncedCommandSender syncedCommandSender,
 		SyncTimeoutScheduler syncTimeoutScheduler,
+		Comparator<VerifiedLedgerHeaderAndProof> headerComparator,
 		VerifiedLedgerHeaderAndProof current,
 		int batchSize,
 		long patienceMilliseconds
@@ -91,6 +94,7 @@ public final class SyncServiceProcessor {
 		this.syncTimeoutScheduler = Objects.requireNonNull(syncTimeoutScheduler);
 		this.batchSize = batchSize;
 		this.patienceMilliseconds = patienceMilliseconds;
+		this.headerComparator = Objects.requireNonNull(headerComparator);
 		this.currentHeader = current;
 		this.targetHeader = current;
 	}
@@ -113,7 +117,7 @@ public final class SyncServiceProcessor {
 
 	public void processSyncResponse(VerifiedCommandsAndProof commands) {
 		// TODO: Check validity of response
-		if (commands.getHeader().compareTo(this.currentHeader) <= 0) {
+		if (headerComparator.compare(commands.getHeader(), this.currentHeader) <= 0) {
 			return;
 		}
 		this.syncedCommandSender.sendSyncedCommand(commands);
@@ -121,7 +125,7 @@ public final class SyncServiceProcessor {
 	}
 
 	public void processVersionUpdate(VerifiedLedgerHeaderAndProof updatedHeader) {
-		if (updatedHeader.compareTo(this.currentHeader) > 0) {
+		if (headerComparator.compare(updatedHeader, this.currentHeader) > 0) {
 			this.currentHeader = updatedHeader;
 		}
 	}
@@ -129,7 +133,7 @@ public final class SyncServiceProcessor {
 	// TODO: Handle epoch changes with same state version
 	public void processLocalSyncRequest(LocalSyncRequest request) {
 		final VerifiedLedgerHeaderAndProof nextTargetHeader = request.getTarget();
-		if (nextTargetHeader.compareTo(this.targetHeader) <= 0) {
+		if (headerComparator.compare(nextTargetHeader, this.targetHeader) <= 0) {
 			return;
 		}
 
@@ -143,7 +147,7 @@ public final class SyncServiceProcessor {
 	}
 
 	private void sendRequest(SyncInProgress syncInProgress) {
-		if (syncInProgress.getTargetHeader().compareTo(this.currentHeader) <= 0) {
+		if (headerComparator.compare(syncInProgress.getTargetHeader(), this.currentHeader) <= 0) {
 			return;
 		}
 

@@ -33,6 +33,7 @@ import com.radixdlt.crypto.Hash;
 import com.radixdlt.mempool.Mempool;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -58,6 +59,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		void sendCommittedStateSync(long stateVersion, Object opaque);
 	}
 
+	private final Comparator<VerifiedLedgerHeaderAndProof> headerComparator;
 	private final Mempool mempool;
 	private final StateComputer stateComputer;
 	private final CommittedStateSyncSender committedStateSyncSender;
@@ -65,10 +67,11 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	private final SystemCounters counters;
 
 	private final Object lock = new Object();
-	private VerifiedLedgerHeaderAndProof currentLedgerState;
+	private VerifiedLedgerHeaderAndProof currentLedgerHeader;
 	private final TreeMap<Long, Set<Object>> committedStateSyncers = new TreeMap<>();
 
 	public StateComputerLedger(
+		Comparator<VerifiedLedgerHeaderAndProof> headerComparator,
 		VerifiedLedgerHeaderAndProof initialLedgerState,
 		Mempool mempool,
 		StateComputer stateComputer,
@@ -76,7 +79,8 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		CommittedSender committedSender,
 		SystemCounters counters
 	) {
-		this.currentLedgerState = initialLedgerState;
+		this.headerComparator = Objects.requireNonNull(headerComparator);
+		this.currentLedgerHeader = initialLedgerState;
 		this.mempool = Objects.requireNonNull(mempool);
 		this.stateComputer = Objects.requireNonNull(stateComputer);
 		this.committedStateSyncSender = Objects.requireNonNull(committedStateSyncSender);
@@ -120,8 +124,8 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	@Override
 	public OnSynced ifCommitSynced(VerifiedLedgerHeaderAndProof committedLedgerState) {
 		synchronized (lock) {
-			if (committedLedgerState.getStateVersion() <= this.currentLedgerState.getStateVersion()) {
-				if (committedLedgerState.compareTo(this.currentLedgerState) > 0) {
+			if (committedLedgerState.getStateVersion() <= this.currentLedgerHeader.getStateVersion()) {
+				if (headerComparator.compare(committedLedgerState, this.currentLedgerHeader) > 0) {
 					// Can happen on epoch changes
 					// TODO: Need to cleanup this logic, can't skip epochs
 					this.commit(new VerifiedCommandsAndProof(ImmutableList.of(), committedLedgerState));
@@ -143,38 +147,38 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	public void commit(VerifiedCommandsAndProof verifiedCommandsAndProof) {
 		this.counters.increment(CounterType.LEDGER_PROCESSED);
 		synchronized (lock) {
-			final VerifiedLedgerHeaderAndProof committedState = verifiedCommandsAndProof.getHeader();
-			if (committedState.compareTo(this.currentLedgerState) <= 0) {
+			final VerifiedLedgerHeaderAndProof committedHeader = verifiedCommandsAndProof.getHeader();
+			if (headerComparator.compare(committedHeader, this.currentLedgerHeader) <= 0) {
 				return;
 			}
 
 			// Callers of commit() should be aware of currentLedgerState.getStateVersion()
 			// and only call commit with a first version <= currentVersion + 1
-			if (currentLedgerState.getStateVersion() + 1 < verifiedCommandsAndProof.getFirstVersion()) {
+			if (currentLedgerHeader.getStateVersion() + 1 < verifiedCommandsAndProof.getFirstVersion()) {
 				throw new IllegalStateException();
 			}
 
 			// Remove commands which have already been committed
 			VerifiedCommandsAndProof commandsToStore = verifiedCommandsAndProof
-				.truncateFromVersion(this.currentLedgerState.getStateVersion());
+				.truncateFromVersion(this.currentLedgerHeader.getStateVersion());
 
 			// persist
 			Optional<BFTValidatorSet> validatorSet = this.stateComputer.commit(commandsToStore);
 
 			// TODO: move all of the following to post-persist event handling
-			this.currentLedgerState = committedState;
-			this.counters.set(CounterType.LEDGER_STATE_VERSION, this.currentLedgerState.getStateVersion());
+			this.currentLedgerHeader = committedHeader;
+			this.counters.set(CounterType.LEDGER_STATE_VERSION, this.currentLedgerHeader.getStateVersion());
 
 			commandsToStore.forEach((v, cmd) -> this.mempool.removeCommitted(cmd.getHash()));
 			committedSender.sendCommitted(commandsToStore, validatorSet.orElse(null));
 
-			Collection<Set<Object>> listeners = this.committedStateSyncers.headMap(this.currentLedgerState.getStateVersion(), true)
+			Collection<Set<Object>> listeners = this.committedStateSyncers.headMap(this.currentLedgerHeader.getStateVersion(), true)
 				.values();
 			Iterator<Set<Object>> listenersIterator = listeners.iterator();
 			while (listenersIterator.hasNext()) {
 				Set<Object> opaqueObjects = listenersIterator.next();
 				for (Object opaque : opaqueObjects) {
-					committedStateSyncSender.sendCommittedStateSync(this.currentLedgerState.getStateVersion(), opaque);
+					committedStateSyncSender.sendCommittedStateSync(this.currentLedgerHeader.getStateVersion(), opaque);
 				}
 				listenersIterator.remove();
 			}
