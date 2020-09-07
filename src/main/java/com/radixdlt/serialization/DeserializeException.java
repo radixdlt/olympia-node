@@ -20,10 +20,10 @@ package com.radixdlt.serialization;
 import java.io.IOException;
 
 /**
- * General exception raised for serialization failures.
+ * General exception raised for failures which may happen during deserialization.
  */
-public class SerializationException extends IOException {
-	private static final long serialVersionUID = 4590727289547107895L;
+public class DeserializeException extends IOException {
+	private static final long serialVersionUID = -4590727289547107895L;
 
     /**
      * Constructs a new exception with the specified detail message.  The
@@ -33,7 +33,7 @@ public class SerializationException extends IOException {
      * @param   message   the detail message. The detail message is saved for
      *          later retrieval by the {@link #getMessage()} method.
      */
-	public SerializationException(String message) {
+	public DeserializeException(String message) {
 		super(message);
 	}
 
@@ -52,7 +52,7 @@ public class SerializationException extends IOException {
      *         permitted, and indicates that the cause is nonexistent or
      *         unknown.)
      */
-	public SerializationException(String message, Throwable cause) {
+	public DeserializeException(String message, Throwable cause) {
 		super(message, cause);
 	}
 }
