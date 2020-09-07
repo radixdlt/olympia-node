@@ -285,7 +285,7 @@ public class Serialization {
 		}, downstream.combiner(), downstream.finisher(), downstream.characteristics().toArray(new Collector.Characteristics[0]));
 	}
 
-	private String assembleMessage(Object o, String type) {
+	private static String assembleMessage(Object o, String type) {
 		String className = o == null ? "(null)" : o.getClass().getName();
 		return "Error converting to " + type + ". Check registration for " + className;
 	}
