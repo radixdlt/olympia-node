@@ -19,6 +19,7 @@ package com.radixdlt.integration.distributed.simulation;
 
 import com.google.inject.Scopes;
 import com.radixdlt.ModuleRunner;
+import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.ProposerElectionFactory;
@@ -29,6 +30,7 @@ import com.radixdlt.consensus.VertexStoreEventProcessor;
 import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.View;
@@ -48,6 +50,9 @@ import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.sync.SyncRequestSender;
 import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.utils.UInt256;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 public class MockedLedgerModule extends AbstractModule {
 	@Override
@@ -59,18 +64,11 @@ public class MockedLedgerModule extends AbstractModule {
 	}
 
 	@Provides
-	@Singleton
-	public VertexStore vertexStore(
-		Vertex genesisVertex,
-		QuorumCertificate genesisQC,
-		VertexStoreFactory vertexStoreFactory,
-		Ledger ledger
-	) {
-		return vertexStoreFactory.create(genesisVertex, genesisQC, ledger);
+	BFTValidatorSet validatorSet(Stream<BFTNode> nodes) {
+		return BFTValidatorSet.from(nodes.map(node -> BFTValidator.from(node, UInt256.ONE)));
 	}
 
 	@Provides
-	@Singleton
 	public BFTInfoSender bftInfoSender(EpochInfoSender epochInfoSender) {
 		return new BFTInfoSender() {
 			@Override
@@ -83,6 +81,17 @@ public class MockedLedgerModule extends AbstractModule {
 				epochInfoSender.sendTimeoutProcessed(new Timeout(EpochView.of(1, view), leader));
 			}
 		};
+	}
+
+	@Provides
+	@Singleton
+	public VertexStore vertexStore(
+		BFTNode self,
+		Function<BFTNode, BFTConfiguration> config,
+		VertexStoreFactory vertexStoreFactory,
+		Ledger ledger
+	) {
+		return vertexStoreFactory.create(config.apply(self).getGenesisVertex(), config.apply(self).getGenesisQC(), ledger);
 	}
 
 	@Provides

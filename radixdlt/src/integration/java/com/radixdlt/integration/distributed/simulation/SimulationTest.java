@@ -32,12 +32,8 @@ import com.radixdlt.LedgerRxModule;
 import com.radixdlt.LedgerLocalMempoolModule;
 import com.radixdlt.RadixEngineModule;
 import com.radixdlt.RadixEngineRxModule;
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
 import com.radixdlt.integration.distributed.simulation.application.IncrementalBytesSubmittor;
 import com.radixdlt.integration.distributed.simulation.application.CommittedChecker;
@@ -129,8 +125,14 @@ public class SimulationTest {
 		private Function<Long, IntStream> epochToNodeIndexMapper;
 		private LedgerType ledgerType = LedgerType.MOCKED_LEDGER;
 		private int numInitialValidators = 0;
+		private boolean modifyOneGenesis = false;
 
 		private Builder() {
+		}
+
+		public Builder modifyOneGenesis(boolean modifyOneGenesis) {
+			this.modifyOneGenesis = modifyOneGenesis;
+			return this;
 		}
 
 		public Builder addOneProposalPerViewDropper() {
@@ -291,66 +293,54 @@ public class SimulationTest {
 		}
 
 		public SimulationTest build() {
-			ImmutableList.Builder<Module> ledgerModules = ImmutableList.builder();
-			ledgerModules.add(new AbstractModule() {
+			ImmutableList.Builder<Module> modules = ImmutableList.builder();
+			modules.add(new AbstractModule() {
 				@Provides
 				Stream<BFTNode> nodes() {
-					return nodes.stream()
-						.map(node -> BFTNode.create(node.getPublicKey()));
+					return nodes.stream().map(node -> BFTNode.create(node.getPublicKey()));
 				}
 			});
 
 			if (ledgerType == LedgerType.MOCKED_LEDGER) {
-				ledgerModules.add(new AbstractModule() {
-					@Provides
-					BFTValidatorSet validatorSet(Stream<BFTNode> nodes) {
-						return BFTValidatorSet.from(nodes.map(node -> BFTValidator.from(node, UInt256.ONE)));
-					}
-
-					@Provides
-					Vertex genesisVertex() {
-						return Vertex.createGenesis(LedgerHeader.genesis(Hash.ZERO_HASH));
-					}
-
-					@Provides
-					QuorumCertificate genesisQC(Vertex genesis) {
-						return QuorumCertificate.ofGenesis(genesis, LedgerHeader.genesis(Hash.ZERO_HASH));
-					}
-				});
-				ledgerModules.add(new MockedLedgerModule());
+				if (modifyOneGenesis) {
+					modules.add(new MockedBFTConfigurationOneDifferentGenesisModule(BFTNode.create(nodes.get(0).getPublicKey())));
+				} else {
+					modules.add(new MockedBFTConfigurationModule());
+				}
+				modules.add(new MockedLedgerModule());
 			} else {
-				ledgerModules.add(new ConsensusRunnerModule());
-				ledgerModules.add(new LedgerModule());
-				ledgerModules.add(new LedgerRxModule());
-				ledgerModules.add(new LedgerEpochChangeRxModule());
-				ledgerModules.add(new MockedSyncServiceModule());
+				modules.add(new ConsensusRunnerModule());
+				modules.add(new LedgerModule());
+				modules.add(new LedgerRxModule());
+				modules.add(new LedgerEpochChangeRxModule());
+				modules.add(new MockedSyncServiceModule());
 				final long limit = numInitialValidators == 0 ? Long.MAX_VALUE : numInitialValidators;
 
 				if (ledgerType == LedgerType.LEDGER) {
-					ledgerModules.add(new MockedCommandGeneratorModule());
-					ledgerModules.add(new MockedMempoolModule());
-					ledgerModules.add(new AbstractModule() {
+					modules.add(new MockedCommandGeneratorModule());
+					modules.add(new MockedMempoolModule());
+					modules.add(new AbstractModule() {
 						@Provides
 						BFTValidatorSet validatorSet(Stream<BFTNode> nodes) {
 							return BFTValidatorSet.from(nodes.limit(limit).map(node -> BFTValidator.from(node, UInt256.ONE)));
 						}
 					});
-					ledgerModules.add(new MockedStateComputerModule());
+					modules.add(new MockedStateComputerModule());
 				} else if (ledgerType == LedgerType.LEDGER_AND_EPOCHS) {
-					ledgerModules.add(new LedgerCommandGeneratorModule());
-					ledgerModules.add(new MockedMempoolModule());
-					ledgerModules.add(new LedgerEpochChangeModule());
+					modules.add(new LedgerCommandGeneratorModule());
+					modules.add(new MockedMempoolModule());
+					modules.add(new LedgerEpochChangeModule());
 					Function<Long, BFTValidatorSet> epochToValidatorSetMapping =
 						epochToNodeIndexMapper.andThen(indices -> BFTValidatorSet.from(
 							indices.mapToObj(nodes::get)
 								.map(node -> BFTNode.create(node.getPublicKey()))
 								.map(node -> BFTValidator.from(node, UInt256.ONE))
 								.collect(Collectors.toList())));
-					ledgerModules.add(new MockedStateComputerWithEpochsModule(epochHighView, epochToValidatorSetMapping));
+					modules.add(new MockedStateComputerWithEpochsModule(epochHighView, epochToValidatorSetMapping));
 				} else if (ledgerType == LedgerType.LEDGER_AND_LOCALMEMPOOL) {
-					ledgerModules.add(new LedgerCommandGeneratorModule());
-					ledgerModules.add(new LedgerLocalMempoolModule(10));
-					ledgerModules.add(new AbstractModule() {
+					modules.add(new LedgerCommandGeneratorModule());
+					modules.add(new LedgerLocalMempoolModule(10));
+					modules.add(new AbstractModule() {
 						@Override
 						protected void configure() {
 							bind(Mempool.class).to(LocalMempool.class);
@@ -361,11 +351,11 @@ public class SimulationTest {
 							return BFTValidatorSet.from(nodes.limit(limit).map(node -> BFTValidator.from(node, UInt256.ONE)));
 						}
 					});
-					ledgerModules.add(new MockedStateComputerModule());
+					modules.add(new MockedStateComputerModule());
 				} else if (ledgerType == LedgerType.LEDGER_AND_RADIXENGINE) {
-					ledgerModules.add(new LedgerCommandGeneratorModule());
-					ledgerModules.add(new LedgerLocalMempoolModule(10));
-					ledgerModules.add(new AbstractModule() {
+					modules.add(new LedgerCommandGeneratorModule());
+					modules.add(new LedgerLocalMempoolModule(10));
+					modules.add(new AbstractModule() {
 						@Override
 						protected void configure() {
 							bind(Mempool.class).to(LocalMempool.class);
@@ -376,10 +366,10 @@ public class SimulationTest {
 							return BFTValidatorSet.from(nodes.limit(limit).map(node -> BFTValidator.from(node, UInt256.ONE)));
 						}
 					});
-					ledgerModules.add(new LedgerEpochChangeModule());
-					ledgerModules.add(new RadixEngineModule(epochHighView, true));
-					ledgerModules.add(new RadixEngineRxModule());
-					ledgerModules.add(new MockedRadixEngineStoreModule());
+					modules.add(new LedgerEpochChangeModule());
+					modules.add(new RadixEngineModule(epochHighView, true));
+					modules.add(new RadixEngineRxModule());
+					modules.add(new MockedRadixEngineStoreModule());
 				}
 			}
 
@@ -402,7 +392,7 @@ public class SimulationTest {
 				latencyProvider.copyOf(),
 				pacemakerTimeout,
 				getVerticesRPCEnabled,
-				ledgerModules.build(),
+				modules.build(),
 				checks,
 				runners
 			);
