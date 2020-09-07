@@ -40,22 +40,27 @@ public final class VerifiedLedgerHeaderAndProof {
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
+	// proposed
 	@JsonProperty("opaque0")
 	@DsonOutput(Output.ALL)
 	private final BFTHeader opaque0;
 
+	// parent
 	@JsonProperty("opaque1")
 	@DsonOutput(Output.ALL)
 	private final BFTHeader opaque1;
 
+	// committed view
 	@JsonProperty("opaque2")
 	@DsonOutput(Output.ALL)
 	private final long opaque2;
 
+	// committed vertexId
 	@JsonProperty("opaque3")
 	@DsonOutput(Output.ALL)
 	private final Hash opaque3;
 
+	// committed ledgerState
 	@JsonProperty("ledgerState")
 	@DsonOutput(Output.ALL)
 	private final LedgerHeader ledgerHeader;
