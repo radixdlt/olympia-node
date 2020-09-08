@@ -26,22 +26,24 @@ import static org.powermock.api.mockito.PowerMockito.when;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.constraintmachine.CMInstruction;
+import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
-import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.statecomputer.CommandToBinaryConverter;
 import com.radixdlt.middleware2.store.CommittedAtomsStore.AtomIndexer;
+import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.SearchCursor;
-import com.radixdlt.syncer.CommittedCommand;
-import java.util.Objects;
+import com.radixdlt.ledger.CommittedCommand;
+import java.util.HashSet;
 import java.util.Optional;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.junit.Before;
 import org.junit.Test;
@@ -51,43 +53,76 @@ public class CommittedAtomsStoreTest {
 	private LedgerEntryStore store;
 	private CommandToBinaryConverter commandToBinaryConverter;
 	private ClientAtomToBinaryConverter clientAtomToBinaryConverter;
+	private CommittedAtomSender committedAtomSender;
 	private AtomIndexer atomIndexer;
+	private Serialization serialization;
 
 	@Before
 	public void setUp() {
+		this.committedAtomSender = mock(CommittedAtomSender.class);
 		this.store = mock(LedgerEntryStore.class);
 		this.commandToBinaryConverter = mock(CommandToBinaryConverter.class);
 		this.clientAtomToBinaryConverter = mock(ClientAtomToBinaryConverter.class);
 		this.atomIndexer = mock(AtomIndexer.class);
+		this.serialization = mock(Serialization.class);
 
-		this.committedAtomsStore = new CommittedAtomsStore(store, commandToBinaryConverter, clientAtomToBinaryConverter, atomIndexer);
+		this.committedAtomsStore = new CommittedAtomsStore(
+			committedAtomSender,
+			store,
+			commandToBinaryConverter,
+			clientAtomToBinaryConverter,
+			atomIndexer,
+			serialization
+		);
 	}
 
 	@Test
-	public void when_get_atom_containing__then_should_return_atom() {
-		Particle particle = mock(Particle.class);
-		when(particle.euid()).thenReturn(EUID.ONE);
-		// No type check issues with mocking generic here
-		@SuppressWarnings("unchecked")
-		Consumer<CommittedAtom> callback = mock(Consumer.class);
+	public void when_compute_and_empty__then_should_return_initial_state() {
+		when(serialization.getIdForClass(any())).thenReturn("test");
+		when(store.search(any(), any(), any())).thenReturn(null);
+		Object initial = mock(Object.class);
+		Object result = committedAtomsStore.compute(Particle.class, initial, (o, v) -> {
+			throw new RuntimeException();
+		}, (o, v) -> {
+			throw new RuntimeException();
+		});
+
+		assertThat(result).isEqualTo(initial);
+	}
+
+	@Test
+	public void when_compute_and_not_empty__then_should_scan_and_compute() {
+		when(serialization.getIdForClass(any())).thenReturn("test");
+
+		// TODO: Cleanup this transformation mess
 		SearchCursor searchCursor = mock(SearchCursor.class);
+		when(store.search(any(), any(), any())).thenReturn(searchCursor);
 		AID aid = mock(AID.class);
 		when(searchCursor.get()).thenReturn(aid);
-		when(store.search(any(), any(), any())).thenReturn(searchCursor);
 		LedgerEntry ledgerEntry = mock(LedgerEntry.class);
-		when(ledgerEntry.getContent()).thenReturn(new byte[0]);
-
-		VertexMetadata vertexMetadata = mock((VertexMetadata.class));
+		when(store.get(eq(aid))).thenReturn(Optional.of(ledgerEntry));
+		CommittedCommand committedCommand = mock(CommittedCommand.class);
 		Command command = mock(Command.class);
 		ClientAtom clientAtom = mock(ClientAtom.class);
+		CMInstruction cmInstruction = mock(CMInstruction.class);
+		when(clientAtom.getCMInstruction()).thenReturn(cmInstruction);
+		when(cmInstruction.getMicroInstructions())
+			.thenReturn(ImmutableList.of(
+				CMMicroInstruction.checkSpin(mock(Particle.class), Spin.NEUTRAL),
+				CMMicroInstruction.push(mock(Particle.class))
+			));
 		when(command.map(any())).thenReturn(clientAtom);
-		CommittedCommand committedCommand = new CommittedCommand(command, vertexMetadata);
+		when(committedCommand.getCommand()).thenReturn(command);
 		when(commandToBinaryConverter.toCommand(any())).thenReturn(committedCommand);
-		when(store.get(eq(aid))).thenReturn(Optional.of(ledgerEntry));
+		HashSet<Particle> result = committedAtomsStore.compute(Particle.class, new HashSet<>(), (s, v) -> {
+			s.add(v);
+			return s;
+		}, (s, v) -> {
+			s.remove(v);
+			return s;
+		});
 
-		committedAtomsStore.getAtomContaining(particle, true, callback);
-		verify(callback, times(1))
-			.accept(argThat(a -> Objects.equals(a.getClientAtom(), clientAtom) && a.getVertexMetadata().equals(vertexMetadata)));
+		assertThat(result).hasSize(1);
 	}
 
 

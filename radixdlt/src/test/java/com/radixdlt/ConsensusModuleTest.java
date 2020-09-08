@@ -34,7 +34,7 @@ import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
-import com.radixdlt.consensus.SyncedExecutor;
+import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
@@ -43,6 +43,7 @@ import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
+import com.radixdlt.consensus.sync.SyncRequestSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.network.TimeSupplier;
 import io.reactivex.rxjava3.core.Observable;
@@ -51,7 +52,6 @@ import org.junit.Test;
 public class ConsensusModuleTest {
 	private static class ExternalConsensusModule extends AbstractModule {
 		@Override
-		@SuppressWarnings("unchecked")
 		protected void configure() {
 			CommittedStateSyncRx committedStateSyncRx = mock(CommittedStateSyncRx.class);
 			when(committedStateSyncRx.committedStateSyncs()).thenReturn(Observable.never());
@@ -76,7 +76,7 @@ public class ConsensusModuleTest {
 			when(syncVerticesRPCRx.responses()).thenReturn(Observable.never());
 			bind(SyncVerticesRPCRx.class).toInstance(syncVerticesRPCRx);
 
-			bind(SyncedExecutor.class).toInstance(mock(SyncedExecutor.class));
+			bind(Ledger.class).toInstance(mock(Ledger.class));
 			bind(BFTEventSender.class).toInstance(mock(BFTEventSender.class));
 			bind(SyncVerticesRPCSender.class).toInstance(mock(SyncVerticesRPCSender.class));
 			bind(VertexStoreEventSender.class).toInstance(mock(VertexStoreEventSender.class));
@@ -89,6 +89,7 @@ public class ConsensusModuleTest {
 			bind(HashVerifier.class).toInstance(mock(HashVerifier.class));
 			bind(HashSigner.class).toInstance(mock(HashSigner.class));
 			bind(EpochChange.class).toInstance(mock(EpochChange.class));
+			bind(SyncRequestSender.class).toInstance(mock(SyncRequestSender.class));
 			bind(BFTNode.class).annotatedWith(Names.named("self")).toInstance(mock(BFTNode.class));
 		}
 	}

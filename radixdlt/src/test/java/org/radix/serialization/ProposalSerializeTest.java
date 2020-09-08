@@ -18,6 +18,7 @@
 package org.radix.serialization;
 
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.PreparedCommand;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
@@ -39,8 +40,9 @@ public class ProposalSerializeTest extends SerializeObject<Proposal> {
 		View view = View.of(1234567891L);
 		Hash id = Hash.random();
 
-		VertexMetadata vertexMetadata = new VertexMetadata(0, view, id, 1, null, Hash.ZERO_HASH);
-		VertexMetadata parent = new VertexMetadata(0, View.of(1234567890L), Hash.random(), 0, null, Hash.ZERO_HASH);
+		PreparedCommand preparedCommand = PreparedCommand.create(0, 0L, false);
+		VertexMetadata vertexMetadata = new VertexMetadata(0, view, id, preparedCommand);
+		VertexMetadata parent = new VertexMetadata(0, View.of(1234567890L), Hash.random(), preparedCommand);
 		VoteData voteData = new VoteData(vertexMetadata, parent, null);
 		QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 		Command command = new Command(new byte[] {0, 1, 2, 3});

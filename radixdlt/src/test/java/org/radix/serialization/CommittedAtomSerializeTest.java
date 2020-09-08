@@ -20,18 +20,19 @@ package org.radix.serialization;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atommodel.message.MessageParticle;
+import com.radixdlt.consensus.PreparedCommand;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.ClientAtom.LedgerAtomConversionException;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.utils.UInt256;
-import java.util.Collections;
 
 public class CommittedAtomSerializeTest extends SerializeObject<CommittedAtom> {
 	public CommittedAtomSerializeTest() {
@@ -55,9 +56,7 @@ public class CommittedAtomSerializeTest extends SerializeObject<CommittedAtom> {
 		}
 
 		return new CommittedAtom(clientAtom, VertexMetadata.ofGenesisAncestor(
-			BFTValidatorSet.from(ImmutableSet.of(
-				BFTValidator.from(BFTNode.create(ECKeyPair.generateNew().getPublicKey()), UInt256.ONE)
-			))
+			PreparedCommand.create(0, 0L, false)
 		));
 	}
 

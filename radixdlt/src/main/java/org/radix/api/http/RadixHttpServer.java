@@ -19,6 +19,7 @@ package org.radix.api.http;
 
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.systeminfo.InMemorySystemInfoManager;
+import com.google.common.io.CharStreams;
 import com.radixdlt.api.CommittedAtomsRx;
 import com.radixdlt.api.SubmissionErrorsRx;
 import com.radixdlt.consensus.ConsensusRunner;
@@ -58,6 +59,9 @@ import org.radix.time.Time;
 import org.radix.universe.system.LocalSystem;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
@@ -77,6 +81,7 @@ public final class RadixHttpServer {
 	private static final Logger logger = LogManager.getLogger();
 
 	private final ConcurrentHashMap<RadixJsonRpcPeer, WebSocketChannel> peers;
+	private final ConsensusRunner consensusRunner;
 	private final AtomsService atomsService;
 	private final RadixJsonRpcServer jsonRpcServer;
 	private final InternalService internalService;
@@ -104,6 +109,7 @@ public final class RadixHttpServer {
 		AddressBook addressBook
 	) {
 		this.infoStateRunner = Objects.requireNonNull(infoStateRunner);
+		this.consensusRunner = Objects.requireNonNull(consensusRunner);
 		this.universe = Objects.requireNonNull(universe);
 		this.serialization = Objects.requireNonNull(serialization);
 		this.apiSerializedUniverse = serialization.toJsonObject(this.universe, DsonOutput.Output.API);
@@ -282,6 +288,8 @@ public final class RadixHttpServer {
 			respond(result, exchange);
 		}, handler);
 
+		addRoute("/api/bft/0", Methods.PUT_STRING, this::handleBftState, handler);
+
 		// keep-alive
 		addGetRoute("/api/ping", exchange -> {
 			JSONObject obj = new JSONObject();
@@ -360,6 +368,34 @@ public final class RadixHttpServer {
 		result.put("closedCount", peersCopy.size());
 
 		return result;
+	}
+
+	/**
+	 * Handle PUT request for changing BFT state.
+	 * <p>
+	 * Put request takes two parameters:
+	 * <ul>
+	 *   <li><b>id</b> the ID of the BFT instance (must be {@code 0} for now)</li>
+	 *   <li><b>state</b> {@code true} to enable the specified instance id, otherwise
+	 *     the instance is disabled
+	 * </ul>
+	 *
+	 * @param exchange The {@link HttpServerExchange} to use
+	 * @throws IOException if an error occurs parsing form data
+	 */
+	private void handleBftState(HttpServerExchange exchange) throws IOException {
+		exchange.startBlocking();
+		try (InputStream httpStream = exchange.getInputStream();
+			InputStreamReader httpStreamReader = new InputStreamReader(httpStream, StandardCharsets.UTF_8)) {
+			String requestBody = CharStreams.toString(httpStreamReader);
+			JSONObject values = new JSONObject(requestBody);
+			if (values.getBoolean("state")) {
+				consensusRunner.start();
+			} else {
+				consensusRunner.stop();
+			}
+		}
+		exchange.setStatusCode(StatusCodes.OK);
 	}
 
 	/**

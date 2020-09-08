@@ -44,12 +44,16 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.radix.network.messaging.Message;
 
 /**
  * Network interface for syncing vertices using the MessageCentral
  */
 public class MessageCentralValidatorSync implements SyncVerticesRPCSender, SyncVerticesRPCRx, SyncEpochsRPCSender, SyncEpochsRPCRx {
+	private static final Logger log = LogManager.getLogger();
 
 	private final BFTNode self;
 	private final int magic;
@@ -80,8 +84,8 @@ public class MessageCentralValidatorSync implements SyncVerticesRPCSender, SyncV
 
 		final Optional<Peer> peer = this.addressBook.peer(node.getKey().euid());
 		if (!peer.isPresent()) {
-			// TODO: Change to more appropriate exception type
-			throw new IllegalStateException(String.format("Peer with pubkey %s not present", node));
+			log.warn("{}: Peer {} not in address book when sending GetVerticesRequest", this.self, node);
+			return;
 		}
 
 		opaqueCache.put(id, opaque);
@@ -192,8 +196,8 @@ public class MessageCentralValidatorSync implements SyncVerticesRPCSender, SyncV
 	public void sendGetEpochRequest(BFTNode node, long epoch) {
 		final Optional<Peer> peer = this.addressBook.peer(node.getKey().euid());
 		if (!peer.isPresent()) {
-			// TODO: Change to more appropriate exception type
-			throw new IllegalStateException(String.format("Peer with pubkey %s not present", node));
+			log.warn("{}: Peer {} not in address book when sending GetEpochRequest", this.self, node);
+			return;
 		}
 
 		final GetEpochRequestMessage epochRequest = new GetEpochRequestMessage(this.self, this.magic, epoch);
@@ -204,8 +208,8 @@ public class MessageCentralValidatorSync implements SyncVerticesRPCSender, SyncV
 	public void sendGetEpochResponse(BFTNode node, VertexMetadata ancestor) {
 		final Optional<Peer> peer = this.addressBook.peer(node.getKey().euid());
 		if (!peer.isPresent()) {
-			// TODO: Change to more appropriate exception type
-			throw new IllegalStateException(String.format("Peer with pubkey %s not present", node));
+			log.warn("{}: Peer {} not in address book when sending GetEpochResponse", this.self, node);
+			return;
 		}
 
 		final GetEpochResponseMessage epochResponseMessage = new GetEpochResponseMessage(this.self, this.magic, ancestor);

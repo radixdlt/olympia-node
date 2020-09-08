@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.syncer.CommittedCommand;
+import com.radixdlt.ledger.CommittedCommand;
 import org.radix.network.messaging.Message;
 
 /**

@@ -19,10 +19,11 @@ package com.radixdlt.statecomputer;
 
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.PreparedCommand;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.syncer.CommittedCommand;
+import com.radixdlt.ledger.CommittedCommand;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -38,7 +39,8 @@ public class CommandToBinaryConverterTest {
 
 	@Test
 	public void test_atom_content_transformation_to_byte_array_and_back() {
-		VertexMetadata vertexMetadata = new VertexMetadata(0, View.of(1), Hash.random(), 0, null, Hash.ZERO_HASH);
+		PreparedCommand preparedCommand = PreparedCommand.create(0, 0L, false);
+		VertexMetadata vertexMetadata = new VertexMetadata(0, View.of(1), Hash.random(), preparedCommand);
 		CommittedCommand committedCommand = new CommittedCommand(new Command(new byte[] {0, 1, 2, 3}), vertexMetadata);
 
 		byte[] serializedCommand = commandToBinaryConverter.toLedgerEntryContent(committedCommand);

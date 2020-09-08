@@ -20,10 +20,12 @@ package com.radixdlt.integration.distributed.simulation;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.PreparedCommand;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.syncer.SyncExecutor.StateComputer;
+import com.radixdlt.ledger.StateComputerLedger.StateComputer;
+
 import java.util.Optional;
 
 public class MockedStateComputerModule extends AbstractModule {
@@ -33,21 +35,29 @@ public class MockedStateComputerModule extends AbstractModule {
 		this.validatorSet = validatorSet;
 	}
 
+
+	@Provides
+	private BFTValidatorSet genesisValidatorSet() {
+		return validatorSet;
+	}
+
 	@Provides
 	private VertexMetadata genesisMetadata() {
-		return VertexMetadata.ofGenesisAncestor(validatorSet);
+		final PreparedCommand preparedCommand = PreparedCommand.create(0, 0L, true);
+		return VertexMetadata.ofGenesisAncestor(preparedCommand);
 	}
 
 	@Provides
 	private StateComputer stateComputer() {
 		return new StateComputer() {
 			@Override
-			public Optional<BFTValidatorSet> prepare(Vertex vertex) {
-				return Optional.empty();
+			public boolean prepare(Vertex vertex) {
+				return false;
 			}
 
 			@Override
-			public void commit(Command command, VertexMetadata vertexMetadata) {
+			public Optional<BFTValidatorSet> commit(Command command, VertexMetadata vertexMetadata) {
+				return Optional.empty();
 			}
 		};
 	}

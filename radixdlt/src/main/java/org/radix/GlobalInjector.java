@@ -26,18 +26,21 @@ import com.google.inject.name.Names;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.CryptoModule;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.ExecutionEpochChangeModule;
-import com.radixdlt.ExecutionEpochChangeRxModule;
-import com.radixdlt.ExecutionLocalMempoolModule;
+import com.radixdlt.LedgerEpochChangeModule;
+import com.radixdlt.LedgerEpochChangeRxModule;
+import com.radixdlt.LedgerLocalMempoolModule;
 import com.radixdlt.PersistenceModule;
-import com.radixdlt.StateComputerModule;
-import com.radixdlt.StateComputerRxModule;
+import com.radixdlt.RadixEngineModule;
+import com.radixdlt.RadixEngineRxModule;
+import com.radixdlt.RadixEngineStoreModule;
 import com.radixdlt.SyncCommittedServiceModule;
 import com.radixdlt.SyncMempoolServiceModule;
-import com.radixdlt.ExecutionRxModule;
-import com.radixdlt.ExecutionModule;
+import com.radixdlt.LedgerRxModule;
+import com.radixdlt.LedgerModule;
+import com.radixdlt.SyncRxModule;
 import com.radixdlt.SystemInfoRxModule;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.crypto.ECKeyPair;
@@ -91,7 +94,7 @@ public class GlobalInjector {
 
 		final int pacemakerTimeout = properties.get("consensus.pacemaker_timeout_millis", 5000);
 		final int fixedNodeCount = properties.get("consensus.fixed_node_count", 1);
-		final long viewsPerEpoch = properties.get("epochs.views_per_epoch", 100L);
+		final View epochHighView = View.of(properties.get("epochs.views_per_epoch", 100L));
 		final int mempoolMaxSize = properties.get("mempool.maxSize", 1000);
 
 		injector = Guice.createInjector(
@@ -99,20 +102,22 @@ public class GlobalInjector {
 			new CryptoModule(),
 			new ConsensusModule(pacemakerTimeout),
 
-			// Execution
-			new ExecutionModule(),
-			new ExecutionRxModule(),
-			new ExecutionEpochChangeModule(),
-			new ExecutionEpochChangeRxModule(),
-			new ExecutionLocalMempoolModule(mempoolMaxSize),
+			// Ledger
+			new LedgerModule(),
+			new LedgerRxModule(),
+			new LedgerEpochChangeModule(),
+			new LedgerEpochChangeRxModule(),
+			new LedgerLocalMempoolModule(mempoolMaxSize),
+
+			// State Computer
+			new RadixEngineModule(epochHighView, false),
+			new RadixEngineRxModule(),
+			new RadixEngineStoreModule(fixedNodeCount),
 
 			new PersistenceModule(),
 
-			// State Computer
-			new StateComputerModule(fixedNodeCount, viewsPerEpoch),
-			new StateComputerRxModule(),
-
 			// Synchronization
+			new SyncRxModule(),
 			new SyncCommittedServiceModule(),
 			new SyncMempoolServiceModule(),
 

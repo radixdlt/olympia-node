@@ -17,48 +17,93 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.crypto.Hash;
-import java.util.Optional;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.serialization.SerializerConstants;
+import com.radixdlt.serialization.SerializerDummy;
+import com.radixdlt.serialization.SerializerId2;
+import java.util.Objects;
+import javax.annotation.concurrent.Immutable;
 
 /**
  * Results from a prepared stage execution. All fields should be persisted on ledger.
  */
+@Immutable
+@SerializerId2("consensus.prepared_command")
 public final class PreparedCommand {
+	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
+	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
+	SerializerDummy serializer = SerializerDummy.DUMMY;
+
+	@JsonProperty("stateVersion")
+	@DsonOutput(Output.ALL)
 	private final long stateVersion;
-	private final Hash timestampedSignaturesHash;
-	private final BFTValidatorSet nextValidatorSet;
 
-	private PreparedCommand(long stateVersion, Hash timestampedSignaturesHash, BFTValidatorSet nextValidatorSet) {
+	@JsonProperty("timestamp")
+	@DsonOutput(Output.ALL)
+	private final long timestamp;
+
+	@JsonProperty("isEndOfEpoch")
+	@DsonOutput(Output.ALL)
+	private final boolean isEndOfEpoch;
+
+	// TODO: Replace isEndOfEpoch with nextValidatorSet
+	@JsonCreator
+	private PreparedCommand(
+		@JsonProperty("stateVersion") long stateVersion,
+		@JsonProperty("timestamp") long timestamp,
+		@JsonProperty("isEndOfEpoch") boolean isEndOfEpoch
+	) {
 		this.stateVersion = stateVersion;
-		this.nextValidatorSet = nextValidatorSet;
-		this.timestampedSignaturesHash = timestampedSignaturesHash;
+		this.isEndOfEpoch = isEndOfEpoch;
+		this.timestamp = timestamp;
 	}
 
 	public static PreparedCommand create(
 		long stateVersion,
-		Hash timestampedSignaturesHash
+		long timestamp,
+		boolean isEndOfEpoch
 	) {
-		return new PreparedCommand(stateVersion, timestampedSignaturesHash, null);
-	}
-
-	public static PreparedCommand create(
-		long stateVersion,
-		Hash timestampedSignaturesHash,
-		BFTValidatorSet nextValidatorSet
-	) {
-		return new PreparedCommand(stateVersion, timestampedSignaturesHash, nextValidatorSet);
+		return new PreparedCommand(stateVersion, timestamp, isEndOfEpoch);
 	}
 
 	public long getStateVersion() {
 		return stateVersion;
 	}
 
-	public Optional<BFTValidatorSet> getNextValidatorSet() {
-		return Optional.ofNullable(nextValidatorSet);
+	public boolean isEndOfEpoch() {
+		return isEndOfEpoch;
 	}
 
-	public Hash getTimestampedSignaturesHash() {
-		return timestampedSignaturesHash;
+	public long timestamp() {
+		return this.timestamp;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(this.stateVersion, this.timestamp, this.isEndOfEpoch);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (o == this) {
+			return true;
+		}
+		if (o instanceof PreparedCommand) {
+			PreparedCommand other = (PreparedCommand) o;
+			return this.timestamp == other.timestamp
+				&& this.stateVersion == other.stateVersion
+				&& this.isEndOfEpoch == other.isEndOfEpoch;
+		}
+		return false;
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{stateVersion=%s timestamp=%s isEndOfEpoch=%s}",
+			getClass().getSimpleName(), this.stateVersion, this.timestamp, this.isEndOfEpoch
+		);
 	}
 }

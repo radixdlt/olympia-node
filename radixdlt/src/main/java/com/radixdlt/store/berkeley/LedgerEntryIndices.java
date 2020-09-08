@@ -25,7 +25,6 @@ import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.store.LedgerEntry;
-import com.radixdlt.consensus.tempo.TempoException;
 
 import java.util.List;
 import java.util.Set;
@@ -74,7 +73,7 @@ public final class LedgerEntryIndices {
 			.filter(index -> index.getPrefix() == ENTRY_INDEX_PREFIX || index.getPrefix() == SHARD_INDEX_PREFIX)
 			.collect(Collectors.toList());
 		if (!offendingIndices.isEmpty()) {
-			throw new TempoException(String.format(
+			throw new BerkeleyStoreException(String.format(
 				"Prefixes %s and %s are reserved for internal use but are used by %s",
 				ENTRY_INDEX_PREFIX, SHARD_INDEX_PREFIX, offendingIndices));
 		}

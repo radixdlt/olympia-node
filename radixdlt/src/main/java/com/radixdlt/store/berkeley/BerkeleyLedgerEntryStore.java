@@ -32,7 +32,6 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.store.LedgerEntry;
-import com.radixdlt.consensus.tempo.TempoException;
 import com.radixdlt.store.LedgerEntryConflict;
 import com.radixdlt.store.LedgerEntryStoreResult;
 import com.radixdlt.store.LedgerEntryStatus;
@@ -144,7 +143,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 			this.atomIndices = env.openDatabase(null, ATOM_INDICES_DB_NAME, primaryConfig);
 			this.pending = env.openDatabase(null, PENDING_DB_NAME, pendingConfig);
 		} catch (Exception e) {
-			throw new TempoException("Error while opening databases", e);
+			throw new BerkeleyStoreException("Error while opening databases", e);
 		}
 
 		if (System.getProperty("db.check_integrity", "1").equals("1")) {
@@ -179,7 +178,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 					transaction.abort();
 				}
 
-				throw new TempoException("Error while resetting databases", e);
+				throw new BerkeleyStoreException("Error while resetting databases", e);
 			}
 		});
 	}
@@ -205,12 +204,12 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 
 	private void fail(String message) {
 		log.error(message);
-		throw new TempoException(message);
+		throw new BerkeleyStoreException(message);
 	}
 
 	private void fail(String message, Exception cause) {
 		log.error(message, cause);
-		throw new TempoException(message, cause);
+		throw new BerkeleyStoreException(message, cause);
 	}
 
 	@Override
@@ -596,7 +595,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 
 			return null;
 		} catch (Exception ex) {
-			throw new TempoException("Error while advancing cursor", ex);
+			throw new BerkeleyStoreException("Error while advancing cursor", ex);
 		}
 	}
 
@@ -612,7 +611,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 
 			return null;
 		} catch (Exception ex) {
-			throw new TempoException("Error while advancing cursor", ex);
+			throw new BerkeleyStoreException("Error while advancing cursor", ex);
 		}
 	}
 
@@ -632,7 +631,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 
 			return null;
 		} catch (Exception ex) {
-			throw new TempoException("Error while advancing cursor", ex);
+			throw new BerkeleyStoreException("Error while advancing cursor", ex);
 		}
 	}
 
@@ -653,7 +652,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 
 			return null;
 		} catch (Exception ex) {
-			throw new TempoException("Error while advancing cursor", ex);
+			throw new BerkeleyStoreException("Error while advancing cursor", ex);
 		}
 	}
 

@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.PendingVotes;
+import com.radixdlt.consensus.PreparedCommand;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
@@ -145,12 +146,8 @@ public class BFTEventReducerTest {
 	@Test
 	public void when_processing_vote_as_not_proposer__then_nothing_happens() {
 		Vote voteMessage = mock(Vote.class);
-		VertexMetadata proposal = new VertexMetadata(
-			0, View.of(2), Hash.random(), 2, null, Hash.ZERO_HASH
-		);
-		VertexMetadata parent = new VertexMetadata(
-			0, View.of(1), Hash.random(), 1, null, Hash.ZERO_HASH
-		);
+		VertexMetadata proposal = new VertexMetadata(0, View.of(2), Hash.random(), mock(PreparedCommand.class));
+		VertexMetadata parent = new VertexMetadata(0, View.of(1), Hash.random(), mock(PreparedCommand.class));
 		VoteData voteData = new VoteData(proposal, parent, null);
 		when(voteMessage.getVoteData()).thenReturn(voteData);
 
@@ -164,12 +161,8 @@ public class BFTEventReducerTest {
 		when(proposerElection.getProposer(any())).thenReturn(this.self);
 
 		Vote vote = mock(Vote.class);
-		VertexMetadata proposal = new VertexMetadata(
-			0, View.of(2), Hash.random(), 2, null, Hash.ZERO_HASH
-		);
-		VertexMetadata parent = new VertexMetadata(
-			0, View.of(1), Hash.random(), 1, null, Hash.ZERO_HASH
-		);
+		VertexMetadata proposal = new VertexMetadata(0, View.of(2), Hash.random(), mock(PreparedCommand.class));
+		VertexMetadata parent = new VertexMetadata(0, View.of(1), Hash.random(), mock(PreparedCommand.class));
 		VoteData voteData = new VoteData(proposal, parent, null);
 		when(vote.getVoteData()).thenReturn(voteData);
 		when(vote.getAuthor()).thenReturn(mock(BFTNode.class));
@@ -217,7 +210,9 @@ public class BFTEventReducerTest {
 		when(pacemaker.processNewView(any(), any())).thenReturn(Optional.of(View.of(1L)));
 		when(proposerElection.getProposer(any())).thenReturn(self);
 		QuorumCertificate highQC = mock(QuorumCertificate.class);
-		when(highQC.getProposed()).thenReturn(mock(VertexMetadata.class));
+		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
+		when(vertexMetadata.getPreparedCommand()).thenReturn(mock(PreparedCommand.class));
+		when(highQC.getProposed()).thenReturn(vertexMetadata);
 		when(vertexStore.getHighestQC()).thenReturn(highQC);
 		when(nextCommandGenerator.generateNextCommand(eq(View.of(1L)), any())).thenReturn(mock(Command.class));
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of());

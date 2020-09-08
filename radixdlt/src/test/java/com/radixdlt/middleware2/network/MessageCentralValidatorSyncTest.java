@@ -22,6 +22,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -78,15 +79,21 @@ public class MessageCentralValidatorSyncTest {
 	}
 
 	@Test
-	public void when_get_vertex_and_peer_doesnt_exist__should_receive_error() {
+	public void when_get_vertex_and_peer_doesnt_exist__no_request_sent() {
 		BFTNode node = mock(BFTNode.class);
 		ECPublicKey key = mock(ECPublicKey.class);
 		EUID euid = mock(EUID.class);
 		when(key.euid()).thenReturn(euid);
 		when(node.getKey()).thenReturn(key);
 		when(addressBook.peer(euid)).thenReturn(Optional.empty());
-		assertThatThrownBy(() -> sync.sendGetVerticesRequest(mock(Hash.class), node, 1, new Object()))
-			.isInstanceOf(IllegalStateException.class);
+		sync.sendGetVerticesRequest(mock(Hash.class), node, 1, new Object());
+
+		// Some attempt was made to discover peer
+		verify(this.addressBook, times(1)).peer(any(EUID.class));
+
+		// No messages sent or injected
+		verify(this.messageCentral, never()).send(any(), any());
+		verify(this.messageCentral, never()).inject(any(), any());
 	}
 
 	@Test

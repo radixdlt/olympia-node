@@ -17,13 +17,10 @@
 
 package com.radixdlt.middleware2.network;
 
-import com.google.common.collect.ImmutableSet;
+import com.radixdlt.consensus.PreparedCommand;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.utils.UInt256;
 import org.radix.serialization.SerializeMessageObject;
 
 public class GetEpochResponseMessageSerializeTest extends SerializeMessageObject<GetEpochResponseMessage> {
@@ -33,10 +30,7 @@ public class GetEpochResponseMessageSerializeTest extends SerializeMessageObject
 
 	private static GetEpochResponseMessage get() {
 		BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
-		ECKeyPair keyPair = ECKeyPair.generateNew();
-		BFTValidatorSet bftValidatorSet = BFTValidatorSet.from(ImmutableSet.of(
-			BFTValidator.from(BFTNode.create(keyPair.getPublicKey()), UInt256.ONE)
-		));
-		return new GetEpochResponseMessage(author, 12345, VertexMetadata.ofGenesisAncestor(bftValidatorSet));
+		PreparedCommand preparedCommand = PreparedCommand.create(0, 0L, false);
+		return new GetEpochResponseMessage(author, 12345, VertexMetadata.ofGenesisAncestor(preparedCommand));
 	}
 }

@@ -17,13 +17,10 @@
 
 package com.radixdlt.consensus.safety;
 
-import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.DefaultHasher;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.safety.SafetyState.Builder;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
@@ -33,7 +30,6 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.PreparedCommand;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.utils.UInt256;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -46,11 +42,7 @@ import static org.mockito.Mockito.when;
  * This tests that the {@link SafetyRules} implementation obeys HotStuff's safety and commit rules.
  */
 public class SafetyRulesTest {
-	private static final VertexMetadata genesisAncestor = VertexMetadata.ofGenesisAncestor(
-		BFTValidatorSet.from(
-			ImmutableSet.of(BFTValidator.from(BFTNode.create(ECKeyPair.generateNew().getPublicKey()), UInt256.ONE))
-		)
-	);
+	private static final VertexMetadata genesisAncestor = VertexMetadata.ofGenesisAncestor(mock(PreparedCommand.class));
 	private static final VoteData GENESIS_DATA = new VoteData(genesisAncestor, genesisAncestor, null);
 	private static final QuorumCertificate GENESIS_QC = new QuorumCertificate(GENESIS_DATA, new TimestampedECDSASignatures());
 
@@ -121,7 +113,8 @@ public class SafetyRulesTest {
 		when(safetyState.toBuilder()).thenReturn(mock(Builder.class));
 
 		Vertex grandParent = Vertex.createVertex(GENESIS_QC, View.of(1), null);
-		VoteData voteData = new VoteData(VertexMetadata.ofVertex(grandParent, mock(PreparedCommand.class)), grandParent.getQC().getProposed(), null);
+		VertexMetadata committed = VertexMetadata.ofVertex(grandParent, mock(PreparedCommand.class));
+		VoteData voteData = new VoteData(committed, grandParent.getQC().getProposed(), null);
 		QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 
 		Vertex parent = Vertex.createVertex(qc, View.of(2), null);
@@ -131,7 +124,7 @@ public class SafetyRulesTest {
 		Vertex proposal = Vertex.createVertex(parentQC, View.of(3), null);
 
 		Vote vote = safetyRules.voteFor(proposal, mock(VertexMetadata.class), 0L, 0L);
-		assertThat(vote.getVoteData().getCommitted()).hasValue(VertexMetadata.ofVertex(grandParent, mock(PreparedCommand.class)));
+		assertThat(vote.getVoteData().getCommitted()).hasValue(committed);
 	}
 
 	@Test
@@ -163,10 +156,10 @@ public class SafetyRulesTest {
 
 		Hash toBeCommitted = mock(Hash.class);
 
-		VertexMetadata committed = new VertexMetadata(0, View.of(1), toBeCommitted, 1, null, Hash.ZERO_HASH);
+		VertexMetadata committed = new VertexMetadata(0, View.of(1), toBeCommitted, mock(PreparedCommand.class));
 		VoteData voteData = new VoteData(
-			new VertexMetadata(0, View.of(3), mock(Hash.class), 3, null, Hash.ZERO_HASH),
-			new VertexMetadata(0, View.of(2), mock(Hash.class), 2, null, Hash.ZERO_HASH),
+			new VertexMetadata(0, View.of(3), mock(Hash.class), mock(PreparedCommand.class)),
+			new VertexMetadata(0, View.of(2), mock(Hash.class), mock(PreparedCommand.class)),
 			committed
 		);
 

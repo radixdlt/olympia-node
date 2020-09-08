@@ -18,6 +18,7 @@
 package com.radixdlt.middleware2.network;
 
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.consensus.PreparedCommand;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
@@ -39,11 +40,12 @@ public class GetVerticesErrorResponseMessageSerializeTest extends SerializeMessa
 		BFTValidatorSet bftValidatorSet = BFTValidatorSet.from(ImmutableSet.of(
 			BFTValidator.from(BFTNode.create(keyPair.getPublicKey()), UInt256.ONE)
 		));
+		PreparedCommand preparedCommand = PreparedCommand.create(0, 0L, false);
 		return new GetVerticesErrorResponseMessage(
 			12345,
 			Hash.random(),
-			QuorumCertificate.ofGenesis(Vertex.createGenesis(VertexMetadata.ofGenesisAncestor(bftValidatorSet))),
-			QuorumCertificate.ofGenesis(Vertex.createGenesis(VertexMetadata.ofGenesisAncestor(bftValidatorSet)))
+			QuorumCertificate.ofGenesis(Vertex.createGenesis(VertexMetadata.ofGenesisAncestor(preparedCommand))),
+			QuorumCertificate.ofGenesis(Vertex.createGenesis(VertexMetadata.ofGenesisAncestor(preparedCommand)))
 		);
 	}
 }

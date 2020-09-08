@@ -19,15 +19,14 @@ package com.radixdlt;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.consensus.epoch.EpochView;
-import com.radixdlt.syncer.CommittedCommand;
-import com.radixdlt.syncer.SyncExecutor.CommittedSender;
+import com.radixdlt.ledger.CommittedCommand;
+import com.radixdlt.ledger.StateComputerLedger.CommittedSender;
 import com.radixdlt.systeminfo.InfoRx;
 import com.radixdlt.consensus.Timeout;
 import com.radixdlt.utils.SenderToRx;
@@ -46,7 +45,8 @@ public final class SystemInfoRxModule extends AbstractModule {
 		SenderToRx<Timeout, Timeout> timeouts = new SenderToRx<>(i -> i);
 		SenderToRx<EpochView, EpochView> currentViews = new SenderToRx<>(i -> i);
 
-		TwoSenderToRx<Command, VertexMetadata, CommittedCommand> committedCommands = new TwoSenderToRx<>(CommittedCommand::new);
+		TwoSenderToRx<CommittedCommand, BFTValidatorSet, CommittedCommand> committedCommands
+			= new TwoSenderToRx<>((committed, vset) -> committed);
 		Multibinder<CommittedSender> committedSenderBinder = Multibinder.newSetBinder(binder(), CommittedSender.class);
 		committedSenderBinder.addBinding().toInstance(committedCommands::send);
 

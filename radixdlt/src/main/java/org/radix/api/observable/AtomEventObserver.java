@@ -28,6 +28,7 @@ import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
+import com.radixdlt.utils.Pair;
 import com.radixdlt.store.LedgerSearchMode;
 import com.radixdlt.statecomputer.CommandToBinaryConverter;
 import com.radixdlt.middleware2.store.EngineAtomIndices;
@@ -35,8 +36,7 @@ import com.radixdlt.middleware2.store.EngineAtomIndices;
 import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
 
-import com.radixdlt.syncer.CommittedCommand;
-import java.util.Objects;
+import com.radixdlt.ledger.CommittedCommand;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.api.AtomQuery;
@@ -124,8 +124,9 @@ public class AtomEventObserver {
 			return;
 		}
 
+		final long timestamp = committedAtom.getVertexMetadata().getPreparedCommand().timestamp();
 		final Atom rawAtom = ClientAtom.convertToApiAtom(committedAtom.getClientAtom());
-		final AtomEventDto atomEventDto = new AtomEventDto(AtomEventType.STORE, rawAtom);
+		final AtomEventDto atomEventDto = new AtomEventDto(AtomEventType.STORE, rawAtom, timestamp);
 		synchronized (this) {
 			this.currentRunnable = currentRunnable.thenRunAsync(() -> update(atomEventDto), executorService);
 		}
@@ -159,7 +160,7 @@ public class AtomEventObserver {
 					return;
 				}
 
-				List<ClientAtom> atoms = new ArrayList<>();
+				List<Pair<ClientAtom, Long>> atoms = new ArrayList<>();
 				while (cursor != null && atoms.size() < BATCH_SIZE) {
 					AID aid = cursor.get();
 					processedAids.add(aid);
@@ -167,17 +168,18 @@ public class AtomEventObserver {
 					ledgerEntry.ifPresent(
 						entry -> {
 							CommittedCommand committedCommand = commandToBinaryConverter.toCommand(entry.getContent());
+							long timestamp = committedCommand.getVertexMetadata().getPreparedCommand().timestamp();
 							ClientAtom clientAtom = committedCommand.getCommand().map(clientAtomToBinaryConverter::toAtom);
-							atoms.add(clientAtom);
+							atoms.add(Pair.of(clientAtom, timestamp));
 						}
 					);
 					cursor = cursor.next();
 				}
 				if (!atoms.isEmpty()) {
 					final Stream<AtomEventDto> atomEvents = atoms.stream()
-						.map(ClientAtom::convertToApiAtom)
-						.filter(Objects::nonNull)
-						.map(atom -> new AtomEventDto(AtomEventType.STORE, atom));
+						.map(p -> p.mapFirst(ClientAtom::convertToApiAtom))
+						.filter(Pair::firstNonNull)
+						.map(p -> new AtomEventDto(AtomEventType.STORE, p.getFirst(), p.getSecond()));
 					onNext.accept(new ObservedAtomEvents(false, atomEvents));
 					count += atoms.size();
 				}

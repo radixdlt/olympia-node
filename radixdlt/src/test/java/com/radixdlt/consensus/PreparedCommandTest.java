@@ -18,26 +18,38 @@
 package com.radixdlt.consensus;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
-import com.radixdlt.crypto.Hash;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Before;
 import org.junit.Test;
 
 public class PreparedCommandTest {
 	private PreparedCommand preparedCommand;
-	private Hash timestampedSignatureHash;
+	private long timestamp;
 
 	@Before
 	public void setup() {
-		this.timestampedSignatureHash = mock(Hash.class);
-		this.preparedCommand = PreparedCommand.create(12345, timestampedSignatureHash);
+		this.timestamp = 12345678L;
+		this.preparedCommand = PreparedCommand.create(12345, timestamp, false);
 	}
 
 	@Test
 	public void testGetters() {
 		assertThat(preparedCommand.getStateVersion()).isEqualTo(12345);
-		assertThat(preparedCommand.getTimestampedSignaturesHash()).isEqualTo(timestampedSignatureHash);
-		assertThat(preparedCommand.getNextValidatorSet()).isEmpty();
+		assertThat(preparedCommand.timestamp()).isEqualTo(timestamp);
+		assertThat(preparedCommand.isEndOfEpoch()).isFalse();
+	}
+
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(PreparedCommand.class)
+			.verify();
+	}
+
+	@Test
+	public void sensibleToString() {
+		String s = this.preparedCommand.toString();
+		AssertionsForClassTypes.assertThat(s).contains("12345");
 	}
 }

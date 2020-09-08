@@ -19,32 +19,24 @@ package com.radixdlt;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.SyncedExecutor;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.BFTBuilder;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.consensus.ConsensusRunner;
-import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.bft.VertexStore.SyncedVertexSender;
-import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.epoch.EpochManager;
-import com.radixdlt.consensus.ConsensusEventsRx;
-import com.radixdlt.consensus.SyncEpochsRPCRx;
-import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
-import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.VertexSyncRx;
 import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.ProposerElectionFactory;
 import com.radixdlt.consensus.Hasher;
-import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
@@ -53,6 +45,7 @@ import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.consensus.liveness.PacemakerRx;
+import com.radixdlt.consensus.sync.SyncRequestSender;
 import com.radixdlt.utils.ScheduledSenderToRx;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.counters.SystemCounters;
@@ -87,6 +80,9 @@ public final class ConsensusModule extends AbstractModule {
 		SenderToRx<Vertex, Hash> syncedVertices = new SenderToRx<>(Vertex::getId);
 		bind(VertexSyncRx.class).toInstance(syncedVertices::rx);
 		bind(SyncedVertexSender.class).toInstance(syncedVertices::send);
+
+		bind(EpochManager.class).in(Scopes.SINGLETON);
+		bind(ConsensusRunner.class).in(Scopes.SINGLETON);
 	}
 
 	// TODO: Change Factory -> Provider
@@ -128,60 +124,6 @@ public final class ConsensusModule extends AbstractModule {
 				.build();
 	}
 
-
-	@Provides
-	@Singleton
-	private EpochManager epochManager(
-		@Named("self") BFTNode self,
-		EpochChange initialEpoch,
-		SyncedExecutor syncer,
-		BFTFactory bftFactory,
-		SyncEpochsRPCSender syncEpochsRPCSender,
-		LocalTimeoutSender scheduledTimeoutSender,
-		PacemakerFactory pacemakerFactory,
-		VertexStoreFactory vertexStoreFactory,
-		ProposerElectionFactory proposerElectionFactory,
-		SystemCounters counters,
-		EpochInfoSender epochInfoSender
-	) {
-		return new EpochManager(
-			self,
-			initialEpoch,
-			syncer,
-			syncEpochsRPCSender,
-			scheduledTimeoutSender,
-			pacemakerFactory,
-			vertexStoreFactory,
-			proposerElectionFactory,
-			bftFactory,
-			counters,
-			epochInfoSender
-		);
-	}
-
-	@Provides
-	@Singleton
-	private ConsensusRunner consensusRunner(
-		EpochChangeRx epochChangeRx,
-		ConsensusEventsRx networkRx,
-		PacemakerRx pacemakerRx,
-		VertexSyncRx vertexSyncRx,
-		CommittedStateSyncRx committedStateSyncRx,
-		SyncVerticesRPCRx rpcRx,
-		SyncEpochsRPCRx epochsRPCRx,
-		EpochManager epochManager
-	) {
-		return new ConsensusRunner(
-			epochChangeRx,
-			networkRx,
-			pacemakerRx, vertexSyncRx,
-			committedStateSyncRx,
-			rpcRx,
-			epochsRPCRx,
-			epochManager
-		);
-	}
-
 	@Provides
 	@Singleton
 	private ProposerElectionFactory proposerElectionFactory() {
@@ -204,14 +146,17 @@ public final class ConsensusModule extends AbstractModule {
 		SyncVerticesRPCSender syncVerticesRPCSender,
 		VertexStoreEventSender vertexStoreEventSender,
 		SyncedVertexSender syncedVertexSender,
+		SyncRequestSender syncRequestSender,
 		SystemCounters counters
 	) {
 		return (genesisVertex, genesisQC, syncedRadixEngine) -> new VertexStore(
 			genesisVertex,
 			genesisQC,
 			syncedRadixEngine,
-			syncVerticesRPCSender, syncedVertexSender,
+			syncVerticesRPCSender,
+			syncedVertexSender,
 			vertexStoreEventSender,
+			syncRequestSender,
 			counters
 		);
 	}

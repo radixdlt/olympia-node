@@ -20,6 +20,9 @@ package com.radixdlt.integration.distributed.deterministic.tests.consensus;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.integration.distributed.deterministic.DeterministicTest;
+import com.radixdlt.integration.distributed.deterministic.network.MessageMutator;
+import com.radixdlt.integration.distributed.deterministic.network.MessageSelector;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -32,28 +35,32 @@ public class OneProposalDropperRandomSyncResponsiveTest {
 	private final Random random = new Random(123456);
 
 	private void runOneProposalDropperResponsiveTest(int numNodes, Function<View, Integer> nodeToDropFunction) {
+		DeterministicTest.builder()
+			.numNodes(numNodes)
+			.randomlySynced(random)
+			.messageSelector(MessageSelector.selectAndStopAfter(MessageSelector.randomSelector(random), NUM_STEPS))
+			.messageMutator(MessageMutator.dropTimeouts().andThen(dropNode(numNodes, nodeToDropFunction)))
+			.build()
+			.run();
+	}
+
+	private MessageMutator dropNode(int numNodes, Function<View, Integer> nodeToDropFunction) {
 		final Map<View, Integer> proposalToDrop = new HashMap<>();
 		final Map<View, Integer> proposalCount = new HashMap<>();
-
-		final DeterministicTest test = DeterministicTest.createSingleEpochRandomlySyncedTest(numNodes, random);
-		test.start();
-		for (int step = 0; step < NUM_STEPS; step++) {
-			test.processNextMsgWithReceiver(random, (receiverId, msg) -> {
-				if (msg instanceof Proposal) {
-					final Proposal proposal = (Proposal) msg;
-					final View view = proposal.getVertex().getView();
-					final Integer nodeToDrop = proposalToDrop.computeIfAbsent(view, nodeToDropFunction);
-					if (proposalCount.merge(view, 1, Integer::sum).equals(numNodes)) {
-						proposalToDrop.remove(view);
-						proposalCount.remove(view);
-					}
-
-					return !receiverId.equals(nodeToDrop);
+		return (rank, message, queue) -> {
+			Object msg = message.message();
+			if (msg instanceof Proposal) {
+				final Proposal proposal = (Proposal) msg;
+				final View view = proposal.getVertex().getView();
+				final int nodeToDrop = proposalToDrop.computeIfAbsent(view, nodeToDropFunction);
+				if (proposalCount.merge(view, 1, Integer::sum).equals(numNodes)) {
+					proposalToDrop.remove(view);
+					proposalCount.remove(view);
 				}
-
-				return true;
-			});
-		}
+				return message.channelId().receiverIndex() == nodeToDrop;
+			}
+			return false;
+		};
 	}
 
 	@Test

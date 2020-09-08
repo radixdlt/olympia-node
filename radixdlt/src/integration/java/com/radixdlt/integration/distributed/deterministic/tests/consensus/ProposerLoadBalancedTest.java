@@ -19,16 +19,15 @@ package com.radixdlt.integration.distributed.deterministic.tests.consensus;
 
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
-
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.NewView;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.integration.distributed.deterministic.DeterministicTest;
-import com.radixdlt.integration.distributed.deterministic.NodeWeighting;
+import com.radixdlt.integration.distributed.deterministic.configuration.EpochNodeWeightMapping;
+import com.radixdlt.integration.distributed.deterministic.network.MessageSelector;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.utils.UInt256;
 
@@ -36,23 +35,16 @@ import static org.assertj.core.api.Assertions.*;
 
 public class ProposerLoadBalancedTest {
 
-	private ImmutableList<Long> run(int numNodes, long numViews, NodeWeighting weighting) {
-		final DeterministicTest test = DeterministicTest.createSingleEpochAlwaysSyncedTest(numNodes, weighting);
-		test.start();
-
-		final AtomicBoolean running = new AtomicBoolean(true);
+	private ImmutableList<Long> run(int numNodes, long numViews, EpochNodeWeightMapping mapping) {
 		final Random random = new Random(123456);
-		while (running.get()) {
-			test.processNextMsg(random, msg -> {
-				if (msg instanceof NewView) {
-					NewView nv = (NewView) msg;
-					if (nv.getView().number() > numViews) {
-						running.set(false);
-					}
-				}
-				return running.get();
-			});
-		}
+
+		DeterministicTest test = DeterministicTest.builder()
+			.numNodes(numNodes)
+			.messageSelector(MessageSelector.selectAndStopAt(MessageSelector.randomSelector(random), View.of(numViews)))
+			.alwaysSynced()
+			.epochNodeWeightMapping(mapping)
+			.build()
+			.run();
 
 		return IntStream.range(0, numNodes)
 			.mapToObj(test::getSystemCounters)
@@ -62,44 +54,69 @@ public class ProposerLoadBalancedTest {
 
 	@Test
 	public void when_run_2_nodes_with_very_different_weights__then_proposals_should_match() {
-		final long proposalChunk = 100_000L; // Actually proposalChunk + 1 proposals run
-		ImmutableList<Long> proposals = this.run(2, proposalChunk + 1, NodeWeighting.repeatingSequence(1, proposalChunk));
+		final int numNodes = 2;
+		final long proposalChunk = 200_000L; // Actually proposalChunk + 1 proposals run
+		ImmutableList<Long> proposals = this.run(
+			numNodes,
+			proposalChunk + 1,
+			EpochNodeWeightMapping.repeatingSequence(numNodes, 1, proposalChunk)
+		);
 		assertThat(proposals).containsExactly(1L, proposalChunk);
 	}
 
 	@Test
 	public void when_run_3_nodes_with_equal_weight__then_proposals_should_be_equal() {
+		final int numNodes = 3;
 		final long proposalsPerNode = 50_000L;
-		ImmutableList<Long> proposals = this.run(3, 3 * proposalsPerNode, NodeWeighting.constant(UInt256.ONE));
+		ImmutableList<Long> proposals = this.run(
+			numNodes,
+			numNodes * proposalsPerNode,
+			EpochNodeWeightMapping.constant(numNodes, 1L)
+		);
 		assertThat(proposals).allMatch(l -> l == proposalsPerNode);
 	}
 
 	@Test
 	public void when_run_100_nodes_with_equal_weight__then_proposals_should_be_equal() {
-		final long proposalsPerNode = 100L;
-		ImmutableList<Long> proposals = this.run(100, 100 * proposalsPerNode, NodeWeighting.constant(UInt256.ONE));
+		final int numNodes = 100;
+		final long proposalsPerNode = 10L;
+		ImmutableList<Long> proposals = this.run(
+			numNodes,
+			numNodes * proposalsPerNode,
+			EpochNodeWeightMapping.constant(100, 1L)
+		);
 		assertThat(proposals).allMatch(l -> l == proposalsPerNode);
 	}
 
 	@Test
 	public void when_run_3_nodes_with_linear_weights__then_proposals_should_match() {
-		final long proposalChunk = 10_000L; // Actually 3! * proposalChunk proposals run
-		List<Long> proposals = this.run(3, 1 * 2 * 3 * proposalChunk, NodeWeighting.repeatingSequence(1, 2, 3));
+		final long proposalChunk = 20_000L; // Actually 3! * proposalChunk proposals run
+		List<Long> proposals = this.run(
+			3,
+			1 * 2 * 3 * proposalChunk,
+			EpochNodeWeightMapping.repeatingSequence(3, 1, 2, 3)
+		);
 		assertThat(proposals).containsExactly(proposalChunk, 2 * proposalChunk, 3 * proposalChunk);
 	}
 
 	@Test
 	public void when_run_100_nodes_with_two_different_weights__then_proposals_should_match() {
+		final int numNodes = 100;
 		// Nodes 0..49 have weight 1; nodes 50..99 have weight 2
-		final long proposalChunk = 100L; // Actually 150 * proposalChunk proposals run
-		ImmutableList<Long> proposals = this.run(100, 150 * proposalChunk, index -> UInt256.from(index / 50 + 1)); // Weights 1, 1, ..., 2, 2
+		final long proposalChunk = 10L; // Actually 150 * proposalChunk proposals run
+		ImmutableList<Long> proposals = this.run(
+			100,
+			150 * proposalChunk,
+			EpochNodeWeightMapping.computed(numNodes, index -> UInt256.from(index / 50 + 1)) // Weights 1, 1, ..., 2, 2
+		);
 		assertThat(proposals.subList(0, 50)).allMatch(Long.valueOf(proposalChunk)::equals);
 		assertThat(proposals.subList(50, 100)).allMatch(Long.valueOf(2 * proposalChunk)::equals);
 	}
 
 	@Test
 	public void when_run_3_nodes_with_large_lcm_weighting__then_proposals_should_be_proportional() {
-		final long numProposals = 200_000L;
+		final int numNodes = 3;
+		final long numProposals = 100_000L;
 		ImmutableList<UInt256> weights = ImmutableList.of(
 			// Some large primes with product/LCM > 2^64 but < 2^256
 			UInt256.from("941083981"),
@@ -112,7 +129,11 @@ public class ProposerLoadBalancedTest {
 			.map(w -> w.multiply(numViews256).divide(sum))
 			.mapToLong(v -> v.getLow().getLow())
 			.toArray();
-		ImmutableList<Long> proposals = this.run(3, numProposals, weights::get);
+		ImmutableList<Long> proposals = this.run(
+			numNodes,
+			numProposals,
+			EpochNodeWeightMapping.computed(numNodes, weights::get)
+		);
 		// Correct number of total proposals
 		assertThat(proposals.stream().mapToLong(Long::longValue).sum()).isEqualTo(numProposals);
 		// Same as calculated value, +/- 1 (rounding and ordering)
@@ -123,7 +144,8 @@ public class ProposerLoadBalancedTest {
 
 	@Test
 	public void when_run_100_nodes_with_very_large_period__then_proposals_should_be_proportional() {
-		final long numProposals = 10_000L;
+		final int numNodes = 100;
+		final long numProposals = 1_000L;
 		ImmutableList<UInt256> weights = generatePrimes(100)
 			.mapToObj(UInt256::from)
 			.collect(ImmutableList.toImmutableList());
@@ -133,7 +155,11 @@ public class ProposerLoadBalancedTest {
 			.map(w -> w.multiply(numViews256).divide(sum))
 			.mapToLong(v -> v.getLow().getLow())
 			.toArray();
-		ImmutableList<Long> proposals = this.run(100, numProposals, weights::get);
+		ImmutableList<Long> proposals = this.run(
+			numNodes,
+			numProposals,
+			EpochNodeWeightMapping.computed(numNodes, weights::get)
+		);
 		// Correct number of total proposals
 		assertThat(proposals.stream().mapToLong(Long::longValue).sum()).isEqualTo(numProposals);
 		// Same as calculated value, +/- 1 (rounding and ordering)

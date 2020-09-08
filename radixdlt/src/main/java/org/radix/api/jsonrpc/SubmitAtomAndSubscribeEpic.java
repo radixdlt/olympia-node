@@ -94,10 +94,6 @@ public class SubmitAtomAndSubscribeEpic {
 			public void onStoredFailure(RadixEngineException exception) {
 				JSONObject data = new JSONObject();
 				data.put("pointerToIssue", exception.getDataPointer().toString());
-				if (exception.getRelated() != null) {
-					data.put("message", exception.getRelated().getAID().toString());
-				}
-
 				final AtomSubmissionState atomSubmissionState;
 				switch (exception.getErrorCode()) {
 					case VIRTUAL_STATE_CONFLICT:

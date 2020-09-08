@@ -21,6 +21,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doAnswer;
@@ -36,9 +37,10 @@ import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.NewView;
+import com.radixdlt.consensus.PreparedCommand;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.SyncedExecutor;
+import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStoreFactory;
@@ -57,6 +59,7 @@ import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.sync.SyncRequestSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.counters.SystemCountersImpl;
@@ -69,12 +72,13 @@ public class EpochManagerTest {
 	private EpochManager epochManager;
 	private EpochManager.SyncEpochsRPCSender syncEpochsRPCSender;
 	private EpochInfoSender epochInfoSender;
+	private SyncRequestSender syncRequestSender;
 	private VertexStore vertexStore;
 	private BFTFactory bftFactory;
 	private Pacemaker pacemaker;
 	private SystemCounters systemCounters;
 	private ProposerElection proposerElection;
-	private SyncedExecutor syncedExecutor;
+	private Ledger ledger;
 	private BFTNode self;
 
 	@Before
@@ -89,23 +93,22 @@ public class EpochManagerTest {
 		this.bftFactory = mock(BFTFactory.class);
 
 		this.systemCounters = new SystemCountersImpl();
-		SyncedExecutor ssc = mock(SyncedExecutor.class);
-		this.syncedExecutor = ssc;
+		this.ledger = mock(Ledger.class);
 
 		this.proposerElection = mock(ProposerElection.class);
 		this.self = mock(BFTNode.class);
 		when(self.getSimpleName()).thenReturn("Test");
 
 		this.epochInfoSender = mock(EpochInfoSender.class);
+		this.syncRequestSender = mock(SyncRequestSender.class);
 
 		this.epochManager = new EpochManager(
 			this.self,
-			new EpochChange(VertexMetadata.ofGenesisAncestor(
-				BFTValidatorSet.from(ImmutableSet.of())), BFTValidatorSet.from(ImmutableSet.of())
-			),
-			this.syncedExecutor,
+			new EpochChange(VertexMetadata.ofGenesisAncestor(mock(PreparedCommand.class)), BFTValidatorSet.from(ImmutableSet.of())),
+			this.ledger,
 			this.syncEpochsRPCSender,
 			mock(LocalTimeoutSender.class),
+			syncRequestSender,
 			timeoutSender -> this.pacemaker,
 			vertexStoreFactory,
 			proposers -> proposerElection,
@@ -175,7 +178,8 @@ public class EpochManagerTest {
 		when(response.getEpochAncestor()).thenReturn(ancestor);
 		when(response.getAuthor()).thenReturn(mock(BFTNode.class));
 		epochManager.processGetEpochResponse(response);
-		verify(syncedExecutor, times(1)).syncTo(eq(ancestor), any(), any());
+		verify(syncRequestSender, times(1))
+			.sendLocalSyncRequest(argThat(req -> req.getTarget().equals(ancestor)));
 	}
 
 	@Test
@@ -183,7 +187,7 @@ public class EpochManagerTest {
 		GetEpochResponse response = mock(GetEpochResponse.class);
 		when(response.getEpochAncestor()).thenReturn(null);
 		epochManager.processGetEpochResponse(response);
-		verify(syncedExecutor, never()).syncTo(any(), any(), any());
+		verify(syncRequestSender, never()).sendLocalSyncRequest(any());
 	}
 
 	@Test
@@ -200,7 +204,7 @@ public class EpochManagerTest {
 		GetEpochResponse response = mock(GetEpochResponse.class);
 		when(response.getEpochAncestor()).thenReturn(ancestor);
 		epochManager.processGetEpochResponse(response);
-		verify(syncedExecutor, never()).syncTo(any(), any(), any());
+		verify(syncRequestSender, never()).sendLocalSyncRequest(any());
 	}
 
 	@Test
@@ -214,6 +218,8 @@ public class EpochManagerTest {
 
 		VertexMetadata ancestor = mock(VertexMetadata.class);
 		when(ancestor.getEpoch()).thenReturn(1L);
+		when(ancestor.getPreparedCommand()).thenReturn(mock(PreparedCommand.class));
+
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		when(validatorSet.containsNode(any())).thenReturn(true);
 
@@ -251,6 +257,8 @@ public class EpochManagerTest {
 
 		VertexMetadata ancestor = mock(VertexMetadata.class);
 		when(ancestor.getEpoch()).thenReturn(1L);
+		PreparedCommand preparedCommand = mock(PreparedCommand.class);
+		when(ancestor.getPreparedCommand()).thenReturn(preparedCommand);
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		when(validatorSet.containsNode(any())).thenReturn(true);
 
@@ -365,6 +373,7 @@ public class EpochManagerTest {
 
 		VertexMetadata ancestor = mock(VertexMetadata.class);
 		when(ancestor.getEpoch()).thenReturn(1L);
+		when(ancestor.getPreparedCommand()).thenReturn(mock(PreparedCommand.class));
 
 		EpochChange epochChange = mock(EpochChange.class);
 		when(epochChange.getAncestor()).thenReturn(ancestor);
@@ -417,6 +426,7 @@ public class EpochManagerTest {
 
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(vertexMetadata.getEpoch()).thenReturn(1L);
+		when(vertexMetadata.getPreparedCommand()).thenReturn(mock(PreparedCommand.class));
 
 		EpochChange epochChange = mock(EpochChange.class);
 		when(epochChange.getAncestor()).thenReturn(vertexMetadata);

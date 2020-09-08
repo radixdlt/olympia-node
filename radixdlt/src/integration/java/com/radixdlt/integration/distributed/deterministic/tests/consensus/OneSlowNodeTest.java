@@ -17,10 +17,21 @@
 
 package com.radixdlt.integration.distributed.deterministic.tests.consensus;
 
+import com.google.common.collect.Lists;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.integration.distributed.deterministic.DeterministicTest;
+import com.radixdlt.integration.distributed.deterministic.network.ChannelId;
+import com.radixdlt.integration.distributed.deterministic.network.ControlledMessage;
+import com.radixdlt.integration.distributed.deterministic.network.MessageMutator;
+import com.radixdlt.integration.distributed.deterministic.network.MessageRank;
+import com.radixdlt.integration.distributed.deterministic.network.MessageSelector;
+import com.radixdlt.utils.Pair;
+
+import static org.junit.Assert.fail;
+
+import java.util.LinkedList;
 import org.junit.Test;
 
 public class OneSlowNodeTest {
@@ -30,24 +41,65 @@ public class OneSlowNodeTest {
 	 */
 	@Test
 	public void when_three_fast_nodes_and_one_slow_node_two_cycles__then_missing_parent_should_not_cause_sync_exception() {
-		final DeterministicTest test = DeterministicTest.createSingleEpochAlwaysSyncedTest(4);
+		final int numNodes = 4;
 
-		test.start();
-
+		LinkedList<Pair<ChannelId, Class<?>>> processingSequence = Lists.newLinkedList();
 		for (int curLeader = 1; curLeader <= 2; curLeader++) {
-			test.processNextMsg(curLeader, 1, NewView.class);
-			test.processNextMsg(curLeader, 2, NewView.class);
-			test.processNextMsg(curLeader, 3, NewView.class);
+			processingSequence.add(Pair.of(ChannelId.of(1, curLeader), NewView.class));
+			processingSequence.add(Pair.of(ChannelId.of(2, curLeader), NewView.class));
+			processingSequence.add(Pair.of(ChannelId.of(3, curLeader), NewView.class));
 
-			test.processNextMsg(1, curLeader, Proposal.class);
-			test.processNextMsg(2, curLeader, Proposal.class);
-			test.processNextMsg(3, curLeader, Proposal.class);
+			processingSequence.add(Pair.of(ChannelId.of(curLeader, 1), Proposal.class));
+			processingSequence.add(Pair.of(ChannelId.of(curLeader, 2), Proposal.class));
+			processingSequence.add(Pair.of(ChannelId.of(curLeader, 3), Proposal.class));
 
-			test.processNextMsg(curLeader, 1, Vote.class);
-			test.processNextMsg(curLeader, 2, Vote.class);
-			test.processNextMsg(curLeader, 3, Vote.class);
+			processingSequence.add(Pair.of(ChannelId.of(1, curLeader), Vote.class));
+			processingSequence.add(Pair.of(ChannelId.of(2, curLeader), Vote.class));
+			processingSequence.add(Pair.of(ChannelId.of(3, curLeader), Vote.class));
 		}
+		// Delayed initial NewView from node 0 to (then) leader 1
+		processingSequence.add(Pair.of(ChannelId.of(0, 1), NewView.class));
+		// Delayed initial Proposal from (then) leader 1 to node 0
+		processingSequence.add(Pair.of(ChannelId.of(1, 0), Proposal.class));
 
-		test.processNextMsg(0, 2, Proposal.class);
+		DeterministicTest.builder()
+			.numNodes(numNodes)
+			.alwaysSynced()
+			.messageSelector(sequenceSelector(processingSequence))
+			.messageMutator(delayMessagesForNode(0))
+			.build()
+			.run();
+	}
+
+	private static MessageSelector sequenceSelector(LinkedList<Pair<ChannelId, Class<?>>> processingSequence) {
+		return messages -> {
+			if (processingSequence.isEmpty()) {
+				// We are finished.
+				return null;
+			}
+			final Pair<ChannelId, Class<?>> messageDetails = processingSequence.pop();
+			final ChannelId channel = messageDetails.getFirst();
+			final Class<?> msgClass = messageDetails.getSecond();
+			for (ControlledMessage message : messages) {
+				if (channel.equals(message.channelId())
+					&& msgClass.isAssignableFrom(message.message().getClass())) {
+						return message;
+				}
+			}
+			fail(String.format("Can't find %s message %s: %s", msgClass.getSimpleName(), channel, messages));
+			return null; // Not required, but compiler can't tell that fail throws exception
+		};
+	}
+
+	private static MessageMutator delayMessagesForNode(int index) {
+		return (rank, message, queue) -> {
+			final int receiverIndex = message.channelId().receiverIndex();
+			final int senderIndex = message.channelId().senderIndex();
+			final MessageRank rankToUse = receiverIndex == index || senderIndex == index
+				? MessageRank.of(rank.major(), rank.minor() + 1)
+				: rank;
+			queue.add(rankToUse, message);
+			return true;
+		};
 	}
 }
