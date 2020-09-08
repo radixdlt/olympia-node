@@ -169,8 +169,8 @@ public final class RadixUniverse {
 		this.networkController = networkController;
 		this.nativeToken = config.getGenesis().stream()
 			.flatMap(atom -> atom.particles(Spin.UP))
-			.filter(p -> p instanceof FixedSupplyTokenDefinitionParticle)
-			.map(p -> ((FixedSupplyTokenDefinitionParticle) p).getRRI())
+			.filter(p -> p instanceof MutableSupplyTokenDefinitionParticle)
+			.map(p -> ((MutableSupplyTokenDefinitionParticle) p).getRRI())
 			.findFirst()
 			.orElseThrow(() -> new IllegalStateException("No Native Token defined in universe"));
 		this.atomStore = atomStore;
