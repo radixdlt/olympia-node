@@ -43,10 +43,10 @@ public class UniformLatencyTest {
 	public void given_4_correct_bfts__then_should_pass_sanity_tests_over_1_minute() {
 		SimulationTest bftTest = SimulationTest.builder()
 			.numNodes(4)
-			.checkSafety("safety")
-			.checkLiveness("liveness")
-			.checkNoTimeouts("noTimeouts")
-			.checkAllProposalsHaveDirectParents("directParents")
+			.checkConsensusSafety("safety")
+			.checkConsensusLiveness("liveness")
+			.checkConsensusNoTimeouts("noTimeouts")
+			.checkConsensusAllProposalsHaveDirectParents("directParents")
 			.build();
 		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
 		assertThat(results).allSatisfy((name, err) -> assertThat(err).isEmpty());

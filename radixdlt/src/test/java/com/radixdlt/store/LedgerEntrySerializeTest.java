@@ -26,6 +26,7 @@ public class LedgerEntrySerializeTest extends SerializeMessageObject<LedgerEntry
 		super(LedgerEntry.class, () -> new LedgerEntry(
 			"{\"test\":\"test\"}".getBytes(),
 			0,
+			0,
 			AID.from(Hash.ZERO_HASH.toByteArray())
 		));
 	}

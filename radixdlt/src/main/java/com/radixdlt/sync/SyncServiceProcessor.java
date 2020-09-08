@@ -18,20 +18,14 @@
 package com.radixdlt.sync;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.ledger.CommittedCommand;
+import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
-import com.radixdlt.network.addressbook.AddressBook;
-import com.radixdlt.network.addressbook.Peer;
+import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
 import java.util.Comparator;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.TreeSet;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.stream.Collectors;
 import javax.annotation.concurrent.NotThreadSafe;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -43,15 +37,23 @@ import org.apache.logging.log4j.Logger;
 @NotThreadSafe
 public final class SyncServiceProcessor {
 	public interface SyncedCommandSender {
-		void sendSyncedCommand(CommittedCommand committedCommand);
+		void sendSyncedCommand(VerifiedCommandsAndProof committedCommand);
 	}
 
 	public static final class SyncInProgress {
-		private final long id;
-		private final List<BFTNode> target;
-		private SyncInProgress(long id, List<BFTNode> target) {
-			this.id = id;
-			this.target = target;
+		private final VerifiedLedgerHeaderAndProof targetHeader;
+		private final ImmutableList<BFTNode> targetNodes;
+		private SyncInProgress(VerifiedLedgerHeaderAndProof targetHeader, ImmutableList<BFTNode> targetNodes) {
+			this.targetHeader = targetHeader;
+			this.targetNodes = targetNodes;
+		}
+
+		private ImmutableList<BFTNode> getTargetNodes() {
+			return targetNodes;
+		}
+
+		private VerifiedLedgerHeaderAndProof getTargetHeader() {
+			return targetHeader;
 		}
 	}
 
@@ -60,159 +62,110 @@ public final class SyncServiceProcessor {
 	}
 
 	private static final Logger log = LogManager.getLogger();
-	private static final int MAX_REQUESTS_TO_SEND = 20;
 	private final RadixEngineStateComputer stateComputer;
 	private final SyncedCommandSender syncedCommandSender;
 	private final int batchSize;
-	private final int maxAtomsQueueSize;
 	private final SyncTimeoutScheduler syncTimeoutScheduler;
 	private final long patienceMilliseconds;
-	private final AddressBook addressBook;
 	private final StateSyncNetwork stateSyncNetwork;
-	private final TreeSet<CommittedCommand> committedCommands = new TreeSet<>(
-		Comparator.comparingLong(a -> a.getVertexMetadata().getPreparedCommand().getStateVersion())
-	);
-
-	private long syncInProgressId = 0;
-	private boolean isSyncInProgress = false;
-	private long syncToTargetVersion;
-	private long currentVersion;
+	private final Comparator<VerifiedLedgerHeaderAndProof> headerComparator;
+	private VerifiedLedgerHeaderAndProof targetHeader;
+	private VerifiedLedgerHeaderAndProof currentHeader;
 
 	public SyncServiceProcessor(
 		RadixEngineStateComputer stateComputer,
 		StateSyncNetwork stateSyncNetwork,
-		AddressBook addressBook,
 		SyncedCommandSender syncedCommandSender,
 		SyncTimeoutScheduler syncTimeoutScheduler,
-		long currentVersion,
+		Comparator<VerifiedLedgerHeaderAndProof> headerComparator,
+		VerifiedLedgerHeaderAndProof current,
 		int batchSize,
 		long patienceMilliseconds
 	) {
-		if (currentVersion < 0) {
-			throw new IllegalArgumentException(String.format("current version must be >= 0 but was %s", currentVersion));
-		}
 		if (patienceMilliseconds <= 0) {
 			throw new IllegalArgumentException();
 		}
 		if (batchSize <= 0) {
 			throw new IllegalArgumentException();
 		}
-		this.currentVersion = currentVersion;
-		this.syncToTargetVersion = currentVersion;
 		this.stateComputer = Objects.requireNonNull(stateComputer);
 		this.stateSyncNetwork = Objects.requireNonNull(stateSyncNetwork);
-		this.addressBook = Objects.requireNonNull(addressBook);
 		this.syncedCommandSender = Objects.requireNonNull(syncedCommandSender);
 		this.syncTimeoutScheduler = Objects.requireNonNull(syncTimeoutScheduler);
 		this.batchSize = batchSize;
 		this.patienceMilliseconds = patienceMilliseconds;
-		// we limit the size of the queue in order to avoid memory issues
-		this.maxAtomsQueueSize = MAX_REQUESTS_TO_SEND * batchSize * 2;
+		this.headerComparator = Objects.requireNonNull(headerComparator);
+		this.currentHeader = current;
+		this.targetHeader = current;
 	}
 
 	public void processSyncRequest(SyncRequest syncRequest) {
 		log.debug("SYNC_REQUEST: {}", syncRequest);
-		Peer peer = syncRequest.getPeer();
 		long stateVersion = syncRequest.getStateVersion();
-		// TODO: This may still return an empty list as we still count state versions for atoms which
-		// TODO: never make it into the radix engine due to state errors. This is because we only check
-		// TODO: validity on commit rather than on proposal/prepare.
-		List<CommittedCommand> committedCommands = stateComputer.getCommittedCommands(stateVersion, batchSize);
-		log.debug("SYNC_REQUEST: SENDING_RESPONSE size: {}", committedCommands.size());
-		stateSyncNetwork.sendSyncResponse(peer, committedCommands);
+		try {
+			VerifiedCommandsAndProof committedCommands = stateComputer.getNextCommittedCommands(stateVersion, batchSize);
+			if (committedCommands == null) {
+				return;
+			}
+
+			log.debug("SYNC_REQUEST: SENDING_RESPONSE size: {}", committedCommands.size());
+			stateSyncNetwork.sendSyncResponse(syncRequest.getNode(), committedCommands);
+		} catch (NextCommittedLimitReachedException e) {
+			log.error(e.getMessage(), e);
+		}
 	}
 
-	public void processSyncResponse(ImmutableList<CommittedCommand> commands) {
+	public void processSyncResponse(VerifiedCommandsAndProof commands) {
 		// TODO: Check validity of response
-		log.debug("SYNC_RESPONSE: size: {}", commands.size());
-		for (CommittedCommand command : commands) {
-			long stateVersion = command.getVertexMetadata().getPreparedCommand().getStateVersion();
-			if (stateVersion > this.currentVersion) {
-				if (committedCommands.size() < maxAtomsQueueSize) { // check if there is enough space
-					committedCommands.add(command);
-				} else { // not enough space available
-					CommittedCommand last = committedCommands.last();
-					// will added it only if it must be applied BEFORE the most recent atom we have
-					if (last.getVertexMetadata().getPreparedCommand().getStateVersion() > stateVersion) {
-						committedCommands.pollLast(); // remove the most recent available
-						committedCommands.add(command);
-					}
-				}
-			}
-		}
-
-		Iterator<CommittedCommand> it = committedCommands.iterator();
-		while (it.hasNext()) {
-			CommittedCommand command = it.next();
-			long stateVersion = command.getVertexMetadata().getPreparedCommand().getStateVersion();
-			if (stateVersion <= currentVersion) {
-				it.remove();
-			} else if (stateVersion == currentVersion + 1) {
-				this.syncedCommandSender.sendSyncedCommand(command);
-				this.currentVersion = this.currentVersion + 1;
-				it.remove();
-			} else {
-				break;
-			}
-		}
-
-		// TODO: Need to check if this response actually corresponds to sync-in-progress
-		isSyncInProgress = false;
-	}
-
-	public void processVersionUpdate(long updatedCurrentVersion) {
-		if (updatedCurrentVersion > this.currentVersion) {
-			this.currentVersion = updatedCurrentVersion;
-		}
-	}
-
-	public void processLocalSyncRequest(LocalSyncRequest request) {
-		final VertexMetadata target = request.getTarget();
-		if (target.getPreparedCommand().getStateVersion() <= this.currentVersion) {
+		if (headerComparator.compare(commands.getHeader(), this.currentHeader) <= 0) {
 			return;
 		}
-		this.syncToTargetVersion = target.getPreparedCommand().getStateVersion();
-		sendSyncRequests(request.getTargetNodes());
+		this.syncedCommandSender.sendSyncedCommand(commands);
+		this.currentHeader = commands.getHeader();
+	}
+
+	public void processVersionUpdate(VerifiedLedgerHeaderAndProof updatedHeader) {
+		if (headerComparator.compare(updatedHeader, this.currentHeader) > 0) {
+			this.currentHeader = updatedHeader;
+		}
+	}
+
+	// TODO: Handle epoch changes with same state version
+	public void processLocalSyncRequest(LocalSyncRequest request) {
+		final VerifiedLedgerHeaderAndProof nextTargetHeader = request.getTarget();
+		if (headerComparator.compare(nextTargetHeader, this.targetHeader) <= 0) {
+			return;
+		}
+
+		this.targetHeader = nextTargetHeader;
+		SyncInProgress syncInProgress = new SyncInProgress(request.getTarget(), request.getTargetNodes());
+		this.sendRequest(syncInProgress);
 	}
 
 	public void processSyncTimeout(SyncInProgress syncInProgress) {
-		if (syncInProgress.id == syncInProgressId && isSyncInProgress) {
-			this.sendSyncRequests(syncInProgress.target);
-		}
+		this.sendRequest(syncInProgress);
 	}
 
-	private void sendSyncRequests(List<BFTNode> target) {
-		if (currentVersion >= syncToTargetVersion) {
+	private void sendRequest(SyncInProgress syncInProgress) {
+		if (headerComparator.compare(syncInProgress.getTargetHeader(), this.currentHeader) <= 0) {
 			return;
 		}
-		long size = ((syncToTargetVersion - currentVersion) / batchSize);
-		if ((syncToTargetVersion - currentVersion) % batchSize > 0) {
-			size += 1;
-		}
-		size = Math.min(size, MAX_REQUESTS_TO_SEND);
-		for (long i = 0; i < size; i++) {
-			sendSyncRequest(currentVersion + batchSize * i, target);
+
+		if (syncInProgress.getTargetHeader().getStateVersion() == this.currentHeader.getStateVersion()) {
+			// Already command synced just need to update header
+			// TODO: Need to check epochs to make sure we're not skipping epochs
+			VerifiedCommandsAndProof verifiedCommandsAndProof = new VerifiedCommandsAndProof(
+				ImmutableList.of(),
+				syncInProgress.getTargetHeader()
+			);
+			this.syncedCommandSender.sendSyncedCommand(verifiedCommandsAndProof);
+			return;
 		}
 
-		syncInProgressId++;
-		isSyncInProgress = true;
-		SyncInProgress syncInProgress = new SyncInProgress(syncInProgressId, target);
+		ImmutableList<BFTNode> targetNodes = syncInProgress.getTargetNodes();
+		BFTNode node = targetNodes.get(ThreadLocalRandom.current().nextInt(targetNodes.size()));
+		final long version = this.currentHeader.getStateVersion();
+		stateSyncNetwork.sendSyncRequest(node, version);
 		syncTimeoutScheduler.scheduleTimeout(syncInProgress, patienceMilliseconds);
-	}
-
-	private void sendSyncRequest(long version, List<BFTNode> target) {
-		List<Peer> peers = target.stream()
-			.map(BFTNode::getKey)
-			.map(pk -> addressBook.peer(pk.euid()))
-			.filter(Optional::isPresent)
-			.map(Optional::get)
-			.filter(Peer::hasSystem)
-			.collect(Collectors.toList());
-		// TODO: Remove this exception
-		if (peers.isEmpty()) {
-			throw new IllegalStateException("Unable to find peer");
-		}
-		Peer peer = peers.get(ThreadLocalRandom.current().nextInt(peers.size()));
-		stateSyncNetwork.sendSyncRequest(peer, version);
 	}
 }

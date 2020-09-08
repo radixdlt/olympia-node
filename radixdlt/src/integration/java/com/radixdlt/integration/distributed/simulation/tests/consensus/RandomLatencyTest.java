@@ -48,10 +48,10 @@ public class RandomLatencyTest {
 		.randomLatency(minLatency, maxLatency)
 		.setGetVerticesRPCEnabled(false)
 		.pacemakerTimeout(synchronousTimeout) // Since no syncing needed 6*MTT required
-		.checkLiveness("liveness", synchronousTimeout, TimeUnit.MILLISECONDS)
-		.checkSafety("safety")
-		.checkAllProposalsHaveDirectParents("directParents")
-		.checkNoTimeouts("noTimeouts");
+		.checkConsensusLiveness("liveness", synchronousTimeout, TimeUnit.MILLISECONDS)
+		.checkConsensusSafety("safety")
+		.checkConsensusAllProposalsHaveDirectParents("directParents")
+		.checkConsensusNoTimeouts("noTimeouts");
 
 	/**
 	 * Tests a static configuration of 3 nodes with random, high variance in latency

@@ -26,6 +26,7 @@ import com.google.inject.name.Names;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.CryptoModule;
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.LedgerCommandGeneratorModule;
 import com.radixdlt.LedgerEpochChangeModule;
 import com.radixdlt.LedgerEpochChangeRxModule;
 import com.radixdlt.LedgerLocalMempoolModule;
@@ -105,6 +106,7 @@ public class GlobalInjector {
 			// Ledger
 			new LedgerModule(),
 			new LedgerRxModule(),
+			new LedgerCommandGeneratorModule(),
 			new LedgerEpochChangeModule(),
 			new LedgerEpochChangeRxModule(),
 			new LedgerLocalMempoolModule(mempoolMaxSize),

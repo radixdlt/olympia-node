@@ -19,7 +19,7 @@ package com.radixdlt.statecomputer;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.identifiers.AID;
@@ -45,32 +45,42 @@ public final class CommittedAtom implements LedgerAtom {
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
+	@JsonProperty("state_version")
+	@DsonOutput(Output.ALL)
+	private final long stateVersion;
+
 	@JsonProperty("atom")
 	@DsonOutput(Output.ALL)
 	private final ClientAtom clientAtom;
 
 	// TODO: include commit signature proof
-	@JsonProperty("metadata")
+	@JsonProperty("proof")
 	@DsonOutput(Output.ALL)
-	private final VertexMetadata vertexMetadata;
+	private final VerifiedLedgerHeaderAndProof proof;
 
 	CommittedAtom() {
 		// Serializer only
 		this.clientAtom = null;
-		this.vertexMetadata = null;
+		this.proof = null;
+		this.stateVersion = 0L;
 	}
 
-	public CommittedAtom(ClientAtom clientAtom, VertexMetadata vertexMetadata) {
+	public CommittedAtom(ClientAtom clientAtom, long stateVersion, VerifiedLedgerHeaderAndProof proof) {
 		this.clientAtom = clientAtom;
-		this.vertexMetadata = Objects.requireNonNull(vertexMetadata);
+		this.stateVersion = stateVersion;
+		this.proof = Objects.requireNonNull(proof);
+	}
+
+	public long getStateVersion() {
+		return stateVersion;
 	}
 
 	public ClientAtom getClientAtom() {
 		return clientAtom;
 	}
 
-	public VertexMetadata getVertexMetadata() {
-		return vertexMetadata;
+	public VerifiedLedgerHeaderAndProof getStateAndProof() {
+		return proof;
 	}
 
 	@Override
@@ -85,7 +95,7 @@ public final class CommittedAtom implements LedgerAtom {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.clientAtom, this.vertexMetadata);
+		return Objects.hash(this.clientAtom, this.stateVersion, this.proof);
 	}
 
 	@Override
@@ -96,7 +106,8 @@ public final class CommittedAtom implements LedgerAtom {
 
 		CommittedAtom other = (CommittedAtom) o;
 		return Objects.equals(other.clientAtom, this.clientAtom)
-			&& Objects.equals(other.vertexMetadata, this.vertexMetadata);
+			&& other.stateVersion == this.stateVersion
+			&& Objects.equals(other.proof, this.proof);
 	}
 
 	@Override
@@ -111,7 +122,8 @@ public final class CommittedAtom implements LedgerAtom {
 
 	@Override
 	public String toString() {
-		return String.format("%s{atom=%s, meta=%s}",
-			getClass().getSimpleName(), clientAtom != null ? clientAtom.getAID() : null, this.vertexMetadata);
+		return String.format("%s{atom=%s, stateVersion=%s proof=%s}",
+			getClass().getSimpleName(), stateVersion, clientAtom != null ? clientAtom.getAID() : null, this.proof);
 	}
 }
+

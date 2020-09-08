@@ -30,13 +30,13 @@ import java.util.stream.Stream;
 import org.junit.Test;
 import org.radix.universe.system.RadixSystem;
 
-public class AddressBookGenesisVertexMetadataProviderTest {
+public class AddressBookGenesisBFTHeaderProviderTest {
 	@Test
 	public void when_quorum_size_is_one__then_should_emit_self() {
 		ECPublicKey self = mock(ECPublicKey.class);
 		when(self.euid()).thenReturn(EUID.ONE);
 		AddressBook addressBook = mock(AddressBook.class);
-		AddressBookGenesisVertexMetadataProvider validatorSetProvider = new AddressBookGenesisVertexMetadataProvider(
+		AddressBookGenesisHeaderProvider validatorSetProvider = new AddressBookGenesisHeaderProvider(
 			self,
 			addressBook,
 			1
@@ -48,7 +48,7 @@ public class AddressBookGenesisVertexMetadataProviderTest {
 		when(peer.getSystem()).thenReturn(system);
 		when(addressBook.peers()).thenAnswer(inv -> Stream.of(peer));
 
-		VertexMetadata vertexMetadata = validatorSetProvider.getGenesisVertexMetadata();
-		assertThat(vertexMetadata.getPreparedCommand().isEndOfEpoch()).isTrue();
+		VerifiedLedgerHeaderAndProof header = validatorSetProvider.getGenesisHeader();
+		assertThat(header.isEndOfEpoch()).isTrue();
 	}
 }

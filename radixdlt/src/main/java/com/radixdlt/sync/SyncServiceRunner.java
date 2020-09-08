@@ -17,6 +17,7 @@
 
 package com.radixdlt.sync;
 
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.sync.SyncServiceProcessor.SyncInProgress;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Scheduler;
@@ -42,7 +43,7 @@ public final class SyncServiceRunner {
 	}
 
 	public interface VersionUpdatesRx {
-		Observable<Long> versionUpdates();
+		Observable<VerifiedLedgerHeaderAndProof> ledgerStateUpdates();
 	}
 
 	private final StateSyncNetwork stateSyncNetwork;
@@ -95,7 +96,7 @@ public final class SyncServiceRunner {
 				.observeOn(singleThreadScheduler)
 				.subscribe(syncServiceProcessor::processSyncTimeout);
 
-			Disposable d4 = versionUpdatesRx.versionUpdates()
+			Disposable d4 = versionUpdatesRx.ledgerStateUpdates()
 				.observeOn(singleThreadScheduler)
 				.subscribe(syncServiceProcessor::processVersionUpdate);
 

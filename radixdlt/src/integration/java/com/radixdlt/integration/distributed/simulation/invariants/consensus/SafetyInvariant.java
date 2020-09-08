@@ -15,10 +15,10 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.simulation.invariants.bft;
+package com.radixdlt.integration.distributed.simulation.invariants.consensus;
 
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochView;
@@ -73,7 +73,10 @@ public class SafetyInvariant implements TestInvariant {
 			.flatMap(nodeAndVertex -> {
 				final BFTNode node = nodeAndVertex.getFirst();
 				final Vertex vertex = nodeAndVertex.getSecond();
-				final EpochView epochView = EpochView.of(vertex.getEpoch(), vertex.getView());
+				final EpochView epochView = EpochView.of(
+					vertex.getQC().getProposed().getLedgerState().getEpoch(),
+					vertex.getView()
+				);
 
 				final Vertex currentVertexAtView = committedVertices.get(epochView);
 				if (currentVertexAtView != null) {
@@ -81,13 +84,19 @@ public class SafetyInvariant implements TestInvariant {
 						return conflictingVerticesError(vertex, currentVertexAtView);
 					}
 				} else {
-					EpochView parentEpochView = EpochView.of(vertex.getEpoch(), vertex.getParentMetadata().getView());
+					EpochView parentEpochView = EpochView.of(
+						vertex.getQC().getProposed().getLedgerState().getEpoch(),
+						vertex.getParentHeader().getView()
+					);
 					Vertex parent = committedVertices.get(parentEpochView);
 					if (parent == null) {
 						Entry<EpochView, Vertex> higherCommitted = committedVertices.higherEntry(parentEpochView);
 						if (higherCommitted != null) {
-							VertexMetadata higherParentMetadata = higherCommitted.getValue().getParentMetadata();
-							EpochView higherCommittedParentEpochView = EpochView.of(higherParentMetadata.getEpoch(), higherParentMetadata.getView());
+							BFTHeader higherParentHeader = higherCommitted.getValue().getParentHeader();
+							EpochView higherCommittedParentEpochView = EpochView.of(
+								higherParentHeader.getLedgerState().getEpoch(),
+								higherParentHeader.getView()
+							);
 							if (epochView.compareTo(higherCommittedParentEpochView) > 0) {
 								return brokenChainError(vertex, higherCommitted.getValue());
 							}

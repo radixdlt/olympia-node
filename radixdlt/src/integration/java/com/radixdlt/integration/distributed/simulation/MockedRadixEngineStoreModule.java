@@ -23,9 +23,11 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.consensus.PreparedCommand;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.View;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.CommittedCommandsReader;
@@ -56,8 +58,8 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 	}
 
 	@Provides
-	public VertexMetadata genesisVertexMetadata() {
-		final PreparedCommand preparedCommand = PreparedCommand.create(0, 0, true);
-		return VertexMetadata.ofGenesisAncestor(preparedCommand);
+	public VerifiedLedgerHeaderAndProof genesisVertexMetadata() {
+		final LedgerHeader ledgerHeader = LedgerHeader.create(0, View.genesis(), 0, Hash.ZERO_HASH, 0, true);
+		return VerifiedLedgerHeaderAndProof.ofGenesisAncestor(ledgerHeader);
 	}
 }

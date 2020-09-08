@@ -25,10 +25,9 @@ import com.radixdlt.consensus.safety.SafetyState.Builder;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.PreparedCommand;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.crypto.ECKeyPair;
 import org.junit.Before;
 import org.junit.Test;
@@ -42,7 +41,7 @@ import static org.mockito.Mockito.when;
  * This tests that the {@link SafetyRules} implementation obeys HotStuff's safety and commit rules.
  */
 public class SafetyRulesTest {
-	private static final VertexMetadata genesisAncestor = VertexMetadata.ofGenesisAncestor(mock(PreparedCommand.class));
+	private static final BFTHeader genesisAncestor = BFTHeader.ofGenesisAncestor(mock(LedgerHeader.class));
 	private static final VoteData GENESIS_DATA = new VoteData(genesisAncestor, genesisAncestor, null);
 	private static final QuorumCertificate GENESIS_QC = new QuorumCertificate(GENESIS_DATA, new TimestampedECDSASignatures());
 
@@ -62,7 +61,7 @@ public class SafetyRulesTest {
 		Vertex vertex = mock(Vertex.class);
 		when(vertex.getView()).thenReturn(view);
 
-		assertThatThrownBy(() -> this.safetyRules.voteFor(vertex, mock(VertexMetadata.class), 0L, 0L))
+		assertThatThrownBy(() -> this.safetyRules.voteFor(vertex, mock(BFTHeader.class), 0L, 0L))
 			.isInstanceOf(SafetyViolationException.class);
 	}
 
@@ -76,7 +75,7 @@ public class SafetyRulesTest {
 		when(qc.getView()).thenReturn(View.of(0));
 		when(vertex.getQC()).thenReturn(qc);
 
-		assertThatThrownBy(() -> this.safetyRules.voteFor(vertex, mock(VertexMetadata.class), 0L, 0L))
+		assertThatThrownBy(() -> this.safetyRules.voteFor(vertex, mock(BFTHeader.class), 0L, 0L))
 			.isInstanceOf(SafetyViolationException.class);
 	}
 
@@ -86,9 +85,9 @@ public class SafetyRulesTest {
 		when(safetyState.getLockedView()).thenReturn(View.of(0));
 		when(safetyState.toBuilder()).thenReturn(mock(Builder.class));
 		Vertex vertex = Vertex.createVertex(GENESIS_QC, View.of(1), null);
-		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
-		Vote vote = safetyRules.voteFor(vertex, vertexMetadata, 0L, 0L);
-		assertThat(vote.getVoteData().getProposed()).isEqualTo(vertexMetadata);
+		BFTHeader header = mock(BFTHeader.class);
+		Vote vote = safetyRules.voteFor(vertex, header, 0L, 0L);
+		assertThat(vote.getVoteData().getProposed()).isEqualTo(header);
 		assertThat(vote.getVoteData().getParent()).isEqualTo(vertex.getQC().getProposed());
 		assertThat(vote.getVoteData().getCommitted()).isEmpty();
 	}
@@ -99,10 +98,10 @@ public class SafetyRulesTest {
 		when(safetyState.getLockedView()).thenReturn(View.of(0));
 		when(safetyState.toBuilder()).thenReturn(mock(Builder.class));
 		Vertex vertex = Vertex.createVertex(GENESIS_QC, View.of(1), null);
-		VoteData voteData = new VoteData(VertexMetadata.ofVertex(vertex, mock(PreparedCommand.class)), vertex.getQC().getProposed(), null);
+		VoteData voteData = new VoteData(BFTHeader.ofVertex(vertex, mock(LedgerHeader.class)), vertex.getQC().getProposed(), null);
 		QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 		Vertex proposal = Vertex.createVertex(qc, View.of(2), null);
-		Vote vote = safetyRules.voteFor(proposal, mock(VertexMetadata.class), 0L, 0L);
+		Vote vote = safetyRules.voteFor(proposal, mock(BFTHeader.class), 0L, 0L);
 		assertThat(vote.getVoteData().getCommitted()).isEmpty();
 	}
 
@@ -113,17 +112,17 @@ public class SafetyRulesTest {
 		when(safetyState.toBuilder()).thenReturn(mock(Builder.class));
 
 		Vertex grandParent = Vertex.createVertex(GENESIS_QC, View.of(1), null);
-		VertexMetadata committed = VertexMetadata.ofVertex(grandParent, mock(PreparedCommand.class));
+		BFTHeader committed = BFTHeader.ofVertex(grandParent, mock(LedgerHeader.class));
 		VoteData voteData = new VoteData(committed, grandParent.getQC().getProposed(), null);
 		QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 
 		Vertex parent = Vertex.createVertex(qc, View.of(2), null);
-		VoteData parentVoteData = new VoteData(VertexMetadata.ofVertex(parent, mock(PreparedCommand.class)), parent.getQC().getProposed(), null);
+		VoteData parentVoteData = new VoteData(BFTHeader.ofVertex(parent, mock(LedgerHeader.class)), parent.getQC().getProposed(), null);
 		QuorumCertificate parentQC = new QuorumCertificate(parentVoteData, new TimestampedECDSASignatures());
 
 		Vertex proposal = Vertex.createVertex(parentQC, View.of(3), null);
 
-		Vote vote = safetyRules.voteFor(proposal, mock(VertexMetadata.class), 0L, 0L);
+		Vote vote = safetyRules.voteFor(proposal, mock(BFTHeader.class), 0L, 0L);
 		assertThat(vote.getVoteData().getCommitted()).hasValue(committed);
 	}
 
@@ -134,39 +133,16 @@ public class SafetyRulesTest {
 		when(safetyState.toBuilder()).thenReturn(mock(Builder.class));
 
 		Vertex grandParent = Vertex.createVertex(GENESIS_QC, View.of(1), null);
-		VoteData voteData = new VoteData(VertexMetadata.ofVertex(grandParent, mock(PreparedCommand.class)), grandParent.getQC().getProposed(), null);
+		VoteData voteData = new VoteData(BFTHeader.ofVertex(grandParent, mock(LedgerHeader.class)), grandParent.getQC().getProposed(), null);
 		QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 
 		Vertex parent = Vertex.createVertex(qc, View.of(2), null);
-		VoteData parentVoteData = new VoteData(VertexMetadata.ofVertex(parent, mock(PreparedCommand.class)), parent.getQC().getProposed(), null);
+		VoteData parentVoteData = new VoteData(BFTHeader.ofVertex(parent, mock(LedgerHeader.class)), parent.getQC().getProposed(), null);
 		QuorumCertificate parentQC = new QuorumCertificate(parentVoteData, new TimestampedECDSASignatures());
 
 		Vertex proposal = Vertex.createVertex(parentQC, View.of(4), null);
 
-		Vote vote = safetyRules.voteFor(proposal, mock(VertexMetadata.class), 0L, 0L);
+		Vote vote = safetyRules.voteFor(proposal, mock(BFTHeader.class), 0L, 0L);
 		assertThat(vote.getVoteData().getCommitted()).isEmpty();
-	}
-
-	@Test
-	public void when_process_qc_with_commit_greater_than_current__then_return_commit() {
-		when(safetyState.getLastVotedView()).thenReturn(View.of(0));
-		when(safetyState.getLockedView()).thenReturn(View.of(0));
-		when(safetyState.getCommittedView()).thenReturn(View.of(0));
-		when(safetyState.toBuilder()).thenReturn(mock(Builder.class));
-
-		Hash toBeCommitted = mock(Hash.class);
-
-		VertexMetadata committed = new VertexMetadata(0, View.of(1), toBeCommitted, mock(PreparedCommand.class));
-		VoteData voteData = new VoteData(
-			new VertexMetadata(0, View.of(3), mock(Hash.class), mock(PreparedCommand.class)),
-			new VertexMetadata(0, View.of(2), mock(Hash.class), mock(PreparedCommand.class)),
-			committed
-		);
-
-		QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-
-		assertThat(safetyRules.process(qc)).hasValue(
-			committed
-		);
 	}
 }

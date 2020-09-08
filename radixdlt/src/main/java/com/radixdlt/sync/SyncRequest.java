@@ -17,7 +17,7 @@
 
 package com.radixdlt.sync;
 
-import com.radixdlt.network.addressbook.Peer;
+import com.radixdlt.consensus.bft.BFTNode;
 import java.util.Objects;
 
 /**
@@ -25,15 +25,15 @@ import java.util.Objects;
  */
 public final class SyncRequest {
 	private final long stateVersion;
-	private final Peer peer;
+	private final BFTNode node;
 
-	public SyncRequest(Peer peer, long stateVersion) {
-		this.peer = Objects.requireNonNull(peer);
+	public SyncRequest(BFTNode node, long stateVersion) {
+		this.node = Objects.requireNonNull(node);
 		this.stateVersion = stateVersion;
 	}
 
-	public Peer getPeer() {
-		return peer;
+	public BFTNode getNode() {
+		return node;
 	}
 
 	public long getStateVersion() {

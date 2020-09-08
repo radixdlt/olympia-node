@@ -24,14 +24,15 @@ import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.EmptyVertexStoreEventProcessor;
+import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.ProposerElectionFactory;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.Timeout;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStoreEventProcessor;
 import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.bft.View;
@@ -96,7 +97,7 @@ public final class EpochManager {
 		 * @param node the peer to send to
 		 * @param ancestor the ancestor of the epoch
 		 */
-		void sendGetEpochResponse(BFTNode node, VertexMetadata ancestor);
+		void sendGetEpochResponse(BFTNode node, VerifiedLedgerHeaderAndProof ancestor);
 	}
 
 	public interface EpochInfoSender {
@@ -126,7 +127,7 @@ public final class EpochManager {
 	private final EpochInfoSender epochInfoSender;
 	private final SyncRequestSender syncRequestSender;
 
-	private VertexMetadata lastConstructed = null;
+	private VerifiedLedgerHeaderAndProof lastConstructed = null;
 	private EpochChange currentEpoch;
 	private VertexStoreEventProcessor vertexStoreEventProcessor;
 	private BFTEventProcessor bftEventProcessor;
@@ -164,7 +165,6 @@ public final class EpochManager {
 
 	private void updateEpochState() {
 		BFTValidatorSet validatorSet = this.currentEpoch.getValidatorSet();
-		VertexMetadata ancestorMetadata = this.currentEpoch.getAncestor();
 
 		final BFTEventProcessor bftEventProcessor;
 		final VertexStoreEventProcessor vertexStoreEventProcessor;
@@ -174,17 +174,17 @@ public final class EpochManager {
 			bftEventProcessor =  EmptyBFTEventProcessor.INSTANCE;
 			vertexStoreEventProcessor = EmptyVertexStoreEventProcessor.INSTANCE;
 		} else {
+			LedgerHeader nextLedgerHeader = this.currentEpoch.getNextLedgerState();
+			final long nextEpoch = nextLedgerHeader.getEpoch();
 			logEpochChange(this.currentEpoch, "included in");
-
-			Vertex genesisVertex = Vertex.createGenesis(ancestorMetadata);
-			final long nextEpoch = genesisVertex.getEpoch();
 
 			ProposerElection proposerElection = proposerElectionFactory.create(validatorSet);
 			TimeoutSender sender = (view, ms) -> localTimeoutSender.scheduleTimeout(new LocalTimeout(nextEpoch, view), ms);
 			Pacemaker pacemaker = pacemakerFactory.create(sender);
 
 			// TODO: Recover VertexStore
-			QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(genesisVertex);
+			Vertex genesisVertex = Vertex.createGenesis(this.currentEpoch.getPrevLedgerState());
+			QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
 			VertexStore vertexStore = vertexStoreFactory.create(genesisVertex, genesisQC, ledger);
 			vertexStoreEventProcessor = vertexStore;
 
@@ -222,28 +222,25 @@ public final class EpochManager {
 	}
 
 	private long currentEpoch() {
-		return this.currentEpoch.getAncestor().getEpoch() + 1;
+		return this.currentEpoch.getEpoch();
 	}
 
 	public void processEpochChange(EpochChange epochChange) {
-		log.trace("{}: EPOCH_CHANGE: {}", this.self, epochChange);
-		BFTValidatorSet validatorSet = epochChange.getValidatorSet();
-		VertexMetadata ancestorMetadata = epochChange.getAncestor();
-		Vertex genesisVertex = Vertex.createGenesis(ancestorMetadata);
-		final long nextEpoch = genesisVertex.getEpoch();
-
 		// Sanity check
-		if (nextEpoch <= this.currentEpoch()) {
+		if (epochChange.getEpoch() <= this.currentEpoch()) {
 			throw new IllegalStateException("Epoch change has already occurred: " + epochChange);
 		}
 
+		log.trace("{}: EPOCH_CHANGE: {}", this.self, epochChange);
+
 		// If constructed the end of the previous epoch then broadcast new epoch to new validator set
 		// TODO: Move this into when lastConstructed is set
-		if (lastConstructed != null && lastConstructed.getEpoch() == ancestorMetadata.getEpoch()) {
+		if (lastConstructed != null && lastConstructed.getEpoch() == epochChange.getEpoch() - 1) {
 			log.info("{}: EPOCH_CHANGE: broadcasting next epoch", this.self);
+			BFTValidatorSet validatorSet = epochChange.getValidatorSet();
 			for (BFTValidator validator : validatorSet.getValidators()) {
 				if (!validator.getNode().equals(self)) {
-					epochsRPCSender.sendGetEpochResponse(validator.getNode(), ancestorMetadata);
+					epochsRPCSender.sendGetEpochResponse(validator.getNode(), epochChange.getProof());
 				}
 			}
 		}
@@ -253,14 +250,14 @@ public final class EpochManager {
 		this.bftEventProcessor.start();
 
 		// Execute any queued up consensus events
-		final List<ConsensusEvent> queuedEventsForEpoch = queuedEvents.getOrDefault(nextEpoch, Collections.emptyList());
+		final List<ConsensusEvent> queuedEventsForEpoch = queuedEvents.getOrDefault(epochChange.getEpoch(), Collections.emptyList());
 		for (ConsensusEvent consensusEvent : queuedEventsForEpoch) {
 			this.processConsensusEventInternal(consensusEvent);
 		}
 
 		numQueuedConsensusEvents -= queuedEventsForEpoch.size();
 		counters.set(CounterType.EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS, numQueuedConsensusEvents);
-		queuedEvents.remove(nextEpoch);
+		queuedEvents.remove(epochChange.getEpoch());
 	}
 
 	private void logEpochChange(EpochChange epochChange, String message) {
@@ -270,7 +267,7 @@ public final class EpochManager {
 			StringBuilder epochMessage = new StringBuilder(this.self.getSimpleName());
 			epochMessage.append(": EPOCH_CHANGE: ");
 			epochMessage.append(message);
-			epochMessage.append(" new epoch ").append(epochChange.getAncestor().getEpoch() + 1);
+			epochMessage.append(" new epoch ").append(epochChange.getEpoch());
 			epochMessage.append(" with ").append(epochChange.getValidatorSet().getValidators().size()).append(" validators: ");
 			Iterator<BFTValidator> i = epochChange.getValidatorSet().getValidators().iterator();
 			if (i.hasNext()) {
@@ -290,10 +287,10 @@ public final class EpochManager {
 		msg.append(v.getNode().getSimpleName()).append(':').append(v.getPower());
 	}
 
-	private void processEndOfEpoch(VertexMetadata vertexMetadata) {
-		log.trace("{}: END_OF_EPOCH: {}", this.self, vertexMetadata);
-		if (this.lastConstructed == null || this.lastConstructed.getEpoch() < vertexMetadata.getEpoch()) {
-			this.lastConstructed = vertexMetadata;
+	private void processEndOfEpoch(VerifiedLedgerHeaderAndProof ledgerState) {
+		log.trace("{}: END_OF_EPOCH: {}", this.self, ledgerState);
+		if (this.lastConstructed == null || this.lastConstructed.getEpoch() < ledgerState.getEpoch()) {
+			this.lastConstructed = ledgerState;
 
 			// Stop processing new events if end of epoch
 			// but keep VertexStore alive to help others in vertex syncing
@@ -305,7 +302,7 @@ public final class EpochManager {
 		log.trace("{}: GET_EPOCH_REQUEST: {}", this.self, request);
 
 		if (this.currentEpoch() > request.getEpoch()) {
-			epochsRPCSender.sendGetEpochResponse(request.getAuthor(), this.currentEpoch.getAncestor());
+			epochsRPCSender.sendGetEpochResponse(request.getAuthor(), this.currentEpoch.getProof());
 		} else {
 			log.warn("{}: GET_EPOCH_REQUEST: {} but currently on epoch: {}",
 				this.self::getSimpleName, () -> request, this::currentEpoch
@@ -319,13 +316,13 @@ public final class EpochManager {
 	public void processGetEpochResponse(GetEpochResponse response) {
 		log.trace("{}: GET_EPOCH_RESPONSE: {}", this.self, response);
 
-		if (response.getEpochAncestor() == null) {
+		if (response.getEpochProof() == null) {
 			log.warn("{}: Received empty GetEpochResponse {}", this.self, response);
 			// TODO: retry
 			return;
 		}
 
-		final VertexMetadata ancestor = response.getEpochAncestor();
+		final VerifiedLedgerHeaderAndProof ancestor = response.getEpochProof();
 		if (ancestor.getEpoch() >= this.currentEpoch()) {
 			syncRequestSender.sendLocalSyncRequest(new LocalSyncRequest(ancestor, ImmutableList.of(response.getAuthor())));
 		} else {

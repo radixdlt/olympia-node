@@ -41,9 +41,9 @@ public class OneSlowNodeTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodesAndLatencies(4, minLatency, minLatency, minLatency, maxLatency)
 		.pacemakerTimeout(synchronousTimeout)
-		.checkSafety("safety")
-		.checkAllProposalsHaveDirectParents("directParents")
-		.checkNoTimeouts("noTimeouts");
+		.checkConsensusSafety("safety")
+		.checkConsensusAllProposalsHaveDirectParents("directParents")
+		.checkConsensusNoTimeouts("noTimeouts");
 
 	/**
 	 * Tests a static configuration of 3 fast, equal nodes and 1 slow node.

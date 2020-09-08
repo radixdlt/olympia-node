@@ -81,7 +81,7 @@ public final class NewView implements RequiresSyncConsensusEvent {
 
 	@Override
 	public long getEpoch() {
-		return qc.getProposed().getEpoch();
+		return qc.getProposed().getLedgerState().getEpoch();
 	}
 
 	@Override

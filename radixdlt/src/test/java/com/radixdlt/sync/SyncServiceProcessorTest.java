@@ -20,7 +20,6 @@ package com.radixdlt.sync;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -29,165 +28,133 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.PreparedCommand;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.ledger.CommittedCommand;
+import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
-import com.radixdlt.identifiers.EUID;
-import com.radixdlt.network.addressbook.AddressBook;
-import com.radixdlt.network.addressbook.Peer;
+import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
 import com.radixdlt.sync.SyncServiceProcessor.SyncTimeoutScheduler;
 import com.radixdlt.sync.SyncServiceProcessor.SyncedCommandSender;
-import java.util.Optional;
+import java.util.Comparator;
 import org.junit.Before;
 import org.junit.Test;
 
 public class SyncServiceProcessorTest {
-
 	private StateSyncNetwork stateSyncNetwork;
 	private SyncServiceProcessor syncServiceProcessor;
-	private AddressBook addressBook;
 	private RadixEngineStateComputer stateComputer;
 	private SyncedCommandSender syncedCommandSender;
 	private SyncTimeoutScheduler syncTimeoutScheduler;
-
-	private static CommittedCommand buildWithVersion(long version) {
-		CommittedCommand committedCommand = mock(CommittedCommand.class);
-		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
-		PreparedCommand preparedCommand = mock(PreparedCommand.class);
-		when(preparedCommand.getStateVersion()).thenReturn(version);
-		when(vertexMetadata.getPreparedCommand()).thenReturn(preparedCommand);
-		when(committedCommand.getVertexMetadata()).thenReturn(vertexMetadata);
-		return committedCommand;
-	}
+	private VerifiedLedgerHeaderAndProof currentHeader;
+	private Comparator<VerifiedLedgerHeaderAndProof> headerComparator;
 
 	@Before
 	public void setUp() {
-		final long currentVersion = 0;
 		this.stateSyncNetwork = mock(StateSyncNetwork.class);
-		this.addressBook = mock(AddressBook.class);
 		this.stateComputer = mock(RadixEngineStateComputer.class);
 		this.syncedCommandSender = mock(SyncedCommandSender.class);
 		this.syncTimeoutScheduler = mock(SyncTimeoutScheduler.class);
+		this.currentHeader = mock(VerifiedLedgerHeaderAndProof.class);
+		this.headerComparator = mock(Comparator.class);
 		this.syncServiceProcessor = new SyncServiceProcessor(
 			stateComputer,
 			stateSyncNetwork,
-			addressBook,
 			syncedCommandSender,
 			syncTimeoutScheduler,
-			currentVersion,
+			headerComparator,
+			currentHeader,
 			2,
 			1
 		);
 	}
 
 	@Test
-	public void when_remote_sync_request__then_process_it() {
+	public void when_remote_sync_request__then_process_it() throws NextCommittedLimitReachedException {
 		SyncRequest syncRequest = mock(SyncRequest.class);
-		Peer peer = mock(Peer.class);
-		when(syncRequest.getPeer()).thenReturn(peer);
-		when(stateComputer.getCommittedCommands(anyLong(), anyInt())).thenReturn(ImmutableList.of());
+		BFTNode node = mock(BFTNode.class);
+		when(syncRequest.getNode()).thenReturn(node);
+		VerifiedCommandsAndProof verifiedCommandsAndProof = mock(VerifiedCommandsAndProof.class);
+		when(stateComputer.getNextCommittedCommands(anyLong(), anyInt())).thenReturn(verifiedCommandsAndProof);
 		syncServiceProcessor.processSyncRequest(syncRequest);
-		verify(stateSyncNetwork, times(1)).sendSyncResponse(eq(peer), any());
+		verify(stateSyncNetwork, times(1)).sendSyncResponse(eq(node), any());
 	}
 
 	@Test
-	public void basicSynchronization() {
-		final long currentVersion = 6;
-		final long targetVersion = 15;
+	public void when_remote_sync_request_and_unable__then_dont_do_anything() {
+		syncServiceProcessor.processSyncRequest(mock(SyncRequest.class));
+		verify(stateSyncNetwork, never()).sendSyncResponse(any(), any());
+	}
 
-		BFTNode node = mock(BFTNode.class);
-		ECPublicKey key = mock(ECPublicKey.class);
-		when(key.euid()).thenReturn(mock(EUID.class));
-		when(node.getKey()).thenReturn(key);
-		Peer peer = mock(Peer.class);
-		when(peer.hasSystem()).thenReturn(true);
-		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
-		VertexMetadata target = mock(VertexMetadata.class);
-		PreparedCommand preparedCommand = mock(PreparedCommand.class);
-		when(preparedCommand.getStateVersion()).thenReturn(targetVersion);
-		when(target.getPreparedCommand()).thenReturn(preparedCommand);
-		syncServiceProcessor.processVersionUpdate(currentVersion);
-		LocalSyncRequest request = new LocalSyncRequest(target, ImmutableList.of(node));
+	@Test
+	public void when_remote_sync_request_and_exception__then_dont_do_anything() throws NextCommittedLimitReachedException {
+		syncServiceProcessor.processSyncRequest(mock(SyncRequest.class));
+		when(stateComputer.getNextCommittedCommands(anyLong(), anyInt())).thenThrow(new NextCommittedLimitReachedException(1));
+		verify(stateSyncNetwork, never()).sendSyncResponse(any(), any());
+	}
+
+	@Test
+	public void given_some_current_header__when_response_with_higher_header__then_should_send_sync() {
+		VerifiedCommandsAndProof commands = mock(VerifiedCommandsAndProof.class);
+		VerifiedLedgerHeaderAndProof ledgerHeader = mock(VerifiedLedgerHeaderAndProof.class);
+		when(headerComparator.compare(ledgerHeader, currentHeader)).thenReturn(1);
+		when(commands.getHeader()).thenReturn(ledgerHeader);
+		syncServiceProcessor.processSyncResponse(commands);
+
+		verify(syncedCommandSender, times(1)).sendSyncedCommand(eq(commands));
+	}
+
+	@Test
+	public void given_some_current_header__when_response_with_lower_version__then_should_not_send_sync() {
+		VerifiedCommandsAndProof commands = mock(VerifiedCommandsAndProof.class);
+		VerifiedLedgerHeaderAndProof ledgerHeader = mock(VerifiedLedgerHeaderAndProof.class);
+		when(headerComparator.compare(ledgerHeader, currentHeader)).thenReturn(-1);
+		when(commands.getHeader()).thenReturn(ledgerHeader);
+		syncServiceProcessor.processSyncResponse(commands);
+
+		verify(syncedCommandSender, never()).sendSyncedCommand(eq(commands));
+	}
+
+	@Test
+	public void given_some_current_header__when_local_request_has_equal_target__then_should_do_nothing() {
+		VerifiedLedgerHeaderAndProof targetHeader = mock(VerifiedLedgerHeaderAndProof.class);
+		when(headerComparator.compare(targetHeader, currentHeader)).thenReturn(0);
+		LocalSyncRequest request = mock(LocalSyncRequest.class);
+		when(request.getTarget()).thenReturn(targetHeader);
 		syncServiceProcessor.processLocalSyncRequest(request);
-
-		ImmutableList.Builder<CommittedCommand> newCommands1 = ImmutableList.builder();
-		for (int i = 7; i <= 12; i++) {
-			newCommands1.add(buildWithVersion(i));
-		}
-		syncServiceProcessor.processSyncResponse(newCommands1.build());
-		ImmutableList.Builder<CommittedCommand> newAtoms2 = ImmutableList.builder();
-		for (int i = 10; i <= 18; i++) {
-			newAtoms2.add(buildWithVersion(i));
-		}
-		syncServiceProcessor.processSyncResponse(newAtoms2.build());
-
-		verify(syncedCommandSender, times((int) (18 - currentVersion))).sendSyncedCommand(any());
+		verify(syncedCommandSender, never()).sendSyncedCommand(any());
+		verify(stateSyncNetwork, never()).sendSyncRequest(any(), anyLong());
+		verify(syncTimeoutScheduler, never()).scheduleTimeout(any(), anyLong());
 	}
 
 	@Test
-	public void syncWithLostMessages() {
-		final long currentVersion = 6;
-		final long targetVersion = 15;
-		BFTNode node = mock(BFTNode.class);
-		ECPublicKey key = mock(ECPublicKey.class);
-		when(key.euid()).thenReturn(mock(EUID.class));
-		when(node.getKey()).thenReturn(key);
-		Peer peer = mock(Peer.class);
-		when(peer.hasSystem()).thenReturn(true);
-		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
-		VertexMetadata target = mock(VertexMetadata.class);
-		PreparedCommand preparedCommand = mock(PreparedCommand.class);
-		when(preparedCommand.getStateVersion()).thenReturn(targetVersion);
-		when(target.getPreparedCommand()).thenReturn(preparedCommand);
-		syncServiceProcessor.processVersionUpdate(currentVersion);
-		LocalSyncRequest request = new LocalSyncRequest(target, ImmutableList.of(node));
+	public void given_some_current_header__when_local_request_has_higher_target__then_should_send_timeout_and_remote_request() {
+		when(currentHeader.getStateVersion()).thenReturn(1L);
+		VerifiedLedgerHeaderAndProof targetHeader = mock(VerifiedLedgerHeaderAndProof.class);
+		when(targetHeader.getStateVersion()).thenReturn(2L);
+		when(headerComparator.compare(targetHeader, currentHeader)).thenReturn(1);
+		LocalSyncRequest request = mock(LocalSyncRequest.class);
+		when(request.getTarget()).thenReturn(targetHeader);
+		when(request.getTargetNodes()).thenReturn(ImmutableList.of(mock(BFTNode.class)));
 		syncServiceProcessor.processLocalSyncRequest(request);
-		ImmutableList.Builder<CommittedCommand> newCommands1 = ImmutableList.builder();
-		for (int i = 7; i <= 11; i++) {
-			newCommands1.add(buildWithVersion(i));
-		}
-		newCommands1.add(buildWithVersion(13));
-		newCommands1.add(buildWithVersion(15));
-		syncServiceProcessor.processSyncResponse(newCommands1.build());
-		verify(syncedCommandSender, never())
-			.sendSyncedCommand(argThat(a -> a.getVertexMetadata().getPreparedCommand().getStateVersion() > 11));
+		verify(syncedCommandSender, never()).sendSyncedCommand(any());
+		verify(stateSyncNetwork, times(1)).sendSyncRequest(any(), anyLong());
+		verify(syncTimeoutScheduler, times(1)).scheduleTimeout(any(), anyLong());
 	}
 
+	// TODO: require state versions to define whether whether header is higher or lower
+	// TODO: thus rendering this test deprecated
 	@Test
-	public void requestSent() {
-		final long currentVersion = 10;
-		final long targetVersion = 15;
-		BFTNode node = mock(BFTNode.class);
-		ECPublicKey key = mock(ECPublicKey.class);
-		when(key.euid()).thenReturn(mock(EUID.class));
-		when(node.getKey()).thenReturn(key);
-		Peer peer = mock(Peer.class);
-		when(peer.hasSystem()).thenReturn(true);
-		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
-		VertexMetadata target = mock(VertexMetadata.class);
-		PreparedCommand preparedCommand = mock(PreparedCommand.class);
-		when(preparedCommand.getStateVersion()).thenReturn(targetVersion);
-		when(target.getPreparedCommand()).thenReturn(preparedCommand);
-		syncServiceProcessor.processVersionUpdate(currentVersion);
-		LocalSyncRequest request = new LocalSyncRequest(target, ImmutableList.of(node));
+	public void given_some_current_header__when_local_request_has_higher_target_but_same_version__then_should_send_timeout_and_remote_request() {
+		when(currentHeader.getStateVersion()).thenReturn(1L);
+		VerifiedLedgerHeaderAndProof targetHeader = mock(VerifiedLedgerHeaderAndProof.class);
+		when(targetHeader.getStateVersion()).thenReturn(1L);
+		when(headerComparator.compare(targetHeader, currentHeader)).thenReturn(1);
+		LocalSyncRequest request = mock(LocalSyncRequest.class);
+		when(request.getTarget()).thenReturn(targetHeader);
+		when(request.getTargetNodes()).thenReturn(ImmutableList.of(mock(BFTNode.class)));
 		syncServiceProcessor.processLocalSyncRequest(request);
-		verify(stateSyncNetwork, times(1)).sendSyncRequest(any(), eq(10L));
-		verify(stateSyncNetwork, times(1)).sendSyncRequest(any(), eq(12L));
-		verify(stateSyncNetwork, times(1)).sendSyncRequest(any(), eq(14L));
-	}
-
-	@Test
-	public void atomsListPruning() {
-		ImmutableList.Builder<CommittedCommand> newCommands = ImmutableList.builder();
-		for (int i = 1000; i >= 1; i--) {
-			newCommands.add(buildWithVersion(i));
-		}
-		syncServiceProcessor.processSyncResponse(newCommands.build());
-
-		verify(syncedCommandSender, times(1))
-			.sendSyncedCommand(argThat(a -> a.getVertexMetadata().getPreparedCommand().getStateVersion() == 1));
+		verify(syncedCommandSender, times(1)).sendSyncedCommand(any());
+		verify(stateSyncNetwork, never()).sendSyncRequest(any(), anyLong());
+		verify(syncTimeoutScheduler, never()).scheduleTimeout(any(), anyLong());
 	}
 }

@@ -17,6 +17,8 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.ledger.VerifiedCommandsAndProof;
+
 /**
  * A distributed computer which manages the computed state in a BFT.
  */
@@ -28,14 +30,14 @@ public interface Ledger {
 	 * @param vertex the vertex to compute
 	 * @return the results of executing the prepare stage
 	 */
-	PreparedCommand prepare(Vertex vertex);
+	LedgerHeader prepare(Vertex vertex);
 
 	/**
 	 * Check if the ledger is commit synced at a particular state
-	 * @param vertexMetadata the metadata to sync to
+	 * @param header the metadata to sync to
 	 * @return Synced handler
 	 */
-	OnSynced ifCommitSynced(VertexMetadata vertexMetadata);
+	OnSynced ifCommitSynced(VerifiedLedgerHeaderAndProof header);
 
 	interface OnSynced {
 		OnNotSynced then(Runnable onSynced);
@@ -47,8 +49,7 @@ public interface Ledger {
 
 	/**
 	 * Commit a command
-	 * @param command the command to commit
-	 * @param vertexMetadata ledger metadata regarding command
+	 * @param verifiedCommandsAndProof the command to commit
 	 */
-	void commit(Command command, VertexMetadata vertexMetadata);
+	void commit(VerifiedCommandsAndProof verifiedCommandsAndProof);
 }

@@ -17,16 +17,15 @@
 
 package com.radixdlt.middleware2.network;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.ledger.CommittedCommand;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.sync.StateSyncNetwork;
 import com.radixdlt.sync.SyncRequest;
-import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageListener;
 import com.radixdlt.universe.Universe;
 import io.reactivex.rxjava3.core.Observable;
-import java.util.List;
 import java.util.Objects;
 import javax.inject.Inject;
 
@@ -36,18 +35,21 @@ import javax.inject.Inject;
 public final class MessageCentralLedgerSync implements StateSyncNetwork {
 	private final int magic;
 	private final MessageCentral messageCentral;
+	private final AddressBook addressBook;
 
 	@Inject
 	public MessageCentralLedgerSync(
 		Universe universe,
+		AddressBook addressBook,
 		MessageCentral messageCentral
 	) {
 		this.magic = universe.getMagic();
+		this.addressBook = addressBook;
 		this.messageCentral = Objects.requireNonNull(messageCentral);
 	}
 
 	@Override
-	public Observable<ImmutableList<CommittedCommand>> syncResponses() {
+	public Observable<VerifiedCommandsAndProof> syncResponses() {
 		return Observable.create(emitter -> {
 			MessageListener<SyncResponseMessage> listener = (src, msg) -> emitter.onNext(msg.getCommands());
 			this.messageCentral.addListener(SyncResponseMessage.class, listener);
@@ -58,21 +60,34 @@ public final class MessageCentralLedgerSync implements StateSyncNetwork {
 	@Override
 	public Observable<SyncRequest> syncRequests() {
 		return Observable.create(emitter -> {
-			MessageListener<SyncRequestMessage> listener = (src, msg) -> emitter.onNext(new SyncRequest(src, msg.getStateVersion()));
+			MessageListener<SyncRequestMessage> listener = (src, msg) -> {
+				if (src.hasSystem()) {
+					BFTNode node = BFTNode.create(src.getSystem().getKey());
+					emitter.onNext(new SyncRequest(node, msg.getStateVersion()));
+				}
+			};
 			this.messageCentral.addListener(SyncRequestMessage.class, listener);
 			emitter.setCancellable(() -> this.messageCentral.removeListener(listener));
 		});
 	}
 
 	@Override
-	public void sendSyncRequest(Peer peer, long stateVersion) {
-		SyncRequestMessage syncRequestMessage = new SyncRequestMessage(this.magic, stateVersion);
-		this.messageCentral.send(peer, syncRequestMessage);
+	public void sendSyncRequest(BFTNode node, long stateVersion) {
+		addressBook.peer(node.getKey().euid()).ifPresent(peer -> {
+			if (peer.hasSystem()) {
+				final SyncRequestMessage syncRequestMessage = new SyncRequestMessage(this.magic, stateVersion);
+				this.messageCentral.send(peer, syncRequestMessage);
+			}
+		});
 	}
 
 	@Override
-	public void sendSyncResponse(Peer peer, List<CommittedCommand> commands) {
-		final SyncResponseMessage syncResponseMessage = new SyncResponseMessage(this.magic, ImmutableList.copyOf(commands));
-		this.messageCentral.send(peer, syncResponseMessage);
+	public void sendSyncResponse(BFTNode node, VerifiedCommandsAndProof commands) {
+		addressBook.peer(node.getKey().euid()).ifPresent(peer -> {
+			if (peer.hasSystem()) {
+				final SyncResponseMessage syncResponseMessage = new SyncResponseMessage(this.magic, commands);
+				this.messageCentral.send(peer, syncResponseMessage);
+			}
+		});
 	}
 }

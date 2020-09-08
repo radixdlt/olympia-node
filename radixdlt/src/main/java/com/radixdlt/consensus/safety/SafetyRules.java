@@ -24,7 +24,7 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimestampedVoteData;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
@@ -35,7 +35,6 @@ import com.radixdlt.crypto.Hash;
 
 import com.radixdlt.utils.Longs;
 import java.util.Objects;
-import java.util.Optional;
 
 /**
  * Manages safety of the protocol.
@@ -62,9 +61,8 @@ public final class SafetyRules {
 	/**
 	 * Process a QC.
 	 * @param qc The quorum certificate
-	 * @return the just-committed vertex id, if any
 	 */
-	public Optional<VertexMetadata> process(QuorumCertificate qc) {
+	public void process(QuorumCertificate qc) {
 		final Builder safetyStateBuilder = this.state.toBuilder();
 
 		// prepare phase on qc's proposed vertex if there is a newer 1-chain
@@ -81,19 +79,7 @@ public final class SafetyRules {
 			safetyStateBuilder.lockedView(qc.getParent().getView());
 		}
 
-		// commit phase for a vertex if it's view is greater than last commit.
-		// otherwise, it must have already been committed
-		final Optional<VertexMetadata> commitMetadata = qc.getCommitted().flatMap(vmd -> {
-			if (vmd.getView().compareTo(this.state.getCommittedView()) > 0) {
-				safetyStateBuilder.committedView(vmd.getView());
-				return Optional.of(vmd);
-			}
-			return Optional.empty();
-		});
-
 		this.state = safetyStateBuilder.build();
-
-		return commitMetadata;
 	}
 
 	/**
@@ -108,22 +94,22 @@ public final class SafetyRules {
 		return new Proposal(proposedVertex, highestCommittedQC, this.self, signature, payload);
 	}
 
-	private static VoteData constructVoteData(Vertex proposedVertex, VertexMetadata proposedVertexMetadata) {
-		final VertexMetadata parent = proposedVertex.getQC().getProposed();
+	private static VoteData constructVoteData(Vertex proposedVertex, BFTHeader proposedHeader) {
+		final BFTHeader parent = proposedVertex.getQC().getProposed();
 
 		// Add a vertex to commit if creating a quorum for the proposed vertex would
 		// create three consecutive qcs.
-		final VertexMetadata toCommit;
-		if (proposedVertex.getView().equals(proposedVertex.getParentMetadata().getView().next())
-			&& !proposedVertex.getParentMetadata().getView().isGenesis() && !proposedVertex.getGrandParentMetadata().getView().isGenesis()
-			&& proposedVertex.getParentMetadata().getView().equals(proposedVertex.getGrandParentMetadata().getView().next())
+		final BFTHeader toCommit;
+		if (proposedVertex.getView().equals(proposedVertex.getParentHeader().getView().next())
+			&& !proposedVertex.getParentHeader().getView().isGenesis() && !proposedVertex.getGrandParentHeader().getView().isGenesis()
+			&& proposedVertex.getParentHeader().getView().equals(proposedVertex.getGrandParentHeader().getView().next())
 		) {
 			toCommit = proposedVertex.getQC().getParent();
 		} else {
 			toCommit = null;
 		}
 
-		return new VoteData(proposedVertexMetadata, parent, toCommit);
+		return new VoteData(proposedHeader, parent, toCommit);
 	}
 
 	/**
@@ -149,12 +135,12 @@ public final class SafetyRules {
 	 * Vote for a proposed vertex while ensuring that safety invariants are upheld.
 	 *
 	 * @param proposedVertex The proposed vertex
-	 * @param proposedVertexMetadata results of vertex execution
+	 * @param proposedHeader results of vertex execution
 	 * @param timestamp timestamp to use for the vote in milliseconds since epoch
 	 * @return A vote result containing the vote and any committed vertices
 	 * @throws SafetyViolationException In case the vertex would violate a safety invariant
 	 */
-	public Vote voteFor(Vertex proposedVertex, VertexMetadata proposedVertexMetadata, long timestamp, long payload) throws SafetyViolationException {
+	public Vote voteFor(Vertex proposedVertex, BFTHeader proposedHeader, long timestamp, long payload) throws SafetyViolationException {
 		// ensure vertex does not violate earlier votes
 		if (proposedVertex.getView().compareTo(this.state.getLastVotedView()) <= 0) {
 			throw new SafetyViolationException(proposedVertex, this.state, String.format(
@@ -170,7 +156,7 @@ public final class SafetyRules {
 		Builder safetyStateBuilder = this.state.toBuilder();
 		safetyStateBuilder.lastVotedView(proposedVertex.getView());
 
-		final VoteData voteData = constructVoteData(proposedVertex, proposedVertexMetadata);
+		final VoteData voteData = constructVoteData(proposedVertex, proposedHeader);
 		final TimestampedVoteData timestampedVoteData = new TimestampedVoteData(voteData, timestamp);
 
 		final Hash voteHash = hasher.hash(timestampedVoteData);

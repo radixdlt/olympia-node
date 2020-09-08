@@ -66,7 +66,7 @@ public class PendingVotesTest {
 		VoteData voteData = mock(VoteData.class);
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		when(validatorSet.containsNode(any())).thenReturn(true);
-		VertexMetadata proposed = voteWithoutSignature.getVoteData().getProposed();
+		BFTHeader proposed = voteWithoutSignature.getVoteData().getProposed();
 		when(voteData.getProposed()).thenReturn(proposed);
 
 		assertThatThrownBy(() -> pendingVotes.insertVote(voteWithoutSignature, validatorSet))
@@ -83,7 +83,7 @@ public class PendingVotesTest {
 			Collections.singleton(BFTValidator.from(vote1.getAuthor(), UInt256.ONE))
 		);
 		VoteData voteData = mock(VoteData.class);
-		VertexMetadata proposed = vote1.getVoteData().getProposed();
+		BFTHeader proposed = vote1.getVoteData().getProposed();
 		when(voteData.getProposed()).thenReturn(proposed);
 
 		assertThat(this.pendingVotes.insertVote(vote2, validatorSet)).isEmpty();
@@ -104,7 +104,7 @@ public class PendingVotesTest {
 		when(validatorSet.containsNode(any())).thenReturn(true);
 
 		VoteData voteData = mock(VoteData.class);
-		VertexMetadata proposed = vote.getVoteData().getProposed();
+		BFTHeader proposed = vote.getVoteData().getProposed();
 		when(voteData.getProposed()).thenReturn(proposed);
 
 		assertThat(this.pendingVotes.insertVote(vote, validatorSet)).isPresent();
@@ -124,7 +124,7 @@ public class PendingVotesTest {
 		when(validatorSet.containsNode(any())).thenReturn(true);
 
 		VoteData voteData = mock(VoteData.class);
-		VertexMetadata proposed = vote.getVoteData().getProposed();
+		BFTHeader proposed = vote.getVoteData().getProposed();
 		when(voteData.getProposed()).thenReturn(proposed);
 
 		// Preconditions
@@ -154,8 +154,8 @@ public class PendingVotesTest {
 
 	private Vote makeVoteWithoutSignatureFor(BFTNode author, View parentView, Hash vertexId) {
 		Vote vote = mock(Vote.class);
-		VertexMetadata proposed = new VertexMetadata(0, parentView.next(), vertexId, mock(PreparedCommand.class));
-		VertexMetadata parent = new VertexMetadata(0, parentView, Hash.random(), mock(PreparedCommand.class));
+		BFTHeader proposed = new BFTHeader(parentView.next(), vertexId, mock(LedgerHeader.class));
+		BFTHeader parent = new BFTHeader(parentView, Hash.random(), mock(LedgerHeader.class));
 		VoteData voteData = new VoteData(proposed, parent, null);
 		TimestampedVoteData timestampedVoteData = new TimestampedVoteData(voteData, 123456L);
 		when(vote.getVoteData()).thenReturn(voteData);

@@ -17,22 +17,19 @@
 
 package org.radix.serialization;
 
-import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atommodel.message.MessageParticle;
-import com.radixdlt.consensus.PreparedCommand;
-import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.TimestampedECDSASignatures;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.BFTHeader;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.ClientAtom.LedgerAtomConversionException;
 import com.radixdlt.statecomputer.CommittedAtom;
-import com.radixdlt.utils.UInt256;
 
 public class CommittedAtomSerializeTest extends SerializeObject<CommittedAtom> {
 	public CommittedAtomSerializeTest() {
@@ -55,9 +52,15 @@ public class CommittedAtomSerializeTest extends SerializeObject<CommittedAtom> {
 			throw new IllegalStateException();
 		}
 
-		return new CommittedAtom(clientAtom, VertexMetadata.ofGenesisAncestor(
-			PreparedCommand.create(0, 0L, false)
-		));
+		LedgerHeader ledgerHeader = LedgerHeader.create(0, View.genesis(), 0, Hash.random(), 0L, false);
+		VerifiedLedgerHeaderAndProof proof = new VerifiedLedgerHeaderAndProof(
+			BFTHeader.ofGenesisAncestor(ledgerHeader),
+			BFTHeader.ofGenesisAncestor(ledgerHeader),
+			0L, Hash.random(), ledgerHeader,
+			new TimestampedECDSASignatures()
+		);
+
+		return new CommittedAtom(clientAtom, 0L, proof);
 	}
 
 	private static CommittedAtom get() {

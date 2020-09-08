@@ -41,11 +41,13 @@ public class RandomValidatorsTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.pacemakerTimeout(5000)
 		.numNodes(numNodes)
-		.checkEpochHighView("epochHighView", View.of(100))
-		.checkSafety("safety")
-		.checkLiveness("liveness", 5000, TimeUnit.MILLISECONDS)
-		.checkNoTimeouts("noTimeouts")
-		.checkAllProposalsHaveDirectParents("directParents");
+		.checkEpochsHighViewCorrect("epochHighView", View.of(100))
+		.checkConsensusSafety("safety")
+		.checkConsensusLiveness("liveness", 5000, TimeUnit.MILLISECONDS)
+		.checkConsensusNoTimeouts("noTimeouts")
+		.checkConsensusAllProposalsHaveDirectParents("directParents")
+		.checkLedgerSyncedInOrder("syncedInOrder")
+		.checkLedgerProcessesConsensusCommitted("consensusToLedger");
 
 	private static Function<Long, IntStream> randomEpochToNodesMapper(Function<Long, Random> randomSupplier) {
 		return epoch -> {

@@ -23,8 +23,8 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.name.Named;
-import com.radixdlt.consensus.AddressBookGenesisVertexMetadataProvider;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.AddressBookGenesisHeaderProvider;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
@@ -38,12 +38,13 @@ import com.radixdlt.middleware2.store.EngineAtomIndices;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
-import com.radixdlt.statecomputer.CommandToBinaryConverter;
+import com.radixdlt.middleware2.store.CommandToBinaryConverter;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.statecomputer.CommittedCommandsReader;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LedgerEntryStore;
+import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
 import com.radixdlt.universe.Universe;
 
 import java.util.function.BiFunction;
@@ -98,19 +99,19 @@ public class RadixEngineStoreModule extends AbstractModule {
 	@Singleton
 	private CommittedAtom genesisAtom(
 		Universe universe,
-		VertexMetadata genesisVertexMetadata
+		VerifiedLedgerHeaderAndProof genesisHeader
 	) throws LedgerAtomConversionException {
 		final ClientAtom genesisAtom = ClientAtom.convertFromApiAtom(universe.getGenesis().get(0));
-		return new CommittedAtom(genesisAtom, genesisVertexMetadata);
+		return new CommittedAtom(genesisAtom, genesisHeader.getStateVersion(), genesisHeader);
 	}
 
 	@Provides
 	@Singleton
-	private AddressBookGenesisVertexMetadataProvider provider(
+	private AddressBookGenesisHeaderProvider provider(
 		AddressBook addressBook,
 		@Named("self") ECKeyPair selfKey
 	) {
-		return new AddressBookGenesisVertexMetadataProvider(
+		return new AddressBookGenesisHeaderProvider(
 			selfKey.getPublicKey(),
 			addressBook,
 			fixedNodeCount
@@ -120,17 +121,17 @@ public class RadixEngineStoreModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private BFTValidatorSet genesisValidatorSet(
-		AddressBookGenesisVertexMetadataProvider metadataProvider
+		AddressBookGenesisHeaderProvider metadataProvider
 	) {
 		return metadataProvider.getGenesisValidatorSet();
 	}
 
 	@Provides
 	@Singleton
-	private VertexMetadata genesisVertexMetadata(
-		AddressBookGenesisVertexMetadataProvider metadataProvider
+	private VerifiedLedgerHeaderAndProof genesisVertexMetadata(
+		AddressBookGenesisHeaderProvider metadataProvider
 	) {
-		return metadataProvider.getGenesisVertexMetadata();
+		return metadataProvider.getGenesisHeader();
 	}
 
 	@Provides
@@ -149,7 +150,7 @@ public class RadixEngineStoreModule extends AbstractModule {
 		ClientAtomToBinaryConverter clientAtomToBinaryConverter,
 		AtomIndexer atomIndexer,
 		Serialization serialization
-	) {
+	) throws NextCommittedLimitReachedException {
 		final CommittedAtomsStore engineStore = new CommittedAtomsStore(
 			committedAtomSender,
 			store,
@@ -158,8 +159,7 @@ public class RadixEngineStoreModule extends AbstractModule {
 			atomIndexer,
 			serialization
 		);
-		if (store.getNextCommittedLedgerEntries(genesisAtom.getVertexMetadata()
-			.getPreparedCommand().getStateVersion() - 1, 1).isEmpty()
+		if (store.getNextCommittedLedgerEntries(genesisAtom.getStateAndProof().getStateVersion() - 1, 1).isEmpty()
 		) {
 			engineStore.storeAtom(genesisAtom);
 		}

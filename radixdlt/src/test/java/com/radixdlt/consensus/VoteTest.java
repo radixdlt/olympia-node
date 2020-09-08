@@ -37,8 +37,8 @@ public class VoteTest {
 
 	@Before
 	public void setUp() {
-		VertexMetadata parent = new VertexMetadata(0, View.of(1234567890L), Hash.random(), mock(PreparedCommand.class));
-		this.voteData = new VoteData(VertexMetadata.ofGenesisAncestor(mock(PreparedCommand.class)), parent, null);
+		BFTHeader parent = new BFTHeader(View.of(1234567890L), Hash.random(), mock(LedgerHeader.class));
+		this.voteData = new VoteData(BFTHeader.ofGenesisAncestor(mock(LedgerHeader.class)), parent, null);
 		this.timestampedVoteData = new TimestampedVoteData(this.voteData, 123456L);
 		this.author = mock(BFTNode.class);
 		this.payload = 123456L;
@@ -53,7 +53,7 @@ public class VoteTest {
 
 	@Test
 	public void testGetters() {
-		assertEquals(this.testObject.getEpoch(), voteData.getProposed().getEpoch());
+		assertEquals(this.testObject.getEpoch(), voteData.getProposed().getLedgerState().getEpoch());
 		assertEquals(this.voteData, this.testObject.getVoteData());
 		assertEquals(this.author, this.testObject.getAuthor());
 		assertEquals(this.payload, this.testObject.getPayload());

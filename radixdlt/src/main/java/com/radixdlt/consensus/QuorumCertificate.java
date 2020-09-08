@@ -18,6 +18,7 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.utils.Pair;
 import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -57,13 +58,13 @@ public final class QuorumCertificate {
 	 * @param genesisVertex the vertex to create a qc for
 	 * @return a mocked QC
 	 */
-	public static QuorumCertificate ofGenesis(Vertex genesisVertex) {
+	public static QuorumCertificate ofGenesis(Vertex genesisVertex, LedgerHeader ledgerHeader) {
 		if (!genesisVertex.getView().isGenesis()) {
 			throw new IllegalArgumentException(String.format("Vertex is not genesis: %s", genesisVertex));
 		}
 
-		VertexMetadata vertexMetadata = VertexMetadata.ofGenesisVertex(genesisVertex);
-		final VoteData voteData = new VoteData(vertexMetadata, vertexMetadata, vertexMetadata);
+		BFTHeader header = BFTHeader.ofVertex(genesisVertex, ledgerHeader);
+		final VoteData voteData = new VoteData(header, header, header);
 		return new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 	}
 
@@ -71,16 +72,26 @@ public final class QuorumCertificate {
 		return voteData.getProposed().getView();
 	}
 
-	public VertexMetadata getProposed() {
+	public BFTHeader getProposed() {
 		return voteData.getProposed();
 	}
 
-	public VertexMetadata getParent() {
+	public BFTHeader getParent() {
 		return voteData.getParent();
 	}
 
-	public Optional<VertexMetadata> getCommitted() {
-		return voteData.getCommitted();
+	public Optional<Pair<BFTHeader, VerifiedLedgerHeaderAndProof>> getCommittedAndLedgerStateProof() {
+		return voteData.getCommitted().map(committed -> {
+			VerifiedLedgerHeaderAndProof ledgerStateProof = new VerifiedLedgerHeaderAndProof(
+				voteData.getProposed(),
+				voteData.getParent(),
+				committed.getView().number(),
+				committed.getVertexId(),
+				committed.getLedgerState(),
+				signatures
+			);
+			return Pair.of(committed, ledgerStateProof);
+		});
 	}
 
 	public VoteData getVoteData() {

@@ -15,12 +15,12 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.ledger;
+package com.radixdlt.middleware2.store;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -30,11 +30,11 @@ import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
 
 /**
- * A command which has been committed on ledger
+ * A class simply for storing a ledger entry with proof
  */
 @Immutable
-@SerializerId2("ledger.committed_command")
-public final class CommittedCommand {
+@SerializerId2("store.stored_committed_command")
+public final class StoredCommittedCommand {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
@@ -43,45 +43,45 @@ public final class CommittedCommand {
 	@DsonOutput(Output.ALL)
 	private final Command command;
 
-	@JsonProperty("vertex_metadata")
+	@JsonProperty("proof")
 	@DsonOutput(Output.ALL)
-	private final VertexMetadata vertexMetadata;
+	private final VerifiedLedgerHeaderAndProof proof;
 
 	@JsonCreator
-	public CommittedCommand(
+	public StoredCommittedCommand(
 		@JsonProperty("command") Command command,
-		@JsonProperty("vertex_metadata") VertexMetadata vertexMetadata
+		@JsonProperty("proof") VerifiedLedgerHeaderAndProof proof
 	) {
 		this.command = command;
-		this.vertexMetadata = Objects.requireNonNull(vertexMetadata);
+		this.proof = Objects.requireNonNull(proof);
 	}
 
 	public Command getCommand() {
 		return command;
 	}
 
-	public VertexMetadata getVertexMetadata() {
-		return vertexMetadata;
+	public VerifiedLedgerHeaderAndProof getStateAndProof() {
+		return proof;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(command, vertexMetadata);
+		return Objects.hash(command, proof);
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof CommittedCommand)) {
+		if (!(o instanceof StoredCommittedCommand)) {
 			return false;
 		}
 
-		CommittedCommand other = (CommittedCommand) o;
+		StoredCommittedCommand other = (StoredCommittedCommand) o;
 		return Objects.equals(this.command, other.command)
-			&& Objects.equals(this.vertexMetadata, other.vertexMetadata);
+			&& Objects.equals(this.proof, other.proof);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{cmd=%s meta=%s}", this.getClass().getSimpleName(), command, vertexMetadata);
+		return String.format("%s{cmd=%s proof=%s}", this.getClass().getSimpleName(), command, proof);
 	}
 }

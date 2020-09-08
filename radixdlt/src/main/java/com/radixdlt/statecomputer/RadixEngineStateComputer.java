@@ -19,10 +19,9 @@ package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Streams;
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.engine.RadixEngine;
@@ -30,16 +29,17 @@ import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.middleware2.store.StoredCommittedCommand;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.middleware2.LedgerAtom;
-import com.radixdlt.ledger.CommittedCommand;
+import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.LinkedList;
-import java.util.List;
+import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.function.Consumer;
 
 /**
@@ -66,7 +66,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private final CommittedCommandsReader committedCommandsReader;
 	private final CommittedAtomSender committedAtomSender;
 	private final Object lock = new Object();
-	private final LinkedList<CommittedCommand> unstoredCommittedAtoms = new LinkedList<>();
+	private final TreeMap<Long, StoredCommittedCommand> unstoredCommittedAtoms = new TreeMap<>();
 
 	public RadixEngineStateComputer(
 		Serialization serialization,
@@ -87,25 +87,34 @@ public final class RadixEngineStateComputer implements StateComputer {
 	}
 
 	// TODO Move this to a different class class when unstored committed atoms is fixed
-	public List<CommittedCommand> getCommittedCommands(long stateVersion, int batchSize) {
+	public VerifiedCommandsAndProof getNextCommittedCommands(long stateVersion, int batchSize) throws NextCommittedLimitReachedException {
 		// TODO: This may still return an empty list as we still count state versions for atoms which
 		// TODO: never make it into the radix engine due to state errors. This is because we only check
 		// TODO: validity on commit rather than on proposal/prepare.
-		// TODO: remove 100 hardcode limit
-		List<CommittedCommand> storedCommittedAtoms = committedCommandsReader.getCommittedCommands(stateVersion, batchSize);
-
-		// TODO: Remove
-		final List<CommittedCommand> copy;
-		synchronized (lock) {
-			copy = new ArrayList<>(unstoredCommittedAtoms);
+		TreeMap<Long, StoredCommittedCommand> storedCommittedAtoms = committedCommandsReader
+			.getNextCommittedCommands(stateVersion, batchSize);
+		final VerifiedLedgerHeaderAndProof nextState;
+		if (storedCommittedAtoms.firstEntry() != null) {
+			nextState = storedCommittedAtoms.firstEntry().getValue().getStateAndProof();
+		} else {
+			Entry<Long, StoredCommittedCommand> uncommittedEntry = unstoredCommittedAtoms.higherEntry(stateVersion);
+			if (uncommittedEntry == null) {
+				return null;
+			}
+			nextState = uncommittedEntry.getValue().getStateAndProof();
 		}
 
-		return Streams.concat(
-			storedCommittedAtoms.stream(),
-			copy.stream().filter(a -> a.getVertexMetadata().getPreparedCommand().getStateVersion() > stateVersion)
-		)
-			.sorted(Comparator.comparingLong(a -> a.getVertexMetadata().getPreparedCommand().getStateVersion()))
-			.collect(ImmutableList.toImmutableList());
+		synchronized (lock) {
+			final long proofStateVersion = nextState.getStateVersion();
+			Map<Long, StoredCommittedCommand> unstoredToReturn
+				= unstoredCommittedAtoms.subMap(stateVersion, false, proofStateVersion, true);
+			storedCommittedAtoms.putAll(unstoredToReturn);
+		}
+
+		return new VerifiedCommandsAndProof(
+			storedCommittedAtoms.values().stream().map(StoredCommittedCommand::getCommand).collect(ImmutableList.toImmutableList()),
+			nextState
+		);
 	}
 
 	@Override
@@ -121,12 +130,11 @@ public final class RadixEngineStateComputer implements StateComputer {
 		}
 	}
 
-	@Override
-	public Optional<BFTValidatorSet> commit(Command command, VertexMetadata vertexMetadata) {
+	private void commitCommand(long version, Command command, VerifiedLedgerHeaderAndProof proof) {
 		boolean storedInRadixEngine = false;
-		final ClientAtom clientAtom = command != null ? this.mapCommand(command) : null;
+		final ClientAtom clientAtom = this.mapCommand(command);
 		if (clientAtom != null) {
-			final CommittedAtom committedAtom = new CommittedAtom(clientAtom, vertexMetadata);
+			final CommittedAtom committedAtom = new CommittedAtom(clientAtom, version, proof);
 			try {
 				// TODO: execute list of commands instead
 				this.radixEngine.checkAndStore(committedAtom);
@@ -142,12 +150,22 @@ public final class RadixEngineStateComputer implements StateComputer {
 		}
 
 		if (!storedInRadixEngine) {
-			this.unstoredCommittedAtoms.add(new CommittedCommand(command, vertexMetadata));
+			StoredCommittedCommand storedCommittedCommand = new StoredCommittedCommand(
+				command,
+				proof
+			);
+			this.unstoredCommittedAtoms.put(version, storedCommittedCommand);
 		}
+	}
 
-		if (vertexMetadata.getPreparedCommand().isEndOfEpoch()) {
+	@Override
+	public Optional<BFTValidatorSet> commit(VerifiedCommandsAndProof verifiedCommandsAndProof) {
+		final VerifiedLedgerHeaderAndProof headerAndProof = verifiedCommandsAndProof.getHeader();
+
+		verifiedCommandsAndProof.forEach((version, command) -> this.commitCommand(version, command, headerAndProof));
+
+		if (headerAndProof.isEndOfEpoch()) {
 			RadixEngineValidatorSetBuilder validatorSetBuilder = this.radixEngine.getComputedState(RadixEngineValidatorSetBuilder.class);
-
 			return Optional.of(validatorSetBuilder.build());
 		}
 

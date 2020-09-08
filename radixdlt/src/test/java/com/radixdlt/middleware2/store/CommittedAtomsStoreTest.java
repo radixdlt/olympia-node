@@ -25,7 +25,7 @@ import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
@@ -35,16 +35,15 @@ import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
-import com.radixdlt.statecomputer.CommandToBinaryConverter;
 import com.radixdlt.middleware2.store.CommittedAtomsStore.AtomIndexer;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.SearchCursor;
-import com.radixdlt.ledger.CommittedCommand;
+import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
 import java.util.HashSet;
 import java.util.Optional;
-import java.util.stream.Stream;
+import java.util.stream.LongStream;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -101,7 +100,7 @@ public class CommittedAtomsStoreTest {
 		when(searchCursor.get()).thenReturn(aid);
 		LedgerEntry ledgerEntry = mock(LedgerEntry.class);
 		when(store.get(eq(aid))).thenReturn(Optional.of(ledgerEntry));
-		CommittedCommand committedCommand = mock(CommittedCommand.class);
+		StoredCommittedCommand committedCommand = mock(StoredCommittedCommand.class);
 		Command command = mock(Command.class);
 		ClientAtom clientAtom = mock(ClientAtom.class);
 		CMInstruction cmInstruction = mock(CMInstruction.class);
@@ -136,9 +135,11 @@ public class CommittedAtomsStoreTest {
 		when(store.search(any(), any(), any())).thenReturn(searchCursor);
 		LedgerEntry ledgerEntry = mock(LedgerEntry.class);
 		when(ledgerEntry.getContent()).thenReturn(new byte[0]);
-		CommittedCommand committedCommand = mock(CommittedCommand.class);
-		when(committedCommand.getCommand()).thenReturn(mock(Command.class));
-		when(committedCommand.getVertexMetadata()).thenReturn(mock(VertexMetadata.class));
+		StoredCommittedCommand committedCommand = mock(StoredCommittedCommand.class);
+		Command command = mock(Command.class);
+		when(command.map(any())).thenReturn(mock(ClientAtom.class));
+		when(committedCommand.getCommand()).thenReturn(command);
+		when(committedCommand.getStateAndProof()).thenReturn(mock(VerifiedLedgerHeaderAndProof.class));
 		when(commandToBinaryConverter.toCommand(any())).thenReturn(committedCommand);
 		when(store.get(eq(aid))).thenReturn(Optional.of(ledgerEntry));
 
@@ -146,19 +147,21 @@ public class CommittedAtomsStoreTest {
 	}
 
 	@Test
-	public void when_get_committed_atoms__should_return_atoms() {
+	public void when_get_committed_atoms__should_return_atoms() throws NextCommittedLimitReachedException {
 		ImmutableList<AID> aids = ImmutableList.of(mock(AID.class), mock(AID.class), mock(AID.class), mock(AID.class));
-		ImmutableList<LedgerEntry> entries = Stream.generate(() -> mock(LedgerEntry.class))
-			.limit(4)
-			.collect(ImmutableList.toImmutableList());
+		ImmutableList<LedgerEntry> entries = LongStream.range(0, 4).mapToObj(i -> {
+			LedgerEntry e = mock(LedgerEntry.class);
+			when(e.getStateVersion()).thenReturn(i);
+			return e;
+		}).collect(ImmutableList.toImmutableList());
 		when(this.store.getNextCommittedLedgerEntries(eq(3L), eq(4)))
 				.thenReturn(entries);
 		for (int i = 0; i < aids.size(); i++) {
 			when(this.store.get(eq(aids.get(i)))).thenReturn(Optional.of(entries.get(i)));
 			when(entries.get(i).getContent()).thenReturn(new byte[i]);
-			when(this.commandToBinaryConverter.toCommand(any())).thenReturn(mock(CommittedCommand.class));
+			when(this.commandToBinaryConverter.toCommand(any())).thenReturn(mock(StoredCommittedCommand.class));
 		}
 
-		assertThat(this.committedAtomsStore.getCommittedCommands(3, 4)).hasSize(4);
+		assertThat(this.committedAtomsStore.getNextCommittedCommands(3, 4)).hasSize(4);
 	}
 }

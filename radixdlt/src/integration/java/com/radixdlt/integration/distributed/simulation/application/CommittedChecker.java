@@ -40,7 +40,7 @@ public class CommittedChecker implements TestInvariant {
 		return submittedCommands
 			.flatMapMaybe(command -> network
 					.committedCommands()
-						.filter(cmd -> Objects.equals(cmd.getCommand(), command))
+						.filter(nodeAndCmd -> nodeAndCmd.getSecond().contains(command))
 						.timeout(10, TimeUnit.SECONDS)
 						.firstOrError()
 						.ignoreElement()

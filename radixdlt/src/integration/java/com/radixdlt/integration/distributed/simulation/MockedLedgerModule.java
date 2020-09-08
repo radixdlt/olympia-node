@@ -17,22 +17,24 @@
 
 package com.radixdlt.integration.distributed.simulation;
 
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.bft.View;
+import com.radixdlt.crypto.Hash;
+import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import java.util.Objects;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.sync.SyncRequestSender;
-import com.radixdlt.consensus.PreparedCommand;
+import com.radixdlt.consensus.LedgerHeader;
 import io.reactivex.rxjava3.core.Observable;
 
 public class MockedLedgerModule extends AbstractModule {
@@ -46,8 +48,8 @@ public class MockedLedgerModule extends AbstractModule {
 	public void configure() {
 		bind(CommittedStateSyncRx.class).toInstance(Observable::never);
 		bind(EpochChangeRx.class).toInstance(Observable::never);
-		PreparedCommand preparedCommand = PreparedCommand.create(0, 0L, true);
-		EpochChange initialEpoch = new EpochChange(VertexMetadata.ofGenesisAncestor(preparedCommand), validatorSet);
+		LedgerHeader ledgerHeader = LedgerHeader.create(0, View.genesis(), 0, Hash.ZERO_HASH, 0L, true);
+		EpochChange initialEpoch = new EpochChange(VerifiedLedgerHeaderAndProof.ofGenesisAncestor(ledgerHeader), validatorSet);
 		bind(EpochChange.class).toInstance(initialEpoch);
 		bind(NextCommandGenerator.class).toInstance((view, aids) -> null);
 		bind(SyncRequestSender.class).toInstance(req -> { });
@@ -55,15 +57,22 @@ public class MockedLedgerModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	Ledger syncedLedger() {
+	Ledger syncedLedger(EpochChange initialEpoch) {
 		return new Ledger() {
 			@Override
-			public PreparedCommand prepare(Vertex vertex) {
-				return PreparedCommand.create(0, 0L, false);
+			public LedgerHeader prepare(Vertex vertex) {
+				return LedgerHeader.create(
+					initialEpoch.getProof().getEpoch() + 1,
+					vertex.getView(),
+					0,
+					Hash.ZERO_HASH,
+					0L,
+					false
+				);
 			}
 
 			@Override
-			public OnSynced ifCommitSynced(VertexMetadata vertexMetadata) {
+			public OnSynced ifCommitSynced(VerifiedLedgerHeaderAndProof header) {
 				return onSynced -> {
 					onSynced.run();
 					return (notSynced, opaque) -> { };
@@ -71,7 +80,7 @@ public class MockedLedgerModule extends AbstractModule {
 			}
 
 			@Override
-			public void commit(Command command, VertexMetadata vertexMetadata) {
+			public void commit(VerifiedCommandsAndProof command) {
 				// Nothing to do here
 			}
 		};

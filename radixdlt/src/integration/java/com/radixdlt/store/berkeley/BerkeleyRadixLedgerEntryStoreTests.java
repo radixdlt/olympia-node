@@ -78,8 +78,12 @@ public class BerkeleyRadixLedgerEntryStoreTests extends RadixTestWithStores {
             ledgerStore.commit(ledgerEntries.get(0).getAID());
 
             // committed ledger entry can be queried by version
-            softly.assertThat(ledgerStore.getNextCommittedLedgerEntries(ledgerEntries.get(0).getStateVersion() - 1, 1))
-                    .contains(ledgerEntries.get(0));
+			try {
+                softly.assertThat(ledgerStore.getNextCommittedLedgerEntries(ledgerEntries.get(0).getStateVersion() - 1, 1))
+                        .contains(ledgerEntries.get(0));
+			} catch (NextCommittedLimitReachedException e) {
+			    throw new IllegalStateException();
+            }
 
             // committed atom is committed
             softly.assertThat(ledgerStore.getStatus(ledgerEntries.get(0).getAID())).isEqualTo(LedgerEntryStatus.COMMITTED);
@@ -93,7 +97,7 @@ public class BerkeleyRadixLedgerEntryStoreTests extends RadixTestWithStores {
     }
 
     @Test
-    public void searchCommittedTest() {
+    public void searchCommittedTest() throws NextCommittedLimitReachedException {
         SoftAssertions.assertSoftly(softly -> {
             // setup by storing/committing atoms
             for (int i = 0; i < ledgerEntries.size(); ++i) {
@@ -101,15 +105,20 @@ public class BerkeleyRadixLedgerEntryStoreTests extends RadixTestWithStores {
                 ledgerStore.commit(ledgerEntries.get(i).getAID());
             }
 
-            // search for atoms singly
-            for (int i = 0; i < ledgerEntries.size(); ++i) {
-                // committed atom can be queried by version
-                softly.assertThat(ledgerStore.getNextCommittedLedgerEntries(ledgerEntries.get(i).getStateVersion() - 1, 1))
-                        .contains(ledgerEntries.get(i));
-            }
+            try {
+                // search for atoms singly
+                for (int i = 0; i < ledgerEntries.size(); ++i) {
+                    // committed atom can be queried by version
+                    softly.assertThat(ledgerStore.getNextCommittedLedgerEntries(ledgerEntries.get(i).getStateVersion() - 1, 1))
+                            .contains(ledgerEntries.get(i));
+                }
 
-            // verify that five atoms in total have been committed and can be returned
-            softly.assertThat(ledgerStore.getNextCommittedLedgerEntries(ledgerEntries.get(0).getStateVersion() - 1, 10)).size().isEqualTo(5);
+                // verify that five atoms in total have been committed and can be returned
+                softly.assertThat(ledgerStore.getNextCommittedLedgerEntries(ledgerEntries.get(0).getStateVersion() - 1, 10))
+                    .size().isEqualTo(1);
+            } catch (NextCommittedLimitReachedException e) {
+                throw new IllegalStateException();
+            }
 
             // TODO more advanced testing using different limits
         });

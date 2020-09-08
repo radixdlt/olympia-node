@@ -21,12 +21,13 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.PreparedCommand;
+import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.Ledger;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.sync.SyncRequestSender;
+import com.radixdlt.crypto.Hash;
+import com.radixdlt.ledger.VerifiedCommandsAndProof;
 
 /**
  * A synced executor that is always synced.
@@ -42,12 +43,19 @@ public class DeterministicAlwaysSyncedLedgerModule extends AbstractModule {
 	Ledger syncedExecutor() {
 		return new Ledger() {
 			@Override
-			public PreparedCommand prepare(Vertex vertex) {
-				return PreparedCommand.create(0, 0L, false);
+			public LedgerHeader prepare(Vertex vertex) {
+				return LedgerHeader.create(
+					0,
+					vertex.getView(),
+					0,
+					Hash.ZERO_HASH,
+					0L,
+					false
+				);
 			}
 
 			@Override
-			public OnSynced ifCommitSynced(VertexMetadata vertexMetadata) {
+			public OnSynced ifCommitSynced(VerifiedLedgerHeaderAndProof header) {
 				return onSynced -> {
 					onSynced.run();
 					return (notSynced, opaque) -> { };
@@ -55,7 +63,7 @@ public class DeterministicAlwaysSyncedLedgerModule extends AbstractModule {
 			}
 
 			@Override
-			public void commit(Command command, VertexMetadata vertexMetadata) {
+			public void commit(VerifiedCommandsAndProof command) {
 				// Nothing to do here
 			}
 		};

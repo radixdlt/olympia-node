@@ -34,12 +34,17 @@ import org.junit.Test;
 public class MempoolSanityTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(4)
-		.checkSafety("safety")
-		.checkLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
-		.checkNoTimeouts("noTimeouts")
-		.checkAllProposalsHaveDirectParents("directParents")
+		.checkConsensusSafety("safety")
+		.checkConsensusLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
+		.checkConsensusNoTimeouts("noTimeouts")
+		.checkConsensusAllProposalsHaveDirectParents("directParents")
+		.checkLedgerSyncedInOrder("syncedInOrder")
+		.checkLedgerProcessesConsensusCommitted("consensusToLedger")
 		.addMempoolSubmissionsSteadyState("mempool");
 
+	/**
+	 * TODO: This is more of a test for mempoolSubmissionSteadyState, should move somewhere else
+	 */
 	@Test
 	public void when_submitting_items_to_null_mempool__then_test_should_fail() {
 		SimulationTest simulationTest = bftTestBuilder

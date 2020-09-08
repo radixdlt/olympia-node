@@ -33,8 +33,8 @@ public class FPlusOneOutOfBoundsTest {
 	private final int outOfBoundsLatency = synchronousTimeout;
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.pacemakerTimeout(2 * synchronousTimeout)
-		.checkSafety("safety")
-		.checkNoneCommitted("noneCommitted");
+		.checkConsensusSafety("safety")
+		.checkConsensusNoneCommitted("noneCommitted");
 
 	/**
 	 * Tests a configuration of 0 out of 3 nodes out of synchrony bounds
