@@ -41,6 +41,7 @@ import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.StatelessActionToParticleGroupsMapper;
+import com.radixdlt.client.application.translate.TokenFeeMapper;
 import com.radixdlt.client.application.translate.data.AtomToDecryptedMessageMapper;
 import com.radixdlt.client.application.translate.data.DecryptedMessage;
 import com.radixdlt.client.application.translate.data.SendMessageAction;
@@ -976,7 +977,7 @@ public class RadixApplicationAPI {
 		List<ParticleGroup> allParticleGroups = new ArrayList<>(particleGroups);
 		Map<String, String> metaData = new HashMap<>();
 		Atom atom = Atom.create(particleGroups, metaData);
-		Pair<Map<String, String>, List<ParticleGroup>> fee = this.feeMapper.map(atom, this.universe, this.getPublicKey());
+		Pair<Map<String, String>, List<ParticleGroup>> fee = this.feeMapper.map(this, atom);
 		allParticleGroups.addAll(fee.getSecond());
 		metaData.putAll(fee.getFirst());
 
@@ -1165,7 +1166,7 @@ public class RadixApplicationAPI {
 	public static class RadixApplicationAPIBuilder {
 		private RadixIdentity identity;
 		private RadixUniverse universe;
-		private FeeMapper feeMapper;
+		private Function<RadixUniverse, FeeMapper> feeMapperBuilder;
 		private List<ParticleReducer<? extends ApplicationState>> reducers = new ArrayList<>();
 		private ImmutableMap.Builder<Class<? extends Action>, Function<Action, Set<ShardedParticleStateId>>> requiredStateMappers
 			= new ImmutableMap.Builder<>();
@@ -1211,12 +1212,22 @@ public class RadixApplicationAPI {
 		}
 
 		public RadixApplicationAPIBuilder feeMapper(FeeMapper feeMapper) {
-			this.feeMapper = feeMapper;
+			this.feeMapperBuilder = radixUniverse -> feeMapper;
 			return this;
 		}
 
 		public RadixApplicationAPIBuilder defaultFeeMapper() {
-			this.feeMapper = new PowFeeMapper(Atom::getHash, new ProofOfWorkBuilder());
+			this.feeMapperBuilder = u -> new TokenFeeMapper(u.getNativeToken(), u.feeTable());
+			return this;
+		}
+
+		public RadixApplicationAPIBuilder tokenFeeMapper(RRI tokenRri) {
+			this.feeMapperBuilder = radixUniverse -> new TokenFeeMapper(tokenRri, radixUniverse.feeTable());
+			return this;
+		}
+
+		public RadixApplicationAPIBuilder powFeeMapper() {
+			this.feeMapperBuilder = radixUniverse -> new PowFeeMapper(Atom::getHash, radixUniverse.getMagic(), new ProofOfWorkBuilder());
 			return this;
 		}
 
@@ -1237,10 +1248,10 @@ public class RadixApplicationAPI {
 
 		public RadixApplicationAPI build() {
 			Objects.requireNonNull(this.identity, "Identity must be specified");
-			Objects.requireNonNull(this.feeMapper, "Fee Mapper must be specified");
+			Objects.requireNonNull(this.feeMapperBuilder, "Fee Mapper must be specified");
 			Objects.requireNonNull(this.universe, "Universe must be specified");
 
-			final FeeMapper feeMapper = this.feeMapper;
+			final FeeMapper feeMapper = this.feeMapperBuilder.apply(this.universe);
 			final RadixIdentity identity = this.identity;
 			final List<ParticleReducer<? extends ApplicationState>> reducers = this.reducers;
 
@@ -1331,6 +1342,15 @@ public class RadixApplicationAPI {
 
 				universe.getAtomStore().stageParticleGroup(uuid, pg);
 			}
+		}
+
+		/**
+		 * Gets a list of staged particle groups.
+		 *
+		 * @return The list of staged particle groups for this transaction
+		 */
+		public List<ParticleGroup> getStagedAndClear() {
+			return universe.getAtomStore().getStagedAndClear(uuid);
 		}
 
 		/**

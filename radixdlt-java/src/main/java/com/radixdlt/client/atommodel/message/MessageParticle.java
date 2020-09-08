@@ -83,8 +83,11 @@ public class MessageParticle extends Particle implements Accountable {
 		}
 	}
 
-	MessageParticle() {
-		// Serializer only
+	public static MessageParticleBuilder builder() {
+		return new MessageParticleBuilder();
+	}
+
+	private MessageParticle() {
 		super();
 	}
 
