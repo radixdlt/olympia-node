@@ -23,7 +23,6 @@ import com.radixdlt.identifiers.AID;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.store.LedgerEntry;
 
 import java.util.LinkedHashMap;
@@ -57,15 +56,12 @@ public class LedgerEntryGenerator {
         byte[] pKey = new byte[32];
         r.nextBytes(pKey);
         Atom atom = new Atom();
-        try {
-            LedgerEntry ledgerEntry = new LedgerEntry(
-                DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.API),
-                stateVersion++,
-                AID.from(pKey)
-            );
-            return ledgerEntry;
-        } catch (SerializationException e) {
-            throw new RuntimeException(e);
-        }
+
+        LedgerEntry ledgerEntry = new LedgerEntry(
+            DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.API),
+            stateVersion++,
+            AID.from(pKey)
+        );
+        return ledgerEntry;
     }
 }

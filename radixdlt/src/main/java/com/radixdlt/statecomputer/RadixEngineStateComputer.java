@@ -29,8 +29,8 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.ledger.CommittedCommand;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
@@ -116,7 +116,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private ClientAtom mapCommand(Command command) {
 		try {
 			return serialization.fromDson(command.getPayload(), ClientAtom.class);
-		} catch (SerializationException e) {
+		} catch (DeserializeException e) {
 			return null;
 		}
 	}

@@ -34,7 +34,6 @@ import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.ClientAtom.LedgerAtomConversionException;
 import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializationException;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import java.util.List;
@@ -83,7 +82,7 @@ public class RadixEngineValidatorRegistratorAndUnregistrator extends LocalMempoo
 			ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom);
 			final byte[] payload = DefaultSerialization.getInstance().toDson(clientAtom, Output.ALL);
 			command = new Command(payload);
-		} catch (CryptoException | LedgerAtomConversionException | SerializationException e) {
+		} catch (CryptoException | LedgerAtomConversionException e) {
 			throw new RuntimeException();
 		}
 

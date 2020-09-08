@@ -19,7 +19,6 @@ package org.radix.serialization;
 
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.serialization.SerializationException;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -38,7 +37,7 @@ public class TestParticleGroupSerialization {
 	}
 
 	@Test
-	public void testLargeStringSerialization() throws SerializationException {
+	public void testLargeStringSerialization() {
 		// "massive" must be greater length than (16000 / 4) - 4 = 3996
 		String massive = Strings.repeat("X", 4096);
 		ParticleGroup pg = ParticleGroup.builder().addMetaData("massive", massive).build();

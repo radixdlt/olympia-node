@@ -19,9 +19,9 @@ package com.radixdlt.statecomputer;
 
 import com.google.inject.Inject;
 import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.serialization.SerializationException;
 
 /**
  * Serializes/deserializes a client atom
@@ -35,17 +35,13 @@ public class ClientAtomToBinaryConverter {
 	}
 
 	public byte[] toLedgerEntryContent(ClientAtom clientAtom) {
-		try {
-			return serializer.toDson(clientAtom, DsonOutput.Output.PERSIST);
-		} catch (SerializationException e) {
-			throw new RuntimeException(String.format("Serialization for Command %s failed", clientAtom));
-		}
+		return serializer.toDson(clientAtom, DsonOutput.Output.PERSIST);
 	}
 
 	public ClientAtom toAtom(byte[] ledgerEntryContent) {
 		try {
 			return serializer.fromDson(ledgerEntryContent, ClientAtom.class);
-		} catch (SerializationException e) {
+		} catch (DeserializeException e) {
 			throw new IllegalStateException("Deserialization of Atom failed", e);
 		}
 	}

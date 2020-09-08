@@ -20,7 +20,6 @@ package com.radixdlt.network.addressbook;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.serialization.SerializationException;
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
@@ -99,14 +98,10 @@ public class AddressBookPersistence implements PeerPersistence {
 	@Override
 	public boolean savePeer(Peer peer) {
 		if (peer.hasNID()) {
-			try {
-				DatabaseEntry key = new DatabaseEntry(peer.getNID().toByteArray());
-				byte[] bytes = serialization.toDson(peer, Output.PERSIST);
-				DatabaseEntry value = new DatabaseEntry(bytes);
-				return (peersByNidDB.put(null, key, value) == OperationStatus.SUCCESS);
-			} catch (SerializationException e) {
-				log.error("Failure updating " + peer);
-			}
+			DatabaseEntry key = new DatabaseEntry(peer.getNID().toByteArray());
+			byte[] bytes = serialization.toDson(peer, Output.PERSIST);
+			DatabaseEntry value = new DatabaseEntry(bytes);
+			return (peersByNidDB.put(null, key, value) == OperationStatus.SUCCESS);
 		}
 		return false;
 	}

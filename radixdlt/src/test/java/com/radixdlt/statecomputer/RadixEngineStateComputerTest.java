@@ -41,8 +41,8 @@ import com.radixdlt.identifiers.AID;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.utils.TypedMocks;
 
@@ -164,7 +164,7 @@ public class RadixEngineStateComputerTest {
 	}
 
 	@Test
-	public void when_commit_vertex_with_malformed_command__then_is_available_on_query() throws SerializationException {
+	public void when_commit_vertex_with_malformed_command__then_is_available_on_query() throws DeserializeException {
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(vertexMetadata.getView()).then(i -> View.of(50));
 		PreparedCommand preparedCommand = mock(PreparedCommand.class);
@@ -172,7 +172,7 @@ public class RadixEngineStateComputerTest {
 		when(preparedCommand.isEndOfEpoch()).thenReturn(false);
 		when(vertexMetadata.getPreparedCommand()).thenReturn(preparedCommand);
 
-		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenThrow(new SerializationException(""));
+		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenThrow(new DeserializeException(""));
 
 		Command cmd = new Command(new byte[] {0, 1});
 		assertThat(stateComputer.commit(cmd, vertexMetadata)).isEmpty();

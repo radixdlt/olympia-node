@@ -31,8 +31,8 @@ import com.radixdlt.statecomputer.CommandToBinaryConverter;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.PeerManager;
 import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Bytes;
@@ -251,7 +251,7 @@ public final class Radix
 			Universe u = serialization.fromDson(bytes, Universe.class);
 			UniverseValidator.validate(u);
 			return u;
-		} catch (SerializationException e) {
+		} catch (DeserializeException e) {
 			throw new IllegalStateException("Error while deserialising universe", e);
 		}
 	}

@@ -19,8 +19,8 @@ package org.radix.serialization;
 
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.serialization.ClassScanningSerializerIds;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.serialization.SerializationException;
 import java.nio.charset.StandardCharsets;
 
 import org.apache.logging.log4j.Level;
@@ -45,7 +45,7 @@ public class Serializer2Test extends RadixTest {
 	private static DummyTestObject testObject;
 
 	@BeforeClass
-	public static void beforeClass() throws SerializationException {
+	public static void beforeClass() throws DeserializeException {
 		// Disable this output for now, as the serialiser is quite verbose when starting.
 		Configurator.setLevel(LogManager.getLogger(ClassScanningSerializerIds.class).getName(), Level.INFO);
 
@@ -66,21 +66,21 @@ public class Serializer2Test extends RadixTest {
 	}
 
 	@Test
-	public void roundTripJacksonDsonTest() throws SerializationException {
+	public void roundTripJacksonDsonTest() throws DeserializeException {
 		byte[] bytes = serialization.toDson(testObject, Output.ALL);
 		DummyTestObject newObject = serialization.fromDson(bytes, DummyTestObject.class);
 		assertEquals(testObject, newObject);
 	}
 
 	@Test
-	public void roundTripJacksonJsonTest() throws SerializationException {
+	public void roundTripJacksonJsonTest() throws DeserializeException {
 		String json = serialization.toJson(testObject, Output.ALL);
 		DummyTestObject newObject = serialization.fromJson(json, DummyTestObject.class);
 		assertEquals(testObject, newObject);
 	}
 
 	@Test
-	public void checkJsonSerializerInclusion() throws SerializationException {
+	public void checkJsonSerializerInclusion() {
 		String json = serialization.toJson(testObject, Output.HASH);
 		assertTrue(json.contains("serializer"));
 		json = serialization.toJson(testObject, Output.WIRE);
@@ -88,7 +88,7 @@ public class Serializer2Test extends RadixTest {
 	}
 
 	@Test
-	public void checkDsonSerializerInclusion() throws SerializationException {
+	public void checkDsonSerializerInclusion() {
 		byte[] dson = serialization.toDson(testObject, Output.HASH);
 		assertTrue(contains(dson, "serializer".getBytes(StandardCharsets.UTF_8)));
 		dson = serialization.toDson(testObject, Output.WIRE);
