@@ -24,7 +24,7 @@ import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.converters.AtomToClientAtomConverter;
 import com.radixdlt.middleware2.converters.AtomConversionException;
-import com.radixdlt.serialization.SerializationException;
+import com.radixdlt.serialization.DeserializeException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import org.json.JSONObject;
@@ -79,7 +79,7 @@ public class SubmissionControlImplTest {
 	@Test
 	public void when_command_deserialization_fails__then_throw_exception() throws Exception {
 		Command command = new Command(new byte[] {});
-		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenThrow(new SerializationException(""));
+		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenThrow(new DeserializeException(""));
 		assertThatThrownBy(() -> submissionControl.submitCommand(command))
 			.isInstanceOf(MempoolRejectedException.class);
 	}

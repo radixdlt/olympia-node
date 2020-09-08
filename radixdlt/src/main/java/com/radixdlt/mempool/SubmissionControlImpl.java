@@ -23,8 +23,8 @@ import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.converters.AtomConversionException;
 import com.radixdlt.middleware2.converters.AtomToClientAtomConverter;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializationException;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -69,11 +69,13 @@ public class SubmissionControlImpl implements SubmissionControl {
 		ClientAtom clientAtom = command.map(payload -> {
 			try {
 				return serialization.fromDson(payload, ClientAtom.class);
-			} catch (SerializationException e) {
+			} catch (DeserializeException e) {
 				return null;
 			}
 		});
 		if (clientAtom == null) {
+			//TODO: use of base class looks inconsistent (all other cases have dedicated exceptions)
+			//TODO: create dedicated MempoolBadAtomException?
 			throw new MempoolRejectedException(command, "Bad atom");
 		}
 		submitAtom(clientAtom);
@@ -95,8 +97,6 @@ public class SubmissionControlImpl implements SubmissionControl {
 				e.getMessage()
 			);
 			this.submissionControlSender.sendRadixEngineFailure(atom, e);
-		} catch (SerializationException e) {
-			throw new IllegalStateException("Should not ever get here if atom was already deserialized properly");
 		}
 	}
 

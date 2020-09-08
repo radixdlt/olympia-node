@@ -22,10 +22,10 @@ import com.radixdlt.DefaultSerialization;
 import org.junit.Test;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
@@ -60,7 +60,7 @@ public class TransportMetadataSerializationTest {
 	}
 
 	@Test
-	public void testDynamicMetadataSerializationToJson() throws SerializationException {
+	public void testDynamicMetadataSerializationToJson() throws DeserializeException {
 		Serialization serialization = DefaultSerialization.getInstance();
 
 		TestClass tc = new TestClass(DynamicTransportMetadata.of("host", () -> "127.0.0.1", "port", () -> "30000"));
@@ -77,7 +77,7 @@ public class TransportMetadataSerializationTest {
 	}
 
 	@Test
-	public void testStaticMetadataSerializationToJson() throws SerializationException {
+	public void testStaticMetadataSerializationToJson() throws DeserializeException {
 		Serialization serialization = DefaultSerialization.getInstance();
 
 		TestClass tc = new TestClass(StaticTransportMetadata.of("host", "127.0.0.1", "port", "30000"));

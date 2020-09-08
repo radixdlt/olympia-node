@@ -18,9 +18,9 @@
 package org.radix.serialization;
 
 import com.radixdlt.serialization.ClassScanningSerializerIds;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Polymorphic;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.serialization.SerializationException;
 
 import java.lang.reflect.Method;
 import java.util.function.Supplier;
@@ -75,13 +75,13 @@ public abstract class SerializeObject<T> extends RadixTest {
 	}
 
 	@Test
-	public void testNONEIsEmpty() throws SerializationException {
+	public void testNONEIsEmpty() {
 		String s2Json = getSerialization().toJson(factory.get(), Output.NONE);
 		assertEquals("{}", s2Json);
 	}
 
 	@Test
-	public void testRoundTripJsonSame() throws SerializationException {
+	public void testRoundTripJsonSame() throws DeserializeException {
 		checkPolymorphic();
 		Serialization s = getSerialization();
 		T initialObj = factory.get();
@@ -91,7 +91,7 @@ public abstract class SerializeObject<T> extends RadixTest {
 	}
 
 	@Test
-	public void testRoundTripDsonSame() throws SerializationException {
+	public void testRoundTripDsonSame() throws DeserializeException {
 		checkPolymorphic();
 		Serialization s = getSerialization();
 		T initialObj = factory.get();

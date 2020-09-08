@@ -18,9 +18,9 @@
 package com.radixdlt.statecomputer;
 
 import com.google.inject.Inject;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.ledger.CommittedCommand;
 import java.util.Objects;
 
@@ -33,17 +33,13 @@ public final class CommandToBinaryConverter {
 	}
 
 	public byte[] toLedgerEntryContent(CommittedCommand command) {
-		try {
-			return serializer.toDson(command, DsonOutput.Output.PERSIST);
-		} catch (SerializationException e) {
-			throw new RuntimeException(String.format("Serialization for Command %s failed", command));
-		}
+		return serializer.toDson(command, DsonOutput.Output.PERSIST);
 	}
 
 	public CommittedCommand toCommand(byte[] ledgerEntryContent) {
 		try {
 			return serializer.fromDson(ledgerEntryContent, CommittedCommand.class);
-		} catch (SerializationException e) {
+		} catch (DeserializeException e) {
 			throw new IllegalStateException("Deserialization of Command failed", e);
 		}
 	}

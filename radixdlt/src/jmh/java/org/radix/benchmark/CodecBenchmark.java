@@ -25,10 +25,10 @@ import org.apache.logging.log4j.core.config.Configurator;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.infra.Blackhole;
 
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.ClassScanningSerializerIds;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.serialization.SerializationException;
 
 import org.radix.serialization.DummyTestObject;
 import org.radix.serialization.TestSetupUtils;
@@ -68,31 +68,23 @@ public class CodecBenchmark {
 		// Disable this output for now, as the serialiser is quite verbose when starting.
 		Configurator.setLevel(LogManager.getLogger(ClassScanningSerializerIds.class).getName(), Level.INFO);
 
-		try {
-			TestSetupUtils.installBouncyCastleProvider();
+		TestSetupUtils.installBouncyCastleProvider();
 
-			serialization = DefaultSerialization.getInstance();
+		serialization = DefaultSerialization.getInstance();
 
-			testObject = new DummyTestObject(true);
+		testObject = new DummyTestObject(true);
 
-			jacksonJson = serialization.toJson(testObject, Output.ALL);
-			jacksonBytes = serialization.toDson(testObject, Output.ALL);
+		jacksonJson = serialization.toJson(testObject, Output.ALL);
+		jacksonBytes = serialization.toDson(testObject, Output.ALL);
 
-			System.out.format("DSON bytes length: %s%n", jacksonBytes.length);
-			System.out.format("JSON bytes length: %s%n", jacksonJson.length());
-		} catch (SerializationException ex) {
-			throw new IllegalStateException("Can't initialise test objects", ex);
-		}
+		System.out.format("DSON bytes length: %s%n", jacksonBytes.length);
+		System.out.format("JSON bytes length: %s%n", jacksonJson.length());
 	}
 
 	@Benchmark
 	public void jacksonToBytesTest(Blackhole bh) {
-		try {
-			byte[] bytes = serialization.toDson(testObject, Output.WIRE);
-			bh.consume(bytes);
-		} catch (SerializationException ex) {
-			throw new IllegalStateException("While serializing to DSON", ex);
-		}
+		byte[] bytes = serialization.toDson(testObject, Output.WIRE);
+		bh.consume(bytes);
 	}
 
 	@Benchmark
@@ -100,7 +92,7 @@ public class CodecBenchmark {
 		try {
 			DummyTestObject newObj = serialization.fromDson(jacksonBytes, DummyTestObject.class);
 			bh.consume(newObj);
-		} catch (SerializationException ex) {
+		} catch (DeserializeException ex) {
 			throw new IllegalStateException("While deserializing from DSON", ex);
 		}
 	}
@@ -108,12 +100,8 @@ public class CodecBenchmark {
 
 	@Benchmark
 	public void jacksonToJsonTest(Blackhole bh) {
-		try {
-			String json = serialization.toJson(testObject, Output.WIRE);
-			bh.consume(json);
-		} catch (SerializationException ex) {
-			throw new IllegalStateException("While serializing to JSON", ex);
-		}
+		String json = serialization.toJson(testObject, Output.WIRE);
+		bh.consume(json);
 	}
 
 	@Benchmark
@@ -121,7 +109,7 @@ public class CodecBenchmark {
 		try {
 			DummyTestObject newObj = serialization.fromJson(jacksonJson, DummyTestObject.class);
 			bh.consume(newObj);
-		} catch (SerializationException ex) {
+		} catch (DeserializeException ex) {
 			throw new IllegalStateException("While deserializing from JSON", ex);
 		}
 	}

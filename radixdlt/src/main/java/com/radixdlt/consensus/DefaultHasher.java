@@ -20,7 +20,6 @@ package com.radixdlt.consensus;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializationException;
 
 /**
  * Hasher which uses the default dson serialization in order to construct hashes of objects.
@@ -28,10 +27,6 @@ import com.radixdlt.serialization.SerializationException;
 public final class DefaultHasher implements Hasher {
 	@Override
 	public Hash hash(Object o) {
-		try {
-			return Hash.of(DefaultSerialization.getInstance().toDson(o, Output.HASH));
-		} catch (SerializationException e) {
-			throw new IllegalArgumentException("Failed to serialize for hash", e);
-		}
+		return Hash.of(DefaultSerialization.getInstance().toDson(o, Output.HASH));
 	}
 }
