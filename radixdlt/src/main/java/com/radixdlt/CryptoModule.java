@@ -21,12 +21,15 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
-import com.radixdlt.consensus.DefaultHasher;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.Hash;
+import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.serialization.Serialization;
+import com.radixdlt.serialization.SerializationException;
 
 /**
  * Module which maintains crypto primitives for consensus
@@ -35,8 +38,18 @@ public final class CryptoModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		// Configuration
-		bind(Hasher.class).to(DefaultHasher.class);
 		bind(HashVerifier.class).toInstance(ECPublicKey::verify);
+	}
+
+	@Provides
+	Hasher hasher(Serialization serialization) {
+		return o -> {
+			try {
+				return Hash.of(serialization.toDson(o, Output.HASH));
+			} catch (SerializationException e) {
+				throw new IllegalArgumentException("Failed to serialize for hash", e);
+			}
+		};
 	}
 
 	@Provides
