@@ -34,17 +34,19 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
 
 @SerializerId2("radix.particles.rri")
-public class RRIParticle extends Particle implements Accountable {
+public final class RRIParticle extends Particle implements Accountable {
 	@JsonProperty("rri")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private RRI rri;
+	private final RRI rri;
 
 	@JsonProperty("nonce")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private long nonce;
+	private final long nonce;
 
 	RRIParticle() {
 		// Serializer only
+		this.rri = null;
+		this.nonce = 0;
 	}
 
 	public RRIParticle(RRI rri) {

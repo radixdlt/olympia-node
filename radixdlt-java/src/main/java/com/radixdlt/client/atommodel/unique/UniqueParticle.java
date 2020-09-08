@@ -31,21 +31,24 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
 
 @SerializerId2("radix.particles.unique")
-public class UniqueParticle extends Particle implements Identifiable {
+public final class UniqueParticle extends Particle implements Identifiable {
 	@JsonProperty("name")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private String name;
+	private final String name;
 
 	@JsonProperty("address")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private RadixAddress address;
+	private final RadixAddress address;
 
 	@JsonProperty("nonce")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private long nonce;
+	private final long nonce;
 
 	UniqueParticle() {
 		// Serializer only
+		this.name = null;
+		this.address = null;
+		this.nonce = 0;
 	}
 
 	public UniqueParticle(RadixAddress address, String unique) {

@@ -35,25 +35,37 @@ import java.util.Objects;
 import java.util.Set;
 
 @SerializerId2("radix.particles.registered_validator")
-public class RegisteredValidatorParticle extends Particle implements Accountable, Ownable {
+public final class RegisteredValidatorParticle extends Particle implements Accountable, Ownable {
 	@JsonProperty("address")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private RadixAddress address;
+	private final RadixAddress address;
 
 	@JsonProperty("allowedDelegators")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private Set<RadixAddress> allowedDelegators;
+	private final ImmutableSet<RadixAddress> allowedDelegators;
 
 	@JsonProperty("url")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private String url;
+	private final String url;
 
 	@JsonProperty("nonce")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private long nonce;
+	private final long nonce;
 
 	RegisteredValidatorParticle() {
-		// for serializer
+		// Serializer only
+		this.address = null;
+		this.allowedDelegators = null;
+		this.url = null;
+		this.nonce = 0;
+	}
+
+	public RegisteredValidatorParticle(RadixAddress address, ImmutableSet<RadixAddress> allowedDelegators, String url, long nonce) {
+		super(address.euid());
+		this.address = Objects.requireNonNull(address);
+		this.allowedDelegators = Objects.requireNonNull(allowedDelegators);
+		this.url = url;
+		this.nonce = nonce;
 	}
 
 	public RegisteredValidatorParticle(RadixAddress address, long nonce) {
@@ -61,11 +73,7 @@ public class RegisteredValidatorParticle extends Particle implements Accountable
 	}
 
 	public RegisteredValidatorParticle(RadixAddress address, Set<RadixAddress> allowedDelegators, String url, long nonce) {
-		super(address.euid());
-		this.address = Objects.requireNonNull(address, "address");
-		this.allowedDelegators = Objects.requireNonNull(allowedDelegators, "allowedDelegators");
-		this.url = url;
-		this.nonce = nonce;
+		this(address, ImmutableSet.copyOf(allowedDelegators), url, nonce);
 	}
 
 	public RegisteredValidatorParticle copyWithNonce(long nonce) {
