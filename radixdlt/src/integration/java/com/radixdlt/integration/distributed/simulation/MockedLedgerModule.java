@@ -23,7 +23,6 @@ import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.ProposerElectionFactory;
-import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.VertexStoreEventProcessor;
@@ -32,6 +31,7 @@ import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
@@ -46,7 +46,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.Ledger;
-import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.sync.SyncRequestSender;
 import com.radixdlt.consensus.LedgerHeader;
@@ -122,9 +121,9 @@ public class MockedLedgerModule extends AbstractModule {
 	Ledger syncedLedger() {
 		return new Ledger() {
 			@Override
-			public LedgerHeader prepare(Vertex vertex) {
+			public LedgerHeader prepare(VerifiedVertex vertex) {
 				return LedgerHeader.create(
-					vertex.getQC().getProposed().getLedgerState().getEpoch(),
+					vertex.getParentHeader().getLedgerHeader().getEpoch(),
 					vertex.getView(),
 					0,
 					Hash.ZERO_HASH,

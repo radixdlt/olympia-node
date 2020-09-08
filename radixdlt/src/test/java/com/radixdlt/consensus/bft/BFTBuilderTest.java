@@ -25,7 +25,6 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.BFTEventProcessor;
-import com.radixdlt.consensus.DefaultHasher;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.Hasher;
@@ -51,7 +50,7 @@ public class BFTBuilderTest {
 	private BFTInfoSender infoSender;
 	private BFTValidatorSet validatorSet;
 	private ProposerElection proposerElection;
-	private Hasher hasher = new DefaultHasher();
+	private Hasher hasher;
 	private HashSigner signer;
 	private HashVerifier verifier = ECPublicKey::verify;
 	private Pacemaker pacemaker;
@@ -73,6 +72,7 @@ public class BFTBuilderTest {
 		vertexStore = mock(VertexStore.class);
 		self = mock(BFTNode.class);
 		infoSender = mock(BFTInfoSender.class);
+		hasher = mock(Hasher.class);
 	}
 
 	@Test

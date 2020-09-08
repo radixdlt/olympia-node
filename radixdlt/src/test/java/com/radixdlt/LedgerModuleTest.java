@@ -26,6 +26,7 @@ import com.google.inject.Injector;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.name.Names;
 import com.radixdlt.consensus.BFTFactory;
+import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.ProposerElectionFactory;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.VertexStoreFactory;
@@ -58,6 +59,7 @@ public class LedgerModuleTest {
 			bind(SyncEpochsRPCSender.class).toInstance(mock(SyncEpochsRPCSender.class));
 			bind(LocalTimeoutSender.class).toInstance(mock(LocalTimeoutSender.class));
 			bind(SyncRequestSender.class).toInstance(mock(SyncRequestSender.class));
+			bind(Hasher.class).toInstance(mock(Hasher.class));
 
 			bind(Mempool.class).toInstance(mock(Mempool.class));
 			bind(StateComputer.class).toInstance(mock(StateComputer.class));

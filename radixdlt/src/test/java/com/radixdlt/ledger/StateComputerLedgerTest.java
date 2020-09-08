@@ -37,8 +37,8 @@ import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.BFTHeader;
+import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
@@ -95,8 +95,9 @@ public class StateComputerLedgerTest {
 
 	@Test
 	public void when_prepare_with_no_command_and_not_end_of_epoch__then_should_return_same_state_version() {
-		Vertex vertex = mock(Vertex.class);
+		VerifiedVertex vertex = mock(VerifiedVertex.class);
 		QuorumCertificate qc = mock(QuorumCertificate.class);
+		when(qc.getTimestampedSignatures()).thenReturn(new TimestampedECDSASignatures());
 		when(vertex.getQC()).thenReturn(qc);
 
 		LedgerHeader ledgerHeader = mock(LedgerHeader.class);
@@ -104,9 +105,8 @@ public class StateComputerLedgerTest {
 		when(ledgerHeader.getStateVersion()).thenReturn(12345L);
 
 		BFTHeader parent = mock(BFTHeader.class);
-		when(parent.getLedgerState()).thenReturn(ledgerHeader);
-		when(qc.getProposed()).thenReturn(parent);
-		when(qc.getTimestampedSignatures()).thenReturn(new TimestampedECDSASignatures());
+		when(parent.getLedgerHeader()).thenReturn(ledgerHeader);
+		when(vertex.getParentHeader()).thenReturn(parent);
 
 		LedgerHeader nextPrepared = stateComputerLedger.prepare(vertex);
 		assertThat(nextPrepared.isEndOfEpoch()).isFalse();
@@ -115,8 +115,9 @@ public class StateComputerLedgerTest {
 
 	@Test
 	public void when_prepare_and_parent_is_end_of_epoch__then_should_return_same_state_version() {
-		Vertex vertex = mock(Vertex.class);
+		VerifiedVertex vertex = mock(VerifiedVertex.class);
 		QuorumCertificate qc = mock(QuorumCertificate.class);
+		when(qc.getTimestampedSignatures()).thenReturn(new TimestampedECDSASignatures());
 		when(vertex.getQC()).thenReturn(qc);
 
 		LedgerHeader ledgerHeader = mock(LedgerHeader.class);
@@ -124,9 +125,8 @@ public class StateComputerLedgerTest {
 		when(ledgerHeader.getStateVersion()).thenReturn(12345L);
 
 		BFTHeader parent = mock(BFTHeader.class);
-		when(parent.getLedgerState()).thenReturn(ledgerHeader);
-		when(qc.getProposed()).thenReturn(parent);
-		when(qc.getTimestampedSignatures()).thenReturn(new TimestampedECDSASignatures());
+		when(parent.getLedgerHeader()).thenReturn(ledgerHeader);
+		when(vertex.getParentHeader()).thenReturn(parent);
 
 		LedgerHeader nextPrepared = stateComputerLedger.prepare(vertex);
 		assertThat(nextPrepared.isEndOfEpoch()).isFalse();
@@ -135,8 +135,9 @@ public class StateComputerLedgerTest {
 
 	@Test
 	public void when_prepare_with_no_command_and_end_of_epoch__then_should_return_same_state_version() {
-		Vertex vertex = mock(Vertex.class);
+		VerifiedVertex vertex = mock(VerifiedVertex.class);
 		QuorumCertificate qc = mock(QuorumCertificate.class);
+		when(qc.getTimestampedSignatures()).thenReturn(new TimestampedECDSASignatures());
 		when(vertex.getQC()).thenReturn(qc);
 
 		LedgerHeader ledgerHeader = mock(LedgerHeader.class);
@@ -144,9 +145,9 @@ public class StateComputerLedgerTest {
 		when(ledgerHeader.getStateVersion()).thenReturn(12345L);
 
 		BFTHeader parent = mock(BFTHeader.class);
-		when(parent.getLedgerState()).thenReturn(ledgerHeader);
-		when(qc.getProposed()).thenReturn(parent);
-		when(qc.getTimestampedSignatures()).thenReturn(new TimestampedECDSASignatures());
+		when(parent.getLedgerHeader()).thenReturn(ledgerHeader);
+		when(vertex.getParentHeader()).thenReturn(parent);
+
 		when(stateComputer.prepare(eq(vertex))).thenReturn(true);
 
 		LedgerHeader nextPrepared = stateComputerLedger.prepare(vertex);
@@ -156,8 +157,9 @@ public class StateComputerLedgerTest {
 
 	@Test
 	public void when_prepare_with_command_and_not_end_of_epoch__then_should_return_next_state_version() {
-		Vertex vertex = mock(Vertex.class);
+		VerifiedVertex vertex = mock(VerifiedVertex.class);
 		QuorumCertificate qc = mock(QuorumCertificate.class);
+		when(qc.getTimestampedSignatures()).thenReturn(new TimestampedECDSASignatures());
 		when(vertex.getQC()).thenReturn(qc);
 
 		LedgerHeader ledgerHeader = mock(LedgerHeader.class);
@@ -165,9 +167,8 @@ public class StateComputerLedgerTest {
 		when(ledgerHeader.getStateVersion()).thenReturn(12345L);
 
 		BFTHeader parent = mock(BFTHeader.class);
-		when(parent.getLedgerState()).thenReturn(ledgerHeader);
-		when(qc.getProposed()).thenReturn(parent);
-		when(qc.getTimestampedSignatures()).thenReturn(new TimestampedECDSASignatures());
+		when(parent.getLedgerHeader()).thenReturn(ledgerHeader);
+		when(vertex.getParentHeader()).thenReturn(parent);
 		when(vertex.getCommand()).thenReturn(mock(Command.class));
 
 		LedgerHeader nextPrepared = stateComputerLedger.prepare(vertex);

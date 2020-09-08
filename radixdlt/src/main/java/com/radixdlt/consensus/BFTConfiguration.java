@@ -17,18 +17,19 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.consensus.bft.VerifiedVertex;
 import java.util.Objects;
 
 public final class BFTConfiguration {
-	private final Vertex genesisVertex;
+	private final VerifiedVertex genesisVertex;
 	private final QuorumCertificate genesisQC;
 
-	public BFTConfiguration(Vertex genesisVertex, QuorumCertificate genesisQC) {
+	public BFTConfiguration(VerifiedVertex genesisVertex, QuorumCertificate genesisQC) {
 		this.genesisVertex = Objects.requireNonNull(genesisVertex);
 		this.genesisQC = Objects.requireNonNull(genesisQC);
 	}
 
-	public Vertex getGenesisVertex() {
+	public VerifiedVertex getGenesisVertex() {
 		return genesisVertex;
 	}
 

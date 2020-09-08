@@ -24,7 +24,7 @@ import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.Ledger;
-import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.counters.SystemCounters;
@@ -46,7 +46,7 @@ import java.util.TreeMap;
  */
 public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	public interface StateComputer {
-		boolean prepare(Vertex vertex);
+		boolean prepare(VerifiedVertex vertex);
 		Optional<BFTValidatorSet> commit(VerifiedCommandsAndProof verifiedCommandsAndProof);
 	}
 
@@ -95,8 +95,8 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	}
 
 	@Override
-	public LedgerHeader prepare(Vertex vertex) {
-		final LedgerHeader parent = vertex.getQC().getProposed().getLedgerState();
+	public LedgerHeader prepare(VerifiedVertex vertex) {
+		final LedgerHeader parent = vertex.getParentHeader().getLedgerHeader();
 		final long parentStateVersion = parent.getStateVersion();
 
 		boolean isEndOfEpoch = stateComputer.prepare(vertex);

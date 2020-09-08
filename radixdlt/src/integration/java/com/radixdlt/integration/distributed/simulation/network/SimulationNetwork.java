@@ -24,6 +24,7 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
+import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
@@ -32,7 +33,6 @@ import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
-import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
@@ -246,7 +246,7 @@ public class SimulationNetwork {
 		}
 
 		@Override
-		public void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<Vertex> vertices) {
+		public void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<VerifiedVertex> vertices) {
 			SimulatedVerticesRequest request = (SimulatedVerticesRequest) originalRequest;
 			Object opaque = receivers.computeIfAbsent(request.requestor, SimulatedNetworkImpl::new).opaqueMap.get(request.vertexId);
 			GetVerticesResponse vertexResponse = new GetVerticesResponse(request.vertexId, vertices, opaque);

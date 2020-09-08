@@ -52,7 +52,7 @@ public class BFTHeaderTest {
 		assertThat(View.of(1234567890L)).isEqualTo(this.testObject.getView());
 
 		assertThat(id).isEqualTo(this.testObject.getVertexId());
-		assertThat(ledgerHeader).isEqualTo(this.testObject.getLedgerState());
+		assertThat(ledgerHeader).isEqualTo(this.testObject.getLedgerHeader());
 	}
 
 	@Test

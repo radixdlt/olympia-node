@@ -24,6 +24,7 @@ import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.EmptyVertexStoreEventProcessor;
+import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
@@ -35,6 +36,7 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexStoreEventProcessor;
 import com.radixdlt.consensus.VertexStoreFactory;
+import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
@@ -126,6 +128,7 @@ public final class EpochManager {
 	private final BFTFactory bftFactory;
 	private final EpochInfoSender epochInfoSender;
 	private final SyncRequestSender syncRequestSender;
+	private final Hasher hasher;
 
 	private VerifiedLedgerHeaderAndProof lastConstructed = null;
 	private EpochChange currentEpoch;
@@ -146,7 +149,8 @@ public final class EpochManager {
 		ProposerElectionFactory proposerElectionFactory,
 		BFTFactory bftFactory,
 		SystemCounters counters,
-		EpochInfoSender epochInfoSender
+		EpochInfoSender epochInfoSender,
+		Hasher hasher
 	) {
 		this.currentEpoch = Objects.requireNonNull(initialEpoch);
 		this.self = Objects.requireNonNull(self);
@@ -161,6 +165,7 @@ public final class EpochManager {
 		this.counters = Objects.requireNonNull(counters);
 		this.epochInfoSender = Objects.requireNonNull(epochInfoSender);
 		this.queuedEvents = new HashMap<>();
+		this.hasher = Objects.requireNonNull(hasher);
 	}
 
 	private void updateEpochState() {
@@ -184,8 +189,9 @@ public final class EpochManager {
 
 			// TODO: Recover VertexStore
 			Vertex genesisVertex = Vertex.createGenesis(this.currentEpoch.getPrevLedgerState());
-			QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
-			VertexStore vertexStore = vertexStoreFactory.create(genesisVertex, genesisQC, ledger);
+			VerifiedVertex verifiedVertex = new VerifiedVertex(genesisVertex, hasher.hash(genesisVertex));
+			QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedVertex, nextLedgerHeader);
+			VertexStore vertexStore = vertexStoreFactory.create(verifiedVertex, genesisQC, ledger);
 			vertexStoreEventProcessor = vertexStore;
 
 			BFTInfoSender infoSender = new BFTInfoSender() {

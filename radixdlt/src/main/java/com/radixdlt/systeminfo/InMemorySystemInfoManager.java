@@ -20,9 +20,9 @@ package com.radixdlt.systeminfo;
 import com.google.common.collect.EvictingQueue;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
+import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Timeout;
-import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
 import io.reactivex.rxjava3.schedulers.Schedulers;
@@ -42,7 +42,7 @@ public final class InMemorySystemInfoManager {
 
 	private final InfoRx infoRx;
 
-	private final Queue<Vertex> vertexRingBuffer;
+	private final Queue<VerifiedVertex> vertexRingBuffer;
 	private final AtomicReference<Timeout> lastTimeout = new AtomicReference<>();
 	private final AtomicReference<EpochView> currentView = new AtomicReference<>(EpochView.of(0L, View.genesis()));
 	private final AtomicReference<QuorumCertificate> highQC = new AtomicReference<>();
@@ -98,8 +98,8 @@ public final class InMemorySystemInfoManager {
 		return this.highQC.get();
 	}
 
-	public List<Vertex> getCommittedVertices() {
-		List<Vertex> vertices = Lists.newArrayList();
+	public List<VerifiedVertex> getCommittedVertices() {
+		List<VerifiedVertex> vertices = Lists.newArrayList();
 		// Use internal iteration for thread safety
 		vertexRingBuffer.forEach(vertices::add);
 		return vertices;

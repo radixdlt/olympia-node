@@ -17,6 +17,7 @@
 
 package org.radix.api.http;
 
+import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.systeminfo.InMemorySystemInfoManager;
 import com.google.common.io.CharStreams;
@@ -24,7 +25,6 @@ import com.radixdlt.api.CommittedAtomsRx;
 import com.radixdlt.api.SubmissionErrorsRx;
 import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.Vertex;
 import com.radixdlt.mempool.SubmissionControl;
 import com.radixdlt.middleware2.store.CommandToBinaryConverter;
 import com.radixdlt.network.addressbook.AddressBook;
@@ -211,7 +211,7 @@ public final class RadixHttpServer {
 
 	private void addTestRoutesTo(RoutingHandler handler) {
 		addGetRoute("/api/vertices/committed", exchange -> {
-			List<Vertex> vertices = infoStateRunner.getCommittedVertices();
+			List<VerifiedVertex> vertices = infoStateRunner.getCommittedVertices();
 			JSONArray array = new JSONArray();
 			vertices.stream()
 				.map(v -> new JSONObject().put("view", v.getView().number()).put("hash", v.getId().toString()))
@@ -227,7 +227,7 @@ public final class RadixHttpServer {
 				respond(errorJson, exchange);
 			} else {
 				JSONObject highestQCJson = new JSONObject();
-				highestQCJson.put("epoch", highestQC.getProposed().getLedgerState().getEpoch());
+				highestQCJson.put("epoch", highestQC.getProposed().getLedgerHeader().getEpoch());
 				highestQCJson.put("view", highestQC.getView());
 				highestQCJson.put("vertexId", highestQC.getProposed().getVertexId());
 				respond(highestQCJson, exchange);

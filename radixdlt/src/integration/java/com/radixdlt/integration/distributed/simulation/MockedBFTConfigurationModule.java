@@ -24,6 +24,7 @@ import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.crypto.Hash;
 import java.util.function.Function;
 
@@ -31,9 +32,10 @@ public class MockedBFTConfigurationModule extends AbstractModule {
 	@Provides
 	Function<BFTNode, BFTConfiguration> config() {
 		Vertex genesis = Vertex.createGenesis(LedgerHeader.genesis(Hash.ZERO_HASH));
+		VerifiedVertex hashedGenesis = new VerifiedVertex(genesis, Hash.ZERO_HASH);
 		return node -> new BFTConfiguration(
-			genesis,
-			QuorumCertificate.ofGenesis(genesis, LedgerHeader.genesis(Hash.ZERO_HASH))
+			hashedGenesis,
+			QuorumCertificate.ofGenesis(hashedGenesis, LedgerHeader.genesis(Hash.ZERO_HASH))
 		);
 	}
 }

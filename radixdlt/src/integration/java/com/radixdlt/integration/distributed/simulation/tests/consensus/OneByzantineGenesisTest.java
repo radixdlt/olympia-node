@@ -33,6 +33,7 @@ import org.junit.Test;
  */
 public class OneByzantineGenesisTest {
 	SimulationTest.Builder bftTestBuilder = SimulationTest.builder()
+		.pacemakerTimeout(1000)
 		.numNodes(3)
 		.checkConsensusSafety("safety")
 		.checkConsensusNoneCommitted("noneCommitted");

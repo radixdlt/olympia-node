@@ -21,15 +21,17 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.BFTConfiguration;
+import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.crypto.Hash;
 import java.util.function.Function;
 
 public class MockedBFTConfigurationOneDifferentGenesisModule extends AbstractModule {
-	private final static Hash ONE_HASH = Hash.of(new byte[] {1});
+	private static final Hash ONE_HASH = Hash.of(new byte[] {1});
 	private final BFTNode nodeWithDifferentGenesis;
 
 	public MockedBFTConfigurationOneDifferentGenesisModule(BFTNode nodeWithDifferentGenesis) {
@@ -38,13 +40,15 @@ public class MockedBFTConfigurationOneDifferentGenesisModule extends AbstractMod
 
 	@Provides
 	@Singleton
-	Function<BFTNode, BFTConfiguration> config() {
+	Function<BFTNode, BFTConfiguration> config(Hasher hasher) {
 		return node -> {
-			Hash genesisHash = node.equals(nodeWithDifferentGenesis) ? Hash.ZERO_HASH : ONE_HASH;
-			Vertex genesis = Vertex.createGenesis(LedgerHeader.genesis(genesisHash));
+			Hash genesisHeaderHash = node.equals(nodeWithDifferentGenesis) ? Hash.ZERO_HASH : ONE_HASH;
+			Vertex genesis = Vertex.createGenesis(LedgerHeader.genesis(genesisHeaderHash));
+			Hash vertexHash = hasher.hash(genesis);
+			VerifiedVertex genesisVertex = new VerifiedVertex(genesis, vertexHash);
 			return new BFTConfiguration(
-				genesis,
-				QuorumCertificate.ofGenesis(genesis, LedgerHeader.genesis(genesisHash))
+				genesisVertex,
+				QuorumCertificate.ofGenesis(genesisVertex, LedgerHeader.genesis(genesisHeaderHash))
 			);
 		};
 	}

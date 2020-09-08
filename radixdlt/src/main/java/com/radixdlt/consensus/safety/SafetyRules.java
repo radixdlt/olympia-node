@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus.safety;
 
+import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.NewView;
@@ -94,17 +95,17 @@ public final class SafetyRules {
 		return new Proposal(proposedVertex, highestCommittedQC, this.self, signature, payload);
 	}
 
-	private static VoteData constructVoteData(Vertex proposedVertex, BFTHeader proposedHeader) {
-		final BFTHeader parent = proposedVertex.getQC().getProposed();
+	private static VoteData constructVoteData(VerifiedVertex proposedVertex, BFTHeader proposedHeader) {
+		final BFTHeader parent = proposedVertex.getParentHeader();
 
 		// Add a vertex to commit if creating a quorum for the proposed vertex would
 		// create three consecutive qcs.
 		final BFTHeader toCommit;
-		if (proposedVertex.getView().equals(proposedVertex.getParentHeader().getView().next())
-			&& !proposedVertex.getParentHeader().getView().isGenesis() && !proposedVertex.getGrandParentHeader().getView().isGenesis()
-			&& proposedVertex.getParentHeader().getView().equals(proposedVertex.getGrandParentHeader().getView().next())
+		if (!proposedVertex.touchesGenesis()
+			&& proposedVertex.hasDirectParent()
+			&& proposedVertex.parentHasDirectParent()
 		) {
-			toCommit = proposedVertex.getQC().getParent();
+			toCommit = proposedVertex.getGrandParentHeader();
 		} else {
 			toCommit = null;
 		}
@@ -140,7 +141,7 @@ public final class SafetyRules {
 	 * @return A vote result containing the vote and any committed vertices
 	 * @throws SafetyViolationException In case the vertex would violate a safety invariant
 	 */
-	public Vote voteFor(Vertex proposedVertex, BFTHeader proposedHeader, long timestamp, long payload) throws SafetyViolationException {
+	public Vote voteFor(VerifiedVertex proposedVertex, BFTHeader proposedHeader, long timestamp, long payload) throws SafetyViolationException {
 		// ensure vertex does not violate earlier votes
 		if (proposedVertex.getView().compareTo(this.state.getLastVotedView()) <= 0) {
 			throw new SafetyViolationException(proposedVertex, this.state, String.format(
@@ -148,7 +149,7 @@ public final class SafetyRules {
 		}
 
 		// ensure vertex respects locked QC
-		if (proposedVertex.getQC().getView().compareTo(this.state.getLockedView()) < 0) {
+		if (proposedVertex.getParentHeader().getView().compareTo(this.state.getLockedView()) < 0) {
 			throw new SafetyViolationException(proposedVertex, this.state, String.format(
 				"does not respect locked view %s", this.state.getLockedView()));
 		}

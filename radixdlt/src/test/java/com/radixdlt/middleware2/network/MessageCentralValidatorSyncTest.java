@@ -28,12 +28,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
@@ -57,6 +59,7 @@ public class MessageCentralValidatorSyncTest {
 	private AddressBook addressBook;
 	private MessageCentral messageCentral;
 	private MessageCentralValidatorSync sync;
+	private Hasher hasher;
 
 	@Before
 	public void setUp() {
@@ -68,7 +71,8 @@ public class MessageCentralValidatorSyncTest {
 		Universe universe = mock(Universe.class);
 		this.addressBook = mock(AddressBook.class);
 		this.messageCentral = mock(MessageCentral.class);
-		this.sync = new MessageCentralValidatorSync(self, universe, addressBook, messageCentral);
+		this.hasher = mock(Hasher.class);
+		this.sync = new MessageCentralValidatorSync(self, universe, addressBook, messageCentral, hasher);
 	}
 
 
@@ -122,9 +126,9 @@ public class MessageCentralValidatorSyncTest {
 
 		GetVerticesResponseMessage responseMessage = mock(GetVerticesResponseMessage.class);
 		Vertex vertex = mock(Vertex.class);
-		when(vertex.getId()).thenReturn(id);
 		when(responseMessage.getVertices()).thenReturn(ImmutableList.of(vertex));
 		when(responseMessage.getVertexId()).thenReturn(id);
+		when(hasher.hash(eq(vertex))).thenReturn(id);
 		listener.get().handleMessage(mock(Peer.class), responseMessage);
 
 		testObserver.awaitCount(1);
@@ -156,7 +160,7 @@ public class MessageCentralValidatorSyncTest {
 
 		GetVerticesErrorResponseMessage responseMessage = mock(GetVerticesErrorResponseMessage.class);
 		Vertex vertex = mock(Vertex.class);
-		when(vertex.getId()).thenReturn(id);
+		when(hasher.hash(eq(vertex))).thenReturn(id);
 		when(responseMessage.getVertexId()).thenReturn(id);
 		when(responseMessage.getHighestCommittedQC()).thenReturn(mock(QuorumCertificate.class));
 		when(responseMessage.getHighestQC()).thenReturn(mock(QuorumCertificate.class));
@@ -171,10 +175,10 @@ public class MessageCentralValidatorSyncTest {
 		MessageCentralGetVerticesRequest request = mock(MessageCentralGetVerticesRequest.class);
 		Peer peer = mock(Peer.class);
 		when(request.getRequestor()).thenReturn(peer);
-		Vertex vertex = mock(Vertex.class);
-		when(vertex.getId()).thenReturn(mock(Hash.class));
+		VerifiedVertex vertex = mock(VerifiedVertex.class);
 		when(request.getVertexId()).thenReturn(mock(Hash.class));
-		ImmutableList<Vertex> vertices = ImmutableList.of(vertex);
+		when(vertex.toRaw()).thenReturn(mock(Vertex.class));
+		ImmutableList<VerifiedVertex> vertices = ImmutableList.of(vertex);
 		sync.sendGetVerticesResponse(request, vertices);
 		verify(messageCentral, times(1)).send(eq(peer), any(GetVerticesResponseMessage.class));
 	}

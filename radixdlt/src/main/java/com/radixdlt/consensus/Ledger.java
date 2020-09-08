@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 
 /**
@@ -30,7 +31,7 @@ public interface Ledger {
 	 * @param vertex the vertex to compute
 	 * @return the results of executing the prepare stage
 	 */
-	LedgerHeader prepare(Vertex vertex);
+	LedgerHeader prepare(VerifiedVertex vertex);
 
 	/**
 	 * Check if the ledger is commit synced at a particular state

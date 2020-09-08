@@ -19,8 +19,6 @@ package com.radixdlt.consensus;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.Suppliers;
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.DsonOutput;
@@ -31,7 +29,6 @@ import com.radixdlt.serialization.DsonOutput.Output;
 
 import java.util.Objects;
 
-import java.util.function.Supplier;
 import javax.annotation.concurrent.Immutable;
 
 /**
@@ -53,8 +50,6 @@ public final class Vertex {
 	@JsonProperty("command")
 	@DsonOutput(Output.ALL)
 	private final Command command;
-
-	private final transient Supplier<Hash> cachedHash = Suppliers.memoize(this::doGetHash);
 
 	@JsonCreator
 	Vertex(
@@ -88,18 +83,6 @@ public final class Vertex {
 		return new Vertex(qc, view, command);
 	}
 
-	private Hash doGetHash() {
-		try {
-			return Hash.of(DefaultSerialization.getInstance().toDson(this, Output.HASH));
-		} catch (Exception e) {
-			throw new IllegalStateException("Error generating hash: " + e, e);
-		}
-	}
-
-	public Hash getId() {
-		return this.cachedHash.get();
-	}
-
 	public Hash getParentId() {
 		return qc.getProposed().getVertexId();
 	}
@@ -130,12 +113,6 @@ public final class Vertex {
 
 	public boolean isGenesis() {
 		return this.view.isGenesis();
-	}
-
-	@JsonProperty("id")
-	@DsonOutput(Output.API)
-	private Hash getSerializerId() {
-		return getId();
 	}
 
 	@JsonProperty("view")

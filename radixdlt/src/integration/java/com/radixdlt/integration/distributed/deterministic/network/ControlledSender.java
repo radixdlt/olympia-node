@@ -17,6 +17,7 @@
 
 package com.radixdlt.integration.distributed.deterministic.network;
 
+import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import java.util.Set;
 
@@ -25,7 +26,6 @@ import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -58,7 +58,7 @@ public final class ControlledSender implements DeterministicSender {
 	}
 
 	@Override
-	public void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<Vertex> vertices) {
+	public void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<VerifiedVertex> vertices) {
 		ControlledGetVerticesRequest request = (ControlledGetVerticesRequest) originalRequest;
 		GetVerticesResponse response = new GetVerticesResponse(request.getVertexId(), vertices, request.opaque);
 		handleMessage(MessageRank.EARLIEST_POSSIBLE, new ControlledMessage(this.senderIndex, request.requestor, response));
@@ -73,7 +73,7 @@ public final class ControlledSender implements DeterministicSender {
 	}
 
 	@Override
-	public void sendSyncedVertex(Vertex vertex) {
+	public void sendSyncedVertex(VerifiedVertex vertex) {
 		handleMessage(MessageRank.EARLIEST_POSSIBLE, new ControlledMessage(this.senderIndex, this.senderIndex, vertex.getId()));
 	}
 
@@ -104,7 +104,7 @@ public final class ControlledSender implements DeterministicSender {
 	}
 
 	@Override
-	public void sendCommittedVertex(Vertex vertex) {
+	public void sendCommittedVertex(VerifiedVertex vertex) {
 		// Ignore committed vertex signal
 	}
 
@@ -188,7 +188,7 @@ public final class ControlledSender implements DeterministicSender {
 	}
 
 	private MessageRank messageRank(BFTHeader header, long viewIncrement) {
-		return MessageRank.of(header.getLedgerState().getEpoch(), header.getView().number() + viewIncrement);
+		return MessageRank.of(header.getLedgerHeader().getEpoch(), header.getView().number() + viewIncrement);
 	}
 
 	private MessageRank messageRank(LocalTimeout localTimeout) {

@@ -99,8 +99,6 @@ public class BFTEventPreprocessorTest {
 		Vertex vertex = mock(Vertex.class);
 		when(proposal.getVertex()).thenReturn(vertex);
 		when(vertex.getView()).thenReturn(goodView ? View.of(1) : View.of(0));
-		Hash vertexId = mock(Hash.class);
-		when(vertex.getId()).thenReturn(vertexId);
 
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		BFTHeader proposed = mock(BFTHeader.class);

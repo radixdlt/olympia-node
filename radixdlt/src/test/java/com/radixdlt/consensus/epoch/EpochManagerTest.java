@@ -36,6 +36,7 @@ import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.ConsensusEvent;
+import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.Proposal;
@@ -81,6 +82,7 @@ public class EpochManagerTest {
 	private ProposerElection proposerElection;
 	private Ledger ledger;
 	private BFTNode self;
+	private Hasher hasher;
 
 	@Before
 	public void setup() {
@@ -102,6 +104,8 @@ public class EpochManagerTest {
 
 		this.epochInfoSender = mock(EpochInfoSender.class);
 		this.syncRequestSender = mock(SyncRequestSender.class);
+		this.hasher = mock(Hasher.class);
+		when(hasher.hash(any())).thenReturn(mock(Hash.class));
 
 		this.epochManager = new EpochManager(
 			this.self,
@@ -115,7 +119,8 @@ public class EpochManagerTest {
 			proposers -> proposerElection,
 			this.bftFactory,
 			this.systemCounters,
-			this.epochInfoSender
+			this.epochInfoSender,
+			this.hasher
 		);
 		this.epochManager.start();
 	}

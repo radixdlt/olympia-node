@@ -22,7 +22,6 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Ledger;
-import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.VertexStoreEventProcessor;
 import com.radixdlt.consensus.LedgerHeader;
@@ -64,11 +63,11 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	}
 
 	public interface SyncedVertexSender {
-		void sendSyncedVertex(Vertex vertex);
+		void sendSyncedVertex(VerifiedVertex vertex);
 	}
 
 	public interface VertexStoreEventSender {
-		void sendCommittedVertex(Vertex vertex);
+		void sendCommittedVertex(VerifiedVertex vertex);
 		void highQC(QuorumCertificate qc);
 	}
 
@@ -93,7 +92,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		 * @param originalRequest the original request which is being replied to
 		 * @param vertices the response data of vertices
 		 */
-		void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<Vertex> vertices);
+		void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<VerifiedVertex> vertices);
 
 		/**
 		 * Send an RPC error response to a given request
@@ -116,11 +115,11 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	private QuorumCertificate highestQC;
 	private QuorumCertificate highestCommittedQC;
 
-	private final Map<Hash, Vertex> vertices = new HashMap<>();
+	private final Map<Hash, VerifiedVertex> vertices = new HashMap<>();
 	private final Map<Hash, SyncState> syncing = new HashMap<>();
 
 	public VertexStore(
-		Vertex rootVertex,
+		VerifiedVertex rootVertex,
 		QuorumCertificate rootQC,
 		Ledger ledger,
 		SyncVerticesRPCSender syncVerticesRPCSender,
@@ -143,9 +142,9 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	}
 
 	public VertexStore(
-		Vertex rootVertex,
+		VerifiedVertex rootVertex,
 		QuorumCertificate rootQC,
-		List<Vertex> vertices,
+		List<VerifiedVertex> vertices,
 		Ledger ledger,
 		SyncVerticesRPCSender syncVerticesRPCSender,
 		SyncedVertexSender syncedVertexSender,
@@ -167,11 +166,11 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		this.rebuild(rootVertex, rootQC, rootQC, vertices);
 	}
 
-	private Vertex getRoot() {
+	private VerifiedVertex getRoot() {
 		return this.vertices.get(this.rootId);
 	}
 
-	private void rebuild(Vertex rootVertex, QuorumCertificate rootQC, QuorumCertificate rootCommitQC, List<Vertex> vertices) {
+	private void rebuild(VerifiedVertex rootVertex, QuorumCertificate rootQC, QuorumCertificate rootCommitQC, List<VerifiedVertex> vertices) {
 		if (!rootQC.getProposed().getVertexId().equals(rootVertex.getId())) {
 			throw new IllegalStateException(String.format("rootQC=%s does not match rootVertex=%s", rootQC, rootVertex));
 		}
@@ -192,7 +191,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		this.highestCommittedQC = rootCommitQC;
 		this.vertices.put(rootVertex.getId(), rootVertex);
 
-		for (Vertex vertex : vertices) {
+		for (VerifiedVertex vertex : vertices) {
 			if (!addQC(vertex.getQC())) {
 				throw new IllegalStateException(String.format("Missing qc=%s", vertex.getQC()));
 			}
@@ -220,7 +219,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		private final VerifiedLedgerHeaderAndProof verifiedLedgerHeaderAndProof;
 		private final BFTNode author;
 		private SyncStage syncStage;
-		private final LinkedList<Vertex> fetched = new LinkedList<>();
+		private final LinkedList<VerifiedVertex> fetched = new LinkedList<>();
 
 		SyncState(Hash localSyncId, QuorumCertificate qc, QuorumCertificate committedQC, BFTNode author) {
 			this.localSyncId = localSyncId;
@@ -263,7 +262,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		// TODO: Handle nodes trying to DDOS this endpoint
 
 		log.trace("SYNC_VERTICES: Received GetVerticesRequest {}", request);
-		ImmutableList<Vertex> fetched = this.getVertices(request.getVertexId(), request.getCount());
+		ImmutableList<VerifiedVertex> fetched = this.getVertices(request.getVertexId(), request.getCount());
 		if (fetched.isEmpty()) {
 			this.syncVerticesRPCSender.sendGetVerticesErrorResponse(request, this.getHighestQC(), this.getHighestCommittedQC());
 			return;
@@ -278,8 +277,8 @@ public final class VertexStore implements VertexStoreEventProcessor {
 
 		// TODO: check if there are any vertices which haven't been local sync processed yet
 		if (requiresCommittedStateSync(syncState)) {
-			syncState.fetched.sort(Comparator.comparing(Vertex::getView));
-			List<Vertex> nonRootVertices = syncState.fetched.stream().skip(1).collect(Collectors.toList());
+			syncState.fetched.sort(Comparator.comparing(VerifiedVertex::getView));
+			List<VerifiedVertex> nonRootVertices = syncState.fetched.stream().skip(1).collect(Collectors.toList());
 			rebuild(syncState.fetched.get(0), syncState.fetched.get(1).getQC(), syncState.committedQC, nonRootVertices);
 		} else {
 			log.info("SYNC_STATE: skipping rebuild");
@@ -322,12 +321,12 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	}
 
 	private void processVerticesResponseForQCSync(Hash syncTo, SyncState syncState, GetVerticesResponse response) {
-		Vertex vertex = response.getVertices().get(0);
+		VerifiedVertex vertex = response.getVertices().get(0);
 		syncState.fetched.addFirst(vertex);
-		Hash nextVertexId = vertex.getQC().getProposed().getVertexId();
+		Hash nextVertexId = vertex.getParentId();
 
 		if (vertices.containsKey(nextVertexId)) {
-			for (Vertex v: syncState.fetched) {
+			for (VerifiedVertex v: syncState.fetched) {
 				if (!addQC(v.getQC())) {
 					log.info("GET_VERTICES failed: {}", syncState.qc);
 					return;
@@ -479,7 +478,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		return true;
 	}
 
-	private BFTHeader insertVertexInternal(Vertex vertex) throws VertexInsertionException {
+	private BFTHeader insertVertexInternal(VerifiedVertex vertex) throws VertexInsertionException {
 		if (!vertices.containsKey(vertex.getParentId())) {
 			throw new MissingParentException(vertex.getParentId());
 		}
@@ -502,10 +501,10 @@ public final class VertexStore implements VertexStoreEventProcessor {
 			this.syncedVertexSender.sendSyncedVertex(vertex);
 		}
 
-		return BFTHeader.ofVertex(vertex, ledgerHeader);
+		return new BFTHeader(vertex.getView(), vertex.getId(), ledgerHeader);
 	}
 
-	public BFTHeader insertVertex(Vertex vertex) throws VertexInsertionException {
+	public BFTHeader insertVertex(VerifiedVertex vertex) throws VertexInsertionException {
 		return insertVertexInternal(vertex);
 	}
 
@@ -517,25 +516,25 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	 * @param header the proof of commit
 	 * @return the vertex if sucessful, otherwise an empty optional if vertex was already committed
 	 */
-	public Optional<Vertex> commit(BFTHeader header, VerifiedLedgerHeaderAndProof ledgerStateWithProof) {
+	public Optional<VerifiedVertex> commit(BFTHeader header, VerifiedLedgerHeaderAndProof ledgerStateWithProof) {
 		if (header.getView().compareTo(this.getRoot().getView()) < 0) {
 			return Optional.empty();
 		}
 
 		final Hash vertexId = header.getVertexId();
-		final Vertex tipVertex = vertices.get(vertexId);
+		final VerifiedVertex tipVertex = vertices.get(vertexId);
 		if (tipVertex == null) {
 			throw new IllegalStateException("Committing vertex not in store: " + header);
 		}
-		final LinkedList<Vertex> path = new LinkedList<>();
-		Vertex vertex = tipVertex;
+		final LinkedList<VerifiedVertex> path = new LinkedList<>();
+		VerifiedVertex vertex = tipVertex;
 		while (vertex != null && !rootId.equals(vertex.getId())) {
 			path.addFirst(vertex);
 			vertex = vertices.remove(vertex.getParentId());
 		}
 
 		ImmutableList.Builder<Command> commandsToCommitBuilder = ImmutableList.builder();
-		for (Vertex committedVertex : path) {
+		for (VerifiedVertex committedVertex : path) {
 			this.counters.increment(CounterType.BFT_PROCESSED);
 			this.vertexStoreEventSender.sendCommittedVertex(committedVertex);
 			if (committedVertex.getCommand() != null) {
@@ -553,10 +552,10 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		return Optional.of(tipVertex);
 	}
 
-	public List<Vertex> getPathFromRoot(Hash vertexId) {
-		final List<Vertex> path = new ArrayList<>();
+	public List<VerifiedVertex> getPathFromRoot(Hash vertexId) {
+		final List<VerifiedVertex> path = new ArrayList<>();
 
-		Vertex vertex = vertices.get(vertexId);
+		VerifiedVertex vertex = vertices.get(vertexId);
 		while (vertex != null && !vertex.getId().equals(rootId)) {
 			path.add(vertex);
 			vertex = vertices.get(vertex.getParentId());
@@ -594,11 +593,11 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	 * @param count the number of vertices to retrieve
 	 * @return the list of vertices if all found, otherwise an empty list
 	 */
-	private ImmutableList<Vertex> getVertices(Hash vertexId, int count) {
+	private ImmutableList<VerifiedVertex> getVertices(Hash vertexId, int count) {
 		Hash nextId = vertexId;
-		ImmutableList.Builder<Vertex> builder = ImmutableList.builderWithExpectedSize(count);
+		ImmutableList.Builder<VerifiedVertex> builder = ImmutableList.builderWithExpectedSize(count);
 		for (int i = 0; i < count; i++) {
-			Vertex vertex = this.vertices.get(nextId);
+			VerifiedVertex vertex = this.vertices.get(nextId);
 			if (vertex == null) {
 				return ImmutableList.of();
 			}

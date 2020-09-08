@@ -76,15 +76,7 @@ public final class BFTHeader {
 		);
 	}
 
-	public static BFTHeader ofVertex(Vertex vertex, LedgerHeader ledgerHeader) {
-		return new BFTHeader(
-			vertex.getView(),
-			vertex.getId(),
-			ledgerHeader
-		);
-	}
-
-	public LedgerHeader getLedgerState() {
+	public LedgerHeader getLedgerHeader() {
 		return ledgerHeader;
 	}
 

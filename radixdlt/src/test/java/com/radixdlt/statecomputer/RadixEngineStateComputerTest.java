@@ -31,7 +31,7 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.engine.RadixEngine;
@@ -77,14 +77,14 @@ public class RadixEngineStateComputerTest {
 
 	@Test
 	public void when_prepare_vertex_metadata_equal_to_high_view__then_should_return_epoch_change() {
-		Vertex vertex = mock(Vertex.class);
+		VerifiedVertex vertex = mock(VerifiedVertex.class);
 		when(vertex.getView()).thenReturn(epochHighView);
 		assertThat(stateComputer.prepare(vertex)).isTrue();
 	}
 
 	@Test
 	public void when_prepare_vertex_metadata_lower_to_high_view__then_should_return_not_epoch_change() {
-		Vertex vertex = mock(Vertex.class);
+		VerifiedVertex vertex = mock(VerifiedVertex.class);
 		when(vertex.getView()).thenReturn(epochHighView.previous());
 		assertThat(stateComputer.prepare(vertex)).isFalse();
 	}

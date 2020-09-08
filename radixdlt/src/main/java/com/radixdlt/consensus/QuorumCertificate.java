@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.utils.Pair;
 import java.util.Objects;
@@ -58,12 +59,12 @@ public final class QuorumCertificate {
 	 * @param genesisVertex the vertex to create a qc for
 	 * @return a mocked QC
 	 */
-	public static QuorumCertificate ofGenesis(Vertex genesisVertex, LedgerHeader ledgerHeader) {
+	public static QuorumCertificate ofGenesis(VerifiedVertex genesisVertex, LedgerHeader ledgerHeader) {
 		if (!genesisVertex.getView().isGenesis()) {
 			throw new IllegalArgumentException(String.format("Vertex is not genesis: %s", genesisVertex));
 		}
 
-		BFTHeader header = BFTHeader.ofVertex(genesisVertex, ledgerHeader);
+		BFTHeader header = new BFTHeader(genesisVertex.getView(), genesisVertex.getId(), ledgerHeader);
 		final VoteData voteData = new VoteData(header, header, header);
 		return new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 	}
@@ -87,7 +88,7 @@ public final class QuorumCertificate {
 				voteData.getParent(),
 				committed.getView().number(),
 				committed.getVertexId(),
-				committed.getLedgerState(),
+				committed.getLedgerHeader(),
 				signatures
 			);
 			return Pair.of(committed, ledgerStateProof);

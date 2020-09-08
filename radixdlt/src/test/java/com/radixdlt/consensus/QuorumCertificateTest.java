@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
@@ -29,7 +30,7 @@ import org.junit.Test;
 public class QuorumCertificateTest {
 	@Test
 	public void when_create_genesis_qc_with_non_genesis_vertex__then_should_throw_exception() {
-		Vertex vertex = mock(Vertex.class);
+		VerifiedVertex vertex = mock(VerifiedVertex.class);
 		when(vertex.getView()).thenReturn(View.of(1));
 		assertThatThrownBy(() -> QuorumCertificate.ofGenesis(vertex, mock(LedgerHeader.class)))
 			.isInstanceOf(IllegalArgumentException.class);

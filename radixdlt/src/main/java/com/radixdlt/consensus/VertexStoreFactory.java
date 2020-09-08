@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VertexStore;
 
 /**
@@ -31,5 +32,5 @@ public interface VertexStoreFactory {
 	 * @param ledger the underlying ledger
 	 * @return a new VertexStore
 	 */
-	VertexStore create(Vertex genesisVertex, QuorumCertificate genesisQC, Ledger ledger);
+	VertexStore create(VerifiedVertex genesisVertex, QuorumCertificate genesisQC, Ledger ledger);
 }

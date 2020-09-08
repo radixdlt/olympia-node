@@ -18,7 +18,7 @@
 package com.radixdlt;
 
 import com.google.inject.AbstractModule;
-import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.VertexSyncRx;
 import com.radixdlt.consensus.bft.VertexStore.SyncedVertexSender;
 import com.radixdlt.consensus.epoch.LocalTimeout;
@@ -41,7 +41,7 @@ public class ConsensusRxModule extends AbstractModule {
 		bind(LocalTimeoutSender.class).toInstance(localTimeouts::scheduleSend);
 
 		// Local messages
-		SenderToRx<Vertex, Hash> syncedVertices = new SenderToRx<>(Vertex::getId);
+		SenderToRx<VerifiedVertex, Hash> syncedVertices = new SenderToRx<>(VerifiedVertex::getId);
 		bind(VertexSyncRx.class).toInstance(syncedVertices::rx);
 		bind(SyncedVertexSender.class).toInstance(syncedVertices::send);
 	}
