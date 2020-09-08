@@ -162,14 +162,17 @@ public class StateComputerLedgerTest {
 		when(qc.getTimestampedSignatures()).thenReturn(new TimestampedECDSASignatures());
 		when(vertex.getQC()).thenReturn(qc);
 
-		LedgerHeader ledgerHeader = mock(LedgerHeader.class);
-		when(ledgerHeader.isEndOfEpoch()).thenReturn(false);
-		when(ledgerHeader.getStateVersion()).thenReturn(12345L);
+		LedgerHeader parentHeader = mock(LedgerHeader.class);
+		when(parentHeader.isEndOfEpoch()).thenReturn(false);
+		when(parentHeader.getStateVersion()).thenReturn(12345L);
+		when(parentHeader.getAccumulator()).thenReturn(mock(Hash.class));
 
 		BFTHeader parent = mock(BFTHeader.class);
-		when(parent.getLedgerHeader()).thenReturn(ledgerHeader);
+		when(parent.getLedgerHeader()).thenReturn(parentHeader);
 		when(vertex.getParentHeader()).thenReturn(parent);
-		when(vertex.getCommand()).thenReturn(mock(Command.class));
+		Command command = mock(Command.class);
+		when(command.getHash()).thenReturn(mock(Hash.class));
+		when(vertex.getCommand()).thenReturn(command);
 
 		LedgerHeader nextPrepared = stateComputerLedger.prepare(vertex);
 		assertThat(nextPrepared.isEndOfEpoch()).isFalse();

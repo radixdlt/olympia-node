@@ -34,14 +34,14 @@ import org.junit.Test;
 public class OneByzantineGenesisTest {
 	SimulationTest.Builder bftTestBuilder = SimulationTest.builder()
 		.pacemakerTimeout(1000)
-		.numNodes(3)
-		.checkConsensusSafety("safety")
-		.checkConsensusNoneCommitted("noneCommitted");
+		.checkConsensusSafety("safety");
 
 	@Test
-	public void given_2_correct_bfts_and_one_incorrect__then_should_never_make_progress() {
+	public void given_2_correct_bfts_and_1_incorrect__then_should_never_make_progress() {
 		SimulationTest bftTest = bftTestBuilder
+			.numNodes(3)
 			.modifyOneGenesis(true)
+			.checkConsensusNoneCommitted("noneCommitted")
 			.build();
 
 		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
@@ -51,9 +51,24 @@ public class OneByzantineGenesisTest {
 	@Test
 	public void given_3_correct_bfts__then_none_committed_invariant_should_fail() {
 		SimulationTest bftTest = bftTestBuilder
+			.numNodes(3)
+			.checkConsensusNoneCommitted("noneCommitted")
 			.build();
 
 		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
 		assertThat(results).hasEntrySatisfying("noneCommitted", error -> assertThat(error).isPresent());
 	}
+
+	@Test
+	public void given_3_correct_bfts_and_1_incorrect__then_should_make_progress() {
+		SimulationTest bftTest = bftTestBuilder
+			.numNodes(4)
+			.modifyOneGenesis(true)
+			.checkConsensusLiveness("liveness", 5, TimeUnit.SECONDS)
+			.build();
+
+		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
+		assertThat(results).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+	}
+
 }
