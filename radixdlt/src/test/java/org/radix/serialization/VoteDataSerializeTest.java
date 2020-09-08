@@ -17,10 +17,10 @@
 
 package org.radix.serialization;
 
-import com.radixdlt.consensus.PreparedCommand;
+import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.crypto.Hash;
 
 public class VoteDataSerializeTest extends SerializeObject<VoteData> {
@@ -30,11 +30,10 @@ public class VoteDataSerializeTest extends SerializeObject<VoteData> {
 
 	private static VoteData get() {
 		View view = View.of(1234567890L);
-
-		PreparedCommand preparedCommand = PreparedCommand.create(0, 0L, false);
-		VertexMetadata committed = new VertexMetadata(0, view, Hash.random(), preparedCommand);
-		VertexMetadata parent = new VertexMetadata(0, view.next(), Hash.random(), preparedCommand);
-		VertexMetadata proposed = new VertexMetadata(0, view.next().next(), Hash.random(), preparedCommand);
+		LedgerHeader ledgerHeader = LedgerHeader.create(0, View.genesis(), 0, Hash.random(), 0L, false);
+		BFTHeader committed = new BFTHeader(view, Hash.random(), ledgerHeader);
+		BFTHeader parent = new BFTHeader(view.next(), Hash.random(), ledgerHeader);
+		BFTHeader proposed = new BFTHeader(view.next().next(), Hash.random(), ledgerHeader);
 		return new VoteData(proposed, parent, committed);
 	}
 }

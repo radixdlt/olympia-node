@@ -32,17 +32,19 @@ import org.junit.Test;
 public class StaticValidatorsTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(4)
-		.checkSafety("safety")
-		.checkLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
-		.checkNoTimeouts("noTimeouts")
-		.checkAllProposalsHaveDirectParents("directParents");
+		.checkConsensusSafety("safety")
+		.checkConsensusLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
+		.checkConsensusNoTimeouts("noTimeouts")
+		.checkConsensusAllProposalsHaveDirectParents("directParents")
+		.checkLedgerSyncedInOrder("syncedInOrder")
+		.checkLedgerProcessesConsensusCommitted("consensusToLedger");
 
 	@Test
 	public void given_correct_bft_with_changing_epochs_every_view__then_should_pass_bft_and_epoch_invariants() {
 		SimulationTest bftTest = bftTestBuilder
 			.pacemakerTimeout(1000)
 			.ledgerAndEpochs(View.of(1), e -> IntStream.range(0, 4))
-			.checkEpochHighView("epochHighView", View.of(1))
+			.checkEpochsHighViewCorrect("epochHighView", View.of(1))
 			.build();
 		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
 		assertThat(results).allSatisfy((name, err) -> assertThat(err).isEmpty());
@@ -52,7 +54,7 @@ public class StaticValidatorsTest {
 	public void given_correct_bft_with_changing_epochs_per_100_views__then_should_fail_incorrect_epoch_invariant() {
 		SimulationTest bftTest = bftTestBuilder
 			.ledgerAndEpochs(View.of(100), e -> IntStream.range(0, 4))
-			.checkEpochHighView("epochHighView", View.of(99))
+			.checkEpochsHighViewCorrect("epochHighView", View.of(99))
 			.build();
 		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
 		assertThat(results).hasEntrySatisfying("epochHighView", error -> assertThat(error).isPresent());
@@ -62,7 +64,7 @@ public class StaticValidatorsTest {
 	public void given_correct_bft_with_changing_epochs_per_100_views__then_should_pass_bft_and_epoch_invariants() {
 		SimulationTest bftTest = bftTestBuilder
 			.ledgerAndEpochs(View.of(100), e -> IntStream.range(0, 4))
-			.checkEpochHighView("epochHighView", View.of(100))
+			.checkEpochsHighViewCorrect("epochHighView", View.of(100))
 			.build();
 		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
 		assertThat(results).allSatisfy((name, err) -> assertThat(err).isEmpty());

@@ -21,11 +21,11 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.PendingVotes;
-import com.radixdlt.consensus.PreparedCommand;
+import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
@@ -126,17 +126,16 @@ public class BFTEventReducerTest {
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		View view = mock(View.class);
 		when(qc.getView()).thenReturn(view);
-		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
+		BFTHeader header = mock(BFTHeader.class);
 		Hash id = mock(Hash.class);
-		when(vertexMetadata.getId()).thenReturn(id);
-		when(qc.getProposed()).thenReturn(vertexMetadata);
+		when(header.getVertexId()).thenReturn(id);
+		when(qc.getProposed()).thenReturn(header);
 		when(pendingVotes.insertVote(eq(vote), eq(validatorSet))).thenReturn(Optional.of(qc));
 		when(vertexStore.syncToQC(eq(qc), any(), any())).thenReturn(false);
 		reducer.processVote(vote);
 		verify(safetyRules, never()).process(any());
 		verify(pacemaker, never()).processQC(any());
 
-		when(safetyRules.process(any())).thenReturn(Optional.empty());
 		when(pacemaker.processQC(any())).thenReturn(Optional.empty());
 		reducer.processLocalSync(id);
 		verify(safetyRules, never()).process(eq(qc));
@@ -146,8 +145,8 @@ public class BFTEventReducerTest {
 	@Test
 	public void when_processing_vote_as_not_proposer__then_nothing_happens() {
 		Vote voteMessage = mock(Vote.class);
-		VertexMetadata proposal = new VertexMetadata(0, View.of(2), Hash.random(), mock(PreparedCommand.class));
-		VertexMetadata parent = new VertexMetadata(0, View.of(1), Hash.random(), mock(PreparedCommand.class));
+		BFTHeader proposal = new BFTHeader(View.of(2), Hash.random(), mock(LedgerHeader.class));
+		BFTHeader parent = new BFTHeader(View.of(1), Hash.random(), mock(LedgerHeader.class));
 		VoteData voteData = new VoteData(proposal, parent, null);
 		when(voteMessage.getVoteData()).thenReturn(voteData);
 
@@ -161,8 +160,8 @@ public class BFTEventReducerTest {
 		when(proposerElection.getProposer(any())).thenReturn(this.self);
 
 		Vote vote = mock(Vote.class);
-		VertexMetadata proposal = new VertexMetadata(0, View.of(2), Hash.random(), mock(PreparedCommand.class));
-		VertexMetadata parent = new VertexMetadata(0, View.of(1), Hash.random(), mock(PreparedCommand.class));
+		BFTHeader proposal = new BFTHeader(View.of(2), Hash.random(), mock(LedgerHeader.class));
+		BFTHeader parent = new BFTHeader(View.of(1), Hash.random(), mock(LedgerHeader.class));
 		VoteData voteData = new VoteData(proposal, parent, null);
 		when(vote.getVoteData()).thenReturn(voteData);
 		when(vote.getAuthor()).thenReturn(mock(BFTNode.class));
@@ -210,9 +209,9 @@ public class BFTEventReducerTest {
 		when(pacemaker.processNewView(any(), any())).thenReturn(Optional.of(View.of(1L)));
 		when(proposerElection.getProposer(any())).thenReturn(self);
 		QuorumCertificate highQC = mock(QuorumCertificate.class);
-		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
-		when(vertexMetadata.getPreparedCommand()).thenReturn(mock(PreparedCommand.class));
-		when(highQC.getProposed()).thenReturn(vertexMetadata);
+		BFTHeader header = mock(BFTHeader.class);
+		when(header.getLedgerState()).thenReturn(mock(LedgerHeader.class));
+		when(highQC.getProposed()).thenReturn(header);
 		when(vertexStore.getHighestQC()).thenReturn(highQC);
 		when(nextCommandGenerator.generateNextCommand(eq(View.of(1L)), any())).thenReturn(mock(Command.class));
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of());
@@ -228,8 +227,8 @@ public class BFTEventReducerTest {
 		Vertex proposedVertex = mock(Vertex.class);
 		when(proposedVertex.getCommand()).thenReturn(mock(Command.class));
 		when(proposedVertex.getQC()).thenReturn(mock(QuorumCertificate.class));
-		VertexMetadata parent = mock(VertexMetadata.class);
-		when(proposedVertex.getParentMetadata()).thenReturn(parent);
+		BFTHeader parent = mock(BFTHeader.class);
+		when(proposedVertex.getParentHeader()).thenReturn(parent);
 		when(proposedVertex.getView()).thenReturn(currentView);
 
 		Proposal proposal = mock(Proposal.class);
@@ -255,8 +254,8 @@ public class BFTEventReducerTest {
 		when(qc.getView()).thenReturn(qcView);
 		when(proposedVertex.getQC()).thenReturn(qc);
 		when(proposedVertex.getView()).thenReturn(currentView);
-		VertexMetadata parent = mock(VertexMetadata.class);
-		when(proposedVertex.getParentMetadata()).thenReturn(parent);
+		BFTHeader parent = mock(BFTHeader.class);
+		when(proposedVertex.getParentHeader()).thenReturn(parent);
 
 		Proposal proposal = mock(Proposal.class);
 		when(proposal.getVertex()).thenReturn(proposedVertex);
@@ -288,8 +287,8 @@ public class BFTEventReducerTest {
 		when(qc.getView()).thenReturn(qcView);
 		when(proposedVertex.getQC()).thenReturn(qc);
 		when(proposedVertex.getView()).thenReturn(currentView);
-		VertexMetadata parent = mock(VertexMetadata.class);
-		when(proposedVertex.getParentMetadata()).thenReturn(parent);
+		BFTHeader parent = mock(BFTHeader.class);
+		when(proposedVertex.getParentHeader()).thenReturn(parent);
 
 		Proposal proposal = mock(Proposal.class);
 		when(proposal.getVertex()).thenReturn(proposedVertex);
@@ -319,8 +318,8 @@ public class BFTEventReducerTest {
 		when(qc.getView()).thenReturn(qcView);
 		when(proposedVertex.getQC()).thenReturn(qc);
 		when(proposedVertex.getView()).thenReturn(currentView);
-		VertexMetadata parent = mock(VertexMetadata.class);
-		when(proposedVertex.getParentMetadata()).thenReturn(parent);
+		BFTHeader parent = mock(BFTHeader.class);
+		when(proposedVertex.getParentHeader()).thenReturn(parent);
 
 		Proposal proposal = mock(Proposal.class);
 		when(proposal.getVertex()).thenReturn(proposedVertex);
@@ -335,39 +334,5 @@ public class BFTEventReducerTest {
 
 		verify(sender, times(1)).sendVote(eq(vote), any());
 		verify(sender, times(0)).sendNewView(any(), any());
-	}
-
-
-	@Test
-	public void when_processing_valid_stored_proposal_and_there_exists_a_new_commit__the_new_commit_atom_is_removed_from_mempool() {
-		View currentView = View.of(123);
-
-		when(pacemaker.processQC(any())).thenReturn(Optional.empty());
-		when(pacemaker.getCurrentView()).thenReturn(currentView);
-
-		Vertex proposalVertex = mock(Vertex.class);
-		Hash proposalVertexId = mock(Hash.class);
-		when(proposalVertex.getId()).thenReturn(proposalVertexId);
-		QuorumCertificate qc = mock(QuorumCertificate.class);
-		when(qc.getView()).thenReturn(mock(View.class));
-		when(proposalVertex.getQC()).thenReturn(qc);
-		when(proposalVertex.getView()).thenReturn(currentView);
-		VertexMetadata parent = mock(VertexMetadata.class);
-		when(proposalVertex.getParentMetadata()).thenReturn(parent);
-
-		Proposal proposal = mock(Proposal.class);
-		when(proposal.getVertex()).thenReturn(proposalVertex);
-
-		VertexMetadata committedVertexMetadata = mock(VertexMetadata.class);
-		Hash committedVertexId = mock(Hash.class);
-		when(committedVertexMetadata.getId()).thenReturn(committedVertexId);
-		Vertex committedVertex = mock(Vertex.class);
-		when(committedVertex.getCommand()).thenReturn(mock(Command.class));
-
-		when(safetyRules.process(eq(qc))).thenReturn(Optional.of(committedVertexMetadata));
-		when(vertexStore.commitVertex(eq(committedVertexMetadata))).thenReturn(Optional.of(committedVertex));
-		when(proposerElection.getProposer(any())).thenReturn(mock(BFTNode.class));
-
-		reducer.processProposal(proposal);
 	}
 }

@@ -17,11 +17,9 @@
 
 package com.radixdlt.sync;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.ledger.CommittedCommand;
-import com.radixdlt.network.addressbook.Peer;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import io.reactivex.rxjava3.core.Observable;
-import java.util.List;
 
 /**
  * Network interface for state syncing
@@ -32,7 +30,7 @@ public interface StateSyncNetwork {
 	 * Retrieve stream of sync responses
 	 * @return an unending Observable of sync responses
 	 */
-	Observable<ImmutableList<CommittedCommand>> syncResponses();
+	Observable<VerifiedCommandsAndProof> syncResponses();
 
 	/**
 	 * Retrieve stream of sync requests
@@ -41,17 +39,17 @@ public interface StateSyncNetwork {
 	Observable<SyncRequest> syncRequests();
 
 	/**
-	 * Sends a sync request to a peer
+	 * Sends a sync request to a peer node
 	 *
-	 * @param peer peer to send request to
+	 * @param node node to send request to
 	 * @param stateVersion this nodes current stateVersion
 	 */
-	void sendSyncRequest(Peer peer, long stateVersion);
+	void sendSyncRequest(BFTNode node, long stateVersion);
 
 	/**
-	 * Sends a sync response to a peer
-	 * @param peer peer to send response to
+	 * Sends a sync response to a peer node
+	 * @param node node to send response to
 	 * @param atoms list of atoms in the response
 	 */
-	void sendSyncResponse(Peer peer, List<CommittedCommand> atoms);
+	void sendSyncResponse(BFTNode node, VerifiedCommandsAndProof atoms);
 }

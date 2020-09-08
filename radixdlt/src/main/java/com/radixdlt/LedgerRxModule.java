@@ -28,16 +28,9 @@ import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.SubmissionControlImpl.SubmissionControlSender;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.converters.AtomConversionException;
-import com.radixdlt.sync.SyncServiceProcessor.SyncInProgress;
-import com.radixdlt.sync.SyncServiceProcessor.SyncTimeoutScheduler;
-import com.radixdlt.sync.SyncServiceRunner.SyncTimeoutsRx;
 import com.radixdlt.ledger.StateComputerLedger.CommittedStateSyncSender;
-import com.radixdlt.utils.ScheduledSenderToRx;
-import com.radixdlt.utils.ThreadFactories;
 import com.radixdlt.utils.TwoSenderToRx;
 import io.reactivex.rxjava3.core.Observable;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * Module which manages messages from Syncer
@@ -78,10 +71,5 @@ public final class LedgerRxModule extends AbstractModule {
 		TwoSenderToRx<Long, Object, CommittedStateSync> committedStateSyncTwoSenderToRx = new TwoSenderToRx<>(CommittedStateSync::new);
 		bind(CommittedStateSyncRx.class).toInstance(committedStateSyncTwoSenderToRx::rx);
 		bind(CommittedStateSyncSender.class).toInstance(committedStateSyncTwoSenderToRx::send);
-
-		ScheduledExecutorService ses = Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("SyncTimeoutSender"));
-		ScheduledSenderToRx<SyncInProgress> syncsInProgress = new ScheduledSenderToRx<>(ses);
-		bind(SyncTimeoutScheduler.class).toInstance(syncsInProgress::scheduleSend);
-		bind(SyncTimeoutsRx.class).toInstance(syncsInProgress::messages);
 	}
 }

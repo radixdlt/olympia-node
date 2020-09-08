@@ -30,97 +30,68 @@ import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.serialization.DsonOutput.Output;
 
+/**
+ * The bft header which gets voted upon by consensus.
+ */
 @Immutable
-@SerializerId2("consensus.vertex_metadata")
-public final class VertexMetadata {
+@SerializerId2("consensus.bft_header")
+public final class BFTHeader {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("epoch")
-	@DsonOutput(Output.ALL)
-	private final long epoch;
-
 	private View view;
 
-	@JsonProperty("id")
+	@JsonProperty("vertex_id")
 	@DsonOutput(Output.ALL)
-	private final Hash id;
+	private final Hash vertexId;
 
-	@JsonProperty("prepared_command")
+	@JsonProperty("ledger_state")
 	@DsonOutput(Output.ALL)
-	private final PreparedCommand preparedCommand;
+	private final LedgerHeader ledgerHeader;
 
-	VertexMetadata() {
+	BFTHeader() {
 		// Serializer only
 		this.view = null;
-		this.id = null;
-		this.epoch = 0L;
-		this.preparedCommand = null;
+		this.vertexId = null;
+		this.ledgerHeader = null;
 	}
 
-	// TODO: Move executor data to a more opaque data structure
-	public VertexMetadata(
-		long epoch, // consensus data
+	// TODO: Move command output to a more opaque data structure
+	public BFTHeader(
 		View view, // consensus data
-		Hash id, // consensus data
-		PreparedCommand preparedCommand
+		Hash vertexId, // consensus data
+		LedgerHeader ledgerHeader
 	) {
-		if (epoch < 0) {
-			throw new IllegalArgumentException("epoch must be >= 0");
-		}
-
-		this.preparedCommand = preparedCommand;
-		this.epoch = epoch;
 		this.view = view;
-		this.id = id;
+		this.vertexId = vertexId;
+		this.ledgerHeader = ledgerHeader;
 	}
 
-	public static VertexMetadata ofGenesisAncestor(PreparedCommand preparedCommand) {
-		return new VertexMetadata(
-			0,
+	public static BFTHeader ofGenesisAncestor(LedgerHeader ledgerHeader) {
+		return new BFTHeader(
 			View.genesis(),
-			Hash.ZERO_HASH,
-			preparedCommand
+			Hash.ZERO_HASH, ledgerHeader
 		);
 	}
 
-	public static VertexMetadata ofGenesisVertex(Vertex vertex) {
-		return new VertexMetadata(
-			vertex.getEpoch(),
+	public static BFTHeader ofVertex(Vertex vertex, LedgerHeader ledgerHeader) {
+		return new BFTHeader(
 			vertex.getView(),
-			vertex.getId(),
-			PreparedCommand.create(
-				vertex.getQC().getParent().getPreparedCommand().getStateVersion(),
-				0L,
-				false
-			)
+			vertex.getId(), ledgerHeader
 		);
 	}
 
-	public static VertexMetadata ofVertex(Vertex vertex, PreparedCommand preparedCommand) {
-		return new VertexMetadata(
-			vertex.getEpoch(),
-			vertex.getView(),
-			vertex.getId(),
-			preparedCommand
-		);
-	}
-
-	public PreparedCommand getPreparedCommand() {
-		return preparedCommand;
-	}
-
-	public long getEpoch() {
-		return epoch;
+	public LedgerHeader getLedgerState() {
+		return ledgerHeader;
 	}
 
 	public View getView() {
 		return view;
 	}
 
-	public Hash getId() {
-		return id;
+	public Hash getVertexId() {
+		return vertexId;
 	}
 
 	@JsonProperty("view")
@@ -136,7 +107,7 @@ public final class VertexMetadata {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.epoch, this.view, this.id, this.preparedCommand);
+		return Objects.hash(this.view, this.vertexId, this.ledgerHeader);
 	}
 
 	@Override
@@ -144,21 +115,20 @@ public final class VertexMetadata {
 		if (o == this) {
 			return true;
 		}
-		if (o instanceof VertexMetadata) {
-			VertexMetadata other = (VertexMetadata) o;
+		if (o instanceof BFTHeader) {
+			BFTHeader other = (BFTHeader) o;
 			return
 				Objects.equals(this.view, other.view)
-				&& Objects.equals(this.id, other.id)
-				&& this.epoch == other.epoch
-				&& Objects.equals(this.preparedCommand, other.preparedCommand);
+				&& Objects.equals(this.vertexId, other.vertexId)
+				&& Objects.equals(this.ledgerHeader, other.ledgerHeader);
 		}
 		return false;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{epoch=%s view=%s prepared=%s}",
-			getClass().getSimpleName(), this.epoch, this.view, this.preparedCommand
+		return String.format("%s{view=%s ledger=%s}",
+			getClass().getSimpleName(), this.view, this.ledgerHeader
 		);
 	}
 }

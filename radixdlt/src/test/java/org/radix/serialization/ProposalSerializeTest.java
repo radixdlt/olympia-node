@@ -18,12 +18,12 @@
 package org.radix.serialization;
 
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.PreparedCommand;
+import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -40,10 +40,10 @@ public class ProposalSerializeTest extends SerializeObject<Proposal> {
 		View view = View.of(1234567891L);
 		Hash id = Hash.random();
 
-		PreparedCommand preparedCommand = PreparedCommand.create(0, 0L, false);
-		VertexMetadata vertexMetadata = new VertexMetadata(0, view, id, preparedCommand);
-		VertexMetadata parent = new VertexMetadata(0, View.of(1234567890L), Hash.random(), preparedCommand);
-		VoteData voteData = new VoteData(vertexMetadata, parent, null);
+		LedgerHeader ledgerHeader = LedgerHeader.create(0, View.genesis(), 0, Hash.random(), 0L, false);
+		BFTHeader header = new BFTHeader(view, id, ledgerHeader);
+		BFTHeader parent = new BFTHeader(View.of(1234567890L), Hash.random(), ledgerHeader);
+		VoteData voteData = new VoteData(header, parent, null);
 		QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 		Command command = new Command(new byte[] {0, 1, 2, 3});
 

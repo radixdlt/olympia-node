@@ -20,6 +20,7 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.middleware2.network.MessageCentralLedgerSync;
 import com.radixdlt.network.addressbook.AddressBook;
@@ -34,6 +35,7 @@ import com.radixdlt.sync.SyncServiceRunner.SyncTimeoutsRx;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.sync.SyncServiceRunner.VersionUpdatesRx;
 import com.radixdlt.universe.Universe;
+import java.util.Comparator;
 
 /**
  * Module which manages synchronization of committed atoms across of nodes
@@ -44,18 +46,20 @@ public class SyncCommittedServiceModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private SyncServiceProcessor syncServiceProcessor(
+		Comparator<VerifiedLedgerHeaderAndProof> headerComparator,
+		VerifiedLedgerHeaderAndProof header,
 		RadixEngineStateComputer executor,
 		StateSyncNetwork stateSyncNetwork,
-		AddressBook addressBook,
 		SyncedCommandSender syncedCommandSender,
 		SyncTimeoutScheduler syncTimeoutScheduler
 	) {
 		return new SyncServiceProcessor(
 			executor,
 			stateSyncNetwork,
-			addressBook, syncedCommandSender,
+			syncedCommandSender,
 			syncTimeoutScheduler,
-			0,
+			headerComparator,
+			header,
 			BATCH_SIZE,
 			10
 		);
@@ -82,17 +86,19 @@ public class SyncCommittedServiceModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private SyncedCommandSender syncedAtomSender(StateComputerLedger stateComputerLedger) {
-		return syncCmd -> stateComputerLedger.commit(syncCmd.getCommand(), syncCmd.getVertexMetadata());
+		return stateComputerLedger::commit;
 	}
 
 	@Provides
 	@Singleton
 	private StateSyncNetwork stateSyncNetwork(
 		Universe universe,
+		AddressBook addressBook,
 		MessageCentral messageCentral
 	) {
 		return new MessageCentralLedgerSync(
 			universe,
+			addressBook,
 			messageCentral
 		);
 	}

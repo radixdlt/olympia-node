@@ -22,7 +22,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anySet;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
@@ -31,11 +33,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.PreparedCommand;
+import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
@@ -44,6 +47,8 @@ import com.radixdlt.ledger.StateComputerLedger.CommittedStateSyncSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.mempool.Mempool;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.function.BiConsumer;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -54,8 +59,9 @@ public class StateComputerLedgerTest {
 	private StateComputerLedger stateComputerLedger;
 	private CommittedStateSyncSender committedStateSyncSender;
 	private CommittedSender committedSender;
-
+	private VerifiedLedgerHeaderAndProof currentLedgerHeader;
 	private SystemCounters counters;
+	private Comparator<VerifiedLedgerHeaderAndProof> headerComparator;
 
 	@Before
 	public void setup() {
@@ -65,9 +71,12 @@ public class StateComputerLedgerTest {
 		this.committedStateSyncSender = mock(CommittedStateSyncSender.class);
 		this.counters = mock(SystemCounters.class);
 		this.committedSender = mock(CommittedSender.class);
+		this.currentLedgerHeader = mock(VerifiedLedgerHeaderAndProof.class);
+		this.headerComparator = mock(Comparator.class);
 
 		this.stateComputerLedger = new StateComputerLedger(
-			1233,
+			headerComparator,
+			currentLedgerHeader,
 			mempool,
 			stateComputer,
 			committedStateSyncSender,
@@ -90,16 +99,16 @@ public class StateComputerLedgerTest {
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		when(vertex.getQC()).thenReturn(qc);
 
-		PreparedCommand preparedCommand = mock(PreparedCommand.class);
-		when(preparedCommand.isEndOfEpoch()).thenReturn(false);
-		when(preparedCommand.getStateVersion()).thenReturn(12345L);
+		LedgerHeader ledgerHeader = mock(LedgerHeader.class);
+		when(ledgerHeader.isEndOfEpoch()).thenReturn(false);
+		when(ledgerHeader.getStateVersion()).thenReturn(12345L);
 
-		VertexMetadata parent = mock(VertexMetadata.class);
-		when(parent.getPreparedCommand()).thenReturn(preparedCommand);
+		BFTHeader parent = mock(BFTHeader.class);
+		when(parent.getLedgerState()).thenReturn(ledgerHeader);
 		when(qc.getProposed()).thenReturn(parent);
 		when(qc.getTimestampedSignatures()).thenReturn(new TimestampedECDSASignatures());
 
-		PreparedCommand nextPrepared = stateComputerLedger.prepare(vertex);
+		LedgerHeader nextPrepared = stateComputerLedger.prepare(vertex);
 		assertThat(nextPrepared.isEndOfEpoch()).isFalse();
 		assertThat(nextPrepared.getStateVersion()).isEqualTo(12345L);
 	}
@@ -110,39 +119,39 @@ public class StateComputerLedgerTest {
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		when(vertex.getQC()).thenReturn(qc);
 
-		PreparedCommand preparedCommand = mock(PreparedCommand.class);
-		when(preparedCommand.isEndOfEpoch()).thenReturn(false);
-		when(preparedCommand.getStateVersion()).thenReturn(12345L);
+		LedgerHeader ledgerHeader = mock(LedgerHeader.class);
+		when(ledgerHeader.isEndOfEpoch()).thenReturn(false);
+		when(ledgerHeader.getStateVersion()).thenReturn(12345L);
 
-		VertexMetadata parent = mock(VertexMetadata.class);
-		when(parent.getPreparedCommand()).thenReturn(preparedCommand);
+		BFTHeader parent = mock(BFTHeader.class);
+		when(parent.getLedgerState()).thenReturn(ledgerHeader);
 		when(qc.getProposed()).thenReturn(parent);
 		when(qc.getTimestampedSignatures()).thenReturn(new TimestampedECDSASignatures());
 
-		PreparedCommand nextPrepared = stateComputerLedger.prepare(vertex);
+		LedgerHeader nextPrepared = stateComputerLedger.prepare(vertex);
 		assertThat(nextPrepared.isEndOfEpoch()).isFalse();
 		assertThat(nextPrepared.getStateVersion()).isEqualTo(12345L);
 	}
 
 	@Test
-	public void when_prepare_with_no_command_and_end_of_epoch__then_should_return_next_state_version() {
+	public void when_prepare_with_no_command_and_end_of_epoch__then_should_return_same_state_version() {
 		Vertex vertex = mock(Vertex.class);
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		when(vertex.getQC()).thenReturn(qc);
 
-		PreparedCommand preparedCommand = mock(PreparedCommand.class);
-		when(preparedCommand.isEndOfEpoch()).thenReturn(false);
-		when(preparedCommand.getStateVersion()).thenReturn(12345L);
+		LedgerHeader ledgerHeader = mock(LedgerHeader.class);
+		when(ledgerHeader.isEndOfEpoch()).thenReturn(false);
+		when(ledgerHeader.getStateVersion()).thenReturn(12345L);
 
-		VertexMetadata parent = mock(VertexMetadata.class);
-		when(parent.getPreparedCommand()).thenReturn(preparedCommand);
+		BFTHeader parent = mock(BFTHeader.class);
+		when(parent.getLedgerState()).thenReturn(ledgerHeader);
 		when(qc.getProposed()).thenReturn(parent);
 		when(qc.getTimestampedSignatures()).thenReturn(new TimestampedECDSASignatures());
 		when(stateComputer.prepare(eq(vertex))).thenReturn(true);
 
-		PreparedCommand nextPrepared = stateComputerLedger.prepare(vertex);
+		LedgerHeader nextPrepared = stateComputerLedger.prepare(vertex);
 		assertThat(nextPrepared.isEndOfEpoch()).isTrue();
-		assertThat(nextPrepared.getStateVersion()).isEqualTo(12346L);
+		assertThat(nextPrepared.getStateVersion()).isEqualTo(12345L);
 	}
 
 	@Test
@@ -151,17 +160,17 @@ public class StateComputerLedgerTest {
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		when(vertex.getQC()).thenReturn(qc);
 
-		PreparedCommand preparedCommand = mock(PreparedCommand.class);
-		when(preparedCommand.isEndOfEpoch()).thenReturn(false);
-		when(preparedCommand.getStateVersion()).thenReturn(12345L);
+		LedgerHeader ledgerHeader = mock(LedgerHeader.class);
+		when(ledgerHeader.isEndOfEpoch()).thenReturn(false);
+		when(ledgerHeader.getStateVersion()).thenReturn(12345L);
 
-		VertexMetadata parent = mock(VertexMetadata.class);
-		when(parent.getPreparedCommand()).thenReturn(preparedCommand);
+		BFTHeader parent = mock(BFTHeader.class);
+		when(parent.getLedgerState()).thenReturn(ledgerHeader);
 		when(qc.getProposed()).thenReturn(parent);
 		when(qc.getTimestampedSignatures()).thenReturn(new TimestampedECDSASignatures());
 		when(vertex.getCommand()).thenReturn(mock(Command.class));
 
-		PreparedCommand nextPrepared = stateComputerLedger.prepare(vertex);
+		LedgerHeader nextPrepared = stateComputerLedger.prepare(vertex);
 		assertThat(nextPrepared.isEndOfEpoch()).isFalse();
 		assertThat(nextPrepared.getStateVersion()).isEqualTo(12346L);
 	}
@@ -172,15 +181,13 @@ public class StateComputerLedgerTest {
 		Hash hash = mock(Hash.class);
 		when(command.getHash()).thenReturn(hash);
 
-		PreparedCommand preparedCommand = mock(PreparedCommand.class);
-		when(preparedCommand.getStateVersion()).thenReturn(1233L);
+		VerifiedCommandsAndProof verified = mock(VerifiedCommandsAndProof.class);
+		VerifiedLedgerHeaderAndProof proof = mock(VerifiedLedgerHeaderAndProof.class);
+		when(headerComparator.compare(eq(proof), eq(currentLedgerHeader))).thenReturn(-1);
+		when(verified.getHeader()).thenReturn(proof);
 
-		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
-		when(vertexMetadata.getView()).then(i -> View.of(50));
-		when(vertexMetadata.getPreparedCommand()).thenReturn(preparedCommand);
-
-		stateComputerLedger.commit(command, vertexMetadata);
-		verify(stateComputer, never()).commit(any(), any());
+		stateComputerLedger.commit(verified);
+		verify(stateComputer, never()).commit(any());
 		verify(mempool, never()).removeCommitted(any());
 		verify(committedSender, never()).sendCommitted(any(), any());
 	}
@@ -191,31 +198,32 @@ public class StateComputerLedgerTest {
 		Hash hash = mock(Hash.class);
 		when(command.getHash()).thenReturn(hash);
 
-		PreparedCommand preparedCommand = mock(PreparedCommand.class);
-		when(preparedCommand.getStateVersion()).thenReturn(1234L);
+		VerifiedCommandsAndProof verified = mock(VerifiedCommandsAndProof.class);
+		VerifiedLedgerHeaderAndProof proof = mock(VerifiedLedgerHeaderAndProof.class);
+		when(headerComparator.compare(eq(proof), eq(currentLedgerHeader))).thenReturn(1);
+		when(verified.getHeader()).thenReturn(proof);
+		when(verified.truncateFromVersion(anyLong())).thenReturn(verified);
+		doAnswer(invocation -> {
+			BiConsumer<Long, Command> consumer = invocation.getArgument(0);
+			consumer.accept(1L, command);
+			return null;
+		}).when(verified).forEach(any());
 
-		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
-		when(vertexMetadata.getView()).then(i -> View.of(50));
-		when(vertexMetadata.getPreparedCommand()).thenReturn(preparedCommand);
-
-		stateComputerLedger.commit(command, vertexMetadata);
-		verify(stateComputer, times(1)).commit(eq(command), eq(vertexMetadata));
+		stateComputerLedger.commit(verified);
+		verify(stateComputer, times(1)).commit(argThat(v -> v.getHeader().equals(proof)));
 		verify(mempool, times(1)).removeCommitted(eq(hash));
 		verify(committedSender, times(1)).sendCommitted(any(), any());
 	}
 
 	@Test
 	public void when_check_sync_and_synced__then_return_sync_handler() {
-		PreparedCommand preparedCommand = mock(PreparedCommand.class);
-		when(preparedCommand.getStateVersion()).thenReturn(1230L);
-
-		VertexMetadata nextVertexMetadata = mock(VertexMetadata.class);
-		when(nextVertexMetadata.getPreparedCommand()).thenReturn(preparedCommand);
+		VerifiedLedgerHeaderAndProof header = mock(VerifiedLedgerHeaderAndProof.class);
+		when(headerComparator.compare(eq(header), eq(currentLedgerHeader))).thenReturn(0);
 
 		Runnable onSynced = mock(Runnable.class);
 		Runnable onNotSynced = mock(Runnable.class);
 		stateComputerLedger
-			.ifCommitSynced(nextVertexMetadata)
+			.ifCommitSynced(header)
 			.then(onSynced)
 			.elseExecuteAndSendMessageOnSync(onNotSynced, mock(Object.class));
 		verify(onSynced, times(1)).run();
@@ -224,23 +232,28 @@ public class StateComputerLedgerTest {
 
 	@Test
 	public void when_check_sync__will_complete_when_higher_or_equal_state_version() {
-		PreparedCommand preparedCommand = mock(PreparedCommand.class);
-		when(preparedCommand.getStateVersion()).thenReturn(1234L);
-
-		VertexMetadata nextVertexMetadata = mock(VertexMetadata.class);
-		when(nextVertexMetadata.getPreparedCommand()).thenReturn(preparedCommand);
+		when(currentLedgerHeader.getStateVersion()).thenReturn(0L);
+		VerifiedLedgerHeaderAndProof verifiedLedgerHeaderAndProof = mock(VerifiedLedgerHeaderAndProof.class);
+		when(verifiedLedgerHeaderAndProof.getStateVersion()).thenReturn(1L);
 
 		Runnable onSynced = mock(Runnable.class);
 		Runnable onNotSynced = mock(Runnable.class);
 		stateComputerLedger
-			.ifCommitSynced(nextVertexMetadata)
+			.ifCommitSynced(verifiedLedgerHeaderAndProof)
 			.then(onSynced)
 			.elseExecuteAndSendMessageOnSync(onNotSynced, mock(Object.class));
 		verify(committedStateSyncSender, never()).sendCommittedStateSync(anyLong(), any());
 		verify(onSynced, never()).run();
 		verify(onNotSynced, times(1)).run();
 
-		stateComputerLedger.commit(mock(Command.class), nextVertexMetadata);
+		VerifiedCommandsAndProof verified = mock(VerifiedCommandsAndProof.class);
+		VerifiedLedgerHeaderAndProof proof = mock(VerifiedLedgerHeaderAndProof.class);
+		when(proof.getStateVersion()).thenReturn(1L);
+		when(headerComparator.compare(eq(proof), any())).thenReturn(1);
+		when(verified.getHeader()).thenReturn(proof);
+		when(verified.truncateFromVersion(anyLong())).thenReturn(verified);
+
+		stateComputerLedger.commit(verified);
 
 		verify(committedStateSyncSender, timeout(5000).atLeast(1)).sendCommittedStateSync(anyLong(), any());
 	}

@@ -20,11 +20,11 @@ package com.radixdlt.integration.distributed.simulation.network;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.ConsensusEventsRx;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
-import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
@@ -270,7 +270,7 @@ public class SimulationNetwork {
 		}
 
 		@Override
-		public void sendGetEpochResponse(BFTNode node, VertexMetadata ancestor) {
+		public void sendGetEpochResponse(BFTNode node, VerifiedLedgerHeaderAndProof ancestor) {
 			GetEpochResponse getEpochResponse = new GetEpochResponse(thisNode, ancestor);
 			receivedMessages.onNext(MessageInTransit.newMessage(getEpochResponse, thisNode, node));
 		}

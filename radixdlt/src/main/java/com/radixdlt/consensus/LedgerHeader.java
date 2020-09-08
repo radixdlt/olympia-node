@@ -19,6 +19,8 @@ package com.radixdlt.consensus;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.consensus.bft.View;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -28,11 +30,11 @@ import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
 
 /**
- * Results from a prepared stage execution. All fields should be persisted on ledger.
+ * Ledger accumulator which gets voted and agreed upon
  */
 @Immutable
-@SerializerId2("consensus.prepared_command")
-public final class PreparedCommand {
+@SerializerId2("consensus.ledger_header")
+public final class LedgerHeader {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
@@ -41,9 +43,22 @@ public final class PreparedCommand {
 	@DsonOutput(Output.ALL)
 	private final long stateVersion;
 
+	@JsonProperty("epoch")
+	@DsonOutput(Output.ALL)
+	private final long epoch;
+
+	// TODO: remove this
+	private final View view;
+
+	// Not used for anything now
+	// TODO: Change to accumulator
+	@JsonProperty("command_id")
+	@DsonOutput(Output.ALL)
+	private final Hash commandId;
+
 	@JsonProperty("timestamp")
 	@DsonOutput(Output.ALL)
-	private final long timestamp;
+	private final long timestamp; // TODO: Move into command accumulator
 
 	@JsonProperty("isEndOfEpoch")
 	@DsonOutput(Output.ALL)
@@ -51,22 +66,60 @@ public final class PreparedCommand {
 
 	// TODO: Replace isEndOfEpoch with nextValidatorSet
 	@JsonCreator
-	private PreparedCommand(
+	private LedgerHeader(
+		@JsonProperty("epoch") long epoch,
+		@JsonProperty("view") long view,
 		@JsonProperty("stateVersion") long stateVersion,
+		@JsonProperty("command_id") Hash commandId,
 		@JsonProperty("timestamp") long timestamp,
 		@JsonProperty("isEndOfEpoch") boolean isEndOfEpoch
 	) {
+		this(epoch, View.of(view), stateVersion, commandId, timestamp, isEndOfEpoch);
+	}
+
+	private LedgerHeader(
+		long epoch,
+		View view,
+		long stateVersion,
+		Hash commandId,
+		long timestamp,
+		boolean isEndOfEpoch
+	) {
+		this.epoch = epoch;
+		this.view = view;
 		this.stateVersion = stateVersion;
+		this.commandId = commandId;
 		this.isEndOfEpoch = isEndOfEpoch;
 		this.timestamp = timestamp;
 	}
 
-	public static PreparedCommand create(
+	public static LedgerHeader create(
+		long epoch,
+		View view,
 		long stateVersion,
+		Hash commandId,
 		long timestamp,
 		boolean isEndOfEpoch
 	) {
-		return new PreparedCommand(stateVersion, timestamp, isEndOfEpoch);
+		return new LedgerHeader(epoch, view, stateVersion, commandId, timestamp, isEndOfEpoch);
+	}
+
+	@JsonProperty("view")
+	@DsonOutput(Output.ALL)
+	private Long getSerializerView() {
+		return this.view == null ? null : this.view.number();
+	}
+
+	public View getView() {
+		return view;
+	}
+
+	public Hash getCommandId() {
+		return commandId;
+	}
+
+	public long getEpoch() {
+		return epoch;
 	}
 
 	public long getStateVersion() {
@@ -83,7 +136,7 @@ public final class PreparedCommand {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.stateVersion, this.timestamp, this.isEndOfEpoch);
+		return Objects.hash(this.stateVersion, this.commandId, this.timestamp, this.epoch, this.view, this.isEndOfEpoch);
 	}
 
 	@Override
@@ -91,10 +144,13 @@ public final class PreparedCommand {
 		if (o == this) {
 			return true;
 		}
-		if (o instanceof PreparedCommand) {
-			PreparedCommand other = (PreparedCommand) o;
+		if (o instanceof LedgerHeader) {
+			LedgerHeader other = (LedgerHeader) o;
 			return this.timestamp == other.timestamp
 				&& this.stateVersion == other.stateVersion
+				&& Objects.equals(this.commandId, other.commandId)
+				&& this.epoch == other.epoch
+				&& Objects.equals(this.view, other.view)
 				&& this.isEndOfEpoch == other.isEndOfEpoch;
 		}
 		return false;
@@ -102,8 +158,8 @@ public final class PreparedCommand {
 
 	@Override
 	public String toString() {
-		return String.format("%s{stateVersion=%s timestamp=%s isEndOfEpoch=%s}",
-			getClass().getSimpleName(), this.stateVersion, this.timestamp, this.isEndOfEpoch
+		return String.format("%s{stateVersion=%s timestamp=%s epoch=%s, isEndOfEpoch=%s}",
+			getClass().getSimpleName(), this.stateVersion, this.timestamp, this.epoch, this.isEndOfEpoch
 		);
 	}
 }

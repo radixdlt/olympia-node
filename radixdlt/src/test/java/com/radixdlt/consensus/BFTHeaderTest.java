@@ -27,23 +27,23 @@ import static org.mockito.Mockito.mock;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 
-public class VertexMetadataTest {
+public class BFTHeaderTest {
 
-	private VertexMetadata testObject;
+	private BFTHeader testObject;
 	private Hash id;
-	private PreparedCommand preparedCommand;
+	private LedgerHeader ledgerHeader;
 
 	@Before
 	public void setUp() {
 		View view = View.of(1234567890L);
 		this.id = Hash.random();
-		this.preparedCommand = mock(PreparedCommand.class);
-		this.testObject = new VertexMetadata(0, view, id, preparedCommand);
+		this.ledgerHeader = mock(LedgerHeader.class);
+		this.testObject = new BFTHeader(view, id, ledgerHeader);
 	}
 
 	@Test
 	public void equalsContract() {
-		EqualsVerifier.forClass(VertexMetadata.class)
+		EqualsVerifier.forClass(BFTHeader.class)
 			.verify();
 	}
 
@@ -51,18 +51,18 @@ public class VertexMetadataTest {
 	public void testGetters() {
 		assertThat(View.of(1234567890L)).isEqualTo(this.testObject.getView());
 
-		assertThat(id).isEqualTo(this.testObject.getId());
-		assertThat(preparedCommand).isEqualTo(this.testObject.getPreparedCommand());
+		assertThat(id).isEqualTo(this.testObject.getVertexId());
+		assertThat(ledgerHeader).isEqualTo(this.testObject.getLedgerState());
 	}
 
 	@Test
 	public void testSerializerConstructor() {
 		// Don't want to see any exceptions here
-		assertThat(new VertexMetadata()).isNotNull();
+		assertThat(new BFTHeader()).isNotNull();
 	}
 
 	@Test
 	public void testToString() {
-		assertThat(this.testObject.toString()).contains(VertexMetadata.class.getSimpleName());
+		assertThat(this.testObject.toString()).contains(BFTHeader.class.getSimpleName());
 	}
 }

@@ -26,7 +26,7 @@ import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.mempool.SubmissionControl;
-import com.radixdlt.statecomputer.CommandToBinaryConverter;
+import com.radixdlt.middleware2.store.CommandToBinaryConverter;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.DsonOutput;
@@ -227,9 +227,9 @@ public final class RadixHttpServer {
 				respond(errorJson, exchange);
 			} else {
 				JSONObject highestQCJson = new JSONObject();
-				highestQCJson.put("epoch", highestQC.getProposed().getEpoch());
+				highestQCJson.put("epoch", highestQC.getProposed().getLedgerState().getEpoch());
 				highestQCJson.put("view", highestQC.getView());
-				highestQCJson.put("vertexId", highestQC.getProposed().getId());
+				highestQCJson.put("vertexId", highestQC.getProposed().getVertexId());
 				respond(highestQCJson, exchange);
 			}
 		}, handler);

@@ -15,39 +15,46 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.ledger;
+package com.radixdlt.consensus;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.bft.View;
+import com.radixdlt.crypto.Hash;
 import nl.jqno.equalsverifier.EqualsVerifier;
+import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Before;
 import org.junit.Test;
 
-public class CommittedCommandTest {
-	private Command command;
-	private VertexMetadata vertexMetadata;
-	private CommittedCommand committedCommand;
+public class LedgerHeaderTest {
+	private LedgerHeader ledgerHeader;
+	private long timestamp;
+	private Hash commandId;
 
 	@Before
-	public void setUp() {
-		this.command = mock(Command.class);
-		this.vertexMetadata = mock(VertexMetadata.class);
-		this.committedCommand = new CommittedCommand(command, vertexMetadata);
+	public void setup() {
+		this.timestamp = 12345678L;
+		this.commandId = mock(Hash.class);
+		this.ledgerHeader = LedgerHeader.create(0, View.genesis(), 12345, commandId, timestamp, false);
 	}
 
 	@Test
 	public void testGetters() {
-		assertThat(this.committedCommand.getCommand()).isEqualTo(command);
-		assertThat(this.committedCommand.getVertexMetadata()).isEqualTo(vertexMetadata);
+		assertThat(ledgerHeader.getStateVersion()).isEqualTo(12345);
+		assertThat(ledgerHeader.timestamp()).isEqualTo(timestamp);
+		assertThat(ledgerHeader.isEndOfEpoch()).isFalse();
 	}
 
 	@Test
 	public void equalsContract() {
-		EqualsVerifier.forClass(CommittedCommand.class)
+		EqualsVerifier.forClass(LedgerHeader.class)
 			.verify();
 	}
 
+	@Test
+	public void sensibleToString() {
+		String s = this.ledgerHeader.toString();
+		AssertionsForClassTypes.assertThat(s).contains("12345");
+	}
 }

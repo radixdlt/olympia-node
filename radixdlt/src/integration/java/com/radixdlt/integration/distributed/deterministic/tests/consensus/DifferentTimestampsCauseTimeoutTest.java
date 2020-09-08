@@ -182,12 +182,11 @@ public class DifferentTimestampsCauseTimeoutTest {
 	}
 
 	private Vertex mutateVertex(Vertex v, int destination) {
-		long epoch = v.getEpoch();
 		QuorumCertificate qc = v.getQC();
 		View view = v.getView();
 		Command command = v.getCommand();
 
-		return new Vertex(epoch, mutateQC(qc,  destination), view, command);
+		return new Vertex(mutateQC(qc,  destination), view, command);
 	}
 
 	private QuorumCertificate mutateQC(QuorumCertificate qc, int destination) {

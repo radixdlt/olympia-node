@@ -20,7 +20,7 @@ package com.radixdlt.middleware2.store;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
@@ -39,16 +39,16 @@ import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
 import com.radixdlt.store.LedgerSearchMode;
-import com.radixdlt.statecomputer.CommandToBinaryConverter;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
 
-import com.radixdlt.ledger.CommittedCommand;
 import com.radixdlt.store.StoreIndex.LedgerIndexType;
-import java.util.List;
+import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
 import java.util.Objects;
+import java.util.TreeMap;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -84,7 +84,7 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		this.serialization = Objects.requireNonNull(serialization);
 	}
 
-	private Optional<CommittedAtom> getAtomByParticle(Particle particle, boolean isInput) {
+	private Optional<ClientAtom> getAtomByParticle(Particle particle, boolean isInput) {
 		final byte[] indexableBytes = EngineAtomIndices.toByteArray(
 		isInput ? EngineAtomIndices.IndexType.PARTICLE_DOWN : EngineAtomIndices.IndexType.PARTICLE_UP,
 			particle.euid()
@@ -94,9 +94,9 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 			return store.get(cursor.get())
 				.flatMap(ledgerEntry ->  {
 					// TODO: Remove serialization/deserialization
-					CommittedCommand committedCommand = commandToBinaryConverter.toCommand(ledgerEntry.getContent());
+					StoredCommittedCommand committedCommand = commandToBinaryConverter.toCommand(ledgerEntry.getContent());
 					ClientAtom clientAtom = committedCommand.getCommand().map(clientAtomToBinaryConverter::toAtom);
-					return Optional.of(new CommittedAtom(clientAtom, committedCommand.getVertexMetadata()));
+					return Optional.of(clientAtom);
 				});
 		} else {
 			log.debug("getAtomByParticle returned empty result");
@@ -104,17 +104,20 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		}
 	}
 
+	// TODO: Save proof in a separate index
 	@Override
 	public void storeAtom(CommittedAtom committedAtom) {
 		// TODO: Remove serialization/deserialization
 		byte[] payload = clientAtomToBinaryConverter.toLedgerEntryContent(committedAtom.getClientAtom());
 		Command command = new Command(payload);
-		CommittedCommand committedCommand = new CommittedCommand(command, committedAtom.getVertexMetadata());
-		byte[] binaryAtom = commandToBinaryConverter.toLedgerEntryContent(committedCommand);
-		VertexMetadata vertexMetadata = committedAtom.getVertexMetadata();
+
+		final VerifiedLedgerHeaderAndProof proof = committedAtom.getStateAndProof();
+		StoredCommittedCommand storedCommittedCommand = new StoredCommittedCommand(command, proof);
+		byte[] binaryAtom = commandToBinaryConverter.toLedgerEntryContent(storedCommittedCommand);
 		LedgerEntry ledgerEntry = new LedgerEntry(
 			binaryAtom,
-			vertexMetadata.getPreparedCommand().getStateVersion(),
+			committedAtom.getStateVersion(),
+			committedAtom.getStateAndProof().getStateVersion(),
 			committedAtom.getAID()
 		);
 		EngineAtomIndices engineAtomIndices = atomIndexer.getIndices(committedAtom);
@@ -150,7 +153,7 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 			Optional<LedgerEntry> ledgerEntry = store.get(aid);
 			if (ledgerEntry.isPresent()) {
 				LedgerEntry entry = ledgerEntry.get();
-				CommittedCommand committedCommand = commandToBinaryConverter.toCommand(entry.getContent());
+				StoredCommittedCommand committedCommand = commandToBinaryConverter.toCommand(entry.getContent());
 				ClientAtom clientAtom = committedCommand.getCommand().map(clientAtomToBinaryConverter::toAtom);
 				for (CMMicroInstruction cmMicroInstruction : clientAtom.getCMInstruction().getMicroInstructions()) {
 					if (particleClass.isInstance(cmMicroInstruction.getParticle())
@@ -169,13 +172,17 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 	}
 
 	@Override
-	public List<CommittedCommand> getCommittedCommands(long stateVersion, int limit) {
+	public TreeMap<Long, StoredCommittedCommand> getNextCommittedCommands(long stateVersion, int limit) throws NextCommittedLimitReachedException {
 		ImmutableList<LedgerEntry> entries = store.getNextCommittedLedgerEntries(stateVersion, limit);
-		return entries
-				.stream()
-				.map(LedgerEntry::getContent)
-				.map(commandToBinaryConverter::toCommand)
-				.collect(ImmutableList.toImmutableList());
+		return entries.stream()
+			.collect(Collectors.toMap(
+				LedgerEntry::getStateVersion,
+				e -> commandToBinaryConverter.toCommand(e.getContent()),
+				(o, n) -> {
+					throw new IllegalStateException("Duplicate keys found!");
+				},
+				TreeMap::new
+			));
 	}
 
 	@Override

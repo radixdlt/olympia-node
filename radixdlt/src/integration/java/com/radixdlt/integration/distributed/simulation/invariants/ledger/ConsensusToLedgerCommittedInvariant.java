@@ -15,24 +15,36 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.simulation.invariants.bft;
+package com.radixdlt.integration.distributed.simulation.invariants.ledger;
 
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.integration.distributed.simulation.TestInvariant;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
-import java.util.stream.Collectors;
+import java.util.concurrent.TimeUnit;
 
 /**
- * Checks that the network never commits a new vertex
+ * Checks to make sure that everything committed by consensus eventually makes it to the ledger
+ * of atleast one node (TODO: test for every node)
  */
-public class NoneCommittedInvariant implements TestInvariant {
+public class ConsensusToLedgerCommittedInvariant implements TestInvariant {
+
 	@Override
 	public Observable<TestInvariantError> check(RunningNetwork network) {
-		return Observable.merge(
-			network.getNodes().stream().map(
-				node -> network.getInfo(node).committedVertices().map(v -> Pair.of(node, v)))
-				.collect(Collectors.toList())
-		).map(pair -> new TestInvariantError(pair.getFirst() + " node committed a vertex " + pair.getSecond()));
+		return network.committedVertices()
+			.map(Pair::getSecond)
+			.filter(v -> v.getCommand() != null)
+			.map(Vertex::getCommand)
+			.flatMapMaybe(command -> network
+				.committedCommands()
+				.filter(nodeAndCmd -> nodeAndCmd.getSecond().contains(command))
+				.timeout(10, TimeUnit.SECONDS)
+				.firstOrError()
+				.ignoreElement()
+				.onErrorReturn(e -> new TestInvariantError(
+					"Committed vertex " + command + " has not been inserted into the ledger after 10 seconds")
+				)
+			);
 	}
 }

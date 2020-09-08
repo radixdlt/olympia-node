@@ -15,15 +15,16 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.statecomputer;
+package com.radixdlt.middleware2.store;
 
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.PreparedCommand;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.TimestampedECDSASignatures;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.ledger.CommittedCommand;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -39,12 +40,21 @@ public class CommandToBinaryConverterTest {
 
 	@Test
 	public void test_atom_content_transformation_to_byte_array_and_back() {
-		PreparedCommand preparedCommand = PreparedCommand.create(0, 0L, false);
-		VertexMetadata vertexMetadata = new VertexMetadata(0, View.of(1), Hash.random(), preparedCommand);
-		CommittedCommand committedCommand = new CommittedCommand(new Command(new byte[] {0, 1, 2, 3}), vertexMetadata);
+		LedgerHeader ledgerHeader = LedgerHeader.create(0, View.genesis(), 0, Hash.random(), 0L, false);
+		VerifiedLedgerHeaderAndProof proof = new VerifiedLedgerHeaderAndProof(
+			new BFTHeader(View.of(1), Hash.random(), ledgerHeader),
+			new BFTHeader(View.of(1), Hash.random(), ledgerHeader),
+			1L,
+			Hash.random(), ledgerHeader,
+			new TimestampedECDSASignatures()
+		);
+		StoredCommittedCommand committedCommand = new StoredCommittedCommand(
+			new Command(new byte[] {0, 1, 2, 3}),
+			proof
+		);
 
 		byte[] serializedCommand = commandToBinaryConverter.toLedgerEntryContent(committedCommand);
-		CommittedCommand deserializedCommand = commandToBinaryConverter.toCommand(serializedCommand);
+		StoredCommittedCommand deserializedCommand = commandToBinaryConverter.toCommand(serializedCommand);
 		assertEquals(committedCommand, deserializedCommand);
 	}
 }

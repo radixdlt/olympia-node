@@ -17,24 +17,45 @@
 
 package com.radixdlt.consensus.epoch;
 
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.View;
 import java.util.Objects;
 
 /**
  * An epoch change message to consensus
  */
 public final class EpochChange {
-	private final VertexMetadata ancestor;
+	private final VerifiedLedgerHeaderAndProof proof;
 	private final BFTValidatorSet validatorSet;
 
-	public EpochChange(VertexMetadata ancestor, BFTValidatorSet validatorSet) {
-		this.ancestor = Objects.requireNonNull(ancestor);
+	public EpochChange(VerifiedLedgerHeaderAndProof proof, BFTValidatorSet validatorSet) {
+		this.proof = Objects.requireNonNull(proof);
 		this.validatorSet = Objects.requireNonNull(validatorSet);
 	}
 
-	public VertexMetadata getAncestor() {
-		return ancestor;
+	public long getEpoch() {
+		return proof.getEpoch() + 1;
+	}
+
+	public LedgerHeader getPrevLedgerState() {
+		return proof.getRaw();
+	}
+
+	public LedgerHeader getNextLedgerState() {
+		return LedgerHeader.create(
+			proof.getEpoch() + 1,
+			View.genesis(),
+			proof.getStateVersion(),
+			proof.getCommandId(),
+			proof.timestamp(),
+			false
+		);
+	}
+
+	public VerifiedLedgerHeaderAndProof getProof() {
+		return proof;
 	}
 
 	public BFTValidatorSet getValidatorSet() {
@@ -44,7 +65,7 @@ public final class EpochChange {
 	@Override
 	public String toString() {
 		return String.format(
-			"%s{ancestor=%s validatorSet=%s}", this.getClass().getSimpleName(), ancestor, validatorSet
+			"%s{proof=%s validatorSet=%s}", this.getClass().getSimpleName(), proof, validatorSet
 		);
 	}
 }

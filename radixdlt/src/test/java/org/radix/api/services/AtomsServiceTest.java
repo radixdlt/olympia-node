@@ -23,7 +23,7 @@ import static org.mockito.Mockito.when;
 import com.radixdlt.api.SubmissionErrorsRx;
 import com.radixdlt.mempool.SubmissionControl;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
-import com.radixdlt.statecomputer.CommandToBinaryConverter;
+import com.radixdlt.middleware2.store.CommandToBinaryConverter;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomWithResult;
 import com.radixdlt.store.LedgerEntryStore;
 import io.reactivex.rxjava3.core.Observable;

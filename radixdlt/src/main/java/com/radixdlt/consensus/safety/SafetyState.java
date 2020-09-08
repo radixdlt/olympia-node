@@ -30,18 +30,16 @@ import java.util.Optional;
 public final class SafetyState {
 	private final View lastVotedView; // the last view this node voted on (and is thus safe)
 	private final View lockedView; // the highest 2-chain head
-	private final View committedView; // the highest 3-chain (executed) head
 	private final QuorumCertificate genericQC; // the highest 1-chain head
 
 	@Inject
 	protected SafetyState() {
-		this(View.genesis(), View.genesis(), View.genesis(), null);
+		this(View.genesis(), View.genesis(), null);
 	}
 
-	SafetyState(View lastVotedView, View lockedView, View committedView, QuorumCertificate genericQC) {
+	SafetyState(View lastVotedView, View lockedView, QuorumCertificate genericQC) {
 		this.lastVotedView = Objects.requireNonNull(lastVotedView);
 		this.lockedView = Objects.requireNonNull(lockedView);
-		this.committedView = Objects.requireNonNull(committedView);
 		this.genericQC = genericQC;
 	}
 
@@ -49,7 +47,6 @@ public final class SafetyState {
 		private final SafetyState original;
 		private View lastVotedView;
 		private View lockedView;
-		private View committedView;
 		private QuorumCertificate genericQC;
 		private boolean changed = false;
 
@@ -69,12 +66,6 @@ public final class SafetyState {
 			return this;
 		}
 
-		public Builder committedView(View committedView) {
-			this.committedView = committedView;
-			this.changed = true;
-			return this;
-		}
-
 		public Builder qc(QuorumCertificate genericQC) {
 			this.genericQC = genericQC;
 			this.changed = true;
@@ -85,7 +76,6 @@ public final class SafetyState {
 			return changed ? new SafetyState(
 				lastVotedView == null ? original.lastVotedView : lastVotedView,
 				lockedView == null ? original.lockedView : lockedView,
-				committedView == null ? original.committedView : committedView,
 				genericQC == null ? original.genericQC : genericQC
 			) : original;
 		}
@@ -110,13 +100,12 @@ public final class SafetyState {
 		SafetyState that = (SafetyState) o;
 		return Objects.equals(lastVotedView, that.lastVotedView)
 			&& Objects.equals(lockedView, that.lockedView)
-			&& Objects.equals(committedView, that.committedView)
 			&& Objects.equals(genericQC, that.genericQC);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(lastVotedView, lockedView, committedView, genericQC);
+		return Objects.hash(lastVotedView, lockedView, genericQC);
 	}
 
 	@Override
@@ -138,9 +127,5 @@ public final class SafetyState {
 
 	public View getLockedView() {
 		return lockedView;
-	}
-
-	public View getCommittedView() {
-		return committedView;
 	}
 }

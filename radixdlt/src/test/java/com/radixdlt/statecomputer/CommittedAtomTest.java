@@ -22,7 +22,7 @@ import static org.mockito.Mockito.mock;
 import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.identifiers.AID;
@@ -37,7 +37,7 @@ import org.junit.Test;
 public class CommittedAtomTest {
 	private CommittedAtom committedAtom;
 	private ClientAtom clientAtom;
-	private VertexMetadata vertexMetadata;
+	private VerifiedLedgerHeaderAndProof proof;
 
 	@Before
 	public void setUp() {
@@ -46,12 +46,13 @@ public class CommittedAtomTest {
 		when(clientAtom.getCMInstruction()).thenReturn(mock(CMInstruction.class));
 		when(clientAtom.getPowFeeHash()).thenReturn(mock(Hash.class));
 		when(clientAtom.getMetaData()).thenReturn(TypedMocks.rmock(ImmutableMap.class));
-		this.vertexMetadata = mock(VertexMetadata.class);
-		this.committedAtom = new CommittedAtom(clientAtom, vertexMetadata);
+		this.proof = mock(VerifiedLedgerHeaderAndProof.class);
+		this.committedAtom = new CommittedAtom(clientAtom, 12345L, proof);
 	}
 
 	@Test
 	public void testGetters() {
+		assertThat(committedAtom.getStateVersion()).isEqualTo(12345L);
 		assertThat(committedAtom.getClientAtom()).isEqualTo(clientAtom);
 		assertThat(committedAtom.getAID()).isEqualTo(clientAtom.getAID());
 		assertThat(committedAtom.getCMInstruction()).isEqualTo(clientAtom.getCMInstruction());

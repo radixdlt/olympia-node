@@ -21,36 +21,39 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
+import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.Ledger;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof.OrderByEpochAndVersionComparator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.epoch.EpochChange;
-import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.ledger.StateComputerLedger.CommittedSender;
 import com.radixdlt.ledger.StateComputerLedger.CommittedStateSyncSender;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
+import java.util.Comparator;
 import java.util.Set;
 
 /**
- * Module which manages synchronized execution
+ * Module which manages ledger state and synchronization of updates to ledger state
  */
 public class LedgerModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		bind(Ledger.class).to(StateComputerLedger.class).in(Scopes.SINGLETON);
-		bind(NextCommandGenerator.class).to(StateComputerLedger.class);
-
 		// These multibindings are part of our dependency graph, so create the modules here
 		Multibinder.newSetBinder(binder(), CommittedSender.class);
+		bind(new TypeLiteral<Comparator<VerifiedLedgerHeaderAndProof>>() { }).to(OrderByEpochAndVersionComparator.class).in(Scopes.SINGLETON);
 	}
 
 	@Provides
 	@Singleton
-	private StateComputerLedger syncExecutor(
+	private StateComputerLedger ledger(
+		Comparator<VerifiedLedgerHeaderAndProof> headerComparator,
+		VerifiedLedgerHeaderAndProof genesisLedgerState,
 		Mempool mempool,
 		StateComputer stateComputer,
 		CommittedStateSyncSender committedStateSyncSender,
@@ -60,7 +63,8 @@ public class LedgerModule extends AbstractModule {
 		CommittedSender committedSender = (committed, vset) -> committedSenders.forEach(s -> s.sendCommitted(committed, vset));
 
 		return new StateComputerLedger(
-			0L,
+			headerComparator,
+			genesisLedgerState,
 			mempool,
 			stateComputer,
 			committedStateSyncSender,
@@ -71,8 +75,7 @@ public class LedgerModule extends AbstractModule {
 
 	// TODO: Load from storage
 	@Provides
-	@Singleton
-	private EpochChange initialEpoch(VertexMetadata ancestor, BFTValidatorSet validatorSet) {
+	private EpochChange initialEpoch(VerifiedLedgerHeaderAndProof ancestor, BFTValidatorSet validatorSet) {
 		return new EpochChange(ancestor, validatorSet);
 	}
 }

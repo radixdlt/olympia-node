@@ -40,6 +40,7 @@ import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
+import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
 import com.radixdlt.universe.Universe;
 import org.junit.Test;
 
@@ -55,8 +56,13 @@ public class RadixEngineStoreModuleTest {
 			bind(AddressBook.class).toInstance(mock(AddressBook.class));
 			bind(CommittedAtomSender.class).toInstance(mock(CommittedAtomSender.class));
 			LedgerEntryStore ledgerEntryStore = mock(LedgerEntryStore.class);
-			when(ledgerEntryStore.getNextCommittedLedgerEntries(anyLong(), anyInt()))
-				.thenReturn(ImmutableList.of(mock(LedgerEntry.class)));
+			try {
+				when(ledgerEntryStore.getNextCommittedLedgerEntries(anyLong(), anyInt()))
+					.thenReturn(ImmutableList.of(mock(LedgerEntry.class)));
+			} catch (NextCommittedLimitReachedException e) {
+				throw new IllegalStateException();
+			}
+
 			bind(LedgerEntryStore.class).toInstance(ledgerEntryStore);
 			bind(ECKeyPair.class).annotatedWith(Names.named("self")).toInstance(ECKeyPair.generateNew());
 		}

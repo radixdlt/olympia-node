@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
+import com.radixdlt.LedgerCommandGeneratorModule;
 import com.radixdlt.LedgerEpochChangeModule;
 import com.radixdlt.LedgerEpochChangeRxModule;
 import com.radixdlt.LedgerModule;
@@ -29,6 +30,7 @@ import com.radixdlt.LedgerRxModule;
 import com.radixdlt.LedgerLocalMempoolModule;
 import com.radixdlt.RadixEngineModule;
 import com.radixdlt.RadixEngineRxModule;
+import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
@@ -39,6 +41,8 @@ import com.radixdlt.integration.distributed.simulation.application.RadixEngineVa
 import com.radixdlt.integration.distributed.simulation.application.RegisteredValidatorChecker;
 import com.radixdlt.integration.distributed.simulation.invariants.epochs.EpochViewInvariant;
 import com.radixdlt.integration.distributed.simulation.application.LocalMempoolPeriodicSubmittor;
+import com.radixdlt.integration.distributed.simulation.invariants.ledger.ConsensusToLedgerCommittedInvariant;
+import com.radixdlt.integration.distributed.simulation.invariants.ledger.SyncedInOrderInvariant;
 import com.radixdlt.integration.distributed.simulation.network.DroppingLatencyProvider;
 import com.radixdlt.integration.distributed.simulation.network.OneProposalPerViewDropper;
 import com.radixdlt.integration.distributed.simulation.network.RandomLatencyProvider;
@@ -46,17 +50,16 @@ import com.radixdlt.integration.distributed.simulation.network.SimulationNodes;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.mempool.LocalMempool;
 import com.radixdlt.mempool.Mempool;
-import com.radixdlt.integration.distributed.simulation.invariants.bft.AllProposalsHaveDirectParentsInvariant;
-import com.radixdlt.integration.distributed.simulation.invariants.bft.LivenessInvariant;
-import com.radixdlt.integration.distributed.simulation.invariants.bft.NoTimeoutsInvariant;
-import com.radixdlt.integration.distributed.simulation.invariants.bft.NoneCommittedInvariant;
-import com.radixdlt.integration.distributed.simulation.invariants.bft.SafetyInvariant;
+import com.radixdlt.integration.distributed.simulation.invariants.consensus.AllProposalsHaveDirectParentsInvariant;
+import com.radixdlt.integration.distributed.simulation.invariants.consensus.LivenessInvariant;
+import com.radixdlt.integration.distributed.simulation.invariants.consensus.NoTimeoutsInvariant;
+import com.radixdlt.integration.distributed.simulation.invariants.consensus.NoneCommittedInvariant;
+import com.radixdlt.integration.distributed.simulation.invariants.consensus.SafetyInvariant;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.LatencyProvider;
-import com.radixdlt.ledger.CommittedCommand;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.core.Observable;
@@ -126,7 +129,7 @@ public class SimulationTest {
 		private Builder() {
 		}
 
-		public Builder addProposalDropper() {
+		public Builder addOneProposalPerViewDropper() {
 			ImmutableList<BFTNode> bftNodes = nodes.stream().map(kp -> BFTNode.create(kp.getPublicKey()))
 				.collect(ImmutableList.toImmutableList());
 			this.latencyProvider.addDropper(new OneProposalPerViewDropper(bftNodes, new Random()));
@@ -238,37 +241,47 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder checkLiveness(String invariantName) {
+		public Builder checkConsensusLiveness(String invariantName) {
 			this.checksBuilder.put(invariantName, nodes -> new LivenessInvariant(8 * SimulationNetwork.DEFAULT_LATENCY, TimeUnit.MILLISECONDS));
 			return this;
 		}
 
-		public Builder checkLiveness(String invariantName, long duration, TimeUnit timeUnit) {
+		public Builder checkConsensusLiveness(String invariantName, long duration, TimeUnit timeUnit) {
 			this.checksBuilder.put(invariantName, nodes -> new LivenessInvariant(duration, timeUnit));
 			return this;
 		}
 
-		public Builder checkSafety(String invariantName) {
+		public Builder checkConsensusSafety(String invariantName) {
 			this.checksBuilder.put(invariantName, nodes -> new SafetyInvariant());
 			return this;
 		}
 
-		public Builder checkNoTimeouts(String invariantName) {
+		public Builder checkConsensusNoTimeouts(String invariantName) {
 			this.checksBuilder.put(invariantName, nodes -> new NoTimeoutsInvariant());
 			return this;
 		}
 
-		public Builder checkAllProposalsHaveDirectParents(String invariantName) {
+		public Builder checkConsensusAllProposalsHaveDirectParents(String invariantName) {
 			this.checksBuilder.put(invariantName, nodes -> new AllProposalsHaveDirectParentsInvariant());
 			return this;
 		}
 
-		public Builder checkNoneCommitted(String invariantName) {
+		public Builder checkConsensusNoneCommitted(String invariantName) {
 			this.checksBuilder.put(invariantName, nodes -> new NoneCommittedInvariant());
 			return this;
 		}
 
-		public Builder checkEpochHighView(String invariantName, View epochHighView) {
+		public Builder checkLedgerProcessesConsensusCommitted(String invariantName) {
+			this.checksBuilder.put(invariantName, nodes -> new ConsensusToLedgerCommittedInvariant());
+			return this;
+		}
+
+		public Builder checkLedgerSyncedInOrder(String invariantName) {
+			this.checksBuilder.put(invariantName, nodes -> new SyncedInOrderInvariant());
+			return this;
+		}
+
+		public Builder checkEpochsHighViewCorrect(String invariantName, View epochHighView) {
 			this.checksBuilder.put(invariantName, nodes -> new EpochViewInvariant(epochHighView));
 			return this;
 		}
@@ -291,16 +304,18 @@ public class SimulationTest {
 						.limit(numInitialValidators == 0 ? Long.MAX_VALUE : numInitialValidators)
 						.collect(Collectors.toList())
 				);
-				ConcurrentHashMap<Long, CommittedCommand> sharedCommittedCmds = new ConcurrentHashMap<>();
+				ConcurrentHashMap<Long, Command> sharedCommittedCmds = new ConcurrentHashMap<>();
 				ledgerModules.add(new LedgerModule());
 				ledgerModules.add(new LedgerRxModule());
 				ledgerModules.add(new LedgerEpochChangeRxModule());
 				ledgerModules.add(new MockedSyncServiceModule(sharedCommittedCmds));
 
 				if (ledgerType == LedgerType.LEDGER) {
+					ledgerModules.add(new MockedCommandGeneratorModule());
 					ledgerModules.add(new MockedMempoolModule());
 					ledgerModules.add(new MockedStateComputerModule(validatorSet));
 				} else if (ledgerType == LedgerType.LEDGER_AND_EPOCHS) {
+					ledgerModules.add(new LedgerCommandGeneratorModule());
 					ledgerModules.add(new MockedMempoolModule());
 					ledgerModules.add(new LedgerEpochChangeModule());
 					Function<Long, BFTValidatorSet> epochToValidatorSetMapping =
@@ -311,6 +326,7 @@ public class SimulationTest {
 								.collect(Collectors.toList())));
 					ledgerModules.add(new MockedStateComputerWithEpochsModule(epochHighView, epochToValidatorSetMapping));
 				} else if (ledgerType == LedgerType.LEDGER_AND_LOCALMEMPOOL) {
+					ledgerModules.add(new LedgerCommandGeneratorModule());
 					ledgerModules.add(new LedgerLocalMempoolModule(10));
 					ledgerModules.add(new AbstractModule() {
 						@Override
@@ -320,6 +336,7 @@ public class SimulationTest {
 					});
 					ledgerModules.add(new MockedStateComputerModule(validatorSet));
 				} else if (ledgerType == LedgerType.LEDGER_AND_RADIXENGINE) {
+					ledgerModules.add(new LedgerCommandGeneratorModule());
 					ledgerModules.add(new LedgerLocalMempoolModule(10));
 					ledgerModules.add(new AbstractModule() {
 						@Override
