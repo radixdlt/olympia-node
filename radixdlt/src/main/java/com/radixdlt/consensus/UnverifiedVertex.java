@@ -19,10 +19,7 @@ package com.radixdlt.consensus;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.Suppliers;
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
@@ -31,7 +28,6 @@ import com.radixdlt.serialization.DsonOutput.Output;
 
 import java.util.Objects;
 
-import java.util.function.Supplier;
 import javax.annotation.concurrent.Immutable;
 
 /**
@@ -39,7 +35,7 @@ import javax.annotation.concurrent.Immutable;
  */
 @Immutable
 @SerializerId2("consensus.vertex")
-public final class Vertex {
+public final class UnverifiedVertex {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
@@ -54,10 +50,8 @@ public final class Vertex {
 	@DsonOutput(Output.ALL)
 	private final Command command;
 
-	private final transient Supplier<Hash> cachedHash = Suppliers.memoize(this::doGetHash);
-
 	@JsonCreator
-	Vertex(
+	UnverifiedVertex(
 		@JsonProperty("qc") QuorumCertificate qc,
 		@JsonProperty("view") Long viewId,
 		@JsonProperty("command") Command command
@@ -65,59 +59,31 @@ public final class Vertex {
 		this(qc, viewId != null ? View.of(viewId) : null, command);
 	}
 
-	public Vertex(QuorumCertificate qc, View view, Command command) {
+	public UnverifiedVertex(QuorumCertificate qc, View view, Command command) {
 		this.qc = Objects.requireNonNull(qc);
 		this.view = Objects.requireNonNull(view);
 		this.command = command;
 	}
 
-	public static Vertex createGenesis(LedgerHeader ledgerHeader) {
+	public static UnverifiedVertex createGenesis(LedgerHeader ledgerHeader) {
 		BFTHeader header = BFTHeader.ofGenesisAncestor(ledgerHeader);
 		final VoteData voteData = new VoteData(header, header, header);
 		final QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-		return new Vertex(qc, View.genesis(), null);
+		return new UnverifiedVertex(qc, View.genesis(), null);
 	}
 
-	public static Vertex createVertex(QuorumCertificate qc, View view, Command command) {
+	public static UnverifiedVertex createVertex(QuorumCertificate qc, View view, Command command) {
 		Objects.requireNonNull(qc);
 
 		if (view.number() == 0) {
 			throw new IllegalArgumentException("Only genesis can have view 0.");
 		}
 
-		return new Vertex(qc, view, command);
-	}
-
-	private Hash doGetHash() {
-		try {
-			return Hash.of(DefaultSerialization.getInstance().toDson(this, Output.HASH));
-		} catch (Exception e) {
-			throw new IllegalStateException("Error generating hash: " + e, e);
-		}
-	}
-
-	public Hash getId() {
-		return this.cachedHash.get();
-	}
-
-	public Hash getParentId() {
-		return qc.getProposed().getVertexId();
-	}
-
-	public BFTHeader getGrandParentHeader() {
-		return qc.getParent();
-	}
-
-	public BFTHeader getParentHeader() {
-		return qc.getProposed();
+		return new UnverifiedVertex(qc, view, command);
 	}
 
 	public QuorumCertificate getQC() {
 		return qc;
-	}
-
-	public boolean hasDirectParent() {
-		return this.view.number() == this.getParentHeader().getView().number() + 1;
 	}
 
 	public View getView() {
@@ -126,16 +92,6 @@ public final class Vertex {
 
 	public Command getCommand() {
 		return command;
-	}
-
-	public boolean isGenesis() {
-		return this.view.isGenesis();
-	}
-
-	@JsonProperty("id")
-	@DsonOutput(Output.API)
-	private Hash getSerializerId() {
-		return getId();
 	}
 
 	@JsonProperty("view")
@@ -156,11 +112,11 @@ public final class Vertex {
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof Vertex)) {
+		if (!(o instanceof UnverifiedVertex)) {
 			return false;
 		}
 
-		Vertex v = (Vertex) o;
+		UnverifiedVertex v = (UnverifiedVertex) o;
 		return Objects.equals(v.view, this.view)
 			&& Objects.equals(v.command, this.command)
 			&& Objects.equals(v.qc, this.qc);

@@ -19,33 +19,23 @@ package com.radixdlt.integration.distributed.simulation;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.BFTConfiguration;
+import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.UnverifiedVertex;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.ledger.StateComputerLedger.StateComputer;
+import java.util.function.Function;
 
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import java.util.Optional;
-
-public class MockedStateComputerModule extends AbstractModule {
+public class MockedBFTConfigurationModule extends AbstractModule {
 	@Provides
-	private VerifiedLedgerHeaderAndProof genesisMetadata() {
-		return VerifiedLedgerHeaderAndProof.genesis(Hash.ZERO_HASH);
-	}
-
-	@Provides
-	private StateComputer stateComputer() {
-		return new StateComputer() {
-			@Override
-			public boolean prepare(VerifiedVertex vertex) {
-				return false;
-			}
-
-			@Override
-			public Optional<BFTValidatorSet> commit(VerifiedCommandsAndProof command) {
-				return Optional.empty();
-			}
-		};
+	Function<BFTNode, BFTConfiguration> config() {
+		UnverifiedVertex genesis = UnverifiedVertex.createGenesis(LedgerHeader.genesis(Hash.ZERO_HASH));
+		VerifiedVertex hashedGenesis = new VerifiedVertex(genesis, Hash.ZERO_HASH);
+		return node -> new BFTConfiguration(
+			hashedGenesis,
+			QuorumCertificate.ofGenesis(hashedGenesis, LedgerHeader.genesis(Hash.ZERO_HASH))
+		);
 	}
 }

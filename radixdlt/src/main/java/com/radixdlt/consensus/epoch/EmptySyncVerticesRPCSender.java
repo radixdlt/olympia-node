@@ -19,8 +19,8 @@ package com.radixdlt.consensus.epoch;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.crypto.Hash;
@@ -36,7 +36,7 @@ public enum EmptySyncVerticesRPCSender implements VertexStore.SyncVerticesRPCSen
 	}
 
 	@Override
-	public void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<Vertex> vertices) {
+	public void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<VerifiedVertex> vertices) {
 		// empty
 	}
 

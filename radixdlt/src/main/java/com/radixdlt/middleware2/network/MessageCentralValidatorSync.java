@@ -20,16 +20,18 @@ package com.radixdlt.middleware2.network;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
-import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
@@ -59,6 +61,7 @@ public class MessageCentralValidatorSync implements SyncVerticesRPCSender, SyncV
 	private final int magic;
 	private final AddressBook addressBook;
 	private final MessageCentral messageCentral;
+	private final Hasher hasher;
 	// TODO: is using a cache in this manner the best way, or should it be managed by the client?
 	private final Cache<Hash, Object> opaqueCache = CacheBuilder.newBuilder()
 		.expireAfterWrite(30, TimeUnit.SECONDS)
@@ -68,12 +71,14 @@ public class MessageCentralValidatorSync implements SyncVerticesRPCSender, SyncV
 		BFTNode self,
 		Universe universe,
 		AddressBook addressBook,
-		MessageCentral messageCentral
+		MessageCentral messageCentral,
+		Hasher hasher
 	) {
 		this.magic = universe.getMagic();
 		this.self = Objects.requireNonNull(self);
 		this.addressBook = Objects.requireNonNull(addressBook);
 		this.messageCentral = Objects.requireNonNull(messageCentral);
+		this.hasher = Objects.requireNonNull(hasher);
 	}
 
 	@Override
@@ -95,9 +100,14 @@ public class MessageCentralValidatorSync implements SyncVerticesRPCSender, SyncV
 	}
 
 	@Override
-	public void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<Vertex> vertices) {
+	public void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<VerifiedVertex> vertices) {
 		MessageCentralGetVerticesRequest messageCentralGetVerticesRequest = (MessageCentralGetVerticesRequest) originalRequest;
-		GetVerticesResponseMessage response = new GetVerticesResponseMessage(this.magic, messageCentralGetVerticesRequest.getVertexId(), vertices);
+		ImmutableList<UnverifiedVertex> rawVertices = vertices.stream().map(VerifiedVertex::toSerializable).collect(ImmutableList.toImmutableList());
+		GetVerticesResponseMessage response = new GetVerticesResponseMessage(
+			this.magic,
+			messageCentralGetVerticesRequest.getVertexId(),
+			rawVertices
+		);
 		Peer peer = messageCentralGetVerticesRequest.getRequestor();
 		this.messageCentral.send(peer, response);
 	}
@@ -133,7 +143,12 @@ public class MessageCentralValidatorSync implements SyncVerticesRPCSender, SyncV
 					return null; // TODO: send error?
 				}
 
-				return new GetVerticesResponse(msg.getVertexId(), msg.getVertices(), opaque);
+				// TODO: Move hasher to a more appropriate place
+				ImmutableList<VerifiedVertex> hashedVertices = msg.getVertices().stream()
+					.map(v -> new VerifiedVertex(v, hasher.hash(v)))
+					.collect(ImmutableList.toImmutableList());
+
+				return new GetVerticesResponse(msg.getVertexId(), hashedVertices, opaque);
 			}
 		);
 	}

@@ -19,11 +19,10 @@ package com.radixdlt.consensus;
 
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.consensus.ConsensusRunner.Event;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.epoch.EpochManager;
@@ -31,7 +30,6 @@ import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 import com.radixdlt.crypto.Hash;
 import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.observers.TestObserver;
 import org.junit.Test;
 
 public class ConsensusRunnerTest {
@@ -83,20 +81,16 @@ public class ConsensusRunnerTest {
 			epochManager
 		);
 
-		TestObserver<Event> testObserver = consensusRunner.events().test();
 		consensusRunner.start();
-		testObserver.awaitCount(8);
-		testObserver.assertValueCount(8);
-		testObserver.assertNotComplete();
 
-		verify(epochManager, times(1)).processEpochChange(eq(epochChange));
-		verify(epochManager, times(1)).processConsensusEvent(eq(vote));
-		verify(epochManager, times(1)).processConsensusEvent(eq(proposal));
-		verify(epochManager, times(1)).processConsensusEvent(eq(newView));
-		verify(epochManager, times(1)).processLocalTimeout(eq(timeout));
-		verify(epochManager, times(1)).processLocalSync(eq(id));
-		verify(epochManager, times(1)).processCommittedStateSync(eq(stateSync));
-		verify(epochManager, times(1)).processGetVerticesRequest(eq(request));
+		verify(epochManager, timeout(1000).times(1)).processEpochChange(eq(epochChange));
+		verify(epochManager, timeout(1000).times(1)).processConsensusEvent(eq(vote));
+		verify(epochManager, timeout(1000).times(1)).processConsensusEvent(eq(proposal));
+		verify(epochManager, timeout(1000).times(1)).processConsensusEvent(eq(newView));
+		verify(epochManager, timeout(1000).times(1)).processLocalTimeout(eq(timeout));
+		verify(epochManager, timeout(1000).times(1)).processLocalSync(eq(id));
+		verify(epochManager, timeout(1000).times(1)).processCommittedStateSync(eq(stateSync));
+		verify(epochManager, timeout(1000).times(1)).processGetVerticesRequest(eq(request));
 
 		consensusRunner.shutdown();
 	}

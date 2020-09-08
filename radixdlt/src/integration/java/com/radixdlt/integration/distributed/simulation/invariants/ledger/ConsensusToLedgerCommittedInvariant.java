@@ -17,7 +17,7 @@
 
 package com.radixdlt.integration.distributed.simulation.invariants.ledger;
 
-import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.integration.distributed.simulation.TestInvariant;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.utils.Pair;
@@ -35,7 +35,7 @@ public class ConsensusToLedgerCommittedInvariant implements TestInvariant {
 		return network.committedVertices()
 			.map(Pair::getSecond)
 			.filter(v -> v.getCommand() != null)
-			.map(Vertex::getCommand)
+			.map(VerifiedVertex::getCommand)
 			.flatMapMaybe(command -> network
 				.committedCommands()
 				.filter(nodeAndCmd -> nodeAndCmd.getSecond().contains(command))

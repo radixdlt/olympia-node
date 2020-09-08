@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -17,16 +17,23 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.DefaultSerialization;
-import com.radixdlt.crypto.Hash;
-import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.consensus.bft.VerifiedVertex;
+import java.util.Objects;
 
-/**
- * Hasher which uses the default dson serialization in order to construct hashes of objects.
- */
-public final class DefaultHasher implements Hasher {
-	@Override
-	public Hash hash(Object o) {
-		return Hash.of(DefaultSerialization.getInstance().toDson(o, Output.HASH));
+public final class BFTConfiguration {
+	private final VerifiedVertex genesisVertex;
+	private final QuorumCertificate genesisQC;
+
+	public BFTConfiguration(VerifiedVertex genesisVertex, QuorumCertificate genesisQC) {
+		this.genesisVertex = Objects.requireNonNull(genesisVertex);
+		this.genesisQC = Objects.requireNonNull(genesisQC);
+	}
+
+	public VerifiedVertex getGenesisVertex() {
+		return genesisVertex;
+	}
+
+	public QuorumCertificate getGenesisQC() {
+		return genesisQC;
 	}
 }

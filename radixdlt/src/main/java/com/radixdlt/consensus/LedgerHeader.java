@@ -50,11 +50,9 @@ public final class LedgerHeader {
 	// TODO: remove this
 	private final View view;
 
-	// Not used for anything now
-	// TODO: Change to accumulator
-	@JsonProperty("command_id")
+	@JsonProperty("accumulator")
 	@DsonOutput(Output.ALL)
-	private final Hash commandId;
+	private final Hash accumulator;
 
 	@JsonProperty("timestamp")
 	@DsonOutput(Output.ALL)
@@ -70,27 +68,33 @@ public final class LedgerHeader {
 		@JsonProperty("epoch") long epoch,
 		@JsonProperty("view") long view,
 		@JsonProperty("stateVersion") long stateVersion,
-		@JsonProperty("command_id") Hash commandId,
+		@JsonProperty("accumulator") Hash accumulator,
 		@JsonProperty("timestamp") long timestamp,
 		@JsonProperty("isEndOfEpoch") boolean isEndOfEpoch
 	) {
-		this(epoch, View.of(view), stateVersion, commandId, timestamp, isEndOfEpoch);
+		this(epoch, View.of(view), stateVersion, accumulator, timestamp, isEndOfEpoch);
 	}
 
 	private LedgerHeader(
 		long epoch,
 		View view,
 		long stateVersion,
-		Hash commandId,
+		Hash accumulator,
 		long timestamp,
 		boolean isEndOfEpoch
 	) {
 		this.epoch = epoch;
 		this.view = view;
 		this.stateVersion = stateVersion;
-		this.commandId = commandId;
+		this.accumulator = accumulator;
 		this.isEndOfEpoch = isEndOfEpoch;
 		this.timestamp = timestamp;
+	}
+
+	public static LedgerHeader genesis(Hash accumulator) {
+		return new LedgerHeader(
+			0, View.genesis(), 0, accumulator, 0, true
+		);
 	}
 
 	public static LedgerHeader create(
@@ -114,8 +118,8 @@ public final class LedgerHeader {
 		return view;
 	}
 
-	public Hash getCommandId() {
-		return commandId;
+	public Hash getAccumulator() {
+		return accumulator;
 	}
 
 	public long getEpoch() {
@@ -136,7 +140,7 @@ public final class LedgerHeader {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.stateVersion, this.commandId, this.timestamp, this.epoch, this.view, this.isEndOfEpoch);
+		return Objects.hash(this.stateVersion, this.accumulator, this.timestamp, this.epoch, this.view, this.isEndOfEpoch);
 	}
 
 	@Override
@@ -148,7 +152,7 @@ public final class LedgerHeader {
 			LedgerHeader other = (LedgerHeader) o;
 			return this.timestamp == other.timestamp
 				&& this.stateVersion == other.stateVersion
-				&& Objects.equals(this.commandId, other.commandId)
+				&& Objects.equals(this.accumulator, other.accumulator)
 				&& this.epoch == other.epoch
 				&& Objects.equals(this.view, other.view)
 				&& this.isEndOfEpoch == other.isEndOfEpoch;

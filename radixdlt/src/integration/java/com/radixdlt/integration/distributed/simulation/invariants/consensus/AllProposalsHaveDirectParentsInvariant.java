@@ -20,7 +20,7 @@ package com.radixdlt.integration.distributed.simulation.invariants.consensus;
 import com.radixdlt.integration.distributed.simulation.TestInvariant;
 import com.radixdlt.consensus.ConsensusEventsRx;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.List;
@@ -34,7 +34,7 @@ public class AllProposalsHaveDirectParentsInvariant implements TestInvariant {
 
 	@Override
 	public Observable<TestInvariantError> check(RunningNetwork network) {
-		List<Observable<Vertex>> correctProposals = network.getNodes().stream()
+		List<Observable<UnverifiedVertex>> correctProposals = network.getNodes().stream()
 			.map(network.getUnderlyingNetwork()::getNetworkRx)
 			.map(ConsensusEventsRx::consensusEvents)
 			.map(p -> p.ofType(Proposal.class).map(Proposal::getVertex))
@@ -42,7 +42,7 @@ public class AllProposalsHaveDirectParentsInvariant implements TestInvariant {
 
 		return Observable.merge(correctProposals)
 			.concatMap(v -> {
-				if (!v.hasDirectParent()) {
+				if (!v.getView().equals(v.getQC().getProposed().getView().next())) {
 					return Observable.just(new TestInvariantError(String.format("Vertex %s has no direct parent", v)));
 				} else {
 					return Observable.empty();

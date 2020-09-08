@@ -36,13 +36,14 @@ import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.ConsensusEvent;
+import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.bft.View;
@@ -81,6 +82,7 @@ public class EpochManagerTest {
 	private ProposerElection proposerElection;
 	private Ledger ledger;
 	private BFTNode self;
+	private Hasher hasher;
 
 	@Before
 	public void setup() {
@@ -102,10 +104,12 @@ public class EpochManagerTest {
 
 		this.epochInfoSender = mock(EpochInfoSender.class);
 		this.syncRequestSender = mock(SyncRequestSender.class);
+		this.hasher = mock(Hasher.class);
+		when(hasher.hash(any())).thenReturn(mock(Hash.class));
 
 		this.epochManager = new EpochManager(
 			this.self,
-			new EpochChange(VerifiedLedgerHeaderAndProof.ofGenesisAncestor(mock(LedgerHeader.class)), BFTValidatorSet.from(ImmutableSet.of())),
+			new EpochChange(VerifiedLedgerHeaderAndProof.genesis(mock(Hash.class)), BFTValidatorSet.from(ImmutableSet.of())),
 			this.ledger,
 			this.syncEpochsRPCSender,
 			mock(LocalTimeoutSender.class),
@@ -115,7 +119,8 @@ public class EpochManagerTest {
 			proposers -> proposerElection,
 			this.bftFactory,
 			this.systemCounters,
-			this.epochInfoSender
+			this.epochInfoSender,
+			this.hasher
 		);
 		this.epochManager.start();
 	}
@@ -131,7 +136,7 @@ public class EpochManagerTest {
 		when(epochChange.getEpoch()).thenReturn(2L);
 		epochManager.processEpochChange(epochChange);
 
-		verify(bftFactory, never()).create(any(), any(), any(), any(), any(), any());
+		verify(bftFactory, never()).create(any(), any(), any(), any(), any(), any(), any());
 		verify(syncEpochsRPCSender, never()).sendGetEpochRequest(any(), anyLong());
 	}
 
@@ -213,9 +218,9 @@ public class EpochManagerTest {
 		BFTEventProcessor eventProcessor = mock(BFTEventProcessor.class);
 		AtomicReference<EndOfEpochSender> endOfEpochSender = new AtomicReference<>();
 		doAnswer(invocation -> {
-			endOfEpochSender.set(invocation.getArgument(0));
+			endOfEpochSender.set(invocation.getArgument(1));
 			return eventProcessor;
-		}).when(bftFactory).create(any(), any(), any(), any(), any(), any());
+		}).when(bftFactory).create(any(), any(), any(), any(), any(), any(), any());
 
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		when(validatorSet.containsNode(any())).thenReturn(true);
@@ -251,7 +256,7 @@ public class EpochManagerTest {
 	@Test
 	public void when_epoch_change_and_then_epoch_events__then_should_execute_events() {
 		BFTEventProcessor eventProcessor = mock(BFTEventProcessor.class);
-		when(bftFactory.create(any(), any(), any(), any(), any(), any())).thenReturn(eventProcessor);
+		when(bftFactory.create(any(), any(), any(), any(), any(), any(), any())).thenReturn(eventProcessor);
 
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		when(validatorSet.containsNode(any())).thenReturn(true);
@@ -278,7 +283,7 @@ public class EpochManagerTest {
 		Proposal proposal = mock(Proposal.class);
 		when(proposal.getAuthor()).thenReturn(node);
 		when(proposal.getEpoch()).thenReturn(2L);
-		Vertex vertex = mock(Vertex.class);
+		UnverifiedVertex vertex = mock(UnverifiedVertex.class);
 		when(vertex.getView()).thenReturn(View.of(1));
 		when(proposal.getVertex()).thenReturn(vertex);
 		epochManager.processConsensusEvent(proposal);
@@ -348,7 +353,7 @@ public class EpochManagerTest {
 		when(vertexStore.syncToQC(any(), any(), any())).thenReturn(true);
 
 		Proposal proposal = mock(Proposal.class);
-		Vertex vertex = mock(Vertex.class);
+		UnverifiedVertex vertex = mock(UnverifiedVertex.class);
 		when(vertex.getView()).thenReturn(View.of(1));
 		when(proposal.getEpoch()).thenReturn(2L);
 		when(proposal.getVertex()).thenReturn(vertex);
@@ -358,7 +363,7 @@ public class EpochManagerTest {
 		assertThat(systemCounters.get(CounterType.EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS)).isEqualTo(1);
 
 		BFTEventProcessor eventProcessor = mock(BFTEventProcessor.class);
-		when(bftFactory.create(any(), any(), any(), any(), any(), any())).thenReturn(eventProcessor);
+		when(bftFactory.create(any(), any(), any(), any(), any(), any(), any())).thenReturn(eventProcessor);
 
 		BFTValidator validator = mock(BFTValidator.class);
 		when(validator.getNode()).thenReturn(mock(BFTNode.class));
@@ -406,7 +411,7 @@ public class EpochManagerTest {
 		when(vertexStore.getHighestQC()).thenReturn(mock(QuorumCertificate.class));
 
 		BFTEventProcessor eventProcessor = mock(BFTEventProcessor.class);
-		when(bftFactory.create(any(), any(), any(), any(), any(), any())).thenReturn(eventProcessor);
+		when(bftFactory.create(any(), any(), any(), any(), any(), any(), any())).thenReturn(eventProcessor);
 
 		BFTValidator validator = mock(BFTValidator.class);
 		when(validator.getNode()).thenReturn(mock(BFTNode.class));

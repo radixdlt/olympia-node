@@ -22,7 +22,7 @@ import static org.mockito.Mockito.mock;
 import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.systeminfo.InMemorySystemInfoManager;
@@ -73,11 +73,11 @@ public class InMemorySystemInfoManagerTest {
 
 	@Test
 	public void when_send_three_committed_vertices_and_get_committed__then_returns_last_committed() {
-		Vertex vertex0 = mock(Vertex.class);
+		VerifiedVertex vertex0 = mock(VerifiedVertex.class);
 		when(vertex0.getView()).thenReturn(View.of(0));
-		Vertex vertex1 = mock(Vertex.class);
+		VerifiedVertex vertex1 = mock(VerifiedVertex.class);
 		when(vertex1.getView()).thenReturn(View.of(1));
-		Vertex vertex2 = mock(Vertex.class);
+		VerifiedVertex vertex2 = mock(VerifiedVertex.class);
 		when(vertex2.getView()).thenReturn(View.of(2));
 		when(infoRx.committedVertices()).thenReturn(Observable.just(vertex0, vertex1, vertex2));
 		runner.start();

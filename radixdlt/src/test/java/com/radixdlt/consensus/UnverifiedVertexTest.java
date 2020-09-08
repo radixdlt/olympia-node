@@ -24,13 +24,11 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 
-public class VertexTest {
+public class UnverifiedVertexTest {
 
-	private Vertex testObject;
+	private UnverifiedVertex testObject;
 	private QuorumCertificate qc;
 	private Command command;
 
@@ -45,33 +43,13 @@ public class VertexTest {
 
 		this.qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 		this.command = mock(Command.class);
-		this.testObject = Vertex.createVertex(this.qc, baseView.next().next(), this.command);
+		this.testObject = UnverifiedVertex.createVertex(this.qc, baseView.next().next(), this.command);
 	}
 
 	@Test
 	public void equalsContract() {
-		EqualsVerifier.forClass(Vertex.class)
+		EqualsVerifier.forClass(UnverifiedVertex.class)
 			.verify();
-	}
-
-	@Test
-	public void testDirectParentTrue() {
-		assertTrue(testObject.hasDirectParent());
-	}
-
-	@Test
-	public void testDirectParentFalse() {
-		View baseView = View.of(1234567890L);
-		Hash id = Hash.random();
-
-		BFTHeader header = new BFTHeader(baseView.next(), id, mock(LedgerHeader.class));
-		BFTHeader parent = new BFTHeader(baseView, Hash.random(), mock(LedgerHeader.class));
-		VoteData voteData = new VoteData(header, parent, null);
-		QuorumCertificate qc2 = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-
-		Vertex v = Vertex.createVertex(qc2, baseView.next().next().next(), null);
-
-		assertFalse(v.hasDirectParent());
 	}
 
 	@Test

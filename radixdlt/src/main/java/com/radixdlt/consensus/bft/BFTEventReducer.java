@@ -19,12 +19,13 @@ package com.radixdlt.consensus.bft;
 
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
@@ -121,6 +122,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private final Map<Hash, QuorumCertificate> unsyncedQCs = new HashMap<>();
 	private final BFTInfoSender infoSender;
 	private final RTTStatistics rttStatistics = new RTTStatistics();
+	private final Hasher hasher;
 	private boolean synchedLog = false;
 
 	public interface EndOfEpochSender {
@@ -140,7 +142,8 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		BFTValidatorSet validatorSet,
 		SystemCounters counters,
 		BFTInfoSender infoSender,
-		TimeSupplier timeSupplier
+		TimeSupplier timeSupplier,
+		Hasher hasher
 	) {
 		this.self = Objects.requireNonNull(self);
 		this.nextCommandGenerator = Objects.requireNonNull(nextCommandGenerator);
@@ -155,6 +158,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		this.counters = Objects.requireNonNull(counters);
 		this.infoSender = Objects.requireNonNull(infoSender);
 		this.timeSupplier = Objects.requireNonNull(timeSupplier);
+		this.hasher = Objects.requireNonNull(hasher);
 	}
 
 	// Hotstuff's Event-Driven OnNextSyncView
@@ -236,12 +240,12 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 			// Propose null atom in the case that we are at the end of the epoch
 			// TODO: Remove isEndOfEpoch knowledge from consensus
-			if (highestQC.getProposed().getLedgerState().isEndOfEpoch()) {
+			if (highestQC.getProposed().getLedgerHeader().isEndOfEpoch()) {
 				nextCommand = null;
 			} else {
-				final List<Vertex> preparedVertices = vertexStore.getPathFromRoot(highestQC.getProposed().getVertexId());
+				final List<VerifiedVertex> preparedVertices = vertexStore.getPathFromRoot(highestQC.getProposed().getVertexId());
 				final Set<Hash> prepared = preparedVertices.stream()
-					.map(Vertex::getCommand)
+					.map(VerifiedVertex::getCommand)
 					.filter(Objects::nonNull)
 					.map(Command::getHash)
 					.collect(Collectors.toSet());
@@ -249,7 +253,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 				nextCommand = nextCommandGenerator.generateNextCommand(view, prepared);
 			}
 
-			final Vertex proposedVertex = Vertex.createVertex(highestQC, view, nextCommand);
+			final UnverifiedVertex proposedVertex = UnverifiedVertex.createVertex(highestQC, view, nextCommand);
 			final Proposal proposal = safetyRules.signProposal(proposedVertex, highestCommitted, System.nanoTime());
 			log.trace("{}: Broadcasting PROPOSAL: {}", this.self::getSimpleName, () -> proposal);
 			Set<BFTNode> nodes = validatorSet.getValidators().stream().map(BFTValidator::getNode).collect(Collectors.toSet());
@@ -261,7 +265,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	@Override
 	public void processProposal(Proposal proposal) {
 		log.trace("{}: PROPOSAL: Processing {}", this.self::getSimpleName, () -> proposal);
-		final Vertex proposedVertex = proposal.getVertex();
+		final VerifiedVertex proposedVertex = new VerifiedVertex(proposal.getVertex(), hasher.hash(proposal.getVertex()));
 		final View proposedVertexView = proposedVertex.getView();
 
 		processQC(proposedVertex.getQC());

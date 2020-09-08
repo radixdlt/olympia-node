@@ -86,13 +86,15 @@ public final class VerifiedLedgerHeaderAndProof {
 		this.signatures = Objects.requireNonNull(signatures);
 	}
 
-	public static VerifiedLedgerHeaderAndProof ofGenesisAncestor(LedgerHeader ledgerHeader) {
-		BFTHeader header = BFTHeader.ofGenesisAncestor(ledgerHeader);
+	public static VerifiedLedgerHeaderAndProof genesis(Hash accumulator) {
+		LedgerHeader genesisLedgerHeader = LedgerHeader.genesis(accumulator);
+		BFTHeader header = BFTHeader.ofGenesisAncestor(genesisLedgerHeader);
 		return new VerifiedLedgerHeaderAndProof(
 			header,
 			header,
 			0,
-			Hash.ZERO_HASH, ledgerHeader,
+			Hash.ZERO_HASH,
+			genesisLedgerHeader,
 			new TimestampedECDSASignatures()
 		);
 	}
@@ -133,7 +135,7 @@ public final class VerifiedLedgerHeaderAndProof {
 	}
 
 	public Hash getCommandId() {
-		return ledgerHeader.getCommandId();
+		return ledgerHeader.getAccumulator();
 	}
 
 	public long timestamp() {

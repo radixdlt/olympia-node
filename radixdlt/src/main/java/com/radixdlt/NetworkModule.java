@@ -23,6 +23,7 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.ConsensusEventsRx;
+import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
@@ -69,9 +70,10 @@ public final class NetworkModule extends AbstractModule {
 		@Named("self") BFTNode self,
 		Universe universe,
 		AddressBook addressBook,
-		MessageCentral messageCentral
+		MessageCentral messageCentral,
+		Hasher hasher
 	) {
-		return new MessageCentralValidatorSync(self, universe, addressBook, messageCentral);
+		return new MessageCentralValidatorSync(self, universe, addressBook, messageCentral, hasher);
 	}
 
 	@Provides

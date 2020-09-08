@@ -24,9 +24,20 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.multibindings.Multibinder;
+import com.google.inject.name.Names;
+import com.radixdlt.consensus.BFTFactory;
+import com.radixdlt.consensus.Hasher;
+import com.radixdlt.consensus.ProposerElectionFactory;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.VertexStoreFactory;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
+import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
+import com.radixdlt.consensus.liveness.LocalTimeoutSender;
+import com.radixdlt.consensus.liveness.PacemakerFactory;
+import com.radixdlt.consensus.sync.SyncRequestSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.ledger.StateComputerLedger;
@@ -39,6 +50,17 @@ public class LedgerModuleTest {
 	private static class ExternalLedgerModule extends AbstractModule {
 		@Override
 		protected void configure() {
+			bind(BFTFactory.class).toInstance(mock(BFTFactory.class));
+			bind(VertexStoreFactory.class).toInstance(mock(VertexStoreFactory.class));
+			bind(PacemakerFactory.class).toInstance(mock(PacemakerFactory.class));
+			bind(EpochInfoSender.class).toInstance(mock(EpochInfoSender.class));
+			bind(ProposerElectionFactory.class).toInstance(mock(ProposerElectionFactory.class));
+			bind(BFTNode.class).annotatedWith(Names.named("self")).toInstance(mock(BFTNode.class));
+			bind(SyncEpochsRPCSender.class).toInstance(mock(SyncEpochsRPCSender.class));
+			bind(LocalTimeoutSender.class).toInstance(mock(LocalTimeoutSender.class));
+			bind(SyncRequestSender.class).toInstance(mock(SyncRequestSender.class));
+			bind(Hasher.class).toInstance(mock(Hasher.class));
+
 			bind(Mempool.class).toInstance(mock(Mempool.class));
 			bind(StateComputer.class).toInstance(mock(StateComputer.class));
 			bind(CommittedStateSyncSender.class).toInstance(mock(CommittedStateSyncSender.class));

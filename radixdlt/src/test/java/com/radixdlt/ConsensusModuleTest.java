@@ -19,77 +19,43 @@ package com.radixdlt;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.name.Names;
-import com.radixdlt.consensus.CommittedStateSyncRx;
-import com.radixdlt.consensus.ConsensusEventsRx;
-import com.radixdlt.consensus.ConsensusRunner;
-import com.radixdlt.consensus.EpochChangeRx;
+import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.Hasher;
-import com.radixdlt.consensus.SyncEpochsRPCRx;
-import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
+import com.radixdlt.consensus.bft.VertexStore.SyncedVertexSender;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
-import com.radixdlt.consensus.epoch.EpochChange;
-import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
-import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.sync.SyncRequestSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.network.TimeSupplier;
-import io.reactivex.rxjava3.core.Observable;
 import org.junit.Test;
 
 public class ConsensusModuleTest {
 	private static class ExternalConsensusModule extends AbstractModule {
 		@Override
 		protected void configure() {
-			CommittedStateSyncRx committedStateSyncRx = mock(CommittedStateSyncRx.class);
-			when(committedStateSyncRx.committedStateSyncs()).thenReturn(Observable.never());
-			bind(CommittedStateSyncRx.class).toInstance(committedStateSyncRx);
-
-			ConsensusEventsRx consensusEventsRx = mock(ConsensusEventsRx.class);
-			when(consensusEventsRx.consensusEvents()).thenReturn(Observable.never());
-			bind(ConsensusEventsRx.class).toInstance(consensusEventsRx);
-
-			EpochChangeRx epochChangeRx = mock(EpochChangeRx.class);
-			when(epochChangeRx.epochChanges()).thenReturn(Observable.never());
-			bind(EpochChangeRx.class).toInstance(epochChangeRx);
-
-			SyncEpochsRPCRx syncEpochsRPCRx = mock(SyncEpochsRPCRx.class);
-			when(syncEpochsRPCRx.epochResponses()).thenReturn(Observable.never());
-			when(syncEpochsRPCRx.epochRequests()).thenReturn(Observable.never());
-			bind(SyncEpochsRPCRx.class).toInstance(syncEpochsRPCRx);
-
-			SyncVerticesRPCRx syncVerticesRPCRx = mock(SyncVerticesRPCRx.class);
-			when(syncVerticesRPCRx.errorResponses()).thenReturn(Observable.never());
-			when(syncVerticesRPCRx.requests()).thenReturn(Observable.never());
-			when(syncVerticesRPCRx.responses()).thenReturn(Observable.never());
-			bind(SyncVerticesRPCRx.class).toInstance(syncVerticesRPCRx);
-
+			bind(SyncedVertexSender.class).toInstance(mock(SyncedVertexSender.class));
 			bind(Ledger.class).toInstance(mock(Ledger.class));
+			bind(SyncRequestSender.class).toInstance(mock(SyncRequestSender.class));
 			bind(BFTEventSender.class).toInstance(mock(BFTEventSender.class));
 			bind(SyncVerticesRPCSender.class).toInstance(mock(SyncVerticesRPCSender.class));
 			bind(VertexStoreEventSender.class).toInstance(mock(VertexStoreEventSender.class));
-			bind(EpochInfoSender.class).toInstance(mock(EpochInfoSender.class));
-			bind(SyncEpochsRPCSender.class).toInstance(mock(SyncEpochsRPCSender.class));
 			bind(NextCommandGenerator.class).toInstance(mock(NextCommandGenerator.class));
 			bind(SystemCounters.class).toInstance(mock(SystemCounters.class));
 			bind(TimeSupplier.class).toInstance(mock(TimeSupplier.class));
 			bind(Hasher.class).toInstance(mock(Hasher.class));
 			bind(HashVerifier.class).toInstance(mock(HashVerifier.class));
 			bind(HashSigner.class).toInstance(mock(HashSigner.class));
-			bind(EpochChange.class).toInstance(mock(EpochChange.class));
-			bind(SyncRequestSender.class).toInstance(mock(SyncRequestSender.class));
 			bind(BFTNode.class).annotatedWith(Names.named("self")).toInstance(mock(BFTNode.class));
 		}
 	}
@@ -101,7 +67,7 @@ public class ConsensusModuleTest {
 			new ExternalConsensusModule()
 		);
 
-		ConsensusRunner runner = injector.getInstance(ConsensusRunner.class);
-		assertThat(runner).isNotNull();
+		BFTFactory bftFactory = injector.getInstance(BFTFactory.class);
+		assertThat(bftFactory).isNotNull();
 	}
 }

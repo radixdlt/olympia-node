@@ -15,22 +15,15 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt;
 
-import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.bft.VertexStore;
+import com.google.inject.AbstractModule;
+import com.google.inject.Scopes;
+import com.radixdlt.consensus.ConsensusRunner;
 
-/**
- * A Vertex Store factory
- */
-public interface VertexStoreFactory {
-
-	/**
-	 * Creates a new VertexStore given initial vertex and QC
-	 * @param genesisVertex the root vertex
-	 * @param genesisQC the root QC
-	 * @param ledger the underlying ledger
-	 * @return a new VertexStore
-	 */
-	VertexStore create(VerifiedVertex genesisVertex, QuorumCertificate genesisQC, Ledger ledger);
+public class ConsensusRunnerModule extends AbstractModule {
+	@Override
+	public void configure() {
+		bind(ModuleRunner.class).to(ConsensusRunner.class).in(Scopes.SINGLETON);
+	}
 }
