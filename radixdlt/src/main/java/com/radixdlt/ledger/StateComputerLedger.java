@@ -19,6 +19,7 @@ package com.radixdlt.ledger;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
+import com.google.common.hash.Hashing;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
@@ -111,11 +112,21 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		final long stateVersion = parentStateVersion + versionIncrement;
 		final long timestamp = vertex.getQC().getTimestampedSignatures().weightedTimestamp();
 
+		final Hash accumulator;
+		if (vertex.getCommand() != null) {
+			byte[] concat = new byte[32 * 2];
+			parent.getAccumulator().copyTo(concat, 0);
+			vertex.getCommand().getHash().copyTo(concat, 32);
+			accumulator = Hash.of(concat);
+		} else {
+			accumulator = parent.getAccumulator();
+		}
+
 		return LedgerHeader.create(
 			parent.getEpoch(),
 			vertex.getView(),
 			stateVersion,
-			vertex.getCommand() == null ? null : vertex.getCommand().getHash(),
+			accumulator,
 			timestamp,
 			isEndOfEpoch
 		);
