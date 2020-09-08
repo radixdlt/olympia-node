@@ -30,7 +30,7 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class ProposalTest {
 	private Proposal proposal;
-	private Vertex vertex;
+	private UnverifiedVertex vertex;
 	private BFTNode node;
 	private ECDSASignature signature;
 	private QuorumCertificate commitQc;
@@ -38,7 +38,7 @@ public class ProposalTest {
 
 	@Before
 	public void setUp() {
-		this.vertex = mock(Vertex.class);
+		this.vertex = mock(UnverifiedVertex.class);
 		this.node = mock(BFTNode.class);
 		this.signature = mock(ECDSASignature.class);
 		this.commitQc = mock(QuorumCertificate.class);

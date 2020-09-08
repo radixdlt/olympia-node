@@ -23,16 +23,16 @@ import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.crypto.Hash;
 
-public class VertexSerializeTest extends SerializeObject<Vertex> {
-	public VertexSerializeTest() {
-		super(Vertex.class, VertexSerializeTest::get);
+public class UnverifiedVertexSerializeTest extends SerializeObject<UnverifiedVertex> {
+	public UnverifiedVertexSerializeTest() {
+		super(UnverifiedVertex.class, UnverifiedVertexSerializeTest::get);
 	}
 
-	private static Vertex get() {
+	private static UnverifiedVertex get() {
 		View view = View.of(1234567891L);
 		LedgerHeader ledgerHeader = LedgerHeader.genesis(Hash.ZERO_HASH);
 		BFTHeader header = new BFTHeader(view, Hash.random(), ledgerHeader);
@@ -43,6 +43,6 @@ public class VertexSerializeTest extends SerializeObject<Vertex> {
 
 		final Command command = new Command(new byte[] {0, 1, 2, 3});
 
-		return Vertex.createVertex(qc, view, command);
+		return UnverifiedVertex.createVertex(qc, view, command);
 	}
 }

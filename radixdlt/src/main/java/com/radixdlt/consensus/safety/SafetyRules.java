@@ -24,7 +24,7 @@ import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimestampedVoteData;
-import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.Vote;
@@ -89,7 +89,7 @@ public final class SafetyRules {
 	 * @param highestCommittedQC highest known committed QC
 	 * @return signed proposal object for consensus
 	 */
-	public Proposal signProposal(Vertex proposedVertex, QuorumCertificate highestCommittedQC, long payload) {
+	public Proposal signProposal(UnverifiedVertex proposedVertex, QuorumCertificate highestCommittedQC, long payload) {
 		final Hash vertexHash = this.hasher.hash(proposedVertex);
 		ECDSASignature signature = this.signer.sign(vertexHash);
 		return new Proposal(proposedVertex, highestCommittedQC, this.self, signature, payload);

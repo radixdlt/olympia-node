@@ -31,7 +31,7 @@ import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
-import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
@@ -102,7 +102,7 @@ public class MessageCentralValidatorSync implements SyncVerticesRPCSender, SyncV
 	@Override
 	public void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<VerifiedVertex> vertices) {
 		MessageCentralGetVerticesRequest messageCentralGetVerticesRequest = (MessageCentralGetVerticesRequest) originalRequest;
-		ImmutableList<Vertex> rawVertices = vertices.stream().map(VerifiedVertex::toRaw).collect(ImmutableList.toImmutableList());
+		ImmutableList<UnverifiedVertex> rawVertices = vertices.stream().map(VerifiedVertex::toSerializable).collect(ImmutableList.toImmutableList());
 		GetVerticesResponseMessage response = new GetVerticesResponseMessage(
 			this.magic,
 			messageCentralGetVerticesRequest.getVertexId(),

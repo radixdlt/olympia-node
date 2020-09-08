@@ -25,7 +25,7 @@ import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
@@ -253,7 +253,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 				nextCommand = nextCommandGenerator.generateNextCommand(view, prepared);
 			}
 
-			final Vertex proposedVertex = Vertex.createVertex(highestQC, view, nextCommand);
+			final UnverifiedVertex proposedVertex = UnverifiedVertex.createVertex(highestQC, view, nextCommand);
 			final Proposal proposal = safetyRules.signProposal(proposedVertex, highestCommitted, System.nanoTime());
 			log.trace("{}: Broadcasting PROPOSAL: {}", this.self::getSimpleName, () -> proposal);
 			Set<BFTNode> nodes = validatorSet.getValidators().stream().map(BFTValidator::getNode).collect(Collectors.toSet());

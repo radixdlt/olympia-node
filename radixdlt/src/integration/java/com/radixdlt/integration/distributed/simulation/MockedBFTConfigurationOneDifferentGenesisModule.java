@@ -24,7 +24,7 @@ import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.crypto.Hash;
@@ -43,7 +43,7 @@ public class MockedBFTConfigurationOneDifferentGenesisModule extends AbstractMod
 	Function<BFTNode, BFTConfiguration> config(Hasher hasher) {
 		return node -> {
 			Hash genesisHeaderHash = node.equals(nodeWithDifferentGenesis) ? Hash.ZERO_HASH : ONE_HASH;
-			Vertex genesis = Vertex.createGenesis(LedgerHeader.genesis(genesisHeaderHash));
+			UnverifiedVertex genesis = UnverifiedVertex.createGenesis(LedgerHeader.genesis(genesisHeaderHash));
 			Hash vertexHash = hasher.hash(genesis);
 			VerifiedVertex genesisVertex = new VerifiedVertex(genesis, vertexHash);
 			return new BFTConfiguration(

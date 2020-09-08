@@ -34,7 +34,7 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
-import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
@@ -125,7 +125,7 @@ public class MessageCentralValidatorSyncTest {
 		TestObserver<GetVerticesResponse> testObserver = sync.responses().test();
 
 		GetVerticesResponseMessage responseMessage = mock(GetVerticesResponseMessage.class);
-		Vertex vertex = mock(Vertex.class);
+		UnverifiedVertex vertex = mock(UnverifiedVertex.class);
 		when(responseMessage.getVertices()).thenReturn(ImmutableList.of(vertex));
 		when(responseMessage.getVertexId()).thenReturn(id);
 		when(hasher.hash(eq(vertex))).thenReturn(id);
@@ -159,7 +159,7 @@ public class MessageCentralValidatorSyncTest {
 		TestObserver<GetVerticesErrorResponse> testObserver = sync.errorResponses().test();
 
 		GetVerticesErrorResponseMessage responseMessage = mock(GetVerticesErrorResponseMessage.class);
-		Vertex vertex = mock(Vertex.class);
+		UnverifiedVertex vertex = mock(UnverifiedVertex.class);
 		when(hasher.hash(eq(vertex))).thenReturn(id);
 		when(responseMessage.getVertexId()).thenReturn(id);
 		when(responseMessage.getHighestCommittedQC()).thenReturn(mock(QuorumCertificate.class));
@@ -177,7 +177,7 @@ public class MessageCentralValidatorSyncTest {
 		when(request.getRequestor()).thenReturn(peer);
 		VerifiedVertex vertex = mock(VerifiedVertex.class);
 		when(request.getVertexId()).thenReturn(mock(Hash.class));
-		when(vertex.toRaw()).thenReturn(mock(Vertex.class));
+		when(vertex.toSerializable()).thenReturn(mock(UnverifiedVertex.class));
 		ImmutableList<VerifiedVertex> vertices = ImmutableList.of(vertex);
 		sync.sendGetVerticesResponse(request, vertices);
 		verify(messageCentral, times(1)).send(eq(peer), any(GetVerticesResponseMessage.class));

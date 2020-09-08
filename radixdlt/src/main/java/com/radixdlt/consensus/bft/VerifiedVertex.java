@@ -20,7 +20,7 @@ package com.radixdlt.consensus.bft;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.crypto.Hash;
 import java.util.Objects;
 
@@ -28,15 +28,15 @@ import java.util.Objects;
  * A vertex which has been verified with hash id
  */
 public final class VerifiedVertex {
-	private final Vertex vertex;
+	private final UnverifiedVertex vertex;
 	private final Hash id;
 
-	public VerifiedVertex(Vertex vertex, Hash id) {
+	public VerifiedVertex(UnverifiedVertex vertex, Hash id) {
 		this.vertex = Objects.requireNonNull(vertex);
 		this.id = Objects.requireNonNull(id);
 	}
 
-	public Vertex toRaw() {
+	public UnverifiedVertex toSerializable() {
 		return vertex;
 	}
 
@@ -45,25 +45,25 @@ public final class VerifiedVertex {
 	}
 
 	public boolean touchesGenesis() {
-		return vertex.getView().isGenesis()
-			|| vertex.getParentHeader().getView().isGenesis()
-			|| vertex.getGrandParentHeader().getView().isGenesis();
+		return this.getView().isGenesis()
+			|| this.getParentHeader().getView().isGenesis()
+			|| this.getGrandParentHeader().getView().isGenesis();
 	}
 
 	public boolean hasDirectParent() {
-		return vertex.hasDirectParent();
+		return this.vertex.getView().equals(this.getParentHeader().getView().next());
 	}
 
 	public boolean parentHasDirectParent() {
-		return vertex.getParentHeader().getView().equals(vertex.getGrandParentHeader().getView().next());
+		return this.getParentHeader().getView().equals(this.getGrandParentHeader().getView().next());
 	}
 
 	public BFTHeader getParentHeader() {
-		return vertex.getParentHeader();
+		return vertex.getQC().getProposed();
 	}
 
 	public BFTHeader getGrandParentHeader() {
-		return vertex.getGrandParentHeader();
+		return vertex.getQC().getParent();
 	}
 
 	public View getView() {
@@ -74,7 +74,7 @@ public final class VerifiedVertex {
 		return vertex.getQC();
 	}
 
-	public Vertex getVertex() {
+	public UnverifiedVertex getVertex() {
 		return vertex;
 	}
 

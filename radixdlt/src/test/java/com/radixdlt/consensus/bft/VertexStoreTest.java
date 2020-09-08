@@ -40,7 +40,7 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
@@ -91,7 +91,7 @@ public class VertexStoreTest {
 		this.syncedVertexSender = mock(SyncedVertexSender.class);
 
 		this.genesisHash = mock(Hash.class);
-		this.genesisVertex = new VerifiedVertex(Vertex.createGenesis(mock(LedgerHeader.class)), genesisHash);
+		this.genesisVertex = new VerifiedVertex(UnverifiedVertex.createGenesis(mock(LedgerHeader.class)), genesisHash);
 		this.rootQC = QuorumCertificate.ofGenesis(genesisVertex, mock(LedgerHeader.class));
 		this.vertexStore = new VertexStore(
 			genesisVertex,
@@ -115,11 +115,8 @@ public class VertexStoreTest {
 			BFTHeader parentHeader = lastParentHeader.get();
 			BFTHeader grandParentHeader = lastGrandParentHeader.get();
 			BFTHeader greatGrandParentHeader = lastGreatGrandParentHeader.get();
-			Vertex rawVertex = mock(Vertex.class);
+			UnverifiedVertex rawVertex = mock(UnverifiedVertex.class);
 			VerifiedVertex vertex = new VerifiedVertex(rawVertex, hash);
-			when(rawVertex.getParentId()).thenReturn(parentHeader.getVertexId());
-
-			when(rawVertex.hasDirectParent()).thenReturn(!skipOne);
 			final QuorumCertificate qc;
 			if (!parentHeader.getView().equals(View.genesis())) {
 				VoteData data = new VoteData(parentHeader, grandParentHeader, skipOne ? null : greatGrandParentHeader);

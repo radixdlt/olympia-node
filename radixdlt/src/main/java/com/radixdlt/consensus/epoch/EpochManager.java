@@ -33,7 +33,7 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.VertexStoreEventProcessor;
 import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.bft.VerifiedVertex;
@@ -188,7 +188,7 @@ public final class EpochManager {
 			Pacemaker pacemaker = pacemakerFactory.create(sender);
 
 			// TODO: Recover VertexStore
-			Vertex genesisVertex = Vertex.createGenesis(this.currentEpoch.getPrevLedgerState());
+			UnverifiedVertex genesisVertex = UnverifiedVertex.createGenesis(this.currentEpoch.getPrevLedgerState());
 			VerifiedVertex verifiedVertex = new VerifiedVertex(genesisVertex, hasher.hash(genesisVertex));
 			QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedVertex, nextLedgerHeader);
 			VertexStore vertexStore = vertexStoreFactory.create(verifiedVertex, genesisQC, ledger);

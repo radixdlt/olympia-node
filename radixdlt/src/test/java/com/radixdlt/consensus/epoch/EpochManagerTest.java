@@ -43,7 +43,7 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.bft.View;
@@ -283,7 +283,7 @@ public class EpochManagerTest {
 		Proposal proposal = mock(Proposal.class);
 		when(proposal.getAuthor()).thenReturn(node);
 		when(proposal.getEpoch()).thenReturn(2L);
-		Vertex vertex = mock(Vertex.class);
+		UnverifiedVertex vertex = mock(UnverifiedVertex.class);
 		when(vertex.getView()).thenReturn(View.of(1));
 		when(proposal.getVertex()).thenReturn(vertex);
 		epochManager.processConsensusEvent(proposal);
@@ -353,7 +353,7 @@ public class EpochManagerTest {
 		when(vertexStore.syncToQC(any(), any(), any())).thenReturn(true);
 
 		Proposal proposal = mock(Proposal.class);
-		Vertex vertex = mock(Vertex.class);
+		UnverifiedVertex vertex = mock(UnverifiedVertex.class);
 		when(vertex.getView()).thenReturn(View.of(1));
 		when(proposal.getEpoch()).thenReturn(2L);
 		when(proposal.getVertex()).thenReturn(vertex);

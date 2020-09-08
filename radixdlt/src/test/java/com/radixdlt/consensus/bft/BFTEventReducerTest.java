@@ -25,7 +25,7 @@ import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
@@ -231,11 +231,9 @@ public class BFTEventReducerTest {
 	public void when_processing_invalid_proposal__then_atom_is_rejected() throws Exception {
 		View currentView = View.of(123);
 
-		Vertex proposedVertex = mock(Vertex.class);
+		UnverifiedVertex proposedVertex = mock(UnverifiedVertex.class);
 		when(proposedVertex.getCommand()).thenReturn(mock(Command.class));
 		when(proposedVertex.getQC()).thenReturn(mock(QuorumCertificate.class));
-		BFTHeader parent = mock(BFTHeader.class);
-		when(proposedVertex.getParentHeader()).thenReturn(parent);
 		when(proposedVertex.getView()).thenReturn(currentView);
 
 		Proposal proposal = mock(Proposal.class);
@@ -254,15 +252,13 @@ public class BFTEventReducerTest {
 
 		when(proposerElection.getProposer(any())).thenReturn(mock(BFTNode.class));
 
-		Vertex proposedVertex = mock(Vertex.class);
+		UnverifiedVertex proposedVertex = mock(UnverifiedVertex.class);
 		when(proposedVertex.getCommand()).thenReturn(mock(Command.class));
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		View qcView = mock(View.class);
 		when(qc.getView()).thenReturn(qcView);
 		when(proposedVertex.getQC()).thenReturn(qc);
 		when(proposedVertex.getView()).thenReturn(currentView);
-		BFTHeader parent = mock(BFTHeader.class);
-		when(proposedVertex.getParentHeader()).thenReturn(parent);
 
 		Proposal proposal = mock(Proposal.class);
 		when(proposal.getVertex()).thenReturn(proposedVertex);
@@ -287,15 +283,13 @@ public class BFTEventReducerTest {
 		when(proposerElection.getProposer(eq(currentView))).thenReturn(mock(BFTNode.class));
 		when(proposerElection.getProposer(eq(currentView.next()))).thenReturn(self);
 
-		Vertex proposedVertex = mock(Vertex.class);
+		UnverifiedVertex proposedVertex = mock(UnverifiedVertex.class);
 		when(proposedVertex.getCommand()).thenReturn(mock(Command.class));
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		View qcView = mock(View.class);
 		when(qc.getView()).thenReturn(qcView);
 		when(proposedVertex.getQC()).thenReturn(qc);
 		when(proposedVertex.getView()).thenReturn(currentView);
-		BFTHeader parent = mock(BFTHeader.class);
-		when(proposedVertex.getParentHeader()).thenReturn(parent);
 
 		Proposal proposal = mock(Proposal.class);
 		when(proposal.getVertex()).thenReturn(proposedVertex);
@@ -318,15 +312,13 @@ public class BFTEventReducerTest {
 
 		when(proposerElection.getProposer(eq(currentView))).thenReturn(self);
 
-		Vertex proposedVertex = mock(Vertex.class);
+		UnverifiedVertex proposedVertex = mock(UnverifiedVertex.class);
 		when(proposedVertex.getCommand()).thenReturn(mock(Command.class));
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		View qcView = mock(View.class);
 		when(qc.getView()).thenReturn(qcView);
 		when(proposedVertex.getQC()).thenReturn(qc);
 		when(proposedVertex.getView()).thenReturn(currentView);
-		BFTHeader parent = mock(BFTHeader.class);
-		when(proposedVertex.getParentHeader()).thenReturn(parent);
 
 		Proposal proposal = mock(Proposal.class);
 		when(proposal.getVertex()).thenReturn(proposedVertex);
