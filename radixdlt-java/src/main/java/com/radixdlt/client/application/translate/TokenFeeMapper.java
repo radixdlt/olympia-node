@@ -36,7 +36,6 @@ import com.radixdlt.client.serialization.Serialize;
 import com.radixdlt.fees.FeeTable;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
@@ -77,15 +76,11 @@ public final class TokenFeeMapper implements FeeMapper {
 	}
 
 	private UInt256 feeFor(Atom atom) {
-		try {
-			int feeSize = Serialize.getInstance().toDson(atom, Output.HASH).length;
-			ImmutableSet<Particle> outputs = atom.spunParticles()
-				.filter(sp -> Spin.UP.equals(sp.getSpin()))
-				.map(SpunParticle::getParticle)
-				.collect(ImmutableSet.toImmutableSet());
-			return this.feeTable.feeFor(atom, outputs, feeSize);
-		} catch (SerializationException e) {
-			throw new IllegalStateException("While serializing atom", e);
-		}
+		int feeSize = Serialize.getInstance().toDson(atom, Output.HASH).length;
+		ImmutableSet<Particle> outputs = atom.spunParticles()
+			.filter(sp -> Spin.UP.equals(sp.getSpin()))
+			.map(SpunParticle::getParticle)
+			.collect(ImmutableSet.toImmutableSet());
+		return this.feeTable.feeFor(atom, outputs, feeSize);
 	}
 }

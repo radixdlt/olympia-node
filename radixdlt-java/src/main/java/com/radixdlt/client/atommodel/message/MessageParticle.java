@@ -119,7 +119,7 @@ public final class MessageParticle extends Particle implements Accountable {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final long nonce;
 
-	private MessageParticle() {
+	MessageParticle() {
 		// Serializer only
 		this.from = null;
 		this.to = null;
