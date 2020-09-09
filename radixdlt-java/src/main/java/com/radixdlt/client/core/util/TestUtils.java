@@ -25,7 +25,6 @@ package com.radixdlt.client.core.util;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.serialization.Serialize;
 import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.SerializationException;
 
 public class TestUtils {
 	private TestUtils() {
@@ -39,11 +38,7 @@ public class TestUtils {
 	 * @param atom The atom
 	 */
 	public static void dumpJsonForHash(Atom atom) {
-		try {
-			System.out.println(Serialize.getInstance().toJson(atom, DsonOutput.Output.HASH));
-		} catch (SerializationException e) {
-			throw new IllegalStateException("Failed to serialize", e);
-		}
+		System.out.println(Serialize.getInstance().toJson(atom, DsonOutput.Output.HASH));
 	}
 
 	/**

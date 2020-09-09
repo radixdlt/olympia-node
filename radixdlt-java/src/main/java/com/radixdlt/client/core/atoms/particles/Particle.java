@@ -36,7 +36,6 @@ import com.radixdlt.client.atommodel.Identifiable;
 import com.radixdlt.identifiers.RadixAddress;
 
 import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
@@ -93,11 +92,7 @@ public abstract class Particle {
 	}
 
 	public final byte[] toDson() {
-		try {
-			return Serialize.getInstance().toDson(this, Output.HASH);
-		} catch (SerializationException e) {
-			throw new IllegalStateException("Failed to serialize", e);
-		}
+		return Serialize.getInstance().toDson(this, Output.HASH);
 	}
 
 	public final Hash getHash() {

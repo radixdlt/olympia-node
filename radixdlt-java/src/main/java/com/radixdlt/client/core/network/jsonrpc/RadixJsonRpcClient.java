@@ -32,7 +32,7 @@ import com.radixdlt.client.core.atoms.AtomStatusEvent;
 import com.radixdlt.client.core.ledger.AtomEvent;
 import com.radixdlt.client.serialization.GsonJson;
 import com.radixdlt.client.serialization.Serialize;
-import com.radixdlt.serialization.SerializationException;
+import com.radixdlt.serialization.DeserializeException;
 import io.reactivex.functions.Cancellable;
 import java.util.List;
 import java.util.UUID;
@@ -399,7 +399,7 @@ public class RadixJsonRpcClient {
 					.map(jsonAtom -> {
 						try {
 							return Serialize.getInstance().fromJson(jsonAtom.toString(), AtomEvent.class);
-						} catch (SerializationException e) {
+						} catch (DeserializeException e) {
 							throw new IllegalStateException("Failed to deserialize", e);
 						}
 					})

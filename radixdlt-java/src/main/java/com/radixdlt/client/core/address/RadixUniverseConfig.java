@@ -31,9 +31,9 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
@@ -91,7 +91,7 @@ public class RadixUniverseConfig {
 		RadixUniverseConfig universe = null;
 		try {
 			universe = Serialize.getInstance().fromDson(bytes, RadixUniverseConfig.class);
-		} catch (SerializationException e) {
+		} catch (DeserializeException e) {
 			throw new IllegalStateException("Failed to deserialize bytes", e);
 		}
 		return universe;
@@ -157,11 +157,7 @@ public class RadixUniverseConfig {
 	}
 
 	public Hash getHash() {
-		try {
-			return Hash.of(Serialize.getInstance().toDson(this, Output.HASH));
-		} catch (SerializationException e) {
-			throw new IllegalStateException("Failed to serialize universe config", e);
-		}
+		return Hash.of(Serialize.getInstance().toDson(this, Output.HASH));
 	}
 
 	public EUID euid() {

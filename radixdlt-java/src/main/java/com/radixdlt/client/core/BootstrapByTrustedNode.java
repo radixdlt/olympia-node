@@ -28,6 +28,7 @@ import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.network.HttpClients;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
 import com.radixdlt.client.core.network.RadixNode;
+import com.radixdlt.serialization.DeserializeException;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
@@ -36,7 +37,6 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import com.radixdlt.client.serialization.Serialize;
-import com.radixdlt.serialization.SerializationException;
 import okhttp3.Call;
 import okhttp3.OkHttpClient;
 import okhttp3.Response;
@@ -72,7 +72,7 @@ public class BootstrapByTrustedNode implements BootstrapConfig {
 
 			try {
 				return Serialize.getInstance().fromJson(universeJson, RadixUniverseConfig.class);
-			} catch (SerializationException e) {
+			} catch (DeserializeException e) {
 				throw new IllegalStateException("Failed to deserialize", e);
 			}
 		});

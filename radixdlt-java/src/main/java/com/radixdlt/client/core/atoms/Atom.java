@@ -34,7 +34,6 @@ import com.radixdlt.crypto.Hash;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
@@ -170,11 +169,7 @@ public final class Atom {
 	}
 
 	public byte[] toDson() {
-		try {
-			return Serialize.getInstance().toDson(this, DsonOutput.Output.HASH);
-		} catch (SerializationException e) {
-			throw new IllegalStateException("Failed to serialize", e);
-		}
+		return Serialize.getInstance().toDson(this, DsonOutput.Output.HASH);
 	}
 
 	public Hash getHash() {
