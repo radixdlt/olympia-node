@@ -103,7 +103,7 @@ public class RadixApplicationAPITest {
 		Atom atom = mock(Atom.class);
 		when(identity.addSignature(any())).thenReturn(Single.just(atom));
 
-		FeeMapper feeMapper = (api, feeAtom) -> Pair.of(ImmutableMap.of(), ImmutableList.of());
+		FeeMapper feeMapper = (actionProcessor, address, feeAtom) -> Pair.of(ImmutableMap.of(), ImmutableList.of());
 
 		return RadixApplicationAPI.defaultBuilder()
 			.identity(identity)
@@ -323,7 +323,7 @@ public class RadixApplicationAPITest {
 			.identity(identity)
 			.universe(universe)
 			.addStatelessParticlesMapper(action.getClass(), actionMapper)
-			.feeMapper((feeApi, feeAtom) -> Pair.of(ImmutableMap.of(), ImmutableList.of()))
+			.feeMapper((actionProcessor, addr, feeAtom) -> Pair.of(ImmutableMap.of(), ImmutableList.of()))
 			.addAtomErrorMapper(errorMapper)
 			.build();
 

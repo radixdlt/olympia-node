@@ -30,7 +30,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.test.util.TypedMocks;
-import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.crypto.Hash;
@@ -60,9 +59,7 @@ public class PowFeeMapperTest {
 		when(hasher.apply(any())).thenReturn(hash);
 		PowFeeMapper powFeeMapper = new PowFeeMapper(hasher, 0, builder);
 
-		RadixApplicationAPI api = mock(RadixApplicationAPI.class);
-
-		Pair<Map<String, String>, List<ParticleGroup>> output = powFeeMapper.map(api, Atom.create(Collections.emptyList()));
+		Pair<Map<String, String>, List<ParticleGroup>> output = powFeeMapper.map(null, null, Atom.create(Collections.emptyList()));
 		assertThat(output.getFirst()).containsOnlyKeys(Atom.METADATA_POW_NONCE_KEY);
 
 		verify(builder, times(1)).build(anyInt(), any(), anyInt());
