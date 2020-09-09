@@ -29,7 +29,6 @@ import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware.SpunParticle;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.utils.UInt256;
@@ -94,11 +93,7 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 			throw new IllegalStateException("Unknown LedgerAtom type: " + atom.getClass());
 		}
 		Atom atomWithoutFeeGroup = completeAtom.copyExcludingGroups(this::isFeeGroup);
-		try {
-			return this.serialization.toDson(atomWithoutFeeGroup, Output.HASH).length;
-		} catch (SerializationException e) {
-			throw new IllegalStateException("While serializing atom", e);
-		}
+		return this.serialization.toDson(atomWithoutFeeGroup, Output.HASH).length;
 	}
 
 	private boolean isFeeGroup(ParticleGroup pg) {
