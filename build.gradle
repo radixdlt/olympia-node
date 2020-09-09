@@ -112,11 +112,8 @@ dependencies {
     }
 
     api 'com.google.code.gson:gson:2.8.2'
-
-
-
-    api 'org.bouncycastle:bcprov-jdk15to18:1.64'
-    api 'org.bouncycastle:bcpkix-jdk15to18:1.64'
+    api 'org.bouncycastle:bcprov-jdk15to18:1.65'
+    api 'org.bouncycastle:bcpkix-jdk15to18:1.65'
 
     api 'org.json:json:20180813'
     api 'com.fasterxml.jackson.core:jackson-core:2.9.9'
