@@ -19,11 +19,11 @@ package com.radixdlt;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
-import com.radixdlt.consensus.ConsensusRunner;
+import com.radixdlt.consensus.EpochManagerRunner;
 
 public class ConsensusRunnerModule extends AbstractModule {
 	@Override
 	public void configure() {
-		bind(ModuleRunner.class).to(ConsensusRunner.class).in(Scopes.SINGLETON);
+		bind(ConsensusRunner.class).to(EpochManagerRunner.class).in(Scopes.SINGLETON);
 	}
 }

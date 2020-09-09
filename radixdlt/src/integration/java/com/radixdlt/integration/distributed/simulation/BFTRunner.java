@@ -17,7 +17,7 @@
 
 package com.radixdlt.integration.distributed.simulation;
 
-import com.radixdlt.ModuleRunner;
+import com.radixdlt.ConsensusRunner;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.ConsensusEventsRx;
 import com.radixdlt.consensus.NewView;
@@ -44,9 +44,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Standalone consensus runner without epoch management
+ * Standalone bft runner without epoch management
  */
-public class BFTRunner implements ModuleRunner {
+public class BFTRunner implements ConsensusRunner {
 	private static final Logger log = LogManager.getLogger();
 
 	private final ConnectableObservable<Object> events;

@@ -18,7 +18,7 @@
 package org.radix.api.jsonrpc;
 
 import com.google.common.io.CharStreams;
-import com.radixdlt.consensus.ConsensusRunner;
+import com.radixdlt.ConsensusRunner;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;

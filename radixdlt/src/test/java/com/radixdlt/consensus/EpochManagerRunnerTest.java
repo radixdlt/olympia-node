@@ -32,7 +32,7 @@ import com.radixdlt.crypto.Hash;
 import io.reactivex.rxjava3.core.Observable;
 import org.junit.Test;
 
-public class ConsensusRunnerTest {
+public class EpochManagerRunnerTest {
 	@Test
 	public void when_events_get_emitted__then_event_coordinator_should_be_called() {
 		ConsensusEventsRx networkRx = mock(ConsensusEventsRx.class);
@@ -71,7 +71,7 @@ public class ConsensusRunnerTest {
 		CommittedStateSync stateSync = mock(CommittedStateSync.class);
 		when(committedStateSyncRx.committedStateSyncs()).thenReturn(Observable.just(stateSync).concatWith(Observable.never()));
 
-		ConsensusRunner consensusRunner = new ConsensusRunner(
+		EpochManagerRunner consensusRunner = new EpochManagerRunner(
 			epochChangeRx,
 			networkRx,
 			pacemakerRx, vertexSyncRx,

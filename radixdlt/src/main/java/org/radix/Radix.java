@@ -18,13 +18,13 @@
 package org.radix;
 
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.ConsensusRunner;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.sync.SyncServiceRunner;
 import com.radixdlt.systeminfo.InMemorySystemInfoManager;
 import com.radixdlt.api.CommittedAtomsRx;
 import com.radixdlt.api.SubmissionErrorsRx;
-import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.mempool.MempoolReceiver;
 import com.radixdlt.mempool.SubmissionControl;
 import com.radixdlt.middleware2.store.CommandToBinaryConverter;

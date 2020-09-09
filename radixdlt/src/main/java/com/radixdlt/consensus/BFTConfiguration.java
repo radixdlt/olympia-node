@@ -21,6 +21,9 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import java.util.Objects;
 
+/**
+ * Configuration for a bft instance which should be shared by all validators in the bft.
+ */
 public final class BFTConfiguration {
 	private final BFTValidatorSet validatorSet;
 	private final VerifiedVertex genesisVertex;
