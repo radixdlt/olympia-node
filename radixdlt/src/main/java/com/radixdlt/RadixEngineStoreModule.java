@@ -23,10 +23,17 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.name.Named;
-import com.radixdlt.consensus.AddressBookGenesisHeaderProvider;
+import com.radixdlt.consensus.AddressBookGenesisValidatorSetProvider;
+import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.Hasher;
+import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.VerifiedVertex;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
@@ -98,11 +105,11 @@ public class RadixEngineStoreModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private AddressBookGenesisHeaderProvider provider(
+	private AddressBookGenesisValidatorSetProvider provider(
 		AddressBook addressBook,
 		@Named("self") ECKeyPair selfKey
 	) {
-		return new AddressBookGenesisHeaderProvider(
+		return new AddressBookGenesisValidatorSetProvider(
 			selfKey.getPublicKey(),
 			addressBook,
 			fixedNodeCount
@@ -111,10 +118,24 @@ public class RadixEngineStoreModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private BFTValidatorSet genesisValidatorSet(
-		AddressBookGenesisHeaderProvider metadataProvider
+	private BFTConfiguration initialConfig(
+		AddressBookGenesisValidatorSetProvider initialValidatorSetProvider,
+		VerifiedLedgerHeaderAndProof proof,
+		Hasher hasher
 	) {
-		return metadataProvider.getGenesisValidatorSet();
+		UnverifiedVertex genesisVertex = UnverifiedVertex.createGenesis(proof.getRaw());
+		VerifiedVertex verifiedGenesisVertex = new VerifiedVertex(genesisVertex, hasher.hash(genesisVertex));
+		LedgerHeader nextLedgerHeader = LedgerHeader.create(
+			proof.getEpoch() + 1,
+			View.genesis(),
+			proof.getStateVersion(),
+			proof.getCommandId(),
+			proof.timestamp(),
+			false
+		);
+		QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
+		BFTValidatorSet validatorSet = initialValidatorSetProvider.getGenesisValidatorSet();
+		return new BFTConfiguration(validatorSet, verifiedGenesisVertex, genesisQC);
 	}
 
 	@Provides

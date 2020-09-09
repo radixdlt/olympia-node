@@ -46,7 +46,8 @@ public abstract class LocalMempoolPeriodicSubmittor {
 	abstract Command nextCommand();
 
 	private Pair<Command, BFTNode> act(RunningNetwork network, EpochChange lastEpochChange) {
-		ImmutableList<BFTValidator> validators = lastEpochChange.getValidatorSet().getValidators().asList();
+		ImmutableList<BFTValidator> validators = lastEpochChange.getBFTConfiguration()
+			.getValidatorSet().getValidators().asList();
 		int validatorSetSize = validators.size();
 		BFTValidator validator = validators.get(random.nextInt(validatorSetSize));
 		BFTNode node = validator.getNode();

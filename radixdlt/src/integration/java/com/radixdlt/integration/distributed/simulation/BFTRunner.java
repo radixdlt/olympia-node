@@ -43,6 +43,9 @@ import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Standalone consensus runner without epoch management
+ */
 public class BFTRunner implements ModuleRunner {
 	private static final Logger log = LogManager.getLogger();
 

@@ -32,13 +32,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.NewView;
-import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Ledger;
@@ -107,9 +107,15 @@ public class EpochManagerTest {
 		this.hasher = mock(Hasher.class);
 		when(hasher.hash(any())).thenReturn(mock(Hash.class));
 
+		EpochChange initial = mock(EpochChange.class);
+		when(initial.getProof()).thenReturn(VerifiedLedgerHeaderAndProof.genesis(mock(Hash.class)));
+		BFTConfiguration config = mock(BFTConfiguration.class);
+		when(config.getValidatorSet()).thenReturn(BFTValidatorSet.from(ImmutableSet.of()));
+		when(initial.getBFTConfiguration()).thenReturn(config);
+
 		this.epochManager = new EpochManager(
 			this.self,
-			new EpochChange(VerifiedLedgerHeaderAndProof.genesis(mock(Hash.class)), BFTValidatorSet.from(ImmutableSet.of())),
+			initial,
 			this.ledger,
 			this.syncEpochsRPCSender,
 			mock(LocalTimeoutSender.class),
@@ -131,8 +137,9 @@ public class EpochManagerTest {
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		when(validatorSet.containsNode(eq(self))).thenReturn(false);
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of());
-		when(epochChange.getValidatorSet()).thenReturn(validatorSet);
-		when(epochChange.getNextLedgerState()).thenReturn(mock(LedgerHeader.class));
+		BFTConfiguration config = mock(BFTConfiguration.class);
+		when(config.getValidatorSet()).thenReturn(validatorSet);
+		when(epochChange.getBFTConfiguration()).thenReturn(config);
 		when(epochChange.getEpoch()).thenReturn(2L);
 		epochManager.processEpochChange(epochChange);
 
@@ -159,7 +166,9 @@ public class EpochManagerTest {
 		EpochChange epochChange = mock(EpochChange.class);
 		VerifiedLedgerHeaderAndProof proof = mock(VerifiedLedgerHeaderAndProof.class);
 		when(epochChange.getProof()).thenReturn(proof);
-		when(epochChange.getValidatorSet()).thenReturn(validatorSet);
+		BFTConfiguration config = mock(BFTConfiguration.class);
+		when(config.getValidatorSet()).thenReturn(validatorSet);
+		when(epochChange.getBFTConfiguration()).thenReturn(config);
 		when(epochChange.getEpoch()).thenReturn(2L);
 		epochManager.processEpochChange(epochChange);
 
@@ -201,7 +210,9 @@ public class EpochManagerTest {
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of());
 		EpochChange epochChange = mock(EpochChange.class);
-		when(epochChange.getValidatorSet()).thenReturn(validatorSet);
+		BFTConfiguration config = mock(BFTConfiguration.class);
+		when(config.getValidatorSet()).thenReturn(validatorSet);
+		when(epochChange.getBFTConfiguration()).thenReturn(config);
 		when(epochChange.getEpoch()).thenReturn(2L);
 		epochManager.processEpochChange(epochChange);
 
@@ -235,8 +246,9 @@ public class EpochManagerTest {
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of(selfValidator, validator));
 		EpochChange epochChange0 = mock(EpochChange.class);
 		when(epochChange0.getEpoch()).thenReturn(2L);
-		when(epochChange0.getValidatorSet()).thenReturn(validatorSet);
-		when(epochChange0.getNextLedgerState()).thenReturn(mock(LedgerHeader.class));
+		BFTConfiguration config = mock(BFTConfiguration.class);
+		when(config.getValidatorSet()).thenReturn(validatorSet);
+		when(epochChange0.getBFTConfiguration()).thenReturn(config);
 		epochManager.processEpochChange(epochChange0);
 
 		VerifiedLedgerHeaderAndProof verifiedNext = mock(VerifiedLedgerHeaderAndProof.class);
@@ -247,7 +259,9 @@ public class EpochManagerTest {
 		EpochChange epochChange = mock(EpochChange.class);
 		BFTValidatorSet vs = mock(BFTValidatorSet.class);
 		when(vs.getValidators()).thenReturn(ImmutableSet.of());
-		when(epochChange.getValidatorSet()).thenReturn(vs);
+		BFTConfiguration config2 = mock(BFTConfiguration.class);
+		when(config2.getValidatorSet()).thenReturn(vs);
+		when(epochChange.getBFTConfiguration()).thenReturn(config2);
 		when(epochChange.getEpoch()).thenReturn(3L);
 		epochManager.processEpochChange(epochChange);
 	}
@@ -271,8 +285,9 @@ public class EpochManagerTest {
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of(selfValidator, validator));
 		EpochChange epochChange = mock(EpochChange.class);
 		when(epochChange.getEpoch()).thenReturn(2L);
-		when(epochChange.getValidatorSet()).thenReturn(validatorSet);
-		when(epochChange.getNextLedgerState()).thenReturn(mock(LedgerHeader.class));
+		BFTConfiguration configuration = mock(BFTConfiguration.class);
+		when(configuration.getValidatorSet()).thenReturn(validatorSet);
+		when(epochChange.getBFTConfiguration()).thenReturn(configuration);
 		epochManager.processEpochChange(epochChange);
 
 		verify(eventProcessor, times(1)).start();
@@ -373,8 +388,9 @@ public class EpochManagerTest {
 
 		EpochChange epochChange = mock(EpochChange.class);
 		when(epochChange.getEpoch()).thenReturn(2L);
-		when(epochChange.getNextLedgerState()).thenReturn(mock(LedgerHeader.class));
-		when(epochChange.getValidatorSet()).thenReturn(validatorSet);
+		BFTConfiguration configuration = mock(BFTConfiguration.class);
+		when(configuration.getValidatorSet()).thenReturn(validatorSet);
+		when(epochChange.getBFTConfiguration()).thenReturn(configuration);
 
 		epochManager.processEpochChange(epochChange);
 
@@ -397,9 +413,10 @@ public class EpochManagerTest {
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of());
 
 		EpochChange epochChange = mock(EpochChange.class);
-		when(epochChange.getNextLedgerState()).thenReturn(mock(LedgerHeader.class));
+		BFTConfiguration configuration = mock(BFTConfiguration.class);
+		when(configuration.getValidatorSet()).thenReturn(validatorSet);
+		when(epochChange.getBFTConfiguration()).thenReturn(configuration);
 		when(epochChange.getEpoch()).thenReturn(2L);
-		when(epochChange.getValidatorSet()).thenReturn(validatorSet);
 
 		epochManager.processEpochChange(epochChange);
 
@@ -421,8 +438,9 @@ public class EpochManagerTest {
 
 		EpochChange epochChange = mock(EpochChange.class);
 		when(epochChange.getEpoch()).thenReturn(2L);
-		when(epochChange.getValidatorSet()).thenReturn(validatorSet);
-		when(epochChange.getNextLedgerState()).thenReturn(mock(LedgerHeader.class));
+		BFTConfiguration configuration = mock(BFTConfiguration.class);
+		when(configuration.getValidatorSet()).thenReturn(validatorSet);
+		when(epochChange.getBFTConfiguration()).thenReturn(configuration);
 		epochManager.processEpochChange(epochChange);
 
 		GetVerticesRequest getVerticesRequest = mock(GetVerticesRequest.class);

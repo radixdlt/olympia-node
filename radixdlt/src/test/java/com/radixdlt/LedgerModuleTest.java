@@ -25,6 +25,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.name.Names;
+import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.ProposerElectionFactory;
@@ -68,6 +69,7 @@ public class LedgerModuleTest {
 			VerifiedLedgerHeaderAndProof verifiedLedgerHeaderAndProof = mock(VerifiedLedgerHeaderAndProof.class);
 			bind(VerifiedLedgerHeaderAndProof.class).toInstance(verifiedLedgerHeaderAndProof);
 			bind(BFTValidatorSet.class).toInstance(mock(BFTValidatorSet.class));
+			bind(BFTConfiguration.class).toInstance(mock(BFTConfiguration.class));
 			Multibinder.newSetBinder(binder(), CommittedSender.class);
 		}
 	}

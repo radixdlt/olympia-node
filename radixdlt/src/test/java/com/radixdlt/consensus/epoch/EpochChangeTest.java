@@ -21,23 +21,23 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
 import org.junit.Before;
 import org.junit.Test;
 
 public class EpochChangeTest {
 	private VerifiedLedgerHeaderAndProof proof;
-	private BFTValidatorSet validatorSet;
+	private BFTConfiguration configuration;
 	private EpochChange epochChange;
 
 	@Before
 	public void setup() {
 		this.proof = mock(VerifiedLedgerHeaderAndProof.class);
 		when(proof.getEpoch()).thenReturn(323L);
-		this.validatorSet = mock(BFTValidatorSet.class);
+		this.configuration = mock(BFTConfiguration.class);
 
-		this.epochChange = new EpochChange(proof, validatorSet);
+		this.epochChange = new EpochChange(proof, configuration);
 	}
 
 	@Test
@@ -46,7 +46,7 @@ public class EpochChangeTest {
 	}
 
 	@Test
-	public void when_get_next_ledger_state__then_should_be_epoch_after_proof() {
-		assertThat(epochChange.getNextLedgerState().getEpoch()).isEqualTo(324L);
+	public void when_get_configuration__then_should_return_configuration() {
+		assertThat(epochChange.getBFTConfiguration()).isEqualTo(configuration);
 	}
 }

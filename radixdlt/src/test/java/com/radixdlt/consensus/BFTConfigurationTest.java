@@ -17,30 +17,23 @@
 
 package com.radixdlt.consensus;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertex;
-import java.util.Objects;
+import org.junit.Test;
 
-public final class BFTConfiguration {
-	private final BFTValidatorSet validatorSet;
-	private final VerifiedVertex genesisVertex;
-	private final QuorumCertificate genesisQC;
+public class BFTConfigurationTest {
+	@Test
+	public void testGetters() {
+		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
+		VerifiedVertex vertex = mock(VerifiedVertex.class);
+		QuorumCertificate qc = mock(QuorumCertificate.class);
 
-	public BFTConfiguration(BFTValidatorSet validatorSet, VerifiedVertex genesisVertex, QuorumCertificate genesisQC) {
-		this.validatorSet = Objects.requireNonNull(validatorSet);
-		this.genesisVertex = Objects.requireNonNull(genesisVertex);
-		this.genesisQC = Objects.requireNonNull(genesisQC);
-	}
-
-	public BFTValidatorSet getValidatorSet() {
-		return validatorSet;
-	}
-
-	public VerifiedVertex getGenesisVertex() {
-		return genesisVertex;
-	}
-
-	public QuorumCertificate getGenesisQC() {
-		return genesisQC;
+		BFTConfiguration bftConfiguration = new BFTConfiguration(validatorSet, vertex, qc);
+		assertThat(bftConfiguration.getValidatorSet()).isEqualTo(validatorSet);
+		assertThat(bftConfiguration.getGenesisVertex()).isEqualTo(vertex);
+		assertThat(bftConfiguration.getGenesisQC()).isEqualTo(qc);
 	}
 }
