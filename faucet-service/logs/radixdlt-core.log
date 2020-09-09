@@ -1,0 +1,58 @@
+2020-09-09T12:01:36,854 [OFF/Faucet/main] (Faucet.java:205) - Radix faucet 'feature-rpnv1-185-token-fees-1f4831f-dirty' from branch 'feature/rpnv1-185-token-fees' commit '1f4831f5955f0b2988b92b45c4979705c682574c'
+2020-09-09T12:01:36,866 [INFO/RadixEnv/main] (RadixEnv.java:55) - Using Bootstrap Mechanism: LOCALHOST_SINGLENODE
+2020-09-09T12:01:36,912 [FATAL/Faucet/main] (Faucet.java:217) - Identity must be set via env var: FAUCET_IDENTITY_KEY=<private-key-base64>
+2020-09-09T12:02:17,637 [OFF/Faucet/main] (Faucet.java:205) - Radix faucet 'feature-rpnv1-185-token-fees-1f4831f-dirty' from branch 'feature/rpnv1-185-token-fees' commit '1f4831f5955f0b2988b92b45c4979705c682574c'
+2020-09-09T12:02:17,648 [INFO/RadixEnv/main] (RadixEnv.java:55) - Using Bootstrap Mechanism: LOCALHOST_SINGLENODE
+2020-09-09T12:02:17,699 [FATAL/Faucet/main] (Faucet.java:217) - Identity must be set via env var: FAUCET_IDENTITY_KEY=<private-key-base64>
+2020-09-09T12:02:43,122 [OFF/Faucet/main] (Faucet.java:205) - Radix faucet 'feature-rpnv1-185-token-fees-1f4831f-dirty' from branch 'feature/rpnv1-185-token-fees' commit '1f4831f5955f0b2988b92b45c4979705c682574c'
+2020-09-09T12:02:43,134 [INFO/RadixEnv/main] (RadixEnv.java:55) - Using Bootstrap Mechanism: LOCALHOST_SINGLENODE
+2020-09-09T12:02:43,206 [FATAL/Faucet/main] (Faucet.java:217) - Identity must be set via env var: FAUCET_IDENTITY_KEY=<private-key-base64>
+2020-09-09T12:03:16,089 [OFF/Faucet/main] (Faucet.java:205) - Radix faucet 'feature-rpnv1-185-token-fees-1f4831f-dirty' from branch 'feature/rpnv1-185-token-fees' commit '1f4831f5955f0b2988b92b45c4979705c682574c'
+2020-09-09T12:03:16,101 [INFO/RadixEnv/main] (RadixEnv.java:55) - Using Bootstrap Mechanism: LOCALHOST_SINGLENODE
+2020-09-09T12:03:16,140 [FATAL/Faucet/main] (Faucet.java:217) - Identity must be set via env var: FAUCET_IDENTITY_KEY=<private-key-base64>
+2020-09-09T12:03:31,327 [OFF/Faucet/main] (Faucet.java:205) - Radix faucet 'feature-rpnv1-185-token-fees-1f4831f-dirty' from branch 'feature/rpnv1-185-token-fees' commit '1f4831f5955f0b2988b92b45c4979705c682574c'
+2020-09-09T12:03:31,336 [INFO/RadixEnv/main] (RadixEnv.java:55) - Using Bootstrap Mechanism: LOCALHOST_SINGLENODE
+2020-09-09T12:06:18,062 [OFF/Faucet/main] (Faucet.java:207) - Radix faucet 'feature-rpnv1-185-token-fees-1f4831f-dirty' from branch 'feature/rpnv1-185-token-fees' commit '1f4831f5955f0b2988b92b45c4979705c682574c'
+2020-09-09T12:06:18,074 [INFO/RadixEnv/main] (RadixEnv.java:55) - Using Bootstrap Mechanism: LOCALHOST_SINGLENODE
+2020-09-09T12:06:18,126 [FATAL/Faucet/main] (Faucet.java:226) - While decoding identity key
+org.bouncycastle.util.encoders.DecoderException: unable to decode base64 string: String index out of range: 1
+	at org.bouncycastle.util.encoders.Base64.decode(Unknown Source) ~[bcprov-jdk15to18-1.64.jar:1.64.0]
+	at com.radixdlt.client.application.identity.RadixIdentities.fromPrivateKeyBase64(RadixIdentities.java:53) ~[radixdlt-java-feature~rpnv1-185-token-fees-SNAPSHOT.jar:feature~rpnv1-185-token-fees-SNAPSHOT]
+	at com.radixdlt.faucet.Faucet.main(Faucet.java:224) [main/:?]
+Caused by: java.lang.StringIndexOutOfBoundsException: String index out of range: 1
+	at java.lang.String.charAt(String.java:658) ~[?:1.8.0_252]
+	at org.bouncycastle.util.encoders.Base64Encoder.decode(Unknown Source) ~[bcprov-jdk15to18-1.64.jar:1.64.0]
+	... 3 more
+2020-09-09T12:06:53,840 [OFF/Faucet/main] (Faucet.java:207) - Radix faucet 'feature-rpnv1-185-token-fees-1f4831f-dirty' from branch 'feature/rpnv1-185-token-fees' commit '1f4831f5955f0b2988b92b45c4979705c682574c'
+2020-09-09T12:06:53,850 [INFO/RadixEnv/main] (RadixEnv.java:55) - Using Bootstrap Mechanism: LOCALHOST_SINGLENODE
+2020-09-09T12:06:53,908 [FATAL/Faucet/main] (Faucet.java:226) - While decoding identity key from FAUCET_IDENTITY_KEY
+org.bouncycastle.util.encoders.DecoderException: unable to decode base64 string: String index out of range: 1
+	at org.bouncycastle.util.encoders.Base64.decode(Unknown Source) ~[bcprov-jdk15to18-1.64.jar:1.64.0]
+	at com.radixdlt.client.application.identity.RadixIdentities.fromPrivateKeyBase64(RadixIdentities.java:53) ~[radixdlt-java-feature~rpnv1-185-token-fees-SNAPSHOT.jar:feature~rpnv1-185-token-fees-SNAPSHOT]
+	at com.radixdlt.faucet.Faucet.main(Faucet.java:224) [main/:?]
+Caused by: java.lang.StringIndexOutOfBoundsException: String index out of range: 1
+	at java.lang.String.charAt(String.java:658) ~[?:1.8.0_252]
+	at org.bouncycastle.util.encoders.Base64Encoder.decode(Unknown Source) ~[bcprov-jdk15to18-1.64.jar:1.64.0]
+	... 3 more
+2020-09-09T12:07:29,743 [OFF/Faucet/main] (Faucet.java:205) - Radix faucet 'feature-rpnv1-185-token-fees-1f4831f-dirty' from branch 'feature/rpnv1-185-token-fees' commit '1f4831f5955f0b2988b92b45c4979705c682574c'
+2020-09-09T12:07:29,753 [INFO/RadixEnv/main] (RadixEnv.java:55) - Using Bootstrap Mechanism: LOCALHOST_SINGLENODE
+2020-09-09T12:07:30,000 [FATAL/Faucet/main] (Faucet.java:224) - While decoding identity key from FAUCET_IDENTITY_KEY
+org.bouncycastle.util.encoders.DecoderException: unable to decode base64 string: String index out of range: 1
+	at org.bouncycastle.util.encoders.Base64.decode(Unknown Source) ~[bcprov-jdk15to18-1.64.jar:1.64.0]
+	at com.radixdlt.client.application.identity.RadixIdentities.fromPrivateKeyBase64(RadixIdentities.java:53) ~[radixdlt-java-feature~rpnv1-185-token-fees-SNAPSHOT.jar:feature~rpnv1-185-token-fees-SNAPSHOT]
+	at com.radixdlt.faucet.Faucet.main(Faucet.java:222) [main/:?]
+Caused by: java.lang.StringIndexOutOfBoundsException: String index out of range: 1
+	at java.lang.String.charAt(String.java:658) ~[?:1.8.0_252]
+	at org.bouncycastle.util.encoders.Base64Encoder.decode(Unknown Source) ~[bcprov-jdk15to18-1.64.jar:1.64.0]
+	... 3 more
+2020-09-09T12:57:45,280 [OFF/Faucet/main] (Faucet.java:205) - Radix faucet 'feature-rpnv1-185-token-fees-1f4831f-dirty' from branch 'feature/rpnv1-185-token-fees' commit '1f4831f5955f0b2988b92b45c4979705c682574c'
+2020-09-09T12:57:45,292 [INFO/RadixEnv/main] (RadixEnv.java:55) - Using Bootstrap Mechanism: LOCALHOST_SINGLENODE
+2020-09-09T12:57:45,530 [FATAL/Faucet/main] (Faucet.java:224) - While decoding identity key from FAUCET_IDENTITY_KEY
+org.bouncycastle.util.encoders.DecoderException: unable to decode base64 string: String index out of range: 1
+	at org.bouncycastle.util.encoders.Base64.decode(Unknown Source) ~[bcprov-jdk15to18-1.64.jar:1.64.0]
+	at com.radixdlt.client.application.identity.RadixIdentities.fromPrivateKeyBase64(RadixIdentities.java:53) ~[radixdlt-java-feature~rpnv1-185-token-fees-SNAPSHOT.jar:feature~rpnv1-185-token-fees-SNAPSHOT]
+	at com.radixdlt.faucet.Faucet.main(Faucet.java:222) [main/:?]
+Caused by: java.lang.StringIndexOutOfBoundsException: String index out of range: 1
+	at java.lang.String.charAt(String.java:658) ~[?:1.8.0_252]
+	at org.bouncycastle.util.encoders.Base64Encoder.decode(Unknown Source) ~[bcprov-jdk15to18-1.64.jar:1.64.0]
+	... 3 more
