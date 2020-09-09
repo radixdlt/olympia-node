@@ -8,8 +8,6 @@ import com.radix.regression.Util;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
-import com.radixdlt.client.application.translate.FeeMapper;
-import com.radixdlt.client.application.translate.PowFeeMapper;
 import com.radixdlt.client.atommodel.message.MessageParticle;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.RadixUniverse;
@@ -26,7 +24,6 @@ import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.Notification;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NotificationType;
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
-import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
 import com.radixdlt.client.serialization.GsonJson;
 import com.radixdlt.client.serialization.Serialize;
 import com.radixdlt.serialization.DsonOutput;
@@ -63,8 +60,6 @@ public class ParticleGroupsMetaData {
 	private TestObserver<AtomStatusEvent> observer;
 	private TestObserver<Void> atomPushObserver;
 	private TestObserver<RadixJsonRpcClient.JsonRpcResponse> observer2;
-
-	private FeeMapper feeMapper = new PowFeeMapper(Atom::getHash, new ProofOfWorkBuilder());
 
 	@After
 	public void after() {
@@ -312,7 +307,8 @@ public class ParticleGroupsMetaData {
 
 		Map<String, String> atomMetaData = new HashMap<>();
 		atomMetaData.put("timestamp", System.currentTimeMillis() + "");
-		atomMetaData.putAll(feeMapper.map(Atom.create(particleGroups, atomMetaData), universe, this.identity.getPublicKey()).getFirst());
+		// FIXME: not really a fee
+		atomMetaData.put("magic", "0xdeadbeef");
 
 		return Atom.create(particleGroups, atomMetaData);
 	}

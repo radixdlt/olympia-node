@@ -7,8 +7,6 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
-import com.radixdlt.client.application.translate.FeeMapper;
-import com.radixdlt.client.application.translate.PowFeeMapper;
 import com.radixdlt.client.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.client.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.client.core.RadixEnv;
@@ -23,7 +21,6 @@ import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
-import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
 import com.radixdlt.identifiers.RadixAddress;
 import io.reactivex.observers.BaseTestConsumer.TestWaitStrategy;
 import io.reactivex.observers.TestObserver;
@@ -43,7 +40,6 @@ public class ValidatorRegistrationTest {
 	private RadixUniverse universe = RadixUniverse.create(RadixEnv.getBootstrapConfig());
 	private RadixIdentity identity;
 	private RadixAddress address;
-	private FeeMapper feeMapper = new PowFeeMapper(Atom::getHash, new ProofOfWorkBuilder());
 	private RadixJsonRpcClient jsonRpcClient;
 	private WebSocketClient webSocketClient;
 
@@ -74,7 +70,7 @@ public class ValidatorRegistrationTest {
 	}
 
 	@Test
-	@Ignore
+	@Ignore("This test currently breaks consensus RPNV1-677")
 	public void when_registering_unregistering_and_reregistering_validator__then_validator_is_registererd() {
 		// create a new public key identity
 		final RadixIdentity radixIdentity = RadixIdentities.createNew();
@@ -148,7 +144,8 @@ public class ValidatorRegistrationTest {
 		atomMetaData.put("timestamp", timestamp);
 
 		if (addFee) {
-			atomMetaData.putAll(feeMapper.map(Atom.create(particleGroups, atomMetaData), universe, this.identity.getPublicKey()).getFirst());
+			// FIXME: not really a fee
+			atomMetaData.put("magic", "0xdeadbeef");
 		}
 
 		Atom unsignedAtom = Atom.create(particleGroups, atomMetaData);
