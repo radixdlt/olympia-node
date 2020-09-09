@@ -31,7 +31,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.Ledger.OnNotSynced;
 import com.radixdlt.consensus.Ledger.OnSynced;
@@ -51,7 +50,6 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.utils.UInt256;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicReference;
@@ -78,9 +76,6 @@ public class VertexStoreTest {
 	@Before
 	public void setUp() {
 		ECKeyPair keyPair = ECKeyPair.generateNew();
-		BFTValidatorSet bftValidatorSet = BFTValidatorSet.from(ImmutableSet.of(
-			BFTValidator.from(BFTNode.create(keyPair.getPublicKey()), UInt256.ONE)
-		));
 		// No type check issues with mocking generic here
 		Ledger ssc = mock(Ledger.class);
 		this.ledger = ssc;

@@ -39,6 +39,7 @@ import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 
 public class MockedRadixEngineStoreModule extends AbstractModule {
+	@Override
 	public void configure() {
 		bind(CommittedCommandsReader.class).toInstance((stateVersion, limit) -> {
 			throw new UnsupportedOperationException();

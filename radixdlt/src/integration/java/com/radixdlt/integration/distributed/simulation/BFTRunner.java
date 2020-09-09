@@ -54,7 +54,6 @@ public class BFTRunner implements ConsensusRunner {
 	private final ExecutorService singleThreadExecutor;
 	private final Scheduler singleThreadScheduler;
 	private final BFTEventProcessor bftEventProcessor;
-	private final VertexStoreEventProcessor vertexStoreEventProcessor;
 	private Disposable disposable;
 
 	@Inject
@@ -67,7 +66,6 @@ public class BFTRunner implements ConsensusRunner {
 		VertexStoreEventProcessor vertexStoreEventProcessor
 	) {
 		this.bftEventProcessor = Objects.requireNonNull(bftEventProcessor);
-		this.vertexStoreEventProcessor = Objects.requireNonNull(vertexStoreEventProcessor);
 		this.singleThreadExecutor = Executors.newSingleThreadExecutor(ThreadFactories.daemonThreads("ConsensusRunner"));
 		this.singleThreadScheduler = Schedulers.from(this.singleThreadExecutor);
 

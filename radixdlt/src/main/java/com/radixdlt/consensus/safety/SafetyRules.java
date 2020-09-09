@@ -101,13 +101,13 @@ public final class SafetyRules {
 		// Add a vertex to commit if creating a quorum for the proposed vertex would
 		// create three consecutive qcs.
 		final BFTHeader toCommit;
-		if (!proposedVertex.touchesGenesis()
-			&& proposedVertex.hasDirectParent()
-			&& proposedVertex.parentHasDirectParent()
+		if (proposedVertex.touchesGenesis()
+			|| !proposedVertex.hasDirectParent()
+			|| !proposedVertex.parentHasDirectParent()
 		) {
-			toCommit = proposedVertex.getGrandParentHeader();
-		} else {
 			toCommit = null;
+		} else {
+			toCommit = proposedVertex.getGrandParentHeader();
 		}
 
 		return new VoteData(proposedHeader, parent, toCommit);

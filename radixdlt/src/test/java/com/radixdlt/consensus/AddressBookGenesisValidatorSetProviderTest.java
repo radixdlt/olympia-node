@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -26,10 +27,11 @@ import com.radixdlt.network.addressbook.AddressBook;
 
 import com.radixdlt.network.addressbook.Peer;
 import java.util.stream.Stream;
+import org.assertj.core.api.Condition;
 import org.junit.Test;
 import org.radix.universe.system.RadixSystem;
 
-public class AddressBookGenesisBFTHeaderProviderTest {
+public class AddressBookGenesisValidatorSetProviderTest {
 	@Test
 	public void when_quorum_size_is_one__then_should_emit_self() {
 		ECPublicKey self = mock(ECPublicKey.class);
@@ -46,5 +48,7 @@ public class AddressBookGenesisBFTHeaderProviderTest {
 		when(system.getKey()).thenReturn(peerKey);
 		when(peer.getSystem()).thenReturn(system);
 		when(addressBook.peers()).thenAnswer(inv -> Stream.of(peer));
+		assertThat(validatorSetProvider.getGenesisValidatorSet().getValidators())
+			.haveExactly(1, new Condition<>(v -> v.getNode().getKey().equals(self), "validator with self key %s", self));
 	}
 }
