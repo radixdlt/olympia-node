@@ -18,7 +18,6 @@
 package com.radixdlt.consensus.bft;
 
 import com.radixdlt.consensus.BFTEventProcessor;
-import com.radixdlt.consensus.DefaultHasher;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.Hasher;
@@ -49,7 +48,7 @@ public final class BFTBuilder {
 	// BFT Configuration objects
 	private BFTValidatorSet validatorSet;
 	private ProposerElection proposerElection;
-	private Hasher hasher = new DefaultHasher();
+	private Hasher hasher;
 	private HashSigner signer;
 	private HashVerifier verifier = ECPublicKey::verify;
 	private BFTInfoSender infoSender;
@@ -142,10 +141,11 @@ public final class BFTBuilder {
 	public BFTEventProcessor build() {
 		final SafetyRules safetyRules = new SafetyRules(self, SafetyState.initialState(), hasher, countingSigner(counters, signer));
 		// PendingVotes needs a hasher that produces unique values, as it indexes by hash
-		final PendingVotes pendingVotes = new PendingVotes(new DefaultHasher());
+		final PendingVotes pendingVotes = new PendingVotes(this.hasher);
 
 		BFTEventReducer reducer = new BFTEventReducer(
-			self, nextCommandGenerator,
+			self,
+			nextCommandGenerator,
 			eventSender,
 			endOfEpochSender,
 			safetyRules,
@@ -156,7 +156,8 @@ public final class BFTBuilder {
 			validatorSet,
 			counters,
 			infoSender,
-			timeSupplier
+			timeSupplier,
+			hasher
 		);
 
 		SyncQueues syncQueues = new SyncQueues();

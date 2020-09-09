@@ -23,11 +23,12 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
+import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof.OrderByEpochAndVersionComparator;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.ledger.StateComputerLedger;
@@ -43,6 +44,7 @@ import java.util.Set;
 public class LedgerModule extends AbstractModule {
 	@Override
 	protected void configure() {
+		bind(EpochManager.class).in(Scopes.SINGLETON);
 		bind(Ledger.class).to(StateComputerLedger.class).in(Scopes.SINGLETON);
 		// These multibindings are part of our dependency graph, so create the modules here
 		Multibinder.newSetBinder(binder(), CommittedSender.class);
@@ -75,7 +77,10 @@ public class LedgerModule extends AbstractModule {
 
 	// TODO: Load from storage
 	@Provides
-	private EpochChange initialEpoch(VerifiedLedgerHeaderAndProof ancestor, BFTValidatorSet validatorSet) {
-		return new EpochChange(ancestor, validatorSet);
+	private EpochChange initialEpoch(
+		VerifiedLedgerHeaderAndProof proof,
+		BFTConfiguration initialBFTConfig
+	) {
+		return new EpochChange(proof, initialBFTConfig);
 	}
 }

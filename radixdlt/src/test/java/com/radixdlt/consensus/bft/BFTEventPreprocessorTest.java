@@ -29,7 +29,7 @@ import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
@@ -96,11 +96,9 @@ public class BFTEventPreprocessorTest {
 	private Proposal createProposal(boolean goodView, boolean synced) {
 		Proposal proposal = mock(Proposal.class);
 		when(proposal.getAuthor()).thenReturn(self);
-		Vertex vertex = mock(Vertex.class);
+		UnverifiedVertex vertex = mock(UnverifiedVertex.class);
 		when(proposal.getVertex()).thenReturn(vertex);
 		when(vertex.getView()).thenReturn(goodView ? View.of(1) : View.of(0));
-		Hash vertexId = mock(Hash.class);
-		when(vertex.getId()).thenReturn(vertexId);
 
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		BFTHeader proposed = mock(BFTHeader.class);

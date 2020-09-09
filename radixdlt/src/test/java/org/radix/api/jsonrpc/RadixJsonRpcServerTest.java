@@ -22,7 +22,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.consensus.ConsensusRunner;
+import com.radixdlt.consensus.EpochManagerRunner;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.universe.Universe;
 import org.json.JSONObject;
@@ -40,7 +40,7 @@ public class RadixJsonRpcServerTest {
 		JSONObject request = new JSONObject();
 
 		RadixJsonRpcServer server = new RadixJsonRpcServer(
-			mock(ConsensusRunner.class),
+			mock(EpochManagerRunner.class),
 			mock(Serialization.class),
 			mock(LedgerEntryStore.class),
 			mock(AtomsService.class),
@@ -70,7 +70,7 @@ public class RadixJsonRpcServerTest {
 		when(serializer.toJsonObject(any(), any())).thenAnswer(i -> i.getArguments()[0]);
 
 		RadixJsonRpcServer server = new RadixJsonRpcServer(
-			mock(ConsensusRunner.class),
+			mock(EpochManagerRunner.class),
 			serializer,
 			mock(LedgerEntryStore.class),
 			mock(AtomsService.class),
@@ -90,7 +90,7 @@ public class RadixJsonRpcServerTest {
 	@Test
 	public void when_send_oversized_json_rpc_request_with__return_json_error_response() {
 		RadixJsonRpcServer server = new RadixJsonRpcServer(
-			mock(ConsensusRunner.class),
+			mock(EpochManagerRunner.class),
 			mock(Serialization.class),
 			mock(LedgerEntryStore.class),
 			mock(AtomsService.class),

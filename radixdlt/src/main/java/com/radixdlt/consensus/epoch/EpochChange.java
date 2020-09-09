@@ -17,10 +17,8 @@
 
 package com.radixdlt.consensus.epoch;
 
-import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.View;
 import java.util.Objects;
 
 /**
@@ -28,44 +26,29 @@ import java.util.Objects;
  */
 public final class EpochChange {
 	private final VerifiedLedgerHeaderAndProof proof;
-	private final BFTValidatorSet validatorSet;
+	private final BFTConfiguration bftConfiguration;
 
-	public EpochChange(VerifiedLedgerHeaderAndProof proof, BFTValidatorSet validatorSet) {
+	public EpochChange(VerifiedLedgerHeaderAndProof proof, BFTConfiguration bftConfiguration) {
 		this.proof = Objects.requireNonNull(proof);
-		this.validatorSet = Objects.requireNonNull(validatorSet);
+		this.bftConfiguration = Objects.requireNonNull(bftConfiguration);
+	}
+
+	public BFTConfiguration getBFTConfiguration() {
+		return bftConfiguration;
 	}
 
 	public long getEpoch() {
 		return proof.getEpoch() + 1;
 	}
 
-	public LedgerHeader getPrevLedgerState() {
-		return proof.getRaw();
-	}
-
-	public LedgerHeader getNextLedgerState() {
-		return LedgerHeader.create(
-			proof.getEpoch() + 1,
-			View.genesis(),
-			proof.getStateVersion(),
-			proof.getCommandId(),
-			proof.timestamp(),
-			false
-		);
-	}
-
 	public VerifiedLedgerHeaderAndProof getProof() {
 		return proof;
-	}
-
-	public BFTValidatorSet getValidatorSet() {
-		return validatorSet;
 	}
 
 	@Override
 	public String toString() {
 		return String.format(
-			"%s{proof=%s validatorSet=%s}", this.getClass().getSimpleName(), proof, validatorSet
+			"%s{proof=%s config=%s}", this.getClass().getSimpleName(), proof, bftConfiguration
 		);
 	}
 }

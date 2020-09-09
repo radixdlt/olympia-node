@@ -18,12 +18,12 @@
 package com.radixdlt.integration.distributed.deterministic;
 
 import com.google.common.collect.ImmutableList;
+import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.radixdlt.LedgerCommandGeneratorModule;
 import com.radixdlt.LedgerEpochChangeModule;
 import com.radixdlt.LedgerLocalMempoolModule;
 import com.radixdlt.LedgerModule;
-import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -46,8 +46,6 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.Random;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import java.util.function.LongFunction;
 import java.util.stream.IntStream;
@@ -144,7 +142,6 @@ public final class DeterministicTest {
 				? epoch -> completeEqualWeightValidatorSet(this.nodes)
 				: epoch -> partialMixedWeightValidatorSet(epoch, this.nodes, this.epochNodeWeightMapping);
 
-			ConcurrentMap<Long, Command> sharedCommittedCommands = new ConcurrentHashMap<>();
 			ImmutableList.Builder<Module> modules = ImmutableList.builder();
 			modules.add(new LedgerModule());
 			modules.add(new LedgerCommandGeneratorModule());
@@ -153,13 +150,19 @@ public final class DeterministicTest {
 
 			if (epochHighView == null) {
 				BFTValidatorSet validatorSet = validatorSetMapping.apply(1L);
-				modules.add(new MockedStateComputerModule(validatorSet));
+				modules.add(new AbstractModule() {
+					@Override
+					protected void configure() {
+						bind(BFTValidatorSet.class).toInstance(validatorSet);
+					}
+				});
+				modules.add(new MockedStateComputerModule());
 				modules.add(this.syncedExecutorModule);
 			} else {
 				// TODO: adapter from LongFunction<BFTValidatorSet> to Function<Long, BFTValidatorSet> shouldn't be needed
 				Function<Long, BFTValidatorSet> epochToValidatorSetMapping = validatorSetMapping::apply;
 				modules.add(new LedgerEpochChangeModule());
-				modules.add(new MockedSyncServiceModule(sharedCommittedCommands));
+				modules.add(new MockedSyncServiceModule());
 				modules.add(new MockedStateComputerWithEpochsModule(epochHighView, epochToValidatorSetMapping));
 			}
 			return new DeterministicTest(

@@ -36,7 +36,7 @@ public class ConsensusEventMessageSerializeTest extends SerializeMessageObject<C
 	}
 
 	private static ConsensusEventMessage get() {
-		LedgerHeader ledgerHeader = LedgerHeader.create(0, View.genesis(), 0, Hash.ZERO_HASH, 0L, false);
+		LedgerHeader ledgerHeader = LedgerHeader.genesis(Hash.ZERO_HASH);
 		BFTHeader header = new BFTHeader(View.of(1), Hash.ZERO_HASH, ledgerHeader);
 		BFTHeader parent = new BFTHeader(View.of(0), Hash.ZERO_HASH, ledgerHeader);
 		VoteData voteData = new VoteData(header, parent, null);

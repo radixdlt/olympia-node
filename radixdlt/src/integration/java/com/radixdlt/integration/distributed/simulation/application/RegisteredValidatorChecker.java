@@ -40,7 +40,7 @@ public class RegisteredValidatorChecker implements TestInvariant {
 		return registeringValidators
 			.flatMapMaybe(validator ->
 				network.latestEpochChanges()
-					.filter(epochChange -> epochChange.getValidatorSet().containsNode(validator))
+					.filter(epochChange -> epochChange.getBFTConfiguration().getValidatorSet().containsNode(validator))
 					.timeout(20, TimeUnit.SECONDS)
 					.firstOrError()
 					.ignoreElement()

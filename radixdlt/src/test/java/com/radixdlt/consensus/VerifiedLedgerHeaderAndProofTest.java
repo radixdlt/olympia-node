@@ -47,7 +47,7 @@ public class VerifiedLedgerHeaderAndProofTest {
 		LedgerHeader l0 = mock(LedgerHeader.class);
 		Hash commandId = mock(Hash.class);
 		View view = mock(View.class);
-		when(l0.getCommandId()).thenReturn(commandId);
+		when(l0.getAccumulator()).thenReturn(commandId);
 		when(l0.getEpoch()).thenReturn(3L);
 		when(l0.getStateVersion()).thenReturn(12345L);
 		when(l0.getView()).thenReturn(view);

@@ -22,9 +22,7 @@ import com.google.common.collect.Streams;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.addressbook.PeersAddedEvent;
@@ -46,11 +44,11 @@ import org.radix.universe.system.RadixSystem;
  * Temporary epoch management which given a fixed quorum size retrieves the first set of peers which
  * matches the size and used as the validator set.
  */
-public class AddressBookGenesisHeaderProvider {
+public class AddressBookGenesisValidatorSetProvider {
 	private static final Logger log = LogManager.getLogger();
 	private final Single<ImmutableList<BFTValidator>> validatorList;
 
-	public AddressBookGenesisHeaderProvider(
+	public AddressBookGenesisValidatorSetProvider(
 		ECPublicKey selfKey,
 		AddressBook addressBook,
 		int fixedNodeCount
@@ -86,17 +84,5 @@ public class AddressBookGenesisHeaderProvider {
 	public BFTValidatorSet getGenesisValidatorSet() {
 		ImmutableList<BFTValidator> validators = validatorList.blockingGet();
 		return BFTValidatorSet.from(validators);
-	}
-
-	public VerifiedLedgerHeaderAndProof getGenesisHeader() {
-		LedgerHeader ledgerHeader = LedgerHeader.create(0, View.genesis(), 0, Hash.ZERO_HASH, 0L, true);
-		BFTHeader header = BFTHeader.ofGenesisAncestor(ledgerHeader);
-		return new VerifiedLedgerHeaderAndProof(
-			header,
-			header,
-			0L,
-			Hash.ZERO_HASH, ledgerHeader,
-			new TimestampedECDSASignatures()
-		);
 	}
 }

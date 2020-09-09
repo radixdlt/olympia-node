@@ -43,7 +43,7 @@ public final class Proposal implements RequiresSyncConsensusEvent {
 
 	@JsonProperty("vertex")
 	@DsonOutput(Output.ALL)
-	private final Vertex vertex;
+	private final UnverifiedVertex vertex;
 
 	private final BFTNode author;
 
@@ -61,7 +61,7 @@ public final class Proposal implements RequiresSyncConsensusEvent {
 
 	@JsonCreator
 	Proposal(
-		@JsonProperty("vertex") Vertex vertex,
+		@JsonProperty("vertex") UnverifiedVertex vertex,
 		@JsonProperty("committedQC") QuorumCertificate committedQC,
 		@JsonProperty("author") byte[] author,
 		@JsonProperty("signature") ECDSASignature signature,
@@ -70,7 +70,7 @@ public final class Proposal implements RequiresSyncConsensusEvent {
 		this(vertex, committedQC, BFTNode.create(new ECPublicKey(author)), signature, payload);
 	}
 
-	public Proposal(Vertex vertex, QuorumCertificate committedQC, BFTNode author, ECDSASignature signature, long payload) {
+	public Proposal(UnverifiedVertex vertex, QuorumCertificate committedQC, BFTNode author, ECDSASignature signature, long payload) {
 		this.vertex = Objects.requireNonNull(vertex);
 		this.committedQC = committedQC;
 		this.author = Objects.requireNonNull(author);
@@ -80,7 +80,7 @@ public final class Proposal implements RequiresSyncConsensusEvent {
 
 	@Override
 	public long getEpoch() {
-		return vertex.getQC().getProposed().getLedgerState().getEpoch();
+		return vertex.getQC().getProposed().getLedgerHeader().getEpoch();
 	}
 
 	@Override
@@ -98,7 +98,7 @@ public final class Proposal implements RequiresSyncConsensusEvent {
 		return author;
 	}
 
-	public Vertex getVertex() {
+	public UnverifiedVertex getVertex() {
 		return vertex;
 	}
 

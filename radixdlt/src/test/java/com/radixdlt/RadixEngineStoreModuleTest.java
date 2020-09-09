@@ -31,6 +31,7 @@ import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
 import com.radixdlt.atommodel.Atom;
+import com.radixdlt.consensus.Hasher;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.properties.RuntimeProperties;
@@ -62,7 +63,7 @@ public class RadixEngineStoreModuleTest {
 			} catch (NextCommittedLimitReachedException e) {
 				throw new IllegalStateException();
 			}
-
+			bind(Hasher.class).toInstance(mock(Hasher.class));
 			bind(LedgerEntryStore.class).toInstance(ledgerEntryStore);
 			bind(ECKeyPair.class).annotatedWith(Names.named("self")).toInstance(ECKeyPair.generateNew());
 		}

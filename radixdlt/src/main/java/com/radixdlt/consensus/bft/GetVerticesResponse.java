@@ -17,7 +17,6 @@
 
 package com.radixdlt.consensus.bft;
 
-import com.radixdlt.consensus.Vertex;
 import com.radixdlt.crypto.Hash;
 import java.util.List;
 import java.util.Objects;
@@ -28,9 +27,9 @@ import java.util.Objects;
 public final class GetVerticesResponse {
 	private final Object opaque;
 	private final Hash vertexId;
-	private final List<Vertex> vertices;
+	private final List<VerifiedVertex> vertices;
 
-	public GetVerticesResponse(Hash vertexId, List<Vertex> vertices, Object opaque) {
+	public GetVerticesResponse(Hash vertexId, List<VerifiedVertex> vertices, Object opaque) {
 		this.vertexId = Objects.requireNonNull(vertexId);
 		this.vertices = Objects.requireNonNull(vertices);
 		this.opaque = opaque;
@@ -44,7 +43,7 @@ public final class GetVerticesResponse {
 		return vertexId;
 	}
 
-	public List<Vertex> getVertices() {
+	public List<VerifiedVertex> getVertices() {
 		return vertices;
 	}
 

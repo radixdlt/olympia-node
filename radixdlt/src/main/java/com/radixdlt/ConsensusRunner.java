@@ -15,22 +15,21 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
-
-import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.bft.VertexStore;
+package com.radixdlt;
 
 /**
- * A Vertex Store factory
+ * Runs the protocol for consensus as a validator node
+ * TODO: Use same interface for all high level modules
  */
-public interface VertexStoreFactory {
+public interface ConsensusRunner {
 
 	/**
-	 * Creates a new VertexStore given initial vertex and QC
-	 * @param genesisVertex the root vertex
-	 * @param genesisQC the root QC
-	 * @param ledger the underlying ledger
-	 * @return a new VertexStore
+	 * Start running consensus validation
 	 */
-	VertexStore create(VerifiedVertex genesisVertex, QuorumCertificate genesisQC, Ledger ledger);
+	void start();
+
+	/**
+	 * Stop running consensus validation
+	 */
+	void stop();
 }

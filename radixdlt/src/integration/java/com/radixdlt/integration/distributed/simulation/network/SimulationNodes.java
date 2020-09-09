@@ -24,9 +24,11 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.radixdlt.ConsensusModule;
+import com.radixdlt.ConsensusRxModule;
+import com.radixdlt.ConsensusRunner;
 import com.radixdlt.SystemInfoRxModule;
 import com.radixdlt.consensus.EpochChangeRx;
-import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.integration.distributed.simulation.MockedCryptoModule;
 import com.radixdlt.integration.distributed.simulation.SimulationNetworkModule;
@@ -34,7 +36,6 @@ import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.systeminfo.InfoRx;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.ConsensusRunner;
 
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
@@ -84,6 +85,7 @@ public class SimulationNodes {
 				}
 			},
 			new ConsensusModule(pacemakerTimeout),
+			new ConsensusRxModule(),
 			new SystemInfoRxModule(),
 			new MockedCryptoModule(),
 			new SimulationNetworkModule(getVerticesRPCEnabled, self, underlyingNetwork)
@@ -99,7 +101,7 @@ public class SimulationNodes {
 
 		Observable<EpochChange> latestEpochChanges();
 
-		Observable<Pair<BFTNode, Vertex>> committedVertices();
+		Observable<Pair<BFTNode, VerifiedVertex>> committedVertices();
 
 		Observable<Pair<BFTNode, VerifiedCommandsAndProof>> committedCommands();
 
@@ -147,8 +149,8 @@ public class SimulationNodes {
 			}
 
 			@Override
-			public Observable<Pair<BFTNode, Vertex>> committedVertices() {
-				Set<Observable<Pair<BFTNode, Vertex>>> committedVertices = nodeInstances.stream()
+			public Observable<Pair<BFTNode, VerifiedVertex>> committedVertices() {
+				Set<Observable<Pair<BFTNode, VerifiedVertex>>> committedVertices = nodeInstances.stream()
 					.map(i -> {
 						BFTNode node = i.getInstance(BFTNode.class);
 						return i.getInstance(InfoRx.class).committedVertices()

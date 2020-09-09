@@ -21,7 +21,7 @@ import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.RequiresSyncConsensusEvent;
-import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.SyncQueues.SyncQueue;
 import com.radixdlt.consensus.liveness.PacemakerState;
@@ -168,7 +168,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	private boolean processProposalInternal(Proposal proposal) {
 		log.trace("{}: PROPOSAL: PreProcessing {}", this.self::getSimpleName, () -> proposal);
 
-		final Vertex proposedVertex = proposal.getVertex();
+		final UnverifiedVertex proposedVertex = proposal.getVertex();
 		final View proposedVertexView = proposedVertex.getView();
 		final View currentView = this.pacemakerState.getCurrentView();
 		if (proposedVertexView.compareTo(currentView) < 0) {

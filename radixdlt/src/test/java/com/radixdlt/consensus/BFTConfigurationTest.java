@@ -17,28 +17,23 @@
 
 package com.radixdlt.consensus;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.bft.View;
-import nl.jqno.equalsverifier.EqualsVerifier;
-
 import org.junit.Test;
 
-public class QuorumCertificateTest {
+public class BFTConfigurationTest {
 	@Test
-	public void when_create_genesis_qc_with_non_genesis_vertex__then_should_throw_exception() {
+	public void testGetters() {
+		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		VerifiedVertex vertex = mock(VerifiedVertex.class);
-		when(vertex.getView()).thenReturn(View.of(1));
-		assertThatThrownBy(() -> QuorumCertificate.ofGenesis(vertex, mock(LedgerHeader.class)))
-			.isInstanceOf(IllegalArgumentException.class);
-	}
+		QuorumCertificate qc = mock(QuorumCertificate.class);
 
-	@Test
-	public void equalsContract() {
-		EqualsVerifier.forClass(QuorumCertificate.class)
-			.verify();
+		BFTConfiguration bftConfiguration = new BFTConfiguration(validatorSet, vertex, qc);
+		assertThat(bftConfiguration.getValidatorSet()).isEqualTo(validatorSet);
+		assertThat(bftConfiguration.getGenesisVertex()).isEqualTo(vertex);
+		assertThat(bftConfiguration.getGenesisQC()).isEqualTo(qc);
 	}
 }

@@ -27,6 +27,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
+import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -58,7 +59,9 @@ public class RadixEngineModuleTest {
 			BFTValidator validator2 = mock(BFTValidator.class);
 			when(validator2.getNode()).thenReturn(BFTNode.create(ECKeyPair.generateNew().getPublicKey()));
 			when(validatorSet.getValidators()).thenReturn(ImmutableSet.of(validator1, validator2));
-			bind(BFTValidatorSet.class).toInstance(validatorSet);
+			BFTConfiguration configuration = mock(BFTConfiguration.class);
+			when(configuration.getValidatorSet()).thenReturn(validatorSet);
+			bind(BFTConfiguration.class).toInstance(configuration);
 		}
 	}
 

@@ -23,9 +23,13 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.middleware2.LedgerAtom;
@@ -33,15 +37,9 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.CommittedCommandsReader;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
-import java.util.Objects;
 
 public class MockedRadixEngineStoreModule extends AbstractModule {
-	private final BFTValidatorSet validatorSet;
-
-	public MockedRadixEngineStoreModule(BFTValidatorSet validatorSet) {
-		this.validatorSet = Objects.requireNonNull(validatorSet);
-	}
-
+	@Override
 	public void configure() {
 		bind(CommittedCommandsReader.class).toInstance((stateVersion, limit) -> {
 			throw new UnsupportedOperationException();
@@ -53,13 +51,23 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 	}
 
 	@Provides
-	private BFTValidatorSet genesisValidatorSet() {
-		return validatorSet;
+	private BFTConfiguration configuration(VerifiedLedgerHeaderAndProof proof, BFTValidatorSet validatorSet) {
+		LedgerHeader nextLedgerHeader = LedgerHeader.create(
+			proof.getEpoch() + 1,
+			View.genesis(),
+			proof.getStateVersion(),
+			proof.getCommandId(),
+			proof.timestamp(),
+			false
+		);
+		UnverifiedVertex genesis = UnverifiedVertex.createGenesis(nextLedgerHeader);
+		VerifiedVertex verifiedGenesis = new VerifiedVertex(genesis, Hash.ZERO_HASH);
+		QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesis, nextLedgerHeader);
+		return new BFTConfiguration(validatorSet, verifiedGenesis, genesisQC);
 	}
 
 	@Provides
 	public VerifiedLedgerHeaderAndProof genesisVertexMetadata() {
-		final LedgerHeader ledgerHeader = LedgerHeader.create(0, View.genesis(), 0, Hash.ZERO_HASH, 0, true);
-		return VerifiedLedgerHeaderAndProof.ofGenesisAncestor(ledgerHeader);
+		return VerifiedLedgerHeaderAndProof.genesis(Hash.ZERO_HASH);
 	}
 }

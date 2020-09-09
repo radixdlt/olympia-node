@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,18 +15,15 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt;
 
-import com.radixdlt.DefaultSerialization;
-import com.radixdlt.crypto.Hash;
-import com.radixdlt.serialization.DsonOutput.Output;
+import com.google.inject.AbstractModule;
+import com.google.inject.Scopes;
+import com.radixdlt.consensus.EpochManagerRunner;
 
-/**
- * Hasher which uses the default dson serialization in order to construct hashes of objects.
- */
-public final class DefaultHasher implements Hasher {
+public class ConsensusRunnerModule extends AbstractModule {
 	@Override
-	public Hash hash(Object o) {
-		return Hash.of(DefaultSerialization.getInstance().toDson(o, Output.HASH));
+	public void configure() {
+		bind(ConsensusRunner.class).to(EpochManagerRunner.class).in(Scopes.SINGLETON);
 	}
 }

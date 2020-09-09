@@ -19,10 +19,14 @@ package com.radixdlt.integration.distributed.simulation;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.radixdlt.consensus.BFTConfiguration;
+import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
@@ -44,21 +48,36 @@ public class MockedStateComputerWithEpochsModule extends AbstractModule {
 	}
 
 	@Provides
-	private BFTValidatorSet genesisValidatorSet() {
-		return validatorSetMapping.apply(1L);
+	private BFTConfiguration initialConfiguration(VerifiedLedgerHeaderAndProof proof, Hasher hasher) {
+		UnverifiedVertex genesisVertex = UnverifiedVertex.createGenesis(proof.getRaw());
+		VerifiedVertex verifiedGenesisVertex = new VerifiedVertex(genesisVertex, hasher.hash(genesisVertex));
+		LedgerHeader nextLedgerHeader = LedgerHeader.create(
+			proof.getEpoch() + 1,
+			View.genesis(),
+			proof.getStateVersion(),
+			proof.getCommandId(),
+			proof.timestamp(),
+			false
+		);
+		QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
+		BFTValidatorSet validatorSet = validatorSetMapping.apply(1L);
+		return new BFTConfiguration(
+			validatorSet,
+			verifiedGenesisVertex,
+			genesisQC
+		);
 	}
 
 	@Provides
-	private VerifiedLedgerHeaderAndProof genesisMetadata() {
-		LedgerHeader ledgerHeader = LedgerHeader.create(0, View.genesis(), 0, Hash.ZERO_HASH, 0L, true);
-		return VerifiedLedgerHeaderAndProof.ofGenesisAncestor(ledgerHeader);
+	private VerifiedLedgerHeaderAndProof genesisProof() {
+		return VerifiedLedgerHeaderAndProof.genesis(Hash.ZERO_HASH);
 	}
 
 	@Provides
 	private StateComputer stateComputer() {
 		return new StateComputer() {
 			@Override
-			public boolean prepare(Vertex vertex) {
+			public boolean prepare(VerifiedVertex vertex) {
 				return vertex.getView().compareTo(epochHighView) >= 0;
 			}
 

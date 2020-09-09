@@ -28,14 +28,15 @@ import com.radixdlt.consensus.sync.SyncRequestSender;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.ledger.StateComputerLedger.CommittedSender;
 import com.radixdlt.sync.LocalSyncRequest;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.LongStream;
 
 public class MockedSyncServiceModule extends AbstractModule {
 	private final ConcurrentMap<Long, Command> sharedCommittedCommands;
 
-	public MockedSyncServiceModule(ConcurrentMap<Long, Command> sharedCommittedCommands) {
-		this.sharedCommittedCommands = sharedCommittedCommands;
+	public MockedSyncServiceModule() {
+		this.sharedCommittedCommands = new ConcurrentHashMap<>();
 	}
 
 	@ProvidesIntoSet

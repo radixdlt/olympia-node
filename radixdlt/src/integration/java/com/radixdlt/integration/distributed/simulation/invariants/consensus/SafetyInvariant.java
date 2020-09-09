@@ -17,7 +17,7 @@
 
 package com.radixdlt.integration.distributed.simulation.invariants.consensus;
 
-import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
  */
 public class SafetyInvariant implements TestInvariant {
 
-	private static Observable<TestInvariantError> conflictingVerticesError(Vertex vertex, Vertex currentVertex) {
+	private static Observable<TestInvariantError> conflictingVerticesError(VerifiedVertex vertex, VerifiedVertex currentVertex) {
 		return Observable.just(
 			new TestInvariantError(
 				String.format("Conflicting vertices [%s, %s] committed at same view: %s",
@@ -49,7 +49,7 @@ public class SafetyInvariant implements TestInvariant {
 		);
 	}
 
-	private static Observable<TestInvariantError> brokenChainError(Vertex vertex, Vertex closeVertex) {
+	private static Observable<TestInvariantError> brokenChainError(VerifiedVertex vertex, VerifiedVertex closeVertex) {
 		return Observable.just(
 			new TestInvariantError(
 				String.format("Broken Chain [%s, %s]",
@@ -62,7 +62,7 @@ public class SafetyInvariant implements TestInvariant {
 
 	@Override
 	public Observable<TestInvariantError> check(RunningNetwork network) {
-		final TreeMap<EpochView, Vertex> committedVertices = new TreeMap<>();
+		final TreeMap<EpochView, VerifiedVertex> committedVertices = new TreeMap<>();
 		final Map<BFTNode, EpochView> lastCommittedByNode = new HashMap<>();
 
 		return Observable.merge(
@@ -72,29 +72,29 @@ public class SafetyInvariant implements TestInvariant {
 		)
 			.flatMap(nodeAndVertex -> {
 				final BFTNode node = nodeAndVertex.getFirst();
-				final Vertex vertex = nodeAndVertex.getSecond();
+				final VerifiedVertex vertex = nodeAndVertex.getSecond();
 				final EpochView epochView = EpochView.of(
-					vertex.getQC().getProposed().getLedgerState().getEpoch(),
+					vertex.getParentHeader().getLedgerHeader().getEpoch(),
 					vertex.getView()
 				);
 
-				final Vertex currentVertexAtView = committedVertices.get(epochView);
+				final VerifiedVertex currentVertexAtView = committedVertices.get(epochView);
 				if (currentVertexAtView != null) {
 					if (!currentVertexAtView.getId().equals(vertex.getId())) {
 						return conflictingVerticesError(vertex, currentVertexAtView);
 					}
 				} else {
 					EpochView parentEpochView = EpochView.of(
-						vertex.getQC().getProposed().getLedgerState().getEpoch(),
+						vertex.getParentHeader().getLedgerHeader().getEpoch(),
 						vertex.getParentHeader().getView()
 					);
-					Vertex parent = committedVertices.get(parentEpochView);
+					VerifiedVertex parent = committedVertices.get(parentEpochView);
 					if (parent == null) {
-						Entry<EpochView, Vertex> higherCommitted = committedVertices.higherEntry(parentEpochView);
+						Entry<EpochView, VerifiedVertex> higherCommitted = committedVertices.higherEntry(parentEpochView);
 						if (higherCommitted != null) {
 							BFTHeader higherParentHeader = higherCommitted.getValue().getParentHeader();
 							EpochView higherCommittedParentEpochView = EpochView.of(
-								higherParentHeader.getLedgerState().getEpoch(),
+								higherParentHeader.getLedgerHeader().getEpoch(),
 								higherParentHeader.getView()
 							);
 							if (epochView.compareTo(higherCommittedParentEpochView) > 0) {

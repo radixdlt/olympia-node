@@ -53,7 +53,7 @@ public class LivenessInvariant implements TestInvariant {
 				.map(network::getInfo)
 				.map(eventsRx -> eventsRx.highQCs()
 					.map(QuorumCertificate::getProposed)
-					.map(header -> EpochView.of(header.getLedgerState().getEpoch(), header.getView()))
+					.map(header -> EpochView.of(header.getLedgerHeader().getEpoch(), header.getView()))
 				)
 				.collect(Collectors.toList())
 		).scan(EpochView.of(0, View.genesis()), Ordering.natural()::max);

@@ -17,7 +17,15 @@
 
 package com.radixdlt.ledger;
 
+import com.radixdlt.consensus.BFTConfiguration;
+import com.radixdlt.consensus.Hasher;
+import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.UnverifiedVertex;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.VerifiedVertex;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.ledger.StateComputerLedger.CommittedSender;
 import java.util.Objects;
@@ -27,15 +35,30 @@ import java.util.Objects;
  */
 public final class EpochChangeManager implements CommittedSender {
 	private final EpochChangeSender epochChangeSender;
+	private final Hasher hasher;
 
-	public EpochChangeManager(EpochChangeSender epochChangeSender) {
+	public EpochChangeManager(EpochChangeSender epochChangeSender, Hasher hasher) {
 		this.epochChangeSender = Objects.requireNonNull(epochChangeSender);
+		this.hasher = Objects.requireNonNull(hasher);
 	}
 
 	@Override
-	public void sendCommitted(VerifiedCommandsAndProof committedCommand, BFTValidatorSet validatorSet) {
+	public void sendCommitted(VerifiedCommandsAndProof commandsAndProof, BFTValidatorSet validatorSet) {
 		if (validatorSet != null) {
-			EpochChange epochChange = new EpochChange(committedCommand.getHeader(), validatorSet);
+			VerifiedLedgerHeaderAndProof proof = commandsAndProof.getHeader();
+			UnverifiedVertex genesisVertex = UnverifiedVertex.createGenesis(commandsAndProof.getHeader().getRaw());
+			VerifiedVertex verifiedGenesisVertex = new VerifiedVertex(genesisVertex, hasher.hash(genesisVertex));
+			LedgerHeader nextLedgerHeader = LedgerHeader.create(
+				proof.getEpoch() + 1,
+				View.genesis(),
+				proof.getStateVersion(),
+				proof.getCommandId(),
+				proof.timestamp(),
+				false
+			);
+			QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
+			BFTConfiguration bftConfiguration = new BFTConfiguration(validatorSet, verifiedGenesisVertex, genesisQC);
+			EpochChange epochChange = new EpochChange(proof, bftConfiguration);
 			this.epochChangeSender.epochChange(epochChange);
 		}
 	}

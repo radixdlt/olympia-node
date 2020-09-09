@@ -19,20 +19,18 @@ package com.radixdlt.consensus.epoch;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.name.Named;
+import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.EmptyVertexStoreEventProcessor;
-import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.ProposerElectionFactory;
-import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexStoreEventProcessor;
 import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.bft.View;
@@ -164,56 +162,53 @@ public final class EpochManager {
 	}
 
 	private void updateEpochState() {
-		BFTValidatorSet validatorSet = this.currentEpoch.getValidatorSet();
-
-		final BFTEventProcessor bftEventProcessor;
-		final VertexStoreEventProcessor vertexStoreEventProcessor;
-
+		BFTConfiguration config = this.currentEpoch.getBFTConfiguration();
+		BFTValidatorSet validatorSet = config.getValidatorSet();
 		if (!validatorSet.containsNode(self)) {
 			logEpochChange(this.currentEpoch, "excluded from");
-			bftEventProcessor =  EmptyBFTEventProcessor.INSTANCE;
-			vertexStoreEventProcessor = EmptyVertexStoreEventProcessor.INSTANCE;
-		} else {
-			LedgerHeader nextLedgerHeader = this.currentEpoch.getNextLedgerState();
-			final long nextEpoch = nextLedgerHeader.getEpoch();
-			logEpochChange(this.currentEpoch, "included in");
-
-			ProposerElection proposerElection = proposerElectionFactory.create(validatorSet);
-			TimeoutSender sender = (view, ms) -> localTimeoutSender.scheduleTimeout(new LocalTimeout(nextEpoch, view), ms);
-			Pacemaker pacemaker = pacemakerFactory.create(sender);
-
-			// TODO: Recover VertexStore
-			Vertex genesisVertex = Vertex.createGenesis(this.currentEpoch.getPrevLedgerState());
-			QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(genesisVertex, nextLedgerHeader);
-			VertexStore vertexStore = vertexStoreFactory.create(genesisVertex, genesisQC, ledger);
-			vertexStoreEventProcessor = vertexStore;
-
-			BFTInfoSender infoSender = new BFTInfoSender() {
-				@Override
-				public void sendCurrentView(View view) {
-					epochInfoSender.sendCurrentView(EpochView.of(nextEpoch, view));
-				}
-
-				@Override
-				public void sendTimeoutProcessed(View view, BFTNode leader) {
-					Timeout timeout = new Timeout(EpochView.of(nextEpoch, view), leader);
-					epochInfoSender.sendTimeoutProcessed(timeout);
-				}
-			};
-
-			bftEventProcessor = bftFactory.create(
-				this::processEndOfEpoch,
-				pacemaker,
-				vertexStore,
-				proposerElection,
-				validatorSet,
-				infoSender
-			);
+			this.bftEventProcessor =  EmptyBFTEventProcessor.INSTANCE;
+			this.vertexStoreEventProcessor = EmptyVertexStoreEventProcessor.INSTANCE;
+			return;
 		}
 
-		// Update processors
-		this.bftEventProcessor = bftEventProcessor;
-		this.vertexStoreEventProcessor = vertexStoreEventProcessor;
+		final long nextEpoch = this.currentEpoch.getEpoch();
+		logEpochChange(this.currentEpoch, "included in");
+
+		ProposerElection proposerElection = proposerElectionFactory.create(validatorSet);
+		TimeoutSender sender = (view, ms) -> localTimeoutSender.scheduleTimeout(new LocalTimeout(nextEpoch, view), ms);
+		Pacemaker pacemaker = pacemakerFactory.create(sender);
+
+		// TODO: Recover VertexStore
+		BFTConfiguration bftConfiguration = this.currentEpoch.getBFTConfiguration();
+		VertexStore vertexStore = vertexStoreFactory.create(
+			bftConfiguration.getGenesisVertex(),
+			bftConfiguration.getGenesisQC(),
+			ledger
+		);
+		this.vertexStoreEventProcessor = vertexStore;
+
+		BFTInfoSender infoSender = new BFTInfoSender() {
+			@Override
+			public void sendCurrentView(View view) {
+				epochInfoSender.sendCurrentView(EpochView.of(nextEpoch, view));
+			}
+
+			@Override
+			public void sendTimeoutProcessed(View view, BFTNode leader) {
+				Timeout timeout = new Timeout(EpochView.of(nextEpoch, view), leader);
+				epochInfoSender.sendTimeoutProcessed(timeout);
+			}
+		};
+
+		this.bftEventProcessor = bftFactory.create(
+			self,
+			this::processEndOfEpoch,
+			pacemaker,
+			vertexStore,
+			proposerElection,
+			validatorSet,
+			infoSender
+		);
 	}
 
 	public void start() {
@@ -237,7 +232,7 @@ public final class EpochManager {
 		// TODO: Move this into when lastConstructed is set
 		if (lastConstructed != null && lastConstructed.getEpoch() == epochChange.getEpoch() - 1) {
 			log.info("{}: EPOCH_CHANGE: broadcasting next epoch", this.self);
-			BFTValidatorSet validatorSet = epochChange.getValidatorSet();
+			BFTValidatorSet validatorSet = epochChange.getBFTConfiguration().getValidatorSet();
 			for (BFTValidator validator : validatorSet.getValidators()) {
 				if (!validator.getNode().equals(self)) {
 					epochsRPCSender.sendGetEpochResponse(validator.getNode(), epochChange.getProof());
@@ -264,12 +259,13 @@ public final class EpochManager {
 		if (log.isInfoEnabled()) {
 			// Reduce complexity of epoch change log message, and make it easier to correlate with
 			// other logs.  Size reduced from circa 6Kib to approx 1Kib over ValidatorSet.toString().
+			BFTConfiguration configuration = epochChange.getBFTConfiguration();
 			StringBuilder epochMessage = new StringBuilder(this.self.getSimpleName());
 			epochMessage.append(": EPOCH_CHANGE: ");
 			epochMessage.append(message);
 			epochMessage.append(" new epoch ").append(epochChange.getEpoch());
-			epochMessage.append(" with ").append(epochChange.getValidatorSet().getValidators().size()).append(" validators: ");
-			Iterator<BFTValidator> i = epochChange.getValidatorSet().getValidators().iterator();
+			epochMessage.append(" with ").append(configuration.getValidatorSet().getValidators().size()).append(" validators: ");
+			Iterator<BFTValidator> i = configuration.getValidatorSet().getValidators().iterator();
 			if (i.hasNext()) {
 				appendValidator(epochMessage, i.next());
 				while (i.hasNext()) {

@@ -24,7 +24,7 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.sync.SyncRequestSender;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
@@ -43,7 +43,7 @@ public class DeterministicAlwaysSyncedLedgerModule extends AbstractModule {
 	Ledger syncedExecutor() {
 		return new Ledger() {
 			@Override
-			public LedgerHeader prepare(Vertex vertex) {
+			public LedgerHeader prepare(VerifiedVertex vertex) {
 				return LedgerHeader.create(
 					0,
 					vertex.getView(),

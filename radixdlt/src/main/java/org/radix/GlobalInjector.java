@@ -24,6 +24,8 @@ import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.name.Names;
 import com.radixdlt.ConsensusModule;
+import com.radixdlt.ConsensusRunnerModule;
+import com.radixdlt.ConsensusRxModule;
 import com.radixdlt.CryptoModule;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.LedgerCommandGeneratorModule;
@@ -102,6 +104,8 @@ public class GlobalInjector {
 			// Consensus
 			new CryptoModule(),
 			new ConsensusModule(pacemakerTimeout),
+			new ConsensusRxModule(),
+			new ConsensusRunnerModule(),
 
 			// Ledger
 			new LedgerModule(),

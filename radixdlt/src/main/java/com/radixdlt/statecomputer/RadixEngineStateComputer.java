@@ -21,8 +21,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
@@ -118,7 +118,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	}
 
 	@Override
-	public boolean prepare(Vertex vertex) {
+	public boolean prepare(VerifiedVertex vertex) {
 		return vertex.getView().compareTo(epochChangeView) >= 0;
 	}
 

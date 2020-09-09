@@ -23,7 +23,6 @@ import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.BFTHeader;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.identifiers.RadixAddress;
@@ -52,7 +51,7 @@ public class CommittedAtomSerializeTest extends SerializeObject<CommittedAtom> {
 			throw new IllegalStateException();
 		}
 
-		LedgerHeader ledgerHeader = LedgerHeader.create(0, View.genesis(), 0, Hash.random(), 0L, false);
+		LedgerHeader ledgerHeader = LedgerHeader.genesis(Hash.ZERO_HASH);
 		VerifiedLedgerHeaderAndProof proof = new VerifiedLedgerHeaderAndProof(
 			BFTHeader.ofGenesisAncestor(ledgerHeader),
 			BFTHeader.ofGenesisAncestor(ledgerHeader),
