@@ -148,7 +148,6 @@ jmh {
 
 // More warnings
 tasks.withType(JavaCompile) {
-    dependsOn 'versionFile'
     options.compilerArgs << '-proc:none'
     options.compilerArgs << '-Xlint:deprecation'
     //options.compilerArgs << '-Xlint:unchecked' // Way too many of these at the moment
