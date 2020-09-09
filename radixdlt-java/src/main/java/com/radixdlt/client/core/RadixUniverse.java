@@ -80,7 +80,6 @@ import java.util.Set;
  */
 public final class RadixUniverse {
 
-
 	public static RadixUniverse create(BootstrapConfig bootstrapConfig) {
 		return create(
 			bootstrapConfig.getConfig(),
@@ -223,29 +222,27 @@ public final class RadixUniverse {
 
 	/**
 	 * Retrieves the fee table for this universe.
-	 * @return The ffee table for the universe.
+	 * @return The fee table for the universe.
 	 */
 	public FeeTable feeTable() {
-		// WARNING: There is a duplicate fee table in TokenFeeMapper in core.  If you update this
+		// WARNING: There is a duplicate fee table in TokenFeeModule in core.  If you update this
 		// fee table, you will need to change the one there also.
 		ImmutableList<FeeEntry> feeEntries = ImmutableList.of(
-			// 2 rad cents per kilobyte beyond the first one
-			PerBytesFeeEntry.of(1024,  0, radCents(2L)),
-			// 10,000 rad cents per 10kb beyond the first one
-			PerBytesFeeEntry.of(10240, 0, radCents(1000L)),
-			// 100 rad cents per fixed supply token definition
-			PerParticleFeeEntry.of(FixedSupplyTokenDefinitionParticle.class, 0, radCents(100L)),
-			// 100 rad cents per mutable supply token definition
-			PerParticleFeeEntry.of(MutableSupplyTokenDefinitionParticle.class, 0, radCents(100L))
+			// 1 millirad per byte after the first three kilobytes
+			PerBytesFeeEntry.of(1,  3072, milliRads(1L)),
+			// 1,000 millirads per fixed supply token definition
+			PerParticleFeeEntry.of(FixedSupplyTokenDefinitionParticle.class, 0, milliRads(1000L)),
+			// 1,000 millirads per mutable supply token definition
+			PerParticleFeeEntry.of(MutableSupplyTokenDefinitionParticle.class, 0, milliRads(1000L))
 		);
 
-		// Minimum fee of 4 rad cents
-		return FeeTable.from(radCents(4L), feeEntries);
+		// Minimum fee of 40 millirads
+		return FeeTable.from(milliRads(40L), feeEntries);
 	}
 
-	private static UInt256 radCents(long count) {
-		// 1 count is 10^{-2} rads, so we subtract that from the sub-units power
+	private static UInt256 milliRads(long count) {
+		// 1 count is 10^{-3} rads, so we subtract that from the sub-units power
 		// No risk of overflow here, as 10^18 is approx 60 bits, plus 64 bits of count will not exceed 256 bits
-		return UInt256.TEN.pow(TokenUnitConversions.getTokenScale() - 2).multiply(UInt256.from(count));
+		return UInt256.TEN.pow(TokenUnitConversions.getTokenScale() - 3).multiply(UInt256.from(count));
 	}
 }

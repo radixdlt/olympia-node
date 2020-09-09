@@ -977,7 +977,7 @@ public class RadixApplicationAPI {
 		List<ParticleGroup> allParticleGroups = new ArrayList<>(particleGroups);
 		Map<String, String> metaData = new HashMap<>();
 		Atom atom = Atom.create(particleGroups, metaData);
-		Pair<Map<String, String>, List<ParticleGroup>> fee = this.feeMapper.map(this, atom);
+		Pair<Map<String, String>, List<ParticleGroup>> fee = this.feeMapper.map(this::actionProcessor, this.getAddress(), atom);
 		allParticleGroups.addAll(fee.getSecond());
 		metaData.putAll(fee.getFirst());
 
@@ -1087,6 +1087,12 @@ public class RadixApplicationAPI {
 	 */
 	public Observable<RadixNodeAction> getNetworkActions() {
 		return this.universe.getNetworkController().getActions();
+	}
+
+	private List<ParticleGroup> actionProcessor(Action action) {
+		Transaction t = createTransaction();
+		t.stage(action);
+		return t.buildParticleGroups();
 	}
 
 	public static class Result {
@@ -1346,10 +1352,11 @@ public class RadixApplicationAPI {
 
 		/**
 		 * Gets a list of staged particle groups.
+		 * No fees are added to the particle groups.
 		 *
 		 * @return The list of staged particle groups for this transaction
 		 */
-		public List<ParticleGroup> getStagedAndClear() {
+		public List<ParticleGroup> buildParticleGroups() {
 			return universe.getAtomStore().getStagedAndClear(uuid);
 		}
 

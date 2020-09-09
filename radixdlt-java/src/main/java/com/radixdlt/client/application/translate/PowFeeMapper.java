@@ -24,10 +24,10 @@ package com.radixdlt.client.application.translate;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.core.pow.ProofOfWork;
 import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
 import com.radixdlt.utils.Pair;
@@ -54,7 +54,7 @@ public class PowFeeMapper implements FeeMapper {
 	}
 
 	@Override
-	public Pair<Map<String, String>, List<ParticleGroup>> map(RadixApplicationAPI api, Atom atom) {
+	public Pair<Map<String, String>, List<ParticleGroup>> map(ActionProcessor actionProcessor, RadixAddress address, Atom atom) {
 		final byte[] seed = this.hasher.apply(atom).toByteArray();
 		ProofOfWork pow = this.powBuilder.build(universeMagic, seed, LEADING);
 
