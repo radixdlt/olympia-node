@@ -24,16 +24,24 @@ import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.utils.UInt256;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 public class MockedBFTConfigurationModule extends AbstractModule {
+
 	@Provides
-	Function<BFTNode, BFTConfiguration> config() {
+	Function<BFTNode, BFTConfiguration> config(Stream<BFTNode> nodes) {
+		BFTValidatorSet validatorSet = BFTValidatorSet.from(nodes.map(node -> BFTValidator.from(node, UInt256.ONE)));
 		UnverifiedVertex genesis = UnverifiedVertex.createGenesis(LedgerHeader.genesis(Hash.ZERO_HASH));
 		VerifiedVertex hashedGenesis = new VerifiedVertex(genesis, Hash.ZERO_HASH);
+
 		return node -> new BFTConfiguration(
+			validatorSet,
 			hashedGenesis,
 			QuorumCertificate.ofGenesis(hashedGenesis, LedgerHeader.genesis(Hash.ZERO_HASH))
 		);

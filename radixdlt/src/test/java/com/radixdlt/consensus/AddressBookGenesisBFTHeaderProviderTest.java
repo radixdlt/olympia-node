@@ -35,7 +35,7 @@ public class AddressBookGenesisBFTHeaderProviderTest {
 		ECPublicKey self = mock(ECPublicKey.class);
 		when(self.euid()).thenReturn(EUID.ONE);
 		AddressBook addressBook = mock(AddressBook.class);
-		AddressBookGenesisHeaderProvider validatorSetProvider = new AddressBookGenesisHeaderProvider(
+		AddressBookGenesisValidatorSetProvider validatorSetProvider = new AddressBookGenesisValidatorSetProvider(
 			self,
 			addressBook,
 			1

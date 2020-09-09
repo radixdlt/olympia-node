@@ -74,10 +74,6 @@ public final class VerifiedVertex {
 		return vertex.getQC();
 	}
 
-	public UnverifiedVertex getVertex() {
-		return vertex;
-	}
-
 	public Hash getId() {
 		return id;
 	}
@@ -86,4 +82,8 @@ public final class VerifiedVertex {
 		return vertex.getQC().getProposed().getVertexId();
 	}
 
+	@Override
+	public String toString() {
+		return String.format("%s{view=%s id=%s}", this.getClass().getSimpleName(), this.vertex.getView(), this.id);
+	}
 }

@@ -29,8 +29,6 @@ import com.radixdlt.consensus.VertexStoreEventProcessor;
 import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.View;
@@ -49,9 +47,7 @@ import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.sync.SyncRequestSender;
 import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.utils.UInt256;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 public class MockedLedgerModule extends AbstractModule {
 	@Override
@@ -60,11 +56,6 @@ public class MockedLedgerModule extends AbstractModule {
 		bind(SyncRequestSender.class).toInstance(req -> { });
 		bind(ModuleRunner.class).to(BFTRunner.class).in(Scopes.SINGLETON);
 		bind(VertexStoreEventProcessor.class).to(VertexStore.class).in(Scopes.SINGLETON);
-	}
-
-	@Provides
-	BFTValidatorSet validatorSet(Stream<BFTNode> nodes) {
-		return BFTValidatorSet.from(nodes.map(node -> BFTValidator.from(node, UInt256.ONE)));
 	}
 
 	@Provides
@@ -97,11 +88,11 @@ public class MockedLedgerModule extends AbstractModule {
 	@Singleton
 	public BFTEventProcessor eventProcessor(
 		BFTNode self,
+		Function<BFTNode, BFTConfiguration> config,
 		BFTFactory bftFactory,
 		PacemakerFactory pacemakerFactory,
 		VertexStore vertexStore,
 		ProposerElectionFactory proposerElectionFactory,
-		BFTValidatorSet validatorSet,
 		LocalTimeoutSender localTimeoutSender,
 		BFTInfoSender infoSender
 	) {
@@ -110,8 +101,8 @@ public class MockedLedgerModule extends AbstractModule {
 			header -> { },
 			pacemakerFactory.create((view, ms) -> localTimeoutSender.scheduleTimeout(new LocalTimeout(1, view), ms)),
 			vertexStore,
-			proposerElectionFactory.create(validatorSet),
-			validatorSet,
+			proposerElectionFactory.create(config.apply(self).getValidatorSet()),
+			config.apply(self).getValidatorSet(),
 			infoSender
 		);
 	}

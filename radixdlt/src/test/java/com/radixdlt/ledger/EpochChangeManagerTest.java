@@ -17,25 +17,30 @@
 
 package com.radixdlt.ledger;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.crypto.Hash;
 import org.junit.Before;
 import org.junit.Test;
 
 public class EpochChangeManagerTest {
 	private EpochChangeManager epochChangeManager;
 	private EpochChangeSender sender;
+	private Hasher hasher;
 
 	@Before
 	public void setup() {
-		sender = mock(EpochChangeSender.class);
-		epochChangeManager = new EpochChangeManager(sender);
+		this.sender = mock(EpochChangeSender.class);
+		this.hasher = mock(Hasher.class);
+		epochChangeManager = new EpochChangeManager(sender, hasher);
 	}
 
 	@Test
@@ -48,12 +53,17 @@ public class EpochChangeManagerTest {
 		when(proof.isEndOfEpoch()).thenReturn(true);
 		when(proof.getStateVersion()).thenReturn(1234L);
 		when(cmd.getHeader()).thenReturn(proof);
+		when(hasher.hash(any())).thenReturn(mock(Hash.class));
 
 		epochChangeManager.sendCommitted(cmd, validatorSet);
 
 		verify(sender, times(1))
 			.epochChange(
-				argThat(e -> e.getProof().equals(proof) && e.getValidatorSet().equals(validatorSet))
+				argThat(e -> e.getProof().equals(proof)
+					&& e.getBFTConfiguration().getValidatorSet().equals(validatorSet)
+					&& e.getEpoch() == 124L
+					&& e.getBFTConfiguration().getGenesisVertex().getView().isGenesis()
+				)
 			);
 	}
 }

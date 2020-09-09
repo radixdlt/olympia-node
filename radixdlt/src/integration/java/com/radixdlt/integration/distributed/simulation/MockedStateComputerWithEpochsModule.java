@@ -19,6 +19,11 @@ package com.radixdlt.integration.distributed.simulation;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.radixdlt.consensus.BFTConfiguration;
+import com.radixdlt.consensus.Hasher;
+import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertex;
@@ -43,12 +48,28 @@ public class MockedStateComputerWithEpochsModule extends AbstractModule {
 	}
 
 	@Provides
-	private BFTValidatorSet genesisValidatorSet() {
-		return validatorSetMapping.apply(1L);
+	private BFTConfiguration initialConfiguration(VerifiedLedgerHeaderAndProof proof, Hasher hasher) {
+		UnverifiedVertex genesisVertex = UnverifiedVertex.createGenesis(proof.getRaw());
+		VerifiedVertex verifiedGenesisVertex = new VerifiedVertex(genesisVertex, hasher.hash(genesisVertex));
+		LedgerHeader nextLedgerHeader = LedgerHeader.create(
+			proof.getEpoch() + 1,
+			View.genesis(),
+			proof.getStateVersion(),
+			proof.getCommandId(),
+			proof.timestamp(),
+			false
+		);
+		QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
+		BFTValidatorSet validatorSet = validatorSetMapping.apply(1L);
+		return new BFTConfiguration(
+			validatorSet,
+			verifiedGenesisVertex,
+			genesisQC
+		);
 	}
 
 	@Provides
-	private VerifiedLedgerHeaderAndProof genesisMetadata() {
+	private VerifiedLedgerHeaderAndProof genesisProof() {
 		return VerifiedLedgerHeaderAndProof.genesis(Hash.ZERO_HASH);
 	}
 

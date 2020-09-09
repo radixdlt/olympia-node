@@ -19,6 +19,7 @@ package com.radixdlt;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.consensus.Hasher;
 import com.radixdlt.ledger.EpochChangeManager;
 import com.radixdlt.ledger.EpochChangeSender;
 import com.radixdlt.ledger.StateComputerLedger.CommittedSender;
@@ -28,7 +29,10 @@ import com.radixdlt.ledger.StateComputerLedger.CommittedSender;
  */
 public class LedgerEpochChangeModule extends AbstractModule {
 	@ProvidesIntoSet
-	private CommittedSender epochChangeManager(EpochChangeSender sender) {
-		return new EpochChangeManager(sender);
+	private CommittedSender epochChangeManager(
+		EpochChangeSender sender,
+		Hasher hasher
+	) {
+		return new EpochChangeManager(sender, hasher);
 	}
 }

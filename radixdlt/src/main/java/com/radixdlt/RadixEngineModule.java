@@ -28,7 +28,7 @@ import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.crypto.ECPublicKey;
@@ -120,7 +120,7 @@ public class RadixEngineModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private RadixEngine<LedgerAtom> getRadixEngine(
-		BFTValidatorSet initialValidatorSet,
+		BFTConfiguration initialConfig,
 		ConstraintMachine constraintMachine,
 		UnaryOperator<CMStore> virtualStoreLayer,
 		EngineStore<LedgerAtom> engineStore,
@@ -148,7 +148,7 @@ public class RadixEngineModule extends AbstractModule {
 		//   .ofType(RegisteredValidatorParticle.class)
 		//   .toWindowedSet(initialValidatorSet, RegisteredValidatorParticle.class, p -> p.getAddress(), 2)
 		//   .build();
-		Set<ECPublicKey> initialValidatorKeys = initialValidatorSet.getValidators().stream()
+		Set<ECPublicKey> initialValidatorKeys = initialConfig.getValidatorSet().getValidators().stream()
 			.map(v -> v.getNode().getKey())
 			.collect(Collectors.toCollection(HashSet::new));
 		radixEngine.addStateComputer(
