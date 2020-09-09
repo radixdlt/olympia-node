@@ -27,7 +27,7 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.consensus.ConsensusEventsRx;
-import com.radixdlt.consensus.ConsensusRunner;
+import com.radixdlt.consensus.EpochManagerRunner;
 import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
@@ -85,7 +85,7 @@ public class ConsensusRunnerModuleTest {
 			getExternalConsensusRunnerModule()
 		);
 
-		ConsensusRunner runner = injector.getInstance(ConsensusRunner.class);
+		EpochManagerRunner runner = injector.getInstance(EpochManagerRunner.class);
 		assertThat(runner).isNotNull();
 	}
 }

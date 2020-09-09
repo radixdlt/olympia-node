@@ -17,13 +17,13 @@
 
 package org.radix.api.http;
 
+import com.radixdlt.ConsensusRunner;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.systeminfo.InMemorySystemInfoManager;
 import com.google.common.io.CharStreams;
 import com.radixdlt.api.CommittedAtomsRx;
 import com.radixdlt.api.SubmissionErrorsRx;
-import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.mempool.SubmissionControl;
 import com.radixdlt.middleware2.store.CommandToBinaryConverter;

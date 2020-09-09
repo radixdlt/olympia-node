@@ -17,8 +17,19 @@
 
 package com.radixdlt;
 
-public interface ModuleRunner {
+/**
+ * Runs the protocol for consensus as a validator node
+ * TODO: Use same interface for all high level modules
+ */
+public interface ConsensusRunner {
+
+	/**
+	 * Start running consensus validation
+	 */
 	void start();
 
+	/**
+	 * Stop running consensus validation
+	 */
 	void stop();
 }

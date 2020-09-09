@@ -18,7 +18,7 @@
 package com.radixdlt.integration.distributed.simulation;
 
 import com.google.inject.Scopes;
-import com.radixdlt.ModuleRunner;
+import com.radixdlt.ConsensusRunner;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.BFTFactory;
@@ -54,7 +54,7 @@ public class MockedLedgerModule extends AbstractModule {
 	public void configure() {
 		bind(NextCommandGenerator.class).toInstance((view, aids) -> null);
 		bind(SyncRequestSender.class).toInstance(req -> { });
-		bind(ModuleRunner.class).to(BFTRunner.class).in(Scopes.SINGLETON);
+		bind(ConsensusRunner.class).to(BFTRunner.class).in(Scopes.SINGLETON);
 		bind(VertexStoreEventProcessor.class).to(VertexStore.class).in(Scopes.SINGLETON);
 	}
 

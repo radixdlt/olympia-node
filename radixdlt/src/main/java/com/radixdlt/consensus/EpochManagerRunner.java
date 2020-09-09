@@ -17,7 +17,7 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.ModuleRunner;
+import com.radixdlt.ConsensusRunner;
 import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 
@@ -43,7 +43,7 @@ import org.apache.logging.log4j.Logger;
  * Subscription Manager (Start/Stop) to the processing of Consensus events under
  * a single BFT Consensus node instance
  */
-public final class ConsensusRunner implements ModuleRunner {
+public final class EpochManagerRunner implements ConsensusRunner {
 	private static final Logger log = LogManager.getLogger();
 	private final ConnectableObservable<Object> events;
 	private final Object lock = new Object();
@@ -53,7 +53,7 @@ public final class ConsensusRunner implements ModuleRunner {
 	private Disposable disposable;
 
 	@Inject
-	public ConsensusRunner(
+	public EpochManagerRunner(
 		EpochChangeRx epochChangeRx,
 		ConsensusEventsRx networkRx,
 		PacemakerRx pacemakerRx,
