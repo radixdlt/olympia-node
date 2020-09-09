@@ -38,6 +38,7 @@ public class CommittedChecker implements TestInvariant {
 	@Override
 	public Observable<TestInvariantError> check(RunningNetwork network) {
 		return submittedCommands
+			.doOnNext(cmd -> System.out.println("Submitted command: " + cmd))
 			.flatMapMaybe(command -> network
 					.committedCommands()
 						.filter(nodeAndCmd -> nodeAndCmd.getSecond().contains(command))

@@ -28,6 +28,7 @@ import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
@@ -65,7 +66,7 @@ public abstract class LocalMempoolPeriodicSubmittor {
 	}
 
 	public Observable<Pair<Command, BFTNode>> issuedCommands() {
-		return commands;
+		return commands.observeOn(Schedulers.io());
 	}
 
 	public void run(RunningNetwork network) {

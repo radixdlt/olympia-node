@@ -296,37 +296,46 @@ public class SimulationTest {
 			ImmutableList.Builder<Module> modules = ImmutableList.builder();
 			modules.add(new AbstractModule() {
 				@Provides
-				Stream<BFTNode> nodes() {
-					return nodes.stream().map(node -> BFTNode.create(node.getPublicKey()));
+				ImmutableList<BFTNode> nodes() {
+					return nodes.stream().map(node -> BFTNode.create(node.getPublicKey())).collect(ImmutableList.toImmutableList());
 				}
 			});
+			final long limit = numInitialValidators == 0 ? Long.MAX_VALUE : numInitialValidators;
 
 			if (ledgerType == LedgerType.MOCKED_LEDGER) {
+				modules.add(new AbstractModule() {
+					@Provides
+					BFTValidatorSet validatorSet(ImmutableList<BFTNode> nodes) {
+						return BFTValidatorSet.from(nodes.stream().limit(limit).map(node -> BFTValidator.from(node, UInt256.ONE)));
+					}
+				});
 				if (modifyOneGenesis) {
 					modules.add(new MockedBFTConfigurationOneDifferentGenesisModule(BFTNode.create(nodes.get(0).getPublicKey())));
 				} else {
 					modules.add(new MockedBFTConfigurationModule());
 				}
 				modules.add(new MockedLedgerModule());
+				modules.add(new MockedConsensusRunnerModule());
 			} else {
-				modules.add(new ConsensusRunnerModule());
 				modules.add(new LedgerModule());
 				modules.add(new LedgerRxModule());
 				modules.add(new LedgerEpochChangeRxModule());
 				modules.add(new MockedSyncServiceModule());
-				final long limit = numInitialValidators == 0 ? Long.MAX_VALUE : numInitialValidators;
 
 				if (ledgerType == LedgerType.LEDGER) {
+					modules.add(new MockedBFTConfigurationModule());
+					modules.add(new MockedConsensusRunnerModule());
 					modules.add(new MockedCommandGeneratorModule());
 					modules.add(new MockedMempoolModule());
 					modules.add(new AbstractModule() {
 						@Provides
-						BFTValidatorSet validatorSet(Stream<BFTNode> nodes) {
-							return BFTValidatorSet.from(nodes.limit(limit).map(node -> BFTValidator.from(node, UInt256.ONE)));
+						BFTValidatorSet validatorSet(ImmutableList<BFTNode> nodes) {
+							return BFTValidatorSet.from(nodes.stream().limit(limit).map(node -> BFTValidator.from(node, UInt256.ONE)));
 						}
 					});
 					modules.add(new MockedStateComputerModule());
 				} else if (ledgerType == LedgerType.LEDGER_AND_EPOCHS) {
+					modules.add(new ConsensusRunnerModule());
 					modules.add(new LedgerCommandGeneratorModule());
 					modules.add(new MockedMempoolModule());
 					modules.add(new LedgerEpochChangeModule());
@@ -338,6 +347,8 @@ public class SimulationTest {
 								.collect(Collectors.toList())));
 					modules.add(new MockedStateComputerWithEpochsModule(epochHighView, epochToValidatorSetMapping));
 				} else if (ledgerType == LedgerType.LEDGER_AND_LOCALMEMPOOL) {
+					modules.add(new MockedBFTConfigurationModule());
+					modules.add(new MockedConsensusRunnerModule());
 					modules.add(new LedgerCommandGeneratorModule());
 					modules.add(new LedgerLocalMempoolModule(10));
 					modules.add(new AbstractModule() {
@@ -347,12 +358,13 @@ public class SimulationTest {
 						}
 
 						@Provides
-						BFTValidatorSet validatorSet(Stream<BFTNode> nodes) {
-							return BFTValidatorSet.from(nodes.limit(limit).map(node -> BFTValidator.from(node, UInt256.ONE)));
+						BFTValidatorSet validatorSet(ImmutableList<BFTNode> nodes) {
+							return BFTValidatorSet.from(nodes.stream().limit(limit).map(node -> BFTValidator.from(node, UInt256.ONE)));
 						}
 					});
 					modules.add(new MockedStateComputerModule());
 				} else if (ledgerType == LedgerType.LEDGER_AND_RADIXENGINE) {
+					modules.add(new ConsensusRunnerModule());
 					modules.add(new LedgerCommandGeneratorModule());
 					modules.add(new LedgerLocalMempoolModule(10));
 					modules.add(new AbstractModule() {
@@ -362,8 +374,8 @@ public class SimulationTest {
 						}
 
 						@Provides
-						BFTValidatorSet validatorSet(Stream<BFTNode> nodes) {
-							return BFTValidatorSet.from(nodes.limit(limit).map(node -> BFTValidator.from(node, UInt256.ONE)));
+						BFTValidatorSet validatorSet(ImmutableList<BFTNode> nodes) {
+							return BFTValidatorSet.from(nodes.stream().limit(limit).map(node -> BFTValidator.from(node, UInt256.ONE)));
 						}
 					});
 					modules.add(new LedgerEpochChangeModule());
