@@ -48,7 +48,7 @@ public class MockedStateComputerWithEpochsModule extends AbstractModule {
 	}
 
 	@Provides
-	private BFTConfiguration initialConfiguration(VerifiedLedgerHeaderAndProof proof, Hasher hasher) {
+	private BFTConfiguration initialConfiguration(BFTValidatorSet validatorSet, VerifiedLedgerHeaderAndProof proof, Hasher hasher) {
 		UnverifiedVertex genesisVertex = UnverifiedVertex.createGenesis(proof.getRaw());
 		VerifiedVertex verifiedGenesisVertex = new VerifiedVertex(genesisVertex, hasher.hash(genesisVertex));
 		LedgerHeader nextLedgerHeader = LedgerHeader.create(
@@ -60,7 +60,6 @@ public class MockedStateComputerWithEpochsModule extends AbstractModule {
 			false
 		);
 		QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
-		BFTValidatorSet validatorSet = validatorSetMapping.apply(1L);
 		return new BFTConfiguration(
 			validatorSet,
 			verifiedGenesisVertex,

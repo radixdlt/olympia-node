@@ -161,6 +161,12 @@ public final class DeterministicTest {
 			} else {
 				// TODO: adapter from LongFunction<BFTValidatorSet> to Function<Long, BFTValidatorSet> shouldn't be needed
 				Function<Long, BFTValidatorSet> epochToValidatorSetMapping = validatorSetMapping::apply;
+				modules.add(new AbstractModule() {
+					@Override
+					public void configure() {
+						bind(BFTValidatorSet.class).toInstance(epochToValidatorSetMapping.apply(1L));
+					}
+				});
 				modules.add(new LedgerEpochChangeModule());
 				modules.add(new MockedSyncServiceModule());
 				modules.add(new MockedStateComputerWithEpochsModule(epochHighView, epochToValidatorSetMapping));

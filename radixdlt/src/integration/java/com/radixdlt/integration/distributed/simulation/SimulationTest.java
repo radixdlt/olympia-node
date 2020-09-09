@@ -174,6 +174,7 @@ public class SimulationTest {
 		}
 
 		public Builder ledgerAndEpochs(View epochHighView, Function<Long, IntStream> epochToNodeIndexMapper) {
+			this.numInitialValidators = 2;
 			this.ledgerType = LedgerType.LEDGER_AND_EPOCHS;
 			this.epochHighView = epochHighView;
 			this.epochToNodeIndexMapper = epochToNodeIndexMapper;
@@ -294,21 +295,20 @@ public class SimulationTest {
 
 		public SimulationTest build() {
 			ImmutableList.Builder<Module> modules = ImmutableList.builder();
+			final long limit = numInitialValidators == 0 ? Long.MAX_VALUE : numInitialValidators;
 			modules.add(new AbstractModule() {
 				@Provides
 				ImmutableList<BFTNode> nodes() {
 					return nodes.stream().map(node -> BFTNode.create(node.getPublicKey())).collect(ImmutableList.toImmutableList());
 				}
+
+				@Provides
+				BFTValidatorSet initialValidatorSet(ImmutableList<BFTNode> nodes) {
+					return BFTValidatorSet.from(nodes.stream().limit(limit).map(node -> BFTValidator.from(node, UInt256.ONE)));
+				}
 			});
-			final long limit = numInitialValidators == 0 ? Long.MAX_VALUE : numInitialValidators;
 
 			if (ledgerType == LedgerType.MOCKED_LEDGER) {
-				modules.add(new AbstractModule() {
-					@Provides
-					BFTValidatorSet validatorSet(ImmutableList<BFTNode> nodes) {
-						return BFTValidatorSet.from(nodes.stream().limit(limit).map(node -> BFTValidator.from(node, UInt256.ONE)));
-					}
-				});
 				if (modifyOneGenesis) {
 					modules.add(new MockedBFTConfigurationOneDifferentGenesisModule(BFTNode.create(nodes.get(0).getPublicKey())));
 				} else {
@@ -327,12 +327,6 @@ public class SimulationTest {
 					modules.add(new MockedConsensusRunnerModule());
 					modules.add(new MockedCommandGeneratorModule());
 					modules.add(new MockedMempoolModule());
-					modules.add(new AbstractModule() {
-						@Provides
-						BFTValidatorSet validatorSet(ImmutableList<BFTNode> nodes) {
-							return BFTValidatorSet.from(nodes.stream().limit(limit).map(node -> BFTValidator.from(node, UInt256.ONE)));
-						}
-					});
 					modules.add(new MockedStateComputerModule());
 				} else if (ledgerType == LedgerType.LEDGER_AND_EPOCHS) {
 					modules.add(new ConsensusRunnerModule());
@@ -356,11 +350,6 @@ public class SimulationTest {
 						protected void configure() {
 							bind(Mempool.class).to(LocalMempool.class);
 						}
-
-						@Provides
-						BFTValidatorSet validatorSet(ImmutableList<BFTNode> nodes) {
-							return BFTValidatorSet.from(nodes.stream().limit(limit).map(node -> BFTValidator.from(node, UInt256.ONE)));
-						}
 					});
 					modules.add(new MockedStateComputerModule());
 				} else if (ledgerType == LedgerType.LEDGER_AND_RADIXENGINE) {
@@ -371,11 +360,6 @@ public class SimulationTest {
 						@Override
 						protected void configure() {
 							bind(Mempool.class).to(LocalMempool.class);
-						}
-
-						@Provides
-						BFTValidatorSet validatorSet(ImmutableList<BFTNode> nodes) {
-							return BFTValidatorSet.from(nodes.stream().limit(limit).map(node -> BFTValidator.from(node, UInt256.ONE)));
 						}
 					});
 					modules.add(new LedgerEpochChangeModule());
