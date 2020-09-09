@@ -58,8 +58,13 @@ checkstyle {
 }
 
 versionFile {
+    mustRunAfter(processResources)
     // Path to the file to be written
     file = new File("$buildDir/resources/main", 'version.properties')
+}
+
+classes {
+	dependsOn(versionFile)
 }
 
 checkstyleMain {
@@ -143,7 +148,6 @@ jmh {
 
 // More warnings
 tasks.withType(JavaCompile) {
-    dependsOn 'versionFile'
     options.compilerArgs << '-proc:none'
     options.compilerArgs << '-Xlint:deprecation'
     //options.compilerArgs << '-Xlint:unchecked' // Way too many of these at the moment
