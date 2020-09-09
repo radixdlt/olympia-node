@@ -25,7 +25,6 @@ import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.EmptyVertexStoreEventProcessor;
-import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.ProposerElectionFactory;
@@ -125,7 +124,6 @@ public final class EpochManager {
 	private final BFTFactory bftFactory;
 	private final EpochInfoSender epochInfoSender;
 	private final SyncRequestSender syncRequestSender;
-	private final Hasher hasher;
 
 	private VerifiedLedgerHeaderAndProof lastConstructed = null;
 	private EpochChange currentEpoch;
@@ -146,8 +144,7 @@ public final class EpochManager {
 		ProposerElectionFactory proposerElectionFactory,
 		BFTFactory bftFactory,
 		SystemCounters counters,
-		EpochInfoSender epochInfoSender,
-		Hasher hasher
+		EpochInfoSender epochInfoSender
 	) {
 		this.currentEpoch = Objects.requireNonNull(initialEpoch);
 		this.self = Objects.requireNonNull(self);
@@ -162,7 +159,6 @@ public final class EpochManager {
 		this.counters = Objects.requireNonNull(counters);
 		this.epochInfoSender = Objects.requireNonNull(epochInfoSender);
 		this.queuedEvents = new HashMap<>();
-		this.hasher = Objects.requireNonNull(hasher);
 	}
 
 	private void updateEpochState() {
