@@ -24,7 +24,6 @@ import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
 /**
@@ -54,7 +53,7 @@ public class OneProposalPerViewDropperTest {
 			.setGetVerticesRPCEnabled(false)
 			.build();
 
-		Map<String, Optional<TestInvariantError>> results = test.run(1, TimeUnit.MINUTES);
+		Map<String, Optional<TestInvariantError>> results = test.run();
 		assertThat(results).hasEntrySatisfying("noTimeouts", error -> assertThat(error).isPresent());
 	}
 
@@ -68,7 +67,7 @@ public class OneProposalPerViewDropperTest {
 			.setGetVerticesRPCEnabled(true)
 			.build();
 
-		Map<String, Optional<TestInvariantError>> results = test.run(1, TimeUnit.MINUTES);
+		Map<String, Optional<TestInvariantError>> results = test.run();
 		assertThat(results).allSatisfy((name, error) -> assertThat(error).isNotPresent());
 	}
 }

@@ -52,7 +52,7 @@ public class MovingWindowValidatorsTest {
 			.checkConsensusLiveness("liveness", 5000, TimeUnit.MILLISECONDS)
 			.checkEpochsHighViewCorrect("epochHighView", View.of(100))
 			.build();
-		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
+		Map<String, Optional<TestInvariantError>> results = bftTest.run();
 		assertThat(results).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
 	}
 
@@ -64,7 +64,7 @@ public class MovingWindowValidatorsTest {
 			.checkConsensusLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
 			.checkEpochsHighViewCorrect("epochHighView", View.of(100))
 			.build();
-		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
+		Map<String, Optional<TestInvariantError>> results = bftTest.run();
 		assertThat(results).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
 	}
 
@@ -77,7 +77,7 @@ public class MovingWindowValidatorsTest {
 			.checkConsensusLiveness("liveness", 5000, TimeUnit.MILLISECONDS) // High timeout to make Travis happy
 			.checkEpochsHighViewCorrect("epochHighView", View.of(100))
 			.build();
-		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
+		Map<String, Optional<TestInvariantError>> results = bftTest.run();
 		assertThat(results).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
 	}
 
@@ -90,7 +90,7 @@ public class MovingWindowValidatorsTest {
 			.checkConsensusLiveness("liveness", 5000, TimeUnit.MILLISECONDS) // High timeout to make Travis happy
 			.checkEpochsHighViewCorrect("epochHighView", View.of(1))
 			.build();
-		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
+		Map<String, Optional<TestInvariantError>> results = bftTest.run();
 		assertThat(results).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
 	}
 }

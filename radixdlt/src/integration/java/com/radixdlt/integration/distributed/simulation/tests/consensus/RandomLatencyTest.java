@@ -62,7 +62,7 @@ public class RandomLatencyTest {
 			.numNodes(3)
 			.build();
 
-		Map<String, Optional<TestInvariantError>> results = test.run(1, TimeUnit.MINUTES);
+		Map<String, Optional<TestInvariantError>> results = test.run();
 		assertThat(results).allSatisfy((name, error) -> AssertionsForClassTypes.assertThat(error).isNotPresent());
 	}
 
@@ -75,7 +75,7 @@ public class RandomLatencyTest {
 			.numNodes(4)
 			.build();
 
-		Map<String, Optional<TestInvariantError>> results = test.run(1, TimeUnit.MINUTES);
+		Map<String, Optional<TestInvariantError>> results = test.run();
 		assertThat(results).allSatisfy((name, error) -> assertThat(error).isNotPresent());
 	}
 }

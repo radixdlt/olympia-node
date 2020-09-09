@@ -34,6 +34,7 @@ import com.radixdlt.RadixEngineModule;
 import com.radixdlt.RadixEngineRxModule;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
+import org.radix.utils.Duration;
 import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
 import com.radixdlt.integration.distributed.simulation.application.IncrementalBytesSubmittor;
 import com.radixdlt.integration.distributed.simulation.application.CommittedChecker;
@@ -80,6 +81,9 @@ import java.util.stream.Stream;
  * High level BFT Simulation Test Runner
  */
 public class SimulationTest {
+	private static final String ENVIRONMENT_VAR_NAME = "TEST_DURATION"; // Same as used by regression test suite
+	private static final Duration DEFAULT_TEST_DURATION = Duration.of(1).minutes();
+
 	public interface SimulationNetworkActor {
 		void run(RunningNetwork network);
 	}
@@ -444,6 +448,20 @@ public class SimulationTest {
 
 		return Single.merge(results).toObservable()
 			.doOnSubscribe(d -> runners.forEach(c -> c.run(runningNetwork)));
+	}
+
+	/**
+	 * Runs the test for time configured via environment variable. If environment variable is missing then
+	 * default duration is used. Returns either once the duration has passed or if a check has failed.
+	 * Returns a map from the check name to the result.
+	 *
+	 * @return map of check results
+	 */
+	public Map<String, Optional<TestInvariantError>> run() {
+		return Optional.ofNullable(System.getenv(ENVIRONMENT_VAR_NAME))
+				.flatMap(Duration::parse)
+				.orElse(DEFAULT_TEST_DURATION)
+				.apply(this::run);
 	}
 
 	/**

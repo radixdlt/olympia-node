@@ -24,7 +24,6 @@ import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
 public class FPlusOneOutOfBoundsTest {
@@ -45,7 +44,7 @@ public class FPlusOneOutOfBoundsTest {
 			.numNodesAndLatencies(3, latency, latency, latency)
 			.build();
 
-		Map<String, Optional<TestInvariantError>> results = test.run(1, TimeUnit.MINUTES);
+		Map<String, Optional<TestInvariantError>> results = test.run();
 		assertThat(results).hasEntrySatisfying("noneCommitted", error -> assertThat(error).isPresent());
 	}
 
@@ -58,7 +57,7 @@ public class FPlusOneOutOfBoundsTest {
 			.numNodesAndLatencies(3, latency, latency, outOfBoundsLatency)
 			.build();
 
-		Map<String, Optional<TestInvariantError>> results = test.run(1, TimeUnit.MINUTES);
+		Map<String, Optional<TestInvariantError>> results = test.run();
 		assertThat(results).allSatisfy((name, error) -> assertThat(error).isNotPresent());
 	}
 }

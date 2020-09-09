@@ -23,7 +23,6 @@ import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvaria
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
 /**
@@ -48,7 +47,7 @@ public class UniformLatencyTest {
 			.checkConsensusNoTimeouts("noTimeouts")
 			.checkConsensusAllProposalsHaveDirectParents("directParents")
 			.build();
-		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
+		Map<String, Optional<TestInvariantError>> results = bftTest.run();
 		assertThat(results).allSatisfy((name, err) -> assertThat(err).isEmpty());
 	}
 }
