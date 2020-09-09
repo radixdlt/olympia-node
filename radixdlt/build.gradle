@@ -58,8 +58,13 @@ checkstyle {
 }
 
 versionFile {
+    mustRunAfter(processResources)
     // Path to the file to be written
     file = new File("$buildDir/resources/main", 'version.properties')
+}
+
+classes {
+	dependsOn(versionFile)
 }
 
 checkstyleMain {
