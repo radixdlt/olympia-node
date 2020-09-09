@@ -40,6 +40,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import javax.inject.Inject;
+import javax.inject.Named;
+
 /**
  * Checks that metadata in the ledger atom is well formed and follows what is
  * needed for both consensus and governance.
@@ -49,9 +52,10 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 	private final RRI feeTokenRri;
 	private final Serialization serialization;
 
+	@Inject
 	public TokenFeeLedgerAtomChecker(
 		FeeTable feeTable,
-		RRI feeTokenRri,
+		@Named("feeToken") RRI feeTokenRri,
 		Serialization serialization
 	) {
 		this.feeTable = feeTable;
@@ -91,7 +95,7 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 		}
 		Atom atomWithoutFeeGroup = completeAtom.copyExcludingGroups(this::isFeeGroup);
 		try {
-			return this.serialization.toDson(atomWithoutFeeGroup, Output.PERSIST).length;
+			return this.serialization.toDson(atomWithoutFeeGroup, Output.HASH).length;
 		} catch (SerializationException e) {
 			throw new IllegalStateException("While serializing atom", e);
 		}

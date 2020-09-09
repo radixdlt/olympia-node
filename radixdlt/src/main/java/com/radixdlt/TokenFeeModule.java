@@ -22,7 +22,9 @@ import javax.inject.Named;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.Scopes;
 import com.google.inject.Singleton;
+import com.google.inject.TypeLiteral;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
@@ -35,7 +37,6 @@ import com.radixdlt.fees.PerParticleFeeEntry;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.TokenFeeLedgerAtomChecker;
-import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.UInt256;
 
@@ -43,8 +44,14 @@ import com.radixdlt.utils.UInt256;
  * Module which provides a token fee checker
  */
 public class TokenFeeModule extends AbstractModule {
+
+	@Override
+	protected void configure() {
+		bind(new TypeLiteral<AtomChecker<LedgerAtom>>() { }).to(TokenFeeLedgerAtomChecker.class).in(Scopes.SINGLETON);
+	}
+
 	@Provides
-	@Singleton
+	@Singleton // Don't want to recompute on each use
 	@Named("feeToken")
 	private RRI feeTokenRri(Universe universe) {
 		final String tokenName = TokenDefinitionUtils.getNativeTokenShortCode();
@@ -65,39 +72,27 @@ public class TokenFeeModule extends AbstractModule {
 	}
 
 	@Provides
-	@Singleton
+	@Singleton // Immutable and stateless, but no point having more than one
 	private FeeTable feeTable() {
-		// WARNING: There is a duplicate fee table in RadixApplicationAPI in the Java library.
-		// Possibly also the Javascript library too.
+		// WARNING: There is a duplicate fee table in RadixUniverse in the Java library.
+		// Possibly also one somewhere in the Javascript library too.
 		// If you update this fee table, you will need to change the ones there also.
 		ImmutableList<FeeEntry> feeEntries = ImmutableList.of(
-			// 2 rad cents per kilobyte beyond the first one
-			PerBytesFeeEntry.of(1024,  0, radCents(2L)),
-			// 10,000 rad cents per 10kb beyond the first one
-			PerBytesFeeEntry.of(10240, 0, radCents(1000L)),
-			// 100 rad cents per fixed supply token definition
-			PerParticleFeeEntry.of(FixedSupplyTokenDefinitionParticle.class, 0, radCents(100L)),
-			// 100 rad cents per mutable supply token definition
-			PerParticleFeeEntry.of(MutableSupplyTokenDefinitionParticle.class, 0, radCents(100L))
+			// 1 millirad per byte after the first three kilobytes
+			PerBytesFeeEntry.of(1,  3072, milliRads(1L)),
+			// 1,000 millirads per fixed supply token definition
+			PerParticleFeeEntry.of(FixedSupplyTokenDefinitionParticle.class, 0, milliRads(1000L)),
+			// 1,000 millirads per mutable supply token definition
+			PerParticleFeeEntry.of(MutableSupplyTokenDefinitionParticle.class, 0, milliRads(1000L))
 		);
 
-		// Minimum fee of 4 rad cents
-		return FeeTable.from(radCents(4L), feeEntries);
+		// Minimum fee of 40 millirads
+		return FeeTable.from(milliRads(40L), feeEntries);
 	}
 
-	@Provides
-	@Singleton
-	private AtomChecker<LedgerAtom> tokenFeeLedgerAtomChecker(
-		FeeTable feeTable,
-		@Named("feeToken") RRI feeTokenRri,
-		Serialization serialization
-	) {
-		return new TokenFeeLedgerAtomChecker(feeTable, feeTokenRri, serialization);
-	}
-
-	private UInt256 radCents(long count) {
-		// 1 count is 10^{-2} rads, so we subtract that from the sub-units power
+	private static UInt256 milliRads(long count) {
+		// 1 count is 10^{-3} rads, so we subtract that from the sub-units power
 		// No risk of overflow here, as 10^18 is approx 60 bits, plus 64 bits of count will not exceed 256 bits
-		return UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 2).multiply(UInt256.from(count));
+		return UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 - 3).multiply(UInt256.from(count));
 	}
 }
