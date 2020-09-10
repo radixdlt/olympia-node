@@ -19,7 +19,6 @@ package com.radixdlt.integration.distributed.simulation;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.google.inject.Scopes;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
@@ -30,10 +29,8 @@ import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
 import com.radixdlt.consensus.epoch.EmptySyncVerticesRPCSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.SimulatedNetworkImpl;
-import com.radixdlt.network.TimeSupplier;
+import com.radixdlt.sync.StateSyncNetwork;
 
 public class SimulationNetworkModule extends AbstractModule {
 	private final boolean getVerticesRPCEnabled;
@@ -53,17 +50,14 @@ public class SimulationNetworkModule extends AbstractModule {
 		bind(SyncEpochsRPCRx.class).to(SimulatedNetworkImpl.class);
 		bind(SyncVerticesRPCRx.class).to(SimulatedNetworkImpl.class);
 		bind(BFTEventSender.class).to(SimulatedNetworkImpl.class);
-		// TODO: Remove if
+		bind(StateSyncNetwork.class).to(SimulatedNetworkImpl.class);
+		// TODO: Remove if branch
 		if (getVerticesRPCEnabled) {
 			bind(SyncVerticesRPCSender.class).to(SimulatedNetworkImpl.class);
 		} else {
 			bind(SyncVerticesRPCSender.class).toInstance(EmptySyncVerticesRPCSender.INSTANCE);
 		}
 		bind(SyncEpochsRPCSender.class).to(SimulatedNetworkImpl.class);
-
-		// TODO: Move these out
-		bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
-		bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
 	}
 
 	@Provides

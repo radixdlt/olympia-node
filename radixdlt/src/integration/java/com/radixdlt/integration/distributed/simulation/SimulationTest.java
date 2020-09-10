@@ -32,6 +32,8 @@ import com.radixdlt.LedgerRxModule;
 import com.radixdlt.LedgerLocalMempoolModule;
 import com.radixdlt.RadixEngineModule;
 import com.radixdlt.RadixEngineRxModule;
+import com.radixdlt.SyncCommittedServiceModule;
+import com.radixdlt.SyncRxModule;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
@@ -43,7 +45,7 @@ import com.radixdlt.integration.distributed.simulation.application.RegisteredVal
 import com.radixdlt.integration.distributed.simulation.invariants.epochs.EpochViewInvariant;
 import com.radixdlt.integration.distributed.simulation.application.LocalMempoolPeriodicSubmittor;
 import com.radixdlt.integration.distributed.simulation.invariants.ledger.ConsensusToLedgerCommittedInvariant;
-import com.radixdlt.integration.distributed.simulation.invariants.ledger.SyncedInOrderInvariant;
+import com.radixdlt.integration.distributed.simulation.invariants.ledger.LedgerInOrderInvariant;
 import com.radixdlt.integration.distributed.simulation.network.DroppingLatencyProvider;
 import com.radixdlt.integration.distributed.simulation.network.OneProposalPerViewDropper;
 import com.radixdlt.integration.distributed.simulation.network.RandomLatencyProvider;
@@ -112,7 +114,7 @@ public class SimulationTest {
 
 	public static class Builder {
 		private enum LedgerType {
-			MOCKED_LEDGER, LEDGER, LEDGER_AND_EPOCHS, LEDGER_AND_LOCALMEMPOOL, LEDGER_AND_RADIXENGINE
+			MOCKED_LEDGER, LEDGER, LEDGER_AND_SYNC, LEDGER_AND_EPOCHS, LEDGER_AND_LOCALMEMPOOL, LEDGER_AND_RADIXENGINE
 		}
 
 		private final DroppingLatencyProvider latencyProvider = new DroppingLatencyProvider();
@@ -185,6 +187,12 @@ public class SimulationTest {
 			this.ledgerType = LedgerType.LEDGER;
 			return this;
 		}
+
+		public Builder ledgerAndSync() {
+			this.ledgerType = LedgerType.LEDGER_AND_SYNC;
+			return this;
+		}
+
 
 		public Builder ledgerAndMempool() {
 			this.ledgerType = LedgerType.LEDGER_AND_LOCALMEMPOOL;
@@ -283,8 +291,8 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder checkLedgerSyncedInOrder(String invariantName) {
-			this.checksBuilder.put(invariantName, nodes -> new SyncedInOrderInvariant());
+		public Builder checkLedgerInOrder(String invariantName) {
+			this.checksBuilder.put(invariantName, nodes -> new LedgerInOrderInvariant());
 			return this;
 		}
 
@@ -320,7 +328,6 @@ public class SimulationTest {
 				modules.add(new LedgerModule());
 				modules.add(new LedgerRxModule());
 				modules.add(new LedgerEpochChangeRxModule());
-				modules.add(new MockedSyncServiceModule());
 
 				if (ledgerType == LedgerType.LEDGER) {
 					modules.add(new MockedBFTConfigurationModule());
@@ -328,6 +335,15 @@ public class SimulationTest {
 					modules.add(new MockedCommandGeneratorModule());
 					modules.add(new MockedMempoolModule());
 					modules.add(new MockedStateComputerModule());
+					modules.add(new MockedSyncServiceModule());
+				} else if (ledgerType == LedgerType.LEDGER_AND_SYNC) {
+					modules.add(new SyncCommittedServiceModule());
+					modules.add(new SyncRxModule());
+					modules.add(new MockedBFTConfigurationModule());
+					modules.add(new MockedConsensusRunnerModule());
+					modules.add(new MockedCommandGeneratorModule());
+					modules.add(new MockedMempoolModule());
+					modules.add(new MockedStateComputerWithReaderModule());
 				} else if (ledgerType == LedgerType.LEDGER_AND_EPOCHS) {
 					modules.add(new ConsensusRunnerModule());
 					modules.add(new LedgerCommandGeneratorModule());
@@ -340,6 +356,7 @@ public class SimulationTest {
 								.map(node -> BFTValidator.from(node, UInt256.ONE))
 								.collect(Collectors.toList())));
 					modules.add(new MockedStateComputerWithEpochsModule(epochHighView, epochToValidatorSetMapping));
+					modules.add(new MockedSyncServiceModule());
 				} else if (ledgerType == LedgerType.LEDGER_AND_LOCALMEMPOOL) {
 					modules.add(new MockedBFTConfigurationModule());
 					modules.add(new MockedConsensusRunnerModule());
@@ -351,6 +368,7 @@ public class SimulationTest {
 							bind(Mempool.class).to(LocalMempool.class);
 						}
 					});
+					modules.add(new MockedSyncServiceModule());
 					modules.add(new MockedStateComputerModule());
 				} else if (ledgerType == LedgerType.LEDGER_AND_RADIXENGINE) {
 					modules.add(new ConsensusRunnerModule());
@@ -365,6 +383,7 @@ public class SimulationTest {
 					modules.add(new LedgerEpochChangeModule());
 					modules.add(new RadixEngineModule(epochHighView, true));
 					modules.add(new RadixEngineRxModule());
+					modules.add(new MockedSyncServiceModule());
 					modules.add(new MockedRadixEngineStoreModule());
 				}
 			}

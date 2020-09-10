@@ -41,7 +41,7 @@ public class IncreasingValidatorsTest {
 		.checkConsensusLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
 		.checkConsensusNoTimeouts("noTimeouts")
 		.checkConsensusAllProposalsHaveDirectParents("directParents")
-		.checkLedgerSyncedInOrder("syncedInOrder")
+		.checkLedgerInOrder("ledgerInOrder")
 		.checkLedgerProcessesConsensusCommitted("consensusToLedger")
 		.addRadixEngineValidatorRegisterMempoolSubmissions("mempoolSubmitted", "epochChanges");
 

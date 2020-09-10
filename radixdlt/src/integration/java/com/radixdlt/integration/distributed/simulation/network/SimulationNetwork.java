@@ -38,6 +38,9 @@ import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.sync.StateSyncNetwork;
+import com.radixdlt.sync.SyncRequest;
 import io.reactivex.rxjava3.core.Observable;
 
 import io.reactivex.rxjava3.schedulers.Timed;
@@ -180,7 +183,7 @@ public class SimulationNetwork {
 	}
 
 	public class SimulatedNetworkImpl implements
-		BFTEventSender, SyncVerticesRPCSender, SyncEpochsRPCSender, BFTEventsRx, SyncVerticesRPCRx, SyncEpochsRPCRx {
+		BFTEventSender, SyncVerticesRPCSender, SyncEpochsRPCSender, BFTEventsRx, SyncVerticesRPCRx, SyncEpochsRPCRx, StateSyncNetwork {
 		private final Observable<Object> myMessages;
 		private final BFTNode thisNode;
 		private HashMap<Hash, Object> opaqueMap = new HashMap<>();
@@ -300,10 +303,31 @@ public class SimulationNetwork {
 		public Observable<GetEpochResponse> epochResponses() {
 			return myMessages.ofType(GetEpochResponse.class);
 		}
+
+		@Override
+		public Observable<VerifiedCommandsAndProof> syncResponses() {
+			return myMessages.ofType(VerifiedCommandsAndProof.class);
+		}
+
+		@Override
+		public Observable<SyncRequest> syncRequests() {
+			return myMessages.ofType(SyncRequest.class);
+		}
+
+		@Override
+		public void sendSyncRequest(BFTNode node, long stateVersion) {
+			SyncRequest syncRequest = new SyncRequest(node, stateVersion);
+			receivedMessages.onNext(MessageInTransit.newMessage(syncRequest, thisNode, node));
+		}
+
+		@Override
+		public void sendSyncResponse(BFTNode node, VerifiedCommandsAndProof commandsAndProof) {
+			receivedMessages.onNext(MessageInTransit.newMessage(commandsAndProof, thisNode, node));
+
+		}
 	}
 
 	public SimulatedNetworkImpl getNetwork(BFTNode forNode) {
 		return receivers.computeIfAbsent(forNode, SimulatedNetworkImpl::new);
 	}
-
 }

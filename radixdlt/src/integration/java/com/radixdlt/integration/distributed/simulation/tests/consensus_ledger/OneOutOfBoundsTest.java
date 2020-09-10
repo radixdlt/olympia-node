@@ -42,7 +42,7 @@ public class OneOutOfBoundsTest {
 		.pacemakerTimeout(synchronousTimeout)
 		.checkConsensusLiveness("liveness", 2 * synchronousTimeout, TimeUnit.MILLISECONDS)
 		.checkConsensusSafety("safety")
-		.checkLedgerSyncedInOrder("syncedInOrder")
+		.checkLedgerInOrder("ledgerInOrder")
 		.checkLedgerProcessesConsensusCommitted("consensusToLedger");
 
 	/**

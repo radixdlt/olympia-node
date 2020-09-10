@@ -24,6 +24,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Module;
+import com.google.inject.Scopes;
 import com.google.inject.name.Names;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.ConsensusRxModule;
@@ -32,10 +33,13 @@ import com.radixdlt.SystemInfoRxModule;
 import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.integration.distributed.simulation.MockedCryptoModule;
 import com.radixdlt.integration.distributed.simulation.SimulationNetworkModule;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.mempool.Mempool;
+import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.systeminfo.InfoRx;
 import com.radixdlt.consensus.bft.BFTNode;
 
@@ -84,6 +88,8 @@ public class SimulationNodes {
 				@Override
 				public void configure() {
 					bind(BFTNode.class).annotatedWith(Names.named("self")).toInstance(self);
+					bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
+					bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
 				}
 			},
 			new ConsensusModule(pacemakerTimeout),

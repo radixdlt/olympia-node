@@ -46,7 +46,7 @@ public class RandomValidatorsTest {
 		.checkConsensusLiveness("liveness", 5000, TimeUnit.MILLISECONDS)
 		.checkConsensusNoTimeouts("noTimeouts")
 		.checkConsensusAllProposalsHaveDirectParents("directParents")
-		.checkLedgerSyncedInOrder("syncedInOrder")
+		.checkLedgerInOrder("ledgerInOrder")
 		.checkLedgerProcessesConsensusCommitted("consensusToLedger");
 
 	private static Function<Long, IntStream> randomEpochToNodesMapper(Function<Long, Random> randomSupplier) {
