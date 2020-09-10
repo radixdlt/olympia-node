@@ -311,7 +311,6 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		ledger.ifCommitSynced(syncState.committedProof)
 			.then(() -> rebuildAndSyncQC(syncState))
 			.elseExecuteAndSendMessageOnSync(() -> {
-				log.info("SYNC_STATE: Requesting sync to commit " + syncState.committedProof);
 				syncState.setSyncStage(SyncStage.SYNC_TO_COMMIT);
 				LocalSyncRequest localSyncRequest = new LocalSyncRequest(
 					syncState.committedProof,
