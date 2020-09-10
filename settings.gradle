@@ -1,5 +1,4 @@
 include 'radixdlt-java'
 include 'examples'
 include 'radixdlt-cli'
-include 'faucet-service'
 enableFeaturePreview('STABLE_PUBLISHING')
