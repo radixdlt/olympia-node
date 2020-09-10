@@ -43,7 +43,7 @@ import static org.junit.Assert.*;
 
 public class NettyUDPTransportTest {
 	private static final int TEST_SECONDS = SimulationTest.getConfiguredDuration()
-			.map((value, unit) -> (int)(unit.toSeconds(value)/2));
+			.map((value, unit) -> (int)((unit.toSeconds(value) + 1)/2));
 
 	private NettyUDPTransportImpl transport1;
 	private NettyUDPTransportImpl transport2;

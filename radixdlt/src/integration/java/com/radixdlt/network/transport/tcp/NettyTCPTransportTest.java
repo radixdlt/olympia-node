@@ -43,7 +43,7 @@ import static org.mockito.Mockito.*;
 
 public class NettyTCPTransportTest {
 	private static final int TEST_SECONDS = SimulationTest.getConfiguredDuration()
-			.map((value, unit) -> (int)(unit.toSeconds(value)/2));
+			.map((value, unit) -> (int)((unit.toSeconds(value) + 1)/2));
 
 	private NettyTCPTransport transport1;
 	private NettyTCPTransport transport2;
