@@ -49,7 +49,7 @@ public class IncreasingValidatorsTest {
 	public void when_increasing_validators__then_they_should_be_getting_registered() {
 		SimulationTest simulationTest = bftTestBuilder
 			.build();
-		Map<String, Optional<TestInvariantError>> results = simulationTest.run(1, TimeUnit.MINUTES);
+		Map<String, Optional<TestInvariantError>> results = simulationTest.run();
 		assertThat(results).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
 	}
 }

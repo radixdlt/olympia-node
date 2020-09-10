@@ -24,6 +24,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -41,6 +42,8 @@ import com.radixdlt.network.transport.TransportOutboundConnection;
 import static org.junit.Assert.*;
 
 public class NettyUDPTransportTest {
+	private static final int TEST_SECONDS = SimulationTest.getConfiguredDuration()
+			.map((value, unit) -> (int)(unit.toSeconds(value)/2));
 
 	private NettyUDPTransportImpl transport1;
 	private NettyUDPTransportImpl transport2;
@@ -71,19 +74,19 @@ public class NettyUDPTransportTest {
 	@Test
 	public void testThroughputSmallPacket() throws InterruptedException, ExecutionException, IOException {
 		// Approximate size of AtomBroadcastMessage
-		testThroughput("Small", 112, 200, 30);
+		testThroughput("Small", 112, 200, TEST_SECONDS);
 	}
 
 	@Test
 	public void testThroughputMediumPacket() throws InterruptedException, ExecutionException, IOException {
 		// Approximate size of a basic test universe
-		testThroughput("Medium", 3600, 100, 30);
+		testThroughput("Medium", 3600, 100, TEST_SECONDS);
 	}
 
 	@Test
 	public void testThroughputLargePacket() throws InterruptedException, ExecutionException, IOException {
 		// Largest packet supported
-		testThroughput("Large", UDPConstants.MAX_PACKET_LENGTH - 9, 4, 30);
+		testThroughput("Large", UDPConstants.MAX_PACKET_LENGTH - 9, 4, TEST_SECONDS);
 	}
 
 	// Note that windowSize is to help us not wharrgarbl the O/S too much, as this just results in packets being dropped

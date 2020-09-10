@@ -82,7 +82,7 @@ import java.util.stream.Stream;
  */
 public class SimulationTest {
 	private static final String ENVIRONMENT_VAR_NAME = "TEST_DURATION"; // Same as used by regression test suite
-	private static final Duration DEFAULT_TEST_DURATION = Duration.of(10).seconds();
+	private static final Duration DEFAULT_TEST_DURATION = Duration.of(5).seconds();
 
 	public interface SimulationNetworkActor {
 		void run(RunningNetwork network);
@@ -458,10 +458,19 @@ public class SimulationTest {
 	 * @return map of check results
 	 */
 	public Map<String, Optional<TestInvariantError>> run() {
+		return getConfiguredDuration()
+				.map(this::run);
+	}
+
+	/**
+	 * Get test duration.
+	 *
+	 * @return configured test duration.
+	 */
+	public static Duration getConfiguredDuration() {
 		return Optional.ofNullable(System.getenv(ENVIRONMENT_VAR_NAME))
 				.flatMap(Duration::parse)
-				.orElse(DEFAULT_TEST_DURATION)
-				.apply(this::run);
+				.orElse(DEFAULT_TEST_DURATION);
 	}
 
 	/**

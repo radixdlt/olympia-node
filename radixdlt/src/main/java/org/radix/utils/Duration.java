@@ -66,7 +66,7 @@ public class Duration {
 		this.unit = unit;
 	}
 
-	public <R> R apply(BiFunction<Long, TimeUnit, R> mapper) {
+	public <R> R map(BiFunction<Long, TimeUnit, R> mapper) {
 		return mapper.apply(value, unit);
 	}
 
