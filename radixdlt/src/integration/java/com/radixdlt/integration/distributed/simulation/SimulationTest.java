@@ -323,6 +323,7 @@ public class SimulationTest {
 					modules.add(new MockedBFTConfigurationModule());
 				}
 				modules.add(new MockedLedgerModule());
+				modules.add(new LedgerRxModule());
 				modules.add(new MockedConsensusRunnerModule());
 			} else {
 				modules.add(new LedgerModule());
