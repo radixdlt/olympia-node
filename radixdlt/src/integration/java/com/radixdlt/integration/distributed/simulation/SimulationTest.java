@@ -82,7 +82,7 @@ import java.util.stream.Stream;
  */
 public class SimulationTest {
 	private static final String ENVIRONMENT_VAR_NAME = "TEST_DURATION"; // Same as used by regression test suite
-	private static final Duration DEFAULT_TEST_DURATION = Duration.of(1).minutes();
+	private static final Duration DEFAULT_TEST_DURATION = Duration.of(10).seconds();
 
 	public interface SimulationNetworkActor {
 		void run(RunningNetwork network);
