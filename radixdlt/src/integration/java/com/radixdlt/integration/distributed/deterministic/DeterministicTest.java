@@ -37,10 +37,10 @@ import com.radixdlt.integration.distributed.deterministic.configuration.NodeInde
 import com.radixdlt.integration.distributed.deterministic.network.DeterministicNetwork;
 import com.radixdlt.integration.distributed.deterministic.network.MessageMutator;
 import com.radixdlt.integration.distributed.deterministic.network.MessageSelector;
-import com.radixdlt.integration.distributed.simulation.MockedLedgerModule;
-import com.radixdlt.integration.distributed.simulation.MockedStateComputerWithEpochsModule;
-import com.radixdlt.integration.distributed.simulation.MockedStateComputerModule;
-import com.radixdlt.integration.distributed.simulation.MockedSyncServiceModule;
+import com.radixdlt.integration.distributed.MockedLedgerModule;
+import com.radixdlt.integration.distributed.MockedStateComputerWithEpochsModule;
+import com.radixdlt.integration.distributed.MockedStateComputerModule;
+import com.radixdlt.integration.distributed.MockedSyncServiceModule;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.EUID;

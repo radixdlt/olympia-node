@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.simulation;
+package com.radixdlt.integration.distributed;
 
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.bft.View;

@@ -15,15 +15,17 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.simulation;
+package com.radixdlt.integration.distributed;
 
 import com.google.inject.AbstractModule;
-import com.radixdlt.mempool.EmptyMempool;
-import com.radixdlt.mempool.Mempool;
+import com.radixdlt.consensus.liveness.NextCommandGenerator;
 
-public class MockedMempoolModule extends AbstractModule {
+/**
+ * Module which provides a random hash command generator
+ */
+public class MockedCommandGeneratorModule extends AbstractModule {
 	@Override
-	public void configure() {
-		bind(Mempool.class).to(EmptyMempool.class);
+	protected void configure() {
+		bind(NextCommandGenerator.class).to(RandomHashCommandGenerator.class);
 	}
 }
