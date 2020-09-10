@@ -21,10 +21,8 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
-import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
+import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
-import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 import org.junit.Test;
@@ -46,8 +44,8 @@ public class StaticValidatorsTest {
 			.ledgerAndEpochs(View.of(1), e -> IntStream.range(0, 4))
 			.checkEpochsHighViewCorrect("epochHighView", View.of(1))
 			.build();
-		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
-		assertThat(results).allSatisfy((name, err) -> assertThat(err).isEmpty());
+		TestResults results = bftTest.run(1, TimeUnit.MINUTES);
+		assertThat(results.getCheckResults()).allSatisfy((name, err) -> assertThat(err).isEmpty());
 	}
 
 	@Test
@@ -56,8 +54,8 @@ public class StaticValidatorsTest {
 			.ledgerAndEpochs(View.of(100), e -> IntStream.range(0, 4))
 			.checkEpochsHighViewCorrect("epochHighView", View.of(99))
 			.build();
-		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
-		assertThat(results).hasEntrySatisfying("epochHighView", error -> assertThat(error).isPresent());
+		TestResults results = bftTest.run(1, TimeUnit.MINUTES);
+		assertThat(results.getCheckResults()).hasEntrySatisfying("epochHighView", error -> assertThat(error).isPresent());
 	}
 
 	@Test
@@ -66,7 +64,7 @@ public class StaticValidatorsTest {
 			.ledgerAndEpochs(View.of(100), e -> IntStream.range(0, 4))
 			.checkEpochsHighViewCorrect("epochHighView", View.of(100))
 			.build();
-		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
-		assertThat(results).allSatisfy((name, err) -> assertThat(err).isEmpty());
+		TestResults results = bftTest.run(1, TimeUnit.MINUTES);
+		assertThat(results.getCheckResults()).allSatisfy((name, err) -> assertThat(err).isEmpty());
 	}
 }

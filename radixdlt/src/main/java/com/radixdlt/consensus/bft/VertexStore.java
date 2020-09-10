@@ -216,7 +216,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		private final QuorumCertificate qc;
 		private final QuorumCertificate committedQC;
 		private final BFTHeader committedHeader;
-		private final VerifiedLedgerHeaderAndProof verifiedLedgerHeaderAndProof;
+		private final VerifiedLedgerHeaderAndProof committedProof;
 		private final BFTNode author;
 		private SyncStage syncStage;
 		private final LinkedList<VerifiedVertex> fetched = new LinkedList<>();
@@ -226,7 +226,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 			Pair<BFTHeader, VerifiedLedgerHeaderAndProof> pair = committedQC.getCommittedAndLedgerStateProof()
 				.orElseThrow(() -> new IllegalStateException("committedQC must have a commit"));
 			this.committedHeader = pair.getFirst();
-			this.verifiedLedgerHeaderAndProof = pair.getSecond();
+			this.committedProof = pair.getSecond();
 			this.qc = qc;
 			this.committedQC = committedQC;
 			this.author = author;
@@ -308,12 +308,13 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		ImmutableList<BFTNode> signers = ImmutableList.of(syncState.author);
 		syncState.fetched.addAll(response.getVertices());
 
-		ledger.ifCommitSynced(syncState.verifiedLedgerHeaderAndProof)
+		ledger.ifCommitSynced(syncState.committedProof)
 			.then(() -> rebuildAndSyncQC(syncState))
 			.elseExecuteAndSendMessageOnSync(() -> {
+				log.info("SYNC_STATE: Requesting sync to commit " + syncState.committedProof);
 				syncState.setSyncStage(SyncStage.SYNC_TO_COMMIT);
 				LocalSyncRequest localSyncRequest = new LocalSyncRequest(
-					syncState.verifiedLedgerHeaderAndProof,
+					syncState.committedProof,
 					signers
 				);
 				syncRequestSender.sendLocalSyncRequest(localSyncRequest);

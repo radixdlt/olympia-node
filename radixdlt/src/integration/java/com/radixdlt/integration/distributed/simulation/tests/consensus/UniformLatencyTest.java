@@ -19,10 +19,8 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
+import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
-import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
@@ -48,7 +46,7 @@ public class UniformLatencyTest {
 			.checkConsensusNoTimeouts("noTimeouts")
 			.checkConsensusAllProposalsHaveDirectParents("directParents")
 			.build();
-		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
-		assertThat(results).allSatisfy((name, err) -> assertThat(err).isEmpty());
+		TestResults results = bftTest.run(1, TimeUnit.MINUTES);
+		assertThat(results.getCheckResults()).allSatisfy((name, err) -> assertThat(err).isEmpty());
 	}
 }

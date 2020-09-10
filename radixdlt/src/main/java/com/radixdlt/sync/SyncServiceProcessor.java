@@ -98,24 +98,24 @@ public final class SyncServiceProcessor {
 	}
 
 	public void processSyncRequest(SyncRequest syncRequest) {
-		log.debug("SYNC_REQUEST: {}", syncRequest);
+		log.info("SYNC_REQUEST: {}", syncRequest);
 		long stateVersion = syncRequest.getStateVersion();
 		VerifiedCommandsAndProof committedCommands = committedReader.getNextCommittedCommands(stateVersion, batchSize);
 		if (committedCommands == null) {
 			return;
 		}
 
-		log.debug("SYNC_REQUEST: SENDING_RESPONSE size: {}", committedCommands.size());
 		stateSyncNetwork.sendSyncResponse(syncRequest.getNode(), committedCommands);
 	}
 
-	public void processSyncResponse(VerifiedCommandsAndProof commands) {
+	public void processSyncResponse(VerifiedCommandsAndProof commandsAndProof) {
+		log.info("SYNC_RESPONSE: {} current={} target={}", commandsAndProof, this.currentHeader, this.targetHeader);
 		// TODO: Check validity of response
-		if (headerComparator.compare(commands.getHeader(), this.currentHeader) <= 0) {
+		if (headerComparator.compare(commandsAndProof.getHeader(), this.currentHeader) <= 0) {
 			return;
 		}
-		this.syncedCommandSender.sendSyncedCommand(commands);
-		this.currentHeader = commands.getHeader();
+		this.syncedCommandSender.sendSyncedCommand(commandsAndProof);
+		this.currentHeader = commandsAndProof.getHeader();
 	}
 
 	public void processVersionUpdate(VerifiedLedgerHeaderAndProof updatedHeader) {
@@ -126,6 +126,8 @@ public final class SyncServiceProcessor {
 
 	// TODO: Handle epoch changes with same state version
 	public void processLocalSyncRequest(LocalSyncRequest request) {
+		log.info("SYNC_LOCAL_REQUEST: {}", request);
+
 		final VerifiedLedgerHeaderAndProof nextTargetHeader = request.getTarget();
 		if (headerComparator.compare(nextTargetHeader, this.targetHeader) <= 0) {
 			return;

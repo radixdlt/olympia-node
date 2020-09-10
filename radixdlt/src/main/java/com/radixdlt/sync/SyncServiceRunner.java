@@ -17,6 +17,7 @@
 
 package com.radixdlt.sync;
 
+import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.sync.SyncServiceProcessor.SyncInProgress;
 import io.reactivex.rxjava3.core.Observable;
@@ -29,11 +30,15 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 import com.radixdlt.utils.ThreadFactories;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Manages thread safety and is the runner for the Sync Service Processor.
  */
-public final class SyncServiceRunner {
+public final class SyncServiceRunner implements ModuleRunner {
+	private static final Logger log = LogManager.getLogger();
+
 	public interface LocalSyncRequestsRx {
 		Observable<LocalSyncRequest> localSyncRequests();
 	}
@@ -74,6 +79,7 @@ public final class SyncServiceRunner {
 	/**
 	 * Start the service
 	 */
+	@Override
 	public void start() {
 		synchronized (lock) {
 			if (compositeDisposable != null) {
@@ -102,11 +108,14 @@ public final class SyncServiceRunner {
 
 			compositeDisposable = new CompositeDisposable(d0, d1, d2, d3, d4);
 		}
+
+		log.info("Sync started");
 	}
 
 	/**
 	 * Stop the service and cleanup resources
 	 */
+	@Override
 	public void stop() {
 		synchronized (lock) {
 			if (compositeDisposable != null) {

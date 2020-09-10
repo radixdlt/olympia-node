@@ -316,14 +316,13 @@ public class SimulationNetwork {
 
 		@Override
 		public void sendSyncRequest(BFTNode node, long stateVersion) {
-			SyncRequest syncRequest = new SyncRequest(node, stateVersion);
+			SyncRequest syncRequest = new SyncRequest(thisNode, stateVersion);
 			receivedMessages.onNext(MessageInTransit.newMessage(syncRequest, thisNode, node));
 		}
 
 		@Override
 		public void sendSyncResponse(BFTNode node, VerifiedCommandsAndProof commandsAndProof) {
 			receivedMessages.onNext(MessageInTransit.newMessage(commandsAndProof, thisNode, node));
-
 		}
 	}
 

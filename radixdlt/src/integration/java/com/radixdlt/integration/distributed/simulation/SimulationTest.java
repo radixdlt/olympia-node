@@ -449,15 +449,36 @@ public class SimulationTest {
 			.doOnSubscribe(d -> runners.forEach(c -> c.run(runningNetwork)));
 	}
 
+	public static class TestResults {
+		private final Map<String, Optional<TestInvariantError>> checkResults;
+		private final RunningNetwork network;
+
+		private TestResults(
+			Map<String, Optional<TestInvariantError>> checkResults,
+			RunningNetwork network
+		) {
+			this.checkResults = checkResults;
+			this.network = network;
+		}
+
+		public Map<String, Optional<TestInvariantError>> getCheckResults() {
+			return checkResults;
+		}
+
+		public RunningNetwork getNetwork() {
+			return network;
+		}
+	}
+
 	/**
 	 * Runs the test for a given time. Returns either once the duration has passed or if a check has failed.
 	 * Returns a map from the check name to the result.
 	 *
 	 * @param duration duration to run test for
 	 * @param timeUnit time unit of duration
-	 * @return map of check results
+	 * @return test results
 	 */
-	public Map<String, Optional<TestInvariantError>> run(long duration, TimeUnit timeUnit) {
+	public TestResults run(long duration, TimeUnit timeUnit) {
 		SimulationNetwork network = SimulationNetwork.builder()
 			.latencyProvider(this.latencyProvider)
 			.build();
@@ -471,9 +492,10 @@ public class SimulationTest {
 		);
 		RunningNetwork runningNetwork = bftNetwork.start();
 
-		return runChecks(runningNetwork, duration, timeUnit)
+		Map<String, Optional<TestInvariantError>> checkResults = runChecks(runningNetwork, duration, timeUnit)
 			.doFinally(bftNetwork::stop)
 			.blockingStream()
 			.collect(Collectors.toMap(Pair::getFirst, Pair::getSecond));
+		return new TestResults(checkResults, runningNetwork);
 	}
 }

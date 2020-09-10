@@ -21,9 +21,7 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
-import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
-import java.util.Map;
-import java.util.Optional;
+import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
@@ -47,7 +45,7 @@ public class SanityTest {
 	public void sanity_tests_should_pass() {
 		SimulationTest simulationTest = bftTestBuilder
 			.build();
-		Map<String, Optional<TestInvariantError>> results = simulationTest.run(1, TimeUnit.MINUTES);
-		assertThat(results).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+		TestResults results = simulationTest.run(1, TimeUnit.MINUTES);
+		assertThat(results.getCheckResults()).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
 	}
 }

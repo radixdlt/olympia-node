@@ -21,8 +21,9 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
+import com.google.inject.multibindings.MapBinder;
 import com.google.inject.name.Named;
-import com.radixdlt.ConsensusRunner;
+import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.BFTFactory;
@@ -45,7 +46,8 @@ import java.util.function.Function;
 public class MockedConsensusRunnerModule extends AbstractModule {
 	@Override
 	public void configure() {
-		bind(ConsensusRunner.class).to(BFTRunner.class).in(Scopes.SINGLETON);
+		MapBinder<String, ModuleRunner> moduleRunners = MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class);
+		moduleRunners.addBinding("consensus").to(BFTRunner.class).in(Scopes.SINGLETON);
 		bind(VertexStoreEventProcessor.class).to(VertexStore.class).in(Scopes.SINGLETON);
 	}
 

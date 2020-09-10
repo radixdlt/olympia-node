@@ -19,11 +19,9 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
+import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
-import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
@@ -45,8 +43,8 @@ public class FPlusOneOutOfBoundsTest {
 			.numNodesAndLatencies(3, latency, latency, latency)
 			.build();
 
-		Map<String, Optional<TestInvariantError>> results = test.run(1, TimeUnit.MINUTES);
-		assertThat(results).hasEntrySatisfying("noneCommitted", error -> assertThat(error).isPresent());
+		TestResults results = test.run(1, TimeUnit.MINUTES);
+		assertThat(results.getCheckResults()).hasEntrySatisfying("noneCommitted", error -> assertThat(error).isPresent());
 	}
 
 	/**
@@ -58,7 +56,7 @@ public class FPlusOneOutOfBoundsTest {
 			.numNodesAndLatencies(3, latency, latency, outOfBoundsLatency)
 			.build();
 
-		Map<String, Optional<TestInvariantError>> results = test.run(1, TimeUnit.MINUTES);
-		assertThat(results).allSatisfy((name, error) -> assertThat(error).isNotPresent());
+		TestResults results = test.run(1, TimeUnit.MINUTES);
+		assertThat(results.getCheckResults()).allSatisfy((name, error) -> assertThat(error).isNotPresent());
 	}
 }

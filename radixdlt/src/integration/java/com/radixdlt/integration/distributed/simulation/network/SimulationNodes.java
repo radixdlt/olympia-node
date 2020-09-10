@@ -25,10 +25,11 @@ import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
+import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.ConsensusRxModule;
-import com.radixdlt.ConsensusRunner;
+import com.radixdlt.ModuleRunner;
 import com.radixdlt.SystemInfoRxModule;
 import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.bft.VerifiedVertex;
@@ -46,6 +47,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -116,16 +118,17 @@ public class SimulationNodes {
 		Mempool getMempool(BFTNode node);
 
 		SimulationNetwork getUnderlyingNetwork();
+
+		Map<BFTNode, SystemCounters> getSystemCounters();
 	}
 
 	public RunningNetwork start() {
-
-		List<ConsensusRunner> consensusRunners = this.nodeInstances.stream()
-			.map(i -> i.getInstance(ConsensusRunner.class))
+		List<ModuleRunner> moduleRunners = this.nodeInstances.stream()
+			.flatMap(i -> i.getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() { })).values().stream())
 			.collect(Collectors.toList());
 
-		for (ConsensusRunner consensusRunner : consensusRunners) {
-			consensusRunner.start();
+		for (ModuleRunner moduleRunner : moduleRunners) {
+			moduleRunner.start();
 		}
 
 		return new RunningNetwork() {
@@ -193,10 +196,21 @@ public class SimulationNodes {
 			public SimulationNetwork getUnderlyingNetwork() {
 				return underlyingNetwork;
 			}
+
+			@Override
+			public Map<BFTNode, SystemCounters> getSystemCounters() {
+				return nodes.stream()
+					.collect(Collectors.toMap(
+						node -> node,
+						node -> nodeInstances.get(nodes.indexOf(node)).getInstance(SystemCounters.class)
+					));
+			}
 		};
 	}
 
 	public void stop() {
-		this.nodeInstances.forEach(i -> i.getInstance(ConsensusRunner.class).stop());
+		this.nodeInstances.stream()
+			.flatMap(i -> i.getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() { })).values().stream())
+			.forEach(ModuleRunner::stop);
 	}
 }

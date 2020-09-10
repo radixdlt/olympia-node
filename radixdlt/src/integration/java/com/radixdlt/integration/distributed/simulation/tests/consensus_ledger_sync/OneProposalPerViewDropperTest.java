@@ -19,22 +19,24 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_s
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
+import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
-import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
-import java.util.Map;
-import java.util.Optional;
+import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
+import java.util.LongSummaryStatistics;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
-public class OneSlowNodeTest {
+public class OneProposalPerViewDropperTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
-		.numNodesAndLatencies(4, 10, 10, 10, 200)
+		.numNodes(4)
+		.randomLatency(10, 200)
 		.pacemakerTimeout(5000)
+		.addOneProposalPerViewDropper()
 		.ledgerAndSync()
 		.checkConsensusSafety("safety")
-		.checkConsensusLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
+		.checkConsensusLiveness("liveness", 5000, TimeUnit.MILLISECONDS)
 		.checkConsensusNoTimeouts("noTimeouts")
 		.checkConsensusAllProposalsHaveDirectParents("directParents")
 		.checkLedgerInOrder("ledgerInOrder")
@@ -44,8 +46,16 @@ public class OneSlowNodeTest {
 	public void sanity_tests_should_pass() {
 		SimulationTest simulationTest = bftTestBuilder
 			.build();
-		Map<String, Optional<TestInvariantError>> results = simulationTest.run(1, TimeUnit.MINUTES);
-		assertThat(results).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+		TestResults results = simulationTest.run(1, TimeUnit.MINUTES);
+		assertThat(results.getCheckResults()).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+
+		LongSummaryStatistics statistics = results.getNetwork().getSystemCounters().values().stream()
+			.map(s -> s.get(CounterType.SYNC_PROCESSED))
+			.mapToLong(l -> l)
+			.summaryStatistics();
+
+		System.out.println(statistics);
+		assertThat(statistics.getSum()).isGreaterThan(0L);
 	}
 
 }

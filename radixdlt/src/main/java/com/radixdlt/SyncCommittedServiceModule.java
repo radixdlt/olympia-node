@@ -20,7 +20,11 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.google.inject.multibindings.ProvidesIntoMap;
+import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.sync.StateSyncNetwork;
 import com.radixdlt.sync.SyncServiceProcessor;
@@ -57,13 +61,14 @@ public class SyncCommittedServiceModule extends AbstractModule {
 			headerComparator,
 			header,
 			BATCH_SIZE,
-			10
+			1000
 		);
 	}
 
-	@Provides
+	@ProvidesIntoMap
+	@StringMapKey("sync")
 	@Singleton
-	private SyncServiceRunner syncServiceRunner(
+	private ModuleRunner syncServiceRunner(
 		LocalSyncRequestsRx localSyncRequestsRx,
 		SyncTimeoutsRx syncTimeoutsRx,
 		VersionUpdatesRx versionUpdatesRx,
@@ -80,9 +85,10 @@ public class SyncCommittedServiceModule extends AbstractModule {
 	}
 
 	@Provides
-	@Singleton
-	private SyncedCommandSender syncedAtomSender(StateComputerLedger stateComputerLedger) {
-		return stateComputerLedger::commit;
+	private SyncedCommandSender syncedCommandSender(SystemCounters systemCounters, StateComputerLedger stateComputerLedger) {
+		return cmds -> {
+			systemCounters.add(CounterType.SYNC_PROCESSED, cmds.size());
+			stateComputerLedger.commit(cmds);
+		};
 	}
-
 }
