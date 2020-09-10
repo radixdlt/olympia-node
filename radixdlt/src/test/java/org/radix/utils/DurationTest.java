@@ -47,7 +47,17 @@ public class DurationTest {
 	}
 
 	@Test
+	public void zeroValueResultsToEmptyDuration() {
+		assertFalse(Duration.parse("0").isPresent());
+	}
+
+	@Test
 	public void incorrectUnitsResultToEmptyValue() {
 		assertFalse(Duration.parse("123f").isPresent());
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void invalidUnitTriggersException() {
+		Duration.of(1).units(null);
 	}
 }
