@@ -55,7 +55,7 @@ public final class EpochManagerRunner implements ConsensusRunner {
 	@Inject
 	public EpochManagerRunner(
 		EpochChangeRx epochChangeRx,
-		ConsensusEventsRx networkRx,
+		BFTEventsRx networkRx,
 		PacemakerRx pacemakerRx,
 		VertexSyncRx vertexSyncRx,
 		CommittedStateSyncRx committedStateSyncRx,
@@ -76,7 +76,7 @@ public final class EpochManagerRunner implements ConsensusRunner {
 			pacemakerRx.localTimeouts()
 				.observeOn(singleThreadScheduler)
 				.doOnNext(epochManager::processLocalTimeout),
-			networkRx.consensusEvents()
+			networkRx.bftEvents()
 				.observeOn(singleThreadScheduler)
 				.doOnNext(epochManager::processConsensusEvent),
 			rpcRx.requests()

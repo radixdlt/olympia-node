@@ -22,7 +22,9 @@ import com.google.common.collect.Iterables;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.Key;
 import com.google.inject.Module;
+import com.google.inject.name.Names;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.ConsensusRxModule;
 import com.radixdlt.ConsensusRunner;
@@ -81,22 +83,20 @@ public class SimulationNodes {
 			new AbstractModule() {
 				@Override
 				public void configure() {
-					bind(BFTNode.class).toInstance(self);
+					bind(BFTNode.class).annotatedWith(Names.named("self")).toInstance(self);
 				}
 			},
 			new ConsensusModule(pacemakerTimeout),
 			new ConsensusRxModule(),
 			new SystemInfoRxModule(),
 			new MockedCryptoModule(),
-			new SimulationNetworkModule(getVerticesRPCEnabled, self, underlyingNetwork)
+			new SimulationNetworkModule(getVerticesRPCEnabled, underlyingNetwork)
 		);
 		return Guice.createInjector(Iterables.concat(modules, syncModules));
 	}
 
 	// TODO: Add support for epoch changes
 	public interface RunningNetwork {
-		EpochChange initialEpoch();
-
 		List<BFTNode> getNodes();
 
 		Observable<EpochChange> latestEpochChanges();
@@ -124,24 +124,21 @@ public class SimulationNodes {
 
 		return new RunningNetwork() {
 			@Override
-			public EpochChange initialEpoch() {
-				// Just do first instance for now
-				return nodeInstances.get(0).getInstance(EpochChange.class);
-			}
-
-			@Override
 			public List<BFTNode> getNodes() {
 				return nodes;
 			}
 
 			@Override
 			public Observable<EpochChange> latestEpochChanges() {
+				// Just do first instance for now
+				EpochChange initialEpoch =  nodeInstances.get(0).getInstance(EpochChange.class);
+
 				Set<Observable<EpochChange>> epochChanges = nodeInstances.stream()
 					.map(i -> i.getInstance(EpochChangeRx.class))
 					.map(EpochChangeRx::epochChanges)
 					.collect(Collectors.toSet());
 
-				return Observable.just(initialEpoch()).concatWith(
+				return Observable.just(initialEpoch).concatWith(
 					Observable.merge(epochChanges)
 						.scan((cur, next) -> next.getProof().getEpoch() > cur.getProof().getEpoch() ? next : cur)
 						.distinctUntilChanged()
@@ -152,7 +149,7 @@ public class SimulationNodes {
 			public Observable<Pair<BFTNode, VerifiedVertex>> committedVertices() {
 				Set<Observable<Pair<BFTNode, VerifiedVertex>>> committedVertices = nodeInstances.stream()
 					.map(i -> {
-						BFTNode node = i.getInstance(BFTNode.class);
+						BFTNode node = i.getInstance(Key.get(BFTNode.class, Names.named("self")));
 						return i.getInstance(InfoRx.class).committedVertices()
 							.map(v -> Pair.of(node, v));
 					})
@@ -165,7 +162,7 @@ public class SimulationNodes {
 			public Observable<Pair<BFTNode, VerifiedCommandsAndProof>> committedCommands() {
 				Set<Observable<Pair<BFTNode, VerifiedCommandsAndProof>>> committedCommands = nodeInstances.stream()
 					.map(i -> {
-						BFTNode node = i.getInstance(BFTNode.class);
+						BFTNode node = i.getInstance(Key.get(BFTNode.class, Names.named("self")));
 						return i.getInstance(InfoRx.class).committedCommands()
 							.map(v -> Pair.of(node, v));
 					})

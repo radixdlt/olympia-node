@@ -22,11 +22,11 @@ import io.reactivex.rxjava3.core.Observable;
 /**
  * Network accessor for the EventCoordinator
  */
-public interface ConsensusEventsRx {
+public interface BFTEventsRx {
 	/**
 	 * Accessor to the stream of consensus message events as they are received
 	 * from the network.
 	 * @return observable of consensus message events
 	 */
-	Observable<ConsensusEvent> consensusEvents();
+	Observable<ConsensusEvent> bftEvents();
 }

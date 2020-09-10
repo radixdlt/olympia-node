@@ -29,7 +29,7 @@ import org.apache.logging.log4j.Logger;
 import org.radix.network.messaging.Message;
 
 import com.radixdlt.consensus.ConsensusEvent;
-import com.radixdlt.consensus.ConsensusEventsRx;
+import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
@@ -47,7 +47,7 @@ import io.reactivex.rxjava3.subjects.PublishSubject;
  * BFT Network sending and receiving layer used on top of the MessageCentral
  * layer.
  */
-public final class MessageCentralBFTNetwork implements BFTEventSender, ConsensusEventsRx {
+public final class MessageCentralBFTNetwork implements BFTEventSender, BFTEventsRx {
 	private static final Logger log = LogManager.getLogger();
 
 	private final BFTNode self;
@@ -70,7 +70,7 @@ public final class MessageCentralBFTNetwork implements BFTEventSender, Consensus
 	}
 
 	@Override
-	public Observable<ConsensusEvent> consensusEvents() {
+	public Observable<ConsensusEvent> bftEvents() {
 		return Observable.<ConsensusEvent>create(emitter -> {
 			MessageListener<ConsensusEventMessage> listener = (src, msg) -> emitter.onNext(msg.getConsensusMessage());
 			this.messageCentral.addListener(ConsensusEventMessage.class, listener);

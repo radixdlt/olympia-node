@@ -19,7 +19,7 @@ package com.radixdlt.integration.distributed.simulation;
 
 import com.radixdlt.ConsensusRunner;
 import com.radixdlt.consensus.BFTEventProcessor;
-import com.radixdlt.consensus.ConsensusEventsRx;
+import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
@@ -58,7 +58,7 @@ public class BFTRunner implements ConsensusRunner {
 
 	@Inject
 	public BFTRunner(
-		ConsensusEventsRx networkRx,
+		BFTEventsRx networkRx,
 		PacemakerRx pacemakerRx,
 		VertexSyncRx vertexSyncRx,
 		SyncVerticesRPCRx rpcRx,
@@ -76,7 +76,7 @@ public class BFTRunner implements ConsensusRunner {
 				.observeOn(singleThreadScheduler)
 				.map(LocalTimeout::getView)
 				.doOnNext(bftEventProcessor::processLocalTimeout),
-			networkRx.consensusEvents()
+			networkRx.bftEvents()
 				.observeOn(singleThreadScheduler)
 				.doOnNext(e -> {
 					if (e instanceof NewView) {

@@ -45,10 +45,10 @@ public class SimulationNetworkTest {
 	public void when_send_new_view_to_self__then_should_receive_it() {
 		SimulationNetwork network = SimulationNetwork.builder().build();
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
-		network.getNetworkRx(node1).consensusEvents()
+		network.getNetwork(node1).bftEvents()
 			.subscribe(testObserver);
 		NewView newView = mock(NewView.class);
-		network.getNetworkSender(node1).sendNewView(newView, node1);
+		network.getNetwork(node1).sendNewView(newView, node1);
 		testObserver.awaitCount(1);
 		testObserver.assertValue(newView);
 	}
@@ -57,11 +57,11 @@ public class SimulationNetworkTest {
 	public void when_send_new_view_to_self_twice__then_should_receive_both() {
 		SimulationNetwork network = SimulationNetwork.builder().build();
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
-		network.getNetworkRx(node1).consensusEvents()
+		network.getNetwork(node1).bftEvents()
 			.subscribe(testObserver);
 		NewView newView = mock(NewView.class);
-		network.getNetworkSender(node1).sendNewView(newView, node1);
-		network.getNetworkSender(node1).sendNewView(newView, node1);
+		network.getNetwork(node1).sendNewView(newView, node1);
+		network.getNetwork(node1).sendNewView(newView, node1);
 		testObserver.awaitCount(2);
 		testObserver.assertValues(newView, newView);
 	}
@@ -70,11 +70,11 @@ public class SimulationNetworkTest {
 	public void when_self_and_other_send_new_view_to_self__then_should_receive_both() {
 		SimulationNetwork network = SimulationNetwork.builder().build();
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
-		network.getNetworkRx(node1).consensusEvents()
+		network.getNetwork(node1).bftEvents()
 			.subscribe(testObserver);
 		NewView newView = mock(NewView.class);
-		network.getNetworkSender(node1).sendNewView(newView, node1);
-		network.getNetworkSender(node2).sendNewView(newView, node1);
+		network.getNetwork(node1).sendNewView(newView, node1);
+		network.getNetwork(node2).sendNewView(newView, node1);
 		testObserver.awaitCount(2);
 		testObserver.assertValues(newView, newView);
 	}
@@ -83,10 +83,10 @@ public class SimulationNetworkTest {
 	public void when_send_vote_to_self__then_should_receive_it() {
 		SimulationNetwork network = SimulationNetwork.builder().build();
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
-		network.getNetworkRx(node1).consensusEvents()
+		network.getNetwork(node1).bftEvents()
 			.subscribe(testObserver);
 		Vote vote = mock(Vote.class);
-		network.getNetworkSender(node1).sendVote(vote, node1);
+		network.getNetwork(node1).sendVote(vote, node1);
 		testObserver.awaitCount(1);
 		testObserver.assertValue(vote);
 	}
@@ -95,10 +95,10 @@ public class SimulationNetworkTest {
 	public void when_broadcast_proposal__then_should_receive_it() {
 		SimulationNetwork network = SimulationNetwork.builder().build();
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
-		network.getNetworkRx(node1).consensusEvents()
+		network.getNetwork(node1).bftEvents()
 			.subscribe(testObserver);
 		Proposal proposal = mock(Proposal.class);
-		network.getNetworkSender(node1).broadcastProposal(proposal, ImmutableSet.of(node1, node2));
+		network.getNetwork(node1).broadcastProposal(proposal, ImmutableSet.of(node1, node2));
 		testObserver.awaitCount(1);
 		testObserver.assertValue(proposal);
 	}
@@ -110,10 +110,10 @@ public class SimulationNetworkTest {
 			.build();
 
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
-		network.getNetworkRx(node2).consensusEvents()
+		network.getNetwork(node2).bftEvents()
 			.subscribe(testObserver);
 		NewView newView = mock(NewView.class);
-		network.getNetworkSender(node1).sendNewView(newView, node1);
+		network.getNetwork(node1).sendNewView(newView, node1);
 		testObserver.awaitCount(1);
 		testObserver.assertEmpty();
 	}
@@ -124,10 +124,10 @@ public class SimulationNetworkTest {
 		Hash vertexId = mock(Hash.class);
 
 		TestObserver<GetVerticesRequest> rpcRequestListener =
-			network.getNetworkRx(node2).requests().test();
+			network.getNetwork(node2).requests().test();
 
 		network
-			.getSyncSender(node1)
+			.getNetwork(node1)
 			.sendGetVerticesRequest(vertexId, node2, 1, new Object());
 
 		rpcRequestListener.awaitCount(1);

@@ -22,7 +22,7 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
-import com.radixdlt.consensus.ConsensusEventsRx;
+import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
@@ -60,7 +60,7 @@ public final class NetworkModule extends AbstractModule {
 
 		// Network BFT messages
 		bind(BFTEventSender.class).to(MessageCentralBFTNetwork.class);
-		bind(ConsensusEventsRx.class).to(MessageCentralBFTNetwork.class);
+		bind(BFTEventsRx.class).to(MessageCentralBFTNetwork.class);
 	}
 
 

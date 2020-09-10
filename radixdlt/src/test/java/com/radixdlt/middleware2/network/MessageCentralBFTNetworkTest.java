@@ -57,7 +57,7 @@ public class MessageCentralBFTNetworkTest {
 	@Test
 	public void when_send_new_view_to_self__then_should_receive_new_view_message() {
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
-		network.consensusEvents().subscribe(testObserver);
+		network.bftEvents().subscribe(testObserver);
 		NewView newView = mock(NewView.class);
 		network.sendNewView(newView, self);
 		testObserver.awaitCount(1);
@@ -67,7 +67,7 @@ public class MessageCentralBFTNetworkTest {
 	@Test
 	public void when_send_vote_to_self__then_should_receive_vote_message() {
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
-		network.consensusEvents().subscribe(testObserver);
+		network.bftEvents().subscribe(testObserver);
 		Vote vote = mock(Vote.class);
 		network.sendVote(vote, self);
 		testObserver.awaitCount(1);
@@ -77,7 +77,7 @@ public class MessageCentralBFTNetworkTest {
 	@Test
 	public void when_broadcast_proposal__then_should_receive_proposal() {
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
-		network.consensusEvents().subscribe(testObserver);
+		network.bftEvents().subscribe(testObserver);
 		Proposal proposal = mock(Proposal.class);
 		network.broadcastProposal(proposal, Collections.singleton(this.self));
 		testObserver.awaitCount(1);

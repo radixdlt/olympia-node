@@ -21,6 +21,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
+import com.google.inject.name.Named;
 import com.radixdlt.ConsensusRunner;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTEventProcessor;
@@ -51,7 +52,7 @@ public class MockedConsensusRunnerModule extends AbstractModule {
 	@Provides
 	@Singleton
 	public BFTEventProcessor eventProcessor(
-		BFTNode self,
+		@Named("self") BFTNode self,
 		Function<BFTNode, BFTConfiguration> config,
 		BFTFactory bftFactory,
 		PacemakerFactory pacemakerFactory,
@@ -90,7 +91,7 @@ public class MockedConsensusRunnerModule extends AbstractModule {
 	@Provides
 	@Singleton
 	public VertexStore vertexStore(
-		BFTNode self,
+		@Named("self") BFTNode self,
 		Function<BFTNode, BFTConfiguration> config,
 		VertexStoreFactory vertexStoreFactory,
 		Ledger ledger
