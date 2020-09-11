@@ -38,6 +38,7 @@ radixdlt/logger.config
 
 # docker support
 docker/*.deb
+docker/*.tar
 docker/.env 
 *.swo
 *.swp
