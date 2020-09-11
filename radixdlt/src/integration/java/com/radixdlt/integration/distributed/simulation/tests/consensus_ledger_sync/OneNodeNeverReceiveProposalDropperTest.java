@@ -28,12 +28,12 @@ import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
-public class OneProposalPerViewDropperTest {
+public class OneNodeNeverReceiveProposalDropperTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(4)
 		.randomLatency(10, 200)
 		.pacemakerTimeout(5000)
-		.addOneProposalPerViewDropper()
+		.addOneNodeNeverReceiveProposalDropper()
 		.ledgerAndSync()
 		.checkConsensusSafety("safety")
 		.checkConsensusLiveness("liveness", 5000, TimeUnit.MILLISECONDS)
