@@ -163,6 +163,13 @@ tasks.withType(Tar) {
     compression = Compression.GZIP
 }
 
+task generateDevUniverse(type: Exec) {
+    dependsOn compileJava
+    group = "Execution"
+    description = "Generate development universe"
+    commandLine "java", "-classpath", sourceSets.main.runtimeClasspath.getAsPath(), "org.radix.GenerateUniverses", "-t", "development", "-p", "-j"
+}
+
 task createGenerateUniversesScripts(type: CreateStartScripts) {
   mainClassName = 'org.radix.GenerateUniverses'
   applicationName = 'generate_universes'
