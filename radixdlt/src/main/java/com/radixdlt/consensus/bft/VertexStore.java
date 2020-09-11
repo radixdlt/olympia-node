@@ -517,7 +517,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	 * @return the vertex if sucessful, otherwise an empty optional if vertex was already committed
 	 */
 	public Optional<VerifiedVertex> commit(BFTHeader header, VerifiedLedgerHeaderAndProof ledgerStateWithProof) {
-		if (header.getView().compareTo(this.getRoot().getView()) < 0) {
+		if (header.getView().compareTo(this.getRoot().getView()) <= 0) {
 			return Optional.empty();
 		}
 
