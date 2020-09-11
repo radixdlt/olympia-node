@@ -18,7 +18,6 @@
 package com.radixdlt.integration.distributed.simulation.network;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -27,6 +26,7 @@ import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
+import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.ConsensusRxModule;
 import com.radixdlt.ModuleRunner;
@@ -61,7 +61,8 @@ public class SimulationNodes {
 	private final ImmutableList<Injector> nodeInstances;
 	private final List<BFTNode> nodes;
 	private final boolean getVerticesRPCEnabled;
-	private final ImmutableList<Module> syncModules;
+	private final Module baseNodeModule;
+	private final Map<BFTNode, Module> byzantineNodeModules;
 
 	/**
 	 * Create a BFT test network with an underlying simulated network.
@@ -73,11 +74,13 @@ public class SimulationNodes {
 		List<BFTNode> nodes,
 		SimulationNetwork underlyingNetwork,
 		int pacemakerTimeout,
-		ImmutableList<Module> syncModules,
+		Module baseNodeModule,
+		Map<BFTNode, Module> byzantineNodeModules,
 		boolean getVerticesRPCEnabled
 	) {
 		this.nodes = nodes;
-		this.syncModules = syncModules;
+		this.baseNodeModule = baseNodeModule;
+		this.byzantineNodeModules = byzantineNodeModules;
 		this.getVerticesRPCEnabled = getVerticesRPCEnabled;
 		this.underlyingNetwork = Objects.requireNonNull(underlyingNetwork);
 		this.pacemakerTimeout = pacemakerTimeout;
@@ -85,7 +88,7 @@ public class SimulationNodes {
 	}
 
 	private Injector createBFTInstance(BFTNode self) {
-		List<Module> modules = ImmutableList.of(
+		Module module = Modules.combine(
 			new AbstractModule() {
 				@Override
 				public void configure() {
@@ -98,9 +101,16 @@ public class SimulationNodes {
 			new ConsensusRxModule(),
 			new SystemInfoRxModule(),
 			new MockedCryptoModule(),
-			new SimulationNetworkModule(getVerticesRPCEnabled, underlyingNetwork)
+			new SimulationNetworkModule(getVerticesRPCEnabled, underlyingNetwork),
+			baseNodeModule
 		);
-		return Guice.createInjector(Iterables.concat(modules, syncModules));
+
+		Module byzantineModule = byzantineNodeModules.get(self);
+		if (byzantineModule != null) {
+			module = Modules.override(module).with(byzantineModule);
+		}
+
+		return Guice.createInjector(module);
 	}
 
 	// TODO: Add support for epoch changes

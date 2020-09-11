@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.google.inject.Provides;
+import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusRunnerModule;
 import com.radixdlt.LedgerCommandGeneratorModule;
 import com.radixdlt.LedgerEpochChangeModule;
@@ -36,8 +37,8 @@ import com.radixdlt.SyncCommittedServiceModule;
 import com.radixdlt.SyncRxModule;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.integration.distributed.MockedBFTConfigurationModule;
-import com.radixdlt.integration.distributed.MockedBFTConfigurationOneDifferentGenesisModule;
 import com.radixdlt.integration.distributed.MockedCommandGeneratorModule;
 import com.radixdlt.integration.distributed.MockedConsensusRunnerModule;
 import com.radixdlt.integration.distributed.MockedLedgerModule;
@@ -82,6 +83,7 @@ import io.reactivex.rxjava3.core.Single;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -110,20 +112,23 @@ public class SimulationTest {
 	private final ImmutableMap<String, TestInvariant> checks;
 	private final int pacemakerTimeout;
 	private final boolean getVerticesRPCEnabled;
-	private final ImmutableList<Module> modules;
+	private final Module baseNodeModule;
+	private final Map<BFTNode, Module> byzantineNodeModules;
 
 	private SimulationTest(
 		ImmutableList<BFTNode> nodes,
 		LatencyProvider latencyProvider,
 		int pacemakerTimeout,
 		boolean getVerticesRPCEnabled,
-		ImmutableList<Module> modules,
+		Module baseNodeModule,
+		Map<BFTNode, Module> byzantineNodeModules,
 		ImmutableMap<String, TestInvariant> checks,
 		ImmutableSet<SimulationNetworkActor> runners
 	) {
 		this.nodes = nodes;
 		this.latencyProvider = latencyProvider;
-		this.modules = modules;
+		this.baseNodeModule = baseNodeModule;
+		this.byzantineNodeModules = byzantineNodeModules;
 		this.pacemakerTimeout = pacemakerTimeout;
 		this.getVerticesRPCEnabled = getVerticesRPCEnabled;
 		this.checks = checks;
@@ -145,13 +150,14 @@ public class SimulationTest {
 		private Function<Long, IntStream> epochToNodeIndexMapper;
 		private LedgerType ledgerType = LedgerType.MOCKED_LEDGER;
 		private int numInitialValidators = 0;
-		private boolean modifyOneGenesis = false;
+		private final ImmutableMap.Builder<BFTNode, Module> byzantineModules = ImmutableMap.builder();
 
 		private Builder() {
 		}
 
-		public Builder modifyOneGenesis(boolean modifyOneGenesis) {
-			this.modifyOneGenesis = modifyOneGenesis;
+		public Builder addSingleByzantineModule(Module byzantineModule) {
+			BFTNode firstNode = BFTNode.create(nodes.get(0).getPublicKey());
+			byzantineModules.put(firstNode, byzantineModule);
 			return this;
 		}
 
@@ -335,11 +341,7 @@ public class SimulationTest {
 			});
 
 			if (ledgerType == LedgerType.MOCKED_LEDGER) {
-				if (modifyOneGenesis) {
-					modules.add(new MockedBFTConfigurationOneDifferentGenesisModule(BFTNode.create(nodes.get(0).getPublicKey())));
-				} else {
-					modules.add(new MockedBFTConfigurationModule());
-				}
+				modules.add(new MockedBFTConfigurationModule());
 				modules.add(new MockedLedgerModule());
 				modules.add(new LedgerRxModule());
 				modules.add(new MockedConsensusRunnerModule());
@@ -349,7 +351,6 @@ public class SimulationTest {
 				modules.add(new LedgerEpochChangeRxModule());
 
 				if (ledgerType == LedgerType.LEDGER) {
-					modules.add(new MockedBFTConfigurationModule());
 					modules.add(new MockedConsensusRunnerModule());
 					modules.add(new MockedCommandGeneratorModule());
 					modules.add(new MockedMempoolModule());
@@ -358,7 +359,6 @@ public class SimulationTest {
 				} else if (ledgerType == LedgerType.LEDGER_AND_SYNC) {
 					modules.add(new SyncCommittedServiceModule());
 					modules.add(new SyncRxModule());
-					modules.add(new MockedBFTConfigurationModule());
 					modules.add(new MockedConsensusRunnerModule());
 					modules.add(new MockedCommandGeneratorModule());
 					modules.add(new MockedMempoolModule());
@@ -377,7 +377,6 @@ public class SimulationTest {
 					modules.add(new MockedStateComputerWithEpochsModule(epochHighView, epochToValidatorSetMapping));
 					modules.add(new MockedSyncServiceModule());
 				} else if (ledgerType == LedgerType.LEDGER_AND_LOCALMEMPOOL) {
-					modules.add(new MockedBFTConfigurationModule());
 					modules.add(new MockedConsensusRunnerModule());
 					modules.add(new LedgerCommandGeneratorModule());
 					modules.add(new LedgerLocalMempoolModule(10));
@@ -407,6 +406,7 @@ public class SimulationTest {
 				}
 			}
 
+
 			ImmutableSet<SimulationNetworkActor> runners = this.runnableBuilder.build().stream()
 				.map(f -> f.apply(nodes))
 				.collect(ImmutableSet.toImmutableSet());
@@ -426,7 +426,8 @@ public class SimulationTest {
 				latencyProvider.copyOf(),
 				pacemakerTimeout,
 				getVerticesRPCEnabled,
-				modules.build(),
+				Modules.combine(modules.build()),
+				byzantineModules.build(),
 				checks,
 				runners
 			);
@@ -527,7 +528,8 @@ public class SimulationTest {
 			nodes,
 			network,
 			pacemakerTimeout,
-			modules,
+			baseNodeModule,
+			byzantineNodeModules,
 			getVerticesRPCEnabled
 		);
 		RunningNetwork runningNetwork = bftNetwork.start();

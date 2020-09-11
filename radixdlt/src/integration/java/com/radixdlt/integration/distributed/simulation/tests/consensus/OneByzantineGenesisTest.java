@@ -19,6 +19,8 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
+import com.radixdlt.crypto.Hash;
+import com.radixdlt.integration.distributed.MockedBFTConfigurationModule;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import java.util.concurrent.TimeUnit;
@@ -38,7 +40,7 @@ public class OneByzantineGenesisTest {
 	public void given_2_correct_bfts_and_1_incorrect__then_should_never_make_progress() {
 		SimulationTest bftTest = bftTestBuilder
 			.numNodes(3)
-			.modifyOneGenesis(true)
+			.addSingleByzantineModule(new MockedBFTConfigurationModule(Hash.random()))
 			.checkConsensusNoneCommitted("noneCommitted")
 			.build();
 
@@ -61,7 +63,7 @@ public class OneByzantineGenesisTest {
 	public void given_3_correct_bfts_and_1_incorrect__then_should_make_progress() {
 		SimulationTest bftTest = bftTestBuilder
 			.numNodes(4)
-			.modifyOneGenesis(true)
+			.addSingleByzantineModule(new MockedBFTConfigurationModule(Hash.random()))
 			.checkConsensusLiveness("liveness", 5, TimeUnit.SECONDS)
 			.build();
 

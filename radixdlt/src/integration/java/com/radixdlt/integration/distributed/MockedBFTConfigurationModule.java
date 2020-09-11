@@ -23,26 +23,34 @@ import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.UnverifiedVertex;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.crypto.Hash;
-import java.util.function.Function;
 
 /**
  * Shared initial bft configuration across all nodes
  */
 public class MockedBFTConfigurationModule extends AbstractModule {
 
-	@Provides
-	Function<BFTNode, BFTConfiguration> config(BFTValidatorSet validatorSet) {
-		UnverifiedVertex genesis = UnverifiedVertex.createGenesis(LedgerHeader.genesis(Hash.ZERO_HASH));
-		VerifiedVertex hashedGenesis = new VerifiedVertex(genesis, Hash.ZERO_HASH);
+	private final Hash genesisHash;
 
-		return node -> new BFTConfiguration(
+	public MockedBFTConfigurationModule() {
+		this(Hash.ZERO_HASH);
+	}
+
+	public MockedBFTConfigurationModule(Hash genesisHash) {
+		this.genesisHash = genesisHash;
+	}
+
+	@Provides
+	BFTConfiguration config(BFTValidatorSet validatorSet) {
+		UnverifiedVertex genesis = UnverifiedVertex.createGenesis(LedgerHeader.genesis(genesisHash));
+		VerifiedVertex hashedGenesis = new VerifiedVertex(genesis, genesisHash);
+
+		return new BFTConfiguration(
 			validatorSet,
 			hashedGenesis,
-			QuorumCertificate.ofGenesis(hashedGenesis, LedgerHeader.genesis(Hash.ZERO_HASH))
+			QuorumCertificate.ofGenesis(hashedGenesis, LedgerHeader.genesis(genesisHash))
 		);
 	}
 }
