@@ -22,9 +22,7 @@ import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
-import com.radixdlt.sync.SyncServiceRunner;
 import com.radixdlt.systeminfo.InMemorySystemInfoManager;
 import com.radixdlt.api.CommittedAtomsRx;
 import com.radixdlt.api.SubmissionErrorsRx;
@@ -40,7 +38,6 @@ import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Bytes;
 
-import java.util.Comparator;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
