@@ -36,7 +36,7 @@ public interface StateSyncNetwork {
 	 * Retrieve stream of sync requests
  	 * @return an unending Observable of sync requests
 	 */
-	Observable<SyncRequest> syncRequests();
+	Observable<RemoteSyncRequest> syncRequests();
 
 	/**
 	 * Sends a sync request to a peer node

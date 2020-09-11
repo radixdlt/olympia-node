@@ -18,7 +18,6 @@
 package com.radixdlt.sync;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -31,18 +30,15 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.statecomputer.RadixEngineStateComputer;
-import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
-import com.radixdlt.sync.SyncServiceProcessor.SyncTimeoutScheduler;
-import com.radixdlt.sync.SyncServiceProcessor.SyncedCommandSender;
+import com.radixdlt.sync.LocalSyncServiceProcessor.SyncTimeoutScheduler;
+import com.radixdlt.sync.LocalSyncServiceProcessor.SyncedCommandSender;
 import java.util.Comparator;
 import org.junit.Before;
 import org.junit.Test;
 
-public class SyncServiceProcessorTest {
+public class LocalSyncServiceProcessorTest {
 	private StateSyncNetwork stateSyncNetwork;
-	private SyncServiceProcessor syncServiceProcessor;
-	private RadixEngineStateComputer stateComputer;
+	private LocalSyncServiceProcessor syncServiceProcessor;
 	private SyncedCommandSender syncedCommandSender;
 	private SyncTimeoutScheduler syncTimeoutScheduler;
 	private VerifiedLedgerHeaderAndProof currentHeader;
@@ -51,45 +47,18 @@ public class SyncServiceProcessorTest {
 	@Before
 	public void setUp() {
 		this.stateSyncNetwork = mock(StateSyncNetwork.class);
-		this.stateComputer = mock(RadixEngineStateComputer.class);
 		this.syncedCommandSender = mock(SyncedCommandSender.class);
 		this.syncTimeoutScheduler = mock(SyncTimeoutScheduler.class);
 		this.currentHeader = mock(VerifiedLedgerHeaderAndProof.class);
 		this.headerComparator = mock(Comparator.class);
-		this.syncServiceProcessor = new SyncServiceProcessor(
-			stateComputer,
+		this.syncServiceProcessor = new LocalSyncServiceProcessor(
 			stateSyncNetwork,
 			syncedCommandSender,
 			syncTimeoutScheduler,
 			headerComparator,
 			currentHeader,
-			2,
 			1
 		);
-	}
-
-	@Test
-	public void when_remote_sync_request__then_process_it() throws NextCommittedLimitReachedException {
-		SyncRequest syncRequest = mock(SyncRequest.class);
-		BFTNode node = mock(BFTNode.class);
-		when(syncRequest.getNode()).thenReturn(node);
-		VerifiedCommandsAndProof verifiedCommandsAndProof = mock(VerifiedCommandsAndProof.class);
-		when(stateComputer.getNextCommittedCommands(anyLong(), anyInt())).thenReturn(verifiedCommandsAndProof);
-		syncServiceProcessor.processSyncRequest(syncRequest);
-		verify(stateSyncNetwork, times(1)).sendSyncResponse(eq(node), any());
-	}
-
-	@Test
-	public void when_remote_sync_request_and_unable__then_dont_do_anything() {
-		syncServiceProcessor.processSyncRequest(mock(SyncRequest.class));
-		verify(stateSyncNetwork, never()).sendSyncResponse(any(), any());
-	}
-
-	@Test
-	public void when_remote_sync_request_and_null_return__then_dont_do_anything() {
-		syncServiceProcessor.processSyncRequest(mock(SyncRequest.class));
-		when(stateComputer.getNextCommittedCommands(anyLong(), anyInt())).thenReturn(null);
-		verify(stateSyncNetwork, never()).sendSyncResponse(any(), any());
 	}
 
 	@Test

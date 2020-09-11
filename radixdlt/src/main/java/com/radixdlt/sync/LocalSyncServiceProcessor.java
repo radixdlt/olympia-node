@@ -33,7 +33,7 @@ import org.apache.logging.log4j.Logger;
  * Thread-safety must be handled by caller.
  */
 @NotThreadSafe
-public final class SyncServiceProcessor {
+public final class LocalSyncServiceProcessor {
 	public interface SyncedCommandSender {
 		void sendSyncedCommand(VerifiedCommandsAndProof committedCommand);
 	}
@@ -60,9 +60,7 @@ public final class SyncServiceProcessor {
 	}
 
 	private static final Logger log = LogManager.getLogger();
-	private final CommittedReader committedReader;
 	private final SyncedCommandSender syncedCommandSender;
-	private final int batchSize;
 	private final SyncTimeoutScheduler syncTimeoutScheduler;
 	private final long patienceMilliseconds;
 	private final StateSyncNetwork stateSyncNetwork;
@@ -70,42 +68,25 @@ public final class SyncServiceProcessor {
 	private VerifiedLedgerHeaderAndProof targetHeader;
 	private VerifiedLedgerHeaderAndProof currentHeader;
 
-	public SyncServiceProcessor(
-		CommittedReader committedReader,
+	public LocalSyncServiceProcessor(
 		StateSyncNetwork stateSyncNetwork,
 		SyncedCommandSender syncedCommandSender,
 		SyncTimeoutScheduler syncTimeoutScheduler,
 		Comparator<VerifiedLedgerHeaderAndProof> headerComparator,
 		VerifiedLedgerHeaderAndProof current,
-		int batchSize,
 		long patienceMilliseconds
 	) {
 		if (patienceMilliseconds <= 0) {
 			throw new IllegalArgumentException();
 		}
-		if (batchSize <= 0) {
-			throw new IllegalArgumentException();
-		}
-		this.committedReader = Objects.requireNonNull(committedReader);
+
 		this.stateSyncNetwork = Objects.requireNonNull(stateSyncNetwork);
 		this.syncedCommandSender = Objects.requireNonNull(syncedCommandSender);
 		this.syncTimeoutScheduler = Objects.requireNonNull(syncTimeoutScheduler);
-		this.batchSize = batchSize;
 		this.patienceMilliseconds = patienceMilliseconds;
 		this.headerComparator = Objects.requireNonNull(headerComparator);
 		this.currentHeader = current;
 		this.targetHeader = current;
-	}
-
-	public void processSyncRequest(SyncRequest syncRequest) {
-		log.info("SYNC_REQUEST: {}", syncRequest);
-		long stateVersion = syncRequest.getStateVersion();
-		VerifiedCommandsAndProof committedCommands = committedReader.getNextCommittedCommands(stateVersion, batchSize);
-		if (committedCommands == null) {
-			return;
-		}
-
-		stateSyncNetwork.sendSyncResponse(syncRequest.getNode(), committedCommands);
 	}
 
 	public void processSyncResponse(VerifiedCommandsAndProof commandsAndProof) {

@@ -21,7 +21,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.sync.StateSyncNetwork;
-import com.radixdlt.sync.SyncRequest;
+import com.radixdlt.sync.RemoteSyncRequest;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageListener;
 import com.radixdlt.universe.Universe;
@@ -58,12 +58,12 @@ public final class MessageCentralLedgerSync implements StateSyncNetwork {
 	}
 
 	@Override
-	public Observable<SyncRequest> syncRequests() {
+	public Observable<RemoteSyncRequest> syncRequests() {
 		return Observable.create(emitter -> {
 			MessageListener<SyncRequestMessage> listener = (src, msg) -> {
 				if (src.hasSystem()) {
 					BFTNode node = BFTNode.create(src.getSystem().getKey());
-					emitter.onNext(new SyncRequest(node, msg.getStateVersion()));
+					emitter.onNext(new RemoteSyncRequest(node, msg.getStateVersion()));
 				}
 			};
 			this.messageCentral.addListener(SyncRequestMessage.class, listener);

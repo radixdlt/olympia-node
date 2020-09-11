@@ -23,11 +23,11 @@ import java.util.Objects;
 /**
  * A sync request from a peer
  */
-public final class SyncRequest {
+public final class RemoteSyncRequest {
 	private final long stateVersion;
 	private final BFTNode node;
 
-	public SyncRequest(BFTNode node, long stateVersion) {
+	public RemoteSyncRequest(BFTNode node, long stateVersion) {
 		this.node = Objects.requireNonNull(node);
 		this.stateVersion = stateVersion;
 	}

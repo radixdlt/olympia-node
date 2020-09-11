@@ -26,10 +26,11 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.sync.CommittedReader;
+import com.radixdlt.sync.RemoteSyncServiceProcessor;
 import com.radixdlt.sync.StateSyncNetwork;
-import com.radixdlt.sync.SyncServiceProcessor;
-import com.radixdlt.sync.SyncServiceProcessor.SyncTimeoutScheduler;
-import com.radixdlt.sync.SyncServiceProcessor.SyncedCommandSender;
+import com.radixdlt.sync.LocalSyncServiceProcessor;
+import com.radixdlt.sync.LocalSyncServiceProcessor.SyncTimeoutScheduler;
+import com.radixdlt.sync.LocalSyncServiceProcessor.SyncedCommandSender;
 import com.radixdlt.sync.SyncServiceRunner;
 import com.radixdlt.sync.SyncServiceRunner.LocalSyncRequestsRx;
 import com.radixdlt.sync.SyncServiceRunner.SyncTimeoutsRx;
@@ -45,22 +46,32 @@ public class SyncCommittedServiceModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private SyncServiceProcessor syncServiceProcessor(
+	private RemoteSyncServiceProcessor remoteSyncServiceProcessor(
+		CommittedReader committedReader,
+		StateSyncNetwork stateSyncNetwork
+	) {
+		return new RemoteSyncServiceProcessor(
+			committedReader,
+			stateSyncNetwork,
+			BATCH_SIZE
+		);
+	}
+
+	@Provides
+	@Singleton
+	private LocalSyncServiceProcessor syncServiceProcessor(
 		Comparator<VerifiedLedgerHeaderAndProof> headerComparator,
 		VerifiedLedgerHeaderAndProof header,
-		CommittedReader committedReader,
 		StateSyncNetwork stateSyncNetwork,
 		SyncedCommandSender syncedCommandSender,
 		SyncTimeoutScheduler syncTimeoutScheduler
 	) {
-		return new SyncServiceProcessor(
-			committedReader,
+		return new LocalSyncServiceProcessor(
 			stateSyncNetwork,
 			syncedCommandSender,
 			syncTimeoutScheduler,
 			headerComparator,
 			header,
-			BATCH_SIZE,
 			1000
 		);
 	}
@@ -73,14 +84,16 @@ public class SyncCommittedServiceModule extends AbstractModule {
 		SyncTimeoutsRx syncTimeoutsRx,
 		VersionUpdatesRx versionUpdatesRx,
 		StateSyncNetwork stateSyncNetwork,
-		SyncServiceProcessor syncServiceProcessor
+		LocalSyncServiceProcessor syncServiceProcessor,
+		RemoteSyncServiceProcessor remoteSyncServiceProcessor
 	) {
 		return new SyncServiceRunner(
 			localSyncRequestsRx,
 			syncTimeoutsRx,
 			versionUpdatesRx,
 			stateSyncNetwork,
-			syncServiceProcessor
+			syncServiceProcessor,
+			remoteSyncServiceProcessor
 		);
 	}
 

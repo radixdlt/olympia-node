@@ -40,7 +40,7 @@ import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.sync.StateSyncNetwork;
-import com.radixdlt.sync.SyncRequest;
+import com.radixdlt.sync.RemoteSyncRequest;
 import io.reactivex.rxjava3.core.Observable;
 
 import io.reactivex.rxjava3.schedulers.Timed;
@@ -310,13 +310,13 @@ public class SimulationNetwork {
 		}
 
 		@Override
-		public Observable<SyncRequest> syncRequests() {
-			return myMessages.ofType(SyncRequest.class);
+		public Observable<RemoteSyncRequest> syncRequests() {
+			return myMessages.ofType(RemoteSyncRequest.class);
 		}
 
 		@Override
 		public void sendSyncRequest(BFTNode node, long stateVersion) {
-			SyncRequest syncRequest = new SyncRequest(thisNode, stateVersion);
+			RemoteSyncRequest syncRequest = new RemoteSyncRequest(thisNode, stateVersion);
 			receivedMessages.onNext(MessageInTransit.newMessage(syncRequest, thisNode, node));
 		}
 

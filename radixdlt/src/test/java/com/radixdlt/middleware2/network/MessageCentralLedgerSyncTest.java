@@ -31,7 +31,7 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.network.addressbook.AddressBook;
-import com.radixdlt.sync.SyncRequest;
+import com.radixdlt.sync.RemoteSyncRequest;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageListener;
@@ -91,7 +91,7 @@ public class MessageCentralLedgerSyncTest {
 			return null;
 		}).when(messageCentral).addListener(eq(SyncRequestMessage.class), any());
 
-		TestObserver<SyncRequest> testObserver = this.messageCentralLedgerSync.syncRequests().test();
+		TestObserver<RemoteSyncRequest> testObserver = this.messageCentralLedgerSync.syncRequests().test();
 		Peer peer = mock(Peer.class);
 		when(peer.hasSystem()).thenReturn(true);
 		RadixSystem system = mock(RadixSystem.class);
