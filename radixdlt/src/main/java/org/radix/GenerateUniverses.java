@@ -17,236 +17,142 @@
 
 package org.radix;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.radixdlt.DefaultSerialization;
-import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
-import com.radixdlt.atommodel.tokens.TokenPermission;
-import com.radixdlt.atommodel.Atom;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.atommodel.message.MessageParticle;
-import com.radixdlt.atomos.RRIParticle;
-import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
-import com.radixdlt.identifiers.RRI;
-
-import org.json.JSONException;
 import org.json.JSONObject;
-import org.radix.utils.IOUtils;
 
-import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.DefaultSerialization;
+import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.keys.Keys;
-import com.radixdlt.middleware.ParticleGroup;
-import com.radixdlt.middleware.SpunParticle;
-import com.radixdlt.properties.RuntimeProperties;
-
-import org.apache.commons.cli.ParseException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.universe.Universe.UniverseType;
-import com.radixdlt.utils.RadixConstants;
-import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.Bytes;
+import com.radixdlt.utils.Pair;
+
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.security.Security;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public final class GenerateUniverses {
-	private static final Logger LOGGER = LogManager.getLogger();
+	private static final String DEFAULT_UNIVERSES = Arrays.stream(UniverseType.values())
+		.map(UniverseType::toString)
+		.map(String::toLowerCase)
+		.collect(Collectors.joining(","));
+	private static final String DEFAULT_TIMESTAMP = String.valueOf(Instant.parse("2020-01-01T00:00:00.00Z").toEpochMilli());
+	private static final String DEFAULT_KEYSTORE  = "universe.ks";
 
-	public static final String RADIX_ICON_URL  = "https://assets.radixdlt.com/icons/icon-xrd-32x32.png";
-	public static final String RADIX_TOKEN_URL = "https://www.radixdlt.com/";
+	public static void main(String[] args) {
+		Security.insertProviderAt(new BouncyCastleProvider(), 1);
 
-	private final Serialization serialization;
-	private final boolean standalone;
-	private final RuntimeProperties properties;
-	private final ECKeyPair universeKey;
+		Options options = new Options();
+		options.addOption("h", false, "Show usage information (this message)");
+		options.addOption("d", false, "Suppress DSON output");
+		options.addOption("j", false, "Suppress JSON output");
+		options.addOption("k", true,  "Specify universe keystore (default: " + DEFAULT_KEYSTORE + ")");
+		options.addOption("p", false, "Include universe private key in output");
+		options.addOption("t", true,  "Specify universe types (default: " + DEFAULT_UNIVERSES + ")");
+		options.addOption("T", true,  "Specify universe timestamp (default: " + DEFAULT_TIMESTAMP + ")");
 
-	private static final ImmutableMap<MutableSupplyTokenDefinitionParticle.TokenTransition, TokenPermission> XRD_TOKEN_PERMISSIONS =
-		ImmutableMap.of(
-			MutableSupplyTokenDefinitionParticle.TokenTransition.BURN, TokenPermission.ALL,
-			MutableSupplyTokenDefinitionParticle.TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY
-		);
-
-
-	public GenerateUniverses(boolean standalone, RuntimeProperties properties) throws IOException, CryptoException {
-		this.standalone = standalone;
-		this.properties = Objects.requireNonNull(properties);
-		this.serialization = DefaultSerialization.getInstance();
-
-		if (standalone) {
-			Security.insertProviderAt(new BouncyCastleProvider(), 1);
-		}
-
-		String universeKeyPath = this.properties.get("universe.key.path", "universe.ks");
-		universeKey = Keys.readKey(universeKeyPath, "universe", "RADIX_UNIVERSE_KEYSTORE_PASSWORD", "RADIX_UNIVERSE_KEY_PASSWORD");
-	}
-
-	public GenerateUniverses(RuntimeProperties properties) throws IOException, CryptoException {
-		this(false, properties);
-	}
-
-	public List<Universe> generateUniverses() throws CryptoException {
-		if (standalone) {
-			LOGGER.info("UNIVERSE KEY PUBLIC: {}", () -> Bytes.toHexString(universeKey.getPublicKey().getBytes()));
-		}
-
-		List<Universe> universes = new ArrayList<>();
-
-		long universeTimestampSeconds = this.properties.get("universe.timestamp", 1551225600);
-		long universeTimestampMillis = TimeUnit.SECONDS.toMillis(universeTimestampSeconds);
-
-		universes.add(buildUniverse(10000, "Radix Mainnet", "The Radix public Universe", UniverseType.PRODUCTION, universeTimestampMillis));
-		universes.add(buildUniverse(20000, "Radix Testnet", "The Radix test Universe", UniverseType.TEST, universeTimestampMillis));
-		universes.add(buildUniverse(30000, "Radix Devnet",  "The Radix development Universe", UniverseType.DEVELOPMENT, universeTimestampMillis));
-
-		return universes;
-	}
-
-	private Universe buildUniverse(
-		int port,
-		String name,
-		String description,
-		UniverseType type,
-		long timestamp
-	) throws CryptoException {
-		LOGGER.info("------------------ Start of Universe: {} ------------------", type);
-		byte universeMagic = (byte) (Universe.computeMagic(universeKey.getPublicKey(), timestamp, port, type) & 0xFF);
-		Atom universeAtom = createGenesisAtom(universeMagic);
-
-		Universe universe = Universe.newBuilder()
-			.port(port)
-			.name(name)
-			.description(description)
-			.type(type)
-			.timestamp(timestamp)
-			.creator(universeKey.getPublicKey())
-			.addAtom(universeAtom)
-			.build();
-		universe.sign(universeKey);
-
-		if (!universe.verify(universeKey.getPublicKey())) {
-			throw new IllegalStateException("Signature verification failed for " + name + " universe");
-		}
-		if (standalone) {
-			LOGGER.info("{}", () -> serialization.toJsonObject(universe, Output.API).toString(4));
-			byte[] universeBytes = serialization.toDson(universe, Output.WIRE);
-			LOGGER.info("UNIVERSE - {}: {}", () -> type, () -> Bytes.toBase64String(universeBytes));
-		}
-		LOGGER.info("------------------ End of Universe: {} ------------------", type);
-		return universe;
-	}
-
-	private Atom createGenesisAtom(byte magic) throws CryptoException {
-		RadixAddress universeAddress = new RadixAddress(magic, universeKey.getPublicKey());
-		UInt256 genesisAmount = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 + 9); // 10^9 = 1,000,000,000 pieces of eight, please
-		List<SpunParticle> xrdParticles = createTokenDefinition(
-			magic,
-			TokenDefinitionUtils.getNativeTokenShortCode(),
-			"Rads",
-			"Radix Native Tokens",
-			genesisAmount
-		);
-		MessageParticle helloUniverseMessage = createHelloMessage(universeAddress);
-
-		Atom genesisAtom = new Atom();
-		genesisAtom.addParticleGroupWith(helloUniverseMessage, Spin.UP);
-		genesisAtom.addParticleGroup(ParticleGroup.of(xrdParticles));
-		genesisAtom.sign(universeKey);
-
-		if (standalone) {
-			byte[] sigBytes = serialization.toDson(genesisAtom.getSignature(universeKey.euid()), Output.WIRE);
-			byte[] transactionBytes = serialization.toDson(genesisAtom, Output.HASH);
-			LOGGER.info("GENESIS ATOM SIGNATURE {}: {}", universeKey::euid, () -> Bytes.toHexString(sigBytes));
-			LOGGER.info("GENESIS ATOM HASH: {}", genesisAtom.getHash());
-			LOGGER.info("GENESIS ATOM DSON: {}", () -> Bytes.toBase64String(transactionBytes));
-		}
-
-		if (!genesisAtom.verify(universeKey.getPublicKey())) {
-			throw new IllegalStateException("Signature verification failed - GENESIS TRANSACTION HASH: " + genesisAtom.getHash());
-		}
-
-		return genesisAtom;
-	}
-
-	/*
-	 * Create the 'hello' message particle at the given universes
-	 */
-	private static MessageParticle createHelloMessage(RadixAddress address) {
-		return new MessageParticle(address, address, "Radix... just imagine!".getBytes(RadixConstants.STANDARD_CHARSET));
-	}
-
-	/*
-	 * Create a token definition as a genesis token with the radix icon and granularity of 1
-	 */
-	private ImmutableList<SpunParticle> createTokenDefinition(
-		byte magic,
-		String symbol,
-		String name,
-		String description,
-		UInt256 initialSupply
-	) {
-		RadixAddress universeAddress = new RadixAddress(magic, this.universeKey.getPublicKey());
-		RRI tokenRRI = RRI.of(universeAddress, symbol);
-
-		ImmutableList.Builder<SpunParticle> particles = ImmutableList.builder();
-
-		particles.add(SpunParticle.down(new RRIParticle(tokenRRI)));
-		particles.add(SpunParticle.up(new MutableSupplyTokenDefinitionParticle(
-			tokenRRI,
-			name,
-			description,
-			UInt256.ONE,
-			RADIX_ICON_URL,
-			RADIX_TOKEN_URL,
-			XRD_TOKEN_PERMISSIONS
-		)));
-		particles.add(SpunParticle.up(new TransferrableTokensParticle(
-			universeAddress,
-			initialSupply,
-			UInt256.ONE,
-			tokenRRI,
-			XRD_TOKEN_PERMISSIONS
-		)));
-		if (!initialSupply.equals(UInt256.MAX_VALUE)) {
-			particles.add(SpunParticle.up(new UnallocatedTokensParticle(
-				UInt256.MAX_VALUE.subtract(initialSupply),
-				UInt256.ONE,
-				tokenRRI,
-				XRD_TOKEN_PERMISSIONS
-			)));
-		}
-		return particles.build();
-	}
-
-	public static void main(String[] arguments) throws IOException, CryptoException {
-		RuntimeProperties properties = loadProperties(arguments);
-
-		GenerateUniverses generateUniverses = new GenerateUniverses(true, properties);
-		generateUniverses.generateUniverses();
-	}
-
-	private static RuntimeProperties loadProperties(String[] arguments) throws IOException {
+		CommandLineParser parser = new DefaultParser();
 		try {
-			JSONObject runtimeConfigurationJSON = new JSONObject();
-			try (InputStream is = Radix.class.getResourceAsStream("/runtime_options.json")) {
-				runtimeConfigurationJSON = new JSONObject(IOUtils.toString(is));
+			CommandLine cmd = parser.parse(options, args);
+			if (!cmd.getArgList().isEmpty()) {
+				System.err.println("Extra arguments: " + cmd.getArgList().stream().collect(Collectors.joining(" ")));
+				usage(options);
+				return;
 			}
-			return new RuntimeProperties(runtimeConfigurationJSON, arguments);
-		} catch (JSONException | ParseException ex) {
-			throw new IOException("while loading runtime properties", ex);
+
+			if (cmd.hasOption('h')) {
+				usage(options);
+				return;
+			}
+
+			final boolean suppressDson = cmd.hasOption('d');
+			final boolean suppressJson = cmd.hasOption('j');
+			final String universeKeyFile = getDefaultOption(cmd, 'k', DEFAULT_KEYSTORE);
+			final boolean outputPrivateKey = cmd.hasOption('p');
+			final EnumSet<UniverseType> universeTypes = parseUniverseTypes(getDefaultOption(cmd, 't', DEFAULT_UNIVERSES));
+			final long universeTimestampSeconds = Long.parseLong(getDefaultOption(cmd, 'T', DEFAULT_TIMESTAMP));
+
+			final long universeTimestamp = TimeUnit.SECONDS.toMillis(universeTimestampSeconds);
+			final ECKeyPair universeKey = Keys.readKey(
+				universeKeyFile,
+				"universe",
+				"RADIX_UNIVERSE_KEYSTORE_PASSWORD",
+				"RADIX_UNIVERSE_KEY_PASSWORD"
+			);
+
+			universeTypes.stream()
+				.map(type -> Pair.of(type, RadixUniverseBuilder.forType(type).withKey(universeKey).withTimestamp(universeTimestamp).build()))
+				.forEach(p -> outputUniverse(suppressDson, suppressJson, outputPrivateKey, p.getFirst(), p.getSecond()));
+		} catch (ParseException e) {
+			System.err.println(e.getMessage());
+			usage(options);
+		} catch (IOException | CryptoException e) {
+			System.err.println("Error while reading key: " + e.getMessage());
+			usage(options);
 		}
+	}
+
+	private static void outputUniverse(
+		boolean suppressDson,
+		boolean suppressJson,
+		boolean outputPrivateKey,
+		UniverseType type,
+		Pair<ECKeyPair, Universe> p
+	) {
+		final Serialization serialization = DefaultSerialization.getInstance();
+		final ECKeyPair k = p.getFirst();
+		final Universe u = p.getSecond();
+		if (!suppressDson) {
+			byte[] universeBytes = serialization.toDson(u, Output.WIRE);
+			RadixAddress universeAddress = new RadixAddress((byte) u.getMagic(), k.getPublicKey());
+			RRI tokenRri = RRI.of(universeAddress, TokenDefinitionUtils.getNativeTokenShortCode());
+			System.out.format("export RADIXDLT_UNIVERSE_TYPE=%s%n", type);
+			System.out.format("export RADIXDLT_UNIVERSE_PUBKEY=%s%n", k.getPublicKey().toBase64());
+			if (outputPrivateKey) {
+				System.out.format("export RADIXDLT_UNIVERSE_PRIVKEY=%s%n", Bytes.toBase64String(k.getPrivateKey()));
+			}
+			System.out.format("export RADIXDLT_UNIVERSE_ADDRESS=%s%n", universeAddress);
+			System.out.format("export RADIXDLT_UNIVERSE_TOKEN=%s%n", tokenRri);
+			System.out.format("export RADIXDLT_UNIVERSE=%s%n", Bytes.toBase64String(universeBytes));
+		}
+		if (!suppressJson) {
+			JSONObject json = new JSONObject(serialization.toJson(p.getSecond(), Output.WIRE));
+			System.out.println(json.toString(4));
+		}
+	}
+
+	private static void usage(Options options) {
+		HelpFormatter formatter = new HelpFormatter();
+		formatter.printHelp(GenerateUniverses.class.getSimpleName(), options, true);
+	}
+
+	private static EnumSet<UniverseType> parseUniverseTypes(String types) {
+		return Arrays.stream(types.split(","))
+			.map(String::toUpperCase)
+			.map(UniverseType::valueOf)
+			.collect(Collectors.toCollection(() -> EnumSet.noneOf(UniverseType.class)));
+	}
+
+	private static String getDefaultOption(CommandLine cmd, char opt, String defaultValue) {
+		String value = cmd.getOptionValue(opt);
+		return value == null ? defaultValue : value;
 	}
 }
