@@ -23,6 +23,7 @@ import java.nio.file.Paths;
 
 import org.apache.commons.cli.ParseException;
 import org.json.JSONObject;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -69,6 +70,11 @@ public class RuntimePropertiesTest {
 		this.properties = new RuntimeProperties(options, cmdLine);
 		Files.deleteIfExists(Paths.get(TEST_PROPERTIES));
 		assertFalse(Files.exists(Paths.get(TEST_PROPERTIES)));
+	}
+
+	@After
+	public void shutDown() throws IOException {
+		Files.deleteIfExists(Paths.get(TEST_PROPERTIES));
 	}
 
 	@Test

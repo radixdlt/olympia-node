@@ -18,6 +18,7 @@
 package com.radixdlt.network.transport.udp;
 
 import java.io.IOException;
+import java.time.temporal.ChronoUnit;
 import java.util.LinkedList;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
@@ -42,8 +43,8 @@ import com.radixdlt.network.transport.TransportOutboundConnection;
 import static org.junit.Assert.*;
 
 public class NettyUDPTransportTest {
-	private static final int TEST_SECONDS = SimulationTest.getConfiguredDuration()
-			.map((value, unit) -> (int)((unit.toSeconds(value) + 1)/2));
+	private static final int TEST_SECONDS =
+			(int) ((SimulationTest.getConfiguredDuration().get(ChronoUnit.SECONDS) + 1) / 2);
 
 	private NettyUDPTransportImpl transport1;
 	private NettyUDPTransportImpl transport2;

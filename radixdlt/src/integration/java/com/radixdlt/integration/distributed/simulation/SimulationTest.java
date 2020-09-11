@@ -34,7 +34,6 @@ import com.radixdlt.RadixEngineModule;
 import com.radixdlt.RadixEngineRxModule;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
-import org.radix.utils.Duration;
 import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
 import com.radixdlt.integration.distributed.simulation.application.IncrementalBytesSubmittor;
 import com.radixdlt.integration.distributed.simulation.application.CommittedChecker;
@@ -62,10 +61,14 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.LatencyProvider;
+import com.radixdlt.utils.DurationParser;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
+
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -82,7 +85,7 @@ import java.util.stream.Stream;
  */
 public class SimulationTest {
 	private static final String ENVIRONMENT_VAR_NAME = "TEST_DURATION"; // Same as used by regression test suite
-	private static final Duration DEFAULT_TEST_DURATION = Duration.of(5).seconds();
+	private static final Duration DEFAULT_TEST_DURATION = Duration.ofSeconds(5);
 
 	public interface SimulationNetworkActor {
 		void run(RunningNetwork network);
@@ -419,7 +422,7 @@ public class SimulationTest {
 		return new Builder();
 	}
 
-	private Observable<Pair<String, Optional<TestInvariantError>>> runChecks(RunningNetwork runningNetwork, long duration, TimeUnit timeUnit) {
+	private Observable<Pair<String, Optional<TestInvariantError>>> runChecks(RunningNetwork runningNetwork, java.time.Duration duration) {
 		List<Pair<String, Observable<Pair<String, TestInvariantError>>>> assertions = this.checks.keySet().stream()
 			.map(name -> {
 				TestInvariant check = this.checks.get(name);
@@ -439,7 +442,7 @@ public class SimulationTest {
 			.map(assertion -> assertion.getSecond()
 				.takeUntil(firstErrorSignal.flatMapObservable(name ->
 					!assertion.getFirst().equals(name) ? Observable.just(name) : Observable.never()))
-				.takeUntil(Observable.timer(duration, timeUnit))
+				.takeUntil(Observable.timer(duration.get(ChronoUnit.SECONDS), TimeUnit.SECONDS))
 				.map(e -> Optional.of(e.getSecond()))
 				.first(Optional.empty())
 				.map(result -> Pair.of(assertion.getFirst(), result))
@@ -458,8 +461,7 @@ public class SimulationTest {
 	 * @return map of check results
 	 */
 	public Map<String, Optional<TestInvariantError>> run() {
-		return getConfiguredDuration()
-				.map(this::run);
+		return run(getConfiguredDuration());
 	}
 
 	/**
@@ -469,7 +471,7 @@ public class SimulationTest {
 	 */
 	public static Duration getConfiguredDuration() {
 		return Optional.ofNullable(System.getenv(ENVIRONMENT_VAR_NAME))
-				.flatMap(Duration::parse)
+				.flatMap(DurationParser::parse)
 				.orElse(DEFAULT_TEST_DURATION);
 	}
 
@@ -478,10 +480,9 @@ public class SimulationTest {
 	 * Returns a map from the check name to the result.
 	 *
 	 * @param duration duration to run test for
-	 * @param timeUnit time unit of duration
 	 * @return map of check results
 	 */
-	public Map<String, Optional<TestInvariantError>> run(long duration, TimeUnit timeUnit) {
+	public Map<String, Optional<TestInvariantError>> run(Duration duration) {
 		SimulationNetwork network = SimulationNetwork.builder()
 			.latencyProvider(this.latencyProvider)
 			.build();
@@ -495,7 +496,7 @@ public class SimulationTest {
 		);
 		RunningNetwork runningNetwork = bftNetwork.start();
 
-		return runChecks(runningNetwork, duration, timeUnit)
+		return runChecks(runningNetwork, duration)
 			.doFinally(bftNetwork::stop)
 			.blockingStream()
 			.collect(Collectors.toMap(Pair::getFirst, Pair::getSecond));

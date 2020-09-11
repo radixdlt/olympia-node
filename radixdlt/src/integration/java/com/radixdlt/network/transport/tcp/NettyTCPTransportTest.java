@@ -18,6 +18,7 @@
 package com.radixdlt.network.transport.tcp;
 
 import java.io.IOException;
+import java.time.temporal.ChronoUnit;
 import java.util.LinkedList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -42,8 +43,8 @@ import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 public class NettyTCPTransportTest {
-	private static final int TEST_SECONDS = SimulationTest.getConfiguredDuration()
-			.map((value, unit) -> (int)((unit.toSeconds(value) + 1)/2));
+	private static final int TEST_SECONDS =
+			(int) ((SimulationTest.getConfiguredDuration().get(ChronoUnit.SECONDS) + 1) / 2);
 
 	private NettyTCPTransport transport1;
 	private NettyTCPTransport transport2;
