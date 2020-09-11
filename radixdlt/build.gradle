@@ -87,6 +87,8 @@ test {
     testLogging {
         events "passed", "skipped", "failed"
         exceptionFormat "full"
+        outputs.upToDateWhen {false}
+        showStandardStreams true
     }
     systemProperty "java.security.egd", "file:/dev/urandom"
 }

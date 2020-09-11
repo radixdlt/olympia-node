@@ -44,7 +44,7 @@ import static org.mockito.Mockito.*;
 
 public class NettyTCPTransportTest {
 	private static final int TEST_SECONDS =
-			(int) ((SimulationTest.getConfiguredDuration().get(ChronoUnit.SECONDS) + 1) / 2);
+		(int) ((SimulationTest.getConfiguredDuration().get(ChronoUnit.SECONDS) + 1) / 2);
 
 	private NettyTCPTransport transport1;
 	private NettyTCPTransport transport2;
