@@ -19,7 +19,9 @@ package com.radixdlt.ledger;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
+import com.google.inject.Inject;
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -65,11 +67,13 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	private final CommittedStateSyncSender committedStateSyncSender;
 	private final CommittedSender committedSender;
 	private final SystemCounters counters;
+	private final Hasher hasher;
 
 	private final Object lock = new Object();
 	private VerifiedLedgerHeaderAndProof currentLedgerHeader;
 	private final TreeMap<Long, Set<Object>> committedStateSyncers = new TreeMap<>();
 
+	@Inject
 	public StateComputerLedger(
 		Comparator<VerifiedLedgerHeaderAndProof> headerComparator,
 		VerifiedLedgerHeaderAndProof initialLedgerState,
@@ -77,6 +81,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		StateComputer stateComputer,
 		CommittedStateSyncSender committedStateSyncSender,
 		CommittedSender committedSender,
+		Hasher hasher,
 		SystemCounters counters
 	) {
 		this.headerComparator = Objects.requireNonNull(headerComparator);
@@ -86,6 +91,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		this.committedStateSyncSender = Objects.requireNonNull(committedStateSyncSender);
 		this.committedSender = Objects.requireNonNull(committedSender);
 		this.counters = Objects.requireNonNull(counters);
+		this.hasher = Objects.requireNonNull(hasher);
 	}
 
 	@Override
@@ -116,7 +122,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			byte[] concat = new byte[32 * 2];
 			parent.getAccumulator().copyTo(concat, 0);
 			vertex.getCommand().getHash().copyTo(concat, 32);
-			accumulator = Hash.of(concat);
+			accumulator = hasher.hashBytes(concat);
 		} else {
 			accumulator = parent.getAccumulator();
 		}

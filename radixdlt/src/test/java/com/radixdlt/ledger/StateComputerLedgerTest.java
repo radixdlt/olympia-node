@@ -33,6 +33,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
@@ -62,6 +63,7 @@ public class StateComputerLedgerTest {
 	private VerifiedLedgerHeaderAndProof currentLedgerHeader;
 	private SystemCounters counters;
 	private Comparator<VerifiedLedgerHeaderAndProof> headerComparator;
+	private Hasher hasher;
 
 	@Before
 	public void setup() {
@@ -73,6 +75,8 @@ public class StateComputerLedgerTest {
 		this.committedSender = mock(CommittedSender.class);
 		this.currentLedgerHeader = mock(VerifiedLedgerHeaderAndProof.class);
 		this.headerComparator = mock(Comparator.class);
+		this.hasher = mock(Hasher.class);
+		when(hasher.hashBytes(any())).thenReturn(mock(Hash.class));
 
 		this.stateComputerLedger = new StateComputerLedger(
 			headerComparator,
@@ -81,6 +85,7 @@ public class StateComputerLedgerTest {
 			stateComputer,
 			committedStateSyncSender,
 			committedSender,
+			hasher,
 			counters
 		);
 	}
