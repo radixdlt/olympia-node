@@ -46,7 +46,7 @@ public class StaticValidatorsTest {
 			.ledgerAndEpochs(View.of(1), e -> IntStream.range(0, 4))
 			.checkEpochsHighViewCorrect("epochHighView", View.of(1))
 			.build();
-		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
+		Map<String, Optional<TestInvariantError>> results = bftTest.run();
 		assertThat(results).allSatisfy((name, err) -> assertThat(err).isEmpty());
 	}
 
@@ -56,7 +56,7 @@ public class StaticValidatorsTest {
 			.ledgerAndEpochs(View.of(100), e -> IntStream.range(0, 4))
 			.checkEpochsHighViewCorrect("epochHighView", View.of(99))
 			.build();
-		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
+		Map<String, Optional<TestInvariantError>> results = bftTest.run();
 		assertThat(results).hasEntrySatisfying("epochHighView", error -> assertThat(error).isPresent());
 	}
 
@@ -66,7 +66,7 @@ public class StaticValidatorsTest {
 			.ledgerAndEpochs(View.of(100), e -> IntStream.range(0, 4))
 			.checkEpochsHighViewCorrect("epochHighView", View.of(100))
 			.build();
-		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
+		Map<String, Optional<TestInvariantError>> results = bftTest.run();
 		assertThat(results).allSatisfy((name, err) -> assertThat(err).isEmpty());
 	}
 }

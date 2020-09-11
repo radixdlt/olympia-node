@@ -44,7 +44,7 @@ public class OneByzantineGenesisTest {
 			.checkConsensusNoneCommitted("noneCommitted")
 			.build();
 
-		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
+		Map<String, Optional<TestInvariantError>> results = bftTest.run();
 		assertThat(results).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
 	}
 
@@ -55,7 +55,7 @@ public class OneByzantineGenesisTest {
 			.checkConsensusNoneCommitted("noneCommitted")
 			.build();
 
-		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
+		Map<String, Optional<TestInvariantError>> results = bftTest.run();
 		assertThat(results).hasEntrySatisfying("noneCommitted", error -> assertThat(error).isPresent());
 	}
 
@@ -67,7 +67,7 @@ public class OneByzantineGenesisTest {
 			.checkConsensusLiveness("liveness", 5, TimeUnit.SECONDS)
 			.build();
 
-		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
+		Map<String, Optional<TestInvariantError>> results = bftTest.run();
 		assertThat(results).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
 	}
 

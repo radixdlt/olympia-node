@@ -87,6 +87,8 @@ test {
     testLogging {
         events "passed", "skipped", "failed"
         exceptionFormat "full"
+        outputs.upToDateWhen {false}
+        showStandardStreams true
     }
     systemProperty "java.security.egd", "file:/dev/urandom"
 }
@@ -268,6 +270,9 @@ task gendoc(type: NodeTask, dependsOn: genmarkdown) {
  * Run integration tests.
  */
 task integrationTest(type: Test) {
+    logging.captureStandardOutput(LogLevel.INFO)
+    logging.captureStandardError(LogLevel.INFO)
+
     testClassesDirs = sourceSets.integrationTest.output.classesDirs
     classpath = sourceSets.integrationTest.runtimeClasspath
 }

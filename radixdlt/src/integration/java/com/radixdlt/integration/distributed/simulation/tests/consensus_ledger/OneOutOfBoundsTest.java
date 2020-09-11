@@ -54,7 +54,7 @@ public class OneOutOfBoundsTest {
 			.numNodesAndLatencies(4, latency, latency, latency, outOfBoundsLatency)
 			.build();
 
-		Map<String, Optional<TestInvariantError>> results = test.run(1, TimeUnit.MINUTES);
+		Map<String, Optional<TestInvariantError>> results = test.run();
 		assertThat(results).allSatisfy((name, error) -> AssertionsForClassTypes.assertThat(error).isNotPresent());
 	}
 

@@ -76,7 +76,7 @@ public class RandomValidatorsTest {
 		SimulationTest bftTest = bftTestBuilder
 			.ledgerAndEpochs(View.of(100), goodRandomEpochToNodesMapper())
 			.build();
-		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
+		Map<String, Optional<TestInvariantError>> results = bftTest.run();
 		assertThat(results).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
 	}
 
@@ -85,7 +85,7 @@ public class RandomValidatorsTest {
 		SimulationTest bftTest = bftTestBuilder
 			.ledgerAndEpochs(View.of(100), badRandomEpochToNodesMapper())
 			.build();
-		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
+		Map<String, Optional<TestInvariantError>> results = bftTest.run();
 		assertThat(results).hasValueSatisfying(new Condition<>(Optional::isPresent, "Has error"));
 	}
 

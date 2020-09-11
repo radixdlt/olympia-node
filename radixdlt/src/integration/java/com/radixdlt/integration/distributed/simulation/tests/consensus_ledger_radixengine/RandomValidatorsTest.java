@@ -50,7 +50,7 @@ public class RandomValidatorsTest {
 	public void when_random_validators__then_sanity_checks_should_pass() {
 		SimulationTest simulationTest = bftTestBuilder
 			.build();
-		Map<String, Optional<TestInvariantError>> results = simulationTest.run(1, TimeUnit.MINUTES);
+		Map<String, Optional<TestInvariantError>> results = simulationTest.run();
 		assertThat(results).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
 	}
 

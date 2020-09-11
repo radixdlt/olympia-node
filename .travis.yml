@@ -1,7 +1,6 @@
 language: java
 sudo: false
 install: true
-jdk: openjdk8
 
 addons:
   sonarcloud:
@@ -30,3 +29,6 @@ cache:
     - '$HOME/.sonar/cache'
     - '$HOME/.gradle'
     - '.gradle'
+
+env:
+  - TEST_DURATION=30s

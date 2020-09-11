@@ -50,7 +50,7 @@ public class MempoolSanityTest {
 		SimulationTest simulationTest = bftTestBuilder
 			.ledger()
 			.build();
-		Map<String, Optional<TestInvariantError>> results = simulationTest.run(1, TimeUnit.MINUTES);
+		Map<String, Optional<TestInvariantError>> results = simulationTest.run();
 		assertThat(results).hasEntrySatisfying("mempool", error -> assertThat(error).isPresent());
 	}
 
@@ -59,7 +59,7 @@ public class MempoolSanityTest {
 		SimulationTest simulationTest = bftTestBuilder
 			.ledgerAndMempool()
 			.build();
-		Map<String, Optional<TestInvariantError>> results = simulationTest.run(1, TimeUnit.MINUTES);
+		Map<String, Optional<TestInvariantError>> results = simulationTest.run();
 		assertThat(results).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
 	}
 }
