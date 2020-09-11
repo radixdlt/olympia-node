@@ -15,21 +15,20 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt;
+package com.radixdlt.integration.distributed;
+
+import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.liveness.NextCommandGenerator;
+import com.radixdlt.crypto.Hash;
+import java.util.Set;
 
 /**
- * Runs the protocol for consensus as a validator node
- * TODO: Use same interface for all high level modules
+ * Generates new random hash commands
  */
-public interface ConsensusRunner {
-
-	/**
-	 * Start running consensus validation
-	 */
-	void start();
-
-	/**
-	 * Stop running consensus validation
-	 */
-	void stop();
+public final class RandomHashCommandGenerator implements NextCommandGenerator {
+	@Override
+	public Command generateNextCommand(View view, Set<Hash> prepared) {
+		return new Command(Hash.random().toByteArray());
+	}
 }

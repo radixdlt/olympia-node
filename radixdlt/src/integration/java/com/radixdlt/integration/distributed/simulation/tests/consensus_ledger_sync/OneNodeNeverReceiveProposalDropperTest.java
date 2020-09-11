@@ -15,43 +15,47 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_radixengine;
+package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_sync;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
-import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
-import java.util.Map;
-import java.util.Optional;
+import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
+import java.util.LongSummaryStatistics;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
-/**
- * Randomly registers and unregisters nodes as validators
- */
-public class RandomValidatorsTest {
+public class OneNodeNeverReceiveProposalDropperTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(4)
-		.numInitialValidators(2)
-		.ledgerAndRadixEngineWithEpochHighView(View.of(10))
-		.checkEpochsHighViewCorrect("epochHighView", View.of(100))
+		.randomLatency(10, 200)
+		.pacemakerTimeout(5000)
+		.addOneNodeNeverReceiveProposalDropper()
+		.ledgerAndSync()
 		.checkConsensusSafety("safety")
-		.checkConsensusLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
+		.checkConsensusLiveness("liveness", 5000, TimeUnit.MILLISECONDS)
 		.checkConsensusNoTimeouts("noTimeouts")
 		.checkConsensusAllProposalsHaveDirectParents("directParents")
-		.checkLedgerSyncedInOrder("syncedInOrder")
-		.checkLedgerProcessesConsensusCommitted("consensusToLedger")
-		.addRadixEngineValidatorRegisterUnregisterMempoolSubmissions("mempoolSubmitted");
+		.checkLedgerInOrder("ledgerInOrder")
+		.checkLedgerProcessesConsensusCommitted("consensusToLedger");
 
 	@Test
-	public void when_random_validators__then_sanity_checks_should_pass() {
+	public void sanity_tests_should_pass() {
 		SimulationTest simulationTest = bftTestBuilder
 			.build();
-		Map<String, Optional<TestInvariantError>> results = simulationTest.run();
-		assertThat(results).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+		TestResults results = simulationTest.run();
+		assertThat(results.getCheckResults()).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+
+		LongSummaryStatistics statistics = results.getNetwork().getSystemCounters().values().stream()
+			.map(s -> s.get(CounterType.SYNC_PROCESSED))
+			.mapToLong(l -> l)
+			.summaryStatistics();
+
+		System.out.println(statistics);
+		assertThat(statistics.getSum()).isGreaterThan(0L);
 	}
 
 }

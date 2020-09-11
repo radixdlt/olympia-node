@@ -15,10 +15,11 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger;
+package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_epochs_localmempool_radixengine;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
@@ -27,25 +28,29 @@ import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
 /**
- * Runs a consensus and ledger module across 4 nodes and verifies the base
- * case required conditions
+ * Randomly registers and unregisters nodes as validators
  */
-public class SanityTest {
+public class RandomValidatorsTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(4)
-		.ledger()
+		.numInitialValidators(2)
+		.ledgerAndRadixEngineWithEpochHighView(View.of(10))
+		.checkEpochsHighViewCorrect("epochHighView", View.of(100))
 		.checkConsensusSafety("safety")
 		.checkConsensusLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
 		.checkConsensusNoTimeouts("noTimeouts")
 		.checkConsensusAllProposalsHaveDirectParents("directParents")
 		.checkLedgerInOrder("ledgerInOrder")
-		.checkLedgerProcessesConsensusCommitted("consensusToLedger");
+		.checkLedgerProcessesConsensusCommitted("consensusToLedger")
+		.addRadixEngineValidatorRegisterUnregisterMempoolSubmissions("mempoolSubmitted");
 
 	@Test
-	public void sanity_tests_should_pass() {
+	public void when_random_validators__then_sanity_checks_should_pass() {
 		SimulationTest simulationTest = bftTestBuilder
 			.build();
+
 		TestResults results = simulationTest.run();
 		assertThat(results.getCheckResults()).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
 	}
+
 }

@@ -35,7 +35,7 @@ import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.integration.distributed.deterministic.DeterministicConsensusRunner;
 import com.radixdlt.integration.distributed.deterministic.DeterministicNetworkModule;
-import com.radixdlt.integration.distributed.simulation.MockedCryptoModule;
+import com.radixdlt.integration.distributed.MockedCryptoModule;
 import com.radixdlt.ledger.EpochChangeSender;
 import com.radixdlt.ledger.StateComputerLedger.CommittedStateSyncSender;
 import com.radixdlt.utils.Pair;

@@ -15,14 +15,10 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.simulation;
+package com.radixdlt.integration.distributed;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.google.inject.Scopes;
-import com.google.inject.TypeLiteral;
-import com.google.inject.name.Names;
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -32,24 +28,12 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.middleware2.LedgerAtom;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.statecomputer.CommittedCommandsReader;
-import com.radixdlt.store.EngineStore;
-import com.radixdlt.store.InMemoryEngineStore;
+import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 
-public class MockedRadixEngineStoreModule extends AbstractModule {
-	@Override
-	public void configure() {
-		bind(CommittedCommandsReader.class).toInstance((stateVersion, limit) -> {
-			throw new UnsupportedOperationException();
-		});
-		bind(Serialization.class).toInstance(DefaultSerialization.getInstance());
-		bind(Integer.class).annotatedWith(Names.named("magic")).toInstance(1);
-		bind(new TypeLiteral<EngineStore<LedgerAtom>>() { }).to(new TypeLiteral<InMemoryEngineStore<LedgerAtom>>() { })
-			.in(Scopes.SINGLETON);
-	}
+import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import java.util.Optional;
 
+public class MockedStateComputerModule extends AbstractModule {
 	@Provides
 	private BFTConfiguration configuration(VerifiedLedgerHeaderAndProof proof, BFTValidatorSet validatorSet) {
 		LedgerHeader nextLedgerHeader = LedgerHeader.create(
@@ -67,7 +51,22 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 	}
 
 	@Provides
-	public VerifiedLedgerHeaderAndProof genesisVertexMetadata() {
+	private VerifiedLedgerHeaderAndProof genesisMetadata() {
 		return VerifiedLedgerHeaderAndProof.genesis(Hash.ZERO_HASH);
+	}
+
+	@Provides
+	private StateComputer stateComputer() {
+		return new StateComputer() {
+			@Override
+			public boolean prepare(VerifiedVertex vertex) {
+				return false;
+			}
+
+			@Override
+			public Optional<BFTValidatorSet> commit(VerifiedCommandsAndProof command) {
+				return Optional.empty();
+			}
+		};
 	}
 }

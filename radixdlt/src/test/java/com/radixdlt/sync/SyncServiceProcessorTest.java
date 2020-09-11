@@ -86,9 +86,9 @@ public class SyncServiceProcessorTest {
 	}
 
 	@Test
-	public void when_remote_sync_request_and_exception__then_dont_do_anything() throws NextCommittedLimitReachedException {
+	public void when_remote_sync_request_and_null_return__then_dont_do_anything() {
 		syncServiceProcessor.processSyncRequest(mock(SyncRequest.class));
-		when(stateComputer.getNextCommittedCommands(anyLong(), anyInt())).thenThrow(new NextCommittedLimitReachedException(1));
+		when(stateComputer.getNextCommittedCommands(anyLong(), anyInt())).thenReturn(null);
 		verify(stateSyncNetwork, never()).sendSyncResponse(any(), any());
 	}
 

@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,18 +15,13 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.sync;
 
-import io.reactivex.rxjava3.core.Observable;
+import com.radixdlt.ledger.VerifiedCommandsAndProof;
 
 /**
- * Network accessor for the EventCoordinator
+ * Reader of committed commands
  */
-public interface ConsensusEventsRx {
-	/**
-	 * Accessor to the stream of consensus message events as they are received
-	 * from the network.
-	 * @return observable of consensus message events
-	 */
-	Observable<ConsensusEvent> consensusEvents();
+public interface CommittedReader {
+	VerifiedCommandsAndProof getNextCommittedCommands(long stateVersion, int batchSize);
 }

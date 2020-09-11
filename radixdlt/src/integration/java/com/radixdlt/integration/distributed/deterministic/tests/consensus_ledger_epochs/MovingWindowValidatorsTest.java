@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.deterministic.tests.consensus;
+package com.radixdlt.integration.distributed.deterministic.tests.consensus_ledger_epochs;
 
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;

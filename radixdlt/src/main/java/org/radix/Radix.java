@@ -18,10 +18,11 @@
 package org.radix;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.ConsensusRunner;
+import com.google.inject.Key;
+import com.google.inject.TypeLiteral;
+import com.radixdlt.ModuleRunner;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
-import com.radixdlt.sync.SyncServiceRunner;
 import com.radixdlt.systeminfo.InMemorySystemInfoManager;
 import com.radixdlt.api.CommittedAtomsRx;
 import com.radixdlt.api.SubmissionErrorsRx;
@@ -37,6 +38,7 @@ import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Bytes;
 
+import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.commons.cli.ParseException;
@@ -188,13 +190,15 @@ public final class Radix
 		// Start mempool receiver
 		globalInjector.getInjector().getInstance(MempoolReceiver.class).start();
 
-		SyncServiceRunner syncServiceRunner = globalInjector.getInjector().getInstance(SyncServiceRunner.class);
-		syncServiceRunner.start();
-
 		InMemorySystemInfoManager infoStateRunner = globalInjector.getInjector().getInstance(InMemorySystemInfoManager.class);
 		infoStateRunner.start();
 
-		final ConsensusRunner consensusRunner = globalInjector.getInjector().getInstance(ConsensusRunner.class);
+		final Map<String, ModuleRunner> moduleRunners = globalInjector.getInjector()
+			.getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() { }));
+		final ModuleRunner consensusRunner = moduleRunners.get("consensus");
+		final ModuleRunner syncRunner = moduleRunners.get("sync");
+		syncRunner.start();
+
 		// start API services
 		SubmissionControl submissionControl = globalInjector.getInjector().getInstance(SubmissionControl.class);
 		CommandToBinaryConverter commandToBinaryConverter = globalInjector.getInjector().getInstance(CommandToBinaryConverter.class);

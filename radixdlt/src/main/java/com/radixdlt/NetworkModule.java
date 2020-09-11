@@ -22,7 +22,7 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
-import com.radixdlt.consensus.ConsensusEventsRx;
+import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
@@ -33,10 +33,12 @@ import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.mempool.MempoolNetworkRx;
 import com.radixdlt.mempool.MempoolNetworkTx;
 import com.radixdlt.middleware2.network.MessageCentralBFTNetwork;
+import com.radixdlt.middleware2.network.MessageCentralLedgerSync;
 import com.radixdlt.middleware2.network.MessageCentralValidatorSync;
 import com.radixdlt.middleware2.network.SimpleMempoolNetwork;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.messaging.MessageCentral;
+import com.radixdlt.sync.StateSyncNetwork;
 import com.radixdlt.universe.Universe;
 
 /**
@@ -60,7 +62,7 @@ public final class NetworkModule extends AbstractModule {
 
 		// Network BFT messages
 		bind(BFTEventSender.class).to(MessageCentralBFTNetwork.class);
-		bind(ConsensusEventsRx.class).to(MessageCentralBFTNetwork.class);
+		bind(BFTEventsRx.class).to(MessageCentralBFTNetwork.class);
 	}
 
 
@@ -85,5 +87,19 @@ public final class NetworkModule extends AbstractModule {
 		MessageCentral messageCentral
 	) {
 		return new MessageCentralBFTNetwork(self, universe, addressBook, messageCentral);
+	}
+
+	@Provides
+	@Singleton
+	private StateSyncNetwork stateSyncNetwork(
+		Universe universe,
+		AddressBook addressBook,
+		MessageCentral messageCentral
+	) {
+		return new MessageCentralLedgerSync(
+			universe,
+			addressBook,
+			messageCentral
+		);
 	}
 }

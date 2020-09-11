@@ -35,6 +35,7 @@ import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
+import com.radixdlt.sync.CommittedReader;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -45,7 +46,7 @@ import java.util.function.Consumer;
 /**
  * Wraps the Radix Engine and emits messages based on success or failure
  */
-public final class RadixEngineStateComputer implements StateComputer {
+public final class RadixEngineStateComputer implements StateComputer, CommittedReader {
 
 	// TODO: Refactor committed command when commit logic is re-written
 	// TODO: as currently it's mostly loosely coupled logic
@@ -87,12 +88,18 @@ public final class RadixEngineStateComputer implements StateComputer {
 	}
 
 	// TODO Move this to a different class class when unstored committed atoms is fixed
-	public VerifiedCommandsAndProof getNextCommittedCommands(long stateVersion, int batchSize) throws NextCommittedLimitReachedException {
+	@Override
+	public VerifiedCommandsAndProof getNextCommittedCommands(long stateVersion, int batchSize) {
 		// TODO: This may still return an empty list as we still count state versions for atoms which
 		// TODO: never make it into the radix engine due to state errors. This is because we only check
 		// TODO: validity on commit rather than on proposal/prepare.
-		TreeMap<Long, StoredCommittedCommand> storedCommittedAtoms = committedCommandsReader
-			.getNextCommittedCommands(stateVersion, batchSize);
+		final TreeMap<Long, StoredCommittedCommand> storedCommittedAtoms;
+		try {
+			storedCommittedAtoms = committedCommandsReader.getNextCommittedCommands(stateVersion, batchSize);
+		} catch (NextCommittedLimitReachedException e) {
+			return null;
+		}
+
 		final VerifiedLedgerHeaderAndProof nextState;
 		if (storedCommittedAtoms.firstEntry() != null) {
 			nextState = storedCommittedAtoms.firstEntry().getValue().getStateAndProof();
