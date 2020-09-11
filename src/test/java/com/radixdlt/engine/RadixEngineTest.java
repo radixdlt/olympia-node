@@ -119,6 +119,7 @@ public class RadixEngineTest {
 		));
 		when(engineStore.getSpin(eq(particle))).thenReturn(Spin.NEUTRAL);
 		when(radixEngineAtom.getCMInstruction()).thenReturn(cmInstruction);
+		when(constraintMachine.validate(any())).thenReturn(Either.first(ImmutableSet.of()));
 		radixEngine.checkAndStore(radixEngineAtom);
 
 		assertThat(radixEngine.getComputedState(Object.class)).isEqualTo(state2);

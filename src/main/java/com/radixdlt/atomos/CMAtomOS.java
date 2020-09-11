@@ -84,7 +84,8 @@ public final class CMAtomOS {
 	}
 
 	public Function<TransitionToken<?, ?, ?, ?>, TransitionProcedure<Particle, UsedData, Particle, UsedData>> buildTransitionProcedures() {
-		final ImmutableMap<TransitionToken<?, ?, ?, ?>, TransitionProcedure<Particle, UsedData, Particle, UsedData>> procedures = proceduresBuilder.build();
+		final ImmutableMap<TransitionToken<?, ?, ?, ?>, TransitionProcedure<Particle, UsedData, Particle, UsedData>> procedures
+			= proceduresBuilder.build();
 		return procedures::get;
 	}
 
