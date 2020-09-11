@@ -168,10 +168,11 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 				return;
 			}
 
-			// Callers of commit() should be aware of currentLedgerState.getStateVersion()
+			// Callers of commit() should be aware of currentLedgerHeader.getStateVersion()
 			// and only call commit with a first version <= currentVersion + 1
 			if (currentLedgerHeader.getStateVersion() + 1 < verifiedCommandsAndProof.getFirstVersion()) {
-				throw new IllegalStateException();
+				throw new IllegalStateException("Trying to commit version " + verifiedCommandsAndProof.getFirstVersion()
+					+ " but current header is " + currentLedgerHeader);
 			}
 
 			// Remove commands which have already been committed

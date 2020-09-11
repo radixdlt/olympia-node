@@ -22,6 +22,7 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
+import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
@@ -34,7 +35,6 @@ import com.radixdlt.sync.LocalSyncServiceProcessor.SyncedCommandSender;
 import com.radixdlt.sync.SyncServiceRunner;
 import com.radixdlt.sync.SyncServiceRunner.LocalSyncRequestsRx;
 import com.radixdlt.sync.SyncServiceRunner.SyncTimeoutsRx;
-import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.sync.SyncServiceRunner.VersionUpdatesRx;
 import java.util.Comparator;
 
@@ -98,10 +98,10 @@ public class SyncCommittedServiceModule extends AbstractModule {
 	}
 
 	@Provides
-	private SyncedCommandSender syncedCommandSender(SystemCounters systemCounters, StateComputerLedger stateComputerLedger) {
+	private SyncedCommandSender syncedCommandSender(SystemCounters systemCounters, Ledger ledger) {
 		return cmds -> {
 			systemCounters.add(CounterType.SYNC_PROCESSED, cmds.size());
-			stateComputerLedger.commit(cmds);
+			ledger.commit(cmds);
 		};
 	}
 }

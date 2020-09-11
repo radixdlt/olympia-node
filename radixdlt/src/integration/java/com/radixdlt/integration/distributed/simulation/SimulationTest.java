@@ -37,7 +37,6 @@ import com.radixdlt.SyncCommittedServiceModule;
 import com.radixdlt.SyncRxModule;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.integration.distributed.MockedBFTConfigurationModule;
 import com.radixdlt.integration.distributed.MockedCommandGeneratorModule;
 import com.radixdlt.integration.distributed.MockedConsensusRunnerModule;
@@ -83,7 +82,6 @@ import io.reactivex.rxjava3.core.Single;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -165,6 +163,15 @@ public class SimulationTest {
 			this.latencyProvider.addDropper(new OneProposalPerViewDropper(
 				ImmutableList.of(BFTNode.create(nodes.get(0).getPublicKey())), new Random())
 			);
+			return this;
+		}
+
+
+		public Builder addByzantineModuleToAll(Module byzantineModule) {
+			nodes.forEach(k -> {
+				BFTNode node = BFTNode.create(k.getPublicKey());
+				byzantineModules.put(node, byzantineModule);
+			});
 			return this;
 		}
 
