@@ -148,6 +148,13 @@ public class SimulationTest {
 			return this;
 		}
 
+		public Builder addOneNodeNeverReceiveProposalDropper() {
+			this.latencyProvider.addDropper(new OneProposalPerViewDropper(
+				ImmutableList.of(BFTNode.create(nodes.get(0).getPublicKey())), new Random())
+			);
+			return this;
+		}
+
 		public Builder addOneProposalPerViewDropper() {
 			ImmutableList<BFTNode> bftNodes = nodes.stream().map(kp -> BFTNode.create(kp.getPublicKey()))
 				.collect(ImmutableList.toImmutableList());
