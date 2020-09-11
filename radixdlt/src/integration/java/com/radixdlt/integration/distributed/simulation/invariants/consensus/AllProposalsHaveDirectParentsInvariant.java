@@ -18,7 +18,7 @@
 package com.radixdlt.integration.distributed.simulation.invariants.consensus;
 
 import com.radixdlt.integration.distributed.simulation.TestInvariant;
-import com.radixdlt.consensus.ConsensusEventsRx;
+import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
@@ -35,8 +35,8 @@ public class AllProposalsHaveDirectParentsInvariant implements TestInvariant {
 	@Override
 	public Observable<TestInvariantError> check(RunningNetwork network) {
 		List<Observable<UnverifiedVertex>> correctProposals = network.getNodes().stream()
-			.map(network.getUnderlyingNetwork()::getNetworkRx)
-			.map(ConsensusEventsRx::consensusEvents)
+			.map(network.getUnderlyingNetwork()::getNetwork)
+			.map(BFTEventsRx::bftEvents)
 			.map(p -> p.ofType(Proposal.class).map(Proposal::getVertex))
 			.collect(Collectors.toList());
 

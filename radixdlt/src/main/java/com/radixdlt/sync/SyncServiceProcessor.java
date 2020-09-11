@@ -21,8 +21,6 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.statecomputer.RadixEngineStateComputer;
-import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
@@ -62,7 +60,7 @@ public final class SyncServiceProcessor {
 	}
 
 	private static final Logger log = LogManager.getLogger();
-	private final RadixEngineStateComputer stateComputer;
+	private final CommittedReader committedReader;
 	private final SyncedCommandSender syncedCommandSender;
 	private final int batchSize;
 	private final SyncTimeoutScheduler syncTimeoutScheduler;
@@ -73,7 +71,7 @@ public final class SyncServiceProcessor {
 	private VerifiedLedgerHeaderAndProof currentHeader;
 
 	public SyncServiceProcessor(
-		RadixEngineStateComputer stateComputer,
+		CommittedReader committedReader,
 		StateSyncNetwork stateSyncNetwork,
 		SyncedCommandSender syncedCommandSender,
 		SyncTimeoutScheduler syncTimeoutScheduler,
@@ -88,7 +86,7 @@ public final class SyncServiceProcessor {
 		if (batchSize <= 0) {
 			throw new IllegalArgumentException();
 		}
-		this.stateComputer = Objects.requireNonNull(stateComputer);
+		this.committedReader = Objects.requireNonNull(committedReader);
 		this.stateSyncNetwork = Objects.requireNonNull(stateSyncNetwork);
 		this.syncedCommandSender = Objects.requireNonNull(syncedCommandSender);
 		this.syncTimeoutScheduler = Objects.requireNonNull(syncTimeoutScheduler);
@@ -100,28 +98,24 @@ public final class SyncServiceProcessor {
 	}
 
 	public void processSyncRequest(SyncRequest syncRequest) {
-		log.debug("SYNC_REQUEST: {}", syncRequest);
+		log.info("SYNC_REQUEST: {}", syncRequest);
 		long stateVersion = syncRequest.getStateVersion();
-		try {
-			VerifiedCommandsAndProof committedCommands = stateComputer.getNextCommittedCommands(stateVersion, batchSize);
-			if (committedCommands == null) {
-				return;
-			}
-
-			log.debug("SYNC_REQUEST: SENDING_RESPONSE size: {}", committedCommands.size());
-			stateSyncNetwork.sendSyncResponse(syncRequest.getNode(), committedCommands);
-		} catch (NextCommittedLimitReachedException e) {
-			log.error(e.getMessage(), e);
-		}
-	}
-
-	public void processSyncResponse(VerifiedCommandsAndProof commands) {
-		// TODO: Check validity of response
-		if (headerComparator.compare(commands.getHeader(), this.currentHeader) <= 0) {
+		VerifiedCommandsAndProof committedCommands = committedReader.getNextCommittedCommands(stateVersion, batchSize);
+		if (committedCommands == null) {
 			return;
 		}
-		this.syncedCommandSender.sendSyncedCommand(commands);
-		this.currentHeader = commands.getHeader();
+
+		stateSyncNetwork.sendSyncResponse(syncRequest.getNode(), committedCommands);
+	}
+
+	public void processSyncResponse(VerifiedCommandsAndProof commandsAndProof) {
+		log.info("SYNC_RESPONSE: {} current={} target={}", commandsAndProof, this.currentHeader, this.targetHeader);
+		// TODO: Check validity of response
+		if (headerComparator.compare(commandsAndProof.getHeader(), this.currentHeader) <= 0) {
+			return;
+		}
+		this.syncedCommandSender.sendSyncedCommand(commandsAndProof);
+		this.currentHeader = commandsAndProof.getHeader();
 	}
 
 	public void processVersionUpdate(VerifiedLedgerHeaderAndProof updatedHeader) {
@@ -132,6 +126,8 @@ public final class SyncServiceProcessor {
 
 	// TODO: Handle epoch changes with same state version
 	public void processLocalSyncRequest(LocalSyncRequest request) {
+		log.info("SYNC_LOCAL_REQUEST: {}", request);
+
 		final VerifiedLedgerHeaderAndProof nextTargetHeader = request.getTarget();
 		if (headerComparator.compare(nextTargetHeader, this.targetHeader) <= 0) {
 			return;

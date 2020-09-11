@@ -45,4 +45,8 @@ public class LocalSyncRequestTest {
 		assertThat(request.getTargetNodes()).isEqualTo(targetNodes);
 	}
 
+	@Test
+	public void sensibleToString() {
+		assertThat(request.toString()).contains(LocalSyncRequest.class.getSimpleName());
+	}
 }

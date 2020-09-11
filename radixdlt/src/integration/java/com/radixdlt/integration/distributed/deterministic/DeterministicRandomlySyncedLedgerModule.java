@@ -20,6 +20,7 @@ package com.radixdlt.integration.distributed.deterministic;
 import com.google.inject.Provides;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.VerifiedVertex;
+import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.sync.SyncRequestSender;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
@@ -27,7 +28,6 @@ import java.util.Random;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Singleton;
-import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.ledger.StateComputerLedger.CommittedStateSyncSender;
@@ -42,19 +42,20 @@ public class DeterministicRandomlySyncedLedgerModule extends AbstractModule {
 		this.random = random;
 	}
 
-	@Provides
-	private SyncRequestSender syncRequestSender() {
-		return request -> { };
+	@Override
+	public void configure() {
+		bind(NextCommandGenerator.class).toInstance((view, aids) -> null);
+		bind(SyncRequestSender.class).toInstance(req -> { });
 	}
 
+	@Provides
 	@Singleton
-	@ProvidesIntoSet
 	Ledger syncedExecutor(CommittedStateSyncSender committedStateSyncSender) {
 		return new Ledger() {
 			@Override
 			public LedgerHeader prepare(VerifiedVertex vertex) {
 				return LedgerHeader.create(
-					0,
+					vertex.getParentHeader().getLedgerHeader().getEpoch(),
 					vertex.getView(),
 					0,
 					Hash.ZERO_HASH,

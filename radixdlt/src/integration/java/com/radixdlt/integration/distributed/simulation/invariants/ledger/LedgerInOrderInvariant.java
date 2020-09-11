@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
  * Ledger-side safety check. Checks that commands and the order getting persisted are
  * the same across all nodes.
  */
-public class SyncedInOrderInvariant implements TestInvariant {
+public class LedgerInOrderInvariant implements TestInvariant {
 
 	@Override
 	public Observable<TestInvariantError> check(RunningNetwork network) {

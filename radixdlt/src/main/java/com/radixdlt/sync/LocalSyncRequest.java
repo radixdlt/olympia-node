@@ -41,4 +41,9 @@ public final class LocalSyncRequest {
 	public ImmutableList<BFTNode> getTargetNodes() {
 		return targetNodes;
 	}
+
+	@Override
+	public String toString() {
+		return String.format("%s {%s target=%s}", this.getClass().getSimpleName(), target, targetNodes);
+	}
 }

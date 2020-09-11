@@ -35,7 +35,7 @@ import org.junit.Test;
 public class EpochManagerRunnerTest {
 	@Test
 	public void when_events_get_emitted__then_event_coordinator_should_be_called() {
-		ConsensusEventsRx networkRx = mock(ConsensusEventsRx.class);
+		BFTEventsRx networkRx = mock(BFTEventsRx.class);
 
 		EpochChange epochChange = mock(EpochChange.class);
 		EpochChangeRx epochChangeRx = () -> Observable.just(epochChange).concatWith(Observable.never());
@@ -50,7 +50,7 @@ public class EpochManagerRunnerTest {
 		Proposal proposal = mock(Proposal.class);
 		Vote vote = mock(Vote.class);
 
-		when(networkRx.consensusEvents())
+		when(networkRx.bftEvents())
 			.thenReturn(Observable.just(newView, proposal, vote).concatWith(Observable.never()));
 
 		SyncVerticesRPCRx syncVerticesRPCRx = mock(SyncVerticesRPCRx.class);

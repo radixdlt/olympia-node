@@ -18,9 +18,9 @@
 package com.radixdlt.integration.distributed.simulation;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Scopes;
-import com.google.inject.name.Names;
-import com.radixdlt.consensus.ConsensusEventsRx;
+import com.google.inject.Provides;
+import com.google.inject.name.Named;
+import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
@@ -29,39 +29,39 @@ import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
 import com.radixdlt.consensus.epoch.EmptySyncVerticesRPCSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCountersImpl;
-import com.radixdlt.network.TimeSupplier;
+import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.SimulatedNetworkImpl;
+import com.radixdlt.sync.StateSyncNetwork;
 
 public class SimulationNetworkModule extends AbstractModule {
 	private final boolean getVerticesRPCEnabled;
-	private final BFTNode node;
 	private final SimulationNetwork simulationNetwork;
 
 	public SimulationNetworkModule(
 		boolean getVerticesRPCEnabled,
-		BFTNode node,
 		SimulationNetwork simulationNetwork
 	) {
 		this.getVerticesRPCEnabled = getVerticesRPCEnabled;
-		this.node = node;
 		this.simulationNetwork = simulationNetwork;
 	}
 
 	@Override
 	protected void configure() {
-		bind(ConsensusEventsRx.class).toInstance(simulationNetwork.getNetworkRx(node));
-		bind(SyncEpochsRPCRx.class).toInstance(simulationNetwork.getNetworkRx(node));
-		bind(SyncVerticesRPCRx.class).toInstance(simulationNetwork.getNetworkRx(node));
-		bind(BFTEventSender.class).toInstance(simulationNetwork.getNetworkSender(node));
-		bind(SyncVerticesRPCSender.class).toInstance(
-			getVerticesRPCEnabled ? simulationNetwork.getSyncSender(node) : EmptySyncVerticesRPCSender.INSTANCE
-		);
-		bind(SyncEpochsRPCSender.class).toInstance(simulationNetwork.getSyncSender(node));
+		bind(BFTEventsRx.class).to(SimulatedNetworkImpl.class);
+		bind(SyncEpochsRPCRx.class).to(SimulatedNetworkImpl.class);
+		bind(SyncVerticesRPCRx.class).to(SimulatedNetworkImpl.class);
+		bind(BFTEventSender.class).to(SimulatedNetworkImpl.class);
+		bind(StateSyncNetwork.class).to(SimulatedNetworkImpl.class);
+		// TODO: Remove if branch
+		if (getVerticesRPCEnabled) {
+			bind(SyncVerticesRPCSender.class).to(SimulatedNetworkImpl.class);
+		} else {
+			bind(SyncVerticesRPCSender.class).toInstance(EmptySyncVerticesRPCSender.INSTANCE);
+		}
+		bind(SyncEpochsRPCSender.class).to(SimulatedNetworkImpl.class);
+	}
 
-		// TODO: Move these out
-		bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
-		bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
-		bind(BFTNode.class).annotatedWith(Names.named("self")).toInstance(node);
+	@Provides
+	private SimulatedNetworkImpl network(@Named("self") BFTNode node) {
+		return simulationNetwork.getNetwork(node);
 	}
 }

@@ -20,11 +20,12 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.google.inject.multibindings.ProvidesIntoMap;
+import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.statecomputer.RadixEngineStateComputer;
-import com.radixdlt.middleware2.network.MessageCentralLedgerSync;
-import com.radixdlt.network.addressbook.AddressBook;
-import com.radixdlt.network.messaging.MessageCentral;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.sync.StateSyncNetwork;
 import com.radixdlt.sync.SyncServiceProcessor;
 import com.radixdlt.sync.SyncServiceProcessor.SyncTimeoutScheduler;
@@ -34,7 +35,6 @@ import com.radixdlt.sync.SyncServiceRunner.LocalSyncRequestsRx;
 import com.radixdlt.sync.SyncServiceRunner.SyncTimeoutsRx;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.sync.SyncServiceRunner.VersionUpdatesRx;
-import com.radixdlt.universe.Universe;
 import java.util.Comparator;
 
 /**
@@ -48,26 +48,27 @@ public class SyncCommittedServiceModule extends AbstractModule {
 	private SyncServiceProcessor syncServiceProcessor(
 		Comparator<VerifiedLedgerHeaderAndProof> headerComparator,
 		VerifiedLedgerHeaderAndProof header,
-		RadixEngineStateComputer executor,
+		CommittedReader committedReader,
 		StateSyncNetwork stateSyncNetwork,
 		SyncedCommandSender syncedCommandSender,
 		SyncTimeoutScheduler syncTimeoutScheduler
 	) {
 		return new SyncServiceProcessor(
-			executor,
+			committedReader,
 			stateSyncNetwork,
 			syncedCommandSender,
 			syncTimeoutScheduler,
 			headerComparator,
 			header,
 			BATCH_SIZE,
-			10
+			1000
 		);
 	}
 
-	@Provides
+	@ProvidesIntoMap
+	@StringMapKey("sync")
 	@Singleton
-	private SyncServiceRunner syncServiceRunner(
+	private ModuleRunner syncServiceRunner(
 		LocalSyncRequestsRx localSyncRequestsRx,
 		SyncTimeoutsRx syncTimeoutsRx,
 		VersionUpdatesRx versionUpdatesRx,
@@ -84,22 +85,10 @@ public class SyncCommittedServiceModule extends AbstractModule {
 	}
 
 	@Provides
-	@Singleton
-	private SyncedCommandSender syncedAtomSender(StateComputerLedger stateComputerLedger) {
-		return stateComputerLedger::commit;
-	}
-
-	@Provides
-	@Singleton
-	private StateSyncNetwork stateSyncNetwork(
-		Universe universe,
-		AddressBook addressBook,
-		MessageCentral messageCentral
-	) {
-		return new MessageCentralLedgerSync(
-			universe,
-			addressBook,
-			messageCentral
-		);
+	private SyncedCommandSender syncedCommandSender(SystemCounters systemCounters, StateComputerLedger stateComputerLedger) {
+		return cmds -> {
+			systemCounters.add(CounterType.SYNC_PROCESSED, cmds.size());
+			stateComputerLedger.commit(cmds);
+		};
 	}
 }

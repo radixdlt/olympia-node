@@ -17,7 +17,7 @@
 
 package org.radix.api.http;
 
-import com.radixdlt.ConsensusRunner;
+import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.systeminfo.InMemorySystemInfoManager;
@@ -81,7 +81,7 @@ public final class RadixHttpServer {
 	private static final Logger logger = LogManager.getLogger();
 
 	private final ConcurrentHashMap<RadixJsonRpcPeer, WebSocketChannel> peers;
-	private final ConsensusRunner consensusRunner;
+	private final ModuleRunner consensusRunner;
 	private final AtomsService atomsService;
 	private final RadixJsonRpcServer jsonRpcServer;
 	private final InternalService internalService;
@@ -97,7 +97,7 @@ public final class RadixHttpServer {
 		InMemorySystemInfoManager infoStateRunner,
 		SubmissionErrorsRx submissionErrorsRx,
 		CommittedAtomsRx committedAtomsRx,
-		ConsensusRunner consensusRunner,
+		ModuleRunner consensusRunner,
 		LedgerEntryStore store,
 		SubmissionControl submissionControl,
 		CommandToBinaryConverter commandToBinaryConverter,

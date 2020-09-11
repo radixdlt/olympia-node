@@ -32,8 +32,21 @@ import com.radixdlt.LedgerRxModule;
 import com.radixdlt.LedgerLocalMempoolModule;
 import com.radixdlt.RadixEngineModule;
 import com.radixdlt.RadixEngineRxModule;
+import com.radixdlt.SyncCommittedServiceModule;
+import com.radixdlt.SyncRxModule;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.integration.distributed.MockedBFTConfigurationModule;
+import com.radixdlt.integration.distributed.MockedBFTConfigurationOneDifferentGenesisModule;
+import com.radixdlt.integration.distributed.MockedCommandGeneratorModule;
+import com.radixdlt.integration.distributed.MockedConsensusRunnerModule;
+import com.radixdlt.integration.distributed.MockedLedgerModule;
+import com.radixdlt.integration.distributed.MockedMempoolModule;
+import com.radixdlt.integration.distributed.MockedRadixEngineStoreModule;
+import com.radixdlt.integration.distributed.MockedStateComputerModule;
+import com.radixdlt.integration.distributed.MockedStateComputerWithEpochsModule;
+import com.radixdlt.integration.distributed.MockedStateComputerWithReaderModule;
+import com.radixdlt.integration.distributed.MockedSyncServiceModule;
 import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
 import com.radixdlt.integration.distributed.simulation.application.IncrementalBytesSubmittor;
 import com.radixdlt.integration.distributed.simulation.application.CommittedChecker;
@@ -43,7 +56,7 @@ import com.radixdlt.integration.distributed.simulation.application.RegisteredVal
 import com.radixdlt.integration.distributed.simulation.invariants.epochs.EpochViewInvariant;
 import com.radixdlt.integration.distributed.simulation.application.LocalMempoolPeriodicSubmittor;
 import com.radixdlt.integration.distributed.simulation.invariants.ledger.ConsensusToLedgerCommittedInvariant;
-import com.radixdlt.integration.distributed.simulation.invariants.ledger.SyncedInOrderInvariant;
+import com.radixdlt.integration.distributed.simulation.invariants.ledger.LedgerInOrderInvariant;
 import com.radixdlt.integration.distributed.simulation.network.DroppingLatencyProvider;
 import com.radixdlt.integration.distributed.simulation.network.OneProposalPerViewDropper;
 import com.radixdlt.integration.distributed.simulation.network.RandomLatencyProvider;
@@ -119,7 +132,7 @@ public class SimulationTest {
 
 	public static class Builder {
 		private enum LedgerType {
-			MOCKED_LEDGER, LEDGER, LEDGER_AND_EPOCHS, LEDGER_AND_LOCALMEMPOOL, LEDGER_AND_RADIXENGINE
+			MOCKED_LEDGER, LEDGER, LEDGER_AND_SYNC, LEDGER_AND_EPOCHS, LEDGER_AND_LOCALMEMPOOL, LEDGER_AND_RADIXENGINE
 		}
 
 		private final DroppingLatencyProvider latencyProvider = new DroppingLatencyProvider();
@@ -181,6 +194,7 @@ public class SimulationTest {
 		}
 
 		public Builder ledgerAndEpochs(View epochHighView, Function<Long, IntStream> epochToNodeIndexMapper) {
+			this.numInitialValidators = 2;
 			this.ledgerType = LedgerType.LEDGER_AND_EPOCHS;
 			this.epochHighView = epochHighView;
 			this.epochToNodeIndexMapper = epochToNodeIndexMapper;
@@ -191,6 +205,12 @@ public class SimulationTest {
 			this.ledgerType = LedgerType.LEDGER;
 			return this;
 		}
+
+		public Builder ledgerAndSync() {
+			this.ledgerType = LedgerType.LEDGER_AND_SYNC;
+			return this;
+		}
+
 
 		public Builder ledgerAndMempool() {
 			this.ledgerType = LedgerType.LEDGER_AND_LOCALMEMPOOL;
@@ -289,8 +309,8 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder checkLedgerSyncedInOrder(String invariantName) {
-			this.checksBuilder.put(invariantName, nodes -> new SyncedInOrderInvariant());
+		public Builder checkLedgerInOrder(String invariantName) {
+			this.checksBuilder.put(invariantName, nodes -> new LedgerInOrderInvariant());
 			return this;
 		}
 
@@ -301,46 +321,48 @@ public class SimulationTest {
 
 		public SimulationTest build() {
 			ImmutableList.Builder<Module> modules = ImmutableList.builder();
+			final long limit = numInitialValidators == 0 ? Long.MAX_VALUE : numInitialValidators;
 			modules.add(new AbstractModule() {
 				@Provides
 				ImmutableList<BFTNode> nodes() {
 					return nodes.stream().map(node -> BFTNode.create(node.getPublicKey())).collect(ImmutableList.toImmutableList());
 				}
+
+				@Provides
+				BFTValidatorSet initialValidatorSet(ImmutableList<BFTNode> nodes) {
+					return BFTValidatorSet.from(nodes.stream().limit(limit).map(node -> BFTValidator.from(node, UInt256.ONE)));
+				}
 			});
-			final long limit = numInitialValidators == 0 ? Long.MAX_VALUE : numInitialValidators;
 
 			if (ledgerType == LedgerType.MOCKED_LEDGER) {
-				modules.add(new AbstractModule() {
-					@Provides
-					BFTValidatorSet validatorSet(ImmutableList<BFTNode> nodes) {
-						return BFTValidatorSet.from(nodes.stream().limit(limit).map(node -> BFTValidator.from(node, UInt256.ONE)));
-					}
-				});
 				if (modifyOneGenesis) {
 					modules.add(new MockedBFTConfigurationOneDifferentGenesisModule(BFTNode.create(nodes.get(0).getPublicKey())));
 				} else {
 					modules.add(new MockedBFTConfigurationModule());
 				}
 				modules.add(new MockedLedgerModule());
+				modules.add(new LedgerRxModule());
 				modules.add(new MockedConsensusRunnerModule());
 			} else {
 				modules.add(new LedgerModule());
 				modules.add(new LedgerRxModule());
 				modules.add(new LedgerEpochChangeRxModule());
-				modules.add(new MockedSyncServiceModule());
 
 				if (ledgerType == LedgerType.LEDGER) {
 					modules.add(new MockedBFTConfigurationModule());
 					modules.add(new MockedConsensusRunnerModule());
 					modules.add(new MockedCommandGeneratorModule());
 					modules.add(new MockedMempoolModule());
-					modules.add(new AbstractModule() {
-						@Provides
-						BFTValidatorSet validatorSet(ImmutableList<BFTNode> nodes) {
-							return BFTValidatorSet.from(nodes.stream().limit(limit).map(node -> BFTValidator.from(node, UInt256.ONE)));
-						}
-					});
 					modules.add(new MockedStateComputerModule());
+					modules.add(new MockedSyncServiceModule());
+				} else if (ledgerType == LedgerType.LEDGER_AND_SYNC) {
+					modules.add(new SyncCommittedServiceModule());
+					modules.add(new SyncRxModule());
+					modules.add(new MockedBFTConfigurationModule());
+					modules.add(new MockedConsensusRunnerModule());
+					modules.add(new MockedCommandGeneratorModule());
+					modules.add(new MockedMempoolModule());
+					modules.add(new MockedStateComputerWithReaderModule());
 				} else if (ledgerType == LedgerType.LEDGER_AND_EPOCHS) {
 					modules.add(new ConsensusRunnerModule());
 					modules.add(new LedgerCommandGeneratorModule());
@@ -353,6 +375,7 @@ public class SimulationTest {
 								.map(node -> BFTValidator.from(node, UInt256.ONE))
 								.collect(Collectors.toList())));
 					modules.add(new MockedStateComputerWithEpochsModule(epochHighView, epochToValidatorSetMapping));
+					modules.add(new MockedSyncServiceModule());
 				} else if (ledgerType == LedgerType.LEDGER_AND_LOCALMEMPOOL) {
 					modules.add(new MockedBFTConfigurationModule());
 					modules.add(new MockedConsensusRunnerModule());
@@ -363,12 +386,8 @@ public class SimulationTest {
 						protected void configure() {
 							bind(Mempool.class).to(LocalMempool.class);
 						}
-
-						@Provides
-						BFTValidatorSet validatorSet(ImmutableList<BFTNode> nodes) {
-							return BFTValidatorSet.from(nodes.stream().limit(limit).map(node -> BFTValidator.from(node, UInt256.ONE)));
-						}
 					});
+					modules.add(new MockedSyncServiceModule());
 					modules.add(new MockedStateComputerModule());
 				} else if (ledgerType == LedgerType.LEDGER_AND_RADIXENGINE) {
 					modules.add(new ConsensusRunnerModule());
@@ -379,15 +398,11 @@ public class SimulationTest {
 						protected void configure() {
 							bind(Mempool.class).to(LocalMempool.class);
 						}
-
-						@Provides
-						BFTValidatorSet validatorSet(ImmutableList<BFTNode> nodes) {
-							return BFTValidatorSet.from(nodes.stream().limit(limit).map(node -> BFTValidator.from(node, UInt256.ONE)));
-						}
 					});
 					modules.add(new LedgerEpochChangeModule());
 					modules.add(new RadixEngineModule(epochHighView, true));
 					modules.add(new RadixEngineRxModule());
+					modules.add(new MockedSyncServiceModule());
 					modules.add(new MockedRadixEngineStoreModule());
 				}
 			}
@@ -453,6 +468,27 @@ public class SimulationTest {
 			.doOnSubscribe(d -> runners.forEach(c -> c.run(runningNetwork)));
 	}
 
+	public static class TestResults {
+		private final Map<String, Optional<TestInvariantError>> checkResults;
+		private final RunningNetwork network;
+
+		private TestResults(
+			Map<String, Optional<TestInvariantError>> checkResults,
+			RunningNetwork network
+		) {
+			this.checkResults = checkResults;
+			this.network = network;
+		}
+
+		public Map<String, Optional<TestInvariantError>> getCheckResults() {
+			return checkResults;
+		}
+
+		public RunningNetwork getNetwork() {
+			return network;
+		}
+	}
+
 	/**
 	 * Runs the test for time configured via environment variable. If environment variable is missing then
 	 * default duration is used. Returns either once the duration has passed or if a check has failed.
@@ -460,7 +496,7 @@ public class SimulationTest {
 	 *
 	 * @return map of check results
 	 */
-	public Map<String, Optional<TestInvariantError>> run() {
+	public TestResults run() {
 		return run(getConfiguredDuration());
 	}
 
@@ -480,9 +516,9 @@ public class SimulationTest {
 	 * Returns a map from the check name to the result.
 	 *
 	 * @param duration duration to run test for
-	 * @return map of check results
+	 * @return test results
 	 */
-	public Map<String, Optional<TestInvariantError>> run(Duration duration) {
+	public TestResults run(Duration duration) {
 		SimulationNetwork network = SimulationNetwork.builder()
 			.latencyProvider(this.latencyProvider)
 			.build();
@@ -496,9 +532,10 @@ public class SimulationTest {
 		);
 		RunningNetwork runningNetwork = bftNetwork.start();
 
-		return runChecks(runningNetwork, duration)
+		Map<String, Optional<TestInvariantError>> checkResults = runChecks(runningNetwork, duration)
 			.doFinally(bftNetwork::stop)
 			.blockingStream()
 			.collect(Collectors.toMap(Pair::getFirst, Pair::getSecond));
+		return new TestResults(checkResults, runningNetwork);
 	}
 }

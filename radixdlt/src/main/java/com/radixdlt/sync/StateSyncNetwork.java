@@ -49,7 +49,7 @@ public interface StateSyncNetwork {
 	/**
 	 * Sends a sync response to a peer node
 	 * @param node node to send response to
-	 * @param atoms list of atoms in the response
+	 * @param commandsAndProof list of commands with proof
 	 */
-	void sendSyncResponse(BFTNode node, VerifiedCommandsAndProof atoms);
+	void sendSyncResponse(BFTNode node, VerifiedCommandsAndProof commandsAndProof);
 }

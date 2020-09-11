@@ -15,11 +15,12 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.simulation;
+package com.radixdlt.integration.distributed;
 
-import com.radixdlt.ConsensusRunner;
+import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.BFTEventProcessor;
-import com.radixdlt.consensus.ConsensusEventsRx;
+import com.radixdlt.consensus.BFTEventsRx;
+import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
@@ -46,7 +47,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * Standalone bft runner without epoch management
  */
-public class BFTRunner implements ConsensusRunner {
+public class BFTRunner implements ModuleRunner {
 	private static final Logger log = LogManager.getLogger();
 
 	private final ConnectableObservable<Object> events;
@@ -58,10 +59,11 @@ public class BFTRunner implements ConsensusRunner {
 
 	@Inject
 	public BFTRunner(
-		ConsensusEventsRx networkRx,
+		BFTEventsRx networkRx,
 		PacemakerRx pacemakerRx,
 		VertexSyncRx vertexSyncRx,
 		SyncVerticesRPCRx rpcRx,
+		CommittedStateSyncRx committedStateSyncRx,
 		BFTEventProcessor bftEventProcessor,
 		VertexStoreEventProcessor vertexStoreEventProcessor
 	) {
@@ -76,7 +78,7 @@ public class BFTRunner implements ConsensusRunner {
 				.observeOn(singleThreadScheduler)
 				.map(LocalTimeout::getView)
 				.doOnNext(bftEventProcessor::processLocalTimeout),
-			networkRx.consensusEvents()
+			networkRx.bftEvents()
 				.observeOn(singleThreadScheduler)
 				.doOnNext(e -> {
 					if (e instanceof NewView) {
@@ -100,7 +102,10 @@ public class BFTRunner implements ConsensusRunner {
 				.doOnNext(vertexStoreEventProcessor::processGetVerticesErrorResponse),
 			vertexSyncRx.syncedVertices()
 				.observeOn(singleThreadScheduler)
-				.doOnNext(bftEventProcessor::processLocalSync)
+				.doOnNext(bftEventProcessor::processLocalSync),
+			committedStateSyncRx.committedStateSyncs()
+				.observeOn(singleThreadScheduler)
+				.doOnNext(vertexStoreEventProcessor::processCommittedStateSync)
 		));
 
 		this.events = eventCoordinatorEvents
