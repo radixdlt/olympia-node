@@ -19,7 +19,6 @@ package com.radixdlt.sync;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -29,6 +28,7 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.ledger.VerifiableLedgerHeaderAndProof;
 import com.radixdlt.sync.LocalSyncServiceProcessor.SyncTimeoutScheduler;
 import com.radixdlt.sync.LocalSyncServiceProcessor.SyncedCommandSender;
 import java.util.Comparator;
@@ -49,6 +49,7 @@ public class LocalSyncServiceProcessorTest {
 		this.syncedCommandSender = mock(SyncedCommandSender.class);
 		this.syncTimeoutScheduler = mock(SyncTimeoutScheduler.class);
 		this.currentHeader = mock(VerifiedLedgerHeaderAndProof.class);
+		when(this.currentHeader.toSerializable()).thenReturn(mock(VerifiableLedgerHeaderAndProof.class));
 		this.headerComparator = mock(Comparator.class);
 		this.syncServiceProcessor = new LocalSyncServiceProcessor(
 			stateSyncNetwork,
@@ -58,29 +59,6 @@ public class LocalSyncServiceProcessorTest {
 			currentHeader,
 			1
 		);
-	}
-
-	@Test
-	public void given_some_current_header__when_response_with_higher_header__then_should_send_sync() {
-		VerifiableCommandsAndProof commands = mock(VerifiableCommandsAndProof.class);
-		VerifiedLedgerHeaderAndProof ledgerHeader = mock(VerifiedLedgerHeaderAndProof.class);
-		when(headerComparator.compare(ledgerHeader, currentHeader)).thenReturn(1);
-		when(commands.getNext()).thenReturn(ledgerHeader);
-		syncServiceProcessor.processSyncResponse(commands);
-
-		verify(syncedCommandSender, times(1))
-			.sendSyncedCommand(argThat(v -> v.getNext().equals(ledgerHeader)));
-	}
-
-	@Test
-	public void given_some_current_header__when_response_with_lower_version__then_should_not_send_sync() {
-		VerifiableCommandsAndProof commands = mock(VerifiableCommandsAndProof.class);
-		VerifiedLedgerHeaderAndProof ledgerHeader = mock(VerifiedLedgerHeaderAndProof.class);
-		when(headerComparator.compare(ledgerHeader, currentHeader)).thenReturn(-1);
-		when(commands.getNext()).thenReturn(ledgerHeader);
-		syncServiceProcessor.processSyncResponse(commands);
-
-		verify(syncedCommandSender, never()).sendSyncedCommand(any());
 	}
 
 	@Test
@@ -116,6 +94,7 @@ public class LocalSyncServiceProcessorTest {
 	public void given_some_current_header__when_local_request_has_higher_target_but_same_version__then_should_send_timeout_and_remote_request() {
 		when(currentHeader.getStateVersion()).thenReturn(1L);
 		VerifiedLedgerHeaderAndProof targetHeader = mock(VerifiedLedgerHeaderAndProof.class);
+		when(targetHeader.toSerializable()).thenReturn(mock(VerifiableLedgerHeaderAndProof.class));
 		when(targetHeader.getStateVersion()).thenReturn(1L);
 		when(headerComparator.compare(targetHeader, currentHeader)).thenReturn(1);
 		LocalSyncRequest request = mock(LocalSyncRequest.class);

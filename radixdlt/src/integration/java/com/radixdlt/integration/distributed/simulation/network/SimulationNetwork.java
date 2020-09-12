@@ -38,9 +38,10 @@ import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.ledger.VerifiableLedgerHeaderAndProof;
 import com.radixdlt.sync.StateSyncNetwork;
 import com.radixdlt.sync.RemoteSyncRequest;
-import com.radixdlt.sync.VerifiableCommandsAndProof;
+import com.radixdlt.ledger.VerifiableCommandsAndProof;
 import io.reactivex.rxjava3.core.Observable;
 
 import io.reactivex.rxjava3.schedulers.Timed;
@@ -315,7 +316,7 @@ public class SimulationNetwork {
 		}
 
 		@Override
-		public void sendSyncRequest(BFTNode node, VerifiedLedgerHeaderAndProof currentHeader) {
+		public void sendSyncRequest(BFTNode node, VerifiableLedgerHeaderAndProof currentHeader) {
 			RemoteSyncRequest syncRequest = new RemoteSyncRequest(thisNode, currentHeader);
 			receivedMessages.onNext(MessageInTransit.newMessage(syncRequest, thisNode, node));
 		}

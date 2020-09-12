@@ -21,7 +21,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.sync.VerifiableCommandsAndProof;
+import com.radixdlt.ledger.VerifiableCommandsAndProof;
 import org.radix.network.messaging.Message;
 
 /**

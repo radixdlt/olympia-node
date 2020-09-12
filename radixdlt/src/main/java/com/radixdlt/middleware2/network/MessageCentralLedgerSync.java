@@ -17,14 +17,14 @@
 
 package com.radixdlt.middleware2.network;
 
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.ledger.VerifiableLedgerHeaderAndProof;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.sync.StateSyncNetwork;
 import com.radixdlt.sync.RemoteSyncRequest;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageListener;
-import com.radixdlt.sync.VerifiableCommandsAndProof;
+import com.radixdlt.ledger.VerifiableCommandsAndProof;
 import com.radixdlt.universe.Universe;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.Objects;
@@ -73,7 +73,7 @@ public final class MessageCentralLedgerSync implements StateSyncNetwork {
 	}
 
 	@Override
-	public void sendSyncRequest(BFTNode node, VerifiedLedgerHeaderAndProof header) {
+	public void sendSyncRequest(BFTNode node, VerifiableLedgerHeaderAndProof header) {
 		addressBook.peer(node.getKey().euid()).ifPresent(peer -> {
 			if (peer.hasSystem()) {
 				final SyncRequestMessage syncRequestMessage = new SyncRequestMessage(this.magic, header);

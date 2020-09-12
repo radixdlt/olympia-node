@@ -20,6 +20,7 @@ package com.radixdlt.sync;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.ledger.VerifiableCommandsAndProof;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
@@ -91,10 +92,6 @@ public final class LocalSyncServiceProcessor {
 	public void processSyncResponse(VerifiableCommandsAndProof commandsAndProof) {
 		log.info("SYNC_RESPONSE: {} current={} target={}", commandsAndProof, this.currentHeader, this.targetHeader);
 		// TODO: Check validity of response
-		if (headerComparator.compare(commandsAndProof.getNext(), this.currentHeader) <= 0) {
-			return;
-		}
-
 		this.syncedCommandSender.sendSyncedCommand(commandsAndProof);
 	}
 
@@ -132,8 +129,8 @@ public final class LocalSyncServiceProcessor {
 			// TODO: Need to check epochs to make sure we're not skipping epochs
 			VerifiableCommandsAndProof verifiedCommandsAndProof = new VerifiableCommandsAndProof(
 				ImmutableList.of(),
-				this.currentHeader,
-				syncInProgress.getTargetHeader()
+				this.currentHeader.toSerializable(),
+				syncInProgress.getTargetHeader().toSerializable()
 			);
 			this.syncedCommandSender.sendSyncedCommand(verifiedCommandsAndProof);
 			return;
@@ -141,7 +138,7 @@ public final class LocalSyncServiceProcessor {
 
 		ImmutableList<BFTNode> targetNodes = syncInProgress.getTargetNodes();
 		BFTNode node = targetNodes.get(ThreadLocalRandom.current().nextInt(targetNodes.size()));
-		stateSyncNetwork.sendSyncRequest(node, this.currentHeader);
+		stateSyncNetwork.sendSyncRequest(node, this.currentHeader.toSerializable());
 		syncTimeoutScheduler.scheduleTimeout(syncInProgress, patienceMilliseconds);
 	}
 }

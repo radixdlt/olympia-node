@@ -15,13 +15,12 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.sync;
+package com.radixdlt.ledger;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -44,17 +43,17 @@ public class VerifiableCommandsAndProof {
 
 	@JsonProperty("current")
 	@DsonOutput(Output.ALL)
-	private final VerifiedLedgerHeaderAndProof root;
+	private final VerifiableLedgerHeaderAndProof root;
 
 	@JsonProperty("next")
 	@DsonOutput(Output.ALL)
-	private final VerifiedLedgerHeaderAndProof next;
+	private final VerifiableLedgerHeaderAndProof next;
 
 	@JsonCreator
 	public VerifiableCommandsAndProof(
 		@JsonProperty("commands") ImmutableList<Command> commands,
-		@JsonProperty("current") VerifiedLedgerHeaderAndProof root,
-		@JsonProperty("next") VerifiedLedgerHeaderAndProof next
+		@JsonProperty("current") VerifiableLedgerHeaderAndProof root,
+		@JsonProperty("next") VerifiableLedgerHeaderAndProof next
 	) {
 		this.commands = commands == null ? ImmutableList.of() : commands;
 		this.root = Objects.requireNonNull(root);
@@ -65,11 +64,11 @@ public class VerifiableCommandsAndProof {
 		return commands;
 	}
 
-	public VerifiedLedgerHeaderAndProof getRoot() {
+	public VerifiableLedgerHeaderAndProof getRoot() {
 		return root;
 	}
 
-	public VerifiedLedgerHeaderAndProof getNext() {
+	public VerifiableLedgerHeaderAndProof getNext() {
 		return next;
 	}
 

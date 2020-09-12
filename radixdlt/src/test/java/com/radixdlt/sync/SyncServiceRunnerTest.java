@@ -18,6 +18,7 @@
 package com.radixdlt.sync;
 
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.ledger.VerifiableCommandsAndProof;
 import com.radixdlt.sync.SyncServiceRunner.LocalSyncRequestsRx;
 import com.radixdlt.sync.SyncServiceRunner.SyncTimeoutsRx;
 import com.radixdlt.sync.SyncServiceRunner.VersionUpdatesRx;

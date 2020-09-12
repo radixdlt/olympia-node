@@ -19,7 +19,7 @@ package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.sync.VerifiableCommandsAndProof;
+import com.radixdlt.ledger.VerifiableCommandsAndProof;
 
 /**
  * A distributed computer which manages the computed state in a BFT.

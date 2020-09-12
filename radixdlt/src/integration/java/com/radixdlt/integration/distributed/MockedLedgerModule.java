@@ -29,7 +29,7 @@ import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.sync.SyncRequestSender;
 import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.sync.VerifiableCommandsAndProof;
+import com.radixdlt.ledger.VerifiableCommandsAndProof;
 
 public class MockedLedgerModule extends AbstractModule {
 	@Override

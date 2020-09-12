@@ -20,13 +20,11 @@ package com.radixdlt.integration.distributed;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.sync.CommittedReader;
-import com.radixdlt.sync.VerifiableCommandsAndProof;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Random;
@@ -50,18 +48,18 @@ public final class StateComputerWithSometimesBadHashCommittedReader implements S
 	}
 
 	@Override
-	public VerifiableCommandsAndProof getNextCommittedCommands(VerifiedLedgerHeaderAndProof currentHeader, int batchSize) {
-		Entry<Long, VerifiedCommandsAndProof> entry = commandsAndProof.higherEntry(currentHeader.getStateVersion());
+	public VerifiedCommandsAndProof getNextCommittedCommands(long stateVersion, int batchSize) {
+		Entry<Long, VerifiedCommandsAndProof> entry = commandsAndProof.higherEntry(stateVersion);
 		if (entry != null) {
 			ImmutableList<Command> commands;
-			VerifiedCommandsAndProof commandsToSendBack = entry.getValue().truncateFromVersion(currentHeader.getStateVersion());
+			VerifiedCommandsAndProof commandsToSendBack = entry.getValue().truncateFromVersion(stateVersion);
 			if (random.nextBoolean()) {
 				 commands = Stream.generate(() -> new Command(new byte[]{0})).limit(commandsToSendBack.size())
 					.collect(ImmutableList.toImmutableList());
+				return new VerifiedCommandsAndProof(commands, commandsToSendBack.getHeader());
 			} else {
-				commands = commandsToSendBack.getCommands();
+				return commandsToSendBack;
 			}
-			return new VerifiableCommandsAndProof(commands, currentHeader, commandsToSendBack.getHeader());
 		}
 
 		return null;

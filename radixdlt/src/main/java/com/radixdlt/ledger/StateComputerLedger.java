@@ -33,7 +33,6 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.mempool.Mempool;
-import com.radixdlt.sync.VerifiableCommandsAndProof;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -170,27 +169,36 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 
 	@Override
 	public void tryCommit(VerifiableCommandsAndProof commandsAndProof) {
-		Hash accumulator = commandsAndProof.getRoot().getAccumulator();
+		Hash accumulator = commandsAndProof.getRoot().getLedgerHeader().getAccumulator();
 		for (Command command : commandsAndProof.getCommands()) {
 			accumulator = this.accumulate(accumulator, command);
 		}
 
-		if (!commandsAndProof.getNext().getAccumulator().equals(accumulator)) {
+		if (!commandsAndProof.getNext().getLedgerHeader().getAccumulator().equals(accumulator)) {
 			// TODO: Store bad commands for reference and later for slashing
 			log.warn("SYNC Received Bad commands: {}", commandsAndProof);
 			return;
 		}
 
+		// TODO: Stateful ledger header verification:
+		// TODO: -Check epoch signatures
+		// TODO: -verify rootHash matches
+
+		VerifiedLedgerHeaderAndProof nextHeader = new VerifiedLedgerHeaderAndProof(
+			commandsAndProof.getNext().getOpaque0(),
+			commandsAndProof.getNext().getOpaque1(),
+			commandsAndProof.getNext().getOpaque2(),
+			commandsAndProof.getNext().getOpaque3(),
+			commandsAndProof.getNext().getLedgerHeader(),
+			commandsAndProof.getNext().getSignatures()
+		);
+
 		VerifiedCommandsAndProof verified = new VerifiedCommandsAndProof(
 			commandsAndProof.getCommands(),
-			commandsAndProof.getNext()
+			nextHeader
 		);
 
 		counters.add(CounterType.SYNC_PROCESSED, verified.size());
-
-		// TODO: Stateful verification:
-		// TODO: -Check epoch signatures
-		// TODO: -verify rootHash matches
 
 		this.commit(verified);
 	}

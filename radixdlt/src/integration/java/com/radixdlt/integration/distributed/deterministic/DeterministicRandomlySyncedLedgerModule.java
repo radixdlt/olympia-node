@@ -24,7 +24,7 @@ import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.sync.SyncRequestSender;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.sync.VerifiableCommandsAndProof;
+import com.radixdlt.ledger.VerifiableCommandsAndProof;
 import java.util.Random;
 
 import com.google.inject.AbstractModule;

@@ -45,7 +45,6 @@ import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
-import com.radixdlt.sync.VerifiableCommandsAndProof;
 import com.radixdlt.utils.TypedMocks;
 
 import java.util.function.BiConsumer;
@@ -141,12 +140,9 @@ public class RadixEngineStateComputerTest {
 
 		stateComputer.commit(committedCommand);
 
-		VerifiedLedgerHeaderAndProof currentHeader = mock(VerifiedLedgerHeaderAndProof.class);
-		when(currentHeader.getStateVersion()).thenReturn(0L);
-
-		VerifiableCommandsAndProof commands = stateComputer.getNextCommittedCommands(currentHeader, 1);
+		VerifiedCommandsAndProof commands = stateComputer.getNextCommittedCommands(0L, 1);
 		assertThat(commands).isNotNull();
-		assertThat(commands.getNext()).isEqualTo(proof);
+		assertThat(commands.getHeader()).isEqualTo(proof);
 	}
 
 	@Test
@@ -167,12 +163,9 @@ public class RadixEngineStateComputerTest {
 			return null;
 		}).when(command).forEach(any());
 
-		VerifiedLedgerHeaderAndProof currentHeader = mock(VerifiedLedgerHeaderAndProof.class);
-		when(currentHeader.getStateVersion()).thenReturn(0L);
-
 		assertThat(stateComputer.commit(command)).isEmpty();
-		VerifiableCommandsAndProof commands = stateComputer.getNextCommittedCommands(currentHeader, 1);
+		VerifiedCommandsAndProof commands = stateComputer.getNextCommittedCommands(0L, 1);
 		assertThat(commands).isNotNull();
-		assertThat(commands.getNext()).isEqualTo(proof);
+		assertThat(commands.getHeader()).isEqualTo(proof);
 	}
 }

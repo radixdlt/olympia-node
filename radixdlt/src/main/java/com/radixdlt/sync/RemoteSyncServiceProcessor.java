@@ -18,6 +18,9 @@
 package com.radixdlt.sync;
 
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.ledger.VerifiableCommandsAndProof;
+import com.radixdlt.ledger.VerifiableLedgerHeaderAndProof;
+import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -47,16 +50,32 @@ public class RemoteSyncServiceProcessor {
 	}
 
 	public void processRemoteSyncRequest(RemoteSyncRequest syncRequest) {
+		log.info("SYNC_REQUEST: {}", syncRequest);
+
 		// TODO: Verify request
 
-		log.info("SYNC_REQUEST: {}", syncRequest);
-		VerifiedLedgerHeaderAndProof currentHeader = syncRequest.getCurrentHeader();
-		VerifiableCommandsAndProof committedCommands = committedReader.getNextCommittedCommands(currentHeader, batchSize);
+		VerifiableLedgerHeaderAndProof currentHeader = syncRequest.getCurrentHeader();
+		VerifiedLedgerHeaderAndProof verifiedHeader = new VerifiedLedgerHeaderAndProof(
+			currentHeader.getOpaque0(),
+			currentHeader.getOpaque1(),
+			currentHeader.getOpaque2(),
+			currentHeader.getOpaque3(),
+			currentHeader.getLedgerHeader(),
+			currentHeader.getSignatures()
+		);
+
+		VerifiedCommandsAndProof committedCommands = committedReader.getNextCommittedCommands(verifiedHeader.getStateVersion(), batchSize);
 		if (committedCommands == null) {
 			return;
 		}
 
-		stateSyncNetwork.sendSyncResponse(syncRequest.getNode(), committedCommands);
+		VerifiableCommandsAndProof verifiable = new VerifiableCommandsAndProof(
+			committedCommands.getCommands(),
+			currentHeader,
+			committedCommands.getHeader().toSerializable()
+		);
+
+		stateSyncNetwork.sendSyncResponse(syncRequest.getNode(), verifiable);
 	}
 
 }

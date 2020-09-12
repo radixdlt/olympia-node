@@ -36,7 +36,6 @@ import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
 import com.radixdlt.sync.CommittedReader;
-import com.radixdlt.sync.VerifiableCommandsAndProof;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -90,13 +89,13 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 
 	// TODO Move this to a different class class when unstored committed atoms is fixed
 	@Override
-	public VerifiableCommandsAndProof getNextCommittedCommands(VerifiedLedgerHeaderAndProof currentHeader, int batchSize) {
+	public VerifiedCommandsAndProof getNextCommittedCommands(long stateVersion, int batchSize) {
 		// TODO: This may still return an empty list as we still count state versions for atoms which
 		// TODO: never make it into the radix engine due to state errors. This is because we only check
 		// TODO: validity on commit rather than on proposal/prepare.
 		final TreeMap<Long, StoredCommittedCommand> storedCommittedAtoms;
 		try {
-			storedCommittedAtoms = committedCommandsReader.getNextCommittedCommands(currentHeader.getStateVersion(), batchSize);
+			storedCommittedAtoms = committedCommandsReader.getNextCommittedCommands(stateVersion, batchSize);
 		} catch (NextCommittedLimitReachedException e) {
 			return null;
 		}
@@ -105,7 +104,7 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 		if (storedCommittedAtoms.firstEntry() != null) {
 			nextHeader = storedCommittedAtoms.firstEntry().getValue().getStateAndProof();
 		} else {
-			Entry<Long, StoredCommittedCommand> uncommittedEntry = unstoredCommittedAtoms.higherEntry(currentHeader.getStateVersion());
+			Entry<Long, StoredCommittedCommand> uncommittedEntry = unstoredCommittedAtoms.higherEntry(stateVersion);
 			if (uncommittedEntry == null) {
 				return null;
 			}
@@ -115,13 +114,12 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 		synchronized (lock) {
 			final long proofStateVersion = nextHeader.getStateVersion();
 			Map<Long, StoredCommittedCommand> unstoredToReturn
-				= unstoredCommittedAtoms.subMap(currentHeader.getStateVersion(), false, proofStateVersion, true);
+				= unstoredCommittedAtoms.subMap(stateVersion, false, proofStateVersion, true);
 			storedCommittedAtoms.putAll(unstoredToReturn);
 		}
 
-		return new VerifiableCommandsAndProof(
+		return new VerifiedCommandsAndProof(
 			storedCommittedAtoms.values().stream().map(StoredCommittedCommand::getCommand).collect(ImmutableList.toImmutableList()),
-			currentHeader,
 			nextHeader
 		);
 	}

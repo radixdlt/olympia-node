@@ -17,18 +17,18 @@
 
 package com.radixdlt.sync;
 
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.ledger.VerifiableLedgerHeaderAndProof;
 import java.util.Objects;
 
 /**
  * A sync request from a peer
  */
 public final class RemoteSyncRequest {
-	private final VerifiedLedgerHeaderAndProof currentHeader;
+	private final VerifiableLedgerHeaderAndProof currentHeader;
 	private final BFTNode node;
 
-	public RemoteSyncRequest(BFTNode node, VerifiedLedgerHeaderAndProof currentHeader) {
+	public RemoteSyncRequest(BFTNode node, VerifiableLedgerHeaderAndProof currentHeader) {
 		this.node = Objects.requireNonNull(node);
 		this.currentHeader = currentHeader;
 	}
@@ -37,7 +37,7 @@ public final class RemoteSyncRequest {
 		return node;
 	}
 
-	public VerifiedLedgerHeaderAndProof getCurrentHeader() {
+	public VerifiableLedgerHeaderAndProof getCurrentHeader() {
 		return currentHeader;
 	}
 
