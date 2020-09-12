@@ -18,7 +18,7 @@
 package com.radixdlt.middleware2.network;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.ledger.VerifiableLedgerHeaderAndProof;
+import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
@@ -32,7 +32,7 @@ public final class SyncRequestMessage extends Message {
 
 	@JsonProperty("currentHeader")
 	@DsonOutput(Output.ALL)
-	private final VerifiableLedgerHeaderAndProof currentHeader;
+	private final DtoLedgerHeaderAndProof currentHeader;
 
 	SyncRequestMessage() {
 		// Serializer only
@@ -40,12 +40,12 @@ public final class SyncRequestMessage extends Message {
 		this.currentHeader = null;
 	}
 
-	public SyncRequestMessage(int magic, VerifiableLedgerHeaderAndProof currentHeader) {
+	public SyncRequestMessage(int magic, DtoLedgerHeaderAndProof currentHeader) {
 		super(magic);
 		this.currentHeader = currentHeader;
 	}
 
-	public VerifiableLedgerHeaderAndProof getCurrentHeader() {
+	public DtoLedgerHeaderAndProof getCurrentHeader() {
 		return currentHeader;
 	}
 

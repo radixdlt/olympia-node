@@ -33,7 +33,7 @@ import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.ledger.VerifiableLedgerHeaderAndProof;
+import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
 import org.junit.Before;
@@ -57,7 +57,7 @@ public class RemoteSyncServiceProcessorTest {
 	@Test
 	public void when_remote_sync_request__then_process_it() throws NextCommittedLimitReachedException {
 		RemoteSyncRequest request = mock(RemoteSyncRequest.class);
-		VerifiableLedgerHeaderAndProof header = mock(VerifiableLedgerHeaderAndProof.class);
+		DtoLedgerHeaderAndProof header = mock(DtoLedgerHeaderAndProof.class);
 		when(header.getOpaque0()).thenReturn(mock(BFTHeader.class));
 		when(header.getOpaque1()).thenReturn(mock(BFTHeader.class));
 		when(header.getOpaque3()).thenReturn(mock(Hash.class));
@@ -68,7 +68,7 @@ public class RemoteSyncServiceProcessorTest {
 		when(request.getNode()).thenReturn(node);
 		VerifiedCommandsAndProof verifiedCommandsAndProof = mock(VerifiedCommandsAndProof.class);
 		VerifiedLedgerHeaderAndProof verifiedHeader = mock(VerifiedLedgerHeaderAndProof.class);
-		when(verifiedHeader.toSerializable()).thenReturn(header);
+		when(verifiedHeader.toDto()).thenReturn(header);
 		when(verifiedCommandsAndProof.getHeader()).thenReturn(verifiedHeader);
 		when(reader.getNextCommittedCommands(anyLong(), anyInt())).thenReturn(verifiedCommandsAndProof);
 		processor.processRemoteSyncRequest(request);
@@ -78,7 +78,7 @@ public class RemoteSyncServiceProcessorTest {
 	@Test
 	public void when_remote_sync_request_and_unable__then_dont_do_anything() {
 		RemoteSyncRequest request = mock(RemoteSyncRequest.class);
-		VerifiableLedgerHeaderAndProof header = mock(VerifiableLedgerHeaderAndProof.class);
+		DtoLedgerHeaderAndProof header = mock(DtoLedgerHeaderAndProof.class);
 		when(header.getOpaque0()).thenReturn(mock(BFTHeader.class));
 		when(header.getOpaque1()).thenReturn(mock(BFTHeader.class));
 		when(header.getOpaque3()).thenReturn(mock(Hash.class));
@@ -92,7 +92,7 @@ public class RemoteSyncServiceProcessorTest {
 	@Test
 	public void when_remote_sync_request_and_null_return__then_dont_do_anything() {
 		RemoteSyncRequest request = mock(RemoteSyncRequest.class);
-		VerifiableLedgerHeaderAndProof header = mock(VerifiableLedgerHeaderAndProof.class);
+		DtoLedgerHeaderAndProof header = mock(DtoLedgerHeaderAndProof.class);
 		when(header.getOpaque0()).thenReturn(mock(BFTHeader.class));
 		when(header.getOpaque1()).thenReturn(mock(BFTHeader.class));
 		when(header.getOpaque3()).thenReturn(mock(Hash.class));

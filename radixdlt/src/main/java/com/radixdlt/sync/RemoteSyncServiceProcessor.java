@@ -18,8 +18,8 @@
 package com.radixdlt.sync;
 
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.ledger.VerifiableCommandsAndProof;
-import com.radixdlt.ledger.VerifiableLedgerHeaderAndProof;
+import com.radixdlt.ledger.DtoCommandsAndProof;
+import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
@@ -51,10 +51,9 @@ public class RemoteSyncServiceProcessor {
 
 	public void processRemoteSyncRequest(RemoteSyncRequest syncRequest) {
 		log.info("SYNC_REQUEST: {}", syncRequest);
+		DtoLedgerHeaderAndProof currentHeader = syncRequest.getCurrentHeader();
 
 		// TODO: Verify request
-
-		VerifiableLedgerHeaderAndProof currentHeader = syncRequest.getCurrentHeader();
 		VerifiedLedgerHeaderAndProof verifiedHeader = new VerifiedLedgerHeaderAndProof(
 			currentHeader.getOpaque0(),
 			currentHeader.getOpaque1(),
@@ -69,10 +68,10 @@ public class RemoteSyncServiceProcessor {
 			return;
 		}
 
-		VerifiableCommandsAndProof verifiable = new VerifiableCommandsAndProof(
+		DtoCommandsAndProof verifiable = new DtoCommandsAndProof(
 			committedCommands.getCommands(),
 			currentHeader,
-			committedCommands.getHeader().toSerializable()
+			committedCommands.getHeader().toDto()
 		);
 
 		stateSyncNetwork.sendSyncResponse(syncRequest.getNode(), verifiable);

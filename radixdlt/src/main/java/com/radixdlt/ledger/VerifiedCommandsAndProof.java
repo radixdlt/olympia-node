@@ -25,7 +25,9 @@ import java.util.function.BiConsumer;
 import java.util.stream.IntStream;
 
 /**
- * Commands along with proof that they have been committed on ledger
+ * Commands along with proof that they have been committed on ledger.
+ * The commands along with the header are also verified to be part of
+ * the correct state on ledger.
  */
 public final class VerifiedCommandsAndProof {
 	private final ImmutableList<Command> commands;
@@ -35,7 +37,7 @@ public final class VerifiedCommandsAndProof {
 		ImmutableList<Command> commands,
 		VerifiedLedgerHeaderAndProof headerAndProof
 	) {
-		this.commands = commands == null ? ImmutableList.of() : commands;
+		this.commands = Objects.requireNonNull(commands);
 		this.headerAndProof = Objects.requireNonNull(headerAndProof);
 	}
 

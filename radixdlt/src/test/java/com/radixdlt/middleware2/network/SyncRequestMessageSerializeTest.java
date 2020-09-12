@@ -27,7 +27,7 @@ public class SyncRequestMessageSerializeTest extends SerializeMessageObject<Sync
 	}
 
 	private static SyncRequestMessage get() {
-		return new SyncRequestMessage(1234, VerifiedLedgerHeaderAndProof.genesis(Hash.ZERO_HASH).toSerializable());
+		return new SyncRequestMessage(1234, VerifiedLedgerHeaderAndProof.genesis(Hash.ZERO_HASH).toDto());
 	}
 
 }

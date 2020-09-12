@@ -21,7 +21,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.ledger.VerifiableLedgerHeaderAndProof;
+import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -119,8 +119,8 @@ public final class VerifiedLedgerHeaderAndProof {
 		}
 	}
 
-	public VerifiableLedgerHeaderAndProof toSerializable() {
-		return new VerifiableLedgerHeaderAndProof(
+	public DtoLedgerHeaderAndProof toDto() {
+		return new DtoLedgerHeaderAndProof(
 			opaque0,
 			opaque1,
 			opaque2,

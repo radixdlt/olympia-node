@@ -28,7 +28,7 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.ledger.VerifiableLedgerHeaderAndProof;
+import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.sync.LocalSyncServiceProcessor.SyncTimeoutScheduler;
 import com.radixdlt.sync.LocalSyncServiceProcessor.SyncedCommandSender;
 import java.util.Comparator;
@@ -49,7 +49,7 @@ public class LocalSyncServiceProcessorTest {
 		this.syncedCommandSender = mock(SyncedCommandSender.class);
 		this.syncTimeoutScheduler = mock(SyncTimeoutScheduler.class);
 		this.currentHeader = mock(VerifiedLedgerHeaderAndProof.class);
-		when(this.currentHeader.toSerializable()).thenReturn(mock(VerifiableLedgerHeaderAndProof.class));
+		when(this.currentHeader.toDto()).thenReturn(mock(DtoLedgerHeaderAndProof.class));
 		this.headerComparator = mock(Comparator.class);
 		this.syncServiceProcessor = new LocalSyncServiceProcessor(
 			stateSyncNetwork,
@@ -94,7 +94,7 @@ public class LocalSyncServiceProcessorTest {
 	public void given_some_current_header__when_local_request_has_higher_target_but_same_version__then_should_send_timeout_and_remote_request() {
 		when(currentHeader.getStateVersion()).thenReturn(1L);
 		VerifiedLedgerHeaderAndProof targetHeader = mock(VerifiedLedgerHeaderAndProof.class);
-		when(targetHeader.toSerializable()).thenReturn(mock(VerifiableLedgerHeaderAndProof.class));
+		when(targetHeader.toDto()).thenReturn(mock(DtoLedgerHeaderAndProof.class));
 		when(targetHeader.getStateVersion()).thenReturn(1L);
 		when(headerComparator.compare(targetHeader, currentHeader)).thenReturn(1);
 		LocalSyncRequest request = mock(LocalSyncRequest.class);

@@ -38,10 +38,10 @@ import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.ledger.VerifiableLedgerHeaderAndProof;
+import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.sync.StateSyncNetwork;
 import com.radixdlt.sync.RemoteSyncRequest;
-import com.radixdlt.ledger.VerifiableCommandsAndProof;
+import com.radixdlt.ledger.DtoCommandsAndProof;
 import io.reactivex.rxjava3.core.Observable;
 
 import io.reactivex.rxjava3.schedulers.Timed;
@@ -306,8 +306,8 @@ public class SimulationNetwork {
 		}
 
 		@Override
-		public Observable<VerifiableCommandsAndProof> syncResponses() {
-			return myMessages.ofType(VerifiableCommandsAndProof.class);
+		public Observable<DtoCommandsAndProof> syncResponses() {
+			return myMessages.ofType(DtoCommandsAndProof.class);
 		}
 
 		@Override
@@ -316,13 +316,13 @@ public class SimulationNetwork {
 		}
 
 		@Override
-		public void sendSyncRequest(BFTNode node, VerifiableLedgerHeaderAndProof currentHeader) {
+		public void sendSyncRequest(BFTNode node, DtoLedgerHeaderAndProof currentHeader) {
 			RemoteSyncRequest syncRequest = new RemoteSyncRequest(thisNode, currentHeader);
 			receivedMessages.onNext(MessageInTransit.newMessage(syncRequest, thisNode, node));
 		}
 
 		@Override
-		public void sendSyncResponse(BFTNode node, VerifiableCommandsAndProof commandsAndProof) {
+		public void sendSyncResponse(BFTNode node, DtoCommandsAndProof commandsAndProof) {
 			receivedMessages.onNext(MessageInTransit.newMessage(commandsAndProof, thisNode, node));
 		}
 	}

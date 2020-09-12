@@ -20,7 +20,7 @@ package com.radixdlt.sync;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.ledger.VerifiableCommandsAndProof;
+import com.radixdlt.ledger.DtoCommandsAndProof;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
@@ -35,7 +35,7 @@ import org.apache.logging.log4j.Logger;
 @NotThreadSafe
 public final class LocalSyncServiceProcessor {
 	public interface SyncedCommandSender {
-		void sendSyncedCommand(VerifiableCommandsAndProof committedCommand);
+		void sendSyncedCommand(DtoCommandsAndProof committedCommand);
 	}
 
 	public static final class SyncInProgress {
@@ -89,7 +89,7 @@ public final class LocalSyncServiceProcessor {
 		this.targetHeader = current;
 	}
 
-	public void processSyncResponse(VerifiableCommandsAndProof commandsAndProof) {
+	public void processSyncResponse(DtoCommandsAndProof commandsAndProof) {
 		log.info("SYNC_RESPONSE: {} current={} target={}", commandsAndProof, this.currentHeader, this.targetHeader);
 		// TODO: Check validity of response
 		this.syncedCommandSender.sendSyncedCommand(commandsAndProof);
@@ -127,18 +127,18 @@ public final class LocalSyncServiceProcessor {
 		if (syncInProgress.getTargetHeader().getStateVersion() == this.currentHeader.getStateVersion()) {
 			// Already command synced just need to update header
 			// TODO: Need to check epochs to make sure we're not skipping epochs
-			VerifiableCommandsAndProof verifiedCommandsAndProof = new VerifiableCommandsAndProof(
+			DtoCommandsAndProof commandsAndProof = new DtoCommandsAndProof(
 				ImmutableList.of(),
-				this.currentHeader.toSerializable(),
-				syncInProgress.getTargetHeader().toSerializable()
+				this.currentHeader.toDto(),
+				syncInProgress.getTargetHeader().toDto()
 			);
-			this.syncedCommandSender.sendSyncedCommand(verifiedCommandsAndProof);
+			this.syncedCommandSender.sendSyncedCommand(commandsAndProof);
 			return;
 		}
 
 		ImmutableList<BFTNode> targetNodes = syncInProgress.getTargetNodes();
 		BFTNode node = targetNodes.get(ThreadLocalRandom.current().nextInt(targetNodes.size()));
-		stateSyncNetwork.sendSyncRequest(node, this.currentHeader.toSerializable());
+		stateSyncNetwork.sendSyncRequest(node, this.currentHeader.toDto());
 		syncTimeoutScheduler.scheduleTimeout(syncInProgress, patienceMilliseconds);
 	}
 }

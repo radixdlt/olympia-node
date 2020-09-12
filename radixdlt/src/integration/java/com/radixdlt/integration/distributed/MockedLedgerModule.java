@@ -29,7 +29,7 @@ import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.sync.SyncRequestSender;
 import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.ledger.VerifiableCommandsAndProof;
+import com.radixdlt.ledger.DtoCommandsAndProof;
 
 public class MockedLedgerModule extends AbstractModule {
 	@Override
@@ -63,7 +63,7 @@ public class MockedLedgerModule extends AbstractModule {
 			}
 
 			@Override
-			public void tryCommit(VerifiableCommandsAndProof commandsAndProof) {
+			public void tryCommit(DtoCommandsAndProof commandsAndProof) {
 				// Nothing to do here
 			}
 

@@ -31,8 +31,8 @@ import javax.annotation.concurrent.Immutable;
 
 // TODO: Add signature and sender
 @Immutable
-@SerializerId2("ledger.verifiable_commands_and_proof")
-public class VerifiableCommandsAndProof {
+@SerializerId2("ledger.commands_and_proof")
+public class DtoCommandsAndProof {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
@@ -43,17 +43,17 @@ public class VerifiableCommandsAndProof {
 
 	@JsonProperty("current")
 	@DsonOutput(Output.ALL)
-	private final VerifiableLedgerHeaderAndProof root;
+	private final DtoLedgerHeaderAndProof root;
 
 	@JsonProperty("next")
 	@DsonOutput(Output.ALL)
-	private final VerifiableLedgerHeaderAndProof next;
+	private final DtoLedgerHeaderAndProof next;
 
 	@JsonCreator
-	public VerifiableCommandsAndProof(
+	public DtoCommandsAndProof(
 		@JsonProperty("commands") ImmutableList<Command> commands,
-		@JsonProperty("current") VerifiableLedgerHeaderAndProof root,
-		@JsonProperty("next") VerifiableLedgerHeaderAndProof next
+		@JsonProperty("current") DtoLedgerHeaderAndProof root,
+		@JsonProperty("next") DtoLedgerHeaderAndProof next
 	) {
 		this.commands = commands == null ? ImmutableList.of() : commands;
 		this.root = Objects.requireNonNull(root);
@@ -64,11 +64,11 @@ public class VerifiableCommandsAndProof {
 		return commands;
 	}
 
-	public VerifiableLedgerHeaderAndProof getRoot() {
+	public DtoLedgerHeaderAndProof getRoot() {
 		return root;
 	}
 
-	public VerifiableLedgerHeaderAndProof getNext() {
+	public DtoLedgerHeaderAndProof getNext() {
 		return next;
 	}
 

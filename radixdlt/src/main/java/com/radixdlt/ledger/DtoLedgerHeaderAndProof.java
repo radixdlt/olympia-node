@@ -32,8 +32,8 @@ import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
 
 @Immutable
-@SerializerId2("ledger.verifiable_ledger_header_and_proof")
-public class VerifiableLedgerHeaderAndProof {
+@SerializerId2("ledger.ledger_header_and_proof")
+public class DtoLedgerHeaderAndProof {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
@@ -68,7 +68,7 @@ public class VerifiableLedgerHeaderAndProof {
 	private final TimestampedECDSASignatures signatures;
 
 	@JsonCreator
-	public VerifiableLedgerHeaderAndProof(
+	public DtoLedgerHeaderAndProof(
 		@JsonProperty("opaque0") BFTHeader opaque0,
 		@JsonProperty("opaque1") BFTHeader opaque1,
 		@JsonProperty("opaque2") long opaque2,

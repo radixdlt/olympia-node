@@ -24,7 +24,7 @@ import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.sync.SyncRequestSender;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.ledger.VerifiableCommandsAndProof;
+import com.radixdlt.ledger.DtoCommandsAndProof;
 import java.util.Random;
 
 import com.google.inject.AbstractModule;
@@ -83,7 +83,7 @@ public class DeterministicRandomlySyncedLedgerModule extends AbstractModule {
 			}
 
 			@Override
-			public void tryCommit(VerifiableCommandsAndProof commandsAndProof) {
+			public void tryCommit(DtoCommandsAndProof commandsAndProof) {
 				// Nothing to do here
 			}
 

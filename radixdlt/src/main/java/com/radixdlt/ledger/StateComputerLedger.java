@@ -168,7 +168,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	}
 
 	@Override
-	public void tryCommit(VerifiableCommandsAndProof commandsAndProof) {
+	public void tryCommit(DtoCommandsAndProof commandsAndProof) {
 		Hash accumulator = commandsAndProof.getRoot().getLedgerHeader().getAccumulator();
 		for (Command command : commandsAndProof.getCommands()) {
 			accumulator = this.accumulate(accumulator, command);

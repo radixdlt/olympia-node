@@ -20,7 +20,7 @@ package com.radixdlt.middleware2.network;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.ledger.VerifiableCommandsAndProof;
+import com.radixdlt.ledger.DtoCommandsAndProof;
 import org.radix.serialization.SerializeMessageObject;
 
 public class SyncResponseMessageSerializeTest extends SerializeMessageObject<SyncResponseMessage> {
@@ -29,10 +29,10 @@ public class SyncResponseMessageSerializeTest extends SerializeMessageObject<Syn
 	}
 
 	private static SyncResponseMessage get() {
-		return new SyncResponseMessage(1234, new VerifiableCommandsAndProof(
+		return new SyncResponseMessage(1234, new DtoCommandsAndProof(
 			ImmutableList.of(),
-			VerifiedLedgerHeaderAndProof.genesis(Hash.ZERO_HASH).toSerializable(),
-			VerifiedLedgerHeaderAndProof.genesis(Hash.ZERO_HASH).toSerializable()
+			VerifiedLedgerHeaderAndProof.genesis(Hash.ZERO_HASH).toDto(),
+			VerifiedLedgerHeaderAndProof.genesis(Hash.ZERO_HASH).toDto()
 		));
 	}
 }
