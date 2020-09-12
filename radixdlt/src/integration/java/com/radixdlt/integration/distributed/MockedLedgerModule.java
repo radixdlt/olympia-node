@@ -29,6 +29,7 @@ import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.sync.SyncRequestSender;
 import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.sync.VerifiableCommandsAndProof;
 
 public class MockedLedgerModule extends AbstractModule {
 	@Override
@@ -59,6 +60,11 @@ public class MockedLedgerModule extends AbstractModule {
 					onSynced.run();
 					return (notSynced, opaque) -> { };
 				};
+			}
+
+			@Override
+			public void tryCommit(VerifiableCommandsAndProof commandsAndProof) {
+				// Nothing to do here
 			}
 
 			@Override

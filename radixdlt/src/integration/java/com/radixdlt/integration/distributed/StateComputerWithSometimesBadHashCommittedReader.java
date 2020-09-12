@@ -26,6 +26,7 @@ import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.sync.CommittedReader;
+import com.radixdlt.sync.VerifiableCommandsAndProof;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Random;
@@ -33,7 +34,7 @@ import java.util.TreeMap;
 import java.util.stream.Stream;
 
 @Singleton
-public final class SometimesByzantineStateComputerWithReader implements StateComputer, CommittedReader {
+public final class StateComputerWithSometimesBadHashCommittedReader implements StateComputer, CommittedReader {
 	private final TreeMap<Long, VerifiedCommandsAndProof> commandsAndProof = new TreeMap<>();
 	private final Random random = new Random();
 
@@ -49,16 +50,18 @@ public final class SometimesByzantineStateComputerWithReader implements StateCom
 	}
 
 	@Override
-	public VerifiedCommandsAndProof getNextCommittedCommands(VerifiedLedgerHeaderAndProof currentHeader, int batchSize) {
+	public VerifiableCommandsAndProof getNextCommittedCommands(VerifiedLedgerHeaderAndProof currentHeader, int batchSize) {
 		Entry<Long, VerifiedCommandsAndProof> entry = commandsAndProof.higherEntry(currentHeader.getStateVersion());
 		if (entry != null) {
+			ImmutableList<Command> commands;
+			VerifiedCommandsAndProof commandsToSendBack = entry.getValue().truncateFromVersion(currentHeader.getStateVersion());
 			if (random.nextBoolean()) {
-				ImmutableList<Command> wrongCmds = Stream.generate(() -> new Command(new byte[]{0})).limit(entry.getValue().size())
+				 commands = Stream.generate(() -> new Command(new byte[]{0})).limit(commandsToSendBack.size())
 					.collect(ImmutableList.toImmutableList());
-				return new VerifiedCommandsAndProof(wrongCmds, entry.getValue().getHeader());
 			} else {
-				return entry.getValue();
+				commands = commandsToSendBack.getCommands();
 			}
+			return new VerifiableCommandsAndProof(commands, currentHeader, commandsToSendBack.getHeader());
 		}
 
 		return null;

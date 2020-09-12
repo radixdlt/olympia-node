@@ -18,11 +18,10 @@
 package com.radixdlt.sync;
 
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
 
 /**
  * Reader of committed commands
  */
 public interface CommittedReader {
-	VerifiedCommandsAndProof getNextCommittedCommands(VerifiedLedgerHeaderAndProof current, int batchSize);
+	VerifiableCommandsAndProof getNextCommittedCommands(VerifiedLedgerHeaderAndProof current, int batchSize);
 }

@@ -134,7 +134,7 @@ public final class VerifiedLedgerHeaderAndProof {
 		return ledgerHeader.getStateVersion();
 	}
 
-	public Hash getCommandId() {
+	public Hash getAccumulator() {
 		return ledgerHeader.getAccumulator();
 	}
 

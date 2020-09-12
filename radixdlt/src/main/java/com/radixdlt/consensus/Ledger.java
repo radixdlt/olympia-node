@@ -19,6 +19,7 @@ package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.sync.VerifiableCommandsAndProof;
 
 /**
  * A distributed computer which manages the computed state in a BFT.
@@ -47,6 +48,8 @@ public interface Ledger {
 	interface OnNotSynced {
 		void elseExecuteAndSendMessageOnSync(Runnable onNotSynced, Object opaque);
 	}
+
+	void tryCommit(VerifiableCommandsAndProof commandsAndProof);
 
 	/**
 	 * Commit a command

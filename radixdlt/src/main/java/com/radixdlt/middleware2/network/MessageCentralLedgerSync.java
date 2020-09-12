@@ -19,12 +19,12 @@ package com.radixdlt.middleware2.network;
 
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.sync.StateSyncNetwork;
 import com.radixdlt.sync.RemoteSyncRequest;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageListener;
+import com.radixdlt.sync.VerifiableCommandsAndProof;
 import com.radixdlt.universe.Universe;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.Objects;
@@ -50,7 +50,7 @@ public final class MessageCentralLedgerSync implements StateSyncNetwork {
 	}
 
 	@Override
-	public Observable<VerifiedCommandsAndProof> syncResponses() {
+	public Observable<VerifiableCommandsAndProof> syncResponses() {
 		return Observable.create(emitter -> {
 			MessageListener<SyncResponseMessage> listener = (src, msg) -> emitter.onNext(msg.getCommands());
 			this.messageCentral.addListener(SyncResponseMessage.class, listener);
@@ -83,7 +83,7 @@ public final class MessageCentralLedgerSync implements StateSyncNetwork {
 	}
 
 	@Override
-	public void sendSyncResponse(BFTNode node, VerifiedCommandsAndProof commands) {
+	public void sendSyncResponse(BFTNode node, VerifiableCommandsAndProof commands) {
 		addressBook.peer(node.getKey().euid()).ifPresent(peer -> {
 			if (peer.hasSystem()) {
 				final SyncResponseMessage syncResponseMessage = new SyncResponseMessage(this.magic, commands);

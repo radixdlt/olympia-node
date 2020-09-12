@@ -33,6 +33,7 @@ import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.sync.CommittedReader;
+import com.radixdlt.sync.VerifiableCommandsAndProof;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.TreeMap;
@@ -50,7 +51,7 @@ public class MockedStateComputerWithReaderModule extends AbstractModule {
 			proof.getEpoch() + 1,
 			View.genesis(),
 			proof.getStateVersion(),
-			proof.getCommandId(),
+			proof.getAccumulator(),
 			proof.timestamp(),
 			false
 		);
@@ -81,10 +82,15 @@ public class MockedStateComputerWithReaderModule extends AbstractModule {
 		}
 
 		@Override
-		public VerifiedCommandsAndProof getNextCommittedCommands(VerifiedLedgerHeaderAndProof currentHeader, int batchSize) {
+		public VerifiableCommandsAndProof getNextCommittedCommands(VerifiedLedgerHeaderAndProof currentHeader, int batchSize) {
 			Entry<Long, VerifiedCommandsAndProof> entry = commandsAndProof.higherEntry(currentHeader.getStateVersion());
 			if (entry != null) {
-				return entry.getValue();
+				VerifiedCommandsAndProof commandsToSendBack = entry.getValue().truncateFromVersion(currentHeader.getStateVersion());
+				return new VerifiableCommandsAndProof(
+					commandsToSendBack.getCommands(),
+					currentHeader,
+					commandsToSendBack.getHeader()
+				);
 			}
 
 			return null;

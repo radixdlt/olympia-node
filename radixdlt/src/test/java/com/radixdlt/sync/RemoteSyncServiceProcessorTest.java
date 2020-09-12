@@ -27,7 +27,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
 import org.junit.Before;
 import org.junit.Test;
@@ -52,7 +51,7 @@ public class RemoteSyncServiceProcessorTest {
 		RemoteSyncRequest syncRequest = mock(RemoteSyncRequest.class);
 		BFTNode node = mock(BFTNode.class);
 		when(syncRequest.getNode()).thenReturn(node);
-		VerifiedCommandsAndProof verifiedCommandsAndProof = mock(VerifiedCommandsAndProof.class);
+		VerifiableCommandsAndProof verifiedCommandsAndProof = mock(VerifiableCommandsAndProof.class);
 		when(reader.getNextCommittedCommands(any(), anyInt())).thenReturn(verifiedCommandsAndProof);
 		processor.processRemoteSyncRequest(syncRequest);
 		verify(network, times(1)).sendSyncResponse(eq(node), any());

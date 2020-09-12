@@ -40,7 +40,7 @@ public class MockedStateComputerModule extends AbstractModule {
 			proof.getEpoch() + 1,
 			View.genesis(),
 			proof.getStateVersion(),
-			proof.getCommandId(),
+			proof.getAccumulator(),
 			proof.timestamp(),
 			false
 		);

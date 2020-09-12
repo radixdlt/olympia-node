@@ -36,6 +36,7 @@ import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
 import com.radixdlt.sync.CommittedReader;
+import com.radixdlt.sync.VerifiableCommandsAndProof;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -89,7 +90,7 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 
 	// TODO Move this to a different class class when unstored committed atoms is fixed
 	@Override
-	public VerifiedCommandsAndProof getNextCommittedCommands(VerifiedLedgerHeaderAndProof currentHeader, int batchSize) {
+	public VerifiableCommandsAndProof getNextCommittedCommands(VerifiedLedgerHeaderAndProof currentHeader, int batchSize) {
 		// TODO: This may still return an empty list as we still count state versions for atoms which
 		// TODO: never make it into the radix engine due to state errors. This is because we only check
 		// TODO: validity on commit rather than on proposal/prepare.
@@ -100,27 +101,28 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 			return null;
 		}
 
-		final VerifiedLedgerHeaderAndProof nextState;
+		final VerifiedLedgerHeaderAndProof nextHeader;
 		if (storedCommittedAtoms.firstEntry() != null) {
-			nextState = storedCommittedAtoms.firstEntry().getValue().getStateAndProof();
+			nextHeader = storedCommittedAtoms.firstEntry().getValue().getStateAndProof();
 		} else {
 			Entry<Long, StoredCommittedCommand> uncommittedEntry = unstoredCommittedAtoms.higherEntry(currentHeader.getStateVersion());
 			if (uncommittedEntry == null) {
 				return null;
 			}
-			nextState = uncommittedEntry.getValue().getStateAndProof();
+			nextHeader = uncommittedEntry.getValue().getStateAndProof();
 		}
 
 		synchronized (lock) {
-			final long proofStateVersion = nextState.getStateVersion();
+			final long proofStateVersion = nextHeader.getStateVersion();
 			Map<Long, StoredCommittedCommand> unstoredToReturn
 				= unstoredCommittedAtoms.subMap(currentHeader.getStateVersion(), false, proofStateVersion, true);
 			storedCommittedAtoms.putAll(unstoredToReturn);
 		}
 
-		return new VerifiedCommandsAndProof(
+		return new VerifiableCommandsAndProof(
 			storedCommittedAtoms.values().stream().map(StoredCommittedCommand::getCommand).collect(ImmutableList.toImmutableList()),
-			nextState
+			currentHeader,
+			nextHeader
 		);
 	}
 

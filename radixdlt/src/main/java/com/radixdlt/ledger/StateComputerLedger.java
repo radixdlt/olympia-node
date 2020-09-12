@@ -33,6 +33,7 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.mempool.Mempool;
+import com.radixdlt.sync.VerifiableCommandsAndProof;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -42,11 +43,15 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Synchronizes execution
  */
 public final class StateComputerLedger implements Ledger, NextCommandGenerator {
+	private static final Logger log = LogManager.getLogger();
+
 	public interface StateComputer {
 		boolean prepare(VerifiedVertex vertex);
 		Optional<BFTValidatorSet> commit(VerifiedCommandsAndProof verifiedCommandsAndProof);
@@ -94,6 +99,13 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		this.hasher = Objects.requireNonNull(hasher);
 	}
 
+	private Hash accumulate(Hash parent, Command nextCommand) {
+		byte[] concat = new byte[32 * 2];
+		parent.copyTo(concat, 0);
+		nextCommand.getHash().copyTo(concat, 32);
+		return hasher.hashBytes(concat);
+	}
+
 	@Override
 	public Command generateNextCommand(View view, Set<Hash> prepared) {
 		final List<Command> commands = mempool.getCommands(1, prepared);
@@ -119,10 +131,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 
 		final Hash accumulator;
 		if (vertex.getCommand() != null) {
-			byte[] concat = new byte[32 * 2];
-			parent.getAccumulator().copyTo(concat, 0);
-			vertex.getCommand().getHash().copyTo(concat, 32);
-			accumulator = hasher.hashBytes(concat);
+			accumulator = this.accumulate(parent.getAccumulator(), vertex.getCommand());
 		} else {
 			accumulator = parent.getAccumulator();
 		}
@@ -157,6 +166,33 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 				};
 			}
 		}
+	}
+
+	@Override
+	public void tryCommit(VerifiableCommandsAndProof commandsAndProof) {
+		Hash accumulator = commandsAndProof.getRoot().getAccumulator();
+		for (Command command : commandsAndProof.getCommands()) {
+			accumulator = this.accumulate(accumulator, command);
+		}
+
+		if (!commandsAndProof.getNext().getAccumulator().equals(accumulator)) {
+			// TODO: Store bad commands for reference and later for slashing
+			log.warn("SYNC Received Bad commands: {}", commandsAndProof);
+			return;
+		}
+
+		VerifiedCommandsAndProof verified = new VerifiedCommandsAndProof(
+			commandsAndProof.getCommands(),
+			commandsAndProof.getNext()
+		);
+
+		counters.add(CounterType.SYNC_PROCESSED, verified.size());
+
+		// TODO: Stateful verification:
+		// TODO: -Check epoch signatures
+		// TODO: -verify rootHash matches
+
+		this.commit(verified);
 	}
 
 	@Override

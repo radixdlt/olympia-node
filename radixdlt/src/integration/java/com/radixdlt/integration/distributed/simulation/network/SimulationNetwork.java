@@ -38,9 +38,9 @@ import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.sync.StateSyncNetwork;
 import com.radixdlt.sync.RemoteSyncRequest;
+import com.radixdlt.sync.VerifiableCommandsAndProof;
 import io.reactivex.rxjava3.core.Observable;
 
 import io.reactivex.rxjava3.schedulers.Timed;
@@ -305,8 +305,8 @@ public class SimulationNetwork {
 		}
 
 		@Override
-		public Observable<VerifiedCommandsAndProof> syncResponses() {
-			return myMessages.ofType(VerifiedCommandsAndProof.class);
+		public Observable<VerifiableCommandsAndProof> syncResponses() {
+			return myMessages.ofType(VerifiableCommandsAndProof.class);
 		}
 
 		@Override
@@ -321,7 +321,7 @@ public class SimulationNetwork {
 		}
 
 		@Override
-		public void sendSyncResponse(BFTNode node, VerifiedCommandsAndProof commandsAndProof) {
+		public void sendSyncResponse(BFTNode node, VerifiableCommandsAndProof commandsAndProof) {
 			receivedMessages.onNext(MessageInTransit.newMessage(commandsAndProof, thisNode, node));
 		}
 	}
