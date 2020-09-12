@@ -89,13 +89,13 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 
 	// TODO Move this to a different class class when unstored committed atoms is fixed
 	@Override
-	public VerifiedCommandsAndProof getNextCommittedCommands(long stateVersion, int batchSize) {
+	public VerifiedCommandsAndProof getNextCommittedCommands(VerifiedLedgerHeaderAndProof currentHeader, int batchSize) {
 		// TODO: This may still return an empty list as we still count state versions for atoms which
 		// TODO: never make it into the radix engine due to state errors. This is because we only check
 		// TODO: validity on commit rather than on proposal/prepare.
 		final TreeMap<Long, StoredCommittedCommand> storedCommittedAtoms;
 		try {
-			storedCommittedAtoms = committedCommandsReader.getNextCommittedCommands(stateVersion, batchSize);
+			storedCommittedAtoms = committedCommandsReader.getNextCommittedCommands(currentHeader.getStateVersion(), batchSize);
 		} catch (NextCommittedLimitReachedException e) {
 			return null;
 		}
@@ -104,7 +104,7 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 		if (storedCommittedAtoms.firstEntry() != null) {
 			nextState = storedCommittedAtoms.firstEntry().getValue().getStateAndProof();
 		} else {
-			Entry<Long, StoredCommittedCommand> uncommittedEntry = unstoredCommittedAtoms.higherEntry(stateVersion);
+			Entry<Long, StoredCommittedCommand> uncommittedEntry = unstoredCommittedAtoms.higherEntry(currentHeader.getStateVersion());
 			if (uncommittedEntry == null) {
 				return null;
 			}
@@ -114,7 +114,7 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 		synchronized (lock) {
 			final long proofStateVersion = nextState.getStateVersion();
 			Map<Long, StoredCommittedCommand> unstoredToReturn
-				= unstoredCommittedAtoms.subMap(stateVersion, false, proofStateVersion, true);
+				= unstoredCommittedAtoms.subMap(currentHeader.getStateVersion(), false, proofStateVersion, true);
 			storedCommittedAtoms.putAll(unstoredToReturn);
 		}
 

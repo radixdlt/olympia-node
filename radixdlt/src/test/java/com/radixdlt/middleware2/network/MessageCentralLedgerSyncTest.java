@@ -26,6 +26,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.EUID;
@@ -66,7 +67,7 @@ public class MessageCentralLedgerSyncTest {
 		Peer peer = mock(Peer.class);
 		when(peer.hasSystem()).thenReturn(true);
 		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
-		messageCentralLedgerSync.sendSyncRequest(node, 1);
+		messageCentralLedgerSync.sendSyncRequest(node, mock(VerifiedLedgerHeaderAndProof.class));
 		verify(messageCentral, times(1)).send(eq(peer), argThat(msg -> msg.getMagic() == 123));
 	}
 
@@ -100,11 +101,12 @@ public class MessageCentralLedgerSyncTest {
 		when(system.getKey()).thenReturn(key);
 		when(peer.getSystem()).thenReturn(system);
 		SyncRequestMessage syncRequestMessage = mock(SyncRequestMessage.class);
-		when(syncRequestMessage.getStateVersion()).thenReturn(12345L);
+		VerifiedLedgerHeaderAndProof header = mock(VerifiedLedgerHeaderAndProof.class);
+		when(syncRequestMessage.getCurrentHeader()).thenReturn(header);
 		messageListenerAtomicReference.get().handleMessage(peer, syncRequestMessage);
 		testObserver.awaitCount(1);
 		testObserver.assertValue(syncRequest ->
-			syncRequest.getStateVersion() == 12345L && syncRequest.getNode().getKey().equals(key)
+			syncRequest.getCurrentHeader().equals(header) && syncRequest.getNode().getKey().equals(key)
 		);
 	}
 

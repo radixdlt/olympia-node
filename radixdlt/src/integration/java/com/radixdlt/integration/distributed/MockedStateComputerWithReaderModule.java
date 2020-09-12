@@ -81,8 +81,8 @@ public class MockedStateComputerWithReaderModule extends AbstractModule {
 		}
 
 		@Override
-		public VerifiedCommandsAndProof getNextCommittedCommands(long stateVersion, int batchSize) {
-			Entry<Long, VerifiedCommandsAndProof> entry = commandsAndProof.higherEntry(stateVersion);
+		public VerifiedCommandsAndProof getNextCommittedCommands(VerifiedLedgerHeaderAndProof currentHeader, int batchSize) {
+			Entry<Long, VerifiedCommandsAndProof> entry = commandsAndProof.higherEntry(currentHeader.getStateVersion());
 			if (entry != null) {
 				return entry.getValue();
 			}

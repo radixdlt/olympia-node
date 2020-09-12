@@ -20,6 +20,7 @@ package com.radixdlt.integration.distributed;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
@@ -48,13 +49,12 @@ public final class SometimesByzantineStateComputerWithReader implements StateCom
 	}
 
 	@Override
-	public VerifiedCommandsAndProof getNextCommittedCommands(long stateVersion, int batchSize) {
-		Entry<Long, VerifiedCommandsAndProof> entry = commandsAndProof.higherEntry(stateVersion);
+	public VerifiedCommandsAndProof getNextCommittedCommands(VerifiedLedgerHeaderAndProof currentHeader, int batchSize) {
+		Entry<Long, VerifiedCommandsAndProof> entry = commandsAndProof.higherEntry(currentHeader.getStateVersion());
 		if (entry != null) {
 			if (random.nextBoolean()) {
 				ImmutableList<Command> wrongCmds = Stream.generate(() -> new Command(new byte[]{0})).limit(entry.getValue().size())
 					.collect(ImmutableList.toImmutableList());
-				System.out.println("BADDDDDDD");
 				return new VerifiedCommandsAndProof(wrongCmds, entry.getValue().getHeader());
 			} else {
 				return entry.getValue();

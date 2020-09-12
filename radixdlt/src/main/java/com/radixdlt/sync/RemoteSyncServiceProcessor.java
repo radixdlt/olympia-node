@@ -17,6 +17,7 @@
 
 package com.radixdlt.sync;
 
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
@@ -47,9 +48,11 @@ public class RemoteSyncServiceProcessor {
 	}
 
 	public void processRemoteSyncRequest(RemoteSyncRequest syncRequest) {
+		// TODO: Verify request
+
 		log.info("SYNC_REQUEST: {}", syncRequest);
-		long stateVersion = syncRequest.getStateVersion();
-		VerifiedCommandsAndProof committedCommands = committedReader.getNextCommittedCommands(stateVersion, batchSize);
+		VerifiedLedgerHeaderAndProof currentHeader = syncRequest.getCurrentHeader();
+		VerifiedCommandsAndProof committedCommands = committedReader.getNextCommittedCommands(currentHeader, batchSize);
 		if (committedCommands == null) {
 			return;
 		}

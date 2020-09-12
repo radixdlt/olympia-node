@@ -91,7 +91,7 @@ public class LocalSyncServiceProcessorTest {
 		when(request.getTarget()).thenReturn(targetHeader);
 		syncServiceProcessor.processLocalSyncRequest(request);
 		verify(syncedCommandSender, never()).sendSyncedCommand(any());
-		verify(stateSyncNetwork, never()).sendSyncRequest(any(), anyLong());
+		verify(stateSyncNetwork, never()).sendSyncRequest(any(), any());
 		verify(syncTimeoutScheduler, never()).scheduleTimeout(any(), anyLong());
 	}
 
@@ -106,7 +106,7 @@ public class LocalSyncServiceProcessorTest {
 		when(request.getTargetNodes()).thenReturn(ImmutableList.of(mock(BFTNode.class)));
 		syncServiceProcessor.processLocalSyncRequest(request);
 		verify(syncedCommandSender, never()).sendSyncedCommand(any());
-		verify(stateSyncNetwork, times(1)).sendSyncRequest(any(), anyLong());
+		verify(stateSyncNetwork, times(1)).sendSyncRequest(any(), any());
 		verify(syncTimeoutScheduler, times(1)).scheduleTimeout(any(), anyLong());
 	}
 
@@ -123,7 +123,7 @@ public class LocalSyncServiceProcessorTest {
 		when(request.getTargetNodes()).thenReturn(ImmutableList.of(mock(BFTNode.class)));
 		syncServiceProcessor.processLocalSyncRequest(request);
 		verify(syncedCommandSender, times(1)).sendSyncedCommand(any());
-		verify(stateSyncNetwork, never()).sendSyncRequest(any(), anyLong());
+		verify(stateSyncNetwork, never()).sendSyncRequest(any(), any());
 		verify(syncTimeoutScheduler, never()).scheduleTimeout(any(), anyLong());
 	}
 }

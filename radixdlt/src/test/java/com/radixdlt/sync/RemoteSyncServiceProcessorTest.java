@@ -19,7 +19,6 @@ package com.radixdlt.sync;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -54,7 +53,7 @@ public class RemoteSyncServiceProcessorTest {
 		BFTNode node = mock(BFTNode.class);
 		when(syncRequest.getNode()).thenReturn(node);
 		VerifiedCommandsAndProof verifiedCommandsAndProof = mock(VerifiedCommandsAndProof.class);
-		when(reader.getNextCommittedCommands(anyLong(), anyInt())).thenReturn(verifiedCommandsAndProof);
+		when(reader.getNextCommittedCommands(any(), anyInt())).thenReturn(verifiedCommandsAndProof);
 		processor.processRemoteSyncRequest(syncRequest);
 		verify(network, times(1)).sendSyncResponse(eq(node), any());
 	}
@@ -68,7 +67,7 @@ public class RemoteSyncServiceProcessorTest {
 	@Test
 	public void when_remote_sync_request_and_null_return__then_dont_do_anything() {
 		processor.processRemoteSyncRequest(mock(RemoteSyncRequest.class));
-		when(reader.getNextCommittedCommands(anyLong(), anyInt())).thenReturn(null);
+		when(reader.getNextCommittedCommands(any(), anyInt())).thenReturn(null);
 		verify(network, never()).sendSyncResponse(any(), any());
 	}
 

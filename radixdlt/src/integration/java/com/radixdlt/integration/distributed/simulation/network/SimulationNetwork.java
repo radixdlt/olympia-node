@@ -315,8 +315,8 @@ public class SimulationNetwork {
 		}
 
 		@Override
-		public void sendSyncRequest(BFTNode node, long stateVersion) {
-			RemoteSyncRequest syncRequest = new RemoteSyncRequest(thisNode, stateVersion);
+		public void sendSyncRequest(BFTNode node, VerifiedLedgerHeaderAndProof currentHeader) {
+			RemoteSyncRequest syncRequest = new RemoteSyncRequest(thisNode, currentHeader);
 			receivedMessages.onNext(MessageInTransit.newMessage(syncRequest, thisNode, node));
 		}
 

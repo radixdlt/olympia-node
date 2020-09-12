@@ -17,6 +17,7 @@
 
 package com.radixdlt.sync;
 
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import io.reactivex.rxjava3.core.Observable;
@@ -42,9 +43,9 @@ public interface StateSyncNetwork {
 	 * Sends a sync request to a peer node
 	 *
 	 * @param node node to send request to
-	 * @param stateVersion this nodes current stateVersion
+	 * @param currentHeader this nodes current verified header
 	 */
-	void sendSyncRequest(BFTNode node, long stateVersion);
+	void sendSyncRequest(BFTNode node, VerifiedLedgerHeaderAndProof currentHeader);
 
 	/**
 	 * Sends a sync response to a peer node

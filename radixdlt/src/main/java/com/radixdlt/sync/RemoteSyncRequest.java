@@ -17,6 +17,7 @@
 
 package com.radixdlt.sync;
 
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import java.util.Objects;
 
@@ -24,24 +25,24 @@ import java.util.Objects;
  * A sync request from a peer
  */
 public final class RemoteSyncRequest {
-	private final long stateVersion;
+	private final VerifiedLedgerHeaderAndProof currentHeader;
 	private final BFTNode node;
 
-	public RemoteSyncRequest(BFTNode node, long stateVersion) {
+	public RemoteSyncRequest(BFTNode node, VerifiedLedgerHeaderAndProof currentHeader) {
 		this.node = Objects.requireNonNull(node);
-		this.stateVersion = stateVersion;
+		this.currentHeader = currentHeader;
 	}
 
 	public BFTNode getNode() {
 		return node;
 	}
 
-	public long getStateVersion() {
-		return stateVersion;
+	public VerifiedLedgerHeaderAndProof getCurrentHeader() {
+		return currentHeader;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{stateVersion=%s}", this.getClass().getSimpleName(), stateVersion);
+		return String.format("%s{current=%s}", this.getClass().getSimpleName(), currentHeader);
 	}
 }

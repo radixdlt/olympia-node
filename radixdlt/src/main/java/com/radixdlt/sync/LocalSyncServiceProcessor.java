@@ -141,8 +141,7 @@ public final class LocalSyncServiceProcessor {
 
 		ImmutableList<BFTNode> targetNodes = syncInProgress.getTargetNodes();
 		BFTNode node = targetNodes.get(ThreadLocalRandom.current().nextInt(targetNodes.size()));
-		final long version = this.currentHeader.getStateVersion();
-		stateSyncNetwork.sendSyncRequest(node, version);
+		stateSyncNetwork.sendSyncRequest(node, this.currentHeader);
 		syncTimeoutScheduler.scheduleTimeout(syncInProgress, patienceMilliseconds);
 	}
 }

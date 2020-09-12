@@ -17,6 +17,7 @@
 
 package com.radixdlt.middleware2.network;
 
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.network.addressbook.AddressBook;
@@ -63,7 +64,7 @@ public final class MessageCentralLedgerSync implements StateSyncNetwork {
 			MessageListener<SyncRequestMessage> listener = (src, msg) -> {
 				if (src.hasSystem()) {
 					BFTNode node = BFTNode.create(src.getSystem().getKey());
-					emitter.onNext(new RemoteSyncRequest(node, msg.getStateVersion()));
+					emitter.onNext(new RemoteSyncRequest(node, msg.getCurrentHeader()));
 				}
 			};
 			this.messageCentral.addListener(SyncRequestMessage.class, listener);
@@ -72,10 +73,10 @@ public final class MessageCentralLedgerSync implements StateSyncNetwork {
 	}
 
 	@Override
-	public void sendSyncRequest(BFTNode node, long stateVersion) {
+	public void sendSyncRequest(BFTNode node, VerifiedLedgerHeaderAndProof header) {
 		addressBook.peer(node.getKey().euid()).ifPresent(peer -> {
 			if (peer.hasSystem()) {
-				final SyncRequestMessage syncRequestMessage = new SyncRequestMessage(this.magic, stateVersion);
+				final SyncRequestMessage syncRequestMessage = new SyncRequestMessage(this.magic, header);
 				this.messageCentral.send(peer, syncRequestMessage);
 			}
 		});

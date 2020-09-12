@@ -140,7 +140,10 @@ public class RadixEngineStateComputerTest {
 
 		stateComputer.commit(committedCommand);
 
-		VerifiedCommandsAndProof commands = stateComputer.getNextCommittedCommands(0, 1);
+		VerifiedLedgerHeaderAndProof currentHeader = mock(VerifiedLedgerHeaderAndProof.class);
+		when(currentHeader.getStateVersion()).thenReturn(0L);
+
+		VerifiedCommandsAndProof commands = stateComputer.getNextCommittedCommands(currentHeader, 1);
 		assertThat(commands).isNotNull();
 		assertThat(commands.getHeader()).isEqualTo(proof);
 	}
@@ -163,8 +166,11 @@ public class RadixEngineStateComputerTest {
 			return null;
 		}).when(command).forEach(any());
 
+		VerifiedLedgerHeaderAndProof currentHeader = mock(VerifiedLedgerHeaderAndProof.class);
+		when(currentHeader.getStateVersion()).thenReturn(0L);
+
 		assertThat(stateComputer.commit(command)).isEmpty();
-		VerifiedCommandsAndProof commands = stateComputer.getNextCommittedCommands(0, 1);
+		VerifiedCommandsAndProof commands = stateComputer.getNextCommittedCommands(currentHeader, 1);
 		assertThat(commands).isNotNull();
 		assertThat(commands.getHeader()).isEqualTo(proof);
 	}
