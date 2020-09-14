@@ -21,6 +21,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -39,9 +40,11 @@ import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.sync.LocalSyncServiceProcessor.InvalidSyncedCommandsSender;
+import com.radixdlt.sync.LocalSyncServiceProcessor.SyncInProgress;
 import com.radixdlt.sync.LocalSyncServiceProcessor.SyncTimeoutScheduler;
 import com.radixdlt.sync.LocalSyncServiceProcessor.VerifiedSyncedCommandsSender;
 import java.util.Comparator;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -181,5 +184,29 @@ public class LocalSyncServiceProcessorTest {
 		verify(verifiedSyncedCommandsSender, times(1)).sendVerifiedCommands(any());
 		verify(stateSyncNetwork, never()).sendSyncRequest(any(), any());
 		verify(syncTimeoutScheduler, never()).scheduleTimeout(any(), anyLong());
+	}
+
+	@Test
+	public void given_some_sync_in_progress_which_has_been_fulfilled__when_sync_timeout__then_should_do_nothing() {
+		AtomicReference<SyncInProgress> sync = new AtomicReference<>();
+		doAnswer(invocation -> {
+			sync.set(invocation.getArgument(0));
+			return null;
+		}).when(syncTimeoutScheduler).scheduleTimeout(any(), anyLong());
+		VerifiedLedgerHeaderAndProof targetHeader = mock(VerifiedLedgerHeaderAndProof.class);
+		when(targetHeader.getStateVersion()).thenReturn(2L);
+		when(headerComparator.compare(targetHeader, currentHeader)).thenReturn(1);
+		LocalSyncRequest request = mock(LocalSyncRequest.class);
+		when(request.getTarget()).thenReturn(targetHeader);
+		when(request.getTargetNodes()).thenReturn(ImmutableList.of(mock(BFTNode.class)));
+		syncServiceProcessor.processLocalSyncRequest(request);
+		syncServiceProcessor.processVersionUpdate(targetHeader);
+
+		syncServiceProcessor.processSyncTimeout(sync.get());
+
+		// Once only for initial setup
+		verify(stateSyncNetwork, times(1)).sendSyncRequest(any(), any());
+		verify(syncTimeoutScheduler, times(1)).scheduleTimeout(any(), anyLong());
+		verify(verifiedSyncedCommandsSender, never()).sendVerifiedCommands(any());
 	}
 }
