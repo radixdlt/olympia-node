@@ -249,11 +249,8 @@ public class InMemoryAtomStore implements AtomStore {
 	public Stream<Particle> getUpParticles(RadixAddress address, @Nullable String stagedUuid) {
 		synchronized (lock) {
 			List<Particle> upParticles = particleIndex.entrySet().stream()
+				.filter(e -> e.getKey().getShardables().contains(address))
 				.filter(e -> {
-					if (!e.getKey().getShardables().contains(address)) {
-						return false;
-					}
-
 					final Map<Spin, Set<Atom>> spinParticleIndex = e.getValue();
 					final boolean hasDown = spinParticleIndex.getOrDefault(Spin.DOWN, Collections.emptySet())
 						.stream().anyMatch(a -> atoms.get(a).isStore());
@@ -275,6 +272,7 @@ public class InMemoryAtomStore implements AtomStore {
 				stagedParticleIndex.getOrDefault(stagedUuid, Collections.emptyMap()).entrySet().stream()
 					.filter(e -> e.getValue() == Spin.UP)
 					.map(Entry::getKey)
+					.filter(p -> p.getShardables().contains(address))
 					.forEach(upParticles::add);
 			}
 
