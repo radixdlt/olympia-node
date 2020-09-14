@@ -19,7 +19,6 @@ package com.radixdlt.sync;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -29,17 +28,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.BFTHeader;
-import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
-import com.radixdlt.ledger.LedgerAccumulatorVerifier;
+import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.sync.LocalSyncServiceProcessor.DtoCommandsAndProofVerifier;
+import com.radixdlt.sync.LocalSyncServiceProcessor.DtoCommandsAndProofVerifierException;
 import com.radixdlt.sync.LocalSyncServiceProcessor.InvalidSyncedCommandsSender;
 import com.radixdlt.sync.LocalSyncServiceProcessor.SyncInProgress;
 import com.radixdlt.sync.LocalSyncServiceProcessor.SyncTimeoutScheduler;
@@ -54,11 +49,10 @@ public class LocalSyncServiceProcessorTest {
 	private LocalSyncServiceProcessor syncServiceProcessor;
 	private VerifiedSyncedCommandsSender verifiedSyncedCommandsSender;
 	private InvalidSyncedCommandsSender invalidSyncedCommandsSender;
-	private LedgerAccumulatorVerifier verifier;
+	private DtoCommandsAndProofVerifier verifier;
 	private SyncTimeoutScheduler syncTimeoutScheduler;
 	private VerifiedLedgerHeaderAndProof currentHeader;
 	private Comparator<VerifiedLedgerHeaderAndProof> headerComparator;
-	private BFTValidatorSet validatorSet;
 
 	@Before
 	public void setUp() {
@@ -68,9 +62,8 @@ public class LocalSyncServiceProcessorTest {
 		this.syncTimeoutScheduler = mock(SyncTimeoutScheduler.class);
 		this.currentHeader = mock(VerifiedLedgerHeaderAndProof.class);
 		when(this.currentHeader.toDto()).thenReturn(mock(DtoLedgerHeaderAndProof.class));
-		this.verifier = mock(LedgerAccumulatorVerifier.class);
+		this.verifier = mock(DtoCommandsAndProofVerifier.class);
 		this.headerComparator = mock(Comparator.class);
-		this.validatorSet = mock(BFTValidatorSet.class);
 		this.syncServiceProcessor = new LocalSyncServiceProcessor(
 			stateSyncNetwork,
 			verifiedSyncedCommandsSender,
@@ -78,34 +71,15 @@ public class LocalSyncServiceProcessorTest {
 			syncTimeoutScheduler,
 			verifier,
 			headerComparator,
-			validatorSet,
 			currentHeader,
 			1
 		);
 	}
 
-
 	@Test
-	public void when_process_response_with_bad_accumulator__then_invalid_commands_sent() {
+	public void when_process_response_with_bad_verification__then_invalid_commands_sent() throws DtoCommandsAndProofVerifierException {
 		DtoCommandsAndProof dtoCommandsAndProof = mock(DtoCommandsAndProof.class);
-		DtoLedgerHeaderAndProof start = mock(DtoLedgerHeaderAndProof.class);
-		LedgerHeader ledgerHeader = mock(LedgerHeader.class);
-		when(ledgerHeader.getAccumulator()).thenReturn(mock(Hash.class));
-		when(start.getLedgerHeader()).thenReturn(ledgerHeader);
-
-		DtoLedgerHeaderAndProof end = mock(DtoLedgerHeaderAndProof.class);
-		LedgerHeader endHeader = mock(LedgerHeader.class);
-		when(endHeader.getAccumulator()).thenReturn(mock(Hash.class));
-		when(end.getLedgerHeader()).thenReturn(endHeader);
-
-		when(dtoCommandsAndProof.getStartHeader()).thenReturn(start);
-		when(dtoCommandsAndProof.getEndHeader()).thenReturn(end);
-
-		Command command = mock(Command.class);
-		when(command.getHash()).thenReturn(mock(Hash.class));
-		when(dtoCommandsAndProof.getCommands()).thenReturn(ImmutableList.of(command));
-
-		when(verifier.verify(any(), any(), any())).thenReturn(false);
+		when(verifier.verify(any())).thenThrow(mock(DtoCommandsAndProofVerifierException.class));
 
 		syncServiceProcessor.processSyncResponse(dtoCommandsAndProof);
 
@@ -114,35 +88,15 @@ public class LocalSyncServiceProcessorTest {
 	}
 
 	@Test
-	public void when_process_response_with_good_accumulator__then_committed_commands_sent() {
+	public void when_process_response_with_good_accumulator__then_committed_commands_sent() throws DtoCommandsAndProofVerifierException {
 		DtoCommandsAndProof dtoCommandsAndProof = mock(DtoCommandsAndProof.class);
-		DtoLedgerHeaderAndProof start = mock(DtoLedgerHeaderAndProof.class);
-		LedgerHeader ledgerHeader = mock(LedgerHeader.class);
-		when(ledgerHeader.getAccumulator()).thenReturn(mock(Hash.class));
-		when(start.getLedgerHeader()).thenReturn(ledgerHeader);
-
-		DtoLedgerHeaderAndProof end = mock(DtoLedgerHeaderAndProof.class);
-		LedgerHeader endHeader = mock(LedgerHeader.class);
-		when(endHeader.getAccumulator()).thenReturn(mock(Hash.class));
-		when(end.getOpaque0()).thenReturn(mock(BFTHeader.class));
-		when(end.getOpaque1()).thenReturn(mock(BFTHeader.class));
-		when(end.getOpaque3()).thenReturn(mock(Hash.class));
-		when(end.getSignatures()).thenReturn(mock(TimestampedECDSASignatures.class));
-		when(end.getLedgerHeader()).thenReturn(endHeader);
-
-		when(dtoCommandsAndProof.getStartHeader()).thenReturn(start);
-		when(dtoCommandsAndProof.getEndHeader()).thenReturn(end);
-
-		Command command = mock(Command.class);
-		when(command.getHash()).thenReturn(mock(Hash.class));
-		when(dtoCommandsAndProof.getCommands()).thenReturn(ImmutableList.of(command));
-
-		when(verifier.verify(any(), any(), any())).thenReturn(true);
+		VerifiedCommandsAndProof verified = mock(VerifiedCommandsAndProof.class);
+		when(verifier.verify(eq(dtoCommandsAndProof))).thenReturn(verified);
 
 		syncServiceProcessor.processSyncResponse(dtoCommandsAndProof);
 		verify(invalidSyncedCommandsSender, never()).sendInvalidCommands(any());
 		verify(verifiedSyncedCommandsSender, times(1))
-			.sendVerifiedCommands(argThat(cmds -> cmds.contains(command)));
+			.sendVerifiedCommands(eq(verified));
 	}
 
 	@Test

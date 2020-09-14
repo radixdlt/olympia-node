@@ -20,11 +20,7 @@ package com.radixdlt.sync;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.ValidationState;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.DtoCommandsAndProof;
-import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import java.util.Comparator;
 import java.util.Objects;
@@ -39,6 +35,22 @@ import org.apache.logging.log4j.Logger;
  */
 @NotThreadSafe
 public final class LocalSyncServiceProcessor {
+	public interface DtoCommandsAndProofVerifier {
+		VerifiedCommandsAndProof verify(DtoCommandsAndProof dtoCommandsAndProof) throws DtoCommandsAndProofVerifierException;
+	}
+
+	public static class DtoCommandsAndProofVerifierException extends Exception {
+		private final DtoCommandsAndProof dtoCommandsAndProof;
+		public DtoCommandsAndProofVerifierException(DtoCommandsAndProof dtoCommandsAndProof, String message) {
+			super(message);
+			this.dtoCommandsAndProof = dtoCommandsAndProof;
+		}
+
+		public DtoCommandsAndProof getDtoCommandsAndProof() {
+			return dtoCommandsAndProof;
+		}
+	}
+
 	public interface VerifiedSyncedCommandsSender {
 		void sendVerifiedCommands(VerifiedCommandsAndProof commandsAndProof);
 	}
@@ -73,10 +85,9 @@ public final class LocalSyncServiceProcessor {
 	private final SyncTimeoutScheduler syncTimeoutScheduler;
 	private final long patienceMilliseconds;
 	private final StateSyncNetwork stateSyncNetwork;
-	private final LedgerAccumulatorVerifier accumulatorVerifier;
 	private final Comparator<VerifiedLedgerHeaderAndProof> headerComparator;
 	private final InvalidSyncedCommandsSender invalidSyncedCommandsSender;
-	private final BFTValidatorSet validatorSet;
+	private final DtoCommandsAndProofVerifier verifier;
 	private VerifiedLedgerHeaderAndProof targetHeader;
 	private VerifiedLedgerHeaderAndProof currentHeader;
 
@@ -85,9 +96,8 @@ public final class LocalSyncServiceProcessor {
 		VerifiedSyncedCommandsSender verifiedSyncedCommandsSender,
 		InvalidSyncedCommandsSender invalidSyncedCommandsSender,
 		SyncTimeoutScheduler syncTimeoutScheduler,
-		LedgerAccumulatorVerifier accumulatorVerifier,
+		DtoCommandsAndProofVerifier verifier,
 		Comparator<VerifiedLedgerHeaderAndProof> headerComparator,
-		BFTValidatorSet validatorSet,
 		VerifiedLedgerHeaderAndProof current,
 		long patienceMilliseconds
 	) {
@@ -100,49 +110,23 @@ public final class LocalSyncServiceProcessor {
 		this.invalidSyncedCommandsSender = Objects.requireNonNull(invalidSyncedCommandsSender);
 		this.syncTimeoutScheduler = Objects.requireNonNull(syncTimeoutScheduler);
 		this.patienceMilliseconds = patienceMilliseconds;
-		this.accumulatorVerifier = Objects.requireNonNull(accumulatorVerifier);
+		this.verifier = Objects.requireNonNull(verifier);
 		this.headerComparator = Objects.requireNonNull(headerComparator);
-		this.validatorSet = Objects.requireNonNull(validatorSet);
 		this.currentHeader = current;
 		this.targetHeader = current;
 	}
 
 	public void processSyncResponse(DtoCommandsAndProof commandsAndProof) {
 		log.info("SYNC_RESPONSE: {} current={} target={}", commandsAndProof, this.currentHeader, this.targetHeader);
-		Hash start = commandsAndProof.getStartHeader().getLedgerHeader().getAccumulator();
-		Hash end = commandsAndProof.getEndHeader().getLedgerHeader().getAccumulator();
-		if (!this.accumulatorVerifier.verify(start, commandsAndProof.getCommands(), end)) {
-			log.warn("SYNC Received Bad commands: {}", commandsAndProof);
+
+		VerifiedCommandsAndProof verified;
+		try {
+			verified = this.verifier.verify(commandsAndProof);
+		} catch (DtoCommandsAndProofVerifierException e) {
+			log.warn("SYNC_RESPONSE Verification failed {}: {}", commandsAndProof, e.getMessage());
 			invalidSyncedCommandsSender.sendInvalidCommands(commandsAndProof);
 			return;
 		}
-
-		ValidationState validationState = validatorSet.newValidationState();
-		commandsAndProof.getEndHeader().getSignatures().getSignatures().forEach((node, signature) ->
-			validationState.addSignature(node, signature.timestamp(), signature.signature())
-		);
-		if (!validationState.complete()) {
-			log.warn("SYNC Received Bad signatures: {}", commandsAndProof);
-			invalidSyncedCommandsSender.sendInvalidCommands(commandsAndProof);
-			return;
-		}
-
-		// TODO: Stateful ledger header verification:
-		// TODO: -verify rootHash matches
-
-		VerifiedLedgerHeaderAndProof nextHeader = new VerifiedLedgerHeaderAndProof(
-			commandsAndProof.getEndHeader().getOpaque0(),
-			commandsAndProof.getEndHeader().getOpaque1(),
-			commandsAndProof.getEndHeader().getOpaque2(),
-			commandsAndProof.getEndHeader().getOpaque3(),
-			commandsAndProof.getEndHeader().getLedgerHeader(),
-			commandsAndProof.getEndHeader().getSignatures()
-		);
-
-		VerifiedCommandsAndProof verified = new VerifiedCommandsAndProof(
-			commandsAndProof.getCommands(),
-			nextHeader
-		);
 
 		if (verified.getFirstVersion() > this.currentHeader.getStateVersion() + 1) {
 			log.warn("SYNC Received commands not synced to self: {}", commandsAndProof);

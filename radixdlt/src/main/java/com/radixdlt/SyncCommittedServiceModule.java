@@ -27,8 +27,10 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.ledger.AccumulatorAndValidatorSetVerifier;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.sync.CommittedReader;
+import com.radixdlt.sync.LocalSyncServiceProcessor.DtoCommandsAndProofVerifier;
 import com.radixdlt.sync.LocalSyncServiceProcessor.InvalidSyncedCommandsSender;
 import com.radixdlt.sync.RemoteSyncServiceProcessor;
 import com.radixdlt.sync.StateSyncNetwork;
@@ -63,16 +65,26 @@ public class SyncCommittedServiceModule extends AbstractModule {
 	}
 
 	@Provides
+	private DtoCommandsAndProofVerifier verifier(
+		LedgerAccumulatorVerifier verifier,
+		BFTConfiguration initialConfiguration
+	) {
+		return new AccumulatorAndValidatorSetVerifier(
+			verifier,
+			initialConfiguration.getValidatorSet()
+		);
+	}
+
+	@Provides
 	@Singleton
 	private LocalSyncServiceProcessor syncServiceProcessor(
 		Comparator<VerifiedLedgerHeaderAndProof> headerComparator,
-		LedgerAccumulatorVerifier verifier,
 		VerifiedLedgerHeaderAndProof header,
 		StateSyncNetwork stateSyncNetwork,
 		VerifiedSyncedCommandsSender verifiedSyncedCommandsSender,
 		InvalidSyncedCommandsSender invalidSyncedCommandsSender,
 		SyncTimeoutScheduler syncTimeoutScheduler,
-		BFTConfiguration initialConfiguration
+		DtoCommandsAndProofVerifier verifier
 	) {
 		return new LocalSyncServiceProcessor(
 			stateSyncNetwork,
@@ -81,7 +93,6 @@ public class SyncCommittedServiceModule extends AbstractModule {
 			syncTimeoutScheduler,
 			verifier,
 			headerComparator,
-			initialConfiguration.getValidatorSet(),
 			header,
 			200
 		);
