@@ -21,12 +21,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.ledger.StateComputerLedger.StateComputer;
+import com.radixdlt.ledger.StateComputerLedger.CommittedSender;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.sync.CommittedReader;
 import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.TreeMap;
 import java.util.stream.Stream;
 
@@ -34,38 +32,46 @@ import java.util.stream.Stream;
  * A reader which sometimes returns erroneous commands.
  */
 @Singleton
-public final class StateComputerWithSometimesBadHashCommittedReader implements StateComputer, CommittedReader {
+public final class SometimesByzantineCommittedReader implements CommittedSender, CommittedReader {
 	private final TreeMap<Long, VerifiedCommandsAndProof> commandsAndProof = new TreeMap<>();
-	private boolean doBadHash = true;
 
 	@Override
-	public boolean prepare(VerifiedVertex vertex) {
-		return false;
-	}
-
-	@Override
-	public Optional<BFTValidatorSet> commit(VerifiedCommandsAndProof verifiedCommandsAndProof) {
+	public void sendCommitted(VerifiedCommandsAndProof verifiedCommandsAndProof, BFTValidatorSet validatorSet) {
 		commandsAndProof.put(verifiedCommandsAndProof.getFirstVersion(), verifiedCommandsAndProof);
-		return Optional.empty();
 	}
+
+	private enum ReadType {
+		GOOD {
+			@Override
+			VerifiedCommandsAndProof transform(VerifiedCommandsAndProof correctCommands) {
+				return correctCommands;
+			}
+		},
+		BAD_COMMANDS {
+			@Override
+			VerifiedCommandsAndProof transform(VerifiedCommandsAndProof correctCommands) {
+				ImmutableList<Command> badCommands = Stream.generate(() -> new Command(new byte[]{0}))
+					.limit(correctCommands.size())
+					.collect(ImmutableList.toImmutableList());
+				return new VerifiedCommandsAndProof(badCommands, correctCommands.getHeader());
+			}
+		};
+
+		abstract VerifiedCommandsAndProof transform(VerifiedCommandsAndProof correctCommands);
+	}
+
+	private ReadType currentReadType = ReadType.GOOD;
 
 	@Override
 	public VerifiedCommandsAndProof getNextCommittedCommands(long stateVersion, int batchSize) {
 		Entry<Long, VerifiedCommandsAndProof> entry = commandsAndProof.higherEntry(stateVersion);
 		if (entry != null) {
-			ImmutableList<Command> commands;
 			VerifiedCommandsAndProof commandsToSendBack = entry.getValue().truncateFromVersion(stateVersion);
-			if (doBadHash) {
-				 commands = Stream.generate(() -> new Command(new byte[]{0})).limit(commandsToSendBack.size())
-					.collect(ImmutableList.toImmutableList());
-				commandsToSendBack = new VerifiedCommandsAndProof(commands, commandsToSendBack.getHeader());
-			}
-
-			doBadHash = !doBadHash;
+			commandsToSendBack = currentReadType.transform(commandsToSendBack);
+			currentReadType = ReadType.values()[(currentReadType.ordinal() + 1) % ReadType.values().length];
 			return commandsToSendBack;
 		}
 
 		return null;
 	}
-
 }

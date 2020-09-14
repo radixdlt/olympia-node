@@ -47,7 +47,7 @@ import com.radixdlt.integration.distributed.MockedMempoolModule;
 import com.radixdlt.integration.distributed.MockedRadixEngineStoreModule;
 import com.radixdlt.integration.distributed.MockedStateComputerModule;
 import com.radixdlt.integration.distributed.MockedStateComputerWithEpochsModule;
-import com.radixdlt.integration.distributed.MockedStateComputerWithReaderModule;
+import com.radixdlt.integration.distributed.MockedCommittedReaderModule;
 import com.radixdlt.integration.distributed.MockedSyncServiceModule;
 import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
 import com.radixdlt.integration.distributed.simulation.application.IncrementalBytesSubmittor;
@@ -394,7 +394,8 @@ public class SimulationTest {
 					modules.add(new MockedConsensusRunnerModule());
 					modules.add(new MockedCommandGeneratorModule());
 					modules.add(new MockedMempoolModule());
-					modules.add(new MockedStateComputerWithReaderModule());
+					modules.add(new MockedStateComputerModule());
+					modules.add(new MockedCommittedReaderModule());
 				} else if (ledgerType == LedgerType.LEDGER_AND_EPOCHS) {
 					modules.add(new ConsensusRunnerModule());
 					modules.add(new LedgerCommandGeneratorModule());

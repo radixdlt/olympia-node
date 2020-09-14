@@ -21,13 +21,14 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
+import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.integration.distributed.IncorrectAlwaysAcceptingAccumulatorVerifierModule;
-import com.radixdlt.integration.distributed.StateComputerWithSometimesBadHashCommittedReader;
+import com.radixdlt.integration.distributed.SometimesByzantineCommittedReader;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
-import com.radixdlt.ledger.StateComputerLedger.StateComputer;
+import com.radixdlt.ledger.StateComputerLedger.CommittedSender;
 import com.radixdlt.sync.CommittedReader;
 import java.util.LongSummaryStatistics;
 import java.util.concurrent.TimeUnit;
@@ -45,8 +46,9 @@ public class ByzantineSyncTest {
 		.addByzantineModuleToAll(new AbstractModule() {
 			@Override
 			protected void configure() {
-				bind(StateComputer.class).to(StateComputerWithSometimesBadHashCommittedReader.class).in(Scopes.SINGLETON);
-				bind(CommittedReader.class).to(StateComputerWithSometimesBadHashCommittedReader.class).in(Scopes.SINGLETON);
+				Multibinder<CommittedSender> committedSenders = Multibinder.newSetBinder(binder(), CommittedSender.class);
+				committedSenders.addBinding().to(SometimesByzantineCommittedReader.class).in(Scopes.SINGLETON);
+				bind(CommittedReader.class).to(SometimesByzantineCommittedReader.class).in(Scopes.SINGLETON);
 			}
 		})
 		.pacemakerTimeout(5000)
