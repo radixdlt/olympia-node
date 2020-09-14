@@ -58,8 +58,8 @@ import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ActionExecutionException;
 import com.radixdlt.client.application.translate.ActionExecutionExceptionReason;
 import com.radixdlt.client.application.translate.AtomErrorToExceptionReasonMapper;
-import com.radixdlt.client.application.translate.FeeMapper;
-import com.radixdlt.client.application.translate.PowFeeMapper;
+import com.radixdlt.client.application.translate.FeeProcessor;
+import com.radixdlt.client.application.translate.PowFeeProcessor;
 import com.radixdlt.client.application.translate.StatelessActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.data.AtomToDecryptedMessageMapper;
 import com.radixdlt.client.application.translate.data.DecryptedMessage;
@@ -103,7 +103,7 @@ public class RadixApplicationAPITest {
 		Atom atom = mock(Atom.class);
 		when(identity.addSignature(any())).thenReturn(Single.just(atom));
 
-		FeeMapper feeMapper = (actionProcessor, address, feeAtom) -> Pair.of(ImmutableMap.of(), ImmutableList.of());
+		FeeProcessor feeMapper = (actionProcessor, metadataProcessor, address, feeAtom) -> Pair.of(ImmutableMap.of(), ImmutableList.of());
 
 		return RadixApplicationAPI.defaultBuilder()
 			.identity(identity)
@@ -235,7 +235,7 @@ public class RadixApplicationAPITest {
 		RadixApplicationAPI api = new RadixApplicationAPIBuilder()
 			.identity(identity)
 			.universe(universe)
-			.feeMapper(mock(PowFeeMapper.class))
+			.feeMapper(mock(PowFeeProcessor.class))
 			.addAtomMapper(new AtomToDecryptedMessageMapper())
 			.build();
 		TestObserver<DecryptedMessage> observer = TestObserver.create();
@@ -266,7 +266,7 @@ public class RadixApplicationAPITest {
 		RadixApplicationAPI api = new RadixApplicationAPIBuilder()
 			.identity(identity)
 			.universe(universe)
-			.feeMapper(mock(PowFeeMapper.class))
+			.feeMapper(mock(PowFeeProcessor.class))
 			.addReducer(new TokenBalanceReducer())
 			.build();
 		TestObserver<BigDecimal> observer = TestObserver.create();
@@ -323,7 +323,7 @@ public class RadixApplicationAPITest {
 			.identity(identity)
 			.universe(universe)
 			.addStatelessParticlesMapper(action.getClass(), actionMapper)
-			.feeMapper((actionProcessor, addr, feeAtom) -> Pair.of(ImmutableMap.of(), ImmutableList.of()))
+			.feeMapper((actionProcessor, metadataProcessor, addr, feeAtom) -> Pair.of(ImmutableMap.of(), ImmutableList.of()))
 			.addAtomErrorMapper(errorMapper)
 			.build();
 

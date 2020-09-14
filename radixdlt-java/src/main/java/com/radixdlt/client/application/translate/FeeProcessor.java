@@ -22,15 +22,20 @@
 
 package com.radixdlt.client.application.translate;
 
+import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.identifiers.RadixAddress;
+
 /**
- * Interface for processing actions in the context of fee generation.
+ * Interface for processing fees.
  */
-@FunctionalInterface
-public interface ActionProcessor {
+public interface FeeProcessor {
 	/**
-	 * Processes an action in the context of fee generation.
+	 * Processes actions in the context of fee generation.
 	 *
-	 * @param action The action to take
+	 * @param actionProcessor An {@link ActionProcessor} to use to process any actions associated with the fee
+	 * @param metadataProcessor A {@link MetadataProcessor} to use to process any metadata associated with the fee
+	 * @param address The address of the fee payee
+	 * @param feelessAtom The atom, without fees, for which to generate fees
 	 */
-	void process(Action action);
+	void process(ActionProcessor actionProcessor, MetadataProcessor metadataProcessor, RadixAddress address, Atom feelessAtom);
 }

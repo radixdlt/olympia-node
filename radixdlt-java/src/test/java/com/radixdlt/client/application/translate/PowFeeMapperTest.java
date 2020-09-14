@@ -30,17 +30,15 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.test.util.TypedMocks;
+import com.google.common.collect.Maps;
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.client.core.pow.ProofOfWork;
 import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-import com.radixdlt.utils.Pair;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -57,10 +55,11 @@ public class PowFeeMapperTest {
 
 		Function<Atom, Hash> hasher = TypedMocks.rmock(Function.class);
 		when(hasher.apply(any())).thenReturn(hash);
-		PowFeeMapper powFeeMapper = new PowFeeMapper(hasher, 0, builder);
+		PowFeeProcessor powFeeMapper = new PowFeeProcessor(hasher, 0, builder);
 
-		Pair<Map<String, String>, List<ParticleGroup>> output = powFeeMapper.map(null, null, Atom.create(Collections.emptyList()));
-		assertThat(output.getFirst()).containsOnlyKeys(Atom.METADATA_POW_NONCE_KEY);
+		Map<String, String> output = Maps.newHashMap();
+		powFeeMapper.process(null, output::putAll, null, Atom.create(Collections.emptyList()));
+		assertThat(output).containsOnlyKeys(Atom.METADATA_POW_NONCE_KEY);
 
 		verify(builder, times(1)).build(anyInt(), any(), anyInt());
 		verify(hasher, times(1)).apply(any());

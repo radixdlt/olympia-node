@@ -111,6 +111,16 @@ public class InMemoryAtomStore implements AtomStore {
 	}
 
 	@Override
+	public List<ParticleGroup> getStaged(String uuid) {
+		Objects.requireNonNull(uuid);
+
+		synchronized (lock) {
+			final Atom atom = stagedAtoms.get(uuid);
+			return atom.particleGroups().collect(Collectors.toList());
+		}
+	}
+
+	@Override
 	public List<ParticleGroup> getStagedAndClear(String uuid) {
 		Objects.requireNonNull(uuid);
 

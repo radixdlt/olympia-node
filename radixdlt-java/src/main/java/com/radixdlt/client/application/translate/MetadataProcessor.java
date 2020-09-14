@@ -22,15 +22,17 @@
 
 package com.radixdlt.client.application.translate;
 
+import java.util.Map;
+
 /**
- * Interface for processing actions in the context of fee generation.
+ * Interface for processing metadata in the context of fee generation.
  */
 @FunctionalInterface
-public interface ActionProcessor {
+public interface MetadataProcessor {
 	/**
-	 * Processes an action in the context of fee generation.
+	 * Processes metadata in the context of fee generation.
 	 *
-	 * @param action The action to take
+	 * @param metadata The metadata to add to the generated atom
 	 */
-	void process(Action action);
+	void process(Map<String, String> metadata);
 }

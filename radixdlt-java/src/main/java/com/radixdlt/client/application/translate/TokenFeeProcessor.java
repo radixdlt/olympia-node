@@ -22,13 +22,12 @@
 
 package com.radixdlt.client.application.translate;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
+import java.util.Objects;
+
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.client.application.translate.tokens.BurnTokensAction;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
@@ -37,42 +36,37 @@ import com.radixdlt.fees.FeeTable;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 
 /**
  * Maps a complete list of particles ready to be submitted to a token fee particle group.
  */
-public final class TokenFeeMapper implements FeeMapper {
+public final class TokenFeeProcessor implements FeeProcessor {
 
 	private final RRI tokenRri;
 	private final FeeTable feeTable;
 
-	public TokenFeeMapper(RRI tokenRri, FeeTable feeTable) {
+	/**
+	 * Processes fees for supplied atoms.
+	 *
+	 * @param tokenRri The RRI of the token to use for paying fees
+	 * @param feeTable The {@link FeeTable} to use for calculating fees
+	 */
+	public TokenFeeProcessor(RRI tokenRri, FeeTable feeTable) {
 		this.tokenRri = Objects.requireNonNull(tokenRri);
 		this.feeTable = Objects.requireNonNull(feeTable);
 	}
 
 	@Override
-	public Pair<Map<String, String>, List<ParticleGroup>> map(ActionProcessor actionProcessor, RadixAddress address, Atom atom) {
+	public void process(ActionProcessor actionProcessor, MetadataProcessor metadataProcessor, RadixAddress address, Atom atom) {
 		UInt256 feeToPay = feeFor(atom);
-		final List<ParticleGroup> feeParticleGroups = feeToPay.isZero()
-			? ImmutableList.of()
-			: feeParticles(actionProcessor, address, feeToPay);
-		return Pair.of(ImmutableMap.of(), feeParticleGroups);
-	}
-
-	private List<ParticleGroup> feeParticles(ActionProcessor actionProcessor, RadixAddress address, UInt256 feeToPay) {
-		BurnTokensAction fee = BurnTokensAction.create(
+		BurnTokensAction feeAction = BurnTokensAction.create(
 			this.tokenRri,
 			address,
 			TokenUnitConversions.subunitsToUnits(feeToPay)
 		);
-		return actionProcessor.process(fee);
+		actionProcessor.process(feeAction);
 	}
 
 	private UInt256 feeFor(Atom atom) {
