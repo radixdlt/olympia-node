@@ -35,6 +35,8 @@ import com.radixdlt.RadixEngineModule;
 import com.radixdlt.RadixEngineRxModule;
 import com.radixdlt.SyncCommittedServiceModule;
 import com.radixdlt.SyncRxModule;
+import com.radixdlt.consensus.bft.GetVerticesResponse;
+import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.integration.distributed.MockedBFTConfigurationModule;
@@ -167,10 +169,26 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder bindOverridingModule(Module module) {
+		public Builder overrideWithIncorrectModule(Module module) {
 			this.overrideModule = module;
 			return this;
 		}
+
+		public Builder addVerticesSyncDropper() {
+			this.latencyProvider.addDropper(msg -> {
+				if (msg.getContent() instanceof GetVerticesRequest) {
+					return true;
+				}
+
+				if (msg.getContent() instanceof GetVerticesResponse) {
+					return true;
+				}
+
+				return false;
+			});
+			return this;
+		}
+
 
 		public Builder addOneNodeNeverReceiveProposalDropper() {
 			this.latencyProvider.addDropper(new OneProposalPerViewDropper(

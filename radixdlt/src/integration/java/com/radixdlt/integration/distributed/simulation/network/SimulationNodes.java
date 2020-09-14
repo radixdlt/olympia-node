@@ -105,9 +105,8 @@ public class SimulationNodes {
 			baseModule
 		);
 
-		// Override modules can be used to:
-		// 1. Prove that certain adversaries can break network behavior if incorrect modules are used
-		// 2. Prove that certain modules are unnecessary for certain correct behavior
+		// Override modules can be used to prove that certain adversaries
+		// can break network behavior if incorrect modules are used
 		if (overrideModule != null) {
 			module = Modules.override(module).with(overrideModule);
 		}

@@ -49,9 +49,9 @@ public class OneProposalPerViewDropperTest {
 	 * Test should fail with GetVertices RPC disabled
 	 */
 	@Test
-	public void given_incorrect_module_where_get_vertices_are_disabled__then_test_should_fail_against_drop_proposal_adversary() {
+	public void given_incorrect_module_where_vertex_sync_is_disabled__then_test_should_fail_against_drop_proposal_adversary() {
 		SimulationTest test = bftTestBuilder
-			.bindOverridingModule(new AbstractModule() {
+			.overrideWithIncorrectModule(new AbstractModule() {
 				@Override
 				protected void configure() {
 					bind(SyncVerticesRPCSender.class).toInstance(EmptySyncVerticesRPCSender.INSTANCE);
