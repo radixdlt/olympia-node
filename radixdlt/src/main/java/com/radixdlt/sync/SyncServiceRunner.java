@@ -17,6 +17,8 @@
 
 package com.radixdlt.sync;
 
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.sync.LocalSyncServiceProcessor.SyncInProgress;
@@ -36,6 +38,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * Manages thread safety and is the runner for the Sync Service Processor.
  */
+@Singleton
 public final class SyncServiceRunner implements ModuleRunner {
 	private static final Logger log = LogManager.getLogger();
 
@@ -62,6 +65,7 @@ public final class SyncServiceRunner implements ModuleRunner {
 	private final Object lock = new Object();
 	private CompositeDisposable compositeDisposable;
 
+	@Inject
 	public SyncServiceRunner(
 		LocalSyncRequestsRx localSyncRequestsRx,
 		SyncTimeoutsRx syncTimeoutsRx,

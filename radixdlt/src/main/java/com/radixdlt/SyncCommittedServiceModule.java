@@ -20,8 +20,7 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
+import com.google.inject.multibindings.MapBinder;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.counters.SystemCounters;
@@ -35,9 +34,6 @@ import com.radixdlt.sync.LocalSyncServiceProcessor;
 import com.radixdlt.sync.LocalSyncServiceProcessor.SyncTimeoutScheduler;
 import com.radixdlt.sync.LocalSyncServiceProcessor.VerifiedSyncedCommandsSender;
 import com.radixdlt.sync.SyncServiceRunner;
-import com.radixdlt.sync.SyncServiceRunner.LocalSyncRequestsRx;
-import com.radixdlt.sync.SyncServiceRunner.SyncTimeoutsRx;
-import com.radixdlt.sync.SyncServiceRunner.VersionUpdatesRx;
 import java.util.Comparator;
 
 /**
@@ -45,6 +41,11 @@ import java.util.Comparator;
  */
 public class SyncCommittedServiceModule extends AbstractModule {
 	private static final int BATCH_SIZE = 100;
+
+	public void configure() {
+		MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class)
+			.addBinding("sync").to(SyncServiceRunner.class);
+	}
 
 	@Provides
 	@Singleton
@@ -82,31 +83,10 @@ public class SyncCommittedServiceModule extends AbstractModule {
 		);
 	}
 
-	@ProvidesIntoMap
-	@StringMapKey("sync")
-	@Singleton
-	private ModuleRunner syncServiceRunner(
-		LocalSyncRequestsRx localSyncRequestsRx,
-		SyncTimeoutsRx syncTimeoutsRx,
-		VersionUpdatesRx versionUpdatesRx,
-		StateSyncNetwork stateSyncNetwork,
-		LocalSyncServiceProcessor syncServiceProcessor,
-		RemoteSyncServiceProcessor remoteSyncServiceProcessor
-	) {
-		return new SyncServiceRunner(
-			localSyncRequestsRx,
-			syncTimeoutsRx,
-			versionUpdatesRx,
-			stateSyncNetwork,
-			syncServiceProcessor,
-			remoteSyncServiceProcessor
-		);
-	}
-
 	@Provides
-	private VerifiedSyncedCommandsSender syncedCommandSender(SystemCounters systemCounters, Ledger ledger) {
+	private VerifiedSyncedCommandsSender syncedCommandSender(SystemCounters counters, Ledger ledger) {
 		return cmds -> {
-			systemCounters.add(CounterType.SYNC_PROCESSED, cmds.size());
+			counters.add(CounterType.SYNC_PROCESSED, cmds.size());
 			ledger.commit(cmds);
 		};
 	}
@@ -114,9 +94,7 @@ public class SyncCommittedServiceModule extends AbstractModule {
 
 	@Provides
 	private InvalidSyncedCommandsSender invalidCommandsSender(SystemCounters counters) {
-		return commandsAndProof -> {
-			// TODO: Store bad commands for reference and later for slashing
-			counters.increment(CounterType.SYNC_INVALID_COMMANDS_RECEIVED);
-		};
+		// TODO: Store bad commands for reference and later for slashing
+		return commandsAndProof -> counters.increment(CounterType.SYNC_INVALID_COMMANDS_RECEIVED);
 	}
 }
