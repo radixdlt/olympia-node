@@ -23,16 +23,15 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.BFTConfiguration;
+import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof.OrderByEpochAndVersionComparator;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.epoch.EpochManager;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.ledger.StateComputerLedger.CommittedSender;
-import com.radixdlt.ledger.StateComputerLedger.InvalidCommandsSender;
 import java.util.Comparator;
 import java.util.Set;
 
@@ -50,12 +49,15 @@ public class LedgerModule extends AbstractModule {
 	}
 
 	@Provides
-	private InvalidCommandsSender invalidCommandsSender(SystemCounters counters) {
-		return commandsAndProof -> {
-			// TODO: Store bad commands for reference and later for slashing
-			counters.increment(CounterType.SYNC_INVALID_COMMANDS_RECEIVED);
+	private LedgerAccumulator accumulator(Hasher hasher) {
+		return (parent, nextCommand) -> {
+			byte[] concat = new byte[32 * 2];
+			parent.copyTo(concat, 0);
+			nextCommand.getHash().copyTo(concat, 32);
+			return hasher.hashBytes(concat);
 		};
 	}
+
 
 	@Provides
 	private CommittedSender sender(Set<CommittedSender> committedSenders) {

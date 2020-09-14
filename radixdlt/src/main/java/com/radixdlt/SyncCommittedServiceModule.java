@@ -25,12 +25,15 @@ import com.google.inject.multibindings.StringMapKey;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.sync.CommittedReader;
+import com.radixdlt.sync.LocalSyncServiceProcessor.InvalidSyncedCommandsSender;
 import com.radixdlt.sync.RemoteSyncServiceProcessor;
 import com.radixdlt.sync.StateSyncNetwork;
 import com.radixdlt.sync.LocalSyncServiceProcessor;
 import com.radixdlt.sync.LocalSyncServiceProcessor.SyncTimeoutScheduler;
-import com.radixdlt.sync.LocalSyncServiceProcessor.SyncedCommandSender;
+import com.radixdlt.sync.LocalSyncServiceProcessor.VerifiedSyncedCommandsSender;
 import com.radixdlt.sync.SyncServiceRunner;
 import com.radixdlt.sync.SyncServiceRunner.LocalSyncRequestsRx;
 import com.radixdlt.sync.SyncServiceRunner.SyncTimeoutsRx;
@@ -60,15 +63,19 @@ public class SyncCommittedServiceModule extends AbstractModule {
 	@Singleton
 	private LocalSyncServiceProcessor syncServiceProcessor(
 		Comparator<VerifiedLedgerHeaderAndProof> headerComparator,
+		LedgerAccumulator accumulator,
 		VerifiedLedgerHeaderAndProof header,
 		StateSyncNetwork stateSyncNetwork,
-		SyncedCommandSender syncedCommandSender,
+		VerifiedSyncedCommandsSender verifiedSyncedCommandsSender,
+		InvalidSyncedCommandsSender invalidSyncedCommandsSender,
 		SyncTimeoutScheduler syncTimeoutScheduler
 	) {
 		return new LocalSyncServiceProcessor(
 			stateSyncNetwork,
-			syncedCommandSender,
+			verifiedSyncedCommandsSender,
+			invalidSyncedCommandsSender,
 			syncTimeoutScheduler,
+			accumulator,
 			headerComparator,
 			header,
 			1000
@@ -97,7 +104,19 @@ public class SyncCommittedServiceModule extends AbstractModule {
 	}
 
 	@Provides
-	private SyncedCommandSender syncedCommandSender(SystemCounters systemCounters, Ledger ledger) {
-		return ledger::tryCommit;
+	private VerifiedSyncedCommandsSender syncedCommandSender(SystemCounters systemCounters, Ledger ledger) {
+		return cmds -> {
+			systemCounters.add(CounterType.SYNC_PROCESSED, cmds.size());
+			ledger.commit(cmds);
+		};
+	}
+
+
+	@Provides
+	private InvalidSyncedCommandsSender invalidCommandsSender(SystemCounters counters) {
+		return commandsAndProof -> {
+			// TODO: Store bad commands for reference and later for slashing
+			counters.increment(CounterType.SYNC_INVALID_COMMANDS_RECEIVED);
+		};
 	}
 }

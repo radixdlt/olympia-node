@@ -32,9 +32,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
@@ -42,9 +40,7 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.ledger.StateComputerLedger.InvalidCommandsSender;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.StateComputerLedger.CommittedSender;
 import com.radixdlt.ledger.StateComputerLedger.CommittedStateSyncSender;
@@ -66,8 +62,7 @@ public class StateComputerLedgerTest {
 	private VerifiedLedgerHeaderAndProof currentLedgerHeader;
 	private SystemCounters counters;
 	private Comparator<VerifiedLedgerHeaderAndProof> headerComparator;
-	private Hasher hasher;
-	private InvalidCommandsSender invalidCommandsSender;
+	private LedgerAccumulator accumulator;
 
 
 	@Before
@@ -80,19 +75,17 @@ public class StateComputerLedgerTest {
 		this.committedSender = mock(CommittedSender.class);
 		this.currentLedgerHeader = mock(VerifiedLedgerHeaderAndProof.class);
 		this.headerComparator = mock(Comparator.class);
-		this.hasher = mock(Hasher.class);
-		this.invalidCommandsSender = mock(InvalidCommandsSender.class);
-		when(hasher.hashBytes(any())).thenReturn(mock(Hash.class));
+		this.accumulator = mock(LedgerAccumulator.class);
+		when(accumulator.accumulate(any(), any(Command.class))).thenReturn(mock(Hash.class));
 
 		this.stateComputerLedger = new StateComputerLedger(
 			headerComparator,
 			currentLedgerHeader,
 			mempool,
 			stateComputer,
-			invalidCommandsSender,
 			committedStateSyncSender,
 			committedSender,
-			hasher,
+			accumulator,
 			counters
 		);
 	}
@@ -189,68 +182,6 @@ public class StateComputerLedgerTest {
 		LedgerHeader nextPrepared = stateComputerLedger.prepare(vertex);
 		assertThat(nextPrepared.isEndOfEpoch()).isFalse();
 		assertThat(nextPrepared.getStateVersion()).isEqualTo(12346L);
-	}
-
-	@Test
-	public void when_try_commit_with_bad_accumulator__then_invalid_commands_sent() {
-		DtoCommandsAndProof dtoCommandsAndProof = mock(DtoCommandsAndProof.class);
-		DtoLedgerHeaderAndProof start = mock(DtoLedgerHeaderAndProof.class);
-		LedgerHeader ledgerHeader = mock(LedgerHeader.class);
-		Hash startAccumulator = mock(Hash.class);
-		when(ledgerHeader.getAccumulator()).thenReturn(startAccumulator);
-		when(start.getLedgerHeader()).thenReturn(ledgerHeader);
-
-		DtoLedgerHeaderAndProof end = mock(DtoLedgerHeaderAndProof.class);
-		LedgerHeader endHeader = mock(LedgerHeader.class);
-		Hash endAccumulator = mock(Hash.class);
-		when(endHeader.getAccumulator()).thenReturn(endAccumulator);
-		when(end.getLedgerHeader()).thenReturn(endHeader);
-
-		when(dtoCommandsAndProof.getStartHeader()).thenReturn(start);
-		when(dtoCommandsAndProof.getEndHeader()).thenReturn(end);
-
-		Command command = mock(Command.class);
-		when(command.getHash()).thenReturn(mock(Hash.class));
-		when(dtoCommandsAndProof.getCommands()).thenReturn(ImmutableList.of(command));
-
-		when(hasher.hashBytes(any())).thenReturn(mock(Hash.class));
-
-		stateComputerLedger.tryCommit(dtoCommandsAndProof);
-		verify(invalidCommandsSender, times(1)).sendInvalidCommands(eq(dtoCommandsAndProof));
-		verify(counters, never()).increment(eq(CounterType.LEDGER_PROCESSED));
-	}
-
-	@Test
-	public void when_try_commit_with_good_accumulator__then_committed_commands_sent() {
-		DtoCommandsAndProof dtoCommandsAndProof = mock(DtoCommandsAndProof.class);
-		DtoLedgerHeaderAndProof start = mock(DtoLedgerHeaderAndProof.class);
-		LedgerHeader ledgerHeader = mock(LedgerHeader.class);
-		Hash startAccumulator = mock(Hash.class);
-		when(ledgerHeader.getAccumulator()).thenReturn(startAccumulator);
-		when(start.getLedgerHeader()).thenReturn(ledgerHeader);
-
-		DtoLedgerHeaderAndProof end = mock(DtoLedgerHeaderAndProof.class);
-		LedgerHeader endHeader = mock(LedgerHeader.class);
-		Hash endAccumulator = mock(Hash.class);
-		when(endHeader.getAccumulator()).thenReturn(endAccumulator);
-		when(end.getOpaque0()).thenReturn(mock(BFTHeader.class));
-		when(end.getOpaque1()).thenReturn(mock(BFTHeader.class));
-		when(end.getOpaque3()).thenReturn(mock(Hash.class));
-		when(end.getSignatures()).thenReturn(mock(TimestampedECDSASignatures.class));
-		when(end.getLedgerHeader()).thenReturn(endHeader);
-
-		when(dtoCommandsAndProof.getStartHeader()).thenReturn(start);
-		when(dtoCommandsAndProof.getEndHeader()).thenReturn(end);
-
-		Command command = mock(Command.class);
-		when(command.getHash()).thenReturn(mock(Hash.class));
-		when(dtoCommandsAndProof.getCommands()).thenReturn(ImmutableList.of(command));
-
-		when(hasher.hashBytes(any())).thenReturn(endAccumulator);
-
-		stateComputerLedger.tryCommit(dtoCommandsAndProof);
-		verify(invalidCommandsSender, never()).sendInvalidCommands(eq(dtoCommandsAndProof));
-		verify(counters, times(1)).increment(eq(CounterType.LEDGER_PROCESSED));
 	}
 
 	@Test

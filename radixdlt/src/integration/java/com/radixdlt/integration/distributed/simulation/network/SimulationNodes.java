@@ -101,7 +101,8 @@ public class SimulationNodes {
 			new ConsensusRxModule(),
 			new SystemInfoRxModule(),
 			new MockedCryptoModule(),
-			new SimulationNetworkModule(underlyingNetwork), baseModule
+			new SimulationNetworkModule(underlyingNetwork),
+			baseModule
 		);
 
 		// Override modules can be used to:

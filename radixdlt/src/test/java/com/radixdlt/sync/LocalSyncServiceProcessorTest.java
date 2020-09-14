@@ -19,6 +19,7 @@ package com.radixdlt.sync;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -27,20 +28,30 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.BFTHeader;
+import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.crypto.Hash;
+import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
+import com.radixdlt.sync.LocalSyncServiceProcessor.InvalidSyncedCommandsSender;
 import com.radixdlt.sync.LocalSyncServiceProcessor.SyncTimeoutScheduler;
-import com.radixdlt.sync.LocalSyncServiceProcessor.SyncedCommandSender;
+import com.radixdlt.sync.LocalSyncServiceProcessor.VerifiedSyncedCommandsSender;
 import java.util.Comparator;
+import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 
 public class LocalSyncServiceProcessorTest {
 	private StateSyncNetwork stateSyncNetwork;
 	private LocalSyncServiceProcessor syncServiceProcessor;
-	private SyncedCommandSender syncedCommandSender;
+	private VerifiedSyncedCommandsSender verifiedSyncedCommandsSender;
+	private InvalidSyncedCommandsSender invalidSyncedCommandsSender;
+	private LedgerAccumulator accumulator;
 	private SyncTimeoutScheduler syncTimeoutScheduler;
 	private VerifiedLedgerHeaderAndProof currentHeader;
 	private Comparator<VerifiedLedgerHeaderAndProof> headerComparator;
@@ -48,26 +59,88 @@ public class LocalSyncServiceProcessorTest {
 	@Before
 	public void setUp() {
 		this.stateSyncNetwork = mock(StateSyncNetwork.class);
-		this.syncedCommandSender = mock(SyncedCommandSender.class);
+		this.verifiedSyncedCommandsSender = mock(VerifiedSyncedCommandsSender.class);
+		this.invalidSyncedCommandsSender = mock(InvalidSyncedCommandsSender.class);
 		this.syncTimeoutScheduler = mock(SyncTimeoutScheduler.class);
 		this.currentHeader = mock(VerifiedLedgerHeaderAndProof.class);
 		when(this.currentHeader.toDto()).thenReturn(mock(DtoLedgerHeaderAndProof.class));
+		this.accumulator = mock(LedgerAccumulator.class);
 		this.headerComparator = mock(Comparator.class);
 		this.syncServiceProcessor = new LocalSyncServiceProcessor(
 			stateSyncNetwork,
-			syncedCommandSender,
+			verifiedSyncedCommandsSender,
+			invalidSyncedCommandsSender,
 			syncTimeoutScheduler,
+			accumulator,
 			headerComparator,
 			currentHeader,
 			1
 		);
 	}
 
+
 	@Test
-	public void when_receive_sync_response__then_should_forward() {
-		DtoCommandsAndProof commandsAndProof = mock(DtoCommandsAndProof.class);
-		syncServiceProcessor.processSyncResponse(commandsAndProof);
-		verify(syncedCommandSender, times(1)).sendSyncedCommand(eq(commandsAndProof));
+	public void when_process_response_with_bad_accumulator__then_invalid_commands_sent() {
+		DtoCommandsAndProof dtoCommandsAndProof = mock(DtoCommandsAndProof.class);
+		DtoLedgerHeaderAndProof start = mock(DtoLedgerHeaderAndProof.class);
+		LedgerHeader ledgerHeader = mock(LedgerHeader.class);
+		Hash startAccumulator = mock(Hash.class);
+		when(ledgerHeader.getAccumulator()).thenReturn(startAccumulator);
+		when(start.getLedgerHeader()).thenReturn(ledgerHeader);
+
+		DtoLedgerHeaderAndProof end = mock(DtoLedgerHeaderAndProof.class);
+		LedgerHeader endHeader = mock(LedgerHeader.class);
+		Hash endAccumulator = mock(Hash.class);
+		when(endHeader.getAccumulator()).thenReturn(endAccumulator);
+		when(end.getLedgerHeader()).thenReturn(endHeader);
+
+		when(dtoCommandsAndProof.getStartHeader()).thenReturn(start);
+		when(dtoCommandsAndProof.getEndHeader()).thenReturn(end);
+
+		Command command = mock(Command.class);
+		when(command.getHash()).thenReturn(mock(Hash.class));
+		when(dtoCommandsAndProof.getCommands()).thenReturn(ImmutableList.of(command));
+
+		when(accumulator.accumulate(any(), any(List.class))).thenReturn(mock(Hash.class));
+
+		syncServiceProcessor.processSyncResponse(dtoCommandsAndProof);
+
+		verify(invalidSyncedCommandsSender, times(1)).sendInvalidCommands(eq(dtoCommandsAndProof));
+		verify(verifiedSyncedCommandsSender, never()).sendVerifiedCommands(any());
+	}
+
+	@Test
+	public void when_process_response_with_good_accumulator__then_committed_commands_sent() {
+		DtoCommandsAndProof dtoCommandsAndProof = mock(DtoCommandsAndProof.class);
+		DtoLedgerHeaderAndProof start = mock(DtoLedgerHeaderAndProof.class);
+		LedgerHeader ledgerHeader = mock(LedgerHeader.class);
+		Hash startAccumulator = mock(Hash.class);
+		when(ledgerHeader.getAccumulator()).thenReturn(startAccumulator);
+		when(start.getLedgerHeader()).thenReturn(ledgerHeader);
+
+		DtoLedgerHeaderAndProof end = mock(DtoLedgerHeaderAndProof.class);
+		LedgerHeader endHeader = mock(LedgerHeader.class);
+		Hash endAccumulator = mock(Hash.class);
+		when(endHeader.getAccumulator()).thenReturn(endAccumulator);
+		when(end.getOpaque0()).thenReturn(mock(BFTHeader.class));
+		when(end.getOpaque1()).thenReturn(mock(BFTHeader.class));
+		when(end.getOpaque3()).thenReturn(mock(Hash.class));
+		when(end.getSignatures()).thenReturn(mock(TimestampedECDSASignatures.class));
+		when(end.getLedgerHeader()).thenReturn(endHeader);
+
+		when(dtoCommandsAndProof.getStartHeader()).thenReturn(start);
+		when(dtoCommandsAndProof.getEndHeader()).thenReturn(end);
+
+		Command command = mock(Command.class);
+		when(command.getHash()).thenReturn(mock(Hash.class));
+		when(dtoCommandsAndProof.getCommands()).thenReturn(ImmutableList.of(command));
+
+		when(accumulator.accumulate(any(), any(List.class))).thenReturn(endAccumulator);
+
+		syncServiceProcessor.processSyncResponse(dtoCommandsAndProof);
+		verify(invalidSyncedCommandsSender, never()).sendInvalidCommands(any());
+		verify(verifiedSyncedCommandsSender, times(1))
+			.sendVerifiedCommands(argThat(cmds -> cmds.contains(command)));
 	}
 
 	@Test
@@ -77,7 +150,7 @@ public class LocalSyncServiceProcessorTest {
 		LocalSyncRequest request = mock(LocalSyncRequest.class);
 		when(request.getTarget()).thenReturn(targetHeader);
 		syncServiceProcessor.processLocalSyncRequest(request);
-		verify(syncedCommandSender, never()).sendSyncedCommand(any());
+		verify(verifiedSyncedCommandsSender, never()).sendVerifiedCommands(any());
 		verify(stateSyncNetwork, never()).sendSyncRequest(any(), any());
 		verify(syncTimeoutScheduler, never()).scheduleTimeout(any(), anyLong());
 	}
@@ -92,7 +165,7 @@ public class LocalSyncServiceProcessorTest {
 		when(request.getTarget()).thenReturn(targetHeader);
 		when(request.getTargetNodes()).thenReturn(ImmutableList.of(mock(BFTNode.class)));
 		syncServiceProcessor.processLocalSyncRequest(request);
-		verify(syncedCommandSender, never()).sendSyncedCommand(any());
+		verify(verifiedSyncedCommandsSender, never()).sendVerifiedCommands(any());
 		verify(stateSyncNetwork, times(1)).sendSyncRequest(any(), any());
 		verify(syncTimeoutScheduler, times(1)).scheduleTimeout(any(), anyLong());
 	}
@@ -110,7 +183,7 @@ public class LocalSyncServiceProcessorTest {
 		when(request.getTarget()).thenReturn(targetHeader);
 		when(request.getTargetNodes()).thenReturn(ImmutableList.of(mock(BFTNode.class)));
 		syncServiceProcessor.processLocalSyncRequest(request);
-		verify(syncedCommandSender, times(1)).sendSyncedCommand(any());
+		verify(verifiedSyncedCommandsSender, times(1)).sendVerifiedCommands(any());
 		verify(stateSyncNetwork, never()).sendSyncRequest(any(), any());
 		verify(syncTimeoutScheduler, never()).scheduleTimeout(any(), anyLong());
 	}

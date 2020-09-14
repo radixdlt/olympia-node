@@ -27,7 +27,6 @@ import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.sync.CommittedReader;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.Random;
 import java.util.TreeMap;
 import java.util.stream.Stream;
 
@@ -37,7 +36,7 @@ import java.util.stream.Stream;
 @Singleton
 public final class StateComputerWithSometimesBadHashCommittedReader implements StateComputer, CommittedReader {
 	private final TreeMap<Long, VerifiedCommandsAndProof> commandsAndProof = new TreeMap<>();
-	private final Random random = new Random();
+	private boolean doBadHash = true;
 
 	@Override
 	public boolean prepare(VerifiedVertex vertex) {
@@ -56,13 +55,14 @@ public final class StateComputerWithSometimesBadHashCommittedReader implements S
 		if (entry != null) {
 			ImmutableList<Command> commands;
 			VerifiedCommandsAndProof commandsToSendBack = entry.getValue().truncateFromVersion(stateVersion);
-			if (random.nextBoolean()) {
+			if (doBadHash) {
 				 commands = Stream.generate(() -> new Command(new byte[]{0})).limit(commandsToSendBack.size())
 					.collect(ImmutableList.toImmutableList());
-				return new VerifiedCommandsAndProof(commands, commandsToSendBack.getHeader());
-			} else {
-				return commandsToSendBack;
+				commandsToSendBack = new VerifiedCommandsAndProof(commands, commandsToSendBack.getHeader());
 			}
+
+			doBadHash = !doBadHash;
+			return commandsToSendBack;
 		}
 
 		return null;

@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -56,10 +55,6 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		Optional<BFTValidatorSet> commit(VerifiedCommandsAndProof verifiedCommandsAndProof);
 	}
 
-	public interface InvalidCommandsSender {
-		void sendInvalidCommands(DtoCommandsAndProof commandsAndProof);
-	}
-
 	public interface CommittedSender {
 		// TODO: batch these
 		void sendCommitted(VerifiedCommandsAndProof committedCommand, BFTValidatorSet validatorSet);
@@ -72,11 +67,10 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	private final Comparator<VerifiedLedgerHeaderAndProof> headerComparator;
 	private final Mempool mempool;
 	private final StateComputer stateComputer;
-	private final InvalidCommandsSender invalidCommandsSender;
 	private final CommittedStateSyncSender committedStateSyncSender;
 	private final CommittedSender committedSender;
 	private final SystemCounters counters;
-	private final Hasher hasher;
+	private final LedgerAccumulator accumulator;
 
 	private final Object lock = new Object();
 	private VerifiedLedgerHeaderAndProof currentLedgerHeader;
@@ -88,28 +82,19 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		VerifiedLedgerHeaderAndProof initialLedgerState,
 		Mempool mempool,
 		StateComputer stateComputer,
-		InvalidCommandsSender invalidCommandsSender,
 		CommittedStateSyncSender committedStateSyncSender,
 		CommittedSender committedSender,
-		Hasher hasher,
+		LedgerAccumulator accumulator,
 		SystemCounters counters
 	) {
 		this.headerComparator = Objects.requireNonNull(headerComparator);
 		this.currentLedgerHeader = initialLedgerState;
 		this.mempool = Objects.requireNonNull(mempool);
 		this.stateComputer = Objects.requireNonNull(stateComputer);
-		this.invalidCommandsSender = Objects.requireNonNull(invalidCommandsSender);
 		this.committedStateSyncSender = Objects.requireNonNull(committedStateSyncSender);
 		this.committedSender = Objects.requireNonNull(committedSender);
 		this.counters = Objects.requireNonNull(counters);
-		this.hasher = Objects.requireNonNull(hasher);
-	}
-
-	private Hash accumulate(Hash parent, Command nextCommand) {
-		byte[] concat = new byte[32 * 2];
-		parent.copyTo(concat, 0);
-		nextCommand.getHash().copyTo(concat, 32);
-		return hasher.hashBytes(concat);
+		this.accumulator = Objects.requireNonNull(accumulator);
 	}
 
 	@Override
@@ -137,7 +122,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 
 		final Hash accumulator;
 		if (vertex.getCommand() != null) {
-			accumulator = this.accumulate(parent.getAccumulator(), vertex.getCommand());
+			accumulator = this.accumulator.accumulate(parent.getAccumulator(), vertex.getCommand());
 		} else {
 			accumulator = parent.getAccumulator();
 		}
@@ -172,43 +157,6 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 				};
 			}
 		}
-	}
-
-	// TODO: move to a different more approrpriate class
-	@Override
-	public void tryCommit(DtoCommandsAndProof commandsAndProof) {
-		Hash accumulator = commandsAndProof.getStartHeader().getLedgerHeader().getAccumulator();
-		for (Command command : commandsAndProof.getCommands()) {
-			accumulator = this.accumulate(accumulator, command);
-		}
-
-		if (!commandsAndProof.getEndHeader().getLedgerHeader().getAccumulator().equals(accumulator)) {
-			log.warn("SYNC Received Bad commands: {}", commandsAndProof);
-			invalidCommandsSender.sendInvalidCommands(commandsAndProof);
-			return;
-		}
-
-		// TODO: Stateful ledger header verification:
-		// TODO: -Check epoch signatures
-		// TODO: -verify rootHash matches
-
-		VerifiedLedgerHeaderAndProof nextHeader = new VerifiedLedgerHeaderAndProof(
-			commandsAndProof.getEndHeader().getOpaque0(),
-			commandsAndProof.getEndHeader().getOpaque1(),
-			commandsAndProof.getEndHeader().getOpaque2(),
-			commandsAndProof.getEndHeader().getOpaque3(),
-			commandsAndProof.getEndHeader().getLedgerHeader(),
-			commandsAndProof.getEndHeader().getSignatures()
-		);
-
-		VerifiedCommandsAndProof verified = new VerifiedCommandsAndProof(
-			commandsAndProof.getCommands(),
-			nextHeader
-		);
-
-		counters.add(CounterType.SYNC_PROCESSED, verified.size());
-
-		this.commit(verified);
 	}
 
 	@Override
