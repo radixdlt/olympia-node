@@ -33,6 +33,10 @@ import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
+/**
+ * Any number/sort of byzantine sync modules should never be able to cause
+ * a safety failure.
+ */
 public class ByzantineSyncTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(4)
@@ -55,7 +59,7 @@ public class ByzantineSyncTest {
 		.checkLedgerProcessesConsensusCommitted("consensusToLedger");
 
 	@Test
-	public void sanity_tests_should_pass() {
+	public void given_a_randomly_byzantine_sync_layer__sanity_tests_should_pass() {
 		SimulationTest simulationTest = bftTestBuilder
 			.build();
 		TestResults results = simulationTest.run();

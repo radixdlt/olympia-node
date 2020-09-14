@@ -19,6 +19,9 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
+import com.google.inject.AbstractModule;
+import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
+import com.radixdlt.consensus.epoch.EmptySyncVerticesRPCSender;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
@@ -46,9 +49,14 @@ public class OneProposalPerViewDropperTest {
 	 * Test should fail with GetVertices RPC disabled
 	 */
 	@Test
-	public void given_get_vertices_disabled__then_test_should_fail_against_drop_proposal_adversary() {
+	public void given_incorrect_module_where_get_vertices_are_disabled__then_test_should_fail_against_drop_proposal_adversary() {
 		SimulationTest test = bftTestBuilder
-			.setGetVerticesRPCEnabled(false)
+			.bindOverridingModule(new AbstractModule() {
+				@Override
+				protected void configure() {
+					bind(SyncVerticesRPCSender.class).toInstance(EmptySyncVerticesRPCSender.INSTANCE);
+				}
+			})
 			.build();
 
 		TestResults results = test.run();
@@ -61,10 +69,7 @@ public class OneProposalPerViewDropperTest {
 	 */
 	@Test
 	public void given_get_vertices_enabled__then_test_should_succeed_against_drop_proposal_adversary() {
-		SimulationTest test = bftTestBuilder
-			.setGetVerticesRPCEnabled(true)
-			.build();
-
+		SimulationTest test = bftTestBuilder.build();
 		TestResults results = test.run();
 		assertThat(results.getCheckResults()).allSatisfy((name, error) -> assertThat(error).isNotPresent());
 	}

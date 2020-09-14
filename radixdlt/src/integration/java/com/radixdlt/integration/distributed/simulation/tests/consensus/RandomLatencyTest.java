@@ -19,6 +19,9 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
+import com.google.inject.AbstractModule;
+import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
+import com.radixdlt.consensus.epoch.EmptySyncVerticesRPCSender;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
@@ -44,8 +47,13 @@ public class RandomLatencyTest {
 
 	private Builder bftTestBuilder = SimulationTest.builder()
 		.randomLatency(minLatency, maxLatency)
-		.setGetVerticesRPCEnabled(false)
 		.pacemakerTimeout(synchronousTimeout) // Since no syncing needed 6*MTT required
+		.bindOverridingModule(new AbstractModule() {
+			@Override
+			protected void configure() {
+				bind(SyncVerticesRPCSender.class).toInstance(EmptySyncVerticesRPCSender.INSTANCE);
+			}
+		})
 		.checkConsensusLiveness("liveness", synchronousTimeout, TimeUnit.MILLISECONDS)
 		.checkConsensusSafety("safety")
 		.checkConsensusAllProposalsHaveDirectParents("directParents")

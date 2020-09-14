@@ -109,16 +109,16 @@ public class SimulationTest {
 	private final ImmutableSet<SimulationNetworkActor> runners;
 	private final ImmutableMap<String, TestInvariant> checks;
 	private final int pacemakerTimeout;
-	private final boolean getVerticesRPCEnabled;
 	private final Module baseNodeModule;
+	private final Module overrideModule;
 	private final Map<BFTNode, Module> byzantineNodeModules;
 
 	private SimulationTest(
 		ImmutableList<BFTNode> nodes,
 		LatencyProvider latencyProvider,
 		int pacemakerTimeout,
-		boolean getVerticesRPCEnabled,
 		Module baseNodeModule,
+		Module overrideModule,
 		Map<BFTNode, Module> byzantineNodeModules,
 		ImmutableMap<String, TestInvariant> checks,
 		ImmutableSet<SimulationNetworkActor> runners
@@ -126,9 +126,9 @@ public class SimulationTest {
 		this.nodes = nodes;
 		this.latencyProvider = latencyProvider;
 		this.baseNodeModule = baseNodeModule;
+		this.overrideModule = overrideModule;
 		this.byzantineNodeModules = byzantineNodeModules;
 		this.pacemakerTimeout = pacemakerTimeout;
-		this.getVerticesRPCEnabled = getVerticesRPCEnabled;
 		this.checks = checks;
 		this.runners = runners;
 	}
@@ -143,11 +143,11 @@ public class SimulationTest {
 		private final ImmutableList.Builder<Function<List<ECKeyPair>, SimulationNetworkActor>> runnableBuilder = ImmutableList.builder();
 		private ImmutableList<ECKeyPair> nodes = ImmutableList.of(ECKeyPair.generateNew());
 		private int pacemakerTimeout = 12 * SimulationNetwork.DEFAULT_LATENCY;
-		private boolean getVerticesRPCEnabled = true;
 		private View epochHighView = null;
 		private Function<Long, IntStream> epochToNodeIndexMapper;
 		private LedgerType ledgerType = LedgerType.MOCKED_LEDGER;
 		private int numInitialValidators = 0;
+		private Module overrideModule = null;
 		private final ImmutableMap.Builder<BFTNode, Module> byzantineModules = ImmutableMap.builder();
 
 		private Builder() {
@@ -159,19 +159,23 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder addOneNodeNeverReceiveProposalDropper() {
-			this.latencyProvider.addDropper(new OneProposalPerViewDropper(
-				ImmutableList.of(BFTNode.create(nodes.get(0).getPublicKey())), new Random())
-			);
-			return this;
-		}
-
-
 		public Builder addByzantineModuleToAll(Module byzantineModule) {
 			nodes.forEach(k -> {
 				BFTNode node = BFTNode.create(k.getPublicKey());
 				byzantineModules.put(node, byzantineModule);
 			});
+			return this;
+		}
+
+		public Builder bindOverridingModule(Module module) {
+			this.overrideModule = module;
+			return this;
+		}
+
+		public Builder addOneNodeNeverReceiveProposalDropper() {
+			this.latencyProvider.addDropper(new OneProposalPerViewDropper(
+				ImmutableList.of(BFTNode.create(nodes.get(0).getPublicKey())), new Random())
+			);
 			return this;
 		}
 
@@ -243,10 +247,6 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder setGetVerticesRPCEnabled(boolean getVerticesRPCEnabled) {
-			this.getVerticesRPCEnabled = getVerticesRPCEnabled;
-			return this;
-		}
 
 		public Builder randomLatency(int minLatency, int maxLatency) {
 			this.latencyProvider.setBase(new RandomLatencyProvider(minLatency, maxLatency));
@@ -439,8 +439,7 @@ public class SimulationTest {
 				nodes.stream().map(node -> BFTNode.create(node.getPublicKey())).collect(ImmutableList.toImmutableList()),
 				latencyProvider.copyOf(),
 				pacemakerTimeout,
-				getVerticesRPCEnabled,
-				Modules.combine(modules.build()),
+				Modules.combine(modules.build()), overrideModule,
 				byzantineModules.build(),
 				checks,
 				runners
@@ -542,9 +541,8 @@ public class SimulationTest {
 			nodes,
 			network,
 			pacemakerTimeout,
-			baseNodeModule,
-			byzantineNodeModules,
-			getVerticesRPCEnabled
+			baseNodeModule, overrideModule,
+			byzantineNodeModules
 		);
 		RunningNetwork runningNetwork = bftNetwork.start();
 
