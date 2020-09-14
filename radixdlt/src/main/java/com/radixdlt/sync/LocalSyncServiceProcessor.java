@@ -104,10 +104,9 @@ public final class LocalSyncServiceProcessor {
 
 	public void processSyncResponse(DtoCommandsAndProof commandsAndProof) {
 		log.info("SYNC_RESPONSE: {} current={} target={}", commandsAndProof, this.currentHeader, this.targetHeader);
-		Hash currentAccumulated = commandsAndProof.getStartHeader().getLedgerHeader().getAccumulator();
-		Hash nextAccumulated = this.accumulator.accumulate(currentAccumulated, commandsAndProof.getCommands());
-
-		if (!commandsAndProof.getEndHeader().getLedgerHeader().getAccumulator().equals(nextAccumulated)) {
+		Hash start = commandsAndProof.getStartHeader().getLedgerHeader().getAccumulator();
+		Hash end = commandsAndProof.getEndHeader().getLedgerHeader().getAccumulator();
+		if (!this.accumulator.verify(start, commandsAndProof.getCommands(), end)) {
 			log.warn("SYNC Received Bad commands: {}", commandsAndProof);
 			invalidSyncedCommandsSender.sendInvalidCommands(commandsAndProof);
 			return;

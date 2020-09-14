@@ -17,9 +17,10 @@
 
 package com.radixdlt.ledger;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.crypto.Hash;
-import java.util.List;
+import java.util.Objects;
 
 /**
  * Accumulates commands into a single version hash which represents
@@ -28,11 +29,11 @@ import java.util.List;
 public interface LedgerAccumulator {
 	Hash accumulate(Hash parent, Command nextCommand);
 
-	default Hash accumulate(Hash parent, List<Command> commands) {
-		Hash accumulated = parent;
+	default boolean verify(Hash start, ImmutableList<Command> commands, Hash end) {
+		Hash accumulated = start;
 		for (Command command : commands) {
 			accumulated = this.accumulate(accumulated, command);
 		}
-		return accumulated;
+		return Objects.equals(start, end);
 	}
 }

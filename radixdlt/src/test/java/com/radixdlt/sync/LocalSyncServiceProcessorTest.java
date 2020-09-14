@@ -42,7 +42,6 @@ import com.radixdlt.sync.LocalSyncServiceProcessor.InvalidSyncedCommandsSender;
 import com.radixdlt.sync.LocalSyncServiceProcessor.SyncTimeoutScheduler;
 import com.radixdlt.sync.LocalSyncServiceProcessor.VerifiedSyncedCommandsSender;
 import java.util.Comparator;
-import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -84,14 +83,12 @@ public class LocalSyncServiceProcessorTest {
 		DtoCommandsAndProof dtoCommandsAndProof = mock(DtoCommandsAndProof.class);
 		DtoLedgerHeaderAndProof start = mock(DtoLedgerHeaderAndProof.class);
 		LedgerHeader ledgerHeader = mock(LedgerHeader.class);
-		Hash startAccumulator = mock(Hash.class);
-		when(ledgerHeader.getAccumulator()).thenReturn(startAccumulator);
+		when(ledgerHeader.getAccumulator()).thenReturn(mock(Hash.class));
 		when(start.getLedgerHeader()).thenReturn(ledgerHeader);
 
 		DtoLedgerHeaderAndProof end = mock(DtoLedgerHeaderAndProof.class);
 		LedgerHeader endHeader = mock(LedgerHeader.class);
-		Hash endAccumulator = mock(Hash.class);
-		when(endHeader.getAccumulator()).thenReturn(endAccumulator);
+		when(endHeader.getAccumulator()).thenReturn(mock(Hash.class));
 		when(end.getLedgerHeader()).thenReturn(endHeader);
 
 		when(dtoCommandsAndProof.getStartHeader()).thenReturn(start);
@@ -101,7 +98,7 @@ public class LocalSyncServiceProcessorTest {
 		when(command.getHash()).thenReturn(mock(Hash.class));
 		when(dtoCommandsAndProof.getCommands()).thenReturn(ImmutableList.of(command));
 
-		when(accumulator.accumulate(any(), any(List.class))).thenReturn(mock(Hash.class));
+		when(accumulator.verify(any(), any(), any())).thenReturn(false);
 
 		syncServiceProcessor.processSyncResponse(dtoCommandsAndProof);
 
@@ -114,14 +111,12 @@ public class LocalSyncServiceProcessorTest {
 		DtoCommandsAndProof dtoCommandsAndProof = mock(DtoCommandsAndProof.class);
 		DtoLedgerHeaderAndProof start = mock(DtoLedgerHeaderAndProof.class);
 		LedgerHeader ledgerHeader = mock(LedgerHeader.class);
-		Hash startAccumulator = mock(Hash.class);
-		when(ledgerHeader.getAccumulator()).thenReturn(startAccumulator);
+		when(ledgerHeader.getAccumulator()).thenReturn(mock(Hash.class));
 		when(start.getLedgerHeader()).thenReturn(ledgerHeader);
 
 		DtoLedgerHeaderAndProof end = mock(DtoLedgerHeaderAndProof.class);
 		LedgerHeader endHeader = mock(LedgerHeader.class);
-		Hash endAccumulator = mock(Hash.class);
-		when(endHeader.getAccumulator()).thenReturn(endAccumulator);
+		when(endHeader.getAccumulator()).thenReturn(mock(Hash.class));
 		when(end.getOpaque0()).thenReturn(mock(BFTHeader.class));
 		when(end.getOpaque1()).thenReturn(mock(BFTHeader.class));
 		when(end.getOpaque3()).thenReturn(mock(Hash.class));
@@ -135,7 +130,7 @@ public class LocalSyncServiceProcessorTest {
 		when(command.getHash()).thenReturn(mock(Hash.class));
 		when(dtoCommandsAndProof.getCommands()).thenReturn(ImmutableList.of(command));
 
-		when(accumulator.accumulate(any(), any(List.class))).thenReturn(endAccumulator);
+		when(accumulator.verify(any(), any(), any())).thenReturn(true);
 
 		syncServiceProcessor.processSyncResponse(dtoCommandsAndProof);
 		verify(invalidSyncedCommandsSender, never()).sendInvalidCommands(any());
