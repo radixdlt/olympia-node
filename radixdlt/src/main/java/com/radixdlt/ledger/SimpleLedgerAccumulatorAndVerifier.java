@@ -25,6 +25,9 @@ import com.radixdlt.crypto.Hash;
 import java.util.Objects;
 import javax.annotation.concurrent.ThreadSafe;
 
+/**
+ * Hash chain accumulator and verifier
+ */
 @ThreadSafe
 public class SimpleLedgerAccumulatorAndVerifier implements LedgerAccumulator, LedgerAccumulatorVerifier {
 	private final Hasher hasher;

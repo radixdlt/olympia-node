@@ -25,7 +25,6 @@ import com.radixdlt.consensus.epoch.EmptySyncVerticesRPCSender;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
-import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;

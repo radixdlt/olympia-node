@@ -22,8 +22,11 @@ import com.radixdlt.consensus.Command;
 import com.radixdlt.crypto.Hash;
 
 /**
- * Verifies whether a given accumulator extends a given one
+ * Verifies whether a given accumulator extends a given one.
+ *
+ * All implementations should be stateless.
  */
+@FunctionalInterface
 public interface LedgerAccumulatorVerifier {
 	boolean verify(Hash start, ImmutableList<Command> commands, Hash end);
 }

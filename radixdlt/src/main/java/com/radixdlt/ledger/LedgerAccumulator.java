@@ -23,7 +23,10 @@ import com.radixdlt.crypto.Hash;
 /**
  * Accumulates commands into a single version hash which represents
  * all commands which have been committed in a certain order.
+ *
+ * All implementations should be functional and stateless.
  */
+@FunctionalInterface
 public interface LedgerAccumulator {
 	Hash accumulate(Hash parent, Command nextCommand);
 }
