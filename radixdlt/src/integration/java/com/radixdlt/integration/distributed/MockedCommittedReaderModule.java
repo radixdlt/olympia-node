@@ -22,6 +22,7 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.StateComputerLedger.CommittedSender;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.sync.CommittedReader;
@@ -46,7 +47,8 @@ public class MockedCommittedReaderModule extends AbstractModule {
 		}
 
 		@Override
-		public VerifiedCommandsAndProof getNextCommittedCommands(long stateVersion, int batchSize) {
+		public VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start, int batchSize) {
+			final long stateVersion = start.getLedgerHeader().getStateVersion();
 			Entry<Long, VerifiedCommandsAndProof> entry = commandsAndProof.higherEntry(stateVersion);
 			if (entry != null) {
 				return entry.getValue().truncateFromVersion(stateVersion);

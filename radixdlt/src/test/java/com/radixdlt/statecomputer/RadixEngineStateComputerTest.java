@@ -30,6 +30,7 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
@@ -37,6 +38,7 @@ import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
@@ -140,7 +142,12 @@ public class RadixEngineStateComputerTest {
 
 		stateComputer.commit(committedCommand);
 
-		VerifiedCommandsAndProof commands = stateComputer.getNextCommittedCommands(0L, 1);
+		DtoLedgerHeaderAndProof start = mock(DtoLedgerHeaderAndProof.class);
+		LedgerHeader ledgerHeader = mock(LedgerHeader.class);
+		when(ledgerHeader.getStateVersion()).thenReturn(0L);
+		when(start.getLedgerHeader()).thenReturn(ledgerHeader);
+
+		VerifiedCommandsAndProof commands = stateComputer.getNextCommittedCommands(start, 1);
 		assertThat(commands).isNotNull();
 		assertThat(commands.getHeader()).isEqualTo(proof);
 	}
@@ -164,7 +171,11 @@ public class RadixEngineStateComputerTest {
 		}).when(command).forEach(any());
 
 		assertThat(stateComputer.commit(command)).isEmpty();
-		VerifiedCommandsAndProof commands = stateComputer.getNextCommittedCommands(0L, 1);
+		DtoLedgerHeaderAndProof start = mock(DtoLedgerHeaderAndProof.class);
+		LedgerHeader ledgerHeader = mock(LedgerHeader.class);
+		when(ledgerHeader.getStateVersion()).thenReturn(0L);
+		when(start.getLedgerHeader()).thenReturn(ledgerHeader);
+		VerifiedCommandsAndProof commands = stateComputer.getNextCommittedCommands(start, 1);
 		assertThat(commands).isNotNull();
 		assertThat(commands.getHeader()).isEqualTo(proof);
 	}

@@ -27,6 +27,7 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.EUID;
+import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.middleware2.store.StoredCommittedCommand;
@@ -89,7 +90,10 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 
 	// TODO Move this to a different class class when unstored committed atoms is fixed
 	@Override
-	public VerifiedCommandsAndProof getNextCommittedCommands(long stateVersion, int batchSize) {
+	public VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start, int batchSize) {
+		// TODO: verify start
+		long stateVersion = start.getLedgerHeader().getStateVersion();
+
 		// TODO: This may still return an empty list as we still count state versions for atoms which
 		// TODO: never make it into the radix engine due to state errors. This is because we only check
 		// TODO: validity on commit rather than on proposal/prepare.
