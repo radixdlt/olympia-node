@@ -69,7 +69,7 @@ public class RandomLatencyTest {
 			.build();
 
 		TestResults results = test.run();
-		assertThat(results.getCheckResults()).allSatisfy((name, error) -> AssertionsForClassTypes.assertThat(error).isNotPresent());
+		assertThat(results.getCheckResults()).allSatisfy((name, error) -> assertThat(error).isNotPresent());
 	}
 
 	/**

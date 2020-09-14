@@ -17,13 +17,13 @@
 
 package com.radixdlt.ledger;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.crypto.Hash;
 
 /**
- * Accumulates commands into a single version hash which represents
- * all commands which have been committed in a certain order.
+ * Verifies whether a given accumulator extends a given one
  */
-public interface LedgerAccumulator {
-	Hash accumulate(Hash parent, Command nextCommand);
+public interface LedgerAccumulatorVerifier {
+	boolean verify(Hash start, ImmutableList<Command> commands, Hash end);
 }

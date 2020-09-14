@@ -23,13 +23,14 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof.OrderByEpochAndVersionComparator;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.ledger.LedgerAccumulator;
+import com.radixdlt.ledger.LedgerAccumulatorVerifier;
+import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.ledger.StateComputerLedger.CommittedSender;
 import java.util.Comparator;
@@ -46,18 +47,9 @@ public class LedgerModule extends AbstractModule {
 		// These multibindings are part of our dependency graph, so create the modules here
 		Multibinder.newSetBinder(binder(), CommittedSender.class);
 		bind(new TypeLiteral<Comparator<VerifiedLedgerHeaderAndProof>>() { }).to(OrderByEpochAndVersionComparator.class).in(Scopes.SINGLETON);
+		bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
+		bind(LedgerAccumulatorVerifier.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 	}
-
-	@Provides
-	private LedgerAccumulator accumulator(Hasher hasher) {
-		return (parent, nextCommand) -> {
-			byte[] concat = new byte[32 * 2];
-			parent.copyTo(concat, 0);
-			nextCommand.getHash().copyTo(concat, 32);
-			return hasher.hashBytes(concat);
-		};
-	}
-
 
 	@Provides
 	private CommittedSender sender(Set<CommittedSender> committedSenders) {

@@ -26,7 +26,7 @@ import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.ledger.LedgerAccumulator;
+import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.sync.LocalSyncServiceProcessor.InvalidSyncedCommandsSender;
 import com.radixdlt.sync.RemoteSyncServiceProcessor;
@@ -63,7 +63,7 @@ public class SyncCommittedServiceModule extends AbstractModule {
 	@Singleton
 	private LocalSyncServiceProcessor syncServiceProcessor(
 		Comparator<VerifiedLedgerHeaderAndProof> headerComparator,
-		LedgerAccumulator accumulator,
+		LedgerAccumulatorVerifier verifier,
 		VerifiedLedgerHeaderAndProof header,
 		StateSyncNetwork stateSyncNetwork,
 		VerifiedSyncedCommandsSender verifiedSyncedCommandsSender,
@@ -75,10 +75,10 @@ public class SyncCommittedServiceModule extends AbstractModule {
 			verifiedSyncedCommandsSender,
 			invalidSyncedCommandsSender,
 			syncTimeoutScheduler,
-			accumulator,
+			verifier,
 			headerComparator,
 			header,
-			1000
+			200
 		);
 	}
 

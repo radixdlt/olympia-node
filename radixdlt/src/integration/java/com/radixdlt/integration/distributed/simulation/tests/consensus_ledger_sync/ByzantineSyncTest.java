@@ -22,6 +22,7 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.integration.distributed.IncorrectAlwaysAcceptingAccumulatorVerifierModule;
 import com.radixdlt.integration.distributed.StateComputerWithSometimesBadHashCommittedReader;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
@@ -59,7 +60,7 @@ public class ByzantineSyncTest {
 		.checkLedgerProcessesConsensusCommitted("consensusToLedger");
 
 	@Test
-	public void given_a_randomly_byzantine_sync_layer__sanity_tests_should_pass() {
+	public void given_a_sometimes_byzantine_sync_layer__sanity_tests_should_pass() {
 		SimulationTest simulationTest = bftTestBuilder
 			.build();
 		TestResults results = simulationTest.run();
@@ -74,4 +75,10 @@ public class ByzantineSyncTest {
 		AssertionsForClassTypes.assertThat(statistics.getSum()).isGreaterThan(0L);
 	}
 
+	@Test
+	public void given_a_sometimes_byzantine_sync_layer_with_incorrect_accumulator_verifier__sanity_tests_should_not_pass() {
+		SimulationTest simulationTest = bftTestBuilder.bindOverridingModule(new IncorrectAlwaysAcceptingAccumulatorVerifierModule()).build();
+		TestResults results = simulationTest.run();
+		assertThat(results.getCheckResults()).hasEntrySatisfying("ledgerInOrder", error -> assertThat(error).isPresent());
+	}
 }

@@ -21,8 +21,8 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.DtoCommandsAndProof;
+import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import java.util.Comparator;
 import java.util.Objects;
@@ -71,7 +71,7 @@ public final class LocalSyncServiceProcessor {
 	private final SyncTimeoutScheduler syncTimeoutScheduler;
 	private final long patienceMilliseconds;
 	private final StateSyncNetwork stateSyncNetwork;
-	private final LedgerAccumulator accumulator;
+	private final LedgerAccumulatorVerifier verifier;
 	private final Comparator<VerifiedLedgerHeaderAndProof> headerComparator;
 	private final InvalidSyncedCommandsSender invalidSyncedCommandsSender;
 	private VerifiedLedgerHeaderAndProof targetHeader;
@@ -82,7 +82,7 @@ public final class LocalSyncServiceProcessor {
 		VerifiedSyncedCommandsSender verifiedSyncedCommandsSender,
 		InvalidSyncedCommandsSender invalidSyncedCommandsSender,
 		SyncTimeoutScheduler syncTimeoutScheduler,
-		LedgerAccumulator accumulator,
+		LedgerAccumulatorVerifier verifier,
 		Comparator<VerifiedLedgerHeaderAndProof> headerComparator,
 		VerifiedLedgerHeaderAndProof current,
 		long patienceMilliseconds
@@ -96,7 +96,7 @@ public final class LocalSyncServiceProcessor {
 		this.invalidSyncedCommandsSender = Objects.requireNonNull(invalidSyncedCommandsSender);
 		this.syncTimeoutScheduler = Objects.requireNonNull(syncTimeoutScheduler);
 		this.patienceMilliseconds = patienceMilliseconds;
-		this.accumulator = Objects.requireNonNull(accumulator);
+		this.verifier = Objects.requireNonNull(verifier);
 		this.headerComparator = Objects.requireNonNull(headerComparator);
 		this.currentHeader = current;
 		this.targetHeader = current;
@@ -106,7 +106,7 @@ public final class LocalSyncServiceProcessor {
 		log.info("SYNC_RESPONSE: {} current={} target={}", commandsAndProof, this.currentHeader, this.targetHeader);
 		Hash start = commandsAndProof.getStartHeader().getLedgerHeader().getAccumulator();
 		Hash end = commandsAndProof.getEndHeader().getLedgerHeader().getAccumulator();
-		if (!this.accumulator.verify(start, commandsAndProof.getCommands(), end)) {
+		if (!this.verifier.verify(start, commandsAndProof.getCommands(), end)) {
 			log.warn("SYNC Received Bad commands: {}", commandsAndProof);
 			invalidSyncedCommandsSender.sendInvalidCommands(commandsAndProof);
 			return;

@@ -15,15 +15,18 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.ledger;
+package com.radixdlt.integration.distributed;
 
-import com.radixdlt.consensus.Command;
-import com.radixdlt.crypto.Hash;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 
 /**
- * Accumulates commands into a single version hash which represents
- * all commands which have been committed in a certain order.
+ * Accumulator verifier which incorrectly always gives false positives.
  */
-public interface LedgerAccumulator {
-	Hash accumulate(Hash parent, Command nextCommand);
+public class IncorrectAlwaysAcceptingAccumulatorVerifierModule extends AbstractModule {
+	@Provides
+	private LedgerAccumulatorVerifier badVerifier() {
+		return (start, cmds, end) -> true;
+	}
 }

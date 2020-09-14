@@ -35,9 +35,9 @@ import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
+import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.sync.LocalSyncServiceProcessor.InvalidSyncedCommandsSender;
 import com.radixdlt.sync.LocalSyncServiceProcessor.SyncTimeoutScheduler;
 import com.radixdlt.sync.LocalSyncServiceProcessor.VerifiedSyncedCommandsSender;
@@ -50,7 +50,7 @@ public class LocalSyncServiceProcessorTest {
 	private LocalSyncServiceProcessor syncServiceProcessor;
 	private VerifiedSyncedCommandsSender verifiedSyncedCommandsSender;
 	private InvalidSyncedCommandsSender invalidSyncedCommandsSender;
-	private LedgerAccumulator accumulator;
+	private LedgerAccumulatorVerifier verifier;
 	private SyncTimeoutScheduler syncTimeoutScheduler;
 	private VerifiedLedgerHeaderAndProof currentHeader;
 	private Comparator<VerifiedLedgerHeaderAndProof> headerComparator;
@@ -63,14 +63,14 @@ public class LocalSyncServiceProcessorTest {
 		this.syncTimeoutScheduler = mock(SyncTimeoutScheduler.class);
 		this.currentHeader = mock(VerifiedLedgerHeaderAndProof.class);
 		when(this.currentHeader.toDto()).thenReturn(mock(DtoLedgerHeaderAndProof.class));
-		this.accumulator = mock(LedgerAccumulator.class);
+		this.verifier = mock(LedgerAccumulatorVerifier.class);
 		this.headerComparator = mock(Comparator.class);
 		this.syncServiceProcessor = new LocalSyncServiceProcessor(
 			stateSyncNetwork,
 			verifiedSyncedCommandsSender,
 			invalidSyncedCommandsSender,
 			syncTimeoutScheduler,
-			accumulator,
+			verifier,
 			headerComparator,
 			currentHeader,
 			1
@@ -98,7 +98,7 @@ public class LocalSyncServiceProcessorTest {
 		when(command.getHash()).thenReturn(mock(Hash.class));
 		when(dtoCommandsAndProof.getCommands()).thenReturn(ImmutableList.of(command));
 
-		when(accumulator.verify(any(), any(), any())).thenReturn(false);
+		when(verifier.verify(any(), any(), any())).thenReturn(false);
 
 		syncServiceProcessor.processSyncResponse(dtoCommandsAndProof);
 
@@ -130,7 +130,7 @@ public class LocalSyncServiceProcessorTest {
 		when(command.getHash()).thenReturn(mock(Hash.class));
 		when(dtoCommandsAndProof.getCommands()).thenReturn(ImmutableList.of(command));
 
-		when(accumulator.verify(any(), any(), any())).thenReturn(true);
+		when(verifier.verify(any(), any(), any())).thenReturn(true);
 
 		syncServiceProcessor.processSyncResponse(dtoCommandsAndProof);
 		verify(invalidSyncedCommandsSender, never()).sendInvalidCommands(any());
