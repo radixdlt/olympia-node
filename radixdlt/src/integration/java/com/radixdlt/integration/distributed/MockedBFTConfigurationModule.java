@@ -28,7 +28,7 @@ import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.crypto.Hash;
 
 /**
- * Shared initial bft configuration across all nodes
+ * An initial bft configuration
  */
 public class MockedBFTConfigurationModule extends AbstractModule {
 

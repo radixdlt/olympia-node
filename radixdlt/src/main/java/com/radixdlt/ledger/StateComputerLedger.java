@@ -56,6 +56,10 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		Optional<BFTValidatorSet> commit(VerifiedCommandsAndProof verifiedCommandsAndProof);
 	}
 
+	public interface InvalidCommandsSender {
+		void sendInvalidCommands(DtoCommandsAndProof commandsAndProof);
+	}
+
 	public interface CommittedSender {
 		// TODO: batch these
 		void sendCommitted(VerifiedCommandsAndProof committedCommand, BFTValidatorSet validatorSet);
@@ -68,6 +72,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	private final Comparator<VerifiedLedgerHeaderAndProof> headerComparator;
 	private final Mempool mempool;
 	private final StateComputer stateComputer;
+	private final InvalidCommandsSender invalidCommandsSender;
 	private final CommittedStateSyncSender committedStateSyncSender;
 	private final CommittedSender committedSender;
 	private final SystemCounters counters;
@@ -83,6 +88,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		VerifiedLedgerHeaderAndProof initialLedgerState,
 		Mempool mempool,
 		StateComputer stateComputer,
+		InvalidCommandsSender invalidCommandsSender,
 		CommittedStateSyncSender committedStateSyncSender,
 		CommittedSender committedSender,
 		Hasher hasher,
@@ -92,6 +98,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		this.currentLedgerHeader = initialLedgerState;
 		this.mempool = Objects.requireNonNull(mempool);
 		this.stateComputer = Objects.requireNonNull(stateComputer);
+		this.invalidCommandsSender = Objects.requireNonNull(invalidCommandsSender);
 		this.committedStateSyncSender = Objects.requireNonNull(committedStateSyncSender);
 		this.committedSender = Objects.requireNonNull(committedSender);
 		this.counters = Objects.requireNonNull(counters);
@@ -167,16 +174,17 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		}
 	}
 
+	// TODO: move to a different more approrpriate class
 	@Override
 	public void tryCommit(DtoCommandsAndProof commandsAndProof) {
-		Hash accumulator = commandsAndProof.getRoot().getLedgerHeader().getAccumulator();
+		Hash accumulator = commandsAndProof.getStartHeader().getLedgerHeader().getAccumulator();
 		for (Command command : commandsAndProof.getCommands()) {
 			accumulator = this.accumulate(accumulator, command);
 		}
 
-		if (!commandsAndProof.getNext().getLedgerHeader().getAccumulator().equals(accumulator)) {
-			// TODO: Store bad commands for reference and later for slashing
+		if (!commandsAndProof.getEndHeader().getLedgerHeader().getAccumulator().equals(accumulator)) {
 			log.warn("SYNC Received Bad commands: {}", commandsAndProof);
+			invalidCommandsSender.sendInvalidCommands(commandsAndProof);
 			return;
 		}
 
@@ -185,12 +193,12 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		// TODO: -verify rootHash matches
 
 		VerifiedLedgerHeaderAndProof nextHeader = new VerifiedLedgerHeaderAndProof(
-			commandsAndProof.getNext().getOpaque0(),
-			commandsAndProof.getNext().getOpaque1(),
-			commandsAndProof.getNext().getOpaque2(),
-			commandsAndProof.getNext().getOpaque3(),
-			commandsAndProof.getNext().getLedgerHeader(),
-			commandsAndProof.getNext().getSignatures()
+			commandsAndProof.getEndHeader().getOpaque0(),
+			commandsAndProof.getEndHeader().getOpaque1(),
+			commandsAndProof.getEndHeader().getOpaque2(),
+			commandsAndProof.getEndHeader().getOpaque3(),
+			commandsAndProof.getEndHeader().getLedgerHeader(),
+			commandsAndProof.getEndHeader().getSignatures()
 		);
 
 		VerifiedCommandsAndProof verified = new VerifiedCommandsAndProof(

@@ -31,6 +31,9 @@ import java.util.Random;
 import java.util.TreeMap;
 import java.util.stream.Stream;
 
+/**
+ * A reader which sometimes returns erroneous commands.
+ */
 @Singleton
 public final class StateComputerWithSometimesBadHashCommittedReader implements StateComputer, CommittedReader {
 	private final TreeMap<Long, VerifiedCommandsAndProof> commandsAndProof = new TreeMap<>();

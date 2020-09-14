@@ -28,8 +28,11 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof.OrderByEpochAndVersionComparator;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.epoch.EpochManager;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.ledger.StateComputerLedger.CommittedSender;
+import com.radixdlt.ledger.StateComputerLedger.InvalidCommandsSender;
 import java.util.Comparator;
 import java.util.Set;
 
@@ -44,6 +47,14 @@ public class LedgerModule extends AbstractModule {
 		// These multibindings are part of our dependency graph, so create the modules here
 		Multibinder.newSetBinder(binder(), CommittedSender.class);
 		bind(new TypeLiteral<Comparator<VerifiedLedgerHeaderAndProof>>() { }).to(OrderByEpochAndVersionComparator.class).in(Scopes.SINGLETON);
+	}
+
+	@Provides
+	private InvalidCommandsSender invalidCommandsSender(SystemCounters counters) {
+		return commandsAndProof -> {
+			// TODO: Store bad commands for reference and later for slashing
+			counters.increment(CounterType.SYNC_INVALID_COMMANDS_RECEIVED);
+		};
 	}
 
 	@Provides

@@ -29,6 +29,9 @@ import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
 
+/**
+ * A commands and proof which has not been verified
+ */
 // TODO: Add signature and sender
 @Immutable
 @SerializerId2("ledger.commands_and_proof")
@@ -41,39 +44,39 @@ public class DtoCommandsAndProof {
 	@DsonOutput(Output.ALL)
 	private final ImmutableList<Command> commands;
 
-	@JsonProperty("current")
+	@JsonProperty("start")
 	@DsonOutput(Output.ALL)
-	private final DtoLedgerHeaderAndProof root;
+	private final DtoLedgerHeaderAndProof start;
 
-	@JsonProperty("next")
+	@JsonProperty("end")
 	@DsonOutput(Output.ALL)
-	private final DtoLedgerHeaderAndProof next;
+	private final DtoLedgerHeaderAndProof end;
 
 	@JsonCreator
 	public DtoCommandsAndProof(
 		@JsonProperty("commands") ImmutableList<Command> commands,
-		@JsonProperty("current") DtoLedgerHeaderAndProof root,
-		@JsonProperty("next") DtoLedgerHeaderAndProof next
+		@JsonProperty("start") DtoLedgerHeaderAndProof start,
+		@JsonProperty("end") DtoLedgerHeaderAndProof end
 	) {
 		this.commands = commands == null ? ImmutableList.of() : commands;
-		this.root = Objects.requireNonNull(root);
-		this.next = Objects.requireNonNull(next);
+		this.start = Objects.requireNonNull(start);
+		this.end = Objects.requireNonNull(end);
 	}
 
 	public ImmutableList<Command> getCommands() {
 		return commands;
 	}
 
-	public DtoLedgerHeaderAndProof getRoot() {
-		return root;
+	public DtoLedgerHeaderAndProof getStartHeader() {
+		return start;
 	}
 
-	public DtoLedgerHeaderAndProof getNext() {
-		return next;
+	public DtoLedgerHeaderAndProof getEndHeader() {
+		return end;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{cmds=%s root=%s next=%s}", this.getClass().getSimpleName(), commands, root, next);
+		return String.format("%s{cmds=%s root=%s next=%s}", this.getClass().getSimpleName(), commands, start, end);
 	}
 }

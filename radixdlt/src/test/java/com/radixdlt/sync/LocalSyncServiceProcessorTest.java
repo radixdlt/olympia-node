@@ -19,6 +19,7 @@ package com.radixdlt.sync;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -28,6 +29,7 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.sync.LocalSyncServiceProcessor.SyncTimeoutScheduler;
 import com.radixdlt.sync.LocalSyncServiceProcessor.SyncedCommandSender;
@@ -59,6 +61,13 @@ public class LocalSyncServiceProcessorTest {
 			currentHeader,
 			1
 		);
+	}
+
+	@Test
+	public void when_receive_sync_response__then_should_forward() {
+		DtoCommandsAndProof commandsAndProof = mock(DtoCommandsAndProof.class);
+		syncServiceProcessor.processSyncResponse(commandsAndProof);
+		verify(syncedCommandSender, times(1)).sendSyncedCommand(eq(commandsAndProof));
 	}
 
 	@Test

@@ -31,6 +31,9 @@ import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
 
+/**
+ * A ledger header and proof which has not been verified
+ */
 @Immutable
 @SerializerId2("ledger.ledger_header_and_proof")
 public class DtoLedgerHeaderAndProof {
