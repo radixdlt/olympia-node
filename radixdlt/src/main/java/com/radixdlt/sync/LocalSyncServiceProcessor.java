@@ -20,6 +20,8 @@ package com.radixdlt.sync;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.ValidationState;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
@@ -71,9 +73,10 @@ public final class LocalSyncServiceProcessor {
 	private final SyncTimeoutScheduler syncTimeoutScheduler;
 	private final long patienceMilliseconds;
 	private final StateSyncNetwork stateSyncNetwork;
-	private final LedgerAccumulatorVerifier verifier;
+	private final LedgerAccumulatorVerifier accumulatorVerifier;
 	private final Comparator<VerifiedLedgerHeaderAndProof> headerComparator;
 	private final InvalidSyncedCommandsSender invalidSyncedCommandsSender;
+	private final BFTValidatorSet validatorSet;
 	private VerifiedLedgerHeaderAndProof targetHeader;
 	private VerifiedLedgerHeaderAndProof currentHeader;
 
@@ -82,8 +85,9 @@ public final class LocalSyncServiceProcessor {
 		VerifiedSyncedCommandsSender verifiedSyncedCommandsSender,
 		InvalidSyncedCommandsSender invalidSyncedCommandsSender,
 		SyncTimeoutScheduler syncTimeoutScheduler,
-		LedgerAccumulatorVerifier verifier,
+		LedgerAccumulatorVerifier accumulatorVerifier,
 		Comparator<VerifiedLedgerHeaderAndProof> headerComparator,
+		BFTValidatorSet validatorSet,
 		VerifiedLedgerHeaderAndProof current,
 		long patienceMilliseconds
 	) {
@@ -96,8 +100,9 @@ public final class LocalSyncServiceProcessor {
 		this.invalidSyncedCommandsSender = Objects.requireNonNull(invalidSyncedCommandsSender);
 		this.syncTimeoutScheduler = Objects.requireNonNull(syncTimeoutScheduler);
 		this.patienceMilliseconds = patienceMilliseconds;
-		this.verifier = Objects.requireNonNull(verifier);
+		this.accumulatorVerifier = Objects.requireNonNull(accumulatorVerifier);
 		this.headerComparator = Objects.requireNonNull(headerComparator);
+		this.validatorSet = Objects.requireNonNull(validatorSet);
 		this.currentHeader = current;
 		this.targetHeader = current;
 	}
@@ -106,14 +111,23 @@ public final class LocalSyncServiceProcessor {
 		log.info("SYNC_RESPONSE: {} current={} target={}", commandsAndProof, this.currentHeader, this.targetHeader);
 		Hash start = commandsAndProof.getStartHeader().getLedgerHeader().getAccumulator();
 		Hash end = commandsAndProof.getEndHeader().getLedgerHeader().getAccumulator();
-		if (!this.verifier.verify(start, commandsAndProof.getCommands(), end)) {
+		if (!this.accumulatorVerifier.verify(start, commandsAndProof.getCommands(), end)) {
 			log.warn("SYNC Received Bad commands: {}", commandsAndProof);
 			invalidSyncedCommandsSender.sendInvalidCommands(commandsAndProof);
 			return;
 		}
 
+		ValidationState validationState = validatorSet.newValidationState();
+		commandsAndProof.getEndHeader().getSignatures().getSignatures().forEach((node, signature) ->
+			validationState.addSignature(node, signature.timestamp(), signature.signature())
+		);
+		if (!validationState.complete()) {
+			log.warn("SYNC Received Bad signatures: {}", commandsAndProof);
+			invalidSyncedCommandsSender.sendInvalidCommands(commandsAndProof);
+			return;
+		}
+
 		// TODO: Stateful ledger header verification:
-		// TODO: -Check epoch signatures
 		// TODO: -verify rootHash matches
 
 		VerifiedLedgerHeaderAndProof nextHeader = new VerifiedLedgerHeaderAndProof(
@@ -129,6 +143,11 @@ public final class LocalSyncServiceProcessor {
 			commandsAndProof.getCommands(),
 			nextHeader
 		);
+
+		if (verified.getFirstVersion() > this.currentHeader.getStateVersion() + 1) {
+			log.warn("SYNC Received commands not synced to self: {}", commandsAndProof);
+			return;
+		}
 
 		// TODO: Check validity of response
 		this.verifiedSyncedCommandsSender.sendVerifiedCommands(verified);

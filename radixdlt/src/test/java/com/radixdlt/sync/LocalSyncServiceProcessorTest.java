@@ -35,6 +35,7 @@ import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
@@ -57,6 +58,7 @@ public class LocalSyncServiceProcessorTest {
 	private SyncTimeoutScheduler syncTimeoutScheduler;
 	private VerifiedLedgerHeaderAndProof currentHeader;
 	private Comparator<VerifiedLedgerHeaderAndProof> headerComparator;
+	private BFTValidatorSet validatorSet;
 
 	@Before
 	public void setUp() {
@@ -68,6 +70,7 @@ public class LocalSyncServiceProcessorTest {
 		when(this.currentHeader.toDto()).thenReturn(mock(DtoLedgerHeaderAndProof.class));
 		this.verifier = mock(LedgerAccumulatorVerifier.class);
 		this.headerComparator = mock(Comparator.class);
+		this.validatorSet = mock(BFTValidatorSet.class);
 		this.syncServiceProcessor = new LocalSyncServiceProcessor(
 			stateSyncNetwork,
 			verifiedSyncedCommandsSender,
@@ -75,6 +78,7 @@ public class LocalSyncServiceProcessorTest {
 			syncTimeoutScheduler,
 			verifier,
 			headerComparator,
+			validatorSet,
 			currentHeader,
 			1
 		);

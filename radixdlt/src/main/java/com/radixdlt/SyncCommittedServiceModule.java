@@ -21,8 +21,10 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.MapBinder;
+import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
@@ -69,7 +71,8 @@ public class SyncCommittedServiceModule extends AbstractModule {
 		StateSyncNetwork stateSyncNetwork,
 		VerifiedSyncedCommandsSender verifiedSyncedCommandsSender,
 		InvalidSyncedCommandsSender invalidSyncedCommandsSender,
-		SyncTimeoutScheduler syncTimeoutScheduler
+		SyncTimeoutScheduler syncTimeoutScheduler,
+		BFTConfiguration initialConfiguration
 	) {
 		return new LocalSyncServiceProcessor(
 			stateSyncNetwork,
@@ -78,6 +81,7 @@ public class SyncCommittedServiceModule extends AbstractModule {
 			syncTimeoutScheduler,
 			verifier,
 			headerComparator,
+			initialConfiguration.getValidatorSet(),
 			header,
 			200
 		);
