@@ -48,10 +48,8 @@ public class RemoteSyncServiceProcessorTest {
 	public void setUp() {
 		this.reader = mock(CommittedReader.class);
 		this.network =  mock(StateSyncNetwork.class);
-
 		this.processor = new RemoteSyncServiceProcessor(reader, network, 1);
 	}
-
 
 	@Test
 	public void when_remote_sync_request__then_process_it() throws NextCommittedLimitReachedException {

@@ -49,6 +49,7 @@ import io.reactivex.rxjava3.core.Observable;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -63,6 +64,7 @@ public class SimulationNodes {
 	private final Module baseModule;
 	private final Module overrideModule;
 	private final Map<BFTNode, Module> byzantineNodeModules;
+	private final Random sharedRandom = new Random();
 
 	/**
 	 * Create a BFT test network with an underlying simulated network.
@@ -95,6 +97,7 @@ public class SimulationNodes {
 					bind(BFTNode.class).annotatedWith(Names.named("self")).toInstance(self);
 					bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
 					bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
+					bind(Random.class).toInstance(sharedRandom);
 				}
 			},
 			new ConsensusModule(pacemakerTimeout),

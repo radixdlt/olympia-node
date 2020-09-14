@@ -101,11 +101,11 @@ public final class LedgerHeader {
 		long epoch,
 		View view,
 		long stateVersion,
-		Hash commandId,
+		Hash accumulator,
 		long timestamp,
 		boolean isEndOfEpoch
 	) {
-		return new LedgerHeader(epoch, view, stateVersion, commandId, timestamp, isEndOfEpoch);
+		return new LedgerHeader(epoch, view, stateVersion, accumulator, timestamp, isEndOfEpoch);
 	}
 
 	@JsonProperty("view")
