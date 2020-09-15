@@ -57,10 +57,10 @@ public final class AccumulatorAndValidatorSetVerifier implements DtoCommandsAndP
 
 	@Override
 	public VerifiedCommandsAndProof verify(DtoCommandsAndProof commandsAndProof) throws DtoCommandsAndProofVerifierException {
-		Hash start = commandsAndProof.getStartHeader().getLedgerHeader().getAccumulator();
-		Hash end = commandsAndProof.getEndHeader().getLedgerHeader().getAccumulator();
+		AccumulatorState start = commandsAndProof.getStartHeader().getLedgerHeader().getAccumulatorState();
+		AccumulatorState end = commandsAndProof.getEndHeader().getLedgerHeader().getAccumulatorState();
 		if (!this.accumulatorVerifier.verify(start, commandsAndProof.getCommands(), end)) {
-			throw new DtoCommandsAndProofVerifierException(commandsAndProof, "Bad commands");
+			throw new DtoCommandsAndProofVerifierException(commandsAndProof, "Bad accumulator state");
 		}
 
 		ValidationState validationState = validatorSet.newValidationState();

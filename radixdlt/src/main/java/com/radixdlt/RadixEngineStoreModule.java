@@ -129,7 +129,7 @@ public class RadixEngineStoreModule extends AbstractModule {
 			proof.getEpoch() + 1,
 			View.genesis(),
 			proof.getStateVersion(),
-			proof.getAccumulator(),
+			proof.getAccumulatorHash(),
 			proof.timestamp(),
 			false
 		);

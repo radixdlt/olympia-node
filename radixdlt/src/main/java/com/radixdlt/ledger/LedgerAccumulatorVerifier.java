@@ -19,7 +19,6 @@ package com.radixdlt.ledger;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.crypto.Hash;
 
 /**
  * Verifies whether a given accumulator extends a given one.
@@ -28,5 +27,5 @@ import com.radixdlt.crypto.Hash;
  */
 @FunctionalInterface
 public interface LedgerAccumulatorVerifier {
-	boolean verify(Hash start, ImmutableList<Command> commands, Hash end);
+	boolean verify(AccumulatorState start, ImmutableList<Command> commands, AccumulatorState end);
 }

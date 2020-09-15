@@ -25,7 +25,7 @@ import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.StateComputerLedger.CommittedSender;
@@ -95,21 +95,21 @@ public final class SometimesByzantineCommittedReader implements CommittedSender,
 				commands = base.getCommands();
 			}
 
-			Hash accumulated;
+			AccumulatorState accumulatorState;
 			if (accumulator != null) {
-				accumulated = request.getLedgerHeader().getAccumulator();
+				accumulatorState = request.getLedgerHeader().getAccumulatorState();
 				for (Command command : commands) {
-					accumulated = accumulator.accumulate(accumulated, command);
+					accumulatorState = accumulator.accumulate(accumulatorState, command);
 				}
 			} else {
-				accumulated = base.getHeader().getAccumulator();
+				accumulatorState = base.getHeader().getAccumulatorState();
 			}
 
 			LedgerHeader ledgerHeader = LedgerHeader.create(
 				base.getHeader().getEpoch(),
 				base.getHeader().getView(),
-				base.getHeader().getStateVersion(),
-				accumulated,
+				accumulatorState.getStateVersion(),
+				accumulatorState.getAccumulatorHash(),
 				base.getHeader().timestamp(),
 				base.getHeader().isEndOfEpoch()
 			);

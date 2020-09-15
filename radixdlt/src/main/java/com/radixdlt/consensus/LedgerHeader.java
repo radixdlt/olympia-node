@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -50,9 +51,9 @@ public final class LedgerHeader {
 	// TODO: remove this
 	private final View view;
 
-	@JsonProperty("accumulator")
+	@JsonProperty("accumulator_hash")
 	@DsonOutput(Output.ALL)
-	private final Hash accumulator;
+	private final Hash accumulatorHash;
 
 	@JsonProperty("timestamp")
 	@DsonOutput(Output.ALL)
@@ -86,7 +87,7 @@ public final class LedgerHeader {
 		this.epoch = epoch;
 		this.view = view;
 		this.stateVersion = stateVersion;
-		this.accumulator = accumulator;
+		this.accumulatorHash = accumulator;
 		this.isEndOfEpoch = isEndOfEpoch;
 		this.timestamp = timestamp;
 	}
@@ -118,16 +119,22 @@ public final class LedgerHeader {
 		return view;
 	}
 
-	public Hash getAccumulator() {
-		return accumulator;
-	}
-
-	public long getEpoch() {
-		return epoch;
+	public Hash getAccumulatorHash() {
+		return accumulatorHash;
 	}
 
 	public long getStateVersion() {
 		return stateVersion;
+	}
+
+	public AccumulatorState getAccumulatorState() {
+		return new AccumulatorState(
+			stateVersion, accumulatorHash
+		);
+	}
+
+	public long getEpoch() {
+		return epoch;
 	}
 
 	public boolean isEndOfEpoch() {
@@ -140,7 +147,7 @@ public final class LedgerHeader {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.stateVersion, this.accumulator, this.timestamp, this.epoch, this.view, this.isEndOfEpoch);
+		return Objects.hash(this.stateVersion, this.accumulatorHash, this.timestamp, this.epoch, this.view, this.isEndOfEpoch);
 	}
 
 	@Override
@@ -152,7 +159,7 @@ public final class LedgerHeader {
 			LedgerHeader other = (LedgerHeader) o;
 			return this.timestamp == other.timestamp
 				&& this.stateVersion == other.stateVersion
-				&& Objects.equals(this.accumulator, other.accumulator)
+				&& Objects.equals(this.accumulatorHash, other.accumulatorHash)
 				&& this.epoch == other.epoch
 				&& Objects.equals(this.view, other.view)
 				&& this.isEndOfEpoch == other.isEndOfEpoch;

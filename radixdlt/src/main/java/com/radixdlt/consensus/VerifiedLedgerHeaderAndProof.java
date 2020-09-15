@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -142,12 +143,16 @@ public final class VerifiedLedgerHeaderAndProof {
 		return ledgerHeader.getView();
 	}
 
+	public AccumulatorState getAccumulatorState() {
+		return ledgerHeader.getAccumulatorState();
+	}
+
 	public long getStateVersion() {
 		return ledgerHeader.getStateVersion();
 	}
 
-	public Hash getAccumulator() {
-		return ledgerHeader.getAccumulator();
+	public Hash getAccumulatorHash() {
+		return ledgerHeader.getAccumulatorHash();
 	}
 
 	public long timestamp() {

@@ -106,32 +106,23 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	@Override
 	public LedgerHeader prepare(VerifiedVertex vertex) {
 		final LedgerHeader parent = vertex.getParentHeader().getLedgerHeader();
-		final long parentStateVersion = parent.getStateVersion();
 
 		boolean isEndOfEpoch = stateComputer.prepare(vertex);
 
-		final int versionIncrement;
-		if (parent.isEndOfEpoch()) {
-			versionIncrement = 0; // Don't execute atom if in process of epoch change
+		final AccumulatorState accumulatorState;
+		if (parent.isEndOfEpoch() || vertex.getCommand() == null) {
+			// Don't execute atom if in process of epoch change
+			accumulatorState = parent.getAccumulatorState();
 		} else {
-			versionIncrement = vertex.getCommand() != null ? 1 : 0;
+			accumulatorState = this.accumulator.accumulate(parent.getAccumulatorState(), vertex.getCommand());
 		}
 
-		final long stateVersion = parentStateVersion + versionIncrement;
 		final long timestamp = vertex.getQC().getTimestampedSignatures().weightedTimestamp();
-
-		final Hash accumulator;
-		if (vertex.getCommand() != null) {
-			accumulator = this.accumulator.accumulate(parent.getAccumulator(), vertex.getCommand());
-		} else {
-			accumulator = parent.getAccumulator();
-		}
-
 		return LedgerHeader.create(
 			parent.getEpoch(),
 			vertex.getView(),
-			stateVersion,
-			accumulator,
+			accumulatorState.getStateVersion(),
+			accumulatorState.getAccumulatorHash(),
 			timestamp,
 			isEndOfEpoch
 		);

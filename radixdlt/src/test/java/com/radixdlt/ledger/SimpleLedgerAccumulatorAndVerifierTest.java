@@ -52,7 +52,8 @@ public class SimpleLedgerAccumulatorAndVerifierTest {
 	public void when_accumulate__then_should_verify() {
 		Command command = mock(Command.class);
 		when(command.getHash()).thenReturn(Hash.ZERO_HASH);
-		Hash nextHash = accumulatorAndVerifier.accumulate(Hash.ZERO_HASH, command);
-		assertThat(accumulatorAndVerifier.verify(Hash.ZERO_HASH, ImmutableList.of(command), nextHash)).isTrue();
+		AccumulatorState headState = new AccumulatorState(345, Hash.ZERO_HASH);
+		AccumulatorState nextState = accumulatorAndVerifier.accumulate(headState, command);
+		assertThat(accumulatorAndVerifier.verify(headState, ImmutableList.of(command), nextState)).isTrue();
 	}
 }
