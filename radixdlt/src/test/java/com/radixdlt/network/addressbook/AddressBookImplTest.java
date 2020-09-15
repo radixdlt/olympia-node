@@ -340,18 +340,18 @@ public class AddressBookImplTest {
 
 		Peer peer = this.addressbook.peer(transportInfo);
 		assertNotNull(peer);
-		assertEquals(1, this.broadcastEventCount.get());
+		assertEquals(0, this.broadcastEventCount.get());
 		assertEquals(0, this.savedPeerCount.get());
 
 		Peer peer2 = this.addressbook.peer(transportInfo);
 		assertNotNull(peer2);
-		assertEquals(1, this.broadcastEventCount.get());
+		assertEquals(0, this.broadcastEventCount.get());
 		assertEquals(0, this.savedPeerCount.get());
-		assertSame(peer, peer2);
+		assertEquals(peer, peer2);
 
 		// Quick check of internal state too
 		assertEmpty(Whitebox.getInternalState(this.addressbook, "peersByNid"));
-		assertSize(1, Whitebox.getInternalState(this.addressbook, "peersByInfo"));
+		assertSize(0, Whitebox.getInternalState(this.addressbook, "peersByInfo"));
 	}
 
 	@Test
