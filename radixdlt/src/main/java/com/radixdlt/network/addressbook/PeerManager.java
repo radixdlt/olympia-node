@@ -233,46 +233,50 @@ public class PeerManager {
 
 	private void handlePeersMessage(Peer peer, PeersMessage peersMessage) {
 		log.trace("Received PeersMessage from {}", peer);
-		List<Peer> peers = peersMessage.getPeers();
-		if (peers != null) {
-			EUID localNid = this.localSystem.getNID();
-			peers.stream()
+		if (peer != null) {
+			List<Peer> peers = peersMessage.getPeers();
+			if (peers != null) {
+				EUID localNid = this.localSystem.getNID();
+				peers.stream()
 				.filter(Peer::hasSystem)
 				.filter(p -> !localNid.equals(p.getNID()))
 				.forEachOrdered(addressbook::updatePeer);
+			}
 		}
 	}
 
 	private void handleGetPeersMessage(Peer peer, GetPeersMessage getPeersMessage) {
 		log.trace("Received GetPeersMessage from {}", peer);
-		try {
-			// Deliver known Peers in its entirety, filtered on whitelist and activity
-			// Chunk the sending of Peers so that UDP can handle it
-			PeersMessage peersMessage = new PeersMessage(this.universeMagic);
-			List<Peer> peers = addressbook.peers()
-				.filter(Peer::hasNID)
-				.filter(StandardFilters.standardFilter(localSystem.getNID(), whitelist))
-				.filter(StandardFilters.recentlyActive(this.recencyThreshold))
-				.collect(Collectors.toList());
+		if (peer != null) {
+			try {
+				// Deliver known Peers in its entirety, filtered on whitelist and activity
+				// Chunk the sending of Peers so that UDP can handle it
+				PeersMessage peersMessage = new PeersMessage(this.universeMagic);
+				List<Peer> peers = addressbook.peers()
+						.filter(Peer::hasNID)
+						.filter(StandardFilters.standardFilter(localSystem.getNID(), whitelist))
+						.filter(StandardFilters.recentlyActive(this.recencyThreshold))
+						.collect(Collectors.toList());
 
-			for (Peer p : peers) {
-				if (p.getNID().equals(peer.getNID())) {
-					// Know thyself
-					continue;
+				for (Peer p : peers) {
+					if (p.getNID().equals(peer.getNID())) {
+						// Know thyself
+						continue;
+					}
+
+					peersMessage.getPeers().add(p);
+					if (peersMessage.getPeers().size() == peerMessageBatchSize) {
+						messageCentral.send(peer, peersMessage);
+						peersMessage = new PeersMessage(this.universeMagic);
+					}
 				}
 
-				peersMessage.getPeers().add(p);
-				if (peersMessage.getPeers().size() == peerMessageBatchSize) {
+				if (!peersMessage.getPeers().isEmpty()) {
 					messageCentral.send(peer, peersMessage);
-					peersMessage = new PeersMessage(this.universeMagic);
 				}
+			} catch (Exception ex) {
+				log.error(String.format("peers.get %s", peer), ex);
 			}
-
-			if (!peersMessage.getPeers().isEmpty()) {
-				messageCentral.send(peer, peersMessage);
-			}
-		} catch (Exception ex) {
-			log.error(String.format("peers.get %s", peer), ex);
 		}
 	}
 
@@ -299,6 +303,9 @@ public class PeerManager {
 					if (ourNonce.longValue() == nonce) {
 						this.probes.remove(peer);
 						log.info("Got good peer.pong from {}:{}:{}ns", () -> peer, () -> formatNonce(nonce), () -> rtt);
+						this.addressbook.peers().forEachOrdered(p -> {
+							log.info("AddressBook peer {}", p);
+						});
 					} else {
 						log.debug("Got mismatched peer.pong from {} with nonce '{}', ours '{}' ({}ns)",
 							() -> peer, () -> formatNonce(nonce), () -> formatNonce(ourNonce), () -> rtt);

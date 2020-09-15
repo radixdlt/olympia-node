@@ -30,12 +30,14 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.radixdlt.identifiers.EUID;
+import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.network.transport.TransportInfo;
 import com.radixdlt.properties.RuntimeProperties;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.events.Events;
 import org.radix.network.discovery.Whitelist;
+import org.radix.time.Timestamps;
 import org.radix.universe.system.RadixSystem;
 import org.radix.utils.Locking;
 
@@ -55,14 +57,16 @@ public class AddressBookImpl implements AddressBook {
 	private final Map<EUID, Peer>          peersByNid  = new HashMap<>();
 	private final Map<TransportInfo, Peer> peersByInfo = new HashMap<>();
 	private final Whitelist whitelist;
+	private final TimeSupplier timeSupplier;
 
 	@Inject
-	AddressBookImpl(PeerPersistence persistence, Events events, RuntimeProperties properties) {
+	AddressBookImpl(PeerPersistence persistence, Events events, RuntimeProperties properties, TimeSupplier timeSupplier) {
 		super();
 		this.persistence = Objects.requireNonNull(persistence);
 		this.events = Objects.requireNonNull(events);
 		this.recencyThreshold = properties.get("addressbook.recency_ms", 60L * 1000L);
 		this.whitelist = Whitelist.from(properties);
+		this.timeSupplier = Objects.requireNonNull(timeSupplier);
 
 		this.persistence.forEachPersistedPeer(peer -> {
 			this.peersByNid.put(peer.getNID(), peer);
@@ -133,7 +137,12 @@ public class AddressBookImpl implements AddressBook {
 
 	@Override
 	public Peer updatePeerSystem(Peer peer, RadixSystem system) {
-		PeerUpdates updates = Locking.withBiFunctionLock(this.peersLock, this::updateSystemInternal, peer, system);
+		final PeerUpdates updates;
+		if (peer == null) {
+			updates = Locking.withFunctionLock(this.peersLock, this::addUpdatePeerInternal, new PeerWithSystem(system));
+		} else {
+			updates = Locking.withBiFunctionLock(this.peersLock, this::updateSystemInternal, peer, system);
+		}
 		handleUpdatedPeers(updates);
 		if (updates != null) {
 			if (updates.exists != null) {
@@ -146,22 +155,24 @@ public class AddressBookImpl implements AddressBook {
 				return updates.added;
 			}
 		}
+		updateActiveTime(peer);
 		return peer;
 	}
 
 	@Override
 	public Optional<Peer> peer(EUID nid) {
-		return Optional.ofNullable(Locking.withFunctionLock(this.peersLock, this.peersByNid::get, nid));
+		Peer peer = Locking.withFunctionLock(this.peersLock, this.peersByNid::get, nid);
+		updateActiveTime(peer);
+		return Optional.ofNullable(peer);
 	}
 
 	@Override
 	public Peer peer(TransportInfo transportInfo) {
-		Peer p = Locking.withFunctionLock(this.peersLock, this.peersByInfo::get, transportInfo);
-		if (p == null) {
-			p = new PeerWithTransport(transportInfo);
-			addPeer(p);
+		final Peer peer = Locking.withFunctionLock(this.peersLock, this.peersByInfo::get, transportInfo);
+		if (peer != null) {
+			return peer;
 		}
-		return p;
+		return new PeerWithTransport(transportInfo);
 	}
 
 	@Override
@@ -177,6 +188,11 @@ public class AddressBookImpl implements AddressBook {
 	@Override
 	public Stream<EUID> nids() {
 		return Locking.withSupplierLock(this.peersLock, () -> ImmutableSet.copyOf(this.peersByNid.keySet())).stream();
+	}
+
+	@Override
+	public void close() throws IOException {
+		this.persistence.close();
 	}
 
 	// Sends PeersAddedEvents and/or PeersRemoveEvents as required
@@ -286,9 +302,9 @@ public class AddressBookImpl implements AddressBook {
 		return (host != null) && !whitelist.isWhitelisted(host);
 	}
 
-	@Override
-	public void close() throws IOException {
-		this.persistence.close();
+	private void updateActiveTime(Peer peer) {
+		if (peer != null) {
+			peer.setTimestamp(Timestamps.ACTIVE, this.timeSupplier.currentTime());
+		}
 	}
 }
-

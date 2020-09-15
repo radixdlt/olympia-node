@@ -76,7 +76,7 @@ public class AddressBookImplTest {
 		}).when(events).broadcast(any());
 		RuntimeProperties properties = mock(RuntimeProperties.class);
 		doReturn(60_000L).when(properties).get(eq("addressbook.recency_ms"), anyLong());
-		this.addressbook = new AddressBookImpl(persistence, events, properties);
+		this.addressbook = new AddressBookImpl(persistence, events, properties, System::currentTimeMillis);
 	}
 
 	@After
