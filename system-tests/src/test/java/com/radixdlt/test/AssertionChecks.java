@@ -6,7 +6,7 @@ public class AssertionChecks {
 	 *
 	 * @return The test builder
 	 */
-	static RemoteBFTTest.Builder slowNodeTestBuilder() {
+	public static RemoteBFTTest.Builder slowNodeTestBuilder() {
 		return RemoteBFTTest.builder()
 			.assertAllProposalsHaveDirectParents()
 			.assertNoTimeouts()
