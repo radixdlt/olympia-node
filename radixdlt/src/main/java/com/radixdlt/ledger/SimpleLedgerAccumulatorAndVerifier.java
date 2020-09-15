@@ -23,6 +23,7 @@ import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.crypto.Hash;
 import java.util.Objects;
+import java.util.Optional;
 import javax.annotation.concurrent.ThreadSafe;
 
 /**
@@ -56,5 +57,23 @@ public class SimpleLedgerAccumulatorAndVerifier implements LedgerAccumulator, Le
 			accumulatorState = this.accumulate(accumulatorState, command);
 		}
 		return Objects.equals(accumulatorState, end);
+	}
+
+	@Override
+	public Optional<ImmutableList<Command>> verifyAndGetExtension(AccumulatorState current, ImmutableList<Command> commands, AccumulatorState tail) {
+		final long firstVersion = tail.getStateVersion() - commands.size() + 1;
+		if (current.getStateVersion() + 1 < firstVersion) {
+			// Missing versions
+			return Optional.empty();
+		}
+
+		final int startIndex = (int) (current.getStateVersion() + 1 - firstVersion);
+		final ImmutableList<Command> extension = commands.subList(startIndex, commands.size());
+		if (!verify(current, extension, tail)) {
+			// Does not extend
+			return Optional.empty();
+		}
+
+		return Optional.of(extension);
 	}
 }

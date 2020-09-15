@@ -71,6 +71,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	private final CommittedSender committedSender;
 	private final SystemCounters counters;
 	private final LedgerAccumulator accumulator;
+	private final LedgerAccumulatorVerifier verifier;
 
 	private final Object lock = new Object();
 	private VerifiedLedgerHeaderAndProof currentLedgerHeader;
@@ -85,6 +86,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		CommittedStateSyncSender committedStateSyncSender,
 		CommittedSender committedSender,
 		LedgerAccumulator accumulator,
+		LedgerAccumulatorVerifier verifier,
 		SystemCounters counters
 	) {
 		this.headerComparator = Objects.requireNonNull(headerComparator);
@@ -95,6 +97,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		this.committedSender = Objects.requireNonNull(committedSender);
 		this.counters = Objects.requireNonNull(counters);
 		this.accumulator = Objects.requireNonNull(accumulator);
+		this.verifier = Objects.requireNonNull(verifier);
 	}
 
 	@Override
@@ -157,16 +160,20 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 				return;
 			}
 
-			// Callers of commit() should be aware of currentLedgerHeader.getStateVersion()
-			// and only call commit with a first version <= currentVersion + 1
-			if (currentLedgerHeader.getStateVersion() + 1 < verifiedCommandsAndProof.getFirstVersion()) {
-				throw new IllegalStateException("Trying to commit version " + verifiedCommandsAndProof.getFirstVersion()
-					+ " but current header is " + currentLedgerHeader);
+			Optional<ImmutableList<Command>> verifiedExtension = verifier.verifyAndGetExtension(
+				this.currentLedgerHeader.getAccumulatorState(),
+				verifiedCommandsAndProof.getCommands(),
+				verifiedCommandsAndProof.getHeader().getAccumulatorState()
+			);
+
+			if (!verifiedExtension.isPresent()) {
+				// This can occur if there is a bug in a commit caller or if there is a quorum of malicious nodes
+				throw new IllegalStateException("Accumulator failure " + currentLedgerHeader + " " + verifiedCommandsAndProof);
 			}
 
-			// Remove commands which have already been committed
-			VerifiedCommandsAndProof commandsToStore = verifiedCommandsAndProof
-				.truncateFromVersion(this.currentLedgerHeader.getStateVersion());
+			VerifiedCommandsAndProof commandsToStore = new VerifiedCommandsAndProof(
+				verifiedExtension.get(), verifiedCommandsAndProof.getHeader()
+			);
 
 			// persist
 			Optional<BFTValidatorSet> validatorSet = this.stateComputer.commit(commandsToStore);
@@ -175,12 +182,13 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			this.currentLedgerHeader = committedHeader;
 			this.counters.set(CounterType.LEDGER_STATE_VERSION, this.currentLedgerHeader.getStateVersion());
 
-			commandsToStore.forEach((v, cmd) -> this.mempool.removeCommitted(cmd.getHash()));
+			verifiedExtension.get().forEach(cmd -> this.mempool.removeCommitted(cmd.getHash()));
 			committedSender.sendCommitted(commandsToStore, validatorSet.orElse(null));
 
 			// TODO: Verify headers match
-			Collection<Set<Object>> listeners = this.committedStateSyncers.headMap(this.currentLedgerHeader.getStateVersion(), true)
-				.values();
+			Collection<Set<Object>> listeners = this.committedStateSyncers.headMap(
+				this.currentLedgerHeader.getAccumulatorState().getStateVersion(), true
+			).values();
 			Iterator<Set<Object>> listenersIterator = listeners.iterator();
 			while (listenersIterator.hasNext()) {
 				Set<Object> opaqueObjects = listenersIterator.next();

@@ -22,7 +22,6 @@ import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import java.util.Objects;
 import java.util.function.BiConsumer;
-import java.util.stream.IntStream;
 
 /**
  * Commands along with proof that they have been committed on ledger.
@@ -58,23 +57,6 @@ public final class VerifiedCommandsAndProof {
 		for (int i = 0; i < commands.size(); i++) {
 			consumer.accept(firstVersion + i, commands.get(i));
 		}
-	}
-
-	public VerifiedCommandsAndProof truncateFromVersion(long version) {
-		long firstVersion = getFirstVersion();
-
-		if (version + 1 < firstVersion) {
-			throw new IllegalArgumentException("firstVersion is " + firstVersion + " but want " + version);
-		}
-
-		if (version + 1 == firstVersion) {
-			return this;
-		}
-
-		int startIndex = (int) (version + 1 - firstVersion);
-		ImmutableList<Command> truncated = IntStream.range(startIndex, commands.size())
-			.mapToObj(commands::get).collect(ImmutableList.toImmutableList());
-		return new VerifiedCommandsAndProof(truncated, headerAndProof);
 	}
 
 	public int size() {

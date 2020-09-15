@@ -128,11 +128,6 @@ public final class LocalSyncServiceProcessor {
 			return;
 		}
 
-		if (verified.getFirstVersion() > this.currentHeader.getStateVersion() + 1) {
-			log.warn("SYNC Received commands not synced to self: {}", commandsAndProof);
-			return;
-		}
-
 		// TODO: Check validity of response
 		this.verifiedSyncedCommandsSender.sendVerifiedCommands(verified);
 	}

@@ -17,16 +17,21 @@
 
 package com.radixdlt.integration.distributed;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
+import com.google.inject.Inject;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.Multibinder;
+import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
+import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.StateComputerLedger.CommittedSender;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.sync.CommittedReader;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.TreeMap;
 
 public class MockedCommittedReaderModule extends AbstractModule {
@@ -40,6 +45,12 @@ public class MockedCommittedReaderModule extends AbstractModule {
 	@Singleton
 	private static class InMemoryCommittedReader implements CommittedSender, CommittedReader {
 		private final TreeMap<Long, VerifiedCommandsAndProof> commandsAndProof = new TreeMap<>();
+		private final LedgerAccumulatorVerifier accumulatorVerifier;
+
+		@Inject
+		InMemoryCommittedReader(LedgerAccumulatorVerifier accumulatorVerifier) {
+			this.accumulatorVerifier = Objects.requireNonNull(accumulatorVerifier);
+		}
 
 		@Override
 		public void sendCommitted(VerifiedCommandsAndProof verifiedCommandsAndProof, BFTValidatorSet validatorSet) {
@@ -51,7 +62,13 @@ public class MockedCommittedReaderModule extends AbstractModule {
 			final long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
 			Entry<Long, VerifiedCommandsAndProof> entry = commandsAndProof.higherEntry(stateVersion);
 			if (entry != null) {
-				return entry.getValue().truncateFromVersion(stateVersion);
+				ImmutableList<Command> cmds = accumulatorVerifier.verifyAndGetExtension(
+					start.getLedgerHeader().getAccumulatorState(),
+					entry.getValue().getCommands(),
+					entry.getValue().getHeader().getAccumulatorState()
+				).orElseThrow(() -> new RuntimeException());
+
+				return new VerifiedCommandsAndProof(cmds, entry.getValue().getHeader());
 			}
 
 			return null;

@@ -28,6 +28,7 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.LedgerAccumulator;
+import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.StateComputerLedger.CommittedSender;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.sync.CommittedReader;
@@ -44,11 +45,13 @@ import java.util.function.UnaryOperator;
 public final class SometimesByzantineCommittedReader implements CommittedSender, CommittedReader {
 	private final TreeMap<Long, VerifiedCommandsAndProof> commandsAndProof = new TreeMap<>();
 	private final LedgerAccumulator accumulator;
+	private final LedgerAccumulatorVerifier accumulatorVerifier;
 	private ReadType currentReadType;
 
 	@Inject
-	public SometimesByzantineCommittedReader(Random random, LedgerAccumulator accumulator) {
+	public SometimesByzantineCommittedReader(Random random, LedgerAccumulator accumulator, LedgerAccumulatorVerifier accumulatorVerifier) {
 		this.accumulator = Objects.requireNonNull(accumulator);
+		this.accumulatorVerifier = Objects.requireNonNull(accumulatorVerifier);
 		this.currentReadType = ReadType.values()[random.nextInt(ReadType.values().length)];
 	}
 
@@ -192,10 +195,15 @@ public final class SometimesByzantineCommittedReader implements CommittedSender,
 		final long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
 		Entry<Long, VerifiedCommandsAndProof> entry = commandsAndProof.higherEntry(stateVersion);
 		if (entry != null) {
-			VerifiedCommandsAndProof commandsToSendBack = entry.getValue().truncateFromVersion(stateVersion);
-			commandsToSendBack = currentReadType.transform(start, commandsToSendBack, accumulator);
+			ImmutableList<Command> cmds = accumulatorVerifier.verifyAndGetExtension(
+				start.getLedgerHeader().getAccumulatorState(),
+				entry.getValue().getCommands(),
+				entry.getValue().getHeader().getAccumulatorState()
+			).orElseThrow(() -> new RuntimeException());
+
+			VerifiedCommandsAndProof commandsToSendBack = new VerifiedCommandsAndProof(cmds, entry.getValue().getHeader());
 			currentReadType = ReadType.values()[(currentReadType.ordinal() + 1) % ReadType.values().length];
-			return commandsToSendBack;
+			return currentReadType.transform(start, commandsToSendBack, accumulator);
 		}
 
 		return null;

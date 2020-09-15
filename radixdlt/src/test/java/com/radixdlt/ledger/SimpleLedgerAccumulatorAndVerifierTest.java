@@ -56,4 +56,47 @@ public class SimpleLedgerAccumulatorAndVerifierTest {
 		AccumulatorState nextState = accumulatorAndVerifier.accumulate(headState, command);
 		assertThat(accumulatorAndVerifier.verify(headState, ImmutableList.of(command), nextState)).isTrue();
 	}
+
+	@Test
+	public void when_empty_command_truncate_from_bad_version__then_should_throw_exception() {
+		AccumulatorState curState = mock(AccumulatorState.class);
+		when(curState.getStateVersion()).thenReturn(1234L);
+		AccumulatorState nextState = mock(AccumulatorState.class);
+		when(nextState.getStateVersion()).thenReturn(1235L);
+
+		assertThat(accumulatorAndVerifier.verifyAndGetExtension(curState, ImmutableList.of(), nextState))
+			.isEmpty();
+	}
+
+	@Test
+	public void when_single_command_truncate_from_bad_version__then_should_throw_exception() {
+		AccumulatorState curState = mock(AccumulatorState.class);
+		when(curState.getStateVersion()).thenReturn(1234L);
+		AccumulatorState nextState = mock(AccumulatorState.class);
+		when(nextState.getStateVersion()).thenReturn(1236L);
+
+		assertThat(accumulatorAndVerifier.verifyAndGetExtension(curState, ImmutableList.of(mock(Command.class)), nextState))
+			.isEmpty();
+	}
+
+	@Test
+	public void when_empty_command_truncate_from_perfect_version__then_should_return_empty_list() {
+		AccumulatorState state = mock(AccumulatorState.class);
+		when(state.getStateVersion()).thenReturn(1234L);
+		when(state.getAccumulatorHash()).thenReturn(mock(Hash.class));
+
+		assertThat(accumulatorAndVerifier.verifyAndGetExtension(state, ImmutableList.of(), state))
+			.hasValue(ImmutableList.of());
+	}
+
+	@Test
+	public void when_single_command_truncate_from_perfect_version__then_should_return_equivalent() {
+		Command command = mock(Command.class);
+		when(command.getHash()).thenReturn(Hash.ZERO_HASH);
+		AccumulatorState headState = new AccumulatorState(345, Hash.ZERO_HASH);
+		AccumulatorState nextState = accumulatorAndVerifier.accumulate(headState, command);
+
+		assertThat(accumulatorAndVerifier.verifyAndGetExtension(headState, ImmutableList.of(command), nextState))
+			.hasValue(ImmutableList.of(command));
+	}
 }

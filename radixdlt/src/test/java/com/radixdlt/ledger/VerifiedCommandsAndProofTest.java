@@ -18,7 +18,6 @@
 package com.radixdlt.ledger;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -75,42 +74,6 @@ public class VerifiedCommandsAndProofTest {
 		BiConsumer<Long, Command> consumer = mock(BiConsumer.class);
 		singleCommandAndProof.forEach(consumer);
 		verify(consumer, times(1)).accept(eq(stateVersion), eq(command));
-	}
-
-	@Test
-	public void when_empty_command_truncate_from_bad_version__then_should_throw_exception() {
-		assertThatThrownBy(() -> emptyCommandsAndProof.truncateFromVersion(stateVersion - 2))
-			.isInstanceOf(IllegalArgumentException.class);
-	}
-
-	@Test
-	public void when_single_command_truncate_from_bad_version__then_should_throw_exception() {
-		assertThatThrownBy(() -> singleCommandAndProof.truncateFromVersion(stateVersion - 2))
-			.isInstanceOf(IllegalArgumentException.class);
-	}
-
-	@Test
-	public void when_empty_command_truncate_from_perfect_version__then_should_return_equivalent() {
-		VerifiedCommandsAndProof truncated = emptyCommandsAndProof.truncateFromVersion(stateVersion - 1);
-		assertThat(truncated).isEqualTo(emptyCommandsAndProof);
-	}
-
-	@Test
-	public void when_single_command_truncate_from_perfect_version__then_should_return_equivalent() {
-		VerifiedCommandsAndProof truncated = singleCommandAndProof.truncateFromVersion(stateVersion - 1);
-		assertThat(truncated).isEqualTo(singleCommandAndProof);
-	}
-
-	@Test
-	public void when_empty_command_truncate_from_version__then_should_truncate_correctly() {
-		VerifiedCommandsAndProof truncated = emptyCommandsAndProof.truncateFromVersion(stateVersion);
-		assertThat(truncated.size()).isEqualTo(0);
-	}
-
-	@Test
-	public void when_single_command_truncate_from_version__then_should_truncate_correctly() {
-		VerifiedCommandsAndProof truncated = singleCommandAndProof.truncateFromVersion(stateVersion);
-		assertThat(truncated.size()).isEqualTo(0);
 	}
 
 	@Test

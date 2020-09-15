@@ -19,13 +19,14 @@ package com.radixdlt.ledger;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Command;
+import java.util.Optional;
 
 /**
  * Verifies whether a given accumulator extends a given one.
  *
  * All implementations should be stateless.
  */
-@FunctionalInterface
 public interface LedgerAccumulatorVerifier {
-	boolean verify(AccumulatorState start, ImmutableList<Command> commands, AccumulatorState end);
+	boolean verify(AccumulatorState head, ImmutableList<Command> commands, AccumulatorState tail);
+	Optional<ImmutableList<Command>> verifyAndGetExtension(AccumulatorState current, ImmutableList<Command> commands, AccumulatorState tail);
 }

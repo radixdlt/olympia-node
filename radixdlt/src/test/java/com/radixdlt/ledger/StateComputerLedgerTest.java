@@ -20,11 +20,9 @@ package com.radixdlt.ledger;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
@@ -32,6 +30,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -48,7 +47,7 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.mempool.Mempool;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.function.BiConsumer;
+import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -63,6 +62,7 @@ public class StateComputerLedgerTest {
 	private SystemCounters counters;
 	private Comparator<VerifiedLedgerHeaderAndProof> headerComparator;
 	private LedgerAccumulator accumulator;
+	private LedgerAccumulatorVerifier accumulatorVerifier;
 
 
 	@Before
@@ -76,6 +76,7 @@ public class StateComputerLedgerTest {
 		this.currentLedgerHeader = mock(VerifiedLedgerHeaderAndProof.class);
 		this.headerComparator = mock(Comparator.class);
 		this.accumulator = mock(LedgerAccumulator.class);
+		this.accumulatorVerifier = mock(LedgerAccumulatorVerifier.class);
 		when(accumulator.accumulate(any(), any(Command.class))).thenReturn(mock(AccumulatorState.class));
 
 		this.stateComputerLedger = new StateComputerLedger(
@@ -86,6 +87,7 @@ public class StateComputerLedgerTest {
 			committedStateSyncSender,
 			committedSender,
 			accumulator,
+			accumulatorVerifier,
 			counters
 		);
 	}
@@ -225,12 +227,8 @@ public class StateComputerLedgerTest {
 		VerifiedLedgerHeaderAndProof proof = mock(VerifiedLedgerHeaderAndProof.class);
 		when(headerComparator.compare(eq(proof), eq(currentLedgerHeader))).thenReturn(1);
 		when(verified.getHeader()).thenReturn(proof);
-		when(verified.truncateFromVersion(anyLong())).thenReturn(verified);
-		doAnswer(invocation -> {
-			BiConsumer<Long, Command> consumer = invocation.getArgument(0);
-			consumer.accept(1L, command);
-			return null;
-		}).when(verified).forEach(any());
+		when(proof.getAccumulatorState()).thenReturn(mock(AccumulatorState.class));
+		when(accumulatorVerifier.verifyAndGetExtension(any(), any(), any())).thenReturn(Optional.of(ImmutableList.of(command)));
 
 		stateComputerLedger.commit(verified);
 		verify(stateComputer, times(1)).commit(argThat(v -> v.getHeader().equals(proof)));
@@ -254,11 +252,10 @@ public class StateComputerLedgerTest {
 	}
 
 	@Test
-	public void when_check_sync__will_complete_when_higher_or_equal_state_version() {
+	public void given_check_sync__when_commit_when_higher_or_equal_state_version__then_will_emit() {
 		when(currentLedgerHeader.getStateVersion()).thenReturn(0L);
 		VerifiedLedgerHeaderAndProof verifiedLedgerHeaderAndProof = mock(VerifiedLedgerHeaderAndProof.class);
 		when(verifiedLedgerHeaderAndProof.getStateVersion()).thenReturn(1L);
-
 		Runnable onSynced = mock(Runnable.class);
 		Runnable onNotSynced = mock(Runnable.class);
 		stateComputerLedger
@@ -268,13 +265,14 @@ public class StateComputerLedgerTest {
 		verify(committedStateSyncSender, never()).sendCommittedStateSync(any(), any());
 		verify(onSynced, never()).run();
 		verify(onNotSynced, times(1)).run();
-
 		VerifiedCommandsAndProof verified = mock(VerifiedCommandsAndProof.class);
 		VerifiedLedgerHeaderAndProof proof = mock(VerifiedLedgerHeaderAndProof.class);
-		when(proof.getStateVersion()).thenReturn(1L);
 		when(headerComparator.compare(eq(proof), any())).thenReturn(1);
+		AccumulatorState accumulatorState = mock(AccumulatorState.class);
+		when(accumulatorState.getStateVersion()).thenReturn(1L);
+		when(proof.getAccumulatorState()).thenReturn(accumulatorState);
 		when(verified.getHeader()).thenReturn(proof);
-		when(verified.truncateFromVersion(anyLong())).thenReturn(verified);
+		when(accumulatorVerifier.verifyAndGetExtension(any(), any(), any())).thenReturn(Optional.of(ImmutableList.of()));
 
 		stateComputerLedger.commit(verified);
 
