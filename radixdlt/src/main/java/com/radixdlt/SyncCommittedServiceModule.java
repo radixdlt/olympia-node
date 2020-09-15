@@ -47,6 +47,7 @@ import java.util.Comparator;
 public class SyncCommittedServiceModule extends AbstractModule {
 	private static final int BATCH_SIZE = 100;
 
+	@Override
 	public void configure() {
 		MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class)
 			.addBinding("sync").to(SyncServiceRunner.class);
