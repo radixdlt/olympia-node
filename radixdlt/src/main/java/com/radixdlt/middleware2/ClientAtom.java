@@ -175,7 +175,15 @@ public final class ClientAtom implements LedgerAtom {
 					microInstructionsBuilder.add(CMMicroInstruction.checkSpin(particle, checkSpin));
 				} else {
 					if (!SpinStateMachine.canTransition(currentSpin, sp.getSpin())) {
-						throw new LedgerAtomConversionException(DataPointer.ofParticle(i, j), "Invalid internal spin");
+						throw new LedgerAtomConversionException(
+							DataPointer.ofParticle(i, j),
+							String.format(
+								"Invalid internal spin %s->%s for %s particle",
+								currentSpin,
+								sp.getSpin(),
+								sp.getParticle().getClass().getSimpleName()
+							)
+						);
 					}
 				}
 
