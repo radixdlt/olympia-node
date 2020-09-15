@@ -48,7 +48,7 @@ public class MockedCommittedReaderModule extends AbstractModule {
 
 		@Override
 		public VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start, int batchSize) {
-			final long stateVersion = start.getLedgerHeader().getStateVersion();
+			final long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
 			Entry<Long, VerifiedCommandsAndProof> entry = commandsAndProof.higherEntry(stateVersion);
 			if (entry != null) {
 				return entry.getValue().truncateFromVersion(stateVersion);

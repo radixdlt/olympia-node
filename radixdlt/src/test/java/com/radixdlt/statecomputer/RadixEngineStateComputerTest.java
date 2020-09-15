@@ -38,6 +38,7 @@ import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.middleware2.ClientAtom;
@@ -143,7 +144,9 @@ public class RadixEngineStateComputerTest {
 
 		DtoLedgerHeaderAndProof start = mock(DtoLedgerHeaderAndProof.class);
 		LedgerHeader ledgerHeader = mock(LedgerHeader.class);
-		when(ledgerHeader.getStateVersion()).thenReturn(0L);
+		AccumulatorState accumulatorState = mock(AccumulatorState.class);
+		when(accumulatorState.getStateVersion()).thenReturn(0L);
+		when(ledgerHeader.getAccumulatorState()).thenReturn(accumulatorState);
 		when(start.getLedgerHeader()).thenReturn(ledgerHeader);
 
 		VerifiedCommandsAndProof commands = stateComputer.getNextCommittedCommands(start, 1);
@@ -172,7 +175,9 @@ public class RadixEngineStateComputerTest {
 		assertThat(stateComputer.commit(command)).isEmpty();
 		DtoLedgerHeaderAndProof start = mock(DtoLedgerHeaderAndProof.class);
 		LedgerHeader ledgerHeader = mock(LedgerHeader.class);
-		when(ledgerHeader.getStateVersion()).thenReturn(0L);
+		AccumulatorState accumulatorState = mock(AccumulatorState.class);
+		when(accumulatorState.getStateVersion()).thenReturn(0L);
+		when(ledgerHeader.getAccumulatorState()).thenReturn(accumulatorState);
 		when(start.getLedgerHeader()).thenReturn(ledgerHeader);
 		VerifiedCommandsAndProof commands = stateComputer.getNextCommittedCommands(start, 1);
 		assertThat(commands).isNotNull();

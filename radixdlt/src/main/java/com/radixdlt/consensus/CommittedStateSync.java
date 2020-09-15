@@ -21,16 +21,16 @@ package com.radixdlt.consensus;
  * Event which represents that the committed state has been synced
  */
 public final class CommittedStateSync {
-	private final long stateVersion;
+	private final VerifiedLedgerHeaderAndProof header;
 	private final Object opaque;
 
-	public CommittedStateSync(long stateVersion, Object opaque) {
-		this.stateVersion = stateVersion;
+	public CommittedStateSync(VerifiedLedgerHeaderAndProof header, Object opaque) {
+		this.header = header;
 		this.opaque = opaque;
 	}
 
-	public long getStateVersion() {
-		return stateVersion;
+	public VerifiedLedgerHeaderAndProof getHeader() {
+		return header;
 	}
 
 	public Object getOpaque() {
@@ -39,6 +39,6 @@ public final class CommittedStateSync {
 
 	@Override
 	public String toString() {
-		return String.format("%s{version=%s opaque=%s", this.getClass().getSimpleName(), stateVersion, opaque);
+		return String.format("%s{header=%s opaque=%s", this.getClass().getSimpleName(), header, opaque);
 	}
 }

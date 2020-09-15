@@ -109,6 +109,7 @@ public class StateComputerLedgerTest {
 		when(ledgerHeader.isEndOfEpoch()).thenReturn(false);
 		AccumulatorState accumulatorState = mock(AccumulatorState.class);
 		when(accumulatorState.getStateVersion()).thenReturn(12345L);
+		when(accumulatorState.getAccumulatorHash()).thenReturn(mock(Hash.class));
 		when(ledgerHeader.getAccumulatorState()).thenReturn(accumulatorState);
 
 		BFTHeader parent = mock(BFTHeader.class);
@@ -117,7 +118,7 @@ public class StateComputerLedgerTest {
 
 		LedgerHeader nextPrepared = stateComputerLedger.prepare(vertex);
 		assertThat(nextPrepared.isEndOfEpoch()).isFalse();
-		assertThat(nextPrepared.getStateVersion()).isEqualTo(12345L);
+		assertThat(nextPrepared.getAccumulatorState().getStateVersion()).isEqualTo(12345L);
 	}
 
 	@Test
@@ -131,6 +132,7 @@ public class StateComputerLedgerTest {
 		when(ledgerHeader.isEndOfEpoch()).thenReturn(false);
 		AccumulatorState accumulatorState = mock(AccumulatorState.class);
 		when(accumulatorState.getStateVersion()).thenReturn(12345L);
+		when(accumulatorState.getAccumulatorHash()).thenReturn(mock(Hash.class));
 		when(ledgerHeader.getAccumulatorState()).thenReturn(accumulatorState);
 
 		BFTHeader parent = mock(BFTHeader.class);
@@ -139,7 +141,7 @@ public class StateComputerLedgerTest {
 
 		LedgerHeader nextPrepared = stateComputerLedger.prepare(vertex);
 		assertThat(nextPrepared.isEndOfEpoch()).isFalse();
-		assertThat(nextPrepared.getStateVersion()).isEqualTo(12345L);
+		assertThat(nextPrepared.getAccumulatorState().getStateVersion()).isEqualTo(12345L);
 	}
 
 	@Test
@@ -153,6 +155,7 @@ public class StateComputerLedgerTest {
 		when(ledgerHeader.isEndOfEpoch()).thenReturn(false);
 		AccumulatorState accumulatorState = mock(AccumulatorState.class);
 		when(accumulatorState.getStateVersion()).thenReturn(12345L);
+		when(accumulatorState.getAccumulatorHash()).thenReturn(mock(Hash.class));
 		when(ledgerHeader.getAccumulatorState()).thenReturn(accumulatorState);
 
 		BFTHeader parent = mock(BFTHeader.class);
@@ -163,7 +166,7 @@ public class StateComputerLedgerTest {
 
 		LedgerHeader nextPrepared = stateComputerLedger.prepare(vertex);
 		assertThat(nextPrepared.isEndOfEpoch()).isTrue();
-		assertThat(nextPrepared.getStateVersion()).isEqualTo(12345L);
+		assertThat(nextPrepared.getAccumulatorState().getStateVersion()).isEqualTo(12345L);
 	}
 
 	@Test
@@ -181,6 +184,7 @@ public class StateComputerLedgerTest {
 		when(parentHeader.getAccumulatorState()).thenReturn(accumulatorState);
 		AccumulatorState nextAccumulateState = mock(AccumulatorState.class);
 		when(nextAccumulateState.getStateVersion()).thenReturn(12346L);
+		when(nextAccumulateState.getAccumulatorHash()).thenReturn(mock(Hash.class));
 		Command command = mock(Command.class);
 		when(accumulator.accumulate(eq(accumulatorState), eq(command))).thenReturn(nextAccumulateState);
 		BFTHeader parent = mock(BFTHeader.class);
@@ -191,7 +195,7 @@ public class StateComputerLedgerTest {
 		LedgerHeader nextPrepared = stateComputerLedger.prepare(vertex);
 
 		assertThat(nextPrepared.isEndOfEpoch()).isFalse();
-		assertThat(nextPrepared.getStateVersion()).isEqualTo(12346L);
+		assertThat(nextPrepared.getAccumulatorState().getStateVersion()).isEqualTo(12346L);
 	}
 
 	@Test
@@ -261,7 +265,7 @@ public class StateComputerLedgerTest {
 			.ifCommitSynced(verifiedLedgerHeaderAndProof)
 			.then(onSynced)
 			.elseExecuteAndSendMessageOnSync(onNotSynced, mock(Object.class));
-		verify(committedStateSyncSender, never()).sendCommittedStateSync(anyLong(), any());
+		verify(committedStateSyncSender, never()).sendCommittedStateSync(any(), any());
 		verify(onSynced, never()).run();
 		verify(onNotSynced, times(1)).run();
 
@@ -274,6 +278,6 @@ public class StateComputerLedgerTest {
 
 		stateComputerLedger.commit(verified);
 
-		verify(committedStateSyncSender, timeout(5000).atLeast(1)).sendCommittedStateSync(anyLong(), any());
+		verify(committedStateSyncSender, timeout(5000).atLeast(1)).sendCommittedStateSync(any(), any());
 	}
 }

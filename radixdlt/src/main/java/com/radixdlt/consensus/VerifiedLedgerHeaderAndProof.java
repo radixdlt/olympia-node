@@ -108,15 +108,14 @@ public final class VerifiedLedgerHeaderAndProof {
 				return p0.ledgerHeader.getEpoch() > p1.ledgerHeader.getEpoch() ? 1 : -1;
 			}
 
-			if (p0.ledgerHeader.getStateVersion() != p1.ledgerHeader.getStateVersion()) {
-				return p0.ledgerHeader.getStateVersion() > p1.ledgerHeader.getStateVersion() ? 1 : -1;
-			}
-
 			if (p0.ledgerHeader.isEndOfEpoch() != p1.ledgerHeader.isEndOfEpoch()) {
 				return p0.ledgerHeader.isEndOfEpoch() ? 1 : -1;
 			}
 
-			return 0;
+			return Long.compare(
+				p0.ledgerHeader.getAccumulatorState().getStateVersion(),
+				p1.ledgerHeader.getAccumulatorState().getStateVersion()
+			);
 		}
 	}
 
@@ -148,11 +147,11 @@ public final class VerifiedLedgerHeaderAndProof {
 	}
 
 	public long getStateVersion() {
-		return ledgerHeader.getStateVersion();
+		return ledgerHeader.getAccumulatorState().getStateVersion();
 	}
 
 	public Hash getAccumulatorHash() {
-		return ledgerHeader.getAccumulatorHash();
+		return ledgerHeader.getAccumulatorState().getAccumulatorHash();
 	}
 
 	public long timestamp() {

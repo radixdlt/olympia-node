@@ -639,7 +639,7 @@ public class VertexStoreTest {
 		assertThat(vertexStore.getHighestCommittedQC()).isEqualTo(vertex4.getQC());
 
 		CommittedStateSync committedStateSync = new CommittedStateSync(
-			vertexMetadataAtomicReference.get().getStateVersion(), stateOpaque.get()
+			vertexMetadataAtomicReference.get(), stateOpaque.get()
 		);
 		vertexStore.processCommittedStateSync(committedStateSync);
 

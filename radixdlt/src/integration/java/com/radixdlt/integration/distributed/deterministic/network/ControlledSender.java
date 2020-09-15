@@ -114,8 +114,8 @@ public final class ControlledSender implements DeterministicSender {
 	}
 
 	@Override
-	public void sendCommittedStateSync(long stateVersion, Object opaque) {
-		CommittedStateSync committedStateSync = new CommittedStateSync(stateVersion, opaque);
+	public void sendCommittedStateSync(VerifiedLedgerHeaderAndProof header, Object opaque) {
+		CommittedStateSync committedStateSync = new CommittedStateSync(header, opaque);
 		handleMessage(MessageRank.EARLIEST_POSSIBLE, new ControlledMessage(this.senderIndex, this.senderIndex, committedStateSync));
 	}
 

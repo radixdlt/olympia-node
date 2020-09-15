@@ -61,7 +61,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	}
 
 	public interface CommittedStateSyncSender {
-		void sendCommittedStateSync(long stateVersion, Object opaque);
+		void sendCommittedStateSync(VerifiedLedgerHeaderAndProof header, Object opaque);
 	}
 
 	private final Comparator<VerifiedLedgerHeaderAndProof> headerComparator;
@@ -180,13 +180,14 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			commandsToStore.forEach((v, cmd) -> this.mempool.removeCommitted(cmd.getHash()));
 			committedSender.sendCommitted(commandsToStore, validatorSet.orElse(null));
 
+			// TODO: Verify headers match
 			Collection<Set<Object>> listeners = this.committedStateSyncers.headMap(this.currentLedgerHeader.getStateVersion(), true)
 				.values();
 			Iterator<Set<Object>> listenersIterator = listeners.iterator();
 			while (listenersIterator.hasNext()) {
 				Set<Object> opaqueObjects = listenersIterator.next();
 				for (Object opaque : opaqueObjects) {
-					committedStateSyncSender.sendCommittedStateSync(this.currentLedgerHeader.getStateVersion(), opaque);
+					committedStateSyncSender.sendCommittedStateSync(this.currentLedgerHeader, opaque);
 				}
 				listenersIterator.remove();
 			}

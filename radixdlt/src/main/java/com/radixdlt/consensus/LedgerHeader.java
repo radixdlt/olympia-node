@@ -119,14 +119,6 @@ public final class LedgerHeader {
 		return view;
 	}
 
-	public Hash getAccumulatorHash() {
-		return accumulatorHash;
-	}
-
-	public long getStateVersion() {
-		return stateVersion;
-	}
-
 	public AccumulatorState getAccumulatorState() {
 		return new AccumulatorState(
 			stateVersion, accumulatorHash

@@ -92,7 +92,7 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 	@Override
 	public VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start, int batchSize) {
 		// TODO: verify start
-		long stateVersion = start.getLedgerHeader().getStateVersion();
+		long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
 
 		// TODO: This may still return an empty list as we still count state versions for atoms which
 		// TODO: never make it into the radix engine due to state errors. This is because we only check
