@@ -88,7 +88,6 @@ public class GlobalInjector {
 				bind(RadixAddress.class).annotatedWith(Names.named("self")).toProvider(SelfAddressProvider.class);
 				bind(BFTNode.class).annotatedWith(Names.named("self")).toProvider(SelfBFTNodeProvider.class);
 
-				bind(Serialization.class).toProvider(DefaultSerialization::getInstance);
 				bind(Events.class).toProvider(Events::getInstance);
 
 				bind(PeerManagerConfiguration.class).toInstance(PeerManagerConfiguration.fromRuntimeProperties(properties));

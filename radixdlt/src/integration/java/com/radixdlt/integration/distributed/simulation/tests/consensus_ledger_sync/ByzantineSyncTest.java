@@ -51,6 +51,7 @@ public class ByzantineSyncTest {
 				bind(CommittedReader.class).to(SometimesByzantineCommittedReader.class).in(Scopes.SINGLETON);
 			}
 		})
+		.mockCryptoModule(false)
 		.pacemakerTimeout(5000)
 		.addOneNodeNeverReceiveProposalDropper()
 		.ledgerAndSync()
@@ -84,5 +85,11 @@ public class ByzantineSyncTest {
 			.build();
 		TestResults results = simulationTest.run();
 		assertThat(results.getCheckResults()).hasEntrySatisfying("ledgerInOrder", error -> assertThat(error).isPresent());
+		LongSummaryStatistics statistics = results.getNetwork().getSystemCounters().values().stream()
+			.map(s -> s.get(CounterType.SYNC_PROCESSED))
+			.mapToLong(l -> l)
+			.summaryStatistics();
+
+		System.out.println(statistics);
 	}
 }

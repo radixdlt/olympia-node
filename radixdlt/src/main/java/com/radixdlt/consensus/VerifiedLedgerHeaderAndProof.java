@@ -158,6 +158,10 @@ public final class VerifiedLedgerHeaderAndProof {
 		return ledgerHeader.isEndOfEpoch();
 	}
 
+	public TimestampedECDSASignatures getSignatures() {
+		return signatures;
+	}
+
 	@Override
 	public int hashCode() {
 		return Objects.hash(opaque0, opaque1, opaque2, opaque3, ledgerHeader, signatures);

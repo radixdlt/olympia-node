@@ -35,7 +35,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Random;
 import java.util.TreeMap;
-import java.util.stream.Stream;
+import java.util.function.UnaryOperator;
 
 /**
  * A reader which sometimes returns erroneous commands.
@@ -57,6 +57,76 @@ public final class SometimesByzantineCommittedReader implements CommittedSender,
 		commandsAndProof.put(verifiedCommandsAndProof.getFirstVersion(), verifiedCommandsAndProof);
 	}
 
+	private static class ByzantineVerifiedCommandsAndProofBuilder {
+		private DtoLedgerHeaderAndProof request;
+		private UnaryOperator<Command> commandMapper;
+		private VerifiedCommandsAndProof base;
+		private TimestampedECDSASignatures overwriteSignatures;
+		private LedgerAccumulator accumulator;
+
+		public ByzantineVerifiedCommandsAndProofBuilder accumulator(DtoLedgerHeaderAndProof request, LedgerAccumulator accumulator) {
+			this.request = request;
+			this.accumulator = accumulator;
+			return this;
+		}
+
+		public ByzantineVerifiedCommandsAndProofBuilder base(VerifiedCommandsAndProof base) {
+			this.base = base;
+			return this;
+		}
+
+		public ByzantineVerifiedCommandsAndProofBuilder replaceCommands(UnaryOperator<Command> commandMapper) {
+			this.commandMapper = commandMapper;
+			return this;
+		}
+
+		public ByzantineVerifiedCommandsAndProofBuilder overwriteSignatures(TimestampedECDSASignatures overwriteSignatures) {
+			this.overwriteSignatures = overwriteSignatures;
+			return this;
+		}
+
+		public VerifiedCommandsAndProof build() {
+			ImmutableList<Command> commands;
+			if (commandMapper != null) {
+				commands = base.getCommands().stream()
+					.map(commandMapper)
+					.collect(ImmutableList.toImmutableList());
+			} else {
+				commands = base.getCommands();
+			}
+
+			Hash accumulated;
+			if (accumulator != null) {
+				accumulated = request.getLedgerHeader().getAccumulator();
+				for (Command command : commands) {
+					accumulated = accumulator.accumulate(accumulated, command);
+				}
+			} else {
+				accumulated = base.getHeader().getAccumulator();
+			}
+
+			LedgerHeader ledgerHeader = LedgerHeader.create(
+				base.getHeader().getEpoch(),
+				base.getHeader().getView(),
+				base.getHeader().getStateVersion(),
+				accumulated,
+				base.getHeader().timestamp(),
+				base.getHeader().isEndOfEpoch()
+			);
+			TimestampedECDSASignatures signatures = overwriteSignatures != null ? overwriteSignatures : base.getHeader().getSignatures();
+			VerifiedLedgerHeaderAndProof headerAndProof = new VerifiedLedgerHeaderAndProof(
+				base.getHeader().toDto().getOpaque0(),
+				base.getHeader().toDto().getOpaque1(),
+				base.getHeader().toDto().getOpaque2(),
+				base.getHeader().toDto().getOpaque3(),
+				ledgerHeader,
+				signatures
+			);
+
+			return new VerifiedCommandsAndProof(commands, headerAndProof);
+		}
+	}
+
 	private enum ReadType {
 		GOOD {
 			@Override
@@ -75,10 +145,25 @@ public final class SometimesByzantineCommittedReader implements CommittedSender,
 				VerifiedCommandsAndProof correctCommands,
 				LedgerAccumulator ledgerAccumulator
 			) {
-				ImmutableList<Command> badCommands = Stream.generate(() -> new Command(new byte[]{0}))
-					.limit(correctCommands.size())
-					.collect(ImmutableList.toImmutableList());
-				return new VerifiedCommandsAndProof(badCommands, correctCommands.getHeader());
+				return new ByzantineVerifiedCommandsAndProofBuilder()
+					.base(correctCommands)
+					.replaceCommands(cmd -> new Command(new byte[]{0}))
+					.build();
+			}
+		},
+		NO_SIGNATURES {
+			@Override
+			VerifiedCommandsAndProof transform(
+				DtoLedgerHeaderAndProof request,
+				VerifiedCommandsAndProof correctCommands,
+				LedgerAccumulator accumulator
+			) {
+				return new ByzantineVerifiedCommandsAndProofBuilder()
+					.base(correctCommands)
+					.replaceCommands(cmd -> new Command(new byte[]{0}))
+					.accumulator(request, accumulator)
+					.overwriteSignatures(new TimestampedECDSASignatures())
+					.build();
 			}
 		},
 		BAD_SIGNATURES {
@@ -86,32 +171,13 @@ public final class SometimesByzantineCommittedReader implements CommittedSender,
 			VerifiedCommandsAndProof transform(
 				DtoLedgerHeaderAndProof request,
 				VerifiedCommandsAndProof correctCommands,
-				LedgerAccumulator ledgerAccumulator
+				LedgerAccumulator accumulator
 			) {
-				ImmutableList<Command> badCommands = Stream.generate(() -> new Command(new byte[]{0}))
-					.limit(correctCommands.size())
-					.collect(ImmutableList.toImmutableList());
-				Hash accumulated = request.getLedgerHeader().getAccumulator();
-				for (Command command : badCommands) {
-					accumulated = ledgerAccumulator.accumulate(accumulated, command);
-				}
-				LedgerHeader ledgerHeader = LedgerHeader.create(
-					correctCommands.getHeader().getEpoch(),
-					correctCommands.getHeader().getView(),
-					correctCommands.getHeader().getStateVersion(),
-					accumulated,
-					correctCommands.getHeader().timestamp(),
-					correctCommands.getHeader().isEndOfEpoch()
-				);
-				VerifiedLedgerHeaderAndProof headerAndProof = new VerifiedLedgerHeaderAndProof(
-					correctCommands.getHeader().toDto().getOpaque0(),
-					correctCommands.getHeader().toDto().getOpaque1(),
-					correctCommands.getHeader().toDto().getOpaque2(),
-					correctCommands.getHeader().toDto().getOpaque3(),
-					ledgerHeader,
-					new TimestampedECDSASignatures()
-				);
-				return new VerifiedCommandsAndProof(badCommands, headerAndProof);
+				return new ByzantineVerifiedCommandsAndProofBuilder()
+					.base(correctCommands)
+					.replaceCommands(cmd -> new Command(new byte[]{0}))
+					.accumulator(request, accumulator)
+					.build();
 			}
 		};
 
@@ -121,7 +187,6 @@ public final class SometimesByzantineCommittedReader implements CommittedSender,
 			LedgerAccumulator ledgerAccumulator
 		);
 	}
-
 
 	@Override
 	public VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start, int batchSize) {

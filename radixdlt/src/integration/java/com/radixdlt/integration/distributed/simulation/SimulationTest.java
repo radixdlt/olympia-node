@@ -23,8 +23,10 @@ import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.google.inject.Provides;
+import com.google.inject.Scopes;
 import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusRunnerModule;
+import com.radixdlt.CryptoModule;
 import com.radixdlt.LedgerCommandGeneratorModule;
 import com.radixdlt.LedgerEpochChangeModule;
 import com.radixdlt.LedgerEpochChangeRxModule;
@@ -39,9 +41,12 @@ import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.integration.distributed.MockedBFTConfigurationModule;
 import com.radixdlt.integration.distributed.MockedCommandGeneratorModule;
 import com.radixdlt.integration.distributed.MockedConsensusRunnerModule;
+import com.radixdlt.integration.distributed.MockedCryptoModule;
 import com.radixdlt.integration.distributed.MockedLedgerModule;
 import com.radixdlt.integration.distributed.MockedMempoolModule;
 import com.radixdlt.integration.distributed.MockedRadixEngineStoreModule;
@@ -76,6 +81,7 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.LatencyProvider;
+import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.utils.DurationParser;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
@@ -106,22 +112,22 @@ public class SimulationTest {
 		void run(RunningNetwork network);
 	}
 
-	private final ImmutableList<BFTNode> nodes;
+	private final ImmutableList<ECKeyPair> nodes;
 	private final LatencyProvider latencyProvider;
 	private final ImmutableSet<SimulationNetworkActor> runners;
 	private final ImmutableMap<String, TestInvariant> checks;
 	private final int pacemakerTimeout;
 	private final Module baseNodeModule;
 	private final Module overrideModule;
-	private final Map<BFTNode, Module> byzantineNodeModules;
+	private final Map<ECKeyPair, Module> byzantineNodeModules;
 
 	private SimulationTest(
-		ImmutableList<BFTNode> nodes,
+		ImmutableList<ECKeyPair> nodes,
 		LatencyProvider latencyProvider,
 		int pacemakerTimeout,
 		Module baseNodeModule,
 		Module overrideModule,
-		Map<BFTNode, Module> byzantineNodeModules,
+		Map<ECKeyPair, Module> byzantineNodeModules,
 		ImmutableMap<String, TestInvariant> checks,
 		ImmutableSet<SimulationNetworkActor> runners
 	) {
@@ -150,22 +156,24 @@ public class SimulationTest {
 		private LedgerType ledgerType = LedgerType.MOCKED_LEDGER;
 		private int numInitialValidators = 0;
 		private Module overrideModule = null;
-		private final ImmutableMap.Builder<BFTNode, Module> byzantineModules = ImmutableMap.builder();
+		private final ImmutableMap.Builder<ECKeyPair, Module> byzantineModules = ImmutableMap.builder();
+		private boolean mockCryptoModule = true;
 
 		private Builder() {
 		}
 
 		public Builder addSingleByzantineModule(Module byzantineModule) {
-			BFTNode firstNode = BFTNode.create(nodes.get(0).getPublicKey());
-			byzantineModules.put(firstNode, byzantineModule);
+			byzantineModules.put(nodes.get(0), byzantineModule);
 			return this;
 		}
 
 		public Builder addByzantineModuleToAll(Module byzantineModule) {
-			nodes.forEach(k -> {
-				BFTNode node = BFTNode.create(k.getPublicKey());
-				byzantineModules.put(node, byzantineModule);
-			});
+			nodes.forEach(k -> byzantineModules.put(k, byzantineModule));
+			return this;
+		}
+
+		public Builder mockCryptoModule(boolean mockCryptoModule) {
+			this.mockCryptoModule = mockCryptoModule;
 			return this;
 		}
 
@@ -359,8 +367,17 @@ public class SimulationTest {
 
 		public SimulationTest build() {
 			ImmutableList.Builder<Module> modules = ImmutableList.builder();
+			final Random sharedRandom = new Random();
+
 			final long limit = numInitialValidators == 0 ? Long.MAX_VALUE : numInitialValidators;
 			modules.add(new AbstractModule() {
+				@Override
+				public void configure() {
+					bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
+					bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
+					bind(Random.class).toInstance(sharedRandom);
+				}
+
 				@Provides
 				ImmutableList<BFTNode> nodes() {
 					return nodes.stream().map(node -> BFTNode.create(node.getPublicKey())).collect(ImmutableList.toImmutableList());
@@ -371,6 +388,12 @@ public class SimulationTest {
 					return BFTValidatorSet.from(nodes.stream().limit(limit).map(node -> BFTValidator.from(node, UInt256.ONE)));
 				}
 			});
+
+			if (mockCryptoModule) {
+				modules.add(new MockedCryptoModule());
+			} else {
+				modules.add(new CryptoModule());
+			}
 
 			if (ledgerType == LedgerType.MOCKED_LEDGER) {
 				modules.add(new MockedBFTConfigurationModule());
@@ -455,7 +478,7 @@ public class SimulationTest {
 
 
 			return new SimulationTest(
-				nodes.stream().map(node -> BFTNode.create(node.getPublicKey())).collect(ImmutableList.toImmutableList()),
+				nodes,
 				latencyProvider.copyOf(),
 				pacemakerTimeout,
 				Modules.combine(modules.build()), overrideModule,

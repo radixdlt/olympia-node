@@ -22,9 +22,10 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.MapBinder;
 import com.radixdlt.consensus.BFTConfiguration;
+import com.radixdlt.consensus.HashVerifier;
+import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.ledger.AccumulatorAndValidatorSetVerifier;
@@ -67,11 +68,15 @@ public class SyncCommittedServiceModule extends AbstractModule {
 	@Provides
 	private DtoCommandsAndProofVerifier verifier(
 		LedgerAccumulatorVerifier verifier,
-		BFTConfiguration initialConfiguration
+		BFTConfiguration initialConfiguration,
+		Hasher hasher,
+		HashVerifier hashVerifier
 	) {
 		return new AccumulatorAndValidatorSetVerifier(
 			verifier,
-			initialConfiguration.getValidatorSet()
+			initialConfiguration.getValidatorSet(),
+			hasher,
+			hashVerifier
 		);
 	}
 

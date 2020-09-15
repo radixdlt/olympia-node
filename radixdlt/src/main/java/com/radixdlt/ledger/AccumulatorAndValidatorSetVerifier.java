@@ -17,12 +17,21 @@
 
 package com.radixdlt.ledger;
 
+import com.radixdlt.consensus.BFTHeader;
+import com.radixdlt.consensus.HashVerifier;
+import com.radixdlt.consensus.Hasher;
+import com.radixdlt.consensus.TimestampedECDSASignature;
+import com.radixdlt.consensus.TimestampedVoteData;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.VoteData;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.ValidationState;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.sync.LocalSyncServiceProcessor.DtoCommandsAndProofVerifier;
 import com.radixdlt.sync.LocalSyncServiceProcessor.DtoCommandsAndProofVerifierException;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -31,13 +40,19 @@ import java.util.Objects;
 public final class AccumulatorAndValidatorSetVerifier implements DtoCommandsAndProofVerifier {
 	private final LedgerAccumulatorVerifier accumulatorVerifier;
 	private final BFTValidatorSet validatorSet;
+	private final Hasher hasher;
+	private final HashVerifier hashVerifier;
 
 	public AccumulatorAndValidatorSetVerifier(
 		LedgerAccumulatorVerifier accumulatorVerifier,
-		BFTValidatorSet validatorSet
+		BFTValidatorSet validatorSet,
+		Hasher hasher,
+		HashVerifier hashVerifier
 	) {
 		this.accumulatorVerifier = Objects.requireNonNull(accumulatorVerifier);
 		this.validatorSet = Objects.requireNonNull(validatorSet);
+		this.hasher = Objects.requireNonNull(hasher);
+		this.hashVerifier = Objects.requireNonNull(hashVerifier);
 	}
 
 	@Override
@@ -56,10 +71,29 @@ public final class AccumulatorAndValidatorSetVerifier implements DtoCommandsAndP
 			throw new DtoCommandsAndProofVerifierException(commandsAndProof, "Invalid signature count");
 		}
 
+		DtoLedgerHeaderAndProof endHeader = commandsAndProof.getEndHeader();
+		VoteData voteData = new VoteData(
+			endHeader.getOpaque0(),
+			endHeader.getOpaque1(),
+			new BFTHeader(
+				View.of(endHeader.getOpaque2()),
+				endHeader.getOpaque3(),
+				endHeader.getLedgerHeader()
+			)
+		);
+		Map<BFTNode, TimestampedECDSASignature> signatures = endHeader.getSignatures().getSignatures();
+		for (BFTNode node : signatures.keySet()) {
+			TimestampedECDSASignature signature = signatures.get(node);
+			final TimestampedVoteData timestampedVoteData = new TimestampedVoteData(voteData, signature.timestamp());
+			final Hash voteDataHash = this.hasher.hash(timestampedVoteData);
+
+			if (!hashVerifier.verify(node.getKey(), voteDataHash, signature.signature())) {
+				throw new DtoCommandsAndProofVerifierException(commandsAndProof, "Invalid signature");
+			}
+		}
+
 		// TODO: Stateful ledger header verification:
 		// TODO: -verify rootHash matches
-		// TODO: verify signatures
-
 		VerifiedLedgerHeaderAndProof nextHeader = new VerifiedLedgerHeaderAndProof(
 			commandsAndProof.getEndHeader().getOpaque0(),
 			commandsAndProof.getEndHeader().getOpaque1(),
