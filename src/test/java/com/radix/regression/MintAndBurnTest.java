@@ -1,5 +1,6 @@
 package com.radix.regression;
 
+import com.radix.test.utils.TokenUtilities;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.identity.RadixIdentities;
@@ -20,6 +21,7 @@ public class MintAndBurnTest {
 	@Test
 	public void given_an_account_owner_who_created_a_token__when_the_owner_mints_max_then_burns_max_then_mints_max__then_it_should_all_be_successful() throws Exception {
 		RadixApplicationAPI api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
+		TokenUtilities.requestTokensFor(api);
 		api.discoverNodes();
 		RadixNode originNode = api.getNetworkState()
 			.map(RadixNetworkState::getNodes)

@@ -12,6 +12,7 @@ import java.util.function.Supplier;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.radix.test.utils.TokenUtilities;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.translate.Action;
@@ -32,6 +33,7 @@ public class TokenClassesInAccountTest {
 	@BeforeClass
 	public static void setup() {
 		api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
+		TokenUtilities.requestTokensFor(api);
 	}
 
 	private static CreateTokenAction buildCreateNewTokenAction(String symbol, BigDecimal initialSupply) {

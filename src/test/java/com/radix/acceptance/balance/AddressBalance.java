@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.radix.test.utils.TokenUtilities;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.LocalRadixIdentity;
 import com.radixdlt.client.application.identity.RadixIdentities;
@@ -32,8 +33,9 @@ public class AddressBalance {
 		this.identity1 = RadixIdentities.createNew();
 		this.identity2 = RadixIdentities.createNew();
 		this.api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), ownerIdentity);
-		tokenRRI = RRI.of(api.getAddress(), "BALANCETEST");
-		api.createFixedSupplyToken(tokenRRI, "BALANCETEST", "TEST", new BigDecimal(1000)).blockUntilComplete();
+		TokenUtilities.requestTokensFor(this.api);
+		this.tokenRRI = RRI.of(api.getAddress(), "BALANCETEST");
+		this.api.createFixedSupplyToken(tokenRRI, "BALANCETEST", "TEST", new BigDecimal(1000)).blockUntilComplete();
 	}
 
 	@Test

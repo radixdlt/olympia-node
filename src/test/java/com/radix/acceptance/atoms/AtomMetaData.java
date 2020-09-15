@@ -3,6 +3,7 @@ package com.radix.acceptance.atoms;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.radix.test.utils.TokenUtilities;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
@@ -88,6 +89,8 @@ public class AtomMetaData {
         setupWebSocket();
 
         this.identity = RadixIdentities.createNew();
+
+        TokenUtilities.requestTokensFor(this.identity);
 
         this.jsonRpcClient = new RadixJsonRpcClient(this.webSocketClient);
     }

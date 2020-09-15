@@ -17,6 +17,7 @@ import java.util.List;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.radix.acceptance.SpecificProperties;
+import com.radix.test.utils.TokenUtilities;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
@@ -58,6 +59,7 @@ public class CreateSingleIssuanceTokenClass {
 	public void i_have_access_to_a_suitable_Radix_network() {
 		this.identity = RadixIdentities.createNew();
 		this.api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), this.identity);
+		TokenUtilities.requestTokensFor(this.api);
 		this.api.discoverNodes();
 		this.nodeConnection = this.api.getNetworkState()
 			.map(RadixNetworkState::getNodes)

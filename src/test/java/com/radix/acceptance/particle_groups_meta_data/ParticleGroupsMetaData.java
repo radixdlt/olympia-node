@@ -36,6 +36,7 @@ import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
 import io.reactivex.Single;
 import io.reactivex.functions.Cancellable;
+import io.reactivex.observers.BaseTestConsumer.TestWaitStrategy;
 import io.reactivex.observers.TestObserver;
 import org.json.JSONObject;
 
@@ -250,9 +251,8 @@ public class ParticleGroupsMetaData {
 
 	@Then("^I should get a deserialization error$")
 	public void iShouldGetADeserializationError() {
-		this.observer2.awaitTerminalEvent(15, TimeUnit.SECONDS);
+		this.observer2.awaitCount(1, TestWaitStrategy.SLEEP_10MS, TimeUnit.SECONDS.toMillis(15));
 		this.observer2.assertNoErrors();
-		this.observer2.assertComplete();
 		this.observer2.assertValueAt(0, val -> !val.isSuccess());
 		this.observer2.assertValueAt(0, val -> val.getError().getAsJsonObject().get("code").getAsInt() == -32000);
 	}

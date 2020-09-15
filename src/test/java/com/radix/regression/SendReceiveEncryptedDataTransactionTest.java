@@ -3,17 +3,24 @@ package com.radix.regression;
 import com.radixdlt.client.application.translate.data.SendMessageAction;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.identifiers.RadixAddress;
+
 import io.reactivex.disposables.Disposable;
 import java.util.stream.Stream;
 
 import org.junit.Test;
 
+import com.radix.test.utils.TokenUtilities;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.RadixApplicationAPIBuilder;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.identity.RadixIdentities;
+import com.radixdlt.client.application.translate.data.AtomToDecryptedMessageMapper;
 import com.radixdlt.client.application.translate.data.DecryptedMessage;
 import com.radixdlt.client.application.translate.data.DecryptedMessage.EncryptionState;
+import com.radixdlt.client.application.translate.tokens.BurnTokensAction;
+import com.radixdlt.client.application.translate.tokens.BurnTokensActionMapper;
+import com.radixdlt.client.application.translate.tokens.TokenBalanceReducer;
 import com.radixdlt.client.application.translate.data.SendMessageToParticleGroupsMapper;
 import com.radixdlt.client.core.RadixUniverse;
 
@@ -29,7 +36,6 @@ public class SendReceiveEncryptedDataTransactionTest {
 		// Given I own a key pair associated with an address and listening to messages
 		RadixApplicationAPI normalApi = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
 		TestObserver<DecryptedMessage> messageListener = TestObserver.create(Util.loggingObserver("MessageListener"));
-		normalApi.observeMessages().subscribe(messageListener);
 		Disposable d = normalApi.pull();
 
 		// When I send a message to myself encrypted with a different key
@@ -41,8 +47,17 @@ public class SendReceiveEncryptedDataTransactionTest {
 			.defaultFeeMapper()
 			.universe(RadixUniverse.create(RadixEnv.getBootstrapConfig()))
 			.identity(normalApi.getIdentity())
+			.addStatefulParticlesMapper(BurnTokensAction.class, new BurnTokensActionMapper()) // Needed for fees
 			.addStatelessParticlesMapper(SendMessageAction.class, msgMapper)
+			.addReducer(new TokenBalanceReducer()) // Needed for fees
+			.addAtomMapper(new AtomToDecryptedMessageMapper()) // Needed for fees
 			.build();
+		RadixAddress faucetAddress = TokenUtilities.requestTokensFor(sendMessageWithDifferentKeyApi);
+
+		normalApi.observeMessages()
+			.filter(msg -> !faucetAddress.equals(msg.getFrom()))
+			.subscribe(messageListener);
+
 		Result msgSendResult = sendMessageWithDifferentKeyApi.sendMessage(new byte[] {0, 1, 2, 3}, true);
 		msgSendResult.toObservable().subscribe(Util.loggingObserver("MessageSender"));
 		Completable sendMessageStatus = msgSendResult.toCompletable();
