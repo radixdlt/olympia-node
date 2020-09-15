@@ -44,9 +44,9 @@ import io.undertow.util.Methods;
 import io.undertow.util.StatusCodes;
 
 /**
- * Basic API for requesting tokens.
+ * Token request source via API.
  */
-public final class FaucetAPI {
+final class APITokenRequestSource implements TokenRequestSource {
 	private static final Logger logger = LogManager.getLogger();
 
 	private final Undertow server;
@@ -59,8 +59,8 @@ public final class FaucetAPI {
 	 * @param apiPort The port to listen on
 	 * @return A newly created {@code FaucetAPI}
 	 */
-	public static FaucetAPI create(int apiPort) {
-		return new FaucetAPI(apiPort);
+	static APITokenRequestSource create(int apiPort) {
+		return new APITokenRequestSource(apiPort);
 	}
 
 	/**
@@ -68,6 +68,7 @@ public final class FaucetAPI {
 	 *
 	 * @return An observable of requests.
 	 */
+	@Override
 	public Observable<Pair<RadixAddress, EUID>> requestSource() {
 		return this.requests;
 	}
@@ -75,11 +76,11 @@ public final class FaucetAPI {
 	/**
 	 * Stops the server.
 	 */
-	public void stop() {
+	void stop() {
 		this.server.stop();
 	}
 
-	private FaucetAPI(int port) {
+	private APITokenRequestSource(int port) {
         this.requests = BehaviorSubject.create();
         this.random = new SecureRandom();
 
@@ -112,7 +113,7 @@ public final class FaucetAPI {
     			logger.debug("Queuing request {}, address {} from {}", result.getSecond(), result.getFirst(), exchange.getSourceAddress());
     			this.requests.onNext(result);
     			exchange.setStatusCode(StatusCodes.OK);
-				exchange.getResponseSender().send("Request queued");
+				exchange.getResponseSender().send(result.getSecond().toString());
     		} else {
     			exchange.setStatusCode(StatusCodes.BAD_REQUEST);
 				exchange.getResponseSender().send("Address must be specified");
