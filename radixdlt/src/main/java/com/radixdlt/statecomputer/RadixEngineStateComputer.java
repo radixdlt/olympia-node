@@ -100,19 +100,19 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 			return null;
 		}
 
-		final VerifiedLedgerHeaderAndProof nextState;
+		final VerifiedLedgerHeaderAndProof nextHeader;
 		if (storedCommittedAtoms.firstEntry() != null) {
-			nextState = storedCommittedAtoms.firstEntry().getValue().getStateAndProof();
+			nextHeader = storedCommittedAtoms.firstEntry().getValue().getStateAndProof();
 		} else {
 			Entry<Long, StoredCommittedCommand> uncommittedEntry = unstoredCommittedAtoms.higherEntry(stateVersion);
 			if (uncommittedEntry == null) {
 				return null;
 			}
-			nextState = uncommittedEntry.getValue().getStateAndProof();
+			nextHeader = uncommittedEntry.getValue().getStateAndProof();
 		}
 
 		synchronized (lock) {
-			final long proofStateVersion = nextState.getStateVersion();
+			final long proofStateVersion = nextHeader.getStateVersion();
 			Map<Long, StoredCommittedCommand> unstoredToReturn
 				= unstoredCommittedAtoms.subMap(stateVersion, false, proofStateVersion, true);
 			storedCommittedAtoms.putAll(unstoredToReturn);
@@ -120,7 +120,7 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 
 		return new VerifiedCommandsAndProof(
 			storedCommittedAtoms.values().stream().map(StoredCommittedCommand::getCommand).collect(ImmutableList.toImmutableList()),
-			nextState
+			nextHeader
 		);
 	}
 

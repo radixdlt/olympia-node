@@ -26,21 +26,15 @@ import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
-import com.radixdlt.consensus.epoch.EmptySyncVerticesRPCSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.SimulatedNetworkImpl;
 import com.radixdlt.sync.StateSyncNetwork;
 
 public class SimulationNetworkModule extends AbstractModule {
-	private final boolean getVerticesRPCEnabled;
 	private final SimulationNetwork simulationNetwork;
 
-	public SimulationNetworkModule(
-		boolean getVerticesRPCEnabled,
-		SimulationNetwork simulationNetwork
-	) {
-		this.getVerticesRPCEnabled = getVerticesRPCEnabled;
+	public SimulationNetworkModule(SimulationNetwork simulationNetwork) {
 		this.simulationNetwork = simulationNetwork;
 	}
 
@@ -51,12 +45,7 @@ public class SimulationNetworkModule extends AbstractModule {
 		bind(SyncVerticesRPCRx.class).to(SimulatedNetworkImpl.class);
 		bind(BFTEventSender.class).to(SimulatedNetworkImpl.class);
 		bind(StateSyncNetwork.class).to(SimulatedNetworkImpl.class);
-		// TODO: Remove if branch
-		if (getVerticesRPCEnabled) {
-			bind(SyncVerticesRPCSender.class).to(SimulatedNetworkImpl.class);
-		} else {
-			bind(SyncVerticesRPCSender.class).toInstance(EmptySyncVerticesRPCSender.INSTANCE);
-		}
+		bind(SyncVerticesRPCSender.class).to(SimulatedNetworkImpl.class);
 		bind(SyncEpochsRPCSender.class).to(SimulatedNetworkImpl.class);
 	}
 

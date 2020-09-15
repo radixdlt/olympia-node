@@ -52,7 +52,7 @@ public final class EpochChangeManager implements CommittedSender {
 				proof.getEpoch() + 1,
 				View.genesis(),
 				proof.getStateVersion(),
-				proof.getCommandId(),
+				proof.getAccumulator(),
 				proof.timestamp(),
 				false
 			);

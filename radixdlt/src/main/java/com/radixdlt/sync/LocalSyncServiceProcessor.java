@@ -20,6 +20,9 @@ package com.radixdlt.sync;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.crypto.Hash;
+import com.radixdlt.ledger.DtoCommandsAndProof;
+import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import java.util.Comparator;
 import java.util.Objects;
@@ -33,9 +36,13 @@ import org.apache.logging.log4j.Logger;
  * Thread-safety must be handled by caller.
  */
 @NotThreadSafe
-public final class SyncServiceProcessor {
-	public interface SyncedCommandSender {
-		void sendSyncedCommand(VerifiedCommandsAndProof committedCommand);
+public final class LocalSyncServiceProcessor {
+	public interface VerifiedSyncedCommandsSender {
+		void sendVerifiedCommands(VerifiedCommandsAndProof commandsAndProof);
+	}
+
+	public interface InvalidSyncedCommandsSender {
+		void sendInvalidCommands(DtoCommandsAndProof commandsAndProof);
 	}
 
 	public static final class SyncInProgress {
@@ -60,62 +67,71 @@ public final class SyncServiceProcessor {
 	}
 
 	private static final Logger log = LogManager.getLogger();
-	private final CommittedReader committedReader;
-	private final SyncedCommandSender syncedCommandSender;
-	private final int batchSize;
+	private final VerifiedSyncedCommandsSender verifiedSyncedCommandsSender;
 	private final SyncTimeoutScheduler syncTimeoutScheduler;
 	private final long patienceMilliseconds;
 	private final StateSyncNetwork stateSyncNetwork;
+	private final LedgerAccumulatorVerifier verifier;
 	private final Comparator<VerifiedLedgerHeaderAndProof> headerComparator;
+	private final InvalidSyncedCommandsSender invalidSyncedCommandsSender;
 	private VerifiedLedgerHeaderAndProof targetHeader;
 	private VerifiedLedgerHeaderAndProof currentHeader;
 
-	public SyncServiceProcessor(
-		CommittedReader committedReader,
+	public LocalSyncServiceProcessor(
 		StateSyncNetwork stateSyncNetwork,
-		SyncedCommandSender syncedCommandSender,
+		VerifiedSyncedCommandsSender verifiedSyncedCommandsSender,
+		InvalidSyncedCommandsSender invalidSyncedCommandsSender,
 		SyncTimeoutScheduler syncTimeoutScheduler,
+		LedgerAccumulatorVerifier verifier,
 		Comparator<VerifiedLedgerHeaderAndProof> headerComparator,
 		VerifiedLedgerHeaderAndProof current,
-		int batchSize,
 		long patienceMilliseconds
 	) {
 		if (patienceMilliseconds <= 0) {
 			throw new IllegalArgumentException();
 		}
-		if (batchSize <= 0) {
-			throw new IllegalArgumentException();
-		}
-		this.committedReader = Objects.requireNonNull(committedReader);
+
 		this.stateSyncNetwork = Objects.requireNonNull(stateSyncNetwork);
-		this.syncedCommandSender = Objects.requireNonNull(syncedCommandSender);
+		this.verifiedSyncedCommandsSender = Objects.requireNonNull(verifiedSyncedCommandsSender);
+		this.invalidSyncedCommandsSender = Objects.requireNonNull(invalidSyncedCommandsSender);
 		this.syncTimeoutScheduler = Objects.requireNonNull(syncTimeoutScheduler);
-		this.batchSize = batchSize;
 		this.patienceMilliseconds = patienceMilliseconds;
+		this.verifier = Objects.requireNonNull(verifier);
 		this.headerComparator = Objects.requireNonNull(headerComparator);
 		this.currentHeader = current;
 		this.targetHeader = current;
 	}
 
-	public void processSyncRequest(SyncRequest syncRequest) {
-		log.info("SYNC_REQUEST: {}", syncRequest);
-		long stateVersion = syncRequest.getStateVersion();
-		VerifiedCommandsAndProof committedCommands = committedReader.getNextCommittedCommands(stateVersion, batchSize);
-		if (committedCommands == null) {
-			return;
-		}
-
-		stateSyncNetwork.sendSyncResponse(syncRequest.getNode(), committedCommands);
-	}
-
-	public void processSyncResponse(VerifiedCommandsAndProof commandsAndProof) {
+	public void processSyncResponse(DtoCommandsAndProof commandsAndProof) {
 		log.info("SYNC_RESPONSE: {} current={} target={}", commandsAndProof, this.currentHeader, this.targetHeader);
-		// TODO: Check validity of response
-		if (headerComparator.compare(commandsAndProof.getHeader(), this.currentHeader) <= 0) {
+		Hash start = commandsAndProof.getStartHeader().getLedgerHeader().getAccumulator();
+		Hash end = commandsAndProof.getEndHeader().getLedgerHeader().getAccumulator();
+		if (!this.verifier.verify(start, commandsAndProof.getCommands(), end)) {
+			log.warn("SYNC Received Bad commands: {}", commandsAndProof);
+			invalidSyncedCommandsSender.sendInvalidCommands(commandsAndProof);
 			return;
 		}
-		this.syncedCommandSender.sendSyncedCommand(commandsAndProof);
-		this.currentHeader = commandsAndProof.getHeader();
+
+		// TODO: Stateful ledger header verification:
+		// TODO: -Check epoch signatures
+		// TODO: -verify rootHash matches
+
+		VerifiedLedgerHeaderAndProof nextHeader = new VerifiedLedgerHeaderAndProof(
+			commandsAndProof.getEndHeader().getOpaque0(),
+			commandsAndProof.getEndHeader().getOpaque1(),
+			commandsAndProof.getEndHeader().getOpaque2(),
+			commandsAndProof.getEndHeader().getOpaque3(),
+			commandsAndProof.getEndHeader().getLedgerHeader(),
+			commandsAndProof.getEndHeader().getSignatures()
+		);
+
+		VerifiedCommandsAndProof verified = new VerifiedCommandsAndProof(
+			commandsAndProof.getCommands(),
+			nextHeader
+		);
+
+		// TODO: Check validity of response
+		this.verifiedSyncedCommandsSender.sendVerifiedCommands(verified);
 	}
 
 	public void processVersionUpdate(VerifiedLedgerHeaderAndProof updatedHeader) {
@@ -150,18 +166,17 @@ public final class SyncServiceProcessor {
 		if (syncInProgress.getTargetHeader().getStateVersion() == this.currentHeader.getStateVersion()) {
 			// Already command synced just need to update header
 			// TODO: Need to check epochs to make sure we're not skipping epochs
-			VerifiedCommandsAndProof verifiedCommandsAndProof = new VerifiedCommandsAndProof(
+			VerifiedCommandsAndProof commandsAndProof = new VerifiedCommandsAndProof(
 				ImmutableList.of(),
 				syncInProgress.getTargetHeader()
 			);
-			this.syncedCommandSender.sendSyncedCommand(verifiedCommandsAndProof);
+			this.verifiedSyncedCommandsSender.sendVerifiedCommands(commandsAndProof);
 			return;
 		}
 
 		ImmutableList<BFTNode> targetNodes = syncInProgress.getTargetNodes();
 		BFTNode node = targetNodes.get(ThreadLocalRandom.current().nextInt(targetNodes.size()));
-		final long version = this.currentHeader.getStateVersion();
-		stateSyncNetwork.sendSyncRequest(node, version);
+		stateSyncNetwork.sendSyncRequest(node, this.currentHeader.toDto());
 		syncTimeoutScheduler.scheduleTimeout(syncInProgress, patienceMilliseconds);
 	}
 }

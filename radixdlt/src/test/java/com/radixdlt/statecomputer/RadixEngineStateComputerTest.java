@@ -140,7 +140,7 @@ public class RadixEngineStateComputerTest {
 
 		stateComputer.commit(committedCommand);
 
-		VerifiedCommandsAndProof commands = stateComputer.getNextCommittedCommands(0, 1);
+		VerifiedCommandsAndProof commands = stateComputer.getNextCommittedCommands(0L, 1);
 		assertThat(commands).isNotNull();
 		assertThat(commands.getHeader()).isEqualTo(proof);
 	}
@@ -164,7 +164,7 @@ public class RadixEngineStateComputerTest {
 		}).when(command).forEach(any());
 
 		assertThat(stateComputer.commit(command)).isEmpty();
-		VerifiedCommandsAndProof commands = stateComputer.getNextCommittedCommands(0, 1);
+		VerifiedCommandsAndProof commands = stateComputer.getNextCommittedCommands(0L, 1);
 		assertThat(commands).isNotNull();
 		assertThat(commands.getHeader()).isEqualTo(proof);
 	}

@@ -18,7 +18,7 @@
 package com.radixdlt.sync;
 
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.sync.SyncServiceRunner.LocalSyncRequestsRx;
 import com.radixdlt.sync.SyncServiceRunner.SyncTimeoutsRx;
 import com.radixdlt.sync.SyncServiceRunner.VersionUpdatesRx;
@@ -42,11 +42,12 @@ public class SyncServiceRunnerTest {
 	private LocalSyncRequestsRx localSyncRequestsRx;
 	private SyncTimeoutsRx syncTimeoutsRx;
 	private StateSyncNetwork stateSyncNetwork;
-	private SyncServiceProcessor syncServiceProcessor;
+	private LocalSyncServiceProcessor syncServiceProcessor;
+	private RemoteSyncServiceProcessor remoteSyncServiceProcessor;
 	private VersionUpdatesRx versionUpdatesRx;
 	private Subject<VerifiedLedgerHeaderAndProof> versionUpdatesSubject;
-	private Subject<SyncRequest> requestsSubject;
-	private Subject<VerifiedCommandsAndProof> responsesSubject;
+	private Subject<RemoteSyncRequest> requestsSubject;
+	private Subject<DtoCommandsAndProof> responsesSubject;
 
 	@Before
 	public void setUp() {
@@ -65,7 +66,8 @@ public class SyncServiceRunnerTest {
 		this.requestsSubject = PublishSubject.create();
 		when(stateSyncNetwork.syncRequests()).thenReturn(requestsSubject);
 
-		this.syncServiceProcessor = mock(SyncServiceProcessor.class);
+		this.syncServiceProcessor = mock(LocalSyncServiceProcessor.class);
+		this.remoteSyncServiceProcessor = mock(RemoteSyncServiceProcessor.class);
 
 		this.versionUpdatesSubject = PublishSubject.create();
 		this.versionUpdatesRx = () -> this.versionUpdatesSubject;
@@ -75,7 +77,8 @@ public class SyncServiceRunnerTest {
 			syncTimeoutsRx,
 			versionUpdatesRx,
 			stateSyncNetwork,
-			syncServiceProcessor
+			syncServiceProcessor,
+			remoteSyncServiceProcessor
 		);
 
 		// Clear interrupted status
@@ -89,15 +92,15 @@ public class SyncServiceRunnerTest {
 
 	@Test
 	public void when_sync_request__then_it_is_processed() {
-		SyncRequest syncRequest = mock(SyncRequest.class);
+		RemoteSyncRequest syncRequest = mock(RemoteSyncRequest.class);
 		syncServiceRunner.start();
 		requestsSubject.onNext(syncRequest);
-		verify(syncServiceProcessor, timeout(1000).times(1)).processSyncRequest(eq(syncRequest));
+		verify(remoteSyncServiceProcessor, timeout(1000).times(1)).processRemoteSyncRequest(eq(syncRequest));
 	}
 
 	@Test
 	public void when_sync_response__then_it_is_processed() {
-		VerifiedCommandsAndProof committedCommands = mock(VerifiedCommandsAndProof.class);
+		DtoCommandsAndProof committedCommands = mock(DtoCommandsAndProof.class);
 		syncServiceRunner.start();
 		responsesSubject.onNext(committedCommands);
 		verify(syncServiceProcessor, timeout(1000).times(1)).processSyncResponse(eq(committedCommands));

@@ -17,9 +17,11 @@
 
 package com.radixdlt.sync;
 
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.sync.SyncServiceProcessor.SyncInProgress;
+import com.radixdlt.sync.LocalSyncServiceProcessor.SyncInProgress;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
@@ -36,6 +38,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * Manages thread safety and is the runner for the Sync Service Processor.
  */
+@Singleton
 public final class SyncServiceRunner implements ModuleRunner {
 	private static final Logger log = LogManager.getLogger();
 
@@ -54,19 +57,22 @@ public final class SyncServiceRunner implements ModuleRunner {
 	private final StateSyncNetwork stateSyncNetwork;
 	private final Scheduler singleThreadScheduler;
 	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("SyncManager"));
-	private final SyncServiceProcessor syncServiceProcessor;
+	private final LocalSyncServiceProcessor syncServiceProcessor;
+	private final RemoteSyncServiceProcessor remoteSyncServiceProcessor;
 	private final SyncTimeoutsRx syncTimeoutsRx;
 	private final LocalSyncRequestsRx localSyncRequestsRx;
 	private final VersionUpdatesRx versionUpdatesRx;
 	private final Object lock = new Object();
 	private CompositeDisposable compositeDisposable;
 
+	@Inject
 	public SyncServiceRunner(
 		LocalSyncRequestsRx localSyncRequestsRx,
 		SyncTimeoutsRx syncTimeoutsRx,
 		VersionUpdatesRx versionUpdatesRx,
 		StateSyncNetwork stateSyncNetwork,
-		SyncServiceProcessor syncServiceProcessor
+		LocalSyncServiceProcessor syncServiceProcessor,
+		RemoteSyncServiceProcessor remoteSyncServiceProcessor
 	) {
 		this.localSyncRequestsRx = Objects.requireNonNull(localSyncRequestsRx);
 		this.syncTimeoutsRx = Objects.requireNonNull(syncTimeoutsRx);
@@ -74,6 +80,8 @@ public final class SyncServiceRunner implements ModuleRunner {
 		this.syncServiceProcessor = Objects.requireNonNull(syncServiceProcessor);
 		this.stateSyncNetwork = Objects.requireNonNull(stateSyncNetwork);
 		this.singleThreadScheduler = Schedulers.from(this.executorService);
+		this.remoteSyncServiceProcessor = Objects.requireNonNull(remoteSyncServiceProcessor);
+
 	}
 
 	/**
@@ -88,7 +96,7 @@ public final class SyncServiceRunner implements ModuleRunner {
 
 			Disposable d0 = stateSyncNetwork.syncRequests()
 				.observeOn(singleThreadScheduler)
-				.subscribe(syncServiceProcessor::processSyncRequest);
+				.subscribe(remoteSyncServiceProcessor::processRemoteSyncRequest);
 
 			Disposable d1 = stateSyncNetwork.syncResponses()
 				.observeOn(singleThreadScheduler)

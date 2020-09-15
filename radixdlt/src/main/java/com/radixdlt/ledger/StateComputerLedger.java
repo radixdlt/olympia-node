@@ -19,6 +19,7 @@ package com.radixdlt.ledger;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
+import com.google.inject.Inject;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
@@ -40,11 +41,15 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Synchronizes execution
  */
 public final class StateComputerLedger implements Ledger, NextCommandGenerator {
+	private static final Logger log = LogManager.getLogger();
+
 	public interface StateComputer {
 		boolean prepare(VerifiedVertex vertex);
 		Optional<BFTValidatorSet> commit(VerifiedCommandsAndProof verifiedCommandsAndProof);
@@ -65,11 +70,13 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	private final CommittedStateSyncSender committedStateSyncSender;
 	private final CommittedSender committedSender;
 	private final SystemCounters counters;
+	private final LedgerAccumulator accumulator;
 
 	private final Object lock = new Object();
 	private VerifiedLedgerHeaderAndProof currentLedgerHeader;
 	private final TreeMap<Long, Set<Object>> committedStateSyncers = new TreeMap<>();
 
+	@Inject
 	public StateComputerLedger(
 		Comparator<VerifiedLedgerHeaderAndProof> headerComparator,
 		VerifiedLedgerHeaderAndProof initialLedgerState,
@@ -77,6 +84,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		StateComputer stateComputer,
 		CommittedStateSyncSender committedStateSyncSender,
 		CommittedSender committedSender,
+		LedgerAccumulator accumulator,
 		SystemCounters counters
 	) {
 		this.headerComparator = Objects.requireNonNull(headerComparator);
@@ -86,6 +94,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		this.committedStateSyncSender = Objects.requireNonNull(committedStateSyncSender);
 		this.committedSender = Objects.requireNonNull(committedSender);
 		this.counters = Objects.requireNonNull(counters);
+		this.accumulator = Objects.requireNonNull(accumulator);
 	}
 
 	@Override
@@ -113,10 +122,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 
 		final Hash accumulator;
 		if (vertex.getCommand() != null) {
-			byte[] concat = new byte[32 * 2];
-			parent.getAccumulator().copyTo(concat, 0);
-			vertex.getCommand().getHash().copyTo(concat, 32);
-			accumulator = Hash.of(concat);
+			accumulator = this.accumulator.accumulate(parent.getAccumulator(), vertex.getCommand());
 		} else {
 			accumulator = parent.getAccumulator();
 		}
@@ -162,10 +168,11 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 				return;
 			}
 
-			// Callers of commit() should be aware of currentLedgerState.getStateVersion()
+			// Callers of commit() should be aware of currentLedgerHeader.getStateVersion()
 			// and only call commit with a first version <= currentVersion + 1
 			if (currentLedgerHeader.getStateVersion() + 1 < verifiedCommandsAndProof.getFirstVersion()) {
-				throw new IllegalStateException();
+				throw new IllegalStateException("Trying to commit version " + verifiedCommandsAndProof.getFirstVersion()
+					+ " but current header is " + currentLedgerHeader);
 			}
 
 			// Remove commands which have already been committed

@@ -15,13 +15,18 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.sync;
+package com.radixdlt.integration.distributed;
 
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 
 /**
- * Reader of committed commands
+ * Accumulator verifier which incorrectly always gives false positives.
  */
-public interface CommittedReader {
-	VerifiedCommandsAndProof getNextCommittedCommands(long current, int batchSize);
+public class IncorrectAlwaysAcceptingAccumulatorVerifierModule extends AbstractModule {
+	@Provides
+	private LedgerAccumulatorVerifier badVerifier() {
+		return (start, cmds, end) -> true;
+	}
 }

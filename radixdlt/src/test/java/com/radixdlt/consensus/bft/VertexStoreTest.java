@@ -272,7 +272,7 @@ public class VertexStoreTest {
 		assertThat(vertexStore.commit(header, mock(VerifiedLedgerHeaderAndProof.class))).isPresent();
 
 		BFTHeader header1 = mock(BFTHeader.class);
-		when(header1.getView()).thenReturn(View.of(1));
+		when(header1.getView()).thenReturn(View.of(2));
 		when(header1.getVertexId()).thenReturn(id1);
 		assertThat(vertexStore.commit(header1, mock(VerifiedLedgerHeaderAndProof.class))).isNotPresent();
 

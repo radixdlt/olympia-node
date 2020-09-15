@@ -15,33 +15,18 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.sync;
+package com.radixdlt.ledger;
 
-import com.radixdlt.consensus.bft.BFTNode;
-import java.util.Objects;
+import com.radixdlt.consensus.Command;
+import com.radixdlt.crypto.Hash;
 
 /**
- * A sync request from a peer
+ * Accumulates commands into a single version hash which represents
+ * all commands which have been committed in a certain order.
+ *
+ * All implementations should be functional and stateless.
  */
-public final class SyncRequest {
-	private final long stateVersion;
-	private final BFTNode node;
-
-	public SyncRequest(BFTNode node, long stateVersion) {
-		this.node = Objects.requireNonNull(node);
-		this.stateVersion = stateVersion;
-	}
-
-	public BFTNode getNode() {
-		return node;
-	}
-
-	public long getStateVersion() {
-		return stateVersion;
-	}
-
-	@Override
-	public String toString() {
-		return String.format("%s{stateVersion=%s}", this.getClass().getSimpleName(), stateVersion);
-	}
+@FunctionalInterface
+public interface LedgerAccumulator {
+	Hash accumulate(Hash parent, Command nextCommand);
 }

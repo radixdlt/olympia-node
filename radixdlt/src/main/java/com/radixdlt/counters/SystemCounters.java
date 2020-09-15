@@ -43,6 +43,8 @@ public interface SystemCounters {
 
 		LEDGER_PROCESSED("ledger.processed"),
 		LEDGER_STATE_VERSION("ledger.state_version"),
+
+		SYNC_INVALID_COMMANDS_RECEIVED("sync.invalid_commands_received"),
 		SYNC_PROCESSED("sync.processed"),
 
 		MEMPOOL_COUNT("mempool.count"),

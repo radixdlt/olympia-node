@@ -15,13 +15,18 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.sync;
+package com.radixdlt.ledger;
 
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.Command;
+import com.radixdlt.crypto.Hash;
 
 /**
- * Reader of committed commands
+ * Verifies whether a given accumulator extends a given one.
+ *
+ * All implementations should be stateless.
  */
-public interface CommittedReader {
-	VerifiedCommandsAndProof getNextCommittedCommands(long current, int batchSize);
+@FunctionalInterface
+public interface LedgerAccumulatorVerifier {
+	boolean verify(Hash start, ImmutableList<Command> commands, Hash end);
 }

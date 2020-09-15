@@ -36,6 +36,7 @@ public class OneSlowNodeTest {
 	private final int trips = 8;
 	private final int synchronousTimeout = maxLatency * trips;
 	private final Builder bftTestBuilder = SimulationTest.builder()
+		.addVerticesSyncDropper()
 		.numNodesAndLatencies(4, minLatency, minLatency, minLatency, maxLatency)
 		.pacemakerTimeout(synchronousTimeout)
 		.checkConsensusSafety("safety")
@@ -48,10 +49,7 @@ public class OneSlowNodeTest {
 	 */
 	@Test
 	public void given_4_nodes_3_fast_and_1_slow_node_and_sync_disabled__then_a_timeout_wont_occur() {
-		SimulationTest test = bftTestBuilder
-			.setGetVerticesRPCEnabled(false)
-			.build();
-
+		SimulationTest test = bftTestBuilder.build();
 		TestResults results = test.run();
 		assertThat(results.getCheckResults()).allSatisfy((name, error) -> AssertionsForClassTypes.assertThat(error).isNotPresent());
 	}

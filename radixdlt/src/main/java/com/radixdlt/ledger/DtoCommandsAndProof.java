@@ -15,82 +15,68 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.ledger;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.Suppliers;
-import com.radixdlt.crypto.Hash;
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.Command;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-import java.util.Arrays;
 import java.util.Objects;
-import java.util.function.Function;
-import java.util.function.Supplier;
 import javax.annotation.concurrent.Immutable;
 
 /**
- * Generic application command
+ * A commands and proof which has not been verified
  */
+// TODO: Add signature and sender
 @Immutable
-@SerializerId2("consensus.command")
-public final class Command {
+@SerializerId2("ledger.commands_and_proof")
+public class DtoCommandsAndProof {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("payload")
+	@JsonProperty("commands")
 	@DsonOutput(Output.ALL)
-	private final byte[] payload;
+	private final ImmutableList<Command> commands;
 
-	private final transient Supplier<Hash> cachedHash = Suppliers.memoize(this::doGetHash);
+	@JsonProperty("start")
+	@DsonOutput(Output.ALL)
+	private final DtoLedgerHeaderAndProof start;
+
+	@JsonProperty("end")
+	@DsonOutput(Output.ALL)
+	private final DtoLedgerHeaderAndProof end;
 
 	@JsonCreator
-	public Command(@JsonProperty("payload") byte[] payload) {
-		this.payload = Objects.requireNonNull(payload);
+	public DtoCommandsAndProof(
+		@JsonProperty("commands") ImmutableList<Command> commands,
+		@JsonProperty("start") DtoLedgerHeaderAndProof start,
+		@JsonProperty("end") DtoLedgerHeaderAndProof end
+	) {
+		this.commands = commands == null ? ImmutableList.of() : commands;
+		this.start = Objects.requireNonNull(start);
+		this.end = Objects.requireNonNull(end);
 	}
 
-	public <T> T map(Function<byte[], T> mapper) {
-		return mapper.apply(payload);
+	public ImmutableList<Command> getCommands() {
+		return commands;
 	}
 
-	public byte[] getPayload() {
-		return payload;
+	public DtoLedgerHeaderAndProof getStartHeader() {
+		return start;
 	}
 
-	private Hash doGetHash() {
-		try {
-			return Hash.of(payload);
-		} catch (Exception e) {
-			throw new IllegalStateException("Error generating hash: " + e, e);
-		}
-	}
-
-	// TODO: Remove this and move to hasher
-	public Hash getHash() {
-		return this.cachedHash.get();
-	}
-
-	@Override
-	public int hashCode() {
-		return Arrays.hashCode(payload);
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof Command)) {
-			return false;
-		}
-
-		Command other = (Command) o;
-		return Arrays.equals(this.payload, other.payload);
+	public DtoLedgerHeaderAndProof getEndHeader() {
+		return end;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{hash=%s}", this.getClass().getSimpleName(), this.getHash());
+		return String.format("%s{cmds=%s root=%s next=%s}", this.getClass().getSimpleName(), commands, start, end);
 	}
 }

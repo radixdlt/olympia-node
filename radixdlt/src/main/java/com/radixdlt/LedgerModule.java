@@ -20,7 +20,6 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
-import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.BFTConfiguration;
@@ -29,12 +28,11 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof.OrderByEpochAndVersionComparator;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.epoch.EpochManager;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.mempool.Mempool;
+import com.radixdlt.ledger.LedgerAccumulator;
+import com.radixdlt.ledger.LedgerAccumulatorVerifier;
+import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.ledger.StateComputerLedger.CommittedSender;
-import com.radixdlt.ledger.StateComputerLedger.CommittedStateSyncSender;
-import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import java.util.Comparator;
 import java.util.Set;
 
@@ -49,30 +47,13 @@ public class LedgerModule extends AbstractModule {
 		// These multibindings are part of our dependency graph, so create the modules here
 		Multibinder.newSetBinder(binder(), CommittedSender.class);
 		bind(new TypeLiteral<Comparator<VerifiedLedgerHeaderAndProof>>() { }).to(OrderByEpochAndVersionComparator.class).in(Scopes.SINGLETON);
+		bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
+		bind(LedgerAccumulatorVerifier.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 	}
 
 	@Provides
-	@Singleton
-	private StateComputerLedger ledger(
-		Comparator<VerifiedLedgerHeaderAndProof> headerComparator,
-		VerifiedLedgerHeaderAndProof genesisLedgerState,
-		Mempool mempool,
-		StateComputer stateComputer,
-		CommittedStateSyncSender committedStateSyncSender,
-		Set<CommittedSender> committedSenders,
-		SystemCounters counters
-	) {
-		CommittedSender committedSender = (committed, vset) -> committedSenders.forEach(s -> s.sendCommitted(committed, vset));
-
-		return new StateComputerLedger(
-			headerComparator,
-			genesisLedgerState,
-			mempool,
-			stateComputer,
-			committedStateSyncSender,
-			committedSender,
-			counters
-		);
+	private CommittedSender sender(Set<CommittedSender> committedSenders) {
+		return (committed, vset) -> committedSenders.forEach(s -> s.sendCommitted(committed, vset));
 	}
 
 	// TODO: Load from storage

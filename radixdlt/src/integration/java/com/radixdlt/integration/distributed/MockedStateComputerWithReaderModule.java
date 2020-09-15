@@ -50,7 +50,7 @@ public class MockedStateComputerWithReaderModule extends AbstractModule {
 			proof.getEpoch() + 1,
 			View.genesis(),
 			proof.getStateVersion(),
-			proof.getCommandId(),
+			proof.getAccumulator(),
 			proof.timestamp(),
 			false
 		);
@@ -84,7 +84,7 @@ public class MockedStateComputerWithReaderModule extends AbstractModule {
 		public VerifiedCommandsAndProof getNextCommittedCommands(long stateVersion, int batchSize) {
 			Entry<Long, VerifiedCommandsAndProof> entry = commandsAndProof.higherEntry(stateVersion);
 			if (entry != null) {
-				return entry.getValue();
+				return entry.getValue().truncateFromVersion(stateVersion);
 			}
 
 			return null;

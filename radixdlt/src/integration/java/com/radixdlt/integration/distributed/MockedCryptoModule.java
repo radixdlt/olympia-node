@@ -45,10 +45,18 @@ public class MockedCryptoModule extends AbstractModule {
 
 	@Provides
 	private Hasher hasher(Serialization serialization) {
-		return o -> {
-			byte[] dson = serialization.toDson(o, Output.HASH);
-			byte[] hashCode = hashFunction.hashBytes(dson).asBytes();
-			return new Hash(hashCode, 0, 32);
+		return new Hasher() {
+			@Override
+			public Hash hash(Object o) {
+				byte[] dson = serialization.toDson(o, Output.HASH);
+				return this.hashBytes(dson);
+			}
+
+			@Override
+			public Hash hashBytes(byte[] bytes) {
+				byte[] hashCode = hashFunction.hashBytes(bytes).asBytes();
+				return new Hash(hashCode, 0, 32);
+			}
 		};
 	}
 }
