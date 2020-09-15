@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import java.util.Objects;
-import java.util.function.BiConsumer;
 
 /**
  * Commands along with proof that they have been committed on ledger.
@@ -40,27 +39,8 @@ public final class VerifiedCommandsAndProof {
 		this.headerAndProof = Objects.requireNonNull(headerAndProof);
 	}
 
-	public long getFirstVersion() {
-		if (commands.isEmpty()) {
-			return headerAndProof.getStateVersion();
-		}
-
-		return headerAndProof.getStateVersion() - commands.size() + 1;
-	}
-
 	public ImmutableList<Command> getCommands() {
 		return commands;
-	}
-
-	public void forEach(BiConsumer<Long, Command> consumer) {
-		long firstVersion = getFirstVersion();
-		for (int i = 0; i < commands.size(); i++) {
-			consumer.accept(firstVersion + i, commands.get(i));
-		}
-	}
-
-	public int size() {
-		return commands.size();
 	}
 
 	public boolean contains(Command command) {

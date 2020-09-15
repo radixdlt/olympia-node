@@ -18,18 +18,12 @@
 package com.radixdlt.ledger;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import java.util.function.BiConsumer;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
 import org.junit.Test;
@@ -50,30 +44,6 @@ public class VerifiedCommandsAndProofTest {
 
 		this.command = mock(Command.class);
 		this.singleCommandAndProof = new VerifiedCommandsAndProof(ImmutableList.of(command), stateAndProof);
-	}
-
-	@Test
-	public void when_empty_commands__then_first_version_should_be_proof_version() {
-		assertThat(emptyCommandsAndProof.getFirstVersion()).isEqualTo(stateVersion);
-	}
-
-	@Test
-	public void when_single_command__then_first_version_should_be_proof_version() {
-		assertThat(singleCommandAndProof.getFirstVersion()).isEqualTo(stateVersion);
-	}
-
-	@Test
-	public void when_empty_command_for_each__then_should_consume_appropriately() {
-		BiConsumer<Long, Command> consumer = mock(BiConsumer.class);
-		emptyCommandsAndProof.forEach(consumer);
-		verify(consumer, never()).accept(any(), any());
-	}
-
-	@Test
-	public void when_single_command_for_each__then_should_consume_appropriately() {
-		BiConsumer<Long, Command> consumer = mock(BiConsumer.class);
-		singleCommandAndProof.forEach(consumer);
-		verify(consumer, times(1)).accept(eq(stateVersion), eq(command));
 	}
 
 	@Test

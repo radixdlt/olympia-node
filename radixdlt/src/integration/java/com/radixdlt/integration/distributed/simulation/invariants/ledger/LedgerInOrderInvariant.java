@@ -55,7 +55,7 @@ public class LedgerInOrderInvariant implements TestInvariant {
 			BFTNode node = nodeAndCommand.getFirst();
 			VerifiedCommandsAndProof cmd = nodeAndCommand.getSecond();
 			List<Command> nodeCommands = commandsPerNode.get(node);
-			cmd.forEach((v, command) -> nodeCommands.add(command));
+			nodeCommands.addAll(cmd.getCommands());
 
 			return commandsPerNode.values().stream()
 				.filter(list -> nodeCommands != list)

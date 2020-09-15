@@ -107,7 +107,7 @@ public class SyncCommittedServiceModule extends AbstractModule {
 	@Provides
 	private VerifiedSyncedCommandsSender syncedCommandSender(SystemCounters counters, Ledger ledger) {
 		return cmds -> {
-			counters.add(CounterType.SYNC_PROCESSED, cmds.size());
+			counters.add(CounterType.SYNC_PROCESSED, cmds.getCommands().size());
 			ledger.commit(cmds);
 		};
 	}

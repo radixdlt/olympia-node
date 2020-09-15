@@ -57,7 +57,10 @@ public final class SometimesByzantineCommittedReader implements CommittedSender,
 
 	@Override
 	public void sendCommitted(VerifiedCommandsAndProof verifiedCommandsAndProof, BFTValidatorSet validatorSet) {
-		commandsAndProof.put(verifiedCommandsAndProof.getFirstVersion(), verifiedCommandsAndProof);
+		long firstVersion = verifiedCommandsAndProof.getCommands().isEmpty()
+			? verifiedCommandsAndProof.getHeader().getStateVersion()
+			: verifiedCommandsAndProof.getHeader().getStateVersion() - verifiedCommandsAndProof.getCommands().size() + 1;
+		commandsAndProof.put(firstVersion, verifiedCommandsAndProof);
 	}
 
 	private static class ByzantineVerifiedCommandsAndProofBuilder {

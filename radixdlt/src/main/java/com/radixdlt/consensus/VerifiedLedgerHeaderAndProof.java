@@ -146,6 +146,7 @@ public final class VerifiedLedgerHeaderAndProof {
 		return ledgerHeader.getAccumulatorState();
 	}
 
+	// TODO: Remove
 	public long getStateVersion() {
 		return ledgerHeader.getAccumulatorState().getStateVersion();
 	}
