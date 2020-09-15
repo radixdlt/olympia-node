@@ -130,12 +130,11 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	@Override
 	public OnSynced ifCommitSynced(VerifiedLedgerHeaderAndProof committedLedgerState) {
 		synchronized (lock) {
+			if (this.currentLedgerHeader.getEpoch() != committedLedgerState.getEpoch()) {
+				throw new IllegalStateException();
+			}
+
 			if (committedLedgerState.getStateVersion() <= this.currentLedgerHeader.getStateVersion()) {
-				if (headerComparator.compare(committedLedgerState, this.currentLedgerHeader) > 0) {
-					// Can happen on epoch changes
-					// TODO: Need to cleanup this logic, can't skip epochs
-					this.commit(new VerifiedCommandsAndProof(ImmutableList.of(), committedLedgerState));
-				}
 				return onSync -> {
 					onSync.run();
 					return (onNotSynced, opaque) -> { };
