@@ -17,14 +17,37 @@
 
 package com.radixdlt.ledger;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.serialization.SerializerConstants;
+import com.radixdlt.serialization.SerializerDummy;
+import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
+import javax.annotation.concurrent.Immutable;
 
+@Immutable
+@SerializerId2("ledger.accumulator_state")
 public final class AccumulatorState {
+	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
+	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
+	SerializerDummy serializer = SerializerDummy.DUMMY;
+
+	@JsonProperty("state_version")
+	@DsonOutput(Output.ALL)
 	private final long stateVersion;
+
+	@JsonProperty("accumulator_hash")
+	@DsonOutput(Output.ALL)
 	private final Hash accumulatorHash;
 
-	public AccumulatorState(long stateVersion, Hash accumulatorHash) {
+	@JsonCreator
+	public AccumulatorState(
+		@JsonProperty("state_version") long stateVersion,
+		@JsonProperty("accumulator_hash") Hash accumulatorHash
+	) {
 		this.stateVersion = stateVersion;
 		this.accumulatorHash = Objects.requireNonNull(accumulatorHash);
 	}

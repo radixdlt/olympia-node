@@ -150,10 +150,6 @@ public final class VerifiedLedgerHeaderAndProof {
 		return ledgerHeader.getAccumulatorState().getStateVersion();
 	}
 
-	public Hash getAccumulatorHash() {
-		return ledgerHeader.getAccumulatorState().getAccumulatorHash();
-	}
-
 	public long timestamp() {
 		return ledgerHeader.timestamp();
 	}

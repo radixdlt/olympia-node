@@ -61,7 +61,6 @@ public class VerifiedLedgerHeaderAndProofTest {
 			l0,
 			mock(TimestampedECDSASignatures.class)
 		);
-		assertThat(ledgerHeaderAndProof.getAccumulatorHash()).isEqualTo(accumulatorHash);
 		assertThat(ledgerHeaderAndProof.getEpoch()).isEqualTo(3L);
 		assertThat(ledgerHeaderAndProof.getStateVersion()).isEqualTo(12345L);
 		assertThat(ledgerHeaderAndProof.getView()).isEqualTo(view);

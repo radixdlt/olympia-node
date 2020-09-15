@@ -121,8 +121,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		return LedgerHeader.create(
 			parent.getEpoch(),
 			vertex.getView(),
-			accumulatorState.getStateVersion(),
-			accumulatorState.getAccumulatorHash(),
+			accumulatorState,
 			timestamp,
 			isEndOfEpoch
 		);

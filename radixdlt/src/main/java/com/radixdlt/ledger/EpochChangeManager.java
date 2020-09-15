@@ -51,8 +51,7 @@ public final class EpochChangeManager implements CommittedSender {
 			LedgerHeader nextLedgerHeader = LedgerHeader.create(
 				proof.getEpoch() + 1,
 				View.genesis(),
-				proof.getStateVersion(),
-				proof.getAccumulatorHash(),
+				proof.getAccumulatorState(),
 				proof.timestamp(),
 				false
 			);

@@ -40,10 +40,6 @@ public final class LedgerHeader {
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("stateVersion")
-	@DsonOutput(Output.ALL)
-	private final long stateVersion;
-
 	@JsonProperty("epoch")
 	@DsonOutput(Output.ALL)
 	private final long epoch;
@@ -51,9 +47,9 @@ public final class LedgerHeader {
 	// TODO: remove this
 	private final View view;
 
-	@JsonProperty("accumulator_hash")
+	@JsonProperty("accumulator_state")
 	@DsonOutput(Output.ALL)
-	private final Hash accumulatorHash;
+	private final AccumulatorState accumulatorState;
 
 	@JsonProperty("timestamp")
 	@DsonOutput(Output.ALL)
@@ -68,45 +64,41 @@ public final class LedgerHeader {
 	private LedgerHeader(
 		@JsonProperty("epoch") long epoch,
 		@JsonProperty("view") long view,
-		@JsonProperty("stateVersion") long stateVersion,
-		@JsonProperty("accumulator") Hash accumulator,
+		@JsonProperty("accumulator_state") AccumulatorState accumulatorState,
 		@JsonProperty("timestamp") long timestamp,
 		@JsonProperty("isEndOfEpoch") boolean isEndOfEpoch
 	) {
-		this(epoch, View.of(view), stateVersion, accumulator, timestamp, isEndOfEpoch);
+		this(epoch, View.of(view), accumulatorState, timestamp, isEndOfEpoch);
 	}
 
 	private LedgerHeader(
 		long epoch,
 		View view,
-		long stateVersion,
-		Hash accumulator,
+		AccumulatorState accumulatorState,
 		long timestamp,
 		boolean isEndOfEpoch
 	) {
 		this.epoch = epoch;
 		this.view = view;
-		this.stateVersion = stateVersion;
-		this.accumulatorHash = accumulator;
+		this.accumulatorState = accumulatorState;
 		this.isEndOfEpoch = isEndOfEpoch;
 		this.timestamp = timestamp;
 	}
 
 	public static LedgerHeader genesis(Hash accumulator) {
 		return new LedgerHeader(
-			0, View.genesis(), 0, accumulator, 0, true
+			0, View.genesis(), new AccumulatorState(0, accumulator), 0, true
 		);
 	}
 
 	public static LedgerHeader create(
 		long epoch,
 		View view,
-		long stateVersion,
-		Hash accumulator,
+		AccumulatorState accumulatorState,
 		long timestamp,
 		boolean isEndOfEpoch
 	) {
-		return new LedgerHeader(epoch, view, stateVersion, accumulator, timestamp, isEndOfEpoch);
+		return new LedgerHeader(epoch, view, accumulatorState, timestamp, isEndOfEpoch);
 	}
 
 	@JsonProperty("view")
@@ -120,9 +112,7 @@ public final class LedgerHeader {
 	}
 
 	public AccumulatorState getAccumulatorState() {
-		return new AccumulatorState(
-			stateVersion, accumulatorHash
-		);
+		return accumulatorState;
 	}
 
 	public long getEpoch() {
@@ -139,7 +129,7 @@ public final class LedgerHeader {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.stateVersion, this.accumulatorHash, this.timestamp, this.epoch, this.view, this.isEndOfEpoch);
+		return Objects.hash(this.accumulatorState, this.timestamp, this.epoch, this.view, this.isEndOfEpoch);
 	}
 
 	@Override
@@ -150,8 +140,7 @@ public final class LedgerHeader {
 		if (o instanceof LedgerHeader) {
 			LedgerHeader other = (LedgerHeader) o;
 			return this.timestamp == other.timestamp
-				&& this.stateVersion == other.stateVersion
-				&& Objects.equals(this.accumulatorHash, other.accumulatorHash)
+				&& Objects.equals(this.accumulatorState, other.accumulatorState)
 				&& this.epoch == other.epoch
 				&& Objects.equals(this.view, other.view)
 				&& this.isEndOfEpoch == other.isEndOfEpoch;
@@ -161,8 +150,8 @@ public final class LedgerHeader {
 
 	@Override
 	public String toString() {
-		return String.format("%s{stateVersion=%s timestamp=%s epoch=%s, isEndOfEpoch=%s}",
-			getClass().getSimpleName(), this.stateVersion, this.timestamp, this.epoch, this.isEndOfEpoch
+		return String.format("%s{accumulator=%s timestamp=%s epoch=%s, isEndOfEpoch=%s}",
+			getClass().getSimpleName(), this.accumulatorState, this.timestamp, this.epoch, this.isEndOfEpoch
 		);
 	}
 }

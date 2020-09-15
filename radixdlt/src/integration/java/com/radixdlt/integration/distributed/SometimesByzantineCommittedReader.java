@@ -108,8 +108,7 @@ public final class SometimesByzantineCommittedReader implements CommittedSender,
 			LedgerHeader ledgerHeader = LedgerHeader.create(
 				base.getHeader().getEpoch(),
 				base.getHeader().getView(),
-				accumulatorState.getStateVersion(),
-				accumulatorState.getAccumulatorHash(),
+				accumulatorState,
 				base.getHeader().timestamp(),
 				base.getHeader().isEndOfEpoch()
 			);
