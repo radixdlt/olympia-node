@@ -44,7 +44,7 @@ public class SendReceiveEncryptedDataTransactionTest {
 				sendMsg -> Stream.of(ECKeyPair.generateNew().getPublicKey())
 		);
 		RadixApplicationAPI sendMessageWithDifferentKeyApi = new RadixApplicationAPIBuilder()
-			.defaultFeeMapper()
+			.defaultFeeProcessor()
 			.universe(RadixUniverse.create(RadixEnv.getBootstrapConfig()))
 			.identity(normalApi.getIdentity())
 			.addStatefulParticlesMapper(BurnTokensAction.class, new BurnTokensActionMapper()) // Needed for fees

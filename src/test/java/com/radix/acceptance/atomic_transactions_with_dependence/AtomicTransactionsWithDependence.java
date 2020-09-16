@@ -90,7 +90,7 @@ public class AtomicTransactionsWithDependence {
 
 	private void mintAndTransferTokensWith(MintAndTransferTokensActionMapper actionMapper) {
 		RadixApplicationAPI api = new RadixApplicationAPI.RadixApplicationAPIBuilder()
-			.defaultFeeMapper()
+			.defaultFeeProcessor()
 			.universe(RadixUniverse.create(RadixEnv.getBootstrapConfig()))
 			.addStatelessParticlesMapper(CreateTokenAction.class, new CreateTokenToParticleGroupsMapper())
 			.addStatefulParticlesMapper(MintAndTransferTokensAction.class, actionMapper)
