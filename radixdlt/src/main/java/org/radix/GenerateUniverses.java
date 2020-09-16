@@ -83,8 +83,8 @@ public final class GenerateUniverses {
 				return;
 			}
 
-			final boolean suppressDson = cmd.hasOption('d');
-			final boolean suppressJson = cmd.hasOption('j');
+			final boolean suppressDsonOutput = cmd.hasOption('d');
+			final boolean suppressJsonOutput = cmd.hasOption('j');
 			final String universeKeyFile = getDefaultOption(cmd, 'k', DEFAULT_KEYSTORE);
 			final boolean outputPrivateKey = cmd.hasOption('p');
 			final EnumSet<UniverseType> universeTypes = parseUniverseTypes(getDefaultOption(cmd, 't', DEFAULT_UNIVERSES));
@@ -100,7 +100,7 @@ public final class GenerateUniverses {
 
 			universeTypes.stream()
 				.map(type -> Pair.of(type, RadixUniverseBuilder.forType(type).withKey(universeKey).withTimestamp(universeTimestamp).build()))
-				.forEach(p -> outputUniverse(suppressDson, suppressJson, outputPrivateKey, p.getFirst(), p.getSecond()));
+				.forEach(p -> outputUniverse(suppressDsonOutput, suppressJsonOutput, outputPrivateKey, p.getFirst(), p.getSecond()));
 		} catch (ParseException e) {
 			System.err.println(e.getMessage());
 			usage(options);
