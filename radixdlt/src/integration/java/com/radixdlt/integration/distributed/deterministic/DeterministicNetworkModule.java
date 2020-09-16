@@ -34,7 +34,7 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.integration.distributed.deterministic.network.DeterministicNetwork.DeterministicSender;
 import com.radixdlt.network.TimeSupplier;
-import com.radixdlt.ledger.EpochChangeSender;
+import com.radixdlt.epochs.EpochChangeSender;
 import com.radixdlt.ledger.StateComputerLedger.CommittedStateSyncSender;
 
 /**

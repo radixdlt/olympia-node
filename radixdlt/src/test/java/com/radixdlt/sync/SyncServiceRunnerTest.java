@@ -17,11 +17,10 @@
 
 package com.radixdlt.sync;
 
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.ledger.DtoCommandsAndProof;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.sync.SyncServiceRunner.LocalSyncRequestsRx;
 import com.radixdlt.sync.SyncServiceRunner.SyncTimeoutsRx;
-import com.radixdlt.sync.SyncServiceRunner.VersionUpdatesRx;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import io.reactivex.rxjava3.subjects.Subject;
@@ -44,8 +43,7 @@ public class SyncServiceRunnerTest {
 	private StateSyncNetwork stateSyncNetwork;
 	private EpochSyncServiceProcessor syncServiceProcessor;
 	private RemoteSyncServiceProcessor remoteSyncServiceProcessor;
-	private VersionUpdatesRx versionUpdatesRx;
-	private Subject<VerifiedLedgerHeaderAndProof> versionUpdatesSubject;
+	private Subject<LedgerUpdate> versionUpdatesSubject;
 	private Subject<RemoteSyncRequest> requestsSubject;
 	private Subject<DtoCommandsAndProof> responsesSubject;
 
@@ -70,12 +68,11 @@ public class SyncServiceRunnerTest {
 		this.remoteSyncServiceProcessor = mock(RemoteSyncServiceProcessor.class);
 
 		this.versionUpdatesSubject = PublishSubject.create();
-		this.versionUpdatesRx = () -> this.versionUpdatesSubject;
 
 		syncServiceRunner = new SyncServiceRunner(
 			localSyncRequestsRx,
 			syncTimeoutsRx,
-			versionUpdatesRx,
+			versionUpdatesSubject,
 			stateSyncNetwork,
 			syncServiceProcessor,
 			remoteSyncServiceProcessor

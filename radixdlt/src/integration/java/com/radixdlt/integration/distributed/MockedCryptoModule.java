@@ -32,7 +32,6 @@ import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import java.math.BigInteger;
-import java.util.Arrays;
 
 /**
  * For testing where verification and signing is skipped

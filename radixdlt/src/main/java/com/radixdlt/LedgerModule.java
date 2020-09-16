@@ -32,7 +32,7 @@ import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.StateComputerLedger;
-import com.radixdlt.ledger.StateComputerLedger.CommittedSender;
+import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
 import java.util.Comparator;
 import java.util.Set;
 
@@ -45,15 +45,15 @@ public class LedgerModule extends AbstractModule {
 		bind(EpochManager.class).in(Scopes.SINGLETON);
 		bind(Ledger.class).to(StateComputerLedger.class).in(Scopes.SINGLETON);
 		// These multibindings are part of our dependency graph, so create the modules here
-		Multibinder.newSetBinder(binder(), CommittedSender.class);
+		Multibinder.newSetBinder(binder(), LedgerUpdateSender.class);
 		bind(new TypeLiteral<Comparator<VerifiedLedgerHeaderAndProof>>() { }).to(OrderByEpochAndVersionComparator.class).in(Scopes.SINGLETON);
 		bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 		bind(LedgerAccumulatorVerifier.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 	}
 
 	@Provides
-	private CommittedSender sender(Set<CommittedSender> committedSenders) {
-		return (committed, vset) -> committedSenders.forEach(s -> s.sendCommitted(committed, vset));
+	private LedgerUpdateSender sender(Set<LedgerUpdateSender> ledgerUpdateSenders) {
+		return update -> ledgerUpdateSenders.forEach(s -> s.sendLedgerUpdate(update));
 	}
 
 	// TODO: Load from storage

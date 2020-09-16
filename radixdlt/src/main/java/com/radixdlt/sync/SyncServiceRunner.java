@@ -20,7 +20,7 @@ package com.radixdlt.sync;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.ModuleRunner;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.sync.LocalSyncServiceProcessor.SyncInProgress;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Scheduler;
@@ -50,10 +50,6 @@ public final class SyncServiceRunner implements ModuleRunner {
 		Observable<SyncInProgress> timeouts();
 	}
 
-	public interface VersionUpdatesRx {
-		Observable<VerifiedLedgerHeaderAndProof> ledgerStateUpdates();
-	}
-
 	private final StateSyncNetwork stateSyncNetwork;
 	private final Scheduler singleThreadScheduler;
 	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("SyncManager"));
@@ -61,7 +57,7 @@ public final class SyncServiceRunner implements ModuleRunner {
 	private final RemoteSyncServiceProcessor remoteSyncServiceProcessor;
 	private final SyncTimeoutsRx syncTimeoutsRx;
 	private final LocalSyncRequestsRx localSyncRequestsRx;
-	private final VersionUpdatesRx versionUpdatesRx;
+	private final Observable<LedgerUpdate> ledgerUpdates;
 	private final Object lock = new Object();
 	private CompositeDisposable compositeDisposable;
 
@@ -69,14 +65,14 @@ public final class SyncServiceRunner implements ModuleRunner {
 	public SyncServiceRunner(
 		LocalSyncRequestsRx localSyncRequestsRx,
 		SyncTimeoutsRx syncTimeoutsRx,
-		VersionUpdatesRx versionUpdatesRx,
+		Observable<LedgerUpdate> ledgerUpdates,
 		StateSyncNetwork stateSyncNetwork,
 		EpochSyncServiceProcessor epochSyncServiceProcessor,
 		RemoteSyncServiceProcessor remoteSyncServiceProcessor
 	) {
 		this.localSyncRequestsRx = Objects.requireNonNull(localSyncRequestsRx);
 		this.syncTimeoutsRx = Objects.requireNonNull(syncTimeoutsRx);
-		this.versionUpdatesRx = Objects.requireNonNull(versionUpdatesRx);
+		this.ledgerUpdates = Objects.requireNonNull(ledgerUpdates);
 		this.epochSyncServiceProcessor = Objects.requireNonNull(epochSyncServiceProcessor);
 		this.stateSyncNetwork = Objects.requireNonNull(stateSyncNetwork);
 		this.singleThreadScheduler = Schedulers.from(this.executorService);
@@ -112,9 +108,9 @@ public final class SyncServiceRunner implements ModuleRunner {
 				.observeOn(singleThreadScheduler)
 				.subscribe(epochSyncServiceProcessor::processSyncTimeout);
 
-			Disposable d4 = versionUpdatesRx.ledgerStateUpdates()
+			Disposable d4 = ledgerUpdates
 				.observeOn(singleThreadScheduler)
-				.subscribe(epochSyncServiceProcessor::processVersionUpdate);
+				.subscribe(epochSyncServiceProcessor::processLedgerUpdate);
 
 			compositeDisposable = new CompositeDisposable(d0, d1, d2, d3, d4);
 		}

@@ -55,9 +55,8 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		Optional<BFTValidatorSet> commit(VerifiedCommandsAndProof verifiedCommandsAndProof);
 	}
 
-	public interface CommittedSender {
-		// TODO: batch these
-		void sendCommitted(VerifiedCommandsAndProof committedCommand, BFTValidatorSet validatorSet);
+	public interface LedgerUpdateSender {
+		void sendLedgerUpdate(LedgerUpdate ledgerUpdate);
 	}
 
 	public interface CommittedStateSyncSender {
@@ -68,7 +67,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	private final Mempool mempool;
 	private final StateComputer stateComputer;
 	private final CommittedStateSyncSender committedStateSyncSender;
-	private final CommittedSender committedSender;
+	private final LedgerUpdateSender ledgerUpdateSender;
 	private final SystemCounters counters;
 	private final LedgerAccumulator accumulator;
 	private final LedgerAccumulatorVerifier verifier;
@@ -84,7 +83,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		Mempool mempool,
 		StateComputer stateComputer,
 		CommittedStateSyncSender committedStateSyncSender,
-		CommittedSender committedSender,
+		LedgerUpdateSender ledgerUpdateSender,
 		LedgerAccumulator accumulator,
 		LedgerAccumulatorVerifier verifier,
 		SystemCounters counters
@@ -94,7 +93,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		this.mempool = Objects.requireNonNull(mempool);
 		this.stateComputer = Objects.requireNonNull(stateComputer);
 		this.committedStateSyncSender = Objects.requireNonNull(committedStateSyncSender);
-		this.committedSender = Objects.requireNonNull(committedSender);
+		this.ledgerUpdateSender = Objects.requireNonNull(ledgerUpdateSender);
 		this.counters = Objects.requireNonNull(counters);
 		this.accumulator = Objects.requireNonNull(accumulator);
 		this.verifier = Objects.requireNonNull(verifier);
@@ -183,7 +182,8 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			this.counters.set(CounterType.LEDGER_STATE_VERSION, this.currentLedgerHeader.getStateVersion());
 
 			verifiedExtension.get().forEach(cmd -> this.mempool.removeCommitted(cmd.getHash()));
-			committedSender.sendCommitted(commandsToStore, validatorSet.orElse(null));
+			BaseLedgerUpdate ledgerUpdate = new BaseLedgerUpdate(commandsToStore, validatorSet.orElse(null));
+			ledgerUpdateSender.sendLedgerUpdate(ledgerUpdate);
 
 			// TODO: Verify headers match
 			Collection<Set<Object>> listeners = this.committedStateSyncers.headMap(

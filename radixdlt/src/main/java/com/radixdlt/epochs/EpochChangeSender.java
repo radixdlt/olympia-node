@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.ledger;
+package com.radixdlt.epochs;
 
 import com.radixdlt.consensus.epoch.EpochChange;
 

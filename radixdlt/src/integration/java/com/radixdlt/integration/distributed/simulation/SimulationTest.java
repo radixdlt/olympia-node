@@ -26,7 +26,6 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusRunnerModule;
-import com.radixdlt.CryptoModule;
 import com.radixdlt.LedgerCommandGeneratorModule;
 import com.radixdlt.LedgerEpochChangeModule;
 import com.radixdlt.LedgerEpochChangeRxModule;

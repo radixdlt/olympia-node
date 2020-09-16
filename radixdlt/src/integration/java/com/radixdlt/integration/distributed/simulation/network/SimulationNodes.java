@@ -32,7 +32,7 @@ import com.radixdlt.ConsensusModule;
 import com.radixdlt.ConsensusRxModule;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.SystemInfoRxModule;
-import com.radixdlt.consensus.EpochChangeRx;
+import com.radixdlt.epochs.EpochChangeRx;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.counters.SystemCounters;

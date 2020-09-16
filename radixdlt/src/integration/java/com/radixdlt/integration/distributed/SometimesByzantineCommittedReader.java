@@ -24,12 +24,12 @@ import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
-import com.radixdlt.ledger.StateComputerLedger.CommittedSender;
+import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.sync.CommittedReader;
 import java.util.Map.Entry;
@@ -42,7 +42,7 @@ import java.util.function.UnaryOperator;
  * A reader which sometimes returns erroneous commands.
  */
 @Singleton
-public final class SometimesByzantineCommittedReader implements CommittedSender, CommittedReader {
+public final class SometimesByzantineCommittedReader implements LedgerUpdateSender, CommittedReader {
 	private final TreeMap<Long, VerifiedCommandsAndProof> commandsAndProof = new TreeMap<>();
 	private final LedgerAccumulator accumulator;
 	private final LedgerAccumulatorVerifier accumulatorVerifier;
@@ -56,11 +56,11 @@ public final class SometimesByzantineCommittedReader implements CommittedSender,
 	}
 
 	@Override
-	public void sendCommitted(VerifiedCommandsAndProof verifiedCommandsAndProof, BFTValidatorSet validatorSet) {
-		long firstVersion = verifiedCommandsAndProof.getCommands().isEmpty()
-			? verifiedCommandsAndProof.getHeader().getStateVersion()
-			: verifiedCommandsAndProof.getHeader().getStateVersion() - verifiedCommandsAndProof.getCommands().size() + 1;
-		commandsAndProof.put(firstVersion, verifiedCommandsAndProof);
+	public void sendLedgerUpdate(LedgerUpdate update) {
+		long firstVersion = update.getNewCommands().isEmpty()
+			? update.getTail().getStateVersion()
+			: update.getTail().getStateVersion() - update.getNewCommands().size() + 1;
+		commandsAndProof.put(firstVersion, new VerifiedCommandsAndProof(update.getNewCommands(), update.getTail()));
 	}
 
 	private static class ByzantineVerifiedCommandsAndProofBuilder {

@@ -20,17 +20,16 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.consensus.epoch.EpochView;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.ledger.StateComputerLedger.CommittedSender;
+import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
 import com.radixdlt.systeminfo.InfoRx;
 import com.radixdlt.consensus.Timeout;
 import com.radixdlt.utils.SenderToRx;
-import com.radixdlt.utils.TwoSenderToRx;
 import io.reactivex.rxjava3.core.Observable;
 
 /**
@@ -45,9 +44,9 @@ public final class SystemInfoRxModule extends AbstractModule {
 		SenderToRx<Timeout, Timeout> timeouts = new SenderToRx<>(i -> i);
 		SenderToRx<EpochView, EpochView> currentViews = new SenderToRx<>(i -> i);
 
-		TwoSenderToRx<VerifiedCommandsAndProof, BFTValidatorSet, VerifiedCommandsAndProof> committedCommands
-			= new TwoSenderToRx<>((committed, vset) -> committed);
-		Multibinder<CommittedSender> committedSenderBinder = Multibinder.newSetBinder(binder(), CommittedSender.class);
+		SenderToRx<LedgerUpdate, VerifiedCommandsAndProof> committedCommands
+			= new SenderToRx<>(u -> new VerifiedCommandsAndProof(u.getNewCommands(), u.getTail()));
+		Multibinder<LedgerUpdateSender> committedSenderBinder = Multibinder.newSetBinder(binder(), LedgerUpdateSender.class);
 		committedSenderBinder.addBinding().toInstance(committedCommands::send);
 
 		EpochInfoSender epochInfoSender = new EpochInfoSender() {

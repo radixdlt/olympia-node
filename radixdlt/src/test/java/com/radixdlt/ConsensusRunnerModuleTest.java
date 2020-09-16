@@ -28,7 +28,7 @@ import com.google.inject.Module;
 import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.consensus.EpochManagerRunner;
-import com.radixdlt.consensus.EpochChangeRx;
+import com.radixdlt.epochs.EpochChangeRx;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.VertexSyncRx;

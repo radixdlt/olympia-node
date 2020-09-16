@@ -41,7 +41,7 @@ import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
-import com.radixdlt.ledger.StateComputerLedger.CommittedSender;
+import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
 import com.radixdlt.ledger.StateComputerLedger.CommittedStateSyncSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.mempool.Mempool;
@@ -57,7 +57,7 @@ public class StateComputerLedgerTest {
 	private StateComputer stateComputer;
 	private StateComputerLedger stateComputerLedger;
 	private CommittedStateSyncSender committedStateSyncSender;
-	private CommittedSender committedSender;
+	private LedgerUpdateSender ledgerUpdateSender;
 	private VerifiedLedgerHeaderAndProof currentLedgerHeader;
 	private SystemCounters counters;
 	private Comparator<VerifiedLedgerHeaderAndProof> headerComparator;
@@ -72,7 +72,7 @@ public class StateComputerLedgerTest {
 		this.stateComputer = mock(StateComputer.class);
 		this.committedStateSyncSender = mock(CommittedStateSyncSender.class);
 		this.counters = mock(SystemCounters.class);
-		this.committedSender = mock(CommittedSender.class);
+		this.ledgerUpdateSender = mock(LedgerUpdateSender.class);
 		this.currentLedgerHeader = mock(VerifiedLedgerHeaderAndProof.class);
 		this.headerComparator = mock(Comparator.class);
 		this.accumulator = mock(LedgerAccumulator.class);
@@ -84,8 +84,7 @@ public class StateComputerLedgerTest {
 			currentLedgerHeader,
 			mempool,
 			stateComputer,
-			committedStateSyncSender,
-			committedSender,
+			committedStateSyncSender, ledgerUpdateSender,
 			accumulator,
 			accumulatorVerifier,
 			counters
@@ -214,7 +213,7 @@ public class StateComputerLedgerTest {
 		stateComputerLedger.commit(verified);
 		verify(stateComputer, never()).commit(any());
 		verify(mempool, never()).removeCommitted(any());
-		verify(committedSender, never()).sendCommitted(any(), any());
+		verify(ledgerUpdateSender, never()).sendLedgerUpdate(any());
 	}
 
 	@Test
@@ -233,7 +232,7 @@ public class StateComputerLedgerTest {
 		stateComputerLedger.commit(verified);
 		verify(stateComputer, times(1)).commit(argThat(v -> v.getHeader().equals(proof)));
 		verify(mempool, times(1)).removeCommitted(eq(hash));
-		verify(committedSender, times(1)).sendCommitted(any(), any());
+		verify(ledgerUpdateSender, times(1)).sendLedgerUpdate(any());
 	}
 
 	@Test

@@ -28,38 +28,45 @@ import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.epochs.EpochChangeManager;
+import com.radixdlt.epochs.EpochChangeManager.EpochsLedgerUpdateSender;
+import com.radixdlt.epochs.EpochChangeSender;
+import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
 
 public class EpochChangeManagerTest {
 	private EpochChangeManager epochChangeManager;
+	private EpochsLedgerUpdateSender epochsLedgerUpdateSender;
 	private EpochChangeSender sender;
 	private Hasher hasher;
 
 	@Before
 	public void setup() {
 		this.sender = mock(EpochChangeSender.class);
+		this.epochsLedgerUpdateSender = mock(EpochsLedgerUpdateSender.class);
 		this.hasher = mock(Hasher.class);
-		epochChangeManager = new EpochChangeManager(sender, hasher);
+		epochChangeManager = new EpochChangeManager(sender, epochsLedgerUpdateSender, hasher);
 	}
 
 	@Test
 	public void when_sending_committed_atom_with_epoch_change__then_should_send_epoch_change() {
 		long genesisEpoch = 123;
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
-		VerifiedCommandsAndProof cmd = mock(VerifiedCommandsAndProof.class);
-		VerifiedLedgerHeaderAndProof proof = mock(VerifiedLedgerHeaderAndProof.class);
-		when(proof.getEpoch()).thenReturn(genesisEpoch);
-		when(proof.isEndOfEpoch()).thenReturn(true);
-		when(proof.getStateVersion()).thenReturn(1234L);
-		when(cmd.getHeader()).thenReturn(proof);
+		VerifiedLedgerHeaderAndProof tailHeader = mock(VerifiedLedgerHeaderAndProof.class);
+		when(tailHeader.getEpoch()).thenReturn(genesisEpoch);
+		when(tailHeader.isEndOfEpoch()).thenReturn(true);
+		when(tailHeader.getStateVersion()).thenReturn(1234L);
 		when(hasher.hash(any())).thenReturn(mock(Hash.class));
 
-		epochChangeManager.sendCommitted(cmd, validatorSet);
+		LedgerUpdate ledgerUpdate = mock(LedgerUpdate.class);
+		when(ledgerUpdate.getTail()).thenReturn(tailHeader);
+		when(ledgerUpdate.getNextValidatorSet()).thenReturn(Optional.of(validatorSet));
+		epochChangeManager.sendLedgerUpdate(ledgerUpdate);
 
 		verify(sender, times(1))
 			.epochChange(
-				argThat(e -> e.getProof().equals(proof)
+				argThat(e -> e.getProof().equals(tailHeader)
 					&& e.getBFTConfiguration().getValidatorSet().equals(validatorSet)
 					&& e.getEpoch() == 124L
 					&& e.getBFTConfiguration().getGenesisVertex().getView().isGenesis()

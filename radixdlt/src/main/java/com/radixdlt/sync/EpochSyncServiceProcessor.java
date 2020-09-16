@@ -20,9 +20,9 @@ package com.radixdlt.sync;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.ledger.DtoCommandsAndProof;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.sync.LocalSyncServiceProcessor.SyncInProgress;
 import java.util.function.Function;
 
@@ -45,12 +45,8 @@ public class EpochSyncServiceProcessor {
 		localSyncServiceProcessor = localSyncFactory.apply(currentEpoch.getBFTConfiguration());
 	}
 
-	public void processEpochChange(EpochChange epochChange) {
-		localSyncServiceProcessor = localSyncFactory.apply(epochChange.getBFTConfiguration());
-	}
-
-	public void processVersionUpdate(VerifiedLedgerHeaderAndProof header) {
-		localSyncServiceProcessor.processVersionUpdate(header);
+	public void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
+		localSyncServiceProcessor.processLedgerUpdate(ledgerUpdate);
 	}
 
 	public void processLocalSyncRequest(LocalSyncRequest request) {

@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.ledger.DtoCommandsAndProof;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import java.util.Comparator;
 import java.util.Objects;
@@ -132,7 +133,8 @@ public final class LocalSyncServiceProcessor {
 		this.verifiedSyncedCommandsSender.sendVerifiedCommands(verified);
 	}
 
-	public void processVersionUpdate(VerifiedLedgerHeaderAndProof updatedHeader) {
+	public void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
+		VerifiedLedgerHeaderAndProof updatedHeader = ledgerUpdate.getTail();
 		if (headerComparator.compare(updatedHeader, this.currentHeader) > 0) {
 			this.currentHeader = updatedHeader;
 		}

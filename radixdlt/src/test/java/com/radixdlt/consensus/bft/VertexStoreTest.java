@@ -410,6 +410,7 @@ public class VertexStoreTest {
 		when(header.getVertexId()).thenReturn(id);
 		when(header.getView()).thenReturn(View.of(1));
 		when(qc.getProposed()).thenReturn(header);
+		when(qc.getView()).thenReturn(View.of(1));
 
 		assertThat(vertexStore.syncToQC(qc, vertexStore.getHighestCommittedQC(), mock(BFTNode.class))).isFalse();
 		vertexStore.insertVertex(vertex);
@@ -444,6 +445,7 @@ public class VertexStoreTest {
 		when(header.getVertexId()).thenReturn(id);
 		when(header.getView()).thenReturn(View.of(1));
 		when(qc.getProposed()).thenReturn(header);
+		when(qc.getView()).thenReturn(View.of(1));
 
 		assertThatThrownBy(() -> vertexStore.syncToQC(qc, vertexStore.getHighestCommittedQC(), null))
 			.isInstanceOf(IllegalStateException.class);

@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,20 +15,16 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.ledger;
 
-import com.radixdlt.consensus.epoch.EpochChange;
-import io.reactivex.rxjava3.core.Observable;
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
+import java.util.Optional;
 
-/**
- * Validator Set change events
- */
-public interface EpochChangeRx {
-
-	/**
-	 * Epoch change events
-	 *
-	 * @return stream of epoch changes
-	 */
-	Observable<EpochChange> epochChanges();
+public interface LedgerUpdate {
+	ImmutableList<Command> getNewCommands();
+	VerifiedLedgerHeaderAndProof getTail();
+	Optional<BFTValidatorSet> getNextValidatorSet();
 }
