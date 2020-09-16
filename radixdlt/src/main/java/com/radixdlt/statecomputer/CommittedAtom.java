@@ -94,16 +94,6 @@ public final class CommittedAtom implements LedgerAtom {
 	}
 
 	@Override
-	public ImmutableMap<String, String> getMetaData() {
-		return clientAtom.getMetaData();
-	}
-
-	@Override
-	public Hash getPowFeeHash() {
-		return clientAtom.getPowFeeHash();
-	}
-
-	@Override
 	public int hashCode() {
 		return Objects.hash(this.clientAtom, this.stateVersion, this.proof);
 	}
@@ -118,6 +108,16 @@ public final class CommittedAtom implements LedgerAtom {
 		return Objects.equals(other.clientAtom, this.clientAtom)
 			&& other.stateVersion == this.stateVersion
 			&& Objects.equals(other.proof, this.proof);
+	}
+
+	@Override
+	public ImmutableMap<String, String> getMetaData() {
+		return clientAtom.getMetaData();
+	}
+
+	@Override
+	public Hash getPowFeeHash() {
+		return clientAtom.getPowFeeHash();
 	}
 
 	@Override

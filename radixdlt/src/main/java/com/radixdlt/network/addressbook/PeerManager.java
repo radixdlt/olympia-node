@@ -303,9 +303,6 @@ public class PeerManager {
 					if (ourNonce.longValue() == nonce) {
 						this.probes.remove(peer);
 						log.info("Got good peer.pong from {}:{}:{}ns", () -> peer, () -> formatNonce(nonce), () -> rtt);
-						this.addressbook.peers().forEachOrdered(p -> {
-							log.info("AddressBook peer {}", p);
-						});
 					} else {
 						log.debug("Got mismatched peer.pong from {} with nonce '{}', ours '{}' ({}ns)",
 							() -> peer, () -> formatNonce(nonce), () -> formatNonce(ourNonce), () -> rtt);
