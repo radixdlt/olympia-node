@@ -425,7 +425,14 @@ public final class VertexStore implements VertexStoreEventProcessor {
 			return true;
 		}
 
-		log.debug("SYNC_TO_QC: Need sync: {} {}", qc, committedQC);
+		// TODO: Move this check into pre-check
+		// Bad genesis qc, ignore...
+		if (qc.getView().isGenesis()) {
+			log.warn("SYNC_TO_QC: Bad Genesis: {} {}", qc, committedQC);
+			return false;
+		}
+
+		log.trace("SYNC_TO_QC: Need sync: {} {}", qc, committedQC);
 
 		final Hash vertexId = qc.getProposed().getVertexId();
 		if (syncing.containsKey(vertexId)) {
