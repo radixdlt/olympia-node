@@ -131,20 +131,20 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	}
 
 	@Override
-	public OnSynced ifCommitSynced(VerifiedLedgerHeaderAndProof committedLedgerState) {
+	public OnSynced ifCommitSynced(VerifiedLedgerHeaderAndProof committedLedgerHeader) {
 		synchronized (lock) {
-			if (this.currentLedgerHeader.getEpoch() != committedLedgerState.getEpoch()) {
+			if (this.currentLedgerHeader.getEpoch() != committedLedgerHeader.getEpoch() && !this.currentLedgerHeader.isEndOfEpoch()) {
 				throw new IllegalStateException();
 			}
 
-			if (committedLedgerState.getStateVersion() <= this.currentLedgerHeader.getStateVersion()) {
+			if (committedLedgerHeader.getStateVersion() <= this.currentLedgerHeader.getStateVersion()) {
 				return onSync -> {
 					onSync.run();
 					return (onNotSynced, opaque) -> { };
 				};
 			} else {
 				return onSync -> (onNotSynced, opaque) -> {
-					this.committedStateSyncers.merge(committedLedgerState.getStateVersion(), Collections.singleton(opaque), Sets::union);
+					this.committedStateSyncers.merge(committedLedgerHeader.getStateVersion(), Collections.singleton(opaque), Sets::union);
 					onNotSynced.run();
 				};
 			}

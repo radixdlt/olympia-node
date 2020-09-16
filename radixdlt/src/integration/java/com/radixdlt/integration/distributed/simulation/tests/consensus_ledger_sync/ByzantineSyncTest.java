@@ -51,7 +51,6 @@ public class ByzantineSyncTest {
 				bind(CommittedReader.class).to(SometimesByzantineCommittedReader.class).in(Scopes.SINGLETON);
 			}
 		})
-		.mockCryptoModule(false)
 		.pacemakerTimeout(5000)
 		.addOneNodeNeverReceiveProposalDropper()
 		.ledgerAndSync()
