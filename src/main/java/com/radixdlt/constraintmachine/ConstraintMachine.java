@@ -17,7 +17,6 @@
 
 package com.radixdlt.constraintmachine;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.identifiers.EUID;
@@ -30,7 +29,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Function;
 
 /**
@@ -90,13 +88,6 @@ public final class ConstraintMachine {
 			this.currentSpins = new HashMap<>();
 			this.witness = witness;
 			this.signatures = signatures;
-		}
-
-		public ImmutableSet<Particle> getOutputs() {
-			return this.currentSpins.entrySet().stream()
-				.filter(e -> e.getValue().equals(Spin.UP))
-				.map(Map.Entry::getKey)
-				.collect(ImmutableSet.toImmutableSet());
 		}
 
 		void setCurrentTransitionToken(TransitionToken<?, ?, ?, ?> currentTransitionToken) {
@@ -404,14 +395,12 @@ public final class ConstraintMachine {
 	 * @param cmInstruction instruction to validate
 	 * @return the first error found, otherwise an empty optional
 	 */
-	public Either<Set<Particle>, CMError> validate(CMInstruction cmInstruction) {
+	public Optional<CMError> validate(CMInstruction cmInstruction) {
 		final CMValidationState validationState = new CMValidationState(
 			cmInstruction.getWitness(),
 			cmInstruction.getSignatures()
 		);
 
-		return this.validateMicroInstructions(validationState, cmInstruction.getMicroInstructions())
-			.map(Either::<Set<Particle>, CMError>second)
-			.orElseGet(() -> Either.first(validationState.getOutputs()));
+		return this.validateMicroInstructions(validationState, cmInstruction.getMicroInstructions());
 	}
 }

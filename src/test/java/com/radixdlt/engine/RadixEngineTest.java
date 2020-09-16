@@ -19,14 +19,12 @@ package com.radixdlt.engine;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.DataPointer;
-import com.radixdlt.constraintmachine.Either;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.Hash;
@@ -36,6 +34,7 @@ import com.radixdlt.store.CMStores;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.test.utils.TypedMocks;
 
+import java.util.Optional;
 import java.util.function.UnaryOperator;
 import org.junit.Before;
 import org.junit.Test;
@@ -119,7 +118,7 @@ public class RadixEngineTest {
 		));
 		when(engineStore.getSpin(eq(particle))).thenReturn(Spin.NEUTRAL);
 		when(radixEngineAtom.getCMInstruction()).thenReturn(cmInstruction);
-		when(constraintMachine.validate(any())).thenReturn(Either.first(ImmutableSet.of()));
+		when(constraintMachine.validate(any())).thenReturn(Optional.empty());
 		radixEngine.checkAndStore(radixEngineAtom);
 
 		assertThat(radixEngine.getComputedState(Object.class)).isEqualTo(state2);
@@ -127,7 +126,7 @@ public class RadixEngineTest {
 
 	@Test
 	public void when_static_checking_an_atom_with_cm_error__then_an_exception_is_thrown() {
-		when(this.constraintMachine.validate(any())).thenReturn(Either.second(mock(CMError.class)));
+		when(this.constraintMachine.validate(any())).thenReturn(Optional.of(mock(CMError.class)));
 		assertThatThrownBy(() -> radixEngine.staticCheck(mock(RadixEngineAtom.class)))
 			.hasFieldOrPropertyWithValue("errorCode", RadixEngineErrorCode.CM_ERROR)
 			.isInstanceOf(RadixEngineException.class);
@@ -135,10 +134,10 @@ public class RadixEngineTest {
 
 	@Test
 	public void when_static_checking_an_atom_with_a_atom_checker_error__then_an_exception_is_thrown() {
-		when(this.constraintMachine.validate(any())).thenReturn(Either.first(ImmutableSet.of()));
+		when(this.constraintMachine.validate(any())).thenReturn(Optional.empty());
 		AtomChecker<RadixEngineAtom> atomChecker = TypedMocks.rmock(AtomChecker.class);
 		RadixEngineAtom atom = mock(RadixEngineAtom.class);
-		when(atomChecker.check(atom, ImmutableSet.of())).thenReturn(Result.error("error"));
+		when(atomChecker.check(atom)).thenReturn(Result.error("error"));
 		this.radixEngine = new RadixEngine<>(
 			constraintMachine,
 			virtualStore,
@@ -153,7 +152,7 @@ public class RadixEngineTest {
 
 	@Test
 	public void when_validating_an_atom_with_particle_which_conflicts_with_virtual_state__an_internal_spin_conflict_is_returned() {
-		when(this.constraintMachine.validate(any())).thenReturn(Either.first(ImmutableSet.of()));
+		when(this.constraintMachine.validate(any())).thenReturn(Optional.empty());
 		doAnswer(invocation -> {
 			CMStore cmStore = invocation.getArgument(0);
 			return CMStores.virtualizeDefault(cmStore, p -> true, Spin.DOWN);

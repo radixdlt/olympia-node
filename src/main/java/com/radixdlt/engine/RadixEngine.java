@@ -22,6 +22,7 @@ import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.constraintmachine.CMInstruction;
+import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.CMMicroInstruction.CMMicroOp;
 import com.radixdlt.constraintmachine.ConstraintMachine;
@@ -34,6 +35,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
@@ -144,12 +146,14 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 	}
 
 	public void staticCheck(T atom) throws RadixEngineException {
-		Set<Particle> outputParticles = constraintMachine.validate(atom.getCMInstruction())
-			.orElseThrow(e ->
-				new RadixEngineException(RadixEngineErrorCode.CM_ERROR, e.getErrorDescription(), e.getDataPointer(), e));
+		final Optional<CMError> error = constraintMachine.validate(atom.getCMInstruction());
+		if (error.isPresent()) {
+			CMError e = error.get();
+			throw new RadixEngineException(RadixEngineErrorCode.CM_ERROR, e.getErrorDescription(), e.getDataPointer(), e);
+		}
 
 		if (checker != null) {
-			Result hookResult = checker.check(atom, outputParticles);
+			Result hookResult = checker.check(atom);
 			if (hookResult.isError()) {
 				throw new RadixEngineException(RadixEngineErrorCode.HOOK_ERROR, "Checker failed", DataPointer.ofAtom());
 			}

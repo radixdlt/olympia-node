@@ -101,7 +101,7 @@ public class CMTokensTest {
 			)
 		);
 
-		Optional<CMError> error = cm.validate(cmInstruction).asOptionalSecond();
+		Optional<CMError> error = cm.validate(cmInstruction);
 		assertThat(error).isEmpty();
 	}
 
@@ -153,7 +153,7 @@ public class CMTokensTest {
 			)
 		);
 
-		Optional<CMError> error = cm.validate(cmInstruction).asOptionalSecond();
+		Optional<CMError> error = cm.validate(cmInstruction);
 		error.map(CMError::getCmValidationState).ifPresent(System.out::println);
 		assertThat(error).isEmpty();
 	}
@@ -207,7 +207,7 @@ public class CMTokensTest {
 			)
 		);
 
-		Optional<CMError> error = cm.validate(cmInstruction).asOptionalSecond();
+		Optional<CMError> error = cm.validate(cmInstruction);
 		error.map(CMError::getCmValidationState).ifPresent(System.out::println);
 		assertThat(error).isEmpty();
 	}
@@ -260,7 +260,7 @@ public class CMTokensTest {
 			)
 		);
 
-		Optional<CMError> error = cm.validate(cmInstruction).asOptionalSecond();
+		Optional<CMError> error = cm.validate(cmInstruction);
 		error.map(CMError::getCmValidationState).ifPresent(System.out::println);
 		assertThat(error).isEmpty();
 	}
