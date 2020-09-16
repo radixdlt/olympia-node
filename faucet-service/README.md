@@ -6,19 +6,20 @@ address.
 
 To run the service:
 ```
+> export FAUCET_TOKEN_RRI=<rri-of-token-to-issue>
+> export FAUCET_IDENTITY_KEY=<base64-private-key-for-token-rri>
 > export RADIX_BOOTSTRAP_TRUSTED_NODE=http://localhost:8080
-> export RADIX_IDENTITY_KEY_FILE=/home/user/my.key
-> export RADIX_IDENTITY_KEY_FILE_PASSWORD=password123
-> export FAUCET_TOKEN_RRI=/9i3j1YsGd6z65oxyhuNbFL1LaDAkEmuqw9qm4LuWFUd2Gr1aqA4/XRD
 > java com.radixdlt.client.services.Faucet
 ```
 
-## Create image
+## When creating/pushing docker image (not required right now)
+
+### Create image (not required
 ```
 make TAG=betanet faucet
 ```
 
-## Push image
+### Push image
 ```
 make TAG=betanet faucet-push
 ```
