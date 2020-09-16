@@ -49,10 +49,11 @@ public class RemoteSyncServiceProcessor {
 	}
 
 	public void processRemoteSyncRequest(RemoteSyncRequest syncRequest) {
-		log.info("SYNC_REQUEST: {}", syncRequest);
+		log.info("REMOTE_SYNC_REQUEST: {}", syncRequest);
 		DtoLedgerHeaderAndProof currentHeader = syncRequest.getCurrentHeader();
 		VerifiedCommandsAndProof committedCommands = committedReader.getNextCommittedCommands(currentHeader, batchSize);
 		if (committedCommands == null) {
+			log.warn("REMOTE_SYNC_REQUEST: Unable to serve sync request {}.", syncRequest);
 			return;
 		}
 
@@ -61,6 +62,8 @@ public class RemoteSyncServiceProcessor {
 			currentHeader,
 			committedCommands.getHeader().toDto()
 		);
+
+		log.info("REMOTE_SYNC_REQUEST: Sending response {}", verifiable);
 
 		stateSyncNetwork.sendSyncResponse(syncRequest.getNode(), verifiable);
 	}

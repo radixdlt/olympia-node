@@ -32,6 +32,7 @@ import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
+import com.radixdlt.epochs.EpochChangeManager.EpochsLedgerUpdateSender;
 import com.radixdlt.integration.distributed.deterministic.network.DeterministicNetwork.DeterministicSender;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.epochs.EpochChangeSender;
@@ -74,6 +75,7 @@ public class DeterministicNetworkModule extends AbstractModule {
 		bind(VertexStoreEventSender.class).to(DeterministicSender.class);
 		bind(EpochChangeSender.class).to(DeterministicSender.class);
 		bind(CommittedStateSyncSender.class).to(DeterministicSender.class);
+		bind(EpochsLedgerUpdateSender.class).to(DeterministicSender.class);
 
 		bind(EpochInfoSender.class).toInstance(emptyInfoSender);
 

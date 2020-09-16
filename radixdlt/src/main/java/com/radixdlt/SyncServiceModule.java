@@ -20,7 +20,6 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.google.inject.multibindings.MapBinder;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.Hasher;
@@ -30,29 +29,23 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.ledger.AccumulatorAndValidatorSetVerifier;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.sync.CommittedReader;
-import com.radixdlt.sync.LocalSyncServiceProcessor.DtoCommandsAndProofVerifier;
-import com.radixdlt.sync.LocalSyncServiceProcessor.InvalidSyncedCommandsSender;
+import com.radixdlt.sync.BaseLocalSyncServiceProcessor.InvalidSyncedCommandsSender;
+import com.radixdlt.sync.LocalSyncServiceProcessor;
 import com.radixdlt.sync.RemoteSyncServiceProcessor;
 import com.radixdlt.sync.StateSyncNetwork;
-import com.radixdlt.sync.LocalSyncServiceProcessor;
-import com.radixdlt.sync.LocalSyncServiceProcessor.SyncTimeoutScheduler;
-import com.radixdlt.sync.LocalSyncServiceProcessor.VerifiedSyncedCommandsSender;
-import com.radixdlt.sync.SyncServiceRunner;
+import com.radixdlt.sync.BaseLocalSyncServiceProcessor;
+import com.radixdlt.sync.BaseLocalSyncServiceProcessor.SyncTimeoutScheduler;
+import com.radixdlt.sync.BaseLocalSyncServiceProcessor.VerifiedSyncedCommandsSender;
 import java.util.Comparator;
 import java.util.function.Function;
 
 /**
  * Module which manages synchronization of committed atoms across of nodes
  */
-public class SyncCommittedServiceModule extends AbstractModule {
+public class SyncServiceModule extends AbstractModule {
 	private static final int BATCH_SIZE = 100;
-
-	@Override
-	public void configure() {
-		MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class)
-			.addBinding("sync").to(SyncServiceRunner.class);
-	}
 
 	@Provides
 	@Singleton
@@ -68,7 +61,7 @@ public class SyncCommittedServiceModule extends AbstractModule {
 	}
 
 	@Provides
-	private Function<BFTConfiguration, LocalSyncServiceProcessor> localSyncFactory(
+	private Function<BFTConfiguration, LocalSyncServiceProcessor<LedgerUpdate>> localSyncFactory(
 		Comparator<VerifiedLedgerHeaderAndProof> headerComparator,
 		StateSyncNetwork stateSyncNetwork,
 		VerifiedSyncedCommandsSender verifiedSyncedCommandsSender,
@@ -89,7 +82,7 @@ public class SyncCommittedServiceModule extends AbstractModule {
 			VerifiedLedgerHeaderAndProof header = config.getGenesisQC().getCommittedAndLedgerStateProof()
 				.orElseThrow(RuntimeException::new).getSecond();
 
-			return new LocalSyncServiceProcessor(
+			return new BaseLocalSyncServiceProcessor(
 				stateSyncNetwork,
 				verifiedSyncedCommandsSender,
 				invalidSyncedCommandsSender,
@@ -103,41 +96,12 @@ public class SyncCommittedServiceModule extends AbstractModule {
 	}
 
 	@Provides
-	private DtoCommandsAndProofVerifier verifier(
-		LedgerAccumulatorVerifier verifier,
-		BFTConfiguration initialConfiguration,
-		Hasher hasher,
-		HashVerifier hashVerifier
-	) {
-		return new AccumulatorAndValidatorSetVerifier(
-			verifier,
-			initialConfiguration.getValidatorSet(),
-			hasher,
-			hashVerifier
-		);
-	}
-
-	@Provides
 	@Singleton
-	private LocalSyncServiceProcessor syncServiceProcessor(
-		Comparator<VerifiedLedgerHeaderAndProof> headerComparator,
-		VerifiedLedgerHeaderAndProof header,
-		StateSyncNetwork stateSyncNetwork,
-		VerifiedSyncedCommandsSender verifiedSyncedCommandsSender,
-		InvalidSyncedCommandsSender invalidSyncedCommandsSender,
-		SyncTimeoutScheduler syncTimeoutScheduler,
-		DtoCommandsAndProofVerifier verifier
+	private LocalSyncServiceProcessor<LedgerUpdate> syncServiceProcessor(
+		BFTConfiguration initialConfiguration,
+		Function<BFTConfiguration, LocalSyncServiceProcessor<LedgerUpdate>> factory
 	) {
-		return new LocalSyncServiceProcessor(
-			stateSyncNetwork,
-			verifiedSyncedCommandsSender,
-			invalidSyncedCommandsSender,
-			syncTimeoutScheduler,
-			verifier,
-			headerComparator,
-			header,
-			200
-		);
+		return factory.apply(initialConfiguration);
 	}
 
 	@Provides
@@ -147,7 +111,6 @@ public class SyncCommittedServiceModule extends AbstractModule {
 			ledger.commit(cmds);
 		};
 	}
-
 
 	@Provides
 	private InvalidSyncedCommandsSender invalidCommandsSender(SystemCounters counters) {

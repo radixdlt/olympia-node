@@ -27,7 +27,6 @@ import com.radixdlt.ConsensusModule;
 import com.radixdlt.ConsensusRunnerModule;
 import com.radixdlt.ConsensusRxModule;
 import com.radixdlt.CryptoModule;
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.LedgerCommandGeneratorModule;
 import com.radixdlt.LedgerEpochChangeModule;
 import com.radixdlt.LedgerEpochChangeRxModule;
@@ -36,7 +35,7 @@ import com.radixdlt.PersistenceModule;
 import com.radixdlt.RadixEngineModule;
 import com.radixdlt.RadixEngineRxModule;
 import com.radixdlt.RadixEngineStoreModule;
-import com.radixdlt.SyncCommittedServiceModule;
+import com.radixdlt.SyncServiceModule;
 import com.radixdlt.SyncMempoolServiceModule;
 import com.radixdlt.LedgerRxModule;
 import com.radixdlt.LedgerModule;
@@ -59,7 +58,6 @@ import com.radixdlt.network.messaging.MessageCentralModule;
 import com.radixdlt.network.transport.tcp.TCPTransportModule;
 import com.radixdlt.network.transport.udp.UDPTransportModule;
 import com.radixdlt.properties.RuntimeProperties;
-import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
 
 import javax.inject.Inject;
@@ -123,7 +121,7 @@ public class GlobalInjector {
 
 			// Synchronization
 			new SyncRxModule(),
-			new SyncCommittedServiceModule(),
+			new SyncServiceModule(),
 			new SyncMempoolServiceModule(),
 
 			// System Info

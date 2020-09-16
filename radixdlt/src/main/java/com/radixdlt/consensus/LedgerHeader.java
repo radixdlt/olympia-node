@@ -150,8 +150,8 @@ public final class LedgerHeader {
 
 	@Override
 	public String toString() {
-		return String.format("%s{accumulator=%s timestamp=%s epoch=%s, isEndOfEpoch=%s}",
-			getClass().getSimpleName(), this.accumulatorState, this.timestamp, this.epoch, this.isEndOfEpoch
+		return String.format("%s{accumulator=%s timestamp=%s epoch=%s view=%s isEndOfEpoch=%s}",
+			getClass().getSimpleName(), this.accumulatorState, this.timestamp, this.epoch, this.view, this.isEndOfEpoch
 		);
 	}
 }

@@ -21,9 +21,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
+import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
+import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.MapBinder;
 import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusRunnerModule;
 import com.radixdlt.LedgerCommandGeneratorModule;
@@ -32,10 +35,12 @@ import com.radixdlt.LedgerEpochChangeRxModule;
 import com.radixdlt.LedgerModule;
 import com.radixdlt.LedgerRxModule;
 import com.radixdlt.LedgerLocalMempoolModule;
+import com.radixdlt.ModuleRunner;
 import com.radixdlt.RadixEngineModule;
 import com.radixdlt.RadixEngineRxModule;
-import com.radixdlt.SyncCommittedServiceModule;
+import com.radixdlt.SyncServiceModule;
 import com.radixdlt.SyncRxModule;
+import com.radixdlt.SyncServiceRunnerModule;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.bft.View;
@@ -68,6 +73,7 @@ import com.radixdlt.integration.distributed.simulation.network.OneProposalPerVie
 import com.radixdlt.integration.distributed.simulation.network.RandomLatencyProvider;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.LocalMempool;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.integration.distributed.simulation.invariants.consensus.AllProposalsHaveDirectParentsInvariant;
@@ -81,6 +87,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.LatencyProvider;
 import com.radixdlt.network.TimeSupplier;
+import com.radixdlt.sync.SyncServiceRunner;
 import com.radixdlt.utils.DurationParser;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
@@ -408,13 +415,20 @@ public class SimulationTest {
 					modules.add(new MockedStateComputerModule());
 					modules.add(new MockedSyncServiceModule());
 				} else if (ledgerType == LedgerType.LEDGER_AND_SYNC) {
-					modules.add(new SyncCommittedServiceModule());
+					modules.add(new SyncServiceModule());
 					modules.add(new SyncRxModule());
 					modules.add(new MockedConsensusRunnerModule());
 					modules.add(new MockedCommandGeneratorModule());
 					modules.add(new MockedMempoolModule());
 					modules.add(new MockedStateComputerModule());
 					modules.add(new MockedCommittedReaderModule());
+					modules.add(new AbstractModule() {
+						@Override
+						protected void configure() {
+							MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class)
+								.addBinding("sync").to(Key.get(new TypeLiteral<SyncServiceRunner<LedgerUpdate>>() { }));
+						}
+					});
 				} else if (ledgerType == LedgerType.LEDGER_AND_EPOCHS) {
 					modules.add(new ConsensusRunnerModule());
 					modules.add(new LedgerCommandGeneratorModule());
@@ -440,7 +454,8 @@ public class SimulationTest {
 								.map(node -> BFTValidator.from(node, UInt256.ONE))
 								.collect(Collectors.toList())));
 					modules.add(new MockedStateComputerWithEpochsModule(epochHighView, epochToValidatorSetMapping));
-					modules.add(new SyncCommittedServiceModule());
+					modules.add(new SyncServiceModule());
+					modules.add(new SyncServiceRunnerModule());
 					modules.add(new SyncRxModule());
 					modules.add(new MockedCommittedReaderModule());
 				} else if (ledgerType == LedgerType.LEDGER_AND_LOCALMEMPOOL) {

@@ -19,6 +19,7 @@ package com.radixdlt.integration.distributed.deterministic.network;
 
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.epochs.EpochsLedgerUpdate;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
@@ -134,6 +135,11 @@ public final class ControlledSender implements DeterministicSender {
 	public void sendGetEpochResponse(BFTNode node, VerifiedLedgerHeaderAndProof ancestor) {
 		GetEpochResponse getEpochResponse = new GetEpochResponse(node, ancestor);
 		handleMessage(messageRank(getEpochResponse), new ControlledMessage(this.senderIndex, this.network.lookup(node), getEpochResponse));
+	}
+
+	@Override
+	public void sendLedgerUpdate(EpochsLedgerUpdate epochsLedgerUpdate) {
+		handleMessage(MessageRank.EARLIEST_POSSIBLE, new ControlledMessage(this.senderIndex, this.senderIndex, epochsLedgerUpdate));
 	}
 
 	private static class ControlledGetVerticesRequest implements GetVerticesRequest {

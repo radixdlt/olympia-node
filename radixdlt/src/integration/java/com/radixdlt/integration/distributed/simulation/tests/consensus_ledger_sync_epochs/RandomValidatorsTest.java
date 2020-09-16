@@ -15,27 +15,39 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_epochs_sync;
+package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_sync_epochs;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
+import com.radixdlt.ledger.DtoCommandsAndProof;
+import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.sync.BaseLocalSyncServiceProcessor.SyncInProgress;
+import com.radixdlt.sync.LocalSyncRequest;
+import com.radixdlt.sync.LocalSyncServiceProcessor;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.assertj.core.api.AssertionsForClassTypes;
+import org.assertj.core.api.Condition;
 import org.junit.Test;
 
 public class RandomValidatorsTest {
 	private static final int numNodes = 10;
 
 	private final Builder bftTestBuilder = SimulationTest.builder()
+		.ledgerAndEpochsAndSync(View.of(3), goodRandomEpochToNodesMapper())
 		.pacemakerTimeout(5000)
 		.numNodes(numNodes)
 		.checkEpochsHighViewCorrect("epochHighView", View.of(100))
@@ -65,12 +77,45 @@ public class RandomValidatorsTest {
 	@Test
 	public void given_deterministic_randomized_validator_sets__then_should_pass_bft_and_epoch_invariants() {
 		SimulationTest bftTest = bftTestBuilder
-			.ledgerAndEpochsAndSync(View.of(10), goodRandomEpochToNodesMapper())
 			.build();
 
 		TestResults results = bftTest.run();
 		assertThat(results.getCheckResults()).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
 	}
 
+	@Test
+	public void given_deterministic_randomized_validator_sets_with_incorrect_single_epoch_synging__then_should_fail() {
+		SimulationTest bftTest = bftTestBuilder
+			.overrideWithIncorrectModule(new AbstractModule() {
+				@Provides
+				@Singleton
+				private LocalSyncServiceProcessor<EpochsLedgerUpdate> badEpochProcesssor(LocalSyncServiceProcessor<LedgerUpdate> base) {
+					return new LocalSyncServiceProcessor<EpochsLedgerUpdate>() {
+						@Override
+						public void processLedgerUpdate(EpochsLedgerUpdate ledgerUpdate) {
+							base.processLedgerUpdate(ledgerUpdate);
+						}
 
+						@Override
+						public void processLocalSyncRequest(LocalSyncRequest request) {
+							base.processLocalSyncRequest(request);
+						}
+
+						@Override
+						public void processSyncTimeout(SyncInProgress timeout) {
+							base.processSyncTimeout(timeout);
+						}
+
+						@Override
+						public void processSyncResponse(DtoCommandsAndProof dtoCommandsAndProof) {
+							base.processSyncResponse(dtoCommandsAndProof);
+						}
+					};
+				}
+			})
+			.build();
+
+		TestResults results = bftTest.run();
+		assertThat(results.getCheckResults()).hasValueSatisfying(new Condition<>(Optional::isPresent, "Error exists"));
+	}
 }

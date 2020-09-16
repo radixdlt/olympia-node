@@ -35,20 +35,20 @@ import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.sync.LocalSyncServiceProcessor.DtoCommandsAndProofVerifier;
-import com.radixdlt.sync.LocalSyncServiceProcessor.DtoCommandsAndProofVerifierException;
-import com.radixdlt.sync.LocalSyncServiceProcessor.InvalidSyncedCommandsSender;
-import com.radixdlt.sync.LocalSyncServiceProcessor.SyncInProgress;
-import com.radixdlt.sync.LocalSyncServiceProcessor.SyncTimeoutScheduler;
-import com.radixdlt.sync.LocalSyncServiceProcessor.VerifiedSyncedCommandsSender;
+import com.radixdlt.sync.BaseLocalSyncServiceProcessor.DtoCommandsAndProofVerifier;
+import com.radixdlt.sync.BaseLocalSyncServiceProcessor.DtoCommandsAndProofVerifierException;
+import com.radixdlt.sync.BaseLocalSyncServiceProcessor.InvalidSyncedCommandsSender;
+import com.radixdlt.sync.BaseLocalSyncServiceProcessor.SyncInProgress;
+import com.radixdlt.sync.BaseLocalSyncServiceProcessor.SyncTimeoutScheduler;
+import com.radixdlt.sync.BaseLocalSyncServiceProcessor.VerifiedSyncedCommandsSender;
 import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;
 import org.junit.Test;
 
-public class LocalSyncServiceProcessorTest {
+public class BaseLocalSyncServiceProcessorTest {
 	private StateSyncNetwork stateSyncNetwork;
-	private LocalSyncServiceProcessor syncServiceProcessor;
+	private BaseLocalSyncServiceProcessor syncServiceProcessor;
 	private VerifiedSyncedCommandsSender verifiedSyncedCommandsSender;
 	private InvalidSyncedCommandsSender invalidSyncedCommandsSender;
 	private DtoCommandsAndProofVerifier verifier;
@@ -69,7 +69,7 @@ public class LocalSyncServiceProcessorTest {
 		when(this.currentHeader.toDto()).thenReturn(mock(DtoLedgerHeaderAndProof.class));
 		this.verifier = mock(DtoCommandsAndProofVerifier.class);
 		this.headerComparator = mock(Comparator.class);
-		this.syncServiceProcessor = new LocalSyncServiceProcessor(
+		this.syncServiceProcessor = new BaseLocalSyncServiceProcessor(
 			stateSyncNetwork,
 			verifiedSyncedCommandsSender,
 			invalidSyncedCommandsSender,

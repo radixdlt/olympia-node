@@ -15,48 +15,66 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.sync;
+package com.radixdlt.epochs;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.BFTConfiguration;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.sync.LocalSyncServiceProcessor.SyncInProgress;
+import com.radixdlt.sync.BaseLocalSyncServiceProcessor.SyncInProgress;
+import com.radixdlt.sync.LocalSyncRequest;
+import com.radixdlt.sync.LocalSyncServiceProcessor;
 import java.util.function.Function;
+import javax.annotation.concurrent.NotThreadSafe;
 
 @Singleton
-public class EpochSyncServiceProcessor {
-	private final Function<BFTConfiguration, LocalSyncServiceProcessor> localSyncFactory;
+@NotThreadSafe
+public class EpochsLocalSyncServiceProcessor implements LocalSyncServiceProcessor<EpochsLedgerUpdate> {
+	private final Function<BFTConfiguration, LocalSyncServiceProcessor<LedgerUpdate>> localSyncFactory;
 	private EpochChange currentEpoch;
-	private LocalSyncServiceProcessor localSyncServiceProcessor;
+	private VerifiedLedgerHeaderAndProof currentHeader;
+	private LocalSyncServiceProcessor<LedgerUpdate> localSyncServiceProcessor;
 
 	@Inject
-	public EpochSyncServiceProcessor(
+	public EpochsLocalSyncServiceProcessor(
+		LocalSyncServiceProcessor<LedgerUpdate> initialProcessor,
 		EpochChange initialEpoch,
-		Function<BFTConfiguration, LocalSyncServiceProcessor> localSyncFactory
+		VerifiedLedgerHeaderAndProof initialHeader,
+		Function<BFTConfiguration, LocalSyncServiceProcessor<LedgerUpdate>> localSyncFactory
 	) {
 		this.currentEpoch = initialEpoch;
+		this.currentHeader = initialHeader;
 		this.localSyncFactory = localSyncFactory;
+		this.localSyncServiceProcessor = initialProcessor;
 	}
 
-	public void start() {
-		localSyncServiceProcessor = localSyncFactory.apply(currentEpoch.getBFTConfiguration());
+	@Override
+	public void processLedgerUpdate(EpochsLedgerUpdate ledgerUpdate) {
+		this.currentHeader = ledgerUpdate.getTail();
+
+		if (ledgerUpdate.getEpochChange().isPresent()) {
+			final EpochChange epochChange = ledgerUpdate.getEpochChange().get();
+			this.currentEpoch = epochChange;
+			this.localSyncServiceProcessor = localSyncFactory.apply(epochChange.getBFTConfiguration());
+		} else {
+			this.localSyncServiceProcessor.processLedgerUpdate(ledgerUpdate);
+		}
 	}
 
-	public void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
-		localSyncServiceProcessor.processLedgerUpdate(ledgerUpdate);
-	}
-
+	@Override
 	public void processLocalSyncRequest(LocalSyncRequest request) {
 		localSyncServiceProcessor.processLocalSyncRequest(request);
 	}
 
+	@Override
 	public void processSyncTimeout(SyncInProgress timeout) {
 		localSyncServiceProcessor.processSyncTimeout(timeout);
 	}
 
+	@Override
 	public void processSyncResponse(DtoCommandsAndProof dtoCommandsAndProof) {
 		if (dtoCommandsAndProof.getStartHeader().getLedgerHeader().getEpoch() != currentEpoch.getEpoch()
 			|| dtoCommandsAndProof.getEndHeader().getLedgerHeader().getEpoch() != currentEpoch.getEpoch()) {

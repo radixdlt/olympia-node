@@ -17,6 +17,7 @@
 
 package com.radixdlt.sync;
 
+import com.radixdlt.epochs.EpochsLocalSyncServiceProcessor;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.sync.SyncServiceRunner.LocalSyncRequestsRx;
@@ -41,7 +42,7 @@ public class SyncServiceRunnerTest {
 	private LocalSyncRequestsRx localSyncRequestsRx;
 	private SyncTimeoutsRx syncTimeoutsRx;
 	private StateSyncNetwork stateSyncNetwork;
-	private EpochSyncServiceProcessor syncServiceProcessor;
+	private EpochsLocalSyncServiceProcessor syncServiceProcessor;
 	private RemoteSyncServiceProcessor remoteSyncServiceProcessor;
 	private Subject<LedgerUpdate> versionUpdatesSubject;
 	private Subject<RemoteSyncRequest> requestsSubject;
@@ -64,7 +65,7 @@ public class SyncServiceRunnerTest {
 		this.requestsSubject = PublishSubject.create();
 		when(stateSyncNetwork.syncRequests()).thenReturn(requestsSubject);
 
-		this.syncServiceProcessor = mock(EpochSyncServiceProcessor.class);
+		this.syncServiceProcessor = mock(EpochsLocalSyncServiceProcessor.class);
 		this.remoteSyncServiceProcessor = mock(RemoteSyncServiceProcessor.class);
 
 		this.versionUpdatesSubject = PublishSubject.create();
