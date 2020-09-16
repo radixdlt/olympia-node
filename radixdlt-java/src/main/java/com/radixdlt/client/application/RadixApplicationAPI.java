@@ -150,7 +150,7 @@ public class RadixApplicationAPI {
 	 */
 	public static RadixApplicationAPIBuilder defaultBuilder() {
 		return new RadixApplicationAPIBuilder()
-			.defaultFeeMapper()
+			.defaultFeeProcessor()
 			.addStatelessParticlesMapper(
 				SendMessageAction.class,
 				new SendMessageToParticleGroupsMapper(ECKeyPair::generateNew)
@@ -183,12 +183,12 @@ public class RadixApplicationAPI {
 	 */
 	private final List<AtomErrorToExceptionReasonMapper> atomErrorMappers;
 	// TODO: Translator from particles to atom
-	private final FeeProcessor feeMapper;
+	private final FeeProcessor feeProcessor;
 
 	private RadixApplicationAPI(
 		RadixIdentity identity,
 		RadixUniverse universe,
-		FeeProcessor feeMapper,
+		FeeProcessor feeProcessor,
 		ImmutableMap<Class<? extends Action>, Function<Action, Set<ShardedParticleStateId>>> requiredStateMappers,
 		ImmutableMap<Class<? extends Action>, BiFunction<Action, Stream<Particle>, List<ParticleGroup>>> actionMappers,
 		List<ParticleReducer<? extends ApplicationState>> particleReducers,
@@ -197,7 +197,7 @@ public class RadixApplicationAPI {
 	) {
 		Objects.requireNonNull(identity);
 		Objects.requireNonNull(universe);
-		Objects.requireNonNull(feeMapper);
+		Objects.requireNonNull(feeProcessor);
 		Objects.requireNonNull(requiredStateMappers);
 		Objects.requireNonNull(actionMappers);
 		Objects.requireNonNull(particleReducers);
@@ -213,7 +213,7 @@ public class RadixApplicationAPI {
 		this.actionMappers = actionMappers;
 		this.requiredStateMappers = requiredStateMappers;
 		this.atomErrorMappers = atomErrorMappers;
-		this.feeMapper = feeMapper;
+		this.feeProcessor = feeProcessor;
 	}
 
 	private <T extends ApplicationState> ParticleReducer<T> getStateReducer(Class<T> storeClass) {
@@ -1159,7 +1159,7 @@ public class RadixApplicationAPI {
 	public static class RadixApplicationAPIBuilder {
 		private RadixIdentity identity;
 		private RadixUniverse universe;
-		private Function<RadixUniverse, FeeProcessor> feeMapperBuilder;
+		private Function<RadixUniverse, FeeProcessor> feeProcessorBuilder;
 		private List<ParticleReducer<? extends ApplicationState>> reducers = new ArrayList<>();
 		private ImmutableMap.Builder<Class<? extends Action>, Function<Action, Set<ShardedParticleStateId>>> requiredStateMappers
 			= new ImmutableMap.Builder<>();
@@ -1204,23 +1204,23 @@ public class RadixApplicationAPI {
 			return this;
 		}
 
-		public RadixApplicationAPIBuilder feeMapper(FeeProcessor feeMapper) {
-			this.feeMapperBuilder = radixUniverse -> feeMapper;
+		public RadixApplicationAPIBuilder feeProcessor(FeeProcessor feeProcessor) {
+			this.feeProcessorBuilder = radixUniverse -> feeProcessor;
 			return this;
 		}
 
-		public RadixApplicationAPIBuilder defaultFeeMapper() {
-			this.feeMapperBuilder = u -> new TokenFeeProcessor(u.getNativeToken(), u.feeTable());
+		public RadixApplicationAPIBuilder defaultFeeProcessor() {
+			this.feeProcessorBuilder = u -> new TokenFeeProcessor(u.getNativeToken(), u.feeTable());
 			return this;
 		}
 
-		public RadixApplicationAPIBuilder tokenFeeMapper(RRI tokenRri) {
-			this.feeMapperBuilder = radixUniverse -> new TokenFeeProcessor(tokenRri, radixUniverse.feeTable());
+		public RadixApplicationAPIBuilder tokenFeeProcessor(RRI tokenRri) {
+			this.feeProcessorBuilder = radixUniverse -> new TokenFeeProcessor(tokenRri, radixUniverse.feeTable());
 			return this;
 		}
 
-		public RadixApplicationAPIBuilder powFeeMapper() {
-			this.feeMapperBuilder = radixUniverse -> new PowFeeProcessor(Atom::getHash, radixUniverse.getMagic(), new ProofOfWorkBuilder());
+		public RadixApplicationAPIBuilder powFeeProcessor() {
+			this.feeProcessorBuilder = radixUniverse -> new PowFeeProcessor(Atom::getHash, radixUniverse.getMagic(), new ProofOfWorkBuilder());
 			return this;
 		}
 
@@ -1241,17 +1241,17 @@ public class RadixApplicationAPI {
 
 		public RadixApplicationAPI build() {
 			Objects.requireNonNull(this.identity, "Identity must be specified");
-			Objects.requireNonNull(this.feeMapperBuilder, "Fee Mapper must be specified");
+			Objects.requireNonNull(this.feeProcessorBuilder, "Fee Mapper must be specified");
 			Objects.requireNonNull(this.universe, "Universe must be specified");
 
-			final FeeProcessor feeMapper = this.feeMapperBuilder.apply(this.universe);
+			final FeeProcessor feeProcessor = this.feeProcessorBuilder.apply(this.universe);
 			final RadixIdentity identity = this.identity;
 			final List<ParticleReducer<? extends ApplicationState>> reducers = this.reducers;
 
 			return new RadixApplicationAPI(
 				identity,
 				universe,
-				feeMapper,
+				feeProcessor,
 				requiredStateMappers.build(),
 				actionMappers.build(),
 				reducers,
@@ -1371,7 +1371,7 @@ public class RadixApplicationAPI {
 		 */
 		public Atom buildAtom() {
 			Atom feelessAtom = Atom.create(universe.getAtomStore().getStaged(this.uuid), this.metadata);
-			feeMapper.process(this::actionProcessor, this::addAtomMetadata, getAddress(), feelessAtom);
+			feeProcessor.process(this::actionProcessor, this::addAtomMetadata, getAddress(), feelessAtom);
 
 			List<ParticleGroup> particleGroups = universe.getAtomStore().getStagedAndClear(this.uuid);
 			ImmutableMap<String, String> metadataCopy = ImmutableMap.copyOf(this.metadata);

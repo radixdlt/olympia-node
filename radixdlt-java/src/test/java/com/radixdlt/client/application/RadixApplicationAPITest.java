@@ -108,7 +108,7 @@ public class RadixApplicationAPITest {
 		return RadixApplicationAPI.defaultBuilder()
 			.identity(identity)
 			.universe(universe)
-			.feeMapper(feeMapper)
+			.feeProcessor(feeMapper)
 			.build();
 	}
 
@@ -235,7 +235,7 @@ public class RadixApplicationAPITest {
 		RadixApplicationAPI api = new RadixApplicationAPIBuilder()
 			.identity(identity)
 			.universe(universe)
-			.feeMapper(mock(PowFeeProcessor.class))
+			.feeProcessor(mock(PowFeeProcessor.class))
 			.addAtomMapper(new AtomToDecryptedMessageMapper())
 			.build();
 		TestObserver<DecryptedMessage> observer = TestObserver.create();
@@ -266,7 +266,7 @@ public class RadixApplicationAPITest {
 		RadixApplicationAPI api = new RadixApplicationAPIBuilder()
 			.identity(identity)
 			.universe(universe)
-			.feeMapper(mock(PowFeeProcessor.class))
+			.feeProcessor(mock(PowFeeProcessor.class))
 			.addReducer(new TokenBalanceReducer())
 			.build();
 		TestObserver<BigDecimal> observer = TestObserver.create();
@@ -323,7 +323,7 @@ public class RadixApplicationAPITest {
 			.identity(identity)
 			.universe(universe)
 			.addStatelessParticlesMapper(action.getClass(), actionMapper)
-			.feeMapper((actionProcessor, metadataProcessor, addr, feeAtom) -> Pair.of(ImmutableMap.of(), ImmutableList.of()))
+			.feeProcessor((actionProcessor, metadataProcessor, addr, feeAtom) -> Pair.of(ImmutableMap.of(), ImmutableList.of()))
 			.addAtomErrorMapper(errorMapper)
 			.build();
 
