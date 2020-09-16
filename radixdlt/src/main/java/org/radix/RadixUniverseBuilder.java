@@ -24,7 +24,6 @@ import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.keys.Keys;
 import com.radixdlt.atommodel.message.MessageParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
@@ -41,7 +40,6 @@ import com.radixdlt.universe.Universe.UniverseType;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.RadixConstants;
 import com.radixdlt.utils.UInt256;
-import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -83,15 +81,6 @@ public final class RadixUniverseBuilder {
 
 	public RadixUniverseBuilder withTimestamp(long timestamp) {
 		this.universeTimestamp = timestamp;
-		return this;
-	}
-
-	public RadixUniverseBuilder withKeyFromFile(String filename) {
-		try {
-			this.universeKey = Keys.readKey(filename, "universe", "RADIX_UNIVERSE_KEYSTORE_PASSWORD", "RADIX_UNIVERSE_KEY_PASSWORD");
-		} catch (CryptoException | IOException e) {
-			throw new IllegalArgumentException("Can't read universe key from " + filename, e);
-		}
 		return this;
 	}
 

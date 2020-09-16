@@ -214,7 +214,7 @@ public final class ClientAtom implements LedgerAtom {
 		try {
 			return DefaultSerialization.getInstance().fromDson(atom.rawAtom, Atom.class);
 		} catch (DeserializeException e) {
-			throw new IllegalStateException("Could not convert back to api atom " + atom);
+			throw new IllegalStateException("Could not convert back to api atom " + atom, e);
 		}
 	}
 
