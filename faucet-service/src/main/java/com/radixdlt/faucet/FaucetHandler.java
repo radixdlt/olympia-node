@@ -94,6 +94,7 @@ final class FaucetHandler {
 			TimeUnit.SECONDS.sleep(5);
 		} catch (InterruptedException e) {
 			// Ignored
+			Thread.currentThread().interrupt();
 		}
 	}
 
