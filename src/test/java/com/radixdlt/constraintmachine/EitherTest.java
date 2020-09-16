@@ -1,5 +1,6 @@
 package com.radixdlt.constraintmachine;
 
+import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Test;
@@ -79,5 +80,76 @@ public class EitherTest {
 
 		assertEquals(Either.first(13), first.bimap(x -> x + 1, x -> x + "x"));
 		assertEquals(Either.second("Hellox"), second.bimap(x -> x + 1, x -> x + "x"));
+	}
+
+	@Test
+	public void testOrElseNoThrow() {
+		Either<Integer, String> first = Either.first(12);
+
+		assertEquals(12, first.orElseThrow(() -> new AssertionError()).intValue());
+		assertEquals(12, first.orElseThrow(s -> new AssertionError(s)).intValue());
+	}
+
+	@Test(expected = IllegalStateException.class)
+	public void testOrElseThrow1() {
+		Either.second("foo").orElseThrow(() -> new IllegalStateException());
+	}
+
+	@Test(expected = IllegalStateException.class)
+	public void testOrElseThrow2() {
+		Either.second("bar").orElseThrow(s -> new IllegalStateException(s));
+	}
+
+	@Test(expected = NoSuchElementException.class)
+	public void testThrowingGetFirst() {
+		Either.second("baz").get();
+	}
+
+	@Test(expected = NoSuchElementException.class)
+	public void testThrowingGetSecond() {
+		Either.first("bie").getSecond();
+	}
+
+	@Test
+	public void testSwap() {
+		Either<Integer, String> first = Either.first(12);
+		Either<Integer, String> second = Either.second("Hello");
+
+		assertEquals(Either.second(12), first.swap());
+		assertEquals(Either.first("Hello"), second.swap());
+	}
+
+	@Test
+	public void testIterator() {
+		Either<Integer, String> first = Either.first(12);
+		Either<Integer, String> second = Either.second("Hello");
+
+		assertTrue(first.iterator().hasNext());
+		assertFalse(second.iterator().hasNext());
+
+		assertEquals(12, first.iterator().next().intValue());
+	}
+
+	@Test
+	public void testOrElseEtc() {
+		Either<Integer, String> first = Either.first(12);
+		Either<Integer, String> second = Either.second("Hello");
+
+		assertEquals(first, first.orElse(second));
+		assertEquals(first, second.orElse(first));
+
+		assertEquals(first, first.orElseGet(() -> second));
+		assertEquals(first, second.orElseGet(() -> first));
+	}
+
+	@Test
+	public void sensibleToString() {
+		String firstString = Either.first("Hello").toString();
+		String secondString = Either.second("Bye").toString();
+
+		assertTrue(firstString.contains(Either.First.class.getSimpleName()));
+		assertTrue(firstString.contains("Hello"));
+		assertTrue(secondString.contains(Either.Second.class.getSimpleName()));
+		assertTrue(secondString.contains("Bye"));
 	}
 }
