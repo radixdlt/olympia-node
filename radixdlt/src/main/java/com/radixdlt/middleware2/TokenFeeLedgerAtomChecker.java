@@ -19,6 +19,8 @@ package com.radixdlt.middleware2;
 
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.Spin;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
@@ -38,6 +40,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -63,16 +66,29 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 	}
 
 	@Override
-	public Result check(LedgerAtom atom, Set<Particle> outputParticles) {
+	public Result check(LedgerAtom atom) {
 		if (atom.getCMInstruction().getMicroInstructions().isEmpty()) {
 			return Result.error("atom has no instructions");
 		}
 
 		final boolean magic = Objects.equals(atom.getMetaData().get("magic"), "0xdeadbeef");
 		if (!magic) {
-			int feeSize = computeFeeSize(atom);
+			// FIXME: Should remove at least deser here and do somewhere where it can be more efficient
+			final Atom completeAtom;
+			if (atom instanceof ClientAtom) {
+				completeAtom = ClientAtom.convertToApiAtom((ClientAtom) atom);
+			} else if (atom instanceof CommittedAtom) {
+				completeAtom = ClientAtom.convertToApiAtom(((CommittedAtom) atom).getClientAtom());
+			} else {
+				throw new IllegalStateException("Unknown LedgerAtom type: " + atom.getClass());
+			}
+
+			Atom atomWithoutFeeGroup = completeAtom.copyExcludingGroups(this::isFeeGroup);
+			Set<Particle> outputParticles = completeAtom.particles(Spin.UP).collect(ImmutableSet.toImmutableSet());
+			int feeSize = this.serialization.toDson(atomWithoutFeeGroup, Output.HASH).length;
+
 			UInt256 requiredMinimumFee = feeTable.feeFor(atom, outputParticles, feeSize);
-			UInt256 feePaid = computeFeePaid(outputParticles);
+			UInt256 feePaid = computeFeePaid(completeAtom.particleGroups().filter(this::isFeeGroup));
 			if (feePaid.compareTo(requiredMinimumFee) < 0) {
 				String message = String.format("atom fee invalid: '%s' is less than required minimum '%s'", feePaid, requiredMinimumFee);
 				return Result.error(message);
@@ -80,20 +96,6 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 		}
 
 		return Result.success();
-	}
-
-	private int computeFeeSize(LedgerAtom atom) {
-		// FIXME: Should remove at least deser here and do somewhere where it can be more efficient
-		final Atom completeAtom;
-		if (atom instanceof ClientAtom) {
-			completeAtom = ClientAtom.convertToApiAtom((ClientAtom) atom);
-		} else if (atom instanceof CommittedAtom) {
-			completeAtom = ClientAtom.convertToApiAtom(((CommittedAtom) atom).getClientAtom());
-		} else {
-			throw new IllegalStateException("Unknown LedgerAtom type: " + atom.getClass());
-		}
-		Atom atomWithoutFeeGroup = completeAtom.copyExcludingGroups(this::isFeeGroup);
-		return this.serialization.toDson(atomWithoutFeeGroup, Output.HASH).length;
 	}
 
 	private boolean isFeeGroup(ParticleGroup pg) {
@@ -137,19 +139,15 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 		return false;
 	}
 
-	private UInt256 computeFeePaid(Set<Particle> outputParticles) {
+	private UInt256 computeFeePaid(Stream<ParticleGroup> feeParticleGroups) {
 		// We can use UInt256 here, as all fees are paid in a single token
 		// type.  As there can be no more than UInt256.MAX_VALUE tokens of
 		// a given type, a UInt256 cannot overflow.
-		UInt256 feePaid = UInt256.ZERO;
-		for (Particle p : outputParticles) {
-			if (p instanceof UnallocatedTokensParticle) {
-				UnallocatedTokensParticle utp = (UnallocatedTokensParticle) p;
-				if (this.feeTokenRri.equals(utp.getTokDefRef())) {
-					feePaid = feePaid.add(utp.getAmount());
-				}
-			}
-		}
-		return feePaid;
+		return feeParticleGroups
+			.flatMap(pg -> pg.particles(Spin.UP))
+			.filter(UnallocatedTokensParticle.class::isInstance)
+			.map(UnallocatedTokensParticle.class::cast)
+			.map(UnallocatedTokensParticle::getAmount)
+			.reduce(UInt256.ZERO, UInt256::add);
 	}
 }

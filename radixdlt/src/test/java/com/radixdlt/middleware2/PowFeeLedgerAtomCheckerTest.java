@@ -19,7 +19,6 @@ package com.radixdlt.middleware2;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.crypto.Hash;
@@ -72,7 +71,7 @@ public class PowFeeLedgerAtomCheckerTest {
 		Hash powSpent = mock(Hash.class);
 		when(powFeeComputer.computePowSpent(eq(ledgerAtom), eq(0L))).thenReturn(powSpent);
 		when(powSpent.compareTo(eq(target))).thenReturn(-1);
-		assertThat(checker.check(ledgerAtom, ImmutableSet.of()).isSuccess()).isTrue();
+		assertThat(checker.check(ledgerAtom).isSuccess()).isTrue();
 	}
 
 	@Test
@@ -85,7 +84,7 @@ public class PowFeeLedgerAtomCheckerTest {
 		when(ledgerAtom.getCMInstruction()).thenReturn(cmInstruction);
 		when(ledgerAtom.getMetaData()).thenReturn(ImmutableMap.of("timestamp", "0"));
 
-		assertThat(checker.check(ledgerAtom, ImmutableSet.of()).getErrorMessage())
+		assertThat(checker.check(ledgerAtom).getErrorMessage())
 			.contains("instructions");
 	}
 
@@ -99,7 +98,7 @@ public class PowFeeLedgerAtomCheckerTest {
 		when(ledgerAtom.getCMInstruction()).thenReturn(cmInstruction);
 		when(ledgerAtom.getMetaData()).thenReturn(ImmutableMap.of());
 
-		assertThat(checker.check(ledgerAtom, ImmutableSet.of()).getErrorMessage())
+		assertThat(checker.check(ledgerAtom).getErrorMessage())
 			.contains("metadata does not contain");
 	}
 }

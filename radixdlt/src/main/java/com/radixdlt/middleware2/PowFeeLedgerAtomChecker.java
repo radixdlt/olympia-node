@@ -18,7 +18,6 @@
 package com.radixdlt.middleware2;
 
 import com.radixdlt.atomos.Result;
-import com.radixdlt.constraintmachine.Particle;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.crypto.Hash;
@@ -52,7 +51,7 @@ public class PowFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 	}
 
 	@Override
-	public Result check(LedgerAtom atom, Set<Particle> outputParticles) {
+	public Result check(LedgerAtom atom) {
 		if (atom.getCMInstruction().getMicroInstructions().isEmpty()) {
 			return Result.error("atom has no instructions");
 		}
