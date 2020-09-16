@@ -47,7 +47,7 @@ final class ConstraintScryptEnv implements SysCalls {
 	private final Function<RadixAddress, Result> addressChecker;
 
 	private final Map<Class<? extends Particle>, ParticleDefinition<Particle>> scryptParticleDefinitions;
-	private final Map<TransitionToken<?, ?, ?, ?>, TransitionProcedure<Particle, UsedData, Particle, UsedData>> scryptTransitionProcedures;
+	private final Map<TransitionToken, TransitionProcedure<Particle, UsedData, Particle, UsedData>> scryptTransitionProcedures;
 
 	ConstraintScryptEnv(
 		ImmutableMap<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions,
@@ -64,7 +64,7 @@ final class ConstraintScryptEnv implements SysCalls {
 		return scryptParticleDefinitions;
 	}
 
-	public Map<TransitionToken<?, ?, ?, ?>, TransitionProcedure<Particle, UsedData, Particle, UsedData>> getScryptTransitionProcedures() {
+	public Map<TransitionToken, TransitionProcedure<Particle, UsedData, Particle, UsedData>> getScryptTransitionProcedures() {
 		return scryptTransitionProcedures;
 	}
 

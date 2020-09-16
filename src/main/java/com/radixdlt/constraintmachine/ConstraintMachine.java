@@ -41,7 +41,7 @@ public final class ConstraintMachine {
 
 	public static class Builder {
 		private Function<Particle, Result> particleStaticCheck;
-		private Function<TransitionToken<?, ?, ?, ?>, TransitionProcedure<Particle, UsedData, Particle, UsedData>> particleProcedures;
+		private Function<TransitionToken, TransitionProcedure<Particle, UsedData, Particle, UsedData>> particleProcedures;
 
 		public Builder setParticleStaticCheck(Function<Particle, Result> particleStaticCheck) {
 			this.particleStaticCheck = particleStaticCheck;
@@ -49,7 +49,7 @@ public final class ConstraintMachine {
 		}
 
 		public Builder setParticleTransitionProcedures(
-			Function<TransitionToken<?, ?, ?, ?>, TransitionProcedure<Particle, UsedData, Particle, UsedData>> particleProcedures
+			Function<TransitionToken, TransitionProcedure<Particle, UsedData, Particle, UsedData>> particleProcedures
 		) {
 			this.particleProcedures = particleProcedures;
 			return this;
@@ -64,18 +64,18 @@ public final class ConstraintMachine {
 	}
 
 	private final Function<Particle, Result> particleStaticCheck;
-	private final Function<TransitionToken<?, ?, ?, ?>, TransitionProcedure<Particle, UsedData, Particle, UsedData>> particleProcedures;
+	private final Function<TransitionToken, TransitionProcedure<Particle, UsedData, Particle, UsedData>> particleProcedures;
 
 	ConstraintMachine(
 		Function<Particle, Result> particleStaticCheck,
-		Function<TransitionToken<?, ?, ?, ?>, TransitionProcedure<Particle, UsedData, Particle, UsedData>> particleProcedures
+		Function<TransitionToken, TransitionProcedure<Particle, UsedData, Particle, UsedData>> particleProcedures
 	) {
 		this.particleStaticCheck = particleStaticCheck;
 		this.particleProcedures = particleProcedures;
 	}
 
 	public static final class CMValidationState {
-		private TransitionToken<?, ?, ?, ?> currentTransitionToken = null;
+		private TransitionToken currentTransitionToken = null;
 		private Particle particleRemaining = null;
 		private boolean particleRemainingIsInput;
 		private UsedData particleRemainingUsed = null;
@@ -90,11 +90,11 @@ public final class ConstraintMachine {
 			this.signatures = signatures;
 		}
 
-		void setCurrentTransitionToken(TransitionToken<?, ?, ?, ?> currentTransitionToken) {
+		public void setCurrentTransitionToken(TransitionToken currentTransitionToken) {
 			this.currentTransitionToken = currentTransitionToken;
 		}
 
-		boolean checkSpin(Particle particle, Spin spin) {
+		public boolean checkSpin(Particle particle, Spin spin) {
 			if (currentSpins.containsKey(particle)) {
 				return false;
 			}
@@ -103,8 +103,17 @@ public final class ConstraintMachine {
 			return true;
 		}
 
-		boolean isSignedBy(ECPublicKey publicKey) {
+		public boolean isSignedBy(ECPublicKey publicKey) {
 			return this.isSignedByCache.computeIfAbsent(publicKey, this::verifySignedWith);
+		}
+
+		private boolean verifySignedWith(ECPublicKey publicKey) {
+			if (signatures == null || signatures.isEmpty() || witness == null) {
+				return false;
+			}
+
+			final ECDSASignature signature = signatures.get(publicKey.euid());
+			return signature != null && publicKey.verify(witness, signature);
 		}
 
 		boolean has(Particle p) {
@@ -182,15 +191,6 @@ public final class ConstraintMachine {
 			builder.append("\n]");
 
 			return builder.toString();
-		}
-
-		private boolean verifySignedWith(ECPublicKey publicKey) {
-			if (signatures == null || signatures.isEmpty() || witness == null) {
-				return false;
-			}
-
-			final ECDSASignature signature = signatures.get(publicKey.euid());
-			return signature != null && publicKey.verify(witness, signature);
 		}
 	}
 
