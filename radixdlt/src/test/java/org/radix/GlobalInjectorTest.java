@@ -54,6 +54,7 @@ public class GlobalInjectorTest {
 	public void setup() {
 		RuntimeProperties properties = mock(RuntimeProperties.class);
 		doReturn("127.0.0.1").when(properties).get(eq("host.ip"), any());
+		doReturn("none").when(properties).get(eq("debug.fee_module"), any());
 		DatabaseEnvironment dbEnv = mock(DatabaseEnvironment.class);
 		Universe universe = mock(Universe.class);
 

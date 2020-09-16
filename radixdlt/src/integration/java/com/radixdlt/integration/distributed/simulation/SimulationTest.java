@@ -29,6 +29,7 @@ import com.radixdlt.LedgerEpochChangeModule;
 import com.radixdlt.LedgerEpochChangeRxModule;
 import com.radixdlt.LedgerModule;
 import com.radixdlt.LedgerRxModule;
+import com.radixdlt.NoFeeModule;
 import com.radixdlt.LedgerLocalMempoolModule;
 import com.radixdlt.RadixEngineModule;
 import com.radixdlt.RadixEngineRxModule;
@@ -340,6 +341,7 @@ public class SimulationTest {
 					return BFTValidatorSet.from(nodes.stream().limit(limit).map(node -> BFTValidator.from(node, UInt256.ONE)));
 				}
 			});
+			modules.add(new NoFeeModule());
 
 			if (ledgerType == LedgerType.MOCKED_LEDGER) {
 				if (modifyOneGenesis) {
@@ -407,7 +409,7 @@ public class SimulationTest {
 						}
 					});
 					modules.add(new LedgerEpochChangeModule());
-					modules.add(new RadixEngineModule(epochHighView, true));
+					modules.add(new RadixEngineModule(epochHighView));
 					modules.add(new RadixEngineRxModule());
 					modules.add(new MockedSyncServiceModule());
 					modules.add(new MockedRadixEngineStoreModule());

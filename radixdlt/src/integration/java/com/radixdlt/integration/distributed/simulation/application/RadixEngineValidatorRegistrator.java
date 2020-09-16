@@ -37,11 +37,16 @@ import io.reactivex.rxjava3.subjects.PublishSubject;
 import java.util.List;
 import java.util.Objects;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 /**
  * Goes through a list of nodes and registers all of them over some
  * amount of time.
  */
 public final class RadixEngineValidatorRegistrator extends LocalMempoolPeriodicSubmittor {
+	private static final Logger log = LogManager.getLogger();
+
 	private final List<ECKeyPair> nodes;
 	private final PublishSubject<BFTNode> validatorRegistrationSubmissions;
 	private int current = 0;
@@ -80,7 +85,7 @@ public final class RadixEngineValidatorRegistrator extends LocalMempoolPeriodicS
 		}
 
 		BFTNode node = BFTNode.create(keyPair.getPublicKey());
-		System.out.println("Registering node " + node);
+		log.debug("Registering node {}",  node);
 		validatorRegistrationSubmissions.onNext(node);
 		return command;
 	}

@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -30,6 +31,7 @@ import org.json.JSONObject;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
+import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import org.radix.universe.system.LocalSystem;
@@ -38,11 +40,14 @@ public class NetworkService {
 	private final Serialization serialization;
 	private final LocalSystem localSystem;
 	private final AddressBook addressBook;
+	private final PeerWithSystem localPeer;
 
 	public NetworkService(Serialization serialization, LocalSystem localSystem, AddressBook addressBook) {
 		this.serialization = serialization;
 		this.localSystem = localSystem;
 		this.addressBook = addressBook;
+
+		this.localPeer = new PeerWithSystem(this.localSystem);
 	}
 
 	public JSONObject getSelf() {
@@ -57,9 +62,8 @@ public class NetworkService {
 		// sorted by transport name
 		Map<String, Set<Peer>> peersByTransport = new TreeMap<>();
 
-		this.addressBook.recentPeers()
+		selfAndOthers(this.addressBook.recentPeers())
 			.forEachOrdered(p -> addPeerToMap(p, peersByTransport));
-
 
 		for (Map.Entry<String, Set<Peer>> e : peersByTransport.entrySet()) {
 			JSONArray transportPeers = new JSONArray();
@@ -78,19 +82,19 @@ public class NetworkService {
 	}
 
 	public List<JSONObject> getLivePeers() {
-		return this.addressBook.recentPeers()
+		return selfAndOthers(this.addressBook.recentPeers())
 			.map(peer -> serialization.toJsonObject(peer, Output.WIRE))
 			.collect(Collectors.toList());
 	}
 
 	public JSONObject getLiveNIDS() {
 		JSONArray nids = new JSONArray();
-		this.addressBook.recentPeers().forEachOrdered(peer -> nids.put(peer.getNID().toString()));
+		selfAndOthers(this.addressBook.recentPeers()).forEachOrdered(peer -> nids.put(peer.getNID().toString()));
 		return new JSONObject().put("nids", nids);
 	}
 
 	public List<JSONObject> getPeers() {
-		return this.addressBook.peers()
+		return selfAndOthers(this.addressBook.peers())
 			.map(peer -> serialization.toJsonObject(peer, Output.WIRE))
 			.collect(Collectors.toList());
 	}
@@ -98,6 +102,9 @@ public class NetworkService {
 	public JSONObject getPeer(String id) {
 		try {
 			EUID euid = EUID.valueOf(id);
+			if (euid.equals(this.localPeer.euid())) {
+				return serialization.toJsonObject(this.localPeer, Output.API);
+			}
 			return this.addressBook.peer(euid)
 				.map(peer -> serialization.toJsonObject(peer, Output.API))
 				.orElseGet(JSONObject::new);
@@ -107,4 +114,7 @@ public class NetworkService {
 		return new JSONObject();
 	}
 
+	private Stream<Peer> selfAndOthers(Stream<Peer> others) {
+		return Stream.concat(Stream.of(this.localPeer), others).distinct();
+	}
 }

@@ -33,6 +33,7 @@ import com.radixdlt.LedgerEpochChangeModule;
 import com.radixdlt.LedgerEpochChangeRxModule;
 import com.radixdlt.LedgerLocalMempoolModule;
 import com.radixdlt.PersistenceModule;
+import com.radixdlt.PowFeeModule;
 import com.radixdlt.RadixEngineModule;
 import com.radixdlt.RadixEngineRxModule;
 import com.radixdlt.RadixEngineStoreModule;
@@ -42,6 +43,7 @@ import com.radixdlt.LedgerRxModule;
 import com.radixdlt.LedgerModule;
 import com.radixdlt.SyncRxModule;
 import com.radixdlt.SystemInfoRxModule;
+import com.radixdlt.TokenFeeModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.identifiers.RadixAddress;
@@ -51,6 +53,7 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.middleware2.InfoSupplier;
 import com.radixdlt.SystemInfoModule;
 import com.radixdlt.NetworkModule;
+import com.radixdlt.NoFeeModule;
 import com.radixdlt.network.addressbook.AddressBookModule;
 import com.radixdlt.network.addressbook.PeerManagerConfiguration;
 import com.radixdlt.network.hostip.HostIp;
@@ -100,6 +103,22 @@ public class GlobalInjector {
 		final View epochHighView = View.of(properties.get("epochs.views_per_epoch", 100L));
 		final int mempoolMaxSize = properties.get("mempool.maxSize", 1000);
 
+		final Module feeModule;
+		final String feeModuleName = properties.get("debug.fee_module", "token");
+		switch (feeModuleName.toLowerCase()) {
+		case "pow":
+			feeModule = new PowFeeModule();
+			break;
+		case "token":
+			feeModule = new TokenFeeModule();
+			break;
+		case "none":
+			feeModule = new NoFeeModule();
+			break;
+		default:
+			throw new IllegalStateException("No such fee module: " + feeModuleName);
+		}
+
 		injector = Guice.createInjector(
 			// Consensus
 			new CryptoModule(),
@@ -116,9 +135,12 @@ public class GlobalInjector {
 			new LedgerLocalMempoolModule(mempoolMaxSize),
 
 			// State Computer
-			new RadixEngineModule(epochHighView, false),
+			new RadixEngineModule(epochHighView),
 			new RadixEngineRxModule(),
 			new RadixEngineStoreModule(fixedNodeCount),
+
+			// Fees
+			feeModule,
 
 			new PersistenceModule(),
 

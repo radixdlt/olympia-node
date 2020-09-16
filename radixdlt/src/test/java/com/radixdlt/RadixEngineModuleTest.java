@@ -68,7 +68,8 @@ public class RadixEngineModuleTest {
 	@Test
 	public void when_configured_with_correct_interfaces__then_state_computer_should_be_created() {
 		Injector injector = Guice.createInjector(
-			new RadixEngineModule(View.of(1), true),
+			new RadixEngineModule(View.of(1)),
+			new NoFeeModule(),
 			new ExternalRadixEngineModule()
 		);
 

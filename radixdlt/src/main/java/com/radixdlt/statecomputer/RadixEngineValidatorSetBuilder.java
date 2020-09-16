@@ -40,7 +40,9 @@ public final class RadixEngineValidatorSetBuilder {
 
 	public RadixEngineValidatorSetBuilder(Set<ECPublicKey> initialSet, Predicate<Set<ECPublicKey>> validatorSetCheck) {
 		if (!validatorSetCheck.test(initialSet)) {
-			throw new IllegalArgumentException("Initial validator set should pass check");
+			throw new IllegalArgumentException(
+				String.format("Initial validator set %s should pass check: %s", initialSet, validatorSetCheck)
+			);
 		}
 		this.validators = new HashSet<>(initialSet);
 		this.lastGoodSet = new HashSet<>(initialSet);
