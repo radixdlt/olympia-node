@@ -57,7 +57,7 @@ public final class SyncServiceRunner implements ModuleRunner {
 	private final StateSyncNetwork stateSyncNetwork;
 	private final Scheduler singleThreadScheduler;
 	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("SyncManager"));
-	private final LocalSyncServiceProcessor syncServiceProcessor;
+	private final EpochSyncServiceProcessor epochSyncServiceProcessor;
 	private final RemoteSyncServiceProcessor remoteSyncServiceProcessor;
 	private final SyncTimeoutsRx syncTimeoutsRx;
 	private final LocalSyncRequestsRx localSyncRequestsRx;
@@ -71,13 +71,13 @@ public final class SyncServiceRunner implements ModuleRunner {
 		SyncTimeoutsRx syncTimeoutsRx,
 		VersionUpdatesRx versionUpdatesRx,
 		StateSyncNetwork stateSyncNetwork,
-		LocalSyncServiceProcessor syncServiceProcessor,
+		EpochSyncServiceProcessor epochSyncServiceProcessor,
 		RemoteSyncServiceProcessor remoteSyncServiceProcessor
 	) {
 		this.localSyncRequestsRx = Objects.requireNonNull(localSyncRequestsRx);
 		this.syncTimeoutsRx = Objects.requireNonNull(syncTimeoutsRx);
 		this.versionUpdatesRx = Objects.requireNonNull(versionUpdatesRx);
-		this.syncServiceProcessor = Objects.requireNonNull(syncServiceProcessor);
+		this.epochSyncServiceProcessor = Objects.requireNonNull(epochSyncServiceProcessor);
 		this.stateSyncNetwork = Objects.requireNonNull(stateSyncNetwork);
 		this.singleThreadScheduler = Schedulers.from(this.executorService);
 		this.remoteSyncServiceProcessor = Objects.requireNonNull(remoteSyncServiceProcessor);
@@ -94,25 +94,27 @@ public final class SyncServiceRunner implements ModuleRunner {
 				return;
 			}
 
+			epochSyncServiceProcessor.start();
+
 			Disposable d0 = stateSyncNetwork.syncRequests()
 				.observeOn(singleThreadScheduler)
 				.subscribe(remoteSyncServiceProcessor::processRemoteSyncRequest);
 
 			Disposable d1 = stateSyncNetwork.syncResponses()
 				.observeOn(singleThreadScheduler)
-				.subscribe(syncServiceProcessor::processSyncResponse);
+				.subscribe(epochSyncServiceProcessor::processSyncResponse);
 
 			Disposable d2 = localSyncRequestsRx.localSyncRequests()
 				.observeOn(singleThreadScheduler)
-				.subscribe(syncServiceProcessor::processLocalSyncRequest);
+				.subscribe(epochSyncServiceProcessor::processLocalSyncRequest);
 
 			Disposable d3 = syncTimeoutsRx.timeouts()
 				.observeOn(singleThreadScheduler)
-				.subscribe(syncServiceProcessor::processSyncTimeout);
+				.subscribe(epochSyncServiceProcessor::processSyncTimeout);
 
 			Disposable d4 = versionUpdatesRx.ledgerStateUpdates()
 				.observeOn(singleThreadScheduler)
-				.subscribe(syncServiceProcessor::processVersionUpdate);
+				.subscribe(epochSyncServiceProcessor::processVersionUpdate);
 
 			compositeDisposable = new CompositeDisposable(d0, d1, d2, d3, d4);
 		}

@@ -42,7 +42,7 @@ public class SyncServiceRunnerTest {
 	private LocalSyncRequestsRx localSyncRequestsRx;
 	private SyncTimeoutsRx syncTimeoutsRx;
 	private StateSyncNetwork stateSyncNetwork;
-	private LocalSyncServiceProcessor syncServiceProcessor;
+	private EpochSyncServiceProcessor syncServiceProcessor;
 	private RemoteSyncServiceProcessor remoteSyncServiceProcessor;
 	private VersionUpdatesRx versionUpdatesRx;
 	private Subject<VerifiedLedgerHeaderAndProof> versionUpdatesSubject;
@@ -66,7 +66,7 @@ public class SyncServiceRunnerTest {
 		this.requestsSubject = PublishSubject.create();
 		when(stateSyncNetwork.syncRequests()).thenReturn(requestsSubject);
 
-		this.syncServiceProcessor = mock(LocalSyncServiceProcessor.class);
+		this.syncServiceProcessor = mock(EpochSyncServiceProcessor.class);
 		this.remoteSyncServiceProcessor = mock(RemoteSyncServiceProcessor.class);
 
 		this.versionUpdatesSubject = PublishSubject.create();

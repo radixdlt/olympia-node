@@ -149,24 +149,25 @@ public final class LocalSyncServiceProcessor {
 
 		this.targetHeader = nextTargetHeader;
 		SyncInProgress syncInProgress = new SyncInProgress(request.getTarget(), request.getTargetNodes());
-		this.sendRequest(syncInProgress);
+		this.refreshRequest(syncInProgress);
 	}
 
 	public void processSyncTimeout(SyncInProgress syncInProgress) {
-		this.sendRequest(syncInProgress);
+		this.refreshRequest(syncInProgress);
 	}
 
-	private void sendRequest(SyncInProgress syncInProgress) {
-		if (headerComparator.compare(syncInProgress.getTargetHeader(), this.currentHeader) <= 0) {
+	private void refreshRequest(SyncInProgress syncInProgress) {
+		VerifiedLedgerHeaderAndProof requestTargetHeader = syncInProgress.getTargetHeader();
+		if (headerComparator.compare(requestTargetHeader, this.currentHeader) <= 0) {
 			return;
 		}
 
-		if (syncInProgress.getTargetHeader().getStateVersion() == this.currentHeader.getStateVersion()) {
+		if (Objects.equals(requestTargetHeader.getAccumulatorState(), this.currentHeader.getAccumulatorState())) {
 			// Already command synced just need to update header
 			// TODO: Need to check epochs to make sure we're not skipping epochs
 			VerifiedCommandsAndProof commandsAndProof = new VerifiedCommandsAndProof(
 				ImmutableList.of(),
-				syncInProgress.getTargetHeader()
+				requestTargetHeader
 			);
 			this.verifiedSyncedCommandsSender.sendVerifiedCommands(commandsAndProof);
 			return;

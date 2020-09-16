@@ -40,6 +40,7 @@ import com.radixdlt.sync.LocalSyncServiceProcessor.SyncTimeoutScheduler;
 import com.radixdlt.sync.LocalSyncServiceProcessor.VerifiedSyncedCommandsSender;
 import com.radixdlt.sync.SyncServiceRunner;
 import java.util.Comparator;
+import java.util.function.Function;
 
 /**
  * Module which manages synchronization of committed atoms across of nodes
@@ -64,6 +65,41 @@ public class SyncCommittedServiceModule extends AbstractModule {
 			stateSyncNetwork,
 			BATCH_SIZE
 		);
+	}
+
+	@Provides
+	private Function<BFTConfiguration, LocalSyncServiceProcessor> localSyncFactory(
+		Comparator<VerifiedLedgerHeaderAndProof> headerComparator,
+		StateSyncNetwork stateSyncNetwork,
+		VerifiedSyncedCommandsSender verifiedSyncedCommandsSender,
+		InvalidSyncedCommandsSender invalidSyncedCommandsSender,
+		SyncTimeoutScheduler syncTimeoutScheduler,
+		LedgerAccumulatorVerifier verifier,
+		Hasher hasher,
+		HashVerifier hashVerifier
+	) {
+		return config -> {
+			AccumulatorAndValidatorSetVerifier accumulatorAndValidatorSetVerifier = new AccumulatorAndValidatorSetVerifier(
+				verifier,
+				config.getValidatorSet(),
+				hasher,
+				hashVerifier
+			);
+
+			VerifiedLedgerHeaderAndProof header = config.getGenesisQC().getCommittedAndLedgerStateProof()
+				.orElseThrow(RuntimeException::new).getSecond();
+
+			return new LocalSyncServiceProcessor(
+				stateSyncNetwork,
+				verifiedSyncedCommandsSender,
+				invalidSyncedCommandsSender,
+				syncTimeoutScheduler,
+				accumulatorAndValidatorSetVerifier,
+				headerComparator,
+				header,
+				200
+			);
+		};
 	}
 
 	@Provides
