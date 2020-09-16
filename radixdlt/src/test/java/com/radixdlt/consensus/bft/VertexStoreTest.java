@@ -242,7 +242,7 @@ public class VertexStoreTest {
 	}
 
 	@Test
-	public void when_committing_vertex_which_is_lower_than_root__then_empty_optional_is_returned() {
+	public void when_committing_vertex_which_is_lower_or_equal_to_root__then_empty_optional_is_returned() {
 		Hash id1 = mock(Hash.class);
 		VerifiedVertex vertex1 = nextVertex.apply(id1);
 		Hash id2 = mock(Hash.class);
@@ -270,9 +270,19 @@ public class VertexStoreTest {
 		assertThat(vertexStore.commit(header, mock(VerifiedLedgerHeaderAndProof.class))).isPresent();
 
 		BFTHeader header1 = mock(BFTHeader.class);
-		when(header1.getView()).thenReturn(View.of(1));
+		when(header1.getView()).thenReturn(View.of(2));
 		when(header1.getVertexId()).thenReturn(id1);
 		assertThat(vertexStore.commit(header1, mock(VerifiedLedgerHeaderAndProof.class))).isNotPresent();
+
+		BFTHeader header2 = mock(BFTHeader.class);
+		when(header2.getView()).thenReturn(View.of(2));
+		when(header2.getVertexId()).thenReturn(id1);
+		assertThat(vertexStore.commit(header2, mock(VerifiedLedgerHeaderAndProof.class))).isNotPresent();
+
+		verify(vertexStoreEventSender, never()).sendCommittedVertex(argThat(v -> v.getView().equals(View.of(0))));
+		verify(vertexStoreEventSender, times(1)).sendCommittedVertex(argThat(v -> v.getView().equals(View.of(1))));
+		verify(vertexStoreEventSender, times(1)).sendCommittedVertex(argThat(v -> v.getView().equals(View.of(2))));
+		verify(vertexStoreEventSender, never()).sendCommittedVertex(argThat(v -> v.getView().equals(View.of(3))));
 	}
 
 	@Test

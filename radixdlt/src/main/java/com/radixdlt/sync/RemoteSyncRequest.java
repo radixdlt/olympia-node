@@ -15,34 +15,26 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.middleware2.network;
+package com.radixdlt.sync;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializerId2;
-import org.radix.network.messaging.Message;
+import java.util.Objects;
 
 /**
- * Message to request for sync atoms
+ * A sync request from a peer
  */
-@SerializerId2("message.sync.request")
-public final class SyncRequestMessage extends Message {
-
-	@JsonProperty("currentHeader")
-	@DsonOutput(Output.ALL)
+public final class RemoteSyncRequest {
 	private final DtoLedgerHeaderAndProof currentHeader;
+	private final BFTNode node;
 
-	SyncRequestMessage() {
-		// Serializer only
-		super(0);
-		this.currentHeader = null;
+	public RemoteSyncRequest(BFTNode node, DtoLedgerHeaderAndProof currentHeader) {
+		this.node = Objects.requireNonNull(node);
+		this.currentHeader = currentHeader;
 	}
 
-	public SyncRequestMessage(int magic, DtoLedgerHeaderAndProof currentHeader) {
-		super(magic);
-		this.currentHeader = currentHeader;
+	public BFTNode getNode() {
+		return node;
 	}
 
 	public DtoLedgerHeaderAndProof getCurrentHeader() {
@@ -51,6 +43,6 @@ public final class SyncRequestMessage extends Message {
 
 	@Override
 	public String toString() {
-		return String.format("%s{current=%s}", getClass().getSimpleName(), currentHeader);
+		return String.format("%s{current=%s}", this.getClass().getSimpleName(), currentHeader);
 	}
 }

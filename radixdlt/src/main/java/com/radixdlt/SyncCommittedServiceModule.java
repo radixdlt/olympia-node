@@ -20,21 +20,20 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.google.inject.multibindings.ProvidesIntoMap;
-import com.google.inject.multibindings.StringMapKey;
+import com.google.inject.multibindings.MapBinder;
+import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.sync.CommittedReader;
+import com.radixdlt.sync.LocalSyncServiceProcessor.InvalidSyncedCommandsSender;
+import com.radixdlt.sync.RemoteSyncServiceProcessor;
 import com.radixdlt.sync.StateSyncNetwork;
-import com.radixdlt.sync.SyncServiceProcessor;
-import com.radixdlt.sync.SyncServiceProcessor.SyncTimeoutScheduler;
-import com.radixdlt.sync.SyncServiceProcessor.SyncedCommandSender;
+import com.radixdlt.sync.LocalSyncServiceProcessor;
+import com.radixdlt.sync.LocalSyncServiceProcessor.SyncTimeoutScheduler;
+import com.radixdlt.sync.LocalSyncServiceProcessor.VerifiedSyncedCommandsSender;
 import com.radixdlt.sync.SyncServiceRunner;
-import com.radixdlt.sync.SyncServiceRunner.LocalSyncRequestsRx;
-import com.radixdlt.sync.SyncServiceRunner.SyncTimeoutsRx;
-import com.radixdlt.ledger.StateComputerLedger;
-import com.radixdlt.sync.SyncServiceRunner.VersionUpdatesRx;
 import java.util.Comparator;
 
 /**
@@ -43,52 +42,60 @@ import java.util.Comparator;
 public class SyncCommittedServiceModule extends AbstractModule {
 	private static final int BATCH_SIZE = 100;
 
+	@Override
+	public void configure() {
+		MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class)
+			.addBinding("sync").to(SyncServiceRunner.class);
+	}
+
 	@Provides
 	@Singleton
-	private SyncServiceProcessor syncServiceProcessor(
-		Comparator<VerifiedLedgerHeaderAndProof> headerComparator,
-		VerifiedLedgerHeaderAndProof header,
+	private RemoteSyncServiceProcessor remoteSyncServiceProcessor(
 		CommittedReader committedReader,
-		StateSyncNetwork stateSyncNetwork,
-		SyncedCommandSender syncedCommandSender,
-		SyncTimeoutScheduler syncTimeoutScheduler
+		StateSyncNetwork stateSyncNetwork
 	) {
-		return new SyncServiceProcessor(
+		return new RemoteSyncServiceProcessor(
 			committedReader,
 			stateSyncNetwork,
-			syncedCommandSender,
-			syncTimeoutScheduler,
-			headerComparator,
-			header,
-			BATCH_SIZE,
-			1000
-		);
-	}
-
-	@ProvidesIntoMap
-	@StringMapKey("sync")
-	@Singleton
-	private ModuleRunner syncServiceRunner(
-		LocalSyncRequestsRx localSyncRequestsRx,
-		SyncTimeoutsRx syncTimeoutsRx,
-		VersionUpdatesRx versionUpdatesRx,
-		StateSyncNetwork stateSyncNetwork,
-		SyncServiceProcessor syncServiceProcessor
-	) {
-		return new SyncServiceRunner(
-			localSyncRequestsRx,
-			syncTimeoutsRx,
-			versionUpdatesRx,
-			stateSyncNetwork,
-			syncServiceProcessor
+			BATCH_SIZE
 		);
 	}
 
 	@Provides
-	private SyncedCommandSender syncedCommandSender(SystemCounters systemCounters, StateComputerLedger stateComputerLedger) {
+	@Singleton
+	private LocalSyncServiceProcessor syncServiceProcessor(
+		Comparator<VerifiedLedgerHeaderAndProof> headerComparator,
+		LedgerAccumulatorVerifier verifier,
+		VerifiedLedgerHeaderAndProof header,
+		StateSyncNetwork stateSyncNetwork,
+		VerifiedSyncedCommandsSender verifiedSyncedCommandsSender,
+		InvalidSyncedCommandsSender invalidSyncedCommandsSender,
+		SyncTimeoutScheduler syncTimeoutScheduler
+	) {
+		return new LocalSyncServiceProcessor(
+			stateSyncNetwork,
+			verifiedSyncedCommandsSender,
+			invalidSyncedCommandsSender,
+			syncTimeoutScheduler,
+			verifier,
+			headerComparator,
+			header,
+			200
+		);
+	}
+
+	@Provides
+	private VerifiedSyncedCommandsSender syncedCommandSender(SystemCounters counters, Ledger ledger) {
 		return cmds -> {
-			systemCounters.add(CounterType.SYNC_PROCESSED, cmds.size());
-			stateComputerLedger.commit(cmds);
+			counters.add(CounterType.SYNC_PROCESSED, cmds.size());
+			ledger.commit(cmds);
 		};
+	}
+
+
+	@Provides
+	private InvalidSyncedCommandsSender invalidCommandsSender(SystemCounters counters) {
+		// TODO: Store bad commands for reference and later for slashing
+		return commandsAndProof -> counters.increment(CounterType.SYNC_INVALID_COMMANDS_RECEIVED);
 	}
 }

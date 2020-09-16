@@ -17,45 +17,27 @@
 
 package com.radixdlt.ledger;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializerConstants;
-import com.radixdlt.serialization.SerializerDummy;
-import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.stream.IntStream;
-import javax.annotation.concurrent.Immutable;
 
 /**
- * Commands along with proof that they have been committed on ledger
+ * Commands along with proof that they have been committed on ledger.
+ * The commands along with the header are also verified to be part of
+ * the correct state on ledger.
  */
-@Immutable
-@SerializerId2("ledger.verified_commands_and_proof")
 public final class VerifiedCommandsAndProof {
-	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
-	SerializerDummy serializer = SerializerDummy.DUMMY;
-
-	@JsonProperty("commands")
-	@DsonOutput(Output.ALL)
 	private final ImmutableList<Command> commands;
-
-	@JsonProperty("proof")
-	@DsonOutput(Output.ALL)
 	private final VerifiedLedgerHeaderAndProof headerAndProof;
 
-	@JsonCreator
 	public VerifiedCommandsAndProof(
-		@JsonProperty("commands") ImmutableList<Command> commands,
-		@JsonProperty("proof") VerifiedLedgerHeaderAndProof headerAndProof
+		ImmutableList<Command> commands,
+		VerifiedLedgerHeaderAndProof headerAndProof
 	) {
-		this.commands = commands == null ? ImmutableList.of() : commands;
+		this.commands = Objects.requireNonNull(commands);
 		this.headerAndProof = Objects.requireNonNull(headerAndProof);
 	}
 
@@ -65,6 +47,10 @@ public final class VerifiedCommandsAndProof {
 		}
 
 		return headerAndProof.getStateVersion() - commands.size() + 1;
+	}
+
+	public ImmutableList<Command> getCommands() {
+		return commands;
 	}
 
 	public void forEach(BiConsumer<Long, Command> consumer) {

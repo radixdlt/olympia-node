@@ -41,7 +41,6 @@ import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
-import java.util.function.Function;
 
 public class MockedConsensusRunnerModule extends AbstractModule {
 	@Override
@@ -55,7 +54,7 @@ public class MockedConsensusRunnerModule extends AbstractModule {
 	@Singleton
 	public BFTEventProcessor eventProcessor(
 		@Named("self") BFTNode self,
-		Function<BFTNode, BFTConfiguration> config,
+		BFTConfiguration config,
 		BFTFactory bftFactory,
 		PacemakerFactory pacemakerFactory,
 		VertexStore vertexStore,
@@ -68,8 +67,8 @@ public class MockedConsensusRunnerModule extends AbstractModule {
 			header -> { },
 			pacemakerFactory.create((view, ms) -> localTimeoutSender.scheduleTimeout(new LocalTimeout(1, view), ms)),
 			vertexStore,
-			proposerElectionFactory.create(config.apply(self).getValidatorSet()),
-			config.apply(self).getValidatorSet(),
+			proposerElectionFactory.create(config.getValidatorSet()),
+			config.getValidatorSet(),
 			infoSender
 		);
 	}
@@ -93,11 +92,10 @@ public class MockedConsensusRunnerModule extends AbstractModule {
 	@Provides
 	@Singleton
 	public VertexStore vertexStore(
-		@Named("self") BFTNode self,
-		Function<BFTNode, BFTConfiguration> config,
+		BFTConfiguration config,
 		VertexStoreFactory vertexStoreFactory,
 		Ledger ledger
 	) {
-		return vertexStoreFactory.create(config.apply(self).getGenesisVertex(), config.apply(self).getGenesisQC(), ledger);
+		return vertexStoreFactory.create(config.getGenesisVertex(), config.getGenesisQC(), ledger);
 	}
 }

@@ -18,7 +18,6 @@
 package com.radixdlt.integration.distributed.simulation.network;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -27,6 +26,7 @@ import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
+import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.ConsensusRxModule;
 import com.radixdlt.ModuleRunner;
@@ -60,8 +60,9 @@ public class SimulationNodes {
 	private final SimulationNetwork underlyingNetwork;
 	private final ImmutableList<Injector> nodeInstances;
 	private final List<BFTNode> nodes;
-	private final boolean getVerticesRPCEnabled;
-	private final ImmutableList<Module> syncModules;
+	private final Module baseModule;
+	private final Module overrideModule;
+	private final Map<BFTNode, Module> byzantineNodeModules;
 
 	/**
 	 * Create a BFT test network with an underlying simulated network.
@@ -73,19 +74,21 @@ public class SimulationNodes {
 		List<BFTNode> nodes,
 		SimulationNetwork underlyingNetwork,
 		int pacemakerTimeout,
-		ImmutableList<Module> syncModules,
-		boolean getVerticesRPCEnabled
+		Module baseModule,
+		Module overrideModule,
+		Map<BFTNode, Module> byzantineNodeModules
 	) {
 		this.nodes = nodes;
-		this.syncModules = syncModules;
-		this.getVerticesRPCEnabled = getVerticesRPCEnabled;
+		this.baseModule = baseModule;
+		this.overrideModule = overrideModule;
+		this.byzantineNodeModules = byzantineNodeModules;
 		this.underlyingNetwork = Objects.requireNonNull(underlyingNetwork);
 		this.pacemakerTimeout = pacemakerTimeout;
 		this.nodeInstances = nodes.stream().map(this::createBFTInstance).collect(ImmutableList.toImmutableList());
 	}
 
 	private Injector createBFTInstance(BFTNode self) {
-		List<Module> modules = ImmutableList.of(
+		Module module = Modules.combine(
 			new AbstractModule() {
 				@Override
 				public void configure() {
@@ -98,9 +101,22 @@ public class SimulationNodes {
 			new ConsensusRxModule(),
 			new SystemInfoRxModule(),
 			new MockedCryptoModule(),
-			new SimulationNetworkModule(getVerticesRPCEnabled, underlyingNetwork)
+			new SimulationNetworkModule(underlyingNetwork),
+			baseModule
 		);
-		return Guice.createInjector(Iterables.concat(modules, syncModules));
+
+		// Override modules can be used to prove that certain adversaries
+		// can break network behavior if incorrect modules are used
+		if (overrideModule != null) {
+			module = Modules.override(module).with(overrideModule);
+		}
+
+		Module byzantineModule = byzantineNodeModules.get(self);
+		if (byzantineModule != null) {
+			module = Modules.override(module).with(byzantineModule);
+		}
+
+		return Guice.createInjector(module);
 	}
 
 	// TODO: Add support for epoch changes
