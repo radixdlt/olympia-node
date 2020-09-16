@@ -81,8 +81,8 @@ final class APITokenRequestSource implements TokenRequestSource {
 	}
 
 	private APITokenRequestSource(int port) {
-        this.requests = BehaviorSubject.create();
-        this.random = new SecureRandom();
+		this.requests = BehaviorSubject.create();
+		this.random = new SecureRandom();
 
 		RoutingHandler handler = Handlers.routing(true); // add path params to query params with this flag
 
@@ -96,39 +96,39 @@ final class APITokenRequestSource implements TokenRequestSource {
 		});
 
 		this.server = Undertow.builder()
-            .addHttpListener(port, "0.0.0.0")
-            .setHandler(handler)
-            .build();
+			.addHttpListener(port, "0.0.0.0")
+			.setHandler(handler)
+			.build();
 
 		this.server.start();
 	}
 
-    private void getTokens(HttpServerExchange exchange) {
-    	try {
-    		Optional<RadixAddress> address = Optional.ofNullable(exchange.getQueryParameters().get("address"))
+	private void getTokens(HttpServerExchange exchange) {
+		try {
+			Optional<RadixAddress> address = Optional.ofNullable(exchange.getQueryParameters().get("address"))
 				.map(Deque::getFirst)
 				.map(RadixAddress::from);
-    		if (address.isPresent()) {
-    			Pair<RadixAddress, EUID> result = Pair.of(address.get(), randomEuid());
-    			logger.debug("Queuing request {}, address {} from {}", result.getSecond(), result.getFirst(), exchange.getSourceAddress());
-    			this.requests.onNext(result);
-    			exchange.setStatusCode(StatusCodes.OK);
+			if (address.isPresent()) {
+				Pair<RadixAddress, EUID> result = Pair.of(address.get(), randomEuid());
+				logger.debug("Queuing request {}, address {} from {}", result.getSecond(), result.getFirst(), exchange.getSourceAddress());
+				this.requests.onNext(result);
+				exchange.setStatusCode(StatusCodes.OK);
 				exchange.getResponseSender().send(result.getSecond().toString());
-    		} else {
-    			exchange.setStatusCode(StatusCodes.BAD_REQUEST);
+			} else {
+				exchange.setStatusCode(StatusCodes.BAD_REQUEST);
 				exchange.getResponseSender().send("Address must be specified");
 				logger.debug("Missing address in request from {}", exchange.getSourceAddress());
-    		}
-    	} catch (ArrayIndexOutOfBoundsException | IllegalArgumentException | NoSuchElementException e) {
+			}
+		} catch (ArrayIndexOutOfBoundsException | IllegalArgumentException | NoSuchElementException e) {
 			exchange.setStatusCode(StatusCodes.BAD_REQUEST);
 			exchange.getResponseSender().send("Invalid address");
 			logger.debug(String.format("Bad request from %s", exchange.getSourceAddress()), e);
-    	}
-    }
+		}
+	}
 
-    private EUID randomEuid() {
-    	byte[] value = new byte[EUID.BYTES];
-    	this.random.nextBytes(value);
-    	return new EUID(value);
-    }
+	private EUID randomEuid() {
+		byte[] value = new byte[EUID.BYTES];
+		this.random.nextBytes(value);
+		return new EUID(value);
+	}
 }
