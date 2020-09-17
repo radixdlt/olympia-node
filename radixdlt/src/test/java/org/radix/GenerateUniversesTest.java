@@ -122,15 +122,16 @@ public class GenerateUniversesTest {
 			err = stdErr.toString();
 		}
 		assertThat(err).isEmpty();
-		assertThat(out).hasLineCount(6);
-		assertThat(out).containsSubsequence(
-			"RADIXDLT_UNIVERSE_TYPE=TEST", "\n",
-			"RADIXDLT_UNIVERSE_PUBKEY=", "\n",
-			"RADIXDLT_UNIVERSE_PRIVKEY=", "\n",
-			"RADIXDLT_UNIVERSE_ADDRESS=", "\n",
-			"RADIXDLT_UNIVERSE_TOKEN=", "\n",
-			"RADIXDLT_UNIVERSE=", "\n"
-		);
+		assertThat(out)
+			.hasLineCount(6)
+			.containsSubsequence(
+				"RADIXDLT_UNIVERSE_TYPE=TEST", "\n",
+				"RADIXDLT_UNIVERSE_PUBKEY=", "\n",
+				"RADIXDLT_UNIVERSE_PRIVKEY=", "\n",
+				"RADIXDLT_UNIVERSE_ADDRESS=", "\n",
+				"RADIXDLT_UNIVERSE_TOKEN=", "\n",
+				"RADIXDLT_UNIVERSE=", "\n"
+			);
 	}
 
 	@Test
@@ -144,14 +145,15 @@ public class GenerateUniversesTest {
 			err = stdErr.toString();
 		}
 		assertThat(err).isEmpty();
-		assertThat(out).hasLineCount(5);
-		assertThat(out).containsSubsequence(
-			"RADIXDLT_UNIVERSE_TYPE=TEST", "\n",
-			"RADIXDLT_UNIVERSE_PUBKEY=", "\n",
-			"RADIXDLT_UNIVERSE_ADDRESS=", "\n",
-			"RADIXDLT_UNIVERSE_TOKEN=", "\n",
-			"RADIXDLT_UNIVERSE=", "\n"
-		);
+		assertThat(out)
+			.hasLineCount(5)
+			.containsSubsequence(
+				"RADIXDLT_UNIVERSE_TYPE=TEST", "\n",
+				"RADIXDLT_UNIVERSE_PUBKEY=", "\n",
+				"RADIXDLT_UNIVERSE_ADDRESS=", "\n",
+				"RADIXDLT_UNIVERSE_TOKEN=", "\n",
+				"RADIXDLT_UNIVERSE=", "\n"
+			);
 	}
 
 	@Test
@@ -165,10 +167,11 @@ public class GenerateUniversesTest {
 			err = stdErr.toString();
 		}
 		assertThat(err).isEmpty();
-		assertThat(out).hasLineCount(118);
-		assertThat(out).containsSubsequence(
-			":rri:/", "/XRD", "radix.particles.mutable_supply_token_definition"
-		);
+		assertThat(out)
+			.hasLineCount(118)
+			.containsSubsequence(
+				":rri:/", "/XRD", "radix.particles.mutable_supply_token_definition"
+			);
 	}
 
 	// Largely to combat checkstyle whining about "whitespace after {"
