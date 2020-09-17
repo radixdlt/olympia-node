@@ -38,6 +38,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.logging.log4j.LogManager;
@@ -161,5 +162,13 @@ public class Faucet {
 		final Observable<Pair<RadixAddress, EUID>> ledgerSource = LedgerTokenRequestSource.create(api).requestSource();
 
 		faucet.run(apiSource.mergeWith(ledgerSource));
+
+		// Wait for threads to start
+		try {
+			TimeUnit.SECONDS.sleep(5);
+		} catch (InterruptedException e) {
+			// Ignored
+			Thread.currentThread().interrupt();
+		}
 	}
 }

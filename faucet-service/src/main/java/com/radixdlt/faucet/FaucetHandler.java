@@ -35,7 +35,6 @@ import com.radixdlt.identifiers.RRI;
 
 import java.math.BigDecimal;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.logging.log4j.LogManager;
@@ -45,6 +44,8 @@ import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.RadixConstants;
 
 import io.reactivex.Observable;
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.disposables.Disposable;
 
 /**
  * A service which sends tokens to whoever sends it a message through
@@ -60,6 +61,8 @@ final class FaucetHandler {
 	private final BigDecimal amountToSend;
 	private final RateLimiter rateLimiter;
 
+	private Disposable disposable;
+
 	FaucetHandler(RadixApplicationAPI api, RRI tokenRRI, BigDecimal amountToSend, RateLimiter rateLimiter) {
 		this.tokenRRI = Objects.requireNonNull(tokenRRI);
 		this.api = Objects.requireNonNull(api);
@@ -71,30 +74,36 @@ final class FaucetHandler {
 	 * Start and run the faucet service
 	 */
 	void run(Observable<Pair<RadixAddress, EUID>> requestSource) {
-		log.info("Faucet token: {}", this.tokenRRI);
+		if (this.disposable == null) {
+			log.info("Faucet token: {}", this.tokenRRI);
 
-		final AtomicReference<BigDecimal> currentFaucetBalance = new AtomicReference<>(BigDecimal.ZERO);
+			final AtomicReference<BigDecimal> currentFaucetBalance = new AtomicReference<>(BigDecimal.ZERO);
 
-		// Print out current balance of faucet
-		this.api.observeBalance(this.tokenRRI)
-			.subscribe(
-				balance -> logBalance(currentFaucetBalance, balance),
-				e -> log.error("Error while tracking balance", e)
-			);
+			// Print out current balance of faucet
+			Disposable d1 = this.api.observeBalance(this.tokenRRI)
+				.subscribe(
+					balance -> logBalance(currentFaucetBalance, balance),
+					e -> log.error("Error while tracking balance", e)
+				);
 
-		requestSource
-			.doOnNext(p -> log.info("Request {} from: {}", p.getSecond(), p.getFirst())) // Print out all messages
-			.subscribe(
-				p -> this.leakFaucet(p.getFirst(), p.getSecond()),
-				e -> log.error("Error while processing messages", e)
-			);
+			Disposable d2 = requestSource
+				.doOnNext(p -> log.info("Request {} from: {}", p.getSecond(), p.getFirst())) // Print out all messages
+				.subscribe(
+					p -> this.leakFaucet(p.getFirst(), p.getSecond()),
+					e -> log.error("Error while processing messages", e)
+				);
 
-		// Wait for threads to start
-		try {
-			TimeUnit.SECONDS.sleep(5);
-		} catch (InterruptedException e) {
-			// Ignored
-			Thread.currentThread().interrupt();
+			this.disposable = new CompositeDisposable(d1, d2);
+		}
+	}
+
+	/**
+	 * Stop the faucet service.
+	 */
+	void stop() {
+		if (this.disposable != null) {
+			this.disposable.dispose();
+			this.disposable = null;
 		}
 	}
 

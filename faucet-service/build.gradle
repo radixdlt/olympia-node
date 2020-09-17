@@ -41,6 +41,11 @@ dependencies {
     compile 'com.radixdlt:radixdlt-java:feature~rpnv1-185-token-fees-SNAPSHOT'
     compile 'io.undertow:undertow-core:2.0.6.Final'
     testCompile group: 'junit', name: 'junit', version: '4.12'
+    testCompile('org.objenesis:objenesis:2.4') { force = true } // make powermock 1.7.1 happy
+    testCompile('org.javassist:javassist:3.21.0-GA') { force = true } // make powermock 1.7.1 happy
+    testCompile 'org.powermock:powermock-api-mockito2:1.7.4'
+    testCompile 'org.powermock:powermock-api-mockito2:1.7.4'
+    testCompile 'org.assertj:assertj-core:3.11.1'
 }
 
 classes {
