@@ -33,7 +33,10 @@ import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceProcessor;
 import com.radixdlt.sync.StateSyncNetwork;
 import com.radixdlt.sync.RemoteSyncResponse;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
+import java.util.TreeMap;
 import java.util.function.Function;
 import javax.annotation.concurrent.NotThreadSafe;
 import org.apache.logging.log4j.LogManager;
@@ -53,7 +56,7 @@ public class EpochsLocalSyncServiceProcessor implements LocalSyncServiceProcesso
 	private final Function<BFTConfiguration, LocalSyncServiceProcessor<LedgerUpdate>> localSyncFactory;
 	private final VerifiedSyncedCommandsSender verifiedSyncedCommandsSender;
 	private final StateSyncNetwork stateSyncNetwork;
-
+	private final TreeMap<Long, List<LocalSyncRequest>> outsideOfCurrentEpochRequests = new TreeMap<>();
 
 	@Inject
 	public EpochsLocalSyncServiceProcessor(
@@ -79,6 +82,15 @@ public class EpochsLocalSyncServiceProcessor implements LocalSyncServiceProcesso
 			this.currentEpoch = epochChange;
 			this.currentHeader = ledgerUpdate.getTail();
 			this.localSyncServiceProcessor = localSyncFactory.apply(epochChange.getBFTConfiguration());
+			this.outsideOfCurrentEpochRequests.headMap(epochChange.getEpoch()).clear();
+
+			// TODO: Cleanup further requests
+			this.outsideOfCurrentEpochRequests.values().stream().flatMap(List::stream)
+				.findFirst()
+				.ifPresent(request -> {
+					log.info("Epoch updated sending further sync requests to {}", request.getTargetNodes().get(0));
+					stateSyncNetwork.sendSyncRequest(request.getTargetNodes().get(0), currentEpoch.getProof().toDto());
+				});
 		} else {
 			this.localSyncServiceProcessor.processLedgerUpdate(ledgerUpdate);
 		}
@@ -86,24 +98,15 @@ public class EpochsLocalSyncServiceProcessor implements LocalSyncServiceProcesso
 
 	@Override
 	public void processLocalSyncRequest(LocalSyncRequest request) {
-		/*
 		if (request.getTarget().getEpoch() > currentEpoch.getEpoch()) {
+			outsideOfCurrentEpochRequests.putIfAbsent(request.getTarget().getEpoch(), new ArrayList<>());
+			outsideOfCurrentEpochRequests.get(request.getTarget().getEpoch()).add(request);
+			log.warn("Request {} is a different epoch from current {} sending epoch sync", request, currentEpoch.getEpoch());
 			stateSyncNetwork.sendSyncRequest(request.getTargetNodes().get(0), currentEpoch.getProof().toDto());
 			return;
 		}
-		 */
 
-		if (Objects.equals(request.getTarget().getAccumulatorState(), this.currentHeader.getAccumulatorState())) {
-			if (!this.currentHeader.isEndOfEpoch() && request.getTarget().isEndOfEpoch()) {
-				verifiedSyncedCommandsSender.sendVerifiedCommands(new VerifiedCommandsAndProof(
-					ImmutableList.of(),
-					request.getTarget()
-				));
-			}
-			return;
-		}
-
-		localSyncServiceProcessor.processLocalSyncRequest(request);
+		epochsEquivalentDoAccumulatorRequest(request);
 	}
 
 	@Override
@@ -115,11 +118,13 @@ public class EpochsLocalSyncServiceProcessor implements LocalSyncServiceProcesso
 	public void processSyncResponse(RemoteSyncResponse syncResponse) {
 		DtoCommandsAndProof dtoCommandsAndProof = syncResponse.getCommandsAndProof();
 		if (dtoCommandsAndProof.getTail().getLedgerHeader().getEpoch() != currentEpoch.getEpoch()) {
+			log.warn("Response {} is a different epoch from current {}", syncResponse, currentEpoch.getEpoch());
 			return;
 		}
 
-		/*
 		if (Objects.equals(dtoCommandsAndProof.getHead().getLedgerHeader(), this.currentEpoch.getProof().getRaw())) {
+			log.info("Received response to next epoch sync current {} next {}", this.currentEpoch, dtoCommandsAndProof);
+
 			if (dtoCommandsAndProof.getTail().getLedgerHeader().isEndOfEpoch()) {
 				DtoLedgerHeaderAndProof dto = dtoCommandsAndProof.getTail();
 				// TODO: verify
@@ -132,13 +137,28 @@ public class EpochsLocalSyncServiceProcessor implements LocalSyncServiceProcesso
 					dto.getSignatures()
 				);
 				LocalSyncRequest localSyncRequest = new LocalSyncRequest(verified, ImmutableList.of(syncResponse.getSender()));
-				localSyncServiceProcessor.processLocalSyncRequest(localSyncRequest);
+				epochsEquivalentDoAccumulatorRequest(localSyncRequest);
+			} else {
+				log.warn("Illegal message");
 			}
 
 			return;
 		}
-		 */
 
 		localSyncServiceProcessor.processSyncResponse(syncResponse);
+	}
+
+	private void epochsEquivalentDoAccumulatorRequest(LocalSyncRequest request) {
+		if (Objects.equals(request.getTarget().getAccumulatorState(), this.currentHeader.getAccumulatorState())) {
+			if (!this.currentHeader.isEndOfEpoch() && request.getTarget().isEndOfEpoch()) {
+				verifiedSyncedCommandsSender.sendVerifiedCommands(new VerifiedCommandsAndProof(
+					ImmutableList.of(),
+					request.getTarget()
+				));
+			}
+			return;
+		}
+
+		localSyncServiceProcessor.processLocalSyncRequest(request);
 	}
 }

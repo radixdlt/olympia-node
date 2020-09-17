@@ -43,24 +43,20 @@ import java.util.function.UnaryOperator;
  */
 @Singleton
 public final class SometimesByzantineCommittedReader implements LedgerUpdateSender, CommittedReader {
-	private final TreeMap<Long, VerifiedCommandsAndProof> commandsAndProof = new TreeMap<>();
-	private final LedgerAccumulator accumulator;
-	private final LedgerAccumulatorVerifier accumulatorVerifier;
 	private ReadType currentReadType;
+	private InMemoryCommittedReader correctReader;
+	private LedgerAccumulator accumulator;
 
 	@Inject
-	public SometimesByzantineCommittedReader(Random random, LedgerAccumulator accumulator, LedgerAccumulatorVerifier accumulatorVerifier) {
+	public SometimesByzantineCommittedReader(Random random, LedgerAccumulator accumulator, InMemoryCommittedReader correctReader) {
+		this.correctReader = Objects.requireNonNull(correctReader);
 		this.accumulator = Objects.requireNonNull(accumulator);
-		this.accumulatorVerifier = Objects.requireNonNull(accumulatorVerifier);
 		this.currentReadType = ReadType.values()[random.nextInt(ReadType.values().length)];
 	}
 
 	@Override
 	public void sendLedgerUpdate(LedgerUpdate update) {
-		long firstVersion = update.getNewCommands().isEmpty()
-			? update.getTail().getStateVersion()
-			: update.getTail().getStateVersion() - update.getNewCommands().size() + 1;
-		commandsAndProof.put(firstVersion, new VerifiedCommandsAndProof(update.getNewCommands(), update.getTail()));
+		this.correctReader.sendLedgerUpdate(update);
 	}
 
 	private static class ByzantineVerifiedCommandsAndProofBuilder {
@@ -195,18 +191,15 @@ public final class SometimesByzantineCommittedReader implements LedgerUpdateSend
 
 	@Override
 	public VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start, int batchSize) {
-		final long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
-		Entry<Long, VerifiedCommandsAndProof> entry = commandsAndProof.higherEntry(stateVersion);
-		if (entry != null) {
-			ImmutableList<Command> cmds = accumulatorVerifier.verifyAndGetExtension(
-				start.getLedgerHeader().getAccumulatorState(),
-				entry.getValue().getCommands(),
-				entry.getValue().getHeader().getAccumulatorState()
-			).orElseThrow(() -> new RuntimeException());
+		VerifiedCommandsAndProof correctResult = correctReader.getNextCommittedCommands(start, batchSize);
+		// TODO: Make epoch sync byzantine as well
+		if (start.getLedgerHeader().isEndOfEpoch()) {
+			return correctResult;
+		}
 
-			VerifiedCommandsAndProof commandsToSendBack = new VerifiedCommandsAndProof(cmds, entry.getValue().getHeader());
+		if (correctResult != null) {
 			currentReadType = ReadType.values()[(currentReadType.ordinal() + 1) % ReadType.values().length];
-			return currentReadType.transform(start, commandsToSendBack, accumulator);
+			return currentReadType.transform(start, correctResult, accumulator);
 		}
 
 		return null;

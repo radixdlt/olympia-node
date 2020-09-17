@@ -37,4 +37,9 @@ public class RemoteSyncResponse {
 	public DtoCommandsAndProof getCommandsAndProof() {
 		return commandsAndProof;
 	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{sender=%s payload=%s}", this.getClass().getSimpleName(), sender, commandsAndProof);
+	}
 }

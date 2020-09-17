@@ -96,6 +96,17 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 	// TODO Move this to a different class class when unstored committed atoms is fixed
 	@Override
 	public VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start, int batchSize) {
+		if (start.getLedgerHeader().isEndOfEpoch()) {
+			long currentEpoch = start.getLedgerHeader().getEpoch() + 1;
+			long nextEpoch = currentEpoch + 1;
+			VerifiedLedgerHeaderAndProof nextEpochProof = epochProofs.get(nextEpoch);
+			if (nextEpochProof == null) {
+				return null;
+			}
+
+			return new VerifiedCommandsAndProof(ImmutableList.of(), nextEpochProof);
+		}
+
 		// TODO: verify start
 		long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
 

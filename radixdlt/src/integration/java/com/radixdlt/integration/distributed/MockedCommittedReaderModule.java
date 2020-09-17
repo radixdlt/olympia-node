@@ -17,22 +17,11 @@
 
 package com.radixdlt.integration.distributed;
 
-import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
-import com.google.inject.Inject;
 import com.google.inject.Scopes;
-import com.google.inject.Singleton;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.consensus.Command;
-import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
-import com.radixdlt.ledger.LedgerAccumulatorVerifier;
-import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.sync.CommittedReader;
-import java.util.Map.Entry;
-import java.util.Objects;
-import java.util.TreeMap;
 
 public class MockedCommittedReaderModule extends AbstractModule {
 	@Override
@@ -42,39 +31,4 @@ public class MockedCommittedReaderModule extends AbstractModule {
 		bind(CommittedReader.class).to(InMemoryCommittedReader.class).in(Scopes.SINGLETON);
 	}
 
-	@Singleton
-	private static class InMemoryCommittedReader implements LedgerUpdateSender, CommittedReader {
-		private final TreeMap<Long, VerifiedCommandsAndProof> commandsAndProof = new TreeMap<>();
-		private final LedgerAccumulatorVerifier accumulatorVerifier;
-
-		@Inject
-		InMemoryCommittedReader(LedgerAccumulatorVerifier accumulatorVerifier) {
-			this.accumulatorVerifier = Objects.requireNonNull(accumulatorVerifier);
-		}
-
-		@Override
-		public void sendLedgerUpdate(LedgerUpdate update) {
-			long firstVersion = update.getNewCommands().isEmpty()
-				? update.getTail().getStateVersion()
-				: update.getTail().getStateVersion() - update.getNewCommands().size() + 1;
-			commandsAndProof.put(firstVersion, new VerifiedCommandsAndProof(update.getNewCommands(), update.getTail()));
-		}
-
-		@Override
-		public VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start, int batchSize) {
-			final long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
-			Entry<Long, VerifiedCommandsAndProof> entry = commandsAndProof.higherEntry(stateVersion);
-			if (entry != null) {
-				ImmutableList<Command> cmds = accumulatorVerifier.verifyAndGetExtension(
-					start.getLedgerHeader().getAccumulatorState(),
-					entry.getValue().getCommands(),
-					entry.getValue().getHeader().getAccumulatorState()
-				).orElseThrow(() -> new RuntimeException());
-
-				return new VerifiedCommandsAndProof(cmds, entry.getValue().getHeader());
-			}
-
-			return null;
-		}
-	}
 }
