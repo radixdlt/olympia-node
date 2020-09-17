@@ -27,6 +27,7 @@ import com.radixdlt.ConsensusModule;
 import com.radixdlt.ConsensusRunnerModule;
 import com.radixdlt.ConsensusRxModule;
 import com.radixdlt.CryptoModule;
+import com.radixdlt.EpochsSyncModule;
 import com.radixdlt.LedgerCommandGeneratorModule;
 import com.radixdlt.LedgerEpochChangeModule;
 import com.radixdlt.LedgerEpochChangeRxModule;
@@ -108,9 +109,12 @@ public class GlobalInjector {
 			new LedgerModule(),
 			new LedgerRxModule(),
 			new LedgerCommandGeneratorModule(),
+			new LedgerLocalMempoolModule(mempoolMaxSize),
+
+			// Epochs
 			new LedgerEpochChangeModule(),
 			new LedgerEpochChangeRxModule(),
-			new LedgerLocalMempoolModule(mempoolMaxSize),
+			new EpochsSyncModule(),
 
 			// State Computer
 			new RadixEngineModule(epochHighView, false),

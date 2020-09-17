@@ -17,7 +17,6 @@
 
 package com.radixdlt.sync;
 
-import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -30,8 +29,6 @@ import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.sync.AccumulatorLocalSyncServiceProcessor.DtoCommandsAndProofVerifier;
 import com.radixdlt.sync.AccumulatorLocalSyncServiceProcessor.DtoCommandsAndProofVerifierException;
-import com.radixdlt.sync.AccumulatorRemoteSyncResponseVerifier.InvalidSyncedCommandsSender;
-import com.radixdlt.sync.AccumulatorRemoteSyncResponseVerifier.VerifiedSyncedCommandsSender;
 import org.junit.Before;
 import org.junit.Test;
 

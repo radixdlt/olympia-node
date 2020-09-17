@@ -29,7 +29,7 @@ import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.sync.AccumulatorLocalSyncServiceProcessor.SyncInProgress;
 import com.radixdlt.sync.AccumulatorRemoteSyncResponseVerifier;
-import com.radixdlt.sync.AccumulatorRemoteSyncResponseVerifier.VerifiedSyncedCommandsSender;
+import com.radixdlt.sync.VerifiedSyncedCommandsSender;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceProcessor;
 import com.radixdlt.sync.RemoteSyncResponseProcessor;

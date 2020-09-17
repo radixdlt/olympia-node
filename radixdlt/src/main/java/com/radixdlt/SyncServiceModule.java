@@ -32,9 +32,8 @@ import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.sync.AccumulatorLocalSyncServiceProcessor.DtoCommandsAndProofVerifier;
-import com.radixdlt.sync.AccumulatorRemoteSyncResponseVerifier;
-import com.radixdlt.sync.AccumulatorRemoteSyncResponseVerifier.InvalidSyncedCommandsSender;
-import com.radixdlt.sync.AccumulatorRemoteSyncResponseVerifier.VerifiedSyncedCommandsSender;
+import com.radixdlt.sync.InvalidSyncedCommandsSender;
+import com.radixdlt.sync.VerifiedSyncedCommandsSender;
 import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.sync.LocalSyncServiceProcessor;
 import com.radixdlt.sync.RemoteSyncServiceProcessor;
@@ -42,7 +41,6 @@ import com.radixdlt.sync.StateSyncNetwork;
 import com.radixdlt.sync.AccumulatorLocalSyncServiceProcessor;
 import com.radixdlt.sync.AccumulatorLocalSyncServiceProcessor.SyncTimeoutScheduler;
 import java.util.Comparator;
-import java.util.function.Function;
 
 /**
  * Module which manages synchronization of committed atoms across of nodes
@@ -79,56 +77,23 @@ public class SyncServiceModule extends AbstractModule {
 	}
 
 	@Provides
-	private Function<BFTConfiguration, AccumulatorRemoteSyncResponseVerifier> accumulatorVerifierFactory(
-		VerifiedSyncedCommandsSender verifiedSyncedCommandsSender,
-		InvalidSyncedCommandsSender invalidSyncedCommandsSender,
-		LedgerAccumulatorVerifier verifier,
-		Hasher hasher,
-		HashVerifier hashVerifier
-	) {
-		return config -> {
-			AccumulatorAndValidatorSetVerifier accumulatorAndValidatorSetVerifier = new AccumulatorAndValidatorSetVerifier(
-				verifier,
-				config.getValidatorSet(),
-				hasher,
-				hashVerifier
-			);
-
-			return new AccumulatorRemoteSyncResponseVerifier(
-				verifiedSyncedCommandsSender,
-				invalidSyncedCommandsSender,
-				accumulatorAndValidatorSetVerifier
-			);
-		};
-	}
-
-	@Provides
-	private Function<BFTConfiguration, LocalSyncServiceProcessor<LedgerUpdate>> localSyncFactory(
+	@Singleton
+	private LocalSyncServiceProcessor<LedgerUpdate> localSyncServiceProcessor(
 		Comparator<AccumulatorState> accumulatorComparator,
 		StateSyncNetwork stateSyncNetwork,
-		SyncTimeoutScheduler syncTimeoutScheduler
+		SyncTimeoutScheduler syncTimeoutScheduler,
+		BFTConfiguration initialConfiguration
 	) {
-		return config -> {
-			VerifiedLedgerHeaderAndProof header = config.getGenesisQC().getCommittedAndLedgerStateProof()
-				.orElseThrow(RuntimeException::new).getSecond();
+		VerifiedLedgerHeaderAndProof header = initialConfiguration.getGenesisQC().getCommittedAndLedgerStateProof()
+			.orElseThrow(RuntimeException::new).getSecond();
 
-			return new AccumulatorLocalSyncServiceProcessor(
-				stateSyncNetwork,
-				syncTimeoutScheduler,
-				accumulatorComparator,
-				header,
-				200
-			);
-		};
-	}
-
-	@Provides
-	@Singleton
-	private LocalSyncServiceProcessor<LedgerUpdate> syncServiceProcessor(
-		BFTConfiguration initialConfiguration,
-		Function<BFTConfiguration, LocalSyncServiceProcessor<LedgerUpdate>> factory
-	) {
-		return factory.apply(initialConfiguration);
+		return new AccumulatorLocalSyncServiceProcessor(
+			stateSyncNetwork,
+			syncTimeoutScheduler,
+			accumulatorComparator,
+			header,
+			200
+		);
 	}
 
 	@Provides

@@ -29,6 +29,7 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.MapBinder;
 import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusRunnerModule;
+import com.radixdlt.EpochsSyncModule;
 import com.radixdlt.LedgerCommandGeneratorModule;
 import com.radixdlt.LedgerEpochChangeModule;
 import com.radixdlt.LedgerEpochChangeRxModule;
@@ -457,6 +458,7 @@ public class SimulationTest {
 								.map(node -> BFTValidator.from(node, UInt256.ONE))
 								.collect(Collectors.toList())));
 					modules.add(new MockedStateComputerWithEpochsModule(epochHighView, epochToValidatorSetMapping));
+					modules.add(new EpochsSyncModule());
 					modules.add(new SyncServiceModule());
 					modules.add(new SyncServiceRunnerModule());
 					modules.add(new SyncRxModule());

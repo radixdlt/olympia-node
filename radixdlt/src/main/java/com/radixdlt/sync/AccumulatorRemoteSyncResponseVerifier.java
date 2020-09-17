@@ -31,14 +31,6 @@ import org.apache.logging.log4j.Logger;
 public class AccumulatorRemoteSyncResponseVerifier implements RemoteSyncResponseProcessor {
 	private static final Logger log = LogManager.getLogger();
 
-	public interface VerifiedSyncedCommandsSender {
-		void sendVerifiedCommands(VerifiedCommandsAndProof commandsAndProof);
-	}
-
-	public interface InvalidSyncedCommandsSender {
-		void sendInvalidCommands(DtoCommandsAndProof commandsAndProof);
-	}
-
 	private final VerifiedSyncedCommandsSender verifiedSyncedCommandsSender;
 	private final InvalidSyncedCommandsSender invalidSyncedCommandsSender;
 	private final DtoCommandsAndProofVerifier verifier;
