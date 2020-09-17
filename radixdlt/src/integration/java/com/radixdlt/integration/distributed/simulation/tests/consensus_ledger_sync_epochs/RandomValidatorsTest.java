@@ -27,11 +27,11 @@ import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
-import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.sync.BaseLocalSyncServiceProcessor.SyncInProgress;
+import com.radixdlt.sync.AccumulatorSyncServiceProcessor.SyncInProgress;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceProcessor;
+import com.radixdlt.sync.RemoteSyncResponse;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -107,8 +107,8 @@ public class RandomValidatorsTest {
 						}
 
 						@Override
-						public void processSyncResponse(DtoCommandsAndProof dtoCommandsAndProof) {
-							base.processSyncResponse(dtoCommandsAndProof);
+						public void processSyncResponse(RemoteSyncResponse syncResponse) {
+							base.processSyncResponse(syncResponse);
 						}
 					};
 				}

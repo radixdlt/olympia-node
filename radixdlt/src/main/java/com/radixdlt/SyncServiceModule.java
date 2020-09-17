@@ -32,13 +32,13 @@ import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.sync.CommittedReader;
-import com.radixdlt.sync.BaseLocalSyncServiceProcessor.InvalidSyncedCommandsSender;
+import com.radixdlt.sync.AccumulatorSyncServiceProcessor.InvalidSyncedCommandsSender;
 import com.radixdlt.sync.LocalSyncServiceProcessor;
 import com.radixdlt.sync.RemoteSyncServiceProcessor;
 import com.radixdlt.sync.StateSyncNetwork;
-import com.radixdlt.sync.BaseLocalSyncServiceProcessor;
-import com.radixdlt.sync.BaseLocalSyncServiceProcessor.SyncTimeoutScheduler;
-import com.radixdlt.sync.BaseLocalSyncServiceProcessor.VerifiedSyncedCommandsSender;
+import com.radixdlt.sync.AccumulatorSyncServiceProcessor;
+import com.radixdlt.sync.AccumulatorSyncServiceProcessor.SyncTimeoutScheduler;
+import com.radixdlt.sync.AccumulatorSyncServiceProcessor.VerifiedSyncedCommandsSender;
 import java.util.Comparator;
 import java.util.function.Function;
 
@@ -83,7 +83,7 @@ public class SyncServiceModule extends AbstractModule {
 			VerifiedLedgerHeaderAndProof header = config.getGenesisQC().getCommittedAndLedgerStateProof()
 				.orElseThrow(RuntimeException::new).getSecond();
 
-			return new BaseLocalSyncServiceProcessor(
+			return new AccumulatorSyncServiceProcessor(
 				stateSyncNetwork,
 				verifiedSyncedCommandsSender,
 				invalidSyncedCommandsSender,

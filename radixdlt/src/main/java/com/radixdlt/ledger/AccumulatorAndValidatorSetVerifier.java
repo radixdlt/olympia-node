@@ -29,8 +29,8 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.ValidationState;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.sync.BaseLocalSyncServiceProcessor.DtoCommandsAndProofVerifier;
-import com.radixdlt.sync.BaseLocalSyncServiceProcessor.DtoCommandsAndProofVerifierException;
+import com.radixdlt.sync.AccumulatorSyncServiceProcessor.DtoCommandsAndProofVerifier;
+import com.radixdlt.sync.AccumulatorSyncServiceProcessor.DtoCommandsAndProofVerifierException;
 import java.util.Map;
 import java.util.Objects;
 
@@ -57,21 +57,21 @@ public final class AccumulatorAndValidatorSetVerifier implements DtoCommandsAndP
 
 	@Override
 	public VerifiedCommandsAndProof verify(DtoCommandsAndProof commandsAndProof) throws DtoCommandsAndProofVerifierException {
-		AccumulatorState start = commandsAndProof.getStartHeader().getLedgerHeader().getAccumulatorState();
-		AccumulatorState end = commandsAndProof.getEndHeader().getLedgerHeader().getAccumulatorState();
+		AccumulatorState start = commandsAndProof.getHead().getLedgerHeader().getAccumulatorState();
+		AccumulatorState end = commandsAndProof.getTail().getLedgerHeader().getAccumulatorState();
 		if (!this.accumulatorVerifier.verify(start, commandsAndProof.getCommands(), end)) {
 			throw new DtoCommandsAndProofVerifierException(commandsAndProof, "Bad accumulator state");
 		}
 
 		ValidationState validationState = validatorSet.newValidationState();
-		commandsAndProof.getEndHeader().getSignatures().getSignatures().forEach((node, signature) ->
+		commandsAndProof.getTail().getSignatures().getSignatures().forEach((node, signature) ->
 			validationState.addSignature(node, signature.timestamp(), signature.signature())
 		);
 		if (!validationState.complete()) {
 			throw new DtoCommandsAndProofVerifierException(commandsAndProof, "Invalid signature count");
 		}
 
-		DtoLedgerHeaderAndProof endHeader = commandsAndProof.getEndHeader();
+		DtoLedgerHeaderAndProof endHeader = commandsAndProof.getTail();
 		VoteData voteData = new VoteData(
 			endHeader.getOpaque0(),
 			endHeader.getOpaque1(),
@@ -95,12 +95,12 @@ public final class AccumulatorAndValidatorSetVerifier implements DtoCommandsAndP
 		// TODO: Stateful ledger header verification:
 		// TODO: -verify rootHash matches
 		VerifiedLedgerHeaderAndProof nextHeader = new VerifiedLedgerHeaderAndProof(
-			commandsAndProof.getEndHeader().getOpaque0(),
-			commandsAndProof.getEndHeader().getOpaque1(),
-			commandsAndProof.getEndHeader().getOpaque2(),
-			commandsAndProof.getEndHeader().getOpaque3(),
-			commandsAndProof.getEndHeader().getLedgerHeader(),
-			commandsAndProof.getEndHeader().getSignatures()
+			commandsAndProof.getTail().getOpaque0(),
+			commandsAndProof.getTail().getOpaque1(),
+			commandsAndProof.getTail().getOpaque2(),
+			commandsAndProof.getTail().getOpaque3(),
+			commandsAndProof.getTail().getLedgerHeader(),
+			commandsAndProof.getTail().getSignatures()
 		);
 
 		return new VerifiedCommandsAndProof(

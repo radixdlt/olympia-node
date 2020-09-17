@@ -35,20 +35,20 @@ import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.sync.BaseLocalSyncServiceProcessor.DtoCommandsAndProofVerifier;
-import com.radixdlt.sync.BaseLocalSyncServiceProcessor.DtoCommandsAndProofVerifierException;
-import com.radixdlt.sync.BaseLocalSyncServiceProcessor.InvalidSyncedCommandsSender;
-import com.radixdlt.sync.BaseLocalSyncServiceProcessor.SyncInProgress;
-import com.radixdlt.sync.BaseLocalSyncServiceProcessor.SyncTimeoutScheduler;
-import com.radixdlt.sync.BaseLocalSyncServiceProcessor.VerifiedSyncedCommandsSender;
+import com.radixdlt.sync.AccumulatorSyncServiceProcessor.DtoCommandsAndProofVerifier;
+import com.radixdlt.sync.AccumulatorSyncServiceProcessor.DtoCommandsAndProofVerifierException;
+import com.radixdlt.sync.AccumulatorSyncServiceProcessor.InvalidSyncedCommandsSender;
+import com.radixdlt.sync.AccumulatorSyncServiceProcessor.SyncInProgress;
+import com.radixdlt.sync.AccumulatorSyncServiceProcessor.SyncTimeoutScheduler;
+import com.radixdlt.sync.AccumulatorSyncServiceProcessor.VerifiedSyncedCommandsSender;
 import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;
 import org.junit.Test;
 
-public class BaseLocalSyncServiceProcessorTest {
+public class AccumulatorSyncServiceProcessorTest {
 	private StateSyncNetwork stateSyncNetwork;
-	private BaseLocalSyncServiceProcessor syncServiceProcessor;
+	private AccumulatorSyncServiceProcessor syncServiceProcessor;
 	private VerifiedSyncedCommandsSender verifiedSyncedCommandsSender;
 	private InvalidSyncedCommandsSender invalidSyncedCommandsSender;
 	private DtoCommandsAndProofVerifier verifier;
@@ -69,7 +69,7 @@ public class BaseLocalSyncServiceProcessorTest {
 		when(this.currentHeader.toDto()).thenReturn(mock(DtoLedgerHeaderAndProof.class));
 		this.verifier = mock(DtoCommandsAndProofVerifier.class);
 		this.accumulatorComparator = mock(Comparator.class);
-		this.syncServiceProcessor = new BaseLocalSyncServiceProcessor(
+		this.syncServiceProcessor = new AccumulatorSyncServiceProcessor(
 			stateSyncNetwork,
 			verifiedSyncedCommandsSender,
 			invalidSyncedCommandsSender,
@@ -84,9 +84,11 @@ public class BaseLocalSyncServiceProcessorTest {
 	@Test
 	public void when_process_response_with_bad_verification__then_invalid_commands_sent() throws DtoCommandsAndProofVerifierException {
 		DtoCommandsAndProof dtoCommandsAndProof = mock(DtoCommandsAndProof.class);
+		RemoteSyncResponse response = mock(RemoteSyncResponse.class);
+		when(response.getCommandsAndProof()).thenReturn(dtoCommandsAndProof);
 		when(verifier.verify(any())).thenThrow(mock(DtoCommandsAndProofVerifierException.class));
 
-		syncServiceProcessor.processSyncResponse(dtoCommandsAndProof);
+		syncServiceProcessor.processSyncResponse(response);
 
 		verify(invalidSyncedCommandsSender, times(1)).sendInvalidCommands(eq(dtoCommandsAndProof));
 		verify(verifiedSyncedCommandsSender, never()).sendVerifiedCommands(any());
@@ -98,7 +100,10 @@ public class BaseLocalSyncServiceProcessorTest {
 		VerifiedCommandsAndProof verified = mock(VerifiedCommandsAndProof.class);
 		when(verifier.verify(eq(dtoCommandsAndProof))).thenReturn(verified);
 
-		syncServiceProcessor.processSyncResponse(dtoCommandsAndProof);
+		RemoteSyncResponse response = mock(RemoteSyncResponse.class);
+		when(response.getCommandsAndProof()).thenReturn(dtoCommandsAndProof);
+
+		syncServiceProcessor.processSyncResponse(response);
 
 		verify(invalidSyncedCommandsSender, never()).sendInvalidCommands(any());
 		verify(verifiedSyncedCommandsSender, times(1))

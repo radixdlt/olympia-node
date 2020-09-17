@@ -36,7 +36,7 @@ import org.apache.logging.log4j.Logger;
  * Thread-safety must be handled by caller.
  */
 @NotThreadSafe
-public final class BaseLocalSyncServiceProcessor implements LocalSyncServiceProcessor<LedgerUpdate> {
+public final class AccumulatorSyncServiceProcessor implements LocalSyncServiceProcessor<LedgerUpdate> {
 	public interface DtoCommandsAndProofVerifier {
 		VerifiedCommandsAndProof verify(DtoCommandsAndProof dtoCommandsAndProof) throws DtoCommandsAndProofVerifierException;
 	}
@@ -93,7 +93,7 @@ public final class BaseLocalSyncServiceProcessor implements LocalSyncServiceProc
 	private VerifiedLedgerHeaderAndProof targetHeader;
 	private VerifiedLedgerHeaderAndProof currentHeader;
 
-	public BaseLocalSyncServiceProcessor(
+	public AccumulatorSyncServiceProcessor(
 		StateSyncNetwork stateSyncNetwork,
 		VerifiedSyncedCommandsSender verifiedSyncedCommandsSender,
 		InvalidSyncedCommandsSender invalidSyncedCommandsSender,
@@ -119,8 +119,10 @@ public final class BaseLocalSyncServiceProcessor implements LocalSyncServiceProc
 	}
 
 	@Override
-	public void processSyncResponse(DtoCommandsAndProof commandsAndProof) {
-		log.info("SYNC_RESPONSE: {} current={} target={}", commandsAndProof, this.currentHeader, this.targetHeader);
+	public void processSyncResponse(RemoteSyncResponse syncResponse) {
+		log.info("SYNC_RESPONSE: {}", syncResponse);
+
+		DtoCommandsAndProof commandsAndProof = syncResponse.getCommandsAndProof();
 
 		VerifiedCommandsAndProof verified;
 		try {

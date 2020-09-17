@@ -20,6 +20,7 @@ package com.radixdlt.middleware2.network;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.network.addressbook.AddressBook;
+import com.radixdlt.sync.RemoteSyncResponse;
 import com.radixdlt.sync.StateSyncNetwork;
 import com.radixdlt.sync.RemoteSyncRequest;
 import com.radixdlt.network.messaging.MessageCentral;
@@ -50,9 +51,14 @@ public final class MessageCentralLedgerSync implements StateSyncNetwork {
 	}
 
 	@Override
-	public Observable<DtoCommandsAndProof> syncResponses() {
+	public Observable<RemoteSyncResponse> syncResponses() {
 		return Observable.create(emitter -> {
-			MessageListener<SyncResponseMessage> listener = (src, msg) -> emitter.onNext(msg.getCommands());
+			MessageListener<SyncResponseMessage> listener = (src, msg) -> {
+				if (src.hasSystem()) {
+					BFTNode node = BFTNode.create(src.getSystem().getKey());
+					emitter.onNext(new RemoteSyncResponse(node, msg.getCommands()));
+				}
+			};
 			this.messageCentral.addListener(SyncResponseMessage.class, listener);
 			emitter.setCancellable(() -> this.messageCentral.removeListener(listener));
 		});

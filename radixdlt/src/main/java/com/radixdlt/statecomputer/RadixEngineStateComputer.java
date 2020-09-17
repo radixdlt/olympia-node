@@ -69,6 +69,7 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 	private final CommittedAtomSender committedAtomSender;
 	private final Object lock = new Object();
 	private final TreeMap<Long, StoredCommittedCommand> unstoredCommittedAtoms = new TreeMap<>();
+	private final TreeMap<Long, VerifiedLedgerHeaderAndProof> epochProofs = new TreeMap<>();
 
 	public RadixEngineStateComputer(
 		Serialization serialization,
@@ -86,6 +87,10 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 		this.epochChangeView = epochChangeView;
 		this.committedCommandsReader = Objects.requireNonNull(committedCommandsReader);
 		this.committedAtomSender = Objects.requireNonNull(committedAtomSender);
+	}
+
+	public VerifiedLedgerHeaderAndProof getEpochProof(long epoch) {
+		return epochProofs.get(epoch);
 	}
 
 	// TODO Move this to a different class class when unstored committed atoms is fixed
@@ -179,6 +184,7 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 		}
 
 		if (headerAndProof.isEndOfEpoch()) {
+			this.epochProofs.put(headerAndProof.getEpoch() + 1, headerAndProof);
 			RadixEngineValidatorSetBuilder validatorSetBuilder = this.radixEngine.getComputedState(RadixEngineValidatorSetBuilder.class);
 			return Optional.of(validatorSetBuilder.build());
 		}

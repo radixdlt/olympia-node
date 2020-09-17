@@ -17,12 +17,24 @@
 
 package com.radixdlt.sync;
 
-import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.sync.AccumulatorSyncServiceProcessor.SyncInProgress;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.ledger.DtoCommandsAndProof;
+import java.util.Objects;
 
-public interface LocalSyncServiceProcessor<T extends LedgerUpdate> {
-	void processLedgerUpdate(T ledgerUpdate);
-	void processLocalSyncRequest(LocalSyncRequest request);
-	void processSyncTimeout(SyncInProgress timeout);
-	void processSyncResponse(RemoteSyncResponse syncResponse);
+public class RemoteSyncResponse {
+	private final BFTNode sender;
+	private final DtoCommandsAndProof commandsAndProof;
+
+	public RemoteSyncResponse(BFTNode sender, DtoCommandsAndProof commandsAndProof) {
+		this.sender = Objects.requireNonNull(sender);
+		this.commandsAndProof = Objects.requireNonNull(commandsAndProof);
+	}
+
+	public BFTNode getSender() {
+		return sender;
+	}
+
+	public DtoCommandsAndProof getCommandsAndProof() {
+		return commandsAndProof;
+	}
 }
