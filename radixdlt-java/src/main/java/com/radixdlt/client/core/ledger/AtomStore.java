@@ -95,4 +95,14 @@ public interface AtomStore {
 	 * @return all staged particle groups in the order they were staged
 	 */
 	List<ParticleGroup> getStagedAndClear(String uuid);
+
+	/**
+	 * Retrieves all staged particle groups without clearing the staging area
+	 * for the given uuid.
+	 * TODO: Cleanup interface
+	 *
+	 * @param uuid uuid to retrieve the staged particle groups for
+	 * @return all staged particle groups in the order they were staged
+	 */
+	List<ParticleGroup> getStaged(String uuid);
 }

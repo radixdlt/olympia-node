@@ -20,50 +20,40 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-package com.radixdlt.client.atommodel.unique;
+package com.radixdlt.client.application.translate;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.client.atommodel.Identifiable;
-import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.client.core.atoms.particles.Particle;
+import org.junit.Test;
+
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.fees.FeeTable;
 import com.radixdlt.identifiers.RRI;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.SerializerId2;
+import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.utils.UInt256;
 
-@SerializerId2("radix.particles.unique")
-public final class UniqueParticle extends Particle implements Identifiable {
-	@JsonProperty("name")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final String name;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
-	@JsonProperty("address")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final RadixAddress address;
+public class TokenFeeProcessorTest {
 
-	@JsonProperty("nonce")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final long nonce;
+	@Test
+	public void testTokenFeeProcessor() {
+		RRI tokenRri = mock(RRI.class);
+		FeeTable feeTable = FeeTable.from(UInt256.TEN, ImmutableList.of());
+		RadixAddress address = mock(RadixAddress.class);
+		ActionProcessor actionProcessor = mock(ActionProcessor.class);
+		MetadataProcessor metadataProcessor = mock(MetadataProcessor.class);
 
-	UniqueParticle() {
-		// Serializer only
-		this.name = null;
-		this.address = null;
-		this.nonce = 0;
-	}
+		TokenFeeProcessor tfp = new TokenFeeProcessor(tokenRri, feeTable);
 
-	public UniqueParticle(RadixAddress address, String unique) {
-		super(address.euid());
-		this.address = address;
-		this.name = unique;
-		this.nonce = System.nanoTime();
-	}
+		Atom atom = Atom.create(ImmutableList.of());
 
-	public String getName() {
-		return name;
-	}
+		tfp.process(actionProcessor, metadataProcessor, address, atom);
 
-	@Override
-	public RRI getRRI() {
-		return RRI.of(address, name);
+		verify(actionProcessor, times(1)).process(any());
+		verify(metadataProcessor, never()).process(any());
 	}
 }

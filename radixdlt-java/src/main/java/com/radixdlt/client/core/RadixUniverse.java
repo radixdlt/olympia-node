@@ -23,12 +23,20 @@
 package com.radixdlt.client.core;
 
 import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.utils.UInt256;
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
+import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.client.core.ledger.AtomObservation;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.fees.FeeEntry;
+import com.radixdlt.fees.FeeTable;
+import com.radixdlt.fees.PerBytesFeeEntry;
+import com.radixdlt.fees.PerParticleFeeEntry;
 import com.radixdlt.client.core.ledger.AtomPuller;
 import com.radixdlt.client.core.ledger.AtomStore;
 import com.radixdlt.client.core.ledger.InMemoryAtomStore;
@@ -71,7 +79,6 @@ import java.util.Set;
  * be used to cache atoms locally.
  */
 public final class RadixUniverse {
-
 
 	public static RadixUniverse create(BootstrapConfig bootstrapConfig) {
 		return create(
@@ -161,8 +168,8 @@ public final class RadixUniverse {
 		this.networkController = networkController;
 		this.nativeToken = config.getGenesis().stream()
 			.flatMap(atom -> atom.particles(Spin.UP))
-			.filter(p -> p instanceof FixedSupplyTokenDefinitionParticle)
-			.map(p -> ((FixedSupplyTokenDefinitionParticle) p).getRRI())
+			.filter(p -> p instanceof MutableSupplyTokenDefinitionParticle)
+			.map(p -> ((MutableSupplyTokenDefinitionParticle) p).getRRI())
 			.findFirst()
 			.orElseThrow(() -> new IllegalStateException("No Native Token defined in universe"));
 		this.atomStore = atomStore;
@@ -211,5 +218,31 @@ public final class RadixUniverse {
 
 	public RadixUniverseConfig getConfig() {
 		return config;
+	}
+
+	/**
+	 * Retrieves the fee table for this universe.
+	 * @return The fee table for the universe.
+	 */
+	public FeeTable feeTable() {
+		// WARNING: There is a duplicate fee table in TokenFeeModule in core.  If you update this
+		// fee table, you will need to change the one there also.
+		ImmutableList<FeeEntry> feeEntries = ImmutableList.of(
+			// 1 millirad per byte after the first three kilobytes
+			PerBytesFeeEntry.of(1,  3072, milliRads(1L)),
+			// 1,000 millirads per fixed supply token definition
+			PerParticleFeeEntry.of(FixedSupplyTokenDefinitionParticle.class, 0, milliRads(1000L)),
+			// 1,000 millirads per mutable supply token definition
+			PerParticleFeeEntry.of(MutableSupplyTokenDefinitionParticle.class, 0, milliRads(1000L))
+		);
+
+		// Minimum fee of 40 millirads
+		return FeeTable.from(milliRads(40L), feeEntries);
+	}
+
+	private static UInt256 milliRads(long count) {
+		// 1 count is 10^{-3} rads, so we subtract that from the sub-units power
+		// No risk of overflow here, as 10^18 is approx 60 bits, plus 64 bits of count will not exceed 256 bits
+		return UInt256.TEN.pow(TokenUnitConversions.getTokenScale() - 3).multiply(UInt256.from(count));
 	}
 }

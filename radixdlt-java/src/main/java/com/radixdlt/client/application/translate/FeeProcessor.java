@@ -20,50 +20,22 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-package com.radixdlt.client.atommodel.unique;
+package com.radixdlt.client.application.translate;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.client.atommodel.Identifiable;
+import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.identifiers.RRI;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.SerializerId2;
 
-@SerializerId2("radix.particles.unique")
-public final class UniqueParticle extends Particle implements Identifiable {
-	@JsonProperty("name")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final String name;
-
-	@JsonProperty("address")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final RadixAddress address;
-
-	@JsonProperty("nonce")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final long nonce;
-
-	UniqueParticle() {
-		// Serializer only
-		this.name = null;
-		this.address = null;
-		this.nonce = 0;
-	}
-
-	public UniqueParticle(RadixAddress address, String unique) {
-		super(address.euid());
-		this.address = address;
-		this.name = unique;
-		this.nonce = System.nanoTime();
-	}
-
-	public String getName() {
-		return name;
-	}
-
-	@Override
-	public RRI getRRI() {
-		return RRI.of(address, name);
-	}
+/**
+ * Interface for processing fees.
+ */
+public interface FeeProcessor {
+	/**
+	 * Processes actions in the context of fee generation.
+	 *
+	 * @param actionProcessor An {@link ActionProcessor} to use to process any actions associated with the fee
+	 * @param metadataProcessor A {@link MetadataProcessor} to use to process any metadata associated with the fee
+	 * @param address The address of the fee payee
+	 * @param feelessAtom The atom, without fees, for which to generate fees
+	 */
+	void process(ActionProcessor actionProcessor, MetadataProcessor metadataProcessor, RadixAddress address, Atom feelessAtom);
 }

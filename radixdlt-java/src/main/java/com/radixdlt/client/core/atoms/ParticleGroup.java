@@ -35,7 +35,6 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -46,7 +45,6 @@ import com.radixdlt.client.core.atoms.particles.SpunParticle;
 /**
  * A group of particles representing one intent, e.g. a transfer.
  * <p>
- * * @author flotothemoon
  */
 @SerializerId2("radix.particle_group")
 public class ParticleGroup {
@@ -69,26 +67,23 @@ public class ParticleGroup {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final ImmutableMap<String, String> metaData;
 
-
 	ParticleGroup() {
 		// Serializer only
 		this.particles = ImmutableList.of();
 		this.metaData = ImmutableMap.of();
 	}
 
-	public ParticleGroup(Iterable<SpunParticle> particles) {
-		Objects.requireNonNull(particles, "particles is required");
+	public ParticleGroup(ImmutableList<SpunParticle> particles, ImmutableMap<String, String> metaData) {
+		this.particles = Objects.requireNonNull(particles);
+		this.metaData = metaData == null ? ImmutableMap.of() : metaData;
+	}
 
-		this.particles = ImmutableList.copyOf(particles);
-		this.metaData = ImmutableMap.of();
+	public ParticleGroup(Iterable<SpunParticle> particles) {
+		this(ImmutableList.copyOf(particles), ImmutableMap.of());
 	}
 
 	public ParticleGroup(Iterable<SpunParticle> particles, Map<String, String> metaData) {
-		Objects.requireNonNull(particles, "particles is required");
-		Objects.requireNonNull(metaData, "metaData is required");
-
-		this.particles = ImmutableList.copyOf(particles);
-		this.metaData = ImmutableMap.copyOf(metaData);
+		this(ImmutableList.copyOf(particles), ImmutableMap.copyOf(metaData));
 	}
 
 	public ImmutableList<SpunParticle> getSpunParticles() {
