@@ -31,14 +31,16 @@ import com.radixdlt.ledger.AccumulatorAndValidatorSetVerifier;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.sync.AccumulatorLocalSyncServiceProcessor.DtoCommandsAndProofVerifier;
+import com.radixdlt.sync.AccumulatorRemoteSyncResponseVerifier;
+import com.radixdlt.sync.AccumulatorRemoteSyncResponseVerifier.InvalidSyncedCommandsSender;
+import com.radixdlt.sync.AccumulatorRemoteSyncResponseVerifier.VerifiedSyncedCommandsSender;
 import com.radixdlt.sync.CommittedReader;
-import com.radixdlt.sync.AccumulatorSyncServiceProcessor.InvalidSyncedCommandsSender;
 import com.radixdlt.sync.LocalSyncServiceProcessor;
 import com.radixdlt.sync.RemoteSyncServiceProcessor;
 import com.radixdlt.sync.StateSyncNetwork;
-import com.radixdlt.sync.AccumulatorSyncServiceProcessor;
-import com.radixdlt.sync.AccumulatorSyncServiceProcessor.SyncTimeoutScheduler;
-import com.radixdlt.sync.AccumulatorSyncServiceProcessor.VerifiedSyncedCommandsSender;
+import com.radixdlt.sync.AccumulatorLocalSyncServiceProcessor;
+import com.radixdlt.sync.AccumulatorLocalSyncServiceProcessor.SyncTimeoutScheduler;
 import java.util.Comparator;
 import java.util.function.Function;
 
@@ -62,12 +64,24 @@ public class SyncServiceModule extends AbstractModule {
 	}
 
 	@Provides
-	private Function<BFTConfiguration, LocalSyncServiceProcessor<LedgerUpdate>> localSyncFactory(
-		Comparator<AccumulatorState> accumulatorComparator,
-		StateSyncNetwork stateSyncNetwork,
+	private DtoCommandsAndProofVerifier initialVerifier(
+		LedgerAccumulatorVerifier verifier,
+		Hasher hasher,
+		HashVerifier hashVerifier,
+		BFTConfiguration initialConfiguration
+	) {
+		return new AccumulatorAndValidatorSetVerifier(
+			verifier,
+			initialConfiguration.getValidatorSet(),
+			hasher,
+			hashVerifier
+		);
+	}
+
+	@Provides
+	private Function<BFTConfiguration, AccumulatorRemoteSyncResponseVerifier> accumulatorVerifierFactory(
 		VerifiedSyncedCommandsSender verifiedSyncedCommandsSender,
 		InvalidSyncedCommandsSender invalidSyncedCommandsSender,
-		SyncTimeoutScheduler syncTimeoutScheduler,
 		LedgerAccumulatorVerifier verifier,
 		Hasher hasher,
 		HashVerifier hashVerifier
@@ -80,15 +94,27 @@ public class SyncServiceModule extends AbstractModule {
 				hashVerifier
 			);
 
+			return new AccumulatorRemoteSyncResponseVerifier(
+				verifiedSyncedCommandsSender,
+				invalidSyncedCommandsSender,
+				accumulatorAndValidatorSetVerifier
+			);
+		};
+	}
+
+	@Provides
+	private Function<BFTConfiguration, LocalSyncServiceProcessor<LedgerUpdate>> localSyncFactory(
+		Comparator<AccumulatorState> accumulatorComparator,
+		StateSyncNetwork stateSyncNetwork,
+		SyncTimeoutScheduler syncTimeoutScheduler
+	) {
+		return config -> {
 			VerifiedLedgerHeaderAndProof header = config.getGenesisQC().getCommittedAndLedgerStateProof()
 				.orElseThrow(RuntimeException::new).getSecond();
 
-			return new AccumulatorSyncServiceProcessor(
+			return new AccumulatorLocalSyncServiceProcessor(
 				stateSyncNetwork,
-				verifiedSyncedCommandsSender,
-				invalidSyncedCommandsSender,
 				syncTimeoutScheduler,
-				accumulatorAndValidatorSetVerifier,
 				accumulatorComparator,
 				header,
 				200

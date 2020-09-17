@@ -87,6 +87,8 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.LatencyProvider;
 import com.radixdlt.network.TimeSupplier;
+import com.radixdlt.sync.AccumulatorRemoteSyncResponseVerifier;
+import com.radixdlt.sync.RemoteSyncResponseProcessor;
 import com.radixdlt.sync.SyncServiceRunner;
 import com.radixdlt.utils.DurationParser;
 import com.radixdlt.utils.Pair;
@@ -427,6 +429,7 @@ public class SimulationTest {
 						protected void configure() {
 							MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class)
 								.addBinding("sync").to(Key.get(new TypeLiteral<SyncServiceRunner<LedgerUpdate>>() { }));
+							bind(RemoteSyncResponseProcessor.class).to(AccumulatorRemoteSyncResponseVerifier.class).in(Scopes.SINGLETON);
 						}
 					});
 				} else if (ledgerType == LedgerType.LEDGER_AND_EPOCHS) {

@@ -36,7 +36,7 @@ import org.apache.logging.log4j.Logger;
  * Thread-safety must be handled by caller.
  */
 @NotThreadSafe
-public final class AccumulatorSyncServiceProcessor implements LocalSyncServiceProcessor<LedgerUpdate> {
+public final class AccumulatorLocalSyncServiceProcessor implements LocalSyncServiceProcessor<LedgerUpdate> {
 	public interface DtoCommandsAndProofVerifier {
 		VerifiedCommandsAndProof verify(DtoCommandsAndProof dtoCommandsAndProof) throws DtoCommandsAndProofVerifierException;
 	}
@@ -51,14 +51,6 @@ public final class AccumulatorSyncServiceProcessor implements LocalSyncServicePr
 		public DtoCommandsAndProof getDtoCommandsAndProof() {
 			return dtoCommandsAndProof;
 		}
-	}
-
-	public interface VerifiedSyncedCommandsSender {
-		void sendVerifiedCommands(VerifiedCommandsAndProof commandsAndProof);
-	}
-
-	public interface InvalidSyncedCommandsSender {
-		void sendInvalidCommands(DtoCommandsAndProof commandsAndProof);
 	}
 
 	public static final class SyncInProgress {
@@ -83,22 +75,17 @@ public final class AccumulatorSyncServiceProcessor implements LocalSyncServicePr
 	}
 
 	private static final Logger log = LogManager.getLogger();
-	private final VerifiedSyncedCommandsSender verifiedSyncedCommandsSender;
+
 	private final SyncTimeoutScheduler syncTimeoutScheduler;
 	private final long patienceMilliseconds;
 	private final StateSyncNetwork stateSyncNetwork;
 	private final Comparator<AccumulatorState> accComparator;
-	private final InvalidSyncedCommandsSender invalidSyncedCommandsSender;
-	private final DtoCommandsAndProofVerifier verifier;
 	private VerifiedLedgerHeaderAndProof targetHeader;
 	private VerifiedLedgerHeaderAndProof currentHeader;
 
-	public AccumulatorSyncServiceProcessor(
+	public AccumulatorLocalSyncServiceProcessor(
 		StateSyncNetwork stateSyncNetwork,
-		VerifiedSyncedCommandsSender verifiedSyncedCommandsSender,
-		InvalidSyncedCommandsSender invalidSyncedCommandsSender,
 		SyncTimeoutScheduler syncTimeoutScheduler,
-		DtoCommandsAndProofVerifier verifier,
 		Comparator<AccumulatorState> accComparator,
 		VerifiedLedgerHeaderAndProof current,
 		long patienceMilliseconds
@@ -108,33 +95,11 @@ public final class AccumulatorSyncServiceProcessor implements LocalSyncServicePr
 		}
 
 		this.stateSyncNetwork = Objects.requireNonNull(stateSyncNetwork);
-		this.verifiedSyncedCommandsSender = Objects.requireNonNull(verifiedSyncedCommandsSender);
-		this.invalidSyncedCommandsSender = Objects.requireNonNull(invalidSyncedCommandsSender);
 		this.syncTimeoutScheduler = Objects.requireNonNull(syncTimeoutScheduler);
 		this.patienceMilliseconds = patienceMilliseconds;
-		this.verifier = Objects.requireNonNull(verifier);
 		this.accComparator = Objects.requireNonNull(accComparator);
 		this.currentHeader = current;
 		this.targetHeader = current;
-	}
-
-	@Override
-	public void processSyncResponse(RemoteSyncResponse syncResponse) {
-		log.info("SYNC_RESPONSE: {}", syncResponse);
-
-		DtoCommandsAndProof commandsAndProof = syncResponse.getCommandsAndProof();
-
-		VerifiedCommandsAndProof verified;
-		try {
-			verified = this.verifier.verify(commandsAndProof);
-		} catch (DtoCommandsAndProofVerifierException e) {
-			log.warn("SYNC_RESPONSE Verification failed {}: {}", commandsAndProof, e.getMessage());
-			invalidSyncedCommandsSender.sendInvalidCommands(commandsAndProof);
-			return;
-		}
-
-		// TODO: Check validity of response
-		this.verifiedSyncedCommandsSender.sendVerifiedCommands(verified);
 	}
 
 	@Override

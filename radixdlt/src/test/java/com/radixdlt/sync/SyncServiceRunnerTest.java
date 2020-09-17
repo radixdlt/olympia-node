@@ -42,6 +42,7 @@ public class SyncServiceRunnerTest {
 	private SyncTimeoutsRx syncTimeoutsRx;
 	private StateSyncNetwork stateSyncNetwork;
 	private EpochsLocalSyncServiceProcessor syncServiceProcessor;
+	private RemoteSyncResponseProcessor remoteSyncResponseProcessor;
 	private RemoteSyncServiceProcessor remoteSyncServiceProcessor;
 	private Subject<LedgerUpdate> versionUpdatesSubject;
 	private Subject<RemoteSyncRequest> requestsSubject;
@@ -65,9 +66,11 @@ public class SyncServiceRunnerTest {
 		when(stateSyncNetwork.syncRequests()).thenReturn(requestsSubject);
 
 		this.syncServiceProcessor = mock(EpochsLocalSyncServiceProcessor.class);
+		this.remoteSyncResponseProcessor = mock(RemoteSyncResponseProcessor.class);
 		this.remoteSyncServiceProcessor = mock(RemoteSyncServiceProcessor.class);
 
 		this.versionUpdatesSubject = PublishSubject.create();
+
 
 		syncServiceRunner = new SyncServiceRunner(
 			localSyncRequestsRx,
@@ -75,7 +78,8 @@ public class SyncServiceRunnerTest {
 			versionUpdatesSubject,
 			stateSyncNetwork,
 			syncServiceProcessor,
-			remoteSyncServiceProcessor
+			remoteSyncServiceProcessor,
+			remoteSyncResponseProcessor
 		);
 
 		// Clear interrupted status
@@ -100,6 +104,6 @@ public class SyncServiceRunnerTest {
 		RemoteSyncResponse response = mock(RemoteSyncResponse.class);
 		syncServiceRunner.start();
 		responsesSubject.onNext(response);
-		verify(syncServiceProcessor, timeout(1000).times(1)).processSyncResponse(eq(response));
+		verify(remoteSyncResponseProcessor, timeout(1000).times(1)).processSyncResponse(eq(response));
 	}
 }

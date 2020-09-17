@@ -29,8 +29,8 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.ValidationState;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.sync.AccumulatorSyncServiceProcessor.DtoCommandsAndProofVerifier;
-import com.radixdlt.sync.AccumulatorSyncServiceProcessor.DtoCommandsAndProofVerifierException;
+import com.radixdlt.sync.AccumulatorLocalSyncServiceProcessor.DtoCommandsAndProofVerifier;
+import com.radixdlt.sync.AccumulatorLocalSyncServiceProcessor.DtoCommandsAndProofVerifierException;
 import java.util.Map;
 import java.util.Objects;
 

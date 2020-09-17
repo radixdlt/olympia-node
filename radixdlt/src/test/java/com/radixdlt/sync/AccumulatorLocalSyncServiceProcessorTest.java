@@ -19,7 +19,6 @@ package com.radixdlt.sync;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -31,27 +30,18 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.sync.AccumulatorSyncServiceProcessor.DtoCommandsAndProofVerifier;
-import com.radixdlt.sync.AccumulatorSyncServiceProcessor.DtoCommandsAndProofVerifierException;
-import com.radixdlt.sync.AccumulatorSyncServiceProcessor.InvalidSyncedCommandsSender;
-import com.radixdlt.sync.AccumulatorSyncServiceProcessor.SyncInProgress;
-import com.radixdlt.sync.AccumulatorSyncServiceProcessor.SyncTimeoutScheduler;
-import com.radixdlt.sync.AccumulatorSyncServiceProcessor.VerifiedSyncedCommandsSender;
+import com.radixdlt.sync.AccumulatorLocalSyncServiceProcessor.SyncInProgress;
+import com.radixdlt.sync.AccumulatorLocalSyncServiceProcessor.SyncTimeoutScheduler;
 import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;
 import org.junit.Test;
 
-public class AccumulatorSyncServiceProcessorTest {
+public class AccumulatorLocalSyncServiceProcessorTest {
 	private StateSyncNetwork stateSyncNetwork;
-	private AccumulatorSyncServiceProcessor syncServiceProcessor;
-	private VerifiedSyncedCommandsSender verifiedSyncedCommandsSender;
-	private InvalidSyncedCommandsSender invalidSyncedCommandsSender;
-	private DtoCommandsAndProofVerifier verifier;
+	private AccumulatorLocalSyncServiceProcessor syncServiceProcessor;
 	private SyncTimeoutScheduler syncTimeoutScheduler;
 	private VerifiedLedgerHeaderAndProof currentHeader;
 	private Comparator<AccumulatorState> accumulatorComparator;
@@ -60,55 +50,21 @@ public class AccumulatorSyncServiceProcessorTest {
 	@Before
 	public void setUp() {
 		this.stateSyncNetwork = mock(StateSyncNetwork.class);
-		this.verifiedSyncedCommandsSender = mock(VerifiedSyncedCommandsSender.class);
-		this.invalidSyncedCommandsSender = mock(InvalidSyncedCommandsSender.class);
 		this.syncTimeoutScheduler = mock(SyncTimeoutScheduler.class);
 		this.currentHeader = mock(VerifiedLedgerHeaderAndProof.class);
 		this.currentAccumulatorState = mock(AccumulatorState.class);
 		when(currentHeader.getAccumulatorState()).thenReturn(currentAccumulatorState);
 		when(this.currentHeader.toDto()).thenReturn(mock(DtoLedgerHeaderAndProof.class));
-		this.verifier = mock(DtoCommandsAndProofVerifier.class);
 		this.accumulatorComparator = mock(Comparator.class);
-		this.syncServiceProcessor = new AccumulatorSyncServiceProcessor(
+		this.syncServiceProcessor = new AccumulatorLocalSyncServiceProcessor(
 			stateSyncNetwork,
-			verifiedSyncedCommandsSender,
-			invalidSyncedCommandsSender,
 			syncTimeoutScheduler,
-			verifier,
 			accumulatorComparator,
 			currentHeader,
 			1
 		);
 	}
 
-	@Test
-	public void when_process_response_with_bad_verification__then_invalid_commands_sent() throws DtoCommandsAndProofVerifierException {
-		DtoCommandsAndProof dtoCommandsAndProof = mock(DtoCommandsAndProof.class);
-		RemoteSyncResponse response = mock(RemoteSyncResponse.class);
-		when(response.getCommandsAndProof()).thenReturn(dtoCommandsAndProof);
-		when(verifier.verify(any())).thenThrow(mock(DtoCommandsAndProofVerifierException.class));
-
-		syncServiceProcessor.processSyncResponse(response);
-
-		verify(invalidSyncedCommandsSender, times(1)).sendInvalidCommands(eq(dtoCommandsAndProof));
-		verify(verifiedSyncedCommandsSender, never()).sendVerifiedCommands(any());
-	}
-
-	@Test
-	public void when_process_response_with_good_accumulator__then_committed_commands_sent() throws DtoCommandsAndProofVerifierException {
-		DtoCommandsAndProof dtoCommandsAndProof = mock(DtoCommandsAndProof.class);
-		VerifiedCommandsAndProof verified = mock(VerifiedCommandsAndProof.class);
-		when(verifier.verify(eq(dtoCommandsAndProof))).thenReturn(verified);
-
-		RemoteSyncResponse response = mock(RemoteSyncResponse.class);
-		when(response.getCommandsAndProof()).thenReturn(dtoCommandsAndProof);
-
-		syncServiceProcessor.processSyncResponse(response);
-
-		verify(invalidSyncedCommandsSender, never()).sendInvalidCommands(any());
-		verify(verifiedSyncedCommandsSender, times(1))
-			.sendVerifiedCommands(eq(verified));
-	}
 
 	@Test
 	public void given_some_current_header__when_local_request_has_equal_target__then_should_do_nothing() {
@@ -119,7 +75,6 @@ public class AccumulatorSyncServiceProcessorTest {
 		LocalSyncRequest request = mock(LocalSyncRequest.class);
 		when(request.getTarget()).thenReturn(targetHeader);
 		syncServiceProcessor.processLocalSyncRequest(request);
-		verify(verifiedSyncedCommandsSender, never()).sendVerifiedCommands(any());
 		verify(stateSyncNetwork, never()).sendSyncRequest(any(), any());
 		verify(syncTimeoutScheduler, never()).scheduleTimeout(any(), anyLong());
 	}
@@ -136,7 +91,6 @@ public class AccumulatorSyncServiceProcessorTest {
 
 		syncServiceProcessor.processLocalSyncRequest(request);
 
-		verify(verifiedSyncedCommandsSender, never()).sendVerifiedCommands(any());
 		verify(stateSyncNetwork, times(1)).sendSyncRequest(any(), any());
 		verify(syncTimeoutScheduler, times(1)).scheduleTimeout(any(), anyLong());
 	}
@@ -165,6 +119,5 @@ public class AccumulatorSyncServiceProcessorTest {
 		// Once only for initial setup
 		verify(stateSyncNetwork, times(1)).sendSyncRequest(any(), any());
 		verify(syncTimeoutScheduler, times(1)).scheduleTimeout(any(), anyLong());
-		verify(verifiedSyncedCommandsSender, never()).sendVerifiedCommands(any());
 	}
 }

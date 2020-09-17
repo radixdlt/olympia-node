@@ -27,15 +27,12 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.LedgerAccumulator;
-import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.sync.CommittedReader;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Random;
-import java.util.TreeMap;
 import java.util.function.UnaryOperator;
 
 /**

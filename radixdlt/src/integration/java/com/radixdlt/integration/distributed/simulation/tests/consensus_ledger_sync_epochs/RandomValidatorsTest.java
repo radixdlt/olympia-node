@@ -20,18 +20,12 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_s
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
-import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.sync.AccumulatorSyncServiceProcessor.SyncInProgress;
-import com.radixdlt.sync.LocalSyncRequest;
-import com.radixdlt.sync.LocalSyncServiceProcessor;
-import com.radixdlt.sync.RemoteSyncResponse;
+import com.radixdlt.sync.AccumulatorRemoteSyncResponseVerifier;
+import com.radixdlt.sync.RemoteSyncResponseProcessor;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -87,30 +81,9 @@ public class RandomValidatorsTest {
 	public void given_deterministic_randomized_validator_sets_with_incorrect_single_epoch_synging__then_should_fail() {
 		SimulationTest bftTest = bftTestBuilder
 			.overrideWithIncorrectModule(new AbstractModule() {
-				@Provides
-				@Singleton
-				private LocalSyncServiceProcessor<EpochsLedgerUpdate> badEpochProcesssor(LocalSyncServiceProcessor<LedgerUpdate> base) {
-					return new LocalSyncServiceProcessor<EpochsLedgerUpdate>() {
-						@Override
-						public void processLedgerUpdate(EpochsLedgerUpdate ledgerUpdate) {
-							base.processLedgerUpdate(ledgerUpdate);
-						}
-
-						@Override
-						public void processLocalSyncRequest(LocalSyncRequest request) {
-							base.processLocalSyncRequest(request);
-						}
-
-						@Override
-						public void processSyncTimeout(SyncInProgress timeout) {
-							base.processSyncTimeout(timeout);
-						}
-
-						@Override
-						public void processSyncResponse(RemoteSyncResponse syncResponse) {
-							base.processSyncResponse(syncResponse);
-						}
-					};
+				@Override
+				public void configure() {
+					bind(RemoteSyncResponseProcessor.class).to(AccumulatorRemoteSyncResponseVerifier.class);
 				}
 			})
 			.build();
