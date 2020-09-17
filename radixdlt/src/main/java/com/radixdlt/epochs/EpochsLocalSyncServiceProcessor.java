@@ -17,15 +17,20 @@
 
 package com.radixdlt.epochs;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.BFTConfiguration;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.sync.BaseLocalSyncServiceProcessor.SyncInProgress;
+import com.radixdlt.sync.BaseLocalSyncServiceProcessor.VerifiedSyncedCommandsSender;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceProcessor;
+import java.util.Objects;
 import java.util.function.Function;
 import javax.annotation.concurrent.NotThreadSafe;
 
@@ -37,17 +42,24 @@ import javax.annotation.concurrent.NotThreadSafe;
 public class EpochsLocalSyncServiceProcessor implements LocalSyncServiceProcessor<EpochsLedgerUpdate> {
 	private final Function<BFTConfiguration, LocalSyncServiceProcessor<LedgerUpdate>> localSyncFactory;
 	private EpochChange currentEpoch;
+	private VerifiedLedgerHeaderAndProof currentHeader;
 	private LocalSyncServiceProcessor<LedgerUpdate> localSyncServiceProcessor;
+	private final VerifiedSyncedCommandsSender verifiedSyncedCommandsSender;
+
 
 	@Inject
 	public EpochsLocalSyncServiceProcessor(
 		LocalSyncServiceProcessor<LedgerUpdate> initialProcessor,
 		EpochChange initialEpoch,
-		Function<BFTConfiguration, LocalSyncServiceProcessor<LedgerUpdate>> localSyncFactory
+		VerifiedLedgerHeaderAndProof currentHeader,
+		Function<BFTConfiguration, LocalSyncServiceProcessor<LedgerUpdate>> localSyncFactory,
+		VerifiedSyncedCommandsSender verifiedSyncedCommandsSender
 	) {
 		this.currentEpoch = initialEpoch;
+		this.currentHeader = currentHeader;
 		this.localSyncFactory = localSyncFactory;
 		this.localSyncServiceProcessor = initialProcessor;
+		this.verifiedSyncedCommandsSender = verifiedSyncedCommandsSender;
 	}
 
 	@Override
@@ -55,6 +67,7 @@ public class EpochsLocalSyncServiceProcessor implements LocalSyncServiceProcesso
 		if (ledgerUpdate.getEpochChange().isPresent()) {
 			final EpochChange epochChange = ledgerUpdate.getEpochChange().get();
 			this.currentEpoch = epochChange;
+			this.currentHeader = ledgerUpdate.getTail();
 			this.localSyncServiceProcessor = localSyncFactory.apply(epochChange.getBFTConfiguration());
 		} else {
 			this.localSyncServiceProcessor.processLedgerUpdate(ledgerUpdate);
@@ -63,6 +76,20 @@ public class EpochsLocalSyncServiceProcessor implements LocalSyncServiceProcesso
 
 	@Override
 	public void processLocalSyncRequest(LocalSyncRequest request) {
+		if (request.getTarget().getEpoch() != currentEpoch.getEpoch()) {
+			return;
+		}
+
+		if (Objects.equals(request.getTarget().getAccumulatorState(), this.currentHeader.getAccumulatorState())) {
+			if (!this.currentHeader.isEndOfEpoch() && request.getTarget().isEndOfEpoch()) {
+				verifiedSyncedCommandsSender.sendVerifiedCommands(new VerifiedCommandsAndProof(
+					ImmutableList.of(),
+					request.getTarget()
+				));
+			}
+			return;
+		}
+
 		localSyncServiceProcessor.processLocalSyncRequest(request);
 	}
 

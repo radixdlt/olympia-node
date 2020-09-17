@@ -54,7 +54,7 @@ public class BaseLocalSyncServiceProcessorTest {
 	private DtoCommandsAndProofVerifier verifier;
 	private SyncTimeoutScheduler syncTimeoutScheduler;
 	private VerifiedLedgerHeaderAndProof currentHeader;
-	private Comparator<VerifiedLedgerHeaderAndProof> headerComparator;
+	private Comparator<AccumulatorState> accumulatorComparator;
 	private AccumulatorState currentAccumulatorState;
 
 	@Before
@@ -68,14 +68,14 @@ public class BaseLocalSyncServiceProcessorTest {
 		when(currentHeader.getAccumulatorState()).thenReturn(currentAccumulatorState);
 		when(this.currentHeader.toDto()).thenReturn(mock(DtoLedgerHeaderAndProof.class));
 		this.verifier = mock(DtoCommandsAndProofVerifier.class);
-		this.headerComparator = mock(Comparator.class);
+		this.accumulatorComparator = mock(Comparator.class);
 		this.syncServiceProcessor = new BaseLocalSyncServiceProcessor(
 			stateSyncNetwork,
 			verifiedSyncedCommandsSender,
 			invalidSyncedCommandsSender,
 			syncTimeoutScheduler,
 			verifier,
-			headerComparator,
+			accumulatorComparator,
 			currentHeader,
 			1
 		);
@@ -99,6 +99,7 @@ public class BaseLocalSyncServiceProcessorTest {
 		when(verifier.verify(eq(dtoCommandsAndProof))).thenReturn(verified);
 
 		syncServiceProcessor.processSyncResponse(dtoCommandsAndProof);
+
 		verify(invalidSyncedCommandsSender, never()).sendInvalidCommands(any());
 		verify(verifiedSyncedCommandsSender, times(1))
 			.sendVerifiedCommands(eq(verified));
@@ -107,7 +108,9 @@ public class BaseLocalSyncServiceProcessorTest {
 	@Test
 	public void given_some_current_header__when_local_request_has_equal_target__then_should_do_nothing() {
 		VerifiedLedgerHeaderAndProof targetHeader = mock(VerifiedLedgerHeaderAndProof.class);
-		when(headerComparator.compare(targetHeader, currentHeader)).thenReturn(0);
+		AccumulatorState target = mock(AccumulatorState.class);
+		when(targetHeader.getAccumulatorState()).thenReturn(target);
+		when(accumulatorComparator.compare(target, currentAccumulatorState)).thenReturn(0);
 		LocalSyncRequest request = mock(LocalSyncRequest.class);
 		when(request.getTarget()).thenReturn(targetHeader);
 		syncServiceProcessor.processLocalSyncRequest(request);
@@ -118,10 +121,10 @@ public class BaseLocalSyncServiceProcessorTest {
 
 	@Test
 	public void given_some_current_header__when_local_request_has_higher_target__then_should_send_timeout_and_remote_request() {
-		when(currentHeader.getStateVersion()).thenReturn(1L);
 		VerifiedLedgerHeaderAndProof targetHeader = mock(VerifiedLedgerHeaderAndProof.class);
-		when(targetHeader.getStateVersion()).thenReturn(2L);
-		when(headerComparator.compare(targetHeader, currentHeader)).thenReturn(1);
+		AccumulatorState target = mock(AccumulatorState.class);
+		when(targetHeader.getAccumulatorState()).thenReturn(target);
+		when(accumulatorComparator.compare(target, currentAccumulatorState)).thenReturn(1);
 		LocalSyncRequest request = mock(LocalSyncRequest.class);
 		when(request.getTarget()).thenReturn(targetHeader);
 		when(request.getTargetNodes()).thenReturn(ImmutableList.of(mock(BFTNode.class)));
@@ -133,26 +136,6 @@ public class BaseLocalSyncServiceProcessorTest {
 		verify(syncTimeoutScheduler, times(1)).scheduleTimeout(any(), anyLong());
 	}
 
-	// TODO: require state versions to define whether whether header is higher or lower
-	// TODO: thus rendering this test deprecated
-	@Test
-	public void given_some_current_header__when_local_request_has_higher_target_but_same_version__then_should_send_timeout_and_remote_request() {
-		when(currentHeader.getStateVersion()).thenReturn(1L);
-		VerifiedLedgerHeaderAndProof targetHeader = mock(VerifiedLedgerHeaderAndProof.class);
-		when(targetHeader.toDto()).thenReturn(mock(DtoLedgerHeaderAndProof.class));
-		when(targetHeader.getStateVersion()).thenReturn(1L);
-		when(targetHeader.getAccumulatorState()).thenReturn(currentAccumulatorState);
-		when(headerComparator.compare(targetHeader, currentHeader)).thenReturn(1);
-		LocalSyncRequest request = mock(LocalSyncRequest.class);
-		when(request.getTarget()).thenReturn(targetHeader);
-		when(request.getTargetNodes()).thenReturn(ImmutableList.of(mock(BFTNode.class)));
-		syncServiceProcessor.processLocalSyncRequest(request);
-
-		verify(verifiedSyncedCommandsSender, times(1)).sendVerifiedCommands(any());
-		verify(stateSyncNetwork, never()).sendSyncRequest(any(), any());
-		verify(syncTimeoutScheduler, never()).scheduleTimeout(any(), anyLong());
-	}
-
 	@Test
 	public void given_some_sync_in_progress_which_has_been_fulfilled__when_sync_timeout__then_should_do_nothing() {
 		AtomicReference<SyncInProgress> sync = new AtomicReference<>();
@@ -161,8 +144,9 @@ public class BaseLocalSyncServiceProcessorTest {
 			return null;
 		}).when(syncTimeoutScheduler).scheduleTimeout(any(), anyLong());
 		VerifiedLedgerHeaderAndProof targetHeader = mock(VerifiedLedgerHeaderAndProof.class);
-		when(targetHeader.getStateVersion()).thenReturn(2L);
-		when(headerComparator.compare(targetHeader, currentHeader)).thenReturn(1);
+		AccumulatorState target = mock(AccumulatorState.class);
+		when(targetHeader.getAccumulatorState()).thenReturn(target);
+		when(accumulatorComparator.compare(target, currentAccumulatorState)).thenReturn(1);
 		LocalSyncRequest request = mock(LocalSyncRequest.class);
 		when(request.getTarget()).thenReturn(targetHeader);
 		when(request.getTargetNodes()).thenReturn(ImmutableList.of(mock(BFTNode.class)));

@@ -20,6 +20,7 @@ package com.radixdlt.sync;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
@@ -86,7 +87,7 @@ public final class BaseLocalSyncServiceProcessor implements LocalSyncServiceProc
 	private final SyncTimeoutScheduler syncTimeoutScheduler;
 	private final long patienceMilliseconds;
 	private final StateSyncNetwork stateSyncNetwork;
-	private final Comparator<VerifiedLedgerHeaderAndProof> headerComparator;
+	private final Comparator<AccumulatorState> accComparator;
 	private final InvalidSyncedCommandsSender invalidSyncedCommandsSender;
 	private final DtoCommandsAndProofVerifier verifier;
 	private VerifiedLedgerHeaderAndProof targetHeader;
@@ -98,7 +99,7 @@ public final class BaseLocalSyncServiceProcessor implements LocalSyncServiceProc
 		InvalidSyncedCommandsSender invalidSyncedCommandsSender,
 		SyncTimeoutScheduler syncTimeoutScheduler,
 		DtoCommandsAndProofVerifier verifier,
-		Comparator<VerifiedLedgerHeaderAndProof> headerComparator,
+		Comparator<AccumulatorState> accComparator,
 		VerifiedLedgerHeaderAndProof current,
 		long patienceMilliseconds
 	) {
@@ -112,7 +113,7 @@ public final class BaseLocalSyncServiceProcessor implements LocalSyncServiceProc
 		this.syncTimeoutScheduler = Objects.requireNonNull(syncTimeoutScheduler);
 		this.patienceMilliseconds = patienceMilliseconds;
 		this.verifier = Objects.requireNonNull(verifier);
-		this.headerComparator = Objects.requireNonNull(headerComparator);
+		this.accComparator = Objects.requireNonNull(accComparator);
 		this.currentHeader = current;
 		this.targetHeader = current;
 	}
@@ -137,7 +138,7 @@ public final class BaseLocalSyncServiceProcessor implements LocalSyncServiceProc
 	@Override
 	public void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
 		VerifiedLedgerHeaderAndProof updatedHeader = ledgerUpdate.getTail();
-		if (headerComparator.compare(updatedHeader, this.currentHeader) > 0) {
+		if (accComparator.compare(updatedHeader.getAccumulatorState(), this.currentHeader.getAccumulatorState()) > 0) {
 			this.currentHeader = updatedHeader;
 		}
 	}
@@ -148,7 +149,7 @@ public final class BaseLocalSyncServiceProcessor implements LocalSyncServiceProc
 		log.info("SYNC_LOCAL_REQUEST: {}", request);
 
 		final VerifiedLedgerHeaderAndProof nextTargetHeader = request.getTarget();
-		if (headerComparator.compare(nextTargetHeader, this.targetHeader) <= 0) {
+		if (accComparator.compare(nextTargetHeader.getAccumulatorState(), this.targetHeader.getAccumulatorState()) <= 0) {
 			return;
 		}
 
@@ -164,19 +165,7 @@ public final class BaseLocalSyncServiceProcessor implements LocalSyncServiceProc
 
 	private void refreshRequest(SyncInProgress syncInProgress) {
 		VerifiedLedgerHeaderAndProof requestTargetHeader = syncInProgress.getTargetHeader();
-		if (headerComparator.compare(requestTargetHeader, this.currentHeader) <= 0) {
-			return;
-		}
-
-		if (Objects.equals(requestTargetHeader.getAccumulatorState(), this.currentHeader.getAccumulatorState())) {
-			// Already command synced just need to update header
-			// TODO: Need to check epochs to make sure we're not skipping epochs
-			// TODO: Remove epoch handling from Base
-			VerifiedCommandsAndProof commandsAndProof = new VerifiedCommandsAndProof(
-				ImmutableList.of(),
-				requestTargetHeader
-			);
-			this.verifiedSyncedCommandsSender.sendVerifiedCommands(commandsAndProof);
+		if (accComparator.compare(requestTargetHeader.getAccumulatorState(), this.currentHeader.getAccumulatorState()) <= 0) {
 			return;
 		}
 

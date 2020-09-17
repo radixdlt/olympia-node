@@ -28,6 +28,7 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof.OrderByEpochAndVersionComparator;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.epoch.EpochManager;
+import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
@@ -49,6 +50,11 @@ public class LedgerModule extends AbstractModule {
 		bind(new TypeLiteral<Comparator<VerifiedLedgerHeaderAndProof>>() { }).to(OrderByEpochAndVersionComparator.class).in(Scopes.SINGLETON);
 		bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 		bind(LedgerAccumulatorVerifier.class).to(SimpleLedgerAccumulatorAndVerifier.class);
+	}
+
+	@Provides
+	private Comparator<AccumulatorState> accumulatorStateComparator() {
+		return Comparator.comparingLong(AccumulatorState::getStateVersion);
 	}
 
 	@Provides

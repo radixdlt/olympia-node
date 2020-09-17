@@ -28,6 +28,7 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.ledger.AccumulatorAndValidatorSetVerifier;
+import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.sync.CommittedReader;
@@ -62,7 +63,7 @@ public class SyncServiceModule extends AbstractModule {
 
 	@Provides
 	private Function<BFTConfiguration, LocalSyncServiceProcessor<LedgerUpdate>> localSyncFactory(
-		Comparator<VerifiedLedgerHeaderAndProof> headerComparator,
+		Comparator<AccumulatorState> accumulatorComparator,
 		StateSyncNetwork stateSyncNetwork,
 		VerifiedSyncedCommandsSender verifiedSyncedCommandsSender,
 		InvalidSyncedCommandsSender invalidSyncedCommandsSender,
@@ -88,7 +89,7 @@ public class SyncServiceModule extends AbstractModule {
 				invalidSyncedCommandsSender,
 				syncTimeoutScheduler,
 				accumulatorAndValidatorSetVerifier,
-				headerComparator,
+				accumulatorComparator,
 				header,
 				200
 			);
