@@ -32,16 +32,16 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.sync.AccumulatorLocalSyncServiceProcessor.SyncInProgress;
-import com.radixdlt.sync.AccumulatorLocalSyncServiceProcessor.SyncTimeoutScheduler;
+import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
+import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncTimeoutScheduler;
 import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;
 import org.junit.Test;
 
-public class AccumulatorLocalSyncServiceProcessorTest {
+public class LocalSyncServiceAccumulatorProcessorTest {
 	private StateSyncNetwork stateSyncNetwork;
-	private AccumulatorLocalSyncServiceProcessor syncServiceProcessor;
+	private LocalSyncServiceAccumulatorProcessor syncServiceProcessor;
 	private SyncTimeoutScheduler syncTimeoutScheduler;
 	private VerifiedLedgerHeaderAndProof currentHeader;
 	private Comparator<AccumulatorState> accumulatorComparator;
@@ -56,7 +56,7 @@ public class AccumulatorLocalSyncServiceProcessorTest {
 		when(currentHeader.getAccumulatorState()).thenReturn(currentAccumulatorState);
 		when(this.currentHeader.toDto()).thenReturn(mock(DtoLedgerHeaderAndProof.class));
 		this.accumulatorComparator = mock(Comparator.class);
-		this.syncServiceProcessor = new AccumulatorLocalSyncServiceProcessor(
+		this.syncServiceProcessor = new LocalSyncServiceAccumulatorProcessor(
 			stateSyncNetwork,
 			syncTimeoutScheduler,
 			accumulatorComparator,

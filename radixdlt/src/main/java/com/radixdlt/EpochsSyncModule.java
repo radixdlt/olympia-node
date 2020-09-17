@@ -17,21 +17,29 @@
 
 package com.radixdlt;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
+import com.google.inject.Key;
 import com.google.inject.Provides;
+import com.google.inject.Scopes;
+import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.Hasher;
+import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.ledger.AccumulatorAndValidatorSetVerifier;
+import com.radixdlt.epochs.EpochsLedgerUpdate;
+import com.radixdlt.epochs.EpochsLocalSyncServiceProcessor;
+import com.radixdlt.epochs.EpochsLocalSyncServiceProcessor.SyncedEpochSender;
 import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.sync.AccumulatorLocalSyncServiceProcessor;
-import com.radixdlt.sync.AccumulatorLocalSyncServiceProcessor.SyncTimeoutScheduler;
-import com.radixdlt.sync.AccumulatorRemoteSyncResponseVerifier;
-import com.radixdlt.sync.InvalidSyncedCommandsSender;
-import com.radixdlt.sync.VerifiedSyncedCommandsSender;
+import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor;
+import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncTimeoutScheduler;
+import com.radixdlt.sync.RemoteSyncResponseProcessor;
+import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier;
+import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier.InvalidValidatorSetSender;
+import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier.VerifiedValidatorSetSender;
 import com.radixdlt.sync.LocalSyncServiceProcessor;
 import com.radixdlt.sync.StateSyncNetwork;
 import java.util.Comparator;
@@ -39,30 +47,42 @@ import java.util.function.Function;
 
 public class EpochsSyncModule extends AbstractModule {
 
+	@Override
+	public void configure() {
+		bind(Key.get(new TypeLiteral<LocalSyncServiceProcessor<EpochsLedgerUpdate>>() { }))
+			.to(EpochsLocalSyncServiceProcessor.class).in(Scopes.SINGLETON);
+		bind(Key.get(new TypeLiteral<RemoteSyncResponseProcessor>() { }))
+			.to(EpochsLocalSyncServiceProcessor.class).in(Scopes.SINGLETON);
+	}
+
 	@Provides
-	private Function<BFTConfiguration, AccumulatorRemoteSyncResponseVerifier> accumulatorVerifierFactory(
-		VerifiedSyncedCommandsSender verifiedSyncedCommandsSender,
-		InvalidSyncedCommandsSender invalidSyncedCommandsSender,
-		LedgerAccumulatorVerifier verifier,
+	SyncedEpochSender syncedEpochSender(Ledger ledger) {
+		return header -> {
+			VerifiedCommandsAndProof commandsAndProof = new VerifiedCommandsAndProof(
+				ImmutableList.of(),
+				header
+			);
+
+			ledger.commit(commandsAndProof);
+		};
+	}
+
+	@Provides
+	private Function<BFTConfiguration, RemoteSyncResponseValidatorSetVerifier> accumulatorVerifierFactory(
+		VerifiedValidatorSetSender verifiedValidatorSetSender,
+		InvalidValidatorSetSender invalidValidatorSetSender,
 		Hasher hasher,
 		HashVerifier hashVerifier
 	) {
-		return config -> {
-			AccumulatorAndValidatorSetVerifier accumulatorAndValidatorSetVerifier = new AccumulatorAndValidatorSetVerifier(
-				verifier,
+		return config ->
+			new RemoteSyncResponseValidatorSetVerifier(
+				verifiedValidatorSetSender,
+				invalidValidatorSetSender,
 				config.getValidatorSet(),
 				hasher,
 				hashVerifier
 			);
-
-			return new AccumulatorRemoteSyncResponseVerifier(
-				verifiedSyncedCommandsSender,
-				invalidSyncedCommandsSender,
-				accumulatorAndValidatorSetVerifier
-			);
-		};
 	}
-
 
 	@Provides
 	private Function<BFTConfiguration, LocalSyncServiceProcessor<LedgerUpdate>> localSyncFactory(
@@ -74,7 +94,7 @@ public class EpochsSyncModule extends AbstractModule {
 			VerifiedLedgerHeaderAndProof header = config.getGenesisQC().getCommittedAndLedgerStateProof()
 				.orElseThrow(RuntimeException::new).getSecond();
 
-			return new AccumulatorLocalSyncServiceProcessor(
+			return new LocalSyncServiceAccumulatorProcessor(
 				stateSyncNetwork,
 				syncTimeoutScheduler,
 				accumulatorComparator,
@@ -83,5 +103,4 @@ public class EpochsSyncModule extends AbstractModule {
 			);
 		};
 	}
-
 }

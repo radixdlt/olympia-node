@@ -19,13 +19,9 @@ package com.radixdlt;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Key;
-import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.MapBinder;
-import com.radixdlt.epochs.EpochsLocalSyncServiceProcessor;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
-import com.radixdlt.sync.LocalSyncServiceProcessor;
-import com.radixdlt.sync.RemoteSyncResponseProcessor;
 import com.radixdlt.sync.SyncServiceRunner;
 
 public class SyncServiceRunnerModule extends AbstractModule {
@@ -33,9 +29,5 @@ public class SyncServiceRunnerModule extends AbstractModule {
 	public void configure() {
 		MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class)
 			.addBinding("sync").to(Key.get(new TypeLiteral<SyncServiceRunner<EpochsLedgerUpdate>>() { }));
-		bind(Key.get(new TypeLiteral<LocalSyncServiceProcessor<EpochsLedgerUpdate>>() { }))
-			.to(EpochsLocalSyncServiceProcessor.class).in(Scopes.SINGLETON);
-		bind(Key.get(new TypeLiteral<RemoteSyncResponseProcessor>() { }))
-			.to(EpochsLocalSyncServiceProcessor.class).in(Scopes.SINGLETON);
 	}
 }

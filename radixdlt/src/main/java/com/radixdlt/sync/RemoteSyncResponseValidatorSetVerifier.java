@@ -15,60 +15,66 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.ledger;
+package com.radixdlt.sync;
 
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.TimestampedECDSASignature;
 import com.radixdlt.consensus.TimestampedVoteData;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.ValidationState;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.sync.AccumulatorLocalSyncServiceProcessor.DtoCommandsAndProofVerifier;
-import com.radixdlt.sync.AccumulatorLocalSyncServiceProcessor.DtoCommandsAndProofVerifierException;
+import com.radixdlt.ledger.DtoCommandsAndProof;
+import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import java.util.Map;
 import java.util.Objects;
 
-/**
- * Verifies the accumulator and validator set signatures
- */
-public final class AccumulatorAndValidatorSetVerifier implements DtoCommandsAndProofVerifier {
-	private final LedgerAccumulatorVerifier accumulatorVerifier;
+public class RemoteSyncResponseValidatorSetVerifier implements RemoteSyncResponseProcessor {
+
+	public interface VerifiedValidatorSetSender {
+		void sendVerified(RemoteSyncResponse remoteSyncResponse);
+	}
+
+	public interface InvalidValidatorSetSender {
+		void sendInvalid(RemoteSyncResponse remoteSyncResponse, String message);
+	}
+
+	private final VerifiedValidatorSetSender verifiedValidatorSetSender;
+	private final InvalidValidatorSetSender invalidValidatorSetSender;
 	private final BFTValidatorSet validatorSet;
 	private final Hasher hasher;
 	private final HashVerifier hashVerifier;
 
-	public AccumulatorAndValidatorSetVerifier(
-		LedgerAccumulatorVerifier accumulatorVerifier,
+	public RemoteSyncResponseValidatorSetVerifier(
+		VerifiedValidatorSetSender verifiedValidatorSetSender,
+		InvalidValidatorSetSender invalidValidatorSetSender,
 		BFTValidatorSet validatorSet,
 		Hasher hasher,
 		HashVerifier hashVerifier
 	) {
-		this.accumulatorVerifier = Objects.requireNonNull(accumulatorVerifier);
+		this.verifiedValidatorSetSender = Objects.requireNonNull(verifiedValidatorSetSender);
+		this.invalidValidatorSetSender = Objects.requireNonNull(invalidValidatorSetSender);
 		this.validatorSet = Objects.requireNonNull(validatorSet);
 		this.hasher = Objects.requireNonNull(hasher);
 		this.hashVerifier = Objects.requireNonNull(hashVerifier);
 	}
 
 	@Override
-	public VerifiedCommandsAndProof verify(DtoCommandsAndProof commandsAndProof) throws DtoCommandsAndProofVerifierException {
-		AccumulatorState start = commandsAndProof.getHead().getLedgerHeader().getAccumulatorState();
-		AccumulatorState end = commandsAndProof.getTail().getLedgerHeader().getAccumulatorState();
-		if (!this.accumulatorVerifier.verify(start, commandsAndProof.getCommands(), end)) {
-			throw new DtoCommandsAndProofVerifierException(commandsAndProof, "Bad accumulator state");
-		}
-
+	public void processSyncResponse(RemoteSyncResponse syncResponse) {
 		ValidationState validationState = validatorSet.newValidationState();
+		DtoCommandsAndProof commandsAndProof = syncResponse.getCommandsAndProof();
+
 		commandsAndProof.getTail().getSignatures().getSignatures().forEach((node, signature) ->
 			validationState.addSignature(node, signature.timestamp(), signature.signature())
 		);
+
 		if (!validationState.complete()) {
-			throw new DtoCommandsAndProofVerifierException(commandsAndProof, "Invalid signature count");
+			invalidValidatorSetSender.sendInvalid(syncResponse, "Invalid signature count");
+			return;
 		}
 
 		DtoLedgerHeaderAndProof endHeader = commandsAndProof.getTail();
@@ -88,24 +94,13 @@ public final class AccumulatorAndValidatorSetVerifier implements DtoCommandsAndP
 			final Hash voteDataHash = this.hasher.hash(timestampedVoteData);
 
 			if (!hashVerifier.verify(node.getKey(), voteDataHash, signature.signature())) {
-				throw new DtoCommandsAndProofVerifierException(commandsAndProof, "Invalid signature");
+				invalidValidatorSetSender.sendInvalid(syncResponse, "Invalid signature");
+				return;
 			}
 		}
 
-		// TODO: Stateful ledger header verification:
-		// TODO: -verify rootHash matches
-		VerifiedLedgerHeaderAndProof nextHeader = new VerifiedLedgerHeaderAndProof(
-			commandsAndProof.getTail().getOpaque0(),
-			commandsAndProof.getTail().getOpaque1(),
-			commandsAndProof.getTail().getOpaque2(),
-			commandsAndProof.getTail().getOpaque3(),
-			commandsAndProof.getTail().getLedgerHeader(),
-			commandsAndProof.getTail().getSignatures()
-		);
+		verifiedValidatorSetSender.sendVerified(syncResponse);
 
-		return new VerifiedCommandsAndProof(
-			commandsAndProof.getCommands(),
-			nextHeader
-		);
+
 	}
 }

@@ -26,13 +26,11 @@ import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.sync.AccumulatorLocalSyncServiceProcessor.SyncInProgress;
-import com.radixdlt.sync.AccumulatorRemoteSyncResponseVerifier;
-import com.radixdlt.sync.VerifiedSyncedCommandsSender;
+import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceProcessor;
 import com.radixdlt.sync.RemoteSyncResponseProcessor;
+import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier;
 import com.radixdlt.sync.StateSyncNetwork;
 import com.radixdlt.sync.RemoteSyncResponse;
 import java.util.ArrayList;
@@ -52,14 +50,17 @@ import org.apache.logging.log4j.Logger;
 public class EpochsLocalSyncServiceProcessor implements LocalSyncServiceProcessor<EpochsLedgerUpdate>, RemoteSyncResponseProcessor {
 	private static final Logger log = LogManager.getLogger();
 
+	public interface SyncedEpochSender {
+		void sendSyncedEpoch(VerifiedLedgerHeaderAndProof headerAndProof);
+	}
 
 	private final Function<BFTConfiguration, LocalSyncServiceProcessor<LedgerUpdate>> localSyncFactory;
-	private final Function<BFTConfiguration, AccumulatorRemoteSyncResponseVerifier> verifierFactory;
-	private final VerifiedSyncedCommandsSender verifiedSyncedCommandsSender;
+	private final Function<BFTConfiguration, RemoteSyncResponseValidatorSetVerifier> verifierFactory;
+	private final SyncedEpochSender syncedEpochSender;
 	private final StateSyncNetwork stateSyncNetwork;
 	private final TreeMap<Long, List<LocalSyncRequest>> outsideOfCurrentEpochRequests = new TreeMap<>();
 
-	private AccumulatorRemoteSyncResponseVerifier currentVerifier;
+	private RemoteSyncResponseProcessor currentVerifier;
 	private EpochChange currentEpoch;
 	private VerifiedLedgerHeaderAndProof currentHeader;
 	private LocalSyncServiceProcessor<LedgerUpdate> localSyncServiceProcessor;
@@ -67,13 +68,13 @@ public class EpochsLocalSyncServiceProcessor implements LocalSyncServiceProcesso
 	@Inject
 	public EpochsLocalSyncServiceProcessor(
 		LocalSyncServiceProcessor<LedgerUpdate> initialProcessor,
-		AccumulatorRemoteSyncResponseVerifier initialVerifier,
+		RemoteSyncResponseValidatorSetVerifier initialVerifier,
 		EpochChange initialEpoch,
 		VerifiedLedgerHeaderAndProof currentHeader,
 		Function<BFTConfiguration, LocalSyncServiceProcessor<LedgerUpdate>> localSyncFactory,
-		Function<BFTConfiguration, AccumulatorRemoteSyncResponseVerifier> verifierFactory,
+		Function<BFTConfiguration, RemoteSyncResponseValidatorSetVerifier> verifierFactory,
 		StateSyncNetwork stateSyncNetwork,
-		VerifiedSyncedCommandsSender verifiedSyncedCommandsSender
+		SyncedEpochSender syncedEpochSender
 	) {
 		this.currentEpoch = initialEpoch;
 		this.currentHeader = currentHeader;
@@ -82,7 +83,7 @@ public class EpochsLocalSyncServiceProcessor implements LocalSyncServiceProcesso
 		this.localSyncFactory = localSyncFactory;
 		this.verifierFactory = verifierFactory;
 		this.localSyncServiceProcessor = initialProcessor;
-		this.verifiedSyncedCommandsSender = verifiedSyncedCommandsSender;
+		this.syncedEpochSender = syncedEpochSender;
 		this.stateSyncNetwork = stateSyncNetwork;
 	}
 
@@ -118,7 +119,14 @@ public class EpochsLocalSyncServiceProcessor implements LocalSyncServiceProcesso
 			return;
 		}
 
-		epochsEquivalentDoAccumulatorRequest(request);
+		if (Objects.equals(request.getTarget().getAccumulatorState(), this.currentHeader.getAccumulatorState())) {
+			if (!this.currentHeader.isEndOfEpoch() && request.getTarget().isEndOfEpoch()) {
+				syncedEpochSender.sendSyncedEpoch(request.getTarget());
+			}
+			return;
+		}
+
+		localSyncServiceProcessor.processLocalSyncRequest(request);
 	}
 
 	@Override
@@ -136,41 +144,33 @@ public class EpochsLocalSyncServiceProcessor implements LocalSyncServiceProcesso
 
 		if (Objects.equals(dtoCommandsAndProof.getHead().getLedgerHeader(), this.currentEpoch.getProof().getRaw())) {
 			log.info("Received response to next epoch sync current {} next {}", this.currentEpoch, dtoCommandsAndProof);
-
-			if (dtoCommandsAndProof.getTail().getLedgerHeader().isEndOfEpoch()) {
-				DtoLedgerHeaderAndProof dto = dtoCommandsAndProof.getTail();
-				// TODO: verify
-				VerifiedLedgerHeaderAndProof verified = new VerifiedLedgerHeaderAndProof(
-					dto.getOpaque0(),
-					dto.getOpaque1(),
-					dto.getOpaque2(),
-					dto.getOpaque3(),
-					dto.getLedgerHeader(),
-					dto.getSignatures()
-				);
-				LocalSyncRequest localSyncRequest = new LocalSyncRequest(verified, ImmutableList.of(syncResponse.getSender()));
-				epochsEquivalentDoAccumulatorRequest(localSyncRequest);
-			} else {
-				log.warn("Illegal message");
+			DtoLedgerHeaderAndProof dto = dtoCommandsAndProof.getTail();
+			if (!dto.getLedgerHeader().isEndOfEpoch()) {
+				log.warn("Bad message: {}", syncResponse);
+				return;
 			}
+
+			// TODO: verify
+			VerifiedLedgerHeaderAndProof verified = new VerifiedLedgerHeaderAndProof(
+				dto.getOpaque0(),
+				dto.getOpaque1(),
+				dto.getOpaque2(),
+				dto.getOpaque3(),
+				dto.getLedgerHeader(),
+				dto.getSignatures()
+			);
+
+			if (Objects.equals(dto.getLedgerHeader().getAccumulatorState(), this.currentHeader.getAccumulatorState())) {
+				syncedEpochSender.sendSyncedEpoch(verified);
+				return;
+			}
+
+			LocalSyncRequest localSyncRequest = new LocalSyncRequest(verified, ImmutableList.of(syncResponse.getSender()));
+			localSyncServiceProcessor.processLocalSyncRequest(localSyncRequest);
 
 			return;
 		}
 
 		currentVerifier.processSyncResponse(syncResponse);
-	}
-
-	private void epochsEquivalentDoAccumulatorRequest(LocalSyncRequest request) {
-		if (Objects.equals(request.getTarget().getAccumulatorState(), this.currentHeader.getAccumulatorState())) {
-			if (!this.currentHeader.isEndOfEpoch() && request.getTarget().isEndOfEpoch()) {
-				verifiedSyncedCommandsSender.sendVerifiedCommands(new VerifiedCommandsAndProof(
-					ImmutableList.of(),
-					request.getTarget()
-				));
-			}
-			return;
-		}
-
-		localSyncServiceProcessor.processLocalSyncRequest(request);
 	}
 }

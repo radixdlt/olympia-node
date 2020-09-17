@@ -27,19 +27,22 @@ import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.ledger.AccumulatorAndValidatorSetVerifier;
 import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.ledger.LedgerAccumulatorVerifier;
+import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.sync.AccumulatorLocalSyncServiceProcessor.DtoCommandsAndProofVerifier;
-import com.radixdlt.sync.InvalidSyncedCommandsSender;
-import com.radixdlt.sync.VerifiedSyncedCommandsSender;
+import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.sync.LocalSyncServiceProcessor;
+import com.radixdlt.sync.RemoteSyncResponseAccumulatorVerifier;
+import com.radixdlt.sync.RemoteSyncResponseAccumulatorVerifier.InvalidAccumulatorSender;
+import com.radixdlt.sync.RemoteSyncResponseAccumulatorVerifier.VerifiedAccumulatorSender;
+import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier;
+import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier.InvalidValidatorSetSender;
+import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier.VerifiedValidatorSetSender;
 import com.radixdlt.sync.RemoteSyncServiceProcessor;
 import com.radixdlt.sync.StateSyncNetwork;
-import com.radixdlt.sync.AccumulatorLocalSyncServiceProcessor;
-import com.radixdlt.sync.AccumulatorLocalSyncServiceProcessor.SyncTimeoutScheduler;
+import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor;
+import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncTimeoutScheduler;
 import java.util.Comparator;
 
 /**
@@ -47,6 +50,46 @@ import java.util.Comparator;
  */
 public class SyncServiceModule extends AbstractModule {
 	private static final int BATCH_SIZE = 100;
+
+	@Provides
+	private VerifiedValidatorSetSender verifiedValidatorSetSender(RemoteSyncResponseAccumulatorVerifier accumulatorVerifier) {
+		return accumulatorVerifier::processSyncResponse;
+	}
+
+	@Provides
+	private InvalidValidatorSetSender invalidValidatorSetSender(SystemCounters counters) {
+		return (resp, msg) -> counters.increment(CounterType.SYNC_INVALID_COMMANDS_RECEIVED);
+	}
+
+	@Provides
+	private InvalidAccumulatorSender invalidAccumulatorSender(SystemCounters counters) {
+		return resp -> counters.increment(CounterType.SYNC_INVALID_COMMANDS_RECEIVED);
+	}
+
+	@Provides
+	private VerifiedAccumulatorSender verifiedSyncedCommandsSender(SystemCounters counters, Ledger ledger) {
+		return resp -> {
+			DtoCommandsAndProof commandsAndProof = resp.getCommandsAndProof();
+			// TODO: Stateful ledger header verification:
+			// TODO: -verify rootHash matches
+			VerifiedLedgerHeaderAndProof nextHeader = new VerifiedLedgerHeaderAndProof(
+				commandsAndProof.getTail().getOpaque0(),
+				commandsAndProof.getTail().getOpaque1(),
+				commandsAndProof.getTail().getOpaque2(),
+				commandsAndProof.getTail().getOpaque3(),
+				commandsAndProof.getTail().getLedgerHeader(),
+				commandsAndProof.getTail().getSignatures()
+			);
+
+			VerifiedCommandsAndProof verified = new VerifiedCommandsAndProof(
+				commandsAndProof.getCommands(),
+				nextHeader
+			);
+
+			counters.add(CounterType.SYNC_PROCESSED, verified.getCommands().size());
+			ledger.commit(verified);
+		};
+	}
 
 	@Provides
 	@Singleton
@@ -62,14 +105,17 @@ public class SyncServiceModule extends AbstractModule {
 	}
 
 	@Provides
-	private DtoCommandsAndProofVerifier initialVerifier(
-		LedgerAccumulatorVerifier verifier,
+	@Singleton
+	RemoteSyncResponseValidatorSetVerifier validatorSetVerifier(
+		VerifiedValidatorSetSender verifiedValidatorSetSender,
+		InvalidValidatorSetSender invalidValidatorSetSender,
 		Hasher hasher,
 		HashVerifier hashVerifier,
 		BFTConfiguration initialConfiguration
 	) {
-		return new AccumulatorAndValidatorSetVerifier(
-			verifier,
+		return new RemoteSyncResponseValidatorSetVerifier(
+			verifiedValidatorSetSender,
+			invalidValidatorSetSender,
 			initialConfiguration.getValidatorSet(),
 			hasher,
 			hashVerifier
@@ -87,26 +133,12 @@ public class SyncServiceModule extends AbstractModule {
 		VerifiedLedgerHeaderAndProof header = initialConfiguration.getGenesisQC().getCommittedAndLedgerStateProof()
 			.orElseThrow(RuntimeException::new).getSecond();
 
-		return new AccumulatorLocalSyncServiceProcessor(
+		return new LocalSyncServiceAccumulatorProcessor(
 			stateSyncNetwork,
 			syncTimeoutScheduler,
 			accumulatorComparator,
 			header,
 			200
 		);
-	}
-
-	@Provides
-	private VerifiedSyncedCommandsSender syncedCommandSender(SystemCounters counters, Ledger ledger) {
-		return cmds -> {
-			counters.add(CounterType.SYNC_PROCESSED, cmds.getCommands().size());
-			ledger.commit(cmds);
-		};
-	}
-
-	@Provides
-	private InvalidSyncedCommandsSender invalidCommandsSender(SystemCounters counters) {
-		// TODO: Store bad commands for reference and later for slashing
-		return commandsAndProof -> counters.increment(CounterType.SYNC_INVALID_COMMANDS_RECEIVED);
 	}
 }

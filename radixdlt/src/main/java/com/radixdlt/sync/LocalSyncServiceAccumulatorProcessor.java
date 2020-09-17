@@ -21,9 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
@@ -36,23 +34,7 @@ import org.apache.logging.log4j.Logger;
  * Thread-safety must be handled by caller.
  */
 @NotThreadSafe
-public final class AccumulatorLocalSyncServiceProcessor implements LocalSyncServiceProcessor<LedgerUpdate> {
-	public interface DtoCommandsAndProofVerifier {
-		VerifiedCommandsAndProof verify(DtoCommandsAndProof dtoCommandsAndProof) throws DtoCommandsAndProofVerifierException;
-	}
-
-	public static class DtoCommandsAndProofVerifierException extends Exception {
-		private final DtoCommandsAndProof dtoCommandsAndProof;
-		public DtoCommandsAndProofVerifierException(DtoCommandsAndProof dtoCommandsAndProof, String message) {
-			super(message);
-			this.dtoCommandsAndProof = dtoCommandsAndProof;
-		}
-
-		public DtoCommandsAndProof getDtoCommandsAndProof() {
-			return dtoCommandsAndProof;
-		}
-	}
-
+public final class LocalSyncServiceAccumulatorProcessor implements LocalSyncServiceProcessor<LedgerUpdate> {
 	public static final class SyncInProgress {
 		private final VerifiedLedgerHeaderAndProof targetHeader;
 		private final ImmutableList<BFTNode> targetNodes;
@@ -83,7 +65,7 @@ public final class AccumulatorLocalSyncServiceProcessor implements LocalSyncServ
 	private VerifiedLedgerHeaderAndProof targetHeader;
 	private VerifiedLedgerHeaderAndProof currentHeader;
 
-	public AccumulatorLocalSyncServiceProcessor(
+	public LocalSyncServiceAccumulatorProcessor(
 		StateSyncNetwork stateSyncNetwork,
 		SyncTimeoutScheduler syncTimeoutScheduler,
 		Comparator<AccumulatorState> accComparator,

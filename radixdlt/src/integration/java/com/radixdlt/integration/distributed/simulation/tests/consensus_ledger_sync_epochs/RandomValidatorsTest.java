@@ -24,8 +24,8 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
-import com.radixdlt.sync.AccumulatorRemoteSyncResponseVerifier;
 import com.radixdlt.sync.RemoteSyncResponseProcessor;
+import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -78,12 +78,12 @@ public class RandomValidatorsTest {
 	}
 
 	@Test
-	public void given_deterministic_randomized_validator_sets_with_incorrect_single_epoch_synging__then_should_fail() {
+	public void given_deterministic_randomized_validator_sets_with_incorrect_single_epoch_syncing__then_should_fail() {
 		SimulationTest bftTest = bftTestBuilder
 			.overrideWithIncorrectModule(new AbstractModule() {
 				@Override
 				public void configure() {
-					bind(RemoteSyncResponseProcessor.class).to(AccumulatorRemoteSyncResponseVerifier.class);
+					bind(RemoteSyncResponseProcessor.class).to(RemoteSyncResponseValidatorSetVerifier.class);
 				}
 			})
 			.build();
