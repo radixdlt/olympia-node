@@ -7,6 +7,7 @@ import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNode;
 import org.junit.Test;
 
+import com.radix.test.utils.TokenUtilities;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.translate.ActionExecutionException;
@@ -29,6 +30,7 @@ public class SendUniqueTransactionsTest {
 
 		// Given account owner which has performed an action with a unique id
 		final RadixApplicationAPI api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
+		TokenUtilities.requestTokensFor(api);
 
 		api.discoverNodes();
 		final RadixNode originNode = api.getNetworkState()
@@ -68,6 +70,7 @@ public class SendUniqueTransactionsTest {
 
 		// Given account owner which has NOT performed an action with a unique id
 		RadixApplicationAPI api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
+		TokenUtilities.requestTokensFor(api);
 		RRI unique = RRI.of(api.getAddress(), "thisisauniquestring");
 
 		// When client attempts to use id
@@ -88,6 +91,7 @@ public class SendUniqueTransactionsTest {
 
 		// Given account owner which has NOT performed an action with a unique id
 		RadixApplicationAPI api1 = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(),  RadixIdentities.createNew());
+		TokenUtilities.requestTokensFor(api1);
 		RadixApplicationAPI api2 = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
 		RRI unique = RRI.of(api2.getAddress(), "thisisauniquestring");
 

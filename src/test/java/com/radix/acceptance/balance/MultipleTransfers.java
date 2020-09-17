@@ -6,6 +6,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
 
+import com.radix.test.utils.TokenUtilities;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.LocalRadixIdentity;
 import com.radixdlt.client.application.identity.RadixIdentities;
@@ -23,10 +24,12 @@ public class MultipleTransfers {
 		LocalRadixIdentity identity1 = RadixIdentities.createNew();
 		LocalRadixIdentity identity2 = RadixIdentities.createNew();
 		RadixApplicationAPI api1 = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), identity1);
+		TokenUtilities.requestTokensFor(api1);
 		RRI tokenRRI = RRI.of(api1.getAddress(), "MBALANCETEST");
 		api1.createFixedSupplyToken(tokenRRI, "MBALANCETEST", "TEST", new BigDecimal(100000)).blockUntilComplete();
 		Disposable d1 = api1.pull();
 		RadixApplicationAPI api2 = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), identity2);
+		TokenUtilities.requestTokensFor(api2);
 		Disposable d2 = api2.pull();
 		try {
 			CountDownLatch cld3 = new CountDownLatch(1);

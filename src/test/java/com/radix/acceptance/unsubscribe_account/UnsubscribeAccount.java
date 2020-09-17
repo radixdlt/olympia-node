@@ -1,6 +1,7 @@
 package com.radix.acceptance.unsubscribe_account;
 
 import com.radix.regression.Util;
+import com.radix.test.utils.TokenUtilities;
 import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.atoms.AtomStatus;
@@ -27,7 +28,6 @@ import com.radixdlt.client.core.network.jsonrpc.AtomQuery;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
-
 import cucumber.api.java.After;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
@@ -82,7 +82,7 @@ public class UnsubscribeAccount {
 	}
 
 	@Given("^a node connected websocket client who has an atom subscription to an empty account$")
-	public void a_websocket_client_who_has_an_atom_subscription_to_an_empty_account() throws Throwable {
+	public void a_websocket_client_who_has_an_atom_subscription_to_an_empty_account() {
 		setupWebSocket();
 
 		this.jsonRpcClient = new RadixJsonRpcClient(this.webSocketClient);
@@ -96,6 +96,7 @@ public class UnsubscribeAccount {
 					return Observable.just(n.getEvent());
 				}
 			})
+			.filter(TokenUtilities::isNotFaucetAtomObservation)
 			.subscribe(this.observer);
 
 		this.observer.awaitCount(1);
@@ -103,7 +104,7 @@ public class UnsubscribeAccount {
 	}
 
 	@Given("^the websocket client has an atom subscription to another account$")
-	public void the_websocket_client_has_an_atom_subscription_to_another_account() throws Throwable {
+	public void the_websocket_client_has_an_atom_subscription_to_another_account() {
 		this.jsonRpcClient = new RadixJsonRpcClient(this.webSocketClient);
 
 		this.otherAccount = api.getAddress(ECKeyPair.generateNew().getPublicKey());
@@ -118,6 +119,7 @@ public class UnsubscribeAccount {
 					return Observable.just(n.getEvent());
 				}
 			})
+			.filter(TokenUtilities::isNotFaucetAtomObservation)
 			.subscribe(this.otherObserver);
 
 		this.otherObserver.awaitCount(1);
@@ -125,7 +127,7 @@ public class UnsubscribeAccount {
 	}
 
 	@When("the client sends a cancel subscription request to his account$")
-	public void the_client_sends_a_cancel_subscription_request_to_his_account() throws Throwable {
+	public void the_client_sends_a_cancel_subscription_request_to_his_account() {
 		TestObserver<Object> completionObserver = TestObserver.create();
 		this.jsonRpcClient.cancelAtomsSubscribe(this.uuid).subscribe(completionObserver);
 		completionObserver.awaitTerminalEvent(3, TimeUnit.SECONDS);
@@ -133,7 +135,7 @@ public class UnsubscribeAccount {
 	}
 
 	@When("the client sends a subscribe request to his account in another subscription$")
-	public void the_client_sends_a_subscribe_request_to_his_account_in_another_subscription() throws Throwable {
+	public void the_client_sends_a_subscribe_request_to_his_account_in_another_subscription() {
 		this.otherUuid = UUID.randomUUID().toString();
 
 		this.otherObserver = TestObserver.create();
@@ -145,11 +147,12 @@ public class UnsubscribeAccount {
 					return Observable.just(n.getEvent());
 				}
 			})
+			.filter(TokenUtilities::isNotFaucetAtomObservation)
 			.subscribe(this.otherObserver);
 	}
 
 	@When("the client sends a message to himself$")
-	public void the_client_sends_a_message_to_himself() throws Throwable {
+	public void the_client_sends_a_message_to_himself() {
 		Transaction transaction = this.api.createTransaction();
 		transaction.stage(SendMessageAction.create(this.api.getAddress(), this.api.getAddress(), new byte[]{1}, false));
 		Atom unsignedAtom = transaction.buildAtom();
@@ -174,9 +177,10 @@ public class UnsubscribeAccount {
 	}
 
 	@When("the client sends another message to himself$")
-	public void the_client_sends_another_message_to_himself() throws Throwable {
+	public void the_client_sends_another_message_to_himself() throws InterruptedException {
+		Thread.sleep(2000); // Might be a slight delay between websocket and API, so let API catch up so fees don't fail
 		Transaction transaction = this.api.createTransaction();
-		transaction.stage(SendMessageAction.create(this.api.getAddress(), this.api.getAddress(), new byte[]{1}, false));
+		transaction.stage(SendMessageAction.create(this.api.getAddress(), this.api.getAddress(), new byte[]{1, 2}, false));
 		Atom unsignedAtom = transaction.buildAtom();
 		this.otherAtom = this.identity.addSignature(unsignedAtom).blockingGet();
 
@@ -199,7 +203,7 @@ public class UnsubscribeAccount {
 	}
 
 	@When("the client sends a message to the other account$")
-	public void the_client_sends_a_message_to_the_other_account() throws Throwable {
+	public void the_client_sends_a_message_to_the_other_account() {
 		Transaction transaction = this.api.createTransaction();
 		transaction.stage(SendMessageAction.create(this.api.getAddress(), this.otherAccount, new byte[]{3}, false));
 		Atom unsignedAtom = transaction.buildAtom();
@@ -224,14 +228,14 @@ public class UnsubscribeAccount {
 	}
 
 	@Then("^the client should not receive any new atom notifications in his account$")
-	public void the_client_should_not_receive_any_new_atom_notifications_in_his_account() throws Throwable {
+	public void the_client_should_not_receive_any_new_atom_notifications_in_his_account() throws InterruptedException {
 		observer.await(5, TimeUnit.SECONDS);
 		observer.assertValue(AtomObservation::isHead);
 		observer.assertNotComplete();
 	}
 
 	@Then("^the client should receive the sent atom in the other subscription$")
-	public void the_client_should_receive_the_sent_atom_in_the_other_subscription() throws Throwable {
+	public void the_client_should_receive_the_sent_atom_in_the_other_subscription() {
 		otherObserver.awaitCount(2);
 		otherObserver.assertValueAt(0, AtomObservation::isHead);
 		otherObserver.assertValueAt(1, AtomObservation::isStore);
@@ -240,7 +244,7 @@ public class UnsubscribeAccount {
 	}
 
 	@Then("the client should receive both atom messages in the other subscription$")
-	public void the_client_should_receive_both_atom_messages_in_the_other_subscription() throws Throwable {
+	public void the_client_should_receive_both_atom_messages_in_the_other_subscription() {
 		// Some special magic here, as the atoms are not necessarily sent in the same order
 		List<Atom> atoms = Lists.newArrayList(this.atom, this.otherAtom);
 		otherObserver.awaitCount(3);
@@ -254,6 +258,8 @@ public class UnsubscribeAccount {
 	private void setupWebSocket() {
 		this.identity = RadixIdentities.createNew();
 		this.api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), this.identity);
+		TokenUtilities.requestTokensFor(this.api);
+		api.pull(); // Make sure token balances updated for fees
 		this.api.discoverNodes();
 		RadixNode node = this.api.getNetworkState()
 			.filter(state -> !state.getNodes().isEmpty())

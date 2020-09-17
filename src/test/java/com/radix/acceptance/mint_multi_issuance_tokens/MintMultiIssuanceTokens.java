@@ -24,6 +24,7 @@ import com.radixdlt.utils.UInt256;
 
 import com.google.common.collect.Lists;
 import com.radix.acceptance.SpecificProperties;
+import com.radix.test.utils.TokenUtilities;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
@@ -125,6 +126,7 @@ public class MintMultiIssuanceTokens {
 	@Given("^a library client who does not own a token class \"([^\"]*)\" on another account$")
 	public void a_library_client_who_does_not_own_a_token_class_on_another_account(String symbol) throws Throwable {
 		setupApi();
+		setupOtherApi();
 
 		Disposable d = this.api.pull(this.otherApi.getAddress());
 		this.properties.put(SYMBOL, symbol);
@@ -193,11 +195,8 @@ public class MintMultiIssuanceTokens {
 	private void setupApi() {
 		this.identity = RadixIdentities.createNew();
 		this.api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), this.identity);
+		TokenUtilities.requestTokensFor(this.api);
 		this.disposables.add(this.api.pull());
-
-		this.otherIdentity = RadixIdentities.createNew();
-		this.otherApi = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), this.otherIdentity);
-		this.disposables.add(this.otherApi.pull());
 
 		// Reset data
 		this.properties.clear();
@@ -215,6 +214,13 @@ public class MintMultiIssuanceTokens {
 			.map(s -> s.iterator().next())
 			.firstOrError()
 			.blockingGet();
+	}
+
+	private void setupOtherApi() {
+		this.otherIdentity = RadixIdentities.createNew();
+		this.otherApi = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), this.otherIdentity);
+		TokenUtilities.requestTokensFor(this.otherApi);
+		this.disposables.add(this.otherApi.pull());
 	}
 
 	private void createToken(CreateTokenAction.TokenSupplyType tokenCreateSupplyType) {

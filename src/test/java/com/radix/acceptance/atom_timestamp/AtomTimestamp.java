@@ -8,6 +8,7 @@ import io.reactivex.disposables.Disposable;
 import java.math.BigDecimal;
 import java.util.List;
 import com.google.common.collect.Lists;
+import com.radix.test.utils.TokenUtilities;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
@@ -97,19 +98,24 @@ public class AtomTimestamp {
 		checkAtomObservations(this.apis.get(0), this.apis.get(1).getAddress());
 	}
 
-
-
 	private RadixApplicationAPI setupApi(int expectedNumber) {
 		return setupApi(expectedNumber, RadixIdentities.createNew());
 	}
 
 	private RadixApplicationAPI setupApi(int expectedNumber, RadixIdentity identity) {
+		boolean existingIdentity = this.identities.stream()
+			.anyMatch(i -> identity.getPublicKey().equals(i.getPublicKey()));
 		if (this.identities.size() != expectedNumber) {
 			throw new IllegalStateException(String.format("Expected %s identities and there are %s", expectedNumber, this.identities.size()));
 		}
 		this.identities.add(identity);
 		RadixApplicationAPI api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), identity);
 		this.apis.add(api);
+
+		if (!existingIdentity) {
+			TokenUtilities.requestTokensFor(api);
+		}
+
 		return api;
 	}
 
@@ -125,14 +131,14 @@ public class AtomTimestamp {
 	private void checkAtomObservations(RadixApplicationAPI api, RadixAddress address) {
 		TestObserver<AtomObservation> observer = new TestObserver<>();
 		api.getAtomStore().getAtomObservations(address)
-			.filter(ao -> { System.err.format("%s: %s%n", ao.getUpdateType().getType(), ao.getUpdateType().isSoft()); return true; })
-			.filter(AtomObservation::isStore)
+			.filter(TokenUtilities::isNotFaucetAtomObservation)
+			.filter(AtomObservation::hasAtom)
 			.subscribe(observer);
 		observer.awaitCount(1, TestWaitStrategy.SLEEP_10MS, 10000);
 		long now = System.currentTimeMillis();
 		observer.assertNoTimeout();
 		observer.assertNoErrors();
-		long minTime = now - 10_000L;
+		long minTime = now - 15_000L;
 		observer.assertValue(ao -> ao.atomTimestamp() <= now && ao.atomTimestamp() > minTime);
 	}
 }

@@ -7,6 +7,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
 
+import com.radix.test.utils.TokenUtilities;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.identity.RadixIdentities;
@@ -21,16 +22,17 @@ import io.reactivex.observers.TestObserver;
  */
 public class UnsubscribeTest {
 
-	private final static Predicate<RadixNetworkState> NETWORK_IS_CLOSE =
+	private static final Predicate<RadixNetworkState> NETWORK_IS_CLOSE =
 		state -> state.getNodeStates().entrySet().stream().noneMatch(e -> e.getValue().getStatus().equals(WebSocketStatus.CONNECTED));
 
-	private final static Predicate<RadixNetworkState> NETWORK_IS_OPEN =
+	private static final Predicate<RadixNetworkState> NETWORK_IS_OPEN =
 		state -> state.getNodeStates().entrySet().stream().anyMatch(e -> e.getValue().getStatus().equals(WebSocketStatus.CONNECTED));
 
 	@Test
 	public void given_i_am_a_library_user_with_no_connections__when_i_send_a_message_to_myself_to_completion__then_i_can_observe_all_network_connections_being_closed() {
 		// Given I am a library user
 		RadixApplicationAPI normalApi = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
+		TokenUtilities.requestTokensFor(normalApi);
 		Observable<RadixNetworkState> networkStatus = normalApi
 			.getNetworkState()
 			.debounce(3, TimeUnit.SECONDS);
@@ -44,7 +46,6 @@ public class UnsubscribeTest {
 		TestObserver<Object> completion = TestObserver.create(Util.loggingObserver("MessageSent"));
 		result.toCompletable().subscribe(completion);
 		completion.awaitTerminalEvent();
-
 
 		// Then I can observe all network connections being closed
 		TestObserver<RadixNetworkState> networkListener2 = TestObserver.create(Util.loggingObserver("NetworkListener2"));

@@ -3,6 +3,7 @@ package com.radix.acceptance.particle_groups;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.radix.acceptance.SpecificProperties;
+import com.radix.test.utils.TokenUtilities;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
 import com.radixdlt.client.application.identity.RadixIdentities;
@@ -13,6 +14,7 @@ import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsM
 import com.radixdlt.client.application.translate.StatelessActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.data.SendMessageAction;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
+import com.radixdlt.client.application.translate.tokens.InsufficientFundsException;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.application.translate.tokens.TransferTokensToParticleGroupsMapper;
@@ -42,6 +44,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -124,6 +127,8 @@ public class ParticleGroups {
 			.addStatefulParticlesMapper(MergeAction.class, new MergeStatefulActionToParticleGroupsMapper<>(mapper))
 			.build();
 
+		TokenUtilities.requestTokensFor(this.api);
+
 		// Reset data
 		this.properties1.clear();
 		this.properties2.clear();
@@ -169,13 +174,14 @@ public class ParticleGroups {
 		createTwoTokens(tokenSupplyType);
 	}
 
-	@And("^I submit two token transfer requests of (\\d+) for \"([^\"]*)\" in separate particle groups$")
+	@Then("^Two token transfer requests of (\\d+) for \"([^\"]*)\" in separate particle groups should fail$")
 	public void i_submit_two_token_transfer_requests_of_for_in_separate_particle_groups(int amount, String symbol) {
-		// this works because client does not check for double spends right now
-		createAtomic(
-			buildTransferTokenAction(symbol, 100L),
-			buildTransferTokenAction(symbol, 100L)
-		);
+		assertThatThrownBy(() ->
+			createAtomic(
+				buildTransferTokenAction(symbol, 100L),
+				buildTransferTokenAction(symbol, 100L)
+			)
+		).isInstanceOf(InsufficientFundsException.class);
 	}
 
 	@When("^I submit an arbitrary atom with an empty particle group$")

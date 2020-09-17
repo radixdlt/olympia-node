@@ -1,5 +1,6 @@
 package com.radix.regression;
 
+import com.radix.test.utils.TokenUtilities;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.identity.RadixIdentities;
@@ -22,8 +23,10 @@ public class IconUrlTest {
 	@Test
 	public void when_creating_multi_issuance_token_with_icon_url__then_icon_url_should_be_included() throws Exception {
 		RadixApplicationAPI api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
+		TokenUtilities.requestTokensFor(api);
 		TestObserver<TokenDefinitionsState> testObserver = TestObserver.create(Util.loggingObserver("TokenDefinitionsState"));
 		api.observeTokenDefs(api.getAddress())
+			.filter(td -> !td.getState().isEmpty())
 			.firstOrError()
 			.subscribe(testObserver);
 
@@ -51,8 +54,10 @@ public class IconUrlTest {
 	@Test
 	public void when_creating_fixed_supply_token_with_icon_url__then_icon_url_should_be_included() throws Exception {
 		RadixApplicationAPI api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
+		TokenUtilities.requestTokensFor(api);
 		TestObserver<TokenDefinitionsState> testObserver = TestObserver.create(Util.loggingObserver("TokenDefinitionsState"));
 		api.observeTokenDefs(api.getAddress())
+			.filter(td -> !td.getState().isEmpty())
 			.firstOrError()
 			.subscribe(testObserver);
 
@@ -72,6 +77,7 @@ public class IconUrlTest {
 		List<TokenDefinitionsState> values = testObserver.values();
 		assertEquals(1, values.size());
 		TokenDefinitionsState value = values.get(0);
+		System.err.println(value);
 		assertNotNull(value);
 		assertNotNull(value.getState());
 		assertNotNull(value.getState().get(token));
@@ -81,8 +87,10 @@ public class IconUrlTest {
 	@Test
 	public void when_creating_token_with_icon_url__then_icon_url_should_be_included() throws Exception {
 		RadixApplicationAPI api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
+		TokenUtilities.requestTokensFor(api);
 		TestObserver<TokenDefinitionsState> testObserver = TestObserver.create(Util.loggingObserver("TokenDefinitionsState"));
 		api.observeTokenDefs(api.getAddress())
+			.filter(td -> !td.getState().isEmpty())
 			.firstOrError()
 			.subscribe(testObserver);
 

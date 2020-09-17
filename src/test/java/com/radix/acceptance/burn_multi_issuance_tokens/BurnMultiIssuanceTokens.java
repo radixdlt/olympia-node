@@ -2,6 +2,7 @@ package com.radix.acceptance.burn_multi_issuance_tokens;
 
 import com.google.common.collect.ImmutableSet;
 import com.radix.regression.Util;
+import com.radix.test.utils.TokenUtilities;
 import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
 import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionsState;
@@ -64,7 +65,7 @@ public class BurnMultiIssuanceTokens {
 	private RadixApplicationAPI api;
 	private RadixNode nodeConnection;
 	private RadixIdentity identity;
-	private RadixApplicationAPI otherApi;
+	private RadixApplicationAPI otherApix;
 	private RadixIdentity otherIdentity;
 	private final SpecificProperties properties = SpecificProperties.of(
 		ADDRESS,        "unknown",
@@ -112,20 +113,21 @@ public class BurnMultiIssuanceTokens {
 	@Given("^a library client who does not own a token class \"([^\"]*)\" on another account with (\\d+) initial supply$")
 	public void a_library_client_who_does_not_own_a_token_class_on_another_account(String symbol, int initialSupply) throws Throwable {
 		setupApi();
+		setupOtherApi();
 
 		this.properties.put(SYMBOL, symbol);
-		createToken(this.otherApi, TokenSupplyType.MUTABLE);
+		createToken(this.otherApix, TokenSupplyType.MUTABLE);
 		awaitAtomStatus(STORED);
 
-		Disposable d = this.api.pull(this.otherApi.getAddress());
-		this.api.observeTokenDef(RRI.of(this.otherApi.getAddress(), symbol))
+		Disposable d = this.api.pull(this.otherApix.getAddress());
+		this.api.observeTokenDef(RRI.of(this.otherApix.getAddress(), symbol))
 			.firstOrError()
 			.timeout(15, TimeUnit.SECONDS)
 			.blockingGet();
 		d.dispose();
 
 		this.properties.put(ADDRESS, this.api.getAddress().toString());
-		this.properties.put(OTHER_ADDRESS, this.otherApi.getAddress().toString());
+		this.properties.put(OTHER_ADDRESS, this.otherApix.getAddress().toString());
 		this.properties.put(INITIAL_SUPPLY, Integer.toString(initialSupply));
 	}
 
@@ -189,11 +191,8 @@ public class BurnMultiIssuanceTokens {
 	private void setupApi() {
 		this.identity = RadixIdentities.createNew();
 		this.api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), this.identity);
+		TokenUtilities.requestTokensFor(this.api);
 		this.disposables.add(this.api.pull());
-
-		this.otherIdentity = RadixIdentities.createNew();
-		this.otherApi = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), this.otherIdentity);
-		this.disposables.add(this.otherApi.pull());
 
 		// Reset data
 		this.properties.clear();
@@ -209,6 +208,13 @@ public class BurnMultiIssuanceTokens {
 			.map(s -> s.iterator().next())
 			.firstOrError()
 			.blockingGet();
+	}
+
+	private void setupOtherApi() {
+		this.otherIdentity = RadixIdentities.createNew();
+		this.otherApix = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), this.otherIdentity);
+		TokenUtilities.requestTokensFor(this.otherApix);
+		this.disposables.add(this.otherApix.pull());
 	}
 
 	private void createToken(CreateTokenAction.TokenSupplyType tokenCreateSupplyType) {

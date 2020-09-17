@@ -1,6 +1,7 @@
 package com.radix.regression;
 
 import com.google.common.collect.ImmutableSet;
+import com.radix.test.utils.TokenUtilities;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.identity.LocalRadixIdentity;
@@ -35,6 +36,7 @@ public class TranslucentAtomTest {
 	public void setUp() {
 		this.identity = RadixIdentities.createNew();
 		this.api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), identity);
+		TokenUtilities.requestTokensFor(this.api);
 	}
 
 	@Test

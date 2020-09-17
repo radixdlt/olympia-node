@@ -3,11 +3,15 @@ package com.radix.acceptance.atomic_transactions_with_dependence;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.radix.acceptance.SpecificProperties;
+import com.radix.test.utils.TokenUtilities;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
+import com.radixdlt.client.application.translate.data.AtomToDecryptedMessageMapper;
 import com.radixdlt.client.application.translate.tokens.AtomToTokenTransfersMapper;
+import com.radixdlt.client.application.translate.tokens.BurnTokensAction;
+import com.radixdlt.client.application.translate.tokens.BurnTokensActionMapper;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.CreateTokenToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.tokens.MintTokensAction;
@@ -70,6 +74,7 @@ public class AtomicTransactionsWithDependence {
 			.universe(RadixUniverse.create(RadixEnv.getBootstrapConfig()))
 			.identity(RadixIdentities.createNew())
 			.build();
+		TokenUtilities.requestTokensFor(api);
 		this.api.discoverNodes();
 		this.nodeConnection = this.api.getNetworkState()
 			.map(RadixNetworkState::getNodes)
@@ -85,16 +90,19 @@ public class AtomicTransactionsWithDependence {
 
 	private void mintAndTransferTokensWith(MintAndTransferTokensActionMapper actionMapper) {
 		RadixApplicationAPI api = new RadixApplicationAPI.RadixApplicationAPIBuilder()
-			.defaultFeeMapper()
+			.defaultFeeProcessor()
 			.universe(RadixUniverse.create(RadixEnv.getBootstrapConfig()))
 			.addStatelessParticlesMapper(CreateTokenAction.class, new CreateTokenToParticleGroupsMapper())
 			.addStatefulParticlesMapper(MintAndTransferTokensAction.class, actionMapper)
 			.addStatefulParticlesMapper(TransferTokensAction.class, new TransferTokensToParticleGroupsMapper())
+			.addStatefulParticlesMapper(BurnTokensAction.class, new BurnTokensActionMapper()) // Required for fees
 			.addReducer(new TokenDefinitionsReducer())
 			.addReducer(new TokenBalanceReducer())
 			.addAtomMapper(new AtomToTokenTransfersMapper())
+			.addAtomMapper(new AtomToDecryptedMessageMapper()) // Required for faucet
 			.identity(RadixIdentities.createNew())
 			.build();
+		TokenUtilities.requestTokensFor(api);
 
 		this.properties.put(SYMBOL, "TEST0");
 		createToken(CreateTokenAction.TokenSupplyType.MUTABLE, api);

@@ -20,7 +20,7 @@ import java.math.BigDecimal;
 
 public class StakingTest {
 	@Test
-	@Ignore
+	@Ignore("Doesn't currently work RPNV1-676")
 	public void given_a_registered_validator__then_staking_against_it_should_only_work_if_permitted() {
 		BigDecimal stakedAmount = BigDecimal.valueOf(10000.0);
 		RadixApplicationAPI delegate = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
