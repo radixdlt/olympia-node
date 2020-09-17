@@ -20,7 +20,6 @@ package com.radixdlt.atommodel.tokens;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.identifiers.RRI;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -72,8 +71,7 @@ public final class MutableSupplyTokenDefinitionParticle extends Particle {
 	}
 
 	public MutableSupplyTokenDefinitionParticle(
-		RadixAddress address,
-		String symbol,
+		RRI rri,
 		String name,
 		String description,
 		UInt256 granularity,
@@ -81,9 +79,9 @@ public final class MutableSupplyTokenDefinitionParticle extends Particle {
 		String url,
 		Map<TokenTransition, TokenPermission> tokenPermissions
 	) {
-		super(address.euid());
+		super(rri.getAddress().euid());
 
-		this.rri = RRI.of(address, symbol);
+		this.rri = rri;
 		this.name = name;
 		this.description = description;
 		this.granularity = Objects.requireNonNull(granularity);

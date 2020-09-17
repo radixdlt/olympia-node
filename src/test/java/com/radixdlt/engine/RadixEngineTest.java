@@ -32,11 +32,12 @@ import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.CMStores;
 import com.radixdlt.store.EngineStore;
+import com.radixdlt.test.utils.TypedMocks;
+
+import java.util.Optional;
 import java.util.function.UnaryOperator;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -64,8 +65,8 @@ public class RadixEngineTest {
 	@Before
 	public void setup() {
 		this.constraintMachine = mock(ConstraintMachine.class);
-		this.engineStore = mock(EngineStore.class);
-		this.virtualStore = mock(UnaryOperator.class);
+		this.engineStore = TypedMocks.rmock(EngineStore.class);
+		this.virtualStore = TypedMocks.rmock(UnaryOperator.class);
 		this.radixEngine = new RadixEngine<>(
 			constraintMachine,
 			virtualStore,
@@ -117,6 +118,7 @@ public class RadixEngineTest {
 		));
 		when(engineStore.getSpin(eq(particle))).thenReturn(Spin.NEUTRAL);
 		when(radixEngineAtom.getCMInstruction()).thenReturn(cmInstruction);
+		when(constraintMachine.validate(any())).thenReturn(Optional.empty());
 		radixEngine.checkAndStore(radixEngineAtom);
 
 		assertThat(radixEngine.getComputedState(Object.class)).isEqualTo(state2);
@@ -133,7 +135,7 @@ public class RadixEngineTest {
 	@Test
 	public void when_static_checking_an_atom_with_a_atom_checker_error__then_an_exception_is_thrown() {
 		when(this.constraintMachine.validate(any())).thenReturn(Optional.empty());
-		AtomChecker<RadixEngineAtom> atomChecker = mock(AtomChecker.class);
+		AtomChecker<RadixEngineAtom> atomChecker = TypedMocks.rmock(AtomChecker.class);
 		RadixEngineAtom atom = mock(RadixEngineAtom.class);
 		when(atomChecker.check(atom)).thenReturn(Result.error("error"));
 		this.radixEngine = new RadixEngine<>(
