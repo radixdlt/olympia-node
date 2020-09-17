@@ -20,7 +20,6 @@ package com.radixdlt.epochs;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
@@ -30,31 +29,29 @@ import com.radixdlt.sync.LocalSyncServiceProcessor;
 import java.util.function.Function;
 import javax.annotation.concurrent.NotThreadSafe;
 
+/**
+ * Manages the syncing service across epochs
+ */
 @Singleton
 @NotThreadSafe
 public class EpochsLocalSyncServiceProcessor implements LocalSyncServiceProcessor<EpochsLedgerUpdate> {
 	private final Function<BFTConfiguration, LocalSyncServiceProcessor<LedgerUpdate>> localSyncFactory;
 	private EpochChange currentEpoch;
-	private VerifiedLedgerHeaderAndProof currentHeader;
 	private LocalSyncServiceProcessor<LedgerUpdate> localSyncServiceProcessor;
 
 	@Inject
 	public EpochsLocalSyncServiceProcessor(
 		LocalSyncServiceProcessor<LedgerUpdate> initialProcessor,
 		EpochChange initialEpoch,
-		VerifiedLedgerHeaderAndProof initialHeader,
 		Function<BFTConfiguration, LocalSyncServiceProcessor<LedgerUpdate>> localSyncFactory
 	) {
 		this.currentEpoch = initialEpoch;
-		this.currentHeader = initialHeader;
 		this.localSyncFactory = localSyncFactory;
 		this.localSyncServiceProcessor = initialProcessor;
 	}
 
 	@Override
 	public void processLedgerUpdate(EpochsLedgerUpdate ledgerUpdate) {
-		this.currentHeader = ledgerUpdate.getTail();
-
 		if (ledgerUpdate.getEpochChange().isPresent()) {
 			final EpochChange epochChange = ledgerUpdate.getEpochChange().get();
 			this.currentEpoch = epochChange;
