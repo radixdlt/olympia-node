@@ -19,11 +19,11 @@ package com.radixdlt.integration.distributed.deterministic.network;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Streams;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
+import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
@@ -88,14 +88,19 @@ public final class DeterministicNetwork {
 		List<BFTNode> nodes,
 		MessageSelector messageSelector,
 		MessageMutator messageMutator,
-		Collection<Module> syncExecutionModules
+		Collection<Module> syncExecutionModules,
+		Module overrideModule
 	) {
 		this.messageSelector = Objects.requireNonNull(messageSelector);
 		this.messageMutator = Objects.requireNonNull(messageMutator);
-		this.nodeLookup = Streams.mapWithIndex(nodes.stream(), (node, index) -> Pair.of(node, (int) index))
-			.collect(ImmutableMap.toImmutableMap(Pair::getFirst, Pair::getSecond));
-		this.nodeInstances = Streams.mapWithIndex(nodes.stream(), (node, index) -> createBFTInstance(node, (int) index, syncExecutionModules))
-			.collect(ImmutableList.toImmutableList());
+		this.nodeLookup = Streams.mapWithIndex(
+			nodes.stream(),
+			(node, index) -> Pair.of(node, (int) index)
+		).collect(ImmutableMap.toImmutableMap(Pair::getFirst, Pair::getSecond));
+		this.nodeInstances = Streams.mapWithIndex(
+			nodes.stream(),
+			(node, index) -> createBFTInstance(node, (int) index, syncExecutionModules, overrideModule)
+		).collect(ImmutableList.toImmutableList());
 
 		log.debug("Nodes {}", this.nodeLookup);
 	}
@@ -156,14 +161,18 @@ public final class DeterministicNetwork {
 		}
 	}
 
-	private Injector createBFTInstance(BFTNode self, int index, Collection<Module> syncExecutionModules) {
-		List<Module> modules = ImmutableList.of(
+	private Injector createBFTInstance(BFTNode self, int index, Collection<Module> syncExecutionModules, Module overrideModule) {
+		Module module = Modules.combine(
 			// An arbitrary timeout for the pacemaker, as time is handled differently
 			// in a deterministic test.
 			new ConsensusModule(5000),
 			new MockedCryptoModule(),
-			new DeterministicNetworkModule(self, createSender(index))
+			new DeterministicNetworkModule(self, createSender(index)),
+			Modules.combine(syncExecutionModules)
 		);
-		return Guice.createInjector(Iterables.concat(modules, syncExecutionModules));
+		if (overrideModule != null) {
+			module = Modules.override(module).with(overrideModule);
+		}
+		return Guice.createInjector(module);
 	}
 }
