@@ -34,8 +34,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class LedgerAtomCheckerTest {
-	private LedgerAtomChecker checker;
+public class PowFeeLedgerAtomCheckerTest {
+	private PowFeeLedgerAtomChecker checker;
 	private Universe universe;
 	private PowFeeComputer powFeeComputer;
 	private Hash target;
@@ -46,11 +46,10 @@ public class LedgerAtomCheckerTest {
 		when(universe.getGenesis()).thenReturn(Collections.emptyList());
 		this.powFeeComputer = mock(PowFeeComputer.class);
 		this.target = mock(Hash.class);
-		this.checker = new LedgerAtomChecker(
-			() -> universe,
+		this.checker = new PowFeeLedgerAtomChecker(
+			universe,
 			powFeeComputer,
-			target,
-			false
+			target
 		);
 	}
 

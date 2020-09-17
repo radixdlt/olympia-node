@@ -46,6 +46,8 @@ import com.radixdlt.ledger.StateComputerLedger.CommittedSender;
 import com.radixdlt.ledger.StateComputerLedger.CommittedStateSyncSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.mempool.Mempool;
+import com.radixdlt.utils.TypedMocks;
+
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.function.BiConsumer;
@@ -74,7 +76,7 @@ public class StateComputerLedgerTest {
 		this.counters = mock(SystemCounters.class);
 		this.committedSender = mock(CommittedSender.class);
 		this.currentLedgerHeader = mock(VerifiedLedgerHeaderAndProof.class);
-		this.headerComparator = mock(Comparator.class);
+		this.headerComparator = TypedMocks.rmock(Comparator.class);
 		this.accumulator = mock(LedgerAccumulator.class);
 		when(accumulator.accumulate(any(), any(Command.class))).thenReturn(mock(Hash.class));
 

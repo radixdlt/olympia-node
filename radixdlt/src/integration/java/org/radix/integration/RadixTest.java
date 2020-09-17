@@ -25,8 +25,8 @@ import com.radixdlt.universe.Universe;
 import org.json.JSONObject;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.radix.GenerateUniverses;
 import org.radix.Radix;
+import org.radix.RadixUniverseBuilder;
 import org.radix.serialization.TestSetupUtils;
 import org.radix.utils.IOUtils;
 
@@ -61,7 +61,7 @@ public class RadixTest {
 		}
 		properties.set("db.location", dbLocation);
 
-		universe = new GenerateUniverses(properties).generateUniverses().stream().filter(Universe::isTest).findAny().get();
+		universe = RadixUniverseBuilder.test().build().getSecond();
 	}
 
 	@AfterClass

@@ -69,7 +69,13 @@ subprojects {
     repositories {
         jcenter()
         mavenCentral()
-        maven { url 'https://maven.pkg.github.com/radixdlt/maven-packages' }
+        maven {
+            url 'https://maven.pkg.github.com/radixdlt/maven-packages'
+            credentials {
+                username = System.getenv("GPR_USER") ?: ''
+                password = System.getenv("GPR_TOKEN") ?: ''
+            }
+        }
         maven { url 'https://jitpack.io' }
     }
 

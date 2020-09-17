@@ -18,34 +18,36 @@
 package com.radixdlt.middleware2;
 
 import com.radixdlt.atomos.Result;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.AtomChecker;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.universe.Universe;
+
 import java.util.Objects;
-import java.util.function.Supplier;
+import java.util.Set;
 
 /**
  * Checks that metadata in the ledger atom is well formed and follows what is
  * needed for both consensus and governance.
  */
-public class LedgerAtomChecker implements AtomChecker<LedgerAtom> {
-	private final boolean skipAtomFeeCheck;
-	private final Supplier<Universe> universeSupplier;
+public class PowFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
+	private final Set<AID> genesisAtomIDs;
 	private final PowFeeComputer powFeeComputer;
 
 	private final Hash target;
 
-	public LedgerAtomChecker(
-		Supplier<Universe> universeSupplier,
+	public PowFeeLedgerAtomChecker(
+		Universe universe,
 		PowFeeComputer powFeeComputer,
-		Hash target,
-		boolean skipAtomFeeCheck
+		Hash target
 	) {
-		this.universeSupplier = universeSupplier;
+		this.genesisAtomIDs = universe.getGenesis().stream()
+			.map(Atom::getAID)
+			.collect(ImmutableSet.toImmutableSet());
 		this.powFeeComputer = powFeeComputer;
 		this.target = target;
-		this.skipAtomFeeCheck = skipAtomFeeCheck;
 	}
 
 	@Override
@@ -57,26 +59,23 @@ public class LedgerAtomChecker implements AtomChecker<LedgerAtom> {
 		final boolean isMagic = Objects.equals(atom.getMetaData().get("magic"), "0xdeadbeef");
 
 		// Atom has fee
-		if (!skipAtomFeeCheck) {
-			boolean isGenesis = universeSupplier.get().getGenesis().stream().map(Atom::getAID).anyMatch(atom.getAID()::equals);
-			if (!isGenesis && !isMagic) {
+		boolean isGenesis = this.genesisAtomIDs.contains(atom.getAID());
+		if (!isGenesis && !isMagic) {
+			String powNonceString = atom.getMetaData().get(Atom.METADATA_POW_NONCE_KEY);
+			if (powNonceString == null) {
+				return Result.error("atom fee missing, metadata does not contain '" + Atom.METADATA_POW_NONCE_KEY + "'");
+			}
 
-				String powNonceString = atom.getMetaData().get(Atom.METADATA_POW_NONCE_KEY);
-				if (powNonceString == null) {
-					return Result.error("atom fee missing, metadata does not contain '" + Atom.METADATA_POW_NONCE_KEY + "'");
-				}
+			final long powNonce;
+			try {
+				powNonce = Long.parseLong(powNonceString);
+			} catch (NumberFormatException e) {
+				return Result.error("atom fee invalid, metadata contains invalid powNonce: " + powNonceString);
+			}
 
-				final long powNonce;
-				try {
-					powNonce = Long.parseLong(powNonceString);
-				} catch (NumberFormatException e) {
-					return Result.error("atom fee invalid, metadata contains invalid powNonce: " + powNonceString);
-				}
-
-				Hash powSpent = powFeeComputer.computePowSpent(atom, powNonce);
-				if (powSpent.compareTo(target) >= 0) {
-					return Result.error("atom fee invalid: '" + powSpent + "' does not meet target '" + target + "'");
-				}
+			Hash powSpent = powFeeComputer.computePowSpent(atom, powNonce);
+			if (powSpent.compareTo(target) >= 0) {
+				return Result.error("atom fee invalid: '" + powSpent + "' does not meet target '" + target + "'");
 			}
 		}
 

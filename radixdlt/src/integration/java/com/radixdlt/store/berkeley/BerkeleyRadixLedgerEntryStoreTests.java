@@ -97,7 +97,7 @@ public class BerkeleyRadixLedgerEntryStoreTests extends RadixTestWithStores {
     }
 
     @Test
-    public void searchCommittedTest() throws NextCommittedLimitReachedException {
+    public void searchCommittedTest() {
         SoftAssertions.assertSoftly(softly -> {
             // setup by storing/committing atoms
             for (int i = 0; i < ledgerEntries.size(); ++i) {
