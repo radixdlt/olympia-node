@@ -38,7 +38,7 @@ import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.integration.distributed.simulation.SimulationNetworkModule;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.systeminfo.InfoRx;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -129,7 +129,7 @@ public class SimulationNodes {
 
 		Observable<Pair<BFTNode, VerifiedVertex>> committedVertices();
 
-		Observable<Pair<BFTNode, VerifiedCommandsAndProof>> committedCommands();
+		Observable<Pair<BFTNode, LedgerUpdate>> ledgerUpdates();
 
 		InfoRx getInfo(BFTNode node);
 
@@ -187,11 +187,11 @@ public class SimulationNodes {
 			}
 
 			@Override
-			public Observable<Pair<BFTNode, VerifiedCommandsAndProof>> committedCommands() {
-				Set<Observable<Pair<BFTNode, VerifiedCommandsAndProof>>> committedCommands = nodeInstances.stream()
+			public Observable<Pair<BFTNode, LedgerUpdate>> ledgerUpdates() {
+				Set<Observable<Pair<BFTNode, LedgerUpdate>>> committedCommands = nodeInstances.stream()
 					.map(i -> {
 						BFTNode node = i.getInstance(Key.get(BFTNode.class, Names.named("self")));
-						return i.getInstance(InfoRx.class).committedCommands()
+						return i.getInstance(Key.get(new TypeLiteral<Observable<LedgerUpdate>>() { }))
 							.map(v -> Pair.of(node, v));
 					})
 					.collect(Collectors.toSet());

@@ -24,8 +24,6 @@ import java.util.Objects;
 
 /**
  * Commands along with proof that they have been committed on ledger.
- * The commands along with the header are also verified to be part of
- * the correct state on ledger.
  */
 public final class VerifiedCommandsAndProof {
 	private final ImmutableList<Command> commands;
