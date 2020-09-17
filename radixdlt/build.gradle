@@ -126,8 +126,8 @@ dependencies {
     compile group: 'com.stijndewitt.undertow.cors', name: 'undertow-cors-filter', version: '0.4.0'
 
     testCompile 'org.awaitility:awaitility:4.0.3'
-    testCompile('org.objenesis:objenesis:3.1') { force = true } // make powermock1.7.1 happy
-    testCompile('org.javassist:javassist:3.27.0-GA') { force = true } // make powermock 1.7.1 happy
+    testCompile('org.objenesis:objenesis:3.1') { force = true }
+    testCompile('org.javassist:javassist:3.27.0-GA') { force = true }
     testCompile('org.mockito:mockito-core:3.5.10') { force = true }
     testCompile('net.bytebuddy:byte-buddy:1.10.13') { force = true }
     testCompile('net.bytebuddy:byte-buddy-agent:1.10.13') { force = true }
