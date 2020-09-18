@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
@@ -140,7 +141,8 @@ public final class TokenUtilities {
 
 	private static EUID requestTokens(RadixAddress address) {
 		try {
-			URL url = new URL("http://localhost:8079/api/v1/getTokens/" + address);
+			String faucetHost = Optional.ofNullable(System.getenv("FAUCET_HOST")).orElse("localhost:8079") ;
+			URL url = new URL("http://"+faucetHost+ "/api/v1/getTokens/" + address);
 			HttpURLConnection con = (HttpURLConnection) url.openConnection();
 			con.setRequestMethod("GET");
 			con.setConnectTimeout(5000);
