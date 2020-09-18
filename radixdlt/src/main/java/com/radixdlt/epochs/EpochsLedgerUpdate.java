@@ -26,6 +26,9 @@ import com.radixdlt.ledger.LedgerUpdate;
 import java.util.Objects;
 import java.util.Optional;
 
+/**
+ * A ledger update with possible epoch related information
+ */
 public final class EpochsLedgerUpdate implements LedgerUpdate {
 	private final LedgerUpdate base;
 	private final EpochChange epochChange;

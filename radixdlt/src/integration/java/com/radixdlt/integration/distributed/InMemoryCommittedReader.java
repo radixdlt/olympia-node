@@ -32,6 +32,9 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.TreeMap;
 
+/**
+ * A correct in memory committed reader used for testing
+ */
 @Singleton
 class InMemoryCommittedReader implements LedgerUpdateSender, CommittedReader {
 
