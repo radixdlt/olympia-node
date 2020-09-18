@@ -58,16 +58,16 @@ public class EpochsLocalSyncServiceProcessor implements LocalSyncServiceProcesso
 	public EpochsLocalSyncServiceProcessor(
 		LocalSyncServiceAccumulatorProcessor initialProcessor,
 		EpochChange initialEpoch,
-		VerifiedLedgerHeaderAndProof currentHeader,
+		VerifiedLedgerHeaderAndProof initialHeader,
 		Function<BFTConfiguration, LocalSyncServiceAccumulatorProcessor> localSyncFactory,
 		StateSyncNetwork stateSyncNetwork,
 		SyncedEpochSender syncedEpochSender
 	) {
 		this.currentEpoch = initialEpoch;
-		this.currentHeader = currentHeader;
+		this.currentHeader = initialHeader;
+		this.localSyncServiceProcessor = initialProcessor;
 
 		this.localSyncFactory = localSyncFactory;
-		this.localSyncServiceProcessor = initialProcessor;
 		this.syncedEpochSender = syncedEpochSender;
 		this.stateSyncNetwork = stateSyncNetwork;
 	}
