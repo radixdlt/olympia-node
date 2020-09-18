@@ -81,9 +81,9 @@ public class EpochsLocalSyncServiceProcessor implements LocalSyncServiceProcesso
 			this.currentEpoch = epochChange;
 			this.currentHeader = epochChange.getBFTConfiguration().getGenesisHeader();
 			this.localSyncServiceProcessor = localSyncFactory.apply(epochChange.getBFTConfiguration());
-			this.outsideOfCurrentEpochRequests.headMap(epochChange.getEpoch()).clear();
 
 			// TODO: Cleanup further requests
+			this.outsideOfCurrentEpochRequests.headMap(epochChange.getEpoch()).clear();
 			this.outsideOfCurrentEpochRequests.values().stream().flatMap(List::stream)
 				.findFirst()
 				.ifPresent(request -> {
@@ -91,6 +91,7 @@ public class EpochsLocalSyncServiceProcessor implements LocalSyncServiceProcesso
 					stateSyncNetwork.sendSyncRequest(request.getTargetNodes().get(0), currentEpoch.getProof().toDto());
 				});
 		} else {
+			this.currentHeader = ledgerUpdate.getTail();
 			this.localSyncServiceProcessor.processLedgerUpdate(ledgerUpdate);
 		}
 	}
@@ -110,8 +111,13 @@ public class EpochsLocalSyncServiceProcessor implements LocalSyncServiceProcesso
 			return;
 		}
 
+		if (targetEpoch < currentEpoch.getEpoch()) {
+			log.warn("Request {} epoch is lower from current {} ignoring", request, currentEpoch.getEpoch());
+			return;
+		}
+
 		if (Objects.equals(request.getTarget().getAccumulatorState(), this.currentHeader.getAccumulatorState())) {
-			if (!this.currentHeader.isEndOfEpoch() && request.getTarget().isEndOfEpoch()) {
+			if (request.getTarget().isEndOfEpoch()) {
 				syncedEpochSender.sendSyncedEpoch(request.getTarget());
 			}
 			return;
