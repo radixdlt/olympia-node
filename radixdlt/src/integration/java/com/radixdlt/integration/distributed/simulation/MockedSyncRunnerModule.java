@@ -31,6 +31,9 @@ import com.radixdlt.sync.RemoteSyncResponseProcessor;
 import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier;
 import com.radixdlt.sync.SyncServiceRunner;
 
+/**
+ * A sync runner which doesn't involve epochs
+ */
 public class MockedSyncRunnerModule extends AbstractModule {
 	@Override
 	public void configure() {

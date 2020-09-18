@@ -26,6 +26,7 @@ import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.sync.SyncRequestSender;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
+import com.radixdlt.sync.LedgerUpdateProcessor;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.RemoteSyncResponse;
 import com.radixdlt.sync.RemoteSyncResponseProcessor;
@@ -36,9 +37,13 @@ import javax.annotation.concurrent.NotThreadSafe;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Processes remote sync responses with the current epoch
+ * in mind.
+ */
 @Singleton
 @NotThreadSafe
-public class EpochsRemoteSyncResponseProcessor implements RemoteSyncResponseProcessor {
+public final class EpochsRemoteSyncResponseProcessor implements RemoteSyncResponseProcessor, LedgerUpdateProcessor<EpochsLedgerUpdate> {
 	private static final Logger log = LogManager.getLogger();
 
 	private final Function<BFTConfiguration, RemoteSyncResponseValidatorSetVerifier> verifierFactory;
@@ -58,16 +63,15 @@ public class EpochsRemoteSyncResponseProcessor implements RemoteSyncResponseProc
 		Function<BFTConfiguration, RemoteSyncResponseValidatorSetVerifier> verifierFactory,
 		SyncedEpochSender syncedEpochSender
 	) {
-		this.localSyncRequestSender = localSyncRequestSender;
-		this.currentEpoch = initialEpoch;
-		this.currentHeader = currentHeader;
-		this.currentVerifier = initialVerifier;
-
-		this.verifierFactory = verifierFactory;
-		this.syncedEpochSender = syncedEpochSender;
+		this.localSyncRequestSender = Objects.requireNonNull(localSyncRequestSender);
+		this.currentEpoch = Objects.requireNonNull(initialEpoch);
+		this.currentHeader = Objects.requireNonNull(currentHeader);
+		this.currentVerifier = Objects.requireNonNull(initialVerifier);
+		this.verifierFactory = Objects.requireNonNull(verifierFactory);
+		this.syncedEpochSender = Objects.requireNonNull(syncedEpochSender);
 	}
 
-
+	@Override
 	public void processLedgerUpdate(EpochsLedgerUpdate ledgerUpdate) {
 		if (ledgerUpdate.getEpochChange().isPresent()) {
 			final EpochChange epochChange = ledgerUpdate.getEpochChange().get();

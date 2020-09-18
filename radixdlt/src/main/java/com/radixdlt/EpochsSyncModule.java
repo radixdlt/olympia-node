@@ -44,8 +44,10 @@ import com.radixdlt.sync.StateSyncNetwork;
 import java.util.Comparator;
 import java.util.function.Function;
 
+/**
+ * Epoch+Sync extension
+ */
 public class EpochsSyncModule extends AbstractModule {
-
 	@Override
 	public void configure() {
 		bind(Key.get(new TypeLiteral<LocalSyncServiceProcessor>() { }))

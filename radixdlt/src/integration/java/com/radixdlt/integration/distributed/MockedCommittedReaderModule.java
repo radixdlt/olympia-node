@@ -30,5 +30,4 @@ public class MockedCommittedReaderModule extends AbstractModule {
 		committedSenders.addBinding().to(InMemoryCommittedReader.class).in(Scopes.SINGLETON);
 		bind(CommittedReader.class).to(InMemoryCommittedReader.class).in(Scopes.SINGLETON);
 	}
-
 }
