@@ -28,11 +28,17 @@ public final class GetVerticesResponse {
 	private final Object opaque;
 	private final Hash vertexId;
 	private final List<VerifiedVertex> vertices;
+	private final BFTNode sender;
 
-	public GetVerticesResponse(Hash vertexId, List<VerifiedVertex> vertices, Object opaque) {
+	public GetVerticesResponse(BFTNode sender, Hash vertexId, List<VerifiedVertex> vertices, Object opaque) {
+		this.sender = Objects.requireNonNull(sender);
 		this.vertexId = Objects.requireNonNull(vertexId);
 		this.vertices = Objects.requireNonNull(vertices);
 		this.opaque = opaque;
+	}
+
+	public BFTNode getSender() {
+		return sender;
 	}
 
 	public Object getOpaque() {

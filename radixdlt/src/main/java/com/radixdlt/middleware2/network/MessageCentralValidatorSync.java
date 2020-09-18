@@ -137,18 +137,23 @@ public class MessageCentralValidatorSync implements SyncVerticesRPCSender, SyncV
 	public Observable<GetVerticesResponse> responses() {
 		return this.createObservable(
 			GetVerticesResponseMessage.class,
-			(peer, msg) -> {
+			(src, msg) -> {
 				Object opaque = opaqueCache.getIfPresent(msg.getVertexId());
 				if (opaque == null) {
 					return null; // TODO: send error?
 				}
 
+				if (!src.hasSystem()) {
+					return null;
+				}
+
+				BFTNode node = BFTNode.create(src.getSystem().getKey());
 				// TODO: Move hasher to a more appropriate place
 				ImmutableList<VerifiedVertex> hashedVertices = msg.getVertices().stream()
 					.map(v -> new VerifiedVertex(v, hasher.hash(v)))
 					.collect(ImmutableList.toImmutableList());
 
-				return new GetVerticesResponse(msg.getVertexId(), hashedVertices, opaque);
+				return new GetVerticesResponse(node, msg.getVertexId(), hashedVertices, opaque);
 			}
 		);
 	}
@@ -157,13 +162,19 @@ public class MessageCentralValidatorSync implements SyncVerticesRPCSender, SyncV
 	public Observable<GetVerticesErrorResponse> errorResponses() {
 		return this.createObservable(
 			GetVerticesErrorResponseMessage.class,
-			(peer, msg) -> {
+			(src, msg) -> {
 				Object opaque = opaqueCache.getIfPresent(msg.getVertexId());
 				if (opaque == null) {
 					return null; // TODO: send error?
 				}
 
+				if (!src.hasSystem()) {
+					return null;
+				}
+
+				BFTNode node = BFTNode.create(src.getSystem().getKey());
 				return new GetVerticesErrorResponse(
+					node,
 					msg.getVertexId(),
 					msg.getHighestQC(),
 					msg.getHighestCommittedQC(),

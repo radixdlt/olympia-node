@@ -25,6 +25,7 @@ import com.radixdlt.consensus.bft.ValidationState;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECDSASignature;
+import org.apache.logging.log4j.Logger;
 import org.junit.Before;
 import com.radixdlt.utils.UInt256;
 import org.junit.Test;
@@ -51,16 +52,16 @@ public class FixedTimeoutPacemakerTest {
 	public void setUp() {
 		this.timeout = 100;
 		this.timeoutSender = mock(FixedTimeoutPacemaker.TimeoutSender.class);
-		this.pacemaker = new FixedTimeoutPacemaker(timeout, this.timeoutSender);
+		this.pacemaker = new FixedTimeoutPacemaker(timeout, this.timeoutSender, mock(Logger.class));
 	}
 
 	@Test
 	public void when_creating_pacemaker_with_invalid_timeout__then_exception_is_thrown() {
-		assertThatThrownBy(() -> new FixedTimeoutPacemaker(0, mock(FixedTimeoutPacemaker.TimeoutSender.class)))
+		assertThatThrownBy(() -> new FixedTimeoutPacemaker(0, mock(FixedTimeoutPacemaker.TimeoutSender.class), mock(Logger.class)))
 			.isInstanceOf(IllegalArgumentException.class);
-		assertThatThrownBy(() -> new FixedTimeoutPacemaker(-1, mock(FixedTimeoutPacemaker.TimeoutSender.class)))
+		assertThatThrownBy(() -> new FixedTimeoutPacemaker(-1, mock(FixedTimeoutPacemaker.TimeoutSender.class), mock(Logger.class)))
 			.isInstanceOf(IllegalArgumentException.class);
-		assertThatThrownBy(() -> new FixedTimeoutPacemaker(-100, mock(FixedTimeoutPacemaker.TimeoutSender.class)))
+		assertThatThrownBy(() -> new FixedTimeoutPacemaker(-100, mock(FixedTimeoutPacemaker.TimeoutSender.class), mock(Logger.class)))
 			.isInstanceOf(IllegalArgumentException.class);
 	}
 

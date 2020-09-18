@@ -53,6 +53,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;
 import org.junit.Test;
+import org.radix.universe.system.RadixSystem;
 
 public class MessageCentralValidatorSyncTest {
 	private BFTNode self;
@@ -129,7 +130,12 @@ public class MessageCentralValidatorSyncTest {
 		when(responseMessage.getVertices()).thenReturn(ImmutableList.of(vertex));
 		when(responseMessage.getVertexId()).thenReturn(id);
 		when(hasher.hash(eq(vertex))).thenReturn(id);
-		listener.get().handleMessage(mock(Peer.class), responseMessage);
+
+		when(peer.hasSystem()).thenReturn(true);
+		RadixSystem system = mock(RadixSystem.class);
+		when(system.getKey()).thenReturn(key);
+		when(peer.getSystem()).thenReturn(system);
+		listener.get().handleMessage(peer, responseMessage);
 
 		testObserver.awaitCount(1);
 		testObserver.assertValue(resp -> resp.getOpaque().equals(opaque));
@@ -164,7 +170,12 @@ public class MessageCentralValidatorSyncTest {
 		when(responseMessage.getVertexId()).thenReturn(id);
 		when(responseMessage.getHighestCommittedQC()).thenReturn(mock(QuorumCertificate.class));
 		when(responseMessage.getHighestQC()).thenReturn(mock(QuorumCertificate.class));
-		listener.get().handleMessage(mock(Peer.class), responseMessage);
+
+		when(peer.hasSystem()).thenReturn(true);
+		RadixSystem system = mock(RadixSystem.class);
+		when(system.getKey()).thenReturn(key);
+		when(peer.getSystem()).thenReturn(system);
+		listener.get().handleMessage(peer, responseMessage);
 
 		testObserver.awaitCount(1);
 		testObserver.assertValue(resp -> resp.getOpaque().equals(opaque));

@@ -55,6 +55,7 @@ import java.util.Collections;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import org.apache.logging.log4j.Logger;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -96,7 +97,8 @@ public class VertexStoreTest {
 			syncedVertexSender,
 			vertexStoreEventSender,
 			syncRequestSender,
-			counters
+			counters,
+			mock(Logger.class)
 		);
 
 		AtomicReference<BFTHeader> lastParentHeader
@@ -154,7 +156,8 @@ public class VertexStoreTest {
 				syncedVertexSender,
 				vertexStoreEventSender,
 				syncRequestSender,
-				counters
+				counters,
+				mock(Logger.class)
 			)
 		).isInstanceOf(IllegalStateException.class);
 	}
@@ -171,7 +174,8 @@ public class VertexStoreTest {
 			syncedVertexSender,
 			vertexStoreEventSender,
 			syncRequestSender,
-			counters
+			counters,
+			mock(Logger.class)
 		);
 	}
 
@@ -189,7 +193,8 @@ public class VertexStoreTest {
 				syncedVertexSender,
 				vertexStoreEventSender,
 				syncRequestSender,
-				counters
+				counters,
+				mock(Logger.class)
 			)
 		).isInstanceOf(IllegalStateException.class);
 	}
@@ -214,7 +219,12 @@ public class VertexStoreTest {
 		assertThat(vertexStore.syncToQC(qc, vertexStore.getHighestCommittedQC(), author)).isFalse();
 		verify(syncVerticesRPCSender, times(1)).sendGetVerticesRequest(eq(vertex.getId()), any(), eq(1), any());
 
-		GetVerticesResponse getVerticesResponse = new GetVerticesResponse(vertex.getId(), Collections.singletonList(vertex), opaque.get());
+		GetVerticesResponse getVerticesResponse = new GetVerticesResponse(
+			mock(BFTNode.class),
+			vertex.getId(),
+			Collections.singletonList(vertex),
+			opaque.get()
+		);
 		vertexStore.processGetVerticesResponse(getVerticesResponse);
 
 		verify(syncedVertexSender, times(1)).sendSyncedVertex(eq(vertex));
@@ -263,7 +273,8 @@ public class VertexStoreTest {
 				syncedVertexSender,
 				vertexStoreEventSender,
 				syncRequestSender,
-				counters
+				counters,
+				mock(Logger.class)
 			);
 
 		BFTHeader header = mock(BFTHeader.class);
@@ -466,7 +477,8 @@ public class VertexStoreTest {
 				syncedVertexSender,
 				vertexStoreEventSender,
 				syncRequestSender,
-				counters
+				counters,
+				mock(Logger.class)
 			);
 
 		Hash id3 = mock(Hash.class);
@@ -495,7 +507,8 @@ public class VertexStoreTest {
 				syncedVertexSender,
 				vertexStoreEventSender,
 				syncRequestSender,
-				counters
+				counters,
+				mock(Logger.class)
 			);
 
 		Hash id5 = mock(Hash.class);
@@ -522,7 +535,8 @@ public class VertexStoreTest {
 				syncedVertexSender,
 				vertexStoreEventSender,
 				syncRequestSender,
-				counters
+				counters,
+				mock(Logger.class)
 			);
 
 		// Skip two vertices
@@ -554,7 +568,8 @@ public class VertexStoreTest {
 				syncedVertexSender,
 				vertexStoreEventSender,
 				syncRequestSender,
-				counters
+				counters,
+				mock(Logger.class)
 			);
 
 		Hash id3 = mock(Hash.class);
@@ -573,11 +588,11 @@ public class VertexStoreTest {
 		assertThat(vertexStore.syncToQC(vertex5.getQC(), vertex5.getQC(), mock(BFTNode.class))).isFalse();
 
 		verify(syncVerticesRPCSender, times(1)).sendGetVerticesRequest(eq(id4), any(), eq(1), any());
-		GetVerticesResponse response1 = new GetVerticesResponse(id4, Collections.singletonList(vertex4), opaque.get());
+		GetVerticesResponse response1 = new GetVerticesResponse(mock(BFTNode.class), id4, Collections.singletonList(vertex4), opaque.get());
 		vertexStore.processGetVerticesResponse(response1);
 
 		verify(syncVerticesRPCSender, times(1)).sendGetVerticesRequest(eq(id3), any(), eq(1), any());
-		GetVerticesResponse response2 = new GetVerticesResponse(id3, Collections.singletonList(vertex3), opaque.get());
+		GetVerticesResponse response2 = new GetVerticesResponse(mock(BFTNode.class), id3, Collections.singletonList(vertex3), opaque.get());
 		vertexStore.processGetVerticesResponse(response2);
 
 
@@ -602,7 +617,8 @@ public class VertexStoreTest {
 				syncedVertexSender,
 				vertexStoreEventSender,
 				syncRequestSender,
-				counters
+				counters,
+				mock(Logger.class)
 			);
 
 		VerifiedVertex vertex5 = nextVertex.apply(mock(Hash.class));
@@ -635,7 +651,7 @@ public class VertexStoreTest {
 		}).when(ledger).ifCommitSynced(any());
 
 		vertexStore.syncToQC(vertex8.getQC(), vertex8.getQC(), mock(BFTNode.class));
-		GetVerticesResponse response = new GetVerticesResponse(id7, Arrays.asList(vertex7, vertex6, vertex5), rpcOpaque.get());
+		GetVerticesResponse response = new GetVerticesResponse(mock(BFTNode.class), id7, Arrays.asList(vertex7, vertex6, vertex5), rpcOpaque.get());
 		vertexStore.processGetVerticesResponse(response);
 		assertThat(vertexStore.getHighestQC()).isEqualTo(vertex4.getQC());
 		assertThat(vertexStore.getHighestCommittedQC()).isEqualTo(vertex4.getQC());
