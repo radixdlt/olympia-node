@@ -1114,7 +1114,7 @@ public class RadixApplicationAPI {
 							.errorData(errorData);
 						atomErrorMappers.stream()
 							.flatMap(errorMapper -> errorMapper.mapAtomErrorToExceptionReasons(status.getAtom(), errorData))
-							.forEach(exceptionBuilder::addReason);
+							.forEach(reason -> exceptionBuilder.addReason(reason));
 						return Completable.error(exceptionBuilder.build());
 					}
 				});
