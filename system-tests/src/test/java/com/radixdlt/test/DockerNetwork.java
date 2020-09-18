@@ -19,6 +19,7 @@
 package com.radixdlt.test;
 
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import okhttp3.HttpUrl;
 import utils.CmdHelper;
 
@@ -115,7 +116,7 @@ public class DockerNetwork implements Closeable, RemoteBFTNetwork {
 			String containerId = (String) options.get("containerId");
 			CmdHelper.captureLogs(containerId,testName);
 		});
-		CmdHelper.removeAllDockerContainers();
+//		CmdHelper.removeAllDockerContainers();
 		CmdHelper.runCommand("docker network rm " + this.name);
 		this.networkState = NetworkState.SHUTDOWN;
 	}

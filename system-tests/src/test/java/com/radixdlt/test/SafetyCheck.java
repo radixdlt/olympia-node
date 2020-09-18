@@ -50,6 +50,7 @@ public class SafetyCheck implements RemoteBFTCheck {
 
 	private final long timeout;
 	private final TimeUnit timeoutUnit;
+	private List<String> nodesToIgnore;
 
 	private SafetyCheck(long timeout, TimeUnit timeoutUnit) {
 		if (timeout < 1) {
@@ -63,10 +64,17 @@ public class SafetyCheck implements RemoteBFTCheck {
 		return new SafetyCheck(timeout, timeoutUnit);
 	}
 
+	public SafetyCheck withNodesToIgnore(List<String> nodesToIgnore) {
+		this.nodesToIgnore = nodesToIgnore;
+		return this;
+	}
+
+
 	@Override
 	public Single<RemoteBFTCheckResult> check(RemoteBFTNetworkBridge network) {
 		return Single.zip(
 			network.getNodeIds().stream()
+				.filter(nodename -> !nodesToIgnore.contains(nodename))
 				.map(node -> network.queryEndpoint(node, "api/vertices/committed")
 					.timeout(timeout, timeoutUnit)
 					.map(verticesString -> extractVertices(verticesString, node))

@@ -24,7 +24,7 @@ import java.util.Comparator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
-
+import java.util.List;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -45,6 +45,7 @@ public class LivenessCheck implements RemoteBFTCheck {
 
 	private final long timeout;
 	private final TimeUnit timeoutUnit;
+	private List<String> nodesToIgnore;
 
 	private LivenessCheck(long patience, TimeUnit patienceUnit, long timeout, TimeUnit timeoutUnit) {
 		this.patience = patience;
@@ -55,6 +56,11 @@ public class LivenessCheck implements RemoteBFTCheck {
 
 	public static LivenessCheck with(long patience, TimeUnit patienceUnit, long timeout, TimeUnit timeoutUnit) {
 		return new LivenessCheck(patience, patienceUnit, timeout, timeoutUnit);
+	}
+
+	public LivenessCheck withNodesToIgnore(List<String> nodesToIgnore) {
+		this.nodesToIgnore = nodesToIgnore;
+		return this;
 	}
 
 	private static final Comparator<Pair<Long, Long>> EPOCH_AND_VIEW_COMPARATOR =
@@ -86,6 +92,7 @@ public class LivenessCheck implements RemoteBFTCheck {
 	private Single<Pair<Long, Long>> getHighestHighestQCView(RemoteBFTNetworkBridge network) {
 		return Single.zip(
 			network.getNodeIds().stream()
+				.filter(nodename -> !nodesToIgnore.contains(nodename))
 				.map(node -> network.queryEndpointJson(node, "api/vertices/highestqc")
 					.map(LivenessCheck::extractEpochAndView)
 					.timeout(this.timeout, this.timeoutUnit)

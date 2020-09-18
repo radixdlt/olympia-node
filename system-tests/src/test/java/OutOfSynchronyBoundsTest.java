@@ -5,6 +5,7 @@ import com.radixdlt.test.Docker;
 import com.radixdlt.test.DockerNetwork;
 import com.radixdlt.test.RemoteBFTNetworkBridge;
 import com.radixdlt.test.RemoteBFTTest;
+import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -30,16 +31,31 @@ public class OutOfSynchronyBoundsTest {
 
 		String name = Generic.extractTestName(this.name.getMethodName());
 		logger.info("Test name is " + name);
-		try (DockerNetwork network = DockerNetwork.builder().numNodes(4).testName(name).build()) {
+		try (DockerNetwork network = DockerNetwork.builder().numNodes(4).testName(name).startConsensusOnBoot().build()) {
 			network.startBlocking();
-			String veth = CmdHelper.getVethByContainerName(network.getNodeIds().stream().findFirst().get());
+
+			Thread.sleep(30000);
+//			RemoteBFTTest test = slowNodeTestBuilder()
+//				.network(RemoteBFTNetworkBridge.of(network))
+//				.waitUntilResponsive()
+//				.build();
+//			test.runBlocking(CmdHelper.getTestDurationInSeconds(), TimeUnit.SECONDS);
+
+			String nodeNetworkSlowed = network.getNodeIds().stream().findFirst().get();
+			String veth = CmdHelper.getVethByContainerName(nodeNetworkSlowed);
 			CmdHelper.setupQueueQuality(veth,"delay 100ms loss 100%");
 
-			RemoteBFTTest test = slowNodeTestBuilder()
-				.network(RemoteBFTNetworkBridge.of(network))
-				.waitUntilResponsive()
-				.startConsensusOnRun().build();
-			test.runBlocking(CmdHelper.getTestDurationInSeconds(), TimeUnit.SECONDS);
+			ArrayList<String> setNodesToIgnore = new ArrayList<String>();
+			setNodesToIgnore.add(nodeNetworkSlowed);
+
+			RemoteBFTTest testOutOfSynchronyBounds = outOfSynchronyTestBuilder(setNodesToIgnore)
+				.network(RemoteBFTNetworkBridge.of(network)).build();
+
+
+			testOutOfSynchronyBounds.runBlocking(CmdHelper.getTestDurationInSeconds(), TimeUnit.SECONDS);
+
+		} catch (InterruptedException e) {
+			e.printStackTrace();
 		}
 
 	}
