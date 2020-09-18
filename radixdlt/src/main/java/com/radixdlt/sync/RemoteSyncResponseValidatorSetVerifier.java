@@ -17,20 +17,9 @@
 
 package com.radixdlt.sync;
 
-import com.radixdlt.consensus.BFTHeader;
-import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.Hasher;
-import com.radixdlt.consensus.TimestampedECDSASignature;
-import com.radixdlt.consensus.TimestampedVoteData;
-import com.radixdlt.consensus.VoteData;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.ValidationState;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.DtoCommandsAndProof;
-import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
-import java.util.Map;
 import java.util.Objects;
 
 public class RemoteSyncResponseValidatorSetVerifier implements RemoteSyncResponseProcessor {
@@ -40,27 +29,21 @@ public class RemoteSyncResponseValidatorSetVerifier implements RemoteSyncRespons
 	}
 
 	public interface InvalidValidatorSetSender {
-		void sendInvalid(RemoteSyncResponse remoteSyncResponse, String message);
+		void sendInvalid(RemoteSyncResponse remoteSyncResponse);
 	}
 
 	private final VerifiedValidatorSetSender verifiedValidatorSetSender;
 	private final InvalidValidatorSetSender invalidValidatorSetSender;
 	private final BFTValidatorSet validatorSet;
-	private final Hasher hasher;
-	private final HashVerifier hashVerifier;
 
 	public RemoteSyncResponseValidatorSetVerifier(
 		VerifiedValidatorSetSender verifiedValidatorSetSender,
 		InvalidValidatorSetSender invalidValidatorSetSender,
-		BFTValidatorSet validatorSet,
-		Hasher hasher,
-		HashVerifier hashVerifier
+		BFTValidatorSet validatorSet
 	) {
 		this.verifiedValidatorSetSender = Objects.requireNonNull(verifiedValidatorSetSender);
 		this.invalidValidatorSetSender = Objects.requireNonNull(invalidValidatorSetSender);
 		this.validatorSet = Objects.requireNonNull(validatorSet);
-		this.hasher = Objects.requireNonNull(hasher);
-		this.hashVerifier = Objects.requireNonNull(hashVerifier);
 	}
 
 	@Override
@@ -73,34 +56,10 @@ public class RemoteSyncResponseValidatorSetVerifier implements RemoteSyncRespons
 		);
 
 		if (!validationState.complete()) {
-			invalidValidatorSetSender.sendInvalid(syncResponse, "Invalid signature count");
+			invalidValidatorSetSender.sendInvalid(syncResponse);
 			return;
 		}
 
-		DtoLedgerHeaderAndProof endHeader = commandsAndProof.getTail();
-		VoteData voteData = new VoteData(
-			endHeader.getOpaque0(),
-			endHeader.getOpaque1(),
-			new BFTHeader(
-				View.of(endHeader.getOpaque2()),
-				endHeader.getOpaque3(),
-				endHeader.getLedgerHeader()
-			)
-		);
-		Map<BFTNode, TimestampedECDSASignature> signatures = endHeader.getSignatures().getSignatures();
-		for (BFTNode node : signatures.keySet()) {
-			TimestampedECDSASignature signature = signatures.get(node);
-			final TimestampedVoteData timestampedVoteData = new TimestampedVoteData(voteData, signature.timestamp());
-			final Hash voteDataHash = this.hasher.hash(timestampedVoteData);
-
-			if (!hashVerifier.verify(node.getKey(), voteDataHash, signature.signature())) {
-				invalidValidatorSetSender.sendInvalid(syncResponse, "Invalid signature");
-				return;
-			}
-		}
-
 		verifiedValidatorSetSender.sendVerified(syncResponse);
-
-
 	}
 }

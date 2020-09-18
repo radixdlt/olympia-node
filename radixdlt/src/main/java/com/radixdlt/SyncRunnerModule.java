@@ -24,7 +24,7 @@ import com.google.inject.multibindings.MapBinder;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.sync.SyncServiceRunner;
 
-public class SyncServiceRunnerModule extends AbstractModule {
+public class SyncRunnerModule extends AbstractModule {
 	@Override
 	public void configure() {
 		MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class)
