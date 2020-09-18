@@ -54,8 +54,7 @@ public class MockedStateComputerWithEpochsModule extends AbstractModule {
 		LedgerHeader nextLedgerHeader = LedgerHeader.create(
 			proof.getEpoch() + 1,
 			View.genesis(),
-			proof.getStateVersion(),
-			proof.getAccumulator(),
+			proof.getAccumulatorState(),
 			proof.timestamp(),
 			false
 		);

@@ -17,11 +17,12 @@
 
 package com.radixdlt.sync;
 
+import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 
 /**
  * Reader of committed commands
  */
 public interface CommittedReader {
-	VerifiedCommandsAndProof getNextCommittedCommands(long current, int batchSize);
+	VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start, int batchSize);
 }

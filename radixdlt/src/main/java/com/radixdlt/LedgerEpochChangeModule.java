@@ -20,19 +20,21 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.Hasher;
-import com.radixdlt.ledger.EpochChangeManager;
-import com.radixdlt.ledger.EpochChangeSender;
-import com.radixdlt.ledger.StateComputerLedger.CommittedSender;
+import com.radixdlt.epochs.EpochChangeManager;
+import com.radixdlt.epochs.EpochChangeManager.EpochsLedgerUpdateSender;
+import com.radixdlt.epochs.EpochChangeSender;
+import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
 
 /**
  * Adds epoch change functionality to the ledger
  */
 public class LedgerEpochChangeModule extends AbstractModule {
 	@ProvidesIntoSet
-	private CommittedSender epochChangeManager(
+	private LedgerUpdateSender epochChangeManager(
 		EpochChangeSender sender,
+		EpochsLedgerUpdateSender epochsLedgerUpdateSender,
 		Hasher hasher
 	) {
-		return new EpochChangeManager(sender, hasher);
+		return new EpochChangeManager(sender, epochsLedgerUpdateSender, hasher);
 	}
 }

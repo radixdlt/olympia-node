@@ -21,14 +21,17 @@ import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.name.Named;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.Hasher;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
+import java.math.BigInteger;
 
 /**
  * For testing where verification and signing is skipped
@@ -39,8 +42,28 @@ public class MockedCryptoModule extends AbstractModule {
 	@Override
 	public void configure() {
 		bind(Serialization.class).toInstance(DefaultSerialization.getInstance());
-		bind(HashVerifier.class).toInstance((pubKey, hash, sig) -> true);
-		bind(HashSigner.class).toInstance(h -> new ECDSASignature());
+	}
+
+	@Provides
+	private HashVerifier hashVerifier() {
+		return (pubKey, hash, sig) -> {
+			byte[] concat = new byte[64];
+			hash.copyTo(concat, 0);
+			System.arraycopy(pubKey.getBytes(), 0, concat, 32, 32);
+			long hashCode = hashFunction.hashBytes(concat).asLong();
+			return sig.getR().longValue() == hashCode;
+		};
+	}
+
+	@Provides
+	private HashSigner hashSigner(@Named("self") BFTNode node) {
+		return h -> {
+			byte[] concat = new byte[64];
+			System.arraycopy(h, 0, concat, 0, 32);
+			System.arraycopy(node.getKey().getBytes(), 0, concat, 32, 32);
+			long hashCode = hashFunction.hashBytes(concat).asLong();
+			return new ECDSASignature(BigInteger.valueOf(hashCode), BigInteger.valueOf(hashCode));
+		};
 	}
 
 	@Provides

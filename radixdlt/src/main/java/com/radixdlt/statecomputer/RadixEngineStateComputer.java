@@ -27,6 +27,7 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.EUID;
+import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.middleware2.store.StoredCommittedCommand;
@@ -68,6 +69,7 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 	private final CommittedAtomSender committedAtomSender;
 	private final Object lock = new Object();
 	private final TreeMap<Long, StoredCommittedCommand> unstoredCommittedAtoms = new TreeMap<>();
+	private final TreeMap<Long, VerifiedLedgerHeaderAndProof> epochProofs = new TreeMap<>();
 
 	public RadixEngineStateComputer(
 		Serialization serialization,
@@ -87,9 +89,27 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 		this.committedAtomSender = Objects.requireNonNull(committedAtomSender);
 	}
 
+	public VerifiedLedgerHeaderAndProof getEpochProof(long epoch) {
+		return epochProofs.get(epoch);
+	}
+
 	// TODO Move this to a different class class when unstored committed atoms is fixed
 	@Override
-	public VerifiedCommandsAndProof getNextCommittedCommands(long stateVersion, int batchSize) {
+	public VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start, int batchSize) {
+		if (start.getLedgerHeader().isEndOfEpoch()) {
+			long currentEpoch = start.getLedgerHeader().getEpoch() + 1;
+			long nextEpoch = currentEpoch + 1;
+			VerifiedLedgerHeaderAndProof nextEpochProof = epochProofs.get(nextEpoch);
+			if (nextEpochProof == null) {
+				return null;
+			}
+
+			return new VerifiedCommandsAndProof(ImmutableList.of(), nextEpochProof);
+		}
+
+		// TODO: verify start
+		long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
+
 		// TODO: This may still return an empty list as we still count state versions for atoms which
 		// TODO: never make it into the radix engine due to state errors. This is because we only check
 		// TODO: validity on commit rather than on proposal/prepare.
@@ -168,10 +188,14 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 	@Override
 	public Optional<BFTValidatorSet> commit(VerifiedCommandsAndProof verifiedCommandsAndProof) {
 		final VerifiedLedgerHeaderAndProof headerAndProof = verifiedCommandsAndProof.getHeader();
-
-		verifiedCommandsAndProof.forEach((version, command) -> this.commitCommand(version, command, headerAndProof));
+		long stateVersion = headerAndProof.getAccumulatorState().getStateVersion();
+		long firstVersion = stateVersion - verifiedCommandsAndProof.getCommands().size() + 1;
+		for (int i = 0; i < verifiedCommandsAndProof.getCommands().size(); i++) {
+			this.commitCommand(firstVersion + i, verifiedCommandsAndProof.getCommands().get(i), headerAndProof);
+		}
 
 		if (headerAndProof.isEndOfEpoch()) {
+			this.epochProofs.put(headerAndProof.getEpoch() + 1, headerAndProof);
 			RadixEngineValidatorSetBuilder validatorSetBuilder = this.radixEngine.getComputedState(RadixEngineValidatorSetBuilder.class);
 			return Optional.of(validatorSetBuilder.build());
 		}

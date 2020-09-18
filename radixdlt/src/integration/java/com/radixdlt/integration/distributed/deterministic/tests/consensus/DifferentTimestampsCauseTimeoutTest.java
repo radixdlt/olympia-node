@@ -17,6 +17,9 @@
 
 package com.radixdlt.integration.distributed.deterministic.tests.consensus;
 
+import com.google.inject.AbstractModule;
+import com.radixdlt.consensus.HashSigner;
+import com.radixdlt.consensus.HashVerifier;
 import java.util.LinkedList;
 import java.util.Map;
 
@@ -149,7 +152,16 @@ public class DifferentTimestampsCauseTimeoutTest {
 		// 2 (leader) will have already moved on to next view from the NewView messages
 		processingSequence.add(Pair.of(ChannelId.of(3, 3), LocalTimeout.class));
 
+		// TODO: this test isn't exactly right and should be updated so that
+		// TODO: byzantine node sends different sets of valid QCs to each node
 		DeterministicTest.builder()
+			.overrideWithIncorrectModule(new AbstractModule() {
+				@Override
+				protected void configure() {
+					bind(HashVerifier.class).toInstance((pubKey, hash, sig) -> true);
+					bind(HashSigner.class).toInstance(h -> new ECDSASignature());
+				}
+			})
 			.numNodes(numNodes)
 			.alwaysSynced()
 			.messageSelector(sequenceSelector(processingSequence))

@@ -39,6 +39,7 @@ import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
+import com.radixdlt.sync.RemoteSyncResponse;
 import com.radixdlt.sync.StateSyncNetwork;
 import com.radixdlt.sync.RemoteSyncRequest;
 import com.radixdlt.ledger.DtoCommandsAndProof;
@@ -306,8 +307,8 @@ public class SimulationNetwork {
 		}
 
 		@Override
-		public Observable<DtoCommandsAndProof> syncResponses() {
-			return myMessages.ofType(DtoCommandsAndProof.class);
+		public Observable<RemoteSyncResponse> syncResponses() {
+			return myMessages.ofType(RemoteSyncResponse.class);
 		}
 
 		@Override
@@ -323,7 +324,8 @@ public class SimulationNetwork {
 
 		@Override
 		public void sendSyncResponse(BFTNode node, DtoCommandsAndProof commandsAndProof) {
-			receivedMessages.onNext(MessageInTransit.newMessage(commandsAndProof, thisNode, node));
+			RemoteSyncResponse syncResponse = new RemoteSyncResponse(thisNode, commandsAndProof);
+			receivedMessages.onNext(MessageInTransit.newMessage(syncResponse, thisNode, node));
 		}
 	}
 

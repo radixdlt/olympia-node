@@ -31,7 +31,7 @@ public interface StateSyncNetwork {
 	 * Retrieve stream of sync responses
 	 * @return an unending Observable of sync responses
 	 */
-	Observable<DtoCommandsAndProof> syncResponses();
+	Observable<RemoteSyncResponse> syncResponses();
 
 	/**
 	 * Retrieve stream of sync requests

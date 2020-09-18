@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -107,15 +108,14 @@ public final class VerifiedLedgerHeaderAndProof {
 				return p0.ledgerHeader.getEpoch() > p1.ledgerHeader.getEpoch() ? 1 : -1;
 			}
 
-			if (p0.ledgerHeader.getStateVersion() != p1.ledgerHeader.getStateVersion()) {
-				return p0.ledgerHeader.getStateVersion() > p1.ledgerHeader.getStateVersion() ? 1 : -1;
-			}
-
 			if (p0.ledgerHeader.isEndOfEpoch() != p1.ledgerHeader.isEndOfEpoch()) {
 				return p0.ledgerHeader.isEndOfEpoch() ? 1 : -1;
 			}
 
-			return 0;
+			return Long.compare(
+				p0.ledgerHeader.getAccumulatorState().getStateVersion(),
+				p1.ledgerHeader.getAccumulatorState().getStateVersion()
+			);
 		}
 	}
 
@@ -142,12 +142,13 @@ public final class VerifiedLedgerHeaderAndProof {
 		return ledgerHeader.getView();
 	}
 
-	public long getStateVersion() {
-		return ledgerHeader.getStateVersion();
+	public AccumulatorState getAccumulatorState() {
+		return ledgerHeader.getAccumulatorState();
 	}
 
-	public Hash getAccumulator() {
-		return ledgerHeader.getAccumulator();
+	// TODO: Remove
+	public long getStateVersion() {
+		return ledgerHeader.getAccumulatorState().getStateVersion();
 	}
 
 	public long timestamp() {
@@ -156,6 +157,10 @@ public final class VerifiedLedgerHeaderAndProof {
 
 	public boolean isEndOfEpoch() {
 		return ledgerHeader.isEndOfEpoch();
+	}
+
+	public TimestampedECDSASignatures getSignatures() {
+		return signatures;
 	}
 
 	@Override

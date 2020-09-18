@@ -44,39 +44,39 @@ public class DtoCommandsAndProof {
 	@DsonOutput(Output.ALL)
 	private final ImmutableList<Command> commands;
 
-	@JsonProperty("start")
+	@JsonProperty("head")
 	@DsonOutput(Output.ALL)
-	private final DtoLedgerHeaderAndProof start;
+	private final DtoLedgerHeaderAndProof head;
 
-	@JsonProperty("end")
+	@JsonProperty("tail")
 	@DsonOutput(Output.ALL)
-	private final DtoLedgerHeaderAndProof end;
+	private final DtoLedgerHeaderAndProof tail;
 
 	@JsonCreator
 	public DtoCommandsAndProof(
 		@JsonProperty("commands") ImmutableList<Command> commands,
-		@JsonProperty("start") DtoLedgerHeaderAndProof start,
-		@JsonProperty("end") DtoLedgerHeaderAndProof end
+		@JsonProperty("head") DtoLedgerHeaderAndProof head,
+		@JsonProperty("tail") DtoLedgerHeaderAndProof tail
 	) {
 		this.commands = commands == null ? ImmutableList.of() : commands;
-		this.start = Objects.requireNonNull(start);
-		this.end = Objects.requireNonNull(end);
+		this.head = Objects.requireNonNull(head);
+		this.tail = Objects.requireNonNull(tail);
 	}
 
 	public ImmutableList<Command> getCommands() {
 		return commands;
 	}
 
-	public DtoLedgerHeaderAndProof getStartHeader() {
-		return start;
+	public DtoLedgerHeaderAndProof getHead() {
+		return head;
 	}
 
-	public DtoLedgerHeaderAndProof getEndHeader() {
-		return end;
+	public DtoLedgerHeaderAndProof getTail() {
+		return tail;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{cmds=%s root=%s next=%s}", this.getClass().getSimpleName(), commands, start, end);
+		return String.format("%s{cmds=%s head=%s tail=%s}", this.getClass().getSimpleName(), commands, head, tail);
 	}
 }

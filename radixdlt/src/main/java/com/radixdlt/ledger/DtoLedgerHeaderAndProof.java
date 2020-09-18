@@ -113,6 +113,6 @@ public class DtoLedgerHeaderAndProof {
 
 	@Override
 	public String toString() {
-		return String.format("%s{ledger=%s}", this.getClass().getSimpleName(), this.ledgerHeader);
+		return String.format("%s{header=%s}", this.getClass().getSimpleName(), this.ledgerHeader);
 	}
 }

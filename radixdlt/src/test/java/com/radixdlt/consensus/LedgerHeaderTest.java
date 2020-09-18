@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.ledger.AccumulatorState;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Before;
@@ -30,18 +30,18 @@ import org.junit.Test;
 public class LedgerHeaderTest {
 	private LedgerHeader ledgerHeader;
 	private long timestamp;
-	private Hash commandId;
+	private AccumulatorState accumulatorState;
 
 	@Before
 	public void setup() {
 		this.timestamp = 12345678L;
-		this.commandId = mock(Hash.class);
-		this.ledgerHeader = LedgerHeader.create(0, View.genesis(), 12345, commandId, timestamp, false);
+		this.accumulatorState = mock(AccumulatorState.class);
+		this.ledgerHeader = LedgerHeader.create(0, View.genesis(), accumulatorState, timestamp, false);
 	}
 
 	@Test
 	public void testGetters() {
-		assertThat(ledgerHeader.getStateVersion()).isEqualTo(12345);
+		assertThat(ledgerHeader.getAccumulatorState()).isEqualTo(accumulatorState);
 		assertThat(ledgerHeader.timestamp()).isEqualTo(timestamp);
 		assertThat(ledgerHeader.isEndOfEpoch()).isFalse();
 	}

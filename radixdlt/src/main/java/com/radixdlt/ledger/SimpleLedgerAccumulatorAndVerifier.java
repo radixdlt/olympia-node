@@ -23,6 +23,7 @@ import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.crypto.Hash;
 import java.util.Objects;
+import java.util.Optional;
 import javax.annotation.concurrent.ThreadSafe;
 
 /**
@@ -38,19 +39,41 @@ public class SimpleLedgerAccumulatorAndVerifier implements LedgerAccumulator, Le
 	}
 
 	@Override
-	public Hash accumulate(Hash parent, Command nextCommand) {
+	public AccumulatorState accumulate(AccumulatorState parent, Command nextCommand) {
 		byte[] concat = new byte[32 * 2];
-		parent.copyTo(concat, 0);
+		parent.getAccumulatorHash().copyTo(concat, 0);
 		nextCommand.getHash().copyTo(concat, 32);
-		return hasher.hashBytes(concat);
+		Hash nextAccumulatorHash = hasher.hashBytes(concat);
+		return new AccumulatorState(
+			parent.getStateVersion() + 1,
+			nextAccumulatorHash
+		);
 	}
 
 	@Override
-	public boolean verify(Hash start, ImmutableList<Command> commands, Hash end) {
-		Hash accumulated = start;
+	public boolean verify(AccumulatorState start, ImmutableList<Command> commands, AccumulatorState end) {
+		AccumulatorState accumulatorState = start;
 		for (Command command : commands) {
-			accumulated = this.accumulate(accumulated, command);
+			accumulatorState = this.accumulate(accumulatorState, command);
 		}
-		return Objects.equals(accumulated, end);
+		return Objects.equals(accumulatorState, end);
+	}
+
+	@Override
+	public Optional<ImmutableList<Command>> verifyAndGetExtension(AccumulatorState current, ImmutableList<Command> commands, AccumulatorState tail) {
+		final long firstVersion = tail.getStateVersion() - commands.size() + 1;
+		if (current.getStateVersion() + 1 < firstVersion) {
+			// Missing versions
+			return Optional.empty();
+		}
+
+		final int startIndex = (int) (current.getStateVersion() + 1 - firstVersion);
+		final ImmutableList<Command> extension = commands.subList(startIndex, commands.size());
+		if (!verify(current, extension, tail)) {
+			// Does not extend
+			return Optional.empty();
+		}
+
+		return Optional.of(extension);
 	}
 }
