@@ -22,7 +22,11 @@ import com.radixdlt.consensus.bft.ValidationState;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import java.util.Objects;
 
-public class RemoteSyncResponseValidatorSetVerifier implements RemoteSyncResponseProcessor {
+/**
+ * Verifies the signature set of sync remote responses and checks
+ * whether the signatures form a quorum based on a validatorSet.
+ */
+public final class RemoteSyncResponseValidatorSetVerifier implements RemoteSyncResponseProcessor {
 
 	public interface VerifiedValidatorSetSender {
 		void sendVerified(RemoteSyncResponse remoteSyncResponse);

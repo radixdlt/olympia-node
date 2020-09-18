@@ -33,6 +33,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 
+/**
+ * Verifies the signatures in a sync response
+ */
 public class RemoteSyncResponseSignaturesVerifier implements RemoteSyncResponseProcessor {
 	public interface VerifiedSignaturesSender {
 		void sendVerified(RemoteSyncResponse remoteSyncResponse);
