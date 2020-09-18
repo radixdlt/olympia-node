@@ -24,8 +24,6 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
@@ -82,17 +80,13 @@ public class EpochsSyncModule extends AbstractModule {
 	@Provides
 	private Function<BFTConfiguration, RemoteSyncResponseValidatorSetVerifier> accumulatorVerifierFactory(
 		VerifiedValidatorSetSender verifiedValidatorSetSender,
-		InvalidValidatorSetSender invalidValidatorSetSender,
-		Hasher hasher,
-		HashVerifier hashVerifier
+		InvalidValidatorSetSender invalidValidatorSetSender
 	) {
 		return config ->
 			new RemoteSyncResponseValidatorSetVerifier(
 				verifiedValidatorSetSender,
 				invalidValidatorSetSender,
-				config.getValidatorSet(),
-				hasher,
-				hashVerifier
+				config.getValidatorSet()
 			);
 	}
 

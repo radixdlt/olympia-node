@@ -21,8 +21,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.counters.SystemCounters;
@@ -34,6 +32,9 @@ import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.sync.RemoteSyncResponseAccumulatorVerifier;
 import com.radixdlt.sync.RemoteSyncResponseAccumulatorVerifier.InvalidAccumulatorSender;
 import com.radixdlt.sync.RemoteSyncResponseAccumulatorVerifier.VerifiedAccumulatorSender;
+import com.radixdlt.sync.RemoteSyncResponseSignaturesVerifier;
+import com.radixdlt.sync.RemoteSyncResponseSignaturesVerifier.InvalidSignaturesSender;
+import com.radixdlt.sync.RemoteSyncResponseSignaturesVerifier.VerifiedSignaturesSender;
 import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier;
 import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier.InvalidValidatorSetSender;
 import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier.VerifiedValidatorSetSender;
@@ -50,13 +51,23 @@ public class SyncServiceModule extends AbstractModule {
 	private static final int BATCH_SIZE = 100;
 
 	@Provides
-	private VerifiedValidatorSetSender verifiedValidatorSetSender(RemoteSyncResponseAccumulatorVerifier accumulatorVerifier) {
+	private VerifiedValidatorSetSender verifiedValidatorSetSender(RemoteSyncResponseSignaturesVerifier signaturesVerifier) {
+		return signaturesVerifier::processSyncResponse;
+	}
+
+	@Provides
+	private VerifiedSignaturesSender verifiedSignaturesSender(RemoteSyncResponseAccumulatorVerifier accumulatorVerifier) {
 		return accumulatorVerifier::processSyncResponse;
 	}
 
 	@Provides
+	private InvalidSignaturesSender invalidSignaturesSender(SystemCounters counters) {
+		return resp -> counters.increment(CounterType.SYNC_INVALID_COMMANDS_RECEIVED);
+	}
+
+	@Provides
 	private InvalidValidatorSetSender invalidValidatorSetSender(SystemCounters counters) {
-		return (resp, msg) -> counters.increment(CounterType.SYNC_INVALID_COMMANDS_RECEIVED);
+		return resp -> counters.increment(CounterType.SYNC_INVALID_COMMANDS_RECEIVED);
 	}
 
 	@Provides
@@ -103,20 +114,15 @@ public class SyncServiceModule extends AbstractModule {
 	}
 
 	@Provides
-	@Singleton
 	RemoteSyncResponseValidatorSetVerifier validatorSetVerifier(
 		VerifiedValidatorSetSender verifiedValidatorSetSender,
 		InvalidValidatorSetSender invalidValidatorSetSender,
-		Hasher hasher,
-		HashVerifier hashVerifier,
 		BFTConfiguration initialConfiguration
 	) {
 		return new RemoteSyncResponseValidatorSetVerifier(
 			verifiedValidatorSetSender,
 			invalidValidatorSetSender,
-			initialConfiguration.getValidatorSet(),
-			hasher,
-			hashVerifier
+			initialConfiguration.getValidatorSet()
 		);
 	}
 
