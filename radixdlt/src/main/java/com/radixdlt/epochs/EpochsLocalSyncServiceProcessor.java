@@ -17,22 +17,17 @@
 
 package com.radixdlt.epochs;
 
-import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.epoch.EpochChange;
-import com.radixdlt.ledger.DtoCommandsAndProof;
-import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
-import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.sync.LedgerUpdateProcessor;
+import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceProcessor;
-import com.radixdlt.sync.RemoteSyncResponseProcessor;
-import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier;
 import com.radixdlt.sync.StateSyncNetwork;
-import com.radixdlt.sync.RemoteSyncResponse;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -47,41 +42,31 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 @NotThreadSafe
-public class EpochsLocalSyncServiceProcessor implements LocalSyncServiceProcessor<EpochsLedgerUpdate>, RemoteSyncResponseProcessor {
+public class EpochsLocalSyncServiceProcessor implements LocalSyncServiceProcessor, LedgerUpdateProcessor<EpochsLedgerUpdate> {
 	private static final Logger log = LogManager.getLogger();
 
-	public interface SyncedEpochSender {
-		void sendSyncedEpoch(VerifiedLedgerHeaderAndProof headerAndProof);
-	}
-
-	private final Function<BFTConfiguration, LocalSyncServiceProcessor<LedgerUpdate>> localSyncFactory;
-	private final Function<BFTConfiguration, RemoteSyncResponseValidatorSetVerifier> verifierFactory;
+	private final Function<BFTConfiguration, LocalSyncServiceAccumulatorProcessor> localSyncFactory;
 	private final SyncedEpochSender syncedEpochSender;
 	private final StateSyncNetwork stateSyncNetwork;
 	private final TreeMap<Long, List<LocalSyncRequest>> outsideOfCurrentEpochRequests = new TreeMap<>();
 
-	private RemoteSyncResponseProcessor currentVerifier;
 	private EpochChange currentEpoch;
 	private VerifiedLedgerHeaderAndProof currentHeader;
-	private LocalSyncServiceProcessor<LedgerUpdate> localSyncServiceProcessor;
+	private LocalSyncServiceAccumulatorProcessor localSyncServiceProcessor;
 
 	@Inject
 	public EpochsLocalSyncServiceProcessor(
-		LocalSyncServiceProcessor<LedgerUpdate> initialProcessor,
-		RemoteSyncResponseValidatorSetVerifier initialVerifier,
+		LocalSyncServiceAccumulatorProcessor initialProcessor,
 		EpochChange initialEpoch,
 		VerifiedLedgerHeaderAndProof currentHeader,
-		Function<BFTConfiguration, LocalSyncServiceProcessor<LedgerUpdate>> localSyncFactory,
-		Function<BFTConfiguration, RemoteSyncResponseValidatorSetVerifier> verifierFactory,
+		Function<BFTConfiguration, LocalSyncServiceAccumulatorProcessor> localSyncFactory,
 		StateSyncNetwork stateSyncNetwork,
 		SyncedEpochSender syncedEpochSender
 	) {
 		this.currentEpoch = initialEpoch;
 		this.currentHeader = currentHeader;
-		this.currentVerifier = initialVerifier;
 
 		this.localSyncFactory = localSyncFactory;
-		this.verifierFactory = verifierFactory;
 		this.localSyncServiceProcessor = initialProcessor;
 		this.syncedEpochSender = syncedEpochSender;
 		this.stateSyncNetwork = stateSyncNetwork;
@@ -92,9 +77,9 @@ public class EpochsLocalSyncServiceProcessor implements LocalSyncServiceProcesso
 		if (ledgerUpdate.getEpochChange().isPresent()) {
 			final EpochChange epochChange = ledgerUpdate.getEpochChange().get();
 			this.currentEpoch = epochChange;
-			this.currentHeader = ledgerUpdate.getTail();
+			this.currentHeader = epochChange.getBFTConfiguration().getGenesisQC().getCommittedAndLedgerStateProof()
+				.orElseThrow(RuntimeException::new).getSecond();
 			this.localSyncServiceProcessor = localSyncFactory.apply(epochChange.getBFTConfiguration());
-			this.currentVerifier = verifierFactory.apply(epochChange.getBFTConfiguration());
 			this.outsideOfCurrentEpochRequests.headMap(epochChange.getEpoch()).clear();
 
 			// TODO: Cleanup further requests
@@ -132,45 +117,5 @@ public class EpochsLocalSyncServiceProcessor implements LocalSyncServiceProcesso
 	@Override
 	public void processSyncTimeout(SyncInProgress timeout) {
 		localSyncServiceProcessor.processSyncTimeout(timeout);
-	}
-
-	@Override
-	public void processSyncResponse(RemoteSyncResponse syncResponse) {
-		DtoCommandsAndProof dtoCommandsAndProof = syncResponse.getCommandsAndProof();
-		if (dtoCommandsAndProof.getTail().getLedgerHeader().getEpoch() != currentEpoch.getEpoch()) {
-			log.warn("Response {} is a different epoch from current {}", syncResponse, currentEpoch.getEpoch());
-			return;
-		}
-
-		if (Objects.equals(dtoCommandsAndProof.getHead().getLedgerHeader(), this.currentEpoch.getProof().getRaw())) {
-			log.info("Received response to next epoch sync current {} next {}", this.currentEpoch, dtoCommandsAndProof);
-			DtoLedgerHeaderAndProof dto = dtoCommandsAndProof.getTail();
-			if (!dto.getLedgerHeader().isEndOfEpoch()) {
-				log.warn("Bad message: {}", syncResponse);
-				return;
-			}
-
-			// TODO: verify
-			VerifiedLedgerHeaderAndProof verified = new VerifiedLedgerHeaderAndProof(
-				dto.getOpaque0(),
-				dto.getOpaque1(),
-				dto.getOpaque2(),
-				dto.getOpaque3(),
-				dto.getLedgerHeader(),
-				dto.getSignatures()
-			);
-
-			if (Objects.equals(dto.getLedgerHeader().getAccumulatorState(), this.currentHeader.getAccumulatorState())) {
-				syncedEpochSender.sendSyncedEpoch(verified);
-				return;
-			}
-
-			LocalSyncRequest localSyncRequest = new LocalSyncRequest(verified, ImmutableList.of(syncResponse.getSender()));
-			localSyncServiceProcessor.processLocalSyncRequest(localSyncRequest);
-
-			return;
-		}
-
-		currentVerifier.processSyncResponse(syncResponse);
 	}
 }

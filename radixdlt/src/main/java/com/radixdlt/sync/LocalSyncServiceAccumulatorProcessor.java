@@ -34,7 +34,7 @@ import org.apache.logging.log4j.Logger;
  * Thread-safety must be handled by caller.
  */
 @NotThreadSafe
-public final class LocalSyncServiceAccumulatorProcessor implements LocalSyncServiceProcessor<LedgerUpdate> {
+public final class LocalSyncServiceAccumulatorProcessor implements LocalSyncServiceProcessor, LedgerUpdateProcessor<LedgerUpdate> {
 	public static final class SyncInProgress {
 		private final VerifiedLedgerHeaderAndProof targetHeader;
 		private final ImmutableList<BFTNode> targetNodes;
@@ -92,7 +92,6 @@ public final class LocalSyncServiceAccumulatorProcessor implements LocalSyncServ
 		}
 	}
 
-	// TODO: Handle epoch changes with same state version
 	@Override
 	public void processLocalSyncRequest(LocalSyncRequest request) {
 		log.info("SYNC_LOCAL_REQUEST: {}", request);

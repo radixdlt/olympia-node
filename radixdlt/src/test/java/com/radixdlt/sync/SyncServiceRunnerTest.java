@@ -17,7 +17,6 @@
 
 package com.radixdlt.sync;
 
-import com.radixdlt.epochs.EpochsLocalSyncServiceProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.sync.SyncServiceRunner.LocalSyncRequestsRx;
 import com.radixdlt.sync.SyncServiceRunner.SyncTimeoutsRx;
@@ -37,13 +36,14 @@ import static org.mockito.Mockito.when;
 
 public class SyncServiceRunnerTest {
 
-	private SyncServiceRunner syncServiceRunner;
+	private SyncServiceRunner<LedgerUpdate> syncServiceRunner;
 	private LocalSyncRequestsRx localSyncRequestsRx;
 	private SyncTimeoutsRx syncTimeoutsRx;
 	private StateSyncNetwork stateSyncNetwork;
-	private EpochsLocalSyncServiceProcessor syncServiceProcessor;
+	private LocalSyncServiceProcessor syncServiceProcessor;
 	private RemoteSyncResponseProcessor remoteSyncResponseProcessor;
 	private RemoteSyncServiceProcessor remoteSyncServiceProcessor;
+	private LedgerUpdateProcessor<LedgerUpdate> ledgerUpdateProcessor;
 	private Subject<LedgerUpdate> versionUpdatesSubject;
 	private Subject<RemoteSyncRequest> requestsSubject;
 	private Subject<RemoteSyncResponse> responsesSubject;
@@ -64,22 +64,22 @@ public class SyncServiceRunnerTest {
 
 		this.requestsSubject = PublishSubject.create();
 		when(stateSyncNetwork.syncRequests()).thenReturn(requestsSubject);
-
-		this.syncServiceProcessor = mock(EpochsLocalSyncServiceProcessor.class);
-		this.remoteSyncResponseProcessor = mock(RemoteSyncResponseProcessor.class);
-		this.remoteSyncServiceProcessor = mock(RemoteSyncServiceProcessor.class);
-
 		this.versionUpdatesSubject = PublishSubject.create();
 
+		this.syncServiceProcessor = mock(LocalSyncServiceProcessor.class);
+		this.remoteSyncResponseProcessor = mock(RemoteSyncResponseProcessor.class);
+		this.remoteSyncServiceProcessor = mock(RemoteSyncServiceProcessor.class);
+		this.ledgerUpdateProcessor = mock(LedgerUpdateProcessor.class);
 
-		syncServiceRunner = new SyncServiceRunner(
+		syncServiceRunner = new SyncServiceRunner<>(
 			localSyncRequestsRx,
 			syncTimeoutsRx,
 			versionUpdatesSubject,
 			stateSyncNetwork,
 			syncServiceProcessor,
 			remoteSyncServiceProcessor,
-			remoteSyncResponseProcessor
+			remoteSyncResponseProcessor,
+			ledgerUpdateProcessor
 		);
 
 		// Clear interrupted status

@@ -53,12 +53,13 @@ public final class SyncServiceRunner<T extends LedgerUpdate> implements ModuleRu
 	private final StateSyncNetwork stateSyncNetwork;
 	private final Scheduler singleThreadScheduler;
 	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("SyncManager"));
-	private final LocalSyncServiceProcessor<T> localSyncServiceProcessor;
+	private final LocalSyncServiceProcessor localSyncServiceProcessor;
 	private final RemoteSyncServiceProcessor remoteSyncServiceProcessor;
 	private final RemoteSyncResponseProcessor remoteSyncResponseProcessor;
 	private final SyncTimeoutsRx syncTimeoutsRx;
 	private final LocalSyncRequestsRx localSyncRequestsRx;
 	private final Observable<T> ledgerUpdates;
+	private final LedgerUpdateProcessor<T> ledgerUpdateProcessor;
 	private final Object lock = new Object();
 	private CompositeDisposable compositeDisposable;
 
@@ -68,9 +69,10 @@ public final class SyncServiceRunner<T extends LedgerUpdate> implements ModuleRu
 		SyncTimeoutsRx syncTimeoutsRx,
 		Observable<T> ledgerUpdates,
 		StateSyncNetwork stateSyncNetwork,
-		LocalSyncServiceProcessor<T> localSyncServiceProcessor,
+		LocalSyncServiceProcessor localSyncServiceProcessor,
 		RemoteSyncServiceProcessor remoteSyncServiceProcessor,
-		RemoteSyncResponseProcessor remoteSyncResponseProcessor
+		RemoteSyncResponseProcessor remoteSyncResponseProcessor,
+		LedgerUpdateProcessor<T> ledgerUpdateProcessor
 	) {
 		this.localSyncRequestsRx = Objects.requireNonNull(localSyncRequestsRx);
 		this.syncTimeoutsRx = Objects.requireNonNull(syncTimeoutsRx);
@@ -80,6 +82,7 @@ public final class SyncServiceRunner<T extends LedgerUpdate> implements ModuleRu
 		this.singleThreadScheduler = Schedulers.from(this.executorService);
 		this.remoteSyncServiceProcessor = Objects.requireNonNull(remoteSyncServiceProcessor);
 		this.remoteSyncResponseProcessor = Objects.requireNonNull(remoteSyncResponseProcessor);
+		this.ledgerUpdateProcessor = Objects.requireNonNull(ledgerUpdateProcessor);
 	}
 
 	/**
@@ -110,7 +113,7 @@ public final class SyncServiceRunner<T extends LedgerUpdate> implements ModuleRu
 
 			Disposable d4 = ledgerUpdates
 				.observeOn(singleThreadScheduler)
-				.subscribe(localSyncServiceProcessor::processLedgerUpdate);
+				.subscribe(ledgerUpdateProcessor::processLedgerUpdate);
 
 			compositeDisposable = new CompositeDisposable(d0, d1, d2, d3, d4);
 		}

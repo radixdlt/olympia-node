@@ -17,9 +17,8 @@
 
 package com.radixdlt.sync;
 
-import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
+import com.radixdlt.ledger.LedgerUpdate;
 
-public interface LocalSyncServiceProcessor {
-	void processLocalSyncRequest(LocalSyncRequest request);
-	void processSyncTimeout(SyncInProgress timeout);
+public interface LedgerUpdateProcessor<T extends LedgerUpdate> {
+	void processLedgerUpdate(T ledgerUpdate);
 }

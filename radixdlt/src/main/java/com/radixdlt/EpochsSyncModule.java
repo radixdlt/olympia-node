@@ -30,10 +30,11 @@ import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.epochs.EpochsLocalSyncServiceProcessor;
-import com.radixdlt.epochs.EpochsLocalSyncServiceProcessor.SyncedEpochSender;
+import com.radixdlt.epochs.EpochsRemoteSyncResponseProcessor;
+import com.radixdlt.epochs.SyncedEpochSender;
 import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.sync.LedgerUpdateProcessor;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncTimeoutScheduler;
 import com.radixdlt.sync.RemoteSyncResponseProcessor;
@@ -49,10 +50,21 @@ public class EpochsSyncModule extends AbstractModule {
 
 	@Override
 	public void configure() {
-		bind(Key.get(new TypeLiteral<LocalSyncServiceProcessor<EpochsLedgerUpdate>>() { }))
+		bind(Key.get(new TypeLiteral<LocalSyncServiceProcessor>() { }))
 			.to(EpochsLocalSyncServiceProcessor.class).in(Scopes.SINGLETON);
 		bind(Key.get(new TypeLiteral<RemoteSyncResponseProcessor>() { }))
-			.to(EpochsLocalSyncServiceProcessor.class).in(Scopes.SINGLETON);
+			.to(EpochsRemoteSyncResponseProcessor.class).in(Scopes.SINGLETON);
+	}
+
+	@Provides
+	private LedgerUpdateProcessor<EpochsLedgerUpdate> epochsLedgerUpdateProcessor(
+		EpochsRemoteSyncResponseProcessor remoteSyncResponseProcessor,
+		EpochsLocalSyncServiceProcessor localSyncServiceProcessor
+	) {
+		return ledgerUpdate -> {
+			remoteSyncResponseProcessor.processLedgerUpdate(ledgerUpdate);
+			localSyncServiceProcessor.processLedgerUpdate(ledgerUpdate);
+		};
 	}
 
 	@Provides
@@ -85,7 +97,7 @@ public class EpochsSyncModule extends AbstractModule {
 	}
 
 	@Provides
-	private Function<BFTConfiguration, LocalSyncServiceProcessor<LedgerUpdate>> localSyncFactory(
+	private Function<BFTConfiguration, LocalSyncServiceAccumulatorProcessor> localSyncFactory(
 		Comparator<AccumulatorState> accumulatorComparator,
 		StateSyncNetwork stateSyncNetwork,
 		SyncTimeoutScheduler syncTimeoutScheduler

@@ -29,10 +29,8 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoCommandsAndProof;
-import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.sync.CommittedReader;
-import com.radixdlt.sync.LocalSyncServiceProcessor;
 import com.radixdlt.sync.RemoteSyncResponseAccumulatorVerifier;
 import com.radixdlt.sync.RemoteSyncResponseAccumulatorVerifier.InvalidAccumulatorSender;
 import com.radixdlt.sync.RemoteSyncResponseAccumulatorVerifier.VerifiedAccumulatorSender;
@@ -124,7 +122,7 @@ public class SyncServiceModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private LocalSyncServiceProcessor<LedgerUpdate> localSyncServiceProcessor(
+	private LocalSyncServiceAccumulatorProcessor localSyncServiceProcessor(
 		Comparator<AccumulatorState> accumulatorComparator,
 		StateSyncNetwork stateSyncNetwork,
 		SyncTimeoutScheduler syncTimeoutScheduler,

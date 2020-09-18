@@ -15,11 +15,10 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.sync;
+package com.radixdlt.epochs;
 
-import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 
-public interface LocalSyncServiceProcessor {
-	void processLocalSyncRequest(LocalSyncRequest request);
-	void processSyncTimeout(SyncInProgress timeout);
+public interface SyncedEpochSender {
+	void sendSyncedEpoch(VerifiedLedgerHeaderAndProof headerAndProof);
 }
