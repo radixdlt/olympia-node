@@ -95,7 +95,21 @@ public final class EpochsRemoteSyncResponseProcessor implements RemoteSyncRespon
 			log.info("Received response to next epoch sync current {} next {}", this.currentEpoch, dtoCommandsAndProof);
 			DtoLedgerHeaderAndProof dto = dtoCommandsAndProof.getTail();
 			if (!dto.getLedgerHeader().isEndOfEpoch()) {
-				log.warn("Bad message: {}", syncResponse);
+				log.warn("Bad message as sync epoch responses must be end of epochs: {}", syncResponse);
+				return;
+			}
+
+			if (Objects.equals(dto.getLedgerHeader().getAccumulatorState(), this.currentHeader.getAccumulatorState())) {
+				// TODO: cleanup this mess
+				DtoCommandsAndProof mockedDtoCommandsAndProof = new DtoCommandsAndProof(
+					ImmutableList.of(),
+					this.currentHeader.toDto(),
+					dto
+				);
+				RemoteSyncResponse mockedResponse = new RemoteSyncResponse(
+					syncResponse.getSender(), mockedDtoCommandsAndProof
+				);
+				currentVerifier.processSyncResponse(mockedResponse);
 				return;
 			}
 
@@ -108,15 +122,8 @@ public final class EpochsRemoteSyncResponseProcessor implements RemoteSyncRespon
 				dto.getLedgerHeader(),
 				dto.getSignatures()
 			);
-
-			if (Objects.equals(dto.getLedgerHeader().getAccumulatorState(), this.currentHeader.getAccumulatorState())) {
-				syncedEpochSender.sendSyncedEpoch(verified);
-				return;
-			}
-
 			LocalSyncRequest localSyncRequest = new LocalSyncRequest(verified, ImmutableList.of(syncResponse.getSender()));
 			localSyncRequestSender.sendLocalSyncRequest(localSyncRequest);
-
 			return;
 		}
 
