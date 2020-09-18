@@ -19,9 +19,12 @@ package com.radixdlt.consensus;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertex;
+import com.radixdlt.utils.Pair;
+import java.util.Optional;
 import org.junit.Test;
 
 public class BFTConfigurationTest {
@@ -30,6 +33,8 @@ public class BFTConfigurationTest {
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		VerifiedVertex vertex = mock(VerifiedVertex.class);
 		QuorumCertificate qc = mock(QuorumCertificate.class);
+		when(qc.getCommittedAndLedgerStateProof())
+			.thenReturn(Optional.of(Pair.of(mock(BFTHeader.class), mock(VerifiedLedgerHeaderAndProof.class))));
 
 		BFTConfiguration bftConfiguration = new BFTConfiguration(validatorSet, vertex, qc);
 		assertThat(bftConfiguration.getValidatorSet()).isEqualTo(validatorSet);

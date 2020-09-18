@@ -154,8 +154,8 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	public void commit(VerifiedCommandsAndProof verifiedCommandsAndProof) {
 		this.counters.increment(CounterType.LEDGER_PROCESSED);
 		synchronized (lock) {
-			final VerifiedLedgerHeaderAndProof committedHeader = verifiedCommandsAndProof.getHeader();
-			if (headerComparator.compare(committedHeader, this.currentLedgerHeader) <= 0) {
+			final VerifiedLedgerHeaderAndProof nextHeader = verifiedCommandsAndProof.getHeader();
+			if (headerComparator.compare(nextHeader, this.currentLedgerHeader) <= 0) {
 				return;
 			}
 
@@ -170,6 +170,9 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 				throw new IllegalStateException("Accumulator failure " + currentLedgerHeader + " " + verifiedCommandsAndProof);
 			}
 
+			// TODO: Add epoch extension verifier, otherwise potential ability to create safety break here with byzantine quorums
+			// TODO: since both consensus or sync can be behind in terms of epoch change sync
+
 			VerifiedCommandsAndProof commandsToStore = new VerifiedCommandsAndProof(
 				verifiedExtension.get(), verifiedCommandsAndProof.getHeader()
 			);
@@ -178,7 +181,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			Optional<BFTValidatorSet> validatorSet = this.stateComputer.commit(commandsToStore);
 
 			// TODO: move all of the following to post-persist event handling
-			this.currentLedgerHeader = committedHeader;
+			this.currentLedgerHeader = nextHeader;
 			this.counters.set(CounterType.LEDGER_STATE_VERSION, this.currentLedgerHeader.getStateVersion());
 
 			verifiedExtension.get().forEach(cmd -> this.mempool.removeCommitted(cmd.getHash()));

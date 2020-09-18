@@ -19,6 +19,7 @@ package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertex;
+import com.radixdlt.utils.Pair;
 import java.util.Objects;
 
 /**
@@ -28,11 +29,14 @@ public final class BFTConfiguration {
 	private final BFTValidatorSet validatorSet;
 	private final VerifiedVertex genesisVertex;
 	private final QuorumCertificate genesisQC;
+	private final VerifiedLedgerHeaderAndProof genesisHeader;
 
 	public BFTConfiguration(BFTValidatorSet validatorSet, VerifiedVertex genesisVertex, QuorumCertificate genesisQC) {
 		this.validatorSet = Objects.requireNonNull(validatorSet);
 		this.genesisVertex = Objects.requireNonNull(genesisVertex);
 		this.genesisQC = Objects.requireNonNull(genesisQC);
+		this.genesisHeader = this.genesisQC.getCommittedAndLedgerStateProof().map(Pair::getSecond)
+			.orElseThrow(() -> new IllegalArgumentException("genesisQC must be committed."));
 	}
 
 	public BFTValidatorSet getValidatorSet() {
@@ -41,6 +45,10 @@ public final class BFTConfiguration {
 
 	public VerifiedVertex getGenesisVertex() {
 		return genesisVertex;
+	}
+
+	public VerifiedLedgerHeaderAndProof getGenesisHeader() {
+		return this.genesisHeader;
 	}
 
 	public QuorumCertificate getGenesisQC() {

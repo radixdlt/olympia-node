@@ -36,6 +36,7 @@ import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
 import com.radixdlt.sync.StateSyncNetwork;
+import java.util.Optional;
 import java.util.function.Function;
 import org.junit.Before;
 import org.junit.Test;
@@ -106,5 +107,66 @@ public class EpochsLocalSyncServiceProcessorTest {
 		verify(stateSyncNetwork, times(1)).sendSyncRequest(any(), any());
 		verify(syncedEpochSender, never()).sendSyncedEpoch(any());
 		verify(initialProcessor, never()).processLocalSyncRequest(any());
+	}
+
+	@Test
+	public void given_current_epoch_1__and_ledger_epoch_update_and_epoch_2_request_with_equal_accumulator__then_should_do_nothing() {
+		when(initialEpoch.getEpoch()).thenReturn(1L);
+		when(initialEpoch.getProof()).thenReturn(mock(VerifiedLedgerHeaderAndProof.class));
+		LocalSyncServiceAccumulatorProcessor localSyncProcessor = mock(LocalSyncServiceAccumulatorProcessor.class);
+		when(localSyncFactory.apply(any())).thenReturn(localSyncProcessor);
+
+		AccumulatorState accumulatorState = mock(AccumulatorState.class);
+		EpochsLedgerUpdate ledgerUpdate = mock(EpochsLedgerUpdate.class);
+		EpochChange epochChange = mock(EpochChange.class);
+		when(epochChange.getEpoch()).thenReturn(2L);
+		BFTConfiguration configuration = mock(BFTConfiguration.class);
+		VerifiedLedgerHeaderAndProof genesisHeader = mock(VerifiedLedgerHeaderAndProof.class);
+		when(genesisHeader.getAccumulatorState()).thenReturn(accumulatorState);
+		when(genesisHeader.isEndOfEpoch()).thenReturn(false);
+		when(configuration.getGenesisHeader()).thenReturn(genesisHeader);
+		when(epochChange.getBFTConfiguration()).thenReturn(configuration);
+		when(ledgerUpdate.getEpochChange()).thenReturn(Optional.of(epochChange));
+		processor.processLedgerUpdate(ledgerUpdate);
+		LocalSyncRequest request = mock(LocalSyncRequest.class);
+		VerifiedLedgerHeaderAndProof header = mock(VerifiedLedgerHeaderAndProof.class);
+		when(header.getAccumulatorState()).thenReturn(accumulatorState);
+		when(header.getEpoch()).thenReturn(2L);
+		when(header.isEndOfEpoch()).thenReturn(false);
+		when(request.getTarget()).thenReturn(header);
+		processor.processLocalSyncRequest(request);
+
+		verify(stateSyncNetwork, never()).sendSyncRequest(any(), any());
+		verify(syncedEpochSender, never()).sendSyncedEpoch(any());
+		verify(initialProcessor, never()).processLocalSyncRequest(any());
+		verify(localSyncProcessor, never()).processLocalSyncRequest(any());
+	}
+
+	@Test
+	public void given_current_epoch_1__and_ledger_update_and_epoch_1_request_with_different_accumulator__then_should_forward() {
+		when(initialEpoch.getEpoch()).thenReturn(1L);
+		when(initialEpoch.getProof()).thenReturn(mock(VerifiedLedgerHeaderAndProof.class));
+		LocalSyncServiceAccumulatorProcessor localSyncProcessor = mock(LocalSyncServiceAccumulatorProcessor.class);
+		when(localSyncFactory.apply(any())).thenReturn(localSyncProcessor);
+
+		AccumulatorState accumulatorState = mock(AccumulatorState.class);
+		EpochsLedgerUpdate ledgerUpdate = mock(EpochsLedgerUpdate.class);
+		VerifiedLedgerHeaderAndProof tail = mock(VerifiedLedgerHeaderAndProof.class);
+		when(tail.getAccumulatorState()).thenReturn(accumulatorState);
+		when(ledgerUpdate.getTail()).thenReturn(tail);
+		when(ledgerUpdate.getEpochChange()).thenReturn(Optional.empty());
+		processor.processLedgerUpdate(ledgerUpdate);
+
+		LocalSyncRequest request = mock(LocalSyncRequest.class);
+		VerifiedLedgerHeaderAndProof header = mock(VerifiedLedgerHeaderAndProof.class);
+		when(header.getAccumulatorState()).thenReturn(mock(AccumulatorState.class));
+		when(header.getEpoch()).thenReturn(1L);
+		when(request.getTarget()).thenReturn(header);
+		processor.processLocalSyncRequest(request);
+
+		verify(stateSyncNetwork, never()).sendSyncRequest(any(), any());
+		verify(syncedEpochSender, never()).sendSyncedEpoch(any());
+		verify(initialProcessor, times(1)).processLocalSyncRequest(any());
+		verify(localSyncProcessor, never()).processLocalSyncRequest(any());
 	}
 }

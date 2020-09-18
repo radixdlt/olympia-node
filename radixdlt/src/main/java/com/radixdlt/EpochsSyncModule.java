@@ -23,9 +23,9 @@ import com.google.inject.Key;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.Ledger;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.epochs.EpochsLocalSyncServiceProcessor;
 import com.radixdlt.epochs.EpochsRemoteSyncResponseProcessor;
@@ -42,6 +42,7 @@ import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier.VerifiedValidato
 import com.radixdlt.sync.LocalSyncServiceProcessor;
 import com.radixdlt.sync.StateSyncNetwork;
 import java.util.Comparator;
+import java.util.Set;
 import java.util.function.Function;
 
 /**
@@ -54,17 +55,17 @@ public class EpochsSyncModule extends AbstractModule {
 			.to(EpochsLocalSyncServiceProcessor.class).in(Scopes.SINGLETON);
 		bind(Key.get(new TypeLiteral<RemoteSyncResponseProcessor>() { }))
 			.to(EpochsRemoteSyncResponseProcessor.class).in(Scopes.SINGLETON);
+		Multibinder<LedgerUpdateProcessor<EpochsLedgerUpdate>> ledgerUpdateProcessors =
+			Multibinder.newSetBinder(binder(), new TypeLiteral<LedgerUpdateProcessor<EpochsLedgerUpdate>>() { });
+		ledgerUpdateProcessors.addBinding().to(EpochsRemoteSyncResponseProcessor.class);
+		ledgerUpdateProcessors.addBinding().to(EpochsLocalSyncServiceProcessor.class);
 	}
 
 	@Provides
 	private LedgerUpdateProcessor<EpochsLedgerUpdate> epochsLedgerUpdateProcessor(
-		EpochsRemoteSyncResponseProcessor remoteSyncResponseProcessor,
-		EpochsLocalSyncServiceProcessor localSyncServiceProcessor
+		Set<LedgerUpdateProcessor<EpochsLedgerUpdate>> ledgerUpdateProcessors
 	) {
-		return ledgerUpdate -> {
-			remoteSyncResponseProcessor.processLedgerUpdate(ledgerUpdate);
-			localSyncServiceProcessor.processLedgerUpdate(ledgerUpdate);
-		};
+		return ledgerUpdate -> ledgerUpdateProcessors.forEach(p -> p.processLedgerUpdate(ledgerUpdate));
 	}
 
 	@Provides
@@ -98,17 +99,13 @@ public class EpochsSyncModule extends AbstractModule {
 		StateSyncNetwork stateSyncNetwork,
 		SyncTimeoutScheduler syncTimeoutScheduler
 	) {
-		return config -> {
-			VerifiedLedgerHeaderAndProof header = config.getGenesisQC().getCommittedAndLedgerStateProof()
-				.orElseThrow(RuntimeException::new).getSecond();
-
-			return new LocalSyncServiceAccumulatorProcessor(
+		return config ->
+			new LocalSyncServiceAccumulatorProcessor(
 				stateSyncNetwork,
 				syncTimeoutScheduler,
 				accumulatorComparator,
-				header,
+				config.getGenesisHeader(),
 				200
 			);
-		};
 	}
 }
