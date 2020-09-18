@@ -79,8 +79,7 @@ public class EpochsLocalSyncServiceProcessor implements LocalSyncServiceProcesso
 		if (maybeEpochChange.isPresent()) {
 			final EpochChange epochChange = maybeEpochChange.get();
 			this.currentEpoch = epochChange;
-			this.currentHeader = epochChange.getBFTConfiguration().getGenesisQC().getCommittedAndLedgerStateProof()
-				.orElseThrow(RuntimeException::new).getSecond();
+			this.currentHeader = epochChange.getBFTConfiguration().getGenesisHeader();
 			this.localSyncServiceProcessor = localSyncFactory.apply(epochChange.getBFTConfiguration());
 			this.outsideOfCurrentEpochRequests.headMap(epochChange.getEpoch()).clear();
 

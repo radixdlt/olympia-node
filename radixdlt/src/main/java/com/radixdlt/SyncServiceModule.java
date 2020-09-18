@@ -134,14 +134,11 @@ public class SyncServiceModule extends AbstractModule {
 		SyncTimeoutScheduler syncTimeoutScheduler,
 		BFTConfiguration initialConfiguration
 	) {
-		VerifiedLedgerHeaderAndProof header = initialConfiguration.getGenesisQC().getCommittedAndLedgerStateProof()
-			.orElseThrow(RuntimeException::new).getSecond();
-
 		return new LocalSyncServiceAccumulatorProcessor(
 			stateSyncNetwork,
 			syncTimeoutScheduler,
 			accumulatorComparator,
-			header,
+			initialConfiguration.getGenesisHeader(),
 			200
 		);
 	}
