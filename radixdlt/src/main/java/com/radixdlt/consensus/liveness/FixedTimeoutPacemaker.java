@@ -21,7 +21,6 @@ import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import java.util.concurrent.TimeUnit;
-import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Objects;
@@ -45,9 +44,9 @@ public final class FixedTimeoutPacemaker implements Pacemaker {
 		void scheduleTimeout(View view, long milliseconds);
 	}
 
-	private static final Logger log = LogManager.getLogger();
 	private static final long LOGGING_INTERVAL = TimeUnit.SECONDS.toMillis(1);
 
+	private final Logger log;
 	private final long timeoutMilliseconds;
 	private final TimeoutSender timeoutSender;
 	private final PendingNewViews pendingNewViews;
@@ -55,12 +54,13 @@ public final class FixedTimeoutPacemaker implements Pacemaker {
 	private View lastSyncView = View.of(0L);
 	private long nextLogging = 0;
 
-	public FixedTimeoutPacemaker(long timeoutMilliseconds, TimeoutSender timeoutSender) {
+	public FixedTimeoutPacemaker(long timeoutMilliseconds, TimeoutSender timeoutSender, Logger log) {
 		if (timeoutMilliseconds <= 0) {
 			throw new IllegalArgumentException("timeoutMilliseconds must be > 0 but was " + timeoutMilliseconds);
 		}
 		this.timeoutMilliseconds = timeoutMilliseconds;
 		this.timeoutSender = Objects.requireNonNull(timeoutSender);
+		this.log = Objects.requireNonNull(log);
 		this.pendingNewViews = new PendingNewViews();
 	}
 

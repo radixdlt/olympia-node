@@ -98,10 +98,15 @@ public class EpochsLocalSyncServiceProcessor implements LocalSyncServiceProcesso
 
 	@Override
 	public void processLocalSyncRequest(LocalSyncRequest request) {
-		if (request.getTarget().getEpoch() > currentEpoch.getEpoch()) {
-			outsideOfCurrentEpochRequests.putIfAbsent(request.getTarget().getEpoch(), new ArrayList<>());
-			outsideOfCurrentEpochRequests.get(request.getTarget().getEpoch()).add(request);
+		final long targetEpoch = request.getTarget().getEpoch();
+		if (targetEpoch > currentEpoch.getEpoch()) {
 			log.warn("Request {} is a different epoch from current {} sending epoch sync", request, currentEpoch.getEpoch());
+
+			outsideOfCurrentEpochRequests.compute(targetEpoch, (epoch, list) -> {
+				List<LocalSyncRequest> requests = list == null ? new ArrayList<>() : list;
+				requests.add(request);
+				return requests;
+			});
 			stateSyncNetwork.sendSyncRequest(request.getTargetNodes().get(0), currentEpoch.getProof().toDto());
 			return;
 		}

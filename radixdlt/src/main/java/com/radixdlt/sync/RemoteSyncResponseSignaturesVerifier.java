@@ -18,14 +18,12 @@
 package com.radixdlt.sync;
 
 import com.google.inject.Inject;
-import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.TimestampedECDSASignature;
 import com.radixdlt.consensus.TimestampedVoteData;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
@@ -67,15 +65,9 @@ public class RemoteSyncResponseSignaturesVerifier implements RemoteSyncResponseP
 	public void processSyncResponse(RemoteSyncResponse syncResponse) {
 		DtoCommandsAndProof commandsAndProof = syncResponse.getCommandsAndProof();
 		DtoLedgerHeaderAndProof endHeader = commandsAndProof.getTail();
-		VoteData voteData = new VoteData(
-			endHeader.getOpaque0(),
-			endHeader.getOpaque1(),
-			new BFTHeader(
-				View.of(endHeader.getOpaque2()),
-				endHeader.getOpaque3(),
-				endHeader.getLedgerHeader()
-			)
-		);
+
+		// TODO: Figure out where this reconstruction should take place
+		VoteData voteData = endHeader.toVoteData();
 		Map<BFTNode, TimestampedECDSASignature> signatures = endHeader.getSignatures().getSignatures();
 		for (Entry<BFTNode, TimestampedECDSASignature> nodeAndSignature : signatures.entrySet()) {
 			BFTNode node = nodeAndSignature.getKey();

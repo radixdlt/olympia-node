@@ -26,8 +26,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.sync.LocalSyncRequest;
@@ -87,5 +89,22 @@ public class EpochsLocalSyncServiceProcessorTest {
 		verify(stateSyncNetwork, never()).sendSyncRequest(any(), any());
 		verify(syncedEpochSender, never()).sendSyncedEpoch(any());
 		verify(initialProcessor, times(1)).processLocalSyncRequest(eq(request));
+	}
+
+	@Test
+	public void given_current_epoch_1__and_request_for_epoch_2__then_should_send_epoch_sync_request() {
+		when(initialEpoch.getEpoch()).thenReturn(1L);
+		when(initialEpoch.getProof()).thenReturn(mock(VerifiedLedgerHeaderAndProof.class));
+
+		LocalSyncRequest request = mock(LocalSyncRequest.class);
+		when(request.getTargetNodes()).thenReturn(ImmutableList.of(mock(BFTNode.class)));
+		VerifiedLedgerHeaderAndProof header = mock(VerifiedLedgerHeaderAndProof.class);
+		when(header.getEpoch()).thenReturn(2L);
+		when(request.getTarget()).thenReturn(header);
+		processor.processLocalSyncRequest(request);
+
+		verify(stateSyncNetwork, times(1)).sendSyncRequest(any(), any());
+		verify(syncedEpochSender, never()).sendSyncedEpoch(any());
+		verify(initialProcessor, never()).processLocalSyncRequest(any());
 	}
 }

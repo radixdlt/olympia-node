@@ -250,7 +250,7 @@ public class SimulationNetwork {
 		public void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<VerifiedVertex> vertices) {
 			SimulatedVerticesRequest request = (SimulatedVerticesRequest) originalRequest;
 			Object opaque = receivers.computeIfAbsent(request.requestor, SimulatedNetworkImpl::new).opaqueMap.get(request.vertexId);
-			GetVerticesResponse vertexResponse = new GetVerticesResponse(request.vertexId, vertices, opaque);
+			GetVerticesResponse vertexResponse = new GetVerticesResponse(thisNode, request.vertexId, vertices, opaque);
 			receivedMessages.onNext(MessageInTransit.newMessage(vertexResponse, thisNode, request.requestor));
 		}
 
@@ -260,7 +260,7 @@ public class SimulationNetwork {
 
 			SimulatedVerticesRequest request = (SimulatedVerticesRequest) originalRequest;
 			Object opaque = receivers.computeIfAbsent(request.requestor, SimulatedNetworkImpl::new).opaqueMap.get(request.vertexId);
-			GetVerticesErrorResponse vertexResponse = new GetVerticesErrorResponse(request.vertexId, highestQC, highestCommittedQC, opaque);
+			GetVerticesErrorResponse vertexResponse = new GetVerticesErrorResponse(thisNode, request.vertexId, highestQC, highestCommittedQC, opaque);
 			receivedMessages.onNext(MessageInTransit.newMessage(vertexResponse, thisNode, request.requestor));
 		}
 
