@@ -31,6 +31,7 @@ import com.radixdlt.sync.StateSyncNetwork;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.function.Function;
 import javax.annotation.concurrent.NotThreadSafe;
@@ -74,8 +75,9 @@ public class EpochsLocalSyncServiceProcessor implements LocalSyncServiceProcesso
 
 	@Override
 	public void processLedgerUpdate(EpochsLedgerUpdate ledgerUpdate) {
-		if (ledgerUpdate.getEpochChange().isPresent()) {
-			final EpochChange epochChange = ledgerUpdate.getEpochChange().get();
+		Optional<EpochChange> maybeEpochChange = ledgerUpdate.getEpochChange();
+		if (maybeEpochChange.isPresent()) {
+			final EpochChange epochChange = maybeEpochChange.get();
 			this.currentEpoch = epochChange;
 			this.currentHeader = epochChange.getBFTConfiguration().getGenesisQC().getCommittedAndLedgerStateProof()
 				.orElseThrow(RuntimeException::new).getSecond();
