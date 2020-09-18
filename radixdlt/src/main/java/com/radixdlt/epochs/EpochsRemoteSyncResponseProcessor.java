@@ -32,6 +32,7 @@ import com.radixdlt.sync.RemoteSyncResponse;
 import com.radixdlt.sync.RemoteSyncResponseProcessor;
 import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import javax.annotation.concurrent.NotThreadSafe;
 import org.apache.logging.log4j.LogManager;
@@ -73,8 +74,9 @@ public final class EpochsRemoteSyncResponseProcessor implements RemoteSyncRespon
 
 	@Override
 	public void processLedgerUpdate(EpochsLedgerUpdate ledgerUpdate) {
-		if (ledgerUpdate.getEpochChange().isPresent()) {
-			final EpochChange epochChange = ledgerUpdate.getEpochChange().get();
+		Optional<EpochChange> maybeEpochChange = ledgerUpdate.getEpochChange();
+		if (maybeEpochChange.isPresent()) {
+			final EpochChange epochChange = maybeEpochChange.get();
 			this.currentEpoch = epochChange;
 			this.currentHeader = ledgerUpdate.getTail();
 			this.currentVerifier = verifierFactory.apply(epochChange.getBFTConfiguration());
