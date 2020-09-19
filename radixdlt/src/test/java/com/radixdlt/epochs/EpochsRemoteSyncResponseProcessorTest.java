@@ -26,10 +26,15 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.consensus.BFTConfiguration;
+import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.sync.SyncRequestSender;
+import com.radixdlt.crypto.Hash;
+import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.sync.RemoteSyncResponse;
@@ -133,5 +138,39 @@ public class EpochsRemoteSyncResponseProcessorTest {
 		verify(nextValidatorSetVerifier, times(1)).processSyncResponse(any());
 	}
 
+	@Test
+	public void given_epoch_is_1__when_process_epoch_sync_response__then_should_send_local_sync_request() {
+		LedgerHeader headHeader = mock(LedgerHeader.class);
+		when(headHeader.getEpoch()).thenReturn(0L);
+		when(initialEpoch.getEpoch()).thenReturn(1L);
+		VerifiedLedgerHeaderAndProof verifiedLedgerHeaderAndProof = mock(VerifiedLedgerHeaderAndProof.class);
+		when(verifiedLedgerHeaderAndProof.getRaw()).thenReturn(headHeader);
+		when(initialEpoch.getProof()).thenReturn(verifiedLedgerHeaderAndProof);
 
+		RemoteSyncResponse response = mock(RemoteSyncResponse.class);
+		DtoCommandsAndProof dtoCommandsAndProof = mock(DtoCommandsAndProof.class);
+		DtoLedgerHeaderAndProof tail = mock(DtoLedgerHeaderAndProof.class);
+		LedgerHeader tailHeader = mock(LedgerHeader.class);
+		when(tailHeader.getEpoch()).thenReturn(1L);
+		when(tailHeader.isEndOfEpoch()).thenReturn(true);
+		when(tailHeader.getAccumulatorState()).thenReturn(mock(AccumulatorState.class));
+		when(tail.getOpaque0()).thenReturn(mock(BFTHeader.class));
+		when(tail.getOpaque1()).thenReturn(mock(BFTHeader.class));
+		when(tail.getOpaque3()).thenReturn(mock(Hash.class));
+		when(tail.getSignatures()).thenReturn(mock(TimestampedECDSASignatures.class));
+		when(tail.getLedgerHeader()).thenReturn(tailHeader);
+		when(dtoCommandsAndProof.getTail()).thenReturn(tail);
+		DtoLedgerHeaderAndProof head = mock(DtoLedgerHeaderAndProof.class);
+		when(head.getLedgerHeader()).thenReturn(headHeader);
+		when(dtoCommandsAndProof.getHead()).thenReturn(head);
+		when(dtoCommandsAndProof.getTail()).thenReturn(tail);
+		when(response.getCommandsAndProof()).thenReturn(dtoCommandsAndProof);
+		when(response.getSender()).thenReturn(mock(BFTNode.class));
+		this.responseProcessor.processSyncResponse(response);
+
+		verify(localSyncRequestSender, times(1)).sendLocalSyncRequest(any());
+		verify(syncedEpochSender, never()).sendSyncedEpoch(any());
+		verify(initialVerifier, never()).processSyncResponse(any());
+		verify(verifierFactory, never()).apply(any());
+	}
 }
