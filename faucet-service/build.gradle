@@ -29,8 +29,6 @@ apply plugin: 'net.nemerosa.versioning'
 
 mainClassName = 'com.radixdlt.faucet.Faucet'
 
-sourceCompatibility = 1.8
-
 versionFile {
     mustRunAfter(processResources)
     // Path to the file to be written
@@ -50,6 +48,7 @@ classes {
 compileJava {
     options.compilerArgs << '-proc:none'
     options.compilerArgs << "-Xlint:all" << "-Werror"
+    options.release = 11
 }
 
 // Using deb4docker name here, so that we can build faucet and ledger
