@@ -42,7 +42,7 @@ import com.radixdlt.consensus.sync.SyncRequestSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.ledger.StateComputerLedger;
-import com.radixdlt.ledger.StateComputerLedger.CommittedSender;
+import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
 import com.radixdlt.ledger.StateComputerLedger.CommittedStateSyncSender;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import org.junit.Test;
@@ -70,7 +70,7 @@ public class LedgerModuleTest {
 			bind(VerifiedLedgerHeaderAndProof.class).toInstance(verifiedLedgerHeaderAndProof);
 			bind(BFTValidatorSet.class).toInstance(mock(BFTValidatorSet.class));
 			bind(BFTConfiguration.class).toInstance(mock(BFTConfiguration.class));
-			Multibinder.newSetBinder(binder(), CommittedSender.class);
+			Multibinder.newSetBinder(binder(), LedgerUpdateSender.class);
 		}
 	}
 

@@ -18,22 +18,15 @@
 package com.radixdlt;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.sync.SyncRequestSender;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.ledger.StateComputerLedger.CommittedSender;
 import com.radixdlt.sync.LocalSyncRequest;
-import com.radixdlt.sync.LocalSyncServiceProcessor.SyncInProgress;
-import com.radixdlt.sync.LocalSyncServiceProcessor.SyncTimeoutScheduler;
+import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
+import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncTimeoutScheduler;
 import com.radixdlt.sync.SyncServiceRunner.LocalSyncRequestsRx;
 import com.radixdlt.sync.SyncServiceRunner.SyncTimeoutsRx;
-import com.radixdlt.sync.SyncServiceRunner.VersionUpdatesRx;
 import com.radixdlt.utils.ScheduledSenderToRx;
 import com.radixdlt.utils.SenderToRx;
 import com.radixdlt.utils.ThreadFactories;
-import com.radixdlt.utils.TwoSenderToRx;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -46,12 +39,6 @@ public class SyncRxModule extends AbstractModule {
 		SenderToRx<LocalSyncRequest, LocalSyncRequest> syncRequests = new SenderToRx<>(c -> c);
 		bind(SyncRequestSender.class).toInstance(syncRequests::send);
 		bind(LocalSyncRequestsRx.class).toInstance(syncRequests::rx);
-
-		TwoSenderToRx<VerifiedCommandsAndProof, BFTValidatorSet, VerifiedLedgerHeaderAndProof> committedCommands
-			= new TwoSenderToRx<>((cmd, vset) -> cmd.getHeader());
-		Multibinder<CommittedSender> committedSenderBinder = Multibinder.newSetBinder(binder(), CommittedSender.class);
-		committedSenderBinder.addBinding().toInstance(committedCommands::send);
-		bind(VersionUpdatesRx.class).toInstance(committedCommands::rx);
 
 		ScheduledExecutorService ses = Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("SyncTimeoutSender"));
 		ScheduledSenderToRx<SyncInProgress> syncsInProgress = new ScheduledSenderToRx<>(ses);

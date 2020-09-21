@@ -39,6 +39,7 @@ import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
+import com.radixdlt.sync.RemoteSyncResponse;
 import com.radixdlt.sync.StateSyncNetwork;
 import com.radixdlt.sync.RemoteSyncRequest;
 import com.radixdlt.ledger.DtoCommandsAndProof;
@@ -249,7 +250,7 @@ public class SimulationNetwork {
 		public void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<VerifiedVertex> vertices) {
 			SimulatedVerticesRequest request = (SimulatedVerticesRequest) originalRequest;
 			Object opaque = receivers.computeIfAbsent(request.requestor, SimulatedNetworkImpl::new).opaqueMap.get(request.vertexId);
-			GetVerticesResponse vertexResponse = new GetVerticesResponse(request.vertexId, vertices, opaque);
+			GetVerticesResponse vertexResponse = new GetVerticesResponse(thisNode, request.vertexId, vertices, opaque);
 			receivedMessages.onNext(MessageInTransit.newMessage(vertexResponse, thisNode, request.requestor));
 		}
 
@@ -259,7 +260,7 @@ public class SimulationNetwork {
 
 			SimulatedVerticesRequest request = (SimulatedVerticesRequest) originalRequest;
 			Object opaque = receivers.computeIfAbsent(request.requestor, SimulatedNetworkImpl::new).opaqueMap.get(request.vertexId);
-			GetVerticesErrorResponse vertexResponse = new GetVerticesErrorResponse(request.vertexId, highestQC, highestCommittedQC, opaque);
+			GetVerticesErrorResponse vertexResponse = new GetVerticesErrorResponse(thisNode, request.vertexId, highestQC, highestCommittedQC, opaque);
 			receivedMessages.onNext(MessageInTransit.newMessage(vertexResponse, thisNode, request.requestor));
 		}
 
@@ -306,8 +307,8 @@ public class SimulationNetwork {
 		}
 
 		@Override
-		public Observable<DtoCommandsAndProof> syncResponses() {
-			return myMessages.ofType(DtoCommandsAndProof.class);
+		public Observable<RemoteSyncResponse> syncResponses() {
+			return myMessages.ofType(RemoteSyncResponse.class);
 		}
 
 		@Override
@@ -323,7 +324,8 @@ public class SimulationNetwork {
 
 		@Override
 		public void sendSyncResponse(BFTNode node, DtoCommandsAndProof commandsAndProof) {
-			receivedMessages.onNext(MessageInTransit.newMessage(commandsAndProof, thisNode, node));
+			RemoteSyncResponse syncResponse = new RemoteSyncResponse(thisNode, commandsAndProof);
+			receivedMessages.onNext(MessageInTransit.newMessage(syncResponse, thisNode, node));
 		}
 	}
 

@@ -31,6 +31,7 @@ public class GetVerticesErrorResponseTest {
 	private QuorumCertificate highestQC;
 	private QuorumCertificate highestCommittedQC;
 	private GetVerticesErrorResponse response;
+	private BFTNode node;
 
 	@Before
 	public void setUp() {
@@ -38,7 +39,8 @@ public class GetVerticesErrorResponseTest {
 		this.opaque = mock(Object.class);
 		this.highestQC = mock(QuorumCertificate.class);
 		this.highestCommittedQC = mock(QuorumCertificate.class);
-		this.response = new GetVerticesErrorResponse(this.vertexId, this.highestQC, this.highestCommittedQC, this.opaque);
+		this.node = mock(BFTNode.class);
+		this.response = new GetVerticesErrorResponse(this.node, this.vertexId, this.highestQC, this.highestCommittedQC, this.opaque);
 	}
 
 	@Test

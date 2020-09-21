@@ -17,7 +17,6 @@
 
 package com.radixdlt.sync;
 
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
@@ -50,21 +49,11 @@ public class RemoteSyncServiceProcessor {
 	}
 
 	public void processRemoteSyncRequest(RemoteSyncRequest syncRequest) {
-		log.info("SYNC_REQUEST: {}", syncRequest);
+		log.info("REMOTE_SYNC_REQUEST: {}", syncRequest);
 		DtoLedgerHeaderAndProof currentHeader = syncRequest.getCurrentHeader();
-
-		// TODO: Verify request
-		VerifiedLedgerHeaderAndProof verifiedHeader = new VerifiedLedgerHeaderAndProof(
-			currentHeader.getOpaque0(),
-			currentHeader.getOpaque1(),
-			currentHeader.getOpaque2(),
-			currentHeader.getOpaque3(),
-			currentHeader.getLedgerHeader(),
-			currentHeader.getSignatures()
-		);
-
-		VerifiedCommandsAndProof committedCommands = committedReader.getNextCommittedCommands(verifiedHeader.getStateVersion(), batchSize);
+		VerifiedCommandsAndProof committedCommands = committedReader.getNextCommittedCommands(currentHeader, batchSize);
 		if (committedCommands == null) {
+			log.warn("REMOTE_SYNC_REQUEST: Unable to serve sync request {}.", syncRequest);
 			return;
 		}
 
@@ -74,7 +63,8 @@ public class RemoteSyncServiceProcessor {
 			committedCommands.getHeader().toDto()
 		);
 
+		log.info("REMOTE_SYNC_REQUEST: Sending response {}", verifiable);
+
 		stateSyncNetwork.sendSyncResponse(syncRequest.getNode(), verifiable);
 	}
-
 }

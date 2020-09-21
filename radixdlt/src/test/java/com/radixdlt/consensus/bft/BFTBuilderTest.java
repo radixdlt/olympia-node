@@ -39,6 +39,7 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.UInt256;
+import org.apache.logging.log4j.Logger;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -96,6 +97,7 @@ public class BFTBuilderTest {
 			.pacemaker(pacemaker)
 			.vertexStore(vertexStore)
 			.self(self)
+			.logger(mock(Logger.class))
 			.build();
 
 		Proposal proposal = mock(Proposal.class);

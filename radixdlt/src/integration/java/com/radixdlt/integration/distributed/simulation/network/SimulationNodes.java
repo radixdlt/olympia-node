@@ -23,24 +23,23 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Module;
-import com.google.inject.Scopes;
+import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
+import com.google.inject.name.Named;
 import com.google.inject.name.Names;
 import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.ConsensusRxModule;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.SystemInfoRxModule;
-import com.radixdlt.consensus.EpochChangeRx;
+import com.radixdlt.epochs.EpochChangeRx;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCountersImpl;
-import com.radixdlt.integration.distributed.MockedCryptoModule;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.integration.distributed.simulation.SimulationNetworkModule;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.Mempool;
-import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.systeminfo.InfoRx;
 import com.radixdlt.consensus.bft.BFTNode;
 
@@ -59,10 +58,10 @@ public class SimulationNodes {
 	private final int pacemakerTimeout;
 	private final SimulationNetwork underlyingNetwork;
 	private final ImmutableList<Injector> nodeInstances;
-	private final List<BFTNode> nodes;
+	private final List<ECKeyPair> nodes;
 	private final Module baseModule;
 	private final Module overrideModule;
-	private final Map<BFTNode, Module> byzantineNodeModules;
+	private final Map<ECKeyPair, Module> byzantineNodeModules;
 
 	/**
 	 * Create a BFT test network with an underlying simulated network.
@@ -71,12 +70,12 @@ public class SimulationNodes {
 	 * @param pacemakerTimeout a fixed pacemaker timeout used for all nodes
 	 */
 	public SimulationNodes(
-		List<BFTNode> nodes,
+		List<ECKeyPair> nodes,
 		SimulationNetwork underlyingNetwork,
 		int pacemakerTimeout,
 		Module baseModule,
 		Module overrideModule,
-		Map<BFTNode, Module> byzantineNodeModules
+		Map<ECKeyPair, Module> byzantineNodeModules
 	) {
 		this.nodes = nodes;
 		this.baseModule = baseModule;
@@ -87,20 +86,23 @@ public class SimulationNodes {
 		this.nodeInstances = nodes.stream().map(this::createBFTInstance).collect(ImmutableList.toImmutableList());
 	}
 
-	private Injector createBFTInstance(BFTNode self) {
+	private Injector createBFTInstance(ECKeyPair self) {
 		Module module = Modules.combine(
 			new AbstractModule() {
 				@Override
 				public void configure() {
-					bind(BFTNode.class).annotatedWith(Names.named("self")).toInstance(self);
-					bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
-					bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
+					bind(ECKeyPair.class).annotatedWith(Names.named("self")).toInstance(self);
+				}
+
+				@Provides
+				@Named("self")
+				private BFTNode self(@Named("self") ECKeyPair selfKey) {
+					return BFTNode.create(selfKey.getPublicKey());
 				}
 			},
 			new ConsensusModule(pacemakerTimeout),
 			new ConsensusRxModule(),
 			new SystemInfoRxModule(),
-			new MockedCryptoModule(),
 			new SimulationNetworkModule(underlyingNetwork),
 			baseModule
 		);
@@ -127,7 +129,7 @@ public class SimulationNodes {
 
 		Observable<Pair<BFTNode, VerifiedVertex>> committedVertices();
 
-		Observable<Pair<BFTNode, VerifiedCommandsAndProof>> committedCommands();
+		Observable<Pair<BFTNode, LedgerUpdate>> ledgerUpdates();
 
 		InfoRx getInfo(BFTNode node);
 
@@ -150,7 +152,8 @@ public class SimulationNodes {
 		return new RunningNetwork() {
 			@Override
 			public List<BFTNode> getNodes() {
-				return nodes;
+				// Just do first instance for now
+				return nodeInstances.get(0).getInstance(Key.get(new TypeLiteral<ImmutableList<BFTNode>>() { }));
 			}
 
 			@Override
@@ -184,11 +187,11 @@ public class SimulationNodes {
 			}
 
 			@Override
-			public Observable<Pair<BFTNode, VerifiedCommandsAndProof>> committedCommands() {
-				Set<Observable<Pair<BFTNode, VerifiedCommandsAndProof>>> committedCommands = nodeInstances.stream()
+			public Observable<Pair<BFTNode, LedgerUpdate>> ledgerUpdates() {
+				Set<Observable<Pair<BFTNode, LedgerUpdate>>> committedCommands = nodeInstances.stream()
 					.map(i -> {
 						BFTNode node = i.getInstance(Key.get(BFTNode.class, Names.named("self")));
-						return i.getInstance(InfoRx.class).committedCommands()
+						return i.getInstance(Key.get(new TypeLiteral<Observable<LedgerUpdate>>() { }))
 							.map(v -> Pair.of(node, v));
 					})
 					.collect(Collectors.toSet());
@@ -198,13 +201,13 @@ public class SimulationNodes {
 
 			@Override
 			public InfoRx getInfo(BFTNode node) {
-				int index = nodes.indexOf(node);
+				int index = getNodes().indexOf(node);
 				return nodeInstances.get(index).getInstance(InfoRx.class);
 			}
 
 			@Override
 			public Mempool getMempool(BFTNode node) {
-				int index = nodes.indexOf(node);
+				int index = getNodes().indexOf(node);
 				return nodeInstances.get(index).getInstance(Mempool.class);
 			}
 
@@ -217,7 +220,7 @@ public class SimulationNodes {
 			public Map<BFTNode, SystemCounters> getSystemCounters() {
 				return nodes.stream()
 					.collect(Collectors.toMap(
-						node -> node,
+						node -> BFTNode.create(node.getPublicKey()),
 						node -> nodeInstances.get(nodes.indexOf(node)).getInstance(SystemCounters.class)
 					));
 			}

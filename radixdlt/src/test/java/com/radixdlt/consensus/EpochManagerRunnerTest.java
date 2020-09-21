@@ -29,6 +29,7 @@ import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.epochs.EpochChangeRx;
 import io.reactivex.rxjava3.core.Observable;
 import org.junit.Test;
 

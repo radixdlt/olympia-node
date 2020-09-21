@@ -21,16 +21,19 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
+import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.integration.distributed.IncorrectAlwaysAcceptingAccumulatorVerifierModule;
-import com.radixdlt.integration.distributed.StateComputerWithSometimesBadHashCommittedReader;
+import com.radixdlt.integration.distributed.SometimesByzantineCommittedReader;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
-import com.radixdlt.ledger.StateComputerLedger.StateComputer;
+import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
 import com.radixdlt.sync.CommittedReader;
 import java.util.LongSummaryStatistics;
 import java.util.concurrent.TimeUnit;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
@@ -39,14 +42,16 @@ import org.junit.Test;
  * a safety failure.
  */
 public class ByzantineSyncTest {
+	Logger logger = LogManager.getLogger();
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(4)
 		.randomLatency(10, 200)
 		.addByzantineModuleToAll(new AbstractModule() {
 			@Override
 			protected void configure() {
-				bind(StateComputer.class).to(StateComputerWithSometimesBadHashCommittedReader.class).in(Scopes.SINGLETON);
-				bind(CommittedReader.class).to(StateComputerWithSometimesBadHashCommittedReader.class).in(Scopes.SINGLETON);
+				Multibinder<LedgerUpdateSender> committedSenders = Multibinder.newSetBinder(binder(), LedgerUpdateSender.class);
+				committedSenders.addBinding().to(SometimesByzantineCommittedReader.class).in(Scopes.SINGLETON);
+				bind(CommittedReader.class).to(SometimesByzantineCommittedReader.class).in(Scopes.SINGLETON);
 			}
 		})
 		.pacemakerTimeout(5000)
@@ -82,5 +87,11 @@ public class ByzantineSyncTest {
 			.build();
 		TestResults results = simulationTest.run();
 		assertThat(results.getCheckResults()).hasEntrySatisfying("ledgerInOrder", error -> assertThat(error).isPresent());
+		LongSummaryStatistics statistics = results.getNetwork().getSystemCounters().values().stream()
+			.map(s -> s.get(CounterType.SYNC_PROCESSED))
+			.mapToLong(l -> l)
+			.summaryStatistics();
+
+		logger.info(statistics);
 	}
 }

@@ -27,7 +27,7 @@ import com.radixdlt.ConsensusModule;
 import com.radixdlt.ConsensusRunnerModule;
 import com.radixdlt.ConsensusRxModule;
 import com.radixdlt.CryptoModule;
-import com.radixdlt.DefaultSerialization;
+import com.radixdlt.EpochsSyncModule;
 import com.radixdlt.LedgerCommandGeneratorModule;
 import com.radixdlt.LedgerEpochChangeModule;
 import com.radixdlt.LedgerEpochChangeRxModule;
@@ -37,7 +37,7 @@ import com.radixdlt.PowFeeModule;
 import com.radixdlt.RadixEngineModule;
 import com.radixdlt.RadixEngineRxModule;
 import com.radixdlt.RadixEngineStoreModule;
-import com.radixdlt.SyncCommittedServiceModule;
+import com.radixdlt.SyncServiceModule;
 import com.radixdlt.SyncMempoolServiceModule;
 import com.radixdlt.LedgerRxModule;
 import com.radixdlt.LedgerModule;
@@ -62,7 +62,6 @@ import com.radixdlt.network.messaging.MessageCentralModule;
 import com.radixdlt.network.transport.tcp.TCPTransportModule;
 import com.radixdlt.network.transport.udp.UDPTransportModule;
 import com.radixdlt.properties.RuntimeProperties;
-import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
 
 import javax.inject.Inject;
@@ -91,7 +90,6 @@ public class GlobalInjector {
 				bind(RadixAddress.class).annotatedWith(Names.named("self")).toProvider(SelfAddressProvider.class);
 				bind(BFTNode.class).annotatedWith(Names.named("self")).toProvider(SelfBFTNodeProvider.class);
 
-				bind(Serialization.class).toProvider(DefaultSerialization::getInstance);
 				bind(Events.class).toProvider(Events::getInstance);
 
 				bind(PeerManagerConfiguration.class).toInstance(PeerManagerConfiguration.fromRuntimeProperties(properties));
@@ -130,9 +128,12 @@ public class GlobalInjector {
 			new LedgerModule(),
 			new LedgerRxModule(),
 			new LedgerCommandGeneratorModule(),
+			new LedgerLocalMempoolModule(mempoolMaxSize),
+
+			// Epochs
 			new LedgerEpochChangeModule(),
 			new LedgerEpochChangeRxModule(),
-			new LedgerLocalMempoolModule(mempoolMaxSize),
+			new EpochsSyncModule(),
 
 			// State Computer
 			new RadixEngineModule(epochHighView),
@@ -146,7 +147,7 @@ public class GlobalInjector {
 
 			// Synchronization
 			new SyncRxModule(),
-			new SyncCommittedServiceModule(),
+			new SyncServiceModule(),
 			new SyncMempoolServiceModule(),
 
 			// System Info

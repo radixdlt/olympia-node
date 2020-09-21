@@ -22,6 +22,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
+import com.radixdlt.consensus.VoteData;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -87,6 +89,18 @@ public class DtoLedgerHeaderAndProof {
 		this.signatures = Objects.requireNonNull(signatures);
 	}
 
+	public VoteData toVoteData() {
+		return new VoteData(
+			this.opaque0,
+			this.opaque1,
+			new BFTHeader(
+				View.of(this.opaque2),
+				this.opaque3,
+				this.ledgerHeader
+			)
+		);
+	}
+
 	public BFTHeader getOpaque0() {
 		return opaque0;
 	}
@@ -113,6 +127,6 @@ public class DtoLedgerHeaderAndProof {
 
 	@Override
 	public String toString() {
-		return String.format("%s{ledger=%s}", this.getClass().getSimpleName(), this.ledgerHeader);
+		return String.format("%s{header=%s}", this.getClass().getSimpleName(), this.ledgerHeader);
 	}
 }

@@ -28,7 +28,6 @@ import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.serialization.Serialization;
 import org.junit.Test;
 
 public class CryptoModuleTest {
@@ -40,7 +39,6 @@ public class CryptoModuleTest {
 				@Override
 				protected void configure() {
 					bind(ECKeyPair.class).annotatedWith(Names.named("self")).toInstance(mock(ECKeyPair.class));
-					bind(Serialization.class).toInstance(mock(Serialization.class));
 				}
 			},
 			new CryptoModule()

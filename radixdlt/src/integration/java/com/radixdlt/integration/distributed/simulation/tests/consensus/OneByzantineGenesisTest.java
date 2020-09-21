@@ -37,7 +37,7 @@ public class OneByzantineGenesisTest {
 		.checkConsensusSafety("safety");
 
 	@Test
-	public void given_2_correct_bfts_and_1_incorrect__then_should_never_make_progress() {
+	public void given_2_correct_bfts_and_1_byzantine__then_should_never_make_progress() {
 		SimulationTest bftTest = bftTestBuilder
 			.numNodes(3)
 			.addSingleByzantineModule(new MockedBFTConfigurationModule(Hash.random()))
@@ -60,7 +60,7 @@ public class OneByzantineGenesisTest {
 	}
 
 	@Test
-	public void given_3_correct_bfts_and_1_incorrect__then_should_make_progress() {
+	public void given_3_correct_bfts_and_1_byzantine__then_should_make_progress() {
 		SimulationTest bftTest = bftTestBuilder
 			.numNodes(4)
 			.addSingleByzantineModule(new MockedBFTConfigurationModule(Hash.random()))

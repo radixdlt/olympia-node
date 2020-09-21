@@ -25,16 +25,22 @@ import java.util.Objects;
  * An error response to the GetVertices call
  */
 public final class GetVerticesErrorResponse {
+	private BFTNode sender;
 	private final Hash vertexId;
 	private final Object opaque;
 	private final QuorumCertificate highestQC;
 	private final QuorumCertificate highestCommittedQC;
 
-	public GetVerticesErrorResponse(Hash vertexId, QuorumCertificate highestQC, QuorumCertificate highestCommittedQC, Object opaque) {
+	public GetVerticesErrorResponse(BFTNode sender, Hash vertexId, QuorumCertificate highestQC, QuorumCertificate highestCommittedQC, Object opaque) {
+		this.sender = Objects.requireNonNull(sender);
 		this.vertexId = Objects.requireNonNull(vertexId);
 		this.highestQC = Objects.requireNonNull(highestQC);
 		this.highestCommittedQC = Objects.requireNonNull(highestCommittedQC);
 		this.opaque = opaque;
+	}
+
+	public BFTNode getSender() {
+		return sender;
 	}
 
 	public Hash getVertexId() {

@@ -46,7 +46,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.NotThreadSafe;
-import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
@@ -55,8 +54,6 @@ import org.apache.logging.log4j.Logger;
  */
 @NotThreadSafe
 public final class VertexStore implements VertexStoreEventProcessor {
-	private static final Logger log = LogManager.getLogger();
-
 	public interface GetVerticesRequest {
 		Hash getVertexId();
 		int getCount();
@@ -103,6 +100,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		void sendGetVerticesErrorResponse(GetVerticesRequest originalRequest, QuorumCertificate highestQC, QuorumCertificate highestCommittedQC);
 	}
 
+	private final Logger log;
 	private final VertexStoreEventSender vertexStoreEventSender;
 	private final SyncedVertexSender syncedVertexSender;
 	private final SyncVerticesRPCSender syncVerticesRPCSender;
@@ -126,7 +124,8 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		SyncedVertexSender syncedVertexSender,
 		VertexStoreEventSender vertexStoreEventSender,
 		SyncRequestSender syncRequestSender,
-		SystemCounters counters
+		SystemCounters counters,
+		Logger log
 	) {
 		this(
 			rootVertex,
@@ -137,7 +136,8 @@ public final class VertexStore implements VertexStoreEventProcessor {
 			syncedVertexSender,
 			vertexStoreEventSender,
 			syncRequestSender,
-			counters
+			counters,
+			log
 		);
 	}
 
@@ -150,7 +150,8 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		SyncedVertexSender syncedVertexSender,
 		VertexStoreEventSender vertexStoreEventSender,
 		SyncRequestSender syncRequestSender,
-		SystemCounters counters
+		SystemCounters counters,
+		Logger log
 	) {
 		this.ledger = Objects.requireNonNull(ledger);
 		this.syncVerticesRPCSender = Objects.requireNonNull(syncVerticesRPCSender);
@@ -158,6 +159,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		this.syncedVertexSender = Objects.requireNonNull(syncedVertexSender);
 		this.syncRequestSender = syncRequestSender;
 		this.counters = Objects.requireNonNull(counters);
+		this.log = Objects.requireNonNull(log);
 
 		Objects.requireNonNull(rootVertex);
 		Objects.requireNonNull(rootQC);
@@ -303,7 +305,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	}
 
 	private void processVerticesResponseForCommittedSync(Hash syncTo, SyncState syncState, GetVerticesResponse response) {
-		log.info("SYNC_STATE: Processing vertices {}", syncState);
+		log.info("SYNC_STATE: Processing vertices {} View {} From {}", syncState, response.getVertices().get(0).getView(), response.getSender());
 
 		ImmutableList<BFTNode> signers = ImmutableList.of(syncState.author);
 		syncState.fetched.addAll(response.getVertices());
@@ -353,13 +355,15 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		log.info("SYNC_VERTICES: Received GetVerticesErrorResponse {} ", response);
 
 		final Hash syncTo = (Hash) response.getOpaque();
-		SyncState syncState = syncing.get(syncTo);
+		SyncState syncState = syncing.remove(syncTo);
 		if (syncState == null) {
 			return; // sync requirements already satisfied by another sync
 		}
 
 		// error response indicates that the node has moved on from last sync so try and sync to a new sync
-		this.startSync(syncTo, response.getHighestQC(), response.getHighestCommittedQC(), syncState.author);
+		this.syncToQC(response.getHighestQC(), response.getHighestCommittedQC(), syncState.author);
+
+		//this.startSync(syncTo, response.getHighestQC(), response.getHighestCommittedQC(), syncState.author);
 	}
 
 	@Override
@@ -425,7 +429,14 @@ public final class VertexStore implements VertexStoreEventProcessor {
 			return true;
 		}
 
-		log.debug("SYNC_TO_QC: Need sync: {} {}", qc, committedQC);
+		// TODO: Move this check into pre-check
+		// Bad genesis qc, ignore...
+		if (qc.getView().isGenesis()) {
+			log.warn("SYNC_TO_QC: Bad Genesis: {} {}", qc, committedQC);
+			return false;
+		}
+
+		log.trace("SYNC_TO_QC: Need sync: {} {}", qc, committedQC);
 
 		final Hash vertexId = qc.getProposed().getVertexId();
 		if (syncing.containsKey(vertexId)) {
