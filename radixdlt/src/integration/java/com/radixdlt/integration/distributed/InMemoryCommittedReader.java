@@ -19,7 +19,6 @@ package com.radixdlt.integration.distributed;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
-import com.google.inject.Singleton;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
@@ -35,7 +34,6 @@ import java.util.TreeMap;
 /**
  * A correct in memory committed reader used for testing
  */
-@Singleton
 class InMemoryCommittedReader implements LedgerUpdateSender, CommittedReader {
 
 	private final TreeMap<Long, VerifiedCommandsAndProof> commandsAndProof = new TreeMap<>();

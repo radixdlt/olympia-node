@@ -19,7 +19,6 @@ package com.radixdlt.epochs;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
-import com.google.inject.Singleton;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.epoch.EpochChange;
@@ -42,13 +41,11 @@ import org.apache.logging.log4j.Logger;
  * Processes remote sync responses with the current epoch
  * in mind.
  */
-@Singleton
 @NotThreadSafe
 public final class EpochsRemoteSyncResponseProcessor implements RemoteSyncResponseProcessor, LedgerUpdateProcessor<EpochsLedgerUpdate> {
 	private static final Logger log = LogManager.getLogger();
 
 	private final Function<BFTConfiguration, RemoteSyncResponseValidatorSetVerifier> verifierFactory;
-	private final SyncedEpochSender syncedEpochSender;
 	private final SyncRequestSender localSyncRequestSender;
 
 	private RemoteSyncResponseValidatorSetVerifier currentVerifier;
@@ -61,15 +58,13 @@ public final class EpochsRemoteSyncResponseProcessor implements RemoteSyncRespon
 		RemoteSyncResponseValidatorSetVerifier initialVerifier,
 		EpochChange initialEpoch,
 		VerifiedLedgerHeaderAndProof currentHeader,
-		Function<BFTConfiguration, RemoteSyncResponseValidatorSetVerifier> verifierFactory,
-		SyncedEpochSender syncedEpochSender
+		Function<BFTConfiguration, RemoteSyncResponseValidatorSetVerifier> verifierFactory
 	) {
 		this.localSyncRequestSender = Objects.requireNonNull(localSyncRequestSender);
 		this.currentEpoch = Objects.requireNonNull(initialEpoch);
 		this.currentHeader = Objects.requireNonNull(currentHeader);
 		this.currentVerifier = Objects.requireNonNull(initialVerifier);
 		this.verifierFactory = Objects.requireNonNull(verifierFactory);
-		this.syncedEpochSender = Objects.requireNonNull(syncedEpochSender);
 	}
 
 	@Override

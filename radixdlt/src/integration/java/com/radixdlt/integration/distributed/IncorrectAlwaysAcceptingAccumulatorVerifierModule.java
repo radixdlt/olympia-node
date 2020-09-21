@@ -38,8 +38,11 @@ public class IncorrectAlwaysAcceptingAccumulatorVerifierModule extends AbstractM
 			}
 
 			@Override
-			public Optional<ImmutableList<Command>> verifyAndGetExtension(AccumulatorState current, ImmutableList<Command> commands,
-				AccumulatorState tail) {
+			public Optional<ImmutableList<Command>> verifyAndGetExtension(
+				AccumulatorState current,
+				ImmutableList<Command> commands,
+				AccumulatorState tail
+			) {
 				final long firstVersion = tail.getStateVersion() - commands.size() + 1;
 				if (current.getStateVersion() + 1 < firstVersion) {
 					// Missing versions

@@ -19,6 +19,10 @@ package com.radixdlt.sync;
 
 import com.radixdlt.ledger.LedgerUpdate;
 
+/**
+ * Processes a ledger update
+ * @param <T> the type of ledger update
+ */
 public interface LedgerUpdateProcessor<T extends LedgerUpdate> {
 	void processLedgerUpdate(T ledgerUpdate);
 }
