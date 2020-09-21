@@ -29,5 +29,6 @@ public class MockedCommittedReaderModule extends AbstractModule {
 		Multibinder<LedgerUpdateSender> committedSenders = Multibinder.newSetBinder(binder(), LedgerUpdateSender.class);
 		committedSenders.addBinding().to(InMemoryCommittedReader.class).in(Scopes.SINGLETON);
 		bind(CommittedReader.class).to(InMemoryCommittedReader.class).in(Scopes.SINGLETON);
+		bind(InMemoryCommittedReader.class).in(Scopes.SINGLETON);
 	}
 }

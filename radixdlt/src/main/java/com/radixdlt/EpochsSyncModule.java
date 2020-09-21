@@ -59,6 +59,9 @@ public class EpochsSyncModule extends AbstractModule {
 			Multibinder.newSetBinder(binder(), new TypeLiteral<LedgerUpdateProcessor<EpochsLedgerUpdate>>() { });
 		ledgerUpdateProcessors.addBinding().to(EpochsRemoteSyncResponseProcessor.class);
 		ledgerUpdateProcessors.addBinding().to(EpochsLocalSyncServiceProcessor.class);
+
+		bind(EpochsRemoteSyncResponseProcessor.class).in(Scopes.SINGLETON);
+		bind(EpochsLocalSyncServiceProcessor.class).in(Scopes.SINGLETON);
 	}
 
 	@Provides
