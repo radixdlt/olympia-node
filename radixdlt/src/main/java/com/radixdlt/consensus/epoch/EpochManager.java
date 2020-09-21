@@ -65,7 +65,6 @@ import java.util.Objects;
 import javax.annotation.concurrent.NotThreadSafe;
 import javax.inject.Inject;
 
-import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
@@ -73,8 +72,6 @@ import org.apache.logging.log4j.Logger;
  */
 @NotThreadSafe
 public final class EpochManager {
-	private static final Logger log = LogManager.getLogger();
-
 	/**
 	 * A sender of GetEpoch RPC requests/responses
 	 */
@@ -113,6 +110,7 @@ public final class EpochManager {
 		void sendTimeoutProcessed(Timeout timeout);
 	}
 
+	private final Logger logger;
 	private final BFTNode self;
 	private final SyncEpochsRPCSender epochsRPCSender;
 	private final PacemakerFactory pacemakerFactory;
@@ -145,7 +143,8 @@ public final class EpochManager {
 		ProposerElectionFactory proposerElectionFactory,
 		BFTFactory bftFactory,
 		SystemCounters counters,
-		EpochInfoSender epochInfoSender
+		EpochInfoSender epochInfoSender,
+		Logger logger
 	) {
 		this.currentEpoch = Objects.requireNonNull(initialEpoch);
 		this.self = Objects.requireNonNull(self);
@@ -160,6 +159,7 @@ public final class EpochManager {
 		this.counters = Objects.requireNonNull(counters);
 		this.epochInfoSender = Objects.requireNonNull(epochInfoSender);
 		this.queuedEvents = new HashMap<>();
+		this.logger = Objects.requireNonNull(logger);
 	}
 
 	private void updateEpochState() {
@@ -236,12 +236,12 @@ public final class EpochManager {
 			throw new IllegalStateException("Epoch change has already occurred: " + epochChange);
 		}
 
-		log.trace("{}: EPOCH_CHANGE: {}", this.self, epochChange);
+		logger.trace("{}: EPOCH_CHANGE: {}", this.self, epochChange);
 
 		// If constructed the end of the previous epoch then broadcast new epoch to new validator set
 		// TODO: Move this into when lastConstructed is set
 		if (lastConstructed != null && lastConstructed.getEpoch() == epochChange.getEpoch() - 1) {
-			log.info("{}: EPOCH_CHANGE: broadcasting next epoch", this.self);
+			logger.info("{}: EPOCH_CHANGE: broadcasting next epoch", this.self);
 			BFTValidatorSet validatorSet = epochChange.getBFTConfiguration().getValidatorSet();
 			for (BFTValidator validator : validatorSet.getValidators()) {
 				if (!validator.getNode().equals(self)) {
@@ -266,7 +266,7 @@ public final class EpochManager {
 	}
 
 	private void logEpochChange(EpochChange epochChange, String message) {
-		if (log.isInfoEnabled()) {
+		if (logger.isInfoEnabled()) {
 			// Reduce complexity of epoch change log message, and make it easier to correlate with
 			// other logs.  Size reduced from circa 6Kib to approx 1Kib over ValidatorSet.toString().
 			BFTConfiguration configuration = epochChange.getBFTConfiguration();
@@ -285,7 +285,7 @@ public final class EpochManager {
 			} else {
 				epochMessage.append("[NONE]");
 			}
-			log.info("{}", epochMessage);
+			logger.info("{}", epochMessage);
 		}
 	}
 
@@ -294,7 +294,7 @@ public final class EpochManager {
 	}
 
 	private void processEndOfEpoch(VerifiedLedgerHeaderAndProof ledgerState) {
-		log.trace("{}: END_OF_EPOCH: {}", this.self, ledgerState);
+		logger.trace("{}: END_OF_EPOCH: {}", this.self, ledgerState);
 		if (this.lastConstructed == null || this.lastConstructed.getEpoch() < ledgerState.getEpoch()) {
 			this.lastConstructed = ledgerState;
 
@@ -305,12 +305,12 @@ public final class EpochManager {
 	}
 
 	public void processGetEpochRequest(GetEpochRequest request) {
-		log.trace("{}: GET_EPOCH_REQUEST: {}", this.self, request);
+		logger.trace("{}: GET_EPOCH_REQUEST: {}", this.self, request);
 
 		if (this.currentEpoch() > request.getEpoch()) {
 			epochsRPCSender.sendGetEpochResponse(request.getAuthor(), this.currentEpoch.getProof());
 		} else {
-			log.warn("{}: GET_EPOCH_REQUEST: {} but currently on epoch: {}",
+			logger.warn("{}: GET_EPOCH_REQUEST: {} but currently on epoch: {}",
 				this.self::getSimpleName, () -> request, this::currentEpoch
 			);
 
@@ -320,10 +320,10 @@ public final class EpochManager {
 	}
 
 	public void processGetEpochResponse(GetEpochResponse response) {
-		log.trace("{}: GET_EPOCH_RESPONSE: {}", this.self, response);
+		logger.trace("{}: GET_EPOCH_RESPONSE: {}", this.self, response);
 
 		if (response.getEpochProof() == null) {
-			log.warn("{}: Received empty GetEpochResponse {}", this.self, response);
+			logger.warn("{}: Received empty GetEpochResponse {}", this.self, response);
 			// TODO: retry
 			return;
 		}
@@ -332,7 +332,7 @@ public final class EpochManager {
 		if (ancestor.getEpoch() >= this.currentEpoch()) {
 			syncRequestSender.sendLocalSyncRequest(new LocalSyncRequest(ancestor, ImmutableList.of(response.getAuthor())));
 		} else {
-			log.info("{}: Ignoring old epoch {}", this.self, response);
+			logger.info("{}: Ignoring old epoch {}", this.self, response);
 		}
 	}
 
@@ -350,7 +350,7 @@ public final class EpochManager {
 
 	public void processConsensusEvent(ConsensusEvent consensusEvent) {
 		if (consensusEvent.getEpoch() > this.currentEpoch()) {
-			log.debug("{}: CONSENSUS_EVENT: Received higher epoch event: {} current epoch: {}",
+			logger.debug("{}: CONSENSUS_EVENT: Received higher epoch event: {} current epoch: {}",
 				this.self::getSimpleName, () -> consensusEvent, this::currentEpoch
 			);
 
@@ -366,7 +366,7 @@ public final class EpochManager {
 		}
 
 		if (consensusEvent.getEpoch() < this.currentEpoch()) {
-			log.debug("{}: CONSENSUS_EVENT: Ignoring lower epoch event: {} current epoch: {}",
+			logger.debug("{}: CONSENSUS_EVENT: Ignoring lower epoch event: {} current epoch: {}",
 				this.self::getSimpleName, () -> consensusEvent, this::currentEpoch
 			);
 			return;
