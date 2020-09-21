@@ -31,6 +31,7 @@ import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.sync.SyncRequestSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.epochs.EpochsLocalSyncServiceProcessor;
@@ -60,6 +61,7 @@ public class EpochsSyncModuleTest {
 		return new AbstractModule() {
 			@Override
 			protected void configure() {
+				bind(SyncRequestSender.class).toInstance(mock(SyncRequestSender.class));
 				bind(EpochsRemoteSyncResponseProcessor.class).toInstance(remoteSyncResponseProcessor);
 				bind(EpochsLocalSyncServiceProcessor.class).toInstance(localSyncServiceProcessor);
 				bind(SystemCounters.class).toInstance(mock(SystemCounters.class));
