@@ -45,7 +45,7 @@ public class LinuxSecureRandom extends SecureRandomSpi {
 
     private static class LinuxSecureRandomProvider extends Provider {
         LinuxSecureRandomProvider() {
-            super("LinuxSecureRandom", 1.0,
+            super("LinuxSecureRandom", "1.0",
                     "A Linux specific random number provider that uses /dev/urandom");
             put("SecureRandom.LinuxSecureRandom", LinuxSecureRandom.class.getName());
         }
