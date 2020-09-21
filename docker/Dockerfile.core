@@ -1,5 +1,15 @@
-FROM radixdlt/base-core
-MAINTAINER Radix Devops <devops@radixdlt.com>
+FROM ubuntu:16.04
+MAINTAINER radixdlt <devops@radixdlt.com>
+
+RUN apt-get -y update && \
+    apt-get -y --no-install-recommends install net-tools gettext-base curl tcpdump strace attr  software-properties-common ca-certificates-java && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /var/tmp/* /tmp/*
+
+RUN add-apt-repository ppa:openjdk-r/ppa && \
+    apt-get -y update && \
+    apt -y --no-install-recommends install openjdk-11-jdk
+
 
 # set entrypoint and default command
 ENTRYPOINT [ "/opt/radixdlt/config_radixdlt.sh" ]
