@@ -39,6 +39,10 @@ dependencies {
     compile 'com.radixdlt:radixdlt-java:feature~rpnv1-185-token-fees-SNAPSHOT'
     compile 'io.undertow:undertow-core:2.0.6.Final'
     testCompile group: 'junit', name: 'junit', version: '4.12'
+
+    testCompile('net.bytebuddy:byte-buddy:1.10.13') { force = true }
+    testCompile('net.bytebuddy:byte-buddy-agent:1.10.13') { force = true }
+    testCompile('org.mockito:mockito-core:3.5.10') { force = true }
 }
 
 classes {
