@@ -9,7 +9,7 @@ ENV DEBIAN_FRONTEND noninteractive
 CMD /bin/bash
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends wget curl iputils-ping dnsutils unzip software-properties-common
+    && apt-get install -y --no-install-recommends wget curl iputils-ping dnsutils unzip software-properties-common ca-certificates-java
 #install Gradle
 RUN wget -q https://services.gradle.org/distributions/gradle-6.6.1-bin.zip \
     && unzip gradle-6.6.1-bin.zip -d /opt \
