@@ -18,7 +18,6 @@
 package com.radixdlt.ledger;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerHeader;
@@ -33,7 +32,6 @@ import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.mempool.Mempool;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
@@ -60,7 +58,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	}
 
 	public interface CommittedStateSyncSender {
-		void sendCommittedStateSync(VerifiedLedgerHeaderAndProof header, Object opaque);
+		void sendCommittedStateSync(LedgerHeader header);
 	}
 
 	private final Comparator<VerifiedLedgerHeaderAndProof> headerComparator;
@@ -74,7 +72,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 
 	private final Object lock = new Object();
 	private VerifiedLedgerHeaderAndProof currentLedgerHeader;
-	private final TreeMap<Long, Set<Object>> committedStateSyncers = new TreeMap<>();
+	private final TreeMap<Long, LedgerHeader> committedStateSyncers = new TreeMap<>();
 
 	@Inject
 	public StateComputerLedger(
@@ -139,11 +137,12 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			if (committedLedgerHeader.getStateVersion() <= this.currentLedgerHeader.getStateVersion()) {
 				return onSync -> {
 					onSync.run();
-					return (onNotSynced, opaque) -> { };
+					return onNotSynced -> { };
 				};
 			} else {
-				return onSync -> (onNotSynced, opaque) -> {
-					this.committedStateSyncers.merge(committedLedgerHeader.getStateVersion(), Collections.singleton(opaque), Sets::union);
+				return onSync -> onNotSynced -> {
+					// TODO: check if one already exists and doesn't match then its proof of byzantine failure
+					this.committedStateSyncers.put(committedLedgerHeader.getStateVersion(), committedLedgerHeader.getRaw());
 					onNotSynced.run();
 				};
 			}
@@ -189,15 +188,13 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			ledgerUpdateSender.sendLedgerUpdate(ledgerUpdate);
 
 			// TODO: Verify headers match
-			Collection<Set<Object>> listeners = this.committedStateSyncers.headMap(
+			Collection<LedgerHeader> listeners = this.committedStateSyncers.headMap(
 				this.currentLedgerHeader.getAccumulatorState().getStateVersion(), true
 			).values();
-			Iterator<Set<Object>> listenersIterator = listeners.iterator();
+			Iterator<LedgerHeader> listenersIterator = listeners.iterator();
 			while (listenersIterator.hasNext()) {
-				Set<Object> opaqueObjects = listenersIterator.next();
-				for (Object opaque : opaqueObjects) {
-					committedStateSyncSender.sendCommittedStateSync(this.currentLedgerHeader, opaque);
-				}
+				LedgerHeader syncTo = listenersIterator.next();
+				committedStateSyncSender.sendCommittedStateSync(syncTo);
 				listenersIterator.remove();
 			}
 		}

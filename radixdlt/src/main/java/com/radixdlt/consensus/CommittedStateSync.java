@@ -21,24 +21,18 @@ package com.radixdlt.consensus;
  * Event which represents that the committed state has been synced
  */
 public final class CommittedStateSync {
-	private final VerifiedLedgerHeaderAndProof header;
-	private final Object opaque;
+	private final LedgerHeader header;
 
-	public CommittedStateSync(VerifiedLedgerHeaderAndProof header, Object opaque) {
+	public CommittedStateSync(LedgerHeader header) {
 		this.header = header;
-		this.opaque = opaque;
 	}
 
-	public VerifiedLedgerHeaderAndProof getHeader() {
+	public LedgerHeader getHeader() {
 		return header;
-	}
-
-	public Object getOpaque() {
-		return opaque;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{header=%s opaque=%s", this.getClass().getSimpleName(), header, opaque);
+		return String.format("%s{header=%s", this.getClass().getSimpleName(), header);
 	}
 }

@@ -115,6 +115,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 
 	private final Map<Hash, VerifiedVertex> vertices = new HashMap<>();
 	private final Map<Hash, SyncState> syncing = new HashMap<>();
+	private final Map<LedgerHeader, List<Hash>> committedSyncing = new HashMap<>();
 
 	public VertexStore(
 		VerifiedVertex rootVertex,
@@ -157,7 +158,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		this.syncVerticesRPCSender = Objects.requireNonNull(syncVerticesRPCSender);
 		this.vertexStoreEventSender = Objects.requireNonNull(vertexStoreEventSender);
 		this.syncedVertexSender = Objects.requireNonNull(syncedVertexSender);
-		this.syncRequestSender = syncRequestSender;
+		this.syncRequestSender = Objects.requireNonNull(syncRequestSender);
 		this.counters = Objects.requireNonNull(counters);
 		this.log = Objects.requireNonNull(log);
 
@@ -297,10 +298,14 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	public void processCommittedStateSync(CommittedStateSync committedStateSync) {
 		log.info("SYNC_STATE: synced {}", committedStateSync);
 
-		final Hash syncTo = (Hash) committedStateSync.getOpaque();
-		SyncState syncState = syncing.get(syncTo);
-		if (syncState != null) {
-			rebuildAndSyncQC(syncState);
+		List<Hash> syncs = committedSyncing.remove(committedStateSync.getHeader());
+		if (syncs != null) {
+			for (Hash syncTo : syncs) {
+				SyncState syncState = syncing.get(syncTo);
+				if (syncState != null) {
+					rebuildAndSyncQC(syncState);
+				}
+			}
 		}
 	}
 
@@ -314,12 +319,19 @@ public final class VertexStore implements VertexStoreEventProcessor {
 			.then(() -> rebuildAndSyncQC(syncState))
 			.elseExecuteAndSendMessageOnSync(() -> {
 				syncState.setSyncStage(SyncStage.SYNC_TO_COMMIT);
+				committedSyncing.compute(syncState.committedProof.getRaw(), (header, syncing) -> {
+					if (syncing == null) {
+						syncing = new ArrayList<>();
+					}
+					syncing.add(syncState.localSyncId);
+					return syncing;
+				});
 				LocalSyncRequest localSyncRequest = new LocalSyncRequest(
 					syncState.committedProof,
 					signers
 				);
 				syncRequestSender.sendLocalSyncRequest(localSyncRequest);
-			}, syncTo);
+			});
 	}
 
 	private void processVerticesResponseForQCSync(Hash syncTo, SyncState syncState, GetVerticesResponse response) {
@@ -621,6 +633,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	}
 
 	public void clearSyncs() {
+		committedSyncing.clear();
 		syncing.clear();
 	}
 

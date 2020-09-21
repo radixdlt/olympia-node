@@ -57,7 +57,7 @@ public class MockedLedgerModule extends AbstractModule {
 			public OnSynced ifCommitSynced(VerifiedLedgerHeaderAndProof header) {
 				return onSynced -> {
 					onSynced.run();
-					return (notSynced, opaque) -> { };
+					return notSynced -> { };
 				};
 			}
 

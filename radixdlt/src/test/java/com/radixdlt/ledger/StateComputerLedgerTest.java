@@ -247,7 +247,7 @@ public class StateComputerLedgerTest {
 		stateComputerLedger
 			.ifCommitSynced(header)
 			.then(onSynced)
-			.elseExecuteAndSendMessageOnSync(onNotSynced, mock(Object.class));
+			.elseExecuteAndSendMessageOnSync(onNotSynced);
 		verify(onSynced, times(1)).run();
 		verify(onNotSynced, never()).run();
 	}
@@ -262,8 +262,8 @@ public class StateComputerLedgerTest {
 		stateComputerLedger
 			.ifCommitSynced(verifiedLedgerHeaderAndProof)
 			.then(onSynced)
-			.elseExecuteAndSendMessageOnSync(onNotSynced, mock(Object.class));
-		verify(committedStateSyncSender, never()).sendCommittedStateSync(any(), any());
+			.elseExecuteAndSendMessageOnSync(onNotSynced);
+		verify(committedStateSyncSender, never()).sendCommittedStateSync(any());
 		verify(onSynced, never()).run();
 		verify(onNotSynced, times(1)).run();
 		VerifiedCommandsAndProof verified = mock(VerifiedCommandsAndProof.class);
@@ -277,6 +277,6 @@ public class StateComputerLedgerTest {
 
 		stateComputerLedger.commit(verified);
 
-		verify(committedStateSyncSender, timeout(5000).atLeast(1)).sendCommittedStateSync(any(), any());
+		verify(committedStateSyncSender, timeout(5000).atLeast(1)).sendCommittedStateSync(any());
 	}
 }

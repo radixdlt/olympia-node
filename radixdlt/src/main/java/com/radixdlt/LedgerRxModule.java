@@ -27,7 +27,7 @@ import com.radixdlt.api.SubmissionFailure;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.CommittedStateSyncRx;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
@@ -75,8 +75,8 @@ public final class LedgerRxModule extends AbstractModule {
 		bind(SubmissionControlSender.class).toInstance(submissionControlSender);
 		bind(SubmissionErrorsRx.class).toInstance(submissionErrorsRx);
 
-		TwoSenderToRx<VerifiedLedgerHeaderAndProof, Object, CommittedStateSync> committedStateSyncTwoSenderToRx
-			= new TwoSenderToRx<>(CommittedStateSync::new);
+		SenderToRx<LedgerHeader, CommittedStateSync> committedStateSyncTwoSenderToRx
+			= new SenderToRx<>(CommittedStateSync::new);
 		bind(CommittedStateSyncRx.class).toInstance(committedStateSyncTwoSenderToRx::rx);
 		bind(CommittedStateSyncSender.class).toInstance(committedStateSyncTwoSenderToRx::send);
 

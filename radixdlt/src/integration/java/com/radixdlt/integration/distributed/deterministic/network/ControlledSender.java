@@ -17,6 +17,7 @@
 
 package com.radixdlt.integration.distributed.deterministic.network;
 
+import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
@@ -121,8 +122,8 @@ public final class ControlledSender implements DeterministicSender {
 	}
 
 	@Override
-	public void sendCommittedStateSync(VerifiedLedgerHeaderAndProof header, Object opaque) {
-		CommittedStateSync committedStateSync = new CommittedStateSync(header, opaque);
+	public void sendCommittedStateSync(LedgerHeader header) {
+		CommittedStateSync committedStateSync = new CommittedStateSync(header);
 		handleMessage(MessageRank.EARLIEST_POSSIBLE, new ControlledMessage(this.senderIndex, this.senderIndex, committedStateSync));
 	}
 

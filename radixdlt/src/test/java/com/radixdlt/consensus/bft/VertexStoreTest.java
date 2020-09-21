@@ -83,6 +83,7 @@ public class VertexStoreTest {
 		this.vertexStoreEventSender = mock(VertexStoreEventSender.class);
 		this.counters = mock(SystemCounters.class);
 		this.syncedVertexSender = mock(SyncedVertexSender.class);
+		this.syncRequestSender = mock(SyncRequestSender.class);
 
 		this.genesisHash = mock(Hash.class);
 		this.genesisVertex = new VerifiedVertex(UnverifiedVertex.createGenesis(mock(LedgerHeader.class)), genesisHash);
@@ -631,20 +632,21 @@ public class VertexStoreTest {
 			return null;
 		}).when(syncVerticesRPCSender).sendGetVerticesRequest(eq(id7), any(), eq(3), any());
 
-		AtomicReference<Object> stateOpaque = new AtomicReference<>();
-		AtomicReference<VerifiedLedgerHeaderAndProof> vertexMetadataAtomicReference = new AtomicReference<>();
+		AtomicReference<LedgerHeader> ledgerHeaderRef = new AtomicReference<>();
 
 		OnSynced onSynced = mock(OnSynced.class);
 		OnNotSynced onNotSynced = mock(OnNotSynced.class);
 
 		when(onSynced.then(any())).thenReturn(onNotSynced);
 		doAnswer(invocation -> {
-			stateOpaque.set(invocation.getArgument(1));
+			Runnable runnable = invocation.getArgument(0);
+			runnable.run();
 			return false;
-		}).when(onNotSynced).elseExecuteAndSendMessageOnSync(any(), any());
+		}).when(onNotSynced).elseExecuteAndSendMessageOnSync(any());
 
 		doAnswer(invocation -> {
-			vertexMetadataAtomicReference.set(invocation.getArgument(0));
+			VerifiedLedgerHeaderAndProof header = invocation.getArgument(0);
+			ledgerHeaderRef.set(header.getRaw());
 			return onSynced;
 		}).when(ledger).ifCommitSynced(any());
 
@@ -654,9 +656,7 @@ public class VertexStoreTest {
 		assertThat(vertexStore.getHighestQC()).isEqualTo(vertex4.getQC());
 		assertThat(vertexStore.getHighestCommittedQC()).isEqualTo(vertex4.getQC());
 
-		CommittedStateSync committedStateSync = new CommittedStateSync(
-			vertexMetadataAtomicReference.get(), stateOpaque.get()
-		);
+		CommittedStateSync committedStateSync = new CommittedStateSync(ledgerHeaderRef.get());
 		vertexStore.processCommittedStateSync(committedStateSync);
 
 		assertThat(vertexStore.getHighestQC()).isEqualTo(vertex8.getQC());

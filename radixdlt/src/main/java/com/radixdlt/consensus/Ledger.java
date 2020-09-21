@@ -45,7 +45,7 @@ public interface Ledger {
 	}
 
 	interface OnNotSynced {
-		void elseExecuteAndSendMessageOnSync(Runnable onNotSynced, Object opaque);
+		void elseExecuteAndSendMessageOnSync(Runnable onNotSynced);
 	}
 
 	/**
