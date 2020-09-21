@@ -30,8 +30,6 @@ apply plugin: 'net.nemerosa.versioning'
 
 mainClassName = 'com.radixdlt.faucet.Faucet'
 
-sourceCompatibility = 1.8
-
 versionFile {
     mustRunAfter(processResources)
     // Path to the file to be written
@@ -42,10 +40,14 @@ dependencies {
     compile 'com.radixdlt:radixdlt-java:feature~rpnv1-185-token-fees-SNAPSHOT'
     compile 'io.undertow:undertow-core:2.0.6.Final'
     testCompile group: 'junit', name: 'junit', version: '4.12'
-    testCompile('org.objenesis:objenesis:2.4') { force = true } // make powermock 1.7.1 happy
-    testCompile('org.javassist:javassist:3.21.0-GA') { force = true } // make powermock 1.7.1 happy
-    testCompile 'org.powermock:powermock-api-mockito2:1.7.4'
-    testCompile 'org.powermock:powermock-api-mockito2:1.7.4'
+
+    testCompile('org.objenesis:objenesis:3.1') { force = true }
+    testCompile('org.javassist:javassist:3.27.0-GA') { force = true }
+    testCompile('org.mockito:mockito-core:3.5.10') { force = true }
+    testCompile('net.bytebuddy:byte-buddy:1.10.13') { force = true }
+    testCompile('net.bytebuddy:byte-buddy-agent:1.10.13') { force = true }
+    testCompile 'org.powermock:powermock-module-junit4:2.0.7'
+    testCompile 'org.powermock:powermock-api-mockito2:2.0.7'
     testCompile 'org.assertj:assertj-core:3.11.1'
 }
 
@@ -63,6 +65,7 @@ jacocoTestReport {
 compileJava {
     options.compilerArgs << '-proc:none'
     options.compilerArgs << "-Xlint:all" << "-Werror"
+    options.release = 11
 }
 
 // Using deb4docker name here, so that we can build faucet and ledger

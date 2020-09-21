@@ -3,7 +3,7 @@ LABEL maintainer="devops@radixdlt.com"
 USER root
 
 # add jdk
-RUN apk add --no-cache openjdk8
+RUN apk add --no-cache openjdk11 --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community
 
 # add distTar
 ADD faucet-service-*.tar /opt
