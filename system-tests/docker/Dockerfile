@@ -25,13 +25,13 @@ RUN bash -c ' \
 CMD /bin/bash
 
 #install Gradle
-RUN wget -q https://services.gradle.org/distributions/gradle-4.5.1-bin.zip \
-    && unzip gradle-4.5.1-bin.zip -d /opt \
-    && rm gradle-4.5.1-bin.zip
+RUN wget -q https://services.gradle.org/distributions/gradle-6.6.1-bin.zip \
+    && unzip gradle-6.6.1-bin.zip -d /opt \
+    && rm gradle-6.6.1-bin.zip
 
 # Set Gradle in the environment variables
-ENV GRADLE_HOME=/opt/gradle-4.5.1
-ENV PATH=/opt/gradle-4.5.1/bin:$PATH
+ENV GRADLE_HOME=/opt/gradle-6.6.1
+ENV PATH=/opt/gradle-6.6.1/bin:$PATH
 
 RUN apt-get update
 RUN apt install docker.io -y
