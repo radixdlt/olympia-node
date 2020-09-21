@@ -31,15 +31,16 @@ import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.sync.SyncRequestSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
-import com.radixdlt.epochs.EpochsLocalSyncServiceProcessor;
-import com.radixdlt.epochs.EpochsRemoteSyncResponseProcessor;
 import com.radixdlt.epochs.SyncedEpochSender;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.sync.LedgerUpdateProcessor;
+import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncTimeoutScheduler;
+import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier;
 import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier.InvalidValidatorSetSender;
 import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier.VerifiedValidatorSetSender;
 import com.radixdlt.sync.StateSyncNetwork;
@@ -53,17 +54,17 @@ public class EpochsSyncModuleTest {
 	@Inject
 	private LedgerUpdateProcessor<EpochsLedgerUpdate> updateProcessor;
 
-	private EpochsRemoteSyncResponseProcessor remoteSyncResponseProcessor = mock(EpochsRemoteSyncResponseProcessor.class);
-	private EpochsLocalSyncServiceProcessor localSyncServiceProcessor = mock(EpochsLocalSyncServiceProcessor.class);
 	private Ledger ledger = mock(Ledger.class);
 
 	public Module getExternalModule() {
 		return new AbstractModule() {
 			@Override
 			protected void configure() {
+				bind(VerifiedLedgerHeaderAndProof.class).toInstance(mock(VerifiedLedgerHeaderAndProof.class));
+				bind(EpochChange.class).toInstance(mock(EpochChange.class));
+				bind(LocalSyncServiceAccumulatorProcessor.class).toInstance(mock(LocalSyncServiceAccumulatorProcessor.class));
+				bind(RemoteSyncResponseValidatorSetVerifier.class).toInstance(mock(RemoteSyncResponseValidatorSetVerifier.class));
 				bind(SyncRequestSender.class).toInstance(mock(SyncRequestSender.class));
-				bind(EpochsRemoteSyncResponseProcessor.class).toInstance(remoteSyncResponseProcessor);
-				bind(EpochsLocalSyncServiceProcessor.class).toInstance(localSyncServiceProcessor);
 				bind(SystemCounters.class).toInstance(mock(SystemCounters.class));
 				bind(Ledger.class).toInstance(ledger);
 				bind(VerifiedValidatorSetSender.class).toInstance(mock(VerifiedValidatorSetSender.class));
@@ -84,17 +85,4 @@ public class EpochsSyncModuleTest {
 
 		verify(ledger, times(1)).commit(any());
 	}
-
-	@Test
-	public void given_configured_with_correct_interfaces__when_ledger_update__then_should_update_both_processors() {
-		Injector injector = Guice.createInjector(new EpochsSyncModule(), getExternalModule());
-		injector.injectMembers(this);
-
-		EpochsLedgerUpdate ledgerUpdate = mock(EpochsLedgerUpdate.class);
-		this.updateProcessor.processLedgerUpdate(ledgerUpdate);
-
-		verify(remoteSyncResponseProcessor, times(1)).processLedgerUpdate(ledgerUpdate);
-		verify(localSyncServiceProcessor, times(1)).processLedgerUpdate(ledgerUpdate);
-	}
-
 }
