@@ -20,22 +20,27 @@ package com.radixdlt.integration.distributed.deterministic;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
+import com.google.inject.Provides;
 import com.radixdlt.LedgerCommandGeneratorModule;
 import com.radixdlt.LedgerEpochChangeModule;
 import com.radixdlt.LedgerLocalMempoolModule;
 import com.radixdlt.LedgerModule;
+import com.radixdlt.consensus.BFTConfiguration;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.integration.distributed.deterministic.configuration.EpochNodeWeightMapping;
 import com.radixdlt.integration.distributed.deterministic.configuration.NodeIndexAndWeight;
 import com.radixdlt.integration.distributed.deterministic.network.DeterministicNetwork;
 import com.radixdlt.integration.distributed.deterministic.network.MessageMutator;
 import com.radixdlt.integration.distributed.deterministic.network.MessageSelector;
-import com.radixdlt.integration.distributed.simulation.MockedStateComputerWithEpochsModule;
-import com.radixdlt.integration.distributed.simulation.MockedStateComputerModule;
-import com.radixdlt.integration.distributed.simulation.MockedSyncServiceModule;
+import com.radixdlt.integration.distributed.MockedLedgerModule;
+import com.radixdlt.integration.distributed.MockedStateComputerWithEpochsModule;
+import com.radixdlt.integration.distributed.MockedStateComputerModule;
+import com.radixdlt.integration.distributed.MockedSyncServiceModule;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.EUID;
@@ -115,7 +120,7 @@ public final class DeterministicTest {
 		}
 
 		public Builder alwaysSynced() {
-			this.syncedExecutorModule = new DeterministicAlwaysSyncedLedgerModule();
+			this.syncedExecutorModule = new MockedLedgerModule();
 			return this;
 		}
 
@@ -143,8 +148,6 @@ public final class DeterministicTest {
 				: epoch -> partialMixedWeightValidatorSet(epoch, this.nodes, this.epochNodeWeightMapping);
 
 			ImmutableList.Builder<Module> modules = ImmutableList.builder();
-			modules.add(new LedgerModule());
-			modules.add(new LedgerCommandGeneratorModule());
 			modules.add(new LedgerLocalMempoolModule(10));
 			modules.add(new DeterministicMempoolModule());
 
@@ -155,13 +158,29 @@ public final class DeterministicTest {
 					protected void configure() {
 						bind(BFTValidatorSet.class).toInstance(validatorSet);
 					}
+
+					@Provides
+					private EpochChange initialEpoch(
+						VerifiedLedgerHeaderAndProof proof,
+						BFTConfiguration initialBFTConfig
+					) {
+						return new EpochChange(proof, initialBFTConfig);
+					}
 				});
 				modules.add(new MockedStateComputerModule());
 				modules.add(this.syncedExecutorModule);
 			} else {
 				// TODO: adapter from LongFunction<BFTValidatorSet> to Function<Long, BFTValidatorSet> shouldn't be needed
 				Function<Long, BFTValidatorSet> epochToValidatorSetMapping = validatorSetMapping::apply;
+				modules.add(new AbstractModule() {
+					@Override
+					public void configure() {
+						bind(BFTValidatorSet.class).toInstance(epochToValidatorSetMapping.apply(1L));
+					}
+				});
+				modules.add(new LedgerModule());
 				modules.add(new LedgerEpochChangeModule());
+				modules.add(new LedgerCommandGeneratorModule());
 				modules.add(new MockedSyncServiceModule());
 				modules.add(new MockedStateComputerWithEpochsModule(epochHighView, epochToValidatorSetMapping));
 			}

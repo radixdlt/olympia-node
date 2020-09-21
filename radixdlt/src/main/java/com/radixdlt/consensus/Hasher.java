@@ -24,4 +24,6 @@ import com.radixdlt.crypto.Hash;
  */
 public interface Hasher {
 	Hash hash(Object o);
+
+	Hash hashBytes(byte[] bytes);
 }

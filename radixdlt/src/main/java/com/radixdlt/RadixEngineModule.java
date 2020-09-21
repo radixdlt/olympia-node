@@ -43,6 +43,7 @@ import com.radixdlt.statecomputer.RadixEngineValidatorSetBuilder;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
+import com.radixdlt.sync.CommittedReader;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -62,6 +63,7 @@ public class RadixEngineModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		bind(StateComputer.class).to(RadixEngineStateComputer.class);
+		bind(CommittedReader.class).to(RadixEngineStateComputer.class);
 	}
 
 	@Provides

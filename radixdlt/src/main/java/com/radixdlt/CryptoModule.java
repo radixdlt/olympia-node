@@ -42,7 +42,17 @@ public final class CryptoModule extends AbstractModule {
 
 	@Provides
 	Hasher hasher(Serialization serialization) {
-		return o -> Hash.of(serialization.toDson(o, Output.HASH));
+		return new Hasher() {
+			@Override
+			public Hash hash(Object o) {
+				return Hash.of(serialization.toDson(o, Output.HASH));
+			}
+
+			@Override
+			public Hash hashBytes(byte[] bytes) {
+				return Hash.of(bytes);
+			}
+		};
 	}
 
 	@Provides

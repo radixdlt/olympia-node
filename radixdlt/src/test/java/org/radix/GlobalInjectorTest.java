@@ -21,7 +21,6 @@ import com.radixdlt.consensus.bft.BFTNode;
 import java.io.File;
 
 import org.assertj.core.util.Files;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.radix.GlobalInjector.LocalSystemProvider;
@@ -50,52 +49,62 @@ public class GlobalInjectorTest {
 		TestSetupUtils.installBouncyCastleProvider();
 	}
 
-	@Before
-	public void setup() {
-		RuntimeProperties properties = mock(RuntimeProperties.class);
-		doReturn("127.0.0.1").when(properties).get(eq("host.ip"), any());
-		doReturn("none").when(properties).get(eq("debug.fee_module"), any());
-		DatabaseEnvironment dbEnv = mock(DatabaseEnvironment.class);
-		Universe universe = mock(Universe.class);
-
-		Files.delete(new File("nonesuch.ks"));
-		when(properties.get(eq("node.key.path"), any(String.class))).thenReturn("nonesuch.ks");
-
-		this.globalInjector = new GlobalInjector(properties, dbEnv, universe);
-	}
-
 	@Test
 	public void testInjectorNotNull() {
+		setup("none");
 		assertNotNull(this.globalInjector.getInjector());
 	}
 
 	@Test
+	public void testInjectorNotNullPow() {
+		setup("pow");
+		assertNotNull(this.globalInjector.getInjector());
+	}
+
+	@Test
+	public void testInjectorNotNullToken() {
+		setup("token");
+		assertNotNull(this.globalInjector.getInjector());
+	}
+
+	@Test(expected = IllegalStateException.class)
+	public void testInjectorInvalidFee() {
+		setup("rhinoplasty");
+	}
+
+	@Test
 	public void testNid() {
+		setup("none");
 		testSelfInstance(EUID.class);
 	}
 
 	@Test
 	public void testKeyPair() {
+		setup("none");
 		testSelfInstance(ECKeyPair.class);
 	}
 
 	@Test
 	public void testPublicKey() {
+		setup("none");
 		testSelfInstance(ECPublicKey.class);
 	}
 
 	@Test
 	public void testAddress() {
+		setup("none");
 		testSelfInstance(RadixAddress.class);
 	}
 
 	@Test
 	public void testBFTNode() {
+		setup("none");
 		testSelfInstance(BFTNode.class);
 	}
 
 	@Test
 	public void testLocalSystem() {
+		setup("none");
 		LocalSystemProvider provider = this.globalInjector.getInjector().getInstance(LocalSystemProvider.class);
 		LocalSystem localSystem = provider.get();
 		assertNotNull(localSystem.getInfo());
@@ -105,5 +114,18 @@ public class GlobalInjectorTest {
 		Key<T> key = Key.get(cls, Names.named("self"));
 		T obj = this.globalInjector.getInjector().getInstance(key);
 		assertNotNull(obj);
+	}
+
+	private void setup(String feeType) {
+		RuntimeProperties properties = mock(RuntimeProperties.class);
+		doReturn("127.0.0.1").when(properties).get(eq("host.ip"), any());
+		doReturn(feeType).when(properties).get(eq("debug.fee_module"), any());
+		DatabaseEnvironment dbEnv = mock(DatabaseEnvironment.class);
+		Universe universe = mock(Universe.class);
+
+		Files.delete(new File("nonesuch.ks"));
+		when(properties.get(eq("node.key.path"), any(String.class))).thenReturn("nonesuch.ks");
+
+		this.globalInjector = new GlobalInjector(properties, dbEnv, universe);
 	}
 }

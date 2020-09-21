@@ -64,6 +64,8 @@ public class StateComputerLedgerTest {
 	private VerifiedLedgerHeaderAndProof currentLedgerHeader;
 	private SystemCounters counters;
 	private Comparator<VerifiedLedgerHeaderAndProof> headerComparator;
+	private LedgerAccumulator accumulator;
+
 
 	@Before
 	public void setup() {
@@ -75,6 +77,8 @@ public class StateComputerLedgerTest {
 		this.committedSender = mock(CommittedSender.class);
 		this.currentLedgerHeader = mock(VerifiedLedgerHeaderAndProof.class);
 		this.headerComparator = TypedMocks.rmock(Comparator.class);
+		this.accumulator = mock(LedgerAccumulator.class);
+		when(accumulator.accumulate(any(), any(Command.class))).thenReturn(mock(Hash.class));
 
 		this.stateComputerLedger = new StateComputerLedger(
 			headerComparator,
@@ -83,6 +87,7 @@ public class StateComputerLedgerTest {
 			stateComputer,
 			committedStateSyncSender,
 			committedSender,
+			accumulator,
 			counters
 		);
 	}

@@ -20,21 +20,20 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.google.inject.multibindings.MapBinder;
+import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.statecomputer.RadixEngineStateComputer;
-import com.radixdlt.middleware2.network.MessageCentralLedgerSync;
-import com.radixdlt.network.addressbook.AddressBook;
-import com.radixdlt.network.messaging.MessageCentral;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.ledger.LedgerAccumulatorVerifier;
+import com.radixdlt.sync.CommittedReader;
+import com.radixdlt.sync.LocalSyncServiceProcessor.InvalidSyncedCommandsSender;
+import com.radixdlt.sync.RemoteSyncServiceProcessor;
 import com.radixdlt.sync.StateSyncNetwork;
-import com.radixdlt.sync.SyncServiceProcessor;
-import com.radixdlt.sync.SyncServiceProcessor.SyncTimeoutScheduler;
-import com.radixdlt.sync.SyncServiceProcessor.SyncedCommandSender;
+import com.radixdlt.sync.LocalSyncServiceProcessor;
+import com.radixdlt.sync.LocalSyncServiceProcessor.SyncTimeoutScheduler;
+import com.radixdlt.sync.LocalSyncServiceProcessor.VerifiedSyncedCommandsSender;
 import com.radixdlt.sync.SyncServiceRunner;
-import com.radixdlt.sync.SyncServiceRunner.LocalSyncRequestsRx;
-import com.radixdlt.sync.SyncServiceRunner.SyncTimeoutsRx;
-import com.radixdlt.ledger.StateComputerLedger;
-import com.radixdlt.sync.SyncServiceRunner.VersionUpdatesRx;
-import com.radixdlt.universe.Universe;
 import java.util.Comparator;
 
 /**
@@ -43,63 +42,60 @@ import java.util.Comparator;
 public class SyncCommittedServiceModule extends AbstractModule {
 	private static final int BATCH_SIZE = 100;
 
+	@Override
+	public void configure() {
+		MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class)
+			.addBinding("sync").to(SyncServiceRunner.class);
+	}
+
 	@Provides
 	@Singleton
-	private SyncServiceProcessor syncServiceProcessor(
+	private RemoteSyncServiceProcessor remoteSyncServiceProcessor(
+		CommittedReader committedReader,
+		StateSyncNetwork stateSyncNetwork
+	) {
+		return new RemoteSyncServiceProcessor(
+			committedReader,
+			stateSyncNetwork,
+			BATCH_SIZE
+		);
+	}
+
+	@Provides
+	@Singleton
+	private LocalSyncServiceProcessor syncServiceProcessor(
 		Comparator<VerifiedLedgerHeaderAndProof> headerComparator,
+		LedgerAccumulatorVerifier verifier,
 		VerifiedLedgerHeaderAndProof header,
-		RadixEngineStateComputer executor,
 		StateSyncNetwork stateSyncNetwork,
-		SyncedCommandSender syncedCommandSender,
+		VerifiedSyncedCommandsSender verifiedSyncedCommandsSender,
+		InvalidSyncedCommandsSender invalidSyncedCommandsSender,
 		SyncTimeoutScheduler syncTimeoutScheduler
 	) {
-		return new SyncServiceProcessor(
-			executor,
+		return new LocalSyncServiceProcessor(
 			stateSyncNetwork,
-			syncedCommandSender,
+			verifiedSyncedCommandsSender,
+			invalidSyncedCommandsSender,
 			syncTimeoutScheduler,
+			verifier,
 			headerComparator,
 			header,
-			BATCH_SIZE,
-			10
+			200
 		);
 	}
 
 	@Provides
-	@Singleton
-	private SyncServiceRunner syncServiceRunner(
-		LocalSyncRequestsRx localSyncRequestsRx,
-		SyncTimeoutsRx syncTimeoutsRx,
-		VersionUpdatesRx versionUpdatesRx,
-		StateSyncNetwork stateSyncNetwork,
-		SyncServiceProcessor syncServiceProcessor
-	) {
-		return new SyncServiceRunner(
-			localSyncRequestsRx,
-			syncTimeoutsRx,
-			versionUpdatesRx,
-			stateSyncNetwork,
-			syncServiceProcessor
-		);
+	private VerifiedSyncedCommandsSender syncedCommandSender(SystemCounters counters, Ledger ledger) {
+		return cmds -> {
+			counters.add(CounterType.SYNC_PROCESSED, cmds.size());
+			ledger.commit(cmds);
+		};
 	}
 
-	@Provides
-	@Singleton
-	private SyncedCommandSender syncedAtomSender(StateComputerLedger stateComputerLedger) {
-		return stateComputerLedger::commit;
-	}
 
 	@Provides
-	@Singleton
-	private StateSyncNetwork stateSyncNetwork(
-		Universe universe,
-		AddressBook addressBook,
-		MessageCentral messageCentral
-	) {
-		return new MessageCentralLedgerSync(
-			universe,
-			addressBook,
-			messageCentral
-		);
+	private InvalidSyncedCommandsSender invalidCommandsSender(SystemCounters counters) {
+		// TODO: Store bad commands for reference and later for slashing
+		return commandsAndProof -> counters.increment(CounterType.SYNC_INVALID_COMMANDS_RECEIVED);
 	}
 }

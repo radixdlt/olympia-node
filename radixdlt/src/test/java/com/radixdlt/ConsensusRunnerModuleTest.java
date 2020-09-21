@@ -26,7 +26,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.radixdlt.consensus.CommittedStateSyncRx;
-import com.radixdlt.consensus.ConsensusEventsRx;
+import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.consensus.EpochManagerRunner;
 import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
@@ -46,9 +46,9 @@ public class ConsensusRunnerModuleTest {
 				when(committedStateSyncRx.committedStateSyncs()).thenReturn(Observable.never());
 				bind(CommittedStateSyncRx.class).toInstance(committedStateSyncRx);
 
-				ConsensusEventsRx consensusEventsRx = mock(ConsensusEventsRx.class);
-				when(consensusEventsRx.consensusEvents()).thenReturn(Observable.never());
-				bind(ConsensusEventsRx.class).toInstance(consensusEventsRx);
+				BFTEventsRx bftEventsRx = mock(BFTEventsRx.class);
+				when(bftEventsRx.bftEvents()).thenReturn(Observable.never());
+				bind(BFTEventsRx.class).toInstance(bftEventsRx);
 
 				EpochChangeRx epochChangeRx = mock(EpochChangeRx.class);
 				when(epochChangeRx.epochChanges()).thenReturn(Observable.never());

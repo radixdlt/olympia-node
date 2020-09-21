@@ -18,7 +18,7 @@
 package org.radix.api.jsonrpc;
 
 import com.google.common.io.CharStreams;
-import com.radixdlt.ConsensusRunner;
+import com.radixdlt.ModuleRunner;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
@@ -74,11 +74,12 @@ public final class RadixJsonRpcServer {
 	private final LocalSystem localSystem;
 	private final AddressBook addressBook;
 	private final Universe universe;
-	private final ConsensusRunner consensusRunner;
+
+	private final ModuleRunner consensusRunner;
 	private final PeerWithSystem localPeer;
 
 	public RadixJsonRpcServer(
-		ConsensusRunner consensusRunner,
+		ModuleRunner consensusRunner,
 		Serialization serialization,
 		LedgerEntryStore ledger,
 		AtomsService atomsService,
@@ -90,7 +91,7 @@ public final class RadixJsonRpcServer {
 	}
 
 	public RadixJsonRpcServer(
-		ConsensusRunner consensusRunner,
+		ModuleRunner consensusRunner,
 		Serialization serialization,
 		LedgerEntryStore ledger,
 		AtomsService atomsService,

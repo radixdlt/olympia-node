@@ -19,7 +19,7 @@ package com.radixdlt.integration.distributed.simulation.network;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.ConsensusEvent;
-import com.radixdlt.consensus.ConsensusEventsRx;
+import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -38,6 +38,10 @@ import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
+import com.radixdlt.sync.StateSyncNetwork;
+import com.radixdlt.sync.RemoteSyncRequest;
+import com.radixdlt.ledger.DtoCommandsAndProof;
 import io.reactivex.rxjava3.core.Observable;
 
 import io.reactivex.rxjava3.schedulers.Timed;
@@ -152,27 +156,6 @@ public class SimulationNetwork {
 		return new Builder();
 	}
 
-	public BFTEventSender getNetworkSender(BFTNode forNode) {
-		return new BFTEventSender() {
-			@Override
-			public void broadcastProposal(Proposal proposal, Set<BFTNode> nodes) {
-				for (BFTNode reader : nodes) {
-					receivedMessages.onNext(MessageInTransit.newMessage(proposal, forNode, reader));
-				}
-			}
-
-			@Override
-			public void sendNewView(NewView newView, BFTNode newViewLeader) {
-				receivedMessages.onNext(MessageInTransit.newMessage(newView, forNode, newViewLeader));
-			}
-
-			@Override
-			public void sendVote(Vote vote, BFTNode leader) {
-				receivedMessages.onNext(MessageInTransit.newMessage(vote, forNode, leader));
-			}
-		};
-	}
-
 	private static final class SimulatedVerticesRequest implements GetVerticesRequest {
 		private final Hash vertexId;
 		private final int count;
@@ -200,8 +183,8 @@ public class SimulationNetwork {
 		}
 	}
 
-
-	private class SimulatedNetworkImpl implements SimulatedNetworkReceiver, SimulationSyncSender {
+	public class SimulatedNetworkImpl implements
+		BFTEventSender, SyncVerticesRPCSender, SyncEpochsRPCSender, BFTEventsRx, SyncVerticesRPCRx, SyncEpochsRPCRx, StateSyncNetwork {
 		private final Observable<Object> myMessages;
 		private final BFTNode thisNode;
 		private HashMap<Hash, Object> opaqueMap = new HashMap<>();
@@ -236,6 +219,23 @@ public class SimulationNetwork {
 				)
 				.publish()
 				.refCount();
+		}
+
+		@Override
+		public void broadcastProposal(Proposal proposal, Set<BFTNode> nodes) {
+			for (BFTNode reader : nodes) {
+				receivedMessages.onNext(MessageInTransit.newMessage(proposal, thisNode, reader));
+			}
+		}
+
+		@Override
+		public void sendNewView(NewView newView, BFTNode newViewLeader) {
+			receivedMessages.onNext(MessageInTransit.newMessage(newView, thisNode, newViewLeader));
+		}
+
+		@Override
+		public void sendVote(Vote vote, BFTNode leader) {
+			receivedMessages.onNext(MessageInTransit.newMessage(vote, thisNode, leader));
 		}
 
 		@Override
@@ -276,7 +276,7 @@ public class SimulationNetwork {
 		}
 
 		@Override
-		public Observable<ConsensusEvent> consensusEvents() {
+		public Observable<ConsensusEvent> bftEvents() {
 			return myMessages.ofType(ConsensusEvent.class);
 		}
 
@@ -304,19 +304,30 @@ public class SimulationNetwork {
 		public Observable<GetEpochResponse> epochResponses() {
 			return myMessages.ofType(GetEpochResponse.class);
 		}
+
+		@Override
+		public Observable<DtoCommandsAndProof> syncResponses() {
+			return myMessages.ofType(DtoCommandsAndProof.class);
+		}
+
+		@Override
+		public Observable<RemoteSyncRequest> syncRequests() {
+			return myMessages.ofType(RemoteSyncRequest.class);
+		}
+
+		@Override
+		public void sendSyncRequest(BFTNode node, DtoLedgerHeaderAndProof currentHeader) {
+			RemoteSyncRequest syncRequest = new RemoteSyncRequest(thisNode, currentHeader);
+			receivedMessages.onNext(MessageInTransit.newMessage(syncRequest, thisNode, node));
+		}
+
+		@Override
+		public void sendSyncResponse(BFTNode node, DtoCommandsAndProof commandsAndProof) {
+			receivedMessages.onNext(MessageInTransit.newMessage(commandsAndProof, thisNode, node));
+		}
 	}
 
-	public SimulatedNetworkReceiver getNetworkRx(BFTNode forNode) {
+	public SimulatedNetworkImpl getNetwork(BFTNode forNode) {
 		return receivers.computeIfAbsent(forNode, SimulatedNetworkImpl::new);
-	}
-
-	public SimulationSyncSender getSyncSender(BFTNode forNode) {
-		return receivers.computeIfAbsent(forNode, SimulatedNetworkImpl::new);
-	}
-
-	public interface SimulationSyncSender extends SyncVerticesRPCSender, SyncEpochsRPCSender {
-	}
-
-	public interface SimulatedNetworkReceiver extends ConsensusEventsRx, SyncVerticesRPCRx, SyncEpochsRPCRx {
 	}
 }

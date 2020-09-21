@@ -18,7 +18,8 @@
 package com.radixdlt.sync;
 
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.ledger.DtoCommandsAndProof;
+import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import io.reactivex.rxjava3.core.Observable;
 
 /**
@@ -30,26 +31,26 @@ public interface StateSyncNetwork {
 	 * Retrieve stream of sync responses
 	 * @return an unending Observable of sync responses
 	 */
-	Observable<VerifiedCommandsAndProof> syncResponses();
+	Observable<DtoCommandsAndProof> syncResponses();
 
 	/**
 	 * Retrieve stream of sync requests
  	 * @return an unending Observable of sync requests
 	 */
-	Observable<SyncRequest> syncRequests();
+	Observable<RemoteSyncRequest> syncRequests();
 
 	/**
 	 * Sends a sync request to a peer node
 	 *
 	 * @param node node to send request to
-	 * @param stateVersion this nodes current stateVersion
+	 * @param currentHeader this nodes current verified header
 	 */
-	void sendSyncRequest(BFTNode node, long stateVersion);
+	void sendSyncRequest(BFTNode node, DtoLedgerHeaderAndProof currentHeader);
 
 	/**
 	 * Sends a sync response to a peer node
 	 * @param node node to send response to
-	 * @param atoms list of atoms in the response
+	 * @param commandsAndProof list of commands with proof
 	 */
-	void sendSyncResponse(BFTNode node, VerifiedCommandsAndProof atoms);
+	void sendSyncResponse(BFTNode node, DtoCommandsAndProof commandsAndProof);
 }

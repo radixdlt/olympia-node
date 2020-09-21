@@ -18,28 +18,36 @@
 package com.radixdlt.integration.distributed.simulation.network;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.Key;
 import com.google.inject.Module;
+import com.google.inject.Scopes;
+import com.google.inject.TypeLiteral;
+import com.google.inject.name.Names;
+import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.ConsensusRxModule;
-import com.radixdlt.ConsensusRunner;
+import com.radixdlt.ModuleRunner;
 import com.radixdlt.SystemInfoRxModule;
 import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.epoch.EpochChange;
-import com.radixdlt.integration.distributed.simulation.MockedCryptoModule;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCountersImpl;
+import com.radixdlt.integration.distributed.MockedCryptoModule;
 import com.radixdlt.integration.distributed.simulation.SimulationNetworkModule;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.mempool.Mempool;
+import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.systeminfo.InfoRx;
 import com.radixdlt.consensus.bft.BFTNode;
 
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -52,8 +60,9 @@ public class SimulationNodes {
 	private final SimulationNetwork underlyingNetwork;
 	private final ImmutableList<Injector> nodeInstances;
 	private final List<BFTNode> nodes;
-	private final boolean getVerticesRPCEnabled;
-	private final ImmutableList<Module> syncModules;
+	private final Module baseModule;
+	private final Module overrideModule;
+	private final Map<BFTNode, Module> byzantineNodeModules;
 
 	/**
 	 * Create a BFT test network with an underlying simulated network.
@@ -65,38 +74,53 @@ public class SimulationNodes {
 		List<BFTNode> nodes,
 		SimulationNetwork underlyingNetwork,
 		int pacemakerTimeout,
-		ImmutableList<Module> syncModules,
-		boolean getVerticesRPCEnabled
+		Module baseModule,
+		Module overrideModule,
+		Map<BFTNode, Module> byzantineNodeModules
 	) {
 		this.nodes = nodes;
-		this.syncModules = syncModules;
-		this.getVerticesRPCEnabled = getVerticesRPCEnabled;
+		this.baseModule = baseModule;
+		this.overrideModule = overrideModule;
+		this.byzantineNodeModules = byzantineNodeModules;
 		this.underlyingNetwork = Objects.requireNonNull(underlyingNetwork);
 		this.pacemakerTimeout = pacemakerTimeout;
 		this.nodeInstances = nodes.stream().map(this::createBFTInstance).collect(ImmutableList.toImmutableList());
 	}
 
 	private Injector createBFTInstance(BFTNode self) {
-		List<Module> modules = ImmutableList.of(
+		Module module = Modules.combine(
 			new AbstractModule() {
 				@Override
 				public void configure() {
-					bind(BFTNode.class).toInstance(self);
+					bind(BFTNode.class).annotatedWith(Names.named("self")).toInstance(self);
+					bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
+					bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
 				}
 			},
 			new ConsensusModule(pacemakerTimeout),
 			new ConsensusRxModule(),
 			new SystemInfoRxModule(),
 			new MockedCryptoModule(),
-			new SimulationNetworkModule(getVerticesRPCEnabled, self, underlyingNetwork)
+			new SimulationNetworkModule(underlyingNetwork),
+			baseModule
 		);
-		return Guice.createInjector(Iterables.concat(modules, syncModules));
+
+		// Override modules can be used to prove that certain adversaries
+		// can break network behavior if incorrect modules are used
+		if (overrideModule != null) {
+			module = Modules.override(module).with(overrideModule);
+		}
+
+		Module byzantineModule = byzantineNodeModules.get(self);
+		if (byzantineModule != null) {
+			module = Modules.override(module).with(byzantineModule);
+		}
+
+		return Guice.createInjector(module);
 	}
 
 	// TODO: Add support for epoch changes
 	public interface RunningNetwork {
-		EpochChange initialEpoch();
-
 		List<BFTNode> getNodes();
 
 		Observable<EpochChange> latestEpochChanges();
@@ -110,25 +134,20 @@ public class SimulationNodes {
 		Mempool getMempool(BFTNode node);
 
 		SimulationNetwork getUnderlyingNetwork();
+
+		Map<BFTNode, SystemCounters> getSystemCounters();
 	}
 
 	public RunningNetwork start() {
-
-		List<ConsensusRunner> consensusRunners = this.nodeInstances.stream()
-			.map(i -> i.getInstance(ConsensusRunner.class))
+		List<ModuleRunner> moduleRunners = this.nodeInstances.stream()
+			.flatMap(i -> i.getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() { })).values().stream())
 			.collect(Collectors.toList());
 
-		for (ConsensusRunner consensusRunner : consensusRunners) {
-			consensusRunner.start();
+		for (ModuleRunner moduleRunner : moduleRunners) {
+			moduleRunner.start();
 		}
 
 		return new RunningNetwork() {
-			@Override
-			public EpochChange initialEpoch() {
-				// Just do first instance for now
-				return nodeInstances.get(0).getInstance(EpochChange.class);
-			}
-
 			@Override
 			public List<BFTNode> getNodes() {
 				return nodes;
@@ -136,12 +155,15 @@ public class SimulationNodes {
 
 			@Override
 			public Observable<EpochChange> latestEpochChanges() {
+				// Just do first instance for now
+				EpochChange initialEpoch =  nodeInstances.get(0).getInstance(EpochChange.class);
+
 				Set<Observable<EpochChange>> epochChanges = nodeInstances.stream()
 					.map(i -> i.getInstance(EpochChangeRx.class))
 					.map(EpochChangeRx::epochChanges)
 					.collect(Collectors.toSet());
 
-				return Observable.just(initialEpoch()).concatWith(
+				return Observable.just(initialEpoch).concatWith(
 					Observable.merge(epochChanges)
 						.scan((cur, next) -> next.getProof().getEpoch() > cur.getProof().getEpoch() ? next : cur)
 						.distinctUntilChanged()
@@ -152,7 +174,7 @@ public class SimulationNodes {
 			public Observable<Pair<BFTNode, VerifiedVertex>> committedVertices() {
 				Set<Observable<Pair<BFTNode, VerifiedVertex>>> committedVertices = nodeInstances.stream()
 					.map(i -> {
-						BFTNode node = i.getInstance(BFTNode.class);
+						BFTNode node = i.getInstance(Key.get(BFTNode.class, Names.named("self")));
 						return i.getInstance(InfoRx.class).committedVertices()
 							.map(v -> Pair.of(node, v));
 					})
@@ -165,7 +187,7 @@ public class SimulationNodes {
 			public Observable<Pair<BFTNode, VerifiedCommandsAndProof>> committedCommands() {
 				Set<Observable<Pair<BFTNode, VerifiedCommandsAndProof>>> committedCommands = nodeInstances.stream()
 					.map(i -> {
-						BFTNode node = i.getInstance(BFTNode.class);
+						BFTNode node = i.getInstance(Key.get(BFTNode.class, Names.named("self")));
 						return i.getInstance(InfoRx.class).committedCommands()
 							.map(v -> Pair.of(node, v));
 					})
@@ -190,10 +212,21 @@ public class SimulationNodes {
 			public SimulationNetwork getUnderlyingNetwork() {
 				return underlyingNetwork;
 			}
+
+			@Override
+			public Map<BFTNode, SystemCounters> getSystemCounters() {
+				return nodes.stream()
+					.collect(Collectors.toMap(
+						node -> node,
+						node -> nodeInstances.get(nodes.indexOf(node)).getInstance(SystemCounters.class)
+					));
+			}
 		};
 	}
 
 	public void stop() {
-		this.nodeInstances.forEach(i -> i.getInstance(ConsensusRunner.class).stop());
+		this.nodeInstances.stream()
+			.flatMap(i -> i.getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() { })).values().stream())
+			.forEach(ModuleRunner::stop);
 	}
 }

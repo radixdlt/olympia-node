@@ -20,6 +20,7 @@ package com.radixdlt.middleware2;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
@@ -107,19 +108,24 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 			.collect(Collectors.groupingBy(sp -> sp.getParticle().getClass()));
 		List<SpunParticle> spunTransferableTokens = grouping.remove(TransferrableTokensParticle.class);
 		List<SpunParticle> spunUnallocatedTokens = grouping.remove(UnallocatedTokensParticle.class);
-		// If there is other "stuff" in the group, or no "burn+change", then it's not a fee group
-		if (grouping.isEmpty() && spunTransferableTokens != null && spunUnallocatedTokens != null) {
-			List<TransferrableTokensParticle> transferableTokens = spunTransferableTokens.stream()
-				.map(SpunParticle::getParticle)
-				.map(p -> (TransferrableTokensParticle) p)
-				.collect(Collectors.toList());
+		// If there is other "stuff" in the group, or no "burns", then it's not a fee group
+		if (grouping.isEmpty() && spunUnallocatedTokens != null) {
+			ImmutableList<TransferrableTokensParticle> transferableTokens = spunTransferableTokens == null
+				? ImmutableList.of()
+				: spunTransferableTokens.stream()
+					.map(SpunParticle::getParticle)
+					.map(p -> (TransferrableTokensParticle) p)
+					.collect(ImmutableList.toImmutableList());
 			return allUpForFeeToken(spunUnallocatedTokens) && allSameAddressAndForFee(transferableTokens);
 		}
 		return false;
 	}
 
 	// Check that all transferable particles are in for the same address and for the fee token
-	private boolean allSameAddressAndForFee(List<TransferrableTokensParticle> transferableTokens) {
+	private boolean allSameAddressAndForFee(ImmutableList<TransferrableTokensParticle> transferableTokens) {
+		if (transferableTokens.isEmpty()) {
+			return true;
+		}
 		RadixAddress addr = transferableTokens.get(0).getAddress();
 		return transferableTokens.stream()
 			.allMatch(ttp -> ttp.getAddress().equals(addr) && this.feeTokenRri.equals(ttp.getTokDefRef()));

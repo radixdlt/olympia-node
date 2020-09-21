@@ -29,3 +29,6 @@ cache:
     - '$HOME/.sonar/cache'
     - '$HOME/.gradle'
     - '.gradle'
+
+env:
+  - TEST_DURATION=30s
