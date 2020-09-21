@@ -32,6 +32,8 @@ import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
 import com.radixdlt.sync.CommittedReader;
 import java.util.LongSummaryStatistics;
 import java.util.concurrent.TimeUnit;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
@@ -40,6 +42,7 @@ import org.junit.Test;
  * a safety failure.
  */
 public class ByzantineSyncTest {
+	Logger logger = LogManager.getLogger();
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(4)
 		.randomLatency(10, 200)
@@ -89,6 +92,6 @@ public class ByzantineSyncTest {
 			.mapToLong(l -> l)
 			.summaryStatistics();
 
-		System.out.println(statistics);
+		logger.info(statistics);
 	}
 }

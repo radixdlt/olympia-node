@@ -23,6 +23,9 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import java.util.Optional;
 
+/**
+ * An update from the ledger signifying a new state has been committed.
+ */
 public interface LedgerUpdate {
 	ImmutableList<Command> getNewCommands();
 	VerifiedLedgerHeaderAndProof getTail();

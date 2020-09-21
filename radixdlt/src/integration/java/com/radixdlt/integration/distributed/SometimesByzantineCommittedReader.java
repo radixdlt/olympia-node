@@ -19,7 +19,6 @@ package com.radixdlt.integration.distributed;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
-import com.google.inject.Singleton;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
@@ -38,7 +37,6 @@ import java.util.function.UnaryOperator;
 /**
  * A reader which sometimes returns erroneous commands.
  */
-@Singleton
 public final class SometimesByzantineCommittedReader implements LedgerUpdateSender, CommittedReader {
 	private ReadType currentReadType;
 	private InMemoryCommittedReader correctReader;

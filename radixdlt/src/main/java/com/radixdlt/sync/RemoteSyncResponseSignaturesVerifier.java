@@ -34,7 +34,7 @@ import java.util.Objects;
 /**
  * Verifies the signatures in a sync response
  */
-public class RemoteSyncResponseSignaturesVerifier implements RemoteSyncResponseProcessor {
+public final class RemoteSyncResponseSignaturesVerifier implements RemoteSyncResponseProcessor {
 	public interface VerifiedSignaturesSender {
 		void sendVerified(RemoteSyncResponse remoteSyncResponse);
 	}

@@ -18,7 +18,6 @@
 package com.radixdlt.epochs;
 
 import com.google.inject.Inject;
-import com.google.inject.Singleton;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.epoch.EpochChange;
@@ -41,7 +40,6 @@ import org.apache.logging.log4j.Logger;
 /**
  * Manages the syncing service across epochs
  */
-@Singleton
 @NotThreadSafe
 public class EpochsLocalSyncServiceProcessor implements LocalSyncServiceProcessor, LedgerUpdateProcessor<EpochsLedgerUpdate> {
 	private static final Logger log = LogManager.getLogger();

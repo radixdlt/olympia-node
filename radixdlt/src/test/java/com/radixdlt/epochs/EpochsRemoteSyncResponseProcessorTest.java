@@ -17,7 +17,6 @@
 
 package com.radixdlt.epochs;
 
-import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -51,7 +50,6 @@ public class EpochsRemoteSyncResponseProcessorTest {
 	private EpochChange initialEpoch;
 	private VerifiedLedgerHeaderAndProof currentHeader;
 	private Function<BFTConfiguration, RemoteSyncResponseValidatorSetVerifier> verifierFactory;
-	private SyncedEpochSender syncedEpochSender;
 
 	@Before
 	public void setup() {
@@ -61,15 +59,13 @@ public class EpochsRemoteSyncResponseProcessorTest {
 
 		this.localSyncRequestSender = mock(SyncRequestSender.class);
 		this.verifierFactory = mock(Function.class);
-		this.syncedEpochSender = mock(SyncedEpochSender.class);
 
 		this.responseProcessor = new EpochsRemoteSyncResponseProcessor(
 			localSyncRequestSender,
 			initialVerifier,
 			initialEpoch,
 			currentHeader,
-			verifierFactory,
-			syncedEpochSender
+			verifierFactory
 		);
 	}
 
@@ -80,7 +76,6 @@ public class EpochsRemoteSyncResponseProcessorTest {
 		this.responseProcessor.processLedgerUpdate(update);
 
 		verify(localSyncRequestSender, never()).sendLocalSyncRequest(any());
-		verify(syncedEpochSender, never()).sendSyncedEpoch(any());
 		verify(initialVerifier, never()).processSyncResponse(any());
 		verify(verifierFactory, never()).apply(any());
 	}
@@ -100,7 +95,6 @@ public class EpochsRemoteSyncResponseProcessorTest {
 		this.responseProcessor.processSyncResponse(response);
 
 		verify(localSyncRequestSender, never()).sendLocalSyncRequest(any());
-		verify(syncedEpochSender, never()).sendSyncedEpoch(any());
 		verify(initialVerifier, never()).processSyncResponse(any());
 		verify(verifierFactory, never()).apply(any());
 	}
@@ -133,7 +127,6 @@ public class EpochsRemoteSyncResponseProcessorTest {
 		this.responseProcessor.processSyncResponse(response);
 
 		verify(localSyncRequestSender, never()).sendLocalSyncRequest(any());
-		verify(syncedEpochSender, never()).sendSyncedEpoch(any());
 		verify(initialVerifier, never()).processSyncResponse(any());
 		verify(nextValidatorSetVerifier, times(1)).processSyncResponse(any());
 	}
@@ -169,7 +162,6 @@ public class EpochsRemoteSyncResponseProcessorTest {
 		this.responseProcessor.processSyncResponse(response);
 
 		verify(localSyncRequestSender, times(1)).sendLocalSyncRequest(any());
-		verify(syncedEpochSender, never()).sendSyncedEpoch(any());
 		verify(initialVerifier, never()).processSyncResponse(any());
 		verify(verifierFactory, never()).apply(any());
 	}

@@ -21,7 +21,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import java.util.Objects;
 
-public class RemoteSyncResponse {
+public final class RemoteSyncResponse {
 	private final BFTNode sender;
 	private final DtoCommandsAndProof commandsAndProof;
 

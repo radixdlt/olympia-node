@@ -18,7 +18,6 @@
 package com.radixdlt.sync;
 
 import com.google.inject.Inject;
-import com.google.inject.Singleton;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
@@ -26,8 +25,7 @@ import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@Singleton
-public class RemoteSyncResponseAccumulatorVerifier implements RemoteSyncResponseProcessor {
+public final class RemoteSyncResponseAccumulatorVerifier implements RemoteSyncResponseProcessor {
 	private static final Logger log = LogManager.getLogger();
 
 	public interface VerifiedAccumulatorSender {

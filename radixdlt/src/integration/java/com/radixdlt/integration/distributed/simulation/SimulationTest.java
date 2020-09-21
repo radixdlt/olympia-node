@@ -144,7 +144,13 @@ public class SimulationTest {
 
 	public static class Builder {
 		private enum LedgerType {
-			MOCKED_LEDGER, LEDGER, LEDGER_AND_SYNC, LEDGER_AND_EPOCHS, LEDGER_AND_LOCALMEMPOOL, LEDGER_AND_EPOCHS_AND_SYNC, LEDGER_AND_RADIXENGINE
+			MOCKED_LEDGER,
+			LEDGER,
+			LEDGER_AND_SYNC,
+			LEDGER_AND_EPOCHS,
+			LEDGER_AND_LOCALMEMPOOL,
+			LEDGER_AND_EPOCHS_AND_SYNC,
+			LEDGER_AND_RADIXENGINE
 		}
 
 		private final DroppingLatencyProvider latencyProvider = new DroppingLatencyProvider();
