@@ -30,6 +30,7 @@ import com.google.gson.JsonObject;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ActionExecutionException.ActionExecutionExceptionBuilder;
+import com.radixdlt.client.application.translate.ActionExecutionExceptionReason;
 import com.radixdlt.client.application.translate.ApplicationState;
 import com.radixdlt.client.application.translate.AtomErrorToExceptionReasonMapper;
 import com.radixdlt.client.application.translate.AtomToExecutedActionsMapper;
@@ -119,6 +120,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -1106,9 +1108,10 @@ public class RadixApplicationAPI {
 						final JsonObject errorData = data == null ? null : data.getAsJsonObject();
 						final ActionExecutionExceptionBuilder exceptionBuilder = new ActionExecutionExceptionBuilder()
 							.errorData(errorData);
+						final Consumer<ActionExecutionExceptionReason> addReason = exceptionBuilder::addReason;
 						atomErrorMappers.stream()
 							.flatMap(errorMapper -> errorMapper.mapAtomErrorToExceptionReasons(status.getAtom(), errorData))
-							.forEach(exceptionBuilder::addReason);
+							.forEach(addReason);
 						return Completable.error(exceptionBuilder.build());
 					}
 				});
