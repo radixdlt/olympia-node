@@ -52,6 +52,7 @@ public class ByzantineSyncTest {
 				Multibinder<LedgerUpdateSender> committedSenders = Multibinder.newSetBinder(binder(), LedgerUpdateSender.class);
 				committedSenders.addBinding().to(SometimesByzantineCommittedReader.class).in(Scopes.SINGLETON);
 				bind(CommittedReader.class).to(SometimesByzantineCommittedReader.class).in(Scopes.SINGLETON);
+				bind(SometimesByzantineCommittedReader.class).in(Scopes.SINGLETON);
 			}
 		})
 		.pacemakerTimeout(5000)
