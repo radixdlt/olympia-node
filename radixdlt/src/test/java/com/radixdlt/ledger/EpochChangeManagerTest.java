@@ -27,10 +27,10 @@ import static org.mockito.Mockito.when;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.epochs.EpochChangeManager;
 import com.radixdlt.epochs.EpochChangeManager.EpochsLedgerUpdateSender;
-import com.radixdlt.epochs.EpochChangeSender;
 import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
@@ -38,15 +38,13 @@ import org.junit.Test;
 public class EpochChangeManagerTest {
 	private EpochChangeManager epochChangeManager;
 	private EpochsLedgerUpdateSender epochsLedgerUpdateSender;
-	private EpochChangeSender sender;
 	private Hasher hasher;
 
 	@Before
 	public void setup() {
-		this.sender = mock(EpochChangeSender.class);
 		this.epochsLedgerUpdateSender = mock(EpochsLedgerUpdateSender.class);
 		this.hasher = mock(Hasher.class);
-		epochChangeManager = new EpochChangeManager(sender, epochsLedgerUpdateSender, hasher);
+		epochChangeManager = new EpochChangeManager(epochsLedgerUpdateSender, hasher);
 	}
 
 	@Test
@@ -64,13 +62,16 @@ public class EpochChangeManagerTest {
 		when(ledgerUpdate.getNextValidatorSet()).thenReturn(Optional.of(validatorSet));
 		epochChangeManager.sendLedgerUpdate(ledgerUpdate);
 
-		verify(sender, times(1))
-			.epochChange(
-				argThat(e -> e.getProof().equals(tailHeader)
-					&& e.getBFTConfiguration().getValidatorSet().equals(validatorSet)
-					&& e.getEpoch() == 124L
-					&& e.getBFTConfiguration().getGenesisVertex().getView().isGenesis()
-				)
+		verify(epochsLedgerUpdateSender, times(1))
+			.sendLedgerUpdate(
+				argThat(e -> {
+					Optional<EpochChange> epochChange = e.getEpochChange();
+					return epochChange.isPresent()
+						&& epochChange.get().getProof().equals(tailHeader)
+							&& epochChange.get().getBFTConfiguration().getValidatorSet().equals(validatorSet)
+							&& epochChange.get().getEpoch() == 124L
+							&& epochChange.get().getBFTConfiguration().getGenesisVertex().getView().isGenesis();
+				})
 			);
 	}
 }

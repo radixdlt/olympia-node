@@ -22,7 +22,6 @@ import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
-import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
@@ -63,15 +62,12 @@ public final class DeterministicConsensusRunner {
 			this.epochManager.processGetVerticesErrorResponse((GetVerticesErrorResponse) message);
 		} else if (message instanceof CommittedStateSync) {
 			this.epochManager.processCommittedStateSync((CommittedStateSync) message);
-		} else if (message instanceof EpochChange) {
-			this.epochManager.processEpochChange((EpochChange) message);
 		} else if (message instanceof GetEpochRequest) {
 			this.epochManager.processGetEpochRequest((GetEpochRequest) message);
 		} else if (message instanceof GetEpochResponse) {
 			this.epochManager.processGetEpochResponse((GetEpochResponse) message);
 		} else if (message instanceof EpochsLedgerUpdate) {
-			// do nothing for now
-			// TODO: forward to sync
+			this.epochManager.processLedgerUpdate((EpochsLedgerUpdate) message);
 		} else {
 			throw new IllegalArgumentException("Unknown message type: " + message.getClass().getName());
 		}

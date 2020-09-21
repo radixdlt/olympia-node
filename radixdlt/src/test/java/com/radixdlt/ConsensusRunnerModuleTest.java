@@ -24,17 +24,20 @@ import static org.mockito.Mockito.when;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.Key;
 import com.google.inject.Module;
+import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.consensus.EpochManagerRunner;
-import com.radixdlt.epochs.EpochChangeRx;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.VertexSyncRx;
 import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.liveness.PacemakerRx;
+import com.radixdlt.epochs.EpochsLedgerUpdate;
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.subjects.PublishSubject;
 import org.junit.Test;
 
 public class ConsensusRunnerModuleTest {
@@ -50,9 +53,7 @@ public class ConsensusRunnerModuleTest {
 				when(bftEventsRx.bftEvents()).thenReturn(Observable.never());
 				bind(BFTEventsRx.class).toInstance(bftEventsRx);
 
-				EpochChangeRx epochChangeRx = mock(EpochChangeRx.class);
-				when(epochChangeRx.epochChanges()).thenReturn(Observable.never());
-				bind(EpochChangeRx.class).toInstance(epochChangeRx);
+				bind(Key.get(new TypeLiteral<Observable<EpochsLedgerUpdate>>() { })).toInstance(PublishSubject.create());
 
 				SyncEpochsRPCRx syncEpochsRPCRx = mock(SyncEpochsRPCRx.class);
 				when(syncEpochsRPCRx.epochResponses()).thenReturn(Observable.never());

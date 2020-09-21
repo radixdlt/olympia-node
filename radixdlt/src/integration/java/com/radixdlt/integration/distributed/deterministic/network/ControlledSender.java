@@ -34,7 +34,6 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
-import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.crypto.Hash;
@@ -107,11 +106,6 @@ public final class ControlledSender implements DeterministicSender {
 	}
 
 	@Override
-	public void epochChange(EpochChange epochChange) {
-		handleMessage(messageRank(epochChange), new ControlledMessage(this.senderIndex, this.senderIndex, epochChange));
-	}
-
-	@Override
 	public void sendCommittedVertex(VerifiedVertex vertex) {
 		// Ignore committed vertex signal
 	}
@@ -146,7 +140,7 @@ public final class ControlledSender implements DeterministicSender {
 
 	@Override
 	public void sendLedgerUpdate(EpochsLedgerUpdate epochsLedgerUpdate) {
-		handleMessage(MessageRank.EARLIEST_POSSIBLE, new ControlledMessage(this.senderIndex, this.senderIndex, epochsLedgerUpdate));
+		handleMessage(messageRank(epochsLedgerUpdate), new ControlledMessage(this.senderIndex, this.senderIndex, epochsLedgerUpdate));
 	}
 
 	private static class ControlledGetVerticesRequest implements GetVerticesRequest {
@@ -193,8 +187,8 @@ public final class ControlledSender implements DeterministicSender {
 		return MessageRank.of(proof.getEpoch(), proof.getView().number() + 3);
 	}
 
-	private MessageRank messageRank(EpochChange epochChange) {
-		VerifiedLedgerHeaderAndProof proof = epochChange.getProof();
+	private MessageRank messageRank(EpochsLedgerUpdate epochsLedgerUpdate) {
+		VerifiedLedgerHeaderAndProof proof = epochsLedgerUpdate.getTail();
 		return MessageRank.of(proof.getEpoch(), proof.getView().number() + 3);
 	}
 

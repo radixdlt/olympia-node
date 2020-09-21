@@ -32,11 +32,11 @@ import com.radixdlt.ConsensusModule;
 import com.radixdlt.ConsensusRxModule;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.SystemInfoRxModule;
-import com.radixdlt.epochs.EpochChangeRx;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.integration.distributed.simulation.SimulationNetworkModule;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.Mempool;
@@ -162,8 +162,8 @@ public class SimulationNodes {
 				EpochChange initialEpoch =  nodeInstances.get(0).getInstance(EpochChange.class);
 
 				Set<Observable<EpochChange>> epochChanges = nodeInstances.stream()
-					.map(i -> i.getInstance(EpochChangeRx.class))
-					.map(EpochChangeRx::epochChanges)
+					.map(i -> i.getInstance(Key.get(new TypeLiteral<Observable<EpochsLedgerUpdate>>() { })))
+					.map(o -> o.filter(u -> u.getEpochChange().isPresent()).map(u -> u.getEpochChange().get()))
 					.collect(Collectors.toSet());
 
 				return Observable.just(initialEpoch).concatWith(

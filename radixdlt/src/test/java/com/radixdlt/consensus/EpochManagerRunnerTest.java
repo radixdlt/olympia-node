@@ -24,13 +24,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
-import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.epochs.EpochChangeRx;
+import com.radixdlt.epochs.EpochsLedgerUpdate;
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.subjects.PublishSubject;
+import io.reactivex.rxjava3.subjects.Subject;
 import org.junit.Test;
 
 public class EpochManagerRunnerTest {
@@ -38,8 +39,7 @@ public class EpochManagerRunnerTest {
 	public void when_events_get_emitted__then_event_coordinator_should_be_called() {
 		BFTEventsRx networkRx = mock(BFTEventsRx.class);
 
-		EpochChange epochChange = mock(EpochChange.class);
-		EpochChangeRx epochChangeRx = () -> Observable.just(epochChange).concatWith(Observable.never());
+		Subject<EpochsLedgerUpdate> ledgerUpdates = PublishSubject.create();
 
 		EpochManager epochManager = mock(EpochManager.class);
 
@@ -73,7 +73,7 @@ public class EpochManagerRunnerTest {
 		when(committedStateSyncRx.committedStateSyncs()).thenReturn(Observable.just(stateSync).concatWith(Observable.never()));
 
 		EpochManagerRunner consensusRunner = new EpochManagerRunner(
-			epochChangeRx,
+			ledgerUpdates,
 			networkRx,
 			pacemakerRx, vertexSyncRx,
 			committedStateSyncRx,
@@ -84,7 +84,10 @@ public class EpochManagerRunnerTest {
 
 		consensusRunner.start();
 
-		verify(epochManager, timeout(1000).times(1)).processEpochChange(eq(epochChange));
+		EpochsLedgerUpdate epochsLedgerUpdate = mock(EpochsLedgerUpdate.class);
+		ledgerUpdates.onNext(epochsLedgerUpdate);
+
+		verify(epochManager, timeout(1000).times(1)).processLedgerUpdate(eq(epochsLedgerUpdate));
 		verify(epochManager, timeout(1000).times(1)).processConsensusEvent(eq(vote));
 		verify(epochManager, timeout(1000).times(1)).processConsensusEvent(eq(proposal));
 		verify(epochManager, timeout(1000).times(1)).processConsensusEvent(eq(newView));

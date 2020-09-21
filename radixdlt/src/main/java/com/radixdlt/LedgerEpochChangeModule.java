@@ -22,7 +22,6 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.epochs.EpochChangeManager;
 import com.radixdlt.epochs.EpochChangeManager.EpochsLedgerUpdateSender;
-import com.radixdlt.epochs.EpochChangeSender;
 import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
 
 /**
@@ -31,10 +30,9 @@ import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
 public class LedgerEpochChangeModule extends AbstractModule {
 	@ProvidesIntoSet
 	private LedgerUpdateSender epochChangeManager(
-		EpochChangeSender sender,
 		EpochsLedgerUpdateSender epochsLedgerUpdateSender,
 		Hasher hasher
 	) {
-		return new EpochChangeManager(sender, epochsLedgerUpdateSender, hasher);
+		return new EpochChangeManager(epochsLedgerUpdateSender, hasher);
 	}
 }

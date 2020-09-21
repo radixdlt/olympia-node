@@ -21,7 +21,7 @@ import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 
-import com.radixdlt.epochs.EpochChangeRx;
+import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.utils.ThreadFactories;
 
 import io.reactivex.rxjava3.core.Observable;
@@ -55,7 +55,7 @@ public final class EpochManagerRunner implements ModuleRunner {
 
 	@Inject
 	public EpochManagerRunner(
-		EpochChangeRx epochChangeRx,
+		Observable<EpochsLedgerUpdate> ledgerUpdates,
 		BFTEventsRx networkRx,
 		PacemakerRx pacemakerRx,
 		VertexSyncRx vertexSyncRx,
@@ -71,9 +71,9 @@ public final class EpochManagerRunner implements ModuleRunner {
 		// It is important that all of these events are executed on the same thread
 		// as all logic is dependent on this assumption
 		final Observable<Object> eventCoordinatorEvents = Observable.merge(Arrays.asList(
-			epochChangeRx.epochChanges()
+			ledgerUpdates
 				.observeOn(singleThreadScheduler)
-				.doOnNext(epochManager::processEpochChange),
+				.doOnNext(epochManager::processLedgerUpdate),
 			pacemakerRx.localTimeouts()
 				.observeOn(singleThreadScheduler)
 				.doOnNext(epochManager::processLocalTimeout),

@@ -65,6 +65,8 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.epochs.EpochsLedgerUpdate;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;
 import org.junit.Test;
@@ -136,7 +138,9 @@ public class EpochManagerTest {
 		when(config.getValidatorSet()).thenReturn(validatorSet);
 		when(epochChange.getBFTConfiguration()).thenReturn(config);
 		when(epochChange.getEpoch()).thenReturn(2L);
-		epochManager.processEpochChange(epochChange);
+		EpochsLedgerUpdate epochsLedgerUpdate = mock(EpochsLedgerUpdate.class);
+		when(epochsLedgerUpdate.getEpochChange()).thenReturn(Optional.of(epochChange));
+		epochManager.processLedgerUpdate(epochsLedgerUpdate);
 
 		verify(bftFactory, never()).create(any(), any(), any(), any(), any(), any(), any());
 		verify(syncEpochsRPCSender, never()).sendGetEpochRequest(any(), anyLong());
@@ -165,7 +169,9 @@ public class EpochManagerTest {
 		when(config.getValidatorSet()).thenReturn(validatorSet);
 		when(epochChange.getBFTConfiguration()).thenReturn(config);
 		when(epochChange.getEpoch()).thenReturn(2L);
-		epochManager.processEpochChange(epochChange);
+		EpochsLedgerUpdate epochsLedgerUpdate = mock(EpochsLedgerUpdate.class);
+		when(epochsLedgerUpdate.getEpochChange()).thenReturn(Optional.of(epochChange));
+		epochManager.processLedgerUpdate(epochsLedgerUpdate);
 
 		BFTNode sender = mock(BFTNode.class);
 		epochManager.processGetEpochRequest(new GetEpochRequest(sender, 1L));
@@ -209,7 +215,9 @@ public class EpochManagerTest {
 		when(config.getValidatorSet()).thenReturn(validatorSet);
 		when(epochChange.getBFTConfiguration()).thenReturn(config);
 		when(epochChange.getEpoch()).thenReturn(2L);
-		epochManager.processEpochChange(epochChange);
+		EpochsLedgerUpdate epochsLedgerUpdate = mock(EpochsLedgerUpdate.class);
+		when(epochsLedgerUpdate.getEpochChange()).thenReturn(Optional.of(epochChange));
+		epochManager.processLedgerUpdate(epochsLedgerUpdate);
 
 		GetEpochResponse response = mock(GetEpochResponse.class);
 		VerifiedLedgerHeaderAndProof proof = mock(VerifiedLedgerHeaderAndProof.class);
@@ -244,7 +252,9 @@ public class EpochManagerTest {
 		BFTConfiguration config = mock(BFTConfiguration.class);
 		when(config.getValidatorSet()).thenReturn(validatorSet);
 		when(epochChange0.getBFTConfiguration()).thenReturn(config);
-		epochManager.processEpochChange(epochChange0);
+		EpochsLedgerUpdate epochsLedgerUpdate0 = mock(EpochsLedgerUpdate.class);
+		when(epochsLedgerUpdate0.getEpochChange()).thenReturn(Optional.of(epochChange0));
+		epochManager.processLedgerUpdate(epochsLedgerUpdate0);
 
 		VerifiedLedgerHeaderAndProof verifiedNext = mock(VerifiedLedgerHeaderAndProof.class);
 		when(verifiedNext.getEpoch()).thenReturn(2L);
@@ -258,7 +268,9 @@ public class EpochManagerTest {
 		when(config2.getValidatorSet()).thenReturn(vs);
 		when(epochChange.getBFTConfiguration()).thenReturn(config2);
 		when(epochChange.getEpoch()).thenReturn(3L);
-		epochManager.processEpochChange(epochChange);
+		EpochsLedgerUpdate epochsLedgerUpdate = mock(EpochsLedgerUpdate.class);
+		when(epochsLedgerUpdate.getEpochChange()).thenReturn(Optional.of(epochChange));
+		epochManager.processLedgerUpdate(epochsLedgerUpdate);
 	}
 
 	// TODO: Refactor EpochManager to simplify the following testing logic (TDD)
@@ -283,7 +295,9 @@ public class EpochManagerTest {
 		BFTConfiguration configuration = mock(BFTConfiguration.class);
 		when(configuration.getValidatorSet()).thenReturn(validatorSet);
 		when(epochChange.getBFTConfiguration()).thenReturn(configuration);
-		epochManager.processEpochChange(epochChange);
+		EpochsLedgerUpdate epochsLedgerUpdate = mock(EpochsLedgerUpdate.class);
+		when(epochsLedgerUpdate.getEpochChange()).thenReturn(Optional.of(epochChange));
+		epochManager.processLedgerUpdate(epochsLedgerUpdate);
 
 		verify(eventProcessor, times(1)).start();
 
@@ -386,8 +400,9 @@ public class EpochManagerTest {
 		BFTConfiguration configuration = mock(BFTConfiguration.class);
 		when(configuration.getValidatorSet()).thenReturn(validatorSet);
 		when(epochChange.getBFTConfiguration()).thenReturn(configuration);
-
-		epochManager.processEpochChange(epochChange);
+		EpochsLedgerUpdate epochsLedgerUpdate = mock(EpochsLedgerUpdate.class);
+		when(epochsLedgerUpdate.getEpochChange()).thenReturn(Optional.of(epochChange));
+		epochManager.processLedgerUpdate(epochsLedgerUpdate);
 
 		assertThat(systemCounters.get(CounterType.EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS)).isEqualTo(0);
 		verify(eventProcessor, times(1)).processProposal(eq(proposal));
@@ -412,8 +427,9 @@ public class EpochManagerTest {
 		when(configuration.getValidatorSet()).thenReturn(validatorSet);
 		when(epochChange.getBFTConfiguration()).thenReturn(configuration);
 		when(epochChange.getEpoch()).thenReturn(2L);
-
-		epochManager.processEpochChange(epochChange);
+		EpochsLedgerUpdate epochsLedgerUpdate = mock(EpochsLedgerUpdate.class);
+		when(epochsLedgerUpdate.getEpochChange()).thenReturn(Optional.of(epochChange));
+		epochManager.processLedgerUpdate(epochsLedgerUpdate);
 
 		assertThat(systemCounters.get(CounterType.EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS)).isEqualTo(0);
 	}
@@ -436,7 +452,9 @@ public class EpochManagerTest {
 		BFTConfiguration configuration = mock(BFTConfiguration.class);
 		when(configuration.getValidatorSet()).thenReturn(validatorSet);
 		when(epochChange.getBFTConfiguration()).thenReturn(configuration);
-		epochManager.processEpochChange(epochChange);
+		EpochsLedgerUpdate epochsLedgerUpdate = mock(EpochsLedgerUpdate.class);
+		when(epochsLedgerUpdate.getEpochChange()).thenReturn(Optional.of(epochChange));
+		epochManager.processLedgerUpdate(epochsLedgerUpdate);
 
 		GetVerticesRequest getVerticesRequest = mock(GetVerticesRequest.class);
 		epochManager.processGetVerticesRequest(getVerticesRequest);

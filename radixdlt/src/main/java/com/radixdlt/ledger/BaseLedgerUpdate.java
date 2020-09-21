@@ -47,4 +47,9 @@ public final class BaseLedgerUpdate implements LedgerUpdate {
 	public Optional<BFTValidatorSet> getNextValidatorSet() {
 		return Optional.ofNullable(validatorSet);
 	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{commands=%s}", this.getClass().getSimpleName(), verifiedCommandsAndProof);
+	}
 }

@@ -53,6 +53,7 @@ import com.radixdlt.consensus.sync.SyncRequestSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.sync.LocalSyncRequest;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -220,7 +221,16 @@ public final class EpochManager {
 		return this.currentEpoch.getEpoch();
 	}
 
-	public void processEpochChange(EpochChange epochChange) {
+	public void processLedgerUpdate(EpochsLedgerUpdate epochsLedgerUpdate) {
+		epochsLedgerUpdate.getEpochChange().ifPresentOrElse(
+			this::processEpochChange,
+			() -> {
+				// TODO: Forward to vertexStore
+			}
+		);
+	}
+
+	private void processEpochChange(EpochChange epochChange) {
 		// Sanity check
 		if (epochChange.getEpoch() <= this.currentEpoch()) {
 			throw new IllegalStateException("Epoch change has already occurred: " + epochChange);

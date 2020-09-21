@@ -37,7 +37,6 @@ import com.radixdlt.epochs.EpochChangeManager.EpochsLedgerUpdateSender;
 import com.radixdlt.integration.distributed.deterministic.DeterministicConsensusRunner;
 import com.radixdlt.integration.distributed.deterministic.DeterministicNetworkModule;
 import com.radixdlt.integration.distributed.MockedCryptoModule;
-import com.radixdlt.epochs.EpochChangeSender;
 import com.radixdlt.ledger.StateComputerLedger.CommittedStateSyncSender;
 import com.radixdlt.utils.Pair;
 
@@ -62,7 +61,6 @@ public final class DeterministicNetwork {
 		VertexStoreEventSender,
 		SyncVerticesRPCSender,
 		SyncedVertexSender,
-		EpochChangeSender,
 		EpochsLedgerUpdateSender,
 		CommittedStateSyncSender,
 		LocalTimeoutSender,
