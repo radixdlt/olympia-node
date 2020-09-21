@@ -21,6 +21,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.HashVerifier;
+import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.bft.BFTBuilder;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.BFTFactory;
@@ -126,6 +127,7 @@ public final class ConsensusModule extends AbstractModule {
 			vertexStoreEventSender,
 			syncRequestSender,
 			counters,
+			Comparator.comparingLong((LedgerHeader h) -> h.getAccumulatorState().getStateVersion()),
 			log
 		);
 	}

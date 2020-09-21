@@ -51,6 +51,7 @@ import com.radixdlt.crypto.Hash;
 import com.radixdlt.consensus.LedgerHeader;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -72,6 +73,7 @@ public class VertexStoreTest {
 	private SyncedVertexSender syncedVertexSender;
 	private SystemCounters counters;
 	private SyncRequestSender syncRequestSender;
+	private Comparator<LedgerHeader> ledgerHeaderComparator;
 
 	@Before
 	public void setUp() {
@@ -88,6 +90,7 @@ public class VertexStoreTest {
 		this.genesisHash = mock(Hash.class);
 		this.genesisVertex = new VerifiedVertex(UnverifiedVertex.createGenesis(mock(LedgerHeader.class)), genesisHash);
 		this.rootQC = QuorumCertificate.ofGenesis(genesisVertex, mock(LedgerHeader.class));
+		this.ledgerHeaderComparator = mock(Comparator.class);
 		this.vertexStore = new VertexStore(
 			genesisVertex,
 			rootQC,
@@ -97,6 +100,7 @@ public class VertexStoreTest {
 			vertexStoreEventSender,
 			syncRequestSender,
 			counters,
+			ledgerHeaderComparator,
 			mock(Logger.class)
 		);
 
@@ -156,6 +160,7 @@ public class VertexStoreTest {
 				vertexStoreEventSender,
 				syncRequestSender,
 				counters,
+				ledgerHeaderComparator,
 				mock(Logger.class)
 			)
 		).isInstanceOf(IllegalStateException.class);
@@ -174,6 +179,7 @@ public class VertexStoreTest {
 			vertexStoreEventSender,
 			syncRequestSender,
 			counters,
+			ledgerHeaderComparator,
 			mock(Logger.class)
 		);
 	}
@@ -193,6 +199,7 @@ public class VertexStoreTest {
 				vertexStoreEventSender,
 				syncRequestSender,
 				counters,
+				ledgerHeaderComparator,
 				mock(Logger.class)
 			)
 		).isInstanceOf(IllegalStateException.class);
@@ -273,6 +280,7 @@ public class VertexStoreTest {
 				vertexStoreEventSender,
 				syncRequestSender,
 				counters,
+				ledgerHeaderComparator,
 				mock(Logger.class)
 			);
 
@@ -477,6 +485,7 @@ public class VertexStoreTest {
 				vertexStoreEventSender,
 				syncRequestSender,
 				counters,
+				ledgerHeaderComparator,
 				mock(Logger.class)
 			);
 
@@ -507,6 +516,7 @@ public class VertexStoreTest {
 				vertexStoreEventSender,
 				syncRequestSender,
 				counters,
+				ledgerHeaderComparator,
 				mock(Logger.class)
 			);
 
@@ -535,6 +545,7 @@ public class VertexStoreTest {
 				vertexStoreEventSender,
 				syncRequestSender,
 				counters,
+				ledgerHeaderComparator,
 				mock(Logger.class)
 			);
 
@@ -568,6 +579,7 @@ public class VertexStoreTest {
 				vertexStoreEventSender,
 				syncRequestSender,
 				counters,
+				ledgerHeaderComparator,
 				mock(Logger.class)
 			);
 
@@ -617,6 +629,7 @@ public class VertexStoreTest {
 				vertexStoreEventSender,
 				syncRequestSender,
 				counters,
+				ledgerHeaderComparator,
 				mock(Logger.class)
 			);
 
@@ -632,7 +645,7 @@ public class VertexStoreTest {
 			return null;
 		}).when(syncVerticesRPCSender).sendGetVerticesRequest(eq(id7), any(), eq(3), any());
 
-		AtomicReference<LedgerHeader> ledgerHeaderRef = new AtomicReference<>();
+		AtomicReference<VerifiedLedgerHeaderAndProof> ledgerHeaderRef = new AtomicReference<>();
 
 		OnSynced onSynced = mock(OnSynced.class);
 		OnNotSynced onNotSynced = mock(OnNotSynced.class);
@@ -646,7 +659,7 @@ public class VertexStoreTest {
 
 		doAnswer(invocation -> {
 			VerifiedLedgerHeaderAndProof header = invocation.getArgument(0);
-			ledgerHeaderRef.set(header.getRaw());
+			ledgerHeaderRef.set(header);
 			return onSynced;
 		}).when(ledger).ifCommitSynced(any());
 

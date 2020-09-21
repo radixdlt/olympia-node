@@ -58,7 +58,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	}
 
 	public interface CommittedStateSyncSender {
-		void sendCommittedStateSync(LedgerHeader header);
+		void sendCommittedStateSync(VerifiedLedgerHeaderAndProof header);
 	}
 
 	private final Comparator<VerifiedLedgerHeaderAndProof> headerComparator;
@@ -193,8 +193,8 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			).values();
 			Iterator<LedgerHeader> listenersIterator = listeners.iterator();
 			while (listenersIterator.hasNext()) {
-				LedgerHeader syncTo = listenersIterator.next();
-				committedStateSyncSender.sendCommittedStateSync(syncTo);
+				listenersIterator.next();
+				committedStateSyncSender.sendCommittedStateSync(this.currentLedgerHeader);
 				listenersIterator.remove();
 			}
 		}

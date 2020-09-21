@@ -21,13 +21,13 @@ package com.radixdlt.consensus;
  * Event which represents that the committed state has been synced
  */
 public final class CommittedStateSync {
-	private final LedgerHeader header;
+	private final VerifiedLedgerHeaderAndProof header;
 
-	public CommittedStateSync(LedgerHeader header) {
+	public CommittedStateSync(VerifiedLedgerHeaderAndProof header) {
 		this.header = header;
 	}
 
-	public LedgerHeader getHeader() {
+	public VerifiedLedgerHeaderAndProof getHeader() {
 		return header;
 	}
 

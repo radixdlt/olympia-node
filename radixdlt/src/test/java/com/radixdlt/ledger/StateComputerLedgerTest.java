@@ -256,6 +256,7 @@ public class StateComputerLedgerTest {
 	public void given_check_sync__when_commit_when_higher_or_equal_state_version__then_will_emit() {
 		when(currentLedgerHeader.getStateVersion()).thenReturn(0L);
 		VerifiedLedgerHeaderAndProof verifiedLedgerHeaderAndProof = mock(VerifiedLedgerHeaderAndProof.class);
+		when(verifiedLedgerHeaderAndProof.getRaw()).thenReturn(mock(LedgerHeader.class));
 		when(verifiedLedgerHeaderAndProof.getStateVersion()).thenReturn(1L);
 		Runnable onSynced = mock(Runnable.class);
 		Runnable onNotSynced = mock(Runnable.class);

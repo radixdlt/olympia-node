@@ -35,14 +35,17 @@ import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.utils.Pair;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.NotThreadSafe;
@@ -115,7 +118,8 @@ public final class VertexStore implements VertexStoreEventProcessor {
 
 	private final Map<Hash, VerifiedVertex> vertices = new HashMap<>();
 	private final Map<Hash, SyncState> syncing = new HashMap<>();
-	private final Map<LedgerHeader, List<Hash>> committedSyncing = new HashMap<>();
+	private final TreeMap<LedgerHeader, List<Hash>> committedSyncing;
+
 
 	public VertexStore(
 		VerifiedVertex rootVertex,
@@ -126,6 +130,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		VertexStoreEventSender vertexStoreEventSender,
 		SyncRequestSender syncRequestSender,
 		SystemCounters counters,
+		Comparator<LedgerHeader> ledgerHeaderComparator,
 		Logger log
 	) {
 		this(
@@ -138,6 +143,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 			vertexStoreEventSender,
 			syncRequestSender,
 			counters,
+			ledgerHeaderComparator,
 			log
 		);
 	}
@@ -152,6 +158,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		VertexStoreEventSender vertexStoreEventSender,
 		SyncRequestSender syncRequestSender,
 		SystemCounters counters,
+		Comparator<LedgerHeader> ledgerHeaderComparator,
 		Logger log
 	) {
 		this.ledger = Objects.requireNonNull(ledger);
@@ -161,6 +168,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		this.syncRequestSender = Objects.requireNonNull(syncRequestSender);
 		this.counters = Objects.requireNonNull(counters);
 		this.log = Objects.requireNonNull(log);
+		this.committedSyncing = new TreeMap<>(ledgerHeaderComparator);
 
 		Objects.requireNonNull(rootVertex);
 		Objects.requireNonNull(rootQC);
@@ -298,14 +306,19 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	public void processCommittedStateSync(CommittedStateSync committedStateSync) {
 		log.info("SYNC_STATE: synced {}", committedStateSync);
 
-		List<Hash> syncs = committedSyncing.remove(committedStateSync.getHeader());
-		if (syncs != null) {
+		Collection<List<Hash>> listeners = this.committedSyncing.headMap(
+			committedStateSync.getHeader().getRaw(), true
+		).values();
+		Iterator<List<Hash>> listenersIterator = listeners.iterator();
+		while (listenersIterator.hasNext()) {
+			List<Hash> syncs = listenersIterator.next();
 			for (Hash syncTo : syncs) {
 				SyncState syncState = syncing.get(syncTo);
 				if (syncState != null) {
 					rebuildAndSyncQC(syncState);
 				}
 			}
+			listenersIterator.remove();
 		}
 	}
 

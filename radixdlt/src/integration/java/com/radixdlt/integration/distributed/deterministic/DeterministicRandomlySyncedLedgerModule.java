@@ -75,7 +75,7 @@ public class DeterministicRandomlySyncedLedgerModule extends AbstractModule {
 					return notSynced -> {
 						if (!synced) {
 							notSynced.run();
-							committedStateSyncSender.sendCommittedStateSync(ledgerState.getRaw());
+							committedStateSyncSender.sendCommittedStateSync(ledgerState);
 						}
 					};
 				};
