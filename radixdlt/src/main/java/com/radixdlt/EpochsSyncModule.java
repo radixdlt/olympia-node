@@ -51,10 +51,8 @@ import java.util.function.Function;
 public class EpochsSyncModule extends AbstractModule {
 	@Override
 	public void configure() {
-		bind(Key.get(new TypeLiteral<LocalSyncServiceProcessor>() { }))
-			.to(EpochsLocalSyncServiceProcessor.class).in(Scopes.SINGLETON);
-		bind(Key.get(new TypeLiteral<RemoteSyncResponseProcessor>() { }))
-			.to(EpochsRemoteSyncResponseProcessor.class).in(Scopes.SINGLETON);
+		bind(Key.get(new TypeLiteral<LocalSyncServiceProcessor>() { })).to(EpochsLocalSyncServiceProcessor.class);
+		bind(Key.get(new TypeLiteral<RemoteSyncResponseProcessor>() { })).to(EpochsRemoteSyncResponseProcessor.class);
 		Multibinder<LedgerUpdateProcessor<EpochsLedgerUpdate>> ledgerUpdateProcessors =
 			Multibinder.newSetBinder(binder(), new TypeLiteral<LedgerUpdateProcessor<EpochsLedgerUpdate>>() { });
 		ledgerUpdateProcessors.addBinding().to(EpochsRemoteSyncResponseProcessor.class);
