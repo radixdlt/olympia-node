@@ -17,7 +17,6 @@
 
 package com.radixdlt.integration.distributed.deterministic;
 
-import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
@@ -60,8 +59,6 @@ public final class DeterministicConsensusRunner {
 			this.epochManager.processGetVerticesResponse((GetVerticesResponse) message);
 		} else if (message instanceof GetVerticesErrorResponse) {
 			this.epochManager.processGetVerticesErrorResponse((GetVerticesErrorResponse) message);
-		} else if (message instanceof CommittedStateSync) {
-			this.epochManager.processCommittedStateSync((CommittedStateSync) message);
 		} else if (message instanceof GetEpochRequest) {
 			this.epochManager.processGetEpochRequest((GetEpochRequest) message);
 		} else if (message instanceof GetEpochResponse) {

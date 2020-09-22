@@ -20,12 +20,12 @@ package com.radixdlt.consensus;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
+import com.radixdlt.ledger.LedgerUpdate;
 
 /**
  * Processor of vertex store events
  */
 public interface VertexStoreEventProcessor {
-
 	/**
 	 * Process a get vertices request
 	 * @param request the get vertices request
@@ -45,8 +45,8 @@ public interface VertexStoreEventProcessor {
 	void processGetVerticesResponse(GetVerticesResponse response);
 
 	/**
-	 * Process a committed state ync
-	 * @param committedStateSync the committed state sync
+	 * Process a ledger update
+	 * @param ledgerUpdate the ledger update
 	 */
-	void processCommittedStateSync(CommittedStateSync committedStateSync);
+	void processLedgerUpdate(LedgerUpdate ledgerUpdate);
 }

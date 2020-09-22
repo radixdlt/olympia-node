@@ -31,14 +31,11 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.mempool.Mempool;
-import java.util.Collection;
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.TreeMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -57,14 +54,9 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		void sendLedgerUpdate(LedgerUpdate ledgerUpdate);
 	}
 
-	public interface CommittedStateSyncSender {
-		void sendCommittedStateSync(VerifiedLedgerHeaderAndProof header);
-	}
-
 	private final Comparator<VerifiedLedgerHeaderAndProof> headerComparator;
 	private final Mempool mempool;
 	private final StateComputer stateComputer;
-	private final CommittedStateSyncSender committedStateSyncSender;
 	private final LedgerUpdateSender ledgerUpdateSender;
 	private final SystemCounters counters;
 	private final LedgerAccumulator accumulator;
@@ -72,7 +64,6 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 
 	private final Object lock = new Object();
 	private VerifiedLedgerHeaderAndProof currentLedgerHeader;
-	private final TreeMap<Long, LedgerHeader> committedStateSyncers = new TreeMap<>();
 
 	@Inject
 	public StateComputerLedger(
@@ -80,7 +71,6 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		VerifiedLedgerHeaderAndProof initialLedgerState,
 		Mempool mempool,
 		StateComputer stateComputer,
-		CommittedStateSyncSender committedStateSyncSender,
 		LedgerUpdateSender ledgerUpdateSender,
 		LedgerAccumulator accumulator,
 		LedgerAccumulatorVerifier verifier,
@@ -90,7 +80,6 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		this.currentLedgerHeader = initialLedgerState;
 		this.mempool = Objects.requireNonNull(mempool);
 		this.stateComputer = Objects.requireNonNull(stateComputer);
-		this.committedStateSyncSender = Objects.requireNonNull(committedStateSyncSender);
 		this.ledgerUpdateSender = Objects.requireNonNull(ledgerUpdateSender);
 		this.counters = Objects.requireNonNull(counters);
 		this.accumulator = Objects.requireNonNull(accumulator);
@@ -140,11 +129,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 					return onNotSynced -> { };
 				};
 			} else {
-				return onSync -> onNotSynced -> {
-					// TODO: check if one already exists and doesn't match then its proof of byzantine failure
-					this.committedStateSyncers.put(committedLedgerHeader.getStateVersion(), committedLedgerHeader.getRaw());
-					onNotSynced.run();
-				};
+				return onSync -> Runnable::run;
 			}
 		}
 	}
@@ -186,17 +171,6 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			verifiedExtension.get().forEach(cmd -> this.mempool.removeCommitted(cmd.getHash()));
 			BaseLedgerUpdate ledgerUpdate = new BaseLedgerUpdate(commandsToStore, validatorSet.orElse(null));
 			ledgerUpdateSender.sendLedgerUpdate(ledgerUpdate);
-
-			// TODO: Verify headers match
-			Collection<LedgerHeader> listeners = this.committedStateSyncers.headMap(
-				this.currentLedgerHeader.getAccumulatorState().getStateVersion(), true
-			).values();
-			Iterator<LedgerHeader> listenersIterator = listeners.iterator();
-			while (listenersIterator.hasNext()) {
-				listenersIterator.next();
-				committedStateSyncSender.sendCommittedStateSync(this.currentLedgerHeader);
-				listenersIterator.remove();
-			}
 		}
 	}
 }

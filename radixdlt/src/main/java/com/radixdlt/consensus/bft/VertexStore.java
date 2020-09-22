@@ -19,7 +19,6 @@ package com.radixdlt.consensus.bft;
 
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.BFTHeader;
@@ -31,6 +30,7 @@ import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.utils.Pair;
@@ -302,12 +302,14 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		}
 	}
 
+
+	// TODO: Verify headers match
 	@Override
-	public void processCommittedStateSync(CommittedStateSync committedStateSync) {
-		log.info("SYNC_STATE: synced {}", committedStateSync);
+	public void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
+		log.trace("SYNC_STATE: update {}", ledgerUpdate);
 
 		Collection<List<Hash>> listeners = this.committedSyncing.headMap(
-			committedStateSync.getHeader().getRaw(), true
+			ledgerUpdate.getTail().getRaw(), true
 		).values();
 		Iterator<List<Hash>> listenersIterator = listeners.iterator();
 		while (listenersIterator.hasNext()) {

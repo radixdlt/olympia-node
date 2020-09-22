@@ -33,6 +33,7 @@ public class EpochsLedgerUpdateModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		Multibinder.newSetBinder(binder(), EpochsLedgerUpdateSender.class);
+		Multibinder.newSetBinder(binder(), LedgerUpdateSender.class);
 	}
 
 	@Provides

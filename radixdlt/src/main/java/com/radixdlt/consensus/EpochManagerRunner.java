@@ -59,7 +59,6 @@ public final class EpochManagerRunner implements ModuleRunner {
 		BFTEventsRx networkRx,
 		PacemakerRx pacemakerRx,
 		VertexSyncRx vertexSyncRx,
-		CommittedStateSyncRx committedStateSyncRx,
 		SyncVerticesRPCRx rpcRx,
 		SyncEpochsRPCRx epochsRPCRx,
 		EpochManager epochManager
@@ -97,10 +96,7 @@ public final class EpochManagerRunner implements ModuleRunner {
 				.doOnNext(epochManager::processGetEpochResponse),
 			vertexSyncRx.syncedVertices()
 				.observeOn(singleThreadScheduler)
-				.doOnNext(epochManager::processLocalSync),
-			committedStateSyncRx.committedStateSyncs()
-				.observeOn(singleThreadScheduler)
-				.doOnNext(epochManager::processCommittedStateSync)
+				.doOnNext(epochManager::processLocalSync)
 		));
 
 		this.events = eventCoordinatorEvents

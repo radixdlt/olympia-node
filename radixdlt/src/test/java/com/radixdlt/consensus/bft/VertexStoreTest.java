@@ -31,7 +31,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.Ledger.OnNotSynced;
 import com.radixdlt.consensus.Ledger.OnSynced;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -49,6 +48,7 @@ import com.radixdlt.consensus.sync.SyncRequestSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.ledger.LedgerUpdate;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
@@ -669,8 +669,9 @@ public class VertexStoreTest {
 		assertThat(vertexStore.getHighestQC()).isEqualTo(vertex4.getQC());
 		assertThat(vertexStore.getHighestCommittedQC()).isEqualTo(vertex4.getQC());
 
-		CommittedStateSync committedStateSync = new CommittedStateSync(ledgerHeaderRef.get());
-		vertexStore.processCommittedStateSync(committedStateSync);
+		LedgerUpdate ledgerUpdate = mock(LedgerUpdate.class);
+		when(ledgerUpdate.getTail()).thenReturn(ledgerHeaderRef.get());
+		vertexStore.processLedgerUpdate(ledgerUpdate);
 
 		assertThat(vertexStore.getHighestQC()).isEqualTo(vertex8.getQC());
 		assertThat(vertexStore.getHighestCommittedQC()).isEqualTo(vertex8.getQC());

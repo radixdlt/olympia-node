@@ -25,7 +25,6 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -42,7 +41,6 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
-import com.radixdlt.ledger.StateComputerLedger.CommittedStateSyncSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.utils.TypedMocks;
@@ -58,7 +56,6 @@ public class StateComputerLedgerTest {
 	private Mempool mempool;
 	private StateComputer stateComputer;
 	private StateComputerLedger stateComputerLedger;
-	private CommittedStateSyncSender committedStateSyncSender;
 	private LedgerUpdateSender ledgerUpdateSender;
 	private VerifiedLedgerHeaderAndProof currentLedgerHeader;
 	private SystemCounters counters;
@@ -72,7 +69,6 @@ public class StateComputerLedgerTest {
 		this.mempool = mock(Mempool.class);
 		// No type check issues with mocking generic here
 		this.stateComputer = mock(StateComputer.class);
-		this.committedStateSyncSender = mock(CommittedStateSyncSender.class);
 		this.counters = mock(SystemCounters.class);
 		this.ledgerUpdateSender = mock(LedgerUpdateSender.class);
 		this.currentLedgerHeader = mock(VerifiedLedgerHeaderAndProof.class);
@@ -86,7 +82,7 @@ public class StateComputerLedgerTest {
 			currentLedgerHeader,
 			mempool,
 			stateComputer,
-			committedStateSyncSender, ledgerUpdateSender,
+			ledgerUpdateSender,
 			accumulator,
 			accumulatorVerifier,
 			counters
@@ -250,34 +246,5 @@ public class StateComputerLedgerTest {
 			.elseExecuteAndSendMessageOnSync(onNotSynced);
 		verify(onSynced, times(1)).run();
 		verify(onNotSynced, never()).run();
-	}
-
-	@Test
-	public void given_check_sync__when_commit_when_higher_or_equal_state_version__then_will_emit() {
-		when(currentLedgerHeader.getStateVersion()).thenReturn(0L);
-		VerifiedLedgerHeaderAndProof verifiedLedgerHeaderAndProof = mock(VerifiedLedgerHeaderAndProof.class);
-		when(verifiedLedgerHeaderAndProof.getRaw()).thenReturn(mock(LedgerHeader.class));
-		when(verifiedLedgerHeaderAndProof.getStateVersion()).thenReturn(1L);
-		Runnable onSynced = mock(Runnable.class);
-		Runnable onNotSynced = mock(Runnable.class);
-		stateComputerLedger
-			.ifCommitSynced(verifiedLedgerHeaderAndProof)
-			.then(onSynced)
-			.elseExecuteAndSendMessageOnSync(onNotSynced);
-		verify(committedStateSyncSender, never()).sendCommittedStateSync(any());
-		verify(onSynced, never()).run();
-		verify(onNotSynced, times(1)).run();
-		VerifiedCommandsAndProof verified = mock(VerifiedCommandsAndProof.class);
-		VerifiedLedgerHeaderAndProof proof = mock(VerifiedLedgerHeaderAndProof.class);
-		when(headerComparator.compare(eq(proof), any())).thenReturn(1);
-		AccumulatorState accumulatorState = mock(AccumulatorState.class);
-		when(accumulatorState.getStateVersion()).thenReturn(1L);
-		when(proof.getAccumulatorState()).thenReturn(accumulatorState);
-		when(verified.getHeader()).thenReturn(proof);
-		when(accumulatorVerifier.verifyAndGetExtension(any(), any(), any())).thenReturn(Optional.of(ImmutableList.of()));
-
-		stateComputerLedger.commit(verified);
-
-		verify(committedStateSyncSender, timeout(5000).atLeast(1)).sendCommittedStateSync(any());
 	}
 }

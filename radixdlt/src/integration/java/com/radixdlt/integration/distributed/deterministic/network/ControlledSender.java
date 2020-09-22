@@ -23,7 +23,6 @@ import com.radixdlt.epochs.EpochsLedgerUpdate;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -112,12 +111,6 @@ public final class ControlledSender implements DeterministicSender {
 	@Override
 	public void highQC(QuorumCertificate qc) {
 		// Ignore high QC signal
-	}
-
-	@Override
-	public void sendCommittedStateSync(VerifiedLedgerHeaderAndProof header) {
-		CommittedStateSync committedStateSync = new CommittedStateSync(header);
-		handleMessage(MessageRank.EARLIEST_POSSIBLE, new ControlledMessage(this.senderIndex, this.senderIndex, committedStateSync));
 	}
 
 	@Override

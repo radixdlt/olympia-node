@@ -35,7 +35,6 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.BFTFactory;
-import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
@@ -154,7 +153,7 @@ public class EpochManagerTest {
 		epochManager.processLocalSync(mock(Hash.class));
 		epochManager.processGetVerticesRequest(mock(GetVerticesRequest.class));
 		epochManager.processGetVerticesResponse(mock(GetVerticesResponse.class));
-		epochManager.processCommittedStateSync(mock(CommittedStateSync.class));
+		epochManager.processLedgerUpdate(mock(EpochsLedgerUpdate.class));
 		epochManager.processConsensusEvent(mock(NewView.class));
 		epochManager.processConsensusEvent(mock(Proposal.class));
 		epochManager.processConsensusEvent(mock(Vote.class));
@@ -470,8 +469,8 @@ public class EpochManagerTest {
 		epochManager.processGetVerticesErrorResponse(getVerticesErrorResponse);
 		verify(vertexStore, times(1)).processGetVerticesErrorResponse(eq(getVerticesErrorResponse));
 
-		CommittedStateSync committedStateSync = mock(CommittedStateSync.class);
-		epochManager.processCommittedStateSync(committedStateSync);
-		verify(vertexStore, times(1)).processCommittedStateSync(eq(committedStateSync));
+		EpochsLedgerUpdate ledgerUpdate = mock(EpochsLedgerUpdate.class);
+		epochManager.processLedgerUpdate(ledgerUpdate);
+		verify(vertexStore, times(1)).processLedgerUpdate(eq(ledgerUpdate));
 	}
 }

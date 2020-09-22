@@ -27,7 +27,6 @@ import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.consensus.EpochManagerRunner;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
@@ -45,10 +44,6 @@ public class ConsensusRunnerModuleTest {
 		return new AbstractModule() {
 			@Override
 			protected void configure() {
-				CommittedStateSyncRx committedStateSyncRx = mock(CommittedStateSyncRx.class);
-				when(committedStateSyncRx.committedStateSyncs()).thenReturn(Observable.never());
-				bind(CommittedStateSyncRx.class).toInstance(committedStateSyncRx);
-
 				BFTEventsRx bftEventsRx = mock(BFTEventsRx.class);
 				when(bftEventsRx.bftEvents()).thenReturn(Observable.never());
 				bind(BFTEventsRx.class).toInstance(bftEventsRx);

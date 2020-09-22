@@ -36,7 +36,6 @@ import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.epochs.EpochChangeManager.EpochsLedgerUpdateSender;
 import com.radixdlt.integration.distributed.deterministic.network.DeterministicNetwork.DeterministicSender;
 import com.radixdlt.network.TimeSupplier;
-import com.radixdlt.ledger.StateComputerLedger.CommittedStateSyncSender;
 
 /**
  * Module that supplies network senders, as well as some other assorted
@@ -73,7 +72,6 @@ public class DeterministicNetworkModule extends AbstractModule {
 		bind(LocalTimeoutSender.class).to(DeterministicSender.class);
 		bind(SyncEpochsRPCSender.class).to(DeterministicSender.class);
 		bind(VertexStoreEventSender.class).to(DeterministicSender.class);
-		bind(CommittedStateSyncSender.class).to(DeterministicSender.class);
 
 		// TODO: Remove multibind?
 		Multibinder.newSetBinder(binder(), EpochsLedgerUpdateSender.class).addBinding().to(DeterministicSender.class);

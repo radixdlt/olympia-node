@@ -20,6 +20,7 @@ package com.radixdlt.consensus;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
+import com.radixdlt.ledger.LedgerUpdate;
 
 /**
  * An empty/mocked vertex store event processor
@@ -43,7 +44,7 @@ public enum EmptyVertexStoreEventProcessor implements VertexStoreEventProcessor 
 	}
 
 	@Override
-	public void processCommittedStateSync(CommittedStateSync committedStateSync) {
+	public void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
 		// No-op
 	}
 }

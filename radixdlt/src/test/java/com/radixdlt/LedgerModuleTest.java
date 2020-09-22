@@ -32,7 +32,6 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
@@ -42,7 +41,6 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
-import com.radixdlt.ledger.StateComputerLedger.CommittedStateSyncSender;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import org.junit.Test;
 
@@ -63,7 +61,6 @@ public class LedgerModuleTest {
 
 			bind(Mempool.class).toInstance(mock(Mempool.class));
 			bind(StateComputer.class).toInstance(mock(StateComputer.class));
-			bind(CommittedStateSyncSender.class).toInstance(mock(CommittedStateSyncSender.class));
 			bind(SystemCounters.class).toInstance(mock(SystemCounters.class));
 			VerifiedLedgerHeaderAndProof verifiedLedgerHeaderAndProof = mock(VerifiedLedgerHeaderAndProof.class);
 			bind(VerifiedLedgerHeaderAndProof.class).toInstance(verifiedLedgerHeaderAndProof);

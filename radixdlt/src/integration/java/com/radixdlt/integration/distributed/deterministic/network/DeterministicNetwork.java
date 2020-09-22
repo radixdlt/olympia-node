@@ -37,7 +37,6 @@ import com.radixdlt.epochs.EpochChangeManager.EpochsLedgerUpdateSender;
 import com.radixdlt.integration.distributed.deterministic.DeterministicConsensusRunner;
 import com.radixdlt.integration.distributed.deterministic.DeterministicNetworkModule;
 import com.radixdlt.integration.distributed.MockedCryptoModule;
-import com.radixdlt.ledger.StateComputerLedger.CommittedStateSyncSender;
 import com.radixdlt.utils.Pair;
 
 import java.io.PrintStream;
@@ -62,7 +61,6 @@ public final class DeterministicNetwork {
 		SyncVerticesRPCSender,
 		SyncedVertexSender,
 		EpochsLedgerUpdateSender,
-		CommittedStateSyncSender,
 		LocalTimeoutSender,
 		SyncEpochsRPCSender {
 		// Aggregation, no additional stuff

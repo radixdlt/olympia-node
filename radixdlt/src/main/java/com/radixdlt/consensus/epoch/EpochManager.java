@@ -22,7 +22,6 @@ import com.google.inject.name.Named;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.BFTFactory;
-import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.EmptyVertexStoreEventProcessor;
 import com.radixdlt.consensus.NewView;
@@ -224,9 +223,7 @@ public final class EpochManager {
 	public void processLedgerUpdate(EpochsLedgerUpdate epochsLedgerUpdate) {
 		epochsLedgerUpdate.getEpochChange().ifPresentOrElse(
 			this::processEpochChange,
-			() -> {
-				// TODO: Forward to vertexStore
-			}
+			() -> this.vertexStoreEventProcessor.processLedgerUpdate(epochsLedgerUpdate)
 		);
 	}
 
@@ -397,9 +394,5 @@ public final class EpochManager {
 
 	public void processGetVerticesResponse(GetVerticesResponse response) {
 		vertexStoreEventProcessor.processGetVerticesResponse(response);
-	}
-
-	public void processCommittedStateSync(CommittedStateSync committedStateSync) {
-		vertexStoreEventProcessor.processCommittedStateSync(committedStateSync);
 	}
 }

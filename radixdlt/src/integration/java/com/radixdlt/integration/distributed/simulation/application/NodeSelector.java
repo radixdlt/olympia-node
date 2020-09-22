@@ -19,7 +19,6 @@ package com.radixdlt.integration.distributed.simulation.application;
 
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
-import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
 
 public interface NodeSelector {

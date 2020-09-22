@@ -20,7 +20,6 @@ package com.radixdlt.integration.distributed;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.BFTEventsRx;
-import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
@@ -29,6 +28,7 @@ import com.radixdlt.consensus.VertexSyncRx;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.liveness.PacemakerRx;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.utils.ThreadFactories;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Scheduler;
@@ -59,11 +59,11 @@ public class BFTRunner implements ModuleRunner {
 
 	@Inject
 	public BFTRunner(
+		Observable<LedgerUpdate> ledgerUpdates,
 		BFTEventsRx networkRx,
 		PacemakerRx pacemakerRx,
 		VertexSyncRx vertexSyncRx,
 		SyncVerticesRPCRx rpcRx,
-		CommittedStateSyncRx committedStateSyncRx,
 		BFTEventProcessor bftEventProcessor,
 		VertexStoreEventProcessor vertexStoreEventProcessor
 	) {
@@ -103,9 +103,9 @@ public class BFTRunner implements ModuleRunner {
 			vertexSyncRx.syncedVertices()
 				.observeOn(singleThreadScheduler)
 				.doOnNext(bftEventProcessor::processLocalSync),
-			committedStateSyncRx.committedStateSyncs()
+			ledgerUpdates
 				.observeOn(singleThreadScheduler)
-				.doOnNext(vertexStoreEventProcessor::processCommittedStateSync)
+				.doOnNext(vertexStoreEventProcessor::processLedgerUpdate)
 		));
 
 		this.events = eventCoordinatorEvents

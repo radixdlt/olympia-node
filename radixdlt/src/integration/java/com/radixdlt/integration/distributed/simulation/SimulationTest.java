@@ -423,6 +423,7 @@ public class SimulationTest {
 				modules.add(new MockedLedgerModule());
 				modules.add(new LedgerRxModule());
 				modules.add(new MockedConsensusRunnerModule());
+				modules.add(new MockedLedgerUpdateRxModule());
 			} else {
 				modules.add(new LedgerModule());
 				modules.add(new LedgerRxModule());

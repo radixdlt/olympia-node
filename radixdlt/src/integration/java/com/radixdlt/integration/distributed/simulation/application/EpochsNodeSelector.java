@@ -18,7 +18,6 @@
 package com.radixdlt.integration.distributed.simulation.application;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;

@@ -186,6 +186,9 @@ public final class DeterministicTest {
 				});
 				modules.add(new MockedStateComputerModule());
 				modules.add(this.syncedExecutorModule);
+
+				// TODO: remove the following
+				modules.add(new EpochsLedgerUpdateModule());
 			} else {
 				// TODO: adapter from LongFunction<BFTValidatorSet> to Function<Long, BFTValidatorSet> shouldn't be needed
 				Function<Long, BFTValidatorSet> epochToValidatorSetMapping = validatorSetMapping::apply;

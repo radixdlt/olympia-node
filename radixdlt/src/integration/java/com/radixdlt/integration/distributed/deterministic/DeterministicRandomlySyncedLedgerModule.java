@@ -17,13 +17,17 @@
 
 package com.radixdlt.integration.distributed.deterministic;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Provides;
+import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.sync.SyncRequestSender;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.ledger.BaseLedgerUpdate;
+import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import java.util.Random;
 
@@ -31,7 +35,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.Ledger;
-import com.radixdlt.ledger.StateComputerLedger.CommittedStateSyncSender;
 
 /**
  * Module that appears to be synced at random.
@@ -47,11 +50,12 @@ public class DeterministicRandomlySyncedLedgerModule extends AbstractModule {
 	public void configure() {
 		bind(NextCommandGenerator.class).toInstance((view, aids) -> null);
 		bind(SyncRequestSender.class).toInstance(req -> { });
+		Multibinder.newSetBinder(binder(), LedgerUpdateSender.class);
 	}
 
 	@Provides
 	@Singleton
-	Ledger syncedExecutor(CommittedStateSyncSender committedStateSyncSender) {
+	Ledger syncedExecutor(LedgerUpdateSender ledgerUpdateSender) {
 		return new Ledger() {
 			@Override
 			public LedgerHeader prepare(VerifiedVertex vertex) {
@@ -65,7 +69,7 @@ public class DeterministicRandomlySyncedLedgerModule extends AbstractModule {
 			}
 
 			@Override
-			public OnSynced ifCommitSynced(VerifiedLedgerHeaderAndProof ledgerState) {
+			public OnSynced ifCommitSynced(VerifiedLedgerHeaderAndProof header) {
 				return onSynced -> {
 					boolean synced = random.nextBoolean();
 					if (synced) {
@@ -75,7 +79,14 @@ public class DeterministicRandomlySyncedLedgerModule extends AbstractModule {
 					return notSynced -> {
 						if (!synced) {
 							notSynced.run();
-							committedStateSyncSender.sendCommittedStateSync(ledgerState);
+
+							// TODO: Fix this
+							VerifiedCommandsAndProof commandsAndProof = new VerifiedCommandsAndProof(
+								ImmutableList.of(),
+								header
+							);
+							BaseLedgerUpdate baseLedgerUpdate = new BaseLedgerUpdate(commandsAndProof, null);
+							ledgerUpdateSender.sendLedgerUpdate(baseLedgerUpdate);
 						}
 					};
 				};
