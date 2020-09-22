@@ -6,7 +6,7 @@ echo "Test executor Container Name = $test_executor"
 echo "Duration of individual tests = $TEST_DURATION"
 
 if [[  -z "${RADIXDLT_UNIVERSE}" ]]; then
-  echo " RADIXDLT_UNIVERSE environment variable isn't setup . Existing the tests"
+  echo " RADIXDLT_UNIVERSE environment variable isn't setup. Exiting the tests"
   exit 1
 fi
 
