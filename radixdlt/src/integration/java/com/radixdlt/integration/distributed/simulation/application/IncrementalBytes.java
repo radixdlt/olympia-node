@@ -23,11 +23,11 @@ import com.radixdlt.consensus.Command;
 /**
  * Submits unique bytes (incrementally) to a network
  */
-public class IncrementalBytesSubmittor extends LocalMempoolPeriodicSubmittor {
+public class IncrementalBytes implements CommandGenerator {
 	private long commandId = 0;
 
 	@Override
-	Command nextCommand() {
+	public Command nextCommand() {
 		return new Command(Longs.toByteArray(commandId++));
 	}
 }

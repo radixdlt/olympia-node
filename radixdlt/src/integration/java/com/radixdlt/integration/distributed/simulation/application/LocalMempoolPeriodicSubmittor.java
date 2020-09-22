@@ -17,11 +17,8 @@
 
 package com.radixdlt.integration.distributed.simulation.application;
 
-import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolDuplicateException;
@@ -30,39 +27,30 @@ import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.reactivex.rxjava3.subjects.PublishSubject;
-import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 /**
  * Contributes to steady state by submitting commands to the mempool every few seconds
  */
-public abstract class LocalMempoolPeriodicSubmittor {
+public class LocalMempoolPeriodicSubmittor {
 	private final PublishSubject<Pair<Command, BFTNode>> commands;
-	private final Random random = new Random();
+	private final CommandGenerator commandGenerator;
+	private final NodeSelector nodeSelector;
 
-	public LocalMempoolPeriodicSubmittor() {
+	public LocalMempoolPeriodicSubmittor(CommandGenerator commandGenerator, NodeSelector nodeSelector) {
 		this.commands = PublishSubject.create();
+		this.commandGenerator = commandGenerator;
+		this.nodeSelector = nodeSelector;
 	}
 
-	abstract Command nextCommand();
-
-	private Pair<Command, BFTNode> act(RunningNetwork network, EpochChange lastEpochChange) {
-		ImmutableList<BFTValidator> validators = lastEpochChange.getBFTConfiguration()
-			.getValidatorSet().getValidators().asList();
-		int validatorSetSize = validators.size();
-		BFTValidator validator = validators.get(random.nextInt(validatorSetSize));
-		BFTNode node = validator.getNode();
-
+	private void act(RunningNetwork network, Command command, BFTNode node) {
 		Mempool mempool = network.getMempool(node);
-		Command command = nextCommand();
 		try {
 			mempool.add(command);
 		} catch (MempoolDuplicateException | MempoolFullException e) {
 			// TODO: Cleanup
 			e.printStackTrace();
 		}
-
-		return Pair.of(command, node);
 	}
 
 	public Observable<Pair<Command, BFTNode>> issuedCommands() {
@@ -71,8 +59,9 @@ public abstract class LocalMempoolPeriodicSubmittor {
 
 	public void run(RunningNetwork network) {
 		Observable.interval(1, 10, TimeUnit.SECONDS)
-			.withLatestFrom(network.latestEpochChanges(), (t, e) -> e)
-			.map(e -> this.act(network, e))
+			.map(i -> commandGenerator.nextCommand())
+			.withLatestFrom(nodeSelector.nextNode(network), Pair::of)
+			.doOnNext(p -> this.act(network, p.getFirst(), p.getSecond()))
 			.subscribe(commands);
 	}
 }
