@@ -1,3 +1,5 @@
+package com.radixdlt.test;
+
 import static com.radixdlt.test.AssertionChecks.*;
 
 import com.radixdlt.test.AssertionChecks;

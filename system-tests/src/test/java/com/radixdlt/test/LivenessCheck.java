@@ -21,6 +21,7 @@ package com.radixdlt.test;
 import com.radixdlt.utils.Pair;
 import io.reactivex.Single;
 import java.util.Comparator;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
@@ -90,9 +91,15 @@ public class LivenessCheck implements RemoteBFTCheck {
 	 * @return The highest highest QC view
 	 */
 	private Single<Pair<Long, Long>> getHighestHighestQCView(RemoteBFTNetworkBridge network) {
+		Stream<String> nodes = network.getNodeIds().stream().filter(nodename -> !nodesToIgnore.contains(nodename));;
+
 		return Single.zip(
 			network.getNodeIds().stream()
-				.filter(nodename -> !nodesToIgnore.contains(nodename))
+				.filter(nodename -> {
+					if(nodesToIgnore.size() == 0 )
+						return true;
+					return !nodesToIgnore.contains(nodename);
+				})
 				.map(node -> network.queryEndpointJson(node, "api/vertices/highestqc")
 					.map(LivenessCheck::extractEpochAndView)
 					.timeout(this.timeout, this.timeoutUnit)
