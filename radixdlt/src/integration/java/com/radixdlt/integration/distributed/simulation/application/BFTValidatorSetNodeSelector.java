@@ -17,11 +17,24 @@
 
 package com.radixdlt.integration.distributed.simulation.application;
 
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
-import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
+import java.util.Random;
 
-public interface NodeSelector {
-	Single<BFTNode> nextNode(RunningNetwork network);
+public class BFTValidatorSetNodeSelector implements NodeSelector {
+	private final Random random = new Random();
+
+	@Override
+	public Single<BFTNode> nextNode(RunningNetwork network) {
+		BFTConfiguration config = network.bftConfiguration();
+		ImmutableList<BFTValidator> validators = config
+			.getValidatorSet().getValidators().asList();
+		int validatorSetSize = validators.size();
+		BFTValidator validator = validators.get(random.nextInt(validatorSetSize));
+		return Single.just(validator.getNode());
+	}
 }

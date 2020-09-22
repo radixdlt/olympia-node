@@ -26,6 +26,7 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusRunnerModule;
+import com.radixdlt.EpochsConsensusModule;
 import com.radixdlt.EpochsSyncModule;
 import com.radixdlt.LedgerCommandGeneratorModule;
 import com.radixdlt.LedgerEpochChangeModule;
@@ -56,6 +57,7 @@ import com.radixdlt.integration.distributed.MockedStateComputerWithEpochsModule;
 import com.radixdlt.integration.distributed.MockedCommittedReaderModule;
 import com.radixdlt.integration.distributed.MockedSyncServiceModule;
 import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
+import com.radixdlt.integration.distributed.simulation.application.BFTValidatorSetNodeSelector;
 import com.radixdlt.integration.distributed.simulation.application.EpochsNodeSelector;
 import com.radixdlt.integration.distributed.simulation.application.IncrementalBytes;
 import com.radixdlt.integration.distributed.simulation.application.CommittedChecker;
@@ -296,7 +298,7 @@ public class SimulationTest {
 
 		public Builder addMempoolSubmissionsSteadyState(String invariantName) {
 			IncrementalBytes incrementalBytes = new IncrementalBytes();
-			NodeSelector nodeSelector = new EpochsNodeSelector();
+			NodeSelector nodeSelector = this.ledgerType.hasEpochs ? new EpochsNodeSelector() : new BFTValidatorSetNodeSelector();
 			LocalMempoolPeriodicSubmittor mempoolSubmission = new LocalMempoolPeriodicSubmittor(
 				incrementalBytes,
 				nodeSelector
@@ -312,7 +314,7 @@ public class SimulationTest {
 			this.runnableBuilder.add(nodes -> {
 				RadixEngineValidatorRegistratorAndUnregistrator randomValidatorSubmittor
 					= new RadixEngineValidatorRegistratorAndUnregistrator(nodes);
-				NodeSelector nodeSelector = new EpochsNodeSelector();
+				NodeSelector nodeSelector = this.ledgerType.hasEpochs ? new EpochsNodeSelector() : new BFTValidatorSetNodeSelector();
 				LocalMempoolPeriodicSubmittor submittor = new LocalMempoolPeriodicSubmittor(randomValidatorSubmittor, nodeSelector);
 				// TODO: Fix hack, hack required due to lack of Guice
 				this.checksBuilder.put(
@@ -327,7 +329,7 @@ public class SimulationTest {
 		public Builder addRadixEngineValidatorRegisterMempoolSubmissions(String submittedInvariantName, String registeredInvariantName) {
 			this.runnableBuilder.add(nodes -> {
 				RadixEngineValidatorRegistrator validatorRegistrator = new RadixEngineValidatorRegistrator(nodes);
-				NodeSelector nodeSelector = new EpochsNodeSelector();
+				NodeSelector nodeSelector = this.ledgerType.hasEpochs ? new EpochsNodeSelector() : new BFTValidatorSetNodeSelector();
 				LocalMempoolPeriodicSubmittor submittor = new LocalMempoolPeriodicSubmittor(validatorRegistrator, nodeSelector);
 				// TODO: Fix hack, hack required due to lack of Guice
 				this.checksBuilder.put(
@@ -441,6 +443,7 @@ public class SimulationTest {
 					modules.add(new MockedCommittedReaderModule());
 					modules.add(new MockedSyncRunnerModule());
 				} else if (ledgerType == LedgerType.LEDGER_AND_EPOCHS) {
+					modules.add(new EpochsConsensusModule());
 					modules.add(new ConsensusRunnerModule());
 					modules.add(new LedgerCommandGeneratorModule());
 					modules.add(new MockedMempoolModule());
@@ -454,6 +457,7 @@ public class SimulationTest {
 					modules.add(new MockedStateComputerWithEpochsModule(epochHighView, epochToValidatorSetMapping));
 					modules.add(new MockedSyncServiceModule());
 				} else if (ledgerType == LedgerType.LEDGER_AND_EPOCHS_AND_SYNC) {
+					modules.add(new EpochsConsensusModule());
 					modules.add(new ConsensusRunnerModule());
 					modules.add(new MockedCommandGeneratorModule());
 					modules.add(new MockedMempoolModule());
@@ -483,6 +487,7 @@ public class SimulationTest {
 					modules.add(new MockedSyncServiceModule());
 					modules.add(new MockedStateComputerModule());
 				} else if (ledgerType == LedgerType.LEDGER_AND_LOCALMEMPOOL_AND_EPOCHS_AND_RADIXENGINE) {
+					modules.add(new EpochsConsensusModule());
 					modules.add(new ConsensusRunnerModule());
 					modules.add(new LedgerCommandGeneratorModule());
 					modules.add(new LedgerLocalMempoolModule(10));

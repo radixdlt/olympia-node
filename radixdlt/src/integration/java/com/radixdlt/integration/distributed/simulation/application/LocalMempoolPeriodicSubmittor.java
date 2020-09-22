@@ -60,7 +60,7 @@ public class LocalMempoolPeriodicSubmittor {
 	public void run(RunningNetwork network) {
 		Observable.interval(1, 10, TimeUnit.SECONDS)
 			.map(i -> commandGenerator.nextCommand())
-			.withLatestFrom(nodeSelector.nextNode(network), Pair::of)
+			.flatMapSingle(cmd -> nodeSelector.nextNode(network).map(node -> Pair.of(cmd, node)))
 			.doOnNext(p -> this.act(network, p.getFirst(), p.getSecond()))
 			.subscribe(commands);
 	}

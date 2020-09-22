@@ -18,17 +18,18 @@
 package com.radixdlt.integration.distributed.simulation.application;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
-import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.Single;
 import java.util.Random;
 
 public class EpochsNodeSelector implements NodeSelector {
 	private final Random random = new Random();
 
 	@Override
-	public Observable<BFTNode> nextNode(RunningNetwork network) {
+	public Single<BFTNode> nextNode(RunningNetwork network) {
 		return network.latestEpochChanges()
 			.map(e -> {
 				ImmutableList<BFTValidator> validators = e.getBFTConfiguration()
@@ -36,6 +37,6 @@ public class EpochsNodeSelector implements NodeSelector {
 				int validatorSetSize = validators.size();
 				BFTValidator validator = validators.get(random.nextInt(validatorSetSize));
 				return validator.getNode();
-			});
+			}).firstOrError();
 	}
 }

@@ -27,6 +27,7 @@ import com.radixdlt.ConsensusModule;
 import com.radixdlt.ConsensusRunnerModule;
 import com.radixdlt.ConsensusRxModule;
 import com.radixdlt.CryptoModule;
+import com.radixdlt.EpochsConsensusModule;
 import com.radixdlt.EpochsSyncModule;
 import com.radixdlt.LedgerCommandGeneratorModule;
 import com.radixdlt.LedgerEpochChangeModule;
@@ -131,6 +132,7 @@ public class GlobalInjector {
 			new LedgerLocalMempoolModule(mempoolMaxSize),
 
 			// Epochs
+			new EpochsConsensusModule(),
 			new LedgerEpochChangeModule(),
 			new LedgerEpochChangeRxModule(),
 			new EpochsSyncModule(),

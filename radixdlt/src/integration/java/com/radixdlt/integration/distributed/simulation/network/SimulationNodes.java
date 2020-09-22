@@ -32,6 +32,7 @@ import com.radixdlt.ConsensusModule;
 import com.radixdlt.ConsensusRxModule;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.SystemInfoRxModule;
+import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.counters.SystemCounters;
@@ -125,6 +126,8 @@ public class SimulationNodes {
 	public interface RunningNetwork {
 		List<BFTNode> getNodes();
 
+		BFTConfiguration bftConfiguration();
+
 		Observable<EpochChange> latestEpochChanges();
 
 		Observable<Pair<BFTNode, VerifiedVertex>> committedVertices();
@@ -154,6 +157,11 @@ public class SimulationNodes {
 			public List<BFTNode> getNodes() {
 				// Just do first instance for now
 				return nodeInstances.get(0).getInstance(Key.get(new TypeLiteral<ImmutableList<BFTNode>>() { }));
+			}
+
+			@Override
+			public BFTConfiguration bftConfiguration() {
+				return nodeInstances.get(0).getInstance(BFTConfiguration.class);
 			}
 
 			@Override

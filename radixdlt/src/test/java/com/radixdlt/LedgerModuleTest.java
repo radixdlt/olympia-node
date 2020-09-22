@@ -83,7 +83,5 @@ public class LedgerModuleTest {
 
 		StateComputerLedger stateComputerLedger = injector.getInstance(StateComputerLedger.class);
 		assertThat(stateComputerLedger).isNotNull();
-		EpochChange epochChange = injector.getInstance(EpochChange.class);
-		assertThat(epochChange).isNotNull();
 	}
 }
