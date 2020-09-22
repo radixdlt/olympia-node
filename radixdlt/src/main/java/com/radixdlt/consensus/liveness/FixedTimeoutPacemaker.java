@@ -62,6 +62,7 @@ public final class FixedTimeoutPacemaker implements Pacemaker {
 		this.timeoutMilliseconds = timeoutMilliseconds;
 		this.timeoutSender = Objects.requireNonNull(timeoutSender);
 		this.pendingNewViews = new PendingNewViews();
+		log.debug("FixedTimeoutPacemaker with timeout {}ms", this.timeoutMilliseconds);
 	}
 
 	@Override
@@ -72,10 +73,10 @@ public final class FixedTimeoutPacemaker implements Pacemaker {
 	private void updateView(View nextView) {
 		long crtTime = System.currentTimeMillis();
 		if (crtTime >= nextLogging) {
-			log.info("Starting View: {}", nextView);
+			log.info("Starting view {}", nextView);
 			nextLogging = crtTime + LOGGING_INTERVAL;
 		} else {
-			log.trace("Starting View: {}", nextView);
+			log.trace("Starting view {}", nextView);
 		}
 		this.currentView = nextView;
 		timeoutSender.scheduleTimeout(this.currentView, timeoutMilliseconds);
@@ -94,7 +95,9 @@ public final class FixedTimeoutPacemaker implements Pacemaker {
 	// TODO: Move this into Event Coordinator
 	@Override
 	public Optional<View> processNewView(NewView newView, BFTValidatorSet validatorSet) {
-		if (newView.getView().compareTo(this.lastSyncView) <= 0) {
+		View newViewView = newView.getView();
+		if (newViewView.compareTo(this.lastSyncView) <= 0) {
+			log.debug("Ignoring NewView message {}: last sync view is {}", newView, this.lastSyncView);
 			return Optional.empty();
 		}
 
@@ -104,16 +107,16 @@ public final class FixedTimeoutPacemaker implements Pacemaker {
 		final boolean highestQC = !qcView.isGenesis() && qcView.next().equals(this.currentView);
 
 		if (!this.pendingNewViews.insertNewView(newView, validatorSet).isPresent() && !highestQC) {
+			log.debug("NewView quorum not yet formed (qc {}+1 -> {})", qcView, this.currentView);
 			return Optional.empty();
 		}
 
-		if (newView.getView().equals(this.currentView)) {
+		if (newViewView.equals(this.currentView)) {
 			this.lastSyncView = this.currentView;
 			return Optional.of(this.currentView);
-		} else {
-			log.trace("Ignoring New View Quorum: {} Current is: {}", newView, this.currentView);
-			return Optional.empty();
 		}
+		log.trace("Ignoring NewView quorum for view {}, current is: {}", newViewView, this.currentView);
+		return Optional.empty();
 	}
 
 	@Override

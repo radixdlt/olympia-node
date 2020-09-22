@@ -43,6 +43,8 @@ import com.radixdlt.sync.LocalSyncServiceProcessor.InvalidSyncedCommandsSender;
 import com.radixdlt.sync.LocalSyncServiceProcessor.SyncInProgress;
 import com.radixdlt.sync.LocalSyncServiceProcessor.SyncTimeoutScheduler;
 import com.radixdlt.sync.LocalSyncServiceProcessor.VerifiedSyncedCommandsSender;
+import com.radixdlt.utils.TypedMocks;
+
 import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;
@@ -67,7 +69,7 @@ public class LocalSyncServiceProcessorTest {
 		this.currentHeader = mock(VerifiedLedgerHeaderAndProof.class);
 		when(this.currentHeader.toDto()).thenReturn(mock(DtoLedgerHeaderAndProof.class));
 		this.verifier = mock(LedgerAccumulatorVerifier.class);
-		this.headerComparator = mock(Comparator.class);
+		this.headerComparator = TypedMocks.rmock(Comparator.class);
 		this.syncServiceProcessor = new LocalSyncServiceProcessor(
 			stateSyncNetwork,
 			verifiedSyncedCommandsSender,

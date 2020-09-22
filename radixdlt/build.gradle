@@ -52,6 +52,12 @@ configurations {
     integrationTestRuntime.extendsFrom testRuntime
 }
 
+task integrationTest(type: Test) {
+    testClassesDirs = sourceSets.integrationTest.output.classesDirs
+    classpath = sourceSets.integrationTest.runtimeClasspath
+    mustRunAfter(test)
+}
+
 checkstyle {
     toolVersion '8.10.1'
     showViolations = true
@@ -64,7 +70,7 @@ versionFile {
 }
 
 classes {
-	dependsOn(versionFile)
+    dependsOn(versionFile)
 }
 
 checkstyleMain {
@@ -92,13 +98,29 @@ test {
     testLogging {
         events "passed", "skipped", "failed"
         exceptionFormat "full"
-        outputs.upToDateWhen {false}
+        outputs.upToDateWhen { false }
         showStandardStreams true
     }
     systemProperty "java.security.egd", "file:/dev/urandom"
 }
 
+integrationTest {
+    testLogging {
+        events "passed", "skipped", "failed"
+        exceptionFormat "full"
+        outputs.upToDateWhen { false }
+        showStandardStreams true
+    }
+    systemProperty "java.security.egd", "file:/dev/urandom"
+    jacoco {
+        // It appears that Jacoco can introduce thread and/or JVM pauses, which
+        // in turn can cause timeouts that interfere with integration tests.
+        enabled false
+    }
+}
+
 jacocoTestReport {
+    dependsOn test
     reports {
         xml.enabled true
         csv.enabled false
@@ -280,19 +302,6 @@ task genmarkdown(type: NodeTask, dependsOn: updatejsonschema2md) {
 task gendoc(type: NodeTask, dependsOn: genmarkdown) {
     script = file('create-html.js')
 }
-
-/**
- * Run integration tests.
- */
-task integrationTest(type: Test) {
-    logging.captureStandardOutput(LogLevel.INFO)
-    logging.captureStandardError(LogLevel.INFO)
-
-    testClassesDirs = sourceSets.integrationTest.output.classesDirs
-    classpath = sourceSets.integrationTest.runtimeClasspath
-}
-
-integrationTest.mustRunAfter test
 
 /**
  * Creates the JSON RPC documentation and manages the *.deb file in the docker directory

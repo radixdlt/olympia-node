@@ -44,7 +44,6 @@ import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
-import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
 import com.radixdlt.utils.TypedMocks;
 
 import java.util.function.BiConsumer;
@@ -147,7 +146,7 @@ public class RadixEngineStateComputerTest {
 
 	@Test
 	public void when_commit_vertex_with_malformed_command__then_is_available_on_query()
-		throws DeserializeException, NextCommittedLimitReachedException {
+		throws DeserializeException {
 		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenThrow(new DeserializeException(""));
 
 		Command cmd = new Command(new byte[] {0, 1});
