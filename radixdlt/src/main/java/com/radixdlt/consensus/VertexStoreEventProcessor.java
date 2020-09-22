@@ -19,19 +19,12 @@ package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
-import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.ledger.LedgerUpdate;
 
 /**
  * Processor of vertex store events
  */
 public interface VertexStoreEventProcessor {
-	/**
-	 * Process a get vertices request
-	 * @param request the get vertices request
-	 */
-	void processGetVerticesRequest(GetVerticesRequest request);
-
 	/**
 	 * Process a get vertices error response
 	 * @param response the get vertices error response

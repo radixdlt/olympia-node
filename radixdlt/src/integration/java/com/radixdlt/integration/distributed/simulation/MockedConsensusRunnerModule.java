@@ -34,7 +34,9 @@ import com.radixdlt.consensus.VertexStoreEventProcessor;
 import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.SyncVerticesRequestProcessor;
 import com.radixdlt.consensus.bft.VertexStore;
+import com.radixdlt.consensus.bft.VertexStoreSyncVerticesRequestProcessor;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.consensus.epoch.EpochView;
@@ -49,6 +51,7 @@ public class MockedConsensusRunnerModule extends AbstractModule {
 		MapBinder<String, ModuleRunner> moduleRunners = MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class);
 		moduleRunners.addBinding("consensus").to(BFTRunner.class).in(Scopes.SINGLETON);
 		bind(VertexStoreEventProcessor.class).to(VertexStore.class).in(Scopes.SINGLETON);
+		bind(SyncVerticesRequestProcessor.class).to(VertexStoreSyncVerticesRequestProcessor.class);
 	}
 
 	@Provides

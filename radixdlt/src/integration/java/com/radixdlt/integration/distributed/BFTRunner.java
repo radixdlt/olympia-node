@@ -26,6 +26,7 @@ import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.VertexStoreEventProcessor;
 import com.radixdlt.consensus.VertexSyncRx;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.bft.SyncVerticesRequestProcessor;
 import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 import com.radixdlt.ledger.LedgerUpdate;
@@ -65,7 +66,8 @@ public class BFTRunner implements ModuleRunner {
 		VertexSyncRx vertexSyncRx,
 		SyncVerticesRPCRx rpcRx,
 		BFTEventProcessor bftEventProcessor,
-		VertexStoreEventProcessor vertexStoreEventProcessor
+		VertexStoreEventProcessor vertexStoreEventProcessor,
+		SyncVerticesRequestProcessor requestProcessor
 	) {
 		this.bftEventProcessor = Objects.requireNonNull(bftEventProcessor);
 		this.singleThreadExecutor = Executors.newSingleThreadExecutor(ThreadFactories.daemonThreads("ConsensusRunner"));
@@ -93,7 +95,7 @@ public class BFTRunner implements ModuleRunner {
 				}),
 			rpcRx.requests()
 				.observeOn(singleThreadScheduler)
-				.doOnNext(vertexStoreEventProcessor::processGetVerticesRequest),
+				.doOnNext(requestProcessor::processGetVerticesRequest),
 			rpcRx.responses()
 				.observeOn(singleThreadScheduler)
 				.doOnNext(vertexStoreEventProcessor::processGetVerticesResponse),

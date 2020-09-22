@@ -24,9 +24,10 @@ import com.google.inject.name.Names;
 import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
-import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
+import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRequestSender;
 import com.radixdlt.consensus.bft.VertexStore.SyncedVertexSender;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
+import com.radixdlt.consensus.bft.VertexStoreSyncVerticesRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
@@ -67,7 +68,8 @@ public class DeterministicNetworkModule extends AbstractModule {
 		bind(DeterministicSender.class).toInstance(this.sender);
 
 		bind(BFTEventSender.class).to(DeterministicSender.class);
-		bind(SyncVerticesRPCSender.class).to(DeterministicSender.class);
+		bind(SyncVerticesRequestSender.class).to(DeterministicSender.class);
+		bind(SyncVerticesResponseSender.class).to(DeterministicSender.class);
 		bind(SyncedVertexSender.class).to(DeterministicSender.class);
 		bind(LocalTimeoutSender.class).to(DeterministicSender.class);
 		bind(SyncEpochsRPCSender.class).to(DeterministicSender.class);

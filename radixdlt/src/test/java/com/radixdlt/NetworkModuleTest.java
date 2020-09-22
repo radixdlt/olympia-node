@@ -30,7 +30,7 @@ import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
+import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRequestSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.messaging.MessageCentral;
@@ -63,7 +63,7 @@ public class NetworkModuleTest {
 			StateSyncNetwork.class,
 			SyncEpochsRPCSender.class,
 			SyncEpochsRPCRx.class,
-			SyncVerticesRPCSender.class,
+			SyncVerticesRequestSender.class,
 			SyncVerticesRPCRx.class,
 			BFTEventSender.class,
 			BFTEventsRx.class

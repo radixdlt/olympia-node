@@ -17,28 +17,9 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
-import com.radixdlt.consensus.bft.GetVerticesResponse;
-import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.consensus.bft.VertexStore;
+import com.radixdlt.consensus.bft.VertexStoreSyncVerticesRequestProcessor;
 
-/**
- * An empty/mocked vertex store event processor
- */
-public enum EmptyVertexStoreEventProcessor implements VertexStoreEventProcessor {
-	INSTANCE;
-
-	@Override
-	public void processGetVerticesErrorResponse(GetVerticesErrorResponse response) {
-		// No-op
-	}
-
-	@Override
-	public void processGetVerticesResponse(GetVerticesResponse response) {
-		// No-op
-	}
-
-	@Override
-	public void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
-		// No-op
-	}
+public interface VertexStoreSyncVerticesRequestProcessorFactory {
+	VertexStoreSyncVerticesRequestProcessor create(VertexStore vertexStore);
 }

@@ -22,18 +22,21 @@ import com.google.inject.Provides;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.VertexStoreSyncVerticesRequestProcessorFactory;
 import com.radixdlt.consensus.bft.BFTBuilder;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStore.SyncedVertexSender;
+import com.radixdlt.consensus.bft.VertexStoreSyncVerticesRequestProcessor;
+import com.radixdlt.consensus.bft.VertexStoreSyncVerticesRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.ProposerElectionFactory;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
-import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
+import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRequestSender;
 import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
@@ -110,8 +113,15 @@ public final class ConsensusModule extends AbstractModule {
 	}
 
 	@Provides
+	private VertexStoreSyncVerticesRequestProcessorFactory vertexStoreSyncVerticesRequestProcessorFactory(
+		SyncVerticesResponseSender syncVerticesResponseSender
+	) {
+		return vertexStore -> new VertexStoreSyncVerticesRequestProcessor(vertexStore, syncVerticesResponseSender);
+	}
+
+	@Provides
 	private VertexStoreFactory vertexStoreFactory(
-		SyncVerticesRPCSender syncVerticesRPCSender,
+		SyncVerticesRequestSender syncVerticesRPCSender,
 		VertexStoreEventSender vertexStoreEventSender,
 		SyncedVertexSender syncedVertexSender,
 		SyncRequestSender syncRequestSender,

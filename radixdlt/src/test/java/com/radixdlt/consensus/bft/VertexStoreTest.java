@@ -35,7 +35,7 @@ import com.radixdlt.consensus.Ledger.OnNotSynced;
 import com.radixdlt.consensus.Ledger.OnSynced;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
+import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRequestSender;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.UnverifiedVertex;
@@ -69,7 +69,7 @@ public class VertexStoreTest {
 	private VertexStore vertexStore;
 	private Ledger ledger;
 	private VertexStoreEventSender vertexStoreEventSender;
-	private SyncVerticesRPCSender syncVerticesRPCSender;
+	private SyncVerticesRequestSender syncVerticesRPCSender;
 	private SyncedVertexSender syncedVertexSender;
 	private SystemCounters counters;
 	private SyncRequestSender syncRequestSender;
@@ -81,7 +81,7 @@ public class VertexStoreTest {
 		Ledger ssc = mock(Ledger.class);
 		this.ledger = ssc;
 		when(this.ledger.prepare(any())).thenReturn(mock(LedgerHeader.class));
-		this.syncVerticesRPCSender = mock(SyncVerticesRPCSender.class);
+		this.syncVerticesRPCSender = mock(SyncVerticesRequestSender.class);
 		this.vertexStoreEventSender = mock(VertexStoreEventSender.class);
 		this.counters = mock(SystemCounters.class);
 		this.syncedVertexSender = mock(SyncedVertexSender.class);
@@ -678,15 +678,14 @@ public class VertexStoreTest {
 	}
 
 	@Test
-	public void when_rpc_call_to_get_vertices_with_size_2__then_should_return_both() throws Exception {
+	public void when_get_vertices_with_size_2__then_should_return_both() throws Exception {
 		Hash id = mock(Hash.class);
 		VerifiedVertex vertex = nextVertex.apply(id);
 		vertexStore.insertVertex(vertex);
 		GetVerticesRequest getVerticesRequest = mock(GetVerticesRequest.class);
 		when(getVerticesRequest.getCount()).thenReturn(2);
 		when(getVerticesRequest.getVertexId()).thenReturn(id);
-		vertexStore.processGetVerticesRequest(getVerticesRequest);
-		verify(syncVerticesRPCSender, times(1))
-			.sendGetVerticesResponse(eq(getVerticesRequest), eq(ImmutableList.of(vertex, genesisVertex)));
+		assertThat(vertexStore.getVertices(id, 2))
+			.isEqualTo(ImmutableList.of(vertex, genesisVertex));
 	}
 }

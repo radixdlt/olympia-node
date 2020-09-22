@@ -32,6 +32,8 @@ import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.VertexStoreEventProcessor;
 import com.radixdlt.consensus.VertexStoreFactory;
+import com.radixdlt.consensus.VertexStoreSyncVerticesRequestProcessorFactory;
+import com.radixdlt.consensus.bft.SyncVerticesRequestProcessor;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
@@ -70,7 +72,7 @@ import org.apache.logging.log4j.Logger;
  * Manages Epochs and the BFT instance (which is mostly epoch agnostic) associated with each epoch
  */
 @NotThreadSafe
-public final class EpochManager {
+public final class EpochManager implements SyncVerticesRequestProcessor {
 	/**
 	 * A sender of GetEpoch RPC requests/responses
 	 */
@@ -114,6 +116,7 @@ public final class EpochManager {
 	private final SyncEpochsRPCSender epochsRPCSender;
 	private final PacemakerFactory pacemakerFactory;
 	private final VertexStoreFactory vertexStoreFactory;
+	private final VertexStoreSyncVerticesRequestProcessorFactory vertexStoreSyncVerticesRequestProcessorFactory;
 	private final ProposerElectionFactory proposerElectionFactory;
 	private final SystemCounters counters;
 	private final LocalTimeoutSender localTimeoutSender;
@@ -126,6 +129,7 @@ public final class EpochManager {
 	private VerifiedLedgerHeaderAndProof lastConstructed = null;
 	private EpochChange currentEpoch;
 	private VertexStoreEventProcessor vertexStoreEventProcessor;
+	private SyncVerticesRequestProcessor syncRequestProcessor;
 	private BFTEventProcessor bftEventProcessor;
 	private int numQueuedConsensusEvents = 0;
 
@@ -139,6 +143,7 @@ public final class EpochManager {
 		SyncRequestSender syncRequestSender,
 		PacemakerFactory pacemakerFactory,
 		VertexStoreFactory vertexStoreFactory,
+		VertexStoreSyncVerticesRequestProcessorFactory vertexStoreSyncVerticesRequestProcessorFactory,
 		ProposerElectionFactory proposerElectionFactory,
 		BFTFactory bftFactory,
 		SystemCounters counters,
@@ -153,6 +158,7 @@ public final class EpochManager {
 		this.localTimeoutSender = Objects.requireNonNull(localTimeoutSender);
 		this.pacemakerFactory = Objects.requireNonNull(pacemakerFactory);
 		this.vertexStoreFactory = Objects.requireNonNull(vertexStoreFactory);
+		this.vertexStoreSyncVerticesRequestProcessorFactory = vertexStoreSyncVerticesRequestProcessorFactory;
 		this.proposerElectionFactory = Objects.requireNonNull(proposerElectionFactory);
 		this.bftFactory = bftFactory;
 		this.counters = Objects.requireNonNull(counters);
@@ -168,6 +174,7 @@ public final class EpochManager {
 			logEpochChange(this.currentEpoch, "excluded from");
 			this.bftEventProcessor =  EmptyBFTEventProcessor.INSTANCE;
 			this.vertexStoreEventProcessor = EmptyVertexStoreEventProcessor.INSTANCE;
+			this.syncRequestProcessor = req -> { };
 			return;
 		}
 
@@ -186,6 +193,7 @@ public final class EpochManager {
 			ledger
 		);
 		this.vertexStoreEventProcessor = vertexStore;
+		this.syncRequestProcessor = vertexStoreSyncVerticesRequestProcessorFactory.create(vertexStore);
 
 		BFTInfoSender infoSender = new BFTInfoSender() {
 			@Override
@@ -384,8 +392,9 @@ public final class EpochManager {
 		bftEventProcessor.processLocalSync(synced);
 	}
 
+	@Override
 	public void processGetVerticesRequest(GetVerticesRequest request) {
-		vertexStoreEventProcessor.processGetVerticesRequest(request);
+		syncRequestProcessor.processGetVerticesRequest(request);
 	}
 
 	public void processGetVerticesErrorResponse(GetVerticesErrorResponse response) {

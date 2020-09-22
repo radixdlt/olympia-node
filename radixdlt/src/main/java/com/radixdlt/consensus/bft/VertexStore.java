@@ -74,7 +74,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	/**
 	 * An asynchronous supplier which retrieves data for a vertex with a given id
 	 */
-	public interface SyncVerticesRPCSender {
+	public interface SyncVerticesRequestSender {
 		/**
 		 * Send an RPC request to retrieve vertices given an Id and number of
 		 * vertices. i.e. The vertex with the given id and (count - 1) ancestors
@@ -86,27 +86,12 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		 * @param opaque an object which is expected to be provided in the corresponding response
 		 */
 		void sendGetVerticesRequest(Hash id, BFTNode node, int count, Object opaque);
-
-		/**
-		 * Send an RPC response to a given request
-		 * @param originalRequest the original request which is being replied to
-		 * @param vertices the response data of vertices
-		 */
-		void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<VerifiedVertex> vertices);
-
-		/**
-		 * Send an RPC error response to a given request
-		 * @param originalRequest the original request
-		 * @param highestQC highestQC sync info
-		 * @param highestCommittedQC highestCommittedQC sync info
-		 */
-		void sendGetVerticesErrorResponse(GetVerticesRequest originalRequest, QuorumCertificate highestQC, QuorumCertificate highestCommittedQC);
 	}
 
 	private final Logger log;
 	private final VertexStoreEventSender vertexStoreEventSender;
 	private final SyncedVertexSender syncedVertexSender;
-	private final SyncVerticesRPCSender syncVerticesRPCSender;
+	private final SyncVerticesRequestSender syncVerticesRPCSender;
 	private final Ledger ledger;
 	private final SystemCounters counters;
 	private final SyncRequestSender syncRequestSender;
@@ -120,12 +105,11 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	private final Map<Hash, SyncState> syncing = new HashMap<>();
 	private final TreeMap<LedgerHeader, List<Hash>> committedSyncing;
 
-
 	public VertexStore(
 		VerifiedVertex rootVertex,
 		QuorumCertificate rootQC,
 		Ledger ledger,
-		SyncVerticesRPCSender syncVerticesRPCSender,
+		SyncVerticesRequestSender syncVerticesRPCSender,
 		SyncedVertexSender syncedVertexSender,
 		VertexStoreEventSender vertexStoreEventSender,
 		SyncRequestSender syncRequestSender,
@@ -153,7 +137,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		QuorumCertificate rootQC,
 		List<VerifiedVertex> vertices,
 		Ledger ledger,
-		SyncVerticesRPCSender syncVerticesRPCSender,
+		SyncVerticesRequestSender syncVerticesRPCSender,
 		SyncedVertexSender syncedVertexSender,
 		VertexStoreEventSender vertexStoreEventSender,
 		SyncRequestSender syncRequestSender,
@@ -266,21 +250,6 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		}
 
 		return false;
-	}
-
-	@Override
-	public void processGetVerticesRequest(GetVerticesRequest request) {
-		// TODO: Handle nodes trying to DDOS this endpoint
-
-		log.trace("SYNC_VERTICES: Received GetVerticesRequest {}", request);
-		ImmutableList<VerifiedVertex> fetched = this.getVertices(request.getVertexId(), request.getCount());
-		if (fetched.isEmpty()) {
-			this.syncVerticesRPCSender.sendGetVerticesErrorResponse(request, this.getHighestQC(), this.getHighestCommittedQC());
-			return;
-		}
-
-		log.trace("SYNC_VERTICES: Sending Response {}", fetched);
-		this.syncVerticesRPCSender.sendGetVerticesResponse(request, fetched);
 	}
 
 	private void rebuildAndSyncQC(SyncState syncState) {
@@ -631,7 +600,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	 * @param count the number of vertices to retrieve
 	 * @return the list of vertices if all found, otherwise an empty list
 	 */
-	private ImmutableList<VerifiedVertex> getVertices(Hash vertexId, int count) {
+	ImmutableList<VerifiedVertex> getVertices(Hash vertexId, int count) {
 		Hash nextId = vertexId;
 		ImmutableList.Builder<VerifiedVertex> builder = ImmutableList.builderWithExpectedSize(count);
 		for (int i = 0; i < count; i++) {

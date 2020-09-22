@@ -44,6 +44,8 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.VertexStoreFactory;
+import com.radixdlt.consensus.VertexStoreSyncVerticesRequestProcessorFactory;
+import com.radixdlt.consensus.bft.VertexStoreSyncVerticesRequestProcessor;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
@@ -83,6 +85,7 @@ public class EpochManagerTest {
 	private ProposerElection proposerElection;
 	private Ledger ledger;
 	private BFTNode self;
+	private VertexStoreSyncVerticesRequestProcessorFactory requestProcessorFactory;
 
 	@Before
 	public void setup() {
@@ -111,6 +114,8 @@ public class EpochManagerTest {
 		when(config.getValidatorSet()).thenReturn(BFTValidatorSet.from(ImmutableSet.of()));
 		when(initial.getBFTConfiguration()).thenReturn(config);
 
+		this.requestProcessorFactory = mock(VertexStoreSyncVerticesRequestProcessorFactory.class);
+
 		this.epochManager = new EpochManager(
 			this.self,
 			initial,
@@ -120,6 +125,7 @@ public class EpochManagerTest {
 			syncRequestSender,
 			timeoutSender -> this.pacemaker,
 			vertexStoreFactory,
+			requestProcessorFactory,
 			proposers -> proposerElection,
 			this.bftFactory,
 			this.systemCounters,
@@ -442,6 +448,9 @@ public class EpochManagerTest {
 		BFTEventProcessor eventProcessor = mock(BFTEventProcessor.class);
 		when(bftFactory.create(any(), any(), any(), any(), any(), any(), any())).thenReturn(eventProcessor);
 
+		VertexStoreSyncVerticesRequestProcessor requestProcessor = mock(VertexStoreSyncVerticesRequestProcessor.class);
+		when(requestProcessorFactory.create(any())).thenReturn(requestProcessor);
+
 		BFTValidator validator = mock(BFTValidator.class);
 		when(validator.getNode()).thenReturn(mock(BFTNode.class));
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
@@ -459,7 +468,7 @@ public class EpochManagerTest {
 
 		GetVerticesRequest getVerticesRequest = mock(GetVerticesRequest.class);
 		epochManager.processGetVerticesRequest(getVerticesRequest);
-		verify(vertexStore, times(1)).processGetVerticesRequest(eq(getVerticesRequest));
+		verify(requestProcessor, times(1)).processGetVerticesRequest(eq(getVerticesRequest));
 
 		GetVerticesResponse getVerticesResponse = mock(GetVerticesResponse.class);
 		epochManager.processGetVerticesResponse(getVerticesResponse);
