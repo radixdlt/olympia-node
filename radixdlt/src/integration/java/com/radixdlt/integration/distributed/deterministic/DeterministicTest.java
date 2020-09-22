@@ -101,7 +101,14 @@ public final class DeterministicTest {
 			return this;
 		}
 
-
+		/**
+		 * Override with an incorrect module which should cause a test to fail.
+		 * TODO: Refactor to make the link between incorrect module and failing test
+		 * more explicit.
+		 *
+		 * @param module the incorrect module
+		 * @return the current builder
+		 */
 		public Builder overrideWithIncorrectModule(Module module) {
 			this.overrideModule = module;
 			return this;
