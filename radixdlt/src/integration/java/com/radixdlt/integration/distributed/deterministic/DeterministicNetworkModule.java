@@ -19,6 +19,7 @@ package com.radixdlt.integration.distributed.deterministic;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
+import com.google.inject.multibindings.Multibinder;
 import com.google.inject.name.Names;
 import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -73,7 +74,9 @@ public class DeterministicNetworkModule extends AbstractModule {
 		bind(SyncEpochsRPCSender.class).to(DeterministicSender.class);
 		bind(VertexStoreEventSender.class).to(DeterministicSender.class);
 		bind(CommittedStateSyncSender.class).to(DeterministicSender.class);
-		bind(EpochsLedgerUpdateSender.class).to(DeterministicSender.class);
+
+		// TODO: Remove multibind?
+		Multibinder.newSetBinder(binder(), EpochsLedgerUpdateSender.class).addBinding().to(DeterministicSender.class);
 
 		bind(EpochInfoSender.class).toInstance(emptyInfoSender);
 

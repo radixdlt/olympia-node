@@ -21,7 +21,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof.OrderByEpochAndVersionComparator;
@@ -30,9 +29,7 @@ import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.StateComputerLedger;
-import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
 import java.util.Comparator;
-import java.util.Set;
 
 /**
  * Module which manages ledger state and synchronization of updates to ledger state
@@ -41,8 +38,6 @@ public class LedgerModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		bind(Ledger.class).to(StateComputerLedger.class).in(Scopes.SINGLETON);
-		// These multibindings are part of our dependency graph, so create the modules here
-		Multibinder.newSetBinder(binder(), LedgerUpdateSender.class);
 		bind(new TypeLiteral<Comparator<VerifiedLedgerHeaderAndProof>>() { }).to(OrderByEpochAndVersionComparator.class).in(Scopes.SINGLETON);
 		bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 		bind(LedgerAccumulatorVerifier.class).to(SimpleLedgerAccumulatorAndVerifier.class);
@@ -52,10 +47,4 @@ public class LedgerModule extends AbstractModule {
 	private Comparator<AccumulatorState> accumulatorStateComparator() {
 		return Comparator.comparingLong(AccumulatorState::getStateVersion);
 	}
-
-	@Provides
-	private LedgerUpdateSender sender(Set<LedgerUpdateSender> ledgerUpdateSenders) {
-		return update -> ledgerUpdateSenders.forEach(s -> s.sendLedgerUpdate(update));
-	}
-
 }

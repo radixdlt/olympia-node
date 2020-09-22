@@ -15,24 +15,23 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt;
+package com.radixdlt.integration.distributed.simulation;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.epochs.EpochChangeManager.EpochsLedgerUpdateSender;
-import com.radixdlt.epochs.EpochsLedgerUpdate;
+import com.google.inject.multibindings.Multibinder;
+import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
 import com.radixdlt.utils.SenderToRx;
 import io.reactivex.rxjava3.core.Observable;
 
-/**
- * Epoch change messages
- */
-public class LedgerEpochChangeRxModule extends AbstractModule {
+public class MockedLedgerUpdateRxModule extends AbstractModule {
 	@Override
 	protected void configure() {
-		SenderToRx<EpochsLedgerUpdate, EpochsLedgerUpdate> epochsLedgerUpdates = new SenderToRx<>(e -> e);
-		bind(EpochsLedgerUpdateSender.class).toInstance(epochsLedgerUpdates::send);
-		bind(Key.get(new TypeLiteral<Observable<EpochsLedgerUpdate>>() { })).toInstance(epochsLedgerUpdates.rx());
+		SenderToRx<LedgerUpdate, LedgerUpdate> ledgerUpdates = new SenderToRx<>(u -> u);
+		Multibinder<LedgerUpdateSender> committedSenderBinder = Multibinder.newSetBinder(binder(), LedgerUpdateSender.class);
+		committedSenderBinder.addBinding().toInstance(ledgerUpdates::send);
+		bind(Key.get(new TypeLiteral<Observable<LedgerUpdate>>() { })).toInstance(ledgerUpdates.rx());
 	}
 }

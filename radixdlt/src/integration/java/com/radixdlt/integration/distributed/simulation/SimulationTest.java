@@ -29,8 +29,8 @@ import com.radixdlt.ConsensusRunnerModule;
 import com.radixdlt.EpochsConsensusModule;
 import com.radixdlt.EpochsSyncModule;
 import com.radixdlt.LedgerCommandGeneratorModule;
-import com.radixdlt.LedgerEpochChangeModule;
-import com.radixdlt.LedgerEpochChangeRxModule;
+import com.radixdlt.EpochsLedgerUpdateModule;
+import com.radixdlt.EpochsLedgerUpdateRxModule;
 import com.radixdlt.LedgerModule;
 import com.radixdlt.LedgerRxModule;
 import com.radixdlt.NoFeeModule;
@@ -50,6 +50,7 @@ import com.radixdlt.integration.distributed.MockedBFTConfigurationModule;
 import com.radixdlt.integration.distributed.MockedCommandGeneratorModule;
 import com.radixdlt.integration.distributed.MockedCryptoModule;
 import com.radixdlt.integration.distributed.MockedLedgerModule;
+import com.radixdlt.integration.distributed.MockedLedgerUpdateSender;
 import com.radixdlt.integration.distributed.MockedMempoolModule;
 import com.radixdlt.integration.distributed.MockedRadixEngineStoreModule;
 import com.radixdlt.integration.distributed.MockedStateComputerModule;
@@ -425,9 +426,10 @@ public class SimulationTest {
 			} else {
 				modules.add(new LedgerModule());
 				modules.add(new LedgerRxModule());
-				modules.add(new LedgerEpochChangeRxModule());
 
 				if (ledgerType == LedgerType.LEDGER) {
+					modules.add(new MockedLedgerUpdateRxModule());
+					modules.add(new MockedLedgerUpdateSender());
 					modules.add(new MockedConsensusRunnerModule());
 					modules.add(new MockedCommandGeneratorModule());
 					modules.add(new MockedMempoolModule());
@@ -436,18 +438,35 @@ public class SimulationTest {
 				} else if (ledgerType == LedgerType.LEDGER_AND_SYNC) {
 					modules.add(new SyncServiceModule());
 					modules.add(new SyncRxModule());
+					modules.add(new MockedLedgerUpdateRxModule());
+					modules.add(new MockedLedgerUpdateSender());
 					modules.add(new MockedConsensusRunnerModule());
 					modules.add(new MockedCommandGeneratorModule());
 					modules.add(new MockedMempoolModule());
 					modules.add(new MockedStateComputerModule());
 					modules.add(new MockedCommittedReaderModule());
 					modules.add(new MockedSyncRunnerModule());
+				} else if (ledgerType == LedgerType.LEDGER_AND_LOCALMEMPOOL) {
+					modules.add(new MockedLedgerUpdateRxModule());
+					modules.add(new MockedLedgerUpdateSender());
+					modules.add(new MockedConsensusRunnerModule());
+					modules.add(new LedgerCommandGeneratorModule());
+					modules.add(new LedgerLocalMempoolModule(10));
+					modules.add(new AbstractModule() {
+						@Override
+						protected void configure() {
+							bind(Mempool.class).to(LocalMempool.class);
+						}
+					});
+					modules.add(new MockedSyncServiceModule());
+					modules.add(new MockedStateComputerModule());
 				} else if (ledgerType == LedgerType.LEDGER_AND_EPOCHS) {
+					modules.add(new EpochsLedgerUpdateModule());
+					modules.add(new EpochsLedgerUpdateRxModule());
 					modules.add(new EpochsConsensusModule());
 					modules.add(new ConsensusRunnerModule());
 					modules.add(new LedgerCommandGeneratorModule());
 					modules.add(new MockedMempoolModule());
-					modules.add(new LedgerEpochChangeModule());
 					Function<Long, BFTValidatorSet> epochToValidatorSetMapping =
 						epochToNodeIndexMapper.andThen(indices -> BFTValidatorSet.from(
 							indices.mapToObj(nodes::get)
@@ -457,11 +476,12 @@ public class SimulationTest {
 					modules.add(new MockedStateComputerWithEpochsModule(epochHighView, epochToValidatorSetMapping));
 					modules.add(new MockedSyncServiceModule());
 				} else if (ledgerType == LedgerType.LEDGER_AND_EPOCHS_AND_SYNC) {
+					modules.add(new EpochsLedgerUpdateModule());
+					modules.add(new EpochsLedgerUpdateRxModule());
 					modules.add(new EpochsConsensusModule());
 					modules.add(new ConsensusRunnerModule());
 					modules.add(new MockedCommandGeneratorModule());
 					modules.add(new MockedMempoolModule());
-					modules.add(new LedgerEpochChangeModule());
 					Function<Long, BFTValidatorSet> epochToValidatorSetMapping =
 						epochToNodeIndexMapper.andThen(indices -> BFTValidatorSet.from(
 							indices.mapToObj(nodes::get)
@@ -474,19 +494,9 @@ public class SimulationTest {
 					modules.add(new SyncRunnerModule());
 					modules.add(new SyncRxModule());
 					modules.add(new MockedCommittedReaderModule());
-				} else if (ledgerType == LedgerType.LEDGER_AND_LOCALMEMPOOL) {
-					modules.add(new MockedConsensusRunnerModule());
-					modules.add(new LedgerCommandGeneratorModule());
-					modules.add(new LedgerLocalMempoolModule(10));
-					modules.add(new AbstractModule() {
-						@Override
-						protected void configure() {
-							bind(Mempool.class).to(LocalMempool.class);
-						}
-					});
-					modules.add(new MockedSyncServiceModule());
-					modules.add(new MockedStateComputerModule());
 				} else if (ledgerType == LedgerType.LEDGER_AND_LOCALMEMPOOL_AND_EPOCHS_AND_RADIXENGINE) {
+					modules.add(new EpochsLedgerUpdateModule());
+					modules.add(new EpochsLedgerUpdateRxModule());
 					modules.add(new EpochsConsensusModule());
 					modules.add(new ConsensusRunnerModule());
 					modules.add(new LedgerCommandGeneratorModule());
@@ -497,7 +507,6 @@ public class SimulationTest {
 							bind(Mempool.class).to(LocalMempool.class);
 						}
 					});
-					modules.add(new LedgerEpochChangeModule());
 					modules.add(new RadixEngineModule(epochHighView));
 					modules.add(new RadixEngineRxModule());
 					modules.add(new MockedSyncServiceModule());

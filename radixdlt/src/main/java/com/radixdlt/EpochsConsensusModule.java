@@ -31,7 +31,6 @@ public class EpochsConsensusModule extends AbstractModule {
 		bind(EpochManager.class).in(Scopes.SINGLETON);
 	}
 
-
 	// TODO: Load from storage
 	@Provides
 	private EpochChange initialEpoch(

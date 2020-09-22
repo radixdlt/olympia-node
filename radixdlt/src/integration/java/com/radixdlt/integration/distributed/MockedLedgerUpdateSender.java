@@ -15,24 +15,22 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt;
+package com.radixdlt.integration.distributed;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.Hasher;
-import com.radixdlt.epochs.EpochChangeManager;
-import com.radixdlt.epochs.EpochChangeManager.EpochsLedgerUpdateSender;
+import com.google.inject.Provides;
+import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
+import java.util.Set;
 
-/**
- * Adds epoch change functionality to the ledger
- */
-public class LedgerEpochChangeModule extends AbstractModule {
-	@ProvidesIntoSet
-	private LedgerUpdateSender epochChangeManager(
-		EpochsLedgerUpdateSender epochsLedgerUpdateSender,
-		Hasher hasher
-	) {
-		return new EpochChangeManager(epochsLedgerUpdateSender, hasher);
+public class MockedLedgerUpdateSender extends AbstractModule {
+	@Override
+	protected void configure() {
+		Multibinder.newSetBinder(binder(), LedgerUpdateSender.class);
+	}
+
+	@Provides
+	private LedgerUpdateSender sender(Set<LedgerUpdateSender> ledgerUpdateSenders) {
+		return update -> ledgerUpdateSenders.forEach(s -> s.sendLedgerUpdate(update));
 	}
 }

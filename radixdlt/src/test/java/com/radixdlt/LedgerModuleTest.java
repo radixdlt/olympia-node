@@ -23,7 +23,6 @@ import static org.mockito.Mockito.mock;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.google.inject.multibindings.Multibinder;
 import com.google.inject.name.Names;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTFactory;
@@ -70,7 +69,7 @@ public class LedgerModuleTest {
 			bind(VerifiedLedgerHeaderAndProof.class).toInstance(verifiedLedgerHeaderAndProof);
 			bind(BFTValidatorSet.class).toInstance(mock(BFTValidatorSet.class));
 			bind(BFTConfiguration.class).toInstance(mock(BFTConfiguration.class));
-			Multibinder.newSetBinder(binder(), LedgerUpdateSender.class);
+			bind(LedgerUpdateSender.class).toInstance(mock(LedgerUpdateSender.class));
 		}
 	}
 
