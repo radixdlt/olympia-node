@@ -1,5 +1,6 @@
 package com.radix.regression;
 
+import com.radix.test.utils.TokenUtilities;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
 import com.radixdlt.client.application.identity.RadixIdentities;
@@ -73,6 +74,7 @@ public class AtomStatusTest {
 
 	@Test
 	public void given_a_subscription_to_status_notifications__when_the_atom_is_stored__a_store_notification_should_be_sent() {
+		TokenUtilities.requestTokensFor(this.api);
 		Transaction transaction = api.createTransaction();
 		RRI unique = RRI.of(api.getAddress(), "test");
 		transaction.stage(PutUniqueIdAction.create(unique));

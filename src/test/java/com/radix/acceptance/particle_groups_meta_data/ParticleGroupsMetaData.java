@@ -8,8 +8,6 @@ import com.radix.regression.Util;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
-import com.radixdlt.client.application.translate.FeeMapper;
-import com.radixdlt.client.application.translate.PowFeeMapper;
 import com.radixdlt.client.atommodel.message.MessageParticle;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.RadixUniverse;
@@ -26,7 +24,6 @@ import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.Notification;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NotificationType;
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
-import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
 import com.radixdlt.client.serialization.GsonJson;
 import com.radixdlt.client.serialization.Serialize;
 import com.radixdlt.serialization.DsonOutput;
@@ -39,6 +36,7 @@ import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
 import io.reactivex.Single;
 import io.reactivex.functions.Cancellable;
+import io.reactivex.observers.BaseTestConsumer.TestWaitStrategy;
 import io.reactivex.observers.TestObserver;
 import org.json.JSONObject;
 
@@ -63,8 +61,6 @@ public class ParticleGroupsMetaData {
 	private TestObserver<AtomStatusEvent> observer;
 	private TestObserver<Void> atomPushObserver;
 	private TestObserver<RadixJsonRpcClient.JsonRpcResponse> observer2;
-
-	private FeeMapper feeMapper = new PowFeeMapper(Atom::getHash, new ProofOfWorkBuilder());
 
 	@After
 	public void after() {
@@ -255,9 +251,8 @@ public class ParticleGroupsMetaData {
 
 	@Then("^I should get a deserialization error$")
 	public void iShouldGetADeserializationError() {
-		this.observer2.awaitTerminalEvent(15, TimeUnit.SECONDS);
+		this.observer2.awaitCount(1, TestWaitStrategy.SLEEP_10MS, TimeUnit.SECONDS.toMillis(15));
 		this.observer2.assertNoErrors();
-		this.observer2.assertComplete();
 		this.observer2.assertValueAt(0, val -> !val.isSuccess());
 		this.observer2.assertValueAt(0, val -> val.getError().getAsJsonObject().get("code").getAsInt() == -32000);
 	}
@@ -312,7 +307,8 @@ public class ParticleGroupsMetaData {
 
 		Map<String, String> atomMetaData = new HashMap<>();
 		atomMetaData.put("timestamp", System.currentTimeMillis() + "");
-		atomMetaData.putAll(feeMapper.map(Atom.create(particleGroups, atomMetaData), universe, this.identity.getPublicKey()).getFirst());
+		// FIXME: not really a fee
+		atomMetaData.put("magic", "0xdeadbeef");
 
 		return Atom.create(particleGroups, atomMetaData);
 	}

@@ -1,5 +1,6 @@
 package com.radix.regression;
 
+import com.radix.test.utils.TokenUtilities;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
@@ -18,6 +19,7 @@ public class MultipleSubscriptionsToSameAddress {
 
 		RadixIdentity identity = RadixIdentities.createNew();
 		RadixApplicationAPI api0 = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), identity);
+		TokenUtilities.requestTokensFor(api0);
 		RadixApplicationAPI api1 = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), identity);
 
 		api0.createToken(

@@ -4,8 +4,6 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
-import com.radixdlt.client.application.translate.FeeMapper;
-import com.radixdlt.client.application.translate.PowFeeMapper;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.atommodel.rri.RRIParticle;
 import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
@@ -27,7 +25,6 @@ import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.Notification;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NotificationType;
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
-import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
 import io.reactivex.observers.TestObserver;
 import java.util.UUID;
 import org.junit.Before;
@@ -42,7 +39,6 @@ import java.util.Map;
 public class MultipleTransitionsInSameGroupTest {
 	private RadixUniverse universe = RadixUniverse.create(RadixEnv.getBootstrapConfig());
 	private RadixIdentity identity;
-	private FeeMapper feeMapper = new PowFeeMapper(Atom::getHash, new ProofOfWorkBuilder());
 	private RadixJsonRpcClient jsonRpcClient;
 
 	@Before
@@ -239,7 +235,8 @@ public class MultipleTransitionsInSameGroupTest {
 	private TestObserver<AtomStatusEvent> submitAtom(List<ParticleGroup> particleGroups) {
 		Map<String, String> atomMetaData = new HashMap<>();
 		atomMetaData.put("timestamp", String.valueOf(System.currentTimeMillis()));
-		atomMetaData.putAll(feeMapper.map(Atom.create(particleGroups, atomMetaData), universe, this.identity.getPublicKey()).getFirst());
+		// FIXME: not really a fee
+		atomMetaData.put("magic", "0xdeadbeef");
 
 		Atom unsignedAtom = Atom.create(particleGroups, atomMetaData);
 		// Sign and submit

@@ -18,6 +18,7 @@
 
 package com.radix.regression;
 
+import com.radix.test.utils.TokenUtilities;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
 import com.radixdlt.client.application.identity.RadixIdentities;
@@ -70,6 +71,7 @@ public class DeterministicMappingTest {
 		int numIterations = 20;
 		RadixIdentity identity2 = RadixIdentities.createNew();
 		RadixApplicationAPI api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
+		TokenUtilities.requestTokensFor(api);
 		RadixAddress address1 = api.getAddress();
 		RadixAddress address2 = api.getAddress(identity2.getPublicKey());
 		RRI token = RRI.of(address1, "TestToken");

@@ -1,6 +1,7 @@
 package com.radix.regression;
 
 import com.google.common.collect.ImmutableMap;
+import com.radix.test.utils.TokenUtilities;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
@@ -28,6 +29,7 @@ public class UnallocatedTokensParticleTest {
 	@Test
 	public void given_an_account__when_the_account_executes_a_token_creation_without_unallocated_particles__then_the_atom_will_be_rejected() {
 		RadixApplicationAPI api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
+		TokenUtilities.requestTokensFor(api);
 
 		List<ParticleGroup> groups = new ArrayList<>();
 
@@ -66,6 +68,7 @@ public class UnallocatedTokensParticleTest {
 	@Test
 	public void given_an_account_with_a_token__when_the_account_executes_an_atom_with_unallocated_particles_to_that_token__then_the_atom_will_be_rejected() {
 		RadixApplicationAPI api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
+		TokenUtilities.requestTokensFor(api);
 
 		api.createToken(
 			RRI.of(api.getAddress(), "JOSH"),
@@ -107,6 +110,7 @@ public class UnallocatedTokensParticleTest {
 	@Test
 	public void given_an_account__when_the_account_executes_a_token_creation_with_2_unallocated_particles__then_the_atom_will_be_rejected() {
 		RadixApplicationAPI api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
+		TokenUtilities.requestTokensFor(api);
 
 		List<ParticleGroup> groups = new ArrayList<>();
 

@@ -7,6 +7,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
 
+import com.radix.test.utils.TokenUtilities;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.translate.Action;
@@ -29,9 +30,12 @@ public class SendReceiveDataTransactionTest {
 
 		// Given account owner listening to own messages
 		RadixApplicationAPI api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
+		TokenUtilities.requestTokensFor(api);
 		TestObserver<DecryptedMessage> messageListener = TestObserver.create(Util.loggingObserver("MessageListener"));
 		Disposable d = api.pull();
-		api.observeMessages().subscribe(messageListener);
+		api.observeMessages()
+			.filter(msg -> api.getAddress().equals(msg.getFrom()))
+			.subscribe(messageListener);
 
 		// When owner sends message from another account
 		RadixAddress sourceAddress = api.getAddress(RadixIdentities.createNew().getPublicKey());
@@ -45,7 +49,7 @@ public class SendReceiveDataTransactionTest {
 		submissionObserver.assertError(ActionExecutionException.class);
 
 		// And not receive any messages
-		messageListener.await(30, TimeUnit.SECONDS);
+		messageListener.await(10, TimeUnit.SECONDS);
 		messageListener
 			.assertNoErrors()
 			.assertEmpty()
@@ -61,9 +65,14 @@ public class SendReceiveDataTransactionTest {
 		TestObserver<DecryptedMessage> messageListener1 = new TestObserver<>(Util.loggingObserver("MessageListener1"));
 		TestObserver<DecryptedMessage> messageListener2 = new TestObserver<>(Util.loggingObserver("MessageListener2"));
 		RadixApplicationAPI api1 = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
+		TokenUtilities.requestTokensFor(api1);
 		RadixApplicationAPI api2 = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
-		api1.observeMessages().subscribe(messageListener1);
-		api2.observeMessages().subscribe(messageListener2);
+		api1.observeMessages()
+			.filter(msg -> api1.getAddress().equals(msg.getFrom()))
+			.subscribe(messageListener1);
+		api2.observeMessages()
+			.filter(msg -> api1.getAddress().equals(msg.getFrom()))
+			.subscribe(messageListener2);
 
 		Disposable d1 = api1.pull();
 		Disposable d2 = api2.pull();
@@ -96,8 +105,11 @@ public class SendReceiveDataTransactionTest {
 		// Given an account owner listening to own messages
 		TestObserver<DecryptedMessage> messageListener = new TestObserver<>(Util.loggingObserver("MessageListener"));
 		RadixApplicationAPI api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
+		TokenUtilities.requestTokensFor(api);
 		Disposable d = api.pull();
-		api.observeMessages().subscribe(messageListener);
+		api.observeMessages()
+			.filter(msg -> api.getAddress().equals(msg.getFrom())) // No faucet messages
+			.subscribe(messageListener);
 
 		// When owner sends message to himself
 		byte[] message = new byte[] {1, 2, 3, 4};
@@ -121,7 +133,10 @@ public class SendReceiveDataTransactionTest {
 		TestObserver<DecryptedMessage> clientListener = new TestObserver<>(Util.loggingObserver("MessageListener"));
 		RadixApplicationAPI clientApi = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
 		RadixApplicationAPI otherAccount = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
-		clientApi.observeMessages(otherAccount.getAddress()).subscribe(clientListener);
+		TokenUtilities.requestTokensFor(otherAccount);
+		clientApi.observeMessages(otherAccount.getAddress())
+			.filter(msg -> otherAccount.getAddress().equals(msg.getFrom())) // Only include from sender, ignoring faucet
+			.subscribe(clientListener);
 		Disposable d = clientApi.pull(otherAccount.getAddress());
 
 		// When the other account sends message to itself

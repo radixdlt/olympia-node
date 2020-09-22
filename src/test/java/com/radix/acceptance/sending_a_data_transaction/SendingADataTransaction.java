@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.radix.test.utils.TokenUtilities;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
 import com.radixdlt.client.application.identity.RadixIdentities;
@@ -16,6 +17,7 @@ import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
@@ -35,6 +37,8 @@ public class SendingADataTransaction {
 	private RadixApplicationAPI otherApi;
 	private RadixIdentity otherIdentity;
 
+	private RadixAddress faucetAddress;
+
 	private final List<TestObserver<SubmitAtomAction>> observers = Lists.newArrayList();
 
 	@Given("^I have access to a suitable Radix network$")
@@ -45,6 +49,7 @@ public class SendingADataTransaction {
 			.bootstrap(RadixEnv.getBootstrapConfig())
 			.identity(this.identity)
 			.build();
+		this.faucetAddress = TokenUtilities.requestTokensFor(this.api);
 		this.api.pull();
 		this.otherApi = RadixApplicationAPI.defaultBuilder()
 			.bootstrap(RadixEnv.getBootstrapConfig())
@@ -142,7 +147,9 @@ public class SendingADataTransaction {
 	@When("^I can observe a message with \"([^\"]*)\"$")
 	public void i_can_observe_a_message_with(String message) {
 		TestObserver<DecryptedMessage> messageTestObserver = new TestObserver<>();
-		this.api.observeMessages().subscribe(messageTestObserver);
+		this.api.observeMessages()
+			.filter(msg -> !this.faucetAddress.equals(msg.getFrom()))
+			.subscribe(messageTestObserver);
 		messageTestObserver.awaitCount(1);
 		messageTestObserver.assertSubscribed();
 		messageTestObserver.assertNoErrors();
@@ -153,7 +160,9 @@ public class SendingADataTransaction {
 	@When("^I can observe a message with \"([^\"]*)\" from myself$")
 	public void i_can_observe_a_message_with_from_myself(String message) {
 		TestObserver<DecryptedMessage> messageTestObserver = new TestObserver<>();
-		this.api.observeMessages().subscribe(messageTestObserver);
+		this.api.observeMessages()
+			.filter(msg -> !this.faucetAddress.equals(msg.getFrom()))
+			.subscribe(messageTestObserver);
 		messageTestObserver.awaitCount(1, TestWaitStrategy.SLEEP_1000MS, 10000);
 		messageTestObserver.assertSubscribed();
 		messageTestObserver.assertNoErrors();
