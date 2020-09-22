@@ -8,7 +8,7 @@ RUN apt-get -y update && \
 
 RUN add-apt-repository ppa:openjdk-r/ppa && \
     apt-get -y update && \
-    apt -y --no-install-recommends install openjdk-11-jdk ca-certificates-java && \
+    apt -y install openjdk-11-jdk ca-certificates-java && \
     /usr/sbin/update-ca-certificates -f
 
 
