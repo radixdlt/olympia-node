@@ -23,20 +23,20 @@ import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.ConsensusEvent;
-import com.radixdlt.consensus.EmptyVertexStoreEventProcessor;
+import com.radixdlt.consensus.EmptyBFTSyncResponseProcessor;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.ProposerElectionFactory;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.VertexStoreSyncEventProcessor;
+import com.radixdlt.consensus.BFTSyncResponseProcessor;
 import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.VertexStoreSyncFactory;
 import com.radixdlt.consensus.VertexStoreSyncVerticesRequestProcessorFactory;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.BFTUpdateProcessor;
-import com.radixdlt.consensus.bft.SyncVerticesRequestProcessor;
+import com.radixdlt.consensus.bft.BFTSyncRequestProcessor;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
@@ -58,6 +58,8 @@ import com.radixdlt.consensus.sync.VertexStoreSync.GetVerticesRequest;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
+import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.ledger.LedgerUpdateProcessor;
 import com.radixdlt.sync.LocalSyncRequest;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -76,7 +78,7 @@ import org.apache.logging.log4j.Logger;
  * Manages Epochs and the BFT instance (which is mostly epoch agnostic) associated with each epoch
  */
 @NotThreadSafe
-public final class EpochManager implements SyncVerticesRequestProcessor, BFTUpdateProcessor {
+public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdateProcessor {
 	/**
 	 * A sender of GetEpoch RPC requests/responses
 	 */
@@ -133,11 +135,13 @@ public final class EpochManager implements SyncVerticesRequestProcessor, BFTUpda
 
 	private VerifiedLedgerHeaderAndProof lastConstructed = null;
 	private EpochChange currentEpoch;
-	private VertexStoreSyncEventProcessor vertexStoreEventProcessor;
-	private BFTUpdateProcessor syncUpdateProcessor;
-	private SyncVerticesRequestProcessor syncRequestProcessor;
-	private BFTEventProcessor bftEventProcessor;
 	private int numQueuedConsensusEvents = 0;
+
+	private BFTSyncResponseProcessor syncBFTResponseProcessor;
+	private BFTUpdateProcessor syncBFTUpdateProcessor;
+	private LedgerUpdateProcessor<LedgerUpdate> syncLedgerUpdateProcessor;
+	private BFTSyncRequestProcessor syncRequestProcessor;
+	private BFTEventProcessor bftEventProcessor;
 
 	@Inject
 	public EpochManager(
@@ -179,9 +183,10 @@ public final class EpochManager implements SyncVerticesRequestProcessor, BFTUpda
 		if (!validatorSet.containsNode(self)) {
 			logEpochChange(this.currentEpoch, "excluded from");
 			this.bftEventProcessor =  EmptyBFTEventProcessor.INSTANCE;
-			this.vertexStoreEventProcessor = EmptyVertexStoreEventProcessor.INSTANCE;
+			this.syncBFTResponseProcessor = EmptyBFTSyncResponseProcessor.INSTANCE;
 			this.syncRequestProcessor = req -> { };
-			this.syncUpdateProcessor = update -> { };
+			this.syncLedgerUpdateProcessor = update -> { };
+			this.syncBFTUpdateProcessor = update -> { };
 			return;
 		}
 
@@ -200,8 +205,10 @@ public final class EpochManager implements SyncVerticesRequestProcessor, BFTUpda
 			ledger
 		);
 		VertexStoreSync vertexStoreSync = vertexStoreSyncFactory.create(vertexStore);
-		this.vertexStoreEventProcessor = vertexStoreSync;
-		this.syncUpdateProcessor = vertexStoreSync;
+		this.syncBFTResponseProcessor = vertexStoreSync;
+		this.syncBFTUpdateProcessor = vertexStoreSync;
+		this.syncLedgerUpdateProcessor = vertexStoreSync;
+
 		this.syncRequestProcessor = vertexStoreSyncVerticesRequestProcessorFactory.create(vertexStore);
 
 		BFTInfoSender infoSender = new BFTInfoSender() {
@@ -241,7 +248,7 @@ public final class EpochManager implements SyncVerticesRequestProcessor, BFTUpda
 	public void processLedgerUpdate(EpochsLedgerUpdate epochsLedgerUpdate) {
 		epochsLedgerUpdate.getEpochChange().ifPresentOrElse(
 			this::processEpochChange,
-			() -> this.vertexStoreEventProcessor.processLedgerUpdate(epochsLedgerUpdate)
+			() -> this.syncLedgerUpdateProcessor.processLedgerUpdate(epochsLedgerUpdate)
 		);
 	}
 
@@ -401,7 +408,7 @@ public final class EpochManager implements SyncVerticesRequestProcessor, BFTUpda
 	@Override
 	public void processBFTUpdate(BFTUpdate update) {
 		bftEventProcessor.processBFTUpdate(update);
-		syncUpdateProcessor.processBFTUpdate(update);
+		syncBFTUpdateProcessor.processBFTUpdate(update);
 	}
 
 	@Override
@@ -410,10 +417,10 @@ public final class EpochManager implements SyncVerticesRequestProcessor, BFTUpda
 	}
 
 	public void processGetVerticesErrorResponse(GetVerticesErrorResponse response) {
-		vertexStoreEventProcessor.processGetVerticesErrorResponse(response);
+		syncBFTResponseProcessor.processGetVerticesErrorResponse(response);
 	}
 
 	public void processGetVerticesResponse(GetVerticesResponse response) {
-		vertexStoreEventProcessor.processGetVerticesResponse(response);
+		syncBFTResponseProcessor.processGetVerticesResponse(response);
 	}
 }

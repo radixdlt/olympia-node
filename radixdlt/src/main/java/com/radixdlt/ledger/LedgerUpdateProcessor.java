@@ -15,9 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.sync;
-
-import com.radixdlt.ledger.LedgerUpdate;
+package com.radixdlt.ledger;
 
 /**
  * Processes a ledger update

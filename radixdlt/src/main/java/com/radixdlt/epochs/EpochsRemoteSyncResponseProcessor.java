@@ -25,7 +25,7 @@ import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
-import com.radixdlt.sync.LedgerUpdateProcessor;
+import com.radixdlt.ledger.LedgerUpdateProcessor;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.RemoteSyncResponse;
 import com.radixdlt.sync.RemoteSyncResponseProcessor;

@@ -19,12 +19,11 @@ package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
-import com.radixdlt.ledger.LedgerUpdate;
 
 /**
  * An empty/mocked vertex store event processor
  */
-public enum EmptyVertexStoreEventProcessor implements VertexStoreSyncEventProcessor {
+public enum EmptyBFTSyncResponseProcessor implements BFTSyncResponseProcessor {
 	INSTANCE;
 
 	@Override
@@ -34,11 +33,6 @@ public enum EmptyVertexStoreEventProcessor implements VertexStoreSyncEventProces
 
 	@Override
 	public void processGetVerticesResponse(GetVerticesResponse response) {
-		// No-op
-	}
-
-	@Override
-	public void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
 		// No-op
 	}
 }

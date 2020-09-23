@@ -18,6 +18,7 @@
 package com.radixdlt.sync;
 
 import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.ledger.LedgerUpdateProcessor;
 import com.radixdlt.sync.SyncServiceRunner.LocalSyncRequestsRx;
 import com.radixdlt.sync.SyncServiceRunner.SyncTimeoutsRx;
 import io.reactivex.rxjava3.core.Observable;

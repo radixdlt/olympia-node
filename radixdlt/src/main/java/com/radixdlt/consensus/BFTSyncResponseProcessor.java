@@ -19,12 +19,11 @@ package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
-import com.radixdlt.ledger.LedgerUpdate;
 
 /**
  * Processor of vertex store events
  */
-public interface VertexStoreSyncEventProcessor {
+public interface BFTSyncResponseProcessor {
 	/**
 	 * Process a get vertices error response
 	 * @param response the get vertices error response
@@ -36,10 +35,4 @@ public interface VertexStoreSyncEventProcessor {
 	 * @param response the get vertices response
 	 */
 	void processGetVerticesResponse(GetVerticesResponse response);
-
-	/**
-	 * Process a ledger update
-	 * @param ledgerUpdate the ledger update
-	 */
-	void processLedgerUpdate(LedgerUpdate ledgerUpdate);
 }

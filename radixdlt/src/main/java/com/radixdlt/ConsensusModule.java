@@ -30,8 +30,8 @@ import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
 import com.radixdlt.consensus.sync.VertexStoreSync;
 import com.radixdlt.consensus.sync.VertexStoreSync.SyncVerticesRequestSender;
-import com.radixdlt.consensus.sync.VertexStoreSyncVerticesRequestProcessor;
-import com.radixdlt.consensus.sync.VertexStoreSyncVerticesRequestProcessor.SyncVerticesResponseSender;
+import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
+import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.ProposerElectionFactory;
@@ -90,7 +90,7 @@ public final class ConsensusModule extends AbstractModule {
 				.endOfEpochSender(endOfEpochSender)
 				.pacemaker(pacemaker)
 				.vertexStore(vertexStore)
-				.vertexStoreSync(vertexStoreSync)
+				.bftSyncer(vertexStoreSync)
 				.proposerElection(proposerElection)
 				.validatorSet(validatorSet)
 				.timeSupplier(timeSupplier)
@@ -115,7 +115,7 @@ public final class ConsensusModule extends AbstractModule {
 	private VertexStoreSyncVerticesRequestProcessorFactory vertexStoreSyncVerticesRequestProcessorFactory(
 		SyncVerticesResponseSender syncVerticesResponseSender
 	) {
-		return vertexStore -> new VertexStoreSyncVerticesRequestProcessor(vertexStore, syncVerticesResponseSender);
+		return vertexStore -> new VertexStoreBFTSyncRequestProcessor(vertexStore, syncVerticesResponseSender);
 	}
 
 	@Provides

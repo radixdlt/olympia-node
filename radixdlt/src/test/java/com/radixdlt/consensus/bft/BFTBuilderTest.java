@@ -98,7 +98,7 @@ public class BFTBuilderTest {
 			.verifier(verifier)
 			.pacemaker(pacemaker)
 			.vertexStore(vertexStore)
-			.vertexStoreSync(vertexStoreSync)
+			.bftSyncer(vertexStoreSync)
 			.self(self)
 			.build();
 

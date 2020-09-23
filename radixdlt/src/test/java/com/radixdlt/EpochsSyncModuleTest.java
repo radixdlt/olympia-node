@@ -37,7 +37,7 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.epochs.SyncedEpochSender;
 import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.sync.LedgerUpdateProcessor;
+import com.radixdlt.ledger.LedgerUpdateProcessor;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncTimeoutScheduler;
 import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier;

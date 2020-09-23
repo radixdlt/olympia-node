@@ -23,8 +23,9 @@ import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.VertexStoreSyncEventProcessor;
+import com.radixdlt.consensus.BFTSyncResponseProcessor;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTSyncer;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.BFTUpdateProcessor;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
@@ -34,6 +35,7 @@ import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.ledger.LedgerUpdateProcessor;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.utils.Pair;
 import java.util.ArrayList;
@@ -50,7 +52,7 @@ import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class VertexStoreSync implements VertexStoreSyncEventProcessor, BFTUpdateProcessor {
+public class VertexStoreSync implements BFTSyncResponseProcessor, BFTUpdateProcessor, BFTSyncer, LedgerUpdateProcessor<LedgerUpdate> {
 	public interface GetVerticesRequest {
 		Hash getVertexId();
 		int getCount();
@@ -139,18 +141,7 @@ public class VertexStoreSync implements VertexStoreSyncEventProcessor, BFTUpdate
 		this.ledger = ledger;
 	}
 
-
-	/**
-	 * Initiate a sync to a given QC and a committedQC. Returns true if already synced
-	 * otherwise will initiate a syncing process.
-	 * An author is used because the author will most likely have the corresponding vertices
-	 * still in memory.
-	 *
-	 * @param qc the qc to sync to
-	 * @param committedQC the committedQC to commit sync to
-	 * @param author the original author of the qc
-	 * @return true if already synced, false otherwise
-	 */
+	@Override
 	public boolean syncToQC(QuorumCertificate qc, QuorumCertificate committedQC, @Nullable BFTNode author) {
 		if (qc.getProposed().getView().compareTo(vertexStore.getRoot().getView()) < 0) {
 			return true;
@@ -183,6 +174,12 @@ public class VertexStoreSync implements VertexStoreSyncEventProcessor, BFTUpdate
 		this.startSync(vertexId, qc, committedQC, author);
 
 		return false;
+	}
+
+	@Override
+	public void clearSyncs() {
+		committedSyncing.clear();
+		syncing.clear();
 	}
 
 	private boolean requiresCommittedStateSync(SyncState syncState) {
@@ -241,26 +238,6 @@ public class VertexStoreSync implements VertexStoreSyncEventProcessor, BFTUpdate
 	}
 
 
-	// TODO: Verify headers match
-	@Override
-	public void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
-		log.trace("SYNC_STATE: update {}", ledgerUpdate);
-
-		Collection<List<Hash>> listeners = this.committedSyncing.headMap(
-			ledgerUpdate.getTail().getRaw(), true
-		).values();
-		Iterator<List<Hash>> listenersIterator = listeners.iterator();
-		while (listenersIterator.hasNext()) {
-			List<Hash> syncs = listenersIterator.next();
-			for (Hash syncTo : syncs) {
-				SyncState syncState = syncing.get(syncTo);
-				if (syncState != null) {
-					rebuildAndSyncQC(syncState);
-				}
-			}
-			listenersIterator.remove();
-		}
-	}
 
 	private void processVerticesResponseForCommittedSync(Hash syncTo, SyncState syncState, GetVerticesResponse response) {
 		log.info("SYNC_STATE: Processing vertices {} View {} From {}", syncState, response.getVertices().get(0).getView(), response.getSender());
@@ -357,8 +334,24 @@ public class VertexStoreSync implements VertexStoreSyncEventProcessor, BFTUpdate
 		syncing.remove(update.getInsertedVertex().getId());
 	}
 
-	public void clearSyncs() {
-		committedSyncing.clear();
-		syncing.clear();
+	// TODO: Verify headers match
+	@Override
+	public void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
+		log.trace("SYNC_STATE: update {}", ledgerUpdate);
+
+		Collection<List<Hash>> listeners = this.committedSyncing.headMap(
+			ledgerUpdate.getTail().getRaw(), true
+		).values();
+		Iterator<List<Hash>> listenersIterator = listeners.iterator();
+		while (listenersIterator.hasNext()) {
+			List<Hash> syncs = listenersIterator.next();
+			for (Hash syncTo : syncs) {
+				SyncState syncState = syncing.get(syncTo);
+				if (syncState != null) {
+					rebuildAndSyncQC(syncState);
+				}
+			}
+			listenersIterator.remove();
+		}
 	}
 }

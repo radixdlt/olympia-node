@@ -20,14 +20,14 @@ package com.radixdlt.consensus.sync;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.bft.SyncVerticesRequestProcessor;
+import com.radixdlt.consensus.bft.BFTSyncRequestProcessor;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.sync.VertexStoreSync.GetVerticesRequest;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public final class VertexStoreSyncVerticesRequestProcessor implements SyncVerticesRequestProcessor {
+public final class VertexStoreBFTSyncRequestProcessor implements BFTSyncRequestProcessor {
 	private final Logger log = LogManager.getLogger();
 	private final VertexStore vertexStore;
 	private final SyncVerticesResponseSender syncVerticesRPCSender;
@@ -53,7 +53,7 @@ public final class VertexStoreSyncVerticesRequestProcessor implements SyncVertic
 	}
 
 	@Inject
-	public VertexStoreSyncVerticesRequestProcessor(VertexStore vertexStore, SyncVerticesResponseSender syncVerticesRPCSender) {
+	public VertexStoreBFTSyncRequestProcessor(VertexStore vertexStore, SyncVerticesResponseSender syncVerticesRPCSender) {
 		this.vertexStore = vertexStore;
 		this.syncVerticesRPCSender = syncVerticesRPCSender;
 	}

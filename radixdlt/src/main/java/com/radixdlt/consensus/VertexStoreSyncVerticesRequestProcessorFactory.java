@@ -18,8 +18,8 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.consensus.sync.VertexStoreSyncVerticesRequestProcessor;
+import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
 
 public interface VertexStoreSyncVerticesRequestProcessorFactory {
-	VertexStoreSyncVerticesRequestProcessor create(VertexStore vertexStore);
+	VertexStoreBFTSyncRequestProcessor create(VertexStore vertexStore);
 }

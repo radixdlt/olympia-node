@@ -32,7 +32,7 @@ import com.radixdlt.epochs.EpochsRemoteSyncResponseProcessor;
 import com.radixdlt.epochs.SyncedEpochSender;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.sync.LedgerUpdateProcessor;
+import com.radixdlt.ledger.LedgerUpdateProcessor;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncTimeoutScheduler;
 import com.radixdlt.sync.RemoteSyncResponseProcessor;

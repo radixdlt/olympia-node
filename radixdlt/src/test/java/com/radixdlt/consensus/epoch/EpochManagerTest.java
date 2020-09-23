@@ -49,7 +49,7 @@ import com.radixdlt.consensus.VertexStoreSyncVerticesRequestProcessorFactory;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.sync.VertexStoreSync;
 import com.radixdlt.consensus.sync.VertexStoreSync.GetVerticesRequest;
-import com.radixdlt.consensus.sync.VertexStoreSyncVerticesRequestProcessor;
+import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
@@ -456,7 +456,7 @@ public class EpochManagerTest {
 		BFTEventProcessor eventProcessor = mock(BFTEventProcessor.class);
 		when(bftFactory.create(any(), any(), any(), any(), any(), any(), any(), any())).thenReturn(eventProcessor);
 
-		VertexStoreSyncVerticesRequestProcessor requestProcessor = mock(VertexStoreSyncVerticesRequestProcessor.class);
+		VertexStoreBFTSyncRequestProcessor requestProcessor = mock(VertexStoreBFTSyncRequestProcessor.class);
 		when(requestProcessorFactory.create(any())).thenReturn(requestProcessor);
 
 		BFTValidator validator = mock(BFTValidator.class);
