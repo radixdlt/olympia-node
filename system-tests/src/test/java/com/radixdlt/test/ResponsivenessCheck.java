@@ -36,10 +36,6 @@ public class ResponsivenessCheck implements RemoteBFTCheck {
 	private final TimeUnit timeoutUnit;
 	private List<String> nodesToIgnore;
 
-	private ResponsivenessCheck(long timeout, TimeUnit timeoutUnit) {
-		this(timeout, timeoutUnit, new ArrayList<String>());
-	}
-
 	private ResponsivenessCheck(long timeout, TimeUnit timeoutUnit, List<String> nodesToIgnore) {
 		if (timeout < 1) {
 			throw new IllegalArgumentException("timeout must be >= 1 but was " + timeout);
@@ -50,11 +46,12 @@ public class ResponsivenessCheck implements RemoteBFTCheck {
 	}
 
 	public static ResponsivenessCheck with(long timeout, TimeUnit timeoutUnit) {
-		return new ResponsivenessCheck(timeout, timeoutUnit);
+		return new ResponsivenessCheck(timeout, timeoutUnit,new ArrayList<String>());
 	}
 
-	public static ResponsivenessCheck withNodesToIgnore(long timeout, TimeUnit timeoutUnit, List<String> nodesToIgnore) {
-		return new ResponsivenessCheck(timeout, timeoutUnit, nodesToIgnore);
+	public ResponsivenessCheck withNodesToIgnore(List<String> nodesToIgnore) {
+		this.nodesToIgnore = nodesToIgnore;
+		return this;
 	}
 
 	@Override

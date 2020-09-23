@@ -238,7 +238,7 @@ public final class RemoteBFTTest {
 
 
 		public Builder assertResponsiveness(List<String> nodesToIgnore) {
-			return addCheck(ResponsivenessCheck.withNodesToIgnore(1, TimeUnit.MINUTES, nodesToIgnore));
+			return addCheck(ResponsivenessCheck.with(1, TimeUnit.MINUTES).withNodesToIgnore(nodesToIgnore));
 		}
 
 

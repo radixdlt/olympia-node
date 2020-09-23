@@ -21,6 +21,7 @@ package com.radixdlt.test;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import io.reactivex.Single;
+import java.util.ArrayList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONArray;
@@ -52,16 +53,18 @@ public class SafetyCheck implements RemoteBFTCheck {
 	private final TimeUnit timeoutUnit;
 	private List<String> nodesToIgnore;
 
-	private SafetyCheck(long timeout, TimeUnit timeoutUnit) {
+	private SafetyCheck(long timeout, TimeUnit timeoutUnit , List<String> nodesToIgnore) {
 		if (timeout < 1) {
 			throw new IllegalArgumentException("timeout must be >= 1 but was " + timeout);
 		}
 		this.timeout = timeout;
 		this.timeoutUnit = Objects.requireNonNull(timeoutUnit);
+		this.nodesToIgnore = nodesToIgnore;
 	}
 
 	public static SafetyCheck with(long timeout, TimeUnit timeoutUnit) {
-		return new SafetyCheck(timeout, timeoutUnit);
+
+		return new SafetyCheck(timeout, timeoutUnit,new ArrayList<String>());
 	}
 
 	public SafetyCheck withNodesToIgnore(List<String> nodesToIgnore) {

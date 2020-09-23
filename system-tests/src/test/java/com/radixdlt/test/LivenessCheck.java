@@ -20,6 +20,7 @@ package com.radixdlt.test;
 
 import com.radixdlt.utils.Pair;
 import io.reactivex.Single;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
@@ -48,15 +49,17 @@ public class LivenessCheck implements RemoteBFTCheck {
 	private final TimeUnit timeoutUnit;
 	private List<String> nodesToIgnore;
 
-	private LivenessCheck(long patience, TimeUnit patienceUnit, long timeout, TimeUnit timeoutUnit) {
+
+	private LivenessCheck(long patience, TimeUnit patienceUnit, long timeout, TimeUnit timeoutUnit , List<String> nodesToIgnore) {
 		this.patience = patience;
 		this.patienceUnit = Objects.requireNonNull(patienceUnit);
 		this.timeout = timeout;
 		this.timeoutUnit = Objects.requireNonNull(timeoutUnit);
+		this.nodesToIgnore = nodesToIgnore;
 	}
 
 	public static LivenessCheck with(long patience, TimeUnit patienceUnit, long timeout, TimeUnit timeoutUnit) {
-		return new LivenessCheck(patience, patienceUnit, timeout, timeoutUnit);
+		return new LivenessCheck(patience, patienceUnit, timeout, timeoutUnit,new ArrayList<String>());
 	}
 
 	public LivenessCheck withNodesToIgnore(List<String> nodesToIgnore) {
