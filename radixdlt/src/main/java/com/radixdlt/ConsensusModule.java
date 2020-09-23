@@ -19,28 +19,38 @@ package com.radixdlt;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import com.google.inject.name.Named;
+import com.radixdlt.consensus.BFTConfiguration;
+import com.radixdlt.consensus.BFTEventProcessor;
+import com.radixdlt.consensus.BFTFactory;
+import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HashVerifier;
+import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.VertexStoreSyncFactory;
-import com.radixdlt.consensus.VertexStoreSyncVerticesRequestProcessorFactory;
+import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.bft.BFTBuilder;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
-import com.radixdlt.consensus.BFTFactory;
+import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTSyncRequestProcessor;
+import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
+import com.radixdlt.consensus.epoch.LocalTimeout;
+import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker.TimeoutSender;
+import com.radixdlt.consensus.liveness.LocalTimeoutSender;
+import com.radixdlt.consensus.liveness.NextCommandGenerator;
+import com.radixdlt.consensus.liveness.Pacemaker;
+import com.radixdlt.consensus.liveness.PacemakerFactory;
+import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.sync.VertexStoreSync;
 import com.radixdlt.consensus.sync.VertexStoreSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
-import com.radixdlt.consensus.liveness.NextCommandGenerator;
-import com.radixdlt.consensus.HashSigner;
-import com.radixdlt.consensus.ProposerElectionFactory;
-import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
-import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
-import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.counters.SystemCounters;
@@ -98,34 +108,61 @@ public final class ConsensusModule extends AbstractModule {
 	}
 
 	@Provides
-	private ProposerElectionFactory proposerElectionFactory() {
-		return validatorSet -> new WeightedRotatingLeaders(
-			validatorSet,
+	@Singleton
+	public BFTEventProcessor eventProcessor(
+		@Named("self") BFTNode self,
+		BFTConfiguration config,
+		BFTFactory bftFactory,
+		Pacemaker pacemaker,
+		VertexStore vertexStore,
+		VertexStoreSync vertexStoreSync,
+		ProposerElection proposerElection,
+		BFTInfoSender infoSender
+	) {
+		return bftFactory.create(
+			self,
+			header -> { },
+			pacemaker,
+			vertexStore,
+			vertexStoreSync,
+			proposerElection,
+			config.getValidatorSet(),
+			infoSender
+		);
+	}
+
+	@Provides
+	private ProposerElection proposerElection(BFTConfiguration configuration) {
+		return new WeightedRotatingLeaders(
+			configuration.getValidatorSet(),
 			Comparator.comparing(v -> v.getNode().getKey().euid()),
 			ROTATING_WEIGHTED_LEADERS_CACHE_SIZE
 		);
 	}
 
 	@Provides
-	private PacemakerFactory pacemakerFactory() {
-		return timeoutSender -> new FixedTimeoutPacemaker(pacemakerTimeout, timeoutSender);
+	@Singleton
+	private Pacemaker pacemaker(TimeoutSender timeoutSender) {
+		return new FixedTimeoutPacemaker(pacemakerTimeout, timeoutSender);
 	}
 
 	@Provides
-	private VertexStoreSyncVerticesRequestProcessorFactory vertexStoreSyncVerticesRequestProcessorFactory(
-		SyncVerticesResponseSender syncVerticesResponseSender
+	private BFTSyncRequestProcessor bftSyncRequestProcessor(
+		VertexStore vertexStore,
+		SyncVerticesResponseSender responseSender
 	) {
-		return vertexStore -> new VertexStoreBFTSyncRequestProcessor(vertexStore, syncVerticesResponseSender);
+		return new VertexStoreBFTSyncRequestProcessor(vertexStore, responseSender);
 	}
 
 	@Provides
-	private VertexStoreSyncFactory vertexStoreSyncFactory(
+	@Singleton
+	private VertexStoreSync vertexStoreSync(
 		SyncVerticesRequestSender requestSender,
 		SyncLedgerRequestSender syncLedgerRequestSender,
+		VertexStore vertexStore,
 		Ledger ledger
-
 	) {
-		return vertexStore -> new VertexStoreSync(
+		return new VertexStoreSync(
 			vertexStore,
 			Comparator.comparingLong((LedgerHeader h) -> h.getAccumulatorState().getStateVersion()),
 			requestSender,
@@ -135,14 +172,17 @@ public final class ConsensusModule extends AbstractModule {
 	}
 
 	@Provides
-	private VertexStoreFactory vertexStoreFactory(
+	@Singleton
+	private VertexStore vertexStoreFactory(
 		VertexStoreEventSender vertexStoreEventSender,
 		BFTUpdateSender updateSender,
-		SystemCounters counters
+		BFTConfiguration bftConfiguration,
+		SystemCounters counters,
+		Ledger ledger
 	) {
-		return (genesisVertex, genesisQC, ledger) -> new VertexStore(
-			genesisVertex,
-			genesisQC,
+		return new VertexStore(
+			bftConfiguration.getGenesisVertex(),
+			bftConfiguration.getGenesisQC(),
 			ledger,
 			updateSender,
 			vertexStoreEventSender,

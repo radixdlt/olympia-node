@@ -131,10 +131,17 @@ public class GlobalInjector {
 			new LedgerCommandGeneratorModule(),
 			new LedgerLocalMempoolModule(mempoolMaxSize),
 
-			// Epochs
-			new EpochsConsensusModule(),
+			// Sync
+			new SyncRxModule(),
+			new SyncServiceModule(),
+			new SyncMempoolServiceModule(),
+
+			// Epochs - Consensus
+			new EpochsConsensusModule(pacemakerTimeout),
+			// Epochs - Ledger
 			new EpochsLedgerUpdateModule(),
 			new EpochsLedgerUpdateRxModule(),
+			// Epochs - Sync
 			new EpochsSyncModule(),
 
 			// State Computer
@@ -146,11 +153,6 @@ public class GlobalInjector {
 			feeModule,
 
 			new PersistenceModule(),
-
-			// Synchronization
-			new SyncRxModule(),
-			new SyncServiceModule(),
-			new SyncMempoolServiceModule(),
 
 			// System Info
 			new SystemInfoModule(properties),

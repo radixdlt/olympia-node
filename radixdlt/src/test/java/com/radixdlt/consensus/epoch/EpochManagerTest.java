@@ -45,7 +45,7 @@ import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.VertexStoreSyncFactory;
-import com.radixdlt.consensus.VertexStoreSyncVerticesRequestProcessorFactory;
+import com.radixdlt.consensus.BFTSyncRequestProcessorFactory;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.sync.VertexStoreSync;
 import com.radixdlt.consensus.sync.VertexStoreSync.GetVerticesRequest;
@@ -88,7 +88,7 @@ public class EpochManagerTest {
 	private ProposerElection proposerElection;
 	private Ledger ledger;
 	private BFTNode self;
-	private VertexStoreSyncVerticesRequestProcessorFactory requestProcessorFactory;
+	private BFTSyncRequestProcessorFactory requestProcessorFactory;
 
 	@Before
 	public void setup() {
@@ -122,7 +122,7 @@ public class EpochManagerTest {
 		when(config.getValidatorSet()).thenReturn(BFTValidatorSet.from(ImmutableSet.of()));
 		when(initial.getBFTConfiguration()).thenReturn(config);
 
-		this.requestProcessorFactory = mock(VertexStoreSyncVerticesRequestProcessorFactory.class);
+		this.requestProcessorFactory = mock(BFTSyncRequestProcessorFactory.class);
 
 		this.epochManager = new EpochManager(
 			this.self,

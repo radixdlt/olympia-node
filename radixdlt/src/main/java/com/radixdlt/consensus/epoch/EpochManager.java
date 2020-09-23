@@ -33,7 +33,7 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.BFTSyncResponseProcessor;
 import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.VertexStoreSyncFactory;
-import com.radixdlt.consensus.VertexStoreSyncVerticesRequestProcessorFactory;
+import com.radixdlt.consensus.BFTSyncRequestProcessorFactory;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.BFTUpdateProcessor;
 import com.radixdlt.consensus.bft.BFTSyncRequestProcessor;
@@ -122,7 +122,7 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdatePro
 	private final SyncEpochsRPCSender epochsRPCSender;
 	private final PacemakerFactory pacemakerFactory;
 	private final VertexStoreFactory vertexStoreFactory;
-	private final VertexStoreSyncVerticesRequestProcessorFactory vertexStoreSyncVerticesRequestProcessorFactory;
+	private final BFTSyncRequestProcessorFactory BFTSyncRequestProcessorFactory;
 	private final VertexStoreSyncFactory vertexStoreSyncFactory;
 	private final ProposerElectionFactory proposerElectionFactory;
 	private final SystemCounters counters;
@@ -154,7 +154,7 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdatePro
 		PacemakerFactory pacemakerFactory,
 		VertexStoreFactory vertexStoreFactory,
 		VertexStoreSyncFactory vertexStoreSyncFactory,
-		VertexStoreSyncVerticesRequestProcessorFactory vertexStoreSyncVerticesRequestProcessorFactory,
+		BFTSyncRequestProcessorFactory BFTSyncRequestProcessorFactory,
 		ProposerElectionFactory proposerElectionFactory,
 		BFTFactory bftFactory,
 		SystemCounters counters,
@@ -169,7 +169,7 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdatePro
 		this.pacemakerFactory = Objects.requireNonNull(pacemakerFactory);
 		this.vertexStoreFactory = Objects.requireNonNull(vertexStoreFactory);
 		this.vertexStoreSyncFactory = Objects.requireNonNull(vertexStoreSyncFactory);
-		this.vertexStoreSyncVerticesRequestProcessorFactory = vertexStoreSyncVerticesRequestProcessorFactory;
+		this.BFTSyncRequestProcessorFactory = BFTSyncRequestProcessorFactory;
 		this.proposerElectionFactory = Objects.requireNonNull(proposerElectionFactory);
 		this.bftFactory = bftFactory;
 		this.counters = Objects.requireNonNull(counters);
@@ -209,7 +209,7 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdatePro
 		this.syncBFTUpdateProcessor = vertexStoreSync;
 		this.syncLedgerUpdateProcessor = vertexStoreSync;
 
-		this.syncRequestProcessor = vertexStoreSyncVerticesRequestProcessorFactory.create(vertexStore);
+		this.syncRequestProcessor = BFTSyncRequestProcessorFactory.create(vertexStore);
 
 		BFTInfoSender infoSender = new BFTInfoSender() {
 			@Override

@@ -175,19 +175,12 @@ public final class DeterministicTest {
 					protected void configure() {
 						bind(BFTValidatorSet.class).toInstance(validatorSet);
 					}
-
-					@Provides
-					private EpochChange initialEpoch(
-						VerifiedLedgerHeaderAndProof proof,
-						BFTConfiguration initialBFTConfig
-					) {
-						return new EpochChange(proof, initialBFTConfig);
-					}
 				});
 				modules.add(new MockedStateComputerModule());
 				modules.add(this.syncedExecutorModule);
 
 				// TODO: remove the following
+				modules.add(new EpochsConsensusModule(1));
 				modules.add(new EpochsLedgerUpdateModule());
 			} else {
 				// TODO: adapter from LongFunction<BFTValidatorSet> to Function<Long, BFTValidatorSet> shouldn't be needed
@@ -199,7 +192,7 @@ public final class DeterministicTest {
 					}
 				});
 				modules.add(new LedgerModule());
-				modules.add(new EpochsConsensusModule());
+				modules.add(new EpochsConsensusModule(1));
 				modules.add(new EpochsLedgerUpdateModule());
 				modules.add(new LedgerCommandGeneratorModule());
 				modules.add(new MockedSyncServiceModule());

@@ -37,6 +37,9 @@ import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTSyncRequestProcessor;
 import com.radixdlt.consensus.bft.VertexStore;
+import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker.TimeoutSender;
+import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.sync.VertexStoreSync;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
 import com.radixdlt.consensus.bft.View;
@@ -53,34 +56,7 @@ public class MockedConsensusRunnerModule extends AbstractModule {
 		MapBinder<String, ModuleRunner> moduleRunners = MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class);
 		moduleRunners.addBinding("consensus").to(BFTRunner.class).in(Scopes.SINGLETON);
 		bind(BFTSyncResponseProcessor.class).to(VertexStoreSync.class).in(Scopes.SINGLETON);
-		bind(BFTSyncRequestProcessor.class).to(VertexStoreBFTSyncRequestProcessor.class);
 	}
-
-	@Provides
-	@Singleton
-	public BFTEventProcessor eventProcessor(
-		@Named("self") BFTNode self,
-		BFTConfiguration config,
-		BFTFactory bftFactory,
-		PacemakerFactory pacemakerFactory,
-		VertexStore vertexStore,
-		VertexStoreSync vertexStoreSync,
-		ProposerElectionFactory proposerElectionFactory,
-		LocalTimeoutSender localTimeoutSender,
-		BFTInfoSender infoSender
-	) {
-		return bftFactory.create(
-			self,
-			header -> { },
-			pacemakerFactory.create((view, ms) -> localTimeoutSender.scheduleTimeout(new LocalTimeout(1, view), ms)),
-			vertexStore,
-			vertexStoreSync,
-			proposerElectionFactory.create(config.getValidatorSet()),
-			config.getValidatorSet(),
-			infoSender
-		);
-	}
-
 
 	@Provides
 	public BFTInfoSender bftInfoSender(EpochInfoSender epochInfoSender) {
@@ -98,21 +74,7 @@ public class MockedConsensusRunnerModule extends AbstractModule {
 	}
 
 	@Provides
-	@Singleton
-	public VertexStoreSync vertexStoreSync(
-		VertexStore vertexStore,
-		VertexStoreSyncFactory vertexStoreSyncFactory
-	) {
-		return vertexStoreSyncFactory.create(vertexStore);
-	}
-
-	@Provides
-	@Singleton
-	public VertexStore vertexStore(
-		BFTConfiguration config,
-		VertexStoreFactory vertexStoreFactory,
-		Ledger ledger
-	) {
-		return vertexStoreFactory.create(config.getGenesisVertex(), config.getGenesisQC(), ledger);
+	private TimeoutSender initialTimeoutSender(LocalTimeoutSender localTimeoutSender) {
+		 return (view, ms) -> localTimeoutSender.scheduleTimeout(new LocalTimeout(1, view), ms);
 	}
 }
