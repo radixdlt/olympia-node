@@ -19,14 +19,12 @@ package com.radixdlt;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.google.inject.name.Named;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.VertexStoreSyncVerticesRequestProcessorFactory;
 import com.radixdlt.consensus.bft.BFTBuilder;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.BFTFactory;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStore.SyncedVertexSender;
 import com.radixdlt.consensus.bft.VertexStoreSyncVerticesRequestProcessor;
 import com.radixdlt.consensus.bft.VertexStoreSyncVerticesRequestProcessor.SyncVerticesResponseSender;
@@ -45,8 +43,6 @@ import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.network.TimeSupplier;
 import java.util.Comparator;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Module responsible for running BFT validator logic
@@ -67,8 +63,7 @@ public final class ConsensusModule extends AbstractModule {
 		HashSigner signer,
 		HashVerifier verifier,
 		TimeSupplier timeSupplier,
-		SystemCounters counters,
-		Logger logger
+		SystemCounters counters
 	) {
 		return (
 			self,
@@ -94,7 +89,6 @@ public final class ConsensusModule extends AbstractModule {
 				.proposerElection(proposerElection)
 				.validatorSet(validatorSet)
 				.timeSupplier(timeSupplier)
-				.logger(logger)
 				.build();
 	}
 
@@ -108,8 +102,8 @@ public final class ConsensusModule extends AbstractModule {
 	}
 
 	@Provides
-	private PacemakerFactory pacemakerFactory(Logger log) {
-		return timeoutSender -> new FixedTimeoutPacemaker(pacemakerTimeout, timeoutSender, log);
+	private PacemakerFactory pacemakerFactory() {
+		return timeoutSender -> new FixedTimeoutPacemaker(pacemakerTimeout, timeoutSender);
 	}
 
 	@Provides
@@ -125,8 +119,7 @@ public final class ConsensusModule extends AbstractModule {
 		VertexStoreEventSender vertexStoreEventSender,
 		SyncedVertexSender syncedVertexSender,
 		SyncRequestSender syncRequestSender,
-		SystemCounters counters,
-		Logger log
+		SystemCounters counters
 	) {
 		return (genesisVertex, genesisQC, syncedRadixEngine) -> new VertexStore(
 			genesisVertex,
@@ -137,13 +130,7 @@ public final class ConsensusModule extends AbstractModule {
 			vertexStoreEventSender,
 			syncRequestSender,
 			counters,
-			Comparator.comparingLong((LedgerHeader h) -> h.getAccumulatorState().getStateVersion()),
-			log
+			Comparator.comparingLong((LedgerHeader h) -> h.getAccumulatorState().getStateVersion())
 		);
-	}
-
-	@Provides
-	private Logger logger(@Named("self") BFTNode node) {
-		return LogManager.getLogger(node.toString());
 	}
 }

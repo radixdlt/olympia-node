@@ -25,7 +25,6 @@ import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.SyncVerticesRequestProcessor;
 import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRequestSender;
 import com.radixdlt.consensus.bft.VertexStoreSyncVerticesRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;

@@ -66,6 +66,7 @@ import java.util.Objects;
 import javax.annotation.concurrent.NotThreadSafe;
 import javax.inject.Inject;
 
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
@@ -111,7 +112,7 @@ public final class EpochManager implements SyncVerticesRequestProcessor {
 		void sendTimeoutProcessed(Timeout timeout);
 	}
 
-	private final Logger logger;
+	private final Logger logger = LogManager.getLogger();
 	private final BFTNode self;
 	private final SyncEpochsRPCSender epochsRPCSender;
 	private final PacemakerFactory pacemakerFactory;
@@ -147,8 +148,7 @@ public final class EpochManager implements SyncVerticesRequestProcessor {
 		ProposerElectionFactory proposerElectionFactory,
 		BFTFactory bftFactory,
 		SystemCounters counters,
-		EpochInfoSender epochInfoSender,
-		Logger logger
+		EpochInfoSender epochInfoSender
 	) {
 		this.currentEpoch = Objects.requireNonNull(initialEpoch);
 		this.self = Objects.requireNonNull(self);
@@ -164,7 +164,6 @@ public final class EpochManager implements SyncVerticesRequestProcessor {
 		this.counters = Objects.requireNonNull(counters);
 		this.epochInfoSender = Objects.requireNonNull(epochInfoSender);
 		this.queuedEvents = new HashMap<>();
-		this.logger = Objects.requireNonNull(logger);
 	}
 
 	private void updateEpochState() {

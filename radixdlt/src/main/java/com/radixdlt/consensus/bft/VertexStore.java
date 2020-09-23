@@ -46,9 +46,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.TreeMap;
-import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.NotThreadSafe;
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
@@ -88,7 +88,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		void sendGetVerticesRequest(Hash id, BFTNode node, int count, Object opaque);
 	}
 
-	private final Logger log;
+	private final Logger log = LogManager.getLogger();
 	private final VertexStoreEventSender vertexStoreEventSender;
 	private final SyncedVertexSender syncedVertexSender;
 	private final SyncVerticesRequestSender syncVerticesRPCSender;
@@ -114,8 +114,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		VertexStoreEventSender vertexStoreEventSender,
 		SyncRequestSender syncRequestSender,
 		SystemCounters counters,
-		Comparator<LedgerHeader> ledgerHeaderComparator,
-		Logger log
+		Comparator<LedgerHeader> ledgerHeaderComparator
 	) {
 		this(
 			rootVertex,
@@ -127,8 +126,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 			vertexStoreEventSender,
 			syncRequestSender,
 			counters,
-			ledgerHeaderComparator,
-			log
+			ledgerHeaderComparator
 		);
 	}
 
@@ -142,8 +140,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		VertexStoreEventSender vertexStoreEventSender,
 		SyncRequestSender syncRequestSender,
 		SystemCounters counters,
-		Comparator<LedgerHeader> ledgerHeaderComparator,
-		Logger log
+		Comparator<LedgerHeader> ledgerHeaderComparator
 	) {
 		this.ledger = Objects.requireNonNull(ledger);
 		this.syncVerticesRPCSender = Objects.requireNonNull(syncVerticesRPCSender);
@@ -151,7 +148,6 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		this.syncedVertexSender = Objects.requireNonNull(syncedVertexSender);
 		this.syncRequestSender = Objects.requireNonNull(syncRequestSender);
 		this.counters = Objects.requireNonNull(counters);
-		this.log = Objects.requireNonNull(log);
 		this.committedSyncing = new TreeMap<>(ledgerHeaderComparator);
 
 		Objects.requireNonNull(rootVertex);
@@ -258,7 +254,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		// TODO: check if there are any vertices which haven't been local sync processed yet
 		if (requiresCommittedStateSync(syncState)) {
 			syncState.fetched.sort(Comparator.comparing(VerifiedVertex::getView));
-			List<VerifiedVertex> nonRootVertices = syncState.fetched.stream().skip(1).collect(Collectors.toList());
+			List<VerifiedVertex> nonRootVertices = syncState.fetched.subList(1, syncState.fetched.size());
 			rebuild(syncState.fetched.get(0), syncState.fetched.get(1).getQC(), syncState.committedQC, nonRootVertices);
 		} else {
 			log.info("SYNC_STATE: skipping rebuild");
@@ -504,9 +500,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		vertices.put(vertex.getId(), vertex);
 		updateVertexStoreSize();
 
-		if (syncing.containsKey(vertex.getId())) {
-			this.syncedVertexSender.sendSyncedVertex(vertex);
-		}
+		this.syncedVertexSender.sendSyncedVertex(vertex);
 
 		return new BFTHeader(vertex.getView(), vertex.getId(), ledgerHeader);
 	}

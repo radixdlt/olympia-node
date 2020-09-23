@@ -294,6 +294,12 @@ task integrationTest(type: Test) {
 
 integrationTest.mustRunAfter test
 
+integrationTest {
+     jacoco {
+         enabled false
+     }
+}
+
 /**
  * Creates the JSON RPC documentation and manages the *.deb file in the docker directory
  */

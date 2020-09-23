@@ -69,7 +69,6 @@ import com.radixdlt.crypto.Hash;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.logging.log4j.Logger;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -129,8 +128,7 @@ public class EpochManagerTest {
 			proposers -> proposerElection,
 			this.bftFactory,
 			this.systemCounters,
-			this.epochInfoSender,
-			mock(Logger.class)
+			this.epochInfoSender
 		);
 		this.epochManager.start();
 	}

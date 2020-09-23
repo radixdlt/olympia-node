@@ -17,8 +17,8 @@
 
 package com.radixdlt.integration.distributed.deterministic.network;
 
+import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Streams;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -72,7 +72,7 @@ public final class DeterministicNetwork {
 	private final MessageSelector messageSelector;
 	private final MessageMutator messageMutator;
 
-	private final ImmutableMap<BFTNode, Integer> nodeLookup;
+	private final ImmutableBiMap<BFTNode, Integer> nodeLookup;
 	private final ImmutableList<Injector> nodeInstances;
 
 	/**
@@ -94,7 +94,7 @@ public final class DeterministicNetwork {
 		this.nodeLookup = Streams.mapWithIndex(
 			nodes.stream(),
 			(node, index) -> Pair.of(node, (int) index)
-		).collect(ImmutableMap.toImmutableMap(Pair::getFirst, Pair::getSecond));
+		).collect(ImmutableBiMap.toImmutableBiMap(Pair::getFirst, Pair::getSecond));
 		this.nodeInstances = Streams.mapWithIndex(
 			nodes.stream(),
 			(node, index) -> createBFTInstance(node, (int) index, syncExecutionModules, overrideModule)
@@ -130,8 +130,16 @@ public final class DeterministicNetwork {
 				break;
 			}
 			this.messageQueue.remove(controlledMessage);
-			log.debug("Output message {}", controlledMessage);
-			consensusRunners.get(controlledMessage.channelId().receiverIndex()).handleMessage(controlledMessage.message());
+			int receiver = controlledMessage.channelId().receiverIndex();
+			Thread thisThread = Thread.currentThread();
+			String oldThreadName = thisThread.getName();
+			thisThread.setName(oldThreadName + " " + this.nodeLookup.inverse().get(receiver));
+			try {
+				log.debug("Received message {}", controlledMessage);
+				consensusRunners.get(receiver).handleMessage(controlledMessage.message());
+			} finally {
+				thisThread.setName(oldThreadName);
+			}
 		}
 	}
 
@@ -152,7 +160,7 @@ public final class DeterministicNetwork {
 	}
 
 	void handleMessage(MessageRank rank, ControlledMessage controlledMessage) {
-		log.debug("Input message {}", controlledMessage);
+		log.debug("Sent message {}", controlledMessage);
 		if (!this.messageMutator.mutate(rank, controlledMessage, this.messageQueue)) {
 			// If nothing processes this message, we just add it to the queue
 			this.messageQueue.add(rank, controlledMessage);

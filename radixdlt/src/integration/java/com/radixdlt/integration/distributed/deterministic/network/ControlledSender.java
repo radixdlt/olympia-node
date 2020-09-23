@@ -166,7 +166,7 @@ public final class ControlledSender implements DeterministicSender {
 
 		@Override
 		public String toString() {
-			return String.format("%s{count=%s}", this.getClass().getSimpleName(), count);
+			return String.format("%s{id=%s, count=%s}", this.getClass().getSimpleName(), id.toString(), count);
 		}
 	}
 
