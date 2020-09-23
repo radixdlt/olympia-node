@@ -17,6 +17,12 @@
 
 package com.radixdlt.integration.distributed;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.google.inject.AbstractModule;
@@ -37,6 +43,7 @@ import java.math.BigInteger;
  * For testing where verification and signing is skipped
  */
 public class MockedCryptoModule extends AbstractModule {
+	private static final Logger log = LogManager.getLogger();
 	private static final HashFunction hashFunction = Hashing.goodFastHash(8 * 32);
 
 	@Override
@@ -68,18 +75,37 @@ public class MockedCryptoModule extends AbstractModule {
 
 	@Provides
 	private Hasher hasher(Serialization serialization) {
-		return new Hasher() {
+		AtomicBoolean running = new AtomicBoolean(false);
+		Hasher hasher = new Hasher() {
 			@Override
 			public Hash hash(Object o) {
-				byte[] dson = serialization.toDson(o, Output.HASH);
+				byte[] dson = timeWhinge("Serialization", () -> serialization.toDson(o, Output.HASH));
 				return this.hashBytes(dson);
 			}
 
 			@Override
 			public Hash hashBytes(byte[] bytes) {
-				byte[] hashCode = hashFunction.hashBytes(bytes).asBytes();
+				byte[] hashCode = timeWhinge("Hashing", () -> hashFunction.hashBytes(bytes).asBytes());
 				return new Hash(hashCode, 0, 32);
 			}
+
+			private <T> T timeWhinge(String what, Supplier<T> exec) {
+				long start = System.nanoTime();
+				T result = exec.get();
+				long end = System.nanoTime();
+				long durationMs = (end - start) / 1_000_000L;
+				if (durationMs > 50) {
+					log.warn("{} took {}ms", what, durationMs);
+				}
+				return result;
+			}
 		};
+
+		// Make sure classes etc loaded, as first use seems to take some time
+		Object dummyObject = new ECDSASignature(); // Arbitrary serializable class
+		hasher.hash(dummyObject);
+		running.set(true);
+
+		return hasher;
 	}
 }

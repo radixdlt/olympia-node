@@ -156,12 +156,14 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 
 	@Override
 	public void processNewView(NewView newView) {
-		log.trace("{}: NEW_VIEW: Queueing {}", this.self::getSimpleName, () -> newView);
+		log.trace("{}: NEW_VIEW: Queueing {}", this.self, newView);
 		if (queues.isEmptyElseAdd(newView)) {
 			if (!processNewViewInternal(newView)) {
-				log.debug("{}: NEW_VIEW: Queuing {} Waiting for Sync", this.self::getSimpleName, () -> newView);
+				log.debug("{}: NEW_VIEW: Queuing {} Waiting for Sync", this.self, newView);
 				queues.add(newView);
 			}
+		} else {
+			log.trace("{}: NEW_VIEW added to queue", this.self);
 		}
 	}
 

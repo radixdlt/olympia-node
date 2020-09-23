@@ -26,6 +26,7 @@ import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.VertexStoreEventProcessor;
 import com.radixdlt.consensus.VertexSyncRx;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.SyncVerticesRequestProcessor;
 import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.liveness.PacemakerRx;
@@ -42,6 +43,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
+import javax.inject.Named;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -56,6 +59,7 @@ public class BFTRunner implements ModuleRunner {
 	private final ExecutorService singleThreadExecutor;
 	private final Scheduler singleThreadScheduler;
 	private final BFTEventProcessor bftEventProcessor;
+	private final BFTNode self;
 	private Disposable disposable;
 
 	@Inject
@@ -67,11 +71,13 @@ public class BFTRunner implements ModuleRunner {
 		SyncVerticesRPCRx rpcRx,
 		BFTEventProcessor bftEventProcessor,
 		VertexStoreEventProcessor vertexStoreEventProcessor,
-		SyncVerticesRequestProcessor requestProcessor
+		SyncVerticesRequestProcessor requestProcessor,
+		@Named("self") BFTNode self
 	) {
 		this.bftEventProcessor = Objects.requireNonNull(bftEventProcessor);
-		this.singleThreadExecutor = Executors.newSingleThreadExecutor(ThreadFactories.daemonThreads("ConsensusRunner"));
+		this.singleThreadExecutor = Executors.newSingleThreadExecutor(ThreadFactories.daemonThreads("ConsensusRunner " + self));
 		this.singleThreadScheduler = Schedulers.from(this.singleThreadExecutor);
+		this.self = self;
 
 		// It is important that all of these events are executed on the same thread
 		// as all logic is dependent on this assumption
@@ -90,7 +96,7 @@ public class BFTRunner implements ModuleRunner {
 					} else if (e instanceof Vote) {
 						bftEventProcessor.processVote((Vote) e);
 					} else {
-						throw new IllegalStateException("Unknown consensus event: " + e);
+						throw new IllegalStateException(self + ": Unknown consensus event: " + e);
 					}
 				}),
 			rpcRx.requests()
@@ -114,7 +120,7 @@ public class BFTRunner implements ModuleRunner {
 			.doOnError(e -> {
 				// TODO: Implement better error handling especially against Byzantine nodes.
 				// TODO: Exit process for now.
-				log.error("Unexpected exception occurred", e);
+				log.fatal(String.format("%s: Unexpected exception occurred", self), e);
 				System.exit(-1);
 			})
 			.publish();
@@ -136,7 +142,7 @@ public class BFTRunner implements ModuleRunner {
 			}
 		}
 		if (started) {
-			log.info("Consensus started");
+			log.info("{}: Consensus started", this.self);
 		}
 	}
 
@@ -154,7 +160,7 @@ public class BFTRunner implements ModuleRunner {
 			}
 		}
 		if (stopped) {
-			log.info("Consensus stopped");
+			log.info("{}: Consensus stopped", this.self);
 		}
 	}
 
