@@ -33,7 +33,6 @@ import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.network.TimeSupplier;
-import org.apache.logging.log4j.Logger;
 
 /**
  * A helper class to help in constructing a BFT validator state machine
@@ -61,8 +60,6 @@ public final class BFTBuilder {
 	// Instance specific objects
 	private BFTNode self;
 
-	private Logger logger;
-
 	private BFTBuilder() {
 		// Just making this inaccessible
 	}
@@ -73,11 +70,6 @@ public final class BFTBuilder {
 
 	public BFTBuilder self(BFTNode self) {
 		this.self = self;
-		return this;
-	}
-
-	public BFTBuilder logger(Logger logger) {
-		this.logger = logger;
 		return this;
 	}
 
@@ -165,8 +157,7 @@ public final class BFTBuilder {
 			counters,
 			infoSender,
 			timeSupplier,
-			hasher,
-			logger
+			hasher
 		);
 
 		SyncQueues syncQueues = new SyncQueues();

@@ -55,7 +55,6 @@ import java.util.Collections;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import org.apache.logging.log4j.Logger;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -97,8 +96,7 @@ public class VertexStoreTest {
 			syncedVertexSender,
 			vertexStoreEventSender,
 			syncRequestSender,
-			counters,
-			mock(Logger.class)
+			counters
 		);
 
 		AtomicReference<BFTHeader> lastParentHeader
@@ -156,8 +154,7 @@ public class VertexStoreTest {
 				syncedVertexSender,
 				vertexStoreEventSender,
 				syncRequestSender,
-				counters,
-				mock(Logger.class)
+				counters
 			)
 		).isInstanceOf(IllegalStateException.class);
 	}
@@ -174,8 +171,7 @@ public class VertexStoreTest {
 			syncedVertexSender,
 			vertexStoreEventSender,
 			syncRequestSender,
-			counters,
-			mock(Logger.class)
+			counters
 		);
 	}
 
@@ -193,8 +189,7 @@ public class VertexStoreTest {
 				syncedVertexSender,
 				vertexStoreEventSender,
 				syncRequestSender,
-				counters,
-				mock(Logger.class)
+				counters
 			)
 		).isInstanceOf(IllegalStateException.class);
 	}
@@ -273,8 +268,7 @@ public class VertexStoreTest {
 				syncedVertexSender,
 				vertexStoreEventSender,
 				syncRequestSender,
-				counters,
-				mock(Logger.class)
+				counters
 			);
 
 		BFTHeader header = mock(BFTHeader.class);
@@ -477,8 +471,7 @@ public class VertexStoreTest {
 				syncedVertexSender,
 				vertexStoreEventSender,
 				syncRequestSender,
-				counters,
-				mock(Logger.class)
+				counters
 			);
 
 		Hash id3 = mock(Hash.class);
@@ -507,8 +500,7 @@ public class VertexStoreTest {
 				syncedVertexSender,
 				vertexStoreEventSender,
 				syncRequestSender,
-				counters,
-				mock(Logger.class)
+				counters
 			);
 
 		Hash id5 = mock(Hash.class);
@@ -535,8 +527,7 @@ public class VertexStoreTest {
 				syncedVertexSender,
 				vertexStoreEventSender,
 				syncRequestSender,
-				counters,
-				mock(Logger.class)
+				counters
 			);
 
 		// Skip two vertices
@@ -568,8 +559,7 @@ public class VertexStoreTest {
 				syncedVertexSender,
 				vertexStoreEventSender,
 				syncRequestSender,
-				counters,
-				mock(Logger.class)
+				counters
 			);
 
 		Hash id3 = mock(Hash.class);
@@ -617,8 +607,7 @@ public class VertexStoreTest {
 				syncedVertexSender,
 				vertexStoreEventSender,
 				syncRequestSender,
-				counters,
-				mock(Logger.class)
+				counters
 			);
 
 		VerifiedVertex vertex5 = nextVertex.apply(mock(Hash.class));

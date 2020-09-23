@@ -46,6 +46,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.NotThreadSafe;
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
@@ -100,7 +101,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		void sendGetVerticesErrorResponse(GetVerticesRequest originalRequest, QuorumCertificate highestQC, QuorumCertificate highestCommittedQC);
 	}
 
-	private final Logger log;
+	private final Logger log = LogManager.getLogger();
 	private final VertexStoreEventSender vertexStoreEventSender;
 	private final SyncedVertexSender syncedVertexSender;
 	private final SyncVerticesRPCSender syncVerticesRPCSender;
@@ -124,8 +125,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		SyncedVertexSender syncedVertexSender,
 		VertexStoreEventSender vertexStoreEventSender,
 		SyncRequestSender syncRequestSender,
-		SystemCounters counters,
-		Logger log
+		SystemCounters counters
 	) {
 		this(
 			rootVertex,
@@ -136,8 +136,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 			syncedVertexSender,
 			vertexStoreEventSender,
 			syncRequestSender,
-			counters,
-			log
+			counters
 		);
 	}
 
@@ -150,8 +149,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		SyncedVertexSender syncedVertexSender,
 		VertexStoreEventSender vertexStoreEventSender,
 		SyncRequestSender syncRequestSender,
-		SystemCounters counters,
-		Logger log
+		SystemCounters counters
 	) {
 		this.ledger = Objects.requireNonNull(ledger);
 		this.syncVerticesRPCSender = Objects.requireNonNull(syncVerticesRPCSender);
@@ -159,7 +157,6 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		this.syncedVertexSender = Objects.requireNonNull(syncedVertexSender);
 		this.syncRequestSender = syncRequestSender;
 		this.counters = Objects.requireNonNull(counters);
-		this.log = Objects.requireNonNull(log);
 
 		Objects.requireNonNull(rootVertex);
 		Objects.requireNonNull(rootQC);
