@@ -81,6 +81,7 @@ class CmdHelper {
                         "RADIXDLT_CONSENSUS_FIXED_NODE_COUNT=${options.quorumSize}",
                         "RADIXDLT_HOST_IP_ADDRESS=${options.nodeName}",
                         "RADIXDLT_CONSENSUS_START_ON_BOOT=${options.startConsensusOnBoot}",
+                        "RADIXDLT_UNIVERSE=${options.radixdltUniverse}",
 
         ]
         String dockerContainer = "docker run -d " +
@@ -89,6 +90,7 @@ class CmdHelper {
                 "-e RADIXDLT_CONSENSUS_FIXED_NODE_COUNT " +
                 "-e RADIXDLT_HOST_IP_ADDRESS " +
                 "-e RADIXDLT_CONSENSUS_START_ON_BOOT " +
+                "-e RADIXDLT_UNIVERSE " +
                 "-e JAVA_OPTS " +
                 "-l com.radixdlt.roles='core' " +
                 "-p ${options.hostPort}:8080 " +
@@ -109,6 +111,7 @@ class CmdHelper {
             options.rmiPort = 9010 + index
             options.socketAddressPort = 50505 + index
             options.startConsensusOnBoot = startConsensusOnBoot
+            options.radixdltUniverse = System.getenv("RADIXDLT_UNIVERSE")
             return [(node): options]
         }
 
