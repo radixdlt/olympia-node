@@ -52,6 +52,12 @@ configurations {
     integrationTestRuntime.extendsFrom testRuntime
 }
 
+task integrationTest(type: Test) {
+    testClassesDirs = sourceSets.integrationTest.output.classesDirs
+    classpath = sourceSets.integrationTest.runtimeClasspath
+    mustRunAfter(test)
+}
+
 checkstyle {
     toolVersion '8.10.1'
     showViolations = true
@@ -64,7 +70,7 @@ versionFile {
 }
 
 classes {
-	dependsOn(versionFile)
+    dependsOn(versionFile)
 }
 
 checkstyleMain {
@@ -83,17 +89,38 @@ checkstyleIntegrationTest {
     configFile project.file('config/checkstyle/checkstyle_test.xml')
 }
 
+checkstyleJmh {
+    // Largely the same as the main file, but extended snake case allowed
+    configFile project.file('config/checkstyle/checkstyle_test.xml')
+}
+
 test {
     testLogging {
         events "passed", "skipped", "failed"
         exceptionFormat "full"
-        outputs.upToDateWhen {false}
+        outputs.upToDateWhen { false }
         showStandardStreams true
     }
     systemProperty "java.security.egd", "file:/dev/urandom"
 }
 
+integrationTest {
+    testLogging {
+        events "passed", "skipped", "failed"
+        exceptionFormat "full"
+        outputs.upToDateWhen { false }
+        showStandardStreams true
+    }
+    systemProperty "java.security.egd", "file:/dev/urandom"
+    jacoco {
+        // It appears that Jacoco can introduce thread and/or JVM pauses, which
+        // in turn can cause timeouts that interfere with integration tests.
+        enabled false
+    }
+}
+
 jacocoTestReport {
+    dependsOn test
     reports {
         xml.enabled true
         csv.enabled false
@@ -123,11 +150,14 @@ dependencies {
     compile group: 'com.stijndewitt.undertow.cors', name: 'undertow-cors-filter', version: '0.4.0'
 
     testCompile 'org.awaitility:awaitility:4.0.3'
-    testCompile('org.objenesis:objenesis:2.4') { force = true } // make powermock 1.7.1 happy
-    testCompile('org.javassist:javassist:3.21.0-GA') { force = true } // make powermock 1.7.1 happy
-    testCompile 'org.powermock:powermock-module-junit4:1.7.4'
-    testCompile 'nl.jqno.equalsverifier:equalsverifier:3.1.5'
-    testCompile 'org.powermock:powermock-api-mockito2:1.7.4'
+    testCompile('org.objenesis:objenesis:3.1') { force = true }
+    testCompile('org.javassist:javassist:3.27.0-GA') { force = true }
+    testCompile('org.mockito:mockito-core:3.5.10') { force = true }
+    testCompile('net.bytebuddy:byte-buddy:1.10.13') { force = true }
+    testCompile('net.bytebuddy:byte-buddy-agent:1.10.13') { force = true }
+    testCompile 'org.powermock:powermock-module-junit4:2.0.7'
+    testCompile 'org.powermock:powermock-api-mockito2:2.0.7'
+    testCompile 'nl.jqno.equalsverifier:equalsverifier:3.4.2'
     testCompile 'org.hamcrest:hamcrest-library:1.3'
     testCompile 'org.assertj:assertj-core:3.11.1'
     testCompile('com.flipkart.zjsonpatch:zjsonpatch:0.4.5') {
@@ -271,25 +301,6 @@ task genmarkdown(type: NodeTask, dependsOn: updatejsonschema2md) {
 
 task gendoc(type: NodeTask, dependsOn: genmarkdown) {
     script = file('create-html.js')
-}
-
-/**
- * Run integration tests.
- */
-task integrationTest(type: Test) {
-    logging.captureStandardOutput(LogLevel.INFO)
-    logging.captureStandardError(LogLevel.INFO)
-
-    testClassesDirs = sourceSets.integrationTest.output.classesDirs
-    classpath = sourceSets.integrationTest.runtimeClasspath
-}
-
-integrationTest.mustRunAfter test
-
-integrationTest {
-     jacoco {
-         enabled false
-     }
 }
 
 /**
