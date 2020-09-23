@@ -35,6 +35,7 @@ import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.VertexStoreSyncFactory;
 import com.radixdlt.consensus.VertexStoreSyncVerticesRequestProcessorFactory;
 import com.radixdlt.consensus.bft.BFTUpdate;
+import com.radixdlt.consensus.bft.BFTUpdateProcessor;
 import com.radixdlt.consensus.bft.SyncVerticesRequestProcessor;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.Vote;
@@ -75,7 +76,7 @@ import org.apache.logging.log4j.Logger;
  * Manages Epochs and the BFT instance (which is mostly epoch agnostic) associated with each epoch
  */
 @NotThreadSafe
-public final class EpochManager implements SyncVerticesRequestProcessor {
+public final class EpochManager implements SyncVerticesRequestProcessor, BFTUpdateProcessor {
 	/**
 	 * A sender of GetEpoch RPC requests/responses
 	 */
@@ -133,6 +134,7 @@ public final class EpochManager implements SyncVerticesRequestProcessor {
 	private VerifiedLedgerHeaderAndProof lastConstructed = null;
 	private EpochChange currentEpoch;
 	private VertexStoreSyncEventProcessor vertexStoreEventProcessor;
+	private BFTUpdateProcessor syncUpdateProcessor;
 	private SyncVerticesRequestProcessor syncRequestProcessor;
 	private BFTEventProcessor bftEventProcessor;
 	private int numQueuedConsensusEvents = 0;
@@ -179,6 +181,7 @@ public final class EpochManager implements SyncVerticesRequestProcessor {
 			this.bftEventProcessor =  EmptyBFTEventProcessor.INSTANCE;
 			this.vertexStoreEventProcessor = EmptyVertexStoreEventProcessor.INSTANCE;
 			this.syncRequestProcessor = req -> { };
+			this.syncUpdateProcessor = update -> { };
 			return;
 		}
 
@@ -198,6 +201,7 @@ public final class EpochManager implements SyncVerticesRequestProcessor {
 		);
 		VertexStoreSync vertexStoreSync = vertexStoreSyncFactory.create(vertexStore);
 		this.vertexStoreEventProcessor = vertexStoreSync;
+		this.syncUpdateProcessor = vertexStoreSync;
 		this.syncRequestProcessor = vertexStoreSyncVerticesRequestProcessorFactory.create(vertexStore);
 
 		BFTInfoSender infoSender = new BFTInfoSender() {
@@ -394,8 +398,10 @@ public final class EpochManager implements SyncVerticesRequestProcessor {
 		bftEventProcessor.processLocalTimeout(localTimeout.getView());
 	}
 
+	@Override
 	public void processBFTUpdate(BFTUpdate update) {
 		bftEventProcessor.processBFTUpdate(update);
+		syncUpdateProcessor.processBFTUpdate(update);
 	}
 
 	@Override

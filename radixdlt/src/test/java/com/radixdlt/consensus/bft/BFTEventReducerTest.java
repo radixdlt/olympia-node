@@ -123,14 +123,6 @@ public class BFTEventReducerTest {
 	}
 
 	@Test
-	public void when_processing_local_sync__then_should_process_it_via_vertex_store() {
-		BFTUpdate update = mock(BFTUpdate.class);
-		when(update.getInsertedVertex()).thenReturn(mock(VerifiedVertex.class));
-		reducer.processBFTUpdate(update);
-		verify(vertexStoreSync, times(1)).processLocalSync(eq(update));
-	}
-
-	@Test
 	public void when_process_vote_and_new_qc_not_synced__then_bft_update_should_cause_it_to_process_it() {
 		Vote vote = mock(Vote.class);
 		when(vote.getAuthor()).thenReturn(mock(BFTNode.class));

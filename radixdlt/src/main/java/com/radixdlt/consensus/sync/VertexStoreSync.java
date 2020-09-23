@@ -26,6 +26,7 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.VertexStoreSyncEventProcessor;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTUpdate;
+import com.radixdlt.consensus.bft.BFTUpdateProcessor;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.bft.VerifiedVertex;
@@ -49,7 +50,7 @@ import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class VertexStoreSync implements VertexStoreSyncEventProcessor {
+public class VertexStoreSync implements VertexStoreSyncEventProcessor, BFTUpdateProcessor {
 	public interface GetVerticesRequest {
 		Hash getVertexId();
 		int getCount();
@@ -350,8 +351,9 @@ public class VertexStoreSync implements VertexStoreSyncEventProcessor {
 		}
 	}
 
-	public void processLocalSync(BFTUpdate update) {
-		log.debug("LOCAL_SYNC: Processed {}", update);
+	@Override
+	public void processBFTUpdate(BFTUpdate update) {
+		log.debug("BFTUpdate: Processed {}", update);
 		syncing.remove(update.getInsertedVertex().getId());
 	}
 

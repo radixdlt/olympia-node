@@ -23,13 +23,13 @@ import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
-import com.radixdlt.consensus.VertexStoreSyncEventProcessor;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.SyncVerticesRequestProcessor;
 import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.liveness.PacemakerRx;
+import com.radixdlt.consensus.sync.VertexStoreSync;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.utils.ThreadFactories;
 import io.reactivex.rxjava3.core.Observable;
@@ -70,7 +70,7 @@ public class BFTRunner implements ModuleRunner {
 		PacemakerRx pacemakerRx,
 		SyncVerticesRPCRx rpcRx,
 		BFTEventProcessor bftEventProcessor,
-		VertexStoreSyncEventProcessor vertexStoreEventProcessor,
+		VertexStoreSync vertexStoreSync,
 		SyncVerticesRequestProcessor requestProcessor,
 		@Named("self") BFTNode self
 	) {
@@ -104,16 +104,19 @@ public class BFTRunner implements ModuleRunner {
 				.doOnNext(requestProcessor::processGetVerticesRequest),
 			rpcRx.responses()
 				.observeOn(singleThreadScheduler)
-				.doOnNext(vertexStoreEventProcessor::processGetVerticesResponse),
+				.doOnNext(vertexStoreSync::processGetVerticesResponse),
 			rpcRx.errorResponses()
 				.observeOn(singleThreadScheduler)
-				.doOnNext(vertexStoreEventProcessor::processGetVerticesErrorResponse),
+				.doOnNext(vertexStoreSync::processGetVerticesErrorResponse),
 			bftUpdates
 				.observeOn(singleThreadScheduler)
-				.doOnNext(bftEventProcessor::processBFTUpdate),
+				.doOnNext(update -> {
+					bftEventProcessor.processBFTUpdate(update);
+					vertexStoreSync.processBFTUpdate(update);
+				}),
 			ledgerUpdates
 				.observeOn(singleThreadScheduler)
-				.doOnNext(vertexStoreEventProcessor::processLedgerUpdate)
+				.doOnNext(vertexStoreSync::processLedgerUpdate)
 		));
 
 		this.events = eventCoordinatorEvents
