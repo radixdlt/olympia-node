@@ -40,7 +40,6 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
 import java.util.Optional;
-import org.apache.logging.log4j.LogManager;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -103,8 +102,7 @@ public class BFTEventReducerTest {
 			counters,
 			infoSender,
 			System::currentTimeMillis,
-			hasher,
-			LogManager.getLogger()
+			hasher
 		);
 	}
 

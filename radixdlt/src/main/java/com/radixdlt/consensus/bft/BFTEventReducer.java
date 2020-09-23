@@ -46,6 +46,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.FormattedMessage;
 
@@ -121,7 +122,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private final RTTStatistics rttStatistics = new RTTStatistics();
 	private final Hasher hasher;
 	private boolean synchedLog = false;
-	private final Logger log;
+	private final Logger log = LogManager.getLogger();
 
 	public interface EndOfEpochSender {
 		void sendEndOfEpoch(VerifiedLedgerHeaderAndProof header);
@@ -141,8 +142,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		SystemCounters counters,
 		BFTInfoSender infoSender,
 		TimeSupplier timeSupplier,
-		Hasher hasher,
-		Logger log
+		Hasher hasher
 	) {
 		this.self = Objects.requireNonNull(self);
 		this.nextCommandGenerator = Objects.requireNonNull(nextCommandGenerator);
@@ -158,7 +158,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		this.infoSender = Objects.requireNonNull(infoSender);
 		this.timeSupplier = Objects.requireNonNull(timeSupplier);
 		this.hasher = Objects.requireNonNull(hasher);
-		this.log = Objects.requireNonNull(log);
 	}
 
 	// Hotstuff's Event-Driven OnNextSyncView
