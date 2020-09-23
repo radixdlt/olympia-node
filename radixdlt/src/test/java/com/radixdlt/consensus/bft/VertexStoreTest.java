@@ -37,7 +37,7 @@ import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.VoteData;
-import com.radixdlt.consensus.bft.VertexStore.SyncedVertexSender;
+import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.Hash;
@@ -60,7 +60,7 @@ public class VertexStoreTest {
 	private VertexStore vertexStore;
 	private Ledger ledger;
 	private VertexStoreEventSender vertexStoreEventSender;
-	private SyncedVertexSender syncedVertexSender;
+	private BFTUpdateSender bftUpdateSender;
 	private SystemCounters counters;
 
 	@Before
@@ -71,7 +71,7 @@ public class VertexStoreTest {
 		when(this.ledger.prepare(any())).thenReturn(mock(LedgerHeader.class));
 		this.vertexStoreEventSender = mock(VertexStoreEventSender.class);
 		this.counters = mock(SystemCounters.class);
-		this.syncedVertexSender = mock(SyncedVertexSender.class);
+		this.bftUpdateSender = mock(BFTUpdateSender.class);
 
 		this.genesisHash = mock(Hash.class);
 		this.genesisVertex = new VerifiedVertex(UnverifiedVertex.createGenesis(mock(LedgerHeader.class)), genesisHash);
@@ -79,8 +79,7 @@ public class VertexStoreTest {
 		this.vertexStore = new VertexStore(
 			genesisVertex,
 			rootQC,
-			ledger,
-			syncedVertexSender,
+			ledger, bftUpdateSender,
 			vertexStoreEventSender,
 			counters
 		);
@@ -135,8 +134,7 @@ public class VertexStoreTest {
 			new VertexStore(
 				genesisVertex,
 				badRootQC,
-				ledger,
-				syncedVertexSender,
+				ledger, bftUpdateSender,
 				vertexStoreEventSender,
 				counters
 			)
@@ -150,8 +148,7 @@ public class VertexStoreTest {
 			genesisVertex,
 			rootQC,
 			Collections.singletonList(nextVertex),
-			ledger,
-			syncedVertexSender,
+			ledger, bftUpdateSender,
 			vertexStoreEventSender,
 			counters
 		);
@@ -166,8 +163,7 @@ public class VertexStoreTest {
 				genesisVertex,
 				rootQC,
 				Collections.singletonList(this.nextVertex.apply(mock(Hash.class))),
-				ledger,
-				syncedVertexSender,
+				ledger, bftUpdateSender,
 				vertexStoreEventSender,
 				counters
 			)
@@ -211,8 +207,7 @@ public class VertexStoreTest {
 				genesisVertex,
 				rootQC,
 				Arrays.asList(vertex1, vertex2, vertex3, vertex4, vertex5),
-				ledger,
-				syncedVertexSender,
+				ledger, bftUpdateSender,
 				vertexStoreEventSender,
 				counters
 			);

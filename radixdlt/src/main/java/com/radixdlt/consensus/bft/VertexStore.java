@@ -48,8 +48,8 @@ import org.apache.logging.log4j.Logger;
  */
 @NotThreadSafe
 public final class VertexStore {
-	public interface SyncedVertexSender {
-		void sendSyncedVertex(VerifiedVertex vertex);
+	public interface BFTUpdateSender {
+		void sendBFTUpdate(BFTUpdate bftUpdate);
 	}
 
 	public interface VertexStoreEventSender {
@@ -59,7 +59,7 @@ public final class VertexStore {
 
 	private final Logger log = LogManager.getLogger();
 	private final VertexStoreEventSender vertexStoreEventSender;
-	private final SyncedVertexSender syncedVertexSender;
+	private final BFTUpdateSender bftUpdateSender;
 	private final Ledger ledger;
 	private final SystemCounters counters;
 	private final Map<Hash, VerifiedVertex> vertices = new HashMap<>();
@@ -73,7 +73,7 @@ public final class VertexStore {
 		VerifiedVertex rootVertex,
 		QuorumCertificate rootQC,
 		Ledger ledger,
-		SyncedVertexSender syncedVertexSender,
+		BFTUpdateSender bftUpdateSender,
 		VertexStoreEventSender vertexStoreEventSender,
 		SystemCounters counters
 	) {
@@ -82,7 +82,7 @@ public final class VertexStore {
 			rootQC,
 			Collections.emptyList(),
 			ledger,
-			syncedVertexSender,
+			bftUpdateSender,
 			vertexStoreEventSender,
 			counters
 		);
@@ -93,13 +93,13 @@ public final class VertexStore {
 		QuorumCertificate rootQC,
 		List<VerifiedVertex> vertices,
 		Ledger ledger,
-		SyncedVertexSender syncedVertexSender,
+		BFTUpdateSender bftUpdateSender,
 		VertexStoreEventSender vertexStoreEventSender,
 		SystemCounters counters
 	) {
 		this.ledger = Objects.requireNonNull(ledger);
 		this.vertexStoreEventSender = Objects.requireNonNull(vertexStoreEventSender);
-		this.syncedVertexSender = Objects.requireNonNull(syncedVertexSender);
+		this.bftUpdateSender = Objects.requireNonNull(bftUpdateSender);
 		this.counters = Objects.requireNonNull(counters);
 
 		Objects.requireNonNull(rootVertex);
@@ -191,7 +191,9 @@ public final class VertexStore {
 
 		vertices.put(vertex.getId(), vertex);
 		updateVertexStoreSize();
-		syncedVertexSender.sendSyncedVertex(vertex);
+
+		final BFTUpdate update = new BFTUpdate(vertex);
+		bftUpdateSender.sendBFTUpdate(update);
 
 		return new BFTHeader(vertex.getView(), vertex.getId(), ledgerHeader);
 	}

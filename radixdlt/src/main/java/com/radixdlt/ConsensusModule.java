@@ -27,7 +27,7 @@ import com.radixdlt.consensus.VertexStoreSyncVerticesRequestProcessorFactory;
 import com.radixdlt.consensus.bft.BFTBuilder;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.BFTFactory;
-import com.radixdlt.consensus.bft.VertexStore.SyncedVertexSender;
+import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
 import com.radixdlt.consensus.sync.VertexStoreSync;
 import com.radixdlt.consensus.sync.VertexStoreSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.VertexStoreSyncVerticesRequestProcessor;
@@ -137,14 +137,14 @@ public final class ConsensusModule extends AbstractModule {
 	@Provides
 	private VertexStoreFactory vertexStoreFactory(
 		VertexStoreEventSender vertexStoreEventSender,
-		SyncedVertexSender syncedVertexSender,
+		BFTUpdateSender updateSender,
 		SystemCounters counters
 	) {
 		return (genesisVertex, genesisQC, ledger) -> new VertexStore(
 			genesisVertex,
 			genesisQC,
 			ledger,
-			syncedVertexSender,
+			updateSender,
 			vertexStoreEventSender,
 			counters
 		);

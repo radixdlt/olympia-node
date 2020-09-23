@@ -34,6 +34,7 @@ import com.radixdlt.consensus.VertexStoreSyncEventProcessor;
 import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.VertexStoreSyncFactory;
 import com.radixdlt.consensus.VertexStoreSyncVerticesRequestProcessorFactory;
+import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.SyncVerticesRequestProcessor;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.Vote;
@@ -55,7 +56,6 @@ import com.radixdlt.consensus.sync.VertexStoreSync;
 import com.radixdlt.consensus.sync.VertexStoreSync.GetVerticesRequest;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.sync.LocalSyncRequest;
 import java.util.ArrayList;
@@ -394,8 +394,8 @@ public final class EpochManager implements SyncVerticesRequestProcessor {
 		bftEventProcessor.processLocalTimeout(localTimeout.getView());
 	}
 
-	public void processLocalSync(Hash synced) {
-		bftEventProcessor.processLocalSync(synced);
+	public void processBFTUpdate(BFTUpdate update) {
+		bftEventProcessor.processBFTUpdate(update);
 	}
 
 	@Override

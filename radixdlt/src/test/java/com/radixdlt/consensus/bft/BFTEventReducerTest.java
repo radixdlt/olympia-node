@@ -124,13 +124,14 @@ public class BFTEventReducerTest {
 
 	@Test
 	public void when_processing_local_sync__then_should_process_it_via_vertex_store() {
-		Hash vertexId = mock(Hash.class);
-		reducer.processLocalSync(vertexId);
-		verify(vertexStoreSync, times(1)).processLocalSync(eq(vertexId));
+		BFTUpdate update = mock(BFTUpdate.class);
+		when(update.getInsertedVertex()).thenReturn(mock(VerifiedVertex.class));
+		reducer.processBFTUpdate(update);
+		verify(vertexStoreSync, times(1)).processLocalSync(eq(update));
 	}
 
 	@Test
-	public void when_process_vote_and_new_qc_not_synced__then_local_sync_should_cause_it_to_process_it() {
+	public void when_process_vote_and_new_qc_not_synced__then_bft_update_should_cause_it_to_process_it() {
 		Vote vote = mock(Vote.class);
 		when(vote.getAuthor()).thenReturn(mock(BFTNode.class));
 		QuorumCertificate qc = mock(QuorumCertificate.class);
@@ -147,7 +148,11 @@ public class BFTEventReducerTest {
 		verify(pacemaker, never()).processQC(any());
 
 		when(pacemaker.processQC(any())).thenReturn(Optional.empty());
-		reducer.processLocalSync(id);
+		BFTUpdate update = mock(BFTUpdate.class);
+		VerifiedVertex v = mock(VerifiedVertex.class);
+		when(v.getId()).thenReturn(id);
+		when(update.getInsertedVertex()).thenReturn(v);
+		reducer.processBFTUpdate(update);
 		verify(safetyRules, never()).process(eq(qc));
 		verify(pacemaker, never()).processQC(eq(view));
 	}

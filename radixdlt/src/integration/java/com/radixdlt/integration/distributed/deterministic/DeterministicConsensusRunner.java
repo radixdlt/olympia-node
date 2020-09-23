@@ -18,6 +18,7 @@
 package com.radixdlt.integration.distributed.deterministic;
 
 import com.radixdlt.consensus.ConsensusEvent;
+import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.epoch.EpochManager;
@@ -25,7 +26,6 @@ import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.sync.VertexStoreSync.GetVerticesRequest;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import java.util.Objects;
 import javax.inject.Inject;
@@ -51,8 +51,8 @@ public final class DeterministicConsensusRunner {
 			this.epochManager.processConsensusEvent((ConsensusEvent) message);
 		} else if (message instanceof LocalTimeout) {
 			this.epochManager.processLocalTimeout((LocalTimeout) message);
-		} else if (message instanceof Hash) {
-			this.epochManager.processLocalSync((Hash) message);
+		} else if (message instanceof BFTUpdate) {
+			this.epochManager.processBFTUpdate((BFTUpdate) message);
 		} else if (message instanceof GetVerticesRequest) {
 			this.epochManager.processGetVerticesRequest((GetVerticesRequest) message);
 		} else if (message instanceof GetVerticesResponse) {

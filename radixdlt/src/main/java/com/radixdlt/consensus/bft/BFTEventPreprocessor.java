@@ -91,14 +91,10 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		throw new IllegalStateException("Unexpected consensus event: " + event);
 	}
 
-	/**
-	 * Signal that vertexStore now contains the given vertexId.
-	 * Executes events which are dependent on this vertex
-	 *
-	 * @param vertexId the id of the vertex which is now guaranteed be synced.
-	 */
 	@Override
-	public void processLocalSync(Hash vertexId) {
+	public void processBFTUpdate(BFTUpdate update) {
+		Hash vertexId = update.getInsertedVertex().getId();
+
 		log.trace("{}: LOCAL_SYNC: {}", this.self::getSimpleName, () -> vertexId);
 		for (SyncQueue queue : queues.getQueues()) {
 			if (peekAndExecute(queue, vertexId)) {
@@ -109,7 +105,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 			}
 		}
 
-		forwardTo.processLocalSync(vertexId);
+		forwardTo.processBFTUpdate(update);
 	}
 
 	@Override

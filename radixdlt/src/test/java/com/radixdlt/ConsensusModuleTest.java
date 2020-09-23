@@ -31,7 +31,7 @@ import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.VertexStore.SyncedVertexSender;
+import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.sync.VertexStoreSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.VertexStoreSyncVerticesRequestProcessor.SyncVerticesResponseSender;
@@ -45,7 +45,7 @@ public class ConsensusModuleTest {
 	private static class ExternalConsensusModule extends AbstractModule {
 		@Override
 		protected void configure() {
-			bind(SyncedVertexSender.class).toInstance(mock(SyncedVertexSender.class));
+			bind(BFTUpdateSender.class).toInstance(mock(BFTUpdateSender.class));
 			bind(Ledger.class).toInstance(mock(Ledger.class));
 			bind(SyncLedgerRequestSender.class).toInstance(mock(SyncLedgerRequestSender.class));
 			bind(BFTEventSender.class).toInstance(mock(BFTEventSender.class));

@@ -23,11 +23,11 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 import com.radixdlt.consensus.sync.VertexStoreSync.GetVerticesRequest;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
@@ -40,6 +40,7 @@ public class EpochManagerRunnerTest {
 		BFTEventsRx networkRx = mock(BFTEventsRx.class);
 
 		Subject<EpochsLedgerUpdate> ledgerUpdates = PublishSubject.create();
+		Subject<BFTUpdate> bftUpdates = PublishSubject.create();
 
 		EpochManager epochManager = mock(EpochManager.class);
 
@@ -64,15 +65,11 @@ public class EpochManagerRunnerTest {
 		when(syncEpochsRPCRx.epochRequests()).thenReturn(Observable.never());
 		when(syncEpochsRPCRx.epochResponses()).thenReturn(Observable.never());
 
-		VertexSyncRx vertexSyncRx = mock(VertexSyncRx.class);
-		Hash id = mock(Hash.class);
-		when(vertexSyncRx.syncedVertices()).thenReturn(Observable.just(id).concatWith(Observable.never()));
-
 		EpochManagerRunner consensusRunner = new EpochManagerRunner(
 			ledgerUpdates,
+			bftUpdates,
 			networkRx,
 			pacemakerRx,
-			vertexSyncRx,
 			syncVerticesRPCRx,
 			syncEpochsRPCRx,
 			epochManager
@@ -82,13 +79,15 @@ public class EpochManagerRunnerTest {
 
 		EpochsLedgerUpdate epochsLedgerUpdate = mock(EpochsLedgerUpdate.class);
 		ledgerUpdates.onNext(epochsLedgerUpdate);
+		BFTUpdate bftUpdate = mock(BFTUpdate.class);
+		bftUpdates.onNext(bftUpdate);
 
 		verify(epochManager, timeout(1000).times(1)).processLedgerUpdate(eq(epochsLedgerUpdate));
 		verify(epochManager, timeout(1000).times(1)).processConsensusEvent(eq(vote));
 		verify(epochManager, timeout(1000).times(1)).processConsensusEvent(eq(proposal));
 		verify(epochManager, timeout(1000).times(1)).processConsensusEvent(eq(newView));
 		verify(epochManager, timeout(1000).times(1)).processLocalTimeout(eq(timeout));
-		verify(epochManager, timeout(1000).times(1)).processLocalSync(eq(id));
+		verify(epochManager, timeout(1000).times(1)).processBFTUpdate(eq(bftUpdate));
 		verify(epochManager, timeout(1000).times(1)).processGetVerticesRequest(eq(request));
 
 		consensusRunner.shutdown();

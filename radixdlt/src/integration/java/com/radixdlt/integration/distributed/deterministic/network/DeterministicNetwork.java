@@ -27,7 +27,7 @@ import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
-import com.radixdlt.consensus.bft.VertexStore.SyncedVertexSender;
+import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.sync.VertexStoreSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.VertexStoreSyncVerticesRequestProcessor.SyncVerticesResponseSender;
@@ -61,7 +61,7 @@ public final class DeterministicNetwork {
 		VertexStoreEventSender,
 		SyncVerticesRequestSender,
 		SyncVerticesResponseSender,
-		SyncedVertexSender,
+		BFTUpdateSender,
 		EpochsLedgerUpdateSender,
 		LocalTimeoutSender,
 		SyncEpochsRPCSender {
@@ -160,7 +160,7 @@ public final class DeterministicNetwork {
 	}
 
 	void handleMessage(MessageRank rank, ControlledMessage controlledMessage) {
-		log.info("Sent message {}", controlledMessage);
+		log.debug("Sent message {}", controlledMessage);
 		if (!this.messageMutator.mutate(rank, controlledMessage, this.messageQueue)) {
 			// If nothing processes this message, we just add it to the queue
 			this.messageQueue.add(rank, controlledMessage);

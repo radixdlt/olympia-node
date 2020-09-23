@@ -21,7 +21,7 @@ import com.google.common.collect.Lists;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.integration.distributed.deterministic.DeterministicTest;
 import com.radixdlt.integration.distributed.deterministic.network.ChannelId;
 import com.radixdlt.integration.distributed.deterministic.network.ControlledMessage;
@@ -51,11 +51,11 @@ public class OneSlowNodeTest {
 			processingSequence.add(Pair.of(ChannelId.of(3, curLeader), NewView.class));
 
 			processingSequence.add(Pair.of(ChannelId.of(curLeader, 1), Proposal.class));
-			processingSequence.add(Pair.of(ChannelId.of(1, 1), Hash.class));
+			processingSequence.add(Pair.of(ChannelId.of(1, 1), BFTUpdate.class));
 			processingSequence.add(Pair.of(ChannelId.of(curLeader, 2), Proposal.class));
-			processingSequence.add(Pair.of(ChannelId.of(2, 2), Hash.class));
+			processingSequence.add(Pair.of(ChannelId.of(2, 2), BFTUpdate.class));
 			processingSequence.add(Pair.of(ChannelId.of(curLeader, 3), Proposal.class));
-			processingSequence.add(Pair.of(ChannelId.of(3, 3), Hash.class));
+			processingSequence.add(Pair.of(ChannelId.of(3, 3), BFTUpdate.class));
 
 			processingSequence.add(Pair.of(ChannelId.of(1, curLeader), Vote.class));
 			processingSequence.add(Pair.of(ChannelId.of(2, curLeader), Vote.class));

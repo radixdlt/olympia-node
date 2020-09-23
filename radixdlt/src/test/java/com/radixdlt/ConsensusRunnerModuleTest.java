@@ -31,7 +31,7 @@ import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.consensus.EpochManagerRunner;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
-import com.radixdlt.consensus.VertexSyncRx;
+import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
@@ -49,6 +49,7 @@ public class ConsensusRunnerModuleTest {
 				bind(BFTEventsRx.class).toInstance(bftEventsRx);
 
 				bind(Key.get(new TypeLiteral<Observable<EpochsLedgerUpdate>>() { })).toInstance(PublishSubject.create());
+				bind(Key.get(new TypeLiteral<Observable<BFTUpdate>>() { })).toInstance(PublishSubject.create());
 
 				SyncEpochsRPCRx syncEpochsRPCRx = mock(SyncEpochsRPCRx.class);
 				when(syncEpochsRPCRx.epochResponses()).thenReturn(Observable.never());
@@ -60,10 +61,6 @@ public class ConsensusRunnerModuleTest {
 				when(syncVerticesRPCRx.requests()).thenReturn(Observable.never());
 				when(syncVerticesRPCRx.responses()).thenReturn(Observable.never());
 				bind(SyncVerticesRPCRx.class).toInstance(syncVerticesRPCRx);
-
-				VertexSyncRx vertexSyncRx = mock(VertexSyncRx.class);
-				when(vertexSyncRx.syncedVertices()).thenReturn(Observable.never());
-				bind(VertexSyncRx.class).toInstance(vertexSyncRx);
 
 				PacemakerRx pacemakerRx = mock(PacemakerRx.class);
 				when(pacemakerRx.localTimeouts()).thenReturn(Observable.never());

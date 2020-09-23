@@ -25,6 +25,7 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.VertexStoreSyncEventProcessor;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.bft.VerifiedVertex;
@@ -349,9 +350,9 @@ public class VertexStoreSync implements VertexStoreSyncEventProcessor {
 		}
 	}
 
-	public void processLocalSync(Hash vertexId) {
-		log.debug("LOCAL_SYNC: Processed {}", vertexId);
-		syncing.remove(vertexId);
+	public void processLocalSync(BFTUpdate update) {
+		log.debug("LOCAL_SYNC: Processed {}", update);
+		syncing.remove(update.getInsertedVertex().getId());
 	}
 
 	public void clearSyncs() {

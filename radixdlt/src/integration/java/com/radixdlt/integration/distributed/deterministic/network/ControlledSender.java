@@ -17,6 +17,7 @@
 
 package com.radixdlt.integration.distributed.deterministic.network;
 
+import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.sync.VertexStoreSync.GetVerticesRequest;
@@ -78,8 +79,8 @@ public final class ControlledSender implements DeterministicSender {
 	}
 
 	@Override
-	public void sendSyncedVertex(VerifiedVertex vertex) {
-		handleMessage(MessageRank.EARLIEST_POSSIBLE, new ControlledMessage(this.senderIndex, this.senderIndex, vertex.getId()));
+	public void sendBFTUpdate(BFTUpdate update) {
+		handleMessage(MessageRank.EARLIEST_POSSIBLE, new ControlledMessage(this.senderIndex, this.senderIndex, update));
 	}
 
 	@Override

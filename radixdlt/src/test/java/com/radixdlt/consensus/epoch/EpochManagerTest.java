@@ -46,6 +46,7 @@ import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.VertexStoreSyncFactory;
 import com.radixdlt.consensus.VertexStoreSyncVerticesRequestProcessorFactory;
+import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.sync.VertexStoreSync;
 import com.radixdlt.consensus.sync.VertexStoreSync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexStoreSyncVerticesRequestProcessor;
@@ -163,7 +164,7 @@ public class EpochManagerTest {
 	@Test
 	public void when_no_epoch_change__then_processing_events_should_not_fail() {
 		epochManager.processLocalTimeout(mock(LocalTimeout.class));
-		epochManager.processLocalSync(mock(Hash.class));
+		epochManager.processBFTUpdate(mock(BFTUpdate.class));
 		epochManager.processGetVerticesRequest(mock(GetVerticesRequest.class));
 		epochManager.processGetVerticesResponse(mock(GetVerticesResponse.class));
 		epochManager.processLedgerUpdate(mock(EpochsLedgerUpdate.class));
@@ -356,9 +357,9 @@ public class EpochManagerTest {
 		assertThatThrownBy(() -> epochManager.processConsensusEvent(unknownEvent))
 			.isInstanceOf(IllegalStateException.class);
 
-		Hash localSync = mock(Hash.class);
-		epochManager.processLocalSync(localSync);
-		verify(eventProcessor, times(1)).processLocalSync(eq(localSync));
+		BFTUpdate update = mock(BFTUpdate.class);
+		epochManager.processBFTUpdate(update);
+		verify(eventProcessor, times(1)).processBFTUpdate(eq(update));
 
 		LocalTimeout localTimeout = mock(LocalTimeout.class);
 		when(localTimeout.getEpoch()).thenReturn(2L);

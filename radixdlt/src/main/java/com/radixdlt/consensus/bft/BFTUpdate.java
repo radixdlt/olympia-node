@@ -17,44 +17,19 @@
 
 package com.radixdlt.consensus.bft;
 
-import com.radixdlt.consensus.BFTEventProcessor;
-import com.radixdlt.consensus.NewView;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.Vote;
+import java.util.Objects;
 
 /**
- * An empty BFT event processor
+ * An update to the BFT state
  */
-public enum EmptyBFTEventProcessor implements BFTEventProcessor {
-	INSTANCE;
+public final class BFTUpdate {
+	private final VerifiedVertex insertedVertex;
 
-	@Override
-	public void processVote(Vote vote) {
-		// No-op
+	public BFTUpdate(VerifiedVertex insertedVertex) {
+		this.insertedVertex = Objects.requireNonNull(insertedVertex);
 	}
 
-	@Override
-	public void processNewView(NewView newView) {
-		// No-op
-	}
-
-	@Override
-	public void processProposal(Proposal proposal) {
-		// No-op
-	}
-
-	@Override
-	public void processLocalTimeout(View view) {
-		// No-op
-	}
-
-	@Override
-	public void processBFTUpdate(BFTUpdate update) {
-		// No-op
-	}
-
-	@Override
-	public void start() {
-		// No-op
+	public VerifiedVertex getInsertedVertex() {
+		return insertedVertex;
 	}
 }

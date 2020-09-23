@@ -18,6 +18,7 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.ModuleRunner;
+import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 
@@ -56,9 +57,9 @@ public final class EpochManagerRunner implements ModuleRunner {
 	@Inject
 	public EpochManagerRunner(
 		Observable<EpochsLedgerUpdate> ledgerUpdates,
+		Observable<BFTUpdate> bftUpdates,
 		BFTEventsRx networkRx,
 		PacemakerRx pacemakerRx,
-		VertexSyncRx vertexSyncRx,
 		SyncVerticesRPCRx rpcRx,
 		SyncEpochsRPCRx epochsRPCRx,
 		EpochManager epochManager
@@ -73,6 +74,9 @@ public final class EpochManagerRunner implements ModuleRunner {
 			ledgerUpdates
 				.observeOn(singleThreadScheduler)
 				.doOnNext(epochManager::processLedgerUpdate),
+			bftUpdates
+				.observeOn(singleThreadScheduler)
+				.doOnNext(epochManager::processBFTUpdate),
 			pacemakerRx.localTimeouts()
 				.observeOn(singleThreadScheduler)
 				.doOnNext(epochManager::processLocalTimeout),
@@ -93,10 +97,7 @@ public final class EpochManagerRunner implements ModuleRunner {
 				.doOnNext(epochManager::processGetEpochRequest),
 			epochsRPCRx.epochResponses()
 				.observeOn(singleThreadScheduler)
-				.doOnNext(epochManager::processGetEpochResponse),
-			vertexSyncRx.syncedVertices()
-				.observeOn(singleThreadScheduler)
-				.doOnNext(epochManager::processLocalSync)
+				.doOnNext(epochManager::processGetEpochResponse)
 		));
 
 		this.events = eventCoordinatorEvents

@@ -189,9 +189,10 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	}
 
 	@Override
-	public void processLocalSync(Hash vertexId) {
-		vertexStoreSync.processLocalSync(vertexId);
+	public void processBFTUpdate(BFTUpdate update) {
+		vertexStoreSync.processLocalSync(update);
 
+		Hash vertexId = update.getInsertedVertex().getId();
 		QuorumCertificate qc = unsyncedQCs.remove(vertexId);
 		if (qc != null) {
 			if (vertexStoreSync.syncToQC(qc, vertexStore.getHighestCommittedQC(), null)) {
