@@ -15,19 +15,11 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.epoch;
 
-import com.radixdlt.crypto.Hash;
-import io.reactivex.rxjava3.core.Observable;
+import com.radixdlt.consensus.bft.VertexStore;
+import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
 
-/**
- * Provider of Rx stream of events coming from Vertex Store
- */
-public interface VertexSyncRx {
-
-	/**
-	 * Retrieve rx flow of vertices which have been synced
-	 * @return flow of vertex hashes
-	 */
-	Observable<Hash> syncedVertices();
+public interface BFTSyncRequestProcessorFactory {
+	VertexStoreBFTSyncRequestProcessor create(VertexStore vertexStore);
 }

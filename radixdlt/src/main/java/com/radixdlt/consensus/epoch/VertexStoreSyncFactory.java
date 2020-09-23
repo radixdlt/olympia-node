@@ -15,11 +15,11 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.epoch;
 
 import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
+import com.radixdlt.consensus.sync.VertexStoreSync;
 
-public interface BFTSyncRequestProcessorFactory {
-	VertexStoreBFTSyncRequestProcessor create(VertexStore vertexStore);
+public interface VertexStoreSyncFactory {
+	VertexStoreSync create(VertexStore vertexStore);
 }
