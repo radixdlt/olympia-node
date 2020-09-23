@@ -43,7 +43,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.NotThreadSafe;
 import org.apache.logging.log4j.Logger;
@@ -280,7 +279,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		// TODO: check if there are any vertices which haven't been local sync processed yet
 		if (requiresCommittedStateSync(syncState)) {
 			syncState.fetched.sort(Comparator.comparing(VerifiedVertex::getView));
-			List<VerifiedVertex> nonRootVertices = syncState.fetched.stream().skip(1).collect(Collectors.toList());
+			List<VerifiedVertex> nonRootVertices = syncState.fetched.subList(1, syncState.fetched.size());
 			rebuild(syncState.fetched.get(0), syncState.fetched.get(1).getQC(), syncState.committedQC, nonRootVertices);
 		} else {
 			log.info("SYNC_STATE: skipping rebuild");
@@ -508,9 +507,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		vertices.put(vertex.getId(), vertex);
 		updateVertexStoreSize();
 
-		if (syncing.containsKey(vertex.getId())) {
-			this.syncedVertexSender.sendSyncedVertex(vertex);
-		}
+		this.syncedVertexSender.sendSyncedVertex(vertex);
 
 		return new BFTHeader(vertex.getView(), vertex.getId(), ledgerHeader);
 	}
