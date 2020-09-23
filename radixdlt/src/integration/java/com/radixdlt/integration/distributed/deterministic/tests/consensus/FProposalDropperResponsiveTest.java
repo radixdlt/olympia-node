@@ -46,7 +46,6 @@ public class FProposalDropperResponsiveTest {
 	private void runFProposalDropperResponsiveTest(int numNodes, Function<View, Set<Integer>> nodesToDropFunction) {
 		DeterministicTest.builder()
 			.numNodes(numNodes)
-			.alwaysSynced()
 			.messageSelector(MessageSelector.selectAndStopAfter(MessageSelector.randomSelector(random), NUM_STEPS))
 			.messageMutator(MessageMutator.dropTimeouts().andThen(dropNodes(numNodes, nodesToDropFunction)))
 			.build()

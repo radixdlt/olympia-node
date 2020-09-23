@@ -29,20 +29,15 @@ import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.bft.BFTBuilder;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTSyncRequestProcessor;
-import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
-import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker.TimeoutSender;
-import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
-import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.sync.VertexStoreSync;
 import com.radixdlt.consensus.sync.VertexStoreSync.SyncVerticesRequestSender;
@@ -160,14 +155,14 @@ public final class ConsensusModule extends AbstractModule {
 		SyncVerticesRequestSender requestSender,
 		SyncLedgerRequestSender syncLedgerRequestSender,
 		VertexStore vertexStore,
-		Ledger ledger
+		BFTConfiguration configuration
 	) {
 		return new VertexStoreSync(
 			vertexStore,
 			Comparator.comparingLong((LedgerHeader h) -> h.getAccumulatorState().getStateVersion()),
 			requestSender,
 			syncLedgerRequestSender,
-			ledger
+			configuration.getGenesisHeader()
 		);
 	}
 

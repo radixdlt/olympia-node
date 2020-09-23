@@ -19,7 +19,6 @@ package com.radixdlt.consensus.sync;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.BFTHeader;
-import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
@@ -46,6 +45,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
@@ -125,20 +125,20 @@ public class VertexStoreSync implements BFTSyncResponseProcessor, BFTUpdateProce
 	private final TreeMap<LedgerHeader, List<Hash>> committedSyncing;
 	private final SyncVerticesRequestSender requestSender;
 	private final SyncLedgerRequestSender syncLedgerRequestSender;
-	private final Ledger ledger;
+	private VerifiedLedgerHeaderAndProof currentLedgerHeader;
 
 	public VertexStoreSync(
 		VertexStore vertexStore,
 		Comparator<LedgerHeader> ledgerHeaderComparator,
 		SyncVerticesRequestSender requestSender,
 		SyncLedgerRequestSender syncLedgerRequestSender,
-		Ledger ledger
+		VerifiedLedgerHeaderAndProof currentLedgerHeader
 	) {
 		this.vertexStore = vertexStore;
 		this.committedSyncing = new TreeMap<>(ledgerHeaderComparator);
 		this.requestSender = requestSender;
 		this.syncLedgerRequestSender = syncLedgerRequestSender;
-		this.ledger = ledger;
+		this.currentLedgerHeader = Objects.requireNonNull(currentLedgerHeader);
 	}
 
 	@Override
@@ -245,23 +245,24 @@ public class VertexStoreSync implements BFTSyncResponseProcessor, BFTUpdateProce
 		ImmutableList<BFTNode> signers = ImmutableList.of(syncState.author);
 		syncState.fetched.addAll(response.getVertices());
 
-		ledger.ifCommitSynced(syncState.committedProof)
-			.then(() -> rebuildAndSyncQC(syncState))
-			.elseExecuteAndSendMessageOnSync(() -> {
-				syncState.setSyncStage(SyncStage.SYNC_TO_COMMIT);
-				committedSyncing.compute(syncState.committedProof.getRaw(), (header, syncing) -> {
-					if (syncing == null) {
-						syncing = new ArrayList<>();
-					}
-					syncing.add(syncState.localSyncId);
-					return syncing;
-				});
-				LocalSyncRequest localSyncRequest = new LocalSyncRequest(
-					syncState.committedProof,
-					signers
-				);
-				syncLedgerRequestSender.sendLocalSyncRequest(localSyncRequest);
+		// TODO: verify actually extends rather than just state version comparison
+		if (syncState.committedProof.getStateVersion() <= this.currentLedgerHeader.getStateVersion()) {
+			rebuildAndSyncQC(syncState);
+		} else {
+			syncState.setSyncStage(SyncStage.SYNC_TO_COMMIT);
+			committedSyncing.compute(syncState.committedProof.getRaw(), (header, syncing) -> {
+				if (syncing == null) {
+					syncing = new ArrayList<>();
+				}
+				syncing.add(syncState.localSyncId);
+				return syncing;
 			});
+			LocalSyncRequest localSyncRequest = new LocalSyncRequest(
+				syncState.committedProof,
+				signers
+			);
+			syncLedgerRequestSender.sendLocalSyncRequest(localSyncRequest);
+		}
 	}
 
 	private void processVerticesResponseForQCSync(Hash syncTo, SyncState syncState, GetVerticesResponse response) {

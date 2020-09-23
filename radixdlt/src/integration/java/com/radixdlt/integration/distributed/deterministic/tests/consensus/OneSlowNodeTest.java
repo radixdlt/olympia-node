@@ -68,7 +68,6 @@ public class OneSlowNodeTest {
 
 		DeterministicTest.builder()
 			.numNodes(numNodes)
-			.alwaysSynced()
 			.messageSelector(sequenceSelector(processingSequence))
 			.messageMutator(delayMessagesForNode(0))
 			.build()

@@ -232,19 +232,4 @@ public class StateComputerLedgerTest {
 		verify(mempool, times(1)).removeCommitted(eq(hash));
 		verify(ledgerUpdateSender, times(1)).sendLedgerUpdate(any());
 	}
-
-	@Test
-	public void when_check_sync_and_synced__then_return_sync_handler() {
-		VerifiedLedgerHeaderAndProof header = mock(VerifiedLedgerHeaderAndProof.class);
-		when(headerComparator.compare(eq(header), eq(currentLedgerHeader))).thenReturn(0);
-
-		Runnable onSynced = mock(Runnable.class);
-		Runnable onNotSynced = mock(Runnable.class);
-		stateComputerLedger
-			.ifCommitSynced(header)
-			.then(onSynced)
-			.elseExecuteAndSendMessageOnSync(onNotSynced);
-		verify(onSynced, times(1)).run();
-		verify(onNotSynced, never()).run();
-	}
 }

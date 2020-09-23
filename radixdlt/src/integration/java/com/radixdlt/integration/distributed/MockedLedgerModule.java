@@ -17,10 +17,7 @@
 
 package com.radixdlt.integration.distributed;
 
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.crypto.Hash;
-import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 
 import com.google.inject.AbstractModule;
@@ -47,18 +44,10 @@ public class MockedLedgerModule extends AbstractModule {
 				return LedgerHeader.create(
 					vertex.getParentHeader().getLedgerHeader().getEpoch(),
 					vertex.getView(),
-					new AccumulatorState(0, Hash.ZERO_HASH),
+					vertex.getParentHeader().getLedgerHeader().getAccumulatorState(),
 					0L,
 					false
 				);
-			}
-
-			@Override
-			public OnSynced ifCommitSynced(VerifiedLedgerHeaderAndProof header) {
-				return onSynced -> {
-					onSynced.run();
-					return notSynced -> { };
-				};
 			}
 
 			@Override

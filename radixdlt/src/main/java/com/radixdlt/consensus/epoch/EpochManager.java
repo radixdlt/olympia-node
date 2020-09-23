@@ -122,7 +122,7 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdatePro
 	private final SyncEpochsRPCSender epochsRPCSender;
 	private final PacemakerFactory pacemakerFactory;
 	private final VertexStoreFactory vertexStoreFactory;
-	private final BFTSyncRequestProcessorFactory BFTSyncRequestProcessorFactory;
+	private final BFTSyncRequestProcessorFactory bftSyncRequestProcessorFactory;
 	private final VertexStoreSyncFactory vertexStoreSyncFactory;
 	private final ProposerElectionFactory proposerElectionFactory;
 	private final SystemCounters counters;
@@ -154,7 +154,7 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdatePro
 		PacemakerFactory pacemakerFactory,
 		VertexStoreFactory vertexStoreFactory,
 		VertexStoreSyncFactory vertexStoreSyncFactory,
-		BFTSyncRequestProcessorFactory BFTSyncRequestProcessorFactory,
+		BFTSyncRequestProcessorFactory bftSyncRequestProcessorFactory,
 		ProposerElectionFactory proposerElectionFactory,
 		BFTFactory bftFactory,
 		SystemCounters counters,
@@ -169,7 +169,7 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdatePro
 		this.pacemakerFactory = Objects.requireNonNull(pacemakerFactory);
 		this.vertexStoreFactory = Objects.requireNonNull(vertexStoreFactory);
 		this.vertexStoreSyncFactory = Objects.requireNonNull(vertexStoreSyncFactory);
-		this.BFTSyncRequestProcessorFactory = BFTSyncRequestProcessorFactory;
+		this.bftSyncRequestProcessorFactory = bftSyncRequestProcessorFactory;
 		this.proposerElectionFactory = Objects.requireNonNull(proposerElectionFactory);
 		this.bftFactory = bftFactory;
 		this.counters = Objects.requireNonNull(counters);
@@ -209,7 +209,7 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdatePro
 		this.syncBFTUpdateProcessor = vertexStoreSync;
 		this.syncLedgerUpdateProcessor = vertexStoreSync;
 
-		this.syncRequestProcessor = BFTSyncRequestProcessorFactory.create(vertexStore);
+		this.syncRequestProcessor = bftSyncRequestProcessorFactory.create(vertexStore);
 
 		BFTInfoSender infoSender = new BFTInfoSender() {
 			@Override

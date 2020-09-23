@@ -114,7 +114,6 @@ public class DifferentTimestampsCauseTimeoutTest {
 
 		DeterministicTest.builder()
 			.numNodes(numNodes)
-			.alwaysSynced()
 			.messageSelector(sequenceSelector(processingSequence))
 			.messageMutator(mutateProposalsBy(0))
 			.build()
@@ -184,7 +183,6 @@ public class DifferentTimestampsCauseTimeoutTest {
 				}
 			})
 			.numNodes(numNodes)
-			.alwaysSynced()
 			.messageSelector(sequenceSelector(processingSequence))
 			.messageMutator(mutateProposalsBy(1))
 			.build()

@@ -42,7 +42,6 @@ public class RandomChannelOrderResponsiveTest {
 
 		DeterministicTest test = DeterministicTest.builder()
 			.numNodes(numNodes)
-			.alwaysSynced()
 			.messageSelector(MessageSelector.selectAndStopAt(MessageSelector.randomSelector(random), View.of(viewsToRun)))
 			.messageMutator(MessageMutator.dropTimeouts())
 			.build()

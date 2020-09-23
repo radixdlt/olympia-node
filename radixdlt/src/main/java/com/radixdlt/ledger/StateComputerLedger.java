@@ -113,24 +113,6 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	}
 
 	@Override
-	public OnSynced ifCommitSynced(VerifiedLedgerHeaderAndProof committedLedgerHeader) {
-		synchronized (lock) {
-			if (this.currentLedgerHeader.getEpoch() != committedLedgerHeader.getEpoch() && !this.currentLedgerHeader.isEndOfEpoch()) {
-				throw new IllegalStateException();
-			}
-
-			if (committedLedgerHeader.getStateVersion() <= this.currentLedgerHeader.getStateVersion()) {
-				return onSync -> {
-					onSync.run();
-					return onNotSynced -> { };
-				};
-			} else {
-				return onSync -> Runnable::run;
-			}
-		}
-	}
-
-	@Override
 	public void commit(VerifiedCommandsAndProof verifiedCommandsAndProof) {
 		this.counters.increment(CounterType.LEDGER_PROCESSED);
 		synchronized (lock) {

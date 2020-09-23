@@ -20,19 +20,15 @@ package com.radixdlt.integration.distributed.deterministic;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
-import com.google.inject.Provides;
 import com.radixdlt.EpochsConsensusModule;
 import com.radixdlt.LedgerCommandGeneratorModule;
 import com.radixdlt.EpochsLedgerUpdateModule;
 import com.radixdlt.LedgerLocalMempoolModule;
 import com.radixdlt.LedgerModule;
-import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.integration.distributed.deterministic.configuration.EpochNodeWeightMapping;
 import com.radixdlt.integration.distributed.deterministic.configuration.NodeIndexAndWeight;
 import com.radixdlt.integration.distributed.deterministic.network.DeterministicNetwork;
@@ -51,7 +47,6 @@ import java.io.PrintStream;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Objects;
-import java.util.Random;
 import java.util.function.Function;
 import java.util.function.LongFunction;
 import java.util.stream.IntStream;
@@ -81,13 +76,23 @@ public final class DeterministicTest {
 	}
 
 	public static class Builder {
+		private enum LedgerType {
+			MOCKED_LEDGER(false),
+			LEDGER_AND_EPOCHS_AND_SYNC(true);
+
+			private final boolean hasEpochs;
+			LedgerType(boolean hasEpochs) {
+				this.hasEpochs = hasEpochs;
+			}
+		}
+
 		private ImmutableList<BFTNode> nodes = ImmutableList.of(BFTNode.create(ECKeyPair.generateNew().getPublicKey()));
 		private MessageSelector messageSelector = MessageSelector.selectAndStopAfter(MessageSelector.firstSelector(), 30_000L);
 		private MessageMutator messageMutator = MessageMutator.nothing();
 		private EpochNodeWeightMapping epochNodeWeightMapping = null;
-		private Module syncedExecutorModule = null;
 		private View epochHighView = null;
 		private Module overrideModule = null;
+		private LedgerType ledgerType = LedgerType.MOCKED_LEDGER;
 
 		private Builder() {
 			// Nothing to do here
@@ -136,30 +141,14 @@ public final class DeterministicTest {
 			return this;
 		}
 
-		public Builder alwaysSynced() {
-			this.syncedExecutorModule = new MockedLedgerModule();
-			return this;
-		}
-
-		public Builder randomlySynced(Random random) {
-			Objects.requireNonNull(random);
-			this.syncedExecutorModule = new DeterministicRandomlySyncedLedgerModule(random);
-			return this;
-		}
-
 		public Builder epochHighView(View epochHighView) {
 			Objects.requireNonNull(epochHighView);
+			this.ledgerType = LedgerType.LEDGER_AND_EPOCHS_AND_SYNC;
 			this.epochHighView = epochHighView;
 			return this;
 		}
 
 		public DeterministicTest build() {
-			if (this.syncedExecutorModule == null && epochHighView == null) {
-				throw new IllegalArgumentException("Must specify one (and only one) of alwaysSynced, randomlySynced or epochHighView");
-			}
-			if (this.syncedExecutorModule != null && epochHighView != null) {
-				throw new IllegalArgumentException("Can only specify one of alwaysSynced, randomlySynced or epochHighView");
-			}
 			LongFunction<BFTValidatorSet> validatorSetMapping = epochNodeWeightMapping == null
 				? epoch -> completeEqualWeightValidatorSet(this.nodes)
 				: epoch -> partialMixedWeightValidatorSet(epoch, this.nodes, this.epochNodeWeightMapping);
@@ -168,7 +157,7 @@ public final class DeterministicTest {
 			modules.add(new LedgerLocalMempoolModule(10));
 			modules.add(new DeterministicMempoolModule());
 
-			if (epochHighView == null) {
+			if (ledgerType == LedgerType.MOCKED_LEDGER) {
 				BFTValidatorSet validatorSet = validatorSetMapping.apply(1L);
 				modules.add(new AbstractModule() {
 					@Override
@@ -177,7 +166,7 @@ public final class DeterministicTest {
 					}
 				});
 				modules.add(new MockedStateComputerModule());
-				modules.add(this.syncedExecutorModule);
+				modules.add(new MockedLedgerModule());
 
 				// TODO: remove the following
 				modules.add(new EpochsConsensusModule(1));

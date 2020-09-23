@@ -21,11 +21,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.BFTFactory;
-import com.radixdlt.consensus.HashSigner;
-import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.Hasher;
-import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.ProposerElectionFactory;
 import com.radixdlt.consensus.Timeout;
@@ -33,8 +28,6 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.VertexStoreSyncFactory;
 import com.radixdlt.consensus.BFTSyncRequestProcessorFactory;
-import com.radixdlt.consensus.bft.BFTBuilder;
-import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStore;
@@ -49,7 +42,6 @@ import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker.TimeoutSender;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
-import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
@@ -58,7 +50,6 @@ import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVertic
 import com.radixdlt.consensus.sync.VertexStoreSync;
 import com.radixdlt.consensus.sync.VertexStoreSync.SyncVerticesRequestSender;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.network.TimeSupplier;
 import java.util.Comparator;
 
 public class EpochsConsensusModule extends AbstractModule {
@@ -76,7 +67,7 @@ public class EpochsConsensusModule extends AbstractModule {
 
 	@Provides
 	private TimeoutSender initialTimeoutSender(LocalTimeoutSender localTimeoutSender, EpochChange initialEpoch) {
-		return (view, ms) -> localTimeoutSender.scheduleTimeout(new LocalTimeout(initialEpoch.getEpoch() , view), ms);
+		return (view, ms) -> localTimeoutSender.scheduleTimeout(new LocalTimeout(initialEpoch.getEpoch(), view), ms);
 	}
 
 	@Provides
@@ -129,15 +120,14 @@ public class EpochsConsensusModule extends AbstractModule {
 	private VertexStoreSyncFactory vertexStoreSyncFactory(
 		SyncVerticesRequestSender requestSender,
 		SyncLedgerRequestSender syncLedgerRequestSender,
-		Ledger ledger
-
+		BFTConfiguration configuration
 	) {
 		return vertexStore -> new VertexStoreSync(
 			vertexStore,
 			Comparator.comparingLong((LedgerHeader h) -> h.getAccumulatorState().getStateVersion()),
 			requestSender,
 			syncLedgerRequestSender,
-			ledger
+			configuration.getGenesisHeader()
 		);
 	}
 

@@ -28,7 +28,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.consensus.BFTHeader;
-import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
@@ -53,7 +52,7 @@ public class VertexStoreSyncTest {
 	private Comparator<LedgerHeader> ledgerHeaderComparator;
 	private SyncVerticesRequestSender syncVerticesRequestSender;
 	private SyncLedgerRequestSender syncLedgerRequestSender;
-	private Ledger ledger;
+	private VerifiedLedgerHeaderAndProof verifiedLedgerHeaderAndProof;
 
 	@Before
 	public void setup() {
@@ -61,14 +60,14 @@ public class VertexStoreSyncTest {
 		this.ledgerHeaderComparator = TypedMocks.rmock(Comparator.class);
 		this.syncVerticesRequestSender = mock(SyncVerticesRequestSender.class);
 		this.syncLedgerRequestSender = mock(SyncLedgerRequestSender.class);
-		this.ledger = mock(Ledger.class);
+		this.verifiedLedgerHeaderAndProof = mock(VerifiedLedgerHeaderAndProof.class);
 
 		vertexStoreSync = new VertexStoreSync(
 			vertexStore,
 			ledgerHeaderComparator,
 			syncVerticesRequestSender,
 			syncLedgerRequestSender,
-			ledger
+			verifiedLedgerHeaderAndProof
 		);
 	}
 
