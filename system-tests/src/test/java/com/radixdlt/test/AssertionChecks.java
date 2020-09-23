@@ -27,7 +27,7 @@ public class AssertionChecks {
 			.assertAllProposalsHaveDirectParents()
 			.assertNoTimeouts()
 			.assertSafety()
-			.assertLiveness();
+			.assertLiveness(20);
 	}
 
 	/**
@@ -42,7 +42,7 @@ public class AssertionChecks {
 			.assertAllProposalsHaveDirectParents(nodesToIgnore)
 //			.assertNoTimeouts();
 			.assertSafety(nodesToIgnore)
-			.assertLiveness(10,nodesToIgnore);
+			.assertLiveness(20,nodesToIgnore);
 	}
 
 
