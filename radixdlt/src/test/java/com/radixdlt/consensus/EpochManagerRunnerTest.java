@@ -23,10 +23,10 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.liveness.PacemakerRx;
+import com.radixdlt.consensus.sync.VertexStoreSync.GetVerticesRequest;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import io.reactivex.rxjava3.core.Observable;

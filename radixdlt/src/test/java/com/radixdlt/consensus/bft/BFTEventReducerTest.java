@@ -36,13 +36,13 @@ import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyViolationException;
+import com.radixdlt.consensus.sync.VertexStoreSync;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
 import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mockito;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -64,6 +64,7 @@ public class BFTEventReducerTest {
 	private BFTEventReducer.BFTEventSender sender;
 	private EndOfEpochSender endOfEpochSender;
 	private VertexStore vertexStore;
+	private VertexStoreSync vertexStoreSync;
 	private BFTValidatorSet validatorSet;
 	private SystemCounters counters;
 	private BFTInfoSender infoSender;
@@ -78,6 +79,7 @@ public class BFTEventReducerTest {
 		this.safetyRules = mock(SafetyRules.class);
 		this.pacemaker = mock(Pacemaker.class);
 		this.vertexStore = mock(VertexStore.class);
+		this.vertexStoreSync = mock(VertexStoreSync.class);
 		this.pendingVotes = mock(PendingVotes.class);
 		this.proposerElection = mock(ProposerElection.class);
 		this.validatorSet = mock(BFTValidatorSet.class);
@@ -96,6 +98,7 @@ public class BFTEventReducerTest {
 			safetyRules,
 			pacemaker,
 			vertexStore,
+			vertexStoreSync,
 			pendingVotes,
 			proposerElection,
 			validatorSet,
@@ -123,7 +126,7 @@ public class BFTEventReducerTest {
 	public void when_processing_local_sync__then_should_process_it_via_vertex_store() {
 		Hash vertexId = mock(Hash.class);
 		reducer.processLocalSync(vertexId);
-		verify(vertexStore, times(1)).processLocalSync(eq(vertexId));
+		verify(vertexStoreSync, times(1)).processLocalSync(eq(vertexId));
 	}
 
 	@Test
@@ -138,7 +141,7 @@ public class BFTEventReducerTest {
 		when(header.getVertexId()).thenReturn(id);
 		when(qc.getProposed()).thenReturn(header);
 		when(pendingVotes.insertVote(eq(vote), eq(validatorSet))).thenReturn(Optional.of(qc));
-		when(vertexStore.syncToQC(eq(qc), any(), any())).thenReturn(false);
+		when(vertexStoreSync.syncToQC(eq(qc), any(), any())).thenReturn(false);
 		reducer.processVote(vote);
 		verify(safetyRules, never()).process(any());
 		verify(pacemaker, never()).processQC(any());
@@ -179,7 +182,7 @@ public class BFTEventReducerTest {
 		when(pendingVotes.insertVote(eq(vote), any())).thenReturn(Optional.of(qc));
 		when(pacemaker.getCurrentView()).thenReturn(mock(View.class));
 		when(pacemaker.processQC(eq(view))).thenReturn(Optional.of(mock(View.class)));
-		when(vertexStore.syncToQC(eq(qc), any(), any())).thenReturn(true);
+		when(vertexStoreSync.syncToQC(eq(qc), any(), any())).thenReturn(true);
 		when(vertexStore.getHighestQC()).thenReturn(mock(QuorumCertificate.class));
 
 		reducer.processVote(vote);
@@ -225,25 +228,6 @@ public class BFTEventReducerTest {
 		reducer.processNewView(newView);
 		verify(pacemaker, times(1)).processNewView(any(), any());
 		verify(sender, times(1)).broadcastProposal(any(), any());
-	}
-
-	@Test
-	public void when_processing_invalid_proposal__then_atom_is_rejected() throws Exception {
-		View currentView = View.of(123);
-
-		UnverifiedVertex proposedVertex = mock(UnverifiedVertex.class);
-		when(proposedVertex.getCommand()).thenReturn(mock(Command.class));
-		when(proposedVertex.getQC()).thenReturn(mock(QuorumCertificate.class));
-		when(proposedVertex.getView()).thenReturn(currentView);
-
-		Proposal proposal = mock(Proposal.class);
-		when(proposal.getVertex()).thenReturn(proposedVertex);
-
-		Mockito.doThrow(new VertexInsertionException("Test", mock(Exception.class)))
-			.when(vertexStore).insertVertex(any());
-		when(pacemaker.processQC(any())).thenReturn(Optional.empty());
-		when(pacemaker.getCurrentView()).thenReturn(currentView);
-		reducer.processProposal(proposal);
 	}
 
 	@Test

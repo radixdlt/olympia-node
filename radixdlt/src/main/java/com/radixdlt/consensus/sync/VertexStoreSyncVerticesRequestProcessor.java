@@ -15,12 +15,15 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.consensus.sync;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
+import com.radixdlt.consensus.bft.SyncVerticesRequestProcessor;
+import com.radixdlt.consensus.bft.VerifiedVertex;
+import com.radixdlt.consensus.bft.VertexStore;
+import com.radixdlt.consensus.sync.VertexStoreSync.GetVerticesRequest;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

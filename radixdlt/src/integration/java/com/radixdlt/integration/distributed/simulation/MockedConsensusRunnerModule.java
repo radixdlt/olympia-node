@@ -30,13 +30,15 @@ import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.ProposerElectionFactory;
 import com.radixdlt.consensus.Timeout;
-import com.radixdlt.consensus.VertexStoreEventProcessor;
+import com.radixdlt.consensus.VertexStoreSyncEventProcessor;
 import com.radixdlt.consensus.VertexStoreFactory;
+import com.radixdlt.consensus.VertexStoreSyncFactory;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.SyncVerticesRequestProcessor;
 import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.consensus.bft.VertexStoreSyncVerticesRequestProcessor;
+import com.radixdlt.consensus.sync.VertexStoreSync;
+import com.radixdlt.consensus.sync.VertexStoreSyncVerticesRequestProcessor;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.consensus.epoch.EpochView;
@@ -50,7 +52,7 @@ public class MockedConsensusRunnerModule extends AbstractModule {
 	public void configure() {
 		MapBinder<String, ModuleRunner> moduleRunners = MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class);
 		moduleRunners.addBinding("consensus").to(BFTRunner.class).in(Scopes.SINGLETON);
-		bind(VertexStoreEventProcessor.class).to(VertexStore.class).in(Scopes.SINGLETON);
+		bind(VertexStoreSyncEventProcessor.class).to(VertexStoreSync.class).in(Scopes.SINGLETON);
 		bind(SyncVerticesRequestProcessor.class).to(VertexStoreSyncVerticesRequestProcessor.class);
 	}
 
@@ -62,6 +64,7 @@ public class MockedConsensusRunnerModule extends AbstractModule {
 		BFTFactory bftFactory,
 		PacemakerFactory pacemakerFactory,
 		VertexStore vertexStore,
+		VertexStoreSync vertexStoreSync,
 		ProposerElectionFactory proposerElectionFactory,
 		LocalTimeoutSender localTimeoutSender,
 		BFTInfoSender infoSender
@@ -71,6 +74,7 @@ public class MockedConsensusRunnerModule extends AbstractModule {
 			header -> { },
 			pacemakerFactory.create((view, ms) -> localTimeoutSender.scheduleTimeout(new LocalTimeout(1, view), ms)),
 			vertexStore,
+			vertexStoreSync,
 			proposerElectionFactory.create(config.getValidatorSet()),
 			config.getValidatorSet(),
 			infoSender
@@ -91,6 +95,15 @@ public class MockedConsensusRunnerModule extends AbstractModule {
 				epochInfoSender.sendTimeoutProcessed(new Timeout(EpochView.of(1, view), leader));
 			}
 		};
+	}
+
+	@Provides
+	@Singleton
+	public VertexStoreSync vertexStoreSync(
+		VertexStore vertexStore,
+		VertexStoreSyncFactory vertexStoreSyncFactory
+	) {
+		return vertexStoreSyncFactory.create(vertexStore);
 	}
 
 	@Provides

@@ -35,6 +35,7 @@ import com.radixdlt.consensus.bft.BFTEventReducer.EndOfEpochSender;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.consensus.sync.VertexStoreSync;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
@@ -55,6 +56,7 @@ public class BFTBuilderTest {
 	private HashVerifier verifier = ECPublicKey::verify;
 	private Pacemaker pacemaker;
 	private VertexStore vertexStore;
+	private VertexStoreSync vertexStoreSync;
 	private BFTNode self;
 
 	@Before
@@ -70,6 +72,7 @@ public class BFTBuilderTest {
 		verifier = mock(HashVerifier.class);
 		pacemaker = mock(Pacemaker.class);
 		vertexStore = mock(VertexStore.class);
+		vertexStoreSync = mock(VertexStoreSync.class);
 		self = mock(BFTNode.class);
 		infoSender = mock(BFTInfoSender.class);
 		hasher = mock(Hasher.class);
@@ -95,6 +98,7 @@ public class BFTBuilderTest {
 			.verifier(verifier)
 			.pacemaker(pacemaker)
 			.vertexStore(vertexStore)
+			.vertexStoreSync(vertexStoreSync)
 			.self(self)
 			.build();
 

@@ -30,8 +30,9 @@ import com.radixdlt.consensus.ProposerElectionFactory;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.VertexStoreEventProcessor;
+import com.radixdlt.consensus.VertexStoreSyncEventProcessor;
 import com.radixdlt.consensus.VertexStoreFactory;
+import com.radixdlt.consensus.VertexStoreSyncFactory;
 import com.radixdlt.consensus.VertexStoreSyncVerticesRequestProcessorFactory;
 import com.radixdlt.consensus.bft.SyncVerticesRequestProcessor;
 import com.radixdlt.consensus.bft.View;
@@ -40,7 +41,6 @@ import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.EmptyBFTEventProcessor;
 import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker.TimeoutSender;
@@ -50,7 +50,9 @@ import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.sync.SyncRequestSender;
+import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
+import com.radixdlt.consensus.sync.VertexStoreSync;
+import com.radixdlt.consensus.sync.VertexStoreSync.GetVerticesRequest;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
@@ -118,6 +120,7 @@ public final class EpochManager implements SyncVerticesRequestProcessor {
 	private final PacemakerFactory pacemakerFactory;
 	private final VertexStoreFactory vertexStoreFactory;
 	private final VertexStoreSyncVerticesRequestProcessorFactory vertexStoreSyncVerticesRequestProcessorFactory;
+	private final VertexStoreSyncFactory vertexStoreSyncFactory;
 	private final ProposerElectionFactory proposerElectionFactory;
 	private final SystemCounters counters;
 	private final LocalTimeoutSender localTimeoutSender;
@@ -125,11 +128,11 @@ public final class EpochManager implements SyncVerticesRequestProcessor {
 	private final Map<Long, List<ConsensusEvent>> queuedEvents;
 	private final BFTFactory bftFactory;
 	private final EpochInfoSender epochInfoSender;
-	private final SyncRequestSender syncRequestSender;
+	private final SyncLedgerRequestSender syncRequestSender;
 
 	private VerifiedLedgerHeaderAndProof lastConstructed = null;
 	private EpochChange currentEpoch;
-	private VertexStoreEventProcessor vertexStoreEventProcessor;
+	private VertexStoreSyncEventProcessor vertexStoreEventProcessor;
 	private SyncVerticesRequestProcessor syncRequestProcessor;
 	private BFTEventProcessor bftEventProcessor;
 	private int numQueuedConsensusEvents = 0;
@@ -141,9 +144,10 @@ public final class EpochManager implements SyncVerticesRequestProcessor {
 		Ledger ledger,
 		SyncEpochsRPCSender epochsRPCSender,
 		LocalTimeoutSender localTimeoutSender,
-		SyncRequestSender syncRequestSender,
+		SyncLedgerRequestSender syncRequestSender,
 		PacemakerFactory pacemakerFactory,
 		VertexStoreFactory vertexStoreFactory,
+		VertexStoreSyncFactory vertexStoreSyncFactory,
 		VertexStoreSyncVerticesRequestProcessorFactory vertexStoreSyncVerticesRequestProcessorFactory,
 		ProposerElectionFactory proposerElectionFactory,
 		BFTFactory bftFactory,
@@ -158,6 +162,7 @@ public final class EpochManager implements SyncVerticesRequestProcessor {
 		this.localTimeoutSender = Objects.requireNonNull(localTimeoutSender);
 		this.pacemakerFactory = Objects.requireNonNull(pacemakerFactory);
 		this.vertexStoreFactory = Objects.requireNonNull(vertexStoreFactory);
+		this.vertexStoreSyncFactory = Objects.requireNonNull(vertexStoreSyncFactory);
 		this.vertexStoreSyncVerticesRequestProcessorFactory = vertexStoreSyncVerticesRequestProcessorFactory;
 		this.proposerElectionFactory = Objects.requireNonNull(proposerElectionFactory);
 		this.bftFactory = bftFactory;
@@ -191,7 +196,8 @@ public final class EpochManager implements SyncVerticesRequestProcessor {
 			bftConfiguration.getGenesisQC(),
 			ledger
 		);
-		this.vertexStoreEventProcessor = vertexStore;
+		VertexStoreSync vertexStoreSync = vertexStoreSyncFactory.create(vertexStore);
+		this.vertexStoreEventProcessor = vertexStoreSync;
 		this.syncRequestProcessor = vertexStoreSyncVerticesRequestProcessorFactory.create(vertexStore);
 
 		BFTInfoSender infoSender = new BFTInfoSender() {
@@ -212,6 +218,7 @@ public final class EpochManager implements SyncVerticesRequestProcessor {
 			this::processEndOfEpoch,
 			pacemaker,
 			vertexStore,
+			vertexStoreSync,
 			proposerElection,
 			validatorSet,
 			infoSender

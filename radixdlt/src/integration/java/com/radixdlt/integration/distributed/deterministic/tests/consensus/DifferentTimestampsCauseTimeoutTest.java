@@ -20,6 +20,7 @@ package com.radixdlt.integration.distributed.deterministic.tests.consensus;
 import com.google.inject.AbstractModule;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HashVerifier;
+import com.radixdlt.crypto.Hash;
 import java.util.LinkedList;
 import java.util.Map;
 
@@ -63,9 +64,13 @@ public class DifferentTimestampsCauseTimeoutTest {
 
 		// Proposal here has genesis qc, which has no timestamps
 		processingSequence.add(Pair.of(ChannelId.of(1, 0), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(0, 0), Hash.class));
 		processingSequence.add(Pair.of(ChannelId.of(1, 1), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 1), Hash.class));
 		processingSequence.add(Pair.of(ChannelId.of(1, 2), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 2), Hash.class));
 		processingSequence.add(Pair.of(ChannelId.of(1, 3), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(3, 3), Hash.class));
 
 		processingSequence.add(Pair.of(ChannelId.of(0, 1), Vote.class));
 		processingSequence.add(Pair.of(ChannelId.of(1, 1), Vote.class));
@@ -80,9 +85,13 @@ public class DifferentTimestampsCauseTimeoutTest {
 		// Proposal here should have timestamps from previous view
 		// They are not mutated in this test
 		processingSequence.add(Pair.of(ChannelId.of(2, 0), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(0, 0), Hash.class));
 		processingSequence.add(Pair.of(ChannelId.of(2, 1), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 1), Hash.class));
 		processingSequence.add(Pair.of(ChannelId.of(2, 2), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 2), Hash.class));
 		processingSequence.add(Pair.of(ChannelId.of(2, 3), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(3, 3), Hash.class));
 
 		processingSequence.add(Pair.of(ChannelId.of(0, 2), Vote.class));
 		processingSequence.add(Pair.of(ChannelId.of(1, 2), Vote.class));
@@ -95,9 +104,13 @@ public class DifferentTimestampsCauseTimeoutTest {
 		processingSequence.add(Pair.of(ChannelId.of(3, 3), NewView.class));
 
 		processingSequence.add(Pair.of(ChannelId.of(3, 0), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(0, 0), Hash.class));
 		processingSequence.add(Pair.of(ChannelId.of(3, 1), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 1), Hash.class));
 		processingSequence.add(Pair.of(ChannelId.of(3, 2), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 2), Hash.class));
 		processingSequence.add(Pair.of(ChannelId.of(3, 3), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(3, 3), Hash.class));
 
 		DeterministicTest.builder()
 			.numNodes(numNodes)
@@ -120,9 +133,13 @@ public class DifferentTimestampsCauseTimeoutTest {
 
 		// Proposal here has genesis qc, which has no timestamps
 		processingSequence.add(Pair.of(ChannelId.of(1, 0), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(0, 0), Hash.class));
 		processingSequence.add(Pair.of(ChannelId.of(1, 1), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 1), Hash.class));
 		processingSequence.add(Pair.of(ChannelId.of(1, 2), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 2), Hash.class));
 		processingSequence.add(Pair.of(ChannelId.of(1, 3), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(3, 3), Hash.class));
 
 		processingSequence.add(Pair.of(ChannelId.of(0, 1), Vote.class));
 		processingSequence.add(Pair.of(ChannelId.of(1, 1), Vote.class));
@@ -137,9 +154,13 @@ public class DifferentTimestampsCauseTimeoutTest {
 		// Proposal here should have timestamps from previous view
 		// They are mutated in this test
 		processingSequence.add(Pair.of(ChannelId.of(2, 0), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(0, 0), Hash.class));
 		processingSequence.add(Pair.of(ChannelId.of(2, 1), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 1), Hash.class));
 		processingSequence.add(Pair.of(ChannelId.of(2, 2), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 2), Hash.class));
 		processingSequence.add(Pair.of(ChannelId.of(2, 3), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(3, 3), Hash.class));
 
 		processingSequence.add(Pair.of(ChannelId.of(0, 2), Vote.class));
 		processingSequence.add(Pair.of(ChannelId.of(1, 2), Vote.class));

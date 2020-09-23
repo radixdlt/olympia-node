@@ -23,7 +23,7 @@ import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
-import com.radixdlt.consensus.sync.SyncRequestSender;
+import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.BaseLedgerUpdate;
@@ -49,7 +49,7 @@ public class DeterministicRandomlySyncedLedgerModule extends AbstractModule {
 	@Override
 	public void configure() {
 		bind(NextCommandGenerator.class).toInstance((view, aids) -> null);
-		bind(SyncRequestSender.class).toInstance(req -> { });
+		bind(SyncLedgerRequestSender.class).toInstance(req -> { });
 		Multibinder.newSetBinder(binder(), LedgerUpdateSender.class);
 	}
 

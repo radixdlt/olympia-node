@@ -22,6 +22,6 @@ import com.radixdlt.sync.LocalSyncRequest;
 /**
  * Sends a sync request
  */
-public interface SyncRequestSender {
+public interface SyncLedgerRequestSender {
 	void sendLocalSyncRequest(LocalSyncRequest request);
 }

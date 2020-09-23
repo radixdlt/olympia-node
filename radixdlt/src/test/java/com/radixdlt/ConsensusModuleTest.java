@@ -31,12 +31,12 @@ import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRequestSender;
 import com.radixdlt.consensus.bft.VertexStore.SyncedVertexSender;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
-import com.radixdlt.consensus.bft.VertexStoreSyncVerticesRequestProcessor.SyncVerticesResponseSender;
+import com.radixdlt.consensus.sync.VertexStoreSync.SyncVerticesRequestSender;
+import com.radixdlt.consensus.sync.VertexStoreSyncVerticesRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
-import com.radixdlt.consensus.sync.SyncRequestSender;
+import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.network.TimeSupplier;
 import org.junit.Test;
@@ -47,7 +47,7 @@ public class ConsensusModuleTest {
 		protected void configure() {
 			bind(SyncedVertexSender.class).toInstance(mock(SyncedVertexSender.class));
 			bind(Ledger.class).toInstance(mock(Ledger.class));
-			bind(SyncRequestSender.class).toInstance(mock(SyncRequestSender.class));
+			bind(SyncLedgerRequestSender.class).toInstance(mock(SyncLedgerRequestSender.class));
 			bind(BFTEventSender.class).toInstance(mock(BFTEventSender.class));
 			bind(SyncVerticesRequestSender.class).toInstance(mock(SyncVerticesRequestSender.class));
 			bind(SyncVerticesResponseSender.class).toInstance(mock(SyncVerticesResponseSender.class));

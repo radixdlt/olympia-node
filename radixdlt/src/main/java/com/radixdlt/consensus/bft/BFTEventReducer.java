@@ -33,6 +33,7 @@ import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyViolationException;
+import com.radixdlt.consensus.sync.VertexStoreSync;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
@@ -107,6 +108,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 	private final BFTNode self;
 	private final VertexStore vertexStore;
+	private final VertexStoreSync vertexStoreSync;
 	private final PendingVotes pendingVotes;
 	private final NextCommandGenerator nextCommandGenerator;
 	private final BFTEventSender sender;
@@ -136,6 +138,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		SafetyRules safetyRules,
 		Pacemaker pacemaker,
 		VertexStore vertexStore,
+		VertexStoreSync vertexStoreSync,
 		PendingVotes pendingVotes,
 		ProposerElection proposerElection,
 		BFTValidatorSet validatorSet,
@@ -151,6 +154,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		this.safetyRules = Objects.requireNonNull(safetyRules);
 		this.pacemaker = Objects.requireNonNull(pacemaker);
 		this.vertexStore = Objects.requireNonNull(vertexStore);
+		this.vertexStoreSync = Objects.requireNonNull(vertexStoreSync);
 		this.pendingVotes = Objects.requireNonNull(pendingVotes);
 		this.proposerElection = Objects.requireNonNull(proposerElection);
 		this.validatorSet = Objects.requireNonNull(validatorSet);
@@ -186,11 +190,11 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 	@Override
 	public void processLocalSync(Hash vertexId) {
-		vertexStore.processLocalSync(vertexId);
+		vertexStoreSync.processLocalSync(vertexId);
 
 		QuorumCertificate qc = unsyncedQCs.remove(vertexId);
 		if (qc != null) {
-			if (vertexStore.syncToQC(qc, vertexStore.getHighestCommittedQC(), null)) {
+			if (vertexStoreSync.syncToQC(qc, vertexStore.getHighestCommittedQC(), null)) {
 				processQC(qc);
 				log.trace("LOCAL_SYNC: processed QC: {}", () ->  qc);
 			} else {
@@ -206,7 +210,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		// accumulate votes into QCs in store
 		this.pendingVotes.insertVote(vote, this.validatorSet).ifPresent(qc -> {
 			log.trace("VOTE: Formed QC: {}", () -> qc);
-			if (vertexStore.syncToQC(qc, vertexStore.getHighestCommittedQC(), vote.getAuthor())) {
+			if (vertexStoreSync.syncToQC(qc, vertexStore.getHighestCommittedQC(), vote.getAuthor())) {
 				if (!synchedLog) {
 					log.debug("VOTE: QC Synced: {}", () -> qc);
 					synchedLog = true;
@@ -275,15 +279,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			return;
 		}
 
-		final BFTHeader header;
-		try {
-			header = vertexStore.insertVertex(proposedVertex);
-		} catch (VertexInsertionException e) {
-			counters.increment(CounterType.BFT_REJECTED);
-
-			log.warn("PROPOSAL: Rejected. Reason: {}", e::getMessage);
-			return;
-		}
+		final BFTHeader header = vertexStore.insertVertex(proposedVertex);
 
 		final BFTNode currentLeader = this.proposerElection.getProposer(updatedView);
 		try {

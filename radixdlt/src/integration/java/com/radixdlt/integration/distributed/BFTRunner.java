@@ -23,7 +23,7 @@ import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
-import com.radixdlt.consensus.VertexStoreEventProcessor;
+import com.radixdlt.consensus.VertexStoreSyncEventProcessor;
 import com.radixdlt.consensus.VertexSyncRx;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -70,7 +70,7 @@ public class BFTRunner implements ModuleRunner {
 		VertexSyncRx vertexSyncRx,
 		SyncVerticesRPCRx rpcRx,
 		BFTEventProcessor bftEventProcessor,
-		VertexStoreEventProcessor vertexStoreEventProcessor,
+		VertexStoreSyncEventProcessor vertexStoreEventProcessor,
 		SyncVerticesRequestProcessor requestProcessor,
 		@Named("self") BFTNode self
 	) {

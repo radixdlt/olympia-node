@@ -24,7 +24,7 @@ import com.radixdlt.ledger.LedgerUpdate;
 /**
  * An empty/mocked vertex store event processor
  */
-public enum EmptyVertexStoreEventProcessor implements VertexStoreEventProcessor {
+public enum EmptyVertexStoreEventProcessor implements VertexStoreSyncEventProcessor {
 	INSTANCE;
 
 	@Override

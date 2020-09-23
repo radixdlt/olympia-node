@@ -32,7 +32,7 @@ import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.epoch.EpochChange;
-import com.radixdlt.consensus.sync.SyncRequestSender;
+import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.epochs.SyncedEpochSender;
@@ -64,7 +64,7 @@ public class EpochsSyncModuleTest {
 				bind(EpochChange.class).toInstance(mock(EpochChange.class));
 				bind(LocalSyncServiceAccumulatorProcessor.class).toInstance(mock(LocalSyncServiceAccumulatorProcessor.class));
 				bind(RemoteSyncResponseValidatorSetVerifier.class).toInstance(mock(RemoteSyncResponseValidatorSetVerifier.class));
-				bind(SyncRequestSender.class).toInstance(mock(SyncRequestSender.class));
+				bind(SyncLedgerRequestSender.class).toInstance(mock(SyncLedgerRequestSender.class));
 				bind(SystemCounters.class).toInstance(mock(SystemCounters.class));
 				bind(Ledger.class).toInstance(ledger);
 				bind(VerifiedValidatorSetSender.class).toInstance(mock(VerifiedValidatorSetSender.class));

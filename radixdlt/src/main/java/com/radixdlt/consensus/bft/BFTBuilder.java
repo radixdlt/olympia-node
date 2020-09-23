@@ -30,6 +30,7 @@ import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyState;
+import com.radixdlt.consensus.sync.VertexStoreSync;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.network.TimeSupplier;
@@ -56,6 +57,7 @@ public final class BFTBuilder {
 	// BFT Stateful objects
 	private Pacemaker pacemaker;
 	private VertexStore vertexStore;
+	private VertexStoreSync vertexStoreSync;
 
 	// Instance specific objects
 	private BFTNode self;
@@ -133,6 +135,12 @@ public final class BFTBuilder {
 		return this;
 	}
 
+	public BFTBuilder vertexStoreSync(VertexStoreSync vertexStoreSync) {
+		this.vertexStoreSync = vertexStoreSync;
+		return this;
+	}
+
+
 	public BFTBuilder proposerElection(ProposerElection proposerElection) {
 		this.proposerElection = proposerElection;
 		return this;
@@ -151,6 +159,7 @@ public final class BFTBuilder {
 			safetyRules,
 			pacemaker,
 			vertexStore,
+			vertexStoreSync,
 			pendingVotes,
 			proposerElection,
 			validatorSet,
@@ -166,7 +175,7 @@ public final class BFTBuilder {
 			self,
 			reducer,
 			pacemaker,
-			vertexStore,
+			vertexStoreSync,
 			proposerElection,
 			syncQueues
 		);

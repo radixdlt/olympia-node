@@ -17,32 +17,9 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
-import com.radixdlt.consensus.bft.BFTEventReducer.EndOfEpochSender;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.consensus.liveness.Pacemaker;
-import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.sync.VertexStoreSync;
 
-/**
- * Creates a new bft processor
- */
-public interface BFTFactory {
-	/**
-	 * Create a new clean BFT processor
-	 *
-	 * @return a new bft processor
-	 */
-	BFTEventProcessor create(
-		BFTNode self,
-		EndOfEpochSender endOfEpochSender,
-		Pacemaker pacemaker,
-		VertexStore vertexStore,
-		VertexStoreSync vertexStoreSync,
-		ProposerElection proposerElection,
-		BFTValidatorSet validatorSet,
-		BFTInfoSender infoSender
-	);
+public interface VertexStoreSyncFactory {
+	VertexStoreSync create(VertexStore vertexStore);
 }

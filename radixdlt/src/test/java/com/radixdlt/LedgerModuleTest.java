@@ -36,7 +36,7 @@ import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
-import com.radixdlt.consensus.sync.SyncRequestSender;
+import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.ledger.StateComputerLedger;
@@ -56,7 +56,7 @@ public class LedgerModuleTest {
 			bind(BFTNode.class).annotatedWith(Names.named("self")).toInstance(mock(BFTNode.class));
 			bind(SyncEpochsRPCSender.class).toInstance(mock(SyncEpochsRPCSender.class));
 			bind(LocalTimeoutSender.class).toInstance(mock(LocalTimeoutSender.class));
-			bind(SyncRequestSender.class).toInstance(mock(SyncRequestSender.class));
+			bind(SyncLedgerRequestSender.class).toInstance(mock(SyncLedgerRequestSender.class));
 			bind(Hasher.class).toInstance(mock(Hasher.class));
 
 			bind(Mempool.class).toInstance(mock(Mempool.class));

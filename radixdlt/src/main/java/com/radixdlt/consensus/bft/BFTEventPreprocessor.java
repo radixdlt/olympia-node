@@ -26,6 +26,7 @@ import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.SyncQueues.SyncQueue;
 import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.consensus.sync.VertexStoreSync;
 import com.radixdlt.crypto.Hash;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
@@ -48,7 +49,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 
 	private final BFTNode self;
 	private final BFTEventProcessor forwardTo;
-	private final VertexStore vertexStore;
+	private final VertexStoreSync vertexStoreSync;
 	private final PacemakerState pacemakerState;
 	private final ProposerElection proposerElection;
 	private final SyncQueues queues;
@@ -57,13 +58,13 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		BFTNode self,
 		BFTEventProcessor forwardTo,
 		PacemakerState pacemakerState,
-		VertexStore vertexStore,
+		VertexStoreSync vertexStoreSync,
 		ProposerElection proposerElection,
 		SyncQueues queues
 	) {
 		this.self = Objects.requireNonNull(self);
 		this.pacemakerState = Objects.requireNonNull(pacemakerState);
-		this.vertexStore = Objects.requireNonNull(vertexStore);
+		this.vertexStoreSync = Objects.requireNonNull(vertexStoreSync);
 		this.proposerElection = Objects.requireNonNull(proposerElection);
 		this.queues = queues;
 		this.forwardTo = forwardTo;
@@ -146,7 +147,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 			return true;
 		}
 
-		if (this.vertexStore.syncToQC(newView.getQC(), newView.getCommittedQC(), newView.getAuthor())) {
+		if (this.vertexStoreSync.syncToQC(newView.getQC(), newView.getCommittedQC(), newView.getAuthor())) {
 			forwardTo.processNewView(newView);
 			return true;
 		} else {
@@ -178,7 +179,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 			return true;
 		}
 
-		if (this.vertexStore.syncToQC(proposal.getQC(), proposal.getCommittedQC(), proposal.getAuthor())) {
+		if (this.vertexStoreSync.syncToQC(proposal.getQC(), proposal.getCommittedQC(), proposal.getAuthor())) {
 			forwardTo.processProposal(proposal);
 			return true;
 		} else {
@@ -205,7 +206,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		if (!curView.equals(nextView)) {
 			log.debug("{}: LOCAL_TIMEOUT: Clearing Queues: {}", this.self::getSimpleName, () -> queues);
 			queues.clear();
-			vertexStore.clearSyncs();
+			vertexStoreSync.clearSyncs();
 		}
 	}
 

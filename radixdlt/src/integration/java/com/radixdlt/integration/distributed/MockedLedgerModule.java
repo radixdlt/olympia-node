@@ -28,14 +28,14 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
-import com.radixdlt.consensus.sync.SyncRequestSender;
+import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.consensus.LedgerHeader;
 
 public class MockedLedgerModule extends AbstractModule {
 	@Override
 	public void configure() {
 		bind(NextCommandGenerator.class).toInstance((view, aids) -> null);
-		bind(SyncRequestSender.class).toInstance(req -> { });
+		bind(SyncLedgerRequestSender.class).toInstance(req -> { });
 	}
 
 	@Provides

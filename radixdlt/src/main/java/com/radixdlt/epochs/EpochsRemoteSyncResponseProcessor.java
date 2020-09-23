@@ -22,7 +22,7 @@ import com.google.inject.Inject;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.epoch.EpochChange;
-import com.radixdlt.consensus.sync.SyncRequestSender;
+import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.sync.LedgerUpdateProcessor;
@@ -46,7 +46,7 @@ public final class EpochsRemoteSyncResponseProcessor implements RemoteSyncRespon
 	private static final Logger log = LogManager.getLogger();
 
 	private final Function<BFTConfiguration, RemoteSyncResponseValidatorSetVerifier> verifierFactory;
-	private final SyncRequestSender localSyncRequestSender;
+	private final SyncLedgerRequestSender localSyncRequestSender;
 
 	private RemoteSyncResponseValidatorSetVerifier currentVerifier;
 	private EpochChange currentEpoch;
@@ -54,7 +54,7 @@ public final class EpochsRemoteSyncResponseProcessor implements RemoteSyncRespon
 
 	@Inject
 	public EpochsRemoteSyncResponseProcessor(
-		SyncRequestSender localSyncRequestSender,
+		SyncLedgerRequestSender localSyncRequestSender,
 		RemoteSyncResponseValidatorSetVerifier initialVerifier,
 		EpochChange initialEpoch,
 		VerifiedLedgerHeaderAndProof currentHeader,

@@ -19,6 +19,7 @@ package com.radixdlt.integration.distributed.deterministic.network;
 
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.sync.VertexStoreSync.GetVerticesRequest;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import java.util.Set;
 
@@ -31,7 +32,6 @@ import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
-import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.crypto.Hash;

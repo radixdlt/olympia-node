@@ -24,7 +24,7 @@ import com.radixdlt.ledger.LedgerUpdate;
 /**
  * Processor of vertex store events
  */
-public interface VertexStoreEventProcessor {
+public interface VertexStoreSyncEventProcessor {
 	/**
 	 * Process a get vertices error response
 	 * @param response the get vertices error response

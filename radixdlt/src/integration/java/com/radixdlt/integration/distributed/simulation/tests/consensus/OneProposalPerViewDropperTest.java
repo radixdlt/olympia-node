@@ -20,7 +20,7 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.google.inject.AbstractModule;
-import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRequestSender;
+import com.radixdlt.consensus.sync.VertexStoreSync.SyncVerticesRequestSender;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
