@@ -26,7 +26,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
-import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.Ledger;
@@ -71,7 +70,7 @@ public class EpochsSyncModuleTest {
 				bind(InvalidValidatorSetSender.class).toInstance(mock(InvalidValidatorSetSender.class));
 				bind(StateSyncNetwork.class).toInstance(mock(StateSyncNetwork.class));
 				bind(SyncTimeoutScheduler.class).toInstance(mock(SyncTimeoutScheduler.class));
-				bind(Key.get(new TypeLiteral<Comparator<AccumulatorState>>() { })).toInstance(mock(Comparator.class));
+				bind(new TypeLiteral<Comparator<AccumulatorState>>() { }).toInstance(mock(Comparator.class));
 			}
 		};
 	}

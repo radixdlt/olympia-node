@@ -41,7 +41,7 @@ public class MockedSyncRunnerModule extends AbstractModule {
 			.addBinding("sync").to(Key.get(new TypeLiteral<SyncServiceRunner<LedgerUpdate>>() { }));
 		bind(RemoteSyncResponseProcessor.class).to(RemoteSyncResponseValidatorSetVerifier.class).in(Scopes.SINGLETON);
 		bind(LocalSyncServiceProcessor.class).to(LocalSyncServiceAccumulatorProcessor.class).in(Scopes.SINGLETON);
-		bind(Key.get(new TypeLiteral<LedgerUpdateProcessor<LedgerUpdate>>() { }))
+		bind(new TypeLiteral<LedgerUpdateProcessor<LedgerUpdate>>() { })
 			.to(LocalSyncServiceAccumulatorProcessor.class).in(Scopes.SINGLETON);
 	}
 }
