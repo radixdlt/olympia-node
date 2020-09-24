@@ -1,0 +1,49 @@
+package com.radixdlt.cli
+
+import com.radixdlt.crypto.ECKeyPair
+import com.radixdlt.crypto.RadixKeyStore
+import picocli.CommandLine
+
+@CommandLine.Command(name = "generate-validator-key",mixinStandardHelpOptions = true,
+        description = "Generate keypair for Validator")
+class ValidatorKeyGenerator implements Runnable {
+    @CommandLine.ArgGroup(exclusive = false, multiplicity = "1")
+    Composite.Encrypted keystoreDetails
+
+    @CommandLine.Option(names = ["-n", "--name"], paramLabel = "NAME", description = "Keypair name", required = false, defaultValue = "node")
+    String keyPairName
+
+    @Override
+    void run() {
+        validateParameters()
+
+        def keystoreFile = new File(keystoreDetails.keyStore)
+        def newFile = !keystoreFile.canWrite()
+        def isNew = newFile ? "new" : "existing"
+
+        println "Writing new keypair ${keyPairName} into ${isNew} keystore ${keystoreDetails.keyStore}"
+
+        RadixKeyStore.fromFile(keystoreFile, keystoreDetails.password.getChars(), newFile)
+            .withCloseable((RadixKeyStore keyStore) ->
+                    keyStore.writeKeyPair(keyPairName, ECKeyPair.generateNew()));
+
+        println "Done"
+    }
+
+    void validateParameters() {
+        do {
+            if (keystoreDetails.keyStore.isBlank()) {
+                println "Keystore name must not be empty"
+            } else if (keystoreDetails.password.isBlank()) {
+                println "Password must not be empty"
+            } else if (keyPairName.isBlank()) {
+                println "Keypair name must not be empty"
+            } else {
+                return
+            }
+
+        } while (false);
+
+        System.exit(-1);
+    }
+}
