@@ -53,7 +53,7 @@ public class OneProposalPerViewDropperTest {
 			.overrideWithIncorrectModule(new AbstractModule() {
 				@Override
 				protected void configure() {
-					bind(SyncVerticesRequestSender.class).toInstance((hash, node, count, opaque) -> { });
+					bind(SyncVerticesRequestSender.class).toInstance((node, hash, count) -> { });
 				}
 			})
 			.build();

@@ -111,12 +111,11 @@ public class VertexStoreSync implements BFTSyncResponseProcessor, BFTUpdateProce
 		 * vertices. i.e. The vertex with the given id and (count - 1) ancestors
 		 * will be returned.
 		 *
-		 * @param id the id of the vertex to retrieve
 		 * @param node the node to retrieve the vertex info from
+		 * @param id the id of the vertex to retrieve
 		 * @param count number of vertices to retrieve
-		 * @param opaque an object which is expected to be provided in the corresponding response
 		 */
-		void sendGetVerticesRequest(Hash id, BFTNode node, int count, Object opaque);
+		void sendGetVerticesRequest(BFTNode node, Hash id, int count);
 	}
 
 	private final Logger log = LogManager.getLogger();
@@ -227,7 +226,7 @@ public class VertexStoreSync implements BFTSyncResponseProcessor, BFTUpdateProce
 			syncing.add(syncState.localSyncId);
 			return syncing;
 		});
-		requestSender.sendGetVerticesRequest(vertexId, syncState.author, count, syncState.localSyncId);
+		requestSender.sendGetVerticesRequest(syncState.author, vertexId, count);
 	}
 
 	private void rebuildAndSyncQC(SyncState syncState) {
@@ -248,9 +247,7 @@ public class VertexStoreSync implements BFTSyncResponseProcessor, BFTUpdateProce
 		}
 	}
 
-
-
-	private void processVerticesResponseForCommittedSync(Hash syncTo, SyncState syncState, GetVerticesResponse response) {
+	private void processVerticesResponseForCommittedSync(SyncState syncState, GetVerticesResponse response) {
 		log.info("SYNC_STATE: Processing vertices {} View {} From {}", syncState, response.getVertices().get(0).getView(), response.getSender());
 
 		ImmutableList<BFTNode> signers = ImmutableList.of(syncState.author);
@@ -276,7 +273,7 @@ public class VertexStoreSync implements BFTSyncResponseProcessor, BFTUpdateProce
 		}
 	}
 
-	private void processVerticesResponseForQCSync(Hash syncTo, SyncState syncState, GetVerticesResponse response) {
+	private void processVerticesResponseForQCSync(SyncState syncState, GetVerticesResponse response) {
 		VerifiedVertex vertex = response.getVertices().get(0);
 		syncState.fetched.addFirst(vertex);
 		Hash nextVertexId = vertex.getParentId();
@@ -326,10 +323,10 @@ public class VertexStoreSync implements BFTSyncResponseProcessor, BFTUpdateProce
 				}
 				switch (syncState.syncStage) {
 					case GET_COMMITTED_VERTICES:
-						processVerticesResponseForCommittedSync(syncTo, syncState, response);
+						processVerticesResponseForCommittedSync(syncState, response);
 						break;
 					case GET_QC_VERTICES:
-						processVerticesResponseForQCSync(syncTo, syncState, response);
+						processVerticesResponseForQCSync(syncState, response);
 						break;
 					default:
 						throw new IllegalStateException("Unknown sync stage: " + syncState.syncStage);

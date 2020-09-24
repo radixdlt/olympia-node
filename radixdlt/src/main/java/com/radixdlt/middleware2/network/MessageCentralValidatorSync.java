@@ -17,8 +17,6 @@
 
 package com.radixdlt.middleware2.network;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -45,7 +43,6 @@ import com.radixdlt.universe.Universe;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 
 import org.apache.logging.log4j.LogManager;
@@ -64,10 +61,6 @@ public class MessageCentralValidatorSync implements SyncVerticesRequestSender, S
 	private final AddressBook addressBook;
 	private final MessageCentral messageCentral;
 	private final Hasher hasher;
-	// TODO: is using a cache in this manner the best way, or should it be managed by the client?
-	private final Cache<Hash, Object> opaqueCache = CacheBuilder.newBuilder()
-		.expireAfterWrite(30, TimeUnit.SECONDS)
-		.build();
 
 	public MessageCentralValidatorSync(
 		BFTNode self,
@@ -84,7 +77,7 @@ public class MessageCentralValidatorSync implements SyncVerticesRequestSender, S
 	}
 
 	@Override
-	public void sendGetVerticesRequest(Hash id, BFTNode node, int count, Object opaque) {
+	public void sendGetVerticesRequest(BFTNode node, Hash id, int count) {
 		if (this.self.equals(node)) {
 			throw new IllegalStateException("Should never need to retrieve a vertex from self.");
 		}
@@ -94,8 +87,6 @@ public class MessageCentralValidatorSync implements SyncVerticesRequestSender, S
 			log.warn("{}: Peer {} not in address book when sending GetVerticesRequest", this.self, node);
 			return;
 		}
-
-		opaqueCache.put(id, opaque);
 
 		final GetVerticesRequestMessage vertexRequest = new GetVerticesRequestMessage(this.magic, id, count);
 		this.messageCentral.send(peer.get(), vertexRequest);
@@ -140,11 +131,6 @@ public class MessageCentralValidatorSync implements SyncVerticesRequestSender, S
 		return this.createObservable(
 			GetVerticesResponseMessage.class,
 			(src, msg) -> {
-				Object opaque = opaqueCache.getIfPresent(msg.getVertexId());
-				if (opaque == null) {
-					return null; // TODO: send error?
-				}
-
 				if (!src.hasSystem()) {
 					return null;
 				}
@@ -155,7 +141,7 @@ public class MessageCentralValidatorSync implements SyncVerticesRequestSender, S
 					.map(v -> new VerifiedVertex(v, hasher.hash(v)))
 					.collect(ImmutableList.toImmutableList());
 
-				return new GetVerticesResponse(node, msg.getVertexId(), hashedVertices, opaque);
+				return new GetVerticesResponse(node, msg.getVertexId(), hashedVertices);
 			}
 		);
 	}
@@ -165,11 +151,6 @@ public class MessageCentralValidatorSync implements SyncVerticesRequestSender, S
 		return this.createObservable(
 			GetVerticesErrorResponseMessage.class,
 			(src, msg) -> {
-				Object opaque = opaqueCache.getIfPresent(msg.getVertexId());
-				if (opaque == null) {
-					return null; // TODO: send error?
-				}
-
 				if (!src.hasSystem()) {
 					return null;
 				}
@@ -179,8 +160,7 @@ public class MessageCentralValidatorSync implements SyncVerticesRequestSender, S
 					node,
 					msg.getVertexId(),
 					msg.getHighestQC(),
-					msg.getHighestCommittedQC(),
-					opaque
+					msg.getHighestCommittedQC()
 				);
 			}
 		);

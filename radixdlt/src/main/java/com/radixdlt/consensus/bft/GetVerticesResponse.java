@@ -25,24 +25,18 @@ import java.util.Objects;
  * An RPC response
  */
 public final class GetVerticesResponse {
-	private final Object opaque;
 	private final Hash vertexId;
 	private final List<VerifiedVertex> vertices;
 	private final BFTNode sender;
 
-	public GetVerticesResponse(BFTNode sender, Hash vertexId, List<VerifiedVertex> vertices, Object opaque) {
+	public GetVerticesResponse(BFTNode sender, Hash vertexId, List<VerifiedVertex> vertices) {
 		this.sender = Objects.requireNonNull(sender);
 		this.vertexId = Objects.requireNonNull(vertexId);
 		this.vertices = Objects.requireNonNull(vertices);
-		this.opaque = opaque;
 	}
 
 	public BFTNode getSender() {
 		return sender;
-	}
-
-	public Object getOpaque() {
-		return opaque;
 	}
 
 	public Hash getVertexId() {
@@ -55,6 +49,6 @@ public final class GetVerticesResponse {
 
 	@Override
 	public String toString() {
-		return String.format("%s{vertices=%s opaque=%s}", this.getClass().getSimpleName(), vertices, opaque);
+		return String.format("%s{vertices=%s}", this.getClass().getSimpleName(), vertices);
 	}
 }

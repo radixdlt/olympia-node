@@ -49,7 +49,6 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.schedulers.Timed;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -190,7 +189,6 @@ public class SimulationNetwork {
 		SyncVerticesRPCRx, SyncEpochsRPCRx, StateSyncNetwork {
 		private final Observable<Object> myMessages;
 		private final BFTNode thisNode;
-		private HashMap<Hash, Object> opaqueMap = new HashMap<>();
 
 		private SimulatedNetworkImpl(BFTNode node) {
 			this.thisNode = node;
@@ -242,17 +240,15 @@ public class SimulationNetwork {
 		}
 
 		@Override
-		public void sendGetVerticesRequest(Hash id, BFTNode node, int count, Object opaque) {
+		public void sendGetVerticesRequest(BFTNode node, Hash id, int count) {
 			final SimulatedVerticesRequest request = new SimulatedVerticesRequest(thisNode, id, count);
-			opaqueMap.put(id, opaque);
 			receivedMessages.onNext(MessageInTransit.newMessage(request, thisNode, node));
 		}
 
 		@Override
 		public void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<VerifiedVertex> vertices) {
 			SimulatedVerticesRequest request = (SimulatedVerticesRequest) originalRequest;
-			Object opaque = receivers.computeIfAbsent(request.requestor, SimulatedNetworkImpl::new).opaqueMap.get(request.vertexId);
-			GetVerticesResponse vertexResponse = new GetVerticesResponse(thisNode, request.vertexId, vertices, opaque);
+			GetVerticesResponse vertexResponse = new GetVerticesResponse(thisNode, request.vertexId, vertices);
 			receivedMessages.onNext(MessageInTransit.newMessage(vertexResponse, thisNode, request.requestor));
 		}
 
@@ -261,8 +257,7 @@ public class SimulationNetwork {
 			QuorumCertificate highestCommittedQC) {
 
 			SimulatedVerticesRequest request = (SimulatedVerticesRequest) originalRequest;
-			Object opaque = receivers.computeIfAbsent(request.requestor, SimulatedNetworkImpl::new).opaqueMap.get(request.vertexId);
-			GetVerticesErrorResponse vertexResponse = new GetVerticesErrorResponse(thisNode, request.vertexId, highestQC, highestCommittedQC, opaque);
+			GetVerticesErrorResponse vertexResponse = new GetVerticesErrorResponse(thisNode, request.vertexId, highestQC, highestCommittedQC);
 			receivedMessages.onNext(MessageInTransit.newMessage(vertexResponse, thisNode, request.requestor));
 		}
 

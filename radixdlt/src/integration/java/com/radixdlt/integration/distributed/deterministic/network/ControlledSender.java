@@ -51,8 +51,8 @@ public final class ControlledSender implements DeterministicSender {
 	}
 
 	@Override
-	public void sendGetVerticesRequest(Hash id, BFTNode node, int count, Object opaque) {
-		ControlledGetVerticesRequest request = new ControlledGetVerticesRequest(node, id, count, this.senderIndex, opaque);
+	public void sendGetVerticesRequest(BFTNode node, Hash id, int count) {
+		ControlledGetVerticesRequest request = new ControlledGetVerticesRequest(node, id, count, this.senderIndex);
 		int receiver = this.network.lookup(node);
 		handleMessage(MessageRank.EARLIEST_POSSIBLE, new ControlledMessage(this.senderIndex, receiver, request));
 	}
@@ -60,7 +60,7 @@ public final class ControlledSender implements DeterministicSender {
 	@Override
 	public void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<VerifiedVertex> vertices) {
 		ControlledGetVerticesRequest request = (ControlledGetVerticesRequest) originalRequest;
-		GetVerticesResponse response = new GetVerticesResponse(request.getNode(), request.getVertexId(), vertices, request.opaque);
+		GetVerticesResponse response = new GetVerticesResponse(request.getNode(), request.getVertexId(), vertices);
 		handleMessage(MessageRank.EARLIEST_POSSIBLE, new ControlledMessage(this.senderIndex, request.requestor, response));
 	}
 
@@ -72,8 +72,7 @@ public final class ControlledSender implements DeterministicSender {
 			request.getNode(),
 			request.getVertexId(),
 			highestQC,
-			highestCommittedQC,
-			request.opaque
+			highestCommittedQC
 		);
 		handleMessage(MessageRank.EARLIEST_POSSIBLE, new ControlledMessage(this.senderIndex, request.requestor, response));
 	}
@@ -139,16 +138,14 @@ public final class ControlledSender implements DeterministicSender {
 	private static class ControlledGetVerticesRequest implements GetVerticesRequest {
 		private final Hash id;
 		private final int count;
-		private final Object opaque;
 		private final int requestor;
 		private final BFTNode node;
 
-		private ControlledGetVerticesRequest(BFTNode node, Hash id, int count, int requestor, Object opaque) {
+		private ControlledGetVerticesRequest(BFTNode node, Hash id, int count, int requestor) {
 			this.node = node;
 			this.id = id;
 			this.count = count;
 			this.requestor = requestor;
-			this.opaque = opaque;
 		}
 
 		public BFTNode getNode() {

@@ -32,7 +32,6 @@ import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VertexStore;
@@ -125,7 +124,7 @@ public class VertexStoreSyncTest {
 		BFTNode author = mock(BFTNode.class);
 		vertexStoreSync.syncToQC(qc, committedQC, author);
 
-		verify(syncVerticesRequestSender, times(1)).sendGetVerticesRequest(any(), any(), eq(1), any());
+		verify(syncVerticesRequestSender, times(1)).sendGetVerticesRequest(any(), any(), eq(1));
 		verify(syncLedgerRequestSender, never()).sendLocalSyncRequest(any());
 	}
 
@@ -150,7 +149,7 @@ public class VertexStoreSyncTest {
 		BFTNode author = mock(BFTNode.class);
 		vertexStoreSync.syncToQC(qc, committedQC, author);
 
-		verify(syncVerticesRequestSender, times(1)).sendGetVerticesRequest(any(), any(), eq(1), any());
+		verify(syncVerticesRequestSender, times(1)).sendGetVerticesRequest(any(), any(), eq(1));
 		verify(syncLedgerRequestSender, never()).sendLocalSyncRequest(any());
 	}
 
@@ -177,7 +176,7 @@ public class VertexStoreSyncTest {
 		BFTNode author = mock(BFTNode.class);
 		vertexStoreSync.syncToQC(qc, committedQC, author);
 
-		verify(syncVerticesRequestSender, times(1)).sendGetVerticesRequest(any(), any(), eq(3), any());
+		verify(syncVerticesRequestSender, times(1)).sendGetVerticesRequest(any(), any(), eq(3));
 		verify(syncLedgerRequestSender, never()).sendLocalSyncRequest(any());
 	}
 
@@ -212,8 +211,7 @@ public class VertexStoreSyncTest {
 		GetVerticesResponse getVerticesResponse = new GetVerticesResponse(
 			mock(BFTNode.class),
 			vertexId,
-			Collections.singletonList(vertex),
-			vertexId
+			Collections.singletonList(vertex)
 		);
 		vertexStoreSync.processGetVerticesResponse(getVerticesResponse);
 

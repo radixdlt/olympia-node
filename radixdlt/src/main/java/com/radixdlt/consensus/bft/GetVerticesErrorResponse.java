@@ -27,16 +27,14 @@ import java.util.Objects;
 public final class GetVerticesErrorResponse {
 	private BFTNode sender;
 	private final Hash vertexId;
-	private final Object opaque;
 	private final QuorumCertificate highestQC;
 	private final QuorumCertificate highestCommittedQC;
 
-	public GetVerticesErrorResponse(BFTNode sender, Hash vertexId, QuorumCertificate highestQC, QuorumCertificate highestCommittedQC, Object opaque) {
+	public GetVerticesErrorResponse(BFTNode sender, Hash vertexId, QuorumCertificate highestQC, QuorumCertificate highestCommittedQC) {
 		this.sender = Objects.requireNonNull(sender);
 		this.vertexId = Objects.requireNonNull(vertexId);
 		this.highestQC = Objects.requireNonNull(highestQC);
 		this.highestCommittedQC = Objects.requireNonNull(highestCommittedQC);
-		this.opaque = opaque;
 	}
 
 	public BFTNode getSender() {
@@ -45,10 +43,6 @@ public final class GetVerticesErrorResponse {
 
 	public Hash getVertexId() {
 		return vertexId;
-	}
-
-	public Object getOpaque() {
-		return opaque;
 	}
 
 	public QuorumCertificate getHighestQC() {
@@ -61,6 +55,6 @@ public final class GetVerticesErrorResponse {
 
 	@Override
 	public String toString() {
-		return String.format("%s{highQC=%s highCommittedQC=%s opaque=%s}", this.getClass().getSimpleName(), highestQC, highestCommittedQC, opaque);
+		return String.format("%s{highQC=%s highCommittedQC=%s}", this.getClass().getSimpleName(), highestQC, highestCommittedQC);
 	}
 }
