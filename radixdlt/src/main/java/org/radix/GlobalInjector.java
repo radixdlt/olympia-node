@@ -38,6 +38,7 @@ import com.radixdlt.PowFeeModule;
 import com.radixdlt.RadixEngineModule;
 import com.radixdlt.RadixEngineRxModule;
 import com.radixdlt.RadixEngineStoreModule;
+import com.radixdlt.SyncRunnerModule;
 import com.radixdlt.SyncServiceModule;
 import com.radixdlt.SyncMempoolServiceModule;
 import com.radixdlt.LedgerRxModule;
@@ -132,6 +133,7 @@ public class GlobalInjector {
 			new LedgerLocalMempoolModule(mempoolMaxSize),
 
 			// Sync
+			new SyncRunnerModule(),
 			new SyncRxModule(),
 			new SyncServiceModule(),
 			new SyncMempoolServiceModule(),
