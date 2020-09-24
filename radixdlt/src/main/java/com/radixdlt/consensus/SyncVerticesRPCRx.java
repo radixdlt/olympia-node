@@ -19,7 +19,7 @@ package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
-import com.radixdlt.consensus.sync.VertexStoreSync.GetVerticesRequest;
+import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.GetVerticesRequest;
 import io.reactivex.rxjava3.core.Observable;
 
 /**

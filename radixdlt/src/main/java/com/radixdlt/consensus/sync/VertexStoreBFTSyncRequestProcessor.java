@@ -23,7 +23,7 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.bft.BFTSyncRequestProcessor;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.consensus.sync.VertexStoreSync.GetVerticesRequest;
+import com.radixdlt.crypto.Hash;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -71,5 +71,10 @@ public final class VertexStoreBFTSyncRequestProcessor implements BFTSyncRequestP
 
 		log.trace("SYNC_VERTICES: Sending Response {}", fetched);
 		this.syncVerticesRPCSender.sendGetVerticesResponse(request, fetched);
+	}
+
+	public interface GetVerticesRequest {
+		Hash getVertexId();
+		int getCount();
 	}
 }

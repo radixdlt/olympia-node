@@ -56,11 +56,6 @@ import org.apache.logging.log4j.Logger;
  * Manages keeping the VertexStore in sync for consensus
  */
 public final class VertexStoreSync implements BFTSyncResponseProcessor, BFTUpdateProcessor, BFTSyncer, LedgerUpdateProcessor<LedgerUpdate> {
-	public interface GetVerticesRequest {
-		Hash getVertexId();
-		int getCount();
-	}
-
 	private enum SyncStage {
 		PREPARING,
 		GET_COMMITTED_VERTICES,
@@ -347,6 +342,8 @@ public final class VertexStoreSync implements BFTSyncResponseProcessor, BFTUpdat
 	@Override
 	public void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
 		log.trace("SYNC_STATE: update {}", ledgerUpdate);
+
+		this.currentLedgerHeader = ledgerUpdate.getTail();
 
 		Collection<List<Hash>> listeners = this.ledgerSyncing.headMap(
 			ledgerUpdate.getTail().getRaw(), true
