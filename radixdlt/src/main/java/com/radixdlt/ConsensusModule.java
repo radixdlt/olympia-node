@@ -168,7 +168,7 @@ public final class ConsensusModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private VertexStore vertexStoreFactory(
+	private VertexStore vertexStore(
 		VertexStoreEventSender vertexStoreEventSender,
 		BFTUpdateSender updateSender,
 		BFTConfiguration bftConfiguration,
