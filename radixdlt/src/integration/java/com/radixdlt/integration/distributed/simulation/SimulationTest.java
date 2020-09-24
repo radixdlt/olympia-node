@@ -464,7 +464,7 @@ public class SimulationTest {
 				} else if (ledgerType == LedgerType.LEDGER_AND_EPOCHS) {
 					modules.add(new EpochsLedgerUpdateModule());
 					modules.add(new EpochsLedgerUpdateRxModule());
-					modules.add(new EpochsConsensusModule(pacemakerTimeout));
+					modules.add(new EpochsConsensusModule(pacemakerTimeout, 2.0, 0)); // constant for now
 					modules.add(new ConsensusRunnerModule());
 					modules.add(new LedgerCommandGeneratorModule());
 					modules.add(new MockedMempoolModule());
@@ -479,7 +479,7 @@ public class SimulationTest {
 				} else if (ledgerType == LedgerType.LEDGER_AND_EPOCHS_AND_SYNC) {
 					modules.add(new EpochsLedgerUpdateModule());
 					modules.add(new EpochsLedgerUpdateRxModule());
-					modules.add(new EpochsConsensusModule(pacemakerTimeout));
+					modules.add(new EpochsConsensusModule(pacemakerTimeout, 2.0, 0)); // constant for now
 					modules.add(new ConsensusRunnerModule());
 					modules.add(new MockedCommandGeneratorModule());
 					modules.add(new MockedMempoolModule());
@@ -498,7 +498,7 @@ public class SimulationTest {
 				} else if (ledgerType == LedgerType.LEDGER_AND_LOCALMEMPOOL_AND_EPOCHS_AND_RADIXENGINE) {
 					modules.add(new EpochsLedgerUpdateModule());
 					modules.add(new EpochsLedgerUpdateRxModule());
-					modules.add(new EpochsConsensusModule(pacemakerTimeout));
+					modules.add(new EpochsConsensusModule(pacemakerTimeout, 2.0, 0)); // constant for now
 					modules.add(new ConsensusRunnerModule());
 					modules.add(new LedgerCommandGeneratorModule());
 					modules.add(new LedgerLocalMempoolModule(10));

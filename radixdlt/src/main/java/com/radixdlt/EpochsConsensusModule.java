@@ -39,10 +39,10 @@ import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.epoch.LocalTimeout;
-import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
-import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker.TimeoutSender;
+import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
+import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
@@ -54,10 +54,14 @@ import java.util.Comparator;
 
 public class EpochsConsensusModule extends AbstractModule {
 	private static final int ROTATING_WEIGHTED_LEADERS_CACHE_SIZE = 10;
-	private final int pacemakerTimeout;
+	private final long pacemakerTimeout;
+	private final double pacemakerRate;
+	private final int pacemakerMaxExponent;
 
-	public EpochsConsensusModule(int pacemakerTimeout) {
+	public EpochsConsensusModule(long pacemakerTimeout, double pacemakerRate, int pacemakerMaxExponent) {
 		this.pacemakerTimeout = pacemakerTimeout;
+		this.pacemakerRate = pacemakerRate;
+		this.pacemakerMaxExponent = pacemakerMaxExponent;
 	}
 
 	@Override
@@ -66,7 +70,7 @@ public class EpochsConsensusModule extends AbstractModule {
 	}
 
 	@Provides
-	private TimeoutSender initialTimeoutSender(LocalTimeoutSender localTimeoutSender, EpochChange initialEpoch) {
+	private PacemakerTimeoutSender initialTimeoutSender(LocalTimeoutSender localTimeoutSender, EpochChange initialEpoch) {
 		return (view, ms) -> localTimeoutSender.scheduleTimeout(new LocalTimeout(initialEpoch.getEpoch(), view), ms);
 	}
 
@@ -106,7 +110,7 @@ public class EpochsConsensusModule extends AbstractModule {
 
 	@Provides
 	private PacemakerFactory pacemakerFactory() {
-		return timeoutSender -> new FixedTimeoutPacemaker(pacemakerTimeout, timeoutSender);
+		return timeoutSender -> new ExponentialTimeoutPacemaker(this.pacemakerTimeout, this.pacemakerRate, this.pacemakerMaxExponent, timeoutSender);
 	}
 
 	@Provides

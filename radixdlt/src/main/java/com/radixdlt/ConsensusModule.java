@@ -35,7 +35,7 @@ import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTSyncRequestProcessor;
 import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
-import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker.TimeoutSender;
+import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
@@ -45,8 +45,8 @@ import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
-import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
 import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
+import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.network.TimeSupplier;
@@ -57,10 +57,14 @@ import java.util.Comparator;
  */
 public final class ConsensusModule extends AbstractModule {
 	private static final int ROTATING_WEIGHTED_LEADERS_CACHE_SIZE = 10;
-	private final int pacemakerTimeout;
+	private final long pacemakerTimeout;
+	private final double pacemakerRate;
+	private final int pacemakerMaxExponent;
 
-	public ConsensusModule(int pacemakerTimeout) {
+	public ConsensusModule(long pacemakerTimeout, double pacemakerRate, int pacemakerMaxExponent) {
 		this.pacemakerTimeout = pacemakerTimeout;
+		this.pacemakerRate = pacemakerRate;
+		this.pacemakerMaxExponent = pacemakerMaxExponent;
 	}
 
 	@Provides
@@ -137,8 +141,8 @@ public final class ConsensusModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private Pacemaker pacemaker(TimeoutSender timeoutSender) {
-		return new FixedTimeoutPacemaker(pacemakerTimeout, timeoutSender);
+	private Pacemaker pacemaker(PacemakerTimeoutSender timeoutSender) {
+		return new ExponentialTimeoutPacemaker(this.pacemakerTimeout, this.pacemakerRate, this.pacemakerMaxExponent, timeoutSender);
 	}
 
 	@Provides

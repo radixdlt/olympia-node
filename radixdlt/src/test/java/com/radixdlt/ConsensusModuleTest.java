@@ -35,10 +35,10 @@ import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
-import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker.TimeoutSender;
 import com.radixdlt.consensus.sync.VertexStoreSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
+import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
 import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.network.TimeSupplier;
@@ -63,7 +63,7 @@ public class ConsensusModuleTest {
 			bind(HashSigner.class).toInstance(mock(HashSigner.class));
 			bind(BFTNode.class).annotatedWith(Names.named("self")).toInstance(mock(BFTNode.class));
 			bind(BFTInfoSender.class).toInstance(mock(BFTInfoSender.class));
-			bind(TimeoutSender.class).toInstance(mock(TimeoutSender.class));
+			bind(PacemakerTimeoutSender.class).toInstance(mock(PacemakerTimeoutSender.class));
 			bind(BFTConfiguration.class).toInstance(mock(BFTConfiguration.class));
 		}
 	}
@@ -71,7 +71,7 @@ public class ConsensusModuleTest {
 	@Test
 	public void when_configured_with_correct_interfaces__then_consensus_runner_should_be_created() {
 		Injector injector = Guice.createInjector(
-			new ConsensusModule(500),
+			new ConsensusModule(500, 2.0, 32),
 			new ExternalConsensusModule()
 		);
 

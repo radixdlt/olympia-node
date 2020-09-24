@@ -116,9 +116,9 @@ public class BFTEventReducerTest {
 		when(qc.getView()).thenReturn(view);
 		when(proposerElection.getProposer(any())).thenReturn(self);
 		when(vertexStore.getHighestQC()).thenReturn(qc);
-		when(pacemaker.processQC(eq(view))).thenReturn(Optional.of(mock(View.class)));
+		when(pacemaker.processQC(eq(qc))).thenReturn(Optional.of(mock(View.class)));
 		reducer.start();
-		verify(pacemaker, times(1)).processQC(eq(view));
+		verify(pacemaker, times(1)).processQC(eq(qc));
 		verify(sender, times(1)).sendNewView(any(), any());
 	}
 
@@ -146,7 +146,7 @@ public class BFTEventReducerTest {
 		when(update.getInsertedVertex()).thenReturn(v);
 		reducer.processBFTUpdate(update);
 		verify(safetyRules, never()).process(eq(qc));
-		verify(pacemaker, never()).processQC(eq(view));
+		verify(pacemaker, never()).processQC(eq(qc));
 	}
 
 	@Test
@@ -178,7 +178,7 @@ public class BFTEventReducerTest {
 		when(qc.getView()).thenReturn(view);
 		when(pendingVotes.insertVote(eq(vote), any())).thenReturn(Optional.of(qc));
 		when(pacemaker.getCurrentView()).thenReturn(mock(View.class));
-		when(pacemaker.processQC(eq(view))).thenReturn(Optional.of(mock(View.class)));
+		when(pacemaker.processQC(eq(qc))).thenReturn(Optional.of(mock(View.class)));
 		when(vertexStoreSync.syncToQC(eq(qc), any(), any())).thenReturn(true);
 		when(vertexStore.getHighestQC()).thenReturn(mock(QuorumCertificate.class));
 
@@ -247,8 +247,8 @@ public class BFTEventReducerTest {
 		when(pacemaker.getCurrentView()).thenReturn(currentView);
 		Vote vote = mock(Vote.class);
 		doReturn(vote).when(safetyRules).voteFor(any(), any(), anyLong(), anyLong());
-		when(pacemaker.processQC(eq(qcView))).thenReturn(Optional.empty());
-		when(pacemaker.processQC(eq(currentView))).thenReturn(Optional.of(View.of(124)));
+		when(pacemaker.processQC(eq(qc))).thenReturn(Optional.empty());
+		when(pacemaker.processNextView(eq(currentView))).thenReturn(Optional.of(View.of(124)));
 		when(vertexStore.getHighestQC()).thenReturn(mock(QuorumCertificate.class));
 
 		reducer.processProposal(proposal);
@@ -260,6 +260,8 @@ public class BFTEventReducerTest {
 	@Test
 	public void when_processing_valid_stored_proposal_and_next_leader__then_atom_is_voted_on_and_new_view() throws SafetyViolationException {
 		View currentView = View.of(123);
+		QuorumCertificate currentQC = mock(QuorumCertificate.class);
+		when(currentQC.getView()).thenReturn(currentView);
 
 		when(proposerElection.getProposer(eq(currentView))).thenReturn(mock(BFTNode.class));
 		when(proposerElection.getProposer(eq(currentView.next()))).thenReturn(self);
@@ -278,8 +280,8 @@ public class BFTEventReducerTest {
 		when(pacemaker.getCurrentView()).thenReturn(currentView);
 		Vote vote = mock(Vote.class);
 		doReturn(vote).when(safetyRules).voteFor(any(), any(), anyLong(), anyLong());
-		when(pacemaker.processQC(eq(qcView))).thenReturn(Optional.empty());
-		when(pacemaker.processQC(eq(currentView))).thenReturn(Optional.of(View.of(124)));
+		when(pacemaker.processQC(eq(qc))).thenReturn(Optional.empty());
+		when(pacemaker.processQC(eq(currentQC))).thenReturn(Optional.of(View.of(124)));
 
 		reducer.processProposal(proposal);
 
@@ -290,6 +292,8 @@ public class BFTEventReducerTest {
 	@Test
 	public void when_processing_valid_stored_proposal_and_leader__then_atom_is_voted_on_and_no_new_view() throws SafetyViolationException {
 		View currentView = View.of(123);
+		QuorumCertificate currentQC = mock(QuorumCertificate.class);
+		when(currentQC.getView()).thenReturn(currentView);
 
 		when(proposerElection.getProposer(eq(currentView))).thenReturn(self);
 
@@ -307,8 +311,8 @@ public class BFTEventReducerTest {
 		when(pacemaker.getCurrentView()).thenReturn(currentView);
 		Vote vote = mock(Vote.class);
 		doReturn(vote).when(safetyRules).voteFor(any(), any(), anyLong(), anyLong());
-		when(pacemaker.processQC(eq(qcView))).thenReturn(Optional.empty());
-		when(pacemaker.processQC(eq(currentView))).thenReturn(Optional.of(View.of(124)));
+		when(pacemaker.processQC(eq(qc))).thenReturn(Optional.empty());
+		when(pacemaker.processQC(eq(currentQC))).thenReturn(Optional.of(View.of(124)));
 
 		reducer.processProposal(proposal);
 

@@ -26,13 +26,13 @@ import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.BFTSyncResponseProcessor;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker.TimeoutSender;
 import com.radixdlt.consensus.sync.VertexStoreSync;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
+import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
 import com.radixdlt.integration.distributed.BFTRunner;
 
 public class MockedConsensusRunnerModule extends AbstractModule {
@@ -59,7 +59,7 @@ public class MockedConsensusRunnerModule extends AbstractModule {
 	}
 
 	@Provides
-	private TimeoutSender initialTimeoutSender(LocalTimeoutSender localTimeoutSender) {
+	private PacemakerTimeoutSender initialTimeoutSender(LocalTimeoutSender localTimeoutSender) {
 		 return (view, ms) -> localTimeoutSender.scheduleTimeout(new LocalTimeout(1, view), ms);
 	}
 }

@@ -41,10 +41,10 @@ import com.radixdlt.consensus.bft.EmptyBFTEventProcessor;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
-import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker.TimeoutSender;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
+import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -190,7 +190,7 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdatePro
 		logEpochChange(this.currentEpoch, "included in");
 
 		ProposerElection proposerElection = proposerElectionFactory.create(validatorSet);
-		TimeoutSender sender = (view, ms) -> localTimeoutSender.scheduleTimeout(new LocalTimeout(nextEpoch, view), ms);
+		PacemakerTimeoutSender sender = (view, ms) -> localTimeoutSender.scheduleTimeout(new LocalTimeout(nextEpoch, view), ms);
 		Pacemaker pacemaker = pacemakerFactory.create(sender);
 
 		// TODO: Recover VertexStore

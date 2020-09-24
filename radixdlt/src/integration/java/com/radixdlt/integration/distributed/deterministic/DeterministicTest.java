@@ -77,13 +77,8 @@ public final class DeterministicTest {
 
 	public static class Builder {
 		private enum LedgerType {
-			MOCKED_LEDGER(false),
-			LEDGER_AND_EPOCHS_AND_SYNC(true);
-
-			private final boolean hasEpochs;
-			LedgerType(boolean hasEpochs) {
-				this.hasEpochs = hasEpochs;
-			}
+			MOCKED_LEDGER,
+			LEDGER_AND_EPOCHS_AND_SYNC;
 		}
 
 		private ImmutableList<BFTNode> nodes = ImmutableList.of(BFTNode.create(ECKeyPair.generateNew().getPublicKey()));
@@ -169,7 +164,7 @@ public final class DeterministicTest {
 				modules.add(new MockedLedgerModule());
 
 				// TODO: remove the following
-				modules.add(new EpochsConsensusModule(1));
+				modules.add(new EpochsConsensusModule(1, 2.0, 0));
 				modules.add(new EpochsLedgerUpdateModule());
 			} else {
 				// TODO: adapter from LongFunction<BFTValidatorSet> to Function<Long, BFTValidatorSet> shouldn't be needed
@@ -181,7 +176,7 @@ public final class DeterministicTest {
 					}
 				});
 				modules.add(new LedgerModule());
-				modules.add(new EpochsConsensusModule(1));
+				modules.add(new EpochsConsensusModule(1, 2.0, 0));
 				modules.add(new EpochsLedgerUpdateModule());
 				modules.add(new LedgerCommandGeneratorModule());
 				modules.add(new MockedSyncServiceModule());

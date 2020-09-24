@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *  http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -17,14 +17,18 @@
 
 package com.radixdlt.consensus.liveness;
 
+import com.radixdlt.consensus.bft.View;
+
 /**
- * Pacemaker factory
+ * Callback to the issuer of timeout events
  */
-public interface PacemakerFactory {
+public interface PacemakerTimeoutSender {
 
 	/**
-	 * Creates a new clean pacemaker
-	 * @return a new pacemaker
+	 * Schedules a timeout event for a particular view.
+	 *
+	 * @param view the view to schedule a timeout for
+	 * @param milliseconds the milliseconds to wait before timeout occurs
 	 */
-	Pacemaker create(PacemakerTimeoutSender timeoutSender);
+	void scheduleTimeout(View view, long milliseconds);
 }

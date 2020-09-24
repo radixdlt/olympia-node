@@ -171,7 +171,7 @@ public final class DeterministicNetwork {
 		Module module = Modules.combine(
 			// An arbitrary timeout for the pacemaker, as time is handled differently
 			// in a deterministic test.
-			new ConsensusModule(5000),
+			new ConsensusModule(1, 2.0, 63),
 			new MockedCryptoModule(),
 			new DeterministicNetworkModule(self, createSender(index)),
 			Modules.combine(syncExecutionModules)

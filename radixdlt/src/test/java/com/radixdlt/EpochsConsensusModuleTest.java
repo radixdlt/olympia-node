@@ -42,7 +42,6 @@ import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
-import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker.TimeoutSender;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
@@ -55,9 +54,6 @@ import org.junit.Test;
 public class EpochsConsensusModuleTest {
 	@Inject
 	private BFTInfoSender infoSender;
-
-	@Inject
-	private TimeoutSender timeoutSender;
 
 	private EpochInfoSender epochInfoSender = mock(EpochInfoSender.class);
 
@@ -92,7 +88,7 @@ public class EpochsConsensusModuleTest {
 	@Test
 	public void when_send_current_view__then_should_use_epoch_info_sender() {
 		Guice.createInjector(
-			new EpochsConsensusModule(500),
+			new EpochsConsensusModule(500, 2.0, 0), // constant for now
 			getExternalModule()
 		).injectMembers(this);
 
@@ -106,7 +102,7 @@ public class EpochsConsensusModuleTest {
 	@Test
 	public void when_send_timeout_processed__then_should_use_epoch_info_sender() {
 		Guice.createInjector(
-			new EpochsConsensusModule(500),
+			new EpochsConsensusModule(500, 2.0, 0), // constant for now
 			getExternalModule()
 		).injectMembers(this);
 
