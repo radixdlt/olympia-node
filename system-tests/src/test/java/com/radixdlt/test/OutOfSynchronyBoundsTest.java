@@ -36,12 +36,11 @@ public class OutOfSynchronyBoundsTest {
 		try (DockerNetwork network = DockerNetwork.builder().numNodes(4).testName(name).startConsensusOnBoot().build()) {
 			network.startBlocking();
 
-			Thread.sleep(30000);
-//			RemoteBFTTest test = slowNodeTestBuilder()
-//				.network(RemoteBFTNetworkBridge.of(network))
-//				.waitUntilResponsive()
-//				.build();
-//			test.runBlocking(CmdHelper.getTestDurationInSeconds(), TimeUnit.SECONDS);
+			RemoteBFTTest test = slowNodeTestBuilder()
+				.network(RemoteBFTNetworkBridge.of(network))
+				.waitUntilResponsive()
+				.build();
+			test.runBlocking(CmdHelper.getTestDurationInSeconds(), TimeUnit.SECONDS);
 
 			String nodeNetworkSlowed = network.getNodeIds().stream().findFirst().get();
 			String veth = CmdHelper.getVethByContainerName(nodeNetworkSlowed);
@@ -56,8 +55,6 @@ public class OutOfSynchronyBoundsTest {
 
 			testOutOfSynchronyBounds.runBlocking(CmdHelper.getTestDurationInSeconds(), TimeUnit.SECONDS);
 
-		} catch (InterruptedException e) {
-			e.printStackTrace();
 		}
 
 	}

@@ -20,6 +20,5 @@ docker create  --pid=host --privileged  \
       -e CONTAINER_NAME -e TEST_DURATION -e RADIXDLT_UNIVERSE=${RADIXDLT_UNIVERSE} \
       --name=${test_executor} radix-system-test \
       ./gradlew clean dockerSystemTests
-      #./gradlew clean dockerSystemTests --tests "com.radixdlt.test.OutOfSynchronyBoundsTest.given_4_correct_bfts_in_latent_docker_network__when_one_instance_is_down__then_all_instances_should_get_same_commits_and_progress_should_be_made"
 docker start -a "${test_executor}"
 docker cp $test_executor:src/system-tests .

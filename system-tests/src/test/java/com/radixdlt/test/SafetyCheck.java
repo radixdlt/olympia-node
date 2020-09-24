@@ -82,7 +82,8 @@ public class SafetyCheck implements RemoteBFTCheck {
 					.timeout(timeout, timeoutUnit)
 					.map(verticesString -> {
 						logger.info("Api/Vertices/commited endpoint response {} ",verticesString);
-						return extractVertices(verticesString, node);})
+						return extractVertices(verticesString, node);
+					})
 					.doOnError(err -> logger.warn(
 						"error while querying {} for committed vertices, excluding from evaluation due to: {}",
 						node, err))

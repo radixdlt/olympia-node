@@ -40,7 +40,6 @@ public class AssertionChecks {
 		return RemoteBFTTest.builder()
 			.assertResponsiveness(nodesToIgnore)
 			.assertAllProposalsHaveDirectParents(nodesToIgnore)
-//			.assertNoTimeouts();
 			.assertSafety(nodesToIgnore)
 			.assertLiveness(20,nodesToIgnore);
 	}
