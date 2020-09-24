@@ -40,6 +40,7 @@ import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.sync.VertexStoreSync.SyncVerticesRequestSender;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.TypedMocks;
 import java.util.Collections;
@@ -222,6 +223,51 @@ public class VertexStoreSyncTest {
 
 		verify(syncVerticesRequestSender, times(1)).sendGetVerticesRequest(any(), any(), anyInt());
 		verify(syncLedgerRequestSender, times(1)).sendLocalSyncRequest(any());
+	}
+
+
+	@Test
+	public void given_syncing_to_ledger__when_receive_update__then_should_rebuild() {
+		VerifiedVertex rootVertex = mock(VerifiedVertex.class);
+		when(rootVertex.getView()).thenReturn(View.of(2));
+		when(vertexStore.getRoot()).thenReturn(rootVertex);
+		when(vertexStore.addQC(any())).thenReturn(false);
+		BFTHeader header = mock(BFTHeader.class);
+		Hash vertexId = mock(Hash.class);
+		when(header.getVertexId()).thenReturn(vertexId);
+		when(header.getView()).thenReturn(View.of(5));
+		QuorumCertificate qc = mock(QuorumCertificate.class);
+		when(qc.getProposed()).thenReturn(header);
+		when(qc.getView()).thenReturn(View.of(5));
+		QuorumCertificate committedQC = mock(QuorumCertificate.class);
+		BFTHeader committedHeader = mock(BFTHeader.class);
+		BFTHeader committedProposed = mock(BFTHeader.class);
+		when(committedQC.getProposed()).thenReturn(committedProposed);
+		Hash committedId = mock(Hash.class);
+		when(committedProposed.getVertexId()).thenReturn(committedId);
+		when(committedHeader.getView()).thenReturn(View.of(3));
+		VerifiedLedgerHeaderAndProof committedLedgerHeader = mock(VerifiedLedgerHeaderAndProof.class);
+		when(committedLedgerHeader.getStateVersion()).thenReturn(3L);
+		when(committedQC.getCommittedAndLedgerStateProof())
+			.thenReturn(Optional.of(Pair.of(committedHeader, committedLedgerHeader)));
+		BFTNode author = mock(BFTNode.class);
+		vertexStoreSync.syncToQC(qc, committedQC, author);
+		VerifiedVertex vertex = mock(VerifiedVertex.class);
+		when(vertex.getId()).thenReturn(committedId);
+		when(vertex.getView()).thenReturn(View.of(3));
+		when(vertexStore.addQC(any())).thenReturn(true);
+		GetVerticesResponse getVerticesResponse = new GetVerticesResponse(
+			mock(BFTNode.class),
+			List.of(vertex, vertex, vertex)
+		);
+		vertexStoreSync.processGetVerticesResponse(getVerticesResponse);
+
+		when(vertexStore.containsVertex(any())).thenReturn(false);
+		LedgerUpdate ledgerUpdate = mock(LedgerUpdate.class);
+		when(ledgerUpdate.getTail()).thenReturn(committedLedgerHeader);
+		vertexStoreSync.processLedgerUpdate(ledgerUpdate);
+
+		verify(vertexStore, times(1)).rebuild(any(), any(), any(), any());
 	}
 
 	@Test
