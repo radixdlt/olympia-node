@@ -20,6 +20,9 @@ package com.radixdlt.consensus.epoch;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.sync.VertexStoreSync;
 
+/**
+ * Creates a new vertex store sync given a vertex store
+ */
 public interface VertexStoreSyncFactory {
 	VertexStoreSync create(VertexStore vertexStore);
 }

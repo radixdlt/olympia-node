@@ -20,6 +20,10 @@ package com.radixdlt.consensus.bft;
 import com.radixdlt.consensus.QuorumCertificate;
 import javax.annotation.Nullable;
 
+/**
+ * Synchronizes the state in order for consensus preparation
+ * TODO: Fix interfaces as it seems like a still rather awkward interface
+ */
 public interface BFTSyncer {
 	/**
 	 * Initiate a sync to a given QC and a committedQC. Returns true if already synced

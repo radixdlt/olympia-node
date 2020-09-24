@@ -19,6 +19,9 @@ package com.radixdlt.consensus.bft;
 
 import com.radixdlt.consensus.sync.VertexStoreSync.GetVerticesRequest;
 
+/**
+ * Processes a remote GetVertices request
+ */
 public interface BFTSyncRequestProcessor {
 	void processGetVerticesRequest(GetVerticesRequest request);
 }
