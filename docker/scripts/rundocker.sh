@@ -14,11 +14,9 @@ if [ ! -f "${dockerfile}" ]; then
 fi
 
 # Load environment
-pushd "${scriptdir}/../../radixdlt"
-eval $(../gradlew -q clean generateDevUniverse)
-popd
+eval $(../gradlew -q -p "${scriptdir}/../../radixdlt" clean generateDevUniverse)
 
 # Launch
-${scriptdir}/../../gradlew deb4docker && \
+${scriptdir}/../../gradlew -p "${scriptdir}/../.." deb4docker && \
   (docker kill $(docker ps -q) || true) 2>/dev/null && \
   docker-compose -f "${dockerfile}" up --build | tee docker.log
