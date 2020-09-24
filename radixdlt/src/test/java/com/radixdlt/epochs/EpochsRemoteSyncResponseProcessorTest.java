@@ -38,6 +38,8 @@ import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.sync.RemoteSyncResponse;
 import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier;
+import com.radixdlt.utils.TypedMocks;
+
 import java.util.Optional;
 import java.util.function.Function;
 import org.junit.Before;
@@ -58,7 +60,7 @@ public class EpochsRemoteSyncResponseProcessorTest {
 		this.currentHeader = mock(VerifiedLedgerHeaderAndProof.class);
 
 		this.localSyncRequestSender = mock(SyncLedgerRequestSender.class);
-		this.verifierFactory = mock(Function.class);
+		this.verifierFactory = TypedMocks.rmock(Function.class);
 
 		this.responseProcessor = new EpochsRemoteSyncResponseProcessor(
 			localSyncRequestSender,

@@ -49,6 +49,8 @@ import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncTimeoutSchedul
 import com.radixdlt.sync.RemoteSyncResponse;
 import com.radixdlt.sync.RemoteSyncResponseAccumulatorVerifier.VerifiedAccumulatorSender;
 import com.radixdlt.sync.StateSyncNetwork;
+import com.radixdlt.utils.TypedMocks;
+
 import java.util.Comparator;
 import org.junit.Test;
 
@@ -70,7 +72,7 @@ public class SyncServiceModuleTest {
 				bind(CommittedReader.class).toInstance(mock(CommittedReader.class));
 				bind(SyncTimeoutScheduler.class).toInstance(mock(SyncTimeoutScheduler.class));
 				bind(StateSyncNetwork.class).toInstance(mock(StateSyncNetwork.class));
-				bind(Key.get(new TypeLiteral<Comparator<AccumulatorState>>() { })).toInstance(mock(Comparator.class));
+				bind(Key.get(new TypeLiteral<Comparator<AccumulatorState>>() { })).toInstance(TypedMocks.rmock(Comparator.class));
 				bind(BFTConfiguration.class).toInstance(mock(BFTConfiguration.class));
 			}
 		};

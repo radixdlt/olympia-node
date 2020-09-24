@@ -33,25 +33,22 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.epochs.SyncedEpochSender;
 import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.ledger.LedgerUpdateProcessor;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncTimeoutScheduler;
 import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier;
 import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier.InvalidValidatorSetSender;
 import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier.VerifiedValidatorSetSender;
 import com.radixdlt.sync.StateSyncNetwork;
+import com.radixdlt.utils.TypedMocks;
+
 import java.util.Comparator;
 import org.junit.Test;
 
 public class EpochsSyncModuleTest {
 	@Inject
 	private SyncedEpochSender syncedEpochSender;
-
-	@Inject
-	private LedgerUpdateProcessor<EpochsLedgerUpdate> updateProcessor;
 
 	private Ledger ledger = mock(Ledger.class);
 
@@ -70,7 +67,7 @@ public class EpochsSyncModuleTest {
 				bind(InvalidValidatorSetSender.class).toInstance(mock(InvalidValidatorSetSender.class));
 				bind(StateSyncNetwork.class).toInstance(mock(StateSyncNetwork.class));
 				bind(SyncTimeoutScheduler.class).toInstance(mock(SyncTimeoutScheduler.class));
-				bind(new TypeLiteral<Comparator<AccumulatorState>>() { }).toInstance(mock(Comparator.class));
+				bind(new TypeLiteral<Comparator<AccumulatorState>>() { }).toInstance(TypedMocks.rmock(Comparator.class));
 			}
 		};
 	}

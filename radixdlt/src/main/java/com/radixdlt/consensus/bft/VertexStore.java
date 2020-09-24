@@ -39,8 +39,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import javax.annotation.concurrent.NotThreadSafe;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Manages the BFT Vertex chain.
@@ -57,7 +55,6 @@ public final class VertexStore {
 		void highQC(QuorumCertificate qc);
 	}
 
-	private final Logger log = LogManager.getLogger();
 	private final VertexStoreEventSender vertexStoreEventSender;
 	private final BFTUpdateSender bftUpdateSender;
 	private final Ledger ledger;

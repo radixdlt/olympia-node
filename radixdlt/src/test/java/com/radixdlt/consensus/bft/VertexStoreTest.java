@@ -234,8 +234,7 @@ public class VertexStoreTest {
 	}
 
 	@Test
-	public void when_insert_vertex__then_it_should_not_be_committed_or_stored_in_engine()
-		throws VertexInsertionException {
+	public void when_insert_vertex__then_it_should_not_be_committed_or_stored_in_engine() {
 		VerifiedVertex nextVertex = mock(VerifiedVertex.class);
 		when(nextVertex.getQC()).thenReturn(rootQC);
 		when(nextVertex.getView()).thenReturn(View.of(1));
@@ -248,8 +247,7 @@ public class VertexStoreTest {
 	}
 
 	@Test
-	public void when_insert_and_commit_vertex__then_it_should_be_committed_and_stored_in_engine()
-		throws VertexInsertionException {
+	public void when_insert_and_commit_vertex__then_it_should_be_committed_and_stored_in_engine() {
 		Hash id = mock(Hash.class);
 		VerifiedVertex nextVertex = mock(VerifiedVertex.class);
 		when(nextVertex.getQC()).thenReturn(rootQC);

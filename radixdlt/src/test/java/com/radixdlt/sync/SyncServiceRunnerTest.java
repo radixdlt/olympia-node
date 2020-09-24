@@ -21,6 +21,8 @@ import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdateProcessor;
 import com.radixdlt.sync.SyncServiceRunner.LocalSyncRequestsRx;
 import com.radixdlt.sync.SyncServiceRunner.SyncTimeoutsRx;
+import com.radixdlt.utils.TypedMocks;
+
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import io.reactivex.rxjava3.subjects.Subject;
@@ -70,7 +72,7 @@ public class SyncServiceRunnerTest {
 		this.syncServiceProcessor = mock(LocalSyncServiceProcessor.class);
 		this.remoteSyncResponseProcessor = mock(RemoteSyncResponseProcessor.class);
 		this.remoteSyncServiceProcessor = mock(RemoteSyncServiceProcessor.class);
-		this.ledgerUpdateProcessor = mock(LedgerUpdateProcessor.class);
+		this.ledgerUpdateProcessor = TypedMocks.rmock(LedgerUpdateProcessor.class);
 
 		syncServiceRunner = new SyncServiceRunner<>(
 			localSyncRequestsRx,

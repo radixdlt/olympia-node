@@ -57,6 +57,7 @@ public final class EpochsLedgerUpdate implements LedgerUpdate {
 		return base.getNextValidatorSet();
 	}
 
+	@Override
 	public String toString() {
 		return String.format("%s{numCmds=%s}", this.getClass().getSimpleName(), base.getNewCommands().size());
 	}
