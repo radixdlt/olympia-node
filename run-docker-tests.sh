@@ -13,7 +13,6 @@ fi
 docker build -f system-tests/docker/Dockerfile -t radix-system-test .
 docker ps -a
 
-echo $RADIXDLT_UNIVERSE
 docker rm -f "${test_executor}" || true
 docker create  --pid=host --privileged  \
       -v /var/run/docker.sock:/var/run/docker.sock \
