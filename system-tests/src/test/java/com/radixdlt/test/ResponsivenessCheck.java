@@ -56,10 +56,16 @@ public class ResponsivenessCheck implements RemoteBFTCheck {
 
 	@Override
 	public Single<RemoteBFTCheckResult> check(RemoteBFTNetworkBridge network) {
-		return Completable.mergeDelayError(network.getNodeIds()
-			.stream().filter(nodename -> !nodesToIgnore.contains(nodename))
-			.map(nodeName -> network.queryEndpointJson(nodeName, "api/ping").timeout(timeout, timeoutUnit).ignoreElement())
-			.collect(Collectors.toList())).toSingleDefault(RemoteBFTCheckResult.success()).onErrorReturn(RemoteBFTCheckResult::error);
+		return Completable.mergeDelayError(
+			network.getNodeIds()
+			.stream()
+				.filter(nodename -> !nodesToIgnore.contains(nodename))
+				.map(nodeName -> network.queryEndpointJson(nodeName, "api/ping").
+					timeout(timeout, timeoutUnit)
+					.ignoreElement())
+				.collect(Collectors.toList()))
+			.toSingleDefault(RemoteBFTCheckResult.success())
+			.onErrorReturn(RemoteBFTCheckResult::error);
 	}
 
 	@Override

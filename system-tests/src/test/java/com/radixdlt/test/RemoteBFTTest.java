@@ -48,8 +48,13 @@ public final class RemoteBFTTest {
 	private final TimeUnit prerequisiteTimeoutUnit;
 	private final boolean startConsensusOnRun;
 
-	private RemoteBFTTest(RemoteBFTNetworkBridge testNetwork, ImmutableList<RemoteBFTCheck> prerequisites, ImmutableList<RemoteBFTCheck> checks,
-		RemoteBFTCheckSchedule schedule, long prerequisiteTimeout, TimeUnit prerequisiteTimeoutUnit, boolean startConsensusOnRun) {
+	private RemoteBFTTest(RemoteBFTNetworkBridge testNetwork,
+							ImmutableList<RemoteBFTCheck> prerequisites,
+							ImmutableList<RemoteBFTCheck> checks,
+							RemoteBFTCheckSchedule schedule,
+							long prerequisiteTimeout,
+							TimeUnit prerequisiteTimeoutUnit,
+							boolean startConsensusOnRun) {
 		this.testNetwork = testNetwork;
 		this.prerequisites = prerequisites;
 		this.prerequisiteTimeout = prerequisiteTimeout;
@@ -68,20 +73,28 @@ public final class RemoteBFTTest {
 	public void waitForPrerequisitesBlocking(long timeout, TimeUnit timeoutUnit) {
 		logger.info("waiting for prerequisites to be satisfied: " + prerequisites);
 		// create cold observables containing the prerequisite check schedules
-		List<Observable<RemoteBFTCheckResult>> prerequisiteRuns = this.prerequisites.stream().map(
-			prerequisite -> this.schedule.schedule(prerequisite).map(prerequisiteToRun -> prerequisiteToRun.check(this.testNetwork))
+		List<Observable<RemoteBFTCheckResult>> prerequisiteRuns = this.prerequisites.stream()
+			.map(prerequisite -> this.schedule.schedule(prerequisite)
+				.map(prerequisiteToRun -> prerequisiteToRun.check(this.testNetwork))
 				.flatMap(Single::toObservable)).collect(Collectors.toList());
 		// combine the latest results of executing all prerequisite schedules
-		Observable
-			.combineLatest(prerequisiteRuns, results -> Arrays.stream(results).map(RemoteBFTCheckResult.class::cast).collect(Collectors.toList()))
+		Observable.combineLatest(prerequisiteRuns, results -> Arrays.stream(results)
+			.map(RemoteBFTCheckResult.class::cast)
+			.collect(Collectors.toList()))
 			.doOnNext(results -> {
 				if (results.stream().anyMatch(RemoteBFTCheckResult::isError)) {
-					logger.info("prerequisites unsatisfied, retrying: " + results.stream().filter(RemoteBFTCheckResult::isError)
-						.map(RemoteBFTCheckResult::toString).collect(Collectors.joining(", ")));
+					logger.info("prerequisites unsatisfied, retrying: " + results.stream()
+						.filter(RemoteBFTCheckResult::isError)
+						.map(RemoteBFTCheckResult::toString)
+						.collect(Collectors.joining(", ")));
 				}
-			}).filter(results -> results.stream().allMatch(RemoteBFTCheckResult::isSuccess))
+			})
+			.filter(results -> results.stream().allMatch(RemoteBFTCheckResult::isSuccess))
 			.firstOrError() // error and retry if not all check were successful
-			.retry().timeout(timeout, timeoutUnit).ignoreElement().blockingAwait();
+			.retry()
+			.timeout(timeout, timeoutUnit)
+			.ignoreElement()
+			.blockingAwait();
 	}
 
 	/**
@@ -118,15 +131,22 @@ public final class RemoteBFTTest {
 
 		// run the actual tests for the configured duration
 		logger.info("running for {} {}: {}", duration, durationUnit, this.checks);
-		ArrayList<RemoteBFTCheckResult> failingChecks = Observable.merge(this.checks.stream().map(check -> this.schedule.schedule(check).map(
-			checkToRun -> checkToRun.check(this.testNetwork)
-				.onErrorReturn(error -> RemoteBFTCheckResult.error(InternalBFTCheckError.from(check, error))).doOnSuccess(result -> {
-					if (!delayErrors) {
-						result.assertSuccess(String.format("check %s failed, failing immediately (delayErrors=false)", checkToRun));
-					}
-				})).flatMap(Single::toObservable)).collect(Collectors.toList())).take(duration, durationUnit).filter(RemoteBFTCheckResult::isError)
+		ArrayList<RemoteBFTCheckResult> failingChecks = Observable.merge(
+			this.checks.stream()
+				.map(check -> this.schedule.schedule(check)
+					.map(checkToRun -> checkToRun.check(this.testNetwork)
+						.onErrorReturn(error -> RemoteBFTCheckResult.error(InternalBFTCheckError.from(check, error)))
+						.doOnSuccess(result -> {
+							if (!delayErrors) {
+								result.assertSuccess(String.format("check %s failed, failing immediately (delayErrors=false)", checkToRun));
+							} }))
+					.flatMap(Single::toObservable))
+				.collect(Collectors.toList()))
+			.take(duration, durationUnit)
+			.filter(RemoteBFTCheckResult::isError)
 			.doOnNext(failedCheck -> logger.error("check failed, delaying until completion (delayErrors=true)", failedCheck.getException()))
-			.collectInto(new ArrayList<RemoteBFTCheckResult>(), List::add).blockingGet();
+			.collectInto(new ArrayList<RemoteBFTCheckResult>(), List::add)
+			.blockingGet();
 		if (!failingChecks.isEmpty()) {
 			throw new CompositeError(failingChecks);
 		}
@@ -370,8 +390,13 @@ public final class RemoteBFTTest {
 		private final List<RemoteBFTCheckResult> failedChecks;
 
 		public CompositeError(Collection<RemoteBFTCheckResult> failedChecks) {
-			super(String.format("%d checks failed: %s", failedChecks.size(),
-				failedChecks.stream().map(RemoteBFTCheckResult::getException).map(Throwable::toString).collect(Collectors.joining("%n"))));
+			super(String.format(
+				"%d checks failed: %s",
+				failedChecks.size(),
+				failedChecks.stream()
+					.map(RemoteBFTCheckResult::getException)
+					.map(Throwable::toString)
+					.collect(Collectors.joining("%n"))));
 			this.failedChecks = ImmutableList.copyOf(failedChecks);
 		}
 	}

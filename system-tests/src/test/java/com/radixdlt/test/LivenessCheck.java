@@ -94,8 +94,6 @@ public class LivenessCheck implements RemoteBFTCheck {
 	 * @return The highest highest QC view
 	 */
 	private Single<Pair<Long, Long>> getHighestHighestQCView(RemoteBFTNetworkBridge network) {
-		Stream<String> nodes = network.getNodeIds().stream().filter(nodename -> !nodesToIgnore.contains(nodename));;
-
 		return Single.zip(
 			network.getNodeIds().stream()
 				.filter(nodename -> {
