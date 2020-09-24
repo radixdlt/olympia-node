@@ -15,34 +15,28 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.consensus.sync;
 
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.consensus.bft.BFTNode;
 import java.util.Objects;
 
 /**
  * An error response to the GetVertices call
  */
 public final class GetVerticesErrorResponse {
-	private BFTNode sender;
-	private final Hash vertexId;
+	private final BFTNode sender;
 	private final QuorumCertificate highestQC;
 	private final QuorumCertificate highestCommittedQC;
 
-	public GetVerticesErrorResponse(BFTNode sender, Hash vertexId, QuorumCertificate highestQC, QuorumCertificate highestCommittedQC) {
+	public GetVerticesErrorResponse(BFTNode sender, QuorumCertificate highestQC, QuorumCertificate highestCommittedQC) {
 		this.sender = Objects.requireNonNull(sender);
-		this.vertexId = Objects.requireNonNull(vertexId);
 		this.highestQC = Objects.requireNonNull(highestQC);
 		this.highestCommittedQC = Objects.requireNonNull(highestCommittedQC);
 	}
 
 	public BFTNode getSender() {
 		return sender;
-	}
-
-	public Hash getVertexId() {
-		return vertexId;
 	}
 
 	public QuorumCertificate getHighestQC() {

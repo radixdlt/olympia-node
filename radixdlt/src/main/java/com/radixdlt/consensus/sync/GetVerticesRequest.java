@@ -15,33 +15,35 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.consensus.sync;
 
-import java.util.List;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.crypto.Hash;
 import java.util.Objects;
 
 /**
- * An RPC response
+ * A request for bft vertices info
  */
-public final class GetVerticesResponse {
-	private final List<VerifiedVertex> vertices;
+public final class GetVerticesRequest {
 	private final BFTNode sender;
+	private final Hash vertexId;
+	private final int count;
 
-	public GetVerticesResponse(BFTNode sender, List<VerifiedVertex> vertices) {
+	public GetVerticesRequest(BFTNode sender, Hash vertexId, int count) {
 		this.sender = Objects.requireNonNull(sender);
-		this.vertices = Objects.requireNonNull(vertices);
+		this.vertexId = Objects.requireNonNull(vertexId);
+		this.count = count;
 	}
 
 	public BFTNode getSender() {
 		return sender;
 	}
 
-	public List<VerifiedVertex> getVertices() {
-		return vertices;
+	public Hash getVertexId() {
+		return vertexId;
 	}
 
-	@Override
-	public String toString() {
-		return String.format("%s{vertices=%s}", this.getClass().getSimpleName(), vertices);
+	public int getCount() {
+		return count;
 	}
 }
