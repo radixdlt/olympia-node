@@ -98,9 +98,8 @@ public final class RemoteBFTTest {
 	}
 
 	/**
-	 * Run this test as configured for the specified duration, waiting for prerequisites if required. This method blocks and completes when the test
-	 * has concluded or immediately throws an exception if there are errors.
-	 *
+	 * Run this test as configured for the specified duration, waiting for prerequisites if required.
+	 * This method blocks and completes when the test has concluded or immediately throws an exception if there are errors.
 	 * @param duration The duration this test should be run for
 	 * @param durationUnit The unit of the duration
 	 */
@@ -109,10 +108,10 @@ public final class RemoteBFTTest {
 	}
 
 	/**
-	 * Run this test as configured for the specified duration, waiting for prerequisites if required. This method blocks and completes when the test
-	 * has concluded successfully. In case of errors, - if delayErrors is true, an exception is thrown immediately upon encountering the first error -
-	 * if delayErrors is false, a composite exception containing all errors is thrown after the test has concluded
-	 *
+	 * Run this test as configured for the specified duration, waiting for prerequisites if required.
+	 * This method blocks and completes when the test has concluded successfully. In case of errors,
+	 *  - if delayErrors is true, an exception is thrown immediately upon encountering the first error
+	 *  - if delayErrors is false, a composite exception containing all errors is thrown after the test has concluded
 	 * @param duration The duration this test should be run for
 	 * @param durationUnit The unit of the duration
 	 * @param delayErrors Whether to delay errors (and fail at the end) or fail immediately on first error
