@@ -28,6 +28,7 @@ import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.epochs.EpochsLedgerUpdate;
 import java.util.Objects;
 import javax.inject.Inject;
 
@@ -68,6 +69,9 @@ public final class DeterministicConsensusRunner {
 			this.epochManager.processGetEpochRequest((GetEpochRequest) message);
 		} else if (message instanceof GetEpochResponse) {
 			this.epochManager.processGetEpochResponse((GetEpochResponse) message);
+		} else if (message instanceof EpochsLedgerUpdate) {
+			// do nothing for now
+			// TODO: forward to sync
 		} else {
 			throw new IllegalArgumentException("Unknown message type: " + message.getClass().getName());
 		}

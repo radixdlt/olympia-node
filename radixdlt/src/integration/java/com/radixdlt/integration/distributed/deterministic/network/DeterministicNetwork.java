@@ -17,13 +17,13 @@
 
 package com.radixdlt.integration.distributed.deterministic.network;
 
+import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Streams;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
+import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
@@ -33,10 +33,11 @@ import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.epochs.EpochChangeManager.EpochsLedgerUpdateSender;
 import com.radixdlt.integration.distributed.deterministic.DeterministicConsensusRunner;
 import com.radixdlt.integration.distributed.deterministic.DeterministicNetworkModule;
 import com.radixdlt.integration.distributed.MockedCryptoModule;
-import com.radixdlt.ledger.EpochChangeSender;
+import com.radixdlt.epochs.EpochChangeSender;
 import com.radixdlt.ledger.StateComputerLedger.CommittedStateSyncSender;
 import com.radixdlt.utils.Pair;
 
@@ -62,6 +63,7 @@ public final class DeterministicNetwork {
 		SyncVerticesRPCSender,
 		SyncedVertexSender,
 		EpochChangeSender,
+		EpochsLedgerUpdateSender,
 		CommittedStateSyncSender,
 		LocalTimeoutSender,
 		SyncEpochsRPCSender {
@@ -72,7 +74,7 @@ public final class DeterministicNetwork {
 	private final MessageSelector messageSelector;
 	private final MessageMutator messageMutator;
 
-	private final ImmutableMap<BFTNode, Integer> nodeLookup;
+	private final ImmutableBiMap<BFTNode, Integer> nodeLookup;
 	private final ImmutableList<Injector> nodeInstances;
 
 	/**
@@ -86,14 +88,19 @@ public final class DeterministicNetwork {
 		List<BFTNode> nodes,
 		MessageSelector messageSelector,
 		MessageMutator messageMutator,
-		Collection<Module> syncExecutionModules
+		Collection<Module> syncExecutionModules,
+		Module overrideModule
 	) {
 		this.messageSelector = Objects.requireNonNull(messageSelector);
 		this.messageMutator = Objects.requireNonNull(messageMutator);
-		this.nodeLookup = Streams.mapWithIndex(nodes.stream(), (node, index) -> Pair.of(node, (int) index))
-			.collect(ImmutableMap.toImmutableMap(Pair::getFirst, Pair::getSecond));
-		this.nodeInstances = Streams.mapWithIndex(nodes.stream(), (node, index) -> createBFTInstance(node, (int) index, syncExecutionModules))
-			.collect(ImmutableList.toImmutableList());
+		this.nodeLookup = Streams.mapWithIndex(
+			nodes.stream(),
+			(node, index) -> Pair.of(node, (int) index)
+		).collect(ImmutableBiMap.toImmutableBiMap(Pair::getFirst, Pair::getSecond));
+		this.nodeInstances = Streams.mapWithIndex(
+			nodes.stream(),
+			(node, index) -> createBFTInstance(node, (int) index, syncExecutionModules, overrideModule)
+		).collect(ImmutableList.toImmutableList());
 
 		log.debug("Nodes {}", this.nodeLookup);
 	}
@@ -125,8 +132,16 @@ public final class DeterministicNetwork {
 				break;
 			}
 			this.messageQueue.remove(controlledMessage);
-			log.debug("Output message {}", controlledMessage);
-			consensusRunners.get(controlledMessage.channelId().receiverIndex()).handleMessage(controlledMessage.message());
+			int receiver = controlledMessage.channelId().receiverIndex();
+			Thread thisThread = Thread.currentThread();
+			String oldThreadName = thisThread.getName();
+			thisThread.setName(oldThreadName + " " + this.nodeLookup.inverse().get(receiver));
+			try {
+				log.debug("Received message {}", controlledMessage);
+				consensusRunners.get(receiver).handleMessage(controlledMessage.message());
+			} finally {
+				thisThread.setName(oldThreadName);
+			}
 		}
 	}
 
@@ -147,21 +162,25 @@ public final class DeterministicNetwork {
 	}
 
 	void handleMessage(MessageRank rank, ControlledMessage controlledMessage) {
-		log.debug("Input message {}", controlledMessage);
+		log.debug("Sent message {}", controlledMessage);
 		if (!this.messageMutator.mutate(rank, controlledMessage, this.messageQueue)) {
 			// If nothing processes this message, we just add it to the queue
 			this.messageQueue.add(rank, controlledMessage);
 		}
 	}
 
-	private Injector createBFTInstance(BFTNode self, int index, Collection<Module> syncExecutionModules) {
-		List<Module> modules = ImmutableList.of(
+	private Injector createBFTInstance(BFTNode self, int index, Collection<Module> syncExecutionModules, Module overrideModule) {
+		Module module = Modules.combine(
 			// An arbitrary timeout for the pacemaker, as time is handled differently
 			// in a deterministic test.
 			new ConsensusModule(5000),
 			new MockedCryptoModule(),
-			new DeterministicNetworkModule(self, createSender(index))
+			new DeterministicNetworkModule(self, createSender(index)),
+			Modules.combine(syncExecutionModules)
 		);
-		return Guice.createInjector(Iterables.concat(modules, syncExecutionModules));
+		if (overrideModule != null) {
+			module = Modules.override(module).with(overrideModule);
+		}
+		return Guice.createInjector(module);
 	}
 }

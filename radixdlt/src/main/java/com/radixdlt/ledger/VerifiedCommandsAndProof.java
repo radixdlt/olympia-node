@@ -21,13 +21,9 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import java.util.Objects;
-import java.util.function.BiConsumer;
-import java.util.stream.IntStream;
 
 /**
  * Commands along with proof that they have been committed on ledger.
- * The commands along with the header are also verified to be part of
- * the correct state on ledger.
  */
 public final class VerifiedCommandsAndProof {
 	private final ImmutableList<Command> commands;
@@ -41,44 +37,8 @@ public final class VerifiedCommandsAndProof {
 		this.headerAndProof = Objects.requireNonNull(headerAndProof);
 	}
 
-	public long getFirstVersion() {
-		if (commands.isEmpty()) {
-			return headerAndProof.getStateVersion();
-		}
-
-		return headerAndProof.getStateVersion() - commands.size() + 1;
-	}
-
 	public ImmutableList<Command> getCommands() {
 		return commands;
-	}
-
-	public void forEach(BiConsumer<Long, Command> consumer) {
-		long firstVersion = getFirstVersion();
-		for (int i = 0; i < commands.size(); i++) {
-			consumer.accept(firstVersion + i, commands.get(i));
-		}
-	}
-
-	public VerifiedCommandsAndProof truncateFromVersion(long version) {
-		long firstVersion = getFirstVersion();
-
-		if (version + 1 < firstVersion) {
-			throw new IllegalArgumentException("firstVersion is " + firstVersion + " but want " + version);
-		}
-
-		if (version + 1 == firstVersion) {
-			return this;
-		}
-
-		int startIndex = (int) (version + 1 - firstVersion);
-		ImmutableList<Command> truncated = IntStream.range(startIndex, commands.size())
-			.mapToObj(commands::get).collect(ImmutableList.toImmutableList());
-		return new VerifiedCommandsAndProof(truncated, headerAndProof);
-	}
-
-	public int size() {
-		return commands.size();
 	}
 
 	public boolean contains(Command command) {

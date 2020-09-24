@@ -45,9 +45,9 @@ public final class FixedTimeoutPacemaker implements Pacemaker {
 		void scheduleTimeout(View view, long milliseconds);
 	}
 
-	private static final Logger log = LogManager.getLogger();
 	private static final long LOGGING_INTERVAL = TimeUnit.SECONDS.toMillis(1);
 
+	private final Logger log = LogManager.getLogger();
 	private final long timeoutMilliseconds;
 	private final TimeoutSender timeoutSender;
 	private final PendingNewViews pendingNewViews;

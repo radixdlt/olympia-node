@@ -67,13 +67,15 @@ public final class DeterministicTest {
 		ImmutableList<BFTNode> nodes,
 		MessageSelector messageSelector,
 		MessageMutator messageMutator,
-		Collection<Module> modules
+		Collection<Module> modules,
+		Module overrideModule
 	) {
 		this.network = new DeterministicNetwork(
 			nodes,
 			messageSelector,
 			messageMutator,
-			modules
+			modules,
+			overrideModule
 		);
 	}
 
@@ -84,6 +86,7 @@ public final class DeterministicTest {
 		private EpochNodeWeightMapping epochNodeWeightMapping = null;
 		private Module syncedExecutorModule = null;
 		private View epochHighView = null;
+		private Module overrideModule = null;
 
 		private Builder() {
 			// Nothing to do here
@@ -95,6 +98,19 @@ public final class DeterministicTest {
 				.sorted(Comparator.<ECKeyPair, EUID>comparing(k -> k.getPublicKey().euid()).reversed())
 				.map(kp -> BFTNode.create(kp.getPublicKey()))
 				.collect(ImmutableList.toImmutableList());
+			return this;
+		}
+
+		/**
+		 * Override with an incorrect module which should cause a test to fail.
+		 * TODO: Refactor to make the link between incorrect module and failing test
+		 * more explicit.
+		 *
+		 * @param module the incorrect module
+		 * @return the current builder
+		 */
+		public Builder overrideWithIncorrectModule(Module module) {
+			this.overrideModule = module;
 			return this;
 		}
 
@@ -188,7 +204,8 @@ public final class DeterministicTest {
 				this.nodes,
 				this.messageSelector,
 				this.messageMutator,
-				modules.build()
+				modules.build(),
+				overrideModule
 			);
 		}
 

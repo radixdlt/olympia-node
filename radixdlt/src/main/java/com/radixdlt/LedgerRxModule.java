@@ -18,17 +18,24 @@
 package com.radixdlt;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Key;
+import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.api.DeserializationFailure;
 import com.radixdlt.api.SubmissionErrorsRx;
 import com.radixdlt.api.SubmissionFailure;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.CommittedStateSyncRx;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
 import com.radixdlt.mempool.SubmissionControlImpl.SubmissionControlSender;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.converters.AtomConversionException;
 import com.radixdlt.ledger.StateComputerLedger.CommittedStateSyncSender;
+import com.radixdlt.utils.SenderToRx;
 import com.radixdlt.utils.TwoSenderToRx;
 import io.reactivex.rxjava3.core.Observable;
 
@@ -68,8 +75,14 @@ public final class LedgerRxModule extends AbstractModule {
 		bind(SubmissionControlSender.class).toInstance(submissionControlSender);
 		bind(SubmissionErrorsRx.class).toInstance(submissionErrorsRx);
 
-		TwoSenderToRx<Long, Object, CommittedStateSync> committedStateSyncTwoSenderToRx = new TwoSenderToRx<>(CommittedStateSync::new);
+		TwoSenderToRx<VerifiedLedgerHeaderAndProof, Object, CommittedStateSync> committedStateSyncTwoSenderToRx
+			= new TwoSenderToRx<>(CommittedStateSync::new);
 		bind(CommittedStateSyncRx.class).toInstance(committedStateSyncTwoSenderToRx::rx);
 		bind(CommittedStateSyncSender.class).toInstance(committedStateSyncTwoSenderToRx::send);
+
+		SenderToRx<LedgerUpdate, LedgerUpdate> ledgerUpdates = new SenderToRx<>(u -> u);
+		Multibinder<LedgerUpdateSender> committedSenderBinder = Multibinder.newSetBinder(binder(), LedgerUpdateSender.class);
+		committedSenderBinder.addBinding().toInstance(ledgerUpdates::send);
+		bind(Key.get(new TypeLiteral<Observable<LedgerUpdate>>() { })).toInstance(ledgerUpdates.rx());
 	}
 }

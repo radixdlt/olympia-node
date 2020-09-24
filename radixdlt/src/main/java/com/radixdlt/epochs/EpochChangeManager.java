@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.ledger;
+package com.radixdlt.epochs;
 
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.Hasher;
@@ -23,43 +23,53 @@ import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochChange;
-import com.radixdlt.ledger.StateComputerLedger.CommittedSender;
+import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Translates committed commands to epoch change messages
  */
-public final class EpochChangeManager implements CommittedSender {
+public final class EpochChangeManager implements LedgerUpdateSender {
+	public interface EpochsLedgerUpdateSender {
+		void sendLedgerUpdate(EpochsLedgerUpdate epochsLedgerUpdate);
+	}
+
 	private final EpochChangeSender epochChangeSender;
+	private final EpochsLedgerUpdateSender epochsLedgerUpdateSender;
 	private final Hasher hasher;
 
-	public EpochChangeManager(EpochChangeSender epochChangeSender, Hasher hasher) {
+	public EpochChangeManager(EpochChangeSender epochChangeSender, EpochsLedgerUpdateSender epochsLedgerUpdateSender, Hasher hasher) {
 		this.epochChangeSender = Objects.requireNonNull(epochChangeSender);
+		this.epochsLedgerUpdateSender = Objects.requireNonNull(epochsLedgerUpdateSender);
 		this.hasher = Objects.requireNonNull(hasher);
 	}
 
 	@Override
-	public void sendCommitted(VerifiedCommandsAndProof commandsAndProof, BFTValidatorSet validatorSet) {
-		if (validatorSet != null) {
-			VerifiedLedgerHeaderAndProof proof = commandsAndProof.getHeader();
-			UnverifiedVertex genesisVertex = UnverifiedVertex.createGenesis(commandsAndProof.getHeader().getRaw());
+	public void sendLedgerUpdate(LedgerUpdate ledgerUpdate) {
+		Optional<EpochChange> epochChangeOptional = ledgerUpdate.getNextValidatorSet().map(validatorSet -> {
+			VerifiedLedgerHeaderAndProof header = ledgerUpdate.getTail();
+			UnverifiedVertex genesisVertex = UnverifiedVertex.createGenesis(header.getRaw());
 			VerifiedVertex verifiedGenesisVertex = new VerifiedVertex(genesisVertex, hasher.hash(genesisVertex));
 			LedgerHeader nextLedgerHeader = LedgerHeader.create(
-				proof.getEpoch() + 1,
+				header.getEpoch() + 1,
 				View.genesis(),
-				proof.getStateVersion(),
-				proof.getAccumulator(),
-				proof.timestamp(),
+				header.getAccumulatorState(),
+				header.timestamp(),
 				false
 			);
 			QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
 			BFTConfiguration bftConfiguration = new BFTConfiguration(validatorSet, verifiedGenesisVertex, genesisQC);
-			EpochChange epochChange = new EpochChange(proof, bftConfiguration);
-			this.epochChangeSender.epochChange(epochChange);
-		}
+			return new EpochChange(header, bftConfiguration);
+		});
+
+		epochChangeOptional.ifPresent(this.epochChangeSender::epochChange);
+
+		EpochsLedgerUpdate epochsLedgerUpdate = new EpochsLedgerUpdate(ledgerUpdate, epochChangeOptional.orElse(null));
+		this.epochsLedgerUpdateSender.sendLedgerUpdate(epochsLedgerUpdate);
 	}
 }

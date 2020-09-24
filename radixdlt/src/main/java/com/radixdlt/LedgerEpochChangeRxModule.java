@@ -18,10 +18,15 @@
 package com.radixdlt;
 
 import com.google.inject.AbstractModule;
-import com.radixdlt.consensus.EpochChangeRx;
+import com.google.inject.Key;
+import com.google.inject.TypeLiteral;
+import com.radixdlt.epochs.EpochChangeManager.EpochsLedgerUpdateSender;
+import com.radixdlt.epochs.EpochChangeRx;
 import com.radixdlt.consensus.epoch.EpochChange;
-import com.radixdlt.ledger.EpochChangeSender;
+import com.radixdlt.epochs.EpochChangeSender;
+import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.utils.SenderToRx;
+import io.reactivex.rxjava3.core.Observable;
 
 /**
  * Epoch change messages
@@ -32,5 +37,9 @@ public class LedgerEpochChangeRxModule extends AbstractModule {
 		SenderToRx<EpochChange, EpochChange> epochChangeSenderToRx = new SenderToRx<>(e -> e);
 		bind(EpochChangeRx.class).toInstance(epochChangeSenderToRx::rx);
 		bind(EpochChangeSender.class).toInstance(epochChangeSenderToRx::send);
+
+		SenderToRx<EpochsLedgerUpdate, EpochsLedgerUpdate> epochsLedgerUpdates = new SenderToRx<>(e -> e);
+		bind(EpochsLedgerUpdateSender.class).toInstance(epochsLedgerUpdates::send);
+		bind(Key.get(new TypeLiteral<Observable<EpochsLedgerUpdate>>() { })).toInstance(epochsLedgerUpdates.rx());
 	}
 }

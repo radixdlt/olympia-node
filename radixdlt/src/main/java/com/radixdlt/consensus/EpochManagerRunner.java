@@ -21,6 +21,7 @@ import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 
+import com.radixdlt.epochs.EpochChangeRx;
 import com.radixdlt.utils.ThreadFactories;
 
 import io.reactivex.rxjava3.core.Observable;

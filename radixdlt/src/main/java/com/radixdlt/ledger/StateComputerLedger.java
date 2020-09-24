@@ -51,22 +51,22 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		Optional<BFTValidatorSet> commit(VerifiedCommandsAndProof verifiedCommandsAndProof);
 	}
 
-	public interface CommittedSender {
-		// TODO: batch these
-		void sendCommitted(VerifiedCommandsAndProof committedCommand, BFTValidatorSet validatorSet);
+	public interface LedgerUpdateSender {
+		void sendLedgerUpdate(LedgerUpdate ledgerUpdate);
 	}
 
 	public interface CommittedStateSyncSender {
-		void sendCommittedStateSync(long stateVersion, Object opaque);
+		void sendCommittedStateSync(VerifiedLedgerHeaderAndProof header, Object opaque);
 	}
 
 	private final Comparator<VerifiedLedgerHeaderAndProof> headerComparator;
 	private final Mempool mempool;
 	private final StateComputer stateComputer;
 	private final CommittedStateSyncSender committedStateSyncSender;
-	private final CommittedSender committedSender;
+	private final LedgerUpdateSender ledgerUpdateSender;
 	private final SystemCounters counters;
 	private final LedgerAccumulator accumulator;
+	private final LedgerAccumulatorVerifier verifier;
 
 	private final Object lock = new Object();
 	private VerifiedLedgerHeaderAndProof currentLedgerHeader;
@@ -79,8 +79,9 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		Mempool mempool,
 		StateComputer stateComputer,
 		CommittedStateSyncSender committedStateSyncSender,
-		CommittedSender committedSender,
+		LedgerUpdateSender ledgerUpdateSender,
 		LedgerAccumulator accumulator,
+		LedgerAccumulatorVerifier verifier,
 		SystemCounters counters
 	) {
 		this.headerComparator = Objects.requireNonNull(headerComparator);
@@ -88,9 +89,10 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		this.mempool = Objects.requireNonNull(mempool);
 		this.stateComputer = Objects.requireNonNull(stateComputer);
 		this.committedStateSyncSender = Objects.requireNonNull(committedStateSyncSender);
-		this.committedSender = Objects.requireNonNull(committedSender);
+		this.ledgerUpdateSender = Objects.requireNonNull(ledgerUpdateSender);
 		this.counters = Objects.requireNonNull(counters);
 		this.accumulator = Objects.requireNonNull(accumulator);
+		this.verifier = Objects.requireNonNull(verifier);
 	}
 
 	@Override
@@ -102,53 +104,42 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	@Override
 	public LedgerHeader prepare(VerifiedVertex vertex) {
 		final LedgerHeader parent = vertex.getParentHeader().getLedgerHeader();
-		final long parentStateVersion = parent.getStateVersion();
 
 		boolean isEndOfEpoch = stateComputer.prepare(vertex);
 
-		final int versionIncrement;
-		if (parent.isEndOfEpoch()) {
-			versionIncrement = 0; // Don't execute atom if in process of epoch change
+		final AccumulatorState accumulatorState;
+		if (parent.isEndOfEpoch() || vertex.getCommand() == null) {
+			// Don't execute atom if in process of epoch change
+			accumulatorState = parent.getAccumulatorState();
 		} else {
-			versionIncrement = vertex.getCommand() != null ? 1 : 0;
+			accumulatorState = this.accumulator.accumulate(parent.getAccumulatorState(), vertex.getCommand());
 		}
 
-		final long stateVersion = parentStateVersion + versionIncrement;
 		final long timestamp = vertex.getQC().getTimestampedSignatures().weightedTimestamp();
-
-		final Hash accumulator;
-		if (vertex.getCommand() != null) {
-			accumulator = this.accumulator.accumulate(parent.getAccumulator(), vertex.getCommand());
-		} else {
-			accumulator = parent.getAccumulator();
-		}
-
 		return LedgerHeader.create(
 			parent.getEpoch(),
 			vertex.getView(),
-			stateVersion,
-			accumulator,
+			accumulatorState,
 			timestamp,
 			isEndOfEpoch
 		);
 	}
 
 	@Override
-	public OnSynced ifCommitSynced(VerifiedLedgerHeaderAndProof committedLedgerState) {
+	public OnSynced ifCommitSynced(VerifiedLedgerHeaderAndProof committedLedgerHeader) {
 		synchronized (lock) {
-			if (committedLedgerState.getStateVersion() <= this.currentLedgerHeader.getStateVersion()) {
-				if (headerComparator.compare(committedLedgerState, this.currentLedgerHeader) > 0) {
-					// Can happen on epoch changes
-					// TODO: Need to cleanup this logic, can't skip epochs
-					this.commit(new VerifiedCommandsAndProof(ImmutableList.of(), committedLedgerState));
-				}
+			if (this.currentLedgerHeader.getEpoch() != committedLedgerHeader.getEpoch() && !this.currentLedgerHeader.isEndOfEpoch()) {
+				throw new IllegalStateException();
+			}
+
+			if (committedLedgerHeader.getStateVersion() <= this.currentLedgerHeader.getStateVersion()) {
 				return onSync -> {
 					onSync.run();
 					return (onNotSynced, opaque) -> { };
 				};
 			} else {
 				return onSync -> (onNotSynced, opaque) -> {
-					this.committedStateSyncers.merge(committedLedgerState.getStateVersion(), Collections.singleton(opaque), Sets::union);
+					this.committedStateSyncers.merge(committedLedgerHeader.getStateVersion(), Collections.singleton(opaque), Sets::union);
 					onNotSynced.run();
 				};
 			}
@@ -159,39 +150,49 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	public void commit(VerifiedCommandsAndProof verifiedCommandsAndProof) {
 		this.counters.increment(CounterType.LEDGER_PROCESSED);
 		synchronized (lock) {
-			final VerifiedLedgerHeaderAndProof committedHeader = verifiedCommandsAndProof.getHeader();
-			if (headerComparator.compare(committedHeader, this.currentLedgerHeader) <= 0) {
+			final VerifiedLedgerHeaderAndProof nextHeader = verifiedCommandsAndProof.getHeader();
+			if (headerComparator.compare(nextHeader, this.currentLedgerHeader) <= 0) {
 				return;
 			}
 
-			// Callers of commit() should be aware of currentLedgerHeader.getStateVersion()
-			// and only call commit with a first version <= currentVersion + 1
-			if (currentLedgerHeader.getStateVersion() + 1 < verifiedCommandsAndProof.getFirstVersion()) {
-				throw new IllegalStateException("Trying to commit version " + verifiedCommandsAndProof.getFirstVersion()
-					+ " but current header is " + currentLedgerHeader);
+			Optional<ImmutableList<Command>> verifiedExtension = verifier.verifyAndGetExtension(
+				this.currentLedgerHeader.getAccumulatorState(),
+				verifiedCommandsAndProof.getCommands(),
+				verifiedCommandsAndProof.getHeader().getAccumulatorState()
+			);
+
+			if (!verifiedExtension.isPresent()) {
+				// This can occur if there is a bug in a commit caller or if there is a quorum of malicious nodes
+				throw new IllegalStateException("Accumulator failure " + currentLedgerHeader + " " + verifiedCommandsAndProof);
 			}
 
-			// Remove commands which have already been committed
-			VerifiedCommandsAndProof commandsToStore = verifiedCommandsAndProof
-				.truncateFromVersion(this.currentLedgerHeader.getStateVersion());
+			// TODO: Add epoch extension verifier, otherwise potential ability to create safety break here with byzantine quorums
+			// TODO: since both consensus or sync can be behind in terms of epoch change sync
+
+			VerifiedCommandsAndProof commandsToStore = new VerifiedCommandsAndProof(
+				verifiedExtension.get(), verifiedCommandsAndProof.getHeader()
+			);
 
 			// persist
 			Optional<BFTValidatorSet> validatorSet = this.stateComputer.commit(commandsToStore);
 
 			// TODO: move all of the following to post-persist event handling
-			this.currentLedgerHeader = committedHeader;
+			this.currentLedgerHeader = nextHeader;
 			this.counters.set(CounterType.LEDGER_STATE_VERSION, this.currentLedgerHeader.getStateVersion());
 
-			commandsToStore.forEach((v, cmd) -> this.mempool.removeCommitted(cmd.getHash()));
-			committedSender.sendCommitted(commandsToStore, validatorSet.orElse(null));
+			verifiedExtension.get().forEach(cmd -> this.mempool.removeCommitted(cmd.getHash()));
+			BaseLedgerUpdate ledgerUpdate = new BaseLedgerUpdate(commandsToStore, validatorSet.orElse(null));
+			ledgerUpdateSender.sendLedgerUpdate(ledgerUpdate);
 
-			Collection<Set<Object>> listeners = this.committedStateSyncers.headMap(this.currentLedgerHeader.getStateVersion(), true)
-				.values();
+			// TODO: Verify headers match
+			Collection<Set<Object>> listeners = this.committedStateSyncers.headMap(
+				this.currentLedgerHeader.getAccumulatorState().getStateVersion(), true
+			).values();
 			Iterator<Set<Object>> listenersIterator = listeners.iterator();
 			while (listenersIterator.hasNext()) {
 				Set<Object> opaqueObjects = listenersIterator.next();
 				for (Object opaque : opaqueObjects) {
-					committedStateSyncSender.sendCommittedStateSync(this.currentLedgerHeader.getStateVersion(), opaque);
+					committedStateSyncSender.sendCommittedStateSync(this.currentLedgerHeader, opaque);
 				}
 				listenersIterator.remove();
 			}

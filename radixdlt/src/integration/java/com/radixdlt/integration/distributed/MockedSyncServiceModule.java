@@ -24,9 +24,10 @@ import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.Ledger;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.sync.SyncRequestSender;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.ledger.StateComputerLedger.CommittedSender;
+import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
 import com.radixdlt.sync.LocalSyncRequest;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -40,8 +41,15 @@ public class MockedSyncServiceModule extends AbstractModule {
 	}
 
 	@ProvidesIntoSet
-	private CommittedSender sync() {
-		return (cmd, vset) -> cmd.forEach(sharedCommittedCommands::put);
+	private LedgerUpdateSender sync() {
+		return update -> {
+			final VerifiedLedgerHeaderAndProof headerAndProof = update.getTail();
+			long stateVersion = headerAndProof.getAccumulatorState().getStateVersion();
+			long firstVersion = stateVersion - update.getNewCommands().size() + 1;
+			for (int i = 0; i < update.getNewCommands().size(); i++) {
+				sharedCommittedCommands.put(firstVersion + i, update.getNewCommands().get(i));
+			}
+		};
 	}
 
 	@Provides

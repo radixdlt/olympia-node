@@ -15,18 +15,10 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.ledger;
+package com.radixdlt.epochs;
 
-import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 
-/**
- * Sends an epoch change message
- */
-public interface EpochChangeSender {
-
-	/**
-	 * Signals that an epoch change has occurred
-	 * @param epochChange the epoch change
-	 */
-	void epochChange(EpochChange epochChange);
+public interface SyncedEpochSender {
+	void sendSyncedEpoch(VerifiedLedgerHeaderAndProof headerAndProof);
 }

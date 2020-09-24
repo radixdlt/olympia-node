@@ -38,6 +38,7 @@ public final class CryptoModule extends AbstractModule {
 	protected void configure() {
 		// Configuration
 		bind(HashVerifier.class).toInstance(ECPublicKey::verify);
+		bind(Serialization.class).toProvider(DefaultSerialization::getInstance);
 	}
 
 	@Provides

@@ -19,7 +19,6 @@ package com.radixdlt.sync;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -48,10 +47,8 @@ public class RemoteSyncServiceProcessorTest {
 	public void setUp() {
 		this.reader = mock(CommittedReader.class);
 		this.network =  mock(StateSyncNetwork.class);
-
 		this.processor = new RemoteSyncServiceProcessor(reader, network, 1);
 	}
-
 
 	@Test
 	public void when_remote_sync_request__then_process_it() {
@@ -69,7 +66,7 @@ public class RemoteSyncServiceProcessorTest {
 		VerifiedLedgerHeaderAndProof verifiedHeader = mock(VerifiedLedgerHeaderAndProof.class);
 		when(verifiedHeader.toDto()).thenReturn(header);
 		when(verifiedCommandsAndProof.getHeader()).thenReturn(verifiedHeader);
-		when(reader.getNextCommittedCommands(anyLong(), anyInt())).thenReturn(verifiedCommandsAndProof);
+		when(reader.getNextCommittedCommands(any(), anyInt())).thenReturn(verifiedCommandsAndProof);
 		processor.processRemoteSyncRequest(request);
 		verify(network, times(1)).sendSyncResponse(eq(node), any());
 	}
@@ -99,9 +96,7 @@ public class RemoteSyncServiceProcessorTest {
 		when(header.getSignatures()).thenReturn(mock(TimestampedECDSASignatures.class));
 		when(request.getCurrentHeader()).thenReturn(header);
 		processor.processRemoteSyncRequest(request);
-		when(reader.getNextCommittedCommands(anyLong(), anyInt())).thenReturn(null);
+		when(reader.getNextCommittedCommands(any(), anyInt())).thenReturn(null);
 		verify(network, never()).sendSyncResponse(any(), any());
 	}
-
-
 }

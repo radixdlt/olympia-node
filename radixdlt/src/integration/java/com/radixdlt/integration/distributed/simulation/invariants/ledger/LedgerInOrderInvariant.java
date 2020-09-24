@@ -21,8 +21,7 @@ import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.integration.distributed.simulation.TestInvariant;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.utils.Pair;
+import com.radixdlt.ledger.LedgerUpdate;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -30,7 +29,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * Ledger-side safety check. Checks that commands and the order getting persisted are
@@ -40,22 +38,14 @@ public class LedgerInOrderInvariant implements TestInvariant {
 
 	@Override
 	public Observable<TestInvariantError> check(RunningNetwork network) {
-		Observable<Pair<BFTNode, VerifiedCommandsAndProof>> commands
-			= Observable.merge(
-				network.getNodes()
-					.stream()
-					.map(n -> network.getInfo(n).committedCommands().map(c -> Pair.of(n, c)))
-					.collect(Collectors.toSet())
-		);
-
 		Map<BFTNode, List<Command>> commandsPerNode = new HashMap<>();
 		network.getNodes().forEach(n -> commandsPerNode.put(n, new ArrayList<>()));
 
-		return commands.flatMap(nodeAndCommand -> {
+		return network.ledgerUpdates().flatMap(nodeAndCommand -> {
 			BFTNode node = nodeAndCommand.getFirst();
-			VerifiedCommandsAndProof cmd = nodeAndCommand.getSecond();
+			LedgerUpdate ledgerUpdate = nodeAndCommand.getSecond();
 			List<Command> nodeCommands = commandsPerNode.get(node);
-			cmd.forEach((v, command) -> nodeCommands.add(command));
+			nodeCommands.addAll(ledgerUpdate.getNewCommands());
 
 			return commandsPerNode.values().stream()
 				.filter(list -> nodeCommands != list)
