@@ -60,7 +60,7 @@ public final class ControlledSender implements DeterministicSender {
 	@Override
 	public void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<VerifiedVertex> vertices) {
 		ControlledGetVerticesRequest request = (ControlledGetVerticesRequest) originalRequest;
-		GetVerticesResponse response = new GetVerticesResponse(request.getNode(), request.getVertexId(), vertices);
+		GetVerticesResponse response = new GetVerticesResponse(request.getNode(), vertices);
 		handleMessage(MessageRank.EARLIEST_POSSIBLE, new ControlledMessage(this.senderIndex, request.requestor, response));
 	}
 

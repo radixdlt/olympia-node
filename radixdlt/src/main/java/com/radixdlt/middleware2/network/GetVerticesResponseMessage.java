@@ -20,7 +20,6 @@ package com.radixdlt.middleware2.network;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.UnverifiedVertex;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
@@ -32,10 +31,6 @@ import org.radix.network.messaging.Message;
  */
 @SerializerId2("message.consensus.vertices_response")
 public final class GetVerticesResponseMessage extends Message {
-	@JsonProperty("vertexId")
-	@DsonOutput(Output.ALL)
-	private final Hash vertexId;
-
 	@JsonProperty("vertices")
 	@DsonOutput(Output.ALL)
 	private final ImmutableList<UnverifiedVertex> vertices;
@@ -43,18 +38,12 @@ public final class GetVerticesResponseMessage extends Message {
 	GetVerticesResponseMessage() {
 		// Serializer only
 		super(0);
-		this.vertexId = null;
 		this.vertices = null;
 	}
 
-	GetVerticesResponseMessage(int magic, Hash vertexId, ImmutableList<UnverifiedVertex> vertices) {
+	GetVerticesResponseMessage(int magic, ImmutableList<UnverifiedVertex> vertices) {
 		super(magic);
-		this.vertexId = Objects.requireNonNull(vertexId);
 		this.vertices = Objects.requireNonNull(vertices);
-	}
-
-	public Hash getVertexId() {
-		return vertexId;
 	}
 
 	public ImmutableList<UnverifiedVertex> getVertices() {

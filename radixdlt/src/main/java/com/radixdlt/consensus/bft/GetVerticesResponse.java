@@ -17,7 +17,6 @@
 
 package com.radixdlt.consensus.bft;
 
-import com.radixdlt.crypto.Hash;
 import java.util.List;
 import java.util.Objects;
 
@@ -25,22 +24,16 @@ import java.util.Objects;
  * An RPC response
  */
 public final class GetVerticesResponse {
-	private final Hash vertexId;
 	private final List<VerifiedVertex> vertices;
 	private final BFTNode sender;
 
-	public GetVerticesResponse(BFTNode sender, Hash vertexId, List<VerifiedVertex> vertices) {
+	public GetVerticesResponse(BFTNode sender, List<VerifiedVertex> vertices) {
 		this.sender = Objects.requireNonNull(sender);
-		this.vertexId = Objects.requireNonNull(vertexId);
 		this.vertices = Objects.requireNonNull(vertices);
 	}
 
 	public BFTNode getSender() {
 		return sender;
-	}
-
-	public Hash getVertexId() {
-		return vertexId;
 	}
 
 	public List<VerifiedVertex> getVertices() {

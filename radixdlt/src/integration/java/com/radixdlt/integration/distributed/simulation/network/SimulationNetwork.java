@@ -248,7 +248,7 @@ public class SimulationNetwork {
 		@Override
 		public void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<VerifiedVertex> vertices) {
 			SimulatedVerticesRequest request = (SimulatedVerticesRequest) originalRequest;
-			GetVerticesResponse vertexResponse = new GetVerticesResponse(thisNode, request.vertexId, vertices);
+			GetVerticesResponse vertexResponse = new GetVerticesResponse(thisNode, vertices);
 			receivedMessages.onNext(MessageInTransit.newMessage(vertexResponse, thisNode, request.requestor));
 		}
 

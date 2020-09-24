@@ -52,7 +52,10 @@ import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class VertexStoreSync implements BFTSyncResponseProcessor, BFTUpdateProcessor, BFTSyncer, LedgerUpdateProcessor<LedgerUpdate> {
+/**
+ * Manages keeping the VertexStore in sync for consensus
+ */
+public final class VertexStoreSync implements BFTSyncResponseProcessor, BFTUpdateProcessor, BFTSyncer, LedgerUpdateProcessor<LedgerUpdate> {
 	public interface GetVerticesRequest {
 		Hash getVertexId();
 		int getCount();
@@ -183,7 +186,7 @@ public class VertexStoreSync implements BFTSyncResponseProcessor, BFTUpdateProce
 		syncing.clear();
 	}
 
-	private boolean requiresCommittedStateSync(SyncState syncState) {
+	private boolean requiresLedgerSync(SyncState syncState) {
 		final BFTHeader committedHeader = syncState.committedHeader;
 		if (!vertexStore.containsVertex(committedHeader.getVertexId())) {
 			View rootView = vertexStore.getRoot().getView();
@@ -193,11 +196,10 @@ public class VertexStoreSync implements BFTSyncResponseProcessor, BFTUpdateProce
 		return false;
 	}
 
-
 	private void startSync(Hash vertexId, QuorumCertificate qc, QuorumCertificate committedQC, BFTNode author) {
 		final SyncState syncState = new SyncState(vertexId, qc, committedQC, author);
 		syncing.put(vertexId, syncState);
-		if (requiresCommittedStateSync(syncState)) {
+		if (requiresLedgerSync(syncState)) {
 			this.doCommittedSync(syncState);
 		} else {
 			this.doQCSync(syncState);
@@ -233,7 +235,7 @@ public class VertexStoreSync implements BFTSyncResponseProcessor, BFTUpdateProce
 		log.info("SYNC_STATE: Rebuilding and syncing QC: sync={} curRoot={}", syncState, vertexStore.getRoot());
 
 		// TODO: check if there are any vertices which haven't been local sync processed yet
-		if (requiresCommittedStateSync(syncState)) {
+		if (requiresLedgerSync(syncState)) {
 			syncState.fetched.sort(Comparator.comparing(VerifiedVertex::getView));
 			List<VerifiedVertex> nonRootVertices = syncState.fetched.stream().skip(1).collect(Collectors.toList());
 			vertexStore.rebuild(syncState.fetched.get(0), syncState.fetched.get(1).getQC(), syncState.committedQC, nonRootVertices);

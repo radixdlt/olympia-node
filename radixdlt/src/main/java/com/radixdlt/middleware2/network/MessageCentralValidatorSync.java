@@ -98,7 +98,6 @@ public class MessageCentralValidatorSync implements SyncVerticesRequestSender, S
 		ImmutableList<UnverifiedVertex> rawVertices = vertices.stream().map(VerifiedVertex::toSerializable).collect(ImmutableList.toImmutableList());
 		GetVerticesResponseMessage response = new GetVerticesResponseMessage(
 			this.magic,
-			messageCentralGetVerticesRequest.getVertexId(),
 			rawVertices
 		);
 		Peer peer = messageCentralGetVerticesRequest.getRequestor();
@@ -141,7 +140,7 @@ public class MessageCentralValidatorSync implements SyncVerticesRequestSender, S
 					.map(v -> new VerifiedVertex(v, hasher.hash(v)))
 					.collect(ImmutableList.toImmutableList());
 
-				return new GetVerticesResponse(node, msg.getVertexId(), hashedVertices);
+				return new GetVerticesResponse(node, hashedVertices);
 			}
 		);
 	}
