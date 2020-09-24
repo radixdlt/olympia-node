@@ -33,8 +33,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
- * A BFT test running checks against a test network on a specific schedule. Optionally this test can wait for certain conditions to be met before
- * running the actual checks.
+ * A BFT test running checks against a test network on a specific schedule.
+ * Optionally this test can wait for certain conditions to be met before running the actual checks.
  */
 public final class RemoteBFTTest {
 
@@ -224,9 +224,8 @@ public final class RemoteBFTTest {
 		}
 
 		/**
-		 * Configures the test to wait until the given prerequisite is satisfied before running the actual test. This waiting observes the timeout set
-		 * in prerequisiteTimeout.
-		 *
+		 * Configures the test to wait until the given prerequisite is satisfied before running the actual test.
+		 * This waiting observes the timeout set in prerequisiteTimeout.
 		 * @param prerequisite The prerequisite to wait on
 		 * @return This builder
 		 */
@@ -342,8 +341,8 @@ public final class RemoteBFTTest {
 		}
 
 		/**
-		 * Builds the configured test. This requires a testNetwork to be set using the network method.
-		 *
+		 * Builds the configured test.
+		 * This requires a testNetwork to be set using the network method.
 		 * @return This builder
 		 */
 		public RemoteBFTTest build() {
