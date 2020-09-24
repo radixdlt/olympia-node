@@ -25,6 +25,7 @@ import com.radixdlt.consensus.bft.BFTSyncRequestProcessor;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VertexStore;
 import java.util.Objects;
+import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -67,17 +68,17 @@ public final class VertexStoreBFTSyncRequestProcessor implements BFTSyncRequestP
 		// TODO: Handle nodes trying to DDOS this endpoint
 
 		log.trace("SYNC_VERTICES: Received GetVerticesRequest {}", request);
-		ImmutableList<VerifiedVertex> fetched = vertexStore.getVertices(request.getVertexId(), request.getCount());
-		if (fetched.isEmpty()) {
-			this.syncVerticesResponseSender.sendGetVerticesErrorResponse(
+		Optional<ImmutableList<VerifiedVertex>> verticesMaybe = vertexStore.getVertices(request.getVertexId(), request.getCount());
+		verticesMaybe.ifPresentOrElse(
+			fetched -> {
+				log.trace("SYNC_VERTICES: Sending Response {}", fetched);
+				this.syncVerticesResponseSender.sendGetVerticesResponse(request.getSender(), fetched);
+			},
+			() -> this.syncVerticesResponseSender.sendGetVerticesErrorResponse(
 				request.getSender(),
 				vertexStore.getHighestQC(),
 				vertexStore.getHighestCommittedQC()
-			);
-			return;
-		}
-
-		log.trace("SYNC_VERTICES: Sending Response {}", fetched);
-		this.syncVerticesResponseSender.sendGetVerticesResponse(request.getSender(), fetched);
+			)
+		);
 	}
 }

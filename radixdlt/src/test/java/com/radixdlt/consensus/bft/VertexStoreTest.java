@@ -352,6 +352,6 @@ public class VertexStoreTest {
 		VerifiedVertex vertex = nextVertex.apply(id);
 		vertexStore.insertVertex(vertex);
 		assertThat(vertexStore.getVertices(id, 2))
-			.isEqualTo(ImmutableList.of(vertex, genesisVertex));
+			.contains(ImmutableList.of(vertex, genesisVertex));
 	}
 }
