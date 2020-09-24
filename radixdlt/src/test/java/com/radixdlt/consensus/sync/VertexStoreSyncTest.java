@@ -32,6 +32,7 @@ import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VertexStore;
@@ -207,6 +208,7 @@ public class VertexStoreSyncTest {
 		VerifiedVertex vertex = mock(VerifiedVertex.class);
 		when(vertexStore.addQC(any())).thenReturn(true);
 		when(vertex.getParentId()).thenReturn(parentId);
+		when(vertex.getId()).thenReturn(vertexId);
 		GetVerticesResponse getVerticesResponse = new GetVerticesResponse(
 			mock(BFTNode.class),
 			vertexId,

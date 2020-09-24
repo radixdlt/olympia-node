@@ -122,7 +122,8 @@ public class VertexStoreSync implements BFTSyncResponseProcessor, BFTUpdateProce
 	private final Logger log = LogManager.getLogger();
 	private final VertexStore vertexStore;
 	private final Map<Hash, SyncState> syncing = new HashMap<>();
-	private final TreeMap<LedgerHeader, List<Hash>> committedSyncing;
+	private final TreeMap<LedgerHeader, List<Hash>> ledgerSyncing;
+	private final Map<Pair<Hash, Integer>, List<Hash>> bftSyncing = new HashMap<>();
 	private final SyncVerticesRequestSender requestSender;
 	private final SyncLedgerRequestSender syncLedgerRequestSender;
 	private VerifiedLedgerHeaderAndProof currentLedgerHeader;
@@ -135,7 +136,7 @@ public class VertexStoreSync implements BFTSyncResponseProcessor, BFTUpdateProce
 		VerifiedLedgerHeaderAndProof currentLedgerHeader
 	) {
 		this.vertexStore = vertexStore;
-		this.committedSyncing = new TreeMap<>(ledgerHeaderComparator);
+		this.ledgerSyncing = new TreeMap<>(ledgerHeaderComparator);
 		this.requestSender = requestSender;
 		this.syncLedgerRequestSender = syncLedgerRequestSender;
 		this.currentLedgerHeader = Objects.requireNonNull(currentLedgerHeader);
@@ -178,7 +179,8 @@ public class VertexStoreSync implements BFTSyncResponseProcessor, BFTUpdateProce
 
 	@Override
 	public void clearSyncs() {
-		committedSyncing.clear();
+		ledgerSyncing.clear();
+		bftSyncing.clear();
 		syncing.clear();
 	}
 
@@ -203,11 +205,10 @@ public class VertexStoreSync implements BFTSyncResponseProcessor, BFTUpdateProce
 		}
 	}
 
-
 	private void doQCSync(SyncState syncState) {
 		syncState.setSyncStage(SyncStage.GET_QC_VERTICES);
 		log.debug("SYNC_VERTICES: QC: Sending initial GetVerticesRequest for sync={}", syncState);
-		requestSender.sendGetVerticesRequest(syncState.qc.getProposed().getVertexId(), syncState.author, 1, syncState.localSyncId);
+		this.sendBFTSyncRequest(syncState, syncState.qc.getProposed().getVertexId(), 1);
 	}
 
 	private void doCommittedSync(SyncState syncState) {
@@ -215,9 +216,19 @@ public class VertexStoreSync implements BFTSyncResponseProcessor, BFTUpdateProce
 		syncState.setSyncStage(SyncStage.GET_COMMITTED_VERTICES);
 		log.debug("SYNC_VERTICES: Committed: Sending initial GetVerticesRequest for sync={}", syncState);
 		// Retrieve the 3 vertices preceding the committedQC so we can create a valid committed root
-		requestSender.sendGetVerticesRequest(committedQCId, syncState.author, 3, syncState.localSyncId);
+		this.sendBFTSyncRequest(syncState, committedQCId, 3);
 	}
 
+	private void sendBFTSyncRequest(SyncState syncState, Hash vertexId, int count) {
+		bftSyncing.compute(Pair.of(vertexId, count), (pair, syncing) -> {
+			if (syncing == null) {
+				syncing = new ArrayList<>();
+			}
+			syncing.add(syncState.localSyncId);
+			return syncing;
+		});
+		requestSender.sendGetVerticesRequest(vertexId, syncState.author, count, syncState.localSyncId);
+	}
 
 	private void rebuildAndSyncQC(SyncState syncState) {
 		log.info("SYNC_STATE: Rebuilding and syncing QC: sync={} curRoot={}", syncState, vertexStore.getRoot());
@@ -250,7 +261,7 @@ public class VertexStoreSync implements BFTSyncResponseProcessor, BFTUpdateProce
 			rebuildAndSyncQC(syncState);
 		} else {
 			syncState.setSyncStage(SyncStage.SYNC_TO_COMMIT);
-			committedSyncing.compute(syncState.committedProof.getRaw(), (header, syncing) -> {
+			ledgerSyncing.compute(syncState.committedProof.getRaw(), (header, syncing) -> {
 				if (syncing == null) {
 					syncing = new ArrayList<>();
 				}
@@ -283,7 +294,8 @@ public class VertexStoreSync implements BFTSyncResponseProcessor, BFTUpdateProce
 		} else {
 			log.info("SYNC_VERTICES: Sending further GetVerticesRequest for qc={} fetched={} root={}",
 				syncState.qc, syncState.fetched.size(), vertexStore.getRoot());
-			requestSender.sendGetVerticesRequest(nextVertexId, syncState.author, 1, syncTo);
+
+			this.sendBFTSyncRequest(syncState, nextVertexId, 1);
 		}
 	}
 
@@ -293,16 +305,8 @@ public class VertexStoreSync implements BFTSyncResponseProcessor, BFTUpdateProce
 
 		log.info("SYNC_VERTICES: Received GetVerticesErrorResponse {} ", response);
 
-		final Hash syncTo = (Hash) response.getOpaque();
-		SyncState syncState = syncing.remove(syncTo);
-		if (syncState == null) {
-			return; // sync requirements already satisfied by another sync
-		}
-
 		// error response indicates that the node has moved on from last sync so try and sync to a new sync
-		this.syncToQC(response.getHighestQC(), response.getHighestCommittedQC(), syncState.author);
-
-		//this.startSync(syncTo, response.getHighestQC(), response.getHighestCommittedQC(), syncState.author);
+		this.syncToQC(response.getHighestQC(), response.getHighestCommittedQC(), response.getSender());
 	}
 
 	@Override
@@ -311,21 +315,26 @@ public class VertexStoreSync implements BFTSyncResponseProcessor, BFTUpdateProce
 
 		log.trace("SYNC_VERTICES: Received GetVerticesResponse {}", response);
 
-		final Hash syncTo = (Hash) response.getOpaque();
-		SyncState syncState = syncing.get(syncTo);
-		if (syncState == null) {
-			return; // sync requirements already satisfied by another sync
-		}
-
-		switch (syncState.syncStage) {
-			case GET_COMMITTED_VERTICES:
-				processVerticesResponseForCommittedSync(syncTo, syncState, response);
-				break;
-			case GET_QC_VERTICES:
-				processVerticesResponseForQCSync(syncTo, syncState, response);
-				break;
-			default:
-				throw new IllegalStateException("Unknown sync stage: " + syncState.syncStage);
+		VerifiedVertex firstVertex = response.getVertices().get(0);
+		Pair<Hash, Integer> requestInfo = Pair.of(firstVertex.getId(), response.getVertices().size());
+		List<Hash> syncs = bftSyncing.remove(requestInfo);
+		if (syncs != null) {
+			for (Hash syncTo : syncs) {
+				SyncState syncState = syncing.get(syncTo);
+				if (syncState == null) {
+					continue; // sync requirements already satisfied by another sync
+				}
+				switch (syncState.syncStage) {
+					case GET_COMMITTED_VERTICES:
+						processVerticesResponseForCommittedSync(syncTo, syncState, response);
+						break;
+					case GET_QC_VERTICES:
+						processVerticesResponseForQCSync(syncTo, syncState, response);
+						break;
+					default:
+						throw new IllegalStateException("Unknown sync stage: " + syncState.syncStage);
+				}
+			}
 		}
 	}
 
@@ -340,7 +349,7 @@ public class VertexStoreSync implements BFTSyncResponseProcessor, BFTUpdateProce
 	public void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
 		log.trace("SYNC_STATE: update {}", ledgerUpdate);
 
-		Collection<List<Hash>> listeners = this.committedSyncing.headMap(
+		Collection<List<Hash>> listeners = this.ledgerSyncing.headMap(
 			ledgerUpdate.getTail().getRaw(), true
 		).values();
 		Iterator<List<Hash>> listenersIterator = listeners.iterator();
