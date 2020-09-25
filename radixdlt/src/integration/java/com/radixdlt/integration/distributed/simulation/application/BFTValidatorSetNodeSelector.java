@@ -25,6 +25,9 @@ import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.R
 import io.reactivex.rxjava3.core.Single;
 import java.util.Random;
 
+/**
+ * Selects nodes from an initial bft configuration (no epochs)
+ */
 public class BFTValidatorSetNodeSelector implements NodeSelector {
 	private final Random random = new Random();
 

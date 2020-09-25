@@ -17,6 +17,9 @@
 
 package com.radixdlt.consensus.bft;
 
+/**
+ * A processor of BFT updates
+ */
 public interface BFTUpdateProcessor {
 	void processBFTUpdate(BFTUpdate update);
 }

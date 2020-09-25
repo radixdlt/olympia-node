@@ -24,6 +24,9 @@ import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.R
 import io.reactivex.rxjava3.core.Single;
 import java.util.Random;
 
+/**
+ * Selects random nodes from changing validator sets given by epochs
+ */
 public class EpochsNodeSelector implements NodeSelector {
 	private final Random random = new Random();
 

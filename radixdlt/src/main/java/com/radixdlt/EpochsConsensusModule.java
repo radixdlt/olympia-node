@@ -52,6 +52,9 @@ import com.radixdlt.consensus.sync.VertexStoreSync.SyncVerticesRequestSender;
 import com.radixdlt.counters.SystemCounters;
 import java.util.Comparator;
 
+/**
+ * Module which allows for consensus to have multiple epochs
+ */
 public class EpochsConsensusModule extends AbstractModule {
 	private static final int ROTATING_WEIGHTED_LEADERS_CACHE_SIZE = 10;
 	private final int pacemakerTimeout;
