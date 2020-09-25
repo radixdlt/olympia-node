@@ -33,7 +33,7 @@ import org.apache.logging.log4j.Logger;
  * Processor of sync requests and responds with info from a VertexStore
  */
 public final class VertexStoreBFTSyncRequestProcessor implements BFTSyncRequestProcessor {
-	private final Logger log = LogManager.getLogger();
+	private static final Logger log = LogManager.getLogger();
 	private final VertexStore vertexStore;
 	private final SyncVerticesResponseSender syncVerticesResponseSender;
 
