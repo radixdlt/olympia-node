@@ -191,6 +191,9 @@ class CmdHelper {
             // More details on /sys/class/net can be found on this link https://www.kernel.org/doc/Documentation/ABI/testing/sysfs-class-net
             def string = "bash -c".tokenize() << ("grep -l ${Integer.parseInt(iflink[0])} /sys/class/net/veth*/ifindex" as String)
             (veth, error) = runCommand(string)
+            if(error){
+                throw new IllegalStateException("Docker container is not running ")
+            }
             return veth
         }
 
