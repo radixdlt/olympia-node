@@ -113,7 +113,7 @@ public final class VertexStoreSync implements BFTSyncResponseProcessor, BFTUpdat
 		void sendGetVerticesRequest(BFTNode node, Hash id, int count);
 	}
 
-	private final Logger log = LogManager.getLogger();
+	private static final Logger log = LogManager.getLogger();
 	private final VertexStore vertexStore;
 	private final Map<Hash, SyncState> syncing = new HashMap<>();
 	private final TreeMap<LedgerHeader, List<Hash>> ledgerSyncing;

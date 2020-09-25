@@ -29,7 +29,6 @@ import com.google.inject.Module;
 import com.google.inject.name.Names;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTEventProcessor;
-import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.Hasher;
@@ -59,9 +58,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class ConsensusModuleTest {
-	@Inject
-	private BFTFactory bftFactory;
-
 	@Inject
 	private BFTEventProcessor eventProcessor;
 

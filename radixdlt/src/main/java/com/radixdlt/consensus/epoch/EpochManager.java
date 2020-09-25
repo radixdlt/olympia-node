@@ -113,7 +113,7 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdatePro
 		void sendTimeoutProcessed(Timeout timeout);
 	}
 
-	private final Logger logger = LogManager.getLogger();
+	private static final Logger log = LogManager.getLogger();
 	private final BFTNode self;
 	private final SyncEpochsRPCSender epochsRPCSender;
 	private final PacemakerFactory pacemakerFactory;
@@ -254,12 +254,12 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdatePro
 			throw new IllegalStateException("Epoch change has already occurred: " + epochChange);
 		}
 
-		logger.trace("{}: EPOCH_CHANGE: {}", this.self, epochChange);
+		log.trace("{}: EPOCH_CHANGE: {}", this.self, epochChange);
 
 		// If constructed the end of the previous epoch then broadcast new epoch to new validator set
 		// TODO: Move this into when lastConstructed is set
 		if (lastConstructed != null && lastConstructed.getEpoch() == epochChange.getEpoch() - 1) {
-			logger.info("{}: EPOCH_CHANGE: broadcasting next epoch", this.self);
+			log.info("{}: EPOCH_CHANGE: broadcasting next epoch", this.self);
 			BFTValidatorSet validatorSet = epochChange.getBFTConfiguration().getValidatorSet();
 			for (BFTValidator validator : validatorSet.getValidators()) {
 				if (!validator.getNode().equals(self)) {
@@ -284,7 +284,7 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdatePro
 	}
 
 	private void logEpochChange(EpochChange epochChange, String message) {
-		if (logger.isInfoEnabled()) {
+		if (log.isInfoEnabled()) {
 			// Reduce complexity of epoch change log message, and make it easier to correlate with
 			// other logs.  Size reduced from circa 6Kib to approx 1Kib over ValidatorSet.toString().
 			BFTConfiguration configuration = epochChange.getBFTConfiguration();
@@ -303,7 +303,7 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdatePro
 			} else {
 				epochMessage.append("[NONE]");
 			}
-			logger.info("{}", epochMessage);
+			log.info("{}", epochMessage);
 		}
 	}
 
@@ -312,7 +312,7 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdatePro
 	}
 
 	private void processEndOfEpoch(VerifiedLedgerHeaderAndProof ledgerState) {
-		logger.trace("{}: END_OF_EPOCH: {}", this.self, ledgerState);
+		log.trace("{}: END_OF_EPOCH: {}", this.self, ledgerState);
 		if (this.lastConstructed == null || this.lastConstructed.getEpoch() < ledgerState.getEpoch()) {
 			this.lastConstructed = ledgerState;
 
@@ -323,12 +323,12 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdatePro
 	}
 
 	public void processGetEpochRequest(GetEpochRequest request) {
-		logger.trace("{}: GET_EPOCH_REQUEST: {}", this.self, request);
+		log.trace("{}: GET_EPOCH_REQUEST: {}", this.self, request);
 
 		if (this.currentEpoch() > request.getEpoch()) {
 			epochsRPCSender.sendGetEpochResponse(request.getAuthor(), this.currentEpoch.getProof());
 		} else {
-			logger.warn("{}: GET_EPOCH_REQUEST: {} but currently on epoch: {}",
+			log.warn("{}: GET_EPOCH_REQUEST: {} but currently on epoch: {}",
 				this.self::getSimpleName, () -> request, this::currentEpoch
 			);
 
@@ -338,10 +338,10 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdatePro
 	}
 
 	public void processGetEpochResponse(GetEpochResponse response) {
-		logger.trace("{}: GET_EPOCH_RESPONSE: {}", this.self, response);
+		log.trace("{}: GET_EPOCH_RESPONSE: {}", this.self, response);
 
 		if (response.getEpochProof() == null) {
-			logger.warn("{}: Received empty GetEpochResponse {}", this.self, response);
+			log.warn("{}: Received empty GetEpochResponse {}", this.self, response);
 			// TODO: retry
 			return;
 		}
@@ -350,7 +350,7 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdatePro
 		if (ancestor.getEpoch() >= this.currentEpoch()) {
 			syncRequestSender.sendLocalSyncRequest(new LocalSyncRequest(ancestor, ImmutableList.of(response.getAuthor())));
 		} else {
-			logger.info("{}: Ignoring old epoch {}", this.self, response);
+			log.info("{}: Ignoring old epoch {}", this.self, response);
 		}
 	}
 
@@ -368,7 +368,7 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdatePro
 
 	public void processConsensusEvent(ConsensusEvent consensusEvent) {
 		if (consensusEvent.getEpoch() > this.currentEpoch()) {
-			logger.debug("{}: CONSENSUS_EVENT: Received higher epoch event: {} current epoch: {}",
+			log.debug("{}: CONSENSUS_EVENT: Received higher epoch event: {} current epoch: {}",
 				this.self::getSimpleName, () -> consensusEvent, this::currentEpoch
 			);
 
@@ -384,7 +384,7 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdatePro
 		}
 
 		if (consensusEvent.getEpoch() < this.currentEpoch()) {
-			logger.debug("{}: CONSENSUS_EVENT: Ignoring lower epoch event: {} current epoch: {}",
+			log.debug("{}: CONSENSUS_EVENT: Ignoring lower epoch event: {} current epoch: {}",
 				this.self::getSimpleName, () -> consensusEvent, this::currentEpoch
 			);
 			return;

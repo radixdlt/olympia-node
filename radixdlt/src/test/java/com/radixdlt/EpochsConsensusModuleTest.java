@@ -42,7 +42,6 @@ import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
-import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker.TimeoutSender;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
@@ -55,9 +54,6 @@ import org.junit.Test;
 public class EpochsConsensusModuleTest {
 	@Inject
 	private BFTInfoSender infoSender;
-
-	@Inject
-	private TimeoutSender timeoutSender;
 
 	private EpochInfoSender epochInfoSender = mock(EpochInfoSender.class);
 
