@@ -51,7 +51,7 @@ public class SlowNodeTest {
 			try (DockerNetwork network = DockerNetwork.builder().numNodes(networkSize).testName(name).build()) {
 				network.startBlocking();
 				String veth = CmdHelper.getVethByContainerName(network.getNodeIds().stream().findFirst().get());
-				CmdHelper.setupQueueQuality(veth);
+				CmdHelper.setupQueueQuality(veth,"delay 100ms loss 20%");
 
 				RemoteBFTTest test = AssertionChecks
 					.slowNodeTestBuilder()

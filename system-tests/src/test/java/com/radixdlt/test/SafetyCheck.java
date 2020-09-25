@@ -21,6 +21,7 @@ package com.radixdlt.test;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import io.reactivex.Single;
+import java.util.ArrayList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONArray;
@@ -50,26 +51,39 @@ public class SafetyCheck implements RemoteBFTCheck {
 
 	private final long timeout;
 	private final TimeUnit timeoutUnit;
+	private List<String> nodesToIgnore;
 
-	private SafetyCheck(long timeout, TimeUnit timeoutUnit) {
+	private SafetyCheck(long timeout, TimeUnit timeoutUnit , List<String> nodesToIgnore) {
 		if (timeout < 1) {
 			throw new IllegalArgumentException("timeout must be >= 1 but was " + timeout);
 		}
 		this.timeout = timeout;
 		this.timeoutUnit = Objects.requireNonNull(timeoutUnit);
+		this.nodesToIgnore = nodesToIgnore;
 	}
 
 	public static SafetyCheck with(long timeout, TimeUnit timeoutUnit) {
-		return new SafetyCheck(timeout, timeoutUnit);
+
+		return new SafetyCheck(timeout, timeoutUnit,new ArrayList<String>());
 	}
+
+	public SafetyCheck withNodesToIgnore(List<String> nodesToIgnore) {
+		this.nodesToIgnore = nodesToIgnore;
+		return this;
+	}
+
 
 	@Override
 	public Single<RemoteBFTCheckResult> check(RemoteBFTNetworkBridge network) {
 		return Single.zip(
 			network.getNodeIds().stream()
+				.filter(nodename -> !nodesToIgnore.contains(nodename))
 				.map(node -> network.queryEndpoint(node, "api/vertices/committed")
 					.timeout(timeout, timeoutUnit)
-					.map(verticesString -> extractVertices(verticesString, node))
+					.map(verticesString -> {
+						logger.info("Api/Vertices/commited endpoint response {} ",verticesString);
+						return extractVertices(verticesString, node);
+					})
 					.doOnError(err -> logger.warn(
 						"error while querying {} for committed vertices, excluding from evaluation due to: {}",
 						node, err))

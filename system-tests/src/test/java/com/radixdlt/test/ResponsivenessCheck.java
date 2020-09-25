@@ -21,6 +21,8 @@ package com.radixdlt.test;
 import io.reactivex.Completable;
 import io.reactivex.Single;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -29,27 +31,37 @@ import java.util.stream.Collectors;
  * A responsiveness check using the "api/ping" endpoint, interpreting any response as a success.
  */
 public class ResponsivenessCheck implements RemoteBFTCheck {
+
 	private final long timeout;
 	private final TimeUnit timeoutUnit;
+	private List<String> nodesToIgnore;
 
-	private ResponsivenessCheck(long timeout, TimeUnit timeoutUnit) {
+	private ResponsivenessCheck(long timeout, TimeUnit timeoutUnit, List<String> nodesToIgnore) {
 		if (timeout < 1) {
 			throw new IllegalArgumentException("timeout must be >= 1 but was " + timeout);
 		}
 		this.timeout = timeout;
 		this.timeoutUnit = Objects.requireNonNull(timeoutUnit);
+		this.nodesToIgnore = nodesToIgnore;
 	}
 
 	public static ResponsivenessCheck with(long timeout, TimeUnit timeoutUnit) {
-		return new ResponsivenessCheck(timeout, timeoutUnit);
+		return new ResponsivenessCheck(timeout, timeoutUnit,new ArrayList<String>());
+	}
+
+	public ResponsivenessCheck withNodesToIgnore(List<String> nodesToIgnore) {
+		this.nodesToIgnore = nodesToIgnore;
+		return this;
 	}
 
 	@Override
 	public Single<RemoteBFTCheckResult> check(RemoteBFTNetworkBridge network) {
 		return Completable.mergeDelayError(
-			network.getNodeIds().stream()
-				.map(nodeName -> network.queryEndpointJson(nodeName, "api/ping")
-					.timeout(timeout, timeoutUnit)
+			network.getNodeIds()
+			.stream()
+				.filter(nodename -> !nodesToIgnore.contains(nodename))
+				.map(nodeName -> network.queryEndpointJson(nodeName, "api/ping").
+					timeout(timeout, timeoutUnit)
 					.ignoreElement())
 				.collect(Collectors.toList()))
 			.toSingleDefault(RemoteBFTCheckResult.success())

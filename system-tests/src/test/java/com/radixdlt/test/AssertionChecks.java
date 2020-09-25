@@ -1,12 +1,14 @@
 package com.radixdlt.test;
 
+import java.util.ArrayList;
+
 public class AssertionChecks {
 	/**
 	 * Gets the test builder for slow node BFT network tests.
 	 *
 	 * @return The test builder
 	 */
-	static RemoteBFTTest.Builder slowNodeTestBuilder() {
+	public static RemoteBFTTest.Builder slowNodeTestBuilder() {
 		return RemoteBFTTest.builder()
 			.assertAllProposalsHaveDirectParents()
 			.assertNoTimeouts()
@@ -25,7 +27,23 @@ public class AssertionChecks {
 			.assertAllProposalsHaveDirectParents()
 			.assertNoTimeouts()
 			.assertSafety()
-			.assertLiveness();
+			.assertLiveness(20);
 	}
+
+	/**
+	 * Gets the test builder for latent BFT network tests.
+	 *
+	 * @return The test builder
+	 * @param nodesToIgnore
+	 */
+	public static RemoteBFTTest.Builder outOfSynchronyTestBuilder(ArrayList<String> nodesToIgnore) {
+		return RemoteBFTTest.builder()
+			.assertResponsiveness(nodesToIgnore)
+			.assertAllProposalsHaveDirectParents(nodesToIgnore)
+			.assertSafety(nodesToIgnore)
+			.assertLiveness(20,nodesToIgnore);
+	}
+
+
 
 }

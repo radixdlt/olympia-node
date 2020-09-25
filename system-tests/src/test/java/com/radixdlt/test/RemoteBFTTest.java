@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
  * Optionally this test can wait for certain conditions to be met before running the actual checks.
  */
 public final class RemoteBFTTest {
+
 	private static final Logger logger = LogManager.getLogger();
 
 	private final RemoteBFTNetworkBridge testNetwork;
@@ -48,12 +49,12 @@ public final class RemoteBFTTest {
 	private final boolean startConsensusOnRun;
 
 	private RemoteBFTTest(RemoteBFTNetworkBridge testNetwork,
-						  ImmutableList<RemoteBFTCheck> prerequisites,
-						  ImmutableList<RemoteBFTCheck> checks,
-						  RemoteBFTCheckSchedule schedule,
-						  long prerequisiteTimeout,
-						  TimeUnit prerequisiteTimeoutUnit,
-						  boolean startConsensusOnRun) {
+							ImmutableList<RemoteBFTCheck> prerequisites,
+							ImmutableList<RemoteBFTCheck> checks,
+							RemoteBFTCheckSchedule schedule,
+							long prerequisiteTimeout,
+							TimeUnit prerequisiteTimeoutUnit,
+							boolean startConsensusOnRun) {
 		this.testNetwork = testNetwork;
 		this.prerequisites = prerequisites;
 		this.prerequisiteTimeout = prerequisiteTimeout;
@@ -65,6 +66,7 @@ public final class RemoteBFTTest {
 
 	/**
 	 * Waits for all configured prerequisites to be satisfied simultaneously with the configured timeout.
+	 *
 	 * @param timeout The wait timeout
 	 * @param timeoutUnit The unit of the wait timeout
 	 */
@@ -74,8 +76,7 @@ public final class RemoteBFTTest {
 		List<Observable<RemoteBFTCheckResult>> prerequisiteRuns = this.prerequisites.stream()
 			.map(prerequisite -> this.schedule.schedule(prerequisite)
 				.map(prerequisiteToRun -> prerequisiteToRun.check(this.testNetwork))
-				.flatMap(Single::toObservable))
-			.collect(Collectors.toList());
+				.flatMap(Single::toObservable)).collect(Collectors.toList());
 		// combine the latest results of executing all prerequisite schedules
 		Observable.combineLatest(prerequisiteRuns, results -> Arrays.stream(results)
 			.map(RemoteBFTCheckResult.class::cast)
@@ -124,8 +125,7 @@ public final class RemoteBFTTest {
 		// start consensus if required, waiting until all requests have come through (important for some checks)
 		if (this.startConsensusOnRun) {
 			logger.info("starting consensus in all nodes");
-			testNetwork.startConsensus()
-				.blockingAwait();
+			testNetwork.startConsensus().blockingAwait();
 		}
 
 		// run the actual tests for the configured duration
@@ -138,8 +138,7 @@ public final class RemoteBFTTest {
 						.doOnSuccess(result -> {
 							if (!delayErrors) {
 								result.assertSuccess(String.format("check %s failed, failing immediately (delayErrors=false)", checkToRun));
-							}
-						}))
+							} }))
 					.flatMap(Single::toObservable))
 				.collect(Collectors.toList()))
 			.take(duration, durationUnit)
@@ -155,6 +154,7 @@ public final class RemoteBFTTest {
 
 	/**
 	 * Create a {@link Builder} for creating {@link RemoteBFTTest}s.
+	 *
 	 * @return The builder
 	 */
 	public static Builder builder() {
@@ -165,6 +165,7 @@ public final class RemoteBFTTest {
 	 * A builder for {@link RemoteBFTTest} objects.
 	 */
 	public static class Builder {
+
 		private RemoteBFTNetworkBridge testNetwork;
 		private final List<RemoteBFTCheck> checks = new ArrayList<>();
 		private final List<RemoteBFTCheck> prerequisites = new ArrayList<>();
@@ -178,6 +179,7 @@ public final class RemoteBFTTest {
 
 		/**
 		 * Configures this test to start consensus in all nodes first when run.
+		 *
 		 * @return This builder
 		 */
 		public Builder startConsensusOnRun() {
@@ -187,6 +189,7 @@ public final class RemoteBFTTest {
 
 		/**
 		 * Sets the timeout used when waiting for prerequisites to be satisfied before running the actual test
+		 *
 		 * @param prerequisiteTimeout The prerequisite timeout
 		 * @param prerequisiteTimeoutUnit The unit of the prerequisite timeout
 		 * @return This builder
@@ -202,6 +205,7 @@ public final class RemoteBFTTest {
 
 		/**
 		 * Sets a given schedule to use for scheduling the individual checks
+		 *
 		 * @param schedule The schedule
 		 * @return This builder
 		 */
@@ -212,6 +216,7 @@ public final class RemoteBFTTest {
 
 		/**
 		 * Configures the test to wait until a {@link ResponsivenessCheck} is satisfied with the configured timeout.
+		 *
 		 * @return This builder
 		 */
 		public Builder waitUntilResponsive() {
@@ -231,6 +236,7 @@ public final class RemoteBFTTest {
 
 		/**
 		 * Sets the test network to use.
+		 *
 		 * @param testNetwork The test network
 		 * @return This builder
 		 */
@@ -241,19 +247,37 @@ public final class RemoteBFTTest {
 
 		/**
 		 * Asserts responsiveness using the {@link ResponsivenessCheck}
+		 *
 		 * @return This builder
 		 */
 		public Builder assertResponsiveness() {
 			return addCheck(ResponsivenessCheck.with(1, TimeUnit.SECONDS));
 		}
 
+
+		public Builder assertResponsiveness(List<String> nodesToIgnore) {
+			return addCheck(ResponsivenessCheck.with(1, TimeUnit.MINUTES).withNodesToIgnore(nodesToIgnore));
+		}
+
+
 		/**
 		 * Asserts safety using the {@link SafetyCheck}
+		 *
 		 * @return This builder
 		 */
 		public Builder assertSafety() {
 			return addCheck(SafetyCheck.with(1, TimeUnit.SECONDS));
 		}
+
+		/**
+		 * Asserts safety using the {@link SafetyCheck}
+		 *
+		 * @return This builder
+		 */
+		public Builder assertSafety(List<String> nodesToIgnore) {
+			return addCheck(SafetyCheck.with(1, TimeUnit.SECONDS).withNodesToIgnore(nodesToIgnore));
+		}
+
 
 		/**
 		 * Asserts liveness using the {@link LivenessCheck}
@@ -263,12 +287,24 @@ public final class RemoteBFTTest {
 			return addCheck(LivenessCheck.with(livenessExpectedInSeconds, TimeUnit.SECONDS, 1, TimeUnit.SECONDS));
 		}
 
+		/**
+		 * Asserts liveness using the {@link LivenessCheck}
+		 * @return This builder
+		 */
+		public Builder assertLiveness(int livenessExpectedInSeconds,List<String> nodestoIgnore) {
+			return addCheck(LivenessCheck
+				.with(livenessExpectedInSeconds, TimeUnit.SECONDS, 1, TimeUnit.SECONDS)
+				.withNodesToIgnore(nodestoIgnore)
+			);
+		}
+
 		public Builder assertLiveness() {
 			return assertLiveness(10);
 		}
 
 		/**
 		 * Asserts that BFT_TIMEOUT is zero.
+		 *
 		 * @return This builder
 		 */
 		public Builder assertNoTimeouts() {
@@ -277,6 +313,7 @@ public final class RemoteBFTTest {
 
 		/**
 		 * Asserts that BFT_INDIRECT_PARENT is zero.
+		 *
 		 * @return This builder
 		 */
 		public Builder assertAllProposalsHaveDirectParents() {
@@ -284,7 +321,17 @@ public final class RemoteBFTTest {
 		}
 
 		/**
+		 * Asserts that BFT_INDIRECT_PARENT is zero.
+		 *
+		 * @return This builder
+		 */
+		public Builder assertAllProposalsHaveDirectParents(List<String> nodesToIgnore) {
+			return addCheck(CounterCheck.checkEquals(SystemCounters.CounterType.BFT_INDIRECT_PARENT, 0L).withNodesToIgnore(nodesToIgnore));
+		}
+
+		/**
 		 * Adds the given check to be asserted during this test
+		 *
 		 * @param check The check to add
 		 * @return This builder
 		 */
@@ -303,14 +350,8 @@ public final class RemoteBFTTest {
 				throw new IllegalStateException("testNetwork not set");
 			}
 
-			return new RemoteBFTTest(
-				this.testNetwork,
-				ImmutableList.copyOf(this.prerequisites),
-				ImmutableList.copyOf(this.checks),
-				this.schedule,
-				this.prerequisiteTimeout,
-				this.prerequisiteTimeoutUnit,
-				startConsensusOnRun);
+			return new RemoteBFTTest(this.testNetwork, ImmutableList.copyOf(this.prerequisites), ImmutableList.copyOf(this.checks), this.schedule,
+				this.prerequisiteTimeout, this.prerequisiteTimeoutUnit, startConsensusOnRun);
 		}
 	}
 
@@ -318,6 +359,7 @@ public final class RemoteBFTTest {
 	 * An internal {@link RemoteBFTCheck} error thrown by a check and wrapped by the managing test
 	 */
 	public static final class InternalBFTCheckError extends AssertionError {
+
 		private final RemoteBFTCheck failedCheck;
 		private final Throwable error;
 
@@ -328,6 +370,7 @@ public final class RemoteBFTTest {
 
 		/**
 		 * Creates an {@link InternalBFTCheckError} wrapping the specified error of the given check
+		 *
 		 * @param failedCheck The check that failed
 		 * @param error The error the check threw
 		 * @return An {@link InternalBFTCheckError} wrapping the given error
@@ -341,6 +384,7 @@ public final class RemoteBFTTest {
 	 * A composite error containing a collection of check errors
 	 */
 	public static final class CompositeError extends AssertionError {
+
 		private final List<RemoteBFTCheckResult> failedChecks;
 
 		public CompositeError(Collection<RemoteBFTCheckResult> failedChecks) {
@@ -350,8 +394,7 @@ public final class RemoteBFTTest {
 				failedChecks.stream()
 					.map(RemoteBFTCheckResult::getException)
 					.map(Throwable::toString)
-					.collect(Collectors.joining("%n"))
-			));
+					.collect(Collectors.joining("%n"))));
 			this.failedChecks = ImmutableList.copyOf(failedChecks);
 		}
 	}

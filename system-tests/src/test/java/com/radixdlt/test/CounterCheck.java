@@ -20,6 +20,9 @@ package com.radixdlt.test;
 
 import io.reactivex.Completable;
 import io.reactivex.Single;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.junit.Assert;
 
 import java.util.Objects;
@@ -32,15 +35,29 @@ import java.util.stream.Collectors;
 public class CounterCheck implements RemoteBFTCheck {
 	private final Consumer<SystemCounters> assertion;
 	private final String assertionDescription;
+	private  List<String> nodesToIgnore;
 
-	public CounterCheck(Consumer<SystemCounters> assertion, String assertionDescription) {
+
+	private CounterCheck(Consumer<SystemCounters> assertion, String assertionDescription ) {
+		this(assertion, assertionDescription, new ArrayList<String>());
+	}
+
+	private CounterCheck(Consumer<SystemCounters> assertion, String assertionDescription, List<String> nodesToIgnore) {
 		this.assertion = Objects.requireNonNull(assertion);
 		this.assertionDescription = assertionDescription;
+		this.nodesToIgnore = nodesToIgnore;
+	}
+
+
+	public CounterCheck withNodesToIgnore( List<String> nodesToIgnore) {
+		this.nodesToIgnore = nodesToIgnore;
+		return this;
 	}
 
 	@Override
 	public Single<RemoteBFTCheckResult> check(RemoteBFTNetworkBridge network) {
 		return Completable.mergeDelayError(network.getNodeIds().stream()
+			.filter(nodename -> !nodesToIgnore.contains(nodename))
 			.map(nodeName -> network.queryEndpointJson(nodeName, "api/system")
 				.map(system -> system.getJSONObject("info").getJSONObject("counters"))
 				.map(SystemCounters::from)
@@ -50,6 +67,7 @@ public class CounterCheck implements RemoteBFTCheck {
 			.toSingleDefault(RemoteBFTCheckResult.success())
 			.onErrorReturn(RemoteBFTCheckResult::error);
 	}
+
 
 	@Override
 	public String toString() {
