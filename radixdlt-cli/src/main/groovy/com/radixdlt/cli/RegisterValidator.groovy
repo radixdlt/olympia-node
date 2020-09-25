@@ -29,6 +29,17 @@ import picocli.CommandLine
 
 import java.util.stream.Collectors
 
+/**
+ * Register the validator
+ * <br>
+ * Usage:
+ * <pre>
+ *  $ radixdlt-cli register-validator -k=<keystore name> -p=<keystore password> [-i=<info URL>] [-a=<delegator address>]
+ * </pre>
+ * The {@code -i=<info URL>} parameter is optional.<br>
+ * The {@code -a=<delegator address>} is optional and can be specified multiple times. Every occurence adds one
+ * delegator.
+ */
 @CommandLine.Command(name = "register-validator", mixinStandardHelpOptions = true,
 		description = "Register as a Validator")
 class RegisterValidator implements Runnable {
@@ -50,9 +61,8 @@ class RegisterValidator implements Runnable {
 		RadixApplicationAPI api = Utils.getAPI(identityInfo)
 		api.pullOnce(api.getAddress()).blockingAwait()
 		api.registerValidator(api.getAddress(), allowedDelegators, infoUrl).blockUntilComplete()
-		println("registered ${api.getAddress()} as a validator:")
-		printf("url: %s%n", infoUrl == null ? "<not set>" : infoUrl)
-		printf("allowedDelegators: %s%n", allowedDelegators.isEmpty() ? "<not set, allows any>" : allowedDelegators)
-
+		println("Registered ${api.getAddress()} as a validator:")
+		printf("  url: %s%n", infoUrl == null ? "<not set>" : infoUrl)
+		printf("  allowedDelegators: %s%n", allowedDelegators.isEmpty() ? "<not set, allows any>" : allowedDelegators)
 	}
 }

@@ -29,40 +29,79 @@ import com.radixdlt.client.application.translate.tokens.TokenUnitConversions
 import com.radixdlt.identifiers.RRI
 import picocli.CommandLine
 
+/**
+ * This command allows creation and minting of tokens
+ * <br>
+ * Usage:
+ * <pre>
+ *  $ radixdlt-cli create-mint-token [-k=<keystore name>] [-p=<keystore password>] [-a=<amount>] -n=<token name> [-d=<token description>] [-u]
+ * </pre>
+ * There are following modes of operation for this command, depending on specified parameters. All modes require token name.
+ * <ul>
+ *     <li>Create token without minting it - Do not specify amount. In this mode {@code -u} option is not allowed</li>
+ *     <li>Mint existing token - Specify amount and provide {@code -u} option.</li>
+ *     <li>Create and immediately mint token - Specify amount (and omit {@code -u} option)</li>
+ * </ul>
+ */
 @CommandLine.Command(name = "create-mint-token", mixinStandardHelpOptions = true,
-        description = "Create new token and mint tokens")
+        description = "Create or Mint or Create and Mint token")
 class CreateAndMintToken implements Runnable {
-
     @CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
     Composite.IdentityInfo identityInfo
 
-    @CommandLine.Option(names = ["-a", "--amount"], paramLabel = "AMOUNT", description = " Amount to send", required = true)
+    @CommandLine.Option(names = ["-a", "--amount"], paramLabel = "AMOUNT", description = " Amount to send")
     BigDecimal amount
 
     @CommandLine.Option(names = ["-n", "--token-name"], paramLabel = "TOKEN_NAME", description = " Unique name of the token", required = true)
     String tokenName
 
     @CommandLine.Option(names = ["-d", "--token-desc"], paramLabel = "TOKEN_DESCRIPTION", description = "Description of token")
-    String tokenDescription = "Token description not provided"
+    String tokenDescription = "(no description provided)"
 
+    @CommandLine.Option(names = ["-u", "--use-existing"], paramLabel = "USE_EXISTING_TOKEN", description = " Use existing token instead of creating new")
+    boolean useExisting;
 
     @Override
-	void run() {
+    void run() {
+        if (tokenName.isBlank()) {
+            println "Token name must not be empty"
+            System.exit(-1)
+        }
+
+        if (useExisting && amount != null && amount <= BigDecimal.ZERO) {
+            println "If existing token is used, then greater than zero amount must be provided"
+            System.exit(-1)
+        }
 
         RadixApplicationAPI api = Utils.getAPI(identityInfo)
         RRI tokenRRI = RRI.of(api.getAddress(), tokenName)
         RadixApplicationAPI.Transaction transaction = api.createTransaction()
-        transaction.stage(CreateTokenAction.create(
-                tokenRRI,
-                "${tokenName}",
-                "${tokenDescription}",
-                BigDecimal.ZERO,
-                TokenUnitConversions.getMinimumGranularity(),
-                CreateTokenAction.TokenSupplyType.MUTABLE
-        ))
-        transaction.stage(MintTokensAction.create(tokenRRI, api.getAddress(), BigDecimal.valueOf(amount)))
-        RadixApplicationAPI.Result createTokenAndMint = transaction.commitAndPush()
-        createTokenAndMint.toObservable().blockingSubscribe({ it -> println it })
+
+        if (!useExisting) {
+            println "Creating token ${tokenName} with ${tokenDescription}"
+
+            transaction.stage(CreateTokenAction.create(
+                    tokenRRI,
+                    "${tokenName}",
+                    "${tokenDescription}",
+                    BigDecimal.ZERO,
+                    TokenUnitConversions.getMinimumGranularity(),
+                    CreateTokenAction.TokenSupplyType.MUTABLE
+            ))
+        } else {
+            println "Using existing token ${tokenName}"
+        }
+
+        if (amount != null && amount > BigDecimal.ZERO) {
+            println "Minting token for ${amount}"
+            transaction.stage(MintTokensAction.create(tokenRRI, api.getAddress(), BigDecimal.valueOf(amount)))
+        }
+
+        println "Committing transaction..."
+        transaction.commitAndPush()
+            .toObservable()
+            .blockingSubscribe({ it -> println it })
+        println "Done"
         System.exit(0)
     }
 }

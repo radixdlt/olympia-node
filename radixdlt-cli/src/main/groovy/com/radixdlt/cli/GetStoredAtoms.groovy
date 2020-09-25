@@ -24,25 +24,34 @@ package com.radixdlt.cli
 import com.radixdlt.client.application.RadixApplicationAPI
 import picocli.CommandLine
 
+/**
+ * This command shows stored atoms
+ * <br>
+ * Usage:
+ * <pre>
+ *  $ radixdlt-cli get-stored-atoms [-k=<keystore name>] [-p=<keystore password>]
+ * </pre>
+ */
 @CommandLine.Command(name = "get-stored-atoms", mixinStandardHelpOptions = true,
         description = "Get stored Atoms")
 class GetStoredAtoms implements Runnable {
-
     @CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
     Composite.IdentityInfo identityInfo
 
     @Override
     void run() {
-
         RadixApplicationAPI api = Utils.getAPI(identityInfo)
-        api.pull()
 
+        println "Retrieving atoms..."
+        api.pull()
         def atomStore = api.getAtomStore()
         def observations = atomStore.getAtomObservations(api.getAddress())
         observations.filter({ it -> return it.isHead() }).blockingFirst()
-        atomStore.getStoredAtoms(api.getAddress()).each { it -> println it.getAid() }
+
+        println "Atom ID's:"
+        atomStore.getStoredAtoms(api.getAddress()).each(it -> printf("  %s", it.getAid()))
+        println "Done"
         System.exit(0)
     }
-
 }
 

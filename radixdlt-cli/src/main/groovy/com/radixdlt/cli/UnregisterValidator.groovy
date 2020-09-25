@@ -23,11 +23,16 @@
 package com.radixdlt.cli
 
 import com.radixdlt.client.application.RadixApplicationAPI
-import com.radixdlt.identifiers.RadixAddress
 import picocli.CommandLine
 
-import java.util.stream.Collectors
-
+/**
+ * Unregister the validator
+ * <br>
+ * Usage:
+ * <pre>
+ *  $ radixdlt-cli unregister-validator -k=<keystore name> -p=<keystore password>
+ * </pre>
+ */
 @CommandLine.Command(name = "unregister-validator", mixinStandardHelpOptions = true,
 		description = "Unregister as a Validator")
 class UnregisterValidator implements Runnable {
@@ -40,6 +45,6 @@ class UnregisterValidator implements Runnable {
 		RadixApplicationAPI api = Utils.getAPI(identityInfo)
 		api.pullOnce(api.getAddress()).blockingAwait()
 		api.unregisterValidator(api.getAddress()).blockUntilComplete()
-		println("unregistered ${api.getAddress()} as a validator")
+		println("Unregistered ${api.getAddress()} as a validator")
 	}
 }
