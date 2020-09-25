@@ -34,13 +34,13 @@ import picocli.CommandLine
  * <br>
  * Usage:
  * <pre>
- *  $ radixdlt-cli create-mint-token [-k=<keystore name>] [-p=<keystore password>] [-a=<amount>] -n=<token name> [-d=<token description>] [-u]
+ *  $ radixdlt-cli create-mint-token [-k=<keystore name>] [-p=<keystore password>] [-a=<amount>] -n=<token name> [-d=<token description>] [-r]
  * </pre>
  * There are following modes of operation for this command, depending on specified parameters. All modes require token name.
  * <ul>
- *     <li>Create token without minting it - Do not specify amount. In this mode {@code -u} option is not allowed</li>
- *     <li>Mint existing token - Specify amount and provide {@code -u} option.</li>
- *     <li>Create and immediately mint token - Specify amount (and omit {@code -u} option)</li>
+ *     <li>Create token without minting it - Do not specify amount. In this mode {@code -r} option is not allowed</li>
+ *     <li>Mint existing token - Specify amount and provide {@code -r} option.</li>
+ *     <li>Create and immediately mint token - Specify amount (and omit {@code -r} option)</li>
  * </ul>
  */
 @CommandLine.Command(name = "create-mint-token", mixinStandardHelpOptions = true,
@@ -58,7 +58,7 @@ class CreateAndMintToken implements Runnable {
     @CommandLine.Option(names = ["-d", "--token-desc"], paramLabel = "TOKEN_DESCRIPTION", description = "Description of token")
     String tokenDescription = "(no description provided)"
 
-    @CommandLine.Option(names = ["-u", "--use-existing"], paramLabel = "USE_EXISTING_TOKEN", description = " Use existing token instead of creating new")
+    @CommandLine.Option(names = ["-r", "--use-existing"], paramLabel = "USE_EXISTING_TOKEN", description = " Use existing token instead of creating new")
     boolean useExisting;
 
     @Override

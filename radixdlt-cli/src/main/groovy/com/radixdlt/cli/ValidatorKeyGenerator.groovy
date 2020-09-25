@@ -31,12 +31,14 @@ class ValidatorKeyGenerator implements Runnable {
         def keystoreFile = new File(keystoreDetails.keyStore)
         def newFile = !keystoreFile.canWrite()
         def isNew = newFile ? "new" : "existing"
+        def keyPair = ECKeyPair.generateNew()
+        def publicKey = keyPair.publicKey.toBase64()
 
-        println "Writing new keypair ${keyPairName} into ${isNew} keystore ${keystoreDetails.keyStore}"
+        println "Writing key ${keyPairName} (pubKey: ${publicKey}) into ${isNew} keystore ${keystoreDetails.keyStore}"
 
         RadixKeyStore.fromFile(keystoreFile, keystoreDetails.password.getChars(), newFile)
             .withCloseable((RadixKeyStore keyStore) ->
-                    keyStore.writeKeyPair(keyPairName, ECKeyPair.generateNew()));
+                    keyStore.writeKeyPair(keyPairName, keyPair));
 
         println "Done"
     }
