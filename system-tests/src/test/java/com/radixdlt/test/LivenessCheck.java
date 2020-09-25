@@ -22,7 +22,6 @@ import com.radixdlt.utils.Pair;
 import io.reactivex.Single;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
@@ -73,8 +72,8 @@ public class LivenessCheck implements RemoteBFTCheck {
 	@Override
 	public Single<RemoteBFTCheckResult> check(RemoteBFTNetworkBridge network) {
 		return Single.zip(
-			getHighestHighestQCView(network),
-			Single.timer(patience, patienceUnit).flatMap(l -> getHighestHighestQCView(network)),
+			getMaxOfHighestQCView(network),
+			Single.timer(patience, patienceUnit).flatMap(l -> getMaxOfHighestQCView(network)),
 			(previousHighestView, currentHighestView) -> {
 				if (EPOCH_AND_VIEW_COMPARATOR.compare(currentHighestView, previousHighestView) <= 0) {
 					// didn't advance during patience interval
@@ -93,14 +92,10 @@ public class LivenessCheck implements RemoteBFTCheck {
 	 * @param network The network to query
 	 * @return The highest highest QC view
 	 */
-	private Single<Pair<Long, Long>> getHighestHighestQCView(RemoteBFTNetworkBridge network) {
+	private Single<Pair<Long, Long>> getMaxOfHighestQCView(RemoteBFTNetworkBridge network) {
 		return Single.zip(
 			network.getNodeIds().stream()
-				.filter(nodename -> {
-					if(nodesToIgnore.size() == 0 )
-						return true;
-					return !nodesToIgnore.contains(nodename);
-				})
+				.filter(nodename -> !nodesToIgnore.contains(nodename))
 				.map(node -> network.queryEndpointJson(node, "api/vertices/highestqc")
 					.map(LivenessCheck::extractEpochAndView)
 					.timeout(this.timeout, this.timeoutUnit)
