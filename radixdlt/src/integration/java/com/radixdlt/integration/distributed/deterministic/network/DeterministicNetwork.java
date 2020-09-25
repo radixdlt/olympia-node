@@ -108,8 +108,8 @@ public final class DeterministicNetwork {
 	 * @param nodeIndex The node index/id that this sender is for
 	 * @return A newly created {@link DeterministicSender} for the specified node
 	 */
-	public DeterministicSender createSender(int nodeIndex) {
-		return new ControlledSender(this, nodeIndex);
+	public DeterministicSender createSender(BFTNode self, int nodeIndex) {
+		return new ControlledSender(this, self, nodeIndex);
 	}
 
 	public void run() {
@@ -173,7 +173,7 @@ public final class DeterministicNetwork {
 			// in a deterministic test.
 			new ConsensusModule(1, 2.0, 63),
 			new MockedCryptoModule(),
-			new DeterministicNetworkModule(self, createSender(index)),
+			new DeterministicNetworkModule(self, createSender(self, index)),
 			Modules.combine(syncExecutionModules)
 		);
 		if (overrideModule != null) {

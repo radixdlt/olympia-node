@@ -25,13 +25,13 @@ import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.GetVerticesRequest;
+import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexStoreSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
-import com.radixdlt.consensus.bft.GetVerticesResponse;
+import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
+import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
@@ -157,33 +157,6 @@ public class SimulationNetwork {
 		return new Builder();
 	}
 
-	private static final class SimulatedVerticesRequest implements GetVerticesRequest {
-		private final Hash vertexId;
-		private final int count;
-		private final BFTNode requestor;
-
-		private SimulatedVerticesRequest(BFTNode requestor, Hash vertexId, int count) {
-			this.requestor = requestor;
-			this.vertexId = vertexId;
-			this.count = count;
-		}
-
-		@Override
-		public Hash getVertexId() {
-			return vertexId;
-		}
-
-		@Override
-		public int getCount() {
-			return count;
-		}
-
-		@Override
-		public String toString() {
-			return String.format("%s{vertexId=%s count=%d}", this.getClass().getSimpleName(), this.vertexId, this.count);
-		}
-	}
-
 	public class SimulatedNetworkImpl implements
 		BFTEventSender, SyncVerticesRequestSender, SyncVerticesResponseSender, SyncEpochsRPCSender, BFTEventsRx,
 		SyncVerticesRPCRx, SyncEpochsRPCRx, StateSyncNetwork {
@@ -241,24 +214,20 @@ public class SimulationNetwork {
 
 		@Override
 		public void sendGetVerticesRequest(BFTNode node, Hash id, int count) {
-			final SimulatedVerticesRequest request = new SimulatedVerticesRequest(thisNode, id, count);
+			final GetVerticesRequest request = new GetVerticesRequest(thisNode, id, count);
 			receivedMessages.onNext(MessageInTransit.newMessage(request, thisNode, node));
 		}
 
 		@Override
-		public void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<VerifiedVertex> vertices) {
-			SimulatedVerticesRequest request = (SimulatedVerticesRequest) originalRequest;
+		public void sendGetVerticesResponse(BFTNode node, ImmutableList<VerifiedVertex> vertices) {
 			GetVerticesResponse vertexResponse = new GetVerticesResponse(thisNode, vertices);
-			receivedMessages.onNext(MessageInTransit.newMessage(vertexResponse, thisNode, request.requestor));
+			receivedMessages.onNext(MessageInTransit.newMessage(vertexResponse, thisNode, node));
 		}
 
 		@Override
-		public void sendGetVerticesErrorResponse(GetVerticesRequest originalRequest, QuorumCertificate highestQC,
-			QuorumCertificate highestCommittedQC) {
-
-			SimulatedVerticesRequest request = (SimulatedVerticesRequest) originalRequest;
-			GetVerticesErrorResponse vertexResponse = new GetVerticesErrorResponse(thisNode, request.vertexId, highestQC, highestCommittedQC);
-			receivedMessages.onNext(MessageInTransit.newMessage(vertexResponse, thisNode, request.requestor));
+		public void sendGetVerticesErrorResponse(BFTNode node, QuorumCertificate highestQC, QuorumCertificate highestCommittedQC) {
+			GetVerticesErrorResponse vertexResponse = new GetVerticesErrorResponse(thisNode, highestQC, highestCommittedQC);
+			receivedMessages.onNext(MessageInTransit.newMessage(vertexResponse, thisNode, node));
 		}
 
 		@Override

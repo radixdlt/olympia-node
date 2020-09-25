@@ -23,7 +23,7 @@ import com.google.inject.Scopes;
 import com.google.inject.multibindings.MapBinder;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.Timeout;
-import com.radixdlt.consensus.BFTSyncResponseProcessor;
+import com.radixdlt.consensus.sync.BFTSyncResponseProcessor;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.VertexStoreSync;

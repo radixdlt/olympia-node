@@ -20,17 +20,22 @@ package com.radixdlt.consensus.sync;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTSyncRequestProcessor;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.crypto.Hash;
+import java.util.Objects;
+import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Processor of sync requests and responds with info from a VertexStore
+ */
 public final class VertexStoreBFTSyncRequestProcessor implements BFTSyncRequestProcessor {
 	private final Logger log = LogManager.getLogger();
 	private final VertexStore vertexStore;
-	private final SyncVerticesResponseSender syncVerticesRPCSender;
+	private final SyncVerticesResponseSender syncVerticesResponseSender;
 
 	/**
 	 * An asynchronous supplier which retrieves data for a vertex with a given id
@@ -38,24 +43,24 @@ public final class VertexStoreBFTSyncRequestProcessor implements BFTSyncRequestP
 	public interface SyncVerticesResponseSender {
 		/**
 		 * Send a response to a given request
-		 * @param originalRequest the original request which is being replied to
+		 * @param node the node to send to
 		 * @param vertices the response data of vertices
 		 */
-		void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<VerifiedVertex> vertices);
+		void sendGetVerticesResponse(BFTNode node, ImmutableList<VerifiedVertex> vertices);
 
 		/**
 		 * Send an error response to a given request
-		 * @param originalRequest the original request
+		 * @param node the node to send to
 		 * @param highestQC highestQC sync info
 		 * @param highestCommittedQC highestCommittedQC sync info
 		 */
-		void sendGetVerticesErrorResponse(GetVerticesRequest originalRequest, QuorumCertificate highestQC, QuorumCertificate highestCommittedQC);
+		void sendGetVerticesErrorResponse(BFTNode node, QuorumCertificate highestQC, QuorumCertificate highestCommittedQC);
 	}
 
 	@Inject
-	public VertexStoreBFTSyncRequestProcessor(VertexStore vertexStore, SyncVerticesResponseSender syncVerticesRPCSender) {
-		this.vertexStore = vertexStore;
-		this.syncVerticesRPCSender = syncVerticesRPCSender;
+	public VertexStoreBFTSyncRequestProcessor(VertexStore vertexStore, SyncVerticesResponseSender syncVerticesResponseSender) {
+		this.vertexStore = Objects.requireNonNull(vertexStore);
+		this.syncVerticesResponseSender = Objects.requireNonNull(syncVerticesResponseSender);
 	}
 
 	@Override
@@ -63,18 +68,17 @@ public final class VertexStoreBFTSyncRequestProcessor implements BFTSyncRequestP
 		// TODO: Handle nodes trying to DDOS this endpoint
 
 		log.trace("SYNC_VERTICES: Received GetVerticesRequest {}", request);
-		ImmutableList<VerifiedVertex> fetched = vertexStore.getVertices(request.getVertexId(), request.getCount());
-		if (fetched.isEmpty()) {
-			this.syncVerticesRPCSender.sendGetVerticesErrorResponse(request, vertexStore.getHighestQC(), vertexStore.getHighestCommittedQC());
-			return;
-		}
-
-		log.trace("SYNC_VERTICES: Sending Response {}", fetched);
-		this.syncVerticesRPCSender.sendGetVerticesResponse(request, fetched);
-	}
-
-	public interface GetVerticesRequest {
-		Hash getVertexId();
-		int getCount();
+		Optional<ImmutableList<VerifiedVertex>> verticesMaybe = vertexStore.getVertices(request.getVertexId(), request.getCount());
+		verticesMaybe.ifPresentOrElse(
+			fetched -> {
+				log.trace("SYNC_VERTICES: Sending Response {}", fetched);
+				this.syncVerticesResponseSender.sendGetVerticesResponse(request.getSender(), fetched);
+			},
+			() -> this.syncVerticesResponseSender.sendGetVerticesErrorResponse(
+				request.getSender(),
+				vertexStore.getHighestQC(),
+				vertexStore.getHighestCommittedQC()
+			)
+		);
 	}
 }

@@ -19,6 +19,9 @@ package com.radixdlt.integration.distributed.simulation.application;
 
 import com.radixdlt.consensus.Command;
 
+/**
+ * Generator of commands for consensus processing
+ */
 public interface CommandGenerator {
 	Command nextCommand();
 }

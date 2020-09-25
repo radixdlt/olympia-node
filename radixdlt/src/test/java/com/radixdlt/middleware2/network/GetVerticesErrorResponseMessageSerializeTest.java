@@ -33,7 +33,6 @@ public class GetVerticesErrorResponseMessageSerializeTest extends SerializeMessa
 		LedgerHeader ledgerHeader = LedgerHeader.genesis(Hash.ZERO_HASH);
 		return new GetVerticesErrorResponseMessage(
 			12345,
-			Hash.random(),
 			QuorumCertificate.ofGenesis(new VerifiedVertex(UnverifiedVertex.createGenesis(ledgerHeader), Hash.ZERO_HASH), ledgerHeader),
 			QuorumCertificate.ofGenesis(new VerifiedVertex(UnverifiedVertex.createGenesis(ledgerHeader), Hash.ZERO_HASH), ledgerHeader)
 		);

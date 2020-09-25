@@ -280,20 +280,20 @@ public final class VertexStore {
 	 * @param count the number of vertices to retrieve
 	 * @return the list of vertices if all found, otherwise an empty list
 	 */
-	public ImmutableList<VerifiedVertex> getVertices(Hash vertexId, int count) {
+	public Optional<ImmutableList<VerifiedVertex>> getVertices(Hash vertexId, int count) {
 		Hash nextId = vertexId;
 		ImmutableList.Builder<VerifiedVertex> builder = ImmutableList.builderWithExpectedSize(count);
 		for (int i = 0; i < count; i++) {
 			VerifiedVertex vertex = this.vertices.get(nextId);
 			if (vertex == null) {
-				return ImmutableList.of();
+				return Optional.empty();
 			}
 
 			builder.add(vertex);
 			nextId = vertex.getParentId();
 		}
 
-		return builder.build();
+		return Optional.of(builder.build());
 	}
 
 	public int getSize() {

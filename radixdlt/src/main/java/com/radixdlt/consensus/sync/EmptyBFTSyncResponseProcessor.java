@@ -15,10 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
-
-import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
-import com.radixdlt.consensus.bft.GetVerticesResponse;
+package com.radixdlt.consensus.sync;
 
 /**
  * An empty/mocked vertex store event processor
