@@ -25,19 +25,13 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
-import com.radixdlt.network.addressbook.PeersAddedEvent;
-
 import com.radixdlt.utils.UInt256;
-import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
 import java.util.Comparator;
-import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.radix.events.EventListener;
-import org.radix.events.Events;
 import org.radix.universe.system.RadixSystem;
 
 /**
@@ -57,14 +51,8 @@ public class AddressBookGenesisValidatorSetProvider {
 			throw new IllegalArgumentException("Quorum size must be > 0 but was " + fixedNodeCount);
 		}
 
-		this.validatorList = Observable.<List<Peer>>create(emitter -> {
-			emitter.onNext(addressBook.peers().collect(Collectors.toList()));
-			// Race condition here but ignore as this is a temporary class
-			EventListener<PeersAddedEvent> eventListener = e -> emitter.onNext(e.peers());
-			emitter.setCancellable(() -> Events.getInstance().deregister(PeersAddedEvent.class, eventListener));
-			Events.getInstance().register(PeersAddedEvent.class, eventListener);
-		})
-			.map(peers -> Streams.concat(
+		this.validatorList = addressBook.peerUpdates() // For now, just use any add, update, delete event
+			.map(event -> Streams.concat(
 				addressBook.peers().filter(Peer::hasSystem).map(Peer::getSystem).map(RadixSystem::getKey),
 				Stream.of(selfKey)
 			).distinct().collect(Collectors.toList()))

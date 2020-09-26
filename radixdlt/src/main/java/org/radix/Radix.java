@@ -46,7 +46,6 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.JSONObject;
 import org.radix.api.http.RadixHttpServer;
 import org.radix.database.DatabaseEnvironment;
-import org.radix.events.Events;
 import org.radix.time.Time;
 import org.radix.universe.UniverseValidator;
 import org.radix.universe.system.LocalSystem;
@@ -170,9 +169,6 @@ public final class Radix
 
 		// set up time services
 		Time.start(properties);
-
-		// start events
-		Events.getInstance();
 
 		// start database environment
 		DatabaseEnvironment dbEnv = new DatabaseEnvironment(properties);

@@ -22,20 +22,25 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Stream;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.network.transport.TransportInfo;
 import com.radixdlt.properties.RuntimeProperties;
+
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.ObservableEmitter;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.radix.events.Events;
 import org.radix.network.discovery.Whitelist;
 import org.radix.time.Timestamps;
 import org.radix.universe.system.RadixSystem;
@@ -50,7 +55,6 @@ public class AddressBookImpl implements AddressBook {
 	private static final Logger log = LogManager.getLogger();
 
 	private final PeerPersistence persistence;
-	private final Events events;
 	private final long recencyThreshold;
 
 	private final Lock peersLock = new ReentrantLock();
@@ -59,11 +63,13 @@ public class AddressBookImpl implements AddressBook {
 	private final Whitelist whitelist;
 	private final TimeSupplier timeSupplier;
 
+	private final Lock emittersLock = new ReentrantLock();
+	private final Set<ObservableEmitter<AddressBookEvent>> emitters = Sets.newIdentityHashSet();
+
 	@Inject
-	AddressBookImpl(PeerPersistence persistence, Events events, RuntimeProperties properties, TimeSupplier timeSupplier) {
+	AddressBookImpl(PeerPersistence persistence, RuntimeProperties properties, TimeSupplier timeSupplier) {
 		super();
 		this.persistence = Objects.requireNonNull(persistence);
-		this.events = Objects.requireNonNull(events);
 		this.recencyThreshold = properties.get("addressbook.recency_ms", 60L * 1000L);
 		this.whitelist = Whitelist.from(properties);
 		this.timeSupplier = Objects.requireNonNull(timeSupplier);
@@ -191,22 +197,38 @@ public class AddressBookImpl implements AddressBook {
 	}
 
 	@Override
+	public Observable<AddressBookEvent> peerUpdates() {
+		return Observable.<AddressBookEvent>create(emitter ->
+			Locking.withConsumerLock(this.peersLock, this::addEmitter, emitter)
+		);
+	}
+
+	@Override
 	public void close() throws IOException {
+		Locking.withLock(this.emittersLock, () -> {
+			this.emitters.forEach(ObservableEmitter::onComplete);
+			this.emitters.clear();
+		});
 		this.persistence.close();
 	}
 
 	// Sends PeersAddedEvents and/or PeersRemoveEvents as required
 	private boolean handleUpdatedPeers(PeerUpdates peerUpdates) {
 		if (peerUpdates != null) {
-			if (peerUpdates.added != null) {
-				events.broadcast(new PeersAddedEvent(ImmutableList.of(peerUpdates.added)));
-			}
-			if (peerUpdates.removed != null) {
-				events.broadcast(new PeersRemovedEvent(ImmutableList.of(peerUpdates.removed)));
-			}
-			if (peerUpdates.updated != null) {
-				events.broadcast(new PeersUpdatedEvent(ImmutableList.of(peerUpdates.updated)));
-			}
+			Locking.withLock(this.emittersLock, () -> {
+				if (peerUpdates.added != null) {
+					PeersAddedEvent pae = new PeersAddedEvent(ImmutableList.of(peerUpdates.added));
+					emitters.forEach(e -> e.onNext(pae));
+				}
+				if (peerUpdates.removed != null) {
+					PeersRemovedEvent pre = new PeersRemovedEvent(ImmutableList.of(peerUpdates.removed));
+					emitters.forEach(e -> e.onNext(pre));
+				}
+				if (peerUpdates.updated != null) {
+					PeersUpdatedEvent pue = new PeersUpdatedEvent(ImmutableList.of(peerUpdates.updated));
+					emitters.forEach(e -> e.onNext(pue));
+				}
+			});
 			return !(peerUpdates.added == null && peerUpdates.removed == null && peerUpdates.updated == null);
 		}
 		return false;
@@ -306,5 +328,21 @@ public class AddressBookImpl implements AddressBook {
 		if (peer != null) {
 			peer.setTimestamp(Timestamps.ACTIVE, this.timeSupplier.currentTime());
 		}
+	}
+
+	private void addEmitter(ObservableEmitter<AddressBookEvent> emitter) {
+		Locking.withLock(this.emittersLock, () -> {
+			this.emitters.add(emitter);
+			emitter.setCancellable(() -> this.removeEmitter(emitter));
+			if (!this.peersByInfo.isEmpty()) {
+				emitter.onNext(new PeersAddedEvent(ImmutableList.copyOf(this.peersByInfo.values())));
+			}
+		});
+	}
+
+	private void removeEmitter(ObservableEmitter<?> emitter) {
+		Locking.withLock(this.emittersLock, () -> {
+			this.emitters.remove(emitter);
+		});
 	}
 }

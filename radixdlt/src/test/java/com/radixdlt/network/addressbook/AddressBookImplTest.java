@@ -20,6 +20,8 @@ package com.radixdlt.network.addressbook;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
@@ -28,7 +30,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.powermock.reflect.Whitebox;
 import org.radix.Radix;
-import org.radix.events.Events;
 import org.radix.time.Time;
 import org.radix.time.Timestamps;
 import org.radix.universe.system.RadixSystem;
@@ -44,16 +45,17 @@ import com.radixdlt.properties.RuntimeProperties;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
+import io.reactivex.rxjava3.observers.TestObserver;
+
 public class AddressBookImplTest {
 
-	private AtomicInteger broadcastEventCount;
 	private AtomicInteger savedPeerCount;
 	private AtomicInteger deletedPeerCount;
 	private AddressBookImpl addressbook;
+	private TestObserver<AddressBookEvent> peersObserver;
 
 	@Before
 	public void setUp() {
-		this.broadcastEventCount = new AtomicInteger(0);
 		this.savedPeerCount = new AtomicInteger(0);
 		this.deletedPeerCount = new AtomicInteger(0);
 		// No danger of resources not being closed with mock
@@ -67,20 +69,19 @@ public class AddressBookImplTest {
 			deletedPeerCount.incrementAndGet();
 			return true;
 		}).when(persistence).deletePeer(any());
-		Events events = mock(Events.class);
-		doAnswer(invocation -> {
-			// ClassCastEx here is a failure, so don't check
-			AddressBookEvent abevent = (AddressBookEvent) invocation.getArgument(0);
-			this.broadcastEventCount.addAndGet(abevent.peers().size());
-			return null;
-		}).when(events).broadcast(any());
 		RuntimeProperties properties = mock(RuntimeProperties.class);
 		doReturn(60_000L).when(properties).get(eq("addressbook.recency_ms"), anyLong());
-		this.addressbook = new AddressBookImpl(persistence, events, properties, System::currentTimeMillis);
+		this.addressbook = new AddressBookImpl(persistence, properties, System::currentTimeMillis);
+		this.peersObserver = TestObserver.create();
+		this.addressbook.peerUpdates()
+			.subscribe(this.peersObserver);
 	}
 
 	@After
 	public void tearDown() throws IOException {
+		// Ensure emitters are properly removed on disposal
+		this.peersObserver.dispose();
+		assertSetEmpty(Whitebox.getInternalState(this.addressbook, "emitters"));
 	    addressbook.close();
 	}
 
@@ -89,14 +90,22 @@ public class AddressBookImplTest {
 		TransportInfo transportInfo = TransportInfo.of("DUMMY", StaticTransportMetadata.empty());
 		PeerWithTransport peer = new PeerWithTransport(transportInfo);
 
-		// Adding should return true, and also fire broadcast event, not saved
+		// Adding should return true, and also cause event, but not saved
 		assertTrue(this.addressbook.addPeer(peer));
-		assertEquals(1, this.broadcastEventCount.get());
+		this.peersObserver.awaitCount(1)
+			.assertNoErrors()
+			.assertNotComplete()
+			.assertValueCount(1)
+			.assertValue(e -> e instanceof PeersAddedEvent);
 		assertEquals(0, this.savedPeerCount.get());
 
 		// Adding again should return false, and also not fire broadcast event, not saved
 		assertFalse(this.addressbook.addPeer(peer));
-		assertEquals(1, this.broadcastEventCount.get());
+		this.peersObserver.awaitCount(1)
+			.assertNoErrors()
+			.assertNotComplete()
+			.assertValueCount(1)
+			.assertValue(e -> e instanceof PeersAddedEvent); // But no new ones
 		assertEquals(0, this.savedPeerCount.get());
 
 		// Should be able to find by transport in address book
@@ -104,8 +113,8 @@ public class AddressBookImplTest {
 		assertSame(peer, foundPeer);
 
 		// Quick check of internal state too
-		assertEmpty(Whitebox.getInternalState(this.addressbook, "peersByNid"));
-		assertSize(1, Whitebox.getInternalState(this.addressbook, "peersByInfo"));
+		assertMapEmpty(Whitebox.getInternalState(this.addressbook, "peersByNid"));
+		assertMapSize(1, Whitebox.getInternalState(this.addressbook, "peersByInfo"));
 	}
 
 	@Test
@@ -113,14 +122,22 @@ public class AddressBookImplTest {
 		EUID nid = EUID.ONE;
 		PeerWithNid peer = new PeerWithNid(nid);
 
-		// Adding should return true, and also fire broadcast event, saved
+		// Adding should return true, and also cause event, saved
 		assertTrue(this.addressbook.addPeer(peer));
-		assertEquals(1, this.broadcastEventCount.get());
+		this.peersObserver.awaitCount(1)
+			.assertNoErrors()
+			.assertNotComplete()
+			.assertValueCount(1)
+			.assertValue(e -> e instanceof PeersAddedEvent);
 		assertEquals(1, this.savedPeerCount.get());
 
 		// Adding again should return false, and also not fire broadcast event, not saved again
 		assertFalse(this.addressbook.addPeer(peer));
-		assertEquals(1, this.broadcastEventCount.get());
+		this.peersObserver.awaitCount(1)
+			.assertNoErrors()
+			.assertNotComplete()
+			.assertValueCount(1)
+			.assertValue(e -> e instanceof PeersAddedEvent); // But no new ones
 		assertEquals(1, this.savedPeerCount.get());
 
 		// Should be able to find by nid in address book
@@ -129,8 +146,8 @@ public class AddressBookImplTest {
 		assertSame(peer, foundPeer.get());
 
 		// Quick check of internal state too
-		assertEmpty(Whitebox.getInternalState(this.addressbook, "peersByInfo"));
-		assertSize(1, Whitebox.getInternalState(this.addressbook, "peersByNid"));
+		assertMapEmpty(Whitebox.getInternalState(this.addressbook, "peersByInfo"));
+		assertMapSize(1, Whitebox.getInternalState(this.addressbook, "peersByNid"));
 	}
 
 	@Test
@@ -145,12 +162,20 @@ public class AddressBookImplTest {
 
 		// Adding should return true, and also fire broadcast event, saved
 		assertTrue(this.addressbook.addPeer(peer));
-		assertEquals(1, this.broadcastEventCount.get());
+		this.peersObserver.awaitCount(1)
+			.assertNoErrors()
+			.assertNotComplete()
+			.assertValueCount(1)
+			.assertValue(e -> e instanceof PeersAddedEvent);
 		assertEquals(1, this.savedPeerCount.get());
 
 		// Adding again should return false, and also not fire broadcast event, not saved again
 		assertFalse(this.addressbook.addPeer(peer));
-		assertEquals(1, this.broadcastEventCount.get());
+		this.peersObserver.awaitCount(1)
+			.assertNoErrors()
+			.assertNotComplete()
+			.assertValueCount(1)
+			.assertValue(e -> e instanceof PeersAddedEvent); // But no new ones
 		assertEquals(1, this.savedPeerCount.get());
 
 		// Should be able to find by nid in address book
@@ -163,8 +188,8 @@ public class AddressBookImplTest {
 		assertSame(peer, foundPeer2);
 
 		// Quick check of internal state too
-		assertSize(1, Whitebox.getInternalState(this.addressbook, "peersByInfo"));
-		assertSize(1, Whitebox.getInternalState(this.addressbook, "peersByNid"));
+		assertMapSize(1, Whitebox.getInternalState(this.addressbook, "peersByInfo"));
+		assertMapSize(1, Whitebox.getInternalState(this.addressbook, "peersByNid"));
 	}
 
 	@Test
@@ -174,16 +199,24 @@ public class AddressBookImplTest {
 
 		// Adding should return true and broadcast add
 		assertTrue(this.addressbook.addPeer(peer));
-		assertEquals(1, this.broadcastEventCount.get());
+		this.peersObserver.awaitCount(1)
+			.assertNoErrors()
+			.assertNotComplete()
+			.assertValueCount(1)
+			.assertValue(e -> e instanceof PeersAddedEvent);
 		assertEquals(0, this.deletedPeerCount.get());
 
 		assertTrue(this.addressbook.removePeer(peer));
-		assertEquals(2, this.broadcastEventCount.get());
+		this.peersObserver.awaitCount(2)
+			.assertNoErrors()
+			.assertNotComplete()
+			.assertValueCount(2)
+			.assertValueAt(1, e -> e instanceof PeersRemovedEvent);
 		assertEquals(1, this.deletedPeerCount.get());
 
 		// Quick check of internal state too
-		assertEmpty(Whitebox.getInternalState(this.addressbook, "peersByInfo"));
-		assertEmpty(Whitebox.getInternalState(this.addressbook, "peersByNid"));
+		assertMapEmpty(Whitebox.getInternalState(this.addressbook, "peersByInfo"));
+		assertMapEmpty(Whitebox.getInternalState(this.addressbook, "peersByNid"));
 	}
 
 	@Test
@@ -193,16 +226,24 @@ public class AddressBookImplTest {
 
 		// Adding should return true and broadcast add
 		assertTrue(this.addressbook.addPeer(peer));
-		assertEquals(1, this.broadcastEventCount.get());
+		this.peersObserver.awaitCount(1)
+			.assertNoErrors()
+			.assertNotComplete()
+			.assertValueCount(1)
+			.assertValue(e -> e instanceof PeersAddedEvent);
 		assertEquals(0, this.deletedPeerCount.get());
 
 		assertTrue(this.addressbook.removePeer(peer));
-		assertEquals(2, this.broadcastEventCount.get());
+		this.peersObserver.awaitCount(2)
+			.assertNoErrors()
+			.assertNotComplete()
+			.assertValueCount(2)
+			.assertValueAt(1, e -> e instanceof PeersRemovedEvent);
 		assertEquals(0, this.deletedPeerCount.get()); // Wasn't saved, wasn't deleted
 
 		// Quick check of internal state too
-		assertEmpty(Whitebox.getInternalState(this.addressbook, "peersByInfo"));
-		assertEmpty(Whitebox.getInternalState(this.addressbook, "peersByNid"));
+		assertMapEmpty(Whitebox.getInternalState(this.addressbook, "peersByInfo"));
+		assertMapEmpty(Whitebox.getInternalState(this.addressbook, "peersByNid"));
 	}
 
 	@Test
@@ -211,7 +252,11 @@ public class AddressBookImplTest {
 		PeerWithNid peer = new PeerWithNid(nid);
 
 		assertTrue(this.addressbook.addPeer(peer));
-		assertEquals(1, this.broadcastEventCount.get());
+		this.peersObserver.awaitCount(1)
+			.assertNoErrors()
+			.assertNotComplete()
+			.assertValueCount(1)
+			.assertValue(e -> e instanceof PeersAddedEvent);
 		assertEquals(1, this.savedPeerCount.get());
 
 		TransportInfo transportInfo = TransportInfo.of("DUMMY", StaticTransportMetadata.empty());
@@ -221,12 +266,16 @@ public class AddressBookImplTest {
 		when(system.supportedTransports()).thenAnswer(invocation -> Stream.of(transportInfo));
 		PeerWithSystem peer2 = new PeerWithSystem(system);
 		assertTrue(this.addressbook.updatePeer(peer2));
-		assertEquals(2, this.broadcastEventCount.get());
+		this.peersObserver.awaitCount(2)
+			.assertNoErrors()
+			.assertNotComplete()
+			.assertValueCount(2)
+			.assertValueAt(1, e -> e instanceof PeersUpdatedEvent);
 		assertEquals(2, this.savedPeerCount.get());
 
 		// Quick check of internal state too
-		assertSize(1, Whitebox.getInternalState(this.addressbook, "peersByInfo"));
-		assertSize(1, Whitebox.getInternalState(this.addressbook, "peersByNid"));
+		assertMapSize(1, Whitebox.getInternalState(this.addressbook, "peersByInfo"));
+		assertMapSize(1, Whitebox.getInternalState(this.addressbook, "peersByNid"));
 	}
 
 	@Test
@@ -235,7 +284,11 @@ public class AddressBookImplTest {
 		PeerWithNid peer = new PeerWithNid(nid);
 
 		assertTrue(this.addressbook.addPeer(peer));
-		assertEquals(1, this.broadcastEventCount.get());
+		this.peersObserver.awaitCount(1)
+			.assertNoErrors()
+			.assertNotComplete()
+			.assertValueCount(1)
+			.assertValue(e -> e instanceof PeersAddedEvent);
 		assertEquals(1, this.savedPeerCount.get());
 
 		TransportInfo transportInfo = TransportInfo.of("DUMMY", StaticTransportMetadata.empty());
@@ -245,19 +298,22 @@ public class AddressBookImplTest {
 		when(system.supportedTransports()).thenAnswer(invocation -> Stream.of(transportInfo));
 		Peer peer2 = this.addressbook.updatePeerSystem(peer, system);
 		assertNotNull(peer2);
-		assertEquals(2, this.broadcastEventCount.get());
+		this.peersObserver.awaitCount(2)
+			.assertNoErrors()
+			.assertNotComplete()
+			.assertValueCount(2)
+			.assertValueAt(1, e -> e instanceof PeersUpdatedEvent);
 		assertEquals(2, this.savedPeerCount.get());
 
 		// Quick check of internal state too
-		assertSize(1, Whitebox.getInternalState(this.addressbook, "peersByInfo"));
-		assertSize(1, Whitebox.getInternalState(this.addressbook, "peersByNid"));
+		assertMapSize(1, Whitebox.getInternalState(this.addressbook, "peersByInfo"));
+		assertMapSize(1, Whitebox.getInternalState(this.addressbook, "peersByNid"));
 	}
 
 	@Test
-	public void testUpdatePeerSameSystem() {
+	public void testUpdatePeerSameSystem() throws InterruptedException, IOException {
 		EUID nid = EUID.ONE;
 		TransportInfo transportInfo = TransportInfo.of("DUMMY", StaticTransportMetadata.empty());
-
 
 		RadixSystem system = mock(RadixSystem.class);
 		when(system.getNID()).thenReturn(nid);
@@ -265,17 +321,24 @@ public class AddressBookImplTest {
 		PeerWithSystem peer = new PeerWithSystem(system);
 
 		assertTrue(this.addressbook.addPeer(peer));
-		assertEquals(1, this.broadcastEventCount.get());
+		this.peersObserver.awaitCount(1)
+			.assertNoErrors()
+			.assertNotComplete()
+			.assertValueCount(1)
+			.assertValue(v -> v instanceof PeersAddedEvent);
 		assertEquals(1, this.savedPeerCount.get());
+		assertSetSize(1, Whitebox.getInternalState(this.addressbook, "emitters"));
 
 		Peer peer2 = this.addressbook.updatePeerSystem(new PeerWithTransport(transportInfo), system);
 		assertNotNull(peer2);
-		assertEquals(1, this.broadcastEventCount.get());
 		assertEquals(1, this.savedPeerCount.get());
+		this.addressbook.close();
+		this.peersObserver.await(100, TimeUnit.MILLISECONDS); // Just in case something arrives
+		this.peersObserver.assertComplete().assertValue(v -> v instanceof PeersAddedEvent);
 
 		// Quick check of internal state too
-		assertSize(1, Whitebox.getInternalState(this.addressbook, "peersByInfo"));
-		assertSize(1, Whitebox.getInternalState(this.addressbook, "peersByNid"));
+		assertMapSize(1, Whitebox.getInternalState(this.addressbook, "peersByInfo"));
+		assertMapSize(1, Whitebox.getInternalState(this.addressbook, "peersByNid"));
 	}
 
 	@Test
@@ -283,7 +346,11 @@ public class AddressBookImplTest {
 		PeerWithNid peer = new PeerWithNid(EUID.ONE);
 
 		assertTrue(this.addressbook.addPeer(peer));
-		assertEquals(1, this.broadcastEventCount.get());
+		this.peersObserver.awaitCount(1)
+			.assertNoErrors()
+			.assertNotComplete()
+			.assertValueCount(1)
+			.assertValue(v -> v instanceof PeersAddedEvent);
 		assertEquals(1, this.savedPeerCount.get());
 		assertEquals(0, this.deletedPeerCount.get());
 
@@ -295,27 +362,35 @@ public class AddressBookImplTest {
 		Peer peer2 = this.addressbook.updatePeerSystem(peer, system);
 		assertNotNull(peer2);
 		assertNotSame(peer, peer2);
-		assertEquals(3, this.broadcastEventCount.get());
+		this.peersObserver.awaitCount(3)
+			.assertNoErrors()
+			.assertNotComplete()
+			.assertValueCount(3)
+			.assertValueAt(1, v -> v instanceof PeersAddedEvent)
+			.assertValueAt(2, v -> v instanceof PeersRemovedEvent);
 		assertEquals(2, this.savedPeerCount.get());
 		assertEquals(1, this.deletedPeerCount.get());
 
 		// Updating again should have no effect
 		Peer peer3 = this.addressbook.updatePeerSystem(peer2, system);
 		assertSame(peer2, peer3);
-		assertEquals(3, this.broadcastEventCount.get());
+		this.peersObserver.awaitCount(3)
+			.assertNoErrors()
+			.assertNotComplete()
+			.assertValueCount(3);
 		assertEquals(2, this.savedPeerCount.get());
 		assertEquals(1, this.deletedPeerCount.get());
 
 		// Quick check of internal state too
-		assertSize(1, Whitebox.getInternalState(this.addressbook, "peersByInfo"));
-		assertSize(1, Whitebox.getInternalState(this.addressbook, "peersByNid"));
+		assertMapSize(1, Whitebox.getInternalState(this.addressbook, "peersByInfo"));
+		assertMapSize(1, Whitebox.getInternalState(this.addressbook, "peersByNid"));
 	}
 
 	@Test
 	public void testPeerNid() {
 		Optional<Peer> peer = this.addressbook.peer(EUID.ONE);
 		assertFalse(peer.isPresent());
-		assertEquals(0, this.broadcastEventCount.get());
+		this.peersObserver.assertNoValues();
 		assertEquals(0, this.savedPeerCount.get());
 
 		ECKeyPair key = ECKeyPair.generateNew();
@@ -325,13 +400,17 @@ public class AddressBookImplTest {
 
 		Optional<Peer> peer2 = this.addressbook.peer(pws.getNID());
 		assertTrue(peer2.isPresent());
-		assertEquals(1, this.broadcastEventCount.get());
+		this.peersObserver.awaitCount(1)
+			.assertNoErrors()
+			.assertNotComplete()
+			.assertValueCount(1)
+			.assertValue(v -> v instanceof PeersAddedEvent);
 		assertEquals(1, this.savedPeerCount.get());
 		assertSame(pws, peer2.get());
 
 		// Quick check of internal state too
-		assertEmpty(Whitebox.getInternalState(this.addressbook, "peersByInfo"));
-		assertSize(1, Whitebox.getInternalState(this.addressbook, "peersByNid"));
+		assertMapEmpty(Whitebox.getInternalState(this.addressbook, "peersByInfo"));
+		assertMapSize(1, Whitebox.getInternalState(this.addressbook, "peersByNid"));
 	}
 
 	@Test
@@ -340,18 +419,18 @@ public class AddressBookImplTest {
 
 		Peer peer = this.addressbook.peer(transportInfo);
 		assertNotNull(peer);
-		assertEquals(0, this.broadcastEventCount.get());
+		this.peersObserver.assertNoValues();
 		assertEquals(0, this.savedPeerCount.get());
 
 		Peer peer2 = this.addressbook.peer(transportInfo);
 		assertNotNull(peer2);
-		assertEquals(0, this.broadcastEventCount.get());
+		this.peersObserver.assertNoValues();
 		assertEquals(0, this.savedPeerCount.get());
 		assertEquals(peer, peer2);
 
 		// Quick check of internal state too
-		assertEmpty(Whitebox.getInternalState(this.addressbook, "peersByNid"));
-		assertSize(0, Whitebox.getInternalState(this.addressbook, "peersByInfo"));
+		assertMapEmpty(Whitebox.getInternalState(this.addressbook, "peersByNid"));
+		assertMapSize(0, Whitebox.getInternalState(this.addressbook, "peersByInfo"));
 	}
 
 	@Test
@@ -372,8 +451,8 @@ public class AddressBookImplTest {
 		assertTrue(peers.contains(peer2));
 
 		// Quick check of internal state too
-		assertSize(2, Whitebox.getInternalState(this.addressbook, "peersByInfo"));
-		assertEmpty(Whitebox.getInternalState(this.addressbook, "peersByNid"));
+		assertMapSize(2, Whitebox.getInternalState(this.addressbook, "peersByInfo"));
+		assertMapEmpty(Whitebox.getInternalState(this.addressbook, "peersByNid"));
 	}
 
 	@Test
@@ -394,8 +473,8 @@ public class AddressBookImplTest {
 		assertFalse(peers.contains(peer2));
 
 		// Quick check of internal state too
-		assertSize(2, Whitebox.getInternalState(this.addressbook, "peersByInfo"));
-		assertEmpty(Whitebox.getInternalState(this.addressbook, "peersByNid"));
+		assertMapSize(2, Whitebox.getInternalState(this.addressbook, "peersByInfo"));
+		assertMapEmpty(Whitebox.getInternalState(this.addressbook, "peersByNid"));
 	}
 
 	@Test
@@ -412,18 +491,28 @@ public class AddressBookImplTest {
 		assertTrue(nids.contains(EUID.TWO));
 
 		// Quick check of internal state too
-		assertSize(2, Whitebox.getInternalState(this.addressbook, "peersByNid"));
-		assertEmpty(Whitebox.getInternalState(this.addressbook, "peersByInfo"));
+		assertMapSize(2, Whitebox.getInternalState(this.addressbook, "peersByNid"));
+		assertMapEmpty(Whitebox.getInternalState(this.addressbook, "peersByInfo"));
 	}
 
 
 	// Type coercion
-	private <T, U> void assertEmpty(Map<T, U> map) {
+	private <T, U> void assertMapEmpty(Map<T, U> map) {
 		assertTrue(map.isEmpty());
 	}
 
 	// Type coercion
-	private <T, U> void assertSize(int size, Map<T, U> map) {
+	private <T, U> void assertMapSize(int size, Map<T, U> map) {
 		assertEquals(size, map.size());
+	}
+
+	// Type coercion
+	private <T> void assertSetEmpty(Set<T> set) {
+		assertTrue(set.isEmpty());
+	}
+
+	// Type coercion
+	private <T> void assertSetSize(int size, Set<T> set) {
+		assertEquals(size, set.size());
 	}
 }

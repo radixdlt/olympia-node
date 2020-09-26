@@ -107,7 +107,8 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 	public Optional<View> processNewView(NewView newView, BFTValidatorSet validatorSet) {
 		View newViewView = newView.getView();
 		if (newViewView.compareTo(this.lastSyncView) <= 0) {
-			log.debug("Ignoring NewView message {}: last sync view is {}", newView, this.lastSyncView);
+			// Log happens a lot where f > 0, so setting to trace level
+			log.trace("Ignoring NewView message {}: last sync view is {}", newView, this.lastSyncView);
 			return Optional.empty();
 		}
 

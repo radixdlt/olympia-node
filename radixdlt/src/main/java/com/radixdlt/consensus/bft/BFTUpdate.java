@@ -32,4 +32,9 @@ public final class BFTUpdate {
 	public VerifiedVertex getInsertedVertex() {
 		return insertedVertex;
 	}
+
+	@Override
+	public String toString() {
+		return String.format("%s[%s]", getClass().getSimpleName(), this.insertedVertex);
+	}
 }

@@ -29,8 +29,6 @@ import com.radixdlt.mempool.MempoolFullException;
 import org.json.JSONObject;
 import org.radix.api.services.AtomsService;
 import org.radix.api.services.SingleAtomListener;
-import org.radix.exceptions.AtomAlreadyStoredException;
-import org.radix.exceptions.ValidationException;
 
 /**
  * Epic responsible for translating an atom submission JSON RPC request to the response and resulting
@@ -112,17 +110,7 @@ public class SubmitAtomAndSubscribeEpic {
 
 			@Override
 			public void onError(AID atomId, Throwable e) {
-				if (e instanceof ValidationException) {
-					JSONObject data = new JSONObject();
-					data.put("message", e.getMessage());
-
-					sendAtomSubmissionState.accept(AtomSubmissionState.VALIDATION_ERROR, data);
-				} else if (e instanceof AtomAlreadyStoredException) {
-					JSONObject data = new JSONObject();
-					data.put("justStored", false);
-
-					sendAtomSubmissionState.accept(AtomSubmissionState.STORED, data);
-				} else if (e instanceof MempoolFullException) {
+				if (e instanceof MempoolFullException) {
 					JSONObject data = new JSONObject();
 					data.put("message", e.getMessage());
 					// FIXME: Probably should be something different here, but decision deferred until later
