@@ -334,9 +334,7 @@ public class AddressBookImpl implements AddressBook {
 		Locking.withLock(this.emittersLock, () -> {
 			this.emitters.add(emitter);
 			emitter.setCancellable(() -> this.removeEmitter(emitter));
-			if (!this.peersByInfo.isEmpty()) {
-				emitter.onNext(new PeersAddedEvent(ImmutableList.copyOf(this.peersByInfo.values())));
-			}
+			emitter.onNext(new PeersAddedEvent(ImmutableList.copyOf(this.peersByInfo.values())));
 		});
 	}
 

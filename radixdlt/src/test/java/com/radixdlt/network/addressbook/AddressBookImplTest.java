@@ -75,6 +75,8 @@ public class AddressBookImplTest {
 		this.peersObserver = TestObserver.create();
 		this.addressbook.peerUpdates()
 			.subscribe(this.peersObserver);
+		this.peersObserver.awaitCount(1)
+			.assertValue(e -> e instanceof PeersAddedEvent && e.peers().isEmpty());
 	}
 
 	@After
@@ -95,8 +97,8 @@ public class AddressBookImplTest {
 		this.peersObserver.awaitCount(1)
 			.assertNoErrors()
 			.assertNotComplete()
-			.assertValueCount(1)
-			.assertValue(e -> e instanceof PeersAddedEvent);
+			.assertValueCount(2)
+			.assertValueAt(1, e -> e instanceof PeersAddedEvent);
 		assertEquals(0, this.savedPeerCount.get());
 
 		// Adding again should return false, and also not fire broadcast event, not saved
@@ -104,8 +106,7 @@ public class AddressBookImplTest {
 		this.peersObserver.awaitCount(1)
 			.assertNoErrors()
 			.assertNotComplete()
-			.assertValueCount(1)
-			.assertValue(e -> e instanceof PeersAddedEvent); // But no new ones
+			.assertValueCount(2); // But no new ones
 		assertEquals(0, this.savedPeerCount.get());
 
 		// Should be able to find by transport in address book
@@ -127,17 +128,16 @@ public class AddressBookImplTest {
 		this.peersObserver.awaitCount(1)
 			.assertNoErrors()
 			.assertNotComplete()
-			.assertValueCount(1)
-			.assertValue(e -> e instanceof PeersAddedEvent);
+			.assertValueCount(2)
+			.assertValueAt(1, e -> e instanceof PeersAddedEvent);
 		assertEquals(1, this.savedPeerCount.get());
 
 		// Adding again should return false, and also not fire broadcast event, not saved again
 		assertFalse(this.addressbook.addPeer(peer));
-		this.peersObserver.awaitCount(1)
+		this.peersObserver.awaitCount(2)
 			.assertNoErrors()
 			.assertNotComplete()
-			.assertValueCount(1)
-			.assertValue(e -> e instanceof PeersAddedEvent); // But no new ones
+			.assertValueCount(2); // But no new ones
 		assertEquals(1, this.savedPeerCount.get());
 
 		// Should be able to find by nid in address book
@@ -162,20 +162,19 @@ public class AddressBookImplTest {
 
 		// Adding should return true, and also fire broadcast event, saved
 		assertTrue(this.addressbook.addPeer(peer));
-		this.peersObserver.awaitCount(1)
+		this.peersObserver.awaitCount(2)
 			.assertNoErrors()
 			.assertNotComplete()
-			.assertValueCount(1)
-			.assertValue(e -> e instanceof PeersAddedEvent);
+			.assertValueCount(2)
+			.assertValueAt(1, e -> e instanceof PeersAddedEvent);
 		assertEquals(1, this.savedPeerCount.get());
 
 		// Adding again should return false, and also not fire broadcast event, not saved again
 		assertFalse(this.addressbook.addPeer(peer));
-		this.peersObserver.awaitCount(1)
+		this.peersObserver.awaitCount(2)
 			.assertNoErrors()
 			.assertNotComplete()
-			.assertValueCount(1)
-			.assertValue(e -> e instanceof PeersAddedEvent); // But no new ones
+			.assertValueCount(2); // But no new ones
 		assertEquals(1, this.savedPeerCount.get());
 
 		// Should be able to find by nid in address book
@@ -199,19 +198,19 @@ public class AddressBookImplTest {
 
 		// Adding should return true and broadcast add
 		assertTrue(this.addressbook.addPeer(peer));
-		this.peersObserver.awaitCount(1)
-			.assertNoErrors()
-			.assertNotComplete()
-			.assertValueCount(1)
-			.assertValue(e -> e instanceof PeersAddedEvent);
-		assertEquals(0, this.deletedPeerCount.get());
-
-		assertTrue(this.addressbook.removePeer(peer));
 		this.peersObserver.awaitCount(2)
 			.assertNoErrors()
 			.assertNotComplete()
 			.assertValueCount(2)
-			.assertValueAt(1, e -> e instanceof PeersRemovedEvent);
+			.assertValueAt(1, e -> e instanceof PeersAddedEvent);
+		assertEquals(0, this.deletedPeerCount.get());
+
+		assertTrue(this.addressbook.removePeer(peer));
+		this.peersObserver.awaitCount(3)
+			.assertNoErrors()
+			.assertNotComplete()
+			.assertValueCount(3)
+			.assertValueAt(2, e -> e instanceof PeersRemovedEvent);
 		assertEquals(1, this.deletedPeerCount.get());
 
 		// Quick check of internal state too
@@ -226,19 +225,19 @@ public class AddressBookImplTest {
 
 		// Adding should return true and broadcast add
 		assertTrue(this.addressbook.addPeer(peer));
-		this.peersObserver.awaitCount(1)
-			.assertNoErrors()
-			.assertNotComplete()
-			.assertValueCount(1)
-			.assertValue(e -> e instanceof PeersAddedEvent);
-		assertEquals(0, this.deletedPeerCount.get());
-
-		assertTrue(this.addressbook.removePeer(peer));
 		this.peersObserver.awaitCount(2)
 			.assertNoErrors()
 			.assertNotComplete()
 			.assertValueCount(2)
-			.assertValueAt(1, e -> e instanceof PeersRemovedEvent);
+			.assertValueAt(1, e -> e instanceof PeersAddedEvent);
+		assertEquals(0, this.deletedPeerCount.get());
+
+		assertTrue(this.addressbook.removePeer(peer));
+		this.peersObserver.awaitCount(3)
+			.assertNoErrors()
+			.assertNotComplete()
+			.assertValueCount(3)
+			.assertValueAt(2, e -> e instanceof PeersRemovedEvent);
 		assertEquals(0, this.deletedPeerCount.get()); // Wasn't saved, wasn't deleted
 
 		// Quick check of internal state too
@@ -252,11 +251,11 @@ public class AddressBookImplTest {
 		PeerWithNid peer = new PeerWithNid(nid);
 
 		assertTrue(this.addressbook.addPeer(peer));
-		this.peersObserver.awaitCount(1)
+		this.peersObserver.awaitCount(2)
 			.assertNoErrors()
 			.assertNotComplete()
-			.assertValueCount(1)
-			.assertValue(e -> e instanceof PeersAddedEvent);
+			.assertValueCount(2)
+			.assertValueAt(1, e -> e instanceof PeersAddedEvent);
 		assertEquals(1, this.savedPeerCount.get());
 
 		TransportInfo transportInfo = TransportInfo.of("DUMMY", StaticTransportMetadata.empty());
@@ -266,11 +265,11 @@ public class AddressBookImplTest {
 		when(system.supportedTransports()).thenAnswer(invocation -> Stream.of(transportInfo));
 		PeerWithSystem peer2 = new PeerWithSystem(system);
 		assertTrue(this.addressbook.updatePeer(peer2));
-		this.peersObserver.awaitCount(2)
+		this.peersObserver.awaitCount(3)
 			.assertNoErrors()
 			.assertNotComplete()
-			.assertValueCount(2)
-			.assertValueAt(1, e -> e instanceof PeersUpdatedEvent);
+			.assertValueCount(3)
+			.assertValueAt(2, e -> e instanceof PeersUpdatedEvent);
 		assertEquals(2, this.savedPeerCount.get());
 
 		// Quick check of internal state too
@@ -287,8 +286,8 @@ public class AddressBookImplTest {
 		this.peersObserver.awaitCount(1)
 			.assertNoErrors()
 			.assertNotComplete()
-			.assertValueCount(1)
-			.assertValue(e -> e instanceof PeersAddedEvent);
+			.assertValueCount(2)
+			.assertValueAt(1, e -> e instanceof PeersAddedEvent);
 		assertEquals(1, this.savedPeerCount.get());
 
 		TransportInfo transportInfo = TransportInfo.of("DUMMY", StaticTransportMetadata.empty());
@@ -298,11 +297,11 @@ public class AddressBookImplTest {
 		when(system.supportedTransports()).thenAnswer(invocation -> Stream.of(transportInfo));
 		Peer peer2 = this.addressbook.updatePeerSystem(peer, system);
 		assertNotNull(peer2);
-		this.peersObserver.awaitCount(2)
+		this.peersObserver.awaitCount(3)
 			.assertNoErrors()
 			.assertNotComplete()
-			.assertValueCount(2)
-			.assertValueAt(1, e -> e instanceof PeersUpdatedEvent);
+			.assertValueCount(3)
+			.assertValueAt(2, e -> e instanceof PeersUpdatedEvent);
 		assertEquals(2, this.savedPeerCount.get());
 
 		// Quick check of internal state too
@@ -321,11 +320,11 @@ public class AddressBookImplTest {
 		PeerWithSystem peer = new PeerWithSystem(system);
 
 		assertTrue(this.addressbook.addPeer(peer));
-		this.peersObserver.awaitCount(1)
+		this.peersObserver.awaitCount(2)
 			.assertNoErrors()
 			.assertNotComplete()
-			.assertValueCount(1)
-			.assertValue(v -> v instanceof PeersAddedEvent);
+			.assertValueCount(2)
+			.assertValueAt(1, v -> v instanceof PeersAddedEvent);
 		assertEquals(1, this.savedPeerCount.get());
 		assertSetSize(1, Whitebox.getInternalState(this.addressbook, "emitters"));
 
@@ -334,7 +333,11 @@ public class AddressBookImplTest {
 		assertEquals(1, this.savedPeerCount.get());
 		this.addressbook.close();
 		this.peersObserver.await(100, TimeUnit.MILLISECONDS); // Just in case something arrives
-		this.peersObserver.assertComplete().assertValue(v -> v instanceof PeersAddedEvent);
+		this.peersObserver
+			.assertNoErrors()
+			.assertComplete()
+			.assertValueCount(2)
+			.assertValueAt(1, v -> v instanceof PeersAddedEvent);
 
 		// Quick check of internal state too
 		assertMapSize(1, Whitebox.getInternalState(this.addressbook, "peersByInfo"));
@@ -346,11 +349,11 @@ public class AddressBookImplTest {
 		PeerWithNid peer = new PeerWithNid(EUID.ONE);
 
 		assertTrue(this.addressbook.addPeer(peer));
-		this.peersObserver.awaitCount(1)
+		this.peersObserver.awaitCount(2)
 			.assertNoErrors()
 			.assertNotComplete()
-			.assertValueCount(1)
-			.assertValue(v -> v instanceof PeersAddedEvent);
+			.assertValueCount(2)
+			.assertValueAt(1, v -> v instanceof PeersAddedEvent);
 		assertEquals(1, this.savedPeerCount.get());
 		assertEquals(0, this.deletedPeerCount.get());
 
@@ -362,22 +365,22 @@ public class AddressBookImplTest {
 		Peer peer2 = this.addressbook.updatePeerSystem(peer, system);
 		assertNotNull(peer2);
 		assertNotSame(peer, peer2);
-		this.peersObserver.awaitCount(3)
+		this.peersObserver.awaitCount(4)
 			.assertNoErrors()
 			.assertNotComplete()
-			.assertValueCount(3)
-			.assertValueAt(1, v -> v instanceof PeersAddedEvent)
-			.assertValueAt(2, v -> v instanceof PeersRemovedEvent);
+			.assertValueCount(4)
+			.assertValueAt(2, v -> v instanceof PeersAddedEvent)
+			.assertValueAt(3, v -> v instanceof PeersRemovedEvent);
 		assertEquals(2, this.savedPeerCount.get());
 		assertEquals(1, this.deletedPeerCount.get());
 
 		// Updating again should have no effect
 		Peer peer3 = this.addressbook.updatePeerSystem(peer2, system);
 		assertSame(peer2, peer3);
-		this.peersObserver.awaitCount(3)
+		this.peersObserver.awaitCount(4)
 			.assertNoErrors()
 			.assertNotComplete()
-			.assertValueCount(3);
+			.assertValueCount(4);
 		assertEquals(2, this.savedPeerCount.get());
 		assertEquals(1, this.deletedPeerCount.get());
 
@@ -390,7 +393,8 @@ public class AddressBookImplTest {
 	public void testPeerNid() {
 		Optional<Peer> peer = this.addressbook.peer(EUID.ONE);
 		assertFalse(peer.isPresent());
-		this.peersObserver.assertNoValues();
+		this.peersObserver
+			.assertValueCount(1);
 		assertEquals(0, this.savedPeerCount.get());
 
 		ECKeyPair key = ECKeyPair.generateNew();
@@ -400,11 +404,11 @@ public class AddressBookImplTest {
 
 		Optional<Peer> peer2 = this.addressbook.peer(pws.getNID());
 		assertTrue(peer2.isPresent());
-		this.peersObserver.awaitCount(1)
+		this.peersObserver.awaitCount(2)
 			.assertNoErrors()
 			.assertNotComplete()
-			.assertValueCount(1)
-			.assertValue(v -> v instanceof PeersAddedEvent);
+			.assertValueCount(2)
+			.assertValueAt(1, v -> v instanceof PeersAddedEvent);
 		assertEquals(1, this.savedPeerCount.get());
 		assertSame(pws, peer2.get());
 
@@ -419,12 +423,14 @@ public class AddressBookImplTest {
 
 		Peer peer = this.addressbook.peer(transportInfo);
 		assertNotNull(peer);
-		this.peersObserver.assertNoValues();
+		this.peersObserver
+			.assertValueCount(1);
 		assertEquals(0, this.savedPeerCount.get());
 
 		Peer peer2 = this.addressbook.peer(transportInfo);
 		assertNotNull(peer2);
-		this.peersObserver.assertNoValues();
+		this.peersObserver
+			.assertValueCount(1);
 		assertEquals(0, this.savedPeerCount.get());
 		assertEquals(peer, peer2);
 
