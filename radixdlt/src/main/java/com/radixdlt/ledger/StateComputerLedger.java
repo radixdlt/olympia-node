@@ -32,6 +32,7 @@ import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.mempool.Mempool;
 import java.util.Comparator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -89,7 +90,24 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	}
 
 	@Override
-	public LedgerHeader prepare(VerifiedVertex vertex) {
+	public LedgerHeader prepare(LinkedList<VerifiedVertex> vertices) {
+		final VerifiedVertex vertex = vertices.getLast();
+
+		AccumulatorState parentAccumulatorState = vertex.getParentHeader().getLedgerHeader().getAccumulatorState();
+		ImmutableList<Command> prevCommands = vertices.stream()
+			.filter(v -> !v.equals(vertex))
+			.map(VerifiedVertex::getCommand)
+			.filter(Objects::nonNull)
+			.collect(ImmutableList.toImmutableList());
+
+		Optional<ImmutableList<Command>> prevCommandsMaybe = this.verifier.verifyAndGetExtension(
+			this.currentLedgerHeader.getAccumulatorState(),
+			prevCommands,
+			parentAccumulatorState
+		);
+
+		prevCommands = prevCommandsMaybe.orElseThrow(() -> new IllegalStateException("Evidence of safety break."));
+
 		final LedgerHeader parent = vertex.getParentHeader().getLedgerHeader();
 
 		boolean isEndOfEpoch = stateComputer.prepare(vertex);

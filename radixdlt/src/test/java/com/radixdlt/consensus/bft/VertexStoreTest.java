@@ -277,7 +277,7 @@ public class VertexStoreTest {
 		vertexStore.insertVertex(nextVertex0);
 		vertexStore.insertVertex(nextVertex1);
 		assertThat(vertexStore.getPathFromRoot(id1))
-			.isEqualTo(Arrays.asList(nextVertex1, nextVertex0));
+			.isEqualTo(Arrays.asList(nextVertex0, nextVertex1));
 	}
 
 	@Test

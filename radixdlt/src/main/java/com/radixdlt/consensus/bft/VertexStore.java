@@ -30,7 +30,6 @@ import com.radixdlt.crypto.Hash;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.utils.Pair;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -178,21 +177,16 @@ public final class VertexStore {
 		if (!vertex.hasDirectParent()) {
 			counters.increment(CounterType.BFT_INDIRECT_PARENT);
 		}
-
-		LedgerHeader ledgerHeader = ledger.prepare(vertex);
-
-		// TODO: Don't check for state computer errors for now so that we don't
-		// TODO: have to deal with failing leader proposals
-		// TODO: Reinstate this when ProposalGenerator + Mempool can guarantee correct proposals
-		// TODO: (also see commitVertex->storeAtom)
-
 		vertices.put(vertex.getId(), vertex);
 		updateVertexStoreSize();
 
+		LinkedList<VerifiedVertex> vertices = getPathFromRoot(vertex.getId());
+		LedgerHeader ledgerHeader = ledger.prepare(vertices);
+
+		BFTHeader bftHeader = new BFTHeader(vertex.getView(), vertex.getId(), ledgerHeader);
 		final BFTUpdate update = new BFTUpdate(vertex);
 		bftUpdateSender.sendBFTUpdate(update);
-
-		return new BFTHeader(vertex.getView(), vertex.getId(), ledgerHeader);
+		return bftHeader;
 	}
 
 	/**
@@ -213,12 +207,9 @@ public final class VertexStore {
 		if (tipVertex == null) {
 			throw new IllegalStateException("Committing vertex not in store: " + header);
 		}
-		final LinkedList<VerifiedVertex> path = new LinkedList<>();
-		VerifiedVertex vertex = tipVertex;
-		while (vertex != null && !rootId.equals(vertex.getId())) {
-			path.addFirst(vertex);
-			vertex = vertices.remove(vertex.getParentId());
-		}
+		final LinkedList<VerifiedVertex> path = getPathFromRoot(tipVertex.getId());
+		path.forEach(v -> vertices.remove(v.getParentId()));
+		// TODO: Must prune all other children of root
 
 		ImmutableList.Builder<Command> commandsToCommitBuilder = ImmutableList.builder();
 		for (VerifiedVertex committedVertex : path) {
@@ -239,12 +230,12 @@ public final class VertexStore {
 		return Optional.of(tipVertex);
 	}
 
-	public List<VerifiedVertex> getPathFromRoot(Hash vertexId) {
-		final List<VerifiedVertex> path = new ArrayList<>();
+	public LinkedList<VerifiedVertex> getPathFromRoot(Hash vertexId) {
+		final LinkedList<VerifiedVertex> path = new LinkedList<>();
 
 		VerifiedVertex vertex = vertices.get(vertexId);
 		while (vertex != null && !vertex.getId().equals(rootId)) {
-			path.add(vertex);
+			path.addFirst(vertex);
 			vertex = vertices.get(vertex.getParentId());
 		}
 

@@ -47,6 +47,7 @@ import com.radixdlt.utils.TypedMocks;
 
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedList;
 import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
@@ -103,19 +104,21 @@ public class StateComputerLedgerTest {
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		when(qc.getTimestampedSignatures()).thenReturn(new TimestampedECDSASignatures());
 		when(vertex.getQC()).thenReturn(qc);
-
 		LedgerHeader ledgerHeader = mock(LedgerHeader.class);
 		when(ledgerHeader.isEndOfEpoch()).thenReturn(false);
 		AccumulatorState accumulatorState = mock(AccumulatorState.class);
 		when(accumulatorState.getStateVersion()).thenReturn(12345L);
 		when(accumulatorState.getAccumulatorHash()).thenReturn(mock(Hash.class));
 		when(ledgerHeader.getAccumulatorState()).thenReturn(accumulatorState);
-
 		BFTHeader parent = mock(BFTHeader.class);
 		when(parent.getLedgerHeader()).thenReturn(ledgerHeader);
 		when(vertex.getParentHeader()).thenReturn(parent);
+		when(accumulatorVerifier.verifyAndGetExtension(any(), any(), any())).thenReturn(Optional.of(ImmutableList.of()));
 
-		LedgerHeader nextPrepared = stateComputerLedger.prepare(vertex);
+		LinkedList<VerifiedVertex> vertexChain = new LinkedList<>();
+		vertexChain.addFirst(vertex);
+		LedgerHeader nextPrepared = stateComputerLedger.prepare(vertexChain);
+
 		assertThat(nextPrepared.isEndOfEpoch()).isFalse();
 		assertThat(nextPrepared.getAccumulatorState().getStateVersion()).isEqualTo(12345L);
 	}
@@ -126,19 +129,21 @@ public class StateComputerLedgerTest {
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		when(qc.getTimestampedSignatures()).thenReturn(new TimestampedECDSASignatures());
 		when(vertex.getQC()).thenReturn(qc);
-
 		LedgerHeader ledgerHeader = mock(LedgerHeader.class);
 		when(ledgerHeader.isEndOfEpoch()).thenReturn(false);
 		AccumulatorState accumulatorState = mock(AccumulatorState.class);
 		when(accumulatorState.getStateVersion()).thenReturn(12345L);
 		when(accumulatorState.getAccumulatorHash()).thenReturn(mock(Hash.class));
 		when(ledgerHeader.getAccumulatorState()).thenReturn(accumulatorState);
-
 		BFTHeader parent = mock(BFTHeader.class);
 		when(parent.getLedgerHeader()).thenReturn(ledgerHeader);
 		when(vertex.getParentHeader()).thenReturn(parent);
+		when(accumulatorVerifier.verifyAndGetExtension(any(), any(), any())).thenReturn(Optional.of(ImmutableList.of()));
 
-		LedgerHeader nextPrepared = stateComputerLedger.prepare(vertex);
+		LinkedList<VerifiedVertex> vertexChain = new LinkedList<>();
+		vertexChain.addFirst(vertex);
+		LedgerHeader nextPrepared = stateComputerLedger.prepare(vertexChain);
+
 		assertThat(nextPrepared.isEndOfEpoch()).isFalse();
 		assertThat(nextPrepared.getAccumulatorState().getStateVersion()).isEqualTo(12345L);
 	}
@@ -149,21 +154,22 @@ public class StateComputerLedgerTest {
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		when(qc.getTimestampedSignatures()).thenReturn(new TimestampedECDSASignatures());
 		when(vertex.getQC()).thenReturn(qc);
-
 		LedgerHeader ledgerHeader = mock(LedgerHeader.class);
 		when(ledgerHeader.isEndOfEpoch()).thenReturn(false);
 		AccumulatorState accumulatorState = mock(AccumulatorState.class);
 		when(accumulatorState.getStateVersion()).thenReturn(12345L);
 		when(accumulatorState.getAccumulatorHash()).thenReturn(mock(Hash.class));
 		when(ledgerHeader.getAccumulatorState()).thenReturn(accumulatorState);
-
 		BFTHeader parent = mock(BFTHeader.class);
 		when(parent.getLedgerHeader()).thenReturn(ledgerHeader);
 		when(vertex.getParentHeader()).thenReturn(parent);
-
 		when(stateComputer.prepare(eq(vertex))).thenReturn(true);
+		when(accumulatorVerifier.verifyAndGetExtension(any(), any(), any())).thenReturn(Optional.of(ImmutableList.of()));
 
-		LedgerHeader nextPrepared = stateComputerLedger.prepare(vertex);
+		LinkedList<VerifiedVertex> vertexChain = new LinkedList<>();
+		vertexChain.addFirst(vertex);
+		LedgerHeader nextPrepared = stateComputerLedger.prepare(vertexChain);
+
 		assertThat(nextPrepared.isEndOfEpoch()).isTrue();
 		assertThat(nextPrepared.getAccumulatorState().getStateVersion()).isEqualTo(12345L);
 	}
@@ -174,7 +180,6 @@ public class StateComputerLedgerTest {
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		when(qc.getTimestampedSignatures()).thenReturn(new TimestampedECDSASignatures());
 		when(vertex.getQC()).thenReturn(qc);
-
 		LedgerHeader parentHeader = mock(LedgerHeader.class);
 		when(parentHeader.isEndOfEpoch()).thenReturn(false);
 		AccumulatorState accumulatorState = mock(AccumulatorState.class);
@@ -190,8 +195,11 @@ public class StateComputerLedgerTest {
 		when(parent.getLedgerHeader()).thenReturn(parentHeader);
 		when(vertex.getParentHeader()).thenReturn(parent);
 		when(vertex.getCommand()).thenReturn(command);
+		when(accumulatorVerifier.verifyAndGetExtension(any(), any(), any())).thenReturn(Optional.of(ImmutableList.of()));
 
-		LedgerHeader nextPrepared = stateComputerLedger.prepare(vertex);
+		LinkedList<VerifiedVertex> vertexChain = new LinkedList<>();
+		vertexChain.addFirst(vertex);
+		LedgerHeader nextPrepared = stateComputerLedger.prepare(vertexChain);
 
 		assertThat(nextPrepared.isEndOfEpoch()).isFalse();
 		assertThat(nextPrepared.getAccumulatorState().getStateVersion()).isEqualTo(12346L);
