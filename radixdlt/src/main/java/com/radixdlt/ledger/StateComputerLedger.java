@@ -18,7 +18,6 @@
 package com.radixdlt.ledger;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerHeader;
@@ -32,15 +31,11 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.mempool.Mempool;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.TreeMap;
 
 /**
  * Synchronizes execution
@@ -55,14 +50,9 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		void sendLedgerUpdate(LedgerUpdate ledgerUpdate);
 	}
 
-	public interface CommittedStateSyncSender {
-		void sendCommittedStateSync(VerifiedLedgerHeaderAndProof header, Object opaque);
-	}
-
 	private final Comparator<VerifiedLedgerHeaderAndProof> headerComparator;
 	private final Mempool mempool;
 	private final StateComputer stateComputer;
-	private final CommittedStateSyncSender committedStateSyncSender;
 	private final LedgerUpdateSender ledgerUpdateSender;
 	private final SystemCounters counters;
 	private final LedgerAccumulator accumulator;
@@ -70,7 +60,6 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 
 	private final Object lock = new Object();
 	private VerifiedLedgerHeaderAndProof currentLedgerHeader;
-	private final TreeMap<Long, Set<Object>> committedStateSyncers = new TreeMap<>();
 
 	@Inject
 	public StateComputerLedger(
@@ -78,7 +67,6 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		VerifiedLedgerHeaderAndProof initialLedgerState,
 		Mempool mempool,
 		StateComputer stateComputer,
-		CommittedStateSyncSender committedStateSyncSender,
 		LedgerUpdateSender ledgerUpdateSender,
 		LedgerAccumulator accumulator,
 		LedgerAccumulatorVerifier verifier,
@@ -88,7 +76,6 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		this.currentLedgerHeader = initialLedgerState;
 		this.mempool = Objects.requireNonNull(mempool);
 		this.stateComputer = Objects.requireNonNull(stateComputer);
-		this.committedStateSyncSender = Objects.requireNonNull(committedStateSyncSender);
 		this.ledgerUpdateSender = Objects.requireNonNull(ledgerUpdateSender);
 		this.counters = Objects.requireNonNull(counters);
 		this.accumulator = Objects.requireNonNull(accumulator);
@@ -123,27 +110,6 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			timestamp,
 			isEndOfEpoch
 		);
-	}
-
-	@Override
-	public OnSynced ifCommitSynced(VerifiedLedgerHeaderAndProof committedLedgerHeader) {
-		synchronized (lock) {
-			if (this.currentLedgerHeader.getEpoch() != committedLedgerHeader.getEpoch() && !this.currentLedgerHeader.isEndOfEpoch()) {
-				throw new IllegalStateException();
-			}
-
-			if (committedLedgerHeader.getStateVersion() <= this.currentLedgerHeader.getStateVersion()) {
-				return onSync -> {
-					onSync.run();
-					return (onNotSynced, opaque) -> { };
-				};
-			} else {
-				return onSync -> (onNotSynced, opaque) -> {
-					this.committedStateSyncers.merge(committedLedgerHeader.getStateVersion(), Collections.singleton(opaque), Sets::union);
-					onNotSynced.run();
-				};
-			}
-		}
 	}
 
 	@Override
@@ -183,19 +149,6 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			verifiedExtension.get().forEach(cmd -> this.mempool.removeCommitted(cmd.getHash()));
 			BaseLedgerUpdate ledgerUpdate = new BaseLedgerUpdate(commandsToStore, validatorSet.orElse(null));
 			ledgerUpdateSender.sendLedgerUpdate(ledgerUpdate);
-
-			// TODO: Verify headers match
-			Collection<Set<Object>> listeners = this.committedStateSyncers.headMap(
-				this.currentLedgerHeader.getAccumulatorState().getStateVersion(), true
-			).values();
-			Iterator<Set<Object>> listenersIterator = listeners.iterator();
-			while (listenersIterator.hasNext()) {
-				Set<Object> opaqueObjects = listenersIterator.next();
-				for (Object opaque : opaqueObjects) {
-					committedStateSyncSender.sendCommittedStateSync(this.currentLedgerHeader, opaque);
-				}
-				listenersIterator.remove();
-			}
 		}
 	}
 }

@@ -31,13 +31,15 @@ import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochChange;
-import com.radixdlt.consensus.sync.SyncRequestSender;
+import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.sync.RemoteSyncResponse;
 import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier;
+import com.radixdlt.utils.TypedMocks;
+
 import java.util.Optional;
 import java.util.function.Function;
 import org.junit.Before;
@@ -45,7 +47,7 @@ import org.junit.Test;
 
 public class EpochsRemoteSyncResponseProcessorTest {
 	private EpochsRemoteSyncResponseProcessor responseProcessor;
-	private SyncRequestSender localSyncRequestSender;
+	private SyncLedgerRequestSender localSyncRequestSender;
 	private RemoteSyncResponseValidatorSetVerifier initialVerifier;
 	private EpochChange initialEpoch;
 	private VerifiedLedgerHeaderAndProof currentHeader;
@@ -57,8 +59,8 @@ public class EpochsRemoteSyncResponseProcessorTest {
 		this.initialEpoch = mock(EpochChange.class);
 		this.currentHeader = mock(VerifiedLedgerHeaderAndProof.class);
 
-		this.localSyncRequestSender = mock(SyncRequestSender.class);
-		this.verifierFactory = mock(Function.class);
+		this.localSyncRequestSender = mock(SyncLedgerRequestSender.class);
+		this.verifierFactory = TypedMocks.rmock(Function.class);
 
 		this.responseProcessor = new EpochsRemoteSyncResponseProcessor(
 			localSyncRequestSender,

@@ -39,12 +39,10 @@ public final class EpochChangeManager implements LedgerUpdateSender {
 		void sendLedgerUpdate(EpochsLedgerUpdate epochsLedgerUpdate);
 	}
 
-	private final EpochChangeSender epochChangeSender;
 	private final EpochsLedgerUpdateSender epochsLedgerUpdateSender;
 	private final Hasher hasher;
 
-	public EpochChangeManager(EpochChangeSender epochChangeSender, EpochsLedgerUpdateSender epochsLedgerUpdateSender, Hasher hasher) {
-		this.epochChangeSender = Objects.requireNonNull(epochChangeSender);
+	public EpochChangeManager(EpochsLedgerUpdateSender epochsLedgerUpdateSender, Hasher hasher) {
 		this.epochsLedgerUpdateSender = Objects.requireNonNull(epochsLedgerUpdateSender);
 		this.hasher = Objects.requireNonNull(hasher);
 	}
@@ -66,8 +64,6 @@ public final class EpochChangeManager implements LedgerUpdateSender {
 			BFTConfiguration bftConfiguration = new BFTConfiguration(validatorSet, verifiedGenesisVertex, genesisQC);
 			return new EpochChange(header, bftConfiguration);
 		});
-
-		epochChangeOptional.ifPresent(this.epochChangeSender::epochChange);
 
 		EpochsLedgerUpdate epochsLedgerUpdate = new EpochsLedgerUpdate(ledgerUpdate, epochChangeOptional.orElse(null));
 		this.epochsLedgerUpdateSender.sendLedgerUpdate(epochsLedgerUpdate);

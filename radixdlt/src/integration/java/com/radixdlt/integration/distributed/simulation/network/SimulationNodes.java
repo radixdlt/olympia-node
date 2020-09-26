@@ -32,11 +32,12 @@ import com.radixdlt.ConsensusModule;
 import com.radixdlt.ConsensusRxModule;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.SystemInfoRxModule;
-import com.radixdlt.epochs.EpochChangeRx;
+import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.integration.distributed.simulation.SimulationNetworkModule;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.Mempool;
@@ -100,7 +101,7 @@ public class SimulationNodes {
 					return BFTNode.create(selfKey.getPublicKey());
 				}
 			},
-			new ConsensusModule(pacemakerTimeout),
+			new ConsensusModule(pacemakerTimeout, 2.0, 0), // Use constant timeout for now
 			new ConsensusRxModule(),
 			new SystemInfoRxModule(),
 			new SimulationNetworkModule(underlyingNetwork),
@@ -124,6 +125,8 @@ public class SimulationNodes {
 	// TODO: Add support for epoch changes
 	public interface RunningNetwork {
 		List<BFTNode> getNodes();
+
+		BFTConfiguration bftConfiguration();
 
 		Observable<EpochChange> latestEpochChanges();
 
@@ -157,13 +160,18 @@ public class SimulationNodes {
 			}
 
 			@Override
+			public BFTConfiguration bftConfiguration() {
+				return nodeInstances.get(0).getInstance(BFTConfiguration.class);
+			}
+
+			@Override
 			public Observable<EpochChange> latestEpochChanges() {
 				// Just do first instance for now
 				EpochChange initialEpoch =  nodeInstances.get(0).getInstance(EpochChange.class);
 
 				Set<Observable<EpochChange>> epochChanges = nodeInstances.stream()
-					.map(i -> i.getInstance(EpochChangeRx.class))
-					.map(EpochChangeRx::epochChanges)
+					.map(i -> i.getInstance(Key.get(new TypeLiteral<Observable<EpochsLedgerUpdate>>() { })))
+					.map(o -> o.filter(u -> u.getEpochChange().isPresent()).map(u -> u.getEpochChange().get()))
 					.collect(Collectors.toSet());
 
 				return Observable.just(initialEpoch).concatWith(

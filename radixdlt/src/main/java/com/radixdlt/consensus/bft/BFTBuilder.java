@@ -56,6 +56,7 @@ public final class BFTBuilder {
 	// BFT Stateful objects
 	private Pacemaker pacemaker;
 	private VertexStore vertexStore;
+	private BFTSyncer bftSyncer;
 
 	// Instance specific objects
 	private BFTNode self;
@@ -133,6 +134,12 @@ public final class BFTBuilder {
 		return this;
 	}
 
+	public BFTBuilder bftSyncer(BFTSyncer bftSyncer) {
+		this.bftSyncer = bftSyncer;
+		return this;
+	}
+
+
 	public BFTBuilder proposerElection(ProposerElection proposerElection) {
 		this.proposerElection = proposerElection;
 		return this;
@@ -151,6 +158,7 @@ public final class BFTBuilder {
 			safetyRules,
 			pacemaker,
 			vertexStore,
+			bftSyncer,
 			pendingVotes,
 			proposerElection,
 			validatorSet,
@@ -166,7 +174,7 @@ public final class BFTBuilder {
 			self,
 			reducer,
 			pacemaker,
-			vertexStore,
+			bftSyncer,
 			proposerElection,
 			syncQueues
 		);

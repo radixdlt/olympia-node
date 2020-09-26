@@ -17,7 +17,6 @@
 
 package org.radix.serialization;
 
-import org.junit.Ignore;
 import com.radixdlt.identifiers.AID;
 
 public class AIDSerializeTest extends SerializeMessageObject<AID> {
@@ -34,7 +33,7 @@ public class AIDSerializeTest extends SerializeMessageObject<AID> {
 	}
 
 	@Override
-	@Ignore("Not applicable to AIDs.")
 	public void testNONEIsEmpty() {
+		// Not applicable to Atom IDs
 	}
 }

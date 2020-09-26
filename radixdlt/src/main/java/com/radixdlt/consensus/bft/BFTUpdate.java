@@ -15,14 +15,21 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.sync;
+package com.radixdlt.consensus.bft;
 
-import com.radixdlt.ledger.LedgerUpdate;
+import java.util.Objects;
 
 /**
- * Processes a ledger update
- * @param <T> the type of ledger update
+ * An update to the BFT state
  */
-public interface LedgerUpdateProcessor<T extends LedgerUpdate> {
-	void processLedgerUpdate(T ledgerUpdate);
+public final class BFTUpdate {
+	private final VerifiedVertex insertedVertex;
+
+	public BFTUpdate(VerifiedVertex insertedVertex) {
+		this.insertedVertex = Objects.requireNonNull(insertedVertex);
+	}
+
+	public VerifiedVertex getInsertedVertex() {
+		return insertedVertex;
+	}
 }

@@ -15,18 +15,21 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.epochs;
-
-import com.radixdlt.consensus.epoch.EpochChange;
+package com.radixdlt.consensus.sync;
 
 /**
- * Sends an epoch change message
+ * Processor of vertex store events
  */
-public interface EpochChangeSender {
+public interface BFTSyncResponseProcessor {
+	/**
+	 * Process a get vertices error response
+	 * @param response the get vertices error response
+	 */
+	void processGetVerticesErrorResponse(GetVerticesErrorResponse response);
 
 	/**
-	 * Signals that an epoch change has occurred
-	 * @param epochChange the epoch change
+	 * Process a get vertices response
+	 * @param response the get vertices response
 	 */
-	void epochChange(EpochChange epochChange);
+	void processGetVerticesResponse(GetVerticesResponse response);
 }

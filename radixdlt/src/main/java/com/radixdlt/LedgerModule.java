@@ -21,21 +21,15 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof.OrderByEpochAndVersionComparator;
-import com.radixdlt.consensus.epoch.EpochChange;
-import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.StateComputerLedger;
-import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
 import java.util.Comparator;
-import java.util.Set;
 
 /**
  * Module which manages ledger state and synchronization of updates to ledger state
@@ -43,10 +37,7 @@ import java.util.Set;
 public class LedgerModule extends AbstractModule {
 	@Override
 	protected void configure() {
-		bind(EpochManager.class).in(Scopes.SINGLETON);
 		bind(Ledger.class).to(StateComputerLedger.class).in(Scopes.SINGLETON);
-		// These multibindings are part of our dependency graph, so create the modules here
-		Multibinder.newSetBinder(binder(), LedgerUpdateSender.class);
 		bind(new TypeLiteral<Comparator<VerifiedLedgerHeaderAndProof>>() { }).to(OrderByEpochAndVersionComparator.class).in(Scopes.SINGLETON);
 		bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 		bind(LedgerAccumulatorVerifier.class).to(SimpleLedgerAccumulatorAndVerifier.class);
@@ -55,19 +46,5 @@ public class LedgerModule extends AbstractModule {
 	@Provides
 	private Comparator<AccumulatorState> accumulatorStateComparator() {
 		return Comparator.comparingLong(AccumulatorState::getStateVersion);
-	}
-
-	@Provides
-	private LedgerUpdateSender sender(Set<LedgerUpdateSender> ledgerUpdateSenders) {
-		return update -> ledgerUpdateSenders.forEach(s -> s.sendLedgerUpdate(update));
-	}
-
-	// TODO: Load from storage
-	@Provides
-	private EpochChange initialEpoch(
-		VerifiedLedgerHeaderAndProof proof,
-		BFTConfiguration initialBFTConfig
-	) {
-		return new EpochChange(proof, initialBFTConfig);
 	}
 }

@@ -23,27 +23,24 @@ import static org.mockito.Mockito.mock;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.google.inject.multibindings.Multibinder;
 import com.google.inject.name.Names;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.Hasher;
-import com.radixdlt.consensus.ProposerElectionFactory;
+import com.radixdlt.consensus.epoch.ProposerElectionFactory;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.VertexStoreFactory;
+import com.radixdlt.consensus.epoch.VertexStoreFactory;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
-import com.radixdlt.consensus.sync.SyncRequestSender;
+import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
-import com.radixdlt.ledger.StateComputerLedger.CommittedStateSyncSender;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import org.junit.Test;
 
@@ -59,18 +56,17 @@ public class LedgerModuleTest {
 			bind(BFTNode.class).annotatedWith(Names.named("self")).toInstance(mock(BFTNode.class));
 			bind(SyncEpochsRPCSender.class).toInstance(mock(SyncEpochsRPCSender.class));
 			bind(LocalTimeoutSender.class).toInstance(mock(LocalTimeoutSender.class));
-			bind(SyncRequestSender.class).toInstance(mock(SyncRequestSender.class));
+			bind(SyncLedgerRequestSender.class).toInstance(mock(SyncLedgerRequestSender.class));
 			bind(Hasher.class).toInstance(mock(Hasher.class));
 
 			bind(Mempool.class).toInstance(mock(Mempool.class));
 			bind(StateComputer.class).toInstance(mock(StateComputer.class));
-			bind(CommittedStateSyncSender.class).toInstance(mock(CommittedStateSyncSender.class));
 			bind(SystemCounters.class).toInstance(mock(SystemCounters.class));
 			VerifiedLedgerHeaderAndProof verifiedLedgerHeaderAndProof = mock(VerifiedLedgerHeaderAndProof.class);
 			bind(VerifiedLedgerHeaderAndProof.class).toInstance(verifiedLedgerHeaderAndProof);
 			bind(BFTValidatorSet.class).toInstance(mock(BFTValidatorSet.class));
 			bind(BFTConfiguration.class).toInstance(mock(BFTConfiguration.class));
-			Multibinder.newSetBinder(binder(), LedgerUpdateSender.class);
+			bind(LedgerUpdateSender.class).toInstance(mock(LedgerUpdateSender.class));
 		}
 	}
 
@@ -83,7 +79,5 @@ public class LedgerModuleTest {
 
 		StateComputerLedger stateComputerLedger = injector.getInstance(StateComputerLedger.class);
 		assertThat(stateComputerLedger).isNotNull();
-		EpochChange epochChange = injector.getInstance(EpochChange.class);
-		assertThat(epochChange).isNotNull();
 	}
 }

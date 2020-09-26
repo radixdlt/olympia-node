@@ -17,32 +17,22 @@
 
 package com.radixdlt.consensus.epoch;
 
-import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
-import com.radixdlt.crypto.Hash;
 
 /**
- * Sender which goes nowhere
+ * A Vertex Store factory
  */
-public enum EmptySyncVerticesRPCSender implements VertexStore.SyncVerticesRPCSender {
-	INSTANCE;
-	@Override
-	public void sendGetVerticesRequest(Hash id, BFTNode node, int count, Object opaque) {
-		// empty
-	}
+public interface VertexStoreFactory {
 
-	@Override
-	public void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<VerifiedVertex> vertices) {
-		// empty
-	}
-
-	@Override
-	public void sendGetVerticesErrorResponse(GetVerticesRequest originalRequest, QuorumCertificate highestQC,
-		QuorumCertificate highestCommittedQC) {
-		// empty
-	}
+	/**
+	 * Creates a new VertexStore given initial vertex and QC
+	 * @param genesisVertex the root vertex
+	 * @param genesisQC the root QC
+	 * @param ledger the underlying ledger
+	 * @return a new VertexStore
+	 */
+	VertexStore create(VerifiedVertex genesisVertex, QuorumCertificate genesisQC, Ledger ledger);
 }

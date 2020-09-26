@@ -17,8 +17,8 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.crypto.Hash;
 
 /**
  * Processor of BFT events.
@@ -57,8 +57,8 @@ public interface BFTEventProcessor {
 	void processLocalTimeout(View view);
 
 	/**
-	 * Process a local consensus sync message
-	 * @param vertexId the id of vertex which has been synced
+	 * Process a bft update
+	 * @param update the bft update
 	 */
-	void processLocalSync(Hash vertexId);
+	void processBFTUpdate(BFTUpdate update);
 }

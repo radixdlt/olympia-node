@@ -17,22 +17,21 @@
 
 package com.radixdlt.middleware2.network;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.VerifiedVertex;
+import com.radixdlt.consensus.sync.GetVerticesRequest;
+import com.radixdlt.consensus.sync.VertexStoreSync.SyncVerticesRequestSender;
+import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
-import com.radixdlt.consensus.bft.GetVerticesResponse;
+import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
+import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
-import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
 import com.radixdlt.consensus.UnverifiedVertex;
-import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.crypto.Hash;
@@ -44,7 +43,6 @@ import com.radixdlt.universe.Universe;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 
 import org.apache.logging.log4j.LogManager;
@@ -54,7 +52,8 @@ import org.radix.network.messaging.Message;
 /**
  * Network interface for syncing vertices using the MessageCentral
  */
-public class MessageCentralValidatorSync implements SyncVerticesRPCSender, SyncVerticesRPCRx, SyncEpochsRPCSender, SyncEpochsRPCRx {
+public class MessageCentralValidatorSync implements SyncVerticesRequestSender, SyncVerticesResponseSender,
+	SyncVerticesRPCRx, SyncEpochsRPCSender, SyncEpochsRPCRx {
 	private static final Logger log = LogManager.getLogger();
 
 	private final BFTNode self;
@@ -62,10 +61,6 @@ public class MessageCentralValidatorSync implements SyncVerticesRPCSender, SyncV
 	private final AddressBook addressBook;
 	private final MessageCentral messageCentral;
 	private final Hasher hasher;
-	// TODO: is using a cache in this manner the best way, or should it be managed by the client?
-	private final Cache<Hash, Object> opaqueCache = CacheBuilder.newBuilder()
-		.expireAfterWrite(30, TimeUnit.SECONDS)
-		.build();
 
 	public MessageCentralValidatorSync(
 		BFTNode self,
@@ -82,7 +77,7 @@ public class MessageCentralValidatorSync implements SyncVerticesRPCSender, SyncV
 	}
 
 	@Override
-	public void sendGetVerticesRequest(Hash id, BFTNode node, int count, Object opaque) {
+	public void sendGetVerticesRequest(BFTNode node, Hash id, int count) {
 		if (this.self.equals(node)) {
 			throw new IllegalStateException("Should never need to retrieve a vertex from self.");
 		}
@@ -93,43 +88,51 @@ public class MessageCentralValidatorSync implements SyncVerticesRPCSender, SyncV
 			return;
 		}
 
-		opaqueCache.put(id, opaque);
-
 		final GetVerticesRequestMessage vertexRequest = new GetVerticesRequestMessage(this.magic, id, count);
 		this.messageCentral.send(peer.get(), vertexRequest);
 	}
 
 	@Override
-	public void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<VerifiedVertex> vertices) {
-		MessageCentralGetVerticesRequest messageCentralGetVerticesRequest = (MessageCentralGetVerticesRequest) originalRequest;
+	public void sendGetVerticesResponse(BFTNode node, ImmutableList<VerifiedVertex> vertices) {
 		ImmutableList<UnverifiedVertex> rawVertices = vertices.stream().map(VerifiedVertex::toSerializable).collect(ImmutableList.toImmutableList());
 		GetVerticesResponseMessage response = new GetVerticesResponseMessage(
 			this.magic,
-			messageCentralGetVerticesRequest.getVertexId(),
 			rawVertices
 		);
-		Peer peer = messageCentralGetVerticesRequest.getRequestor();
-		this.messageCentral.send(peer, response);
+
+		final Optional<Peer> peerMaybe = this.addressBook.peer(node.getKey().euid());
+		peerMaybe.ifPresentOrElse(
+			p -> this.messageCentral.send(p, response),
+			() -> log.warn("{}: Peer {} not in address book when sending GetVerticesResponse", this.self, node)
+		);
 	}
 
 	@Override
-	public void sendGetVerticesErrorResponse(GetVerticesRequest originalRequest, QuorumCertificate highestQC, QuorumCertificate highestCommittedQC) {
-		MessageCentralGetVerticesRequest messageCentralGetVerticesRequest = (MessageCentralGetVerticesRequest) originalRequest;
+	public void sendGetVerticesErrorResponse(BFTNode node, QuorumCertificate highestQC, QuorumCertificate highestCommittedQC) {
 		GetVerticesErrorResponseMessage response = new GetVerticesErrorResponseMessage(
 			this.magic,
-			messageCentralGetVerticesRequest.getVertexId(),
 			highestQC,
 			highestCommittedQC
 		);
-		Peer peer = messageCentralGetVerticesRequest.getRequestor();
-		this.messageCentral.send(peer, response);
+		final Optional<Peer> peerMaybe = this.addressBook.peer(node.getKey().euid());
+		peerMaybe.ifPresentOrElse(
+			p -> this.messageCentral.send(p, response),
+			() -> log.warn("{}: Peer {} not in address book when sending GetVerticesErrorResponse", this.self, node)
+		);
 	}
 
 	@Override
 	public Observable<GetVerticesRequest> requests() {
 		return this.createObservable(
 			GetVerticesRequestMessage.class,
-			(peer, msg) -> new MessageCentralGetVerticesRequest(peer, msg.getVertexId(), msg.getCount())
+			(peer, msg) -> {
+				if (!peer.hasSystem()) {
+					return null;
+				}
+
+				final BFTNode node = BFTNode.create(peer.getSystem().getKey());
+				return new GetVerticesRequest(node, msg.getVertexId(), msg.getCount());
+			}
 		);
 	}
 
@@ -138,11 +141,6 @@ public class MessageCentralValidatorSync implements SyncVerticesRPCSender, SyncV
 		return this.createObservable(
 			GetVerticesResponseMessage.class,
 			(src, msg) -> {
-				Object opaque = opaqueCache.getIfPresent(msg.getVertexId());
-				if (opaque == null) {
-					return null; // TODO: send error?
-				}
-
 				if (!src.hasSystem()) {
 					return null;
 				}
@@ -153,7 +151,7 @@ public class MessageCentralValidatorSync implements SyncVerticesRPCSender, SyncV
 					.map(v -> new VerifiedVertex(v, hasher.hash(v)))
 					.collect(ImmutableList.toImmutableList());
 
-				return new GetVerticesResponse(node, msg.getVertexId(), hashedVertices, opaque);
+				return new GetVerticesResponse(node, hashedVertices);
 			}
 		);
 	}
@@ -163,11 +161,6 @@ public class MessageCentralValidatorSync implements SyncVerticesRPCSender, SyncV
 		return this.createObservable(
 			GetVerticesErrorResponseMessage.class,
 			(src, msg) -> {
-				Object opaque = opaqueCache.getIfPresent(msg.getVertexId());
-				if (opaque == null) {
-					return null; // TODO: send error?
-				}
-
 				if (!src.hasSystem()) {
 					return null;
 				}
@@ -175,71 +168,31 @@ public class MessageCentralValidatorSync implements SyncVerticesRPCSender, SyncV
 				BFTNode node = BFTNode.create(src.getSystem().getKey());
 				return new GetVerticesErrorResponse(
 					node,
-					msg.getVertexId(),
 					msg.getHighestQC(),
-					msg.getHighestCommittedQC(),
-					opaque
+					msg.getHighestCommittedQC()
 				);
 			}
 		);
 	}
 
-	/**
-	 * An RPC request to retrieve a given vertex
-	 */
-	static final class MessageCentralGetVerticesRequest implements GetVerticesRequest {
-		private final Peer requestor;
-		private final Hash vertexId;
-		private final int count;
-
-		MessageCentralGetVerticesRequest(Peer requestor, Hash vertexId, int count) {
-			this.requestor = requestor;
-			this.vertexId = vertexId;
-			this.count = count;
-		}
-
-		Peer getRequestor() {
-			return requestor;
-		}
-
-		@Override
-		public Hash getVertexId() {
-			return vertexId;
-		}
-
-		@Override
-		public int getCount() {
-			return count;
-		}
-
-		@Override
-		public String toString() {
-			return String.format("%s{vertexId=%s count=%d}", getClass().getSimpleName(), vertexId.toString().substring(0, 6), count);
-		}
-	}
-
 	@Override
 	public void sendGetEpochRequest(BFTNode node, long epoch) {
-		final Optional<Peer> peer = this.addressBook.peer(node.getKey().euid());
-		if (!peer.isPresent()) {
-			log.warn("{}: Peer {} not in address book when sending GetEpochRequest", this.self, node);
-			return;
-		}
-
 		final GetEpochRequestMessage epochRequest = new GetEpochRequestMessage(this.self, this.magic, epoch);
-		this.messageCentral.send(peer.get(), epochRequest);
+		final Optional<Peer> peerMaybe = this.addressBook.peer(node.getKey().euid());
+		peerMaybe.ifPresentOrElse(
+			p -> this.messageCentral.send(p, epochRequest),
+			() -> log.warn("{}: Peer {} not in address book when sending GetEpochRequest", this.self, node)
+		);
 	}
 
 	@Override
 	public void sendGetEpochResponse(BFTNode node, VerifiedLedgerHeaderAndProof ancestor) {
-		final Optional<Peer> peer = this.addressBook.peer(node.getKey().euid());
-		if (!peer.isPresent()) {
-			log.warn("{}: Peer {} not in address book when sending GetEpochResponse", this.self, node);
-			return;
-		}
-
 		final GetEpochResponseMessage epochResponseMessage = new GetEpochResponseMessage(this.self, this.magic, ancestor);
-		this.messageCentral.send(peer.get(), epochResponseMessage);
+		final Optional<Peer> peerMaybe = this.addressBook.peer(node.getKey().euid());
+		peerMaybe.ifPresentOrElse(
+			p -> this.messageCentral.send(p, epochResponseMessage),
+			() -> log.warn("{}: Peer {} not in address book when sending GetEpochResponse", this.self, node)
+		);
 	}
 
 	@Override

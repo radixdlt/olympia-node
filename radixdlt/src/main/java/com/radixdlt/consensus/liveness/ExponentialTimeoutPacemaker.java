@@ -17,52 +17,66 @@
 
 package com.radixdlt.consensus.liveness;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.util.concurrent.RateLimiter;
 import com.radixdlt.consensus.NewView;
+import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import java.util.concurrent.TimeUnit;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
 import java.util.Objects;
 import java.util.Optional;
 
 /**
  * A pacemaker which utilizes a fixed timeout (aka requires a synchronous network).
  */
-public final class FixedTimeoutPacemaker implements Pacemaker {
+public final class ExponentialTimeoutPacemaker implements Pacemaker {
 
-	/**
-	 * Callback to the issuer of timeout events
-	 */
-	public interface TimeoutSender {
+	private static final Logger log = LogManager.getLogger();
 
-		/**
-		 * Schedules a timeout event for a particular view
-		 * @param view the view to schedule a timeout for
-		 * @param milliseconds the milliseconds to wait before timeout occurs
-		 */
-		void scheduleTimeout(View view, long milliseconds);
-	}
-
-	private static final long LOGGING_INTERVAL = TimeUnit.SECONDS.toMillis(1);
-
-	private final Logger log = LogManager.getLogger();
 	private final long timeoutMilliseconds;
-	private final TimeoutSender timeoutSender;
-	private final PendingNewViews pendingNewViews;
-	private View currentView = View.of(0L);
-	private View lastSyncView = View.of(0L);
-	private long nextLogging = 0;
+	private final double rate;
+	private final int maxExponent;
 
-	public FixedTimeoutPacemaker(long timeoutMilliseconds, TimeoutSender timeoutSender) {
+	private final PacemakerTimeoutSender timeoutSender;
+	private final PendingNewViews pendingNewViews;
+
+	private final RateLimiter newViewLogLimiter = RateLimiter.create(1.0);
+
+	private View currentView = View.genesis();
+	private View lastSyncView = View.genesis();
+	// Highest view in which a commit happened
+	private View highestCommitView = View.genesis();
+
+	public ExponentialTimeoutPacemaker(
+		long timeoutMilliseconds,
+		double rate,
+		int maxExponent,
+		PacemakerTimeoutSender timeoutSender
+	) {
 		if (timeoutMilliseconds <= 0) {
 			throw new IllegalArgumentException("timeoutMilliseconds must be > 0 but was " + timeoutMilliseconds);
 		}
+		if (rate <= 1.0) {
+			throw new IllegalArgumentException("rate must be > 1.0, but was " + rate);
+		}
+		if (maxExponent < 0) {
+			throw new IllegalArgumentException("maxExponent must be >= 0, but was " + maxExponent);
+		}
+		double maxTimeout = timeoutMilliseconds * Math.pow(rate, maxExponent);
+		if (maxTimeout > Long.MAX_VALUE) {
+			throw new IllegalArgumentException("Maximum timeout value of " + maxTimeout + " is too large");
+		}
 		this.timeoutMilliseconds = timeoutMilliseconds;
+		this.rate = rate;
+		this.maxExponent = maxExponent;
 		this.timeoutSender = Objects.requireNonNull(timeoutSender);
 		this.pendingNewViews = new PendingNewViews();
-		log.debug("FixedTimeoutPacemaker with timeout {}ms", this.timeoutMilliseconds);
+		log.debug("{} with max timeout {}*{}^{}ms",
+			getClass().getSimpleName(), this.timeoutMilliseconds, this.rate, this.maxExponent);
+
 	}
 
 	@Override
@@ -71,15 +85,11 @@ public final class FixedTimeoutPacemaker implements Pacemaker {
 	}
 
 	private void updateView(View nextView) {
-		long crtTime = System.currentTimeMillis();
-		if (crtTime >= nextLogging) {
-			log.info("Starting view {}", nextView);
-			nextLogging = crtTime + LOGGING_INTERVAL;
-		} else {
-			log.trace("Starting view {}", nextView);
-		}
+		Level logLevel = this.newViewLogLimiter.tryAcquire() ? Level.INFO : Level.TRACE;
+		long timeout = timeout(uncommittedViews(nextView));
+		log.log(logLevel, "Starting View: {} with timeout {}ms", nextView, timeout);
 		this.currentView = nextView;
-		timeoutSender.scheduleTimeout(this.currentView, timeoutMilliseconds);
+		timeoutSender.scheduleTimeout(this.currentView, timeout);
 	}
 
 	@Override
@@ -120,7 +130,14 @@ public final class FixedTimeoutPacemaker implements Pacemaker {
 	}
 
 	@Override
-	public Optional<View> processQC(View view) {
+	public Optional<View> processQC(QuorumCertificate qc) {
+		qc.getCommittedAndLedgerStateProof().ifPresent(p ->
+			this.highestCommitView = max(this.highestCommitView, qc.getView()));
+		return processNextView(qc.getView());
+	}
+
+	@Override
+	public Optional<View> processNextView(View view) {
 		// check if a new view can be started
 		View newView = view.next();
 		if (newView.compareTo(currentView) > 0) {
@@ -130,5 +147,23 @@ public final class FixedTimeoutPacemaker implements Pacemaker {
 		} else {
 			return Optional.empty();
 		}
+	}
+
+	@VisibleForTesting
+	View highestCommitView() {
+		return this.highestCommitView;
+	}
+
+	private long uncommittedViews(View v) {
+		return Math.max(0L, v.number() - this.highestCommitView.number() - 1);
+	}
+
+	private long timeout(long uncommittedViews) {
+		double exponential = Math.pow(this.rate, Math.min(this.maxExponent, uncommittedViews));
+		return Math.round(this.timeoutMilliseconds * exponential);
+	}
+
+	private static <T extends Comparable<T>> T max(T a, T b) {
+	    return a.compareTo(b) >= 0 ? a : b;
 	}
 }

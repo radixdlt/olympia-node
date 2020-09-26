@@ -20,26 +20,23 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.epochs.EpochChangeManager.EpochsLedgerUpdateSender;
-import com.radixdlt.epochs.EpochChangeRx;
-import com.radixdlt.consensus.epoch.EpochChange;
-import com.radixdlt.epochs.EpochChangeSender;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.utils.SenderToRx;
 import io.reactivex.rxjava3.core.Observable;
 
 /**
  * Epoch change messages
  */
-public class LedgerEpochChangeRxModule extends AbstractModule {
+public class EpochsLedgerUpdateRxModule extends AbstractModule {
 	@Override
 	protected void configure() {
-		SenderToRx<EpochChange, EpochChange> epochChangeSenderToRx = new SenderToRx<>(e -> e);
-		bind(EpochChangeRx.class).toInstance(epochChangeSenderToRx::rx);
-		bind(EpochChangeSender.class).toInstance(epochChangeSenderToRx::send);
-
 		SenderToRx<EpochsLedgerUpdate, EpochsLedgerUpdate> epochsLedgerUpdates = new SenderToRx<>(e -> e);
-		bind(EpochsLedgerUpdateSender.class).toInstance(epochsLedgerUpdates::send);
+		Multibinder.newSetBinder(binder(), EpochsLedgerUpdateSender.class)
+			.addBinding().toInstance(epochsLedgerUpdates::send);
 		bind(Key.get(new TypeLiteral<Observable<EpochsLedgerUpdate>>() { })).toInstance(epochsLedgerUpdates.rx());
+		bind(Key.get(new TypeLiteral<Observable<LedgerUpdate>>() { })).toInstance(epochsLedgerUpdates.rx().map(e -> e));
 	}
 }

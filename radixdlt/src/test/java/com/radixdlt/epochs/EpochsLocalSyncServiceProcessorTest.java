@@ -17,7 +17,6 @@
 
 package com.radixdlt.epochs;
 
-import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -36,6 +35,8 @@ import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
 import com.radixdlt.sync.StateSyncNetwork;
+import com.radixdlt.utils.TypedMocks;
+
 import java.util.Optional;
 import java.util.function.Function;
 import org.junit.Before;
@@ -55,7 +56,7 @@ public class EpochsLocalSyncServiceProcessorTest {
 		this.initialProcessor = mock(LocalSyncServiceAccumulatorProcessor.class);
 		this.initialEpoch = mock(EpochChange.class);
 		this.initialHeader = mock(VerifiedLedgerHeaderAndProof.class);
-		this.localSyncFactory = mock(Function.class);
+		this.localSyncFactory = TypedMocks.rmock(Function.class);
 		this.stateSyncNetwork = mock(StateSyncNetwork.class);
 		this.syncedEpochSender = mock(SyncedEpochSender.class);
 		this.processor = new EpochsLocalSyncServiceProcessor(

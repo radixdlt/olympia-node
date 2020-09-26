@@ -34,6 +34,8 @@ import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncTimeoutScheduler;
+import com.radixdlt.utils.TypedMocks;
+
 import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;
@@ -55,7 +57,7 @@ public class LocalSyncServiceAccumulatorProcessorTest {
 		this.currentAccumulatorState = mock(AccumulatorState.class);
 		when(currentHeader.getAccumulatorState()).thenReturn(currentAccumulatorState);
 		when(this.currentHeader.toDto()).thenReturn(mock(DtoLedgerHeaderAndProof.class));
-		this.accumulatorComparator = mock(Comparator.class);
+		this.accumulatorComparator = TypedMocks.rmock(Comparator.class);
 		this.syncServiceProcessor = new LocalSyncServiceAccumulatorProcessor(
 			stateSyncNetwork,
 			syncTimeoutScheduler,

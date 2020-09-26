@@ -26,20 +26,16 @@ import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.crypto.Hash;
 import org.junit.Test;
 
 public class GetVerticesErrorResponseMessageTest {
 	@Test
 	public void sensibleToString() {
-		Hash vertexId = Hash.random();
 		VerifiedVertex verifiedVertex = mock(VerifiedVertex.class);
 		when(verifiedVertex.getView()).thenReturn(View.genesis());
-		when(verifiedVertex.getId()).thenReturn(vertexId);
 		QuorumCertificate qc = QuorumCertificate.ofGenesis(verifiedVertex, mock(LedgerHeader.class));
-		GetVerticesErrorResponseMessage msg1 = new GetVerticesErrorResponseMessage(0, vertexId, qc, qc);
+		GetVerticesErrorResponseMessage msg1 = new GetVerticesErrorResponseMessage(0, qc, qc);
 		String s1 = msg1.toString();
 		assertThat(s1, containsString(GetVerticesErrorResponseMessage.class.getSimpleName()));
-		assertThat(s1, containsString(vertexId.toString()));
 	}
 }

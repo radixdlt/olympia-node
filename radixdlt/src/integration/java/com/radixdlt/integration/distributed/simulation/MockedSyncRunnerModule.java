@@ -24,7 +24,7 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.MapBinder;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.sync.LedgerUpdateProcessor;
+import com.radixdlt.ledger.LedgerUpdateProcessor;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor;
 import com.radixdlt.sync.LocalSyncServiceProcessor;
 import com.radixdlt.sync.RemoteSyncResponseProcessor;

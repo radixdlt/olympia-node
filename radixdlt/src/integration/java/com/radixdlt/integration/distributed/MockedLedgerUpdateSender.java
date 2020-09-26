@@ -15,18 +15,22 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.integration.distributed;
 
-import io.reactivex.rxjava3.core.Observable;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.multibindings.Multibinder;
+import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
+import java.util.Set;
 
-/**
- * Provider of a stream of committed state sync events
- */
-public interface CommittedStateSyncRx {
+public class MockedLedgerUpdateSender extends AbstractModule {
+	@Override
+	protected void configure() {
+		Multibinder.newSetBinder(binder(), LedgerUpdateSender.class);
+	}
 
-	/**
-	 * retrieve the stream of committed state syncs
-	 * @return observable of committed state syncs
-	 */
-	Observable<CommittedStateSync> committedStateSyncs();
+	@Provides
+	private LedgerUpdateSender sender(Set<LedgerUpdateSender> ledgerUpdateSenders) {
+		return update -> ledgerUpdateSenders.forEach(s -> s.sendLedgerUpdate(update));
+	}
 }

@@ -15,19 +15,12 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
-
-import com.radixdlt.crypto.Hash;
-import io.reactivex.rxjava3.core.Observable;
+package com.radixdlt.ledger;
 
 /**
- * Provider of Rx stream of events coming from Vertex Store
+ * Processes a ledger update
+ * @param <T> the type of ledger update
  */
-public interface VertexSyncRx {
-
-	/**
-	 * Retrieve rx flow of vertices which have been synced
-	 * @return flow of vertex hashes
-	 */
-	Observable<Hash> syncedVertices();
+public interface LedgerUpdateProcessor<T extends LedgerUpdate> {
+	void processLedgerUpdate(T ledgerUpdate);
 }

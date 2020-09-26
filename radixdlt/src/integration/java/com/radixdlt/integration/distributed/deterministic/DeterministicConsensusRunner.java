@@ -17,17 +17,15 @@
 
 package com.radixdlt.integration.distributed.deterministic;
 
-import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.ConsensusEvent;
-import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
-import com.radixdlt.consensus.bft.GetVerticesResponse;
-import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
-import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.consensus.bft.BFTUpdate;
+import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
+import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.consensus.epoch.LocalTimeout;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import java.util.Objects;
 import javax.inject.Inject;
@@ -53,25 +51,20 @@ public final class DeterministicConsensusRunner {
 			this.epochManager.processConsensusEvent((ConsensusEvent) message);
 		} else if (message instanceof LocalTimeout) {
 			this.epochManager.processLocalTimeout((LocalTimeout) message);
-		} else if (message instanceof Hash) {
-			this.epochManager.processLocalSync((Hash) message);
+		} else if (message instanceof BFTUpdate) {
+			this.epochManager.processBFTUpdate((BFTUpdate) message);
 		} else if (message instanceof GetVerticesRequest) {
 			this.epochManager.processGetVerticesRequest((GetVerticesRequest) message);
 		} else if (message instanceof GetVerticesResponse) {
 			this.epochManager.processGetVerticesResponse((GetVerticesResponse) message);
 		} else if (message instanceof GetVerticesErrorResponse) {
 			this.epochManager.processGetVerticesErrorResponse((GetVerticesErrorResponse) message);
-		} else if (message instanceof CommittedStateSync) {
-			this.epochManager.processCommittedStateSync((CommittedStateSync) message);
-		} else if (message instanceof EpochChange) {
-			this.epochManager.processEpochChange((EpochChange) message);
 		} else if (message instanceof GetEpochRequest) {
 			this.epochManager.processGetEpochRequest((GetEpochRequest) message);
 		} else if (message instanceof GetEpochResponse) {
 			this.epochManager.processGetEpochResponse((GetEpochResponse) message);
 		} else if (message instanceof EpochsLedgerUpdate) {
-			// do nothing for now
-			// TODO: forward to sync
+			this.epochManager.processLedgerUpdate((EpochsLedgerUpdate) message);
 		} else {
 			throw new IllegalArgumentException("Unknown message type: " + message.getClass().getName());
 		}

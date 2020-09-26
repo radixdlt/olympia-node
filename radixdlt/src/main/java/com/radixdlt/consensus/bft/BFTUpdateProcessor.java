@@ -15,13 +15,11 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.sync;
-
-import com.radixdlt.sync.LocalSyncRequest;
+package com.radixdlt.consensus.bft;
 
 /**
- * Sends a sync request
+ * A processor of BFT updates
  */
-public interface SyncRequestSender {
-	void sendLocalSyncRequest(LocalSyncRequest request);
+public interface BFTUpdateProcessor {
+	void processBFTUpdate(BFTUpdate update);
 }

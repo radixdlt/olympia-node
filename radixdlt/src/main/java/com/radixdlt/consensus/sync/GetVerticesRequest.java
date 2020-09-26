@@ -15,28 +15,24 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.consensus.sync;
 
-import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.Hash;
 import java.util.Objects;
 
 /**
- * An error response to the GetVertices call
+ * A request for bft vertices info
  */
-public final class GetVerticesErrorResponse {
-	private BFTNode sender;
+public final class GetVerticesRequest {
+	private final BFTNode sender;
 	private final Hash vertexId;
-	private final Object opaque;
-	private final QuorumCertificate highestQC;
-	private final QuorumCertificate highestCommittedQC;
+	private final int count;
 
-	public GetVerticesErrorResponse(BFTNode sender, Hash vertexId, QuorumCertificate highestQC, QuorumCertificate highestCommittedQC, Object opaque) {
+	public GetVerticesRequest(BFTNode sender, Hash vertexId, int count) {
 		this.sender = Objects.requireNonNull(sender);
 		this.vertexId = Objects.requireNonNull(vertexId);
-		this.highestQC = Objects.requireNonNull(highestQC);
-		this.highestCommittedQC = Objects.requireNonNull(highestCommittedQC);
-		this.opaque = opaque;
+		this.count = count;
 	}
 
 	public BFTNode getSender() {
@@ -47,20 +43,12 @@ public final class GetVerticesErrorResponse {
 		return vertexId;
 	}
 
-	public Object getOpaque() {
-		return opaque;
-	}
-
-	public QuorumCertificate getHighestQC() {
-		return highestQC;
-	}
-
-	public QuorumCertificate getHighestCommittedQC() {
-		return highestCommittedQC;
+	public int getCount() {
+		return count;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{highQC=%s highCommittedQC=%s opaque=%s}", this.getClass().getSimpleName(), highestQC, highestCommittedQC, opaque);
+		return String.format("%s{id=%s count=%s}", this.getClass().getSimpleName(), this.vertexId, this.count);
 	}
 }

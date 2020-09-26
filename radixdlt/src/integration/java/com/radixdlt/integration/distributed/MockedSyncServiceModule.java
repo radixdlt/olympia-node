@@ -25,7 +25,7 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.sync.SyncRequestSender;
+import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
 import com.radixdlt.sync.LocalSyncRequest;
@@ -54,10 +54,10 @@ public class MockedSyncServiceModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	SyncRequestSender syncRequestSender(
+	SyncLedgerRequestSender syncRequestSender(
 		Ledger ledger
 	) {
-		return new SyncRequestSender() {
+		return new SyncLedgerRequestSender() {
 			long currentVersion = 0;
 
 			@Override

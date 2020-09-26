@@ -15,30 +15,13 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.sync;
+
+import com.radixdlt.sync.LocalSyncRequest;
 
 /**
- * Event which represents that the committed state has been synced
+ * Sends a sync request
  */
-public final class CommittedStateSync {
-	private final VerifiedLedgerHeaderAndProof header;
-	private final Object opaque;
-
-	public CommittedStateSync(VerifiedLedgerHeaderAndProof header, Object opaque) {
-		this.header = header;
-		this.opaque = opaque;
-	}
-
-	public VerifiedLedgerHeaderAndProof getHeader() {
-		return header;
-	}
-
-	public Object getOpaque() {
-		return opaque;
-	}
-
-	@Override
-	public String toString() {
-		return String.format("%s{header=%s opaque=%s", this.getClass().getSimpleName(), header, opaque);
-	}
+public interface SyncLedgerRequestSender {
+	void sendLocalSyncRequest(LocalSyncRequest request);
 }

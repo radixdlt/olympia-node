@@ -26,10 +26,11 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusRunnerModule;
+import com.radixdlt.EpochsConsensusModule;
 import com.radixdlt.EpochsSyncModule;
 import com.radixdlt.LedgerCommandGeneratorModule;
-import com.radixdlt.LedgerEpochChangeModule;
-import com.radixdlt.LedgerEpochChangeRxModule;
+import com.radixdlt.EpochsLedgerUpdateModule;
+import com.radixdlt.EpochsLedgerUpdateRxModule;
 import com.radixdlt.LedgerModule;
 import com.radixdlt.LedgerRxModule;
 import com.radixdlt.NoFeeModule;
@@ -39,16 +40,17 @@ import com.radixdlt.RadixEngineRxModule;
 import com.radixdlt.SyncServiceModule;
 import com.radixdlt.SyncRxModule;
 import com.radixdlt.SyncRunnerModule;
-import com.radixdlt.consensus.bft.GetVerticesResponse;
-import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
+import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.integration.distributed.MockedBFTConfigurationModule;
 import com.radixdlt.integration.distributed.MockedCommandGeneratorModule;
 import com.radixdlt.integration.distributed.MockedCryptoModule;
 import com.radixdlt.integration.distributed.MockedLedgerModule;
+import com.radixdlt.integration.distributed.MockedLedgerUpdateSender;
 import com.radixdlt.integration.distributed.MockedMempoolModule;
 import com.radixdlt.integration.distributed.MockedRadixEngineStoreModule;
 import com.radixdlt.integration.distributed.MockedStateComputerModule;
@@ -56,8 +58,11 @@ import com.radixdlt.integration.distributed.MockedStateComputerWithEpochsModule;
 import com.radixdlt.integration.distributed.MockedCommittedReaderModule;
 import com.radixdlt.integration.distributed.MockedSyncServiceModule;
 import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
-import com.radixdlt.integration.distributed.simulation.application.IncrementalBytesSubmittor;
+import com.radixdlt.integration.distributed.simulation.application.BFTValidatorSetNodeSelector;
+import com.radixdlt.integration.distributed.simulation.application.EpochsNodeSelector;
+import com.radixdlt.integration.distributed.simulation.application.IncrementalBytes;
 import com.radixdlt.integration.distributed.simulation.application.CommittedChecker;
+import com.radixdlt.integration.distributed.simulation.application.NodeSelector;
 import com.radixdlt.integration.distributed.simulation.application.RadixEngineValidatorRegistrator;
 import com.radixdlt.integration.distributed.simulation.application.RadixEngineValidatorRegistratorAndUnregistrator;
 import com.radixdlt.integration.distributed.simulation.application.RegisteredValidatorChecker;
@@ -144,13 +149,18 @@ public class SimulationTest {
 
 	public static class Builder {
 		private enum LedgerType {
-			MOCKED_LEDGER,
-			LEDGER,
-			LEDGER_AND_SYNC,
-			LEDGER_AND_EPOCHS,
-			LEDGER_AND_LOCALMEMPOOL,
-			LEDGER_AND_EPOCHS_AND_SYNC,
-			LEDGER_AND_RADIXENGINE
+			MOCKED_LEDGER(false),
+			LEDGER(false),
+			LEDGER_AND_SYNC(false),
+			LEDGER_AND_LOCALMEMPOOL(false),
+			LEDGER_AND_EPOCHS(true),
+			LEDGER_AND_EPOCHS_AND_SYNC(true),
+			LEDGER_AND_LOCALMEMPOOL_AND_EPOCHS_AND_RADIXENGINE(true);
+
+			private final boolean hasEpochs;
+			LedgerType(boolean hasEpochs) {
+				this.hasEpochs = hasEpochs;
+			}
 		}
 
 		private final DroppingLatencyProvider latencyProvider = new DroppingLatencyProvider();
@@ -276,7 +286,7 @@ public class SimulationTest {
 		}
 
 		public Builder ledgerAndRadixEngineWithEpochHighView(View epochHighView) {
-			this.ledgerType = LedgerType.LEDGER_AND_RADIXENGINE;
+			this.ledgerType = LedgerType.LEDGER_AND_LOCALMEMPOOL_AND_EPOCHS_AND_RADIXENGINE;
 			this.epochHighView = epochHighView;
 			return this;
 		}
@@ -288,9 +298,13 @@ public class SimulationTest {
 		}
 
 		public Builder addMempoolSubmissionsSteadyState(String invariantName) {
-			LocalMempoolPeriodicSubmittor mempoolSubmission = new IncrementalBytesSubmittor();
-			CommittedChecker committedChecker
-				= new CommittedChecker(mempoolSubmission.issuedCommands().map(Pair::getFirst));
+			IncrementalBytes incrementalBytes = new IncrementalBytes();
+			NodeSelector nodeSelector = this.ledgerType.hasEpochs ? new EpochsNodeSelector() : new BFTValidatorSetNodeSelector();
+			LocalMempoolPeriodicSubmittor mempoolSubmission = new LocalMempoolPeriodicSubmittor(
+				incrementalBytes,
+				nodeSelector
+			);
+			CommittedChecker committedChecker = new CommittedChecker(mempoolSubmission.issuedCommands().map(Pair::getFirst));
 			this.runnableBuilder.add(nodes -> mempoolSubmission::run);
 			this.checksBuilder.put(invariantName, nodes -> committedChecker);
 
@@ -301,12 +315,14 @@ public class SimulationTest {
 			this.runnableBuilder.add(nodes -> {
 				RadixEngineValidatorRegistratorAndUnregistrator randomValidatorSubmittor
 					= new RadixEngineValidatorRegistratorAndUnregistrator(nodes);
+				NodeSelector nodeSelector = this.ledgerType.hasEpochs ? new EpochsNodeSelector() : new BFTValidatorSetNodeSelector();
+				LocalMempoolPeriodicSubmittor submittor = new LocalMempoolPeriodicSubmittor(randomValidatorSubmittor, nodeSelector);
 				// TODO: Fix hack, hack required due to lack of Guice
 				this.checksBuilder.put(
 					submittedInvariantName,
-					nodes2 -> new CommittedChecker(randomValidatorSubmittor.issuedCommands().map(Pair::getFirst))
+					nodes2 -> new CommittedChecker(submittor.issuedCommands().map(Pair::getFirst))
 				);
-				return randomValidatorSubmittor::run;
+				return submittor::run;
 			});
 			return this;
 		}
@@ -314,16 +330,18 @@ public class SimulationTest {
 		public Builder addRadixEngineValidatorRegisterMempoolSubmissions(String submittedInvariantName, String registeredInvariantName) {
 			this.runnableBuilder.add(nodes -> {
 				RadixEngineValidatorRegistrator validatorRegistrator = new RadixEngineValidatorRegistrator(nodes);
+				NodeSelector nodeSelector = this.ledgerType.hasEpochs ? new EpochsNodeSelector() : new BFTValidatorSetNodeSelector();
+				LocalMempoolPeriodicSubmittor submittor = new LocalMempoolPeriodicSubmittor(validatorRegistrator, nodeSelector);
 				// TODO: Fix hack, hack required due to lack of Guice
 				this.checksBuilder.put(
 					submittedInvariantName,
-					nodes2 -> new CommittedChecker(validatorRegistrator.issuedCommands().map(Pair::getFirst))
+					nodes2 -> new CommittedChecker(submittor.issuedCommands().map(Pair::getFirst))
 				);
 				this.checksBuilder.put(
 					registeredInvariantName,
 					nodes2 -> new RegisteredValidatorChecker(validatorRegistrator.validatorRegistrationSubmissions())
 				);
-				return validatorRegistrator::run;
+				return submittor::run;
 			});
 			return this;
 		}
@@ -405,12 +423,14 @@ public class SimulationTest {
 				modules.add(new MockedLedgerModule());
 				modules.add(new LedgerRxModule());
 				modules.add(new MockedConsensusRunnerModule());
+				modules.add(new MockedLedgerUpdateRxModule());
 			} else {
 				modules.add(new LedgerModule());
 				modules.add(new LedgerRxModule());
-				modules.add(new LedgerEpochChangeRxModule());
 
 				if (ledgerType == LedgerType.LEDGER) {
+					modules.add(new MockedLedgerUpdateRxModule());
+					modules.add(new MockedLedgerUpdateSender());
 					modules.add(new MockedConsensusRunnerModule());
 					modules.add(new MockedCommandGeneratorModule());
 					modules.add(new MockedMempoolModule());
@@ -419,17 +439,35 @@ public class SimulationTest {
 				} else if (ledgerType == LedgerType.LEDGER_AND_SYNC) {
 					modules.add(new SyncServiceModule());
 					modules.add(new SyncRxModule());
+					modules.add(new MockedLedgerUpdateRxModule());
+					modules.add(new MockedLedgerUpdateSender());
 					modules.add(new MockedConsensusRunnerModule());
 					modules.add(new MockedCommandGeneratorModule());
 					modules.add(new MockedMempoolModule());
 					modules.add(new MockedStateComputerModule());
 					modules.add(new MockedCommittedReaderModule());
 					modules.add(new MockedSyncRunnerModule());
+				} else if (ledgerType == LedgerType.LEDGER_AND_LOCALMEMPOOL) {
+					modules.add(new MockedLedgerUpdateRxModule());
+					modules.add(new MockedLedgerUpdateSender());
+					modules.add(new MockedConsensusRunnerModule());
+					modules.add(new LedgerCommandGeneratorModule());
+					modules.add(new LedgerLocalMempoolModule(10));
+					modules.add(new AbstractModule() {
+						@Override
+						protected void configure() {
+							bind(Mempool.class).to(LocalMempool.class);
+						}
+					});
+					modules.add(new MockedSyncServiceModule());
+					modules.add(new MockedStateComputerModule());
 				} else if (ledgerType == LedgerType.LEDGER_AND_EPOCHS) {
+					modules.add(new EpochsLedgerUpdateModule());
+					modules.add(new EpochsLedgerUpdateRxModule());
+					modules.add(new EpochsConsensusModule(pacemakerTimeout, 2.0, 0)); // constant for now
 					modules.add(new ConsensusRunnerModule());
 					modules.add(new LedgerCommandGeneratorModule());
 					modules.add(new MockedMempoolModule());
-					modules.add(new LedgerEpochChangeModule());
 					Function<Long, BFTValidatorSet> epochToValidatorSetMapping =
 						epochToNodeIndexMapper.andThen(indices -> BFTValidatorSet.from(
 							indices.mapToObj(nodes::get)
@@ -439,10 +477,12 @@ public class SimulationTest {
 					modules.add(new MockedStateComputerWithEpochsModule(epochHighView, epochToValidatorSetMapping));
 					modules.add(new MockedSyncServiceModule());
 				} else if (ledgerType == LedgerType.LEDGER_AND_EPOCHS_AND_SYNC) {
+					modules.add(new EpochsLedgerUpdateModule());
+					modules.add(new EpochsLedgerUpdateRxModule());
+					modules.add(new EpochsConsensusModule(pacemakerTimeout, 2.0, 0)); // constant for now
 					modules.add(new ConsensusRunnerModule());
 					modules.add(new MockedCommandGeneratorModule());
 					modules.add(new MockedMempoolModule());
-					modules.add(new LedgerEpochChangeModule());
 					Function<Long, BFTValidatorSet> epochToValidatorSetMapping =
 						epochToNodeIndexMapper.andThen(indices -> BFTValidatorSet.from(
 							indices.mapToObj(nodes::get)
@@ -455,19 +495,10 @@ public class SimulationTest {
 					modules.add(new SyncRunnerModule());
 					modules.add(new SyncRxModule());
 					modules.add(new MockedCommittedReaderModule());
-				} else if (ledgerType == LedgerType.LEDGER_AND_LOCALMEMPOOL) {
-					modules.add(new MockedConsensusRunnerModule());
-					modules.add(new LedgerCommandGeneratorModule());
-					modules.add(new LedgerLocalMempoolModule(10));
-					modules.add(new AbstractModule() {
-						@Override
-						protected void configure() {
-							bind(Mempool.class).to(LocalMempool.class);
-						}
-					});
-					modules.add(new MockedSyncServiceModule());
-					modules.add(new MockedStateComputerModule());
-				} else if (ledgerType == LedgerType.LEDGER_AND_RADIXENGINE) {
+				} else if (ledgerType == LedgerType.LEDGER_AND_LOCALMEMPOOL_AND_EPOCHS_AND_RADIXENGINE) {
+					modules.add(new EpochsLedgerUpdateModule());
+					modules.add(new EpochsLedgerUpdateRxModule());
+					modules.add(new EpochsConsensusModule(pacemakerTimeout, 2.0, 0)); // constant for now
 					modules.add(new ConsensusRunnerModule());
 					modules.add(new LedgerCommandGeneratorModule());
 					modules.add(new LedgerLocalMempoolModule(10));
@@ -477,7 +508,6 @@ public class SimulationTest {
 							bind(Mempool.class).to(LocalMempool.class);
 						}
 					});
-					modules.add(new LedgerEpochChangeModule());
 					modules.add(new RadixEngineModule(epochHighView));
 					modules.add(new RadixEngineRxModule());
 					modules.add(new MockedSyncServiceModule());

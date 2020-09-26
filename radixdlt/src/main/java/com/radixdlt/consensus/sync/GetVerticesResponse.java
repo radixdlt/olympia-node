@@ -15,22 +15,35 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.sync;
 
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.bft.VertexStore;
+import java.util.List;
+import java.util.Objects;
 
 /**
- * A Vertex Store factory
+ * An RPC response
  */
-public interface VertexStoreFactory {
+public final class GetVerticesResponse {
+	private final List<VerifiedVertex> vertices;
+	private final BFTNode sender;
 
-	/**
-	 * Creates a new VertexStore given initial vertex and QC
-	 * @param genesisVertex the root vertex
-	 * @param genesisQC the root QC
-	 * @param ledger the underlying ledger
-	 * @return a new VertexStore
-	 */
-	VertexStore create(VerifiedVertex genesisVertex, QuorumCertificate genesisQC, Ledger ledger);
+	public GetVerticesResponse(BFTNode sender, List<VerifiedVertex> vertices) {
+		this.sender = Objects.requireNonNull(sender);
+		this.vertices = Objects.requireNonNull(vertices);
+	}
+
+	public BFTNode getSender() {
+		return sender;
+	}
+
+	public List<VerifiedVertex> getVertices() {
+		return vertices;
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{vertices=%s}", this.getClass().getSimpleName(), vertices);
+	}
 }

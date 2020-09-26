@@ -34,21 +34,6 @@ public interface Ledger {
 	LedgerHeader prepare(VerifiedVertex vertex);
 
 	/**
-	 * Check if the ledger is commit synced at a particular state
-	 * @param header the metadata to sync to
-	 * @return Synced handler
-	 */
-	OnSynced ifCommitSynced(VerifiedLedgerHeaderAndProof header);
-
-	interface OnSynced {
-		OnNotSynced then(Runnable onSynced);
-	}
-
-	interface OnNotSynced {
-		void elseExecuteAndSendMessageOnSync(Runnable onNotSynced, Object opaque);
-	}
-
-	/**
 	 * Commit a command
 	 * @param verifiedCommandsAndProof the command to commit
 	 */

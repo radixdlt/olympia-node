@@ -27,9 +27,10 @@ import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
-import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
-import com.radixdlt.consensus.bft.VertexStore.SyncedVertexSender;
+import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
+import com.radixdlt.consensus.sync.VertexStoreSync.SyncVerticesRequestSender;
+import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.counters.SystemCounters;
@@ -37,8 +38,6 @@ import com.radixdlt.epochs.EpochChangeManager.EpochsLedgerUpdateSender;
 import com.radixdlt.integration.distributed.deterministic.DeterministicConsensusRunner;
 import com.radixdlt.integration.distributed.deterministic.DeterministicNetworkModule;
 import com.radixdlt.integration.distributed.MockedCryptoModule;
-import com.radixdlt.epochs.EpochChangeSender;
-import com.radixdlt.ledger.StateComputerLedger.CommittedStateSyncSender;
 import com.radixdlt.utils.Pair;
 
 import java.io.PrintStream;
@@ -60,11 +59,10 @@ public final class DeterministicNetwork {
 	public interface DeterministicSender extends
 		BFTEventSender,
 		VertexStoreEventSender,
-		SyncVerticesRPCSender,
-		SyncedVertexSender,
-		EpochChangeSender,
+		SyncVerticesRequestSender,
+		SyncVerticesResponseSender,
+		BFTUpdateSender,
 		EpochsLedgerUpdateSender,
-		CommittedStateSyncSender,
 		LocalTimeoutSender,
 		SyncEpochsRPCSender {
 		// Aggregation, no additional stuff
@@ -110,8 +108,8 @@ public final class DeterministicNetwork {
 	 * @param nodeIndex The node index/id that this sender is for
 	 * @return A newly created {@link DeterministicSender} for the specified node
 	 */
-	public DeterministicSender createSender(int nodeIndex) {
-		return new ControlledSender(this, nodeIndex);
+	public DeterministicSender createSender(BFTNode self, int nodeIndex) {
+		return new ControlledSender(this, self, nodeIndex);
 	}
 
 	public void run() {
@@ -173,9 +171,9 @@ public final class DeterministicNetwork {
 		Module module = Modules.combine(
 			// An arbitrary timeout for the pacemaker, as time is handled differently
 			// in a deterministic test.
-			new ConsensusModule(5000),
+			new ConsensusModule(1, 2.0, 63),
 			new MockedCryptoModule(),
-			new DeterministicNetworkModule(self, createSender(index)),
+			new DeterministicNetworkModule(self, createSender(self, index)),
 			Modules.combine(syncExecutionModules)
 		);
 		if (overrideModule != null) {

@@ -135,7 +135,7 @@ public final class BFTEventVerifier implements BFTEventProcessor {
 	}
 
 	@Override
-	public void processLocalSync(Hash vertexId) {
-		forwardTo.processLocalSync(vertexId);
+	public void processBFTUpdate(BFTUpdate update) {
+		forwardTo.processBFTUpdate(update);
 	}
 }

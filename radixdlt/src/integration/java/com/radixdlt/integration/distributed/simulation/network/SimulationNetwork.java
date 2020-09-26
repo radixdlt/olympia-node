@@ -25,15 +25,16 @@ import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.bft.VerifiedVertex;
+import com.radixdlt.consensus.sync.GetVerticesRequest;
+import com.radixdlt.consensus.sync.VertexStoreSync.SyncVerticesRequestSender;
+import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
-import com.radixdlt.consensus.bft.GetVerticesResponse;
+import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
+import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
-import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
-import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
@@ -48,7 +49,6 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.schedulers.Timed;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -157,38 +157,11 @@ public class SimulationNetwork {
 		return new Builder();
 	}
 
-	private static final class SimulatedVerticesRequest implements GetVerticesRequest {
-		private final Hash vertexId;
-		private final int count;
-		private final BFTNode requestor;
-
-		private SimulatedVerticesRequest(BFTNode requestor, Hash vertexId, int count) {
-			this.requestor = requestor;
-			this.vertexId = vertexId;
-			this.count = count;
-		}
-
-		@Override
-		public Hash getVertexId() {
-			return vertexId;
-		}
-
-		@Override
-		public int getCount() {
-			return count;
-		}
-
-		@Override
-		public String toString() {
-			return String.format("%s{vertexId=%s count=%d}", this.getClass().getSimpleName(), this.vertexId, this.count);
-		}
-	}
-
 	public class SimulatedNetworkImpl implements
-		BFTEventSender, SyncVerticesRPCSender, SyncEpochsRPCSender, BFTEventsRx, SyncVerticesRPCRx, SyncEpochsRPCRx, StateSyncNetwork {
+		BFTEventSender, SyncVerticesRequestSender, SyncVerticesResponseSender, SyncEpochsRPCSender, BFTEventsRx,
+		SyncVerticesRPCRx, SyncEpochsRPCRx, StateSyncNetwork {
 		private final Observable<Object> myMessages;
 		private final BFTNode thisNode;
-		private HashMap<Hash, Object> opaqueMap = new HashMap<>();
 
 		private SimulatedNetworkImpl(BFTNode node) {
 			this.thisNode = node;
@@ -240,28 +213,21 @@ public class SimulationNetwork {
 		}
 
 		@Override
-		public void sendGetVerticesRequest(Hash id, BFTNode node, int count, Object opaque) {
-			final SimulatedVerticesRequest request = new SimulatedVerticesRequest(thisNode, id, count);
-			opaqueMap.put(id, opaque);
+		public void sendGetVerticesRequest(BFTNode node, Hash id, int count) {
+			final GetVerticesRequest request = new GetVerticesRequest(thisNode, id, count);
 			receivedMessages.onNext(MessageInTransit.newMessage(request, thisNode, node));
 		}
 
 		@Override
-		public void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<VerifiedVertex> vertices) {
-			SimulatedVerticesRequest request = (SimulatedVerticesRequest) originalRequest;
-			Object opaque = receivers.computeIfAbsent(request.requestor, SimulatedNetworkImpl::new).opaqueMap.get(request.vertexId);
-			GetVerticesResponse vertexResponse = new GetVerticesResponse(thisNode, request.vertexId, vertices, opaque);
-			receivedMessages.onNext(MessageInTransit.newMessage(vertexResponse, thisNode, request.requestor));
+		public void sendGetVerticesResponse(BFTNode node, ImmutableList<VerifiedVertex> vertices) {
+			GetVerticesResponse vertexResponse = new GetVerticesResponse(thisNode, vertices);
+			receivedMessages.onNext(MessageInTransit.newMessage(vertexResponse, thisNode, node));
 		}
 
 		@Override
-		public void sendGetVerticesErrorResponse(GetVerticesRequest originalRequest, QuorumCertificate highestQC,
-			QuorumCertificate highestCommittedQC) {
-
-			SimulatedVerticesRequest request = (SimulatedVerticesRequest) originalRequest;
-			Object opaque = receivers.computeIfAbsent(request.requestor, SimulatedNetworkImpl::new).opaqueMap.get(request.vertexId);
-			GetVerticesErrorResponse vertexResponse = new GetVerticesErrorResponse(thisNode, request.vertexId, highestQC, highestCommittedQC, opaque);
-			receivedMessages.onNext(MessageInTransit.newMessage(vertexResponse, thisNode, request.requestor));
+		public void sendGetVerticesErrorResponse(BFTNode node, QuorumCertificate highestQC, QuorumCertificate highestCommittedQC) {
+			GetVerticesErrorResponse vertexResponse = new GetVerticesErrorResponse(thisNode, highestQC, highestCommittedQC);
+			receivedMessages.onNext(MessageInTransit.newMessage(vertexResponse, thisNode, node));
 		}
 
 		@Override

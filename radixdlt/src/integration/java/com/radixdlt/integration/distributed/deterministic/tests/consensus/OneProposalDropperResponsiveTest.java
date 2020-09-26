@@ -37,7 +37,6 @@ public class OneProposalDropperResponsiveTest {
 	private void runOneProposalDropperResponsiveTest(int numNodes, Function<View, Integer> nodeToDropFunction) {
 		DeterministicTest.builder()
 			.numNodes(numNodes)
-			.alwaysSynced()
 			.messageSelector(MessageSelector.selectAndStopAfter(MessageSelector.randomSelector(random), NUM_STEPS))
 			.messageMutator(MessageMutator.dropTimeouts().andThen(dropNode(numNodes, nodeToDropFunction)))
 			.build()

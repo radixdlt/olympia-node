@@ -18,23 +18,40 @@
 package com.radixdlt;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.ProvidesIntoSet;
+import com.google.inject.Provides;
+import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.epochs.EpochChangeManager;
 import com.radixdlt.epochs.EpochChangeManager.EpochsLedgerUpdateSender;
-import com.radixdlt.epochs.EpochChangeSender;
 import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
+import java.util.Set;
 
 /**
  * Adds epoch change functionality to the ledger
  */
-public class LedgerEpochChangeModule extends AbstractModule {
-	@ProvidesIntoSet
+public class EpochsLedgerUpdateModule extends AbstractModule {
+	@Override
+	protected void configure() {
+		Multibinder.newSetBinder(binder(), EpochsLedgerUpdateSender.class);
+		Multibinder.newSetBinder(binder(), LedgerUpdateSender.class);
+	}
+
+	@Provides
+	private EpochsLedgerUpdateSender sender(
+		Set<EpochsLedgerUpdateSender> epochsLedgerUpdateSenders,
+		Set<LedgerUpdateSender> ledgerUpdateSenders
+	) {
+		return update -> {
+			epochsLedgerUpdateSenders.forEach(s -> s.sendLedgerUpdate(update));
+			ledgerUpdateSenders.forEach(s -> s.sendLedgerUpdate(update));
+		};
+	}
+
+	@Provides
 	private LedgerUpdateSender epochChangeManager(
-		EpochChangeSender sender,
 		EpochsLedgerUpdateSender epochsLedgerUpdateSender,
 		Hasher hasher
 	) {
-		return new EpochChangeManager(sender, epochsLedgerUpdateSender, hasher);
+		return new EpochChangeManager(epochsLedgerUpdateSender, hasher);
 	}
 }

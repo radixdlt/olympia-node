@@ -44,7 +44,7 @@ import org.apache.logging.log4j.Logger;
  * Goes through a list of nodes and registers all of them over some
  * amount of time.
  */
-public final class RadixEngineValidatorRegistrator extends LocalMempoolPeriodicSubmittor {
+public final class RadixEngineValidatorRegistrator implements CommandGenerator {
 	private static final Logger log = LogManager.getLogger();
 
 	private final List<ECKeyPair> nodes;
@@ -57,7 +57,7 @@ public final class RadixEngineValidatorRegistrator extends LocalMempoolPeriodicS
 	}
 
 	@Override
-	Command nextCommand() {
+	public Command nextCommand() {
 		byte magic = 1;
 		ECKeyPair keyPair = nodes.get(current % nodes.size());
 		current++;

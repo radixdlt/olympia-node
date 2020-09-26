@@ -35,6 +35,7 @@ import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.consensus.sync.VertexStoreSync;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
@@ -47,7 +48,7 @@ public class BFTEventPreprocessorTest {
 	private BFTEventPreprocessor preprocessor;
 	private ProposerElection proposerElection;
 	private Pacemaker pacemaker;
-	private VertexStore vertexStore;
+	private VertexStoreSync vertexStoreSync;
 	private BFTEventProcessor forwardTo;
 	private SyncQueues syncQueues;
 	private BFTNode self;
@@ -55,7 +56,7 @@ public class BFTEventPreprocessorTest {
 	@Before
 	public void setUp() {
 		this.pacemaker = mock(Pacemaker.class);
-		this.vertexStore = mock(VertexStore.class);
+		this.vertexStoreSync = mock(VertexStoreSync.class);
 		this.proposerElection = mock(ProposerElection.class);
 		this.forwardTo = mock(BFTEventProcessor.class);
 		this.syncQueues = mock(SyncQueues.class);
@@ -70,7 +71,7 @@ public class BFTEventPreprocessorTest {
 			self,
 			forwardTo,
 			pacemaker,
-			vertexStore,
+			vertexStoreSync,
 			proposerElection,
 			syncQueues
 		);
@@ -89,7 +90,7 @@ public class BFTEventPreprocessorTest {
 		when(newView.getQC()).thenReturn(qc);
 		QuorumCertificate committedQC = mock(QuorumCertificate.class);
 		when(newView.getCommittedQC()).thenReturn(committedQC);
-		when(vertexStore.syncToQC(eq(qc), eq(committedQC), any())).thenReturn(synced);
+		when(vertexStoreSync.syncToQC(eq(qc), eq(committedQC), any())).thenReturn(synced);
 		return newView;
 	}
 
@@ -109,10 +110,9 @@ public class BFTEventPreprocessorTest {
 		when(proposal.getCommittedQC()).thenReturn(committedQC);
 		when(proposal.getQC()).thenReturn(qc);
 
-		when(vertexStore.syncToQC(eq(qc), eq(committedQC), any())).thenReturn(synced);
+		when(vertexStoreSync.syncToQC(eq(qc), eq(committedQC), any())).thenReturn(synced);
 		return proposal;
 	}
-
 
 	@Test
 	public void when_process_vote_as_not_proposer__then_vote_gets_thrown_away() {

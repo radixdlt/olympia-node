@@ -17,10 +17,7 @@
 
 package com.radixdlt.integration.distributed;
 
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.crypto.Hash;
-import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 
 import com.google.inject.AbstractModule;
@@ -28,14 +25,14 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
-import com.radixdlt.consensus.sync.SyncRequestSender;
+import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.consensus.LedgerHeader;
 
 public class MockedLedgerModule extends AbstractModule {
 	@Override
 	public void configure() {
 		bind(NextCommandGenerator.class).toInstance((view, aids) -> null);
-		bind(SyncRequestSender.class).toInstance(req -> { });
+		bind(SyncLedgerRequestSender.class).toInstance(req -> { });
 	}
 
 	@Provides
@@ -47,18 +44,10 @@ public class MockedLedgerModule extends AbstractModule {
 				return LedgerHeader.create(
 					vertex.getParentHeader().getLedgerHeader().getEpoch(),
 					vertex.getView(),
-					new AccumulatorState(0, Hash.ZERO_HASH),
+					vertex.getParentHeader().getLedgerHeader().getAccumulatorState(),
 					0L,
 					false
 				);
-			}
-
-			@Override
-			public OnSynced ifCommitSynced(VerifiedLedgerHeaderAndProof header) {
-				return onSynced -> {
-					onSynced.run();
-					return (notSynced, opaque) -> { };
-				};
 			}
 
 			@Override

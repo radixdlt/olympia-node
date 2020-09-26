@@ -15,20 +15,15 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.epochs;
+package com.radixdlt.integration.distributed.simulation.application;
 
-import com.radixdlt.consensus.epoch.EpochChange;
-import io.reactivex.rxjava3.core.Observable;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
+import io.reactivex.rxjava3.core.Single;
 
 /**
- * Validator Set change events
+ * Node generator for a given network
  */
-public interface EpochChangeRx {
-
-	/**
-	 * Epoch change events
-	 *
-	 * @return stream of epoch changes
-	 */
-	Observable<EpochChange> epochChanges();
+public interface NodeSelector {
+	Single<BFTNode> nextNode(RunningNetwork network);
 }

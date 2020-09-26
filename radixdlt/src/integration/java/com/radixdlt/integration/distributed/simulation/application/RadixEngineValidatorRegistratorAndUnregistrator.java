@@ -43,7 +43,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Randomly registers and unregisters nodes as validators
  */
-public class RadixEngineValidatorRegistratorAndUnregistrator extends LocalMempoolPeriodicSubmittor {
+public class RadixEngineValidatorRegistratorAndUnregistrator implements CommandGenerator {
 	private final ImmutableMap<ECKeyPair, AtomicLong> nodeNonces;
 	private final PublishSubject<BFTNode> validatorRegistrationSubmissions;
 	private final Random random = new Random();
@@ -54,7 +54,7 @@ public class RadixEngineValidatorRegistratorAndUnregistrator extends LocalMempoo
 	}
 
 	@Override
-	Command nextCommand() {
+	public Command nextCommand() {
 		byte magic = 1;
 		ImmutableList<ECKeyPair> nodes = nodeNonces.keySet().asList();
 		ECKeyPair keyPair = nodes.get(random.nextInt(nodes.size()));

@@ -15,22 +15,13 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
-
-import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
-import com.radixdlt.consensus.bft.GetVerticesResponse;
-import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
+package com.radixdlt.consensus.sync;
 
 /**
  * An empty/mocked vertex store event processor
  */
-public enum EmptyVertexStoreEventProcessor implements VertexStoreEventProcessor {
+public enum EmptyBFTSyncResponseProcessor implements BFTSyncResponseProcessor {
 	INSTANCE;
-
-	@Override
-	public void processGetVerticesRequest(GetVerticesRequest request) {
-		// No-op
-	}
 
 	@Override
 	public void processGetVerticesErrorResponse(GetVerticesErrorResponse response) {
@@ -39,11 +30,6 @@ public enum EmptyVertexStoreEventProcessor implements VertexStoreEventProcessor 
 
 	@Override
 	public void processGetVerticesResponse(GetVerticesResponse response) {
-		// No-op
-	}
-
-	@Override
-	public void processCommittedStateSync(CommittedStateSync committedStateSync) {
 		// No-op
 	}
 }

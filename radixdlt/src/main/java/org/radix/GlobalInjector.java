@@ -27,10 +27,11 @@ import com.radixdlt.ConsensusModule;
 import com.radixdlt.ConsensusRunnerModule;
 import com.radixdlt.ConsensusRxModule;
 import com.radixdlt.CryptoModule;
+import com.radixdlt.EpochsConsensusModule;
 import com.radixdlt.EpochsSyncModule;
 import com.radixdlt.LedgerCommandGeneratorModule;
-import com.radixdlt.LedgerEpochChangeModule;
-import com.radixdlt.LedgerEpochChangeRxModule;
+import com.radixdlt.EpochsLedgerUpdateModule;
+import com.radixdlt.EpochsLedgerUpdateRxModule;
 import com.radixdlt.LedgerLocalMempoolModule;
 import com.radixdlt.PersistenceModule;
 import com.radixdlt.PowFeeModule;
@@ -97,7 +98,12 @@ public class GlobalInjector {
 			}
 		};
 
-		final int pacemakerTimeout = properties.get("consensus.pacemaker_timeout_millis", 5000);
+		// Default values mean that pacemakers will sync if they are within 5 views of each other.
+		// 5 consecutive failing views will take 1*(2^6)-1 seconds = 63 seconds.
+		final long pacemakerTimeout = properties.get("consensus.pacemaker_timeout_millis", 1000L);
+		final double pacemakerRate = properties.get("consensus.pacemaker_rate", 2.0);
+		final int pacemakerMaxExponent = properties.get("consensus.pacemaker_max_exponent", 6);
+
 		final int fixedNodeCount = properties.get("consensus.fixed_node_count", 1);
 		final View epochHighView = View.of(properties.get("epochs.views_per_epoch", 100L));
 		final int mempoolMaxSize = properties.get("mempool.maxSize", 1000);
@@ -121,7 +127,7 @@ public class GlobalInjector {
 		injector = Guice.createInjector(
 			// Consensus
 			new CryptoModule(),
-			new ConsensusModule(pacemakerTimeout),
+			new ConsensusModule(pacemakerTimeout, pacemakerRate, pacemakerMaxExponent),
 			new ConsensusRxModule(),
 			new ConsensusRunnerModule(),
 
@@ -131,9 +137,18 @@ public class GlobalInjector {
 			new LedgerCommandGeneratorModule(),
 			new LedgerLocalMempoolModule(mempoolMaxSize),
 
-			// Epochs
-			new LedgerEpochChangeModule(),
-			new LedgerEpochChangeRxModule(),
+			// Sync
+			new SyncRunnerModule(),
+			new SyncRxModule(),
+			new SyncServiceModule(),
+			new SyncMempoolServiceModule(),
+
+			// Epochs - Consensus
+			new EpochsConsensusModule(pacemakerTimeout, pacemakerRate, pacemakerMaxExponent),
+			// Epochs - Ledger
+			new EpochsLedgerUpdateModule(),
+			new EpochsLedgerUpdateRxModule(),
+			// Epochs - Sync
 			new EpochsSyncModule(),
 
 			// State Computer
@@ -145,12 +160,6 @@ public class GlobalInjector {
 			feeModule,
 
 			new PersistenceModule(),
-
-			// Synchronization
-			new SyncRunnerModule(),
-			new SyncRxModule(),
-			new SyncServiceModule(),
-			new SyncMempoolServiceModule(),
 
 			// System Info
 			new SystemInfoModule(properties),
