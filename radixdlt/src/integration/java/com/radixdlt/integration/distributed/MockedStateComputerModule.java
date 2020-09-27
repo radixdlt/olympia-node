@@ -17,9 +17,11 @@
 
 package com.radixdlt.integration.distributed;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.radixdlt.consensus.BFTConfiguration;
+import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.UnverifiedVertex;
@@ -58,8 +60,8 @@ public class MockedStateComputerModule extends AbstractModule {
 	private StateComputer stateComputer() {
 		return new StateComputer() {
 			@Override
-			public boolean prepare(VerifiedVertex vertex) {
-				return false;
+			public Optional<BFTValidatorSet> prepare(ImmutableList<Command> commands, View view) {
+				return Optional.empty();
 			}
 
 			@Override

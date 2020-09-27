@@ -36,6 +36,7 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.BFTHeader;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
@@ -151,6 +152,8 @@ public class StateComputerLedgerTest {
 	@Test
 	public void when_prepare_with_no_command_and_end_of_epoch__then_should_return_same_state_version() {
 		VerifiedVertex vertex = mock(VerifiedVertex.class);
+		View view = mock(View.class);
+		when(vertex.getView()).thenReturn(view);
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		when(qc.getTimestampedSignatures()).thenReturn(new TimestampedECDSASignatures());
 		when(vertex.getQC()).thenReturn(qc);
@@ -163,7 +166,8 @@ public class StateComputerLedgerTest {
 		BFTHeader parent = mock(BFTHeader.class);
 		when(parent.getLedgerHeader()).thenReturn(ledgerHeader);
 		when(vertex.getParentHeader()).thenReturn(parent);
-		when(stateComputer.prepare(eq(vertex))).thenReturn(true);
+
+		when(stateComputer.prepare(eq(ImmutableList.of()), eq(view))).thenReturn(Optional.of(mock(BFTValidatorSet.class)));
 		when(accumulatorVerifier.verifyAndGetExtension(any(), any(), any())).thenReturn(Optional.of(ImmutableList.of()));
 
 		LinkedList<VerifiedVertex> vertexChain = new LinkedList<>();

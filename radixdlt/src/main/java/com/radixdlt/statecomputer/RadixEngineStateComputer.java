@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
@@ -145,8 +144,24 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 	}
 
 	@Override
-	public boolean prepare(VerifiedVertex vertex) {
-		return vertex.getView().compareTo(epochChangeView) >= 0;
+	public Optional<BFTValidatorSet> prepare(ImmutableList<Command> uncommittedChain, View view) {
+		RadixEngine<LedgerAtom> transientBranch = this.radixEngine.transientBranch();
+		for (Command command : uncommittedChain) {
+			ClientAtom clientAtom = mapCommand(command);
+			if (clientAtom != null) {
+				try {
+					transientBranch.checkAndStore(clientAtom);
+				} catch (RadixEngineException e) {
+				}
+			}
+		}
+
+		if (view.compareTo(epochChangeView) >= 0) {
+			RadixEngineValidatorSetBuilder validatorSetBuilder = transientBranch.getComputedState(RadixEngineValidatorSetBuilder.class);
+			return Optional.of(validatorSetBuilder.build());
+		}
+
+		return Optional.empty();
 	}
 
 	private ClientAtom mapCommand(Command command) {

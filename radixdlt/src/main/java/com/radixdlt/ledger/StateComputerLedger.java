@@ -18,6 +18,7 @@
 package com.radixdlt.ledger;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Streams;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerHeader;
@@ -37,13 +38,14 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * Synchronizes execution
  */
 public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	public interface StateComputer {
-		boolean prepare(VerifiedVertex vertex);
+		Optional<BFTValidatorSet> prepare(ImmutableList<Command> commands, View view);
 		Optional<BFTValidatorSet> commit(VerifiedCommandsAndProof verifiedCommandsAndProof);
 	}
 
@@ -106,19 +108,20 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			parentAccumulatorState
 		);
 
-		prevCommands = prevCommandsMaybe.orElseThrow(() -> new IllegalStateException("Evidence of safety break."));
-
+		ImmutableList<Command> uncommittedCommands = prevCommandsMaybe
+			.orElseThrow(() -> new IllegalStateException("Evidence of safety break."));
 		final LedgerHeader parent = vertex.getParentHeader().getLedgerHeader();
-
-		boolean isEndOfEpoch = stateComputer.prepare(vertex);
-
 		final AccumulatorState accumulatorState;
 		if (parent.isEndOfEpoch() || vertex.getCommand() == null) {
 			// Don't execute atom if in process of epoch change
 			accumulatorState = parent.getAccumulatorState();
 		} else {
 			accumulatorState = this.accumulator.accumulate(parent.getAccumulatorState(), vertex.getCommand());
+			uncommittedCommands = Streams.concat(uncommittedCommands.stream(), Stream.of(vertex.getCommand()))
+				.collect(ImmutableList.toImmutableList());
 		}
+
+		Optional<BFTValidatorSet> nextValidatorSet = stateComputer.prepare(uncommittedCommands, vertex.getView());
 
 		final long timestamp = vertex.getQC().getTimestampedSignatures().weightedTimestamp();
 		return LedgerHeader.create(
@@ -126,7 +129,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			vertex.getView(),
 			accumulatorState,
 			timestamp,
-			isEndOfEpoch
+			nextValidatorSet.isPresent()
 		);
 	}
 

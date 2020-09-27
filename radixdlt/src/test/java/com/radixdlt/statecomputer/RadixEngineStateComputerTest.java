@@ -31,6 +31,7 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.CMInstruction;
@@ -79,14 +80,19 @@ public class RadixEngineStateComputerTest {
 	public void when_prepare_vertex_metadata_equal_to_high_view__then_should_return_epoch_change() {
 		VerifiedVertex vertex = mock(VerifiedVertex.class);
 		when(vertex.getView()).thenReturn(epochHighView);
-		assertThat(stateComputer.prepare(vertex)).isTrue();
+		RadixEngineValidatorSetBuilder builder = mock(RadixEngineValidatorSetBuilder.class);
+		RadixEngine<LedgerAtom> branch = TypedMocks.rmock(RadixEngine.class);
+		when(radixEngine.transientBranch()).thenReturn(branch);
+		when(branch.getComputedState(any())).thenReturn(builder);
+		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
+		when(builder.build()).thenReturn(validatorSet);
+
+		assertThat(stateComputer.prepare(ImmutableList.of(), epochHighView)).contains(validatorSet);
 	}
 
 	@Test
 	public void when_prepare_vertex_metadata_lower_to_high_view__then_should_return_not_epoch_change() {
-		VerifiedVertex vertex = mock(VerifiedVertex.class);
-		when(vertex.getView()).thenReturn(epochHighView.previous());
-		assertThat(stateComputer.prepare(vertex)).isFalse();
+		assertThat(stateComputer.prepare(ImmutableList.of(), epochHighView.previous())).isEmpty();
 	}
 
 	@Test
