@@ -31,6 +31,7 @@ import com.radixdlt.store.CMStores;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.SpinStateMachine;
 
+import com.radixdlt.store.TransientEngineStore;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -62,6 +63,15 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 			this.inputReducer = inputReducer;
 		}
 
+		ApplicationStateComputer<U, V> copy() {
+			return new ApplicationStateComputer<>(
+				particleClass,
+				curValue,
+				outputReducer,
+				inputReducer
+			);
+		}
+
 		void initialize() {
 			curValue = engineStore.compute(particleClass, curValue, inputReducer, outputReducer);
 		}
@@ -80,6 +90,7 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 
 	private final ConstraintMachine constraintMachine;
 	private final CMStore virtualizedCMStore;
+	private final UnaryOperator<CMStore> virtualStoreLayer;
 	private final EngineStore<T> engineStore;
 	private final AtomChecker<T> checker;
 	private final Object stateUpdateEngineLock = new Object();
@@ -100,6 +111,7 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		AtomChecker<T> checker
 	) {
 		this.constraintMachine = Objects.requireNonNull(constraintMachine);
+		this.virtualStoreLayer = Objects.requireNonNull(virtualStoreLayer);
 		this.virtualizedCMStore = virtualStoreLayer.apply(CMStores.empty());
 		this.engineStore = Objects.requireNonNull(engineStore);
 		this.checker = checker;
@@ -157,6 +169,25 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 			if (hookResult.isError()) {
 				throw new RadixEngineException(RadixEngineErrorCode.HOOK_ERROR, "Checker failed", DataPointer.ofAtom());
 			}
+		}
+	}
+
+	public RadixEngine<T> transientBranch() {
+		synchronized (stateUpdateEngineLock) {
+			TransientEngineStore<T> transientEngineStore = new TransientEngineStore<>(
+				this.engineStore
+			);
+
+			RadixEngine<T> branched = new RadixEngine<>(
+				this.constraintMachine,
+				this.virtualStoreLayer,
+				transientEngineStore,
+				this.checker
+			);
+
+			this.stateComputers.forEach((c, computer) -> branched.stateComputers.put(c, computer.copy()));
+
+			return branched;
 		}
 	}
 
