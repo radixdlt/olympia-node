@@ -25,7 +25,9 @@ import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.util.Modules;
+import com.radixdlt.ConsensusModule;
 import com.radixdlt.ConsensusRunnerModule;
+import com.radixdlt.ConsensusRxModule;
 import com.radixdlt.EpochsConsensusModule;
 import com.radixdlt.EpochsSyncModule;
 import com.radixdlt.LedgerCommandGeneratorModule;
@@ -40,6 +42,7 @@ import com.radixdlt.RadixEngineRxModule;
 import com.radixdlt.SyncServiceModule;
 import com.radixdlt.SyncRxModule;
 import com.radixdlt.SyncRunnerModule;
+import com.radixdlt.SystemInfoRxModule;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -73,6 +76,7 @@ import com.radixdlt.integration.distributed.simulation.invariants.ledger.LedgerI
 import com.radixdlt.integration.distributed.simulation.network.DroppingLatencyProvider;
 import com.radixdlt.integration.distributed.simulation.network.OneProposalPerViewDropper;
 import com.radixdlt.integration.distributed.simulation.network.RandomLatencyProvider;
+import com.radixdlt.integration.distributed.simulation.network.RandomProposalAndNewViewDropper;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.mempool.LocalMempool;
@@ -213,6 +217,11 @@ public class SimulationTest {
 			this.latencyProvider.addDropper(new OneProposalPerViewDropper(
 				ImmutableList.of(BFTNode.create(nodes.get(0).getPublicKey())), new Random())
 			);
+			return this;
+		}
+
+		public Builder addRandomProposalAndNewViewDropper(int dropsPer100) {
+			this.latencyProvider.addDropper(new RandomProposalAndNewViewDropper(new Random(), dropsPer100));
 			return this;
 		}
 
@@ -415,8 +424,10 @@ public class SimulationTest {
 				}
 			});
 			modules.add(new NoFeeModule());
-
 			modules.add(new MockedCryptoModule());
+			modules.add(new ConsensusModule(pacemakerTimeout, 2.0, 0)); // Use constant timeout for now
+			modules.add(new ConsensusRxModule());
+			modules.add(new SystemInfoRxModule());
 
 			if (ledgerType == LedgerType.MOCKED_LEDGER) {
 				modules.add(new MockedBFTConfigurationModule());

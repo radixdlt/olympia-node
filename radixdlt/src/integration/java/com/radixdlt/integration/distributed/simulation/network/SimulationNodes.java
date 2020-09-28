@@ -101,9 +101,6 @@ public class SimulationNodes {
 					return BFTNode.create(selfKey.getPublicKey());
 				}
 			},
-			new ConsensusModule(pacemakerTimeout, 2.0, 0), // Use constant timeout for now
-			new ConsensusRxModule(),
-			new SystemInfoRxModule(),
 			new SimulationNetworkModule(underlyingNetwork),
 			baseModule
 		);

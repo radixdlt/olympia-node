@@ -181,9 +181,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		this.pacemaker.processQC(qc)
 			.ifPresent(this::proceedToView);
 
-		qc.getCommittedAndLedgerStateProof()
-			.ifPresent(pair -> vertexStore.commit(pair.getFirst(), pair.getSecond()));
-
 		return qc.getCommittedAndLedgerStateProof().map(Pair::getSecond);
 	}
 

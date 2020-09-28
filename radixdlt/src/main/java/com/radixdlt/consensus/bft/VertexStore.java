@@ -60,6 +60,7 @@ public final class VertexStore {
 	private final Ledger ledger;
 	private final SystemCounters counters;
 	private final Map<Hash, VerifiedVertex> vertices = new HashMap<>();
+	private final Map<Hash, Integer> vertexNumChildren = new HashMap<>();
 
 	// These should never be null
 	private Hash rootId;
@@ -125,6 +126,7 @@ public final class VertexStore {
 		}
 
 		this.vertices.clear();
+		this.vertexNumChildren.clear();
 		this.rootId = rootVertex.getId();
 		this.highestQC = rootQC;
 		this.vertexStoreEventSender.highQC(rootQC);
@@ -155,16 +157,20 @@ public final class VertexStore {
 			vertexStoreEventSender.highQC(qc);
 		}
 
-		qc.getCommittedAndLedgerStateProof().map(Pair::getFirst).ifPresent(header -> {
+		qc.getCommittedAndLedgerStateProof().ifPresent(headerAndProof -> {
 			BFTHeader highest = this.highestCommittedQC.getCommittedAndLedgerStateProof()
 				.map(Pair::getFirst)
 				.orElseThrow(() ->
 					new IllegalStateException(String.format("Highest Committed does not have a commit: %s", this.highestCommittedQC))
 				);
 
+			BFTHeader header = headerAndProof.getFirst();
 			if (highest.getView().compareTo(header.getView()) < 0) {
 				this.highestCommittedQC = qc;
 			}
+
+			VerifiedLedgerHeaderAndProof proof = headerAndProof.getSecond();
+			this.commit(header, proof);
 		});
 
 		return true;
@@ -187,6 +193,8 @@ public final class VertexStore {
 		// TODO: (also see commitVertex->storeAtom)
 
 		vertices.put(vertex.getId(), vertex);
+		vertexNumChildren.merge(vertex.getParentId(), 1, Integer::sum);
+
 		updateVertexStoreSize();
 
 		final BFTUpdate update = new BFTUpdate(vertex);
@@ -203,9 +211,9 @@ public final class VertexStore {
 	 * @param header the proof of commit
 	 * @return the vertex if sucessful, otherwise an empty optional if vertex was already committed
 	 */
-	public Optional<VerifiedVertex> commit(BFTHeader header, VerifiedLedgerHeaderAndProof ledgerStateWithProof) {
+	private void commit(BFTHeader header, VerifiedLedgerHeaderAndProof ledgerStateWithProof) {
 		if (header.getView().compareTo(this.getRoot().getView()) <= 0) {
-			return Optional.empty();
+			return;
 		}
 
 		final Hash vertexId = header.getVertexId();
@@ -213,12 +221,13 @@ public final class VertexStore {
 		if (tipVertex == null) {
 			throw new IllegalStateException("Committing vertex not in store: " + header);
 		}
-		final LinkedList<VerifiedVertex> path = new LinkedList<>();
-		VerifiedVertex vertex = tipVertex;
-		while (vertex != null && !rootId.equals(vertex.getId())) {
-			path.addFirst(vertex);
-			vertex = vertices.remove(vertex.getParentId());
-		}
+
+		final LinkedList<VerifiedVertex> path = getPathFromRoot(tipVertex.getId());
+		path.forEach(v -> {
+			vertices.remove(v.getParentId());
+			vertexNumChildren.remove(v.getParentId());
+		});
+		// TODO: Must prune all other children of root
 
 		ImmutableList.Builder<Command> commandsToCommitBuilder = ImmutableList.builder();
 		for (VerifiedVertex committedVertex : path) {
@@ -236,15 +245,14 @@ public final class VertexStore {
 		rootId = header.getVertexId();
 
 		updateVertexStoreSize();
-		return Optional.of(tipVertex);
 	}
 
-	public List<VerifiedVertex> getPathFromRoot(Hash vertexId) {
-		final List<VerifiedVertex> path = new ArrayList<>();
+	public LinkedList<VerifiedVertex> getPathFromRoot(Hash vertexId) {
+		final LinkedList<VerifiedVertex> path = new LinkedList<>();
 
 		VerifiedVertex vertex = vertices.get(vertexId);
 		while (vertex != null && !vertex.getId().equals(rootId)) {
-			path.add(vertex);
+			path.addFirst(vertex);
 			vertex = vertices.get(vertex.getParentId());
 		}
 
@@ -302,5 +310,7 @@ public final class VertexStore {
 
 	private void updateVertexStoreSize() {
 		this.counters.set(CounterType.BFT_VERTEX_STORE_SIZE, this.vertices.size());
+		int forkCount = this.vertexNumChildren.values().stream().mapToInt(i -> i - 1).sum();
+		this.counters.set(CounterType.BFT_VERTEX_STORE_FORK_COUNT, forkCount);
 	}
 }
