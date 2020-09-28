@@ -278,7 +278,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		}
 
 		final BFTNode currentLeader = this.proposerElection.getProposer(updatedView);
-		final Optional<BFTHeader> maybeHeader = vertexStore.insertVertexAndPrepare(proposedVertex);
+		final Optional<BFTHeader> maybeHeader = vertexStore.insertVertex(proposedVertex);
 		// The header may not be present if the ledger is ahead of consensus
 		maybeHeader.ifPresent(header -> {
 			try {

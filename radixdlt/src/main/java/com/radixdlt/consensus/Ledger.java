@@ -30,10 +30,11 @@ public interface Ledger {
 	 * Given a proposed vertex, executes prepare stage on
 	 * the state computer, the result of which gets persisted on ledger.
 	 *
-	 * @param vertices the vertex to compute
+	 * @param previous parents of given vertex
+	 * @param vertex vertex to prepare
 	 * @return the results of executing the prepare stage
 	 */
-	Optional<LedgerHeader> prepare(LinkedList<VerifiedVertex> vertices);
+	Optional<LedgerHeader> prepare(LinkedList<VerifiedVertex> previous, VerifiedVertex vertex);
 
 	/**
 	 * Commit a command

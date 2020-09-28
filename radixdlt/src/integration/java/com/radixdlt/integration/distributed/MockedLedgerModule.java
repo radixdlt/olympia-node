@@ -42,8 +42,7 @@ public class MockedLedgerModule extends AbstractModule {
 	Ledger syncedLedger() {
 		return new Ledger() {
 			@Override
-			public Optional<LedgerHeader> prepare(LinkedList<VerifiedVertex> vertices) {
-				VerifiedVertex vertex = vertices.getLast();
+			public Optional<LedgerHeader> prepare(LinkedList<VerifiedVertex> previous, VerifiedVertex vertex) {
 				LedgerHeader ledgerHeader = LedgerHeader.create(
 					vertex.getParentHeader().getLedgerHeader().getEpoch(),
 					vertex.getView(),

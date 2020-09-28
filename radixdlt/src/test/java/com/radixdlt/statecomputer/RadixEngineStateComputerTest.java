@@ -82,7 +82,7 @@ public class RadixEngineStateComputerTest {
 		VerifiedVertex vertex = mock(VerifiedVertex.class);
 		when(vertex.getView()).thenReturn(epochHighView);
 		RadixEngineValidatorSetBuilder builder = mock(RadixEngineValidatorSetBuilder.class);
-		RadixEngineBranch<LedgerAtom> branch = TypedMocks.rmock(RadixEngine.class);
+		RadixEngineBranch<LedgerAtom> branch = TypedMocks.rmock(RadixEngineBranch.class);
 		when(radixEngine.transientBranch()).thenReturn(branch);
 		when(branch.getComputedState(any())).thenReturn(builder);
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);

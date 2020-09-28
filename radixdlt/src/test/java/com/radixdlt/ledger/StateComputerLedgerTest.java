@@ -118,9 +118,7 @@ public class StateComputerLedgerTest {
 		when(vertex.getParentHeader()).thenReturn(parent);
 		when(accumulatorVerifier.verifyAndGetExtension(any(), any(), any())).thenReturn(Optional.of(ImmutableList.of()));
 
-		LinkedList<VerifiedVertex> vertexChain = new LinkedList<>();
-		vertexChain.addFirst(vertex);
-		Optional<LedgerHeader> nextPrepared = stateComputerLedger.prepare(vertexChain);
+		Optional<LedgerHeader> nextPrepared = stateComputerLedger.prepare(new LinkedList<>(), vertex);
 
 		assertThat(nextPrepared).isNotEmpty();
 		assertThat(nextPrepared)
@@ -146,9 +144,7 @@ public class StateComputerLedgerTest {
 		when(vertex.getParentHeader()).thenReturn(parent);
 		when(accumulatorVerifier.verifyAndGetExtension(any(), any(), any())).thenReturn(Optional.of(ImmutableList.of()));
 
-		LinkedList<VerifiedVertex> vertexChain = new LinkedList<>();
-		vertexChain.addFirst(vertex);
-		Optional<LedgerHeader> nextPrepared = stateComputerLedger.prepare(vertexChain);
+		Optional<LedgerHeader> nextPrepared = stateComputerLedger.prepare(new LinkedList<>(), vertex);
 
 		assertThat(nextPrepared).isNotEmpty();
 		assertThat(nextPrepared)
@@ -180,9 +176,7 @@ public class StateComputerLedgerTest {
 		when(stateComputer.prepare(eq(ImmutableList.of()), eq(view))).thenReturn(Optional.of(validatorSet));
 		when(accumulatorVerifier.verifyAndGetExtension(any(), any(), any())).thenReturn(Optional.of(ImmutableList.of()));
 
-		LinkedList<VerifiedVertex> vertexChain = new LinkedList<>();
-		vertexChain.addFirst(vertex);
-		Optional<LedgerHeader> nextPrepared = stateComputerLedger.prepare(vertexChain);
+		Optional<LedgerHeader> nextPrepared = stateComputerLedger.prepare(new LinkedList<>(), vertex);
 
 		assertThat(nextPrepared).isNotEmpty();
 		assertThat(nextPrepared)
@@ -214,9 +208,7 @@ public class StateComputerLedgerTest {
 		when(vertex.getCommand()).thenReturn(command);
 		when(accumulatorVerifier.verifyAndGetExtension(any(), any(), any())).thenReturn(Optional.of(ImmutableList.of()));
 
-		LinkedList<VerifiedVertex> vertexChain = new LinkedList<>();
-		vertexChain.addFirst(vertex);
-		Optional<LedgerHeader> nextPrepared = stateComputerLedger.prepare(vertexChain);
+		Optional<LedgerHeader> nextPrepared = stateComputerLedger.prepare(new LinkedList<>(), vertex);
 
 		assertThat(nextPrepared).isNotEmpty();
 		assertThat(nextPrepared)

@@ -92,12 +92,9 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	}
 
 	@Override
-	public Optional<LedgerHeader> prepare(LinkedList<VerifiedVertex> vertices) {
-		final VerifiedVertex vertex = vertices.getLast();
-
+	public Optional<LedgerHeader> prepare(LinkedList<VerifiedVertex> previous, VerifiedVertex vertex) {
 		AccumulatorState parentAccumulatorState = vertex.getParentHeader().getLedgerHeader().getAccumulatorState();
-		ImmutableList<Command> prevCommands = vertices.stream()
-			.filter(v -> !v.equals(vertex))
+		ImmutableList<Command> prevCommands = previous.stream()
 			.map(VerifiedVertex::getCommand)
 			.filter(Objects::nonNull)
 			.collect(ImmutableList.toImmutableList());

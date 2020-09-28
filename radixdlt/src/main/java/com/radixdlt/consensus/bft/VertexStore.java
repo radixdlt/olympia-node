@@ -168,7 +168,15 @@ public final class VertexStore {
 		return true;
 	}
 
-	public void insertVertex(VerifiedVertex vertex) {
+	/**
+	 * Inserts a vertex and then attempts to create the next header.
+	 * If the ledger is ahead of the vertex store then returns an empty optional
+	 * otherwise an empty optional.
+	 *
+	 * @param vertex vertex to insert
+	 * @return a bft header if creation of next header is successful.
+	 */
+	public Optional<BFTHeader> insertVertex(VerifiedVertex vertex) {
 		if (!vertices.containsKey(vertex.getParentId())) {
 			throw new MissingParentException(vertex.getParentId());
 		}
@@ -181,20 +189,9 @@ public final class VertexStore {
 
 		final BFTUpdate update = new BFTUpdate(vertex);
 		bftUpdateSender.sendBFTUpdate(update);
-	}
 
-	/**
-	 * Inserts a vertex and then attempts to create the next header.
-	 * If the ledger is ahead of the vertex store then returns an empty optional
-	 * otherwise an empty optional.
-	 *
-	 * @param vertex vertex to insert
-	 * @return a bft header if creation of next header is successful.
-	 */
-	public Optional<BFTHeader> insertVertexAndPrepare(VerifiedVertex vertex) {
-		this.insertVertex(vertex);
-		LinkedList<VerifiedVertex> vertices = getPathFromRoot(vertex.getId());
-		return ledger.prepare(vertices)
+		LinkedList<VerifiedVertex> previous = getPathFromRoot(vertex.getParentId());
+		return ledger.prepare(previous, vertex)
 			.map(ledgerHeader -> new BFTHeader(vertex.getView(), vertex.getId(), ledgerHeader));
 	}
 
