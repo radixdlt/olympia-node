@@ -184,14 +184,16 @@ public class VertexStoreTest {
 	}
 
 	@Test
-	public void when_committing_vertex_which_was_not_inserted__then_illegal_state_exception_is_thrown() {
+	public void when_add_qc_which_was_not_inserted__then_false_is_returned() {
 		BFTHeader header = mock(BFTHeader.class);
 		when(header.getView()).thenReturn(View.of(2));
 		when(header.getVertexId()).thenReturn(mock(Hash.class));
-		assertThatThrownBy(() -> vertexStore.commit(header, mock(VerifiedLedgerHeaderAndProof.class)))
-			.isInstanceOf(IllegalStateException.class);
+		QuorumCertificate qc = mock(QuorumCertificate.class);
+		when(qc.getProposed()).thenReturn(header);
+		assertThat(vertexStore.addQC(qc)).isFalse();
 	}
 
+	/*
 	@Test
 	public void when_committing_vertex_which_is_lower_or_equal_to_root__then_empty_optional_is_returned() {
 		Hash id1 = mock(Hash.class);
@@ -352,4 +354,6 @@ public class VertexStoreTest {
 		assertThat(vertexStore.getVertices(id, 2))
 			.contains(ImmutableList.of(vertex, genesisVertex));
 	}
+
+	 */
 }

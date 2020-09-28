@@ -142,7 +142,9 @@ public final class VertexStoreSync implements BFTSyncResponseProcessor, BFTUpdat
 			return true;
 		}
 
-		if (vertexStore.addQC(qc)) {
+		final Hash vertexId = qc.getProposed().getVertexId();
+
+		if (vertexStore.containsVertex(vertexId)) {
 			return true;
 		}
 
@@ -155,7 +157,6 @@ public final class VertexStoreSync implements BFTSyncResponseProcessor, BFTUpdat
 
 		log.trace("SYNC_TO_QC: Need sync: {} {}", qc, committedQC);
 
-		final Hash vertexId = qc.getProposed().getVertexId();
 		if (syncing.containsKey(vertexId)) {
 			// TODO: what if this committedQC is greater than the one currently in the queue
 			// TODO: then should possibly replace the current one

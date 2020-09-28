@@ -173,6 +173,8 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	}
 
 	private Optional<VerifiedLedgerHeaderAndProof> processQC(QuorumCertificate qc) {
+		this.vertexStore.addQC(qc);
+
 		// commit any newly committable vertices
 		this.safetyRules.process(qc);
 

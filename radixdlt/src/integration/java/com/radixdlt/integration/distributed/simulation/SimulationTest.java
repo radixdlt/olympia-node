@@ -76,7 +76,6 @@ import com.radixdlt.integration.distributed.simulation.invariants.ledger.LedgerI
 import com.radixdlt.integration.distributed.simulation.network.DroppingLatencyProvider;
 import com.radixdlt.integration.distributed.simulation.network.OneProposalPerViewDropper;
 import com.radixdlt.integration.distributed.simulation.network.RandomLatencyProvider;
-import com.radixdlt.integration.distributed.simulation.network.RandomProposalAndNewViewDropper;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.mempool.LocalMempool;
@@ -217,11 +216,6 @@ public class SimulationTest {
 			this.latencyProvider.addDropper(new OneProposalPerViewDropper(
 				ImmutableList.of(BFTNode.create(nodes.get(0).getPublicKey())), new Random())
 			);
-			return this;
-		}
-
-		public Builder addRandomProposalAndNewViewDropper(int dropsPer100) {
-			this.latencyProvider.addDropper(new RandomProposalAndNewViewDropper(new Random(), dropsPer100));
 			return this;
 		}
 
