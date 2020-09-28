@@ -200,7 +200,7 @@ public class HashTest {
 	public void test_hash_of_publickey() throws CryptoException {
 		String publicKeyHex = "03" + deadbeefString();
 		byte[] publicKeyBytes = Bytes.fromHexString(publicKeyHex);
-		ECPublicKey publicKey = new ECPublicKey(publicKeyBytes);
+		ECPublicKey publicKey = ECPublicKey.fromBytes(publicKeyBytes);
 		String expectedEUIDHex = "cbed388efef3a09bee696ad1b30d49a0";
 		assertEquals(expectedEUIDHex, publicKey.euid().toString());
 		assertEquals(expectedEUIDHex, Bytes.toHexString(Hash.hash256(publicKeyBytes)).substring(0, 32));

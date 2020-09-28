@@ -86,7 +86,7 @@ public final class BitcoinJHDKeyPairDerivation implements HDKeyPairDerivation {
 	public HDKeyPair deriveKeyAtPath(HDPath path) {
 		DeterministicKey childKey = deriveKeyForHDPath(path);
 		try {
-			ECKeyPair ecKeyPair = new ECKeyPair(childKey.getPrivKeyBytes());
+			ECKeyPair ecKeyPair = ECKeyPair.fromPrivateKey(childKey.getPrivKeyBytes());
 			return new HDKeyPair(ecKeyPair, path);
 		} catch (CryptoException e) {
 			throw new IllegalStateException("Failed to generate ECKeyPair", e);

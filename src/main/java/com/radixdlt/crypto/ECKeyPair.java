@@ -37,7 +37,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
-import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -49,41 +48,11 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 	public static final int	BYTES = 32;
 
 	private final byte[] privateKey;
-
 	private final ECPublicKey publicKey;
 
-	private ECKeyPair() {
-		this(ECKeyUtils.secureRandom());
-	}
-
-	public ECKeyPair(SecureRandom random) {
-		try {
-			ECKeyPairGenerator generator = new ECKeyPairGenerator();
-	        ECKeyGenerationParameters keygenParams = new ECKeyGenerationParameters(ECKeyUtils.domain(), random);
-	        generator.init(keygenParams);
-	        AsymmetricCipherKeyPair keypair = generator.generateKeyPair();
-	        ECPrivateKeyParameters privParams = (ECPrivateKeyParameters) keypair.getPrivate();
-	        ECPublicKeyParameters pubParams = (ECPublicKeyParameters) keypair.getPublic();
-
-	        byte[] privateKeyBytes = ECKeyUtils.adjustArray(privParams.getD().toByteArray(), BYTES);
-			ECKeyUtils.validatePrivate(privateKeyBytes);
-
-	        this.privateKey = privateKeyBytes;
-
-	        this.publicKey = new ECPublicKey(pubParams.getQ().getEncoded(true));
-		} catch (Exception e) {
-			throw new IllegalStateException("Failed to generate ECKeyPair", e);
-		}
-	}
-
-	public ECKeyPair(byte[] privateKey) throws CryptoException {
-		try {
-			ECKeyUtils.validatePrivate(privateKey);
-			this.privateKey = privateKey;
-			this.publicKey = new ECPublicKey(ECKeyUtils.keyHandler.computePublicKey(privateKey));
-		} catch (Exception ex) {
-			throw new CryptoException("Invalid privateKey", ex);
-		}
+	private ECKeyPair(final byte[] privateKey, final ECPublicKey publicKey) {
+		this.privateKey = privateKey;
+		this.publicKey = publicKey;
 	}
 
 	/**
@@ -91,7 +60,22 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 	 * @return a newly generated private key and it's corresponding {@link ECPublicKey}.
 	 */
 	public static ECKeyPair generateNew() {
-		return new ECKeyPair();
+		try {
+			ECKeyPairGenerator generator = new ECKeyPairGenerator();
+			ECKeyGenerationParameters keygenParams = new ECKeyGenerationParameters(ECKeyUtils.domain(), ECKeyUtils.secureRandom());
+			generator.init(keygenParams);
+			AsymmetricCipherKeyPair keypair = generator.generateKeyPair();
+			ECPrivateKeyParameters privParams = (ECPrivateKeyParameters) keypair.getPrivate();
+			ECPublicKeyParameters pubParams = (ECPublicKeyParameters) keypair.getPublic();
+
+			final ECPublicKey publicKey = ECPublicKey.fromBytes(pubParams.getQ().getEncoded(true));
+			byte[] privateKeyBytes = ECKeyUtils.adjustArray(privParams.getD().toByteArray(), BYTES);
+			ECKeyUtils.validatePrivate(privateKeyBytes);
+
+			return new ECKeyPair(privateKeyBytes, publicKey);
+		} catch (Exception e) {
+			throw new IllegalStateException("Failed to generate ECKeyPair", e);
+		}
 	}
 
 	/**
@@ -109,13 +93,24 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 			throw new IllegalArgumentException("Seed must not be empty");
 		}
 
-		byte[] privateKey = Hash.hash256(seed);
-
 		try {
-			return new ECKeyPair(privateKey);
+			return fromPrivateKey(Hash.hash256(seed));
 		} catch (CryptoException e) {
 			throw new IllegalStateException("Should always be able to create private key from seed", e);
 		}
+	}
+
+	/**
+	 * Restore {@link ECKeyPair} instance from given private key by computing corresponding public key.
+	 * @param privateKey byte array which contains private key.
+	 * @return A keypair for provided private key
+	 * @throws CryptoException
+	 */
+	public static ECKeyPair fromPrivateKey(byte[] privateKey) throws CryptoException {
+		ECKeyUtils.validatePrivate(privateKey);
+
+		return new ECKeyPair(privateKey,
+			ECPublicKey.fromBytes(ECKeyUtils.keyHandler.computePublicKey(privateKey)));
 	}
 
 	public EUID euid() {
@@ -129,8 +124,8 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 	public ECPublicKey getPublicKey() {
 		return this.publicKey;
 	}
-
 	// TODO move this to new class (yet to be created) `ECPrivateKey`.
+
 	@Override
 	public ECPoint multiply(ECPoint point) {
 		BigInteger scalarFromPrivateKey = new BigInteger(1, this.privateKey);
@@ -194,15 +189,6 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 			getClass().getSimpleName(), Bytes.toBase64String(getPublicKey().getBytes()));
 	}
 
-	public ECKeyPair(byte[] publicKey, byte[] privateKey) {
-		try {
-			this.publicKey = new ECPublicKey(publicKey);
-		} catch (CryptoException e) {
-			throw new IllegalArgumentException("Failed to create public key from bytes", e);
-		}
-		this.privateKey = Arrays.copyOf(privateKey, privateKey.length);
-	}
-
 	public static ECKeyPair fromFile(File file) throws CryptoException {
 		try (InputStream inputStream = new FileInputStream(file)) {
 			byte[] privateKey = new byte[32];
@@ -210,7 +196,7 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 			if (len != 32) {
 				throw new IllegalStateException("Private Key file must be 32 bytes in " + file);
 			}
-			return new ECKeyPair(privateKey);
+			return fromPrivateKey(privateKey);
 		} catch (FileNotFoundException e) {
 			throw new IllegalArgumentException("Failed to read file", e);
 		} catch (IOException e) {
@@ -233,7 +219,7 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 
 	public byte[] decrypt(byte[] data, EncryptedPrivateKey sharedKey) throws CryptoException {
 		byte[] privateKeyData = this.decrypt(sharedKey.toByteArray());
-		ECKeyPair sharedKeyPair = new ECKeyPair(privateKeyData);
+		ECKeyPair sharedKeyPair = fromPrivateKey(privateKeyData);
 		return sharedKeyPair.decrypt(data);
 	}
 

@@ -78,7 +78,7 @@ public final class RadixAddress {
 			byte[] digest = new byte[raw.length - 5];
 			System.arraycopy(raw, 1, digest, 0, raw.length - 5);
 
-			return new RadixAddress(raw[0], new ECPublicKey(digest));
+			return new RadixAddress(raw[0], ECPublicKey.fromBytes(digest));
 		} catch (CryptoException e) {
 			throw new IllegalArgumentException("Unable to create address from string: " + Base58.toBase58(raw), e);
 		}

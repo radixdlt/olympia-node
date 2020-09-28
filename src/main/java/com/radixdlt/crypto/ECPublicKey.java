@@ -41,52 +41,24 @@ public final class ECPublicKey {
 	private final Supplier<EUID> uid = Suppliers.memoize(this::computeUID);
 	private final int hashCode;
 
+	private ECPublicKey(byte[] key) {
+		this.publicKey = Arrays.copyOf(key, key.length);
+		this.hashCode = computeHashCode();
+	}
+
+	private int computeHashCode() {
+		return Arrays.hashCode(publicKey);
+	}
+
 	@JsonCreator
-	private static ECPublicKey fromPublicKey(byte[] key) throws CryptoException {
+	public static ECPublicKey fromBytes(byte[] key) throws CryptoException {
+		ECKeyUtils.validatePublic(key);
 		return new ECPublicKey(key);
-	}
-
-	public ECPublicKey(byte[] key) throws CryptoException {
-		try {
-			validatePublic(key);
-			this.publicKey = Arrays.copyOf(key, key.length);
-			// As ECPublicKey instances are commonly used to look up associated
-			// data in HashMaps and/or used as keys in HashMaps, there is minimal
-			// performance benefits, and some costs, in computing this lazily.
-			this.hashCode = computeHashCode();
-		} catch (CryptoException ex) {
-			throw ex;
-		} catch (Exception ex) {
-			throw new CryptoException(ex);
-		}
-	}
-
-	private void validatePublic(byte[] publicKey) throws CryptoException {
-		if (publicKey == null || publicKey.length == 0) {
-			throw new CryptoException("Public key is empty");
-		}
-
-		int pubkey0 = publicKey[0] & 0xFF;
-		switch (pubkey0) {
-		case 2:
-		case 3:
-			if (publicKey.length != BYTES + 1) {
-				throw new CryptoException("Public key is an invalid compressed size");
-			}
-			break;
-		case 4:
-			if (publicKey.length != (BYTES * 2) + 1) {
-				throw new CryptoException("Public key is an invalid uncompressed size");
-			}
-			break;
-		default:
-			throw new CryptoException("Public key is an invalid format");
-		}
 	}
 
 	@JsonCreator
 	public static ECPublicKey fromBase64(String base64) throws CryptoException {
-		return new ECPublicKey(Bytes.fromBase64String(base64));
+		return fromBytes(Bytes.fromBase64String(base64));
 	}
 
 	public EUID euid() {
@@ -149,10 +121,6 @@ public final class ECPublicKey {
 	@Override
 	public String toString() {
 		return String.format("%s[%s]", getClass().getSimpleName(), toBase64());
-	}
-
-	private int computeHashCode() {
-		return Arrays.hashCode(this.getBytes());
 	}
 
 	private EUID computeUID() {

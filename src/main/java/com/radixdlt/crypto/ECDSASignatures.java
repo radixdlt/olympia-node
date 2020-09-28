@@ -149,7 +149,7 @@ public final class ECDSASignatures implements Signatures {
 
 	private ECPublicKey decodePublicKey(String str) {
 		try {
-			return new ECPublicKey(Bytes.fromHexString(str));
+			return ECPublicKey.fromBytes(Bytes.fromHexString(str));
 		} catch (CryptoException e) {
 			throw new IllegalStateException("Error decoding public key", e);
 		}

@@ -113,7 +113,7 @@ public class ECDSASignatureTest {
 		ArrayList<Map<String, String>> vectors = new Gson().fromJson(rfc6979TestVectors, type);
 		assertEquals(6, vectors.size());
 		for (Map<String, String> vector : vectors) {
-			ECKeyPair keyPair = new ECKeyPair(Bytes.fromHexString(vector.get("privateKey")));
+			ECKeyPair keyPair = ECKeyPair.fromPrivateKey(Bytes.fromHexString(vector.get("privateKey")));
 			ECPublicKey publicKey = keyPair.getPublicKey();
 
 			String expectedPublicKeyHex = vector.get("expectedPublicKeyCompressed");

@@ -239,7 +239,7 @@ public final class RadixKeyStore implements Closeable {
 			PrivateKey pk = pkEntry.getPrivateKey();
 			byte[] encoded = pk.getEncoded();
 			try {
-				return new ECKeyPair(decodePrivKey(encoded));
+				return ECKeyPair.fromPrivateKey(decodePrivKey(encoded));
 			} finally {
 				Arrays.fill(encoded, (byte) 0);
 			}

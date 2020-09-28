@@ -70,7 +70,7 @@ public final class ECIES {
 			int publicKeySize = inputStream.readUnsignedByte();
 			byte[] publicKeyRaw = new byte[publicKeySize];
 			inputStream.readFully(publicKeyRaw);
-			ECPublicKey ephemeralPublicKey = new ECPublicKey(publicKeyRaw);
+			ECPublicKey ephemeralPublicKey = ECPublicKey.fromBytes(publicKeyRaw);
 
 			// 3. Do an EC point multiply with this.getPrivateKey() and ephemeral public key. This gives you a point M.
 			ECPoint m = multiplicationScalar.multiply(ephemeralPublicKey.getPublicPoint());

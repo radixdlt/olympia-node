@@ -62,7 +62,7 @@ public class ECKeyPairTest {
 			byte[] priv = key.getPrivateKey();
 			byte[] pub = key.getPublicKey().getBytes();
 
-			key = new ECKeyPair(priv);
+			key = ECKeyPair.fromPrivateKey(priv);
 
 			Assert.assertArrayEquals(priv, key.getPrivateKey());
 			Assert.assertArrayEquals(pub, key.getPublicKey().getBytes());
@@ -79,10 +79,10 @@ public class ECKeyPairTest {
 			byte[] priv = key.getPrivateKey();
 			byte[] pub = key.getPublicKey().getBytes();
 
-			ECKeyPair keyPair = new ECKeyPair(priv);
+			ECKeyPair keyPair = ECKeyPair.fromPrivateKey(priv);
 			ECDSASignature signature = keyPair.sign(Hash.hash256(helloWorld.getBytes(StandardCharsets.UTF_8)));
 
-			ECPublicKey pubkey = new ECPublicKey(pub);
+			ECPublicKey pubkey = ECPublicKey.fromBytes(pub);
 			assertTrue(pubkey.verify(Hash.hash256(helloWorld.getBytes(StandardCharsets.UTF_8)), signature));
 		}
 	}
@@ -99,7 +99,7 @@ public class ECKeyPairTest {
 
 			byte[] encrypted = key.getPublicKey().encrypt(helloWorld.getBytes(StandardCharsets.UTF_8));
 
-			ECKeyPair newkey = new ECKeyPair(priv);
+			ECKeyPair newkey = ECKeyPair.fromPrivateKey(priv);
 			Assert.assertArrayEquals(helloWorld.getBytes(StandardCharsets.UTF_8), newkey.decrypt(encrypted));
 		}
 	}

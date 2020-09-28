@@ -122,6 +122,29 @@ public class ECKeyUtils {
 		}
 	}
 
+	static void validatePublic(byte[] publicKey) throws CryptoException {
+		if (publicKey == null || publicKey.length == 0) {
+			throw new CryptoException("Public key is empty");
+		}
+
+		int pubkey0 = publicKey[0] & 0xFF;
+		switch (pubkey0) {
+			case 2:
+			case 3:
+				if (publicKey.length != ECPublicKey.BYTES + 1) {
+					throw new CryptoException("Public key has invalid compressed size");
+				}
+				break;
+			case 4:
+				if (publicKey.length != (ECPublicKey.BYTES * 2) + 1) {
+					throw new CryptoException("Public key has invalid uncompressed size");
+				}
+				break;
+			default:
+				throw new CryptoException("Public key has invalid format");
+		}
+	}
+
 	/**
 	 * Adjusts the specified array so that is is equal to the specified length.
 	 * <ul>
