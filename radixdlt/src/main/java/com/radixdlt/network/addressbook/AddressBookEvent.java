@@ -19,18 +19,14 @@ package com.radixdlt.network.addressbook;
 
 import java.util.List;
 
-import org.radix.events.Event;
-
 /**
- * Base class for events produced by {@code AddressBook}.
+ * Base interface for events produced by {@code AddressBook}.
  */
-public abstract class AddressBookEvent extends Event {
-
+public interface AddressBookEvent {
 	/**
 	 * Returns the {@link Peer} objects affected by this event.
 	 *
 	 * @return the {@link Peer} objects affected by this event
 	 */
-	public abstract List<Peer> peers();
-
+	List<Peer> peers();
 }

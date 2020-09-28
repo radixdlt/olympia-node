@@ -14,7 +14,7 @@ if [ ! -f "${dockerfile}" ]; then
 fi
 
 # Load environment
-eval $(../gradlew -q -p "${scriptdir}/../../radixdlt" clean generateDevUniverse)
+eval $(${scriptdir}/../../gradlew -q -p "${scriptdir}/../../radixdlt" clean generateDevUniverse)
 
 # Launch
 ${scriptdir}/../../gradlew -p "${scriptdir}/../.." deb4docker && \

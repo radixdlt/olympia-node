@@ -25,10 +25,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.radix.events.Events;
 import org.radix.network.messaging.Message;
 import org.radix.universe.system.LocalSystem;
-import org.radix.universe.system.events.QueueFullEvent;
 import org.radix.utils.SimpleThreadPool;
 import org.xerial.snappy.Snappy;
 
@@ -52,7 +50,6 @@ final class MessageCentralImpl implements MessageCentral {
 	// Dependencies
 	private final Serialization serialization;
 	private final TransportManager connectionManager;
-	private final Events events;
 	private final AddressBook addressBook;
 	private final SystemCounters counters;
 
@@ -88,7 +85,6 @@ final class MessageCentralImpl implements MessageCentral {
 		MessageCentralConfiguration config,
 		Serialization serialization,
 		TransportManager transportManager,
-		Events events,
 		AddressBook addressBook,
 		TimeSupplier timeSource,
 		EventQueueFactory<MessageEvent> eventQueueFactory,
@@ -101,7 +97,6 @@ final class MessageCentralImpl implements MessageCentral {
 
 		this.serialization = Objects.requireNonNull(serialization);
 		this.connectionManager = Objects.requireNonNull(transportManager);
-		this.events = Objects.requireNonNull(events);
 		this.addressBook = Objects.requireNonNull(addressBook);
 
 		Objects.requireNonNull(timeSource);
@@ -148,7 +143,6 @@ final class MessageCentralImpl implements MessageCentral {
 			if (outboundLogRateLimiter.tryAcquire()) {
 				log.error("Outbound message to {} dropped", peer);
 			}
-			events.broadcast(new QueueFullEvent());
 		}
 	}
 
@@ -159,7 +153,6 @@ final class MessageCentralImpl implements MessageCentral {
 			if (inboundLogRateLimiter.tryAcquire()) {
 				log.error("Injected message from {} dropped", peer);
 			}
-			events.broadcast(new QueueFullEvent());
 		}
 	}
 

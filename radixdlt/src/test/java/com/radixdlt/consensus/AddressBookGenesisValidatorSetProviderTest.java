@@ -21,11 +21,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.reactivex.rxjava3.core.Observable;
+
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.network.addressbook.AddressBook;
-
 import com.radixdlt.network.addressbook.Peer;
+
 import java.util.stream.Stream;
 import org.assertj.core.api.Condition;
 import org.junit.Test;
@@ -37,6 +40,7 @@ public class AddressBookGenesisValidatorSetProviderTest {
 		ECPublicKey self = mock(ECPublicKey.class);
 		when(self.euid()).thenReturn(EUID.ONE);
 		AddressBook addressBook = mock(AddressBook.class);
+		when(addressBook.peerUpdates()).thenReturn(Observable.just(() -> ImmutableList.of()));
 		AddressBookGenesisValidatorSetProvider validatorSetProvider = new AddressBookGenesisValidatorSetProvider(
 			self,
 			addressBook,

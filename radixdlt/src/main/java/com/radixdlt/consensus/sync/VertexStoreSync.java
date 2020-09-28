@@ -331,7 +331,7 @@ public final class VertexStoreSync implements BFTSyncResponseProcessor, BFTUpdat
 
 	@Override
 	public void processBFTUpdate(BFTUpdate update) {
-		log.debug("BFTUpdate: Processed {}", update);
+		log.trace("Processed {}", update);
 		syncing.remove(update.getInsertedVertex().getId());
 	}
 

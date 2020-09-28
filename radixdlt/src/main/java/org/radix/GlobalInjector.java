@@ -69,7 +69,6 @@ import com.radixdlt.universe.Universe;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import org.radix.database.DatabaseEnvironment;
-import org.radix.events.Events;
 import org.radix.universe.system.LocalSystem;
 
 public class GlobalInjector {
@@ -91,8 +90,6 @@ public class GlobalInjector {
 				bind(ECPublicKey.class).annotatedWith(Names.named("self")).toProvider(SelfPublicKeyProvider.class);
 				bind(RadixAddress.class).annotatedWith(Names.named("self")).toProvider(SelfAddressProvider.class);
 				bind(BFTNode.class).annotatedWith(Names.named("self")).toProvider(SelfBFTNodeProvider.class);
-
-				bind(Events.class).toProvider(Events::getInstance);
 
 				bind(PeerManagerConfiguration.class).toInstance(PeerManagerConfiguration.fromRuntimeProperties(properties));
 			}

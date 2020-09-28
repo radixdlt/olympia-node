@@ -26,7 +26,7 @@ import com.google.common.collect.ImmutableList;
  * An {@link AddressBookEvent} to let interested parties know that
  * newly discovered peers have been added to the address book.
  */
-public final class PeersAddedEvent extends AddressBookEvent {
+public final class PeersAddedEvent implements AddressBookEvent {
 
 	private final ImmutableList<Peer> peers;
 
@@ -39,4 +39,8 @@ public final class PeersAddedEvent extends AddressBookEvent {
 		return this.peers;
 	}
 
+	@Override
+	public String toString() {
+		return String.format("%s%s", getClass().getSimpleName(), this.peers);
+	}
 }

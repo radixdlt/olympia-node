@@ -26,6 +26,8 @@ import org.radix.universe.system.RadixSystem;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.network.transport.TransportInfo;
 
+import io.reactivex.rxjava3.core.Observable;
+
 /**
  * Address book interface allowing client code to discover and add
  * {@link Peer} objects.
@@ -130,6 +132,14 @@ public interface AddressBook {
 	 * @return A {@link Stream} of {@link EUID} objects representing node IDs
 	 */
 	Stream<EUID> nids();
+
+	/**
+	 * Returns an observable of {@link AddressBookEvent} objects for updates
+	 * made to the address book.
+	 *
+	 * @return An observable of address book events
+	 */
+	Observable<AddressBookEvent> peerUpdates();
 
     /**
      * Closes this {@code AddressBook} and releases any system resources associated
