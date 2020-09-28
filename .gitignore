@@ -5,6 +5,7 @@ emunie-restlet/
 # gradle stuff
 build/
 .gradle/
+faucet-service/build/
 
 # eclipse stuff
 bin/
@@ -30,8 +31,11 @@ api.users
 # radixdlt non-versioned files
 RADIXDB/
 radixdlt/RADIXDB/
+radixdlt/RADIXDB_TEST/
+radixdlt/logs/
 radixdlt/default.config
 radixdlt/logger.config
+faucet-service/logs/
 *.ks
 *.key
 *.wallet

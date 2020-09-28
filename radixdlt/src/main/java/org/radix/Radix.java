@@ -110,7 +110,7 @@ public final class Radix
 	private static final Object BC_LOCK = new Object();
 	private static boolean bcInitialised;
 
-	private static void setupBouncyCastle() throws ClassNotFoundException, IllegalAccessException {
+	private static void setupBouncyCastle() {
 		synchronized (BC_LOCK) {
 			if (bcInitialised) {
 				log.warn("Bouncy castle is already initialised");
@@ -118,24 +118,6 @@ public final class Radix
 			}
 
 			Security.insertProviderAt(new BouncyCastleProvider(), 1);
-			try {
-				Field isRestricted = Class.forName("javax.crypto.JceSecurity").getDeclaredField("isRestricted");
-
-				log.info("Encryption restrictions are set, need to override...");
-
-				if (Modifier.isFinal(isRestricted.getModifiers())) {
-					Field modifiers = Field.class.getDeclaredField("modifiers");
-					modifiers.setAccessible(true);
-					modifiers.setInt(isRestricted, isRestricted.getModifiers() & ~Modifier.FINAL);
-				}
-				isRestricted.setAccessible(true);
-				isRestricted.setBoolean(null, false);
-				isRestricted.setAccessible(false);
-				log.info("...override success!");
-			} catch (NoSuchFieldException nsfex) {
-				log.error("No such field - isRestricted");
-			}
-
 			bcInitialised = true;
 		}
 	}
