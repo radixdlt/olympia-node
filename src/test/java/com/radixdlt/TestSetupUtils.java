@@ -42,23 +42,7 @@ public final class TestSetupUtils {
 	 */
 	public static void installBouncyCastleProvider() {
 		if (bouncyCastleInstalled.compareAndSet(false, true)) {
-			try {
-				Class<?> jceSecurity = Class.forName("javax.crypto.JceSecurity");
-				Field isRestricted = jceSecurity.getDeclaredField("isRestricted");
-				isRestricted.setAccessible(true);
-				if (Boolean.TRUE.equals(isRestricted.get(null))) {
-					if (Modifier.isFinal(isRestricted.getModifiers())) {
-						Field modifiers = Field.class.getDeclaredField("modifiers");
-						modifiers.setAccessible(true);
-						modifiers.setInt(isRestricted, isRestricted.getModifiers() & ~Modifier.FINAL);
-					}
-					isRestricted.setBoolean(null, false);
-				}
-				isRestricted.setAccessible(false);
-				Security.insertProviderAt(new BouncyCastleProvider(), 1);
-			} catch (ReflectiveOperationException | SecurityException ex) {
-				throw new IllegalStateException("Can't install Bouncy Castle security provider", ex);
-			}
+			Security.insertProviderAt(new BouncyCastleProvider(), 1);
 		}
 	}
 
