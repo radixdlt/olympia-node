@@ -66,9 +66,9 @@ public class ConsensusModuleTest {
 	@Before
 	public void setup() {
 		this.bftConfiguration = mock(BFTConfiguration.class);
-		UnverifiedVertex genesis = UnverifiedVertex.createGenesis(LedgerHeader.genesis(Hash.ZERO_HASH));
+		UnverifiedVertex genesis = UnverifiedVertex.createGenesis(LedgerHeader.genesis(Hash.ZERO_HASH, null));
 		VerifiedVertex hashedGenesis = new VerifiedVertex(genesis, Hash.ZERO_HASH);
-		QuorumCertificate qc = QuorumCertificate.ofGenesis(hashedGenesis, LedgerHeader.genesis(Hash.ZERO_HASH));
+		QuorumCertificate qc = QuorumCertificate.ofGenesis(hashedGenesis, LedgerHeader.genesis(Hash.ZERO_HASH, null));
 		when(bftConfiguration.getGenesisVertex()).thenReturn(hashedGenesis);
 		when(bftConfiguration.getGenesisQC()).thenReturn(qc);
 		when(bftConfiguration.getGenesisHeader()).thenReturn(mock(VerifiedLedgerHeaderAndProof.class));

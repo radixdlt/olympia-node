@@ -107,7 +107,7 @@ public final class SometimesByzantineCommittedReader implements LedgerUpdateSend
 				base.getHeader().getView(),
 				accumulatorState,
 				base.getHeader().timestamp(),
-				base.getHeader().isEndOfEpoch()
+				base.getHeader().getNextValidatorSet().orElse(null)
 			);
 			TimestampedECDSASignatures signatures = overwriteSignatures != null ? overwriteSignatures : base.getHeader().getSignatures();
 			VerifiedLedgerHeaderAndProof headerAndProof = new VerifiedLedgerHeaderAndProof(

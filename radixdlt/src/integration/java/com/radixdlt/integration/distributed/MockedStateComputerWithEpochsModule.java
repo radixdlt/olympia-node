@@ -59,7 +59,7 @@ public class MockedStateComputerWithEpochsModule extends AbstractModule {
 			View.genesis(),
 			proof.getAccumulatorState(),
 			proof.timestamp(),
-			false
+			null
 		);
 		QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
 		return new BFTConfiguration(
@@ -70,8 +70,8 @@ public class MockedStateComputerWithEpochsModule extends AbstractModule {
 	}
 
 	@Provides
-	private VerifiedLedgerHeaderAndProof genesisProof() {
-		return VerifiedLedgerHeaderAndProof.genesis(Hash.ZERO_HASH);
+	private VerifiedLedgerHeaderAndProof genesisProof(BFTValidatorSet validatorSet) {
+		return VerifiedLedgerHeaderAndProof.genesis(Hash.ZERO_HASH, validatorSet);
 	}
 
 	@Provides

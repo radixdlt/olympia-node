@@ -130,7 +130,7 @@ public class RadixEngineStoreModule extends AbstractModule {
 			View.genesis(),
 			proof.getAccumulatorState(),
 			proof.timestamp(),
-			false
+			null
 		);
 		QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
 		BFTValidatorSet validatorSet = initialValidatorSetProvider.getGenesisValidatorSet();
@@ -141,12 +141,16 @@ public class RadixEngineStoreModule extends AbstractModule {
 	private VerifiedLedgerHeaderAndProof genesisHeader(
 		Serialization serialization,
 		Universe universe,
-		CommittedAtomsStore committedAtomsStore
+		CommittedAtomsStore committedAtomsStore,
+		AddressBookGenesisValidatorSetProvider initialValidatorSetProvider
 	) throws LedgerAtomConversionException, DeserializeException, NextCommittedLimitReachedException {
 		final ClientAtom genesisAtom = ClientAtom.convertFromApiAtom(universe.getGenesis().get(0));
 		byte[] payload = serialization.toDson(genesisAtom, Output.ALL);
 		Command command = new Command(payload);
-		VerifiedLedgerHeaderAndProof genesisLedgerHeader = VerifiedLedgerHeaderAndProof.genesis(command.getHash());
+		VerifiedLedgerHeaderAndProof genesisLedgerHeader = VerifiedLedgerHeaderAndProof.genesis(
+			command.getHash(),
+			initialValidatorSetProvider.getGenesisValidatorSet()
+		);
 
 		if (committedAtomsStore.getNextCommittedCommands(genesisLedgerHeader.getStateVersion() - 1, 1).isEmpty()) {
 			ClientAtom clientAtom = serialization.fromDson(command.getPayload(), ClientAtom.class);

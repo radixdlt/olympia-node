@@ -30,6 +30,6 @@ public class GetEpochResponseMessageSerializeTest extends SerializeMessageObject
 
 	private static GetEpochResponseMessage get() {
 		BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
-		return new GetEpochResponseMessage(author, 12345, VerifiedLedgerHeaderAndProof.genesis(Hash.ZERO_HASH));
+		return new GetEpochResponseMessage(author, 12345, VerifiedLedgerHeaderAndProof.genesis(Hash.ZERO_HASH, null));
 	}
 }

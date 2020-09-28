@@ -17,6 +17,14 @@
 
 package com.radixdlt.consensus.bft;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.serialization.SerializerConstants;
+import com.radixdlt.serialization.SerializerDummy;
+import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.utils.UInt256;
 import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
@@ -26,12 +34,28 @@ import javax.annotation.concurrent.Immutable;
  * Represents a validator and their Proof-of-Stake status.
  */
 @Immutable
+@SerializerId2("consensus.bft_validator")
 public final class BFTValidator {
+	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
+	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
+	SerializerDummy serializer = SerializerDummy.DUMMY;
+
 	// Power associated with each validator, could e.g. be based on staked tokens
+	@JsonProperty("power")
+	@DsonOutput({Output.ALL})
 	private final UInt256 power;
 
     // Public key for consensus
 	private final BFTNode node;
+
+	@JsonCreator
+	private BFTValidator(
+		@JsonProperty("node") ECPublicKey nodeKey,
+		@JsonProperty("power") UInt256 power
+	) {
+		this.node = Objects.requireNonNull(BFTNode.create(nodeKey));
+		this.power = Objects.requireNonNull(power);
+	}
 
 	private BFTValidator(
 		BFTNode node,
@@ -51,6 +75,12 @@ public final class BFTValidator {
 
 	public UInt256 getPower() {
 		return power;
+	}
+
+	@JsonProperty("node")
+	@DsonOutput(Output.ALL)
+	private ECPublicKey getSerializerView() {
+		return this.node.getKey();
 	}
 
 	@Override

@@ -129,7 +129,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			vertex.getView(),
 			accumulatorState,
 			timestamp,
-			nextValidatorSet.isPresent()
+			nextValidatorSet.orElse(null)
 		);
 	}
 

@@ -57,7 +57,7 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 			View.genesis(),
 			proof.getAccumulatorState(),
 			proof.timestamp(),
-			false
+			null
 		);
 		UnverifiedVertex genesis = UnverifiedVertex.createGenesis(nextLedgerHeader);
 		VerifiedVertex verifiedGenesis = new VerifiedVertex(genesis, Hash.ZERO_HASH);
@@ -66,7 +66,7 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 	}
 
 	@Provides
-	public VerifiedLedgerHeaderAndProof genesisVertexMetadata() {
-		return VerifiedLedgerHeaderAndProof.genesis(Hash.ZERO_HASH);
+	public VerifiedLedgerHeaderAndProof genesisVertexMetadata(BFTValidatorSet validatorSet) {
+		return VerifiedLedgerHeaderAndProof.genesis(Hash.ZERO_HASH, validatorSet);
 	}
 }

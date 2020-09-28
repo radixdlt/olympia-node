@@ -58,7 +58,7 @@ public final class EpochChangeManager implements LedgerUpdateSender {
 				View.genesis(),
 				header.getAccumulatorState(),
 				header.timestamp(),
-				false
+				null
 			);
 			QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
 			BFTConfiguration bftConfiguration = new BFTConfiguration(validatorSet, verifiedGenesisVertex, genesisQC);

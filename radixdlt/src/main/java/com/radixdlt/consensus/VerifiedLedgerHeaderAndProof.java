@@ -19,6 +19,7 @@ package com.radixdlt.consensus;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.AccumulatorState;
@@ -30,6 +31,7 @@ import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import java.util.Comparator;
 import java.util.Objects;
+import java.util.Optional;
 import javax.annotation.concurrent.Immutable;
 
 /**
@@ -88,8 +90,8 @@ public final class VerifiedLedgerHeaderAndProof {
 		this.signatures = Objects.requireNonNull(signatures);
 	}
 
-	public static VerifiedLedgerHeaderAndProof genesis(Hash accumulator) {
-		LedgerHeader genesisLedgerHeader = LedgerHeader.genesis(accumulator);
+	public static VerifiedLedgerHeaderAndProof genesis(Hash accumulator, BFTValidatorSet nextValidators) {
+		LedgerHeader genesisLedgerHeader = LedgerHeader.genesis(accumulator, nextValidators);
 		BFTHeader header = BFTHeader.ofGenesisAncestor(genesisLedgerHeader);
 		return new VerifiedLedgerHeaderAndProof(
 			header,
@@ -132,6 +134,10 @@ public final class VerifiedLedgerHeaderAndProof {
 
 	public LedgerHeader getRaw() {
 		return ledgerHeader;
+	}
+
+	public Optional<BFTValidatorSet> getNextValidatorSet() {
+		return ledgerHeader.getNextValidatorSet();
 	}
 
 	public long getEpoch() {

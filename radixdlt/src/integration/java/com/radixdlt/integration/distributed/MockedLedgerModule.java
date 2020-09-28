@@ -48,7 +48,7 @@ public class MockedLedgerModule extends AbstractModule {
 					vertex.getView(),
 					vertex.getParentHeader().getLedgerHeader().getAccumulatorState(),
 					0L,
-					false
+					null
 				);
 			}
 

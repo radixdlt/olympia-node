@@ -34,7 +34,7 @@ public class UnverifiedVertexSerializeTest extends SerializeObject<UnverifiedVer
 
 	private static UnverifiedVertex get() {
 		View view = View.of(1234567891L);
-		LedgerHeader ledgerHeader = LedgerHeader.genesis(Hash.ZERO_HASH);
+		LedgerHeader ledgerHeader = LedgerHeader.genesis(Hash.ZERO_HASH, null);
 		BFTHeader header = new BFTHeader(view, Hash.random(), ledgerHeader);
 		BFTHeader parent = new BFTHeader(View.of(1234567890L), Hash.random(), ledgerHeader);
 		VoteData voteData = new VoteData(header, parent, null);

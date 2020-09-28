@@ -30,12 +30,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.BFTHeader;
+import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
@@ -167,7 +169,9 @@ public class StateComputerLedgerTest {
 		when(parent.getLedgerHeader()).thenReturn(ledgerHeader);
 		when(vertex.getParentHeader()).thenReturn(parent);
 
-		when(stateComputer.prepare(eq(ImmutableList.of()), eq(view))).thenReturn(Optional.of(mock(BFTValidatorSet.class)));
+		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
+		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of(mock(BFTValidator.class)));
+		when(stateComputer.prepare(eq(ImmutableList.of()), eq(view))).thenReturn(Optional.of(validatorSet));
 		when(accumulatorVerifier.verifyAndGetExtension(any(), any(), any())).thenReturn(Optional.of(ImmutableList.of()));
 
 		LinkedList<VerifiedVertex> vertexChain = new LinkedList<>();

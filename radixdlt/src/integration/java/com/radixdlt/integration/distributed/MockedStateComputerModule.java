@@ -43,7 +43,7 @@ public class MockedStateComputerModule extends AbstractModule {
 			View.genesis(),
 			proof.getAccumulatorState(),
 			proof.timestamp(),
-			false
+			null
 		);
 		UnverifiedVertex genesis = UnverifiedVertex.createGenesis(nextLedgerHeader);
 		VerifiedVertex verifiedGenesis = new VerifiedVertex(genesis, Hash.ZERO_HASH);
@@ -52,8 +52,8 @@ public class MockedStateComputerModule extends AbstractModule {
 	}
 
 	@Provides
-	private VerifiedLedgerHeaderAndProof genesisMetadata() {
-		return VerifiedLedgerHeaderAndProof.genesis(Hash.ZERO_HASH);
+	private VerifiedLedgerHeaderAndProof genesisMetadata(BFTValidatorSet validatorSet) {
+		return VerifiedLedgerHeaderAndProof.genesis(Hash.ZERO_HASH, validatorSet);
 	}
 
 	@Provides

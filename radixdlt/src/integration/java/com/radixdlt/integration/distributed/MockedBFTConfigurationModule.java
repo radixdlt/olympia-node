@@ -44,13 +44,13 @@ public class MockedBFTConfigurationModule extends AbstractModule {
 
 	@Provides
 	BFTConfiguration config(BFTValidatorSet validatorSet) {
-		UnverifiedVertex genesis = UnverifiedVertex.createGenesis(LedgerHeader.genesis(genesisHash));
+		UnverifiedVertex genesis = UnverifiedVertex.createGenesis(LedgerHeader.genesis(genesisHash, validatorSet));
 		VerifiedVertex hashedGenesis = new VerifiedVertex(genesis, genesisHash);
 
 		return new BFTConfiguration(
 			validatorSet,
 			hashedGenesis,
-			QuorumCertificate.ofGenesis(hashedGenesis, LedgerHeader.genesis(genesisHash))
+			QuorumCertificate.ofGenesis(hashedGenesis, LedgerHeader.genesis(genesisHash, null))
 		);
 	}
 }
