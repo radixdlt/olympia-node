@@ -38,6 +38,8 @@ public class GenerateUniversesTest {
 		try (Capture stdOut = Capture.forOut();
 			 Capture stdErr = Capture.forErr()) {
 			GenerateUniverses.main(strings("-d", "-j"));
+			stdOut.toString();
+			stdErr.toString();
 		}
 	}
 
