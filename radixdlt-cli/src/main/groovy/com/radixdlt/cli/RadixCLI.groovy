@@ -33,7 +33,7 @@ import picocli.CommandLine.Command
                 SendMessage.class, GetDetails.class,
                 GetStoredAtoms.class, CreateAndMintToken.class,
                 RegisterValidator.class, UnregisterValidator.class,
-                ShowValidatorConfig.class
+                ShowValidatorConfig.class, ValidatorKeyGenerator.class
         ])
 class RadixCLI implements Runnable {
 

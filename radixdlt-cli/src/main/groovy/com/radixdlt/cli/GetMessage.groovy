@@ -24,6 +24,14 @@ package com.radixdlt.cli
 import com.radixdlt.client.application.RadixApplicationAPI
 import picocli.CommandLine
 
+/**
+ * This command shows all messages received so far
+ * <br>
+ * Usage:
+ * <pre>
+ *  $ radixdlt-cli get-messages [-k=<keystore name>] [-p=<keystore password>]
+ * </pre>
+ */
 @CommandLine.Command(name = "get-messages", mixinStandardHelpOptions = true,
         description = "get all the messages")
 class GetMessage implements Runnable {
@@ -35,8 +43,11 @@ class GetMessage implements Runnable {
     void run() {
 
         RadixApplicationAPI api = Utils.getAPI(identityInfo)
+        println "Retrieving messages..."
         api.pull()
-        api.observeMessages().blockingSubscribe({ it -> println it })
+        println "Messages:"
+        api.observeMessages().blockingSubscribe(it -> println "  ${it}")
+        println "Done"
     }
 
 }
