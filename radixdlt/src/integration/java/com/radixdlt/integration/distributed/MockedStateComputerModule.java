@@ -65,8 +65,7 @@ public class MockedStateComputerModule extends AbstractModule {
 			}
 
 			@Override
-			public Optional<BFTValidatorSet> commit(VerifiedCommandsAndProof command) {
-				return Optional.empty();
+			public void commit(VerifiedCommandsAndProof command) {
 			}
 		};
 	}

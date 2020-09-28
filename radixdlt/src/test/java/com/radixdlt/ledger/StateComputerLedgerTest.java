@@ -120,10 +120,13 @@ public class StateComputerLedgerTest {
 
 		LinkedList<VerifiedVertex> vertexChain = new LinkedList<>();
 		vertexChain.addFirst(vertex);
-		LedgerHeader nextPrepared = stateComputerLedger.prepare(vertexChain);
+		Optional<LedgerHeader> nextPrepared = stateComputerLedger.prepare(vertexChain);
 
-		assertThat(nextPrepared.isEndOfEpoch()).isFalse();
-		assertThat(nextPrepared.getAccumulatorState().getStateVersion()).isEqualTo(12345L);
+		assertThat(nextPrepared).isNotEmpty();
+		assertThat(nextPrepared)
+			.hasValueSatisfying(l -> assertThat(l.isEndOfEpoch()).isFalse());
+		assertThat(nextPrepared)
+			.hasValueSatisfying(l -> assertThat(l.getAccumulatorState().getStateVersion()).isEqualTo(12345L));
 	}
 
 	@Test
@@ -145,10 +148,13 @@ public class StateComputerLedgerTest {
 
 		LinkedList<VerifiedVertex> vertexChain = new LinkedList<>();
 		vertexChain.addFirst(vertex);
-		LedgerHeader nextPrepared = stateComputerLedger.prepare(vertexChain);
+		Optional<LedgerHeader> nextPrepared = stateComputerLedger.prepare(vertexChain);
 
-		assertThat(nextPrepared.isEndOfEpoch()).isFalse();
-		assertThat(nextPrepared.getAccumulatorState().getStateVersion()).isEqualTo(12345L);
+		assertThat(nextPrepared).isNotEmpty();
+		assertThat(nextPrepared)
+			.hasValueSatisfying(l -> assertThat(l.isEndOfEpoch()).isFalse());
+		assertThat(nextPrepared)
+			.hasValueSatisfying(l -> assertThat(l.getAccumulatorState().getStateVersion()).isEqualTo(12345L));
 	}
 
 	@Test
@@ -176,10 +182,13 @@ public class StateComputerLedgerTest {
 
 		LinkedList<VerifiedVertex> vertexChain = new LinkedList<>();
 		vertexChain.addFirst(vertex);
-		LedgerHeader nextPrepared = stateComputerLedger.prepare(vertexChain);
+		Optional<LedgerHeader> nextPrepared = stateComputerLedger.prepare(vertexChain);
 
-		assertThat(nextPrepared.isEndOfEpoch()).isTrue();
-		assertThat(nextPrepared.getAccumulatorState().getStateVersion()).isEqualTo(12345L);
+		assertThat(nextPrepared).isNotEmpty();
+		assertThat(nextPrepared)
+			.hasValueSatisfying(l -> assertThat(l.isEndOfEpoch()).isTrue());
+		assertThat(nextPrepared)
+			.hasValueSatisfying(l -> assertThat(l.getAccumulatorState().getStateVersion()).isEqualTo(12345L));
 	}
 
 	@Test
@@ -207,10 +216,13 @@ public class StateComputerLedgerTest {
 
 		LinkedList<VerifiedVertex> vertexChain = new LinkedList<>();
 		vertexChain.addFirst(vertex);
-		LedgerHeader nextPrepared = stateComputerLedger.prepare(vertexChain);
+		Optional<LedgerHeader> nextPrepared = stateComputerLedger.prepare(vertexChain);
 
-		assertThat(nextPrepared.isEndOfEpoch()).isFalse();
-		assertThat(nextPrepared.getAccumulatorState().getStateVersion()).isEqualTo(12346L);
+		assertThat(nextPrepared).isNotEmpty();
+		assertThat(nextPrepared)
+			.hasValueSatisfying(l -> assertThat(l.isEndOfEpoch()).isFalse());
+		assertThat(nextPrepared)
+			.hasValueSatisfying(l -> assertThat(l.getAccumulatorState().getStateVersion()).isEqualTo(12346L));
 	}
 
 	@Test

@@ -28,6 +28,7 @@ import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.consensus.LedgerHeader;
 import java.util.LinkedList;
+import java.util.Optional;
 
 public class MockedLedgerModule extends AbstractModule {
 	@Override
@@ -41,15 +42,17 @@ public class MockedLedgerModule extends AbstractModule {
 	Ledger syncedLedger() {
 		return new Ledger() {
 			@Override
-			public LedgerHeader prepare(LinkedList<VerifiedVertex> vertices) {
+			public Optional<LedgerHeader> prepare(LinkedList<VerifiedVertex> vertices) {
 				VerifiedVertex vertex = vertices.getLast();
-				return LedgerHeader.create(
+				LedgerHeader ledgerHeader = LedgerHeader.create(
 					vertex.getParentHeader().getLedgerHeader().getEpoch(),
 					vertex.getView(),
 					vertex.getParentHeader().getLedgerHeader().getAccumulatorState(),
 					0L,
 					null
 				);
+
+				return Optional.of(ledgerHeader);
 			}
 
 			@Override

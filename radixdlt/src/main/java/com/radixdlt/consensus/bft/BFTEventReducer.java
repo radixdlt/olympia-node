@@ -277,16 +277,18 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			return;
 		}
 
-		final BFTHeader header = vertexStore.insertVertex(proposedVertex);
-
 		final BFTNode currentLeader = this.proposerElection.getProposer(updatedView);
-		try {
-			final Vote vote = safetyRules.voteFor(proposedVertex, header, this.timeSupplier.currentTime(), proposal.getPayload());
-			log.trace("PROPOSAL: Sending VOTE to {}: {}", () -> currentLeader, () -> vote);
-			sender.sendVote(vote, currentLeader);
-		} catch (SafetyViolationException e) {
-			log.error(() -> new FormattedMessage("PROPOSAL: Rejected {}", proposedVertex), e);
-		}
+		final Optional<BFTHeader> maybeHeader = vertexStore.insertVertexAndPrepare(proposedVertex);
+		// The header may not be present if the ledger is ahead of consensus
+		maybeHeader.ifPresent(header -> {
+			try {
+				final Vote vote = safetyRules.voteFor(proposedVertex, header, this.timeSupplier.currentTime(), proposal.getPayload());
+				log.trace("PROPOSAL: Sending VOTE to {}: {}", () -> currentLeader, () -> vote);
+				sender.sendVote(vote, currentLeader);
+			} catch (SafetyViolationException e) {
+				log.error(() -> new FormattedMessage("PROPOSAL: Rejected {}", proposedVertex), e);
+			}
+		});
 
 		// If not currently leader or next leader, Proceed to next view
 		if (!Objects.equals(currentLeader, this.self)) {

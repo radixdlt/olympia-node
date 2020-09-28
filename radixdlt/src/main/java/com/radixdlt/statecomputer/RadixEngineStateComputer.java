@@ -24,6 +24,7 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.engine.RadixEngine.RadixEngineBranch;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
@@ -145,7 +146,7 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 
 	@Override
 	public Optional<BFTValidatorSet> prepare(ImmutableList<Command> uncommittedChain, View view) {
-		RadixEngine<LedgerAtom> transientBranch = this.radixEngine.transientBranch();
+		RadixEngineBranch<LedgerAtom> transientBranch = this.radixEngine.transientBranch();
 		for (Command command : uncommittedChain) {
 			ClientAtom clientAtom = mapCommand(command);
 			if (clientAtom != null) {
@@ -155,6 +156,8 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 				}
 			}
 		}
+
+		this.radixEngine.deleteBranches();
 
 		if (view.compareTo(epochChangeView) >= 0) {
 			RadixEngineValidatorSetBuilder validatorSetBuilder = transientBranch.getComputedState(RadixEngineValidatorSetBuilder.class);
@@ -201,20 +204,12 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 	}
 
 	@Override
-	public Optional<BFTValidatorSet> commit(VerifiedCommandsAndProof verifiedCommandsAndProof) {
+	public void commit(VerifiedCommandsAndProof verifiedCommandsAndProof) {
 		final VerifiedLedgerHeaderAndProof headerAndProof = verifiedCommandsAndProof.getHeader();
 		long stateVersion = headerAndProof.getAccumulatorState().getStateVersion();
 		long firstVersion = stateVersion - verifiedCommandsAndProof.getCommands().size() + 1;
 		for (int i = 0; i < verifiedCommandsAndProof.getCommands().size(); i++) {
 			this.commitCommand(firstVersion + i, verifiedCommandsAndProof.getCommands().get(i), headerAndProof);
 		}
-
-		if (headerAndProof.isEndOfEpoch()) {
-			this.epochProofs.put(headerAndProof.getEpoch() + 1, headerAndProof);
-			RadixEngineValidatorSetBuilder validatorSetBuilder = this.radixEngine.getComputedState(RadixEngineValidatorSetBuilder.class);
-			return Optional.of(validatorSetBuilder.build());
-		}
-
-		return Optional.empty();
 	}
 }

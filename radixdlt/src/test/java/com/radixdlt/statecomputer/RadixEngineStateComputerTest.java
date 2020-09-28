@@ -36,6 +36,7 @@ import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.engine.RadixEngine.RadixEngineBranch;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.ledger.AccumulatorState;
@@ -81,7 +82,7 @@ public class RadixEngineStateComputerTest {
 		VerifiedVertex vertex = mock(VerifiedVertex.class);
 		when(vertex.getView()).thenReturn(epochHighView);
 		RadixEngineValidatorSetBuilder builder = mock(RadixEngineValidatorSetBuilder.class);
-		RadixEngine<LedgerAtom> branch = TypedMocks.rmock(RadixEngine.class);
+		RadixEngineBranch<LedgerAtom> branch = TypedMocks.rmock(RadixEngine.class);
 		when(radixEngine.transientBranch()).thenReturn(branch);
 		when(branch.getComputedState(any())).thenReturn(builder);
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
@@ -166,11 +167,11 @@ public class RadixEngineStateComputerTest {
 		when(proof.getAccumulatorState()).thenReturn(accumulatorState1);
 		when(proof.isEndOfEpoch()).thenReturn(false);
 
-		VerifiedCommandsAndProof command = mock(VerifiedCommandsAndProof.class);
-		when(command.getHeader()).thenReturn(proof);
-		when(command.getCommands()).thenReturn(ImmutableList.of(cmd));
+		VerifiedCommandsAndProof commandsAndProof = mock(VerifiedCommandsAndProof.class);
+		when(commandsAndProof.getHeader()).thenReturn(proof);
+		when(commandsAndProof.getCommands()).thenReturn(ImmutableList.of(cmd));
 
-		assertThat(stateComputer.commit(command)).isEmpty();
+		stateComputer.commit(commandsAndProof);
 		DtoLedgerHeaderAndProof start = mock(DtoLedgerHeaderAndProof.class);
 		LedgerHeader ledgerHeader = mock(LedgerHeader.class);
 		AccumulatorState accumulatorState = mock(AccumulatorState.class);

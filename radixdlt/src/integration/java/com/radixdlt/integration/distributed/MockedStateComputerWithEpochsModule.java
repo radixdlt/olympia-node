@@ -89,12 +89,9 @@ public class MockedStateComputerWithEpochsModule extends AbstractModule {
 			}
 
 			@Override
-			public Optional<BFTValidatorSet> commit(VerifiedCommandsAndProof command) {
+			public void commit(VerifiedCommandsAndProof command) {
 				if (command.getHeader().isEndOfEpoch()) {
 					epoch = command.getHeader().getEpoch() + 1;
-					return Optional.of(validatorSetMapping.apply(epoch));
-				} else {
-					return Optional.empty();
 				}
 			}
 		};

@@ -46,7 +46,7 @@ import java.util.stream.Stream;
 public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	public interface StateComputer {
 		Optional<BFTValidatorSet> prepare(ImmutableList<Command> commands, View view);
-		Optional<BFTValidatorSet> commit(VerifiedCommandsAndProof verifiedCommandsAndProof);
+		void commit(VerifiedCommandsAndProof verifiedCommandsAndProof);
 	}
 
 	public interface LedgerUpdateSender {
@@ -92,7 +92,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	}
 
 	@Override
-	public LedgerHeader prepare(LinkedList<VerifiedVertex> vertices) {
+	public Optional<LedgerHeader> prepare(LinkedList<VerifiedVertex> vertices) {
 		final VerifiedVertex vertex = vertices.getLast();
 
 		AccumulatorState parentAccumulatorState = vertex.getParentHeader().getLedgerHeader().getAccumulatorState();
@@ -102,35 +102,43 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			.filter(Objects::nonNull)
 			.collect(ImmutableList.toImmutableList());
 
-		Optional<ImmutableList<Command>> prevCommandsMaybe = this.verifier.verifyAndGetExtension(
-			this.currentLedgerHeader.getAccumulatorState(),
-			prevCommands,
-			parentAccumulatorState
-		);
+		synchronized (lock) {
+			if (this.currentLedgerHeader.getStateVersion() > parentAccumulatorState.getStateVersion()) {
+				return Optional.empty();
+			}
 
-		ImmutableList<Command> uncommittedCommands = prevCommandsMaybe
-			.orElseThrow(() -> new IllegalStateException("Evidence of safety break."));
-		final LedgerHeader parent = vertex.getParentHeader().getLedgerHeader();
-		final AccumulatorState accumulatorState;
-		if (parent.isEndOfEpoch() || vertex.getCommand() == null) {
-			// Don't execute atom if in process of epoch change
-			accumulatorState = parent.getAccumulatorState();
-		} else {
-			accumulatorState = this.accumulator.accumulate(parent.getAccumulatorState(), vertex.getCommand());
-			uncommittedCommands = Streams.concat(uncommittedCommands.stream(), Stream.of(vertex.getCommand()))
-				.collect(ImmutableList.toImmutableList());
+			Optional<ImmutableList<Command>> prevCommandsMaybe = this.verifier.verifyAndGetExtension(
+				this.currentLedgerHeader.getAccumulatorState(),
+				prevCommands,
+				parentAccumulatorState
+			);
+
+			ImmutableList<Command> uncommittedCommands = prevCommandsMaybe
+				.orElseThrow(() -> new IllegalStateException("Evidence of safety break."));
+			final LedgerHeader parent = vertex.getParentHeader().getLedgerHeader();
+			final AccumulatorState accumulatorState;
+			if (parent.isEndOfEpoch() || vertex.getCommand() == null) {
+				// Don't execute atom if in process of epoch change
+				accumulatorState = parent.getAccumulatorState();
+			} else {
+				accumulatorState = this.accumulator.accumulate(parent.getAccumulatorState(), vertex.getCommand());
+				uncommittedCommands = Streams.concat(uncommittedCommands.stream(), Stream.of(vertex.getCommand()))
+					.collect(ImmutableList.toImmutableList());
+			}
+
+			Optional<BFTValidatorSet> nextValidatorSet = stateComputer.prepare(uncommittedCommands, vertex.getView());
+
+			final long timestamp = vertex.getQC().getTimestampedSignatures().weightedTimestamp();
+			LedgerHeader ledgerHeader = LedgerHeader.create(
+				parent.getEpoch(),
+				vertex.getView(),
+				accumulatorState,
+				timestamp,
+				nextValidatorSet.orElse(null)
+			);
+
+			return Optional.of(ledgerHeader);
 		}
-
-		Optional<BFTValidatorSet> nextValidatorSet = stateComputer.prepare(uncommittedCommands, vertex.getView());
-
-		final long timestamp = vertex.getQC().getTimestampedSignatures().weightedTimestamp();
-		return LedgerHeader.create(
-			parent.getEpoch(),
-			vertex.getView(),
-			accumulatorState,
-			timestamp,
-			nextValidatorSet.orElse(null)
-		);
 	}
 
 	@Override
@@ -161,14 +169,14 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			);
 
 			// persist
-			Optional<BFTValidatorSet> validatorSet = this.stateComputer.commit(commandsToStore);
+			this.stateComputer.commit(commandsToStore);
 
 			// TODO: move all of the following to post-persist event handling
 			this.currentLedgerHeader = nextHeader;
 			this.counters.set(CounterType.LEDGER_STATE_VERSION, this.currentLedgerHeader.getStateVersion());
 
 			verifiedExtension.get().forEach(cmd -> this.mempool.removeCommitted(cmd.getHash()));
-			BaseLedgerUpdate ledgerUpdate = new BaseLedgerUpdate(commandsToStore, validatorSet.orElse(null));
+			BaseLedgerUpdate ledgerUpdate = new BaseLedgerUpdate(commandsToStore, nextHeader.getNextValidatorSet().orElse(null));
 			ledgerUpdateSender.sendLedgerUpdate(ledgerUpdate);
 		}
 	}

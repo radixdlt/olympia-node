@@ -22,7 +22,6 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.BFTHeader;
-import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
@@ -169,7 +168,7 @@ public final class VertexStore {
 		return true;
 	}
 
-	public BFTHeader insertVertex(VerifiedVertex vertex) {
+	public void insertVertex(VerifiedVertex vertex) {
 		if (!vertices.containsKey(vertex.getParentId())) {
 			throw new MissingParentException(vertex.getParentId());
 		}
@@ -180,13 +179,23 @@ public final class VertexStore {
 		vertices.put(vertex.getId(), vertex);
 		updateVertexStoreSize();
 
-		LinkedList<VerifiedVertex> vertices = getPathFromRoot(vertex.getId());
-		LedgerHeader ledgerHeader = ledger.prepare(vertices);
-
-		BFTHeader bftHeader = new BFTHeader(vertex.getView(), vertex.getId(), ledgerHeader);
 		final BFTUpdate update = new BFTUpdate(vertex);
 		bftUpdateSender.sendBFTUpdate(update);
-		return bftHeader;
+	}
+
+	/**
+	 * Inserts a vertex and then attempts to create the next header.
+	 * If the ledger is ahead of the vertex store then returns an empty optional
+	 * otherwise an empty optional.
+	 *
+	 * @param vertex vertex to insert
+	 * @return a bft header if creation of next header is successful.
+	 */
+	public Optional<BFTHeader> insertVertexAndPrepare(VerifiedVertex vertex) {
+		this.insertVertex(vertex);
+		LinkedList<VerifiedVertex> vertices = getPathFromRoot(vertex.getId());
+		return ledger.prepare(vertices)
+			.map(ledgerHeader -> new BFTHeader(vertex.getView(), vertex.getId(), ledgerHeader));
 	}
 
 	/**

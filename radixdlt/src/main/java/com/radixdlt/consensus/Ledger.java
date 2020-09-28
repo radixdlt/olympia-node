@@ -20,6 +20,7 @@ package com.radixdlt.consensus;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import java.util.LinkedList;
+import java.util.Optional;
 
 /**
  * A distributed computer which manages the computed state in a BFT.
@@ -32,7 +33,7 @@ public interface Ledger {
 	 * @param vertices the vertex to compute
 	 * @return the results of executing the prepare stage
 	 */
-	LedgerHeader prepare(LinkedList<VerifiedVertex> vertices);
+	Optional<LedgerHeader> prepare(LinkedList<VerifiedVertex> vertices);
 
 	/**
 	 * Commit a command
