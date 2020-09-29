@@ -91,7 +91,7 @@ public final class SyncQueues {
 
 		public RequiresSyncConsensusEvent clearViewAndGetNext(View view) {
 			Iterator<RequiresSyncConsensusEvent> eventsIterator = queue.iterator();
-			while(eventsIterator.hasNext()) {
+			while (eventsIterator.hasNext()) {
 				RequiresSyncConsensusEvent event = eventsIterator.next();
 				if (event.getView().compareTo(view) <= 0) {
 					eventsIterator.remove();

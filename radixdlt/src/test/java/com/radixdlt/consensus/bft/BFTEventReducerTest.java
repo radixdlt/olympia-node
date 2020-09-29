@@ -137,16 +137,14 @@ public class BFTEventReducerTest {
 		when(pendingVotes.insertVote(eq(vote), eq(validatorSet))).thenReturn(Optional.of(qc));
 		when(vertexStoreSync.syncToQC(eq(qc), any(), any())).thenReturn(SyncResult.IN_PROGRESS);
 		reducer.processVote(vote);
-		verify(safetyRules, never()).process(any());
 		verify(pacemaker, never()).processQC(any(), any());
 
 		when(pacemaker.processQC(any(), any())).thenReturn(Optional.empty());
 		BFTUpdate update = mock(BFTUpdate.class);
 		VerifiedVertex v = mock(VerifiedVertex.class);
 		when(v.getId()).thenReturn(id);
-		//when(update.getInsertedVertex()).thenReturn(v);
+		when(update.getInsertedVertex()).thenReturn(v);
 		reducer.processBFTUpdate(update);
-		verify(safetyRules, never()).process(eq(qc));
 		verify(pacemaker, never()).processQC(eq(qc), any());
 	}
 
@@ -159,7 +157,6 @@ public class BFTEventReducerTest {
 		when(voteMessage.getVoteData()).thenReturn(voteData);
 
 		reducer.processVote(voteMessage);
-		verify(safetyRules, times(0)).process(any(QuorumCertificate.class));
 		verify(pacemaker, times(0)).processQC(any(), any());
 	}
 

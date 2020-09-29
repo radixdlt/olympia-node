@@ -526,7 +526,6 @@ public class SimulationTest {
 				}
 			}
 
-
 			ImmutableSet<SimulationNetworkActor> runners = this.runnableBuilder.build().stream()
 				.map(f -> f.apply(nodes))
 				.collect(ImmutableSet.toImmutableSet());
@@ -539,7 +538,6 @@ public class SimulationTest {
 						e -> e.getValue().apply(nodes)
 					)
 				);
-
 
 			return new SimulationTest(
 				nodes,

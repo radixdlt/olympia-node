@@ -30,7 +30,6 @@ import com.radixdlt.crypto.Hash;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.utils.Pair;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;

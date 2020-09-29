@@ -85,7 +85,9 @@ public class VertexStoreSyncTest {
 		BFTHeader header = mock(BFTHeader.class);
 		when(header.getView()).thenReturn(View.of(1));
 		when(qc.getProposed()).thenReturn(header);
-		when(vertexStore.addQC(eq(qc))).thenReturn(true);
+		Hash hash = mock(Hash.class);
+		when(header.getVertexId()).thenReturn(hash);
+		when(vertexStore.containsVertex(eq(hash))).thenReturn(true);
 
 		assertThat(vertexStoreSync.syncToQC(qc, vertexStore.getHighestCommittedQC(), null)).isEqualTo(SyncResult.SYNCED);
 	}

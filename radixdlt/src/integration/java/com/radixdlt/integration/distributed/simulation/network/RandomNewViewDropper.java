@@ -18,7 +18,6 @@
 package com.radixdlt.integration.distributed.simulation.network;
 
 import com.radixdlt.consensus.NewView;
-import com.radixdlt.consensus.Proposal;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.MessageInTransit;
 import java.util.Objects;
 import java.util.Random;

@@ -60,30 +60,6 @@ public final class SafetyRules {
 	}
 
 	/**
-	 * Process a QC.
-	 * @param qc The quorum certificate
-	 */
-	public void process(QuorumCertificate qc) {
-		final Builder safetyStateBuilder = this.state.toBuilder();
-
-		// prepare phase on qc's proposed vertex if there is a newer 1-chain
-		// keep highest 1-chain as the current "generic" QC
-		if (qc.getView().compareTo(this.state.getGenericView().orElse(View.of(0L))) > 0) {
-			safetyStateBuilder.qc(qc);
-		}
-
-		// pre-commit phase on consecutive qc's proposed vertex
-		if (qc.getParent() != null
-			&& qc.getParent().getView().compareTo(this.state.getLockedView()) > 0
-			&& qc.getParent().getView().next().equals(qc.getView())) {
-
-			safetyStateBuilder.lockedView(qc.getParent().getView());
-		}
-
-		this.state = safetyStateBuilder.build();
-	}
-
-	/**
 	 * Create a signed proposal from a vertex
 	 * @param proposedVertex vertex to sign
 	 * @param highestCommittedQC highest known committed QC
@@ -148,7 +124,6 @@ public final class SafetyRules {
 				"violates earlier vote at view %s", this.state.getLastVotedView()));
 		}
 
-		// ensure vertex respects locked QC
 		if (proposedVertex.getParentHeader().getView().compareTo(this.state.getLockedView()) < 0) {
 			throw new SafetyViolationException(proposedVertex, this.state, String.format(
 				"does not respect locked view %s", this.state.getLockedView()));
@@ -156,6 +131,10 @@ public final class SafetyRules {
 
 		Builder safetyStateBuilder = this.state.toBuilder();
 		safetyStateBuilder.lastVotedView(proposedVertex.getView());
+		// pre-commit phase on consecutive qc's proposed vertex
+		if (proposedVertex.getGrandParentHeader().getView().compareTo(this.state.getLockedView()) > 0) {
+			safetyStateBuilder.lockedView(proposedVertex.getGrandParentHeader().getView());
+		}
 
 		final VoteData voteData = constructVoteData(proposedVertex, proposedHeader);
 		final TimestampedVoteData timestampedVoteData = new TimestampedVoteData(voteData, timestamp);

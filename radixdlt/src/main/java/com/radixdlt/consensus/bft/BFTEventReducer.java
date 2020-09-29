@@ -176,9 +176,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private Optional<VerifiedLedgerHeaderAndProof> processQC(QuorumCertificate qc) {
 		this.vertexStore.addQC(qc);
 
-		// commit any newly committable vertices
-		this.safetyRules.process(qc);
-
 		// proceed to next view if pacemaker feels like it
 		// TODO: should we proceed even if end of epoch?
 		this.pacemaker.processQC(qc, this.vertexStore.getHighestCommittedQC())

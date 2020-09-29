@@ -89,6 +89,9 @@ public class SafetyRulesTest {
 		BFTHeader parent = mock(BFTHeader.class);
 		when(parent.getView()).thenReturn(View.of(0));
 		when(vertex.getParentHeader()).thenReturn(parent);
+		BFTHeader grandParent = mock(BFTHeader.class);
+		when(grandParent.getView()).thenReturn(mock(View.class));
+		when(vertex.getGrandParentHeader()).thenReturn(grandParent);
 		BFTHeader header = mock(BFTHeader.class);
 		Vote vote = safetyRules.voteFor(vertex, header, 0L, 0L);
 		assertThat(vote.getVoteData().getProposed()).isEqualTo(header);
@@ -109,6 +112,9 @@ public class SafetyRulesTest {
 		when(parent.getView()).thenReturn(View.of(1));
 		when(proposal.getParentHeader()).thenReturn(parent);
 		when(proposal.getView()).thenReturn(View.of(2));
+		BFTHeader grandParent = mock(BFTHeader.class);
+		when(grandParent.getView()).thenReturn(mock(View.class));
+		when(proposal.getGrandParentHeader()).thenReturn(grandParent);
 		Vote vote = safetyRules.voteFor(proposal, mock(BFTHeader.class), 0L, 0L);
 		assertThat(vote.getVoteData().getCommitted()).isEmpty();
 	}
@@ -124,6 +130,7 @@ public class SafetyRulesTest {
 		when(proposal.hasDirectParent()).thenReturn(true);
 		when(proposal.parentHasDirectParent()).thenReturn(true);
 		BFTHeader grandparentHeader = mock(BFTHeader.class);
+		when(grandparentHeader.getView()).thenReturn(mock(View.class));
 		when(proposal.getGrandParentHeader()).thenReturn(grandparentHeader);
 		BFTHeader parent = mock(BFTHeader.class);
 		when(parent.getView()).thenReturn(View.of(2));
@@ -148,6 +155,9 @@ public class SafetyRulesTest {
 		when(parent.getView()).thenReturn(View.of(2));
 		when(proposal.getParentHeader()).thenReturn(parent);
 		when(proposal.getView()).thenReturn(View.of(4));
+		BFTHeader grandParent = mock(BFTHeader.class);
+		when(grandParent.getView()).thenReturn(mock(View.class));
+		when(proposal.getGrandParentHeader()).thenReturn(grandParent);
 
 		Vote vote = safetyRules.voteFor(proposal, mock(BFTHeader.class), 0L, 0L);
 		assertThat(vote.getVoteData().getCommitted()).isEmpty();
