@@ -82,9 +82,7 @@ public class ECKeyUtils {
 		// Check if the currently installed version of BouncyCastle is the version
 		// we want. NOTE! That Android has a stripped down version of BouncyCastle
 		// by default.
-		if (currentBouncyCastleProvider == null
-				|| currentBouncyCastleProvider.getVersion() != requiredBouncyCastleProvider.getVersion()) {
-
+		if (isOfRequiredVersion(currentBouncyCastleProvider, requiredBouncyCastleProvider)) {
 			Security.insertProviderAt(requiredBouncyCastleProvider, 1);
 		}
 
@@ -95,6 +93,11 @@ public class ECKeyUtils {
 		spec = new ECParameterSpec(curve.getCurve(), curve.getG(), curve.getN(), curve.getH());
 		order = adjustArray(domain.getN().toByteArray(), ECKeyPair.BYTES);
 		FixedPointUtil.precompute(curve.getG());
+	}
+
+	private static boolean isOfRequiredVersion(Provider currentBouncyCastleProvider, Provider requiredBouncyCastleProvider) {
+		return currentBouncyCastleProvider == null
+				|| !currentBouncyCastleProvider.getVersionStr().equals(requiredBouncyCastleProvider.getVersionStr());
 	}
 
 	// Must be after secureRandom init
