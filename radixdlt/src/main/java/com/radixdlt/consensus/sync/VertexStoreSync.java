@@ -70,8 +70,8 @@ public final class VertexStoreSync implements BFTSyncResponseProcessor, BFTUpdat
 		private SyncStage syncStage;
 		private final LinkedList<VerifiedVertex> fetched = new LinkedList<>();
 
-		SyncState(Hash localSyncId, QuorumCertificate qc, QuorumCertificate committedQC, BFTNode author) {
-			this.localSyncId = localSyncId;
+		SyncState(QuorumCertificate qc, QuorumCertificate committedQC, BFTNode author) {
+			this.localSyncId = qc.getProposed().getVertexId();
 			Pair<BFTHeader, VerifiedLedgerHeaderAndProof> pair = committedQC.getCommittedAndLedgerStateProof()
 				.orElseThrow(() -> new IllegalStateException("committedQC must have a commit"));
 			this.committedHeader = pair.getFirst();
@@ -165,7 +165,7 @@ public final class VertexStoreSync implements BFTSyncResponseProcessor, BFTUpdat
 			throw new IllegalStateException("Syncing required but author wasn't provided.");
 		}
 
-		this.startSync(vertexId, qc, committedQC, author);
+		this.startSync(qc, committedQC, author);
 
 		return SyncResult.IN_PROGRESS;
 	}
@@ -187,9 +187,9 @@ public final class VertexStoreSync implements BFTSyncResponseProcessor, BFTUpdat
 		return false;
 	}
 
-	private void startSync(Hash vertexId, QuorumCertificate qc, QuorumCertificate committedQC, BFTNode author) {
-		final SyncState syncState = new SyncState(vertexId, qc, committedQC, author);
-		syncing.put(vertexId, syncState);
+	private void startSync(QuorumCertificate qc, QuorumCertificate committedQC, BFTNode author) {
+		final SyncState syncState = new SyncState(qc, committedQC, author);
+		syncing.put(syncState.localSyncId, syncState);
 		if (requiresLedgerSync(syncState)) {
 			this.doCommittedSync(syncState);
 		} else {

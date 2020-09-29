@@ -79,7 +79,6 @@ public final class ConsensusModule extends AbstractModule {
 	) {
 		return (
 			self,
-			endOfEpochSender,
 			pacemaker,
 			vertexStore,
 			vertexStoreSync,
@@ -96,7 +95,6 @@ public final class ConsensusModule extends AbstractModule {
 				.verifier(verifier)
 				.counters(counters)
 				.infoSender(bftInfoSender)
-				.endOfEpochSender(endOfEpochSender)
 				.pacemaker(pacemaker)
 				.vertexStore(vertexStore)
 				.bftSyncer(vertexStoreSync)
@@ -120,7 +118,6 @@ public final class ConsensusModule extends AbstractModule {
 	) {
 		return bftFactory.create(
 			self,
-			header -> { },
 			pacemaker,
 			vertexStore,
 			vertexStoreSync,

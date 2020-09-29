@@ -31,7 +31,6 @@ import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
-import com.radixdlt.consensus.bft.BFTEventReducer.EndOfEpochSender;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
@@ -46,7 +45,6 @@ import org.junit.Test;
 public class BFTBuilderTest {
 	private NextCommandGenerator nextCommandGenerator;
 	private BFTEventSender eventSender;
-	private EndOfEpochSender endOfEpochSender;
 	private SystemCounters counters;
 	private BFTInfoSender infoSender;
 	private BFTValidatorSet validatorSet;
@@ -63,7 +61,6 @@ public class BFTBuilderTest {
 	public void setup() {
 		nextCommandGenerator = mock(NextCommandGenerator.class);
 		eventSender = mock(BFTEventSender.class);
-		endOfEpochSender = mock(EndOfEpochSender.class);
 		counters = mock(SystemCounters.class);
 		validatorSet = mock(BFTValidatorSet.class);
 		proposerElection = mock(ProposerElection.class);
@@ -87,7 +84,6 @@ public class BFTBuilderTest {
 		BFTEventProcessor processor = BFTBuilder.create()
 			.nextCommandGenerator(nextCommandGenerator)
 			.eventSender(eventSender)
-			.endOfEpochSender(endOfEpochSender)
 			.counters(counters)
 			.infoSender(infoSender)
 			.timeSupplier(System::currentTimeMillis)

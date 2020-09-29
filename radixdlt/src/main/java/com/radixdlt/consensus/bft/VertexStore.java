@@ -240,6 +240,10 @@ public final class VertexStore {
 				commandsToCommitBuilder.add(committedVertex.getCommand());
 			}
 		}
+
+		// TODO: Stop vertex store if end of epoch?
+		// TODO: if (ledgerStateWithProof.isEndOfEpoch()) ...
+
 		VerifiedCommandsAndProof verifiedCommandsAndProof = new VerifiedCommandsAndProof(
 			commandsToCommitBuilder.build(), ledgerStateWithProof
 		);

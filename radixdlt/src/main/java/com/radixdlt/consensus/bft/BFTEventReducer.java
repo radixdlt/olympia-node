@@ -20,7 +20,6 @@ package com.radixdlt.consensus.bft;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.Hasher;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.Proposal;
@@ -38,7 +37,6 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.network.TimeSupplier;
-import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.RTTStatistics;
 
 import java.util.EnumMap;
@@ -112,7 +110,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private final PendingVotes pendingVotes;
 	private final NextCommandGenerator nextCommandGenerator;
 	private final BFTEventSender sender;
-	private final EndOfEpochSender endOfEpochSender;
 	private final Pacemaker pacemaker;
 	private final ProposerElection proposerElection;
 	private final SafetyRules safetyRules;
@@ -126,15 +123,10 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private boolean synchedLog = false;
 	private final Logger log = LogManager.getLogger();
 
-	public interface EndOfEpochSender {
-		void sendEndOfEpoch(VerifiedLedgerHeaderAndProof header);
-	}
-
 	public BFTEventReducer(
 		BFTNode self,
 		NextCommandGenerator nextCommandGenerator,
 		BFTEventSender sender,
-		EndOfEpochSender endOfEpochSender,
 		SafetyRules safetyRules,
 		Pacemaker pacemaker,
 		VertexStore vertexStore,
@@ -150,7 +142,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		this.self = Objects.requireNonNull(self);
 		this.nextCommandGenerator = Objects.requireNonNull(nextCommandGenerator);
 		this.sender = Objects.requireNonNull(sender);
-		this.endOfEpochSender = Objects.requireNonNull(endOfEpochSender);
 		this.safetyRules = Objects.requireNonNull(safetyRules);
 		this.pacemaker = Objects.requireNonNull(pacemaker);
 		this.vertexStore = Objects.requireNonNull(vertexStore);
@@ -173,15 +164,13 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		this.infoSender.sendCurrentView(nextView);
 	}
 
-	private Optional<VerifiedLedgerHeaderAndProof> processQC(QuorumCertificate qc) {
+	private void processQC(QuorumCertificate qc) {
 		this.vertexStore.addQC(qc);
 
 		// proceed to next view if pacemaker feels like it
 		// TODO: should we proceed even if end of epoch?
 		this.pacemaker.processQC(qc, this.vertexStore.getHighestCommittedQC())
 			.ifPresent(this::proceedToView);
-
-		return qc.getCommittedAndLedgerStateProof().map(Pair::getSecond);
 	}
 
 	@Override
@@ -216,11 +205,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 						log.debug("VOTE: QC Synced: {}", () -> qc);
 						synchedLog = true;
 					}
-					processQC(qc).ifPresent(committedProof -> {
-						if (committedProof.isEndOfEpoch()) {
-							this.endOfEpochSender.sendEndOfEpoch(committedProof);
-						}
-					});
+					processQC(qc);
 				// Fall through
 				case INVALID:
 					break;

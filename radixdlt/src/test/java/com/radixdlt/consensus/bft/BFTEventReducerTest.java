@@ -30,7 +30,6 @@ import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
-import com.radixdlt.consensus.bft.BFTEventReducer.EndOfEpochSender;
 import com.radixdlt.consensus.bft.BFTSyncer.SyncResult;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
@@ -63,7 +62,6 @@ public class BFTEventReducerTest {
 	private Pacemaker pacemaker;
 	private PendingVotes pendingVotes;
 	private BFTEventReducer.BFTEventSender sender;
-	private EndOfEpochSender endOfEpochSender;
 	private VertexStore vertexStore;
 	private VertexStoreSync vertexStoreSync;
 	private BFTValidatorSet validatorSet;
@@ -76,7 +74,6 @@ public class BFTEventReducerTest {
 	public void setUp() {
 		this.nextCommandGenerator = mock(NextCommandGenerator.class);
 		this.sender = mock(BFTEventReducer.BFTEventSender.class);
-		this.endOfEpochSender = mock(EndOfEpochSender.class);
 		this.safetyRules = mock(SafetyRules.class);
 		this.pacemaker = mock(Pacemaker.class);
 		this.vertexStore = mock(VertexStore.class);
@@ -95,7 +92,6 @@ public class BFTEventReducerTest {
 			self,
 			nextCommandGenerator,
 			sender,
-			endOfEpochSender,
 			safetyRules,
 			pacemaker,
 			vertexStore,

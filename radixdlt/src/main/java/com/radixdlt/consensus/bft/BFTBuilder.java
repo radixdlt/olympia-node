@@ -24,7 +24,6 @@ import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
-import com.radixdlt.consensus.bft.BFTEventReducer.EndOfEpochSender;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
@@ -41,7 +40,6 @@ public final class BFTBuilder {
 	// Connected modules
 	private NextCommandGenerator nextCommandGenerator;
 	private BFTEventSender eventSender;
-	private EndOfEpochSender endOfEpochSender;
 	private SystemCounters counters;
 	private TimeSupplier timeSupplier;
 
@@ -99,11 +97,6 @@ public final class BFTBuilder {
 		return this;
 	}
 
-	public BFTBuilder endOfEpochSender(EndOfEpochSender endOfEpochSender) {
-		this.endOfEpochSender = endOfEpochSender;
-		return this;
-	}
-
 	public BFTBuilder validatorSet(BFTValidatorSet validatorSet) {
 		this.validatorSet = validatorSet;
 		return this;
@@ -154,7 +147,6 @@ public final class BFTBuilder {
 			self,
 			nextCommandGenerator,
 			eventSender,
-			endOfEpochSender,
 			safetyRules,
 			pacemaker,
 			vertexStore,

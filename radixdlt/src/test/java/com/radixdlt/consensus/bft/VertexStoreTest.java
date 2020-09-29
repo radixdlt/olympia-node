@@ -19,10 +19,7 @@ package com.radixdlt.consensus.bft;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -79,7 +76,8 @@ public class VertexStoreTest {
 		this.vertexStore = new VertexStore(
 			genesisVertex,
 			rootQC,
-			ledger, bftUpdateSender,
+			ledger,
+			bftUpdateSender,
 			vertexStoreEventSender,
 			counters
 		);
@@ -134,7 +132,8 @@ public class VertexStoreTest {
 			new VertexStore(
 				genesisVertex,
 				badRootQC,
-				ledger, bftUpdateSender,
+				ledger,
+				bftUpdateSender,
 				vertexStoreEventSender,
 				counters
 			)
@@ -148,7 +147,8 @@ public class VertexStoreTest {
 			genesisVertex,
 			rootQC,
 			Collections.singletonList(nextVertex),
-			ledger, bftUpdateSender,
+			ledger,
+			bftUpdateSender,
 			vertexStoreEventSender,
 			counters
 		);
@@ -163,7 +163,8 @@ public class VertexStoreTest {
 				genesisVertex,
 				rootQC,
 				Collections.singletonList(this.nextVertex.apply(mock(Hash.class))),
-				ledger, bftUpdateSender,
+				ledger,
+				bftUpdateSender,
 				vertexStoreEventSender,
 				counters
 			)

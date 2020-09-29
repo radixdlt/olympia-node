@@ -242,7 +242,6 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 					}
 				}
 			}
-			//queues.clear();
 			//bftSyncer.clearSyncs();
 		}
 	}

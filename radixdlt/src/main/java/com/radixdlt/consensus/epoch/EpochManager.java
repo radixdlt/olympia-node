@@ -129,7 +129,6 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdatePro
 	private final EpochInfoSender epochInfoSender;
 	private final SyncLedgerRequestSender syncRequestSender;
 
-	private VerifiedLedgerHeaderAndProof lastConstructed = null;
 	private EpochChange currentEpoch;
 	private int numQueuedConsensusEvents = 0;
 
@@ -222,7 +221,6 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdatePro
 
 		this.bftEventProcessor = bftFactory.create(
 			self,
-			this::processEndOfEpoch,
 			pacemaker,
 			vertexStore,
 			vertexStoreSync,
@@ -250,15 +248,11 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdatePro
 
 	private void processEpochChange(EpochChange epochChange) {
 		// Sanity check
-		if (epochChange.getEpoch() <= this.currentEpoch()) {
-			throw new IllegalStateException("Epoch change has already occurred: " + epochChange);
+		if (epochChange.getEpoch() != this.currentEpoch() + 1) {
+			throw new IllegalStateException("Bad Epoch change: " + epochChange + " current epoch: " + this.currentEpoch);
 		}
 
-		log.trace("{}: EPOCH_CHANGE: {}", this.self, epochChange);
-
-		// If constructed the end of the previous epoch then broadcast new epoch to new validator set
-		// TODO: Move this into when lastConstructed is set
-		if (lastConstructed != null && lastConstructed.getEpoch() == epochChange.getEpoch() - 1) {
+		if (this.currentEpoch.getBFTConfiguration().getValidatorSet().containsNode(this.self)) {
 			log.info("{}: EPOCH_CHANGE: broadcasting next epoch", this.self);
 			BFTValidatorSet validatorSet = epochChange.getBFTConfiguration().getValidatorSet();
 			for (BFTValidator validator : validatorSet.getValidators()) {
@@ -267,6 +261,8 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdatePro
 				}
 			}
 		}
+
+		log.trace("{}: EPOCH_CHANGE: {}", this.self, epochChange);
 
 		this.currentEpoch = epochChange;
 		this.updateEpochState();
@@ -311,17 +307,6 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdatePro
 		msg.append(v.getNode().getSimpleName()).append(':').append(v.getPower());
 	}
 
-	private void processEndOfEpoch(VerifiedLedgerHeaderAndProof ledgerState) {
-		log.trace("{}: END_OF_EPOCH: {}", this.self, ledgerState);
-		if (this.lastConstructed == null || this.lastConstructed.getEpoch() < ledgerState.getEpoch()) {
-			this.lastConstructed = ledgerState;
-
-			// Stop processing new events if end of epoch
-			// but keep VertexStore alive to help others in vertex syncing
-			this.bftEventProcessor = EmptyBFTEventProcessor.INSTANCE;
-		}
-	}
-
 	public void processGetEpochRequest(GetEpochRequest request) {
 		log.trace("{}: GET_EPOCH_REQUEST: {}", this.self, request);
 
@@ -350,7 +335,9 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdatePro
 		if (ancestor.getEpoch() >= this.currentEpoch()) {
 			syncRequestSender.sendLocalSyncRequest(new LocalSyncRequest(ancestor, ImmutableList.of(response.getAuthor())));
 		} else {
-			log.info("{}: Ignoring old epoch {}", this.self, response);
+			if (ancestor.getEpoch() + 1 < this.currentEpoch()) {
+				log.info("{}: Ignoring old epoch {} current {}", this.self, response, this.currentEpoch);
+			}
 		}
 	}
 

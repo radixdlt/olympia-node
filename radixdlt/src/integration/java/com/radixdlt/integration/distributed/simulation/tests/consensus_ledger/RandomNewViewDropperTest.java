@@ -33,7 +33,7 @@ import org.junit.Test;
  * Dropping random new-views and proposals should cause consensus to fork quite a bit.
  * This is to test that safety should always be preserved even in multiple forking situations.
  */
-public class RandomNewViewAndProposalDropperTest {
+public class RandomNewViewDropperTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(4)
 		.ledger()
