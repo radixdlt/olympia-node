@@ -36,13 +36,13 @@ import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyViolationException;
+import com.radixdlt.consensus.sync.VertexStoreSync;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
 import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mockito;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -64,6 +64,7 @@ public class BFTEventReducerTest {
 	private BFTEventReducer.BFTEventSender sender;
 	private EndOfEpochSender endOfEpochSender;
 	private VertexStore vertexStore;
+	private VertexStoreSync vertexStoreSync;
 	private BFTValidatorSet validatorSet;
 	private SystemCounters counters;
 	private BFTInfoSender infoSender;
@@ -78,6 +79,7 @@ public class BFTEventReducerTest {
 		this.safetyRules = mock(SafetyRules.class);
 		this.pacemaker = mock(Pacemaker.class);
 		this.vertexStore = mock(VertexStore.class);
+		this.vertexStoreSync = mock(VertexStoreSync.class);
 		this.pendingVotes = mock(PendingVotes.class);
 		this.proposerElection = mock(ProposerElection.class);
 		this.validatorSet = mock(BFTValidatorSet.class);
@@ -96,6 +98,7 @@ public class BFTEventReducerTest {
 			safetyRules,
 			pacemaker,
 			vertexStore,
+			vertexStoreSync,
 			pendingVotes,
 			proposerElection,
 			validatorSet,
@@ -113,21 +116,14 @@ public class BFTEventReducerTest {
 		when(qc.getView()).thenReturn(view);
 		when(proposerElection.getProposer(any())).thenReturn(self);
 		when(vertexStore.getHighestQC()).thenReturn(qc);
-		when(pacemaker.processQC(eq(view))).thenReturn(Optional.of(mock(View.class)));
+		when(pacemaker.processQC(eq(qc))).thenReturn(Optional.of(mock(View.class)));
 		reducer.start();
-		verify(pacemaker, times(1)).processQC(eq(view));
+		verify(pacemaker, times(1)).processQC(eq(qc));
 		verify(sender, times(1)).sendNewView(any(), any());
 	}
 
 	@Test
-	public void when_processing_local_sync__then_should_process_it_via_vertex_store() {
-		Hash vertexId = mock(Hash.class);
-		reducer.processLocalSync(vertexId);
-		verify(vertexStore, times(1)).processLocalSync(eq(vertexId));
-	}
-
-	@Test
-	public void when_process_vote_and_new_qc_not_synced__then_local_sync_should_cause_it_to_process_it() {
+	public void when_process_vote_and_new_qc_not_synced__then_bft_update_should_cause_it_to_process_it() {
 		Vote vote = mock(Vote.class);
 		when(vote.getAuthor()).thenReturn(mock(BFTNode.class));
 		QuorumCertificate qc = mock(QuorumCertificate.class);
@@ -138,15 +134,19 @@ public class BFTEventReducerTest {
 		when(header.getVertexId()).thenReturn(id);
 		when(qc.getProposed()).thenReturn(header);
 		when(pendingVotes.insertVote(eq(vote), eq(validatorSet))).thenReturn(Optional.of(qc));
-		when(vertexStore.syncToQC(eq(qc), any(), any())).thenReturn(false);
+		when(vertexStoreSync.syncToQC(eq(qc), any(), any())).thenReturn(false);
 		reducer.processVote(vote);
 		verify(safetyRules, never()).process(any());
 		verify(pacemaker, never()).processQC(any());
 
 		when(pacemaker.processQC(any())).thenReturn(Optional.empty());
-		reducer.processLocalSync(id);
+		BFTUpdate update = mock(BFTUpdate.class);
+		VerifiedVertex v = mock(VerifiedVertex.class);
+		when(v.getId()).thenReturn(id);
+		when(update.getInsertedVertex()).thenReturn(v);
+		reducer.processBFTUpdate(update);
 		verify(safetyRules, never()).process(eq(qc));
-		verify(pacemaker, never()).processQC(eq(view));
+		verify(pacemaker, never()).processQC(eq(qc));
 	}
 
 	@Test
@@ -178,8 +178,8 @@ public class BFTEventReducerTest {
 		when(qc.getView()).thenReturn(view);
 		when(pendingVotes.insertVote(eq(vote), any())).thenReturn(Optional.of(qc));
 		when(pacemaker.getCurrentView()).thenReturn(mock(View.class));
-		when(pacemaker.processQC(eq(view))).thenReturn(Optional.of(mock(View.class)));
-		when(vertexStore.syncToQC(eq(qc), any(), any())).thenReturn(true);
+		when(pacemaker.processQC(eq(qc))).thenReturn(Optional.of(mock(View.class)));
+		when(vertexStoreSync.syncToQC(eq(qc), any(), any())).thenReturn(true);
 		when(vertexStore.getHighestQC()).thenReturn(mock(QuorumCertificate.class));
 
 		reducer.processVote(vote);
@@ -228,25 +228,6 @@ public class BFTEventReducerTest {
 	}
 
 	@Test
-	public void when_processing_invalid_proposal__then_atom_is_rejected() throws Exception {
-		View currentView = View.of(123);
-
-		UnverifiedVertex proposedVertex = mock(UnverifiedVertex.class);
-		when(proposedVertex.getCommand()).thenReturn(mock(Command.class));
-		when(proposedVertex.getQC()).thenReturn(mock(QuorumCertificate.class));
-		when(proposedVertex.getView()).thenReturn(currentView);
-
-		Proposal proposal = mock(Proposal.class);
-		when(proposal.getVertex()).thenReturn(proposedVertex);
-
-		Mockito.doThrow(new VertexInsertionException("Test", mock(Exception.class)))
-			.when(vertexStore).insertVertex(any());
-		when(pacemaker.processQC(any())).thenReturn(Optional.empty());
-		when(pacemaker.getCurrentView()).thenReturn(currentView);
-		reducer.processProposal(proposal);
-	}
-
-	@Test
 	public void when_processing_valid_stored_proposal__then_atom_is_voted_on_and_new_view() throws SafetyViolationException {
 		View currentView = View.of(123);
 
@@ -266,8 +247,8 @@ public class BFTEventReducerTest {
 		when(pacemaker.getCurrentView()).thenReturn(currentView);
 		Vote vote = mock(Vote.class);
 		doReturn(vote).when(safetyRules).voteFor(any(), any(), anyLong(), anyLong());
-		when(pacemaker.processQC(eq(qcView))).thenReturn(Optional.empty());
-		when(pacemaker.processQC(eq(currentView))).thenReturn(Optional.of(View.of(124)));
+		when(pacemaker.processQC(eq(qc))).thenReturn(Optional.empty());
+		when(pacemaker.processNextView(eq(currentView))).thenReturn(Optional.of(View.of(124)));
 		when(vertexStore.getHighestQC()).thenReturn(mock(QuorumCertificate.class));
 
 		reducer.processProposal(proposal);
@@ -279,6 +260,8 @@ public class BFTEventReducerTest {
 	@Test
 	public void when_processing_valid_stored_proposal_and_next_leader__then_atom_is_voted_on_and_new_view() throws SafetyViolationException {
 		View currentView = View.of(123);
+		QuorumCertificate currentQC = mock(QuorumCertificate.class);
+		when(currentQC.getView()).thenReturn(currentView);
 
 		when(proposerElection.getProposer(eq(currentView))).thenReturn(mock(BFTNode.class));
 		when(proposerElection.getProposer(eq(currentView.next()))).thenReturn(self);
@@ -297,8 +280,8 @@ public class BFTEventReducerTest {
 		when(pacemaker.getCurrentView()).thenReturn(currentView);
 		Vote vote = mock(Vote.class);
 		doReturn(vote).when(safetyRules).voteFor(any(), any(), anyLong(), anyLong());
-		when(pacemaker.processQC(eq(qcView))).thenReturn(Optional.empty());
-		when(pacemaker.processQC(eq(currentView))).thenReturn(Optional.of(View.of(124)));
+		when(pacemaker.processQC(eq(qc))).thenReturn(Optional.empty());
+		when(pacemaker.processQC(eq(currentQC))).thenReturn(Optional.of(View.of(124)));
 
 		reducer.processProposal(proposal);
 
@@ -309,6 +292,8 @@ public class BFTEventReducerTest {
 	@Test
 	public void when_processing_valid_stored_proposal_and_leader__then_atom_is_voted_on_and_no_new_view() throws SafetyViolationException {
 		View currentView = View.of(123);
+		QuorumCertificate currentQC = mock(QuorumCertificate.class);
+		when(currentQC.getView()).thenReturn(currentView);
 
 		when(proposerElection.getProposer(eq(currentView))).thenReturn(self);
 
@@ -326,8 +311,8 @@ public class BFTEventReducerTest {
 		when(pacemaker.getCurrentView()).thenReturn(currentView);
 		Vote vote = mock(Vote.class);
 		doReturn(vote).when(safetyRules).voteFor(any(), any(), anyLong(), anyLong());
-		when(pacemaker.processQC(eq(qcView))).thenReturn(Optional.empty());
-		when(pacemaker.processQC(eq(currentView))).thenReturn(Optional.of(View.of(124)));
+		when(pacemaker.processQC(eq(qc))).thenReturn(Optional.empty());
+		when(pacemaker.processQC(eq(currentQC))).thenReturn(Optional.of(View.of(124)));
 
 		reducer.processProposal(proposal);
 

@@ -17,25 +17,25 @@
 
 package com.radixdlt.middleware2;
 
+import com.google.inject.name.Named;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.POW;
-import java.util.function.Supplier;
+import javax.inject.Inject;
 
 /**
  * Temporary (will be removing pow fees soon) class for computing pow spent in an atom
  */
 public final class PowFeeComputer {
-	private final Supplier<Universe> universeSupplier;
-	public PowFeeComputer(
-		Supplier<Universe> universeSupplier
-	) {
-		this.universeSupplier = universeSupplier;
+	private final int magic;
+
+	@Inject
+	public PowFeeComputer(@Named("magic") int magic) {
+		this.magic = magic;
 	}
 
 	public Hash computePowSpent(LedgerAtom ledgerAtom, long powNonce) {
 		final Hash powFeeHash = ledgerAtom.getPowFeeHash();
-		POW pow = new POW(universeSupplier.get().getMagic(), powFeeHash, powNonce);
+		POW pow = new POW(this.magic, powFeeHash, powNonce);
 		return pow.getHash();
 	}
 }

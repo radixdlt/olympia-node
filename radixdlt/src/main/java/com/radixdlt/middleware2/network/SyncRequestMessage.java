@@ -18,6 +18,7 @@
 package com.radixdlt.middleware2.network;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
@@ -29,27 +30,27 @@ import org.radix.network.messaging.Message;
 @SerializerId2("message.sync.request")
 public final class SyncRequestMessage extends Message {
 
-	@JsonProperty("stateVersion")
+	@JsonProperty("currentHeader")
 	@DsonOutput(Output.ALL)
-	private final long stateVersion;
+	private final DtoLedgerHeaderAndProof currentHeader;
 
 	SyncRequestMessage() {
 		// Serializer only
 		super(0);
-		this.stateVersion = 0;
+		this.currentHeader = null;
 	}
 
-	public SyncRequestMessage(int magic, long stateVersion) {
+	public SyncRequestMessage(int magic, DtoLedgerHeaderAndProof currentHeader) {
 		super(magic);
-		this.stateVersion = stateVersion;
+		this.currentHeader = currentHeader;
 	}
 
-	public long getStateVersion() {
-		return stateVersion;
+	public DtoLedgerHeaderAndProof getCurrentHeader() {
+		return currentHeader;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{stateVersion=%s}", getClass().getSimpleName(), stateVersion);
+		return String.format("%s{current=%s}", getClass().getSimpleName(), currentHeader);
 	}
 }

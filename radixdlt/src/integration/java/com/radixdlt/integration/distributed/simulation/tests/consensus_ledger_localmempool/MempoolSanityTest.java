@@ -19,11 +19,12 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_l
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
+import com.google.inject.AbstractModule;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
-import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
-import java.util.Map;
-import java.util.Optional;
+import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
+import com.radixdlt.mempool.EmptyMempool;
+import com.radixdlt.mempool.Mempool;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
@@ -34,11 +35,12 @@ import org.junit.Test;
 public class MempoolSanityTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(4)
+		.ledgerAndMempool()
 		.checkConsensusSafety("safety")
 		.checkConsensusLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
 		.checkConsensusNoTimeouts("noTimeouts")
 		.checkConsensusAllProposalsHaveDirectParents("directParents")
-		.checkLedgerSyncedInOrder("syncedInOrder")
+		.checkLedgerInOrder("ledgerInOrder")
 		.checkLedgerProcessesConsensusCommitted("consensusToLedger")
 		.addMempoolSubmissionsSteadyState("mempool");
 
@@ -48,18 +50,24 @@ public class MempoolSanityTest {
 	@Test
 	public void when_submitting_items_to_null_mempool__then_test_should_fail() {
 		SimulationTest simulationTest = bftTestBuilder
-			.ledger()
+			.overrideWithIncorrectModule(new AbstractModule() {
+				@Override
+				protected void configure() {
+					bind(Mempool.class).to(EmptyMempool.class);
+				}
+			})
 			.build();
-		Map<String, Optional<TestInvariantError>> results = simulationTest.run(1, TimeUnit.MINUTES);
-		assertThat(results).hasEntrySatisfying("mempool", error -> assertThat(error).isPresent());
+
+		TestResults results = simulationTest.run();
+		assertThat(results.getCheckResults()).hasEntrySatisfying("mempool", error -> assertThat(error).isPresent());
 	}
 
 	@Test
 	public void when_submitting_items_to_mempool__then_they_should_get_executed() {
 		SimulationTest simulationTest = bftTestBuilder
-			.ledgerAndMempool()
 			.build();
-		Map<String, Optional<TestInvariantError>> results = simulationTest.run(1, TimeUnit.MINUTES);
-		assertThat(results).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+
+		TestResults results = simulationTest.run();
+		assertThat(results.getCheckResults()).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
 	}
 }

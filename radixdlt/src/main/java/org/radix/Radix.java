@@ -18,10 +18,11 @@
 package org.radix;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.ConsensusRunner;
+import com.google.inject.Key;
+import com.google.inject.TypeLiteral;
+import com.radixdlt.ModuleRunner;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
-import com.radixdlt.sync.SyncServiceRunner;
 import com.radixdlt.systeminfo.InMemorySystemInfoManager;
 import com.radixdlt.api.CommittedAtomsRx;
 import com.radixdlt.api.SubmissionErrorsRx;
@@ -37,6 +38,7 @@ import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Bytes;
 
+import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.commons.cli.ParseException;
@@ -44,7 +46,6 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.JSONObject;
 import org.radix.api.http.RadixHttpServer;
 import org.radix.database.DatabaseEnvironment;
-import org.radix.events.Events;
 import org.radix.time.Time;
 import org.radix.universe.UniverseValidator;
 import org.radix.universe.system.LocalSystem;
@@ -52,8 +53,6 @@ import org.radix.utils.IOUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.net.URISyntaxException;
 import java.security.Security;
 import java.util.Properties;
@@ -108,7 +107,7 @@ public final class Radix
 	private static final Object BC_LOCK = new Object();
 	private static boolean bcInitialised;
 
-	private static void setupBouncyCastle() throws ClassNotFoundException, IllegalAccessException {
+	private static void setupBouncyCastle() {
 		synchronized (BC_LOCK) {
 			if (bcInitialised) {
 				log.warn("Bouncy castle is already initialised");
@@ -116,24 +115,6 @@ public final class Radix
 			}
 
 			Security.insertProviderAt(new BouncyCastleProvider(), 1);
-			try {
-				Field isRestricted = Class.forName("javax.crypto.JceSecurity").getDeclaredField("isRestricted");
-
-				log.info("Encryption restrictions are set, need to override...");
-
-				if (Modifier.isFinal(isRestricted.getModifiers())) {
-					Field modifiers = Field.class.getDeclaredField("modifiers");
-					modifiers.setAccessible(true);
-					modifiers.setInt(isRestricted, isRestricted.getModifiers() & ~Modifier.FINAL);
-				}
-				isRestricted.setAccessible(true);
-				isRestricted.setBoolean(null, false);
-				isRestricted.setAccessible(false);
-				log.info("...override success!");
-			} catch (NoSuchFieldException nsfex) {
-				log.error("No such field - isRestricted");
-			}
-
 			bcInitialised = true;
 		}
 	}
@@ -169,9 +150,6 @@ public final class Radix
 		// set up time services
 		Time.start(properties);
 
-		// start events
-		Events.getInstance();
-
 		// start database environment
 		DatabaseEnvironment dbEnv = new DatabaseEnvironment(properties);
 
@@ -188,13 +166,15 @@ public final class Radix
 		// Start mempool receiver
 		globalInjector.getInjector().getInstance(MempoolReceiver.class).start();
 
-		SyncServiceRunner syncServiceRunner = globalInjector.getInjector().getInstance(SyncServiceRunner.class);
-		syncServiceRunner.start();
-
 		InMemorySystemInfoManager infoStateRunner = globalInjector.getInjector().getInstance(InMemorySystemInfoManager.class);
 		infoStateRunner.start();
 
-		final ConsensusRunner consensusRunner = globalInjector.getInjector().getInstance(ConsensusRunner.class);
+		final Map<String, ModuleRunner> moduleRunners = globalInjector.getInjector()
+			.getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() { }));
+		final ModuleRunner consensusRunner = moduleRunners.get("consensus");
+		final ModuleRunner syncRunner = moduleRunners.get("sync");
+		syncRunner.start();
+
 		// start API services
 		SubmissionControl submissionControl = globalInjector.getInjector().getInstance(SubmissionControl.class);
 		CommandToBinaryConverter commandToBinaryConverter = globalInjector.getInjector().getInstance(CommandToBinaryConverter.class);

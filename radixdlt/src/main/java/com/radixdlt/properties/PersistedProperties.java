@@ -144,6 +144,23 @@ public class PersistedProperties {
 	}
 
 	/**
+	 * Returns a property value as a {@code double}.
+	 *
+	 * @param key the property key
+	 * @param defaultValue the default value returned if no value is set
+	 * @return either the property value, or {@code defaultValue} if no value set
+	 */
+	public double get(String key, double defaultValue) {
+		String value = get(key);
+		try {
+			return value == null ? defaultValue : Double.parseDouble(value);
+		} catch (NumberFormatException ex) {
+			String msg = String.format("Exception while retrieving double value for %s: '%s'", key, value);
+			throw new IllegalArgumentException(msg, ex);
+		}
+	}
+
+	/**
 	 * Returns a property value as a {@code boolean}.
 	 * Note that the strings "true", ignoring case, and correctly formatted non-zero
 	 * integers are {@code true} values, all others are {@code false}.

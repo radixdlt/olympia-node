@@ -27,6 +27,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 import static org.hamcrest.Matchers.*;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 
@@ -76,14 +77,15 @@ public class PersistedPropertiesTest {
 		assertThat(this.properties.get("c"), is("c"));
 	}
 
-	@Test(expected = ParseException.class)
-	public void testLoadNoDefaultThrowsException() throws ParseException, IOException {
+	@Test
+	public void testLoadNoDefaultThrowsException() throws IOException {
 		final String testProperties = "notexist.properties";
 		Files.deleteIfExists(Paths.get(testProperties));
 		assertFalse(Files.exists(Paths.get(testProperties)));
 
-		this.properties.load(testProperties); // Should throw exception
-		fail();
+		assertThatThrownBy(() -> this.properties.load(testProperties))
+			.isInstanceOf(ParseException.class)
+			.hasMessageStartingWith("Can not find properties file");
 	}
 
 	@Test
@@ -91,6 +93,8 @@ public class PersistedPropertiesTest {
 		populateData();
 		assertEquals(12, this.properties.get("int.exist", -1));
 		assertEquals(-1, this.properties.get("int.notexist", -1));
+		assertThatThrownBy(() -> this.properties.get("string.exist", -1))
+			.isInstanceOf(IllegalArgumentException.class);
 	}
 
 	@Test
@@ -98,6 +102,17 @@ public class PersistedPropertiesTest {
 		populateData();
 		assertEquals(12L, this.properties.get("long.exist", -1L));
 		assertEquals(-1L, this.properties.get("int.notexist", -1L));
+		assertThatThrownBy(() -> this.properties.get("string.exist", -1L))
+			.isInstanceOf(IllegalArgumentException.class);
+	}
+
+	@Test
+	public void testGetDouble() {
+		populateData();
+		assertEquals(1.2, this.properties.get("double.exist", -1.0), Math.ulp(1.2));
+		assertEquals(-1.0, this.properties.get("double.notexist", -1.0), Math.ulp(1.0));
+		assertThatThrownBy(() -> this.properties.get("string.exist", -1.0))
+			.isInstanceOf(IllegalArgumentException.class);
 	}
 
 	@Test
@@ -131,6 +146,7 @@ public class PersistedPropertiesTest {
 	private void populateData() {
 		this.properties.set("int.exist", "12");
 		this.properties.set("long.exist", "12");
+		this.properties.set("double.exist", "1.2");
 		this.properties.set("bool.true", "true");
 		this.properties.set("bool.false", "false");
 		this.properties.set("bool.true1", "1");

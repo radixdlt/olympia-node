@@ -18,13 +18,15 @@
 package org.radix.api.jsonrpc;
 
 import com.google.common.io.CharStreams;
-import com.radixdlt.ConsensusRunner;
+import com.radixdlt.ModuleRunner;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
 import com.radixdlt.store.LedgerSearchMode;
 import com.radixdlt.middleware2.store.EngineAtomIndices;
 import com.radixdlt.network.addressbook.AddressBook;
+import com.radixdlt.network.addressbook.Peer;
+import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
@@ -45,6 +47,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Stateless Json Rpc 2.0 Server
@@ -72,10 +75,11 @@ public final class RadixJsonRpcServer {
 	private final AddressBook addressBook;
 	private final Universe universe;
 
-	private final ConsensusRunner consensusRunner;
+	private final ModuleRunner consensusRunner;
+	private final PeerWithSystem localPeer;
 
 	public RadixJsonRpcServer(
-		ConsensusRunner consensusRunner,
+		ModuleRunner consensusRunner,
 		Serialization serialization,
 		LedgerEntryStore ledger,
 		AtomsService atomsService,
@@ -87,7 +91,7 @@ public final class RadixJsonRpcServer {
 	}
 
 	public RadixJsonRpcServer(
-		ConsensusRunner consensusRunner,
+		ModuleRunner consensusRunner,
 		Serialization serialization,
 		LedgerEntryStore ledger,
 		AtomsService atomsService,
@@ -104,6 +108,8 @@ public final class RadixJsonRpcServer {
 		this.addressBook = Objects.requireNonNull(addressBook);
 		this.universe = Objects.requireNonNull(universe);
 		this.maxRequestSizeBytes = maxRequestSizeBytes;
+
+		this.localPeer = new PeerWithSystem(this.localSystem);
 	}
 
     /**
@@ -211,10 +217,10 @@ public final class RadixJsonRpcServer {
 					result = this.universe;
 					break;
                 case "Network.getLivePeers":
-                    result = this.addressBook.recentPeers().collect(Collectors.toList());
+                    result = selfAndOthers(this.addressBook.recentPeers()).collect(Collectors.toList());
                     break;
                 case "Network.getPeers":
-                    result = this.addressBook.peers().collect(Collectors.toList());
+                    result = selfAndOthers(this.addressBook.peers()).collect(Collectors.toList());
                     break;
                 case "Network.getInfo":
                     result = localSystem;
@@ -278,5 +284,9 @@ public final class RadixJsonRpcServer {
 				return JsonRpcUtil.errorResponse(id,-32000, e.getMessage());
 			}
 		}
+	}
+
+	private Stream<Peer> selfAndOthers(Stream<Peer> others) {
+		return Stream.concat(Stream.of(this.localPeer), others).distinct();
 	}
 }

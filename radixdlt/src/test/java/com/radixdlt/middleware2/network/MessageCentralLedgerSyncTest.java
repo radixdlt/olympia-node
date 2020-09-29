@@ -29,12 +29,14 @@ import static org.mockito.Mockito.when;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.EUID;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.network.addressbook.AddressBook;
-import com.radixdlt.sync.SyncRequest;
+import com.radixdlt.sync.RemoteSyncRequest;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageListener;
+import com.radixdlt.ledger.DtoCommandsAndProof;
+import com.radixdlt.sync.RemoteSyncResponse;
 import com.radixdlt.universe.Universe;
 import io.reactivex.rxjava3.observers.TestObserver;
 import java.util.Optional;
@@ -66,7 +68,7 @@ public class MessageCentralLedgerSyncTest {
 		Peer peer = mock(Peer.class);
 		when(peer.hasSystem()).thenReturn(true);
 		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
-		messageCentralLedgerSync.sendSyncRequest(node, 1);
+		messageCentralLedgerSync.sendSyncRequest(node, mock(DtoLedgerHeaderAndProof.class));
 		verify(messageCentral, times(1)).send(eq(peer), argThat(msg -> msg.getMagic() == 123));
 	}
 
@@ -79,7 +81,7 @@ public class MessageCentralLedgerSyncTest {
 		Peer peer = mock(Peer.class);
 		when(peer.hasSystem()).thenReturn(true);
 		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
-		messageCentralLedgerSync.sendSyncResponse(node, mock(VerifiedCommandsAndProof.class));
+		messageCentralLedgerSync.sendSyncResponse(node, mock(DtoCommandsAndProof.class));
 		verify(messageCentral, times(1)).send(eq(peer), argThat(msg -> msg.getMagic() == 123));
 	}
 
@@ -91,7 +93,7 @@ public class MessageCentralLedgerSyncTest {
 			return null;
 		}).when(messageCentral).addListener(eq(SyncRequestMessage.class), any());
 
-		TestObserver<SyncRequest> testObserver = this.messageCentralLedgerSync.syncRequests().test();
+		TestObserver<RemoteSyncRequest> testObserver = this.messageCentralLedgerSync.syncRequests().test();
 		Peer peer = mock(Peer.class);
 		when(peer.hasSystem()).thenReturn(true);
 		RadixSystem system = mock(RadixSystem.class);
@@ -100,11 +102,12 @@ public class MessageCentralLedgerSyncTest {
 		when(system.getKey()).thenReturn(key);
 		when(peer.getSystem()).thenReturn(system);
 		SyncRequestMessage syncRequestMessage = mock(SyncRequestMessage.class);
-		when(syncRequestMessage.getStateVersion()).thenReturn(12345L);
+		DtoLedgerHeaderAndProof header = mock(DtoLedgerHeaderAndProof.class);
+		when(syncRequestMessage.getCurrentHeader()).thenReturn(header);
 		messageListenerAtomicReference.get().handleMessage(peer, syncRequestMessage);
 		testObserver.awaitCount(1);
 		testObserver.assertValue(syncRequest ->
-			syncRequest.getStateVersion() == 12345L && syncRequest.getNode().getKey().equals(key)
+			syncRequest.getCurrentHeader().equals(header) && syncRequest.getNode().getKey().equals(key)
 		);
 	}
 
@@ -116,13 +119,19 @@ public class MessageCentralLedgerSyncTest {
 			return null;
 		}).when(messageCentral).addListener(eq(SyncResponseMessage.class), any());
 
-		TestObserver<VerifiedCommandsAndProof> testObserver = this.messageCentralLedgerSync.syncResponses().test();
+		TestObserver<RemoteSyncResponse> testObserver = this.messageCentralLedgerSync.syncResponses().test();
 		Peer peer = mock(Peer.class);
+		when(peer.hasSystem()).thenReturn(true);
+		RadixSystem system = mock(RadixSystem.class);
+		ECPublicKey key = mock(ECPublicKey.class);
+		when(key.euid()).thenReturn(EUID.ONE);
+		when(system.getKey()).thenReturn(key);
+		when(peer.getSystem()).thenReturn(system);
 		SyncResponseMessage syncResponseMessage = mock(SyncResponseMessage.class);
-		VerifiedCommandsAndProof commands = mock(VerifiedCommandsAndProof.class);
+		DtoCommandsAndProof commands = mock(DtoCommandsAndProof.class);
 		when(syncResponseMessage.getCommands()).thenReturn(commands);
 		messageListenerAtomicReference.get().handleMessage(peer, syncResponseMessage);
 		testObserver.awaitCount(1);
-		testObserver.assertValue(commands);
+		testObserver.assertValue(resp -> resp.getCommandsAndProof().equals(commands));
 	}
 }

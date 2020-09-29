@@ -48,7 +48,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 
 	private final BFTNode self;
 	private final BFTEventProcessor forwardTo;
-	private final VertexStore vertexStore;
+	private final BFTSyncer bftSyncer;
 	private final PacemakerState pacemakerState;
 	private final ProposerElection proposerElection;
 	private final SyncQueues queues;
@@ -57,13 +57,13 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		BFTNode self,
 		BFTEventProcessor forwardTo,
 		PacemakerState pacemakerState,
-		VertexStore vertexStore,
+		BFTSyncer bftSyncer,
 		ProposerElection proposerElection,
 		SyncQueues queues
 	) {
 		this.self = Objects.requireNonNull(self);
 		this.pacemakerState = Objects.requireNonNull(pacemakerState);
-		this.vertexStore = Objects.requireNonNull(vertexStore);
+		this.bftSyncer = Objects.requireNonNull(bftSyncer);
 		this.proposerElection = Objects.requireNonNull(proposerElection);
 		this.queues = queues;
 		this.forwardTo = forwardTo;
@@ -90,14 +90,10 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		throw new IllegalStateException("Unexpected consensus event: " + event);
 	}
 
-	/**
-	 * Signal that vertexStore now contains the given vertexId.
-	 * Executes events which are dependent on this vertex
-	 *
-	 * @param vertexId the id of the vertex which is now guaranteed be synced.
-	 */
 	@Override
-	public void processLocalSync(Hash vertexId) {
+	public void processBFTUpdate(BFTUpdate update) {
+		Hash vertexId = update.getInsertedVertex().getId();
+
 		log.trace("{}: LOCAL_SYNC: {}", this.self::getSimpleName, () -> vertexId);
 		for (SyncQueue queue : queues.getQueues()) {
 			if (peekAndExecute(queue, vertexId)) {
@@ -108,7 +104,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 			}
 		}
 
-		forwardTo.processLocalSync(vertexId);
+		forwardTo.processBFTUpdate(update);
 	}
 
 	@Override
@@ -146,7 +142,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 			return true;
 		}
 
-		if (this.vertexStore.syncToQC(newView.getQC(), newView.getCommittedQC(), newView.getAuthor())) {
+		if (this.bftSyncer.syncToQC(newView.getQC(), newView.getCommittedQC(), newView.getAuthor())) {
 			forwardTo.processNewView(newView);
 			return true;
 		} else {
@@ -156,12 +152,14 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 
 	@Override
 	public void processNewView(NewView newView) {
-		log.trace("{}: NEW_VIEW: Queueing {}", this.self::getSimpleName, () -> newView);
+		log.trace("{}: NEW_VIEW: Queueing {}", this.self, newView);
 		if (queues.isEmptyElseAdd(newView)) {
 			if (!processNewViewInternal(newView)) {
-				log.debug("{}: NEW_VIEW: Queuing {} Waiting for Sync", this.self::getSimpleName, () -> newView);
+				log.debug("{}: NEW_VIEW: Queuing {} Waiting for Sync", this.self, newView);
 				queues.add(newView);
 			}
+		} else {
+			log.trace("{}: NEW_VIEW added to queue", this.self);
 		}
 	}
 
@@ -176,7 +174,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 			return true;
 		}
 
-		if (this.vertexStore.syncToQC(proposal.getQC(), proposal.getCommittedQC(), proposal.getAuthor())) {
+		if (this.bftSyncer.syncToQC(proposal.getQC(), proposal.getCommittedQC(), proposal.getAuthor())) {
 			forwardTo.processProposal(proposal);
 			return true;
 		} else {
@@ -203,7 +201,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		if (!curView.equals(nextView)) {
 			log.debug("{}: LOCAL_TIMEOUT: Clearing Queues: {}", this.self::getSimpleName, () -> queues);
 			queues.clear();
-			vertexStore.clearSyncs();
+			bftSyncer.clearSyncs();
 		}
 	}
 

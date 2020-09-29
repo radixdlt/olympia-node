@@ -75,7 +75,7 @@ public class RadixEngineStoreModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private EngineStore<LedgerAtom> engineStore(CommittedAtomsStore committedAtomsStore) {
-		return new EngineStore<LedgerAtom>() {
+		return new EngineStore<>() {
 			@Override
 			public void storeAtom(LedgerAtom ledgerAtom) {
 				if (!(ledgerAtom instanceof CommittedAtom)) {
@@ -128,8 +128,7 @@ public class RadixEngineStoreModule extends AbstractModule {
 		LedgerHeader nextLedgerHeader = LedgerHeader.create(
 			proof.getEpoch() + 1,
 			View.genesis(),
-			proof.getStateVersion(),
-			proof.getCommandId(),
+			proof.getAccumulatorState(),
 			proof.timestamp(),
 			false
 		);

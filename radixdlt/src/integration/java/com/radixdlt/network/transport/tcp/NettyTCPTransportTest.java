@@ -18,11 +18,13 @@
 package com.radixdlt.network.transport.tcp;
 
 import java.io.IOException;
+import java.time.temporal.ChronoUnit;
 import java.util.LinkedList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -41,6 +43,8 @@ import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 public class NettyTCPTransportTest {
+	private static final int TEST_SECONDS =
+		(int) ((SimulationTest.getConfiguredDuration().get(ChronoUnit.SECONDS) + 1) / 2);
 
 	private NettyTCPTransport transport1;
 	private NettyTCPTransport transport2;
@@ -77,19 +81,19 @@ public class NettyTCPTransportTest {
 	@Test
 	public void testThroughputSmallPacket() throws InterruptedException, ExecutionException, IOException {
 		// Approximate size of AtomBroadcastMessage
-		testThroughput("Small", 112, 1000, 30);
+		testThroughput("Small", 112, 1000, TEST_SECONDS);
 	}
 
 	@Test
 	public void testThroughputMediumPacket() throws InterruptedException, ExecutionException, IOException {
 		// Approximate size of a basic test universe
-		testThroughput("Medium", 3600, 100, 30);
+		testThroughput("Medium", 3600, 100, TEST_SECONDS);
 	}
 
 	@Test
 	public void testThroughputLargePacket() throws InterruptedException, ExecutionException, IOException {
 		// Largest packet supported
-		testThroughput("Large", TCPConstants.MAX_PACKET_LENGTH, 4, 30);
+		testThroughput("Large", TCPConstants.MAX_PACKET_LENGTH, 4, TEST_SECONDS);
 	}
 
 	// Note that windowSize is to help us not wharrgarbl the O/S too much, as this just results in packets being dropped

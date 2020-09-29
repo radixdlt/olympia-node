@@ -18,6 +18,7 @@
 package com.radixdlt.consensus.liveness;
 
 import com.radixdlt.consensus.NewView;
+import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.bft.View;
 
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -36,10 +37,13 @@ public interface Pacemaker extends PacemakerState {
 
 	/**
 	 * Signifies to the pacemaker that a quorum has agreed that a view has been completed
-	 * @param view the view the quorum agreed to
+	 * @param qc the quorum certificate
 	 * @return optional with view, if the pacemaker changes views within the call
 	 */
-	Optional<View> processQC(View view);
+	Optional<View> processQC(QuorumCertificate qc);
+
+	// FIXME: Temporary
+	Optional<View> processNextView(View view);
 
 	/**
 	 * Adds a new view message to the pacemaker state

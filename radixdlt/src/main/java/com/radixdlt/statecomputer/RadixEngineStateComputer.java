@@ -27,6 +27,7 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.EUID;
+import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.middleware2.store.StoredCommittedCommand;
@@ -35,6 +36,7 @@ import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
+import com.radixdlt.sync.CommittedReader;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -45,7 +47,7 @@ import java.util.function.Consumer;
 /**
  * Wraps the Radix Engine and emits messages based on success or failure
  */
-public final class RadixEngineStateComputer implements StateComputer {
+public final class RadixEngineStateComputer implements StateComputer, CommittedReader {
 
 	// TODO: Refactor committed command when commit logic is re-written
 	// TODO: as currently it's mostly loosely coupled logic
@@ -67,6 +69,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private final CommittedAtomSender committedAtomSender;
 	private final Object lock = new Object();
 	private final TreeMap<Long, StoredCommittedCommand> unstoredCommittedAtoms = new TreeMap<>();
+	private final TreeMap<Long, VerifiedLedgerHeaderAndProof> epochProofs = new TreeMap<>();
 
 	public RadixEngineStateComputer(
 		Serialization serialization,
@@ -86,26 +89,50 @@ public final class RadixEngineStateComputer implements StateComputer {
 		this.committedAtomSender = Objects.requireNonNull(committedAtomSender);
 	}
 
+	public VerifiedLedgerHeaderAndProof getEpochProof(long epoch) {
+		return epochProofs.get(epoch);
+	}
+
 	// TODO Move this to a different class class when unstored committed atoms is fixed
-	public VerifiedCommandsAndProof getNextCommittedCommands(long stateVersion, int batchSize) throws NextCommittedLimitReachedException {
+	@Override
+	public VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start, int batchSize) {
+		if (start.getLedgerHeader().isEndOfEpoch()) {
+			long currentEpoch = start.getLedgerHeader().getEpoch() + 1;
+			long nextEpoch = currentEpoch + 1;
+			VerifiedLedgerHeaderAndProof nextEpochProof = epochProofs.get(nextEpoch);
+			if (nextEpochProof == null) {
+				return null;
+			}
+
+			return new VerifiedCommandsAndProof(ImmutableList.of(), nextEpochProof);
+		}
+
+		// TODO: verify start
+		long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
+
 		// TODO: This may still return an empty list as we still count state versions for atoms which
 		// TODO: never make it into the radix engine due to state errors. This is because we only check
 		// TODO: validity on commit rather than on proposal/prepare.
-		TreeMap<Long, StoredCommittedCommand> storedCommittedAtoms = committedCommandsReader
-			.getNextCommittedCommands(stateVersion, batchSize);
-		final VerifiedLedgerHeaderAndProof nextState;
+		final TreeMap<Long, StoredCommittedCommand> storedCommittedAtoms;
+		try {
+			storedCommittedAtoms = committedCommandsReader.getNextCommittedCommands(stateVersion, batchSize);
+		} catch (NextCommittedLimitReachedException e) {
+			return null;
+		}
+
+		final VerifiedLedgerHeaderAndProof nextHeader;
 		if (storedCommittedAtoms.firstEntry() != null) {
-			nextState = storedCommittedAtoms.firstEntry().getValue().getStateAndProof();
+			nextHeader = storedCommittedAtoms.firstEntry().getValue().getStateAndProof();
 		} else {
 			Entry<Long, StoredCommittedCommand> uncommittedEntry = unstoredCommittedAtoms.higherEntry(stateVersion);
 			if (uncommittedEntry == null) {
 				return null;
 			}
-			nextState = uncommittedEntry.getValue().getStateAndProof();
+			nextHeader = uncommittedEntry.getValue().getStateAndProof();
 		}
 
 		synchronized (lock) {
-			final long proofStateVersion = nextState.getStateVersion();
+			final long proofStateVersion = nextHeader.getStateVersion();
 			Map<Long, StoredCommittedCommand> unstoredToReturn
 				= unstoredCommittedAtoms.subMap(stateVersion, false, proofStateVersion, true);
 			storedCommittedAtoms.putAll(unstoredToReturn);
@@ -113,7 +140,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 		return new VerifiedCommandsAndProof(
 			storedCommittedAtoms.values().stream().map(StoredCommittedCommand::getCommand).collect(ImmutableList.toImmutableList()),
-			nextState
+			nextHeader
 		);
 	}
 
@@ -161,10 +188,14 @@ public final class RadixEngineStateComputer implements StateComputer {
 	@Override
 	public Optional<BFTValidatorSet> commit(VerifiedCommandsAndProof verifiedCommandsAndProof) {
 		final VerifiedLedgerHeaderAndProof headerAndProof = verifiedCommandsAndProof.getHeader();
-
-		verifiedCommandsAndProof.forEach((version, command) -> this.commitCommand(version, command, headerAndProof));
+		long stateVersion = headerAndProof.getAccumulatorState().getStateVersion();
+		long firstVersion = stateVersion - verifiedCommandsAndProof.getCommands().size() + 1;
+		for (int i = 0; i < verifiedCommandsAndProof.getCommands().size(); i++) {
+			this.commitCommand(firstVersion + i, verifiedCommandsAndProof.getCommands().get(i), headerAndProof);
+		}
 
 		if (headerAndProof.isEndOfEpoch()) {
+			this.epochProofs.put(headerAndProof.getEpoch() + 1, headerAndProof);
 			RadixEngineValidatorSetBuilder validatorSetBuilder = this.radixEngine.getComputedState(RadixEngineValidatorSetBuilder.class);
 			return Optional.of(validatorSetBuilder.build());
 		}

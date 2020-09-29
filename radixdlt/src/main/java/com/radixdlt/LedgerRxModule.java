@@ -22,13 +22,10 @@ import com.radixdlt.api.DeserializationFailure;
 import com.radixdlt.api.SubmissionErrorsRx;
 import com.radixdlt.api.SubmissionFailure;
 import com.radixdlt.atommodel.Atom;
-import com.radixdlt.consensus.CommittedStateSync;
-import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.SubmissionControlImpl.SubmissionControlSender;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.converters.AtomConversionException;
-import com.radixdlt.ledger.StateComputerLedger.CommittedStateSyncSender;
 import com.radixdlt.utils.TwoSenderToRx;
 import io.reactivex.rxjava3.core.Observable;
 
@@ -67,9 +64,5 @@ public final class LedgerRxModule extends AbstractModule {
 		};
 		bind(SubmissionControlSender.class).toInstance(submissionControlSender);
 		bind(SubmissionErrorsRx.class).toInstance(submissionErrorsRx);
-
-		TwoSenderToRx<Long, Object, CommittedStateSync> committedStateSyncTwoSenderToRx = new TwoSenderToRx<>(CommittedStateSync::new);
-		bind(CommittedStateSyncRx.class).toInstance(committedStateSyncTwoSenderToRx::rx);
-		bind(CommittedStateSyncSender.class).toInstance(committedStateSyncTwoSenderToRx::send);
 	}
 }

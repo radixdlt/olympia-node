@@ -2,7 +2,7 @@
 
 ## Setup
 
-1. Install [Docker for Mac](https://docs.docker.com/docker-for-mac/install/)
+1. Install [Docker for Mac](https://docs.docker.com/docker-for-mac/install/) or [Docker for Linux](https://docs.docker.com/engine/install/ubuntu/) 
 2. Be happy :)
 
 ## File structure
@@ -12,7 +12,10 @@ Configuration is done by means of environment variables passed to Docker contain
 
 Different network setups are implemented in [docker-compose](https://docs.docker.com/compose/) files. (*.yml).
 
-The simplest Radix network is implemented in [minimal-network.yml](minimal-network.yml) for reference.
+Configuration files are provided for [single node](single-node.yml), [two](two-node.yml), 
+[three](three-nodes.yml) and [four](four-nodes.yml) nodes. Description below refers single node
+configuration. In order to run other configurations just replace ```docker/single-node.yml``` 
+with relative path to necessary configuration file. 
 
 ## Build the radixdlt debian package
 
@@ -22,10 +25,10 @@ The [Dockerfile](Dockerfile) depends on the `radixdlt_*_all.deb` package which i
 $ ./gradlew deb4docker
 ```
 
-## Create and start the network
+## Create and start the single node network
 
 ```shell
-$ docker-compose -f docker/minimal-network.yml up -d --build
+$ docker-compose -f docker/single-node.yml up -d --build
 ```
 
 To see the individual `radixdlt` containers:
@@ -37,13 +40,13 @@ $ docker ps
 ## Destroy the network
 
 ```shell
-$ docker-compose -f docker/minimal-network.yml down
+$ docker-compose -f docker/single-node.yml down
 ```
 
 ## Follow combined logs
 
 ```shell
-docker-compose -f docker/minimal-network.yml logs -f
+docker-compose -f docker/single-node.yml logs -f
 ```
 
 ## See the container metrics
@@ -107,7 +110,7 @@ Create an ephemeral network called `test$BUILD_NUMBER`, in example `test123`.
 $ docker-compose -p test$BUILD_NUMBER -f docker/jenkins-network.yml up -d --build
 ```
 
-# Find the IP number of the the core0 node
+# Find the IP number of the core0 node
 
 ```shell
 $ docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' test${BUILD_NUMBER}_core0_1
@@ -121,5 +124,5 @@ $ for i in 0 1 2 3 4 5; do docker inspect -f '{{range .NetworkSettings.Networks}
 # kill the network
 
 ```shell
-$ docker-compose -p  test$BUILD_NUMBER -f docker/minimal-network.yml down
+$ docker-compose -p  test$BUILD_NUMBER -f docker/single-node.yml down
 ```

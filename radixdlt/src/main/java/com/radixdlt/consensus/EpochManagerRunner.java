@@ -17,10 +17,12 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.ConsensusRunner;
+import com.radixdlt.ModuleRunner;
+import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 
+import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.utils.ThreadFactories;
 
 import io.reactivex.rxjava3.core.Observable;
@@ -43,7 +45,7 @@ import org.apache.logging.log4j.Logger;
  * Subscription Manager (Start/Stop) to the processing of Consensus events under
  * a single BFT Consensus node instance
  */
-public final class EpochManagerRunner implements ConsensusRunner {
+public final class EpochManagerRunner implements ModuleRunner {
 	private static final Logger log = LogManager.getLogger();
 	private final ConnectableObservable<Object> events;
 	private final Object lock = new Object();
@@ -54,11 +56,10 @@ public final class EpochManagerRunner implements ConsensusRunner {
 
 	@Inject
 	public EpochManagerRunner(
-		EpochChangeRx epochChangeRx,
-		ConsensusEventsRx networkRx,
+		Observable<EpochsLedgerUpdate> ledgerUpdates,
+		Observable<BFTUpdate> bftUpdates,
+		BFTEventsRx networkRx,
 		PacemakerRx pacemakerRx,
-		VertexSyncRx vertexSyncRx,
-		CommittedStateSyncRx committedStateSyncRx,
 		SyncVerticesRPCRx rpcRx,
 		SyncEpochsRPCRx epochsRPCRx,
 		EpochManager epochManager
@@ -70,13 +71,16 @@ public final class EpochManagerRunner implements ConsensusRunner {
 		// It is important that all of these events are executed on the same thread
 		// as all logic is dependent on this assumption
 		final Observable<Object> eventCoordinatorEvents = Observable.merge(Arrays.asList(
-			epochChangeRx.epochChanges()
+			ledgerUpdates
 				.observeOn(singleThreadScheduler)
-				.doOnNext(epochManager::processEpochChange),
+				.doOnNext(epochManager::processLedgerUpdate),
+			bftUpdates
+				.observeOn(singleThreadScheduler)
+				.doOnNext(epochManager::processBFTUpdate),
 			pacemakerRx.localTimeouts()
 				.observeOn(singleThreadScheduler)
 				.doOnNext(epochManager::processLocalTimeout),
-			networkRx.consensusEvents()
+			networkRx.bftEvents()
 				.observeOn(singleThreadScheduler)
 				.doOnNext(epochManager::processConsensusEvent),
 			rpcRx.requests()
@@ -93,13 +97,7 @@ public final class EpochManagerRunner implements ConsensusRunner {
 				.doOnNext(epochManager::processGetEpochRequest),
 			epochsRPCRx.epochResponses()
 				.observeOn(singleThreadScheduler)
-				.doOnNext(epochManager::processGetEpochResponse),
-			vertexSyncRx.syncedVertices()
-				.observeOn(singleThreadScheduler)
-				.doOnNext(epochManager::processLocalSync),
-			committedStateSyncRx.committedStateSyncs()
-				.observeOn(singleThreadScheduler)
-				.doOnNext(epochManager::processCommittedStateSync)
+				.doOnNext(epochManager::processGetEpochResponse)
 		));
 
 		this.events = eventCoordinatorEvents

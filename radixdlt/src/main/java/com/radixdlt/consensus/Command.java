@@ -91,6 +91,6 @@ public final class Command {
 
 	@Override
 	public String toString() {
-		return String.format("%s{payload=%s}", this.getClass().getSimpleName(), this.getHash());
+		return String.format("%s{hash=%s}", this.getClass().getSimpleName(), this.getHash());
 	}
 }

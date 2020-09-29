@@ -21,7 +21,6 @@ import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.crypto.Hash;
 
 /**
  * An empty BFT event processor
@@ -50,7 +49,7 @@ public enum EmptyBFTEventProcessor implements BFTEventProcessor {
 	}
 
 	@Override
-	public void processLocalSync(Hash vertexId) {
+	public void processBFTUpdate(BFTUpdate update) {
 		// No-op
 	}
 

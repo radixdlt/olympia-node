@@ -19,12 +19,11 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
+import com.google.inject.AbstractModule;
+import com.radixdlt.consensus.sync.VertexStoreSync.SyncVerticesRequestSender;
+import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
 /**
@@ -49,13 +48,18 @@ public class OneProposalPerViewDropperTest {
 	 * Test should fail with GetVertices RPC disabled
 	 */
 	@Test
-	public void given_get_vertices_disabled__then_test_should_fail_against_drop_proposal_adversary() {
+	public void given_incorrect_module_where_vertex_sync_is_disabled__then_test_should_fail_against_drop_proposal_adversary() {
 		SimulationTest test = bftTestBuilder
-			.setGetVerticesRPCEnabled(false)
+			.overrideWithIncorrectModule(new AbstractModule() {
+				@Override
+				protected void configure() {
+					bind(SyncVerticesRequestSender.class).toInstance((node, hash, count) -> { });
+				}
+			})
 			.build();
 
-		Map<String, Optional<TestInvariantError>> results = test.run(1, TimeUnit.MINUTES);
-		assertThat(results).hasEntrySatisfying("noTimeouts", error -> assertThat(error).isPresent());
+		TestResults results = test.run();
+		assertThat(results.getCheckResults()).hasEntrySatisfying("noTimeouts", error -> assertThat(error).isPresent());
 	}
 
 	/**
@@ -64,11 +68,8 @@ public class OneProposalPerViewDropperTest {
 	 */
 	@Test
 	public void given_get_vertices_enabled__then_test_should_succeed_against_drop_proposal_adversary() {
-		SimulationTest test = bftTestBuilder
-			.setGetVerticesRPCEnabled(true)
-			.build();
-
-		Map<String, Optional<TestInvariantError>> results = test.run(1, TimeUnit.MINUTES);
-		assertThat(results).allSatisfy((name, error) -> assertThat(error).isNotPresent());
+		SimulationTest test = bftTestBuilder.build();
+		TestResults results = test.run();
+		assertThat(results.getCheckResults()).allSatisfy((name, error) -> assertThat(error).isNotPresent());
 	}
 }

@@ -85,7 +85,7 @@ public class MessageListenerListTest {
 		assertThat(called, equalTo(1));
 	}
 
-	private final MessageListener<TestMessage> testListener = new MessageListener<TestMessage>() {
+	private final MessageListener<TestMessage> testListener = new MessageListener<>() {
 		@Override
 		public void handleMessage(Peer source, TestMessage message) {
 			called += 1;

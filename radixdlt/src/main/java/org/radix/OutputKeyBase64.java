@@ -18,8 +18,6 @@
 package org.radix;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.security.Security;
 import java.util.Base64;
 
@@ -46,21 +44,6 @@ public final class OutputKeyBase64 {
 		final String[] files = (args == null || args.length == 0) ? new String[] { "universe.ks" } : args;
 
 		Security.insertProviderAt(new BouncyCastleProvider(), 1);
-		try {
-			Field isRestricted = Class.forName("javax.crypto.JceSecurity").getDeclaredField("isRestricted");
-
-			if (Modifier.isFinal(isRestricted.getModifiers())) {
-				Field modifiers = Field.class.getDeclaredField("modifiers");
-				modifiers.setAccessible(true);
-				modifiers.setInt(isRestricted, isRestricted.getModifiers() & ~Modifier.FINAL);
-			}
-			isRestricted.setAccessible(true);
-			isRestricted.setBoolean(null, false);
-			isRestricted.setAccessible(false);
-		} catch (ReflectiveOperationException | SecurityException ex) {
-			System.err.println("Exception while disabling JceSecurity restrictions");
-			ex.printStackTrace(System.err);
-		}
 
 		for (String file : files) {
 			ECKeyPair key = Keys.readKey(file, file, "RADIX_KEYSTORE_PASSWORD", "RADIX_KEY_PASSWORD");

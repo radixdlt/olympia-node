@@ -32,7 +32,6 @@ import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.Hash;
 import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
@@ -71,9 +70,9 @@ public class BFTEventVerifierTest {
 
 	@Test
 	public void when_process_local_sync__then_should_be_forwarded() {
-		Hash sync = mock(Hash.class);
-		eventVerifier.processLocalSync(sync);
-		verify(forwardTo, times(1)).processLocalSync(sync);
+		BFTUpdate update = mock(BFTUpdate.class);
+		eventVerifier.processBFTUpdate(update);
+		verify(forwardTo, times(1)).processBFTUpdate(update);
 	}
 
 	@Test

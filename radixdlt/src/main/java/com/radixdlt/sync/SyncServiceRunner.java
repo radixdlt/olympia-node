@@ -17,8 +17,12 @@
 
 package com.radixdlt.sync;
 
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.sync.SyncServiceProcessor.SyncInProgress;
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
+import com.radixdlt.ModuleRunner;
+import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.ledger.LedgerUpdateProcessor;
+import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
@@ -29,11 +33,16 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 import com.radixdlt.utils.ThreadFactories;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Manages thread safety and is the runner for the Sync Service Processor.
  */
-public final class SyncServiceRunner {
+@Singleton
+public final class SyncServiceRunner<T extends LedgerUpdate> implements ModuleRunner {
+	private static final Logger log = LogManager.getLogger();
+
 	public interface LocalSyncRequestsRx {
 		Observable<LocalSyncRequest> localSyncRequests();
 	}
@@ -42,38 +51,45 @@ public final class SyncServiceRunner {
 		Observable<SyncInProgress> timeouts();
 	}
 
-	public interface VersionUpdatesRx {
-		Observable<VerifiedLedgerHeaderAndProof> ledgerStateUpdates();
-	}
-
 	private final StateSyncNetwork stateSyncNetwork;
 	private final Scheduler singleThreadScheduler;
 	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("SyncManager"));
-	private final SyncServiceProcessor syncServiceProcessor;
+	private final LocalSyncServiceProcessor localSyncServiceProcessor;
+	private final RemoteSyncServiceProcessor remoteSyncServiceProcessor;
+	private final RemoteSyncResponseProcessor remoteSyncResponseProcessor;
 	private final SyncTimeoutsRx syncTimeoutsRx;
 	private final LocalSyncRequestsRx localSyncRequestsRx;
-	private final VersionUpdatesRx versionUpdatesRx;
+	private final Observable<T> ledgerUpdates;
+	private final LedgerUpdateProcessor<T> ledgerUpdateProcessor;
 	private final Object lock = new Object();
 	private CompositeDisposable compositeDisposable;
 
+	@Inject
 	public SyncServiceRunner(
 		LocalSyncRequestsRx localSyncRequestsRx,
 		SyncTimeoutsRx syncTimeoutsRx,
-		VersionUpdatesRx versionUpdatesRx,
+		Observable<T> ledgerUpdates,
 		StateSyncNetwork stateSyncNetwork,
-		SyncServiceProcessor syncServiceProcessor
+		LocalSyncServiceProcessor localSyncServiceProcessor,
+		RemoteSyncServiceProcessor remoteSyncServiceProcessor,
+		RemoteSyncResponseProcessor remoteSyncResponseProcessor,
+		LedgerUpdateProcessor<T> ledgerUpdateProcessor
 	) {
 		this.localSyncRequestsRx = Objects.requireNonNull(localSyncRequestsRx);
 		this.syncTimeoutsRx = Objects.requireNonNull(syncTimeoutsRx);
-		this.versionUpdatesRx = Objects.requireNonNull(versionUpdatesRx);
-		this.syncServiceProcessor = Objects.requireNonNull(syncServiceProcessor);
+		this.ledgerUpdates = Objects.requireNonNull(ledgerUpdates);
+		this.localSyncServiceProcessor = Objects.requireNonNull(localSyncServiceProcessor);
 		this.stateSyncNetwork = Objects.requireNonNull(stateSyncNetwork);
 		this.singleThreadScheduler = Schedulers.from(this.executorService);
+		this.remoteSyncServiceProcessor = Objects.requireNonNull(remoteSyncServiceProcessor);
+		this.remoteSyncResponseProcessor = Objects.requireNonNull(remoteSyncResponseProcessor);
+		this.ledgerUpdateProcessor = Objects.requireNonNull(ledgerUpdateProcessor);
 	}
 
 	/**
 	 * Start the service
 	 */
+	@Override
 	public void start() {
 		synchronized (lock) {
 			if (compositeDisposable != null) {
@@ -82,31 +98,34 @@ public final class SyncServiceRunner {
 
 			Disposable d0 = stateSyncNetwork.syncRequests()
 				.observeOn(singleThreadScheduler)
-				.subscribe(syncServiceProcessor::processSyncRequest);
+				.subscribe(remoteSyncServiceProcessor::processRemoteSyncRequest);
 
 			Disposable d1 = stateSyncNetwork.syncResponses()
 				.observeOn(singleThreadScheduler)
-				.subscribe(syncServiceProcessor::processSyncResponse);
+				.subscribe(remoteSyncResponseProcessor::processSyncResponse);
 
 			Disposable d2 = localSyncRequestsRx.localSyncRequests()
 				.observeOn(singleThreadScheduler)
-				.subscribe(syncServiceProcessor::processLocalSyncRequest);
+				.subscribe(localSyncServiceProcessor::processLocalSyncRequest);
 
 			Disposable d3 = syncTimeoutsRx.timeouts()
 				.observeOn(singleThreadScheduler)
-				.subscribe(syncServiceProcessor::processSyncTimeout);
+				.subscribe(localSyncServiceProcessor::processSyncTimeout);
 
-			Disposable d4 = versionUpdatesRx.ledgerStateUpdates()
+			Disposable d4 = ledgerUpdates
 				.observeOn(singleThreadScheduler)
-				.subscribe(syncServiceProcessor::processVersionUpdate);
+				.subscribe(ledgerUpdateProcessor::processLedgerUpdate);
 
 			compositeDisposable = new CompositeDisposable(d0, d1, d2, d3, d4);
 		}
+
+		log.info("Sync started");
 	}
 
 	/**
 	 * Stop the service and cleanup resources
 	 */
+	@Override
 	public void stop() {
 		synchronized (lock) {
 			if (compositeDisposable != null) {

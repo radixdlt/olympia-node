@@ -18,12 +18,14 @@
 package com.radixdlt.middleware2.network;
 
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.network.addressbook.AddressBook;
+import com.radixdlt.sync.RemoteSyncResponse;
 import com.radixdlt.sync.StateSyncNetwork;
-import com.radixdlt.sync.SyncRequest;
+import com.radixdlt.sync.RemoteSyncRequest;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageListener;
+import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.universe.Universe;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.Objects;
@@ -49,21 +51,26 @@ public final class MessageCentralLedgerSync implements StateSyncNetwork {
 	}
 
 	@Override
-	public Observable<VerifiedCommandsAndProof> syncResponses() {
+	public Observable<RemoteSyncResponse> syncResponses() {
 		return Observable.create(emitter -> {
-			MessageListener<SyncResponseMessage> listener = (src, msg) -> emitter.onNext(msg.getCommands());
+			MessageListener<SyncResponseMessage> listener = (src, msg) -> {
+				if (src.hasSystem()) {
+					BFTNode node = BFTNode.create(src.getSystem().getKey());
+					emitter.onNext(new RemoteSyncResponse(node, msg.getCommands()));
+				}
+			};
 			this.messageCentral.addListener(SyncResponseMessage.class, listener);
 			emitter.setCancellable(() -> this.messageCentral.removeListener(listener));
 		});
 	}
 
 	@Override
-	public Observable<SyncRequest> syncRequests() {
+	public Observable<RemoteSyncRequest> syncRequests() {
 		return Observable.create(emitter -> {
 			MessageListener<SyncRequestMessage> listener = (src, msg) -> {
 				if (src.hasSystem()) {
 					BFTNode node = BFTNode.create(src.getSystem().getKey());
-					emitter.onNext(new SyncRequest(node, msg.getStateVersion()));
+					emitter.onNext(new RemoteSyncRequest(node, msg.getCurrentHeader()));
 				}
 			};
 			this.messageCentral.addListener(SyncRequestMessage.class, listener);
@@ -72,17 +79,17 @@ public final class MessageCentralLedgerSync implements StateSyncNetwork {
 	}
 
 	@Override
-	public void sendSyncRequest(BFTNode node, long stateVersion) {
+	public void sendSyncRequest(BFTNode node, DtoLedgerHeaderAndProof header) {
 		addressBook.peer(node.getKey().euid()).ifPresent(peer -> {
 			if (peer.hasSystem()) {
-				final SyncRequestMessage syncRequestMessage = new SyncRequestMessage(this.magic, stateVersion);
+				final SyncRequestMessage syncRequestMessage = new SyncRequestMessage(this.magic, header);
 				this.messageCentral.send(peer, syncRequestMessage);
 			}
 		});
 	}
 
 	@Override
-	public void sendSyncResponse(BFTNode node, VerifiedCommandsAndProof commands) {
+	public void sendSyncResponse(BFTNode node, DtoCommandsAndProof commands) {
 		addressBook.peer(node.getKey().euid()).ifPresent(peer -> {
 			if (peer.hasSystem()) {
 				final SyncResponseMessage syncResponseMessage = new SyncResponseMessage(this.magic, commands);

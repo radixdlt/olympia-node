@@ -133,37 +133,29 @@ public class AtomEventObserver {
 	}
 
 	private void sync() {
-		if (cancelled.get()) {
-			return;
-		}
+		StoreIndex destinationIndex = new StoreIndex(EngineAtomIndices.IndexType.DESTINATION.getValue(), atomQuery.getDestination().toByteArray());
+		SearchCursor cursor = store.search(StoreIndex.LedgerIndexType.DUPLICATE, destinationIndex, LedgerSearchMode.EXACT);
+		Set<AID> processedAtomIds = Sets.newHashSet();
+		partialSync(cursor, processedAtomIds);
+	}
 
+	private void partialSync(SearchCursor cursor, final Set<AID> processedAtomIds) {
+		long count = 0;
 		try {
-			long count = 0;
-			StoreIndex destinationIndex = new StoreIndex(EngineAtomIndices.IndexType.DESTINATION.getValue(), atomQuery.getDestination().toByteArray());
-			SearchCursor cursor = store.search(StoreIndex.LedgerIndexType.DUPLICATE, destinationIndex, LedgerSearchMode.EXACT);
-			Set<AID> processedAids = Sets.newHashSet();
 			while (cursor != null) {
+				if (cancelled.get()) {
+					return;
+				}
+
 				if (count >= 200) {
-					synchronized(this) {
-						this.currentRunnable = currentRunnable.thenRunAsync(() -> {
-							// Hack to throttle back high amounts of atom reads
-							// Will fix this once an async library is used
-							try {
-								TimeUnit.SECONDS.sleep(1);
-							} catch (InterruptedException e) {
-								// Re-interrupt and continue
-								Thread.currentThread().interrupt();
-							}
-							this.sync();
-						}, executorService);
-					}
+					delaySync(cursor, processedAtomIds);
 					return;
 				}
 
 				List<Pair<ClientAtom, Long>> atoms = new ArrayList<>();
 				while (cursor != null && atoms.size() < BATCH_SIZE) {
 					AID aid = cursor.get();
-					processedAids.add(aid);
+					processedAtomIds.add(aid);
 					Optional<LedgerEntry> ledgerEntry = store.get(aid);
 					ledgerEntry.ifPresent(
 						entry -> {
@@ -191,7 +183,7 @@ public class AtomEventObserver {
 				this.synced = true;
 				// Note that we filter here so that the filter executes with lock held
 				atomEvents = this.waitingQueue.stream()
-					.filter(aed -> !processedAids.contains(aed.getAtom().getAID()) || aed.getType() == AtomEventType.DELETE)
+					.filter(aed -> !processedAtomIds.contains(aed.getAtom().getAID()) || aed.getType() == AtomEventType.DELETE)
 					.collect(Collectors.toList());
 				this.waitingQueue.clear();
 			}
@@ -201,6 +193,22 @@ public class AtomEventObserver {
 			onNext.accept(new ObservedAtomEvents(true, Stream.empty()));
 		} catch (Exception e) {
 			log.error("While handling atom event update", e);
+		}
+	}
+
+	private void delaySync(SearchCursor cursor, Set<AID> processedAtomIds) {
+		synchronized(this) {
+			this.currentRunnable = currentRunnable.thenRunAsync(() -> {
+				// Hack to throttle back high amounts of atom reads
+				// Will fix this once an async library is used
+				try {
+					TimeUnit.SECONDS.sleep(1);
+				} catch (InterruptedException e) {
+					// Re-interrupt and continue
+					Thread.currentThread().interrupt();
+				}
+				this.partialSync(cursor, processedAtomIds);
+			}, executorService);
 		}
 	}
 

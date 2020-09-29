@@ -17,22 +17,22 @@
 
 package com.radixdlt.integration.distributed.deterministic.network;
 
+import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.sync.GetVerticesRequest;
+import com.radixdlt.epochs.EpochsLedgerUpdate;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
-import com.radixdlt.consensus.bft.GetVerticesResponse;
-import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
-import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
+import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.crypto.Hash;
@@ -43,38 +43,43 @@ import com.radixdlt.integration.distributed.deterministic.network.DeterministicN
  */
 public final class ControlledSender implements DeterministicSender {
 	private final DeterministicNetwork network;
+	private final BFTNode self;
 	private final int senderIndex;
 
-	ControlledSender(DeterministicNetwork network, int senderIndex) {
+	ControlledSender(DeterministicNetwork network, BFTNode self, int senderIndex) {
 		this.network = network;
+		this.self = self;
 		this.senderIndex = senderIndex;
 	}
 
 	@Override
-	public void sendGetVerticesRequest(Hash id, BFTNode node, int count, Object opaque) {
-		ControlledGetVerticesRequest request = new ControlledGetVerticesRequest(id, count, this.senderIndex, opaque);
+	public void sendGetVerticesRequest(BFTNode node, Hash id, int count) {
+		GetVerticesRequest request = new GetVerticesRequest(self, id, count);
 		int receiver = this.network.lookup(node);
 		handleMessage(MessageRank.EARLIEST_POSSIBLE, new ControlledMessage(this.senderIndex, receiver, request));
 	}
 
 	@Override
-	public void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<VerifiedVertex> vertices) {
-		ControlledGetVerticesRequest request = (ControlledGetVerticesRequest) originalRequest;
-		GetVerticesResponse response = new GetVerticesResponse(request.getVertexId(), vertices, request.opaque);
-		handleMessage(MessageRank.EARLIEST_POSSIBLE, new ControlledMessage(this.senderIndex, request.requestor, response));
+	public void sendGetVerticesResponse(BFTNode node, ImmutableList<VerifiedVertex> vertices) {
+		GetVerticesResponse response = new GetVerticesResponse(self, vertices);
+		int receiver = this.network.lookup(node);
+		handleMessage(MessageRank.EARLIEST_POSSIBLE, new ControlledMessage(this.senderIndex, receiver, response));
 	}
 
 	@Override
-	public void sendGetVerticesErrorResponse(GetVerticesRequest originalRequest, QuorumCertificate highestQC,
-		QuorumCertificate highestCommittedQC) {
-		ControlledGetVerticesRequest request = (ControlledGetVerticesRequest) originalRequest;
-		GetVerticesErrorResponse response = new GetVerticesErrorResponse(request.getVertexId(), highestQC, highestCommittedQC, request.opaque);
-		handleMessage(MessageRank.EARLIEST_POSSIBLE, new ControlledMessage(this.senderIndex, request.requestor, response));
+	public void sendGetVerticesErrorResponse(BFTNode node, QuorumCertificate highestQC, QuorumCertificate highestCommittedQC) {
+		GetVerticesErrorResponse response = new GetVerticesErrorResponse(
+			self,
+			highestQC,
+			highestCommittedQC
+		);
+		int receiver = this.network.lookup(node);
+		handleMessage(MessageRank.EARLIEST_POSSIBLE, new ControlledMessage(this.senderIndex, receiver, response));
 	}
 
 	@Override
-	public void sendSyncedVertex(VerifiedVertex vertex) {
-		handleMessage(MessageRank.EARLIEST_POSSIBLE, new ControlledMessage(this.senderIndex, this.senderIndex, vertex.getId()));
+	public void sendBFTUpdate(BFTUpdate update) {
+		handleMessage(MessageRank.EARLIEST_POSSIBLE, new ControlledMessage(this.senderIndex, this.senderIndex, update));
 	}
 
 	@Override
@@ -99,11 +104,6 @@ public final class ControlledSender implements DeterministicSender {
 	}
 
 	@Override
-	public void epochChange(EpochChange epochChange) {
-		handleMessage(messageRank(epochChange), new ControlledMessage(this.senderIndex, this.senderIndex, epochChange));
-	}
-
-	@Override
 	public void sendCommittedVertex(VerifiedVertex vertex) {
 		// Ignore committed vertex signal
 	}
@@ -111,12 +111,6 @@ public final class ControlledSender implements DeterministicSender {
 	@Override
 	public void highQC(QuorumCertificate qc) {
 		// Ignore high QC signal
-	}
-
-	@Override
-	public void sendCommittedStateSync(long stateVersion, Object opaque) {
-		CommittedStateSync committedStateSync = new CommittedStateSync(stateVersion, opaque);
-		handleMessage(MessageRank.EARLIEST_POSSIBLE, new ControlledMessage(this.senderIndex, this.senderIndex, committedStateSync));
 	}
 
 	@Override
@@ -136,33 +130,9 @@ public final class ControlledSender implements DeterministicSender {
 		handleMessage(messageRank(getEpochResponse), new ControlledMessage(this.senderIndex, this.network.lookup(node), getEpochResponse));
 	}
 
-	private static class ControlledGetVerticesRequest implements GetVerticesRequest {
-		private final Hash id;
-		private final int count;
-		private final Object opaque;
-		private final int requestor;
-
-		private ControlledGetVerticesRequest(Hash id, int count, int requestor, Object opaque) {
-			this.id = id;
-			this.count = count;
-			this.requestor = requestor;
-			this.opaque = opaque;
-		}
-
-		@Override
-		public Hash getVertexId() {
-			return id;
-		}
-
-		@Override
-		public int getCount() {
-			return count;
-		}
-
-		@Override
-		public String toString() {
-			return String.format("%s{count=%s}", this.getClass().getSimpleName(), count);
-		}
+	@Override
+	public void sendLedgerUpdate(EpochsLedgerUpdate epochsLedgerUpdate) {
+		handleMessage(messageRank(epochsLedgerUpdate), new ControlledMessage(this.senderIndex, this.senderIndex, epochsLedgerUpdate));
 	}
 
 	private void handleMessage(MessageRank eav, ControlledMessage controlledMessage) {
@@ -174,8 +144,8 @@ public final class ControlledSender implements DeterministicSender {
 		return MessageRank.of(proof.getEpoch(), proof.getView().number() + 3);
 	}
 
-	private MessageRank messageRank(EpochChange epochChange) {
-		VerifiedLedgerHeaderAndProof proof = epochChange.getProof();
+	private MessageRank messageRank(EpochsLedgerUpdate epochsLedgerUpdate) {
+		VerifiedLedgerHeaderAndProof proof = epochsLedgerUpdate.getTail();
 		return MessageRank.of(proof.getEpoch(), proof.getView().number() + 3);
 	}
 

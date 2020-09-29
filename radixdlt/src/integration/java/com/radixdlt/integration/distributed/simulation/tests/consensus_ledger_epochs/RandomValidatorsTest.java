@@ -22,9 +22,8 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
-import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
+import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
@@ -46,7 +45,7 @@ public class RandomValidatorsTest {
 		.checkConsensusLiveness("liveness", 5000, TimeUnit.MILLISECONDS)
 		.checkConsensusNoTimeouts("noTimeouts")
 		.checkConsensusAllProposalsHaveDirectParents("directParents")
-		.checkLedgerSyncedInOrder("syncedInOrder")
+		.checkLedgerInOrder("ledgerInOrder")
 		.checkLedgerProcessesConsensusCommitted("consensusToLedger");
 
 	private static Function<Long, IntStream> randomEpochToNodesMapper(Function<Long, Random> randomSupplier) {
@@ -76,8 +75,9 @@ public class RandomValidatorsTest {
 		SimulationTest bftTest = bftTestBuilder
 			.ledgerAndEpochs(View.of(100), goodRandomEpochToNodesMapper())
 			.build();
-		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
-		assertThat(results).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+
+		TestResults results = bftTest.run();
+		assertThat(results.getCheckResults()).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
 	}
 
 	@Test
@@ -85,8 +85,9 @@ public class RandomValidatorsTest {
 		SimulationTest bftTest = bftTestBuilder
 			.ledgerAndEpochs(View.of(100), badRandomEpochToNodesMapper())
 			.build();
-		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
-		assertThat(results).hasValueSatisfying(new Condition<>(Optional::isPresent, "Has error"));
+
+		TestResults results = bftTest.run();
+		assertThat(results.getCheckResults()).hasValueSatisfying(new Condition<>(Optional::isPresent, "Has error"));
 	}
 
 }

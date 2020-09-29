@@ -24,11 +24,15 @@ import io.reactivex.rxjava3.core.Observable;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 /**
  * Checks to make sure that commands have been committed in a certain amount
  * of time
  */
 public class CommittedChecker implements TestInvariant {
+	private static final Logger log = LogManager.getLogger();
 	private final Observable<Command> submittedCommands;
 
 	public CommittedChecker(Observable<Command> submittedCommands) {
@@ -38,10 +42,10 @@ public class CommittedChecker implements TestInvariant {
 	@Override
 	public Observable<TestInvariantError> check(RunningNetwork network) {
 		return submittedCommands
-			.doOnNext(cmd -> System.out.println("Submitted command: " + cmd))
+			.doOnNext(cmd -> log.debug("Submitted command: {}", cmd))
 			.flatMapMaybe(command -> network
-					.committedCommands()
-						.filter(nodeAndCmd -> nodeAndCmd.getSecond().contains(command))
+					.ledgerUpdates()
+						.filter(nodeAndCmd -> nodeAndCmd.getSecond().getNewCommands().contains(command))
 						.timeout(10, TimeUnit.SECONDS)
 						.firstOrError()
 						.ignoreElement()

@@ -37,8 +37,8 @@ public class ConsensusToLedgerCommittedInvariant implements TestInvariant {
 			.filter(v -> v.getCommand() != null)
 			.map(VerifiedVertex::getCommand)
 			.flatMapMaybe(command -> network
-				.committedCommands()
-				.filter(nodeAndCmd -> nodeAndCmd.getSecond().contains(command))
+				.ledgerUpdates()
+				.filter(nodeAndCmd -> nodeAndCmd.getSecond().getNewCommands().contains(command))
 				.timeout(10, TimeUnit.SECONDS)
 				.firstOrError()
 				.ignoreElement()

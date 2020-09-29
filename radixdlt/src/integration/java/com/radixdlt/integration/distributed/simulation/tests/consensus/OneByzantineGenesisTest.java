@@ -19,10 +19,10 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
+import com.radixdlt.crypto.Hash;
+import com.radixdlt.integration.distributed.MockedBFTConfigurationModule;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
-import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
-import java.util.Map;
-import java.util.Optional;
+import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
@@ -37,15 +37,15 @@ public class OneByzantineGenesisTest {
 		.checkConsensusSafety("safety");
 
 	@Test
-	public void given_2_correct_bfts_and_1_incorrect__then_should_never_make_progress() {
+	public void given_2_correct_bfts_and_1_byzantine__then_should_never_make_progress() {
 		SimulationTest bftTest = bftTestBuilder
 			.numNodes(3)
-			.modifyOneGenesis(true)
+			.addSingleByzantineModule(new MockedBFTConfigurationModule(Hash.random()))
 			.checkConsensusNoneCommitted("noneCommitted")
 			.build();
 
-		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
-		assertThat(results).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+		TestResults results = bftTest.run();
+		assertThat(results.getCheckResults()).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
 	}
 
 	@Test
@@ -55,20 +55,20 @@ public class OneByzantineGenesisTest {
 			.checkConsensusNoneCommitted("noneCommitted")
 			.build();
 
-		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
-		assertThat(results).hasEntrySatisfying("noneCommitted", error -> assertThat(error).isPresent());
+		TestResults results = bftTest.run();
+		assertThat(results.getCheckResults()).hasEntrySatisfying("noneCommitted", error -> assertThat(error).isPresent());
 	}
 
 	@Test
-	public void given_3_correct_bfts_and_1_incorrect__then_should_make_progress() {
+	public void given_3_correct_bfts_and_1_byzantine__then_should_make_progress() {
 		SimulationTest bftTest = bftTestBuilder
 			.numNodes(4)
-			.modifyOneGenesis(true)
+			.addSingleByzantineModule(new MockedBFTConfigurationModule(Hash.random()))
 			.checkConsensusLiveness("liveness", 5, TimeUnit.SECONDS)
 			.build();
 
-		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
-		assertThat(results).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+		TestResults results = bftTest.run();
+		assertThat(results.getCheckResults()).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
 	}
 
 }

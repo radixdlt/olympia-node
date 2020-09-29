@@ -27,21 +27,25 @@ import com.radixdlt.ConsensusModule;
 import com.radixdlt.ConsensusRunnerModule;
 import com.radixdlt.ConsensusRxModule;
 import com.radixdlt.CryptoModule;
-import com.radixdlt.DefaultSerialization;
+import com.radixdlt.EpochsConsensusModule;
+import com.radixdlt.EpochsSyncModule;
 import com.radixdlt.LedgerCommandGeneratorModule;
-import com.radixdlt.LedgerEpochChangeModule;
-import com.radixdlt.LedgerEpochChangeRxModule;
+import com.radixdlt.EpochsLedgerUpdateModule;
+import com.radixdlt.EpochsLedgerUpdateRxModule;
 import com.radixdlt.LedgerLocalMempoolModule;
 import com.radixdlt.PersistenceModule;
+import com.radixdlt.PowFeeModule;
 import com.radixdlt.RadixEngineModule;
 import com.radixdlt.RadixEngineRxModule;
 import com.radixdlt.RadixEngineStoreModule;
-import com.radixdlt.SyncCommittedServiceModule;
+import com.radixdlt.SyncRunnerModule;
+import com.radixdlt.SyncServiceModule;
 import com.radixdlt.SyncMempoolServiceModule;
 import com.radixdlt.LedgerRxModule;
 import com.radixdlt.LedgerModule;
 import com.radixdlt.SyncRxModule;
 import com.radixdlt.SystemInfoRxModule;
+import com.radixdlt.TokenFeeModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.identifiers.RadixAddress;
@@ -51,6 +55,7 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.middleware2.InfoSupplier;
 import com.radixdlt.SystemInfoModule;
 import com.radixdlt.NetworkModule;
+import com.radixdlt.NoFeeModule;
 import com.radixdlt.network.addressbook.AddressBookModule;
 import com.radixdlt.network.addressbook.PeerManagerConfiguration;
 import com.radixdlt.network.hostip.HostIp;
@@ -59,13 +64,11 @@ import com.radixdlt.network.messaging.MessageCentralModule;
 import com.radixdlt.network.transport.tcp.TCPTransportModule;
 import com.radixdlt.network.transport.udp.UDPTransportModule;
 import com.radixdlt.properties.RuntimeProperties;
-import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
 import org.radix.database.DatabaseEnvironment;
-import org.radix.events.Events;
 import org.radix.universe.system.LocalSystem;
 
 public class GlobalInjector {
@@ -88,22 +91,40 @@ public class GlobalInjector {
 				bind(RadixAddress.class).annotatedWith(Names.named("self")).toProvider(SelfAddressProvider.class);
 				bind(BFTNode.class).annotatedWith(Names.named("self")).toProvider(SelfBFTNodeProvider.class);
 
-				bind(Serialization.class).toProvider(DefaultSerialization::getInstance);
-				bind(Events.class).toProvider(Events::getInstance);
-
 				bind(PeerManagerConfiguration.class).toInstance(PeerManagerConfiguration.fromRuntimeProperties(properties));
 			}
 		};
 
-		final int pacemakerTimeout = properties.get("consensus.pacemaker_timeout_millis", 5000);
+		// Default values mean that pacemakers will sync if they are within 5 views of each other.
+		// 5 consecutive failing views will take 1*(2^6)-1 seconds = 63 seconds.
+		final long pacemakerTimeout = properties.get("consensus.pacemaker_timeout_millis", 1000L);
+		final double pacemakerRate = properties.get("consensus.pacemaker_rate", 2.0);
+		final int pacemakerMaxExponent = properties.get("consensus.pacemaker_max_exponent", 6);
+
 		final int fixedNodeCount = properties.get("consensus.fixed_node_count", 1);
 		final View epochHighView = View.of(properties.get("epochs.views_per_epoch", 100L));
 		final int mempoolMaxSize = properties.get("mempool.maxSize", 1000);
 
+		final Module feeModule;
+		final String feeModuleName = properties.get("debug.fee_module", "token");
+		switch (feeModuleName.toLowerCase()) {
+		case "pow":
+			feeModule = new PowFeeModule();
+			break;
+		case "token":
+			feeModule = new TokenFeeModule();
+			break;
+		case "none":
+			feeModule = new NoFeeModule();
+			break;
+		default:
+			throw new IllegalStateException("No such fee module: " + feeModuleName);
+		}
+
 		injector = Guice.createInjector(
 			// Consensus
 			new CryptoModule(),
-			new ConsensusModule(pacemakerTimeout),
+			new ConsensusModule(pacemakerTimeout, pacemakerRate, pacemakerMaxExponent),
 			new ConsensusRxModule(),
 			new ConsensusRunnerModule(),
 
@@ -111,21 +132,31 @@ public class GlobalInjector {
 			new LedgerModule(),
 			new LedgerRxModule(),
 			new LedgerCommandGeneratorModule(),
-			new LedgerEpochChangeModule(),
-			new LedgerEpochChangeRxModule(),
 			new LedgerLocalMempoolModule(mempoolMaxSize),
 
+			// Sync
+			new SyncRunnerModule(),
+			new SyncRxModule(),
+			new SyncServiceModule(),
+			new SyncMempoolServiceModule(),
+
+			// Epochs - Consensus
+			new EpochsConsensusModule(pacemakerTimeout, pacemakerRate, pacemakerMaxExponent),
+			// Epochs - Ledger
+			new EpochsLedgerUpdateModule(),
+			new EpochsLedgerUpdateRxModule(),
+			// Epochs - Sync
+			new EpochsSyncModule(),
+
 			// State Computer
-			new RadixEngineModule(epochHighView, false),
+			new RadixEngineModule(epochHighView),
 			new RadixEngineRxModule(),
 			new RadixEngineStoreModule(fixedNodeCount),
 
-			new PersistenceModule(),
+			// Fees
+			feeModule,
 
-			// Synchronization
-			new SyncRxModule(),
-			new SyncCommittedServiceModule(),
-			new SyncMempoolServiceModule(),
+			new PersistenceModule(),
 
 			// System Info
 			new SystemInfoModule(properties),

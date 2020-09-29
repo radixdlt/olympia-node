@@ -21,30 +21,26 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mock;
 
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import org.junit.Before;
 import org.junit.Test;
 
 public class GetVerticesErrorResponseTest {
-	private Hash vertexId;
-	private Object opaque;
 	private QuorumCertificate highestQC;
 	private QuorumCertificate highestCommittedQC;
 	private GetVerticesErrorResponse response;
+	private BFTNode node;
 
 	@Before
 	public void setUp() {
-		this.vertexId = mock(Hash.class);
-		this.opaque = mock(Object.class);
 		this.highestQC = mock(QuorumCertificate.class);
 		this.highestCommittedQC = mock(QuorumCertificate.class);
-		this.response = new GetVerticesErrorResponse(this.vertexId, this.highestQC, this.highestCommittedQC, this.opaque);
+		this.node = mock(BFTNode.class);
+		this.response = new GetVerticesErrorResponse(this.node, this.highestQC, this.highestCommittedQC);
 	}
 
 	@Test
 	public void testGetters() {
-		assertThat(this.response.getVertexId()).isEqualTo(this.vertexId);
-		assertThat(this.response.getOpaque()).isEqualTo(this.opaque);
 		assertThat(this.response.getHighestQC()).isEqualTo(this.highestQC);
 		assertThat(this.response.getHighestCommittedQC()).isEqualTo(this.highestCommittedQC);
 	}

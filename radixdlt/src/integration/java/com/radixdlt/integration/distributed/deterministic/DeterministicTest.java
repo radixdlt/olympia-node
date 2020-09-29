@@ -20,8 +20,9 @@ package com.radixdlt.integration.distributed.deterministic;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
+import com.radixdlt.EpochsConsensusModule;
 import com.radixdlt.LedgerCommandGeneratorModule;
-import com.radixdlt.LedgerEpochChangeModule;
+import com.radixdlt.EpochsLedgerUpdateModule;
 import com.radixdlt.LedgerLocalMempoolModule;
 import com.radixdlt.LedgerModule;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -33,9 +34,10 @@ import com.radixdlt.integration.distributed.deterministic.configuration.NodeInde
 import com.radixdlt.integration.distributed.deterministic.network.DeterministicNetwork;
 import com.radixdlt.integration.distributed.deterministic.network.MessageMutator;
 import com.radixdlt.integration.distributed.deterministic.network.MessageSelector;
-import com.radixdlt.integration.distributed.simulation.MockedStateComputerWithEpochsModule;
-import com.radixdlt.integration.distributed.simulation.MockedStateComputerModule;
-import com.radixdlt.integration.distributed.simulation.MockedSyncServiceModule;
+import com.radixdlt.integration.distributed.MockedLedgerModule;
+import com.radixdlt.integration.distributed.MockedStateComputerWithEpochsModule;
+import com.radixdlt.integration.distributed.MockedStateComputerModule;
+import com.radixdlt.integration.distributed.MockedSyncServiceModule;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.EUID;
@@ -45,7 +47,6 @@ import java.io.PrintStream;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Objects;
-import java.util.Random;
 import java.util.function.Function;
 import java.util.function.LongFunction;
 import java.util.stream.IntStream;
@@ -62,23 +63,31 @@ public final class DeterministicTest {
 		ImmutableList<BFTNode> nodes,
 		MessageSelector messageSelector,
 		MessageMutator messageMutator,
-		Collection<Module> modules
+		Collection<Module> modules,
+		Module overrideModule
 	) {
 		this.network = new DeterministicNetwork(
 			nodes,
 			messageSelector,
 			messageMutator,
-			modules
+			modules,
+			overrideModule
 		);
 	}
 
 	public static class Builder {
+		private enum LedgerType {
+			MOCKED_LEDGER,
+			LEDGER_AND_EPOCHS_AND_SYNC
+		}
+
 		private ImmutableList<BFTNode> nodes = ImmutableList.of(BFTNode.create(ECKeyPair.generateNew().getPublicKey()));
 		private MessageSelector messageSelector = MessageSelector.selectAndStopAfter(MessageSelector.firstSelector(), 30_000L);
 		private MessageMutator messageMutator = MessageMutator.nothing();
 		private EpochNodeWeightMapping epochNodeWeightMapping = null;
-		private Module syncedExecutorModule = null;
 		private View epochHighView = null;
+		private Module overrideModule = null;
+		private LedgerType ledgerType = LedgerType.MOCKED_LEDGER;
 
 		private Builder() {
 			// Nothing to do here
@@ -90,6 +99,19 @@ public final class DeterministicTest {
 				.sorted(Comparator.<ECKeyPair, EUID>comparing(k -> k.getPublicKey().euid()).reversed())
 				.map(kp -> BFTNode.create(kp.getPublicKey()))
 				.collect(ImmutableList.toImmutableList());
+			return this;
+		}
+
+		/**
+		 * Override with an incorrect module which should cause a test to fail.
+		 * TODO: Refactor to make the link between incorrect module and failing test
+		 * more explicit.
+		 *
+		 * @param module the incorrect module
+		 * @return the current builder
+		 */
+		public Builder overrideWithIncorrectModule(Module module) {
+			this.overrideModule = module;
 			return this;
 		}
 
@@ -114,41 +136,23 @@ public final class DeterministicTest {
 			return this;
 		}
 
-		public Builder alwaysSynced() {
-			this.syncedExecutorModule = new DeterministicAlwaysSyncedLedgerModule();
-			return this;
-		}
-
-		public Builder randomlySynced(Random random) {
-			Objects.requireNonNull(random);
-			this.syncedExecutorModule = new DeterministicRandomlySyncedLedgerModule(random);
-			return this;
-		}
-
 		public Builder epochHighView(View epochHighView) {
 			Objects.requireNonNull(epochHighView);
+			this.ledgerType = LedgerType.LEDGER_AND_EPOCHS_AND_SYNC;
 			this.epochHighView = epochHighView;
 			return this;
 		}
 
 		public DeterministicTest build() {
-			if (this.syncedExecutorModule == null && epochHighView == null) {
-				throw new IllegalArgumentException("Must specify one (and only one) of alwaysSynced, randomlySynced or epochHighView");
-			}
-			if (this.syncedExecutorModule != null && epochHighView != null) {
-				throw new IllegalArgumentException("Can only specify one of alwaysSynced, randomlySynced or epochHighView");
-			}
 			LongFunction<BFTValidatorSet> validatorSetMapping = epochNodeWeightMapping == null
 				? epoch -> completeEqualWeightValidatorSet(this.nodes)
 				: epoch -> partialMixedWeightValidatorSet(epoch, this.nodes, this.epochNodeWeightMapping);
 
 			ImmutableList.Builder<Module> modules = ImmutableList.builder();
-			modules.add(new LedgerModule());
-			modules.add(new LedgerCommandGeneratorModule());
 			modules.add(new LedgerLocalMempoolModule(10));
 			modules.add(new DeterministicMempoolModule());
 
-			if (epochHighView == null) {
+			if (ledgerType == LedgerType.MOCKED_LEDGER) {
 				BFTValidatorSet validatorSet = validatorSetMapping.apply(1L);
 				modules.add(new AbstractModule() {
 					@Override
@@ -157,11 +161,24 @@ public final class DeterministicTest {
 					}
 				});
 				modules.add(new MockedStateComputerModule());
-				modules.add(this.syncedExecutorModule);
+				modules.add(new MockedLedgerModule());
+
+				// TODO: remove the following
+				modules.add(new EpochsConsensusModule(1, 2.0, 0));
+				modules.add(new EpochsLedgerUpdateModule());
 			} else {
 				// TODO: adapter from LongFunction<BFTValidatorSet> to Function<Long, BFTValidatorSet> shouldn't be needed
 				Function<Long, BFTValidatorSet> epochToValidatorSetMapping = validatorSetMapping::apply;
-				modules.add(new LedgerEpochChangeModule());
+				modules.add(new AbstractModule() {
+					@Override
+					public void configure() {
+						bind(BFTValidatorSet.class).toInstance(epochToValidatorSetMapping.apply(1L));
+					}
+				});
+				modules.add(new LedgerModule());
+				modules.add(new EpochsConsensusModule(1, 2.0, 0));
+				modules.add(new EpochsLedgerUpdateModule());
+				modules.add(new LedgerCommandGeneratorModule());
 				modules.add(new MockedSyncServiceModule());
 				modules.add(new MockedStateComputerWithEpochsModule(epochHighView, epochToValidatorSetMapping));
 			}
@@ -169,7 +186,8 @@ public final class DeterministicTest {
 				this.nodes,
 				this.messageSelector,
 				this.messageMutator,
-				modules.build()
+				modules.build(),
+				overrideModule
 			);
 		}
 

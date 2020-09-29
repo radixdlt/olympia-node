@@ -20,57 +20,28 @@ package com.radixdlt.integration.distributed.simulation;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
-import com.google.inject.Singleton;
-import com.radixdlt.ConsensusRunner;
-import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.BFTEventProcessor;
-import com.radixdlt.consensus.BFTFactory;
-import com.radixdlt.consensus.Ledger;
-import com.radixdlt.consensus.ProposerElectionFactory;
+import com.google.inject.multibindings.MapBinder;
+import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.Timeout;
-import com.radixdlt.consensus.VertexStoreEventProcessor;
-import com.radixdlt.consensus.VertexStoreFactory;
+import com.radixdlt.consensus.sync.BFTSyncResponseProcessor;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.VertexStore;
+import com.radixdlt.consensus.sync.VertexStoreSync;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
-import com.radixdlt.consensus.liveness.PacemakerFactory;
-import java.util.function.Function;
+import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
+import com.radixdlt.integration.distributed.BFTRunner;
 
 public class MockedConsensusRunnerModule extends AbstractModule {
 	@Override
 	public void configure() {
-		bind(ConsensusRunner.class).to(BFTRunner.class).in(Scopes.SINGLETON);
-		bind(VertexStoreEventProcessor.class).to(VertexStore.class).in(Scopes.SINGLETON);
+		MapBinder<String, ModuleRunner> moduleRunners = MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class);
+		moduleRunners.addBinding("consensus").to(BFTRunner.class).in(Scopes.SINGLETON);
+		bind(BFTSyncResponseProcessor.class).to(VertexStoreSync.class).in(Scopes.SINGLETON);
 	}
-
-	@Provides
-	@Singleton
-	public BFTEventProcessor eventProcessor(
-		BFTNode self,
-		Function<BFTNode, BFTConfiguration> config,
-		BFTFactory bftFactory,
-		PacemakerFactory pacemakerFactory,
-		VertexStore vertexStore,
-		ProposerElectionFactory proposerElectionFactory,
-		LocalTimeoutSender localTimeoutSender,
-		BFTInfoSender infoSender
-	) {
-		return bftFactory.create(
-			self,
-			header -> { },
-			pacemakerFactory.create((view, ms) -> localTimeoutSender.scheduleTimeout(new LocalTimeout(1, view), ms)),
-			vertexStore,
-			proposerElectionFactory.create(config.apply(self).getValidatorSet()),
-			config.apply(self).getValidatorSet(),
-			infoSender
-		);
-	}
-
 
 	@Provides
 	public BFTInfoSender bftInfoSender(EpochInfoSender epochInfoSender) {
@@ -88,13 +59,7 @@ public class MockedConsensusRunnerModule extends AbstractModule {
 	}
 
 	@Provides
-	@Singleton
-	public VertexStore vertexStore(
-		BFTNode self,
-		Function<BFTNode, BFTConfiguration> config,
-		VertexStoreFactory vertexStoreFactory,
-		Ledger ledger
-	) {
-		return vertexStoreFactory.create(config.apply(self).getGenesisVertex(), config.apply(self).getGenesisQC(), ledger);
+	private PacemakerTimeoutSender initialTimeoutSender(LocalTimeoutSender localTimeoutSender) {
+		 return (view, ms) -> localTimeoutSender.scheduleTimeout(new LocalTimeout(1, view), ms);
 	}
 }

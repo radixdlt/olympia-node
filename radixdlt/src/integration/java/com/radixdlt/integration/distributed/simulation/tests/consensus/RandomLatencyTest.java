@@ -19,12 +19,9 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
+import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
-import java.util.Map;
-import java.util.Optional;
-import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -46,8 +43,8 @@ public class RandomLatencyTest {
 
 	private Builder bftTestBuilder = SimulationTest.builder()
 		.randomLatency(minLatency, maxLatency)
-		.setGetVerticesRPCEnabled(false)
 		.pacemakerTimeout(synchronousTimeout) // Since no syncing needed 6*MTT required
+		.addVerticesSyncDropper()
 		.checkConsensusLiveness("liveness", synchronousTimeout, TimeUnit.MILLISECONDS)
 		.checkConsensusSafety("safety")
 		.checkConsensusAllProposalsHaveDirectParents("directParents")
@@ -62,8 +59,8 @@ public class RandomLatencyTest {
 			.numNodes(3)
 			.build();
 
-		Map<String, Optional<TestInvariantError>> results = test.run(1, TimeUnit.MINUTES);
-		assertThat(results).allSatisfy((name, error) -> AssertionsForClassTypes.assertThat(error).isNotPresent());
+		TestResults results = test.run();
+		assertThat(results.getCheckResults()).allSatisfy((name, error) -> assertThat(error).isNotPresent());
 	}
 
 	/**
@@ -75,7 +72,7 @@ public class RandomLatencyTest {
 			.numNodes(4)
 			.build();
 
-		Map<String, Optional<TestInvariantError>> results = test.run(1, TimeUnit.MINUTES);
-		assertThat(results).allSatisfy((name, error) -> assertThat(error).isNotPresent());
+		TestResults results = test.run();
+		assertThat(results.getCheckResults()).allSatisfy((name, error) -> assertThat(error).isNotPresent());
 	}
 }

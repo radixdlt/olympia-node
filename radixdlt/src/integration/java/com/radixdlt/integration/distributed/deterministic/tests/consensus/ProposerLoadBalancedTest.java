@@ -41,7 +41,6 @@ public class ProposerLoadBalancedTest {
 		DeterministicTest test = DeterministicTest.builder()
 			.numNodes(numNodes)
 			.messageSelector(MessageSelector.selectAndStopAt(MessageSelector.randomSelector(random), View.of(numViews)))
-			.alwaysSynced()
 			.epochNodeWeightMapping(mapping)
 			.build()
 			.run();

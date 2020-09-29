@@ -35,7 +35,6 @@ public class OneProposalTimeoutResponsiveTest {
 	private void run(int numNodes, long numViews, long dropPeriod) {
 		DeterministicTest test = DeterministicTest.builder()
 			.numNodes(numNodes)
-			.alwaysSynced()
 			.messageSelector(MessageSelector.selectAndStopAt(MessageSelector.randomSelector(random), View.of(numViews)))
 			.messageMutator(dropSomeProposals(dropPeriod))
 			.build()

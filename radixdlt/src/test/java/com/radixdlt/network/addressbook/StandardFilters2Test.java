@@ -24,13 +24,11 @@ import com.radixdlt.network.transport.udp.UDPConstants;
 import com.radixdlt.properties.RuntimeProperties;
 
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.radix.network.discovery.Whitelist;
 import org.radix.serialization.TestSetupUtils;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
@@ -45,12 +43,6 @@ public class StandardFilters2Test {
 	@BeforeClass
 	public static void beforeClass() {
 		TestSetupUtils.installBouncyCastleProvider();
-	}
-
-	@Test
-	@Ignore("Haven't bothered with this as all the components are checked")
-	public void testStandardFilter() {
-		fail("Not yet implemented");
 	}
 
 	@Test
