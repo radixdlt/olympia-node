@@ -130,9 +130,8 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 	}
 
 	@Override
-	public Optional<View> processQC(QuorumCertificate qc) {
-		qc.getCommittedAndLedgerStateProof().ifPresent(p ->
-			this.highestCommitView = max(this.highestCommitView, qc.getView()));
+	public Optional<View> processQC(QuorumCertificate qc, QuorumCertificate highestCommittedQC) {
+		this.highestCommitView = highestCommittedQC.getView();
 		return processNextView(qc.getView());
 	}
 

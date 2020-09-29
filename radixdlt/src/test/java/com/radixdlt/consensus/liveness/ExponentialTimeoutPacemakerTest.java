@@ -259,50 +259,11 @@ public class ExponentialTimeoutPacemakerTest {
 		when(qc.getCommittedAndLedgerStateProof())
 			.thenReturn(Optional.of(Pair.of(mock(BFTHeader.class), mock(VerifiedLedgerHeaderAndProof.class))));
 
-		this.pacemaker.processQC(qc);
+		this.pacemaker.processQC(qc, qc);
 
 		verify(this.timeoutSender, times(1)).scheduleTimeout(eq(view.next()), eq(this.timeout));
 		assertThat(this.pacemaker.getCurrentView()).isEqualTo(view.next());
 		assertThat(this.pacemaker.highestCommitView()).isEqualTo(view);
-	}
-
-	@Test
-	public void when_processing_qc_with_old_commit__highest_commit_view_not_updated() {
-		View view2 = View.of(2);
-		QuorumCertificate qc2 = mock(QuorumCertificate.class);
-		when(qc2.getView()).thenReturn(view2);
-		when(qc2.getCommittedAndLedgerStateProof())
-			.thenReturn(Optional.of(Pair.of(mock(BFTHeader.class), mock(VerifiedLedgerHeaderAndProof.class))));
-
-		this.pacemaker.processQC(qc2);
-
-		assertThat(this.pacemaker.getCurrentView()).isEqualTo(view2.next());
-		assertThat(this.pacemaker.highestCommitView()).isEqualTo(view2);
-
-		View view1 = View.of(1);
-		QuorumCertificate qc1 = mock(QuorumCertificate.class);
-		when(qc1.getView()).thenReturn(view1);
-		when(qc1.getCommittedAndLedgerStateProof())
-			.thenReturn(Optional.of(Pair.of(mock(BFTHeader.class), mock(VerifiedLedgerHeaderAndProof.class))));
-
-		this.pacemaker.processQC(qc1);
-		assertThat(this.pacemaker.getCurrentView()).isEqualTo(view2.next());
-		assertThat(this.pacemaker.highestCommitView()).isEqualTo(view2);
-	}
-
-	@Test
-	public void when_processing_qc_without_commit__highest_commit_view_not_updated() {
-		View view = View.of(2);
-		QuorumCertificate qc = mock(QuorumCertificate.class);
-		when(qc.getView()).thenReturn(view);
-		when(qc.getCommittedAndLedgerStateProof()).thenReturn(Optional.empty());
-
-		this.pacemaker.processQC(qc);
-
-		long expectedTimeout = Math.round(this.timeout * Math.pow(this.rate, 2));
-		verify(this.timeoutSender, times(1)).scheduleTimeout(eq(view.next()), eq(expectedTimeout));
-		assertThat(this.pacemaker.getCurrentView()).isEqualTo(view.next());
-		assertThat(this.pacemaker.highestCommitView()).isEqualTo(View.genesis());
 	}
 
 	@Test

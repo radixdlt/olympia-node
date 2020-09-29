@@ -180,7 +180,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 		// proceed to next view if pacemaker feels like it
 		// TODO: should we proceed even if end of epoch?
-		this.pacemaker.processQC(qc)
+		this.pacemaker.processQC(qc, this.vertexStore.getHighestCommittedQC())
 			.ifPresent(this::proceedToView);
 
 		return qc.getCommittedAndLedgerStateProof().map(Pair::getSecond);
@@ -321,7 +321,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 	@Override
 	public void start() {
-		this.pacemaker.processQC(this.vertexStore.getHighestQC())
+		this.pacemaker.processQC(this.vertexStore.getHighestQC(), this.vertexStore.getHighestCommittedQC())
 			.ifPresent(this::proceedToView);
 	}
 

@@ -40,7 +40,7 @@ public interface Pacemaker extends PacemakerState {
 	 * @param qc the quorum certificate
 	 * @return optional with view, if the pacemaker changes views within the call
 	 */
-	Optional<View> processQC(QuorumCertificate qc);
+	Optional<View> processQC(QuorumCertificate qc, QuorumCertificate highestCommittedQC);
 
 	// FIXME: Temporary
 	Optional<View> processNextView(View view);
