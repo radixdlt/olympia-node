@@ -403,7 +403,7 @@ public class Universe {
 
 	@JsonProperty("creator")
 	private void setJsonCreator(byte[] bytes) throws CryptoException {
-		this.creator = new ECPublicKey(bytes);
+		this.creator = ECPublicKey.fromBytes(bytes);
 	}
 
 	// Signature - 2 getters, 2 setters.
