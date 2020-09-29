@@ -105,8 +105,7 @@ public class TokensConstraintScryptTest {
 			MutableSupplyTokenDefinitionParticle.TokenTransition.BURN, TokenPermission.ALL
 		);
 		MutableSupplyTokenDefinitionParticle token = new MutableSupplyTokenDefinitionParticle(
-			addr,
-			"TOK",
+			RRI.of(addr, "TOK"),
 			null,
 			null,
 			UInt256.ONE,
@@ -125,8 +124,7 @@ public class TokensConstraintScryptTest {
 			MutableSupplyTokenDefinitionParticle.TokenTransition.BURN, TokenPermission.ALL
 		);
 		MutableSupplyTokenDefinitionParticle token = new MutableSupplyTokenDefinitionParticle(
-			addr,
-			"TOK",
+			RRI.of(addr, "TOK"),
 			"",
 			"",
 			UInt256.ONE,

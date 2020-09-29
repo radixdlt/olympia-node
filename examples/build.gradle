@@ -20,8 +20,6 @@ version '1.0-SNAPSHOT'
 
 apply plugin: 'java'
 
-sourceCompatibility = 1.8
-
 repositories {
     mavenCentral()
     maven { url 'https://jitpack.io' }
@@ -32,6 +30,7 @@ sonarqube {
 }
 
 compileJava {
+    options.release = 11
     options.compilerArgs += '-proc:none'
 }
 

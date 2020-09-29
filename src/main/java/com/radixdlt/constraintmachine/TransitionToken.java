@@ -75,7 +75,7 @@ public final class TransitionToken<I extends Particle, N extends UsedData, O ext
 			return false;
 		}
 
-		TransitionToken t = (TransitionToken) obj;
+		TransitionToken<?, ?, ?, ?> t = (TransitionToken<?, ?, ?, ?>) obj;
 
 		return Objects.equals(t.inputClass, this.inputClass)
 			&& Objects.equals(t.inputUsedClass, this.inputUsedClass)
