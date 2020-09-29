@@ -102,6 +102,15 @@ jacocoTestReport {
     }
 }
 
+configurations.all {
+    resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+        if (details.requested.group == 'com.google.guava' && details.requested.name == 'guava' && details.requested.version == '29.0-android') {
+            details.useVersion '29.0'
+            details.because "Don't use Android version for regular code"
+        }
+    }
+}
+
 dependencies {
     api group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.13.1'
     api group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.13.1'
