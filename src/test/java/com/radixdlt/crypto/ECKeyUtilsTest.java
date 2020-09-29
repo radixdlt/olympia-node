@@ -83,4 +83,63 @@ public class ECKeyUtilsTest {
 		Arrays.fill(testArray, (byte) 1);
 		ECKeyUtils.adjustArray(testArray, ECKeyPair.BYTES);
 	}
+
+	@Test(expected = CryptoException.class)
+	public void testValidatePublicFailForNullInput() throws CryptoException {
+		ECKeyUtils.validatePublic(null);
+	}
+
+	@Test(expected = CryptoException.class)
+	public void testValidatePublicFailForEmptyInput() throws CryptoException {
+		ECKeyUtils.validatePublic(new byte[] {});
+	}
+
+	@Test
+	public void testValidatePublicPassForType2Key() throws CryptoException {
+		var key = new byte[ECPublicKey.BYTES + 1];
+		key[0] = 0x02;
+		ECKeyUtils.validatePublic(key);
+	}
+
+	@Test(expected = CryptoException.class)
+	public void testValidatePublicFailForType2Key() throws CryptoException {
+		var key = new byte[ECPublicKey.BYTES + 1 + 1];
+		key[0] = 0x02;
+		ECKeyUtils.validatePublic(key);
+	}
+
+	@Test
+	public void testValidatePublicPassForType3Key() throws CryptoException {
+		var key = new byte[ECPublicKey.BYTES + 1];
+		key[0] = 0x03;
+		ECKeyUtils.validatePublic(key);
+	}
+
+	@Test(expected = CryptoException.class)
+	public void testValidatePublicFailForType3Key() throws CryptoException {
+		var key = new byte[ECPublicKey.BYTES + 1 + 1];
+		key[0] = 0x03;
+		ECKeyUtils.validatePublic(key);
+	}
+
+	@Test
+	public void testValidatePublicPassForType4Key() throws CryptoException {
+		var key = new byte[(ECPublicKey.BYTES * 2) + 1];
+		key[0] = 0x04;
+		ECKeyUtils.validatePublic(key);
+	}
+
+	@Test(expected = CryptoException.class)
+	public void testValidatePublicFailForType4Key() throws CryptoException {
+		var key = new byte[(ECPublicKey.BYTES * 2) + 1 + 1];
+		key[0] = 0x04;
+		ECKeyUtils.validatePublic(key);
+	}
+
+	@Test(expected = CryptoException.class)
+	public void testValidatePublicFailForUnknownTypeKey() throws CryptoException {
+		var key = new byte[ECPublicKey.BYTES + 1];
+		key[0] = 0x05;
+		ECKeyUtils.validatePublic(key);
+	}
 }
