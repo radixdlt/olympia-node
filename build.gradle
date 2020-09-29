@@ -128,7 +128,7 @@ jacocoTestReport {
 
 dependencies {
     compile 'com.github.radixdlt:radixdlt-java-common:integration~switch-to-factory-methods-SNAPSHOT'
-    testCompile('com.google.guava:guava:27.1-jre') { force = true }
+
     testCompile('org.objenesis:objenesis:3.1') { force = true }
     testCompile('org.javassist:javassist:3.27.0-GA') { force = true }
     testCompile('net.bytebuddy:byte-buddy:1.10.13') { force = true }
