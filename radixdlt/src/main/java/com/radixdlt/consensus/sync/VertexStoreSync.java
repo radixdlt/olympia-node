@@ -142,9 +142,7 @@ public final class VertexStoreSync implements BFTSyncResponseProcessor, BFTUpdat
 			return SyncResult.INVALID;
 		}
 
-		final Hash vertexId = qc.getProposed().getVertexId();
-
-		if (vertexStore.containsVertex(vertexId)) {
+		if (vertexStore.addQC(qc)) {
 			return SyncResult.SYNCED;
 		}
 
@@ -157,6 +155,7 @@ public final class VertexStoreSync implements BFTSyncResponseProcessor, BFTUpdat
 
 		log.trace("SYNC_TO_QC: Need sync: {} {}", qc, committedQC);
 
+		final Hash vertexId = qc.getProposed().getVertexId();
 		if (syncing.containsKey(vertexId)) {
 			return SyncResult.IN_PROGRESS;
 		}

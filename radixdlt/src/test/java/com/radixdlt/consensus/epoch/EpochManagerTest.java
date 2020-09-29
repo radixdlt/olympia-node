@@ -116,6 +116,7 @@ public class EpochManagerTest {
 
 		EpochChange initial = mock(EpochChange.class);
 		when(initial.getProof()).thenReturn(VerifiedLedgerHeaderAndProof.genesis(mock(Hash.class)));
+		when(initial.getEpoch()).thenReturn(1L);
 		BFTConfiguration config = mock(BFTConfiguration.class);
 		when(config.getValidatorSet()).thenReturn(BFTValidatorSet.from(ImmutableSet.of()));
 		when(initial.getBFTConfiguration()).thenReturn(config);

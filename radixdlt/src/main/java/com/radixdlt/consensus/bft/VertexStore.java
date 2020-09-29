@@ -151,6 +151,8 @@ public final class VertexStore {
 			return false;
 		}
 
+		// TODO: check if already added
+
 		if (highestQC.getView().compareTo(qc.getView()) < 0) {
 			highestQC = qc;
 			vertexStoreEventSender.highQC(qc);
