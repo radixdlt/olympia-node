@@ -28,6 +28,7 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.bft.BFTSyncer.SyncResult;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
@@ -191,11 +192,15 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		Hash vertexId = update.getInsertedVertex().getId();
 		QuorumCertificate qc = unsyncedQCs.remove(vertexId);
 		if (qc != null) {
-			if (bftSyncer.syncToQC(qc, vertexStore.getHighestCommittedQC(), null)) {
-				processQC(qc);
-				log.trace("LOCAL_SYNC: processed QC: {}", () ->  qc);
-			} else {
-				unsyncedQCs.put(qc.getProposed().getVertexId(), qc);
+			SyncResult syncResult = bftSyncer.syncToQC(qc, vertexStore.getHighestCommittedQC(), null);
+			switch (syncResult) {
+				case SYNCED:
+					processQC(qc);
+				// Fall through
+				case INVALID:
+					break;
+				case IN_PROGRESS:
+					unsyncedQCs.put(qc.getProposed().getVertexId(), qc);
 			}
 		}
 	}
@@ -207,22 +212,27 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		// accumulate votes into QCs in store
 		this.pendingVotes.insertVote(vote, this.validatorSet).ifPresent(qc -> {
 			log.trace("VOTE: Formed QC: {}", () -> qc);
-			if (bftSyncer.syncToQC(qc, vertexStore.getHighestCommittedQC(), vote.getAuthor())) {
-				if (!synchedLog) {
-					log.debug("VOTE: QC Synced: {}", () -> qc);
-					synchedLog = true;
-				}
-				processQC(qc).ifPresent(committedProof -> {
-					if (committedProof.isEndOfEpoch()) {
-						this.endOfEpochSender.sendEndOfEpoch(committedProof);
+			SyncResult syncResult = bftSyncer.syncToQC(qc, vertexStore.getHighestCommittedQC(), vote.getAuthor());
+			switch (syncResult) {
+				case SYNCED:
+					if (!synchedLog) {
+						log.debug("VOTE: QC Synced: {}", () -> qc);
+						synchedLog = true;
 					}
-				});
-			} else {
-				if (synchedLog) {
-					log.debug("VOTE: QC Not synced: {}", () -> qc);
-					synchedLog = false;
-				}
-				unsyncedQCs.put(qc.getProposed().getVertexId(), qc);
+					processQC(qc).ifPresent(committedProof -> {
+						if (committedProof.isEndOfEpoch()) {
+							this.endOfEpochSender.sendEndOfEpoch(committedProof);
+						}
+					});
+				// Fall through
+				case INVALID:
+					break;
+				case IN_PROGRESS:
+					if (synchedLog) {
+						log.debug("VOTE: QC Not synced: {}", () -> qc);
+						synchedLog = false;
+					}
+					unsyncedQCs.put(qc.getProposed().getVertexId(), qc);
 			}
 		});
 	}

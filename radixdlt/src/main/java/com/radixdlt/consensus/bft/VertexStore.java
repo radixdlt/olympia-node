@@ -185,20 +185,24 @@ public final class VertexStore {
 			counters.increment(CounterType.BFT_INDIRECT_PARENT);
 		}
 
-		LedgerHeader ledgerHeader = ledger.prepare(vertex);
-
 		// TODO: Don't check for state computer errors for now so that we don't
 		// TODO: have to deal with failing leader proposals
 		// TODO: Reinstate this when ProposalGenerator + Mempool can guarantee correct proposals
 		// TODO: (also see commitVertex->storeAtom)
+		LedgerHeader ledgerHeader = ledger.prepare(vertex);
 
-		vertices.put(vertex.getId(), vertex);
-		vertexNumChildren.merge(vertex.getParentId(), 1, Integer::sum);
+		if (!vertices.containsKey(vertex.getId())) {
+			vertices.put(vertex.getId(), vertex);
+			int numChildren = vertexNumChildren.merge(vertex.getParentId(), 1, Integer::sum);
+			if (numChildren > 1) {
+				this.counters.increment(CounterType.BFT_VERTEX_STORE_FORK_COUNT);
+			}
 
-		updateVertexStoreSize();
+			updateVertexStoreSize();
 
-		final BFTUpdate update = new BFTUpdate(vertex);
-		bftUpdateSender.sendBFTUpdate(update);
+			final BFTUpdate update = new BFTUpdate(vertex);
+			bftUpdateSender.sendBFTUpdate(update);
+		}
 
 		return new BFTHeader(vertex.getView(), vertex.getId(), ledgerHeader);
 	}
@@ -310,7 +314,5 @@ public final class VertexStore {
 
 	private void updateVertexStoreSize() {
 		this.counters.set(CounterType.BFT_VERTEX_STORE_SIZE, this.vertices.size());
-		int forkCount = this.vertexNumChildren.values().stream().mapToInt(i -> i - 1).sum();
-		this.counters.set(CounterType.BFT_VERTEX_STORE_FORK_COUNT, forkCount);
 	}
 }

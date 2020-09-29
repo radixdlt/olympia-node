@@ -137,30 +137,28 @@ public final class VertexStoreSync implements BFTSyncResponseProcessor, BFTUpdat
 	}
 
 	@Override
-	public boolean syncToQC(QuorumCertificate qc, QuorumCertificate committedQC, @Nullable BFTNode author) {
+	public SyncResult syncToQC(QuorumCertificate qc, QuorumCertificate committedQC, @Nullable BFTNode author) {
 		if (qc.getProposed().getView().compareTo(vertexStore.getRoot().getView()) < 0) {
-			return true;
+			return SyncResult.INVALID;
 		}
 
 		final Hash vertexId = qc.getProposed().getVertexId();
 
 		if (vertexStore.containsVertex(vertexId)) {
-			return true;
+			return SyncResult.SYNCED;
 		}
 
 		// TODO: Move this check into pre-check
 		// Bad genesis qc, ignore...
 		if (qc.getView().isGenesis()) {
 			log.warn("SYNC_TO_QC: Bad Genesis: {} {}", qc, committedQC);
-			return false;
+			return SyncResult.INVALID;
 		}
 
 		log.trace("SYNC_TO_QC: Need sync: {} {}", qc, committedQC);
 
 		if (syncing.containsKey(vertexId)) {
-			// TODO: what if this committedQC is greater than the one currently in the queue
-			// TODO: then should possibly replace the current one
-			return false;
+			return SyncResult.IN_PROGRESS;
 		}
 
 		if (author == null) {
@@ -169,7 +167,7 @@ public final class VertexStoreSync implements BFTSyncResponseProcessor, BFTUpdat
 
 		this.startSync(vertexId, qc, committedQC, author);
 
-		return false;
+		return SyncResult.IN_PROGRESS;
 	}
 
 	@Override

@@ -31,6 +31,7 @@ import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
 import com.radixdlt.consensus.bft.BFTEventReducer.EndOfEpochSender;
+import com.radixdlt.consensus.bft.BFTSyncer.SyncResult;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
@@ -134,7 +135,7 @@ public class BFTEventReducerTest {
 		when(header.getVertexId()).thenReturn(id);
 		when(qc.getProposed()).thenReturn(header);
 		when(pendingVotes.insertVote(eq(vote), eq(validatorSet))).thenReturn(Optional.of(qc));
-		when(vertexStoreSync.syncToQC(eq(qc), any(), any())).thenReturn(false);
+		when(vertexStoreSync.syncToQC(eq(qc), any(), any())).thenReturn(SyncResult.IN_PROGRESS);
 		reducer.processVote(vote);
 		verify(safetyRules, never()).process(any());
 		verify(pacemaker, never()).processQC(any(), any());
@@ -179,7 +180,7 @@ public class BFTEventReducerTest {
 		when(pendingVotes.insertVote(eq(vote), any())).thenReturn(Optional.of(qc));
 		when(pacemaker.getCurrentView()).thenReturn(mock(View.class));
 		when(pacemaker.processQC(eq(qc), any())).thenReturn(Optional.of(mock(View.class)));
-		when(vertexStoreSync.syncToQC(eq(qc), any(), any())).thenReturn(true);
+		when(vertexStoreSync.syncToQC(eq(qc), any(), any())).thenReturn(SyncResult.SYNCED);
 		when(vertexStore.getHighestQC()).thenReturn(mock(QuorumCertificate.class));
 
 		reducer.processVote(vote);

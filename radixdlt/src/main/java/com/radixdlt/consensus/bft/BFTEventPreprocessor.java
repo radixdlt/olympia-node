@@ -23,6 +23,7 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.RequiresSyncConsensusEvent;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.bft.BFTSyncer.SyncResult;
 import com.radixdlt.consensus.bft.SyncQueues.SyncQueue;
 import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.liveness.ProposerElection;
@@ -67,6 +68,27 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		this.proposerElection = Objects.requireNonNull(proposerElection);
 		this.queues = queues;
 		this.forwardTo = forwardTo;
+	}
+
+	private boolean clearAndExecute(SyncQueue queue, View view) {
+		final RequiresSyncConsensusEvent event = queue.clearViewAndGetNext(view);
+		if (event == null) {
+			return false;
+		}
+
+		// Explicitly using switch case method here rather than functional method
+		// to process these events due to much better performance
+		if (event instanceof NewView) {
+			final NewView newView = (NewView) event;
+			return this.processNewViewInternal(newView);
+		}
+
+		if (event instanceof Proposal) {
+			final Proposal proposal = (Proposal) event;
+			return this.processProposalInternal(proposal);
+		}
+
+		throw new IllegalStateException("Unexpected consensus event: " + event);
 	}
 
 	private boolean peekAndExecute(SyncQueue queue, Hash vertexId) {
@@ -142,11 +164,17 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 			return true;
 		}
 
-		if (this.bftSyncer.syncToQC(newView.getQC(), newView.getCommittedQC(), newView.getAuthor())) {
-			forwardTo.processNewView(newView);
-			return true;
-		} else {
-			return false;
+		SyncResult syncResult = this.bftSyncer.syncToQC(newView.getQC(), newView.getCommittedQC(), newView.getAuthor());
+		switch (syncResult) {
+			case SYNCED:
+				forwardTo.processNewView(newView);
+			// Fall through
+			case INVALID:
+				return true;
+			case IN_PROGRESS:
+				return false;
+			default:
+				throw new IllegalStateException("Unknown syncResult " + syncResult);
 		}
 	}
 
@@ -174,11 +202,17 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 			return true;
 		}
 
-		if (this.bftSyncer.syncToQC(proposal.getQC(), proposal.getCommittedQC(), proposal.getAuthor())) {
-			forwardTo.processProposal(proposal);
-			return true;
-		} else {
-			return false;
+		SyncResult syncResult = this.bftSyncer.syncToQC(proposal.getQC(), proposal.getCommittedQC(), proposal.getAuthor());
+		switch (syncResult) {
+			case SYNCED:
+				forwardTo.processProposal(proposal);
+				// Fall through
+			case INVALID:
+				return true;
+			case IN_PROGRESS:
+				return false;
+			default:
+				throw new IllegalStateException("Unknown syncResult " + syncResult);
 		}
 	}
 
@@ -200,8 +234,16 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		final View nextView = this.pacemakerState.getCurrentView();
 		if (!curView.equals(nextView)) {
 			log.debug("{}: LOCAL_TIMEOUT: Clearing Queues: {}", this.self::getSimpleName, () -> queues);
-			queues.clear();
-			bftSyncer.clearSyncs();
+			for (SyncQueue queue : queues.getQueues()) {
+				if (clearAndExecute(queue, nextView.previous())) {
+					queue.pop();
+					while (peekAndExecute(queue, null)) {
+						queue.pop();
+					}
+				}
+			}
+			//queues.clear();
+			//bftSyncer.clearSyncs();
 		}
 	}
 

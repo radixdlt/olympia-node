@@ -76,6 +76,7 @@ import com.radixdlt.integration.distributed.simulation.invariants.ledger.LedgerI
 import com.radixdlt.integration.distributed.simulation.network.DroppingLatencyProvider;
 import com.radixdlt.integration.distributed.simulation.network.OneProposalPerViewDropper;
 import com.radixdlt.integration.distributed.simulation.network.RandomLatencyProvider;
+import com.radixdlt.integration.distributed.simulation.network.RandomNewViewDropper;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.mempool.LocalMempool;
@@ -193,6 +194,11 @@ public class SimulationTest {
 
 		public Builder overrideWithIncorrectModule(Module module) {
 			this.overrideModule = module;
+			return this;
+		}
+
+		public Builder addRandomNewViewDropper(double drops) {
+			this.latencyProvider.addDropper(new RandomNewViewDropper(new Random(), drops));
 			return this;
 		}
 

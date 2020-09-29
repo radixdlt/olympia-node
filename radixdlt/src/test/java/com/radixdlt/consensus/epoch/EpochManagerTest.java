@@ -43,6 +43,7 @@ import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.BFTHeader;
+import com.radixdlt.consensus.bft.BFTSyncer.SyncResult;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexStoreSync;
@@ -313,7 +314,7 @@ public class EpochManagerTest {
 
 		verify(eventProcessor, times(1)).start();
 
-		when(vertexStoreSync.syncToQC(any(), any(), any())).thenReturn(true);
+		when(vertexStoreSync.syncToQC(any(), any(), any())).thenReturn(SyncResult.SYNCED);
 		when(pacemaker.getCurrentView()).thenReturn(View.of(0));
 
 		Proposal proposal = mock(Proposal.class);
@@ -386,7 +387,7 @@ public class EpochManagerTest {
 
 		when(pacemaker.getCurrentView()).thenReturn(View.genesis());
 		when(vertexStore.getHighestQC()).thenReturn(mock(QuorumCertificate.class));
-		when(vertexStoreSync.syncToQC(any(), any(), any())).thenReturn(true);
+		when(vertexStoreSync.syncToQC(any(), any(), any())).thenReturn(SyncResult.SYNCED);
 
 		Proposal proposal = mock(Proposal.class);
 		UnverifiedVertex vertex = mock(UnverifiedVertex.class);

@@ -33,6 +33,7 @@ import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
+import com.radixdlt.consensus.bft.BFTSyncer.SyncResult;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.sync.VertexStoreSync;
@@ -90,7 +91,7 @@ public class BFTEventPreprocessorTest {
 		when(newView.getQC()).thenReturn(qc);
 		QuorumCertificate committedQC = mock(QuorumCertificate.class);
 		when(newView.getCommittedQC()).thenReturn(committedQC);
-		when(vertexStoreSync.syncToQC(eq(qc), eq(committedQC), any())).thenReturn(synced);
+		when(vertexStoreSync.syncToQC(eq(qc), eq(committedQC), any())).thenReturn(synced ? SyncResult.SYNCED : SyncResult.IN_PROGRESS);
 		return newView;
 	}
 
@@ -110,7 +111,7 @@ public class BFTEventPreprocessorTest {
 		when(proposal.getCommittedQC()).thenReturn(committedQC);
 		when(proposal.getQC()).thenReturn(qc);
 
-		when(vertexStoreSync.syncToQC(eq(qc), eq(committedQC), any())).thenReturn(synced);
+		when(vertexStoreSync.syncToQC(eq(qc), eq(committedQC), any())).thenReturn(synced ? SyncResult.SYNCED : SyncResult.IN_PROGRESS);
 		return proposal;
 	}
 

@@ -21,6 +21,7 @@ import com.radixdlt.consensus.RequiresSyncConsensusEvent;
 import com.radixdlt.crypto.Hash;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.StringJoiner;
@@ -88,6 +89,20 @@ public final class SyncQueues {
 			queue.addLast(event);
 		}
 
+		public RequiresSyncConsensusEvent clearViewAndGetNext(View view) {
+			Iterator<RequiresSyncConsensusEvent> eventsIterator = queue.iterator();
+			while(eventsIterator.hasNext()) {
+				RequiresSyncConsensusEvent event = eventsIterator.next();
+				if (event.getView().compareTo(view) <= 0) {
+					eventsIterator.remove();
+				} else {
+					return event;
+				}
+			}
+
+			return null;
+		}
+
 		@Override
 		public String toString() {
 			return queue.toString();
@@ -108,10 +123,6 @@ public final class SyncQueues {
 
 	void add(RequiresSyncConsensusEvent event) {
 		queues.computeIfAbsent(event.getAuthor(), a -> new SyncQueue()).add(event);
-	}
-
-	void clear() {
-		queues.clear();
 	}
 
 	@Override
