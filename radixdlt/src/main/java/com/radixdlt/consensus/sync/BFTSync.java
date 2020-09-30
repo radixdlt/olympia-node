@@ -175,13 +175,6 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 		return SyncResult.IN_PROGRESS;
 	}
 
-	@Override
-	public void clearSyncs() {
-		ledgerSyncing.clear();
-		bftSyncing.clear();
-		syncing.clear();
-	}
-
 	private boolean requiresLedgerSync(SyncState syncState) {
 		final BFTHeader committedHeader = syncState.committedHeader;
 		if (!vertexStore.containsVertex(committedHeader.getVertexId())) {

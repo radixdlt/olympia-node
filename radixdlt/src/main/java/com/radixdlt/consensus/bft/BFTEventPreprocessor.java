@@ -70,6 +70,8 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		this.forwardTo = forwardTo;
 	}
 
+	// TODO: Cleanup
+	// TODO: remove queues and treat each message independently
 	private boolean clearAndExecute(SyncQueue queue, View view) {
 		final RequiresSyncConsensusEvent event = queue.clearViewAndGetNext(view);
 		if (event == null) {
@@ -242,7 +244,6 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 					}
 				}
 			}
-			//bftSyncer.clearSyncs();
 		}
 	}
 

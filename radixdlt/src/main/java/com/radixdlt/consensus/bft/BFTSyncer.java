@@ -43,6 +43,4 @@ public interface BFTSyncer {
 	 * @return true if already synced, false otherwise
 	 */
 	SyncResult syncToQC(QuorumCertificate qc, QuorumCertificate committedQC, @Nullable BFTNode author);
-
-	void clearSyncs();
 }

@@ -45,7 +45,7 @@ public class MockedConsensusRunnerModule extends AbstractModule {
 	}
 
 	@Provides
-	public PacemakerInfoSender bftInfoSender(EpochInfoSender epochInfoSender, ProposerElection proposerElection) {
+	public PacemakerInfoSender pacemakerInfoSender(EpochInfoSender epochInfoSender, ProposerElection proposerElection) {
 		return new PacemakerInfoSender() {
 			@Override
 			public void sendCurrentView(View view) {

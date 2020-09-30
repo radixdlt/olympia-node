@@ -25,6 +25,9 @@ import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Sends a signed new view message to the leader of the view
+ */
 public final class SignedNewViewToLeaderSender implements ProceedToViewSender {
 	private static final Logger log = LogManager.getLogger();
 

@@ -27,6 +27,9 @@ import com.radixdlt.crypto.Hash;
 import com.radixdlt.utils.Longs;
 import java.util.Objects;
 
+/**
+ * Creates and signs a new-view message
+ */
 public final class NewViewSigner {
 	private final HashSigner signer;
 	private final BFTNode self;
@@ -55,5 +58,4 @@ public final class NewViewSigner {
 			signature
 		);
 	}
-
 }
