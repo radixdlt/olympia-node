@@ -28,5 +28,9 @@ public interface PacemakerFactory {
 	 * Creates a new clean pacemaker
 	 * @return a new pacemaker
 	 */
-	Pacemaker create(PacemakerTimeoutSender timeoutSender, PacemakerInfoSender infoSender);
+	Pacemaker create(
+		PacemakerTimeoutSender timeoutSender,
+		PacemakerInfoSender infoSender,
+		ProposerElection proposerElection
+	);
 }

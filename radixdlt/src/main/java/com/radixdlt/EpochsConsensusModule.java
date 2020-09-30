@@ -22,6 +22,9 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.bft.NewViewSigner;
+import com.radixdlt.consensus.bft.SignedNewViewToLeaderSender;
+import com.radixdlt.consensus.bft.SignedNewViewToLeaderSender.BFTNewViewSender;
 import com.radixdlt.consensus.epoch.ProposerElectionFactory;
 import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
@@ -40,6 +43,7 @@ import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker;
+import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker.ProceedToViewSender;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
@@ -114,9 +118,22 @@ public class EpochsConsensusModule extends AbstractModule {
 	}
 
 	@Provides
-	private PacemakerFactory pacemakerFactory() {
-		return (timeoutSender, infoSender) ->
-			new ExponentialTimeoutPacemaker(this.pacemakerTimeout, this.pacemakerRate, this.pacemakerMaxExponent, timeoutSender, infoSender);
+	private PacemakerFactory pacemakerFactory(NewViewSigner newViewSigner, BFTNewViewSender bftNewViewSender) {
+		return (timeoutSender, infoSender, proposerElection) -> {
+			final ProceedToViewSender proceedToViewSender = new SignedNewViewToLeaderSender(
+				newViewSigner,
+				proposerElection,
+				bftNewViewSender
+			);
+			return new ExponentialTimeoutPacemaker(
+				this.pacemakerTimeout,
+				this.pacemakerRate,
+				this.pacemakerMaxExponent,
+				proceedToViewSender,
+				timeoutSender,
+				infoSender
+			);
+		};
 	}
 
 	@Provides

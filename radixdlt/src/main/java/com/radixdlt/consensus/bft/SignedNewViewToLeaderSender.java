@@ -18,7 +18,8 @@
 package com.radixdlt.consensus.bft;
 
 import com.radixdlt.consensus.NewView;
-import com.radixdlt.consensus.bft.BFTEventReducer.ProceedToViewSender;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker.ProceedToViewSender;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
@@ -38,24 +39,21 @@ public final class SignedNewViewToLeaderSender implements ProceedToViewSender {
 
 	private final NewViewSigner newViewSigner;
 	private final ProposerElection proposerElection;
-	private final VertexStore vertexStore;
 	private final BFTNewViewSender sender;
 
 	public SignedNewViewToLeaderSender(
 		NewViewSigner newViewSigner,
 		ProposerElection proposerElection,
-		VertexStore vertexStore,
 		BFTNewViewSender sender
 	) {
 		this.newViewSigner = Objects.requireNonNull(newViewSigner);
 		this.proposerElection = Objects.requireNonNull(proposerElection);
-		this.vertexStore = Objects.requireNonNull(vertexStore);
 		this.sender = Objects.requireNonNull(sender);
 	}
 
 	@Override
-	public void sendProceedToNextView(View nextView) {
-		NewView newView = newViewSigner.signNewView(nextView, this.vertexStore.getHighestQC(), this.vertexStore.getHighestCommittedQC());
+	public void sendProceedToNextView(View nextView, QuorumCertificate qc, QuorumCertificate highestCommitedQC) {
+		NewView newView = newViewSigner.signNewView(nextView, qc, highestCommitedQC);
 		BFTNode nextLeader = this.proposerElection.getProposer(nextView);
 		log.trace("Sending NEW_VIEW to {}: {}", () -> nextLeader, () ->  newView);
 		this.sender.sendNewView(newView, nextLeader);

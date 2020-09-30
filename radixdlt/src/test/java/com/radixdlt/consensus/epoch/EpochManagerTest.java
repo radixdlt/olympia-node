@@ -24,7 +24,6 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -130,7 +129,7 @@ public class EpochManagerTest {
 			this.syncEpochsRPCSender,
 			mock(LocalTimeoutSender.class),
 			syncRequestSender,
-			(timeoutSender, infoSender) -> this.pacemaker,
+			(timeoutSender, infoSender, proposerElection) -> this.pacemaker,
 			vertexStoreFactory,
 			vertexStoreSyncFactory,
 			requestProcessorFactory,

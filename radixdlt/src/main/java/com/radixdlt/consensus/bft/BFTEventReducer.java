@@ -78,10 +78,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		void sendVote(Vote vote, BFTNode leader);
 	}
 
-	public interface ProceedToViewSender {
-		void sendProceedToNextView(View view);
-	}
-
 	private final BFTNode self;
 	private final VertexStore vertexStore;
 	private final BFTSyncer bftSyncer;
@@ -91,7 +87,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private final Pacemaker pacemaker;
 	private final ProposerElection proposerElection;
 	private final SafetyRules safetyRules;
-	private final ProceedToViewSender proceedToViewSender;
 	private final BFTValidatorSet validatorSet;
 	private final SystemCounters counters;
 	private final TimeSupplier timeSupplier;
@@ -106,7 +101,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		NextCommandGenerator nextCommandGenerator,
 		BFTEventSender sender,
 		SafetyRules safetyRules,
-		ProceedToViewSender proceedToViewSender,
 		Pacemaker pacemaker,
 		VertexStore vertexStore,
 		BFTSyncer bftSyncer,
@@ -129,20 +123,13 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		this.validatorSet = Objects.requireNonNull(validatorSet);
 		this.counters = Objects.requireNonNull(counters);
 		this.timeSupplier = Objects.requireNonNull(timeSupplier);
-		this.proceedToViewSender = Objects.requireNonNull(proceedToViewSender);
 		this.hasher = Objects.requireNonNull(hasher);
-	}
-
-	// Hotstuff's Event-Driven OnNextSyncView
-	private void proceedToView(View nextView) {
-		this.proceedToViewSender.sendProceedToNextView(nextView);
 	}
 
 	private void processQC(QuorumCertificate qc) {
 		// proceed to next view if pacemaker feels like it
 		// TODO: should we proceed even if end of epoch?
-		this.pacemaker.processQC(qc, this.vertexStore.getHighestCommittedQC())
-			.ifPresent(this::proceedToView);
+		this.pacemaker.processQC(this.vertexStore.getHighestQC(), this.vertexStore.getHighestCommittedQC());
 	}
 
 	@Override
@@ -255,9 +242,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		if (!Objects.equals(currentLeader, this.self)) {
 			final BFTNode nextLeader = this.proposerElection.getProposer(updatedView.next());
 			if (!Objects.equals(nextLeader, this.self)) {
-
-				// TODO: should not call processQC
-				this.pacemaker.processNextView(updatedView).ifPresent(this::proceedToView);
+				this.pacemaker.processNextView(updatedView);
 			}
 		}
 	}
@@ -265,27 +250,12 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	@Override
 	public void processLocalTimeout(View view) {
 		log.trace("LOCAL_TIMEOUT: Processing {}", () -> view);
-
-		// proceed to next view if pacemaker feels like it
-		Optional<View> nextView = this.pacemaker.processLocalTimeout(view);
-		if (nextView.isPresent()) {
-			log.warn("LOCAL_TIMEOUT: Processed View {} Leader: {}",
-				() -> view,
-				() -> this.proposerElection.getProposer(view)
-			);
-
-			this.proceedToView(nextView.get());
-
-			counters.increment(CounterType.BFT_TIMEOUT);
-		} else {
-			log.trace("LOCAL_TIMEOUT: Ignoring {}", () -> view);
-		}
+		this.pacemaker.processLocalTimeout(view);
 	}
 
 	@Override
 	public void start() {
-		this.pacemaker.processQC(this.vertexStore.getHighestQC(), this.vertexStore.getHighestCommittedQC())
-			.ifPresent(this::proceedToView);
+		this.pacemaker.processQC(this.vertexStore.getHighestQC(), this.vertexStore.getHighestCommittedQC());
 	}
 
 	private void updateRttStatistics(Vote vote) {

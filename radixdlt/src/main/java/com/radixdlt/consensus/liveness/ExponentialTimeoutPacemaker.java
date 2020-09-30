@@ -35,6 +35,12 @@ import java.util.Optional;
  */
 public final class ExponentialTimeoutPacemaker implements Pacemaker {
 
+	/**
+	 * Hotstuff's Event-Driven OnNextSyncView
+ 	 */
+	public interface ProceedToViewSender {
+		void sendProceedToNextView(View view, QuorumCertificate qc, QuorumCertificate highestCommittedQC);
+	}
 
 	/**
 	 * Sender of information regarding the BFT
@@ -60,11 +66,15 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 	private final double rate;
 	private final int maxExponent;
 
+	private final ProceedToViewSender proceedToViewSender;
 	private final PacemakerTimeoutSender timeoutSender;
 	private final PacemakerInfoSender pacemakerInfoSender;
 	private final PendingNewViews pendingNewViews;
 
 	private final RateLimiter newViewLogLimiter = RateLimiter.create(1.0);
+
+	private QuorumCertificate qc;
+	private QuorumCertificate highestCommittedQC;
 
 	private View currentView = View.genesis();
 	private View lastSyncView = View.genesis();
@@ -75,6 +85,7 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 		long timeoutMilliseconds,
 		double rate,
 		int maxExponent,
+		ProceedToViewSender proceedToViewSender,
 		PacemakerTimeoutSender timeoutSender,
 		PacemakerInfoSender pacemakerInfoSender
 	) {
@@ -94,6 +105,7 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 		this.timeoutMilliseconds = timeoutMilliseconds;
 		this.rate = rate;
 		this.maxExponent = maxExponent;
+		this.proceedToViewSender = Objects.requireNonNull(proceedToViewSender);
 		this.timeoutSender = Objects.requireNonNull(timeoutSender);
 		this.pacemakerInfoSender = Objects.requireNonNull(pacemakerInfoSender);
 		this.pendingNewViews = new PendingNewViews();
@@ -113,19 +125,19 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 		log.log(logLevel, "Starting View: {} with timeout {}ms", nextView, timeout);
 		this.currentView = nextView;
 		this.timeoutSender.scheduleTimeout(this.currentView, timeout);
+		this.proceedToViewSender.sendProceedToNextView(this.currentView, qc, highestCommittedQC);
 		this.pacemakerInfoSender.sendCurrentView(this.currentView);
 	}
 
 	@Override
-	public Optional<View> processLocalTimeout(View view) {
+	public void processLocalTimeout(View view) {
 		if (!view.equals(this.currentView)) {
-			return Optional.empty();
+			log.trace("LOCAL_TIMEOUT: Ignoring {}", () -> view);
+			return;
 		}
 
 		this.pacemakerInfoSender.sendTimeoutProcessed(view);
 		this.updateView(currentView.next());
-
-		return Optional.of(this.currentView);
 	}
 
 	// TODO: Move this into Event Coordinator
@@ -156,21 +168,20 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 	}
 
 	@Override
-	public Optional<View> processQC(QuorumCertificate qc, QuorumCertificate highestCommittedQC) {
+	public void processQC(QuorumCertificate qc, QuorumCertificate highestCommittedQC) {
+		this.qc = qc;
+		this.highestCommittedQC = highestCommittedQC;
 		this.highestCommitView = highestCommittedQC.getView();
-		return processNextView(qc.getView());
+		processNextView(qc.getView());
 	}
 
 	@Override
-	public Optional<View> processNextView(View view) {
+	public void processNextView(View view) {
 		// check if a new view can be started
 		View newView = view.next();
 		if (newView.compareTo(currentView) > 0) {
 			// start new view
 			this.updateView(newView);
-			return Optional.of(this.currentView);
-		} else {
-			return Optional.empty();
 		}
 	}
 
@@ -187,9 +198,4 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 		double exponential = Math.pow(this.rate, Math.min(this.maxExponent, uncommittedViews));
 		return Math.round(this.timeoutMilliseconds * exponential);
 	}
-
-	private static <T extends Comparable<T>> T max(T a, T b) {
-	    return a.compareTo(b) >= 0 ? a : b;
-	}
-
 }

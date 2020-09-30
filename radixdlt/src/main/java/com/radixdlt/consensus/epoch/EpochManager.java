@@ -188,6 +188,13 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdatePro
 		final long nextEpoch = this.currentEpoch.getEpoch();
 		logEpochChange(this.currentEpoch, "included in");
 
+		// TODO: Recover VertexStore
+		BFTConfiguration bftConfiguration = this.currentEpoch.getBFTConfiguration();
+		VertexStore vertexStore = vertexStoreFactory.create(
+			bftConfiguration.getGenesisVertex(),
+			bftConfiguration.getGenesisQC(),
+			ledger
+		);
 		ProposerElection proposerElection = proposerElectionFactory.create(validatorSet);
 		PacemakerTimeoutSender timeoutSender = (view, ms) -> localTimeoutSender.scheduleTimeout(new LocalTimeout(nextEpoch, view), ms);
 		PacemakerInfoSender infoSender = new PacemakerInfoSender() {
@@ -199,19 +206,14 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdatePro
 			@Override
 			public void sendTimeoutProcessed(View view) {
 				BFTNode leader = proposerElection.getProposer(view);
+				log.warn("LOCAL_TIMEOUT: Processed View {} Leader: {}", view, leader);
+				counters.increment(CounterType.BFT_TIMEOUT);
 				Timeout timeout = new Timeout(EpochView.of(nextEpoch, view), leader);
 				epochInfoSender.sendTimeoutProcessed(timeout);
 			}
 		};
-		Pacemaker pacemaker = pacemakerFactory.create(timeoutSender, infoSender);
+		Pacemaker pacemaker = pacemakerFactory.create(timeoutSender, infoSender, proposerElection);
 
-		// TODO: Recover VertexStore
-		BFTConfiguration bftConfiguration = this.currentEpoch.getBFTConfiguration();
-		VertexStore vertexStore = vertexStoreFactory.create(
-			bftConfiguration.getGenesisVertex(),
-			bftConfiguration.getGenesisQC(),
-			ledger
-		);
 		VertexStoreSync vertexStoreSync = vertexStoreSyncFactory.create(vertexStore);
 		this.syncBFTResponseProcessor = vertexStoreSync;
 		this.syncBFTUpdateProcessor = vertexStoreSync;

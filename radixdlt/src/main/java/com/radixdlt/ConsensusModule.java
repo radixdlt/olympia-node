@@ -29,8 +29,10 @@ import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.bft.BFTBuilder;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
+import com.radixdlt.consensus.bft.SignedNewViewToLeaderSender;
 import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker.PacemakerInfoSender;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTSyncRequestProcessor;
@@ -38,6 +40,7 @@ import com.radixdlt.consensus.bft.NewViewSigner;
 import com.radixdlt.consensus.bft.SignedNewViewToLeaderSender.BFTNewViewSender;
 import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
 import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker;
+import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker.ProceedToViewSender;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
@@ -52,6 +55,7 @@ import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.network.TimeSupplier;
+import com.sleepycat.je.rep.elections.Protocol.Propose;
 import java.util.Comparator;
 
 /**
@@ -72,11 +76,9 @@ public final class ConsensusModule extends AbstractModule {
 	@Provides
 	private BFTFactory bftFactory(
 		BFTEventSender bftEventSender,
-		BFTNewViewSender bftNewViewSender,
 		NextCommandGenerator nextCommandGenerator,
 		Hasher hasher,
 		HashSigner signer,
-		NewViewSigner newViewSigner,
 		HashVerifier verifier,
 		TimeSupplier timeSupplier,
 		SystemCounters counters
@@ -92,7 +94,6 @@ public final class ConsensusModule extends AbstractModule {
 			BFTBuilder.create()
 				.self(self)
 				.eventSender(bftEventSender)
-				.newViewSender(bftNewViewSender)
 				.nextCommandGenerator(nextCommandGenerator)
 				.hasher(hasher)
 				.signer(signer)
@@ -104,7 +105,6 @@ public final class ConsensusModule extends AbstractModule {
 				.proposerElection(proposerElection)
 				.validatorSet(validatorSet)
 				.timeSupplier(timeSupplier)
-				.newViewSigner(newViewSigner)
 				.build();
 	}
 
@@ -139,9 +139,24 @@ public final class ConsensusModule extends AbstractModule {
 	}
 
 	@Provides
+	ProceedToViewSender proceedToViewSender(
+		NewViewSigner newViewSigner,
+		ProposerElection proposerElection,
+		BFTNewViewSender bftNewViewSender
+	) {
+		return new SignedNewViewToLeaderSender(
+			newViewSigner,
+			proposerElection,
+			bftNewViewSender
+		);
+	}
+
+	@Provides
 	@Singleton
-	private Pacemaker pacemaker(PacemakerTimeoutSender timeoutSender, PacemakerInfoSender infoSender) {
-		return new ExponentialTimeoutPacemaker(this.pacemakerTimeout, this.pacemakerRate, this.pacemakerMaxExponent, timeoutSender, infoSender);
+	private Pacemaker pacemaker(ProceedToViewSender proceedToViewSender, PacemakerTimeoutSender timeoutSender, PacemakerInfoSender infoSender) {
+		return new ExponentialTimeoutPacemaker(
+			this.pacemakerTimeout, this.pacemakerRate, this.pacemakerMaxExponent, proceedToViewSender, timeoutSender, infoSender
+		);
 	}
 
 	@Provides

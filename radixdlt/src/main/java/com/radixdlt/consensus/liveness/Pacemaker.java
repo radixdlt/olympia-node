@@ -33,17 +33,17 @@ public interface Pacemaker extends PacemakerState {
 	 * @param view the view to timeout
 	 * @return optional with view, if the pacemaker changes views within the call
 	 */
-	Optional<View> processLocalTimeout(View view);
+	void processLocalTimeout(View view);
 
 	/**
 	 * Signifies to the pacemaker that a quorum has agreed that a view has been completed
 	 * @param qc the quorum certificate
 	 * @return optional with view, if the pacemaker changes views within the call
 	 */
-	Optional<View> processQC(QuorumCertificate qc, QuorumCertificate highestCommittedQC);
+	void processQC(QuorumCertificate qc, QuorumCertificate highestCommittedQC);
 
 	// FIXME: Temporary
-	Optional<View> processNextView(View view);
+	void processNextView(View view);
 
 	/**
 	 * Adds a new view message to the pacemaker state
