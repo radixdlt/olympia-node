@@ -51,7 +51,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class BFTSyncTest {
-	private BFTSync vertexStoreSync;
+	private BFTSync bftSync;
 	private VertexStore vertexStore;
 	private Pacemaker pacemaker;
 	private Comparator<LedgerHeader> ledgerHeaderComparator;
@@ -68,7 +68,7 @@ public class BFTSyncTest {
 		this.syncLedgerRequestSender = mock(SyncLedgerRequestSender.class);
 		this.verifiedLedgerHeaderAndProof = mock(VerifiedLedgerHeaderAndProof.class);
 
-		vertexStoreSync = new BFTSync(
+		bftSync = new BFTSync(
 			vertexStore,
 			pacemaker,
 			ledgerHeaderComparator,
@@ -91,7 +91,7 @@ public class BFTSyncTest {
 		when(qc.getProposed()).thenReturn(header);
 		when(vertexStore.addQC(eq(qc))).thenReturn(true);
 
-		assertThat(vertexStoreSync.syncToQC(qc, vertexStore.getHighestCommittedQC(), null)).isEqualTo(SyncResult.SYNCED);
+		assertThat(bftSync.syncToQC(qc, vertexStore.getHighestCommittedQC(), null)).isEqualTo(SyncResult.SYNCED);
 	}
 
 	@Test
@@ -106,8 +106,68 @@ public class BFTSyncTest {
 		when(qc.getProposed()).thenReturn(header);
 		when(vertexStore.addQC(eq(qc))).thenReturn(false);
 
-		assertThatThrownBy(() -> vertexStoreSync.syncToQC(qc, vertexStore.getHighestCommittedQC(), null))
+		assertThatThrownBy(() -> bftSync.syncToQC(qc, vertexStore.getHighestCommittedQC(), null))
 			.isInstanceOf(IllegalStateException.class);
+	}
+
+	@Test
+	public void when_sync_to_qc_and_less_than_root__then_should_return_invalid() {
+		VerifiedVertex rootVertex = mock(VerifiedVertex.class);
+		when(rootVertex.getView()).thenReturn(View.of(3));
+		when(vertexStore.getRoot()).thenReturn(rootVertex);
+
+		QuorumCertificate qc = mock(QuorumCertificate.class);
+		BFTHeader proposed = mock(BFTHeader.class);
+		when(proposed.getView()).thenReturn(View.of(2));
+		when(qc.getProposed()).thenReturn(proposed);
+		SyncResult syncResult = bftSync.syncToQC(qc, mock(QuorumCertificate.class), mock(BFTNode.class));
+
+		assertThat(syncResult).isEqualTo(SyncResult.INVALID);
+	}
+
+	@Test
+	public void when_sync_bad_genesis__then_should_return_invalid() {
+		VerifiedVertex rootVertex = mock(VerifiedVertex.class);
+		when(rootVertex.getView()).thenReturn(View.of(0));
+		when(vertexStore.getRoot()).thenReturn(rootVertex);
+		QuorumCertificate qc = mock(QuorumCertificate.class);
+		BFTHeader proposed = mock(BFTHeader.class);
+		when(proposed.getView()).thenReturn(View.of(0));
+		when(qc.getView()).thenReturn(View.of(0));
+		when(qc.getProposed()).thenReturn(proposed);
+		when(vertexStore.addQC(eq(qc))).thenReturn(false);
+
+		SyncResult syncResult = bftSync.syncToQC(qc, mock(QuorumCertificate.class), mock(BFTNode.class));
+
+		assertThat(syncResult).isEqualTo(SyncResult.INVALID);
+	}
+
+	@Test
+	public void given_a_sync_which_is_ongoing__when_same_sync_is_attempted__then_in_progress_is_returned() {
+		VerifiedVertex rootVertex = mock(VerifiedVertex.class);
+		when(rootVertex.getView()).thenReturn(View.of(1));
+		when(vertexStore.getRoot()).thenReturn(rootVertex);
+		when(vertexStore.addQC(any())).thenReturn(false);
+		BFTHeader header = mock(BFTHeader.class);
+		Hash vertexId = mock(Hash.class);
+		when(header.getVertexId()).thenReturn(vertexId);
+		when(header.getView()).thenReturn(View.of(2));
+		QuorumCertificate qc = mock(QuorumCertificate.class);
+		when(qc.getProposed()).thenReturn(header);
+		when(qc.getView()).thenReturn(View.of(2));
+		QuorumCertificate committedQC = mock(QuorumCertificate.class);
+		BFTHeader committedHeader = mock(BFTHeader.class);
+		when(committedHeader.getView()).thenReturn(View.of(1));
+		when(committedQC.getCommittedAndLedgerStateProof())
+			.thenReturn(Optional.of(Pair.of(committedHeader, mock(VerifiedLedgerHeaderAndProof.class))));
+		BFTNode author = mock(BFTNode.class);
+		bftSync.syncToQC(qc, committedQC, author);
+
+		SyncResult syncResult = bftSync.syncToQC(qc, committedQC, author);
+
+		assertThat(syncResult).isEqualTo(SyncResult.IN_PROGRESS);
+		verify(syncVerticesRequestSender, times(1)).sendGetVerticesRequest(any(), any(), eq(1));
+		verify(syncLedgerRequestSender, never()).sendLocalSyncRequest(any());
 	}
 
 	@Test
@@ -129,7 +189,7 @@ public class BFTSyncTest {
 		when(committedQC.getCommittedAndLedgerStateProof())
 			.thenReturn(Optional.of(Pair.of(committedHeader, mock(VerifiedLedgerHeaderAndProof.class))));
 		BFTNode author = mock(BFTNode.class);
-		vertexStoreSync.syncToQC(qc, committedQC, author);
+		bftSync.syncToQC(qc, committedQC, author);
 
 		verify(syncVerticesRequestSender, times(1)).sendGetVerticesRequest(any(), any(), eq(1));
 		verify(syncLedgerRequestSender, never()).sendLocalSyncRequest(any());
@@ -154,7 +214,7 @@ public class BFTSyncTest {
 		when(committedQC.getCommittedAndLedgerStateProof())
 			.thenReturn(Optional.of(Pair.of(committedHeader, mock(VerifiedLedgerHeaderAndProof.class))));
 		BFTNode author = mock(BFTNode.class);
-		vertexStoreSync.syncToQC(qc, committedQC, author);
+		bftSync.syncToQC(qc, committedQC, author);
 
 		verify(syncVerticesRequestSender, times(1)).sendGetVerticesRequest(any(), any(), eq(1));
 		verify(syncLedgerRequestSender, never()).sendLocalSyncRequest(any());
@@ -181,7 +241,7 @@ public class BFTSyncTest {
 		when(committedQC.getCommittedAndLedgerStateProof())
 			.thenReturn(Optional.of(Pair.of(committedHeader, mock(VerifiedLedgerHeaderAndProof.class))));
 		BFTNode author = mock(BFTNode.class);
-		vertexStoreSync.syncToQC(qc, committedQC, author);
+		bftSync.syncToQC(qc, committedQC, author);
 
 		verify(syncVerticesRequestSender, times(1)).sendGetVerticesRequest(any(), any(), eq(3));
 		verify(syncLedgerRequestSender, never()).sendLocalSyncRequest(any());
@@ -213,7 +273,7 @@ public class BFTSyncTest {
 		when(committedQC.getCommittedAndLedgerStateProof())
 			.thenReturn(Optional.of(Pair.of(committedHeader, ledgerHeader)));
 		BFTNode author = mock(BFTNode.class);
-		vertexStoreSync.syncToQC(qc, committedQC, author);
+		bftSync.syncToQC(qc, committedQC, author);
 
 		VerifiedVertex vertex = mock(VerifiedVertex.class);
 		when(vertexStore.addQC(any())).thenReturn(true);
@@ -222,7 +282,7 @@ public class BFTSyncTest {
 			mock(BFTNode.class),
 			List.of(vertex, vertex, vertex)
 		);
-		vertexStoreSync.processGetVerticesResponse(getVerticesResponse);
+		bftSync.processGetVerticesResponse(getVerticesResponse);
 
 		verify(syncVerticesRequestSender, times(1)).sendGetVerticesRequest(any(), any(), anyInt());
 		verify(syncLedgerRequestSender, times(1)).sendLocalSyncRequest(any());
@@ -254,7 +314,7 @@ public class BFTSyncTest {
 		when(committedQC.getCommittedAndLedgerStateProof())
 			.thenReturn(Optional.of(Pair.of(committedHeader, committedLedgerHeader)));
 		BFTNode author = mock(BFTNode.class);
-		vertexStoreSync.syncToQC(qc, committedQC, author);
+		bftSync.syncToQC(qc, committedQC, author);
 		VerifiedVertex vertex = mock(VerifiedVertex.class);
 		when(vertex.getId()).thenReturn(committedId);
 		when(vertex.getView()).thenReturn(View.of(3));
@@ -263,12 +323,12 @@ public class BFTSyncTest {
 			mock(BFTNode.class),
 			List.of(vertex, vertex, vertex)
 		);
-		vertexStoreSync.processGetVerticesResponse(getVerticesResponse);
+		bftSync.processGetVerticesResponse(getVerticesResponse);
 
 		when(vertexStore.containsVertex(any())).thenReturn(false);
 		LedgerUpdate ledgerUpdate = mock(LedgerUpdate.class);
 		when(ledgerUpdate.getTail()).thenReturn(committedLedgerHeader);
-		vertexStoreSync.processLedgerUpdate(ledgerUpdate);
+		bftSync.processLedgerUpdate(ledgerUpdate);
 
 		verify(vertexStore, times(1)).rebuild(any(), any(), any(), any());
 	}
@@ -297,7 +357,7 @@ public class BFTSyncTest {
 			qc,
 			committedQC
 		);
-		vertexStoreSync.processGetVerticesErrorResponse(getVerticesErrorResponse);
+		bftSync.processGetVerticesErrorResponse(getVerticesErrorResponse);
 
 		verify(syncVerticesRequestSender, times(1)).sendGetVerticesRequest(any(), any(), eq(1));
 		verify(syncLedgerRequestSender, never()).sendLocalSyncRequest(any());
@@ -322,7 +382,7 @@ public class BFTSyncTest {
 		when(committedQC.getCommittedAndLedgerStateProof())
 			.thenReturn(Optional.of(Pair.of(committedHeader, mock(VerifiedLedgerHeaderAndProof.class))));
 		BFTNode author = mock(BFTNode.class);
-		vertexStoreSync.syncToQC(qc, committedQC, author);
+		bftSync.syncToQC(qc, committedQC, author);
 		Hash parentId = mock(Hash.class);
 		when(vertexStore.containsVertex(eq(parentId))).thenReturn(true);
 
@@ -334,7 +394,7 @@ public class BFTSyncTest {
 			mock(BFTNode.class),
 			Collections.singletonList(vertex)
 		);
-		vertexStoreSync.processGetVerticesResponse(getVerticesResponse);
+		bftSync.processGetVerticesResponse(getVerticesResponse);
 
 		verify(vertexStore, times(1)).insertVertex(eq(vertex));
 	}
