@@ -22,8 +22,9 @@
 
 plugins {
     id 'maven-publish'
-    id 'com.adarshr.test-logger' version '1.7.1'
+    id 'com.adarshr.test-logger' version '2.1.0'
     id 'org.sonarqube' version '2.7.1'
+    id 'net.nemerosa.versioning' version '2.14.0'
     id 'com.palantir.git-version' version '0.12.3'
 }
 
@@ -71,7 +72,10 @@ allprojects {
     }
 
     apply plugin: 'java'
+}
 
-    sourceCompatibility = 1.8
-    targetCompatibility = 1.8
+subprojects {
+    compileJava {
+        options.release = 11
+    }
 }

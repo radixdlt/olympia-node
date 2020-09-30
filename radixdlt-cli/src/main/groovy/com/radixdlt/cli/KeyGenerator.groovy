@@ -25,17 +25,26 @@ import com.radixdlt.client.application.identity.RadixIdentities
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 
+/**
+ * This command generates new private key and prints it to standard output.
+ * <br>
+ * Usage:
+ * <pre>
+ *  $ radixdlt-cli generate-key -p=<password>
+ * </pre>
+ * The password is required and it should not be empty.
+ */
 @Command(name = "generate-key",mixinStandardHelpOptions = true,
         description = "Generate key")
 class KeyGenerator implements Runnable {
 
-    @Option(names = ["-p", "--password"], paramLabel = "PASSWORD", description = "password")
+    @Option(names = ["-p", "--password"], paramLabel = "PASSWORD", description = "password", required = true)
     String password
 
     @Override
     void run() {
-        if (password == null) {
-            System.err.println("password required")
+        if (password == null || password.isBlank()) {
+            println "The password must be provided"
             System.exit(-1)
         }
 

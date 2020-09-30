@@ -20,29 +20,19 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-buildscript {
-    repositories {
-        maven { url "https://plugins.gradle.org/m2/" }
-    }
-    dependencies {
-        classpath 'com.github.jengelman.gradle.plugins:shadow:6.0.0'
-    }
-}
+package com.radixdlt.client.application.translate;
 
-apply plugin: 'com.github.johnrengelman.shadow'
+import java.util.Map;
 
-repositories {
-    mavenCentral()
-    maven { url 'https://jitpack.io' }
-}
-
-dependencies {
-    compile project(':radixdlt-java')
-    testCompile group: 'junit', name: 'junit', version: '4.12'
-}
-
-shadowJar {
-    dependencies {
-        exclude(dependency('org.bouncycastle:bcprov-jdk15to18'))
-    }
+/**
+ * Interface for processing metadata in the context of fee generation.
+ */
+@FunctionalInterface
+public interface MetadataProcessor {
+	/**
+	 * Processes metadata in the context of fee generation.
+	 *
+	 * @param metadata The metadata to add to the generated atom
+	 */
+	void process(Map<String, String> metadata);
 }

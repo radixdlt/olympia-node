@@ -27,6 +27,15 @@ import com.radixdlt.client.atommodel.validators.RegisteredValidatorParticle
 import com.radixdlt.identifiers.RadixAddress
 import picocli.CommandLine
 
+/**
+ * Show validator configuration
+ * <br>
+ * Usage:
+ * <pre>
+ *  $ radixdlt-cli show-validator-config [-d=<address>]
+ * </pre>
+ * Address is optional and if omitted then local address is used.
+ */
 @CommandLine.Command(name = "show-validator-config", mixinStandardHelpOptions = true,
 		description = "Show Current Validator Configuration")
 class ShowValidatorConfig implements Runnable {
@@ -37,6 +46,7 @@ class ShowValidatorConfig implements Runnable {
 	@CommandLine.Option(names = ["-d", "--address"], paramLabel = "ADDRESS", description = "Validator address to show config of", required = false)
 	String addressString
 
+	@Override
 	void run() {
 		RadixApplicationAPI api = Utils.getAPI(identityInfo)
 		RadixAddress address = addressString == null ? api.getAddress() : RadixAddress.from(addressString)
@@ -45,14 +55,14 @@ class ShowValidatorConfig implements Runnable {
 				.filter({ particle -> particle instanceof RegisteredValidatorParticle })
 				.findFirst()
 		if (latestValidatorRegistration.isPresent()) {
-			println "current validator configuration at ${address}:"
+			println "Current validator configuration at ${address}:"
 			def validator = latestValidatorRegistration.get()
 			def url = validator.getUrl()
 			def allowedDelegators = validator.getAllowedDelegators()
-			printf("url: %s%n", url == null ? "<not set>" : url)
-			printf("allowedDelegators: %s%n", allowedDelegators == null ? "<not set, allows any>" : allowedDelegators)
+			printf("  url: %s%n", url == null ? "<not set>" : url)
+			printf("  allowedDelegators: %s%n", allowedDelegators == null ? "<not set, allows any>" : allowedDelegators)
 		} else {
-			println "no active validator configuration at ${address}"
+			println "No active validator configuration at ${address}"
 		}
 	}
 }

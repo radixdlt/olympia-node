@@ -44,8 +44,8 @@ import java.util.Objects;
  * Particle which can hold arbitrary data
  */
 @SerializerId2("radix.particles.message")
-public class MessageParticle extends Particle implements Accountable {
-	public static class MessageParticleBuilder {
+public final class MessageParticle extends Particle implements Accountable {
+	public static final class MessageParticleBuilder {
 		private static final Random RNG = new Random();
 		private RadixAddress from;
 		private RadixAddress to;
@@ -83,19 +83,18 @@ public class MessageParticle extends Particle implements Accountable {
 		}
 	}
 
-	MessageParticle() {
-		// Serializer only
-		super();
+	public static MessageParticleBuilder builder() {
+		return new MessageParticleBuilder();
 	}
 
 	@JsonProperty("from")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private RadixAddress from;
+	private final RadixAddress from;
 
 
 	@JsonProperty("to")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private RadixAddress to;
+	private final RadixAddress to;
 
 	/**
 	 * Metadata, aka data about the data (e.g. contentType).
@@ -104,21 +103,29 @@ public class MessageParticle extends Particle implements Accountable {
 	 */
 	@JsonProperty("metaData")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private Map<String, String> metaData = new TreeMap<>();
+	private final Map<String, String> metaData = new TreeMap<>();
 
 	/**
 	 * Arbitrary data
 	 */
 	@JsonProperty("bytes")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private byte[] bytes;
+	private final byte[] bytes;
 
 	/**
 	 * Nonce to make every Message unique
 	 */
 	@JsonProperty("nonce")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private long nonce;
+	private final long nonce;
+
+	MessageParticle() {
+		// Serializer only
+		this.from = null;
+		this.to = null;
+		this.bytes = null;
+		this.nonce = 0;
+	}
 
 	private MessageParticle(RadixAddress from, RadixAddress to, byte[] bytes, MetadataMap metaData, long nonce) {
 		this(from, to, bytes, metaData, nonce, ImmutableSet.of(from.euid(), to.euid()));
@@ -134,12 +141,12 @@ public class MessageParticle extends Particle implements Accountable {
 	) {
 		super(destinations);
 
-		Objects.requireNonNull(bytes);
-
 		this.from = Objects.requireNonNull(from, "from is required");
 		this.to = Objects.requireNonNull(to, "to is required");
 		this.bytes = Arrays.copyOf(bytes, bytes.length);
-		this.metaData.putAll(metaData);
+		if (metaData != null) {
+			this.metaData.putAll(metaData);
+		}
 		this.nonce = nonce;
 	}
 

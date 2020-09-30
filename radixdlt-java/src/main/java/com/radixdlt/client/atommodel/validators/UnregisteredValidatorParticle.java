@@ -35,17 +35,19 @@ import java.util.Objects;
 import java.util.Set;
 
 @SerializerId2("radix.particles.unregistered_validator")
-public class UnregisteredValidatorParticle extends Particle implements Accountable, Ownable {
+public final class UnregisteredValidatorParticle extends Particle implements Accountable, Ownable {
 	@JsonProperty("address")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private RadixAddress address;
+	private final RadixAddress address;
 
 	@JsonProperty("nonce")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private long nonce;
+	private final long nonce;
 
 	UnregisteredValidatorParticle() {
-		// for serializer
+		// Serializer only
+		this.address = null;
+		this.nonce = 0;
 	}
 
 	public UnregisteredValidatorParticle(RadixAddress address, long nonce) {

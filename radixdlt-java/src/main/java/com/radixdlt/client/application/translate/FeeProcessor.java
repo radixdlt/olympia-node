@@ -20,29 +20,22 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-buildscript {
-    repositories {
-        maven { url "https://plugins.gradle.org/m2/" }
-    }
-    dependencies {
-        classpath 'com.github.jengelman.gradle.plugins:shadow:6.0.0'
-    }
-}
+package com.radixdlt.client.application.translate;
 
-apply plugin: 'com.github.johnrengelman.shadow'
+import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.identifiers.RadixAddress;
 
-repositories {
-    mavenCentral()
-    maven { url 'https://jitpack.io' }
-}
-
-dependencies {
-    compile project(':radixdlt-java')
-    testCompile group: 'junit', name: 'junit', version: '4.12'
-}
-
-shadowJar {
-    dependencies {
-        exclude(dependency('org.bouncycastle:bcprov-jdk15to18'))
-    }
+/**
+ * Interface for processing fees.
+ */
+public interface FeeProcessor {
+	/**
+	 * Processes actions in the context of fee generation.
+	 *
+	 * @param actionProcessor An {@link ActionProcessor} to use to process any actions associated with the fee
+	 * @param metadataProcessor A {@link MetadataProcessor} to use to process any metadata associated with the fee
+	 * @param address The address of the fee payee
+	 * @param feelessAtom The atom, without fees, for which to generate fees
+	 */
+	void process(ActionProcessor actionProcessor, MetadataProcessor metadataProcessor, RadixAddress address, Atom feelessAtom);
 }

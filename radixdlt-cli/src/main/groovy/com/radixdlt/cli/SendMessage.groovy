@@ -26,6 +26,14 @@ import com.radixdlt.identifiers.RadixAddress
 import com.radixdlt.utils.RadixConstants
 import picocli.CommandLine
 
+/**
+ * Send message to specified address
+ * <br>
+ * Usage:
+ * <pre>
+ *  $ radixdlt-cli send-message -k=<keystore name> -p=<keystore password> -m=<message> -d=<destination address>
+ * </pre>
+ */
 @CommandLine.Command(name = "send-message", mixinStandardHelpOptions = true,
         description = "Send Message")
 class SendMessage implements Runnable {
@@ -41,7 +49,6 @@ class SendMessage implements Runnable {
 
     @Override
     void run() {
-
         RadixApplicationAPI api = Utils.getAPI(identityInfo)
         RadixAddress address = RadixAddress.from(addressString)
 
@@ -50,8 +57,5 @@ class SendMessage implements Runnable {
         result.blockUntilComplete()
         println "Message sent successfully. AtomID of resulting atom : ${result.getAtom().getAid()}"
         System.exit(0)
-
-
     }
-
 }

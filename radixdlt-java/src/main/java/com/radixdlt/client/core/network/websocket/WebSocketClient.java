@@ -196,7 +196,7 @@ public class WebSocketClient implements PersistentChannel {
 	}
 
 	private String safeString(String str) {
-		if (str.length() > MAX_LOG_STRING_OUTPUT) {
+		if (str.length() > MAX_LOG_STRING_OUTPUT + 3) {
 			str = str.substring(0, MAX_LOG_STRING_OUTPUT) + "...";
 		}
 		return new String(str.getBytes(StandardCharsets.US_ASCII), StandardCharsets.US_ASCII);
