@@ -22,13 +22,16 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.bft.NewViewSigner;
+import com.radixdlt.consensus.bft.SignedNewViewToLeaderSender;
+import com.radixdlt.consensus.bft.SignedNewViewToLeaderSender.BFTNewViewSender;
 import com.radixdlt.consensus.epoch.ProposerElectionFactory;
 import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.epoch.VertexStoreFactory;
-import com.radixdlt.consensus.epoch.VertexStoreSyncFactory;
+import com.radixdlt.consensus.epoch.BFTSyncFactory;
 import com.radixdlt.consensus.epoch.BFTSyncRequestProcessorFactory;
-import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
+import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker.PacemakerInfoSender;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
@@ -40,15 +43,17 @@ import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker;
+import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker.ProceedToViewSender;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
+import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
-import com.radixdlt.consensus.sync.VertexStoreSync;
-import com.radixdlt.consensus.sync.VertexStoreSync.SyncVerticesRequestSender;
+import com.radixdlt.consensus.sync.BFTSync;
+import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.counters.SystemCounters;
 import java.util.Comparator;
 
@@ -78,15 +83,16 @@ public class EpochsConsensusModule extends AbstractModule {
 	}
 
 	@Provides
-	private BFTInfoSender initialInfoSender(EpochInfoSender epochInfoSender, EpochChange initialEpoch) {
-		return new BFTInfoSender() {
+	private PacemakerInfoSender initialInfoSender(EpochInfoSender epochInfoSender, EpochChange initialEpoch, ProposerElection proposerElection) {
+		return new PacemakerInfoSender() {
 			@Override
 			public void sendCurrentView(View view) {
 				epochInfoSender.sendCurrentView(EpochView.of(initialEpoch.getEpoch(), view));
 			}
 
 			@Override
-			public void sendTimeoutProcessed(View view, BFTNode leader) {
+			public void sendTimeoutProcessed(View view) {
+				BFTNode leader = proposerElection.getProposer(view);
 				Timeout timeout = new Timeout(EpochView.of(initialEpoch.getEpoch(), view), leader);
 				epochInfoSender.sendTimeoutProcessed(timeout);
 			}
@@ -112,8 +118,22 @@ public class EpochsConsensusModule extends AbstractModule {
 	}
 
 	@Provides
-	private PacemakerFactory pacemakerFactory() {
-		return timeoutSender -> new ExponentialTimeoutPacemaker(this.pacemakerTimeout, this.pacemakerRate, this.pacemakerMaxExponent, timeoutSender);
+	private PacemakerFactory pacemakerFactory(NewViewSigner newViewSigner, BFTNewViewSender bftNewViewSender) {
+		return (timeoutSender, infoSender, proposerElection) -> {
+			final ProceedToViewSender proceedToViewSender = new SignedNewViewToLeaderSender(
+				newViewSigner,
+				proposerElection,
+				bftNewViewSender
+			);
+			return new ExponentialTimeoutPacemaker(
+				this.pacemakerTimeout,
+				this.pacemakerRate,
+				this.pacemakerMaxExponent,
+				proceedToViewSender,
+				timeoutSender,
+				infoSender
+			);
+		};
 	}
 
 	@Provides
@@ -124,13 +144,14 @@ public class EpochsConsensusModule extends AbstractModule {
 	}
 
 	@Provides
-	private VertexStoreSyncFactory vertexStoreSyncFactory(
+	private BFTSyncFactory bftSyncFactory(
 		SyncVerticesRequestSender requestSender,
 		SyncLedgerRequestSender syncLedgerRequestSender,
 		BFTConfiguration configuration
 	) {
-		return vertexStore -> new VertexStoreSync(
+		return (vertexStore, pacemaker) -> new BFTSync(
 			vertexStore,
+			pacemaker,
 			Comparator.comparingLong((LedgerHeader h) -> h.getAccumulatorState().getStateVersion()),
 			requestSender,
 			syncLedgerRequestSender,

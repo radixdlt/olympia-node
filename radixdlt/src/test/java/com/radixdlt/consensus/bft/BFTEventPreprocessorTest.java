@@ -33,9 +33,10 @@ import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
+import com.radixdlt.consensus.bft.BFTSyncer.SyncResult;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.consensus.sync.VertexStoreSync;
+import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
@@ -48,7 +49,7 @@ public class BFTEventPreprocessorTest {
 	private BFTEventPreprocessor preprocessor;
 	private ProposerElection proposerElection;
 	private Pacemaker pacemaker;
-	private VertexStoreSync vertexStoreSync;
+	private BFTSync vertexStoreSync;
 	private BFTEventProcessor forwardTo;
 	private SyncQueues syncQueues;
 	private BFTNode self;
@@ -56,7 +57,7 @@ public class BFTEventPreprocessorTest {
 	@Before
 	public void setUp() {
 		this.pacemaker = mock(Pacemaker.class);
-		this.vertexStoreSync = mock(VertexStoreSync.class);
+		this.vertexStoreSync = mock(BFTSync.class);
 		this.proposerElection = mock(ProposerElection.class);
 		this.forwardTo = mock(BFTEventProcessor.class);
 		this.syncQueues = mock(SyncQueues.class);
@@ -90,7 +91,7 @@ public class BFTEventPreprocessorTest {
 		when(newView.getQC()).thenReturn(qc);
 		QuorumCertificate committedQC = mock(QuorumCertificate.class);
 		when(newView.getCommittedQC()).thenReturn(committedQC);
-		when(vertexStoreSync.syncToQC(eq(qc), eq(committedQC), any())).thenReturn(synced);
+		when(vertexStoreSync.syncToQC(eq(qc), eq(committedQC), any())).thenReturn(synced ? SyncResult.SYNCED : SyncResult.IN_PROGRESS);
 		return newView;
 	}
 
@@ -110,7 +111,7 @@ public class BFTEventPreprocessorTest {
 		when(proposal.getCommittedQC()).thenReturn(committedQC);
 		when(proposal.getQC()).thenReturn(qc);
 
-		when(vertexStoreSync.syncToQC(eq(qc), eq(committedQC), any())).thenReturn(synced);
+		when(vertexStoreSync.syncToQC(eq(qc), eq(committedQC), any())).thenReturn(synced ? SyncResult.SYNCED : SyncResult.IN_PROGRESS);
 		return proposal;
 	}
 

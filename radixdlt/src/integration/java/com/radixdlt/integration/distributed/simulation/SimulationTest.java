@@ -25,7 +25,9 @@ import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.util.Modules;
+import com.radixdlt.ConsensusModule;
 import com.radixdlt.ConsensusRunnerModule;
+import com.radixdlt.ConsensusRxModule;
 import com.radixdlt.EpochsConsensusModule;
 import com.radixdlt.EpochsSyncModule;
 import com.radixdlt.LedgerCommandGeneratorModule;
@@ -40,6 +42,7 @@ import com.radixdlt.RadixEngineRxModule;
 import com.radixdlt.SyncServiceModule;
 import com.radixdlt.SyncRxModule;
 import com.radixdlt.SyncRunnerModule;
+import com.radixdlt.SystemInfoRxModule;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -71,8 +74,10 @@ import com.radixdlt.integration.distributed.simulation.application.LocalMempoolP
 import com.radixdlt.integration.distributed.simulation.invariants.ledger.ConsensusToLedgerCommittedInvariant;
 import com.radixdlt.integration.distributed.simulation.invariants.ledger.LedgerInOrderInvariant;
 import com.radixdlt.integration.distributed.simulation.network.DroppingLatencyProvider;
+import com.radixdlt.integration.distributed.simulation.network.OneNodePerEpochResponseDropper;
 import com.radixdlt.integration.distributed.simulation.network.OneProposalPerViewDropper;
 import com.radixdlt.integration.distributed.simulation.network.RandomLatencyProvider;
+import com.radixdlt.integration.distributed.simulation.network.RandomNewViewDropper;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.mempool.LocalMempool;
@@ -193,6 +198,11 @@ public class SimulationTest {
 			return this;
 		}
 
+		public Builder addRandomNewViewDropper(double drops) {
+			this.latencyProvider.addDropper(new RandomNewViewDropper(new Random(), drops));
+			return this;
+		}
+
 		public Builder addVerticesSyncDropper() {
 			this.latencyProvider.addDropper(msg -> {
 				if (msg.getContent() instanceof GetVerticesRequest) {
@@ -213,6 +223,11 @@ public class SimulationTest {
 			this.latencyProvider.addDropper(new OneProposalPerViewDropper(
 				ImmutableList.of(BFTNode.create(nodes.get(0).getPublicKey())), new Random())
 			);
+			return this;
+		}
+
+		public Builder addOneNodePerEpochResponseDropper() {
+			this.latencyProvider.addDropper(new OneNodePerEpochResponseDropper());
 			return this;
 		}
 
@@ -415,8 +430,10 @@ public class SimulationTest {
 				}
 			});
 			modules.add(new NoFeeModule());
-
 			modules.add(new MockedCryptoModule());
+			modules.add(new ConsensusModule(pacemakerTimeout, 2.0, 0)); // Use constant timeout for now
+			modules.add(new ConsensusRxModule());
+			modules.add(new SystemInfoRxModule());
 
 			if (ledgerType == LedgerType.MOCKED_LEDGER) {
 				modules.add(new MockedBFTConfigurationModule());
@@ -515,7 +532,6 @@ public class SimulationTest {
 				}
 			}
 
-
 			ImmutableSet<SimulationNetworkActor> runners = this.runnableBuilder.build().stream()
 				.map(f -> f.apply(nodes))
 				.collect(ImmutableSet.toImmutableSet());
@@ -528,7 +544,6 @@ public class SimulationTest {
 						e -> e.getValue().apply(nodes)
 					)
 				);
-
 
 			return new SimulationTest(
 				nodes,

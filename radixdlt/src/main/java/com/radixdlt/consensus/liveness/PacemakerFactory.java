@@ -17,6 +17,8 @@
 
 package com.radixdlt.consensus.liveness;
 
+import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker.PacemakerInfoSender;
+
 /**
  * Pacemaker factory
  */
@@ -26,5 +28,9 @@ public interface PacemakerFactory {
 	 * Creates a new clean pacemaker
 	 * @return a new pacemaker
 	 */
-	Pacemaker create(PacemakerTimeoutSender timeoutSender);
+	Pacemaker create(
+		PacemakerTimeoutSender timeoutSender,
+		PacemakerInfoSender infoSender,
+		ProposerElection proposerElection
+	);
 }

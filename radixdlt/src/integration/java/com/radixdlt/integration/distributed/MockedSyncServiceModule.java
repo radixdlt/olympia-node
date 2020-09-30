@@ -35,9 +35,11 @@ import java.util.stream.LongStream;
 
 public class MockedSyncServiceModule extends AbstractModule {
 	private final ConcurrentMap<Long, Command> sharedCommittedCommands;
+	private final ConcurrentMap<Long, VerifiedLedgerHeaderAndProof> sharedEpochProofs;
 
 	public MockedSyncServiceModule() {
 		this.sharedCommittedCommands = new ConcurrentHashMap<>();
+		this.sharedEpochProofs = new ConcurrentHashMap<>();
 	}
 
 	@ProvidesIntoSet
@@ -49,6 +51,10 @@ public class MockedSyncServiceModule extends AbstractModule {
 			for (int i = 0; i < update.getNewCommands().size(); i++) {
 				sharedCommittedCommands.put(firstVersion + i, update.getNewCommands().get(i));
 			}
+
+			if (update.getTail().isEndOfEpoch()) {
+				sharedEpochProofs.put(update.getTail().getEpoch() + 1, update.getTail());
+			}
 		};
 	}
 
@@ -59,15 +65,37 @@ public class MockedSyncServiceModule extends AbstractModule {
 	) {
 		return new SyncLedgerRequestSender() {
 			long currentVersion = 0;
+			long currentEpoch = 1;
+
+			private void syncTo(VerifiedLedgerHeaderAndProof headerAndProof) {
+				ImmutableList<Command> commands = LongStream.range(currentVersion + 1, headerAndProof.getStateVersion() + 1)
+					.mapToObj(sharedCommittedCommands::get)
+					.collect(ImmutableList.toImmutableList());
+				ledger.commit(new VerifiedCommandsAndProof(commands, headerAndProof));
+				currentVersion = headerAndProof.getStateVersion();
+				if (headerAndProof.isEndOfEpoch()) {
+					currentEpoch = headerAndProof.getEpoch() + 1;
+				} else {
+					currentEpoch = headerAndProof.getEpoch();
+				}
+			}
 
 			@Override
 			public void sendLocalSyncRequest(LocalSyncRequest request) {
+				while (currentEpoch != request.getTarget().getEpoch()) {
+					syncTo(sharedEpochProofs.get(currentEpoch + 1));
+				}
+
+				syncTo(request.getTarget());
+
 				final long targetVersion = request.getTarget().getStateVersion();
 				ImmutableList<Command> commands = LongStream.range(currentVersion + 1, targetVersion + 1)
 					.mapToObj(sharedCommittedCommands::get)
 					.collect(ImmutableList.toImmutableList());
+
 				ledger.commit(new VerifiedCommandsAndProof(commands, request.getTarget()));
 				currentVersion = targetVersion;
+				currentEpoch = request.getTarget().getEpoch();
 			}
 		};
 	}

@@ -78,7 +78,7 @@ public final class DeterministicTest {
 	public static class Builder {
 		private enum LedgerType {
 			MOCKED_LEDGER,
-			LEDGER_AND_EPOCHS_AND_SYNC;
+			LEDGER_AND_EPOCHS_AND_SYNC
 		}
 
 		private ImmutableList<BFTNode> nodes = ImmutableList.of(BFTNode.create(ECKeyPair.generateNew().getPublicKey()));

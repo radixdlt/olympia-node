@@ -43,7 +43,6 @@ public class SafetyStateTest {
 		SafetyState nextSafetyState = builder.build();
 		assertThat(nextSafetyState.getLastVotedView()).isEqualTo(view);
 		assertThat(nextSafetyState.getLockedView()).isEqualTo(safetyState.getLockedView());
-		assertThat(nextSafetyState.getGenericQC()).isEqualTo(safetyState.getGenericQC());
 	}
 
 	@Test

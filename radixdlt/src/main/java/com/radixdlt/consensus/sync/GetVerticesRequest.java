@@ -46,4 +46,9 @@ public final class GetVerticesRequest {
 	public int getCount() {
 		return count;
 	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{id=%s count=%s}", this.getClass().getSimpleName(), this.vertexId, this.count);
+	}
 }

@@ -28,10 +28,7 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.name.Named;
 import com.google.inject.name.Names;
 import com.google.inject.util.Modules;
-import com.radixdlt.ConsensusModule;
-import com.radixdlt.ConsensusRxModule;
 import com.radixdlt.ModuleRunner;
-import com.radixdlt.SystemInfoRxModule;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.epoch.EpochChange;
@@ -101,9 +98,6 @@ public class SimulationNodes {
 					return BFTNode.create(selfKey.getPublicKey());
 				}
 			},
-			new ConsensusModule(pacemakerTimeout, 2.0, 0), // Use constant timeout for now
-			new ConsensusRxModule(),
-			new SystemInfoRxModule(),
 			new SimulationNetworkModule(underlyingNetwork),
 			baseModule
 		);

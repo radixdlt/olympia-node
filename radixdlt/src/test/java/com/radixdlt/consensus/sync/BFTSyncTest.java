@@ -33,10 +33,12 @@ import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTSyncer.SyncResult;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.sync.VertexStoreSync.SyncVerticesRequestSender;
+import com.radixdlt.consensus.liveness.Pacemaker;
+import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.utils.Pair;
@@ -48,9 +50,10 @@ import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
 
-public class VertexStoreSyncTest {
-	private VertexStoreSync vertexStoreSync;
+public class BFTSyncTest {
+	private BFTSync vertexStoreSync;
 	private VertexStore vertexStore;
+	private Pacemaker pacemaker;
 	private Comparator<LedgerHeader> ledgerHeaderComparator;
 	private SyncVerticesRequestSender syncVerticesRequestSender;
 	private SyncLedgerRequestSender syncLedgerRequestSender;
@@ -59,13 +62,15 @@ public class VertexStoreSyncTest {
 	@Before
 	public void setup() {
 		this.vertexStore = mock(VertexStore.class);
+		this.pacemaker = mock(Pacemaker.class);
 		this.ledgerHeaderComparator = TypedMocks.rmock(Comparator.class);
 		this.syncVerticesRequestSender = mock(SyncVerticesRequestSender.class);
 		this.syncLedgerRequestSender = mock(SyncLedgerRequestSender.class);
 		this.verifiedLedgerHeaderAndProof = mock(VerifiedLedgerHeaderAndProof.class);
 
-		vertexStoreSync = new VertexStoreSync(
+		vertexStoreSync = new BFTSync(
 			vertexStore,
+			pacemaker,
 			ledgerHeaderComparator,
 			syncVerticesRequestSender,
 			syncLedgerRequestSender,
@@ -86,7 +91,7 @@ public class VertexStoreSyncTest {
 		when(qc.getProposed()).thenReturn(header);
 		when(vertexStore.addQC(eq(qc))).thenReturn(true);
 
-		assertThat(vertexStoreSync.syncToQC(qc, vertexStore.getHighestCommittedQC(), null)).isTrue();
+		assertThat(vertexStoreSync.syncToQC(qc, vertexStore.getHighestCommittedQC(), null)).isEqualTo(SyncResult.SYNCED);
 	}
 
 	@Test
