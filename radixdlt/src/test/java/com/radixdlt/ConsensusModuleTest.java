@@ -38,7 +38,7 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
-import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
+import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker.PacemakerInfoSender;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -99,7 +99,7 @@ public class ConsensusModuleTest {
 				bind(HashVerifier.class).toInstance(mock(HashVerifier.class));
 				bind(HashSigner.class).toInstance(mock(HashSigner.class));
 				bind(BFTNode.class).annotatedWith(Names.named("self")).toInstance(mock(BFTNode.class));
-				bind(BFTInfoSender.class).toInstance(mock(BFTInfoSender.class));
+				bind(PacemakerInfoSender.class).toInstance(mock(PacemakerInfoSender.class));
 				bind(PacemakerTimeoutSender.class).toInstance(mock(PacemakerTimeoutSender.class));
 				bind(BFTConfiguration.class).toInstance(bftConfiguration);
 			}

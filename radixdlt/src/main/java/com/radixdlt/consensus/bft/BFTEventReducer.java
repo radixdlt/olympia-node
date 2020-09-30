@@ -78,25 +78,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		void sendVote(Vote vote, BFTNode leader);
 	}
 
-	/**
-	 * Sender of information regarding the BFT
-	 */
-	public interface BFTInfoSender {
-
-		/**
-		 * Signify that the bft node is on a new view
-		 * @param view the view the bft node has changed to
-		 */
-		void sendCurrentView(View view);
-
-		/**
-		 * Signify that a timeout was processed by this bft node
-		 * @param view the view of the timeout
-		 * @param leader the leader of the view which timed out
-		 */
-		void sendTimeoutProcessed(View view, BFTNode leader);
-	}
-
 	public interface ProceedToViewSender {
 		void sendProceedToNextView(View view);
 	}
@@ -115,7 +96,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private final SystemCounters counters;
 	private final TimeSupplier timeSupplier;
 	private final Map<Hash, QuorumCertificate> unsyncedQCs = new HashMap<>();
-	private final BFTInfoSender infoSender;
 	private final RTTStatistics rttStatistics = new RTTStatistics();
 	private final Hasher hasher;
 	private boolean synchedLog = false;
@@ -134,7 +114,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		ProposerElection proposerElection,
 		BFTValidatorSet validatorSet,
 		SystemCounters counters,
-		BFTInfoSender infoSender,
 		TimeSupplier timeSupplier,
 		Hasher hasher
 	) {
@@ -149,7 +128,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		this.proposerElection = Objects.requireNonNull(proposerElection);
 		this.validatorSet = Objects.requireNonNull(validatorSet);
 		this.counters = Objects.requireNonNull(counters);
-		this.infoSender = Objects.requireNonNull(infoSender);
 		this.timeSupplier = Objects.requireNonNull(timeSupplier);
 		this.proceedToViewSender = Objects.requireNonNull(proceedToViewSender);
 		this.hasher = Objects.requireNonNull(hasher);
@@ -158,7 +136,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	// Hotstuff's Event-Driven OnNextSyncView
 	private void proceedToView(View nextView) {
 		this.proceedToViewSender.sendProceedToNextView(nextView);
-		this.infoSender.sendCurrentView(nextView);
 	}
 
 	private void processQC(QuorumCertificate qc) {
@@ -299,7 +276,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 			this.proceedToView(nextView.get());
 
-			infoSender.sendTimeoutProcessed(view, this.proposerElection.getProposer(view));
 			counters.increment(CounterType.BFT_TIMEOUT);
 		} else {
 			log.trace("LOCAL_TIMEOUT: Ignoring {}", () -> view);

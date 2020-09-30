@@ -17,10 +17,12 @@
 
 package com.radixdlt;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -35,7 +37,7 @@ import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
-import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
+import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker.PacemakerInfoSender;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
@@ -44,6 +46,7 @@ import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
+import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.sync.VertexStoreSync.SyncVerticesRequestSender;
@@ -53,14 +56,16 @@ import org.junit.Test;
 
 public class EpochsConsensusModuleTest {
 	@Inject
-	private BFTInfoSender infoSender;
+	private PacemakerInfoSender infoSender;
 
 	private EpochInfoSender epochInfoSender = mock(EpochInfoSender.class);
+	private ProposerElection proposerElection = mock(ProposerElection.class);
 
 	private Module getExternalModule() {
 		return new AbstractModule() {
 			@Override
 			protected void configure() {
+				bind(ProposerElection.class).toInstance(proposerElection);
 				bind(BFTUpdateSender.class).toInstance(mock(BFTUpdateSender.class));
 				bind(Ledger.class).toInstance(mock(Ledger.class));
 				bind(SyncLedgerRequestSender.class).toInstance(mock(SyncLedgerRequestSender.class));
@@ -107,8 +112,13 @@ public class EpochsConsensusModuleTest {
 		).injectMembers(this);
 
 		View view = mock(View.class);
-		infoSender.sendTimeoutProcessed(view, mock(BFTNode.class));
+		BFTNode node = mock(BFTNode.class);
+		when(proposerElection.getProposer(any())).thenReturn(node);
+		infoSender.sendTimeoutProcessed(view);
 
-		verify(epochInfoSender, times(1)).sendTimeoutProcessed(argThat(t -> t.getEpochView().getView().equals(view)));
+		verify(epochInfoSender, times(1))
+			.sendTimeoutProcessed(
+				argThat(t -> t.getEpochView().getView().equals(view) && t.getLeader().equals(node))
+			);
 	}
 }

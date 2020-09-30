@@ -31,7 +31,7 @@ import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.bft.BFTBuilder;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
-import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
+import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker.PacemakerInfoSender;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTSyncRequestProcessor;
 import com.radixdlt.consensus.bft.NewViewSigner;
@@ -87,8 +87,7 @@ public final class ConsensusModule extends AbstractModule {
 			vertexStore,
 			vertexStoreSync,
 			proposerElection,
-			validatorSet,
-			bftInfoSender
+			validatorSet
 		) ->
 			BFTBuilder.create()
 				.self(self)
@@ -99,7 +98,6 @@ public final class ConsensusModule extends AbstractModule {
 				.signer(signer)
 				.verifier(verifier)
 				.counters(counters)
-				.infoSender(bftInfoSender)
 				.pacemaker(pacemaker)
 				.vertexStore(vertexStore)
 				.bftSyncer(vertexStoreSync)
@@ -119,8 +117,7 @@ public final class ConsensusModule extends AbstractModule {
 		Pacemaker pacemaker,
 		VertexStore vertexStore,
 		VertexStoreSync vertexStoreSync,
-		ProposerElection proposerElection,
-		BFTInfoSender infoSender
+		ProposerElection proposerElection
 	) {
 		return bftFactory.create(
 			self,
@@ -128,8 +125,7 @@ public final class ConsensusModule extends AbstractModule {
 			vertexStore,
 			vertexStoreSync,
 			proposerElection,
-			config.getValidatorSet(),
-			infoSender
+			config.getValidatorSet()
 		);
 	}
 
@@ -144,8 +140,8 @@ public final class ConsensusModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private Pacemaker pacemaker(PacemakerTimeoutSender timeoutSender) {
-		return new ExponentialTimeoutPacemaker(this.pacemakerTimeout, this.pacemakerRate, this.pacemakerMaxExponent, timeoutSender);
+	private Pacemaker pacemaker(PacemakerTimeoutSender timeoutSender, PacemakerInfoSender infoSender) {
+		return new ExponentialTimeoutPacemaker(this.pacemakerTimeout, this.pacemakerRate, this.pacemakerMaxExponent, timeoutSender, infoSender);
 	}
 
 	@Provides

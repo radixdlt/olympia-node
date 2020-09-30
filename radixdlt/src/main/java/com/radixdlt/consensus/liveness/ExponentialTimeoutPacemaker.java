@@ -21,6 +21,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.RateLimiter;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import org.apache.logging.log4j.Level;
@@ -34,6 +35,25 @@ import java.util.Optional;
  */
 public final class ExponentialTimeoutPacemaker implements Pacemaker {
 
+
+	/**
+	 * Sender of information regarding the BFT
+	 */
+	public interface PacemakerInfoSender {
+
+		/**
+		 * Signify that the bft node is on a new view
+		 * @param view the view the bft node has changed to
+		 */
+		void sendCurrentView(View view);
+
+		/**
+		 * Signify that a timeout was processed by this bft node
+		 * @param view the view of the timeout
+		 */
+		void sendTimeoutProcessed(View view);
+	}
+
 	private static final Logger log = LogManager.getLogger();
 
 	private final long timeoutMilliseconds;
@@ -41,6 +61,7 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 	private final int maxExponent;
 
 	private final PacemakerTimeoutSender timeoutSender;
+	private final PacemakerInfoSender pacemakerInfoSender;
 	private final PendingNewViews pendingNewViews;
 
 	private final RateLimiter newViewLogLimiter = RateLimiter.create(1.0);
@@ -54,7 +75,8 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 		long timeoutMilliseconds,
 		double rate,
 		int maxExponent,
-		PacemakerTimeoutSender timeoutSender
+		PacemakerTimeoutSender timeoutSender,
+		PacemakerInfoSender pacemakerInfoSender
 	) {
 		if (timeoutMilliseconds <= 0) {
 			throw new IllegalArgumentException("timeoutMilliseconds must be > 0 but was " + timeoutMilliseconds);
@@ -73,6 +95,7 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 		this.rate = rate;
 		this.maxExponent = maxExponent;
 		this.timeoutSender = Objects.requireNonNull(timeoutSender);
+		this.pacemakerInfoSender = Objects.requireNonNull(pacemakerInfoSender);
 		this.pendingNewViews = new PendingNewViews();
 		log.debug("{} with max timeout {}*{}^{}ms",
 			getClass().getSimpleName(), this.timeoutMilliseconds, this.rate, this.maxExponent);
@@ -89,7 +112,8 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 		long timeout = timeout(uncommittedViews(nextView));
 		log.log(logLevel, "Starting View: {} with timeout {}ms", nextView, timeout);
 		this.currentView = nextView;
-		timeoutSender.scheduleTimeout(this.currentView, timeout);
+		this.timeoutSender.scheduleTimeout(this.currentView, timeout);
+		this.pacemakerInfoSender.sendCurrentView(this.currentView);
 	}
 
 	@Override
@@ -98,7 +122,9 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 			return Optional.empty();
 		}
 
+		this.pacemakerInfoSender.sendTimeoutProcessed(view);
 		this.updateView(currentView.next());
+
 		return Optional.of(this.currentView);
 	}
 
@@ -165,4 +191,5 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 	private static <T extends Comparable<T>> T max(T a, T b) {
 	    return a.compareTo(b) >= 0 ? a : b;
 	}
+
 }

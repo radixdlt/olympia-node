@@ -23,7 +23,7 @@ import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
-import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
+import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker.PacemakerInfoSender;
 import com.radixdlt.consensus.bft.BFTEventReducer.ProceedToViewSender;
 import com.radixdlt.consensus.bft.SignedNewViewToLeaderSender.BFTNewViewSender;
 import com.radixdlt.consensus.liveness.Pacemaker;
@@ -52,7 +52,6 @@ public final class BFTBuilder {
 	private Hasher hasher;
 	private HashSigner signer;
 	private HashVerifier verifier = ECPublicKey::verify;
-	private BFTInfoSender infoSender;
 	private NewViewSigner newViewSigner;
 
 	// BFT Stateful objects
@@ -117,11 +116,6 @@ public final class BFTBuilder {
 		return this;
 	}
 
-	public BFTBuilder infoSender(BFTInfoSender infoSender) {
-		this.infoSender = infoSender;
-		return this;
-	}
-
 	public BFTBuilder timeSupplier(TimeSupplier timeSupplier) {
 		this.timeSupplier = timeSupplier;
 		return this;
@@ -177,7 +171,6 @@ public final class BFTBuilder {
 			proposerElection,
 			validatorSet,
 			counters,
-			infoSender,
 			timeSupplier,
 			hasher
 		);

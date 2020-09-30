@@ -27,6 +27,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.ValidationState;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker.PacemakerInfoSender;
 import com.radixdlt.crypto.ECDSASignature;
 import org.junit.Before;
 
@@ -71,6 +72,7 @@ public class ExponentialTimeoutPacemakerTest {
 
 	private ExponentialTimeoutPacemaker pacemaker;
 	private PacemakerTimeoutSender timeoutSender;
+	private PacemakerInfoSender infoSender;
 	private long timeout;
 	private double rate;
 	private int maxExponent;
@@ -82,25 +84,26 @@ public class ExponentialTimeoutPacemakerTest {
 		// Want timeout increasing exponentially from timeout to MAX_TIMEOUT
 		// = log_{rate} (MAXTIMEOUT / timeout)
 		this.maxExponent = (int) Math.ceil(Math.log(MAX_TIMEOUT / this.timeout) / Math.log(this.rate));
+		this.infoSender = mock(PacemakerInfoSender.class);
 		this.timeoutSender = mock(PacemakerTimeoutSender.class);
-		this.pacemaker = new ExponentialTimeoutPacemaker(this.timeout, this.rate, this.maxExponent, this.timeoutSender);
+		this.pacemaker = new ExponentialTimeoutPacemaker(this.timeout, this.rate, this.maxExponent, this.timeoutSender, this.infoSender);
 	}
 
 	@Test
 	public void when_creating_pacemaker_with_invalid_timeout__then_exception_is_thrown() {
-		assertThatThrownBy(() -> new ExponentialTimeoutPacemaker(0, 1.2, 1, this.timeoutSender))
+		assertThatThrownBy(() -> new ExponentialTimeoutPacemaker(0, 1.2, 1, this.timeoutSender, this.infoSender))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageStartingWith("timeoutMilliseconds must be > 0");
-		assertThatThrownBy(() -> new ExponentialTimeoutPacemaker(-1, 1.2, 1, this.timeoutSender))
+		assertThatThrownBy(() -> new ExponentialTimeoutPacemaker(-1, 1.2, 1, this.timeoutSender, this.infoSender))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageStartingWith("timeoutMilliseconds must be > 0");
-		assertThatThrownBy(() -> new ExponentialTimeoutPacemaker(1, 1.0, 1, this.timeoutSender))
+		assertThatThrownBy(() -> new ExponentialTimeoutPacemaker(1, 1.0, 1, this.timeoutSender, this.infoSender))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageStartingWith("rate must be > 1.0");
-		assertThatThrownBy(() -> new ExponentialTimeoutPacemaker(1, 1.2, -1, this.timeoutSender))
+		assertThatThrownBy(() -> new ExponentialTimeoutPacemaker(1, 1.2, -1, this.timeoutSender, this.infoSender))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageStartingWith("maxExponent must be >= 0");
-		assertThatThrownBy(() -> new ExponentialTimeoutPacemaker(1, 100.0, 100, this.timeoutSender))
+		assertThatThrownBy(() -> new ExponentialTimeoutPacemaker(1, 100.0, 100, this.timeoutSender, this.infoSender))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageStartingWith("Maximum timeout value");
 	}
@@ -299,7 +302,7 @@ public class ExponentialTimeoutPacemakerTest {
 		for (int i = 0; i < numPacemakers; ++i) {
 			final int j = i;
 			final PacemakerTimeoutSender timeoutSender = (view, timeout) -> timeouts.push(new TimeoutHolder(j, view, baseTime.get() + timeout));
-			pacemaker[i] = new ExponentialTimeoutPacemaker(1L, testRate, numPacemakers, timeoutSender);
+			pacemaker[i] = new ExponentialTimeoutPacemaker(1L, testRate, numPacemakers, timeoutSender, this.infoSender);
 		}
 
 		for (int i = 1; i < numPacemakers; ++i) {
@@ -340,10 +343,10 @@ public class ExponentialTimeoutPacemakerTest {
 		final ExponentialTimeoutPacemaker[] pacemaker = new ExponentialTimeoutPacemaker[2];
 
 		final PacemakerTimeoutSender timeoutSender0 = (view, timeout) -> timeouts.add(new TimeoutHolder(0, view, baseTime.get() + timeout));
-		pacemaker[0] = new ExponentialTimeoutPacemaker(1L, testRate, pacemakerMaxExponent, timeoutSender0);
+		pacemaker[0] = new ExponentialTimeoutPacemaker(1L, testRate, pacemakerMaxExponent, timeoutSender0, this.infoSender);
 
 		PacemakerTimeoutSender timeoutSender1 = (view, timeout) -> timeouts.add(new TimeoutHolder(1, view, baseTime.get() + timeout));
-		pacemaker[1] = new ExponentialTimeoutPacemaker(1L, testRate, pacemakerMaxExponent, timeoutSender1);
+		pacemaker[1] = new ExponentialTimeoutPacemaker(1L, testRate, pacemakerMaxExponent, timeoutSender1, this.infoSender);
 
 		// get pacemaker[0] at least 2 views ahead and until timeout > setuptime
 		pacemaker[0].processNextView(pacemaker[0].getCurrentView());

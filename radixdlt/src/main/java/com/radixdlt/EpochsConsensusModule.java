@@ -28,7 +28,7 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.epoch.VertexStoreFactory;
 import com.radixdlt.consensus.epoch.VertexStoreSyncFactory;
 import com.radixdlt.consensus.epoch.BFTSyncRequestProcessorFactory;
-import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
+import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker.PacemakerInfoSender;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
@@ -43,6 +43,7 @@ import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
+import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
@@ -78,15 +79,16 @@ public class EpochsConsensusModule extends AbstractModule {
 	}
 
 	@Provides
-	private BFTInfoSender initialInfoSender(EpochInfoSender epochInfoSender, EpochChange initialEpoch) {
-		return new BFTInfoSender() {
+	private PacemakerInfoSender initialInfoSender(EpochInfoSender epochInfoSender, EpochChange initialEpoch, ProposerElection proposerElection) {
+		return new PacemakerInfoSender() {
 			@Override
 			public void sendCurrentView(View view) {
 				epochInfoSender.sendCurrentView(EpochView.of(initialEpoch.getEpoch(), view));
 			}
 
 			@Override
-			public void sendTimeoutProcessed(View view, BFTNode leader) {
+			public void sendTimeoutProcessed(View view) {
+				BFTNode leader = proposerElection.getProposer(view);
 				Timeout timeout = new Timeout(EpochView.of(initialEpoch.getEpoch(), view), leader);
 				epochInfoSender.sendTimeoutProcessed(timeout);
 			}
@@ -113,7 +115,8 @@ public class EpochsConsensusModule extends AbstractModule {
 
 	@Provides
 	private PacemakerFactory pacemakerFactory() {
-		return timeoutSender -> new ExponentialTimeoutPacemaker(this.pacemakerTimeout, this.pacemakerRate, this.pacemakerMaxExponent, timeoutSender);
+		return (timeoutSender, infoSender) ->
+			new ExponentialTimeoutPacemaker(this.pacemakerTimeout, this.pacemakerRate, this.pacemakerMaxExponent, timeoutSender, infoSender);
 	}
 
 	@Provides

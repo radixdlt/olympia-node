@@ -30,7 +30,7 @@ import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
-import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
+import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker.PacemakerInfoSender;
 import com.radixdlt.consensus.bft.SignedNewViewToLeaderSender.BFTNewViewSender;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
@@ -47,7 +47,6 @@ public class BFTBuilderTest {
 	private NextCommandGenerator nextCommandGenerator;
 	private BFTEventSender eventSender;
 	private SystemCounters counters;
-	private BFTInfoSender infoSender;
 	private BFTValidatorSet validatorSet;
 	private ProposerElection proposerElection;
 	private Hasher hasher;
@@ -74,7 +73,6 @@ public class BFTBuilderTest {
 		vertexStore = mock(VertexStore.class);
 		vertexStoreSync = mock(VertexStoreSync.class);
 		self = mock(BFTNode.class);
-		infoSender = mock(BFTInfoSender.class);
 		hasher = mock(Hasher.class);
 		newViewSigner = mock(NewViewSigner.class);
 		newViewSender = mock(BFTNewViewSender.class);
@@ -90,7 +88,6 @@ public class BFTBuilderTest {
 			.nextCommandGenerator(nextCommandGenerator)
 			.eventSender(eventSender)
 			.counters(counters)
-			.infoSender(infoSender)
 			.timeSupplier(System::currentTimeMillis)
 			.validatorSet(validatorSet)
 			.proposerElection(proposerElection)

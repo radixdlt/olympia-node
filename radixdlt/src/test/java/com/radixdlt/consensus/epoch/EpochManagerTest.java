@@ -130,7 +130,7 @@ public class EpochManagerTest {
 			this.syncEpochsRPCSender,
 			mock(LocalTimeoutSender.class),
 			syncRequestSender,
-			timeoutSender -> this.pacemaker,
+			(timeoutSender, infoSender) -> this.pacemaker,
 			vertexStoreFactory,
 			vertexStoreSyncFactory,
 			requestProcessorFactory,
@@ -156,7 +156,7 @@ public class EpochManagerTest {
 		when(epochsLedgerUpdate.getEpochChange()).thenReturn(Optional.of(epochChange));
 		epochManager.processLedgerUpdate(epochsLedgerUpdate);
 
-		verify(bftFactory, never()).create(any(), any(), any(), any(), any(), any(), any());
+		verify(bftFactory, never()).create(any(), any(), any(), any(), any(), any());
 		verify(syncEpochsRPCSender, never()).sendGetEpochRequest(any(), anyLong());
 	}
 
@@ -245,7 +245,7 @@ public class EpochManagerTest {
 	@Test
 	public void when_epoch_change_and_then_epoch_events__then_should_execute_events() {
 		BFTEventProcessor eventProcessor = mock(BFTEventProcessor.class);
-		when(bftFactory.create(any(), any(), any(), any(), any(), any(), any())).thenReturn(eventProcessor);
+		when(bftFactory.create(any(), any(), any(), any(), any(), any())).thenReturn(eventProcessor);
 
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		when(validatorSet.containsNode(any())).thenReturn(true);
@@ -355,7 +355,7 @@ public class EpochManagerTest {
 		assertThat(systemCounters.get(CounterType.EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS)).isEqualTo(1);
 
 		BFTEventProcessor eventProcessor = mock(BFTEventProcessor.class);
-		when(bftFactory.create(any(), any(), any(), any(), any(), any(), any())).thenReturn(eventProcessor);
+		when(bftFactory.create(any(), any(), any(), any(), any(), any())).thenReturn(eventProcessor);
 
 		BFTValidator validator = mock(BFTValidator.class);
 		when(validator.getNode()).thenReturn(mock(BFTNode.class));
@@ -407,7 +407,7 @@ public class EpochManagerTest {
 		when(vertexStore.getHighestQC()).thenReturn(mock(QuorumCertificate.class));
 
 		BFTEventProcessor eventProcessor = mock(BFTEventProcessor.class);
-		when(bftFactory.create(any(), any(), any(), any(), any(), any(), any())).thenReturn(eventProcessor);
+		when(bftFactory.create(any(), any(), any(), any(), any(), any())).thenReturn(eventProcessor);
 
 		VertexStoreBFTSyncRequestProcessor requestProcessor = mock(VertexStoreBFTSyncRequestProcessor.class);
 		when(requestProcessorFactory.create(any())).thenReturn(requestProcessor);

@@ -36,7 +36,7 @@ import com.radixdlt.consensus.bft.BFTUpdateProcessor;
 import com.radixdlt.consensus.bft.BFTSyncRequestProcessor;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
+import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker.PacemakerInfoSender;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.EmptyBFTEventProcessor;
 import com.radixdlt.consensus.bft.VertexStore;
@@ -189,8 +189,21 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdatePro
 		logEpochChange(this.currentEpoch, "included in");
 
 		ProposerElection proposerElection = proposerElectionFactory.create(validatorSet);
-		PacemakerTimeoutSender sender = (view, ms) -> localTimeoutSender.scheduleTimeout(new LocalTimeout(nextEpoch, view), ms);
-		Pacemaker pacemaker = pacemakerFactory.create(sender);
+		PacemakerTimeoutSender timeoutSender = (view, ms) -> localTimeoutSender.scheduleTimeout(new LocalTimeout(nextEpoch, view), ms);
+		PacemakerInfoSender infoSender = new PacemakerInfoSender() {
+			@Override
+			public void sendCurrentView(View view) {
+				epochInfoSender.sendCurrentView(EpochView.of(nextEpoch, view));
+			}
+
+			@Override
+			public void sendTimeoutProcessed(View view) {
+				BFTNode leader = proposerElection.getProposer(view);
+				Timeout timeout = new Timeout(EpochView.of(nextEpoch, view), leader);
+				epochInfoSender.sendTimeoutProcessed(timeout);
+			}
+		};
+		Pacemaker pacemaker = pacemakerFactory.create(timeoutSender, infoSender);
 
 		// TODO: Recover VertexStore
 		BFTConfiguration bftConfiguration = this.currentEpoch.getBFTConfiguration();
@@ -206,27 +219,13 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdatePro
 
 		this.syncRequestProcessor = bftSyncRequestProcessorFactory.create(vertexStore);
 
-		BFTInfoSender infoSender = new BFTInfoSender() {
-			@Override
-			public void sendCurrentView(View view) {
-				epochInfoSender.sendCurrentView(EpochView.of(nextEpoch, view));
-			}
-
-			@Override
-			public void sendTimeoutProcessed(View view, BFTNode leader) {
-				Timeout timeout = new Timeout(EpochView.of(nextEpoch, view), leader);
-				epochInfoSender.sendTimeoutProcessed(timeout);
-			}
-		};
-
 		this.bftEventProcessor = bftFactory.create(
 			self,
 			pacemaker,
 			vertexStore,
 			vertexStoreSync,
 			proposerElection,
-			validatorSet,
-			infoSender
+			validatorSet
 		);
 	}
 

@@ -23,8 +23,9 @@ import com.google.inject.Scopes;
 import com.google.inject.multibindings.MapBinder;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.Timeout;
+import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.sync.BFTSyncResponseProcessor;
-import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
+import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker.PacemakerInfoSender;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.VertexStoreSync;
 import com.radixdlt.consensus.bft.View;
@@ -44,15 +45,16 @@ public class MockedConsensusRunnerModule extends AbstractModule {
 	}
 
 	@Provides
-	public BFTInfoSender bftInfoSender(EpochInfoSender epochInfoSender) {
-		return new BFTInfoSender() {
+	public PacemakerInfoSender bftInfoSender(EpochInfoSender epochInfoSender, ProposerElection proposerElection) {
+		return new PacemakerInfoSender() {
 			@Override
 			public void sendCurrentView(View view) {
 				epochInfoSender.sendCurrentView(EpochView.of(1, view));
 			}
 
 			@Override
-			public void sendTimeoutProcessed(View view, BFTNode leader) {
+			public void sendTimeoutProcessed(View view) {
+				BFTNode leader = proposerElection.getProposer(view);
 				epochInfoSender.sendTimeoutProcessed(new Timeout(EpochView.of(1, view), leader));
 			}
 		};
