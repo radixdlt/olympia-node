@@ -103,9 +103,13 @@ jacocoTestReport {
 }
 
 configurations.all {
-    resolutionStrategy.dependencySubstitution {
-        substitute(platform(module('com.google.guava:guava:29.0-android'))).
-                using module('com.google.guava:guava:29.0-jre')
+    resolutionStrategy.eachDependency {
+        if(it.requested.name == 'guava') {
+            it.useTarget 'com.google.guava:guava:29.0-jre'
+        }
+        if(it.requested.name == 'json') {
+            it.useTarget 'org.json:json:20180813'
+        }
     }
 }
 
@@ -133,8 +137,6 @@ dependencies {
         // Use our Guava lib
         exclude group: 'com.google.guava', module: 'guava'
     }
-
-    api 'com.google.guava:guava:29.0-jre'
 
     // need at least this commit (or later): https://github.com/bitcoinj/bitcoinj/commit/7629677103dbdd80f14c63b066ed27e1fad47014
     // in order to work with BouncyCastle 1.64 or later
