@@ -138,6 +138,8 @@ dependencies {
         exclude group: 'com.google.guava', module: 'guava'
     }
 
+    api 'com.google.guava:guava:29.0-jre'
+
     // need at least this commit (or later): https://github.com/bitcoinj/bitcoinj/commit/7629677103dbdd80f14c63b066ed27e1fad47014
     // in order to work with BouncyCastle 1.64 or later
     // see issue: https://github.com/bitcoinj/bitcoinj/issues/1951
