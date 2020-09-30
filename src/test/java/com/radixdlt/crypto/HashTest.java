@@ -197,7 +197,7 @@ public class HashTest {
 	}
 
 	@Test
-	public void test_hash_of_publickey() throws CryptoException {
+	public void test_hash_of_publickey() throws Exception {
 		String publicKeyHex = "03" + deadbeefString();
 		byte[] publicKeyBytes = Bytes.fromHexString(publicKeyHex);
 		ECPublicKey publicKey = ECPublicKey.fromBytes(publicKeyBytes);

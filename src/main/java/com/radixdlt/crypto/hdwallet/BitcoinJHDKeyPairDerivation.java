@@ -18,8 +18,9 @@
 package com.radixdlt.crypto.hdwallet;
 import com.google.common.annotations.VisibleForTesting;
 import com.radixdlt.SecurityCritical;
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.exception.PrivateKeyException;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.utils.Bytes;
 import org.bitcoinj.core.NetworkParameters;
 import org.bitcoinj.crypto.ChildNumber;
@@ -88,7 +89,7 @@ public final class BitcoinJHDKeyPairDerivation implements HDKeyPairDerivation {
 		try {
 			ECKeyPair ecKeyPair = ECKeyPair.fromPrivateKey(childKey.getPrivKeyBytes());
 			return new HDKeyPair(ecKeyPair, path);
-		} catch (CryptoException e) {
+		} catch (PrivateKeyException | PublicKeyException e) {
 			throw new IllegalStateException("Failed to generate ECKeyPair", e);
 		}
 	}

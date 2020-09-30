@@ -23,7 +23,8 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECMultiplicationScalar;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.crypto.MacMismatchException;
+import com.radixdlt.crypto.exception.MacMismatchException;
+import com.radixdlt.crypto.exception.ECIESException;
 import org.bouncycastle.math.ec.ECPoint;
 
 import javax.crypto.Mac;

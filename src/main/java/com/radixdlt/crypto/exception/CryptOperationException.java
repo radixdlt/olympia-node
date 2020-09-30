@@ -15,13 +15,19 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.crypto;
+package com.radixdlt.crypto.exception;
 
-/**
- * Exception when an already signed {@link Atom} is signed again
- */
-public class AtomAlreadySignedException extends CryptoException {
-	public AtomAlreadySignedException(String message) {
-		super(message);
+import com.radixdlt.crypto.encryption.CryptOperation;
+
+public final class CryptOperationException extends CryptoException {
+	private final CryptOperation operationThatFailed;
+
+	public CryptOperationException(CryptOperation operationThatFailed, Exception exception) {
+		super(exception);
+		this.operationThatFailed = operationThatFailed;
+	}
+
+	public CryptOperation operationThatFailed() {
+		return this.operationThatFailed;
 	}
 }

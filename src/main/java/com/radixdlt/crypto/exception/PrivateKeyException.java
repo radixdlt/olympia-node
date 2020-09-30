@@ -15,23 +15,10 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.crypto;
+package com.radixdlt.crypto.exception;
 
-@SuppressWarnings("serial")
-public class CryptoException extends Exception {
-	public CryptoException() {
-		super();
-	}
-
-	public CryptoException(Throwable throwable) {
-		super(throwable);
-	}
-
-	public CryptoException(String errorMessage) {
-		super(errorMessage);
-	}
-
-	public CryptoException(String errorMessage, Throwable throwable) {
-		super(errorMessage, throwable);
-	}
+public class PrivateKeyException extends CryptoException {
+    public PrivateKeyException(String errorMessage) {
+        super(errorMessage);
+    }
 }

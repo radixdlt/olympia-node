@@ -19,6 +19,7 @@ package com.radixdlt.crypto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
@@ -150,7 +151,7 @@ public final class ECDSASignatures implements Signatures {
 	private ECPublicKey decodePublicKey(String str) {
 		try {
 			return ECPublicKey.fromBytes(Bytes.fromHexString(str));
-		} catch (CryptoException e) {
+		} catch (PublicKeyException e) {
 			throw new IllegalStateException("Error decoding public key", e);
 		}
 	}

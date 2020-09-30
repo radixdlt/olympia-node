@@ -19,6 +19,8 @@ package com.radixdlt.crypto;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.primitives.UnsignedBytes;
+import com.radixdlt.crypto.exception.PrivateKeyException;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.RuntimeUtils;
 import org.bouncycastle.asn1.x9.X9ECParameters;
@@ -103,31 +105,31 @@ public class ECKeyUtils {
 	// Must be after secureRandom init
 	static final KeyHandler keyHandler = new BouncyCastleKeyHandler(curve);
 
-	static void validatePrivate(byte[] privateKey) throws CryptoException {
+	static void validatePrivate(byte[] privateKey) throws PrivateKeyException {
 		if (privateKey == null) {
-			throw new CryptoException("Private key is null");
+			throw new PrivateKeyException("Private key is null");
 		}
 
 		if (privateKey.length != ECKeyPair.BYTES) {
-			throw new CryptoException("Private key is invalid length: " + privateKey.length);
+			throw new PrivateKeyException("Private key is invalid length: " + privateKey.length);
 		}
 
 		if (greaterOrEqualOrder(privateKey)) {
-			throw new CryptoException("Private key is greater than or equal to curve order");
+			throw new PrivateKeyException("Private key is greater than or equal to curve order");
 		}
 
 		int pklen = privateKey.length;
 		if (allZero(privateKey, 0, pklen - 1)) {
 			byte lastByte = privateKey[pklen - 1];
 			if (lastByte == 0) {
-				throw new CryptoException("Private key is " + lastByte);
+				throw new PrivateKeyException("Private key is " + lastByte);
 			}
 		}
 	}
 
-	static void validatePublic(byte[] publicKey) throws CryptoException {
+	static void validatePublic(byte[] publicKey) throws PublicKeyException {
 		if (publicKey == null || publicKey.length == 0) {
-			throw new CryptoException("Public key is empty");
+			throw new PublicKeyException("Public key is empty");
 		}
 
 		int pubkey0 = publicKey[0] & 0xFF;
@@ -135,16 +137,16 @@ public class ECKeyUtils {
 			case 2:
 			case 3:
 				if (publicKey.length != ECPublicKey.BYTES + 1) {
-					throw new CryptoException("Public key has invalid compressed size");
+					throw new PublicKeyException("Public key has invalid compressed size");
 				}
 				break;
 			case 4:
 				if (publicKey.length != (ECPublicKey.BYTES * 2) + 1) {
-					throw new CryptoException("Public key has invalid uncompressed size");
+					throw new PublicKeyException("Public key has invalid uncompressed size");
 				}
 				break;
 			default:
-				throw new CryptoException("Public key has invalid format");
+				throw new PublicKeyException("Public key has invalid format");
 		}
 	}
 

@@ -25,7 +25,6 @@ import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.KeyStore;
-import java.security.KeyStoreException;
 import java.security.PrivateKey;
 import java.security.SecureRandom;
 import java.security.cert.Certificate;
@@ -34,6 +33,9 @@ import java.util.stream.IntStream;
 
 import javax.crypto.SecretKey;
 
+import com.radixdlt.crypto.exception.KeyStoreException;
+import com.radixdlt.crypto.exception.PrivateKeyException;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import org.bouncycastle.jcajce.PKCS12Key;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -59,7 +61,7 @@ public class RadixKeyStoreTest {
 	 * Test method for {@link RadixKeyStore#fromFile(java.io.File, char[], boolean)}.
 	 */
 	@Test
-	public void testFromFileCreate() throws IOException, CryptoException {
+	public void testFromFileCreate() throws IOException, KeyStoreException {
 		File file = newFile(TEST_KS_FILENAME);
 		try (RadixKeyStore ks = RadixKeyStore.fromFile(file, null, true)) {
 			assertTrue(file.exists());
@@ -81,7 +83,7 @@ public class RadixKeyStoreTest {
 	 * Test method for {@link RadixKeyStore#fromFile(java.io.File, char[], boolean)}.
 	 */
 	@Test
-	public void testFromFileReload1() throws IOException, CryptoException {
+	public void testFromFileReload1() throws IOException, KeyStoreException, PrivateKeyException, PublicKeyException {
 		File file = newFile(TEST_KS_FILENAME);
 		ECKeyPair kp1 = ECKeyPair.generateNew();
 		try (RadixKeyStore ks = RadixKeyStore.fromFile(file, null, true)) {
@@ -99,7 +101,7 @@ public class RadixKeyStoreTest {
 	 * Test method for {@link RadixKeyStore#fromFile(java.io.File, char[], boolean)}.
 	 */
 	@Test
-	public void testFromFileReload2() throws IOException, CryptoException {
+	public void testFromFileReload2() throws IOException, KeyStoreException, PrivateKeyException, PublicKeyException {
 		File file = newFile(TEST_KS_FILENAME);
 		final ECKeyPair kp1;
 		try (RadixKeyStore ks = RadixKeyStore.fromFile(file, null, true)) {
@@ -117,7 +119,7 @@ public class RadixKeyStoreTest {
 	 * Test method for {@link RadixKeyStore#fromFile(java.io.File, char[], boolean)}.
 	 */
 	@Test
-	public void testFromFileWrongFilePassword() throws IOException, CryptoException {
+	public void testFromFileWrongFilePassword() throws IOException, KeyStoreException {
 		File file = newFile(TEST_KS_FILENAME);
 		try (RadixKeyStore ks = RadixKeyStore.fromFile(file, "secret1".toCharArray(), true)) {
 			assertTrue(file.exists());
@@ -133,12 +135,12 @@ public class RadixKeyStoreTest {
 	 * Test method for {@link RadixKeyStore#readKeyPair(String, boolean)}.
 	 */
 	@Test
-	public void testReadKeyPairFail() throws IOException, CryptoException {
+	public void testReadKeyPairFail() throws IOException, KeyStoreException {
 		File file = newFile(TEST_KS_FILENAME);
 		try (RadixKeyStore ks = RadixKeyStore.fromFile(file, null, true)) {
 			assertTrue(file.exists());
 			assertThatThrownBy(() -> ks.readKeyPair("notexist", false))
-				.isInstanceOf(CryptoException.class)
+				.isInstanceOf(KeyStoreException.class)
 				.hasMessageContaining("No such entry")
 				.hasNoCause();
 		}
@@ -148,7 +150,7 @@ public class RadixKeyStoreTest {
 	 * Test method for {@link RadixKeyStore#close()}.
 	 */
 	@Test
-	public void testClose() throws IOException, CryptoException {
+	public void testClose() throws IOException, KeyStoreException {
 		File file = newFile(TEST_KS_FILENAME);
 		@SuppressWarnings("resource")
 		RadixKeyStore ks = RadixKeyStore.fromFile(file, "testpassword".toCharArray(), true);
@@ -163,7 +165,7 @@ public class RadixKeyStoreTest {
 	 * Test method for {@link RadixKeyStore#toString()}.
 	 */
 	@Test
-	public void testToString() throws IOException, CryptoException {
+	public void testToString() throws IOException, KeyStoreException {
 		File file = newFile(TEST_KS_FILENAME);
 		try (RadixKeyStore ks = RadixKeyStore.fromFile(file, null, true)) {
 			assertThat(ks.toString(), containsString(file.toString()));
@@ -175,7 +177,7 @@ public class RadixKeyStoreTest {
 	 * Test method for ensuring that only secp256k1 keys are allowed.
 	 */
 	@Test
-	public void testInvalidECKey() throws IOException, GeneralSecurityException, CryptoException {
+	public void testInvalidECKey() throws IOException, GeneralSecurityException, KeyStoreException {
 		File file = newFile(TEST_KS_FILENAME);
 
 		KeyStore jks = KeyStore.getInstance("pkcs12");
@@ -197,7 +199,7 @@ public class RadixKeyStoreTest {
 
         try (RadixKeyStore rks = new RadixKeyStore(file, jks, TEST_SECRET.toCharArray())) {
         	assertThatThrownBy(() -> rks.readKeyPair("test", false))
-        		.isInstanceOf(CryptoException.class)
+        		.isInstanceOf(KeyStoreException.class)
         		.hasMessageContaining("Unknown curve")
         		.hasNoCause();
         }
@@ -215,7 +217,7 @@ public class RadixKeyStoreTest {
 		KeyStore.SecretKeyEntry entry = new KeyStore.SecretKeyEntry(sk);
 
 		assertThatThrownBy(() -> jks.setEntry("test", entry, new KeyStore.PasswordProtection(new char[0])))
-			.isInstanceOf(KeyStoreException.class)
+			.isInstanceOf(java.security.KeyStoreException.class)
 			.hasMessageContaining("PKCS12 does not support non-PrivateKeys")
 			.hasNoCause();
 	}

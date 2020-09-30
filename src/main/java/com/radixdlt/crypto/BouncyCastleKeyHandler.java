@@ -17,6 +17,8 @@
 
 package com.radixdlt.crypto;
 
+import com.radixdlt.crypto.exception.PrivateKeyException;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.digests.SHA256Digest;
 import org.bouncycastle.crypto.params.ECDomainParameters;
@@ -51,7 +53,7 @@ final class BouncyCastleKeyHandler implements KeyHandler {
 	}
 
 	@Override
-	public ECDSASignature sign(byte[] hash, byte[] privateKey, boolean enforceLowS, boolean useDeterministicSignatures) throws CryptoException {
+	public ECDSASignature sign(byte[] hash, byte[] privateKey, boolean enforceLowS, boolean useDeterministicSignatures) {
 		final DSAKCalculator kCalculator = useDeterministicSignatures ? new HMacDSAKCalculator(new SHA256Digest()) : new RandomDSAKCalculator();
 		ECDSASigner signer = new ECDSASigner(kCalculator);
 		BigInteger privateKeyScalar = new BigInteger(1, privateKey);
@@ -72,14 +74,14 @@ final class BouncyCastleKeyHandler implements KeyHandler {
 	}
 
 	@Override
-	public boolean verify(byte[] hash, ECDSASignature signature, byte[] publicKey) throws CryptoException {
+	public boolean verify(byte[] hash, ECDSASignature signature, byte[] publicKey) {
 		ECDSASigner verifier = new ECDSASigner();
 		verifier.init(false, new ECPublicKeyParameters(spec.getCurve().decodePoint(publicKey), domain));
 		return verifier.verifySignature(hash, signature.getR(), signature.getS());
 	}
 
 	@Override
-	public byte[] computePublicKey(byte[] privateKey) throws CryptoException {
+	public byte[] computePublicKey(byte[] privateKey) throws PrivateKeyException, PublicKeyException {
 		ECKeyUtils.validatePrivate(privateKey);
 
 		BigInteger d = new BigInteger(1, privateKey);
@@ -91,7 +93,7 @@ final class BouncyCastleKeyHandler implements KeyHandler {
 			// and are casting to a bouncy castle ECPublicKey.
 			return ((ECPublicKey) KeyFactory.getInstance("EC", "BC").generatePublic(publicKeySpec)).getQ().getEncoded(true);
 		} catch (Exception e) {
-			throw new CryptoException(e);
+			throw new PublicKeyException(e);
 		}
 	}
 }

@@ -19,6 +19,7 @@ package com.radixdlt.crypto;
 
 import com.radixdlt.crypto.encryption.EncryptedPrivateKey;
 import com.radixdlt.TestSetupUtils;
+import com.radixdlt.crypto.exception.ECIESException;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -53,7 +54,7 @@ public class ECKeyPairTest {
 	}
 
 	@Test
-	public void checkKeyIntegrity() throws CryptoException {
+	public void checkKeyIntegrity() throws Exception {
 		final int iterations = 5000;
 
 		for (int i = 0; i < iterations; i++) {
@@ -70,7 +71,7 @@ public class ECKeyPairTest {
 	}
 
 	@Test
-	public void signAndVerify() throws CryptoException {
+	public void signAndVerify() throws Exception {
 		final int iterations = 2000;
 		String helloWorld = "Hello World";
 
@@ -88,7 +89,7 @@ public class ECKeyPairTest {
 	}
 
 	@Test
-	public void encryptAndDecrypt() throws CryptoException {
+	public void encryptAndDecrypt() throws Exception {
 		final int iterations = 1000;
 		String helloWorld = "Hello World";
 
@@ -119,11 +120,11 @@ public class ECKeyPairTest {
 		EncryptedPrivateKey encryptedPrivateKey = keyPair2.encryptPrivateKeyWithPublicKey(keyPair1.getPublicKey());
 
 		assertThatThrownBy(() -> keyPair1.decrypt(new byte[]{0}, encryptedPrivateKey))
-				.isInstanceOf(CryptoException.class);
+				.isInstanceOf(ECIESException.class);
 	}
 
 	@Test
-	public void encryptionTest() throws CryptoException {
+	public void encryptionTest() throws ECIESException {
 		String testPhrase = "Hello World";
 		ECKeyPair ecKeyPair = ECKeyPair.generateNew();
 		byte[] encrypted = ecKeyPair.getPublicKey().encrypt(testPhrase.getBytes());

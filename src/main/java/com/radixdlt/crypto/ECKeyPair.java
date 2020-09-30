@@ -20,8 +20,10 @@ package com.radixdlt.crypto;
 import com.radixdlt.SecurityCritical;
 import com.radixdlt.SecurityCritical.SecurityKind;
 import com.radixdlt.crypto.encryption.ECIES;
-import com.radixdlt.crypto.encryption.ECIESException;
+import com.radixdlt.crypto.exception.ECIESException;
 import com.radixdlt.crypto.encryption.EncryptedPrivateKey;
+import com.radixdlt.crypto.exception.PrivateKeyException;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.utils.Bytes;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
@@ -95,7 +97,7 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 
 		try {
 			return fromPrivateKey(Hash.hash256(seed));
-		} catch (CryptoException e) {
+		} catch (PrivateKeyException | PublicKeyException e) {
 			throw new IllegalStateException("Should always be able to create private key from seed", e);
 		}
 	}
@@ -104,9 +106,10 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 	 * Restore {@link ECKeyPair} instance from given private key by computing corresponding public key.
 	 * @param privateKey byte array which contains private key.
 	 * @return A keypair for provided private key
-	 * @throws CryptoException
+	 * @throws PrivateKeyException if input byte array does not represent a private key
+	 * @throws PublicKeyException if public key can't be computed for given private key
 	 */
-	public static ECKeyPair fromPrivateKey(byte[] privateKey) throws CryptoException {
+	public static ECKeyPair fromPrivateKey(byte[] privateKey) throws PrivateKeyException, PublicKeyException {
 		ECKeyUtils.validatePrivate(privateKey);
 
 		return new ECKeyPair(privateKey,
@@ -134,11 +137,7 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 
 	@Override
 	public ECDSASignature sign(byte[] hash) {
-		try {
-			return ECKeyUtils.keyHandler.sign(hash, this.privateKey);
-		} catch (CryptoException e) {
-			throw new IllegalStateException("Failed to sign hash", e);
-		}
+		return ECKeyUtils.keyHandler.sign(hash, this.privateKey);
 	}
 
 	/**
@@ -152,11 +151,7 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 	 * @return An ECDSA Signature.
 	 */
 	public ECDSASignature sign(byte[] data, boolean enforceLowS, boolean beDeterministic) {
-		try {
-			return ECKeyUtils.keyHandler.sign(data, this.privateKey, enforceLowS, beDeterministic);
-		} catch (CryptoException e) {
-			throw new IllegalStateException("Failed to sign hash", e);
-		}
+		return ECKeyUtils.keyHandler.sign(data, this.privateKey, enforceLowS, beDeterministic);
 	}
 
 	@Override
@@ -189,7 +184,7 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 			getClass().getSimpleName(), Bytes.toBase64String(getPublicKey().getBytes()));
 	}
 
-	public static ECKeyPair fromFile(File file) throws CryptoException {
+	public static ECKeyPair fromFile(File file) throws PrivateKeyException, PublicKeyException {
 		try (InputStream inputStream = new FileInputStream(file)) {
 			byte[] privateKey = new byte[32];
 			int len = inputStream.read(privateKey);
@@ -217,7 +212,8 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 	}
 
 
-	public byte[] decrypt(byte[] data, EncryptedPrivateKey sharedKey) throws CryptoException {
+	public byte[] decrypt(byte[] data, EncryptedPrivateKey sharedKey)
+			throws PrivateKeyException, PublicKeyException, ECIESException {
 		byte[] privateKeyData = this.decrypt(sharedKey.toByteArray());
 		ECKeyPair sharedKeyPair = fromPrivateKey(privateKeyData);
 		return sharedKeyPair.decrypt(data);

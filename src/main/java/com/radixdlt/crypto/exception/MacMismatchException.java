@@ -15,14 +15,24 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.crypto.encryption;
+package com.radixdlt.crypto.exception;
 
-import com.radixdlt.crypto.CryptoException;
+import org.bouncycastle.util.encoders.Base64;
 
-public class ECIESException extends CryptoException {
+public class MacMismatchException extends CryptoException {
+	private final byte[] expected;
+	private final byte[] actual;
 
-	public ECIESException(String message, Exception exception) {
-		super(message, exception);
+	public MacMismatchException(byte[] expected, byte[] actual) {
+		this.expected = expected;
+		this.actual = actual;
 	}
 
+	public String getExpectedBase64() {
+		return Base64.toBase64String(expected);
+	}
+
+	public String getActualBase64() {
+		return Base64.toBase64String(actual);
+	}
 }

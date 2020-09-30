@@ -17,6 +17,9 @@
 
 package com.radixdlt.crypto;
 
+import com.radixdlt.crypto.exception.PrivateKeyException;
+import com.radixdlt.crypto.exception.PublicKeyException;
+
 /**
  * Interface for signature and public key computation functions.
  * <p>
@@ -37,9 +40,8 @@ interface KeyHandler {
 	 * @param useDeterministicSignatures If signing should use randomness or be deterministic according to
 	 * <a href="https://tools.ietf.org/html/rfc6979">RFC6979</a>.
 	 * @return An {@link ECDSASignature} with {@code r} and {@code s} values included
-	 * @throws CryptoException if the {@code privateKey} is invalid
 	 */
-	ECDSASignature sign(byte[] hash, byte[] privateKey, boolean enforceLowS, boolean useDeterministicSignatures) throws CryptoException;
+	ECDSASignature sign(byte[] hash, byte[] privateKey, boolean enforceLowS, boolean useDeterministicSignatures);
 
 	/**
 	 * Verify the specified signature against the specified hash with the
@@ -51,7 +53,7 @@ interface KeyHandler {
 	 * @return An boolean indicating whether the signature could be successfully validated
 	 * @throws CryptoException if the {@code publicKey} or {@code signature} is invalid
 	 */
-	boolean verify(byte[] hash, ECDSASignature signature, byte[] publicKey) throws CryptoException;
+	boolean verify(byte[] hash, ECDSASignature signature, byte[] publicKey);
 
 	/**
 	 * Compute a public key for the specified private key.
@@ -60,7 +62,7 @@ interface KeyHandler {
 	 * @return A compressed public key
 	 * @throws CryptoException If the {@code privateKey} is invalid
 	 */
-	byte[] computePublicKey(byte[] privateKey) throws CryptoException;
+	byte[] computePublicKey(byte[] privateKey) throws PrivateKeyException, PublicKeyException;
 
 	/**
 	 * Sign the specified hash with the specified private by using randomness and enforced low {@code S} values,
@@ -69,9 +71,8 @@ interface KeyHandler {
 	 * @param hash The hash to sign
 	 * @param privateKey The private key to sign the hash with
 	 * @return An {@link ECDSASignature} with {@code r} and {@code s} values included
-	 * @throws CryptoException if the {@code privateKey} is invalid
 	 */
-	default ECDSASignature sign(byte[] hash, byte[] privateKey) throws CryptoException {
+	default ECDSASignature sign(byte[] hash, byte[] privateKey) {
 		return sign(hash, privateKey, true, false);
 	}
 
