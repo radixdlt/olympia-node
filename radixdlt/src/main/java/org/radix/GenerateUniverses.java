@@ -17,12 +17,12 @@
 
 package org.radix;
 
+import com.radixdlt.crypto.exception.CryptoException;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.JSONObject;
 
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;

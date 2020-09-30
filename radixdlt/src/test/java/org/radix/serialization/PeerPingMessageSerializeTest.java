@@ -18,8 +18,9 @@
 package org.radix.serialization;
 
 import com.google.common.base.Strings;
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.exception.PrivateKeyException;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.utils.Bytes;
 
@@ -45,7 +46,7 @@ public class PeerPingMessageSerializeTest extends SerializeMessageObject<PeerPin
 			ECKeyPair keyPair = ECKeyPair.fromPrivateKey(Bytes.fromHexString(Strings.repeat("deadbeef", 8)));
 			pingMessage.sign(keyPair, true);
 			return pingMessage;
-		} catch (CryptoException e) {
+		} catch (PrivateKeyException | PublicKeyException e) {
 			throw new IllegalStateException("Failed to create key", e);
 		}
 	}

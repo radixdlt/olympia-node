@@ -21,9 +21,11 @@ import java.io.IOException;
 import java.security.Security;
 import java.util.Base64;
 
+import com.radixdlt.crypto.exception.KeyStoreException;
+import com.radixdlt.crypto.exception.PrivateKeyException;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.keys.Keys;
 
@@ -38,9 +40,12 @@ public final class OutputKeyBase64 {
 	 *
 	 * @param args An array of file names.  If empty or null, the default "universe.ks" is used.
 	 * @throws IOException if there was a problem reading any of the files
-	 * @throws CryptoException if any of the key store files is invalid
+	 * @throws KeyStoreException if any of the key store files is invalid
+	 * @throws PublicKeyException if any of the public keys in store is invalid
+	 * @throws PrivateKeyException if any of the private keys in store is invalid
 	 */
-	public static void main(String[] args) throws IOException, CryptoException {
+	public static void main(String[] args)
+			throws IOException, PublicKeyException, PrivateKeyException, KeyStoreException {
 		final String[] files = (args == null || args.length == 0) ? new String[] { "universe.ks" } : args;
 
 		Security.insertProviderAt(new BouncyCastleProvider(), 1);

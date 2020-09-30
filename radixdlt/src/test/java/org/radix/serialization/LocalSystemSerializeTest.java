@@ -20,8 +20,9 @@ package org.radix.serialization;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.exception.PrivateKeyException;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.network.transport.StaticTransportMetadata;
 import com.radixdlt.network.transport.TransportInfo;
 import com.radixdlt.network.transport.udp.UDPConstants;
@@ -47,7 +48,7 @@ public class LocalSystemSerializeTest extends SerializeValue<LocalSystem> {
 							)
 					)
 			));
-		} catch (CryptoException e) {
+		} catch (PrivateKeyException | PublicKeyException e) {
 			throw new IllegalStateException("Failed to create keypair", e);
 		}
 

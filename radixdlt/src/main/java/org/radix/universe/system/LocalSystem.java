@@ -17,6 +17,7 @@
 
 package org.radix.universe.system;
 
+import com.radixdlt.crypto.exception.CryptoException;
 import com.radixdlt.middleware2.InfoSupplier;
 import java.io.IOException;
 import java.util.Map;
@@ -28,7 +29,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.keys.Keys;
 import com.radixdlt.network.transport.StaticTransportMetadata;
