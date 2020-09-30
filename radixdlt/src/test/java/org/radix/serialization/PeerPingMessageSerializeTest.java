@@ -42,7 +42,7 @@ public class PeerPingMessageSerializeTest extends SerializeMessageObject<PeerPin
 	private static PeerPingMessage get() {
 		try {
 			PeerPingMessage pingMessage = new PeerPingMessage(1, 17L, 18L, getLocalSystem());
-			ECKeyPair keyPair = new ECKeyPair(Bytes.fromHexString(Strings.repeat("deadbeef", 8)));
+			ECKeyPair keyPair = ECKeyPair.fromPrivateKey(Bytes.fromHexString(Strings.repeat("deadbeef", 8)));
 			pingMessage.sign(keyPair, true);
 			return pingMessage;
 		} catch (CryptoException e) {

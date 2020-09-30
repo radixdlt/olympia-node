@@ -145,7 +145,7 @@ public class RadixSystem extends BasicContainer
 	@JsonProperty("key")
 	void setJsonKey(byte[] newKey) throws DeserializeException {
 		try {
-			key = new ECPublicKey(newKey);
+			key = ECPublicKey.fromBytes(newKey);
 		} catch (CryptoException cex) {
 			throw new DeserializeException("Invalid key", cex);
 		}

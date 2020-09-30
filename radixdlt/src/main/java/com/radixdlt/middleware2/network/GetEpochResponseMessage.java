@@ -21,7 +21,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.CryptoException;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
@@ -57,7 +56,7 @@ public class GetEpochResponseMessage extends Message {
 
 	@JsonProperty("author")
 	private void setSerializerAuthor(byte[] author) throws CryptoException {
-		this.author = (author == null) ? null : BFTNode.create(new ECPublicKey(author));
+		this.author = (author == null) ? null : BFTNode.fromPublicKeyBytes(author);
 	}
 
 	public BFTNode getAuthor() {

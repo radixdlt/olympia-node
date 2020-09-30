@@ -38,7 +38,7 @@ public class SystemMessageSerializeTest extends SerializeMessageObject<SystemMes
 
 		private static SystemMessage get() {
 			try {
-				ECKeyPair keyPair = new ECKeyPair(Bytes.fromHexString(Strings.repeat("deadbeef", 8)));
+				ECKeyPair keyPair = ECKeyPair.fromPrivateKey(Bytes.fromHexString(Strings.repeat("deadbeef", 8)));
 				RadixSystem system = new LocalSystem(ImmutableMap::of, keyPair, Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION, ImmutableList.of(
 						TransportInfo.of(
 								UDPConstants.NAME,

@@ -24,7 +24,6 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -68,7 +67,7 @@ public final class NewView implements RequiresSyncConsensusEvent {
 		@JsonProperty("committedQC") QuorumCertificate committedQC,
 		@JsonProperty("signature") ECDSASignature signature
 	) throws CryptoException {
-		this(BFTNode.create(new ECPublicKey(author)), view != null ? View.of(view) : null, qc, committedQC, signature);
+		this(BFTNode.fromPublicKeyBytes(author), view != null ? View.of(view) : null, qc, committedQC, signature);
 	}
 
 	public NewView(BFTNode author, View view, QuorumCertificate qc, QuorumCertificate committedQC, ECDSASignature signature) {

@@ -23,7 +23,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.CryptoException;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
@@ -163,7 +162,7 @@ public final class TimestampedECDSASignatures {
 
 	private static BFTNode toBFTNode(String str) {
 		try {
-			return BFTNode.create(new ECPublicKey(Bytes.fromHexString(str)));
+			return BFTNode.fromPublicKeyBytes(Bytes.fromHexString(str));
 		} catch (CryptoException e) {
 			throw new IllegalStateException("Error decoding public key", e);
 		}

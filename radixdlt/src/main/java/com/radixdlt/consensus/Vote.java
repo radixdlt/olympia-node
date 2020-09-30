@@ -23,7 +23,6 @@ import com.google.errorprone.annotations.Immutable;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -64,7 +63,7 @@ public final class Vote implements ConsensusEvent {
 		@JsonProperty("signature") ECDSASignature signature,
 		@JsonProperty("payload") long payload
 	) throws CryptoException {
-		this(BFTNode.create(new ECPublicKey(author)), voteData, signature, payload);
+		this(BFTNode.fromPublicKeyBytes(author), voteData, signature, payload);
 	}
 
 	public Vote(BFTNode author, TimestampedVoteData voteData, ECDSASignature signature, long payload) {
