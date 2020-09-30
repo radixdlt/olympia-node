@@ -131,7 +131,7 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 	@Override
 	public void processLocalTimeout(View view) {
 		if (!view.equals(this.currentView)) {
-			log.trace("LOCAL_TIMEOUT: Ignoring {}", () -> view);
+			log.trace("LOCAL_TIMEOUT: Ignoring {}", view);
 			return;
 		}
 
@@ -139,7 +139,6 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 		this.updateView(currentView.next());
 	}
 
-	// TODO: Move this into Event Coordinator
 	@Override
 	public Optional<View> processNewView(NewView newView, BFTValidatorSet validatorSet) {
 		View newViewView = newView.getView();

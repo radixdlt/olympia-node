@@ -276,7 +276,7 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdatePro
 		}
 
 		if (this.currentEpoch.getBFTConfiguration().getValidatorSet().containsNode(this.self)) {
-			log.info("{}: EPOCH_CHANGE: broadcasting next epoch", this.self);
+			log.info("EPOCH_CHANGE: broadcasting next epoch");
 			BFTValidatorSet validatorSet = epochChange.getBFTConfiguration().getValidatorSet();
 			for (BFTValidator validator : validatorSet.getValidators()) {
 				if (!validator.getNode().equals(self)) {
@@ -346,10 +346,10 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdatePro
 	}
 
 	public void processGetEpochResponse(GetEpochResponse response) {
-		log.trace("{}: GET_EPOCH_RESPONSE: {}", this.self, response);
+		log.trace("GET_EPOCH_RESPONSE: {}", response);
 
 		if (response.getEpochProof() == null) {
-			log.warn("{}: Received empty GetEpochResponse {}", this.self, response);
+			log.warn("Received empty GetEpochResponse {}", response);
 			// TODO: retry
 			return;
 		}
@@ -359,7 +359,7 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdatePro
 			syncRequestSender.sendLocalSyncRequest(new LocalSyncRequest(ancestor, ImmutableList.of(response.getAuthor())));
 		} else {
 			if (ancestor.getEpoch() + 1 < this.currentEpoch()) {
-				log.info("{}: Ignoring old epoch {} current {}", this.self, response, this.currentEpoch);
+				log.info("Ignoring old epoch {} current {}", response, this.currentEpoch);
 			}
 		}
 	}

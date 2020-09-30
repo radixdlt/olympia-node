@@ -198,7 +198,7 @@ public final class VertexStore {
 			vertices.put(vertex.getId(), vertex);
 			int numChildren = vertexNumChildren.merge(vertex.getParentId(), 1, Integer::sum);
 			if (numChildren > 1) {
-				this.counters.increment(CounterType.BFT_VERTEX_STORE_FORK_COUNT);
+				this.counters.increment(CounterType.BFT_VERTEX_STORE_FORKS);
 			}
 
 			updateVertexStoreSize();
