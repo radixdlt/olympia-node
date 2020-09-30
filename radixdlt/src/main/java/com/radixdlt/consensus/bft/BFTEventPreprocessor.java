@@ -168,7 +168,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		switch (syncResult) {
 			case SYNCED:
 				forwardTo.processNewView(newView);
-			// Fall through
+				return true;
 			case INVALID:
 				return true;
 			case IN_PROGRESS:
@@ -206,7 +206,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		switch (syncResult) {
 			case SYNCED:
 				forwardTo.processProposal(proposal);
-				// Fall through
+				return true;
 			case INVALID:
 				return true;
 			case IN_PROGRESS:
