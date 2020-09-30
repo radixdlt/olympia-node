@@ -37,7 +37,7 @@ versionFile {
 }
 
 dependencies {
-    compile 'com.radixdlt:radixdlt-java:feature~rpnv1-185-token-fees-SNAPSHOT'
+    compile 'com.radixdlt:radixdlt-java:rc~beta.16-SNAPSHOT'
     compile 'io.undertow:undertow-core:2.0.6.Final'
     testCompile group: 'junit', name: 'junit', version: '4.12'
 
