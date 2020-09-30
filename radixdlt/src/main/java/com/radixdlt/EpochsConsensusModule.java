@@ -35,7 +35,6 @@ import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker.PacemakerInfo
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
-import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.epoch.EpochManager;
@@ -161,11 +160,10 @@ public class EpochsConsensusModule extends AbstractModule {
 
 	@Provides
 	private VertexStoreFactory vertexStoreFactory(
-		VertexStoreEventSender vertexStoreEventSender,
 		BFTUpdateSender updateSender,
 		SystemCounters counters
 	) {
-		return (genesisVertex, genesisQC, ledger) -> new VertexStore(
+		return (genesisVertex, genesisQC, ledger, vertexStoreEventSender) -> new VertexStore(
 			genesisVertex,
 			genesisQC,
 			ledger,

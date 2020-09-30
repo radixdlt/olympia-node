@@ -17,6 +17,7 @@
 
 package com.radixdlt.integration.distributed.deterministic.network;
 
+import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
@@ -104,7 +105,7 @@ public final class ControlledSender implements DeterministicSender {
 	}
 
 	@Override
-	public void sendCommittedVertex(VerifiedVertex vertex) {
+	public void sendCommitted(BFTCommittedUpdate update) {
 		// Ignore committed vertex signal
 	}
 
