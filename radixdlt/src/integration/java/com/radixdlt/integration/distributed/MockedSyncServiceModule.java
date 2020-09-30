@@ -82,7 +82,7 @@ public class MockedSyncServiceModule extends AbstractModule {
 
 			@Override
 			public void sendLocalSyncRequest(LocalSyncRequest request) {
-				while(currentEpoch != request.getTarget().getEpoch()) {
+				while (currentEpoch != request.getTarget().getEpoch()) {
 					syncTo(sharedEpochProofs.get(currentEpoch + 1));
 				}
 

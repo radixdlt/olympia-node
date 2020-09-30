@@ -27,7 +27,7 @@ import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.sync.BFTSyncResponseProcessor;
 import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker.PacemakerInfoSender;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.sync.VertexStoreSync;
+import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.consensus.epoch.EpochView;
@@ -41,7 +41,7 @@ public class MockedConsensusRunnerModule extends AbstractModule {
 	public void configure() {
 		MapBinder<String, ModuleRunner> moduleRunners = MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class);
 		moduleRunners.addBinding("consensus").to(BFTRunner.class).in(Scopes.SINGLETON);
-		bind(BFTSyncResponseProcessor.class).to(VertexStoreSync.class).in(Scopes.SINGLETON);
+		bind(BFTSyncResponseProcessor.class).to(BFTSync.class).in(Scopes.SINGLETON);
 	}
 
 	@Provides

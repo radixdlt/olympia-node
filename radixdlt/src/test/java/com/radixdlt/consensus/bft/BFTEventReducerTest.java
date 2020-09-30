@@ -35,7 +35,7 @@ import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyViolationException;
-import com.radixdlt.consensus.sync.VertexStoreSync;
+import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.Hash;
 import java.util.Optional;
@@ -61,7 +61,7 @@ public class BFTEventReducerTest {
 	private PendingVotes pendingVotes;
 	private BFTEventReducer.BFTEventSender sender;
 	private VertexStore vertexStore;
-	private VertexStoreSync vertexStoreSync;
+	private BFTSync vertexStoreSync;
 	private BFTValidatorSet validatorSet;
 	private SystemCounters counters;
 	private BFTNode self;
@@ -74,7 +74,7 @@ public class BFTEventReducerTest {
 		this.safetyRules = mock(SafetyRules.class);
 		this.pacemaker = mock(Pacemaker.class);
 		this.vertexStore = mock(VertexStore.class);
-		this.vertexStoreSync = mock(VertexStoreSync.class);
+		this.vertexStoreSync = mock(BFTSync.class);
 		this.pendingVotes = mock(PendingVotes.class);
 		this.proposerElection = mock(ProposerElection.class);
 		this.validatorSet = mock(BFTValidatorSet.class);

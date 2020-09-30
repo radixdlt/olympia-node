@@ -23,7 +23,6 @@ import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
-import java.time.Duration;
 import java.util.LongSummaryStatistics;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
@@ -50,7 +49,7 @@ public class RandomNewViewDropperTest {
 	@Test
 	public void sanity_test() {
 		SimulationTest test = bftTestBuilder.build();
-		TestResults results = test.run(Duration.ofSeconds(120));
+		TestResults results = test.run();
 
 		LongSummaryStatistics statistics = results.getNetwork().getSystemCounters().values().stream()
 			.map(s -> s.get(CounterType.BFT_VERTEX_STORE_FORK_COUNT))

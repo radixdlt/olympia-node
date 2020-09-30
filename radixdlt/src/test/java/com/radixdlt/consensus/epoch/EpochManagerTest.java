@@ -45,7 +45,7 @@ import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.bft.BFTSyncer.SyncResult;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
-import com.radixdlt.consensus.sync.VertexStoreSync;
+import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.Vote;
@@ -67,7 +67,6 @@ import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -77,7 +76,7 @@ public class EpochManagerTest {
 	private EpochInfoSender epochInfoSender;
 	private SyncLedgerRequestSender syncRequestSender;
 	private VertexStore vertexStore;
-	private VertexStoreSync vertexStoreSync;
+	private BFTSync vertexStoreSync;
 	private BFTFactory bftFactory;
 	private Pacemaker pacemaker;
 	private SystemCounters systemCounters;
@@ -95,9 +94,9 @@ public class EpochManagerTest {
 		this.vertexStoreFactory = mock(VertexStoreFactory.class);
 		when(vertexStoreFactory.create(any(), any(), any())).thenReturn(this.vertexStore);
 
-		this.vertexStoreSync = mock(VertexStoreSync.class);
-		VertexStoreSyncFactory vertexStoreSyncFactory = mock(VertexStoreSyncFactory.class);
-		when(vertexStoreSyncFactory.create(any())).thenReturn(vertexStoreSync);
+		this.vertexStoreSync = mock(BFTSync.class);
+		BFTSyncFactory bftSyncFactory = mock(BFTSyncFactory.class);
+		when(bftSyncFactory.create(any(), any())).thenReturn(vertexStoreSync);
 
 		this.pacemaker = mock(Pacemaker.class);
 
@@ -131,7 +130,7 @@ public class EpochManagerTest {
 			syncRequestSender,
 			(timeoutSender, infoSender, proposerElection) -> this.pacemaker,
 			vertexStoreFactory,
-			vertexStoreSyncFactory,
+			bftSyncFactory,
 			requestProcessorFactory,
 			proposers -> proposerElection,
 			this.bftFactory,

@@ -18,11 +18,12 @@
 package com.radixdlt.consensus.epoch;
 
 import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.consensus.sync.VertexStoreSync;
+import com.radixdlt.consensus.liveness.Pacemaker;
+import com.radixdlt.consensus.sync.BFTSync;
 
 /**
- * Creates a new vertex store sync given a vertex store
+ * Creates a new bft sync given a vertex store and pacemaker
  */
-public interface VertexStoreSyncFactory {
-	VertexStoreSync create(VertexStore vertexStore);
+public interface BFTSyncFactory {
+	BFTSync create(VertexStore vertexStore, Pacemaker pacemaker);
 }

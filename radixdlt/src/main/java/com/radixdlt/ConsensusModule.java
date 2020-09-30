@@ -29,7 +29,6 @@ import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.bft.BFTBuilder;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.bft.SignedNewViewToLeaderSender;
@@ -44,8 +43,8 @@ import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker.ProceedToView
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.consensus.sync.VertexStoreSync;
-import com.radixdlt.consensus.sync.VertexStoreSync.SyncVerticesRequestSender;
+import com.radixdlt.consensus.sync.BFTSync;
+import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.bft.VertexStore;
@@ -55,7 +54,6 @@ import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.network.TimeSupplier;
-import com.sleepycat.je.rep.elections.Protocol.Propose;
 import java.util.Comparator;
 
 /**
@@ -116,7 +114,7 @@ public final class ConsensusModule extends AbstractModule {
 		BFTFactory bftFactory,
 		Pacemaker pacemaker,
 		VertexStore vertexStore,
-		VertexStoreSync vertexStoreSync,
+		BFTSync vertexStoreSync,
 		ProposerElection proposerElection
 	) {
 		return bftFactory.create(
@@ -169,14 +167,16 @@ public final class ConsensusModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private VertexStoreSync vertexStoreSync(
+	private BFTSync bftSync(
+		VertexStore vertexStore,
+		Pacemaker pacemaker,
 		SyncVerticesRequestSender requestSender,
 		SyncLedgerRequestSender syncLedgerRequestSender,
-		VertexStore vertexStore,
 		BFTConfiguration configuration
 	) {
-		return new VertexStoreSync(
+		return new BFTSync(
 			vertexStore,
+			pacemaker,
 			Comparator.comparingLong((LedgerHeader h) -> h.getAccumulatorState().getStateVersion()),
 			requestSender,
 			syncLedgerRequestSender,

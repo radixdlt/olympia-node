@@ -29,7 +29,7 @@ import com.radixdlt.consensus.epoch.ProposerElectionFactory;
 import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.epoch.VertexStoreFactory;
-import com.radixdlt.consensus.epoch.VertexStoreSyncFactory;
+import com.radixdlt.consensus.epoch.BFTSyncFactory;
 import com.radixdlt.consensus.epoch.BFTSyncRequestProcessorFactory;
 import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker.PacemakerInfoSender;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -52,8 +52,8 @@ import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
-import com.radixdlt.consensus.sync.VertexStoreSync;
-import com.radixdlt.consensus.sync.VertexStoreSync.SyncVerticesRequestSender;
+import com.radixdlt.consensus.sync.BFTSync;
+import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.counters.SystemCounters;
 import java.util.Comparator;
 
@@ -144,13 +144,14 @@ public class EpochsConsensusModule extends AbstractModule {
 	}
 
 	@Provides
-	private VertexStoreSyncFactory vertexStoreSyncFactory(
+	private BFTSyncFactory bftSyncFactory(
 		SyncVerticesRequestSender requestSender,
 		SyncLedgerRequestSender syncLedgerRequestSender,
 		BFTConfiguration configuration
 	) {
-		return vertexStore -> new VertexStoreSync(
+		return (vertexStore, pacemaker) -> new BFTSync(
 			vertexStore,
+			pacemaker,
 			Comparator.comparingLong((LedgerHeader h) -> h.getAccumulatorState().getStateVersion()),
 			requestSender,
 			syncLedgerRequestSender,

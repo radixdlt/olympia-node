@@ -50,7 +50,7 @@ import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
-import com.radixdlt.consensus.sync.VertexStoreSync;
+import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
@@ -119,7 +119,7 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdatePro
 	private final PacemakerFactory pacemakerFactory;
 	private final VertexStoreFactory vertexStoreFactory;
 	private final BFTSyncRequestProcessorFactory bftSyncRequestProcessorFactory;
-	private final VertexStoreSyncFactory vertexStoreSyncFactory;
+	private final BFTSyncFactory bftSyncFactory;
 	private final ProposerElectionFactory proposerElectionFactory;
 	private final SystemCounters counters;
 	private final LocalTimeoutSender localTimeoutSender;
@@ -148,7 +148,7 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdatePro
 		SyncLedgerRequestSender syncRequestSender,
 		PacemakerFactory pacemakerFactory,
 		VertexStoreFactory vertexStoreFactory,
-		VertexStoreSyncFactory vertexStoreSyncFactory,
+		BFTSyncFactory bftSyncFactory,
 		BFTSyncRequestProcessorFactory bftSyncRequestProcessorFactory,
 		ProposerElectionFactory proposerElectionFactory,
 		BFTFactory bftFactory,
@@ -163,7 +163,7 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdatePro
 		this.localTimeoutSender = Objects.requireNonNull(localTimeoutSender);
 		this.pacemakerFactory = Objects.requireNonNull(pacemakerFactory);
 		this.vertexStoreFactory = Objects.requireNonNull(vertexStoreFactory);
-		this.vertexStoreSyncFactory = Objects.requireNonNull(vertexStoreSyncFactory);
+		this.bftSyncFactory = Objects.requireNonNull(bftSyncFactory);
 		this.bftSyncRequestProcessorFactory = bftSyncRequestProcessorFactory;
 		this.proposerElectionFactory = Objects.requireNonNull(proposerElectionFactory);
 		this.bftFactory = bftFactory;
@@ -212,12 +212,12 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdatePro
 				epochInfoSender.sendTimeoutProcessed(timeout);
 			}
 		};
-		Pacemaker pacemaker = pacemakerFactory.create(timeoutSender, infoSender, proposerElection);
+		final Pacemaker pacemaker = pacemakerFactory.create(timeoutSender, infoSender, proposerElection);
+		final BFTSync bftSync = bftSyncFactory.create(vertexStore, pacemaker);
 
-		VertexStoreSync vertexStoreSync = vertexStoreSyncFactory.create(vertexStore);
-		this.syncBFTResponseProcessor = vertexStoreSync;
-		this.syncBFTUpdateProcessor = vertexStoreSync;
-		this.syncLedgerUpdateProcessor = vertexStoreSync;
+		this.syncBFTResponseProcessor = bftSync;
+		this.syncBFTUpdateProcessor = bftSync;
+		this.syncLedgerUpdateProcessor = bftSync;
 
 		this.syncRequestProcessor = bftSyncRequestProcessorFactory.create(vertexStore);
 
@@ -225,7 +225,7 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdatePro
 			self,
 			pacemaker,
 			vertexStore,
-			vertexStoreSync,
+			bftSync,
 			proposerElection,
 			validatorSet
 		);

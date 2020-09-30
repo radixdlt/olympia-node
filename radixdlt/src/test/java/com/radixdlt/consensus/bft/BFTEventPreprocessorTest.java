@@ -36,7 +36,7 @@ import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTSyncer.SyncResult;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.consensus.sync.VertexStoreSync;
+import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
@@ -49,7 +49,7 @@ public class BFTEventPreprocessorTest {
 	private BFTEventPreprocessor preprocessor;
 	private ProposerElection proposerElection;
 	private Pacemaker pacemaker;
-	private VertexStoreSync vertexStoreSync;
+	private BFTSync vertexStoreSync;
 	private BFTEventProcessor forwardTo;
 	private SyncQueues syncQueues;
 	private BFTNode self;
@@ -57,7 +57,7 @@ public class BFTEventPreprocessorTest {
 	@Before
 	public void setUp() {
 		this.pacemaker = mock(Pacemaker.class);
-		this.vertexStoreSync = mock(VertexStoreSync.class);
+		this.vertexStoreSync = mock(BFTSync.class);
 		this.proposerElection = mock(ProposerElection.class);
 		this.forwardTo = mock(BFTEventProcessor.class);
 		this.syncQueues = mock(SyncQueues.class);
