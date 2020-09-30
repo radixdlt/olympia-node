@@ -29,6 +29,7 @@ import com.radixdlt.systeminfo.InMemorySystemInfoManager;
 import com.radixdlt.systeminfo.InfoRx;
 import com.radixdlt.consensus.Timeout;
 import io.reactivex.rxjava3.core.Observable;
+import java.util.LinkedList;
 import java.util.concurrent.TimeUnit;
 import org.junit.Before;
 import org.junit.Test;
@@ -79,7 +80,11 @@ public class InMemorySystemInfoManagerTest {
 		when(vertex1.getView()).thenReturn(View.of(1));
 		VerifiedVertex vertex2 = mock(VerifiedVertex.class);
 		when(vertex2.getView()).thenReturn(View.of(2));
-		when(infoRx.committedVertices()).thenReturn(Observable.just(vertex0, vertex1, vertex2));
+		LinkedList<VerifiedVertex> vertices = new LinkedList<>();
+		vertices.add(vertex0);
+		vertices.add(vertex1);
+		vertices.add(vertex2);
+		when(infoRx.committedVertices()).thenReturn(Observable.just(vertices));
 		runner.start();
 		await().atMost(1, TimeUnit.SECONDS).until(() -> runner.getCommittedVertices().size() == 1
 			&& runner.getCommittedVertices().get(0).equals(vertex2));

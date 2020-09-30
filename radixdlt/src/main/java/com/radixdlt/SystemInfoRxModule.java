@@ -27,6 +27,7 @@ import com.radixdlt.systeminfo.InfoRx;
 import com.radixdlt.consensus.Timeout;
 import com.radixdlt.utils.SenderToRx;
 import io.reactivex.rxjava3.core.Observable;
+import java.util.LinkedList;
 
 /**
  * Module which routes system info related messages
@@ -35,7 +36,7 @@ public final class SystemInfoRxModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
-		SenderToRx<VerifiedVertex, VerifiedVertex> committedVertices = new SenderToRx<>(i -> i);
+		SenderToRx<LinkedList<VerifiedVertex>, LinkedList<VerifiedVertex>> committedVertices = new SenderToRx<>(i -> i);
 		SenderToRx<QuorumCertificate, QuorumCertificate> highQCs = new SenderToRx<>(i -> i);
 		SenderToRx<Timeout, Timeout> timeouts = new SenderToRx<>(i -> i);
 		SenderToRx<EpochView, EpochView> currentViews = new SenderToRx<>(i -> i);
@@ -54,7 +55,7 @@ public final class SystemInfoRxModule extends AbstractModule {
 
 		VertexStoreEventSender eventSender = new VertexStoreEventSender() {
 			@Override
-			public void sendCommittedVertex(VerifiedVertex vertex) {
+			public void sendCommitted(LinkedList<VerifiedVertex> vertex) {
 				committedVertices.send(vertex);
 			}
 
@@ -81,7 +82,7 @@ public final class SystemInfoRxModule extends AbstractModule {
 			}
 
 			@Override
-			public Observable<VerifiedVertex> committedVertices() {
+			public Observable<LinkedList<VerifiedVertex>> committedVertices() {
 				return committedVertices.rx();
 			}
 		};

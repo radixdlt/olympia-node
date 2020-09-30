@@ -43,6 +43,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -124,7 +125,7 @@ public class SimulationNodes {
 
 		Observable<EpochChange> latestEpochChanges();
 
-		Observable<Pair<BFTNode, VerifiedVertex>> committedVertices();
+		Observable<Pair<BFTNode, LinkedList<VerifiedVertex>>> committedVertices();
 
 		Observable<Pair<BFTNode, LedgerUpdate>> ledgerUpdates();
 
@@ -176,8 +177,8 @@ public class SimulationNodes {
 			}
 
 			@Override
-			public Observable<Pair<BFTNode, VerifiedVertex>> committedVertices() {
-				Set<Observable<Pair<BFTNode, VerifiedVertex>>> committedVertices = nodeInstances.stream()
+			public Observable<Pair<BFTNode, LinkedList<VerifiedVertex>>> committedVertices() {
+				Set<Observable<Pair<BFTNode, LinkedList<VerifiedVertex>>>> committedVertices = nodeInstances.stream()
 					.map(i -> {
 						BFTNode node = i.getInstance(Key.get(BFTNode.class, Names.named("self")));
 						return i.getInstance(InfoRx.class).committedVertices()

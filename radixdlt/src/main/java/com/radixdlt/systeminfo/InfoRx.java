@@ -22,6 +22,7 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.epoch.EpochView;
 import io.reactivex.rxjava3.core.Observable;
+import java.util.LinkedList;
 
 /**
  * Flows of various information from consensus/state-syncer
@@ -49,5 +50,5 @@ public interface InfoRx {
 	 * Retrieve rx flow of vertices which have been committed
 	 * @return flow of vertices
 	 */
-	Observable<VerifiedVertex> committedVertices();
+	Observable<LinkedList<VerifiedVertex>> committedVertices();
 }

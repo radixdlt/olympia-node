@@ -70,6 +70,9 @@ public class SafetyInvariant implements TestInvariant {
 				node -> network.getInfo(node).committedVertices().map(v -> Pair.of(node, v)))
 				.collect(Collectors.toList())
 		)
+			.concatMap(nodeAndVertices -> Observable.fromStream(nodeAndVertices.getSecond().stream())
+				.map(v -> Pair.of(nodeAndVertices.getFirst(), v))
+			)
 			.flatMap(nodeAndVertex -> {
 				final BFTNode node = nodeAndVertex.getFirst();
 				final VerifiedVertex vertex = nodeAndVertex.getSecond();

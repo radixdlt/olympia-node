@@ -34,6 +34,7 @@ public class ConsensusToLedgerCommittedInvariant implements TestInvariant {
 	public Observable<TestInvariantError> check(RunningNetwork network) {
 		return network.committedVertices()
 			.map(Pair::getSecond)
+			.concatMap(vertices -> Observable.fromStream(vertices.stream()))
 			.filter(v -> v.getCommand() != null)
 			.map(VerifiedVertex::getCommand)
 			.flatMapMaybe(command -> network

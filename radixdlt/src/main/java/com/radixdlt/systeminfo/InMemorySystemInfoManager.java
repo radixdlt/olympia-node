@@ -25,6 +25,7 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
+import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.util.List;
 import java.util.Objects;
@@ -81,6 +82,7 @@ public final class InMemorySystemInfoManager {
 		if (this.vertexUpdateFrequency > 0) {
 			this.infoRx.committedVertices()
 				.observeOn(Schedulers.io())
+				.concatMap(vertices -> Observable.fromStream(vertices.stream()))
 				.filter(v -> (v.getView().number() % vertexUpdateFrequency) == 0)
 				.subscribe(vertexRingBuffer::add);
 		}

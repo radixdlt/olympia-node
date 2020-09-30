@@ -39,6 +39,7 @@ public class EpochViewInvariant implements TestInvariant {
 		return Observable.merge(
 			network.getNodes().stream().map(node -> network.getInfo(node).committedVertices()).collect(Collectors.toList())
 		)
+			.concatMap(vertices -> Observable.fromStream(vertices.stream()))
 			.flatMap(vertex -> {
 				final View view = vertex.getView();
 				if (view.compareTo(epochHighView) > 0) {

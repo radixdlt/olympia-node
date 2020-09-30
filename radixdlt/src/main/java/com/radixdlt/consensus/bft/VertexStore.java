@@ -50,7 +50,7 @@ public final class VertexStore {
 	}
 
 	public interface VertexStoreEventSender {
-		void sendCommittedVertex(VerifiedVertex vertex);
+		void sendCommitted(LinkedList<VerifiedVertex> vertices);
 		void highQC(QuorumCertificate qc);
 	}
 
@@ -65,6 +65,7 @@ public final class VertexStore {
 	private Hash rootId;
 	private QuorumCertificate highestQC;
 	private QuorumCertificate highestCommittedQC;
+	private VerifiedLedgerHeaderAndProof ledgerHeaderAndProof;
 
 	public VertexStore(
 		VerifiedVertex rootVertex,
@@ -236,11 +237,12 @@ public final class VertexStore {
 		ImmutableList.Builder<Command> commandsToCommitBuilder = ImmutableList.builder();
 		for (VerifiedVertex committedVertex : path) {
 			this.counters.increment(CounterType.BFT_PROCESSED);
-			this.vertexStoreEventSender.sendCommittedVertex(committedVertex);
 			if (committedVertex.getCommand() != null) {
 				commandsToCommitBuilder.add(committedVertex.getCommand());
 			}
 		}
+
+		this.vertexStoreEventSender.sendCommitted(path);
 
 		// TODO: Stop vertex store if end of epoch?
 		// TODO: if (ledgerStateWithProof.isEndOfEpoch()) ...
