@@ -194,4 +194,15 @@ public class ECKeyPairTest {
 
 		assertThat(sourceKeyPair.getPrivateKey(), equalTo(loadedKeyPair.getPrivateKey()));
 	}
+
+	@Test
+	public void shortFileIsRejected() throws IOException, PrivateKeyException, PublicKeyException {
+		File testKeyPair = new File("test-private-key.ks");
+
+		try (OutputStream outputStream = new FileOutputStream(testKeyPair)) {
+			outputStream.write(new byte[ECKeyPair.BYTES - 1]);
+		}
+
+		assertThatThrownBy(() -> ECKeyPair.fromFile(testKeyPair)).isInstanceOf(IllegalStateException.class);
+	}
 }
