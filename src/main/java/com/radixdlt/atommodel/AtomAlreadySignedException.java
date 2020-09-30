@@ -17,7 +17,7 @@
 
 package com.radixdlt.atommodel;
 
-import com.radixdlt.crypto.CryptoException;
+import com.radixdlt.crypto.exception.CryptoException;
 
 /**
  * Exception when an already signed {@link Atom} is signed again

@@ -22,8 +22,8 @@ import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.Atom;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.EUID;
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.ECDSASignature;
@@ -402,7 +402,7 @@ public class Universe {
 	}
 
 	@JsonProperty("creator")
-	private void setJsonCreator(byte[] bytes) throws CryptoException {
+	private void setJsonCreator(byte[] bytes) throws PublicKeyException {
 		this.creator = ECPublicKey.fromBytes(bytes);
 	}
 
