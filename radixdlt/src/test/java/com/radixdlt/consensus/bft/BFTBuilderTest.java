@@ -31,6 +31,7 @@ import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
+import com.radixdlt.consensus.bft.SignedNewViewToLeaderSender.BFTNewViewSender;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
@@ -56,6 +57,7 @@ public class BFTBuilderTest {
 	private VertexStore vertexStore;
 	private VertexStoreSync vertexStoreSync;
 	private NewViewSigner newViewSigner;
+	private BFTNewViewSender newViewSender;
 	private BFTNode self;
 
 	@Before
@@ -75,6 +77,7 @@ public class BFTBuilderTest {
 		infoSender = mock(BFTInfoSender.class);
 		hasher = mock(Hasher.class);
 		newViewSigner = mock(NewViewSigner.class);
+		newViewSender = mock(BFTNewViewSender.class);
 	}
 
 	@Test
@@ -98,6 +101,7 @@ public class BFTBuilderTest {
 			.vertexStore(vertexStore)
 			.bftSyncer(vertexStoreSync)
 			.newViewSigner(newViewSigner)
+			.newViewSender(newViewSender)
 			.self(self)
 			.build();
 

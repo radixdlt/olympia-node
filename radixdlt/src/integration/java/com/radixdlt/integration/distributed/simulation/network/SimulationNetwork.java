@@ -24,6 +24,7 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
+import com.radixdlt.consensus.bft.SignedNewViewToLeaderSender.BFTNewViewSender;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexStoreSync.SyncVerticesRequestSender;
@@ -158,7 +159,7 @@ public class SimulationNetwork {
 	}
 
 	public class SimulatedNetworkImpl implements
-		BFTEventSender, SyncVerticesRequestSender, SyncVerticesResponseSender, SyncEpochsRPCSender, BFTEventsRx,
+		BFTEventSender, BFTNewViewSender, SyncVerticesRequestSender, SyncVerticesResponseSender, SyncEpochsRPCSender, BFTEventsRx,
 		SyncVerticesRPCRx, SyncEpochsRPCRx, StateSyncNetwork {
 		private final Observable<Object> myMessages;
 		private final BFTNode thisNode;

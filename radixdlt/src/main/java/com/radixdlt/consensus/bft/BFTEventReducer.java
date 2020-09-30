@@ -71,13 +71,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		void broadcastProposal(Proposal proposal, Set<BFTNode> nodes);
 
 		/**
-		 * Send a new-view message to a given validator
-		 * @param newView the new-view message
-		 * @param newViewLeader the validator the message gets sent to
-		 */
-		void sendNewView(NewView newView, BFTNode newViewLeader);
-
-		/**
 		 * Send a vote message to a given validator
 		 * @param vote the vote message
 		 * @param leader the validator the message gets sent to
@@ -104,6 +97,10 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		void sendTimeoutProcessed(View view, BFTNode leader);
 	}
 
+	public interface ProceedToViewSender {
+		void sendProceedToNextView(View view);
+	}
+
 	private final BFTNode self;
 	private final VertexStore vertexStore;
 	private final BFTSyncer bftSyncer;
@@ -113,7 +110,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private final Pacemaker pacemaker;
 	private final ProposerElection proposerElection;
 	private final SafetyRules safetyRules;
-	private final NewViewSigner newViewSigner;
+	private final ProceedToViewSender proceedToViewSender;
 	private final BFTValidatorSet validatorSet;
 	private final SystemCounters counters;
 	private final TimeSupplier timeSupplier;
@@ -129,7 +126,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		NextCommandGenerator nextCommandGenerator,
 		BFTEventSender sender,
 		SafetyRules safetyRules,
-		NewViewSigner newViewSigner,
+		ProceedToViewSender proceedToViewSender,
 		Pacemaker pacemaker,
 		VertexStore vertexStore,
 		BFTSyncer bftSyncer,
@@ -154,16 +151,13 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		this.counters = Objects.requireNonNull(counters);
 		this.infoSender = Objects.requireNonNull(infoSender);
 		this.timeSupplier = Objects.requireNonNull(timeSupplier);
-		this.newViewSigner = Objects.requireNonNull(newViewSigner);
+		this.proceedToViewSender = Objects.requireNonNull(proceedToViewSender);
 		this.hasher = Objects.requireNonNull(hasher);
 	}
 
 	// Hotstuff's Event-Driven OnNextSyncView
 	private void proceedToView(View nextView) {
-		NewView newView = newViewSigner.signNewView(nextView, this.vertexStore.getHighestQC(), this.vertexStore.getHighestCommittedQC());
-		BFTNode nextLeader = this.proposerElection.getProposer(nextView);
-		log.trace("Sending NEW_VIEW to {}: {}", () -> nextLeader, () ->  newView);
-		this.sender.sendNewView(newView, nextLeader);
+		this.proceedToViewSender.sendProceedToNextView(nextView);
 		this.infoSender.sendCurrentView(nextView);
 	}
 

@@ -30,6 +30,7 @@ import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
+import com.radixdlt.consensus.bft.BFTEventReducer.ProceedToViewSender;
 import com.radixdlt.consensus.bft.BFTSyncer.SyncResult;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
@@ -68,7 +69,7 @@ public class BFTEventReducerTest {
 	private SystemCounters counters;
 	private BFTInfoSender infoSender;
 	private BFTNode self;
-	private NewViewSigner newViewSigner;
+	private ProceedToViewSender proceedToViewSender;
 	private Hasher hasher;
 
 	@Before
@@ -86,7 +87,7 @@ public class BFTEventReducerTest {
 		this.infoSender = mock(BFTInfoSender.class);
 		this.self = mock(BFTNode.class);
 		this.hasher = mock(Hasher.class);
-		this.newViewSigner = mock(NewViewSigner.class);
+		this.proceedToViewSender = mock(ProceedToViewSender.class);
 
 		when(hasher.hash(any())).thenReturn(mock(Hash.class));
 
@@ -95,7 +96,7 @@ public class BFTEventReducerTest {
 			nextCommandGenerator,
 			sender,
 			safetyRules,
-			newViewSigner,
+			proceedToViewSender,
 			pacemaker,
 			vertexStore,
 			vertexStoreSync,
@@ -119,7 +120,7 @@ public class BFTEventReducerTest {
 		when(pacemaker.processQC(eq(qc), any())).thenReturn(Optional.of(mock(View.class)));
 		reducer.start();
 		verify(pacemaker, times(1)).processQC(eq(qc), any());
-		verify(sender, times(1)).sendNewView(any(), any());
+		verify(proceedToViewSender, times(1)).sendProceedToNextView(any());
 	}
 
 	@Test
@@ -181,7 +182,7 @@ public class BFTEventReducerTest {
 
 		reducer.processVote(vote);
 
-		verify(sender, times(1)).sendNewView(any(), any());
+		verify(proceedToViewSender, times(1)).sendProceedToNextView(any());
 	}
 
 	@Test
@@ -191,7 +192,7 @@ public class BFTEventReducerTest {
 		when(pacemaker.getCurrentView()).thenReturn(View.of(1));
 		when(vertexStore.getHighestQC()).thenReturn(mock(QuorumCertificate.class));
 		reducer.processLocalTimeout(View.of(0L));
-		verify(sender, times(1)).sendNewView(any(), any());
+		verify(proceedToViewSender, times(1)).sendProceedToNextView(any());
 		verify(counters, times(1)).increment(eq(CounterType.BFT_TIMEOUT));
 	}
 
@@ -199,7 +200,7 @@ public class BFTEventReducerTest {
 	public void when_processing_irrelevant_local_timeout__then_new_view_is_not_emitted_and_no_counter_increment() {
 		when(pacemaker.processLocalTimeout(any())).thenReturn(Optional.empty());
 		reducer.processLocalTimeout(View.of(0L));
-		verify(sender, times(0)).sendNewView(any(), any());
+		verify(proceedToViewSender, times(0)).sendProceedToNextView(any());
 		verify(counters, times(0)).increment(eq(CounterType.BFT_TIMEOUT));
 	}
 
@@ -251,7 +252,7 @@ public class BFTEventReducerTest {
 		reducer.processProposal(proposal);
 
 		verify(sender, times(1)).sendVote(eq(vote), any());
-		verify(sender, times(1)).sendNewView(any(), any());
+		verify(proceedToViewSender, times(1)).sendProceedToNextView(any());
 	}
 
 	@Test
@@ -283,7 +284,7 @@ public class BFTEventReducerTest {
 		reducer.processProposal(proposal);
 
 		verify(sender, times(1)).sendVote(eq(vote), any());
-		verify(sender, times(0)).sendNewView(any(), any());
+		verify(proceedToViewSender, times(0)).sendProceedToNextView(any());
 	}
 
 	@Test
@@ -314,6 +315,6 @@ public class BFTEventReducerTest {
 		reducer.processProposal(proposal);
 
 		verify(sender, times(1)).sendVote(eq(vote), any());
-		verify(sender, times(0)).sendNewView(any(), any());
+		verify(proceedToViewSender, times(0)).sendProceedToNextView(any());
 	}
 }

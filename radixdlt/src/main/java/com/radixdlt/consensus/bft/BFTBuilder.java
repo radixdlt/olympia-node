@@ -24,6 +24,8 @@ import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
+import com.radixdlt.consensus.bft.BFTEventReducer.ProceedToViewSender;
+import com.radixdlt.consensus.bft.SignedNewViewToLeaderSender.BFTNewViewSender;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
@@ -40,6 +42,7 @@ public final class BFTBuilder {
 	// Connected modules
 	private NextCommandGenerator nextCommandGenerator;
 	private BFTEventSender eventSender;
+	private BFTNewViewSender bftNewViewSender;
 	private SystemCounters counters;
 	private TimeSupplier timeSupplier;
 
@@ -82,6 +85,12 @@ public final class BFTBuilder {
 		this.eventSender = eventSender;
 		return this;
 	}
+
+	public BFTBuilder newViewSender(BFTNewViewSender bftNewViewSender) {
+		this.bftNewViewSender = bftNewViewSender;
+		return this;
+	}
+
 
 	public BFTBuilder hasher(Hasher hasher) {
 		this.hasher = hasher;
@@ -148,13 +157,19 @@ public final class BFTBuilder {
 		final SafetyRules safetyRules = new SafetyRules(self, SafetyState.initialState(), hasher, countingSigner(counters, signer));
 		// PendingVotes needs a hasher that produces unique values, as it indexes by hash
 		final PendingVotes pendingVotes = new PendingVotes(this.hasher);
+		final ProceedToViewSender proceedToViewSender = new SignedNewViewToLeaderSender(
+			newViewSigner,
+			proposerElection,
+			vertexStore,
+			bftNewViewSender
+		);
 
 		BFTEventReducer reducer = new BFTEventReducer(
 			self,
 			nextCommandGenerator,
 			eventSender,
 			safetyRules,
-			newViewSigner,
+			proceedToViewSender,
 			pacemaker,
 			vertexStore,
 			bftSyncer,

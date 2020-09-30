@@ -42,6 +42,7 @@ import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.SignedNewViewToLeaderSender.BFTNewViewSender;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
@@ -87,6 +88,7 @@ public class ConsensusModuleTest {
 				bind(Ledger.class).toInstance(mock(Ledger.class));
 				bind(SyncLedgerRequestSender.class).toInstance(mock(SyncLedgerRequestSender.class));
 				bind(BFTEventSender.class).toInstance(mock(BFTEventSender.class));
+				bind(BFTNewViewSender.class).toInstance(mock(BFTNewViewSender.class));
 				bind(SyncVerticesRequestSender.class).toInstance(mock(SyncVerticesRequestSender.class));
 				bind(SyncVerticesResponseSender.class).toInstance(mock(SyncVerticesResponseSender.class));
 				bind(VertexStoreEventSender.class).toInstance(mock(VertexStoreEventSender.class));

@@ -28,6 +28,7 @@ import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.SignedNewViewToLeaderSender.BFTNewViewSender;
 import com.radixdlt.consensus.sync.VertexStoreSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
@@ -64,6 +65,7 @@ public final class NetworkModule extends AbstractModule {
 
 		// Network BFT messages
 		bind(BFTEventSender.class).to(MessageCentralBFTNetwork.class);
+		bind(BFTNewViewSender.class).to(MessageCentralBFTNetwork.class);
 		bind(BFTEventsRx.class).to(MessageCentralBFTNetwork.class);
 	}
 
