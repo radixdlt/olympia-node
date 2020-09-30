@@ -126,8 +126,20 @@ jacocoTestReport {
     }
 }
 
+configurations.all {
+    resolutionStrategy.eachDependency {
+        if(it.requested.name == 'guava') {
+            it.useTarget 'com.google.guava:guava:29.0-jre'
+        }
+        if(it.requested.name == 'json') {
+            it.useTarget 'org.json:json:20180813'
+        }
+    }
+}
+
 dependencies {
-    compile 'com.github.radixdlt:radixdlt-java-common:1.0-beta.7'
+    compile 'com.github.radixdlt:radixdlt-java-common:integration~switch-to-factory-methods-SNAPSHOT'
+
     testCompile('org.objenesis:objenesis:3.1') { force = true }
     testCompile('org.javassist:javassist:3.27.0-GA') { force = true }
     testCompile('net.bytebuddy:byte-buddy:1.10.13') { force = true }
