@@ -49,7 +49,7 @@ public class RandomNewViewDropperTest {
 		TestResults results = test.run();
 
 		LongSummaryStatistics statistics = results.getNetwork().getSystemCounters().values().stream()
-			.map(s -> s.get(CounterType.BFT_VERTEX_STORE_FORK_COUNT))
+			.map(s -> s.get(CounterType.BFT_VERTEX_STORE_FORKS))
 			.mapToLong(l -> l)
 			.summaryStatistics();
 		System.out.println(statistics);
