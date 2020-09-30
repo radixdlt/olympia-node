@@ -32,9 +32,9 @@ public class ConsensusToLedgerCommittedInvariant implements TestInvariant {
 
 	@Override
 	public Observable<TestInvariantError> check(RunningNetwork network) {
-		return network.committedVertices()
+		return network.bftCommittedUpdates()
 			.map(Pair::getSecond)
-			.concatMap(vertices -> Observable.fromStream(vertices.stream()))
+			.concatMap(committedUpdate -> Observable.fromStream(committedUpdate.getCommitted().stream()))
 			.filter(v -> v.getCommand() != null)
 			.map(VerifiedVertex::getCommand)
 			.flatMapMaybe(command -> network

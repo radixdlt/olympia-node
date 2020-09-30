@@ -17,12 +17,12 @@
 
 package com.radixdlt.integration.distributed.deterministic.network;
 
+import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
-import java.util.LinkedList;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
@@ -105,7 +105,7 @@ public final class ControlledSender implements DeterministicSender {
 	}
 
 	@Override
-	public void sendCommitted(LinkedList<VerifiedVertex> vertex) {
+	public void sendCommitted(BFTCommittedUpdate update) {
 		// Ignore committed vertex signal
 	}
 

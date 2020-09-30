@@ -21,7 +21,9 @@ import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.mock;
 import static org.powermock.api.mockito.PowerMockito.when;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
@@ -29,7 +31,6 @@ import com.radixdlt.systeminfo.InMemorySystemInfoManager;
 import com.radixdlt.systeminfo.InfoRx;
 import com.radixdlt.consensus.Timeout;
 import io.reactivex.rxjava3.core.Observable;
-import java.util.LinkedList;
 import java.util.concurrent.TimeUnit;
 import org.junit.Before;
 import org.junit.Test;
@@ -44,7 +45,7 @@ public class InMemorySystemInfoManagerTest {
 		when(infoRx.timeouts()).thenReturn(Observable.never());
 		when(infoRx.currentViews()).thenReturn(Observable.never());
 		when(infoRx.highQCs()).thenReturn(Observable.never());
-		when(infoRx.committedVertices()).thenReturn(Observable.never());
+		when(infoRx.bftCommittedUpdates()).thenReturn(Observable.never());
 		this.runner = new InMemorySystemInfoManager(infoRx, 1, 1);
 	}
 
@@ -80,11 +81,9 @@ public class InMemorySystemInfoManagerTest {
 		when(vertex1.getView()).thenReturn(View.of(1));
 		VerifiedVertex vertex2 = mock(VerifiedVertex.class);
 		when(vertex2.getView()).thenReturn(View.of(2));
-		LinkedList<VerifiedVertex> vertices = new LinkedList<>();
-		vertices.add(vertex0);
-		vertices.add(vertex1);
-		vertices.add(vertex2);
-		when(infoRx.committedVertices()).thenReturn(Observable.just(vertices));
+		BFTCommittedUpdate update = mock(BFTCommittedUpdate.class);
+		when(update.getCommitted()).thenReturn(ImmutableList.of(vertex0, vertex1, vertex2));
+		when(infoRx.bftCommittedUpdates()).thenReturn(Observable.just(update));
 		runner.start();
 		await().atMost(1, TimeUnit.SECONDS).until(() -> runner.getCommittedVertices().size() == 1
 			&& runner.getCommittedVertices().get(0).equals(vertex2));

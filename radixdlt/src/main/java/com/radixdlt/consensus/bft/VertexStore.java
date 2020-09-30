@@ -45,12 +45,13 @@ import javax.annotation.concurrent.NotThreadSafe;
  */
 @NotThreadSafe
 public final class VertexStore {
+	// TODO: combine all of the following senders as an update sender
 	public interface BFTUpdateSender {
 		void sendBFTUpdate(BFTUpdate bftUpdate);
 	}
 
 	public interface VertexStoreEventSender {
-		void sendCommitted(LinkedList<VerifiedVertex> vertices);
+		void sendCommitted(BFTCommittedUpdate committedUpdate);
 		void highQC(QuorumCertificate qc);
 	}
 
@@ -216,7 +217,7 @@ public final class VertexStore {
 	 *
 	 * @param header the proof of commit
 	 */
-	private void commit(BFTHeader header, VerifiedLedgerHeaderAndProof ledgerStateWithProof) {
+	private void commit(BFTHeader header, VerifiedLedgerHeaderAndProof proof) {
 		if (header.getView().compareTo(this.getRoot().getView()) <= 0) {
 			return;
 		}
@@ -227,29 +228,27 @@ public final class VertexStore {
 			throw new IllegalStateException("Committing vertex not in store: " + header);
 		}
 
-		final LinkedList<VerifiedVertex> path = getPathFromRoot(tipVertex.getId());
+		final ImmutableList<VerifiedVertex> path = ImmutableList.copyOf(getPathFromRoot(tipVertex.getId()));
+
+		// TODO: Must prune all other children of root
 		path.forEach(v -> {
 			vertices.remove(v.getParentId());
 			vertexNumChildren.remove(v.getParentId());
 		});
-		// TODO: Must prune all other children of root
 
-		ImmutableList.Builder<Command> commandsToCommitBuilder = ImmutableList.builder();
-		for (VerifiedVertex committedVertex : path) {
-			this.counters.increment(CounterType.BFT_PROCESSED);
-			if (committedVertex.getCommand() != null) {
-				commandsToCommitBuilder.add(committedVertex.getCommand());
-			}
-		}
+		final ImmutableList<Command> commands = path.stream()
+			.map(VerifiedVertex::getCommand)
+			.filter(Objects::nonNull)
+			.collect(ImmutableList.toImmutableList());
 
-		this.vertexStoreEventSender.sendCommitted(path);
+		this.counters.add(CounterType.BFT_PROCESSED, path.size());
+		final BFTCommittedUpdate bftCommittedUpdate = new BFTCommittedUpdate(path, proof);
+		this.vertexStoreEventSender.sendCommitted(bftCommittedUpdate);
 
 		// TODO: Stop vertex store if end of epoch?
 		// TODO: if (ledgerStateWithProof.isEndOfEpoch()) ...
 
-		VerifiedCommandsAndProof verifiedCommandsAndProof = new VerifiedCommandsAndProof(
-			commandsToCommitBuilder.build(), ledgerStateWithProof
-		);
+		VerifiedCommandsAndProof verifiedCommandsAndProof = new VerifiedCommandsAndProof(commands, proof);
 		this.ledger.commit(verifiedCommandsAndProof);
 
 		rootId = header.getVertexId();

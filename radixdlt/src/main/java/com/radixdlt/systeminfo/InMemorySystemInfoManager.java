@@ -80,9 +80,9 @@ public final class InMemorySystemInfoManager {
 			.subscribe(highQC::set);
 
 		if (this.vertexUpdateFrequency > 0) {
-			this.infoRx.committedVertices()
+			this.infoRx.bftCommittedUpdates()
 				.observeOn(Schedulers.io())
-				.concatMap(vertices -> Observable.fromStream(vertices.stream()))
+				.concatMap(committed -> Observable.fromStream(committed.getCommitted().stream()))
 				.filter(v -> (v.getView().number() % vertexUpdateFrequency) == 0)
 				.subscribe(vertexRingBuffer::add);
 		}

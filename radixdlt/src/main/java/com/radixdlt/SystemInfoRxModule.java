@@ -19,7 +19,7 @@ package com.radixdlt;
 
 import com.google.inject.AbstractModule;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.bft.VerifiedVertex;
+import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.consensus.epoch.EpochView;
@@ -27,7 +27,6 @@ import com.radixdlt.systeminfo.InfoRx;
 import com.radixdlt.consensus.Timeout;
 import com.radixdlt.utils.SenderToRx;
 import io.reactivex.rxjava3.core.Observable;
-import java.util.LinkedList;
 
 /**
  * Module which routes system info related messages
@@ -36,7 +35,7 @@ public final class SystemInfoRxModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
-		SenderToRx<LinkedList<VerifiedVertex>, LinkedList<VerifiedVertex>> committedVertices = new SenderToRx<>(i -> i);
+		SenderToRx<BFTCommittedUpdate, BFTCommittedUpdate> committed = new SenderToRx<>(i -> i);
 		SenderToRx<QuorumCertificate, QuorumCertificate> highQCs = new SenderToRx<>(i -> i);
 		SenderToRx<Timeout, Timeout> timeouts = new SenderToRx<>(i -> i);
 		SenderToRx<EpochView, EpochView> currentViews = new SenderToRx<>(i -> i);
@@ -55,8 +54,8 @@ public final class SystemInfoRxModule extends AbstractModule {
 
 		VertexStoreEventSender eventSender = new VertexStoreEventSender() {
 			@Override
-			public void sendCommitted(LinkedList<VerifiedVertex> vertex) {
-				committedVertices.send(vertex);
+			public void sendCommitted(BFTCommittedUpdate committedUpdate) {
+				committed.send(committedUpdate);
 			}
 
 			@Override
@@ -82,8 +81,8 @@ public final class SystemInfoRxModule extends AbstractModule {
 			}
 
 			@Override
-			public Observable<LinkedList<VerifiedVertex>> committedVertices() {
-				return committedVertices.rx();
+			public Observable<BFTCommittedUpdate> bftCommittedUpdates() {
+				return committed.rx();
 			}
 		};
 
