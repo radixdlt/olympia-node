@@ -16,8 +16,6 @@ git:
 
 jobs:
   include:
-    - stage: depcheck
-      script: cd faucet-service/ && ../gradlew -q dependencies
     - stage: check
       script: ./gradlew check --info
     - stage: sonar
