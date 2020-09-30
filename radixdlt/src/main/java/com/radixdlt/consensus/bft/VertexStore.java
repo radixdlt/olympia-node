@@ -214,7 +214,6 @@ public final class VertexStore {
 	 * what is to be committed, returns an empty optional
 	 *
 	 * @param header the proof of commit
-	 * @return the vertex if sucessful, otherwise an empty optional if vertex was already committed
 	 */
 	private void commit(BFTHeader header, VerifiedLedgerHeaderAndProof ledgerStateWithProof) {
 		if (header.getView().compareTo(this.getRoot().getView()) <= 0) {

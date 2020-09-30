@@ -23,6 +23,9 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.function.Predicate;
 
+/**
+ * Drops random new view messages
+ */
 public class RandomNewViewDropper implements Predicate<MessageInTransit> {
 	private final Random random;
 	private final double drops;

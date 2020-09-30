@@ -24,6 +24,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Predicate;
 
+/**
+ * Drops all epoch response messages from the first node to send an epoch response
+ * for a given epoch
+ */
 public class OneNodePerEpochResponseDropper implements Predicate<MessageInTransit> {
 	private final Map<Long, BFTNode> nodeToDrop = new HashMap<>();
 

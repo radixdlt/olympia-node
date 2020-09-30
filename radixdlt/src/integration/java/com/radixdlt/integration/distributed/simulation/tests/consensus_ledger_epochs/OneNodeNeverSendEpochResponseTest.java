@@ -32,6 +32,10 @@ import java.util.stream.IntStream;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
+/**
+ * Drops all epoch responses from the first node to send the epoch response.
+ * Tests to make sure that epoch changes are still smooth even with an epoch dropper.
+ */
 public class OneNodeNeverSendEpochResponseTest {
 	private static final int numNodes = 10;
 
