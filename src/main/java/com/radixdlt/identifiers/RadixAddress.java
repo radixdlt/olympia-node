@@ -18,10 +18,10 @@
 package com.radixdlt.identifiers;
 
 import com.google.common.base.Suppliers;
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.utils.Base58;
 
 import java.util.Arrays;
@@ -78,8 +78,8 @@ public final class RadixAddress {
 			byte[] digest = new byte[raw.length - 5];
 			System.arraycopy(raw, 1, digest, 0, raw.length - 5);
 
-			return new RadixAddress(raw[0], new ECPublicKey(digest));
-		} catch (CryptoException e) {
+			return new RadixAddress(raw[0], ECPublicKey.fromBytes(digest));
+		} catch (PublicKeyException e) {
 			throw new IllegalArgumentException("Unable to create address from string: " + Base58.toBase58(raw), e);
 		}
 	}

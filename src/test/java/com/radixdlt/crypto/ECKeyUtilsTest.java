@@ -20,6 +20,8 @@ package com.radixdlt.crypto;
 import java.math.BigInteger;
 import java.util.Arrays;
 
+import com.radixdlt.crypto.exception.PrivateKeyException;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -82,5 +84,91 @@ public class ECKeyUtilsTest {
 		byte[] testArray = new byte[ECKeyPair.BYTES + 1];
 		Arrays.fill(testArray, (byte) 1);
 		ECKeyUtils.adjustArray(testArray, ECKeyPair.BYTES);
+	}
+
+	@Test(expected = PublicKeyException.class)
+	public void testValidatePublicFailForNullInput() throws PublicKeyException {
+		ECKeyUtils.validatePublic(null);
+	}
+
+	@Test(expected = PublicKeyException.class)
+	public void testValidatePublicFailForEmptyInput() throws PublicKeyException {
+		ECKeyUtils.validatePublic(new byte[] {});
+	}
+
+	@Test
+	public void testValidatePublicPassForType2Key() throws PublicKeyException {
+		var key = new byte[ECPublicKey.BYTES + 1];
+		key[0] = 0x02;
+		ECKeyUtils.validatePublic(key);
+	}
+
+	@Test(expected = PublicKeyException.class)
+	public void testValidatePublicFailForType2Key() throws PublicKeyException {
+		var key = new byte[ECPublicKey.BYTES + 1 + 1];
+		key[0] = 0x02;
+		ECKeyUtils.validatePublic(key);
+	}
+
+	@Test
+	public void testValidatePublicPassForType3Key() throws PublicKeyException {
+		var key = new byte[ECPublicKey.BYTES + 1];
+		key[0] = 0x03;
+		ECKeyUtils.validatePublic(key);
+	}
+
+	@Test(expected = PublicKeyException.class)
+	public void testValidatePublicFailForType3Key() throws PublicKeyException {
+		var key = new byte[ECPublicKey.BYTES + 1 + 1];
+		key[0] = 0x03;
+		ECKeyUtils.validatePublic(key);
+	}
+
+	@Test
+	public void testValidatePublicPassForType4Key() throws PublicKeyException {
+		var key = new byte[(ECPublicKey.BYTES * 2) + 1];
+		key[0] = 0x04;
+		ECKeyUtils.validatePublic(key);
+	}
+
+	@Test(expected = PublicKeyException.class)
+	public void testValidatePublicFailForType4Key() throws PublicKeyException {
+		var key = new byte[(ECPublicKey.BYTES * 2) + 1 + 1];
+		key[0] = 0x04;
+		ECKeyUtils.validatePublic(key);
+	}
+
+	@Test(expected = PublicKeyException.class)
+	public void testValidatePublicFailForUnknownTypeKey() throws PublicKeyException {
+		var key = new byte[ECPublicKey.BYTES + 1];
+		key[0] = 0x05;
+		ECKeyUtils.validatePublic(key);
+	}
+
+	@Test(expected = PrivateKeyException.class)
+	public void testValidatePrivateFailForNullInput() throws PrivateKeyException {
+		ECKeyUtils.validatePrivate(null);
+	}
+
+	@Test(expected = PrivateKeyException.class)
+	public void testValidatePrivateFailForEmptyInput() throws PrivateKeyException {
+		ECKeyUtils.validatePrivate(new byte[] {});
+	}
+
+	@Test(expected = PrivateKeyException.class)
+	public void testValidatePrivateFailForShortInput() throws PrivateKeyException {
+		ECKeyUtils.validatePrivate(new byte[ECKeyPair.BYTES - 1]);
+	}
+
+	@Test(expected = PrivateKeyException.class)
+	public void testValidatePrivateFailForZeroBytes() throws PrivateKeyException {
+		ECKeyUtils.validatePrivate(new byte[ECKeyPair.BYTES]);
+	}
+
+	@Test(expected = PrivateKeyException.class)
+	public void testValidatePrivateFailForIncorrectOrder() throws PrivateKeyException {
+		var key = new byte[ECKeyPair.BYTES];
+		Arrays.fill(key, (byte) -1);
+		ECKeyUtils.validatePrivate(key);
 	}
 }

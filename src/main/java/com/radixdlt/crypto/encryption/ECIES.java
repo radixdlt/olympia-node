@@ -23,7 +23,8 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECMultiplicationScalar;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.crypto.MacMismatchException;
+import com.radixdlt.crypto.exception.MacMismatchException;
+import com.radixdlt.crypto.exception.ECIESException;
 import org.bouncycastle.math.ec.ECPoint;
 
 import javax.crypto.Mac;
@@ -70,7 +71,7 @@ public final class ECIES {
 			int publicKeySize = inputStream.readUnsignedByte();
 			byte[] publicKeyRaw = new byte[publicKeySize];
 			inputStream.readFully(publicKeyRaw);
-			ECPublicKey ephemeralPublicKey = new ECPublicKey(publicKeyRaw);
+			ECPublicKey ephemeralPublicKey = ECPublicKey.fromBytes(publicKeyRaw);
 
 			// 3. Do an EC point multiply with this.getPrivateKey() and ephemeral public key. This gives you a point M.
 			ECPoint m = multiplicationScalar.multiply(ephemeralPublicKey.getPublicPoint());

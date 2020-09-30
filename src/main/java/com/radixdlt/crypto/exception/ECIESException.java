@@ -15,14 +15,10 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.crypto.encryption;
-
-import com.radixdlt.crypto.CryptoException;
+package com.radixdlt.crypto.exception;
 
 public class ECIESException extends CryptoException {
-
 	public ECIESException(String message, Exception exception) {
 		super(message, exception);
 	}
-
 }

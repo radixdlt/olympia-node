@@ -19,6 +19,9 @@ package com.radixdlt.crypto;
 
 import com.radixdlt.crypto.encryption.EncryptedPrivateKey;
 import com.radixdlt.TestSetupUtils;
+import com.radixdlt.crypto.exception.ECIESException;
+import com.radixdlt.crypto.exception.PrivateKeyException;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -26,6 +29,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -53,7 +60,7 @@ public class ECKeyPairTest {
 	}
 
 	@Test
-	public void checkKeyIntegrity() throws CryptoException {
+	public void checkKeyIntegrity() throws Exception {
 		final int iterations = 5000;
 
 		for (int i = 0; i < iterations; i++) {
@@ -62,7 +69,7 @@ public class ECKeyPairTest {
 			byte[] priv = key.getPrivateKey();
 			byte[] pub = key.getPublicKey().getBytes();
 
-			key = new ECKeyPair(priv);
+			key = ECKeyPair.fromPrivateKey(priv);
 
 			Assert.assertArrayEquals(priv, key.getPrivateKey());
 			Assert.assertArrayEquals(pub, key.getPublicKey().getBytes());
@@ -70,7 +77,7 @@ public class ECKeyPairTest {
 	}
 
 	@Test
-	public void signAndVerify() throws CryptoException {
+	public void signAndVerify() throws Exception {
 		final int iterations = 2000;
 		String helloWorld = "Hello World";
 
@@ -79,16 +86,16 @@ public class ECKeyPairTest {
 			byte[] priv = key.getPrivateKey();
 			byte[] pub = key.getPublicKey().getBytes();
 
-			ECKeyPair keyPair = new ECKeyPair(priv);
+			ECKeyPair keyPair = ECKeyPair.fromPrivateKey(priv);
 			ECDSASignature signature = keyPair.sign(Hash.hash256(helloWorld.getBytes(StandardCharsets.UTF_8)));
 
-			ECPublicKey pubkey = new ECPublicKey(pub);
+			ECPublicKey pubkey = ECPublicKey.fromBytes(pub);
 			assertTrue(pubkey.verify(Hash.hash256(helloWorld.getBytes(StandardCharsets.UTF_8)), signature));
 		}
 	}
 
 	@Test
-	public void encryptAndDecrypt() throws CryptoException {
+	public void encryptAndDecrypt() throws Exception {
 		final int iterations = 1000;
 		String helloWorld = "Hello World";
 
@@ -99,7 +106,7 @@ public class ECKeyPairTest {
 
 			byte[] encrypted = key.getPublicKey().encrypt(helloWorld.getBytes(StandardCharsets.UTF_8));
 
-			ECKeyPair newkey = new ECKeyPair(priv);
+			ECKeyPair newkey = ECKeyPair.fromPrivateKey(priv);
 			Assert.assertArrayEquals(helloWorld.getBytes(StandardCharsets.UTF_8), newkey.decrypt(encrypted));
 		}
 	}
@@ -119,11 +126,11 @@ public class ECKeyPairTest {
 		EncryptedPrivateKey encryptedPrivateKey = keyPair2.encryptPrivateKeyWithPublicKey(keyPair1.getPublicKey());
 
 		assertThatThrownBy(() -> keyPair1.decrypt(new byte[]{0}, encryptedPrivateKey))
-				.isInstanceOf(CryptoException.class);
+				.isInstanceOf(ECIESException.class);
 	}
 
 	@Test
-	public void encryptionTest() throws CryptoException {
+	public void encryptionTest() throws ECIESException {
 		String testPhrase = "Hello World";
 		ECKeyPair ecKeyPair = ECKeyPair.generateNew();
 		byte[] encrypted = ecKeyPair.getPublicKey().encrypt(testPhrase.getBytes());
@@ -166,5 +173,36 @@ public class ECKeyPairTest {
 
 		// Assert that KeyPair2 can be used to verify the signature of Hash1
 		assertTrue(keyPair2.getPublicKey().verify(hash1, signature1));
+	}
+
+	@Test
+	public void validateSeedBeforeUse() {
+		assertThatThrownBy(() -> ECKeyPair.fromSeed(null)).isInstanceOf(NullPointerException.class);
+		assertThatThrownBy(() -> ECKeyPair.fromSeed(new byte[]{})).isInstanceOf(IllegalArgumentException.class);
+	}
+
+	@Test
+	public void keyPairCanBeLoadedFromFile() throws IOException, PrivateKeyException, PublicKeyException {
+		File testKeyPair = new File("test-private-key.ks");
+		var sourceKeyPair = ECKeyPair.generateNew();
+
+		try (OutputStream outputStream = new FileOutputStream(testKeyPair)) {
+			outputStream.write(sourceKeyPair.getPrivateKey());
+		}
+
+		var loadedKeyPair = ECKeyPair.fromFile(testKeyPair);
+
+		assertThat(sourceKeyPair.getPrivateKey(), equalTo(loadedKeyPair.getPrivateKey()));
+	}
+
+	@Test
+	public void shortFileIsRejected() throws IOException, PrivateKeyException, PublicKeyException {
+		File testKeyPair = new File("test-private-key.ks");
+
+		try (OutputStream outputStream = new FileOutputStream(testKeyPair)) {
+			outputStream.write(new byte[ECKeyPair.BYTES - 1]);
+		}
+
+		assertThatThrownBy(() -> ECKeyPair.fromFile(testKeyPair)).isInstanceOf(IllegalStateException.class);
 	}
 }

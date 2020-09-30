@@ -17,8 +17,8 @@
 
 package com.radixdlt.identifiers;
 
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.utils.Bytes;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.bouncycastle.util.encoders.Base64;
@@ -51,9 +51,9 @@ public class RadixAddressTest {
 	}
 
 	@Test
-	public void address_from_key_and_magical() throws CryptoException {
+	public void address_from_key_and_magical() throws PublicKeyException {
 		String publicKeyHexString = "03000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F";
-		ECPublicKey key = new ECPublicKey(Bytes.fromHexString(publicKeyHexString));
+		ECPublicKey key = ECPublicKey.fromBytes(Bytes.fromHexString(publicKeyHexString));
 		RadixAddress address = new RadixAddress((byte) 2, key);
 
 		// https://github.com/radixdlt/radixdlt-swift/
@@ -67,8 +67,8 @@ public class RadixAddressTest {
 	}
 
 	@Test
-	public void createAddressFromPublicKey() throws CryptoException {
-		ECPublicKey publicKey = new ECPublicKey(Base64.decode("A455PdOZNwyRWaSWFXyYYkbj7Wv9jtgCCqUYhuOHiPLC"));
+	public void createAddressFromPublicKey() throws PublicKeyException {
+		ECPublicKey publicKey = ECPublicKey.fromBytes(Base64.decode("A455PdOZNwyRWaSWFXyYYkbj7Wv9jtgCCqUYhuOHiPLC"));
 		RadixAddress address = new RadixAddress(magicByte(), publicKey);
 		assertEquals("JHB89drvftPj6zVCNjnaijURk8D8AMFw4mVja19aoBGmRXWchnJ", address.toString());
 		assertEquals(address, RadixAddress.from("JHB89drvftPj6zVCNjnaijURk8D8AMFw4mVja19aoBGmRXWchnJ"));
@@ -76,7 +76,7 @@ public class RadixAddressTest {
 
 	@Test
 	public void createBadPublicKey() {
-		assertThatThrownBy(() -> new ECPublicKey(Base64.decode("BADKEY")))
+		assertThatThrownBy(() -> ECPublicKey.fromBytes(Base64.decode("BADKEY")))
 			.isInstanceOf(DecoderException.class);
 	}
 
@@ -88,8 +88,8 @@ public class RadixAddressTest {
 
 	@Test
 	public void generateAddress() {
-		assertThatThrownBy(() -> new RadixAddress(magicByte(), new ECPublicKey(new byte[33])))
-			.isInstanceOf(CryptoException.class);
+		assertThatThrownBy(() -> new RadixAddress(magicByte(), ECPublicKey.fromBytes(new byte[33])))
+			.isInstanceOf(PublicKeyException.class);
 	}
 
 	@Test

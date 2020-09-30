@@ -15,19 +15,13 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.crypto;
+package com.radixdlt.crypto.exception;
 
 import org.bouncycastle.util.encoders.Base64;
 
 public class MacMismatchException extends CryptoException {
 	private final byte[] expected;
 	private final byte[] actual;
-
-	public MacMismatchException(String msg, byte[] expected, byte[] actual) {
-		super(msg);
-		this.expected = expected;
-		this.actual = actual;
-	}
 
 	public MacMismatchException(byte[] expected, byte[] actual) {
 		this.expected = expected;

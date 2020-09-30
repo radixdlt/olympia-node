@@ -42,7 +42,7 @@ import com.radixdlt.SecurityCritical.SecurityKind;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECKeyUtils;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.crypto.MacMismatchException;
+import com.radixdlt.crypto.exception.MacMismatchException;
 import com.radixdlt.crypto.keystore.Cipherparams;
 import com.radixdlt.crypto.keystore.Crypto;
 import com.radixdlt.crypto.keystore.Keystore;

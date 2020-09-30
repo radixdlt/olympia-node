@@ -43,6 +43,9 @@ import java.util.Date;
 import java.util.Objects;
 import java.util.Set;
 
+import com.radixdlt.crypto.exception.KeyStoreException;
+import com.radixdlt.crypto.exception.PrivateKeyException;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
@@ -109,8 +112,8 @@ public final class RadixKeyStore implements Closeable {
 	 * <p>
 	 * Note that if {@code create} is set to {@code true}, then the file will
 	 * be created if it does not exist.  If the file is created, then it's
-	 * permissions will be set to just {@link PosixFilePermission.OWNER_READ}
-	 * and {@link PosixFilePermission.OWNER_WRITE} on Posix filesystems.
+	 * permissions will be set to just {@link PosixFilePermission#OWNER_READ}
+	 * and {@link PosixFilePermission#OWNER_WRITE} on Posix filesystems.
 	 *
 	 * @param file  The file to load the private key from
 	 * @param storePassword The password to use for securing the store.
@@ -120,16 +123,17 @@ public final class RadixKeyStore implements Closeable {
 	 * @param create Set to {@code true} if the file should be created if it doesn't exist.
 	 * @return A {@link RadixKeyStore}
 	 * @throws IOException If reading or writing the file fails
-	 * @throws CryptoException If the key read from the file is invalid
+	 * @throws KeyStoreException If the key read from the file is invalid
 	 */
-	public static RadixKeyStore fromFile(File file, char[] storePassword, boolean create) throws IOException, CryptoException {
+	public static RadixKeyStore fromFile(File file, char[] storePassword, boolean create)
+			throws IOException, KeyStoreException {
 		try {
 			final KeyStore ks = KeyStore.getInstance("pkcs12");
 			char[] usedStorePassword = (storePassword == null || storePassword.length == 0) ? defaultKey : storePassword;
 			initializeKeyStore(ks, file, usedStorePassword, create);
 			return new RadixKeyStore(file, ks, usedStorePassword.clone());
 		} catch (GeneralSecurityException ex) {
-			throw new CryptoException("Can't load key store", ex);
+			throw new KeyStoreException("Can't load key store", ex);
 		}
 	}
 
@@ -149,13 +153,16 @@ public final class RadixKeyStore implements Closeable {
 	 *
 	 * @param name The name of the key in the key store.  If no key with the
 	 * 		given name is present, it will be created if specified, otherwise
-	 * 		a {@link CryptoException} will be raised.
+	 * 		a {@link KeyStoreException} will be raised.
 	 * @param create Set to {@code true} to create a new random key if the
 	 * 		specified key does not exist in the store.
 	 * @return The {@link ECKeyPair} read from the key store
-	 * @throws CryptoException If an error occurs reading the key
+	 * @throws KeyStoreException If an error occurs while reading the key
+	 * @throws PrivateKeyException If an error occurs while validating the private key
+	 * @throws PublicKeyException If an error occurs while computing the public key
 	 */
-	public ECKeyPair readKeyPair(String name, boolean create) throws CryptoException {
+	public ECKeyPair readKeyPair(String name, boolean create)
+			throws KeyStoreException, PrivateKeyException, PublicKeyException {
 		try {
 			KeyStore.Entry entry = this.keyStore.getEntry(name, emptyPassword);
 			if (entry == null) {
@@ -164,13 +171,13 @@ public final class RadixKeyStore implements Closeable {
 					writeKeyPair(name, newKeyPair);
 					return newKeyPair;
 				} else {
-					throw new CryptoException("No such entry: " + name);
+					throw new KeyStoreException("No such entry: " + name);
 				}
 			} else {
 				return processEntry(name, entry);
 			}
 		} catch (GeneralSecurityException | IOException e) {
-			throw new CryptoException("Key store error while reading key", e);
+			throw new KeyStoreException("Key store error while reading key", e);
 		}
 	}
 
@@ -180,16 +187,16 @@ public final class RadixKeyStore implements Closeable {
 	 * <p>
 	 * <b>Implementation note:</b><br> Note that this method will create a new
 	 * file and set it's permissions to just
-	 * {@link PosixFilePermission.OWNER_READ} and
-	 * {@link PosixFilePermission.OWNER_WRITE} on Posix filesystems.
+	 * {@link PosixFilePermission#OWNER_READ} and
+	 * {@link PosixFilePermission#OWNER_WRITE} on Posix filesystems.
 	 *
 	 * @param name The name the key will have in the key store.  If a key
 	 * 		already exists with this name, it will be overwritten.
 	 * @param ecKeyPair The {@link ECKeyPair} to write to the store.
-	 * @throws CryptoException If an error occurs writing the key
+	 * @throws KeyStoreException If an error occurs writing the key
 	 * @throws IOException If an error occurs persisting the key store
 	 */
-	public void writeKeyPair(String name, ECKeyPair ecKeyPair) throws CryptoException, IOException {
+	public void writeKeyPair(String name, ECKeyPair ecKeyPair) throws KeyStoreException, IOException {
 		byte[] encodedPrivKey = null;
 		try {
 			encodedPrivKey = encodePrivKey(ecKeyPair.getPrivateKey());
@@ -211,7 +218,7 @@ public final class RadixKeyStore implements Closeable {
 			this.keyStore.setEntry(name, pke, emptyPassword);
 			writeKeyStore(this.file, this.keyStore, this.storePassword);
 		} catch (GeneralSecurityException ex) {
-			throw new CryptoException("Error while writing key", ex);
+			throw new KeyStoreException("Error while writing key", ex);
 		} finally {
 			if (encodedPrivKey != null) {
 				Arrays.fill(encodedPrivKey, (byte) 0);
@@ -229,7 +236,9 @@ public final class RadixKeyStore implements Closeable {
 		return String.format("%s[%s]", getClass().getSimpleName(), file.toString());
 	}
 
-	private ECKeyPair processEntry(String name, Entry entry) throws CryptoException, IOException {
+	private ECKeyPair processEntry(String name, Entry entry)
+			throws KeyStoreException, PrivateKeyException, IOException, PublicKeyException {
+
 		// Should not be possible to have a non-private key entry in a PKCS#12 store.
 		// Still do the check here anyway.
 		if (entry instanceof KeyStore.PrivateKeyEntry) {
@@ -239,12 +248,12 @@ public final class RadixKeyStore implements Closeable {
 			PrivateKey pk = pkEntry.getPrivateKey();
 			byte[] encoded = pk.getEncoded();
 			try {
-				return new ECKeyPair(decodePrivKey(encoded));
+				return ECKeyPair.fromPrivateKey(decodePrivKey(encoded));
 			} finally {
 				Arrays.fill(encoded, (byte) 0);
 			}
 		} else {
-			throw new CryptoException(String.format("Entry %s is not a private key: %s", name, entry.getClass()));
+			throw new KeyStoreException(String.format("Entry %s is not a private key: %s", name, entry.getClass()));
 		}
 	}
 
@@ -270,14 +279,14 @@ public final class RadixKeyStore implements Closeable {
 	 * local clock time for the specified validity period in years.
 	 *
 	 * @param keyPair The key-pair to create the self-signed certificate for.
-	 * @param validity Years The validity period in years.
+	 * @param validityYears Years The validity period in years.
 	 * @param subjectDN The key's distinguished subject name.
 	 * @return A self-signed certificate
-	 * @throws CryptoException If an error occurs while building the certificate
+	 * @throws KeyStoreException If an error occurs while building the certificate
 	 * @throws IOException If an I/O error occurs while building the certificate
 	 */
 	@VisibleForTesting
-	static Certificate selfSignedCert(KeyPair keyPair, int validityYears, String subjectDN) throws CryptoException, IOException {
+	static Certificate selfSignedCert(KeyPair keyPair, int validityYears, String subjectDN) throws KeyStoreException, IOException {
 		X500Name dnName = new X500Name(subjectDN);
 		LocalDateTime startDate = LocalDateTime.now();
 		LocalDateTime endDate = startDate.plusYears(validityYears);
@@ -292,7 +301,7 @@ public final class RadixKeyStore implements Closeable {
 			ContentSigner contentSigner = new JcaContentSignerBuilder(CERT_SIGNATURE_ALG).build(keyPair.getPrivate());
 			return new JcaX509CertificateConverter().getCertificate(certBuilder.build(contentSigner));
 		} catch (OperatorCreationException | CertificateException ex) {
-			throw new CryptoException("Error creating certificate", ex);
+			throw new KeyStoreException("Error creating certificate", ex);
 		}
 	}
 
@@ -308,14 +317,14 @@ public final class RadixKeyStore implements Closeable {
 	 * @param encoded The encoded private key
 	 * @return The raw {@link ECKeyPair#BYTES} length private key.
 	 * @throws IOException If an error occurred decoding the ASN.1 key.
-	 * @throws CryptoException If the decoded key is not for the secp256k1 curve.
+	 * @throws KeyStoreException If the decoded key is not for the secp256k1 curve.
 	 */
-	private static byte[] decodePrivKey(byte[] encoded) throws IOException, CryptoException {
+	private static byte[] decodePrivKey(byte[] encoded) throws IOException, KeyStoreException {
 		PrivateKeyInfo pki = PrivateKeyInfo.getInstance(encoded);
 		ECPrivateKey ecpk = ECPrivateKey.getInstance(pki.parsePrivateKey());
 		ASN1Primitive params = ecpk.getParameters();
 		if (!OID_SECP256K1_CURVE.equals(params)) {
-			throw new CryptoException("Unknown curve: " + params.toString());
+			throw new KeyStoreException("Unknown curve: " + params.toString());
 		}
 		return ECKeyUtils.adjustArray(ecpk.getKey().toByteArray(), ECKeyPair.BYTES);
 	}

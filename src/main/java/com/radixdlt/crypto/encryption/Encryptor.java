@@ -17,9 +17,12 @@
 
 package com.radixdlt.crypto.encryption;
 
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.exception.ECIESException;
+import com.radixdlt.crypto.exception.EncryptorException;
+import com.radixdlt.crypto.exception.PrivateKeyException;
+import com.radixdlt.crypto.exception.PublicKeyException;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -48,7 +51,10 @@ public class Encryptor {
 		}
 
 		public Encryptor build() {
-			List<EncryptedPrivateKey> protectors = readers.stream().map(sharedKey::encryptPrivateKeyWithPublicKey).collect(Collectors.toList());
+			List<EncryptedPrivateKey> protectors =
+				readers.stream()
+						.map(sharedKey::encryptPrivateKeyWithPublicKey)
+						.collect(Collectors.toList());
 			return new Encryptor(protectors);
 		}
 	}
@@ -63,15 +69,15 @@ public class Encryptor {
 		return Collections.unmodifiableList(protectors);
 	}
 
-	public byte[] decrypt(byte[] data, ECKeyPair accessor) throws CryptoException {
+	public byte[] decrypt(byte[] data, ECKeyPair accessor) throws EncryptorException {
 		for (EncryptedPrivateKey protector : protectors) {
 			try {
 				return accessor.decrypt(data, protector);
-			} catch (CryptoException e) {
+			} catch (PrivateKeyException | PublicKeyException | ECIESException e) {
 				// exception could so that we can proceed with next `protector`
 			}
 		}
 
-		throw new CryptoException("Unable to decrypt any of the " + protectors.size() + " protectors.");
+		throw new EncryptorException("Unable to decrypt any of the " + protectors.size() + " protectors.");
 	}
 }

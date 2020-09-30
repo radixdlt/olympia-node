@@ -21,7 +21,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.common.base.Suppliers;
 import com.radixdlt.crypto.encryption.ECIES;
-import com.radixdlt.crypto.encryption.ECIESException;
+import com.radixdlt.crypto.exception.ECIESException;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.utils.Bytes;
 import org.bouncycastle.math.ec.ECPoint;
@@ -33,129 +34,89 @@ import java.util.function.Supplier;
  * Asymmetric EC public key provider fixed to curve 'secp256k1'
  */
 public final class ECPublicKey {
-	public static final int	BYTES = 32;
+    public static final int BYTES = 32;
 
-	@JsonValue
-	private final byte[] publicKey;
+    @JsonValue
+    private final byte[] publicKey;
 
-	private final Supplier<EUID> uid = Suppliers.memoize(this::computeUID);
-	private final int hashCode;
+    private final Supplier<EUID> uid = Suppliers.memoize(this::computeUID);
+    private final int hashCode;
 
-	@JsonCreator
-	private static ECPublicKey fromPublicKey(byte[] key) throws CryptoException {
-		return new ECPublicKey(key);
-	}
+    private ECPublicKey(byte[] key) {
+        this.publicKey = Arrays.copyOf(key, key.length);
+        this.hashCode = computeHashCode();
+    }
 
-	public ECPublicKey(byte[] key) throws CryptoException {
-		try {
-			validatePublic(key);
-			this.publicKey = Arrays.copyOf(key, key.length);
-			// As ECPublicKey instances are commonly used to look up associated
-			// data in HashMaps and/or used as keys in HashMaps, there is minimal
-			// performance benefits, and some costs, in computing this lazily.
-			this.hashCode = computeHashCode();
-		} catch (CryptoException ex) {
-			throw ex;
-		} catch (Exception ex) {
-			throw new CryptoException(ex);
-		}
-	}
+    private int computeHashCode() {
+        return Arrays.hashCode(publicKey);
+    }
 
-	private void validatePublic(byte[] publicKey) throws CryptoException {
-		if (publicKey == null || publicKey.length == 0) {
-			throw new CryptoException("Public key is empty");
-		}
+    @JsonCreator
+    public static ECPublicKey fromBytes(byte[] key) throws PublicKeyException {
+        ECKeyUtils.validatePublic(key);
+        return new ECPublicKey(key);
+    }
 
-		int pubkey0 = publicKey[0] & 0xFF;
-		switch (pubkey0) {
-		case 2:
-		case 3:
-			if (publicKey.length != BYTES + 1) {
-				throw new CryptoException("Public key is an invalid compressed size");
-			}
-			break;
-		case 4:
-			if (publicKey.length != (BYTES * 2) + 1) {
-				throw new CryptoException("Public key is an invalid uncompressed size");
-			}
-			break;
-		default:
-			throw new CryptoException("Public key is an invalid format");
-		}
-	}
+    @JsonCreator
+    public static ECPublicKey fromBase64(String base64) throws PublicKeyException {
+        return fromBytes(Bytes.fromBase64String(base64));
+    }
 
-	@JsonCreator
-	public static ECPublicKey fromBase64(String base64) throws CryptoException {
-		return new ECPublicKey(Bytes.fromBase64String(base64));
-	}
+    public EUID euid() {
+        return this.uid.get();
+    }
 
-	public EUID euid() {
-		return this.uid.get();
-	}
+    public byte[] getBytes() {
+        return this.publicKey;
+    }
 
-	public byte[] getBytes() {
-		return this.publicKey;
-	}
+    public int length() {
+        return publicKey.length;
+    }
 
-	public int length() {
-		return publicKey.length;
-	}
+    public ECPoint getPublicPoint() {
+        return ECKeyUtils.spec().getCurve().decodePoint(this.publicKey);
+    }
 
-	public ECPoint getPublicPoint() {
-		return ECKeyUtils.spec().getCurve().decodePoint(this.publicKey);
-	}
+    public boolean verify(Hash hash, ECDSASignature signature) {
+        return verify(hash.toByteArray(), signature);
+    }
 
-	public boolean verify(Hash hash, ECDSASignature signature) {
-		return verify(hash.toByteArray(), signature);
-	}
+    public boolean verify(byte[] hash, ECDSASignature signature) {
+        return signature != null && ECKeyUtils.keyHandler.verify(hash, signature, this.publicKey);
+    }
 
-	public boolean verify(byte[] hash, ECDSASignature signature) {
-		if (signature == null) {
-			return false;
-		}
+    public byte[] encrypt(byte[] data) throws ECIESException {
+        return ECIES.encrypt(data, this);
+    }
 
-		try {
-			return ECKeyUtils.keyHandler.verify(hash, signature, this.publicKey);
-		} catch (CryptoException e) {
-			return false;
-		}
-	}
+    public String toBase64() {
+        return Bytes.toBase64String(this.publicKey);
+    }
 
-	public byte[] encrypt(byte[] data) throws ECIESException {
-		return ECIES.encrypt(data, this);
-	}
+    @Override
+    public int hashCode() {
+        return this.hashCode;
+    }
 
-	public String toBase64() {
-		return Bytes.toBase64String(this.publicKey);
-	}
+    @Override
+    public boolean equals(Object object) {
+        if (object == this) {
+            return true;
+        }
+        if (object instanceof ECPublicKey) {
+            ECPublicKey other = (ECPublicKey) object;
+            return this.hashCode() == other.hashCode() && Arrays.equals(this.publicKey, other.publicKey);
+        }
+        return false;
+    }
 
-	@Override
-	public int hashCode() {
-		return this.hashCode;
-	}
+    @Override
+    public String toString() {
+        return String.format("%s[%s]", getClass().getSimpleName(), toBase64());
+    }
 
-	@Override
-	public boolean equals(Object object) {
-		if (object == this) {
-			return true;
-		}
-		if (object instanceof ECPublicKey) {
-			ECPublicKey other = (ECPublicKey) object;
-			return this.hashCode() == other.hashCode() && Arrays.equals(this.publicKey, other.publicKey);
-		}
-		return false;
-	}
-
-	@Override
-	public String toString() {
-		return String.format("%s[%s]", getClass().getSimpleName(), toBase64());
-	}
-
-	private int computeHashCode() {
-		return Arrays.hashCode(this.getBytes());
-	}
-
-	private EUID computeUID() {
-		return EUID.hash256(getBytes());
-	}
+    private EUID computeUID() {
+        return EUID.hash256(getBytes());
+    }
 }

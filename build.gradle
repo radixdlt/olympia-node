@@ -102,6 +102,17 @@ jacocoTestReport {
     }
 }
 
+configurations.all {
+    resolutionStrategy.eachDependency {
+        if(it.requested.name == 'guava') {
+            it.useTarget 'com.google.guava:guava:29.0-jre'
+        }
+        if(it.requested.name == 'json') {
+            it.useTarget 'org.json:json:20180813'
+        }
+    }
+}
+
 dependencies {
     api group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.13.1'
     api group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.13.1'
@@ -126,16 +137,17 @@ dependencies {
         // Use our Guava lib
         exclude group: 'com.google.guava', module: 'guava'
     }
-    api 'com.google.guava:guava:27.1-jre'
+
+    api 'com.google.guava:guava:29.0-jre'
 
     // need at least this commit (or later): https://github.com/bitcoinj/bitcoinj/commit/7629677103dbdd80f14c63b066ed27e1fad47014
     // in order to work with BouncyCastle 1.64 or later
     // see issue: https://github.com/bitcoinj/bitcoinj/issues/1951
-    implementation('com.github.bitcoinj:bitcoinj:7c31dcb') {
+    //implementation('com.github.bitcoinj:bitcoinj:7c31dcb') {
+    api('com.github.bitcoinj:bitcoinj:7c31dcb') {
         // Use our Guava lib
         exclude group: 'com.google.guava', module: 'guava'
     }
-
 
     testCompile('org.objenesis:objenesis:3.1') { force = true } // make powermock 1.7.1 happy
     testCompile('org.javassist:javassist:3.27.0-GA') { force = true } // make powermock 1.7.1 happy

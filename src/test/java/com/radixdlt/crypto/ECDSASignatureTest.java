@@ -36,7 +36,7 @@ public class ECDSASignatureTest {
 	}
 
 	@Test
-	public void test_rfc6979_determinstic_signatures() throws CryptoException {
+	public void test_rfc6979_determinstic_signatures() throws Exception {
 
 		/// Sanity checks of Signing implementation of RFC6979 - Deterministic usage of ECDSA: https://tools.ietf.org/html/rfc6979
 		/// Test vectors: https://github.com/trezor/trezor-crypto/blob/957b8129bded180c8ac3106e61ff79a1a3df8893/tests/test_check.c#L1959-L1965
@@ -113,7 +113,7 @@ public class ECDSASignatureTest {
 		ArrayList<Map<String, String>> vectors = new Gson().fromJson(rfc6979TestVectors, type);
 		assertEquals(6, vectors.size());
 		for (Map<String, String> vector : vectors) {
-			ECKeyPair keyPair = new ECKeyPair(Bytes.fromHexString(vector.get("privateKey")));
+			ECKeyPair keyPair = ECKeyPair.fromPrivateKey(Bytes.fromHexString(vector.get("privateKey")));
 			ECPublicKey publicKey = keyPair.getPublicKey();
 
 			String expectedPublicKeyHex = vector.get("expectedPublicKeyCompressed");
