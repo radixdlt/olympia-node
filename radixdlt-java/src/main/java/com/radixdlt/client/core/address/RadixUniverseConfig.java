@@ -26,9 +26,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.io.ByteStreams;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.serialization.Serialize;
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DeserializeException;
@@ -195,8 +195,8 @@ public class RadixUniverseConfig {
 	@JsonProperty("creator")
 	private void setJsonCreator(byte[] bytes) {
 		try {
-			this.creator = new ECPublicKey(bytes);
-		} catch (CryptoException e) {
+			this.creator = ECPublicKey.fromBytes(bytes);
+		} catch (PublicKeyException e) {
 			throw new IllegalArgumentException("Failed to create public key from bytes", e);
 		}
 	}

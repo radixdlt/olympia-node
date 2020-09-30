@@ -28,8 +28,8 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import com.radixdlt.crypto.encryption.ECIESException;
 import com.radixdlt.crypto.encryption.Encryptor;
+import com.radixdlt.crypto.exception.ECIESException;
 import org.bouncycastle.util.encoders.Base64;
 
 /**

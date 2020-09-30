@@ -24,9 +24,9 @@ package com.radixdlt.client.application.translate.data;
 
 import com.google.gson.JsonArray;
 import com.radixdlt.client.application.translate.StatelessActionToParticleGroupsMapper;
-import com.radixdlt.crypto.encryption.ECIESException;
 import com.radixdlt.crypto.encryption.EncryptedPrivateKey;
 import com.radixdlt.crypto.encryption.Encryptor;
+import com.radixdlt.crypto.exception.ECIESException;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.atommodel.message.MessageParticle;
 import com.radixdlt.client.atommodel.message.MessageParticle.MessageParticleBuilder;

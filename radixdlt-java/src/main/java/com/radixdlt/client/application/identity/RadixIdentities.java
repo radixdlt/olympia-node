@@ -22,7 +22,6 @@
 
 package com.radixdlt.client.application.identity;
 
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -35,6 +34,8 @@ import java.io.Writer;
 import java.security.GeneralSecurityException;
 
 import com.radixdlt.crypto.encryption.PrivateKeyEncrypter;
+import com.radixdlt.crypto.exception.PrivateKeyException;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import org.bouncycastle.util.encoders.Base64;
 
 /**
@@ -49,8 +50,9 @@ public class RadixIdentities {
 	 * @param privateKeyBase64 the private key encoded in base 64
 	 * @return a radix identity
 	 */
-	public static RadixIdentity fromPrivateKeyBase64(String privateKeyBase64) throws CryptoException {
-		final ECKeyPair myKey = new ECKeyPair(Base64.decode(privateKeyBase64));
+	public static RadixIdentity fromPrivateKeyBase64(String privateKeyBase64)
+			throws PrivateKeyException, PublicKeyException {
+		final ECKeyPair myKey = ECKeyPair.fromPrivateKey(Base64.decode(privateKeyBase64));
 		return new LocalRadixIdentity(myKey);
 	}
 
@@ -69,7 +71,8 @@ public class RadixIdentities {
 	 * @return a radix identity
 	 * @throws IOException
 	 */
-	public static RadixIdentity loadOrCreateFile(File keyFile) throws IOException, CryptoException {
+	public static RadixIdentity loadOrCreateFile(File keyFile)
+			throws IOException, PrivateKeyException, PublicKeyException {
 		final ECKeyPair ecKeyPair;
 		if (keyFile.exists()) {
 			ecKeyPair = ECKeyPair.fromFile(keyFile);
@@ -91,7 +94,8 @@ public class RadixIdentities {
 	 * @return a radix identity
 	 * @throws IOException
 	 */
-	public static RadixIdentity loadOrCreateFile(String filePath) throws IOException, CryptoException {
+	public static RadixIdentity loadOrCreateFile(String filePath)
+			throws IOException, PrivateKeyException, PublicKeyException {
 		return loadOrCreateFile(new File(filePath));
 	}
 
@@ -104,7 +108,7 @@ public class RadixIdentities {
 	 * @throws IOException
 	 */
 	public static RadixIdentity loadOrCreateEncryptedFile(File keyFile, String password)
-			throws IOException, GeneralSecurityException, CryptoException {
+			throws IOException, GeneralSecurityException, PrivateKeyException, PublicKeyException {
 		if (!keyFile.exists()) {
 			try (Writer writer = new FileWriter(keyFile)) {
 				return createNewEncryptedIdentity(writer, password);
@@ -125,7 +129,7 @@ public class RadixIdentities {
 	 * @throws IOException
 	 */
 	public static RadixIdentity loadOrCreateEncryptedFile(String filePath, String password)
-			throws IOException, GeneralSecurityException, CryptoException {
+			throws IOException, GeneralSecurityException, PrivateKeyException, PublicKeyException {
 		return loadOrCreateEncryptedFile(new File(filePath), password);
 	}
 
@@ -138,7 +142,7 @@ public class RadixIdentities {
 	 * @throws IOException
 	 */
 	public static RadixIdentity createNewEncryptedIdentity(Writer writer, String password)
-			throws IOException, GeneralSecurityException, CryptoException {
+			throws IOException, GeneralSecurityException, PrivateKeyException, PublicKeyException {
 		String encryptedKey = PrivateKeyEncrypter.createEncryptedPrivateKey(password);
 		writer.write(encryptedKey);
 		writer.flush();
@@ -153,8 +157,8 @@ public class RadixIdentities {
 	 * @throws IOException
 	 */
 	public static RadixIdentity readEncryptedIdentity(Reader reader, String password)
-			throws IOException, GeneralSecurityException, CryptoException {
-		final ECKeyPair key = new ECKeyPair(PrivateKeyEncrypter.decryptPrivateKey(password, reader));
+			throws IOException, GeneralSecurityException, PrivateKeyException, PublicKeyException {
+		final ECKeyPair key = ECKeyPair.fromPrivateKey(PrivateKeyEncrypter.decryptPrivateKey(password, reader));
 		return new LocalRadixIdentity(key);
 	}
 }
