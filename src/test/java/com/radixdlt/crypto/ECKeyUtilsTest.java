@@ -159,4 +159,16 @@ public class ECKeyUtilsTest {
 	public void testValidatePrivateFailForShortInput() throws PrivateKeyException {
 		ECKeyUtils.validatePrivate(new byte[ECKeyPair.BYTES - 1]);
 	}
+
+	@Test(expected = PrivateKeyException.class)
+	public void testValidatePrivateFailForZeroBytes() throws PrivateKeyException {
+		ECKeyUtils.validatePrivate(new byte[ECKeyPair.BYTES]);
+	}
+
+	@Test(expected = PrivateKeyException.class)
+	public void testValidatePrivateFailForIncorrectOrder() throws PrivateKeyException {
+		var key = new byte[ECKeyPair.BYTES];
+		Arrays.fill(key, (byte) -1);
+		ECKeyUtils.validatePrivate(key);
+	}
 }
