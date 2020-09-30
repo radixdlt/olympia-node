@@ -22,6 +22,8 @@ jobs:
       script: ./gradlew jacocoTestReport sonarqube --info
     - stage: integration
       script: ./gradlew integrationTest
+    - stage: depcheck
+      script: cd faucet-service/ && ../gradlew -q dependencies
 
 cache:
   directories:
