@@ -20,6 +20,8 @@ package com.radixdlt.crypto;
 import com.radixdlt.crypto.encryption.EncryptedPrivateKey;
 import com.radixdlt.TestSetupUtils;
 import com.radixdlt.crypto.exception.ECIESException;
+import com.radixdlt.crypto.exception.PrivateKeyException;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -27,6 +29,11 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -167,5 +174,25 @@ public class ECKeyPairTest {
 
 		// Assert that KeyPair2 can be used to verify the signature of Hash1
 		assertTrue(keyPair2.getPublicKey().verify(hash1, signature1));
+	}
+
+	@Test
+	public void validateSeedBeforeUse() {
+		assertThatThrownBy(() -> ECKeyPair.fromSeed(null)).isInstanceOf(NullPointerException.class);
+		assertThatThrownBy(() -> ECKeyPair.fromSeed(new byte[]{})).isInstanceOf(IllegalArgumentException.class);
+	}
+
+	@Test
+	public void keyPairCanBeLoadedFromFile() throws IOException, PrivateKeyException, PublicKeyException {
+		File testKeyPair = new File("test-private-key.ks");
+		var sourceKeyPair = ECKeyPair.generateNew();
+
+		try (OutputStream outputStream = new FileOutputStream(testKeyPair)) {
+			outputStream.write(sourceKeyPair.getPrivateKey());
+		}
+
+		var loadedKeyPair = ECKeyPair.fromFile(testKeyPair);
+
+		assertThat(sourceKeyPair.getPrivateKey(), equalTo(loadedKeyPair.getPrivateKey()));
 	}
 }

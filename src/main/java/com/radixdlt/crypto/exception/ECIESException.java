@@ -18,9 +18,7 @@
 package com.radixdlt.crypto.exception;
 
 public class ECIESException extends CryptoException {
-
 	public ECIESException(String message, Exception exception) {
 		super(message, exception);
 	}
-
 }
