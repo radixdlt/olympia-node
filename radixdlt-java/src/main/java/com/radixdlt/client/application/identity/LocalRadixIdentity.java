@@ -23,10 +23,10 @@
 package com.radixdlt.client.application.identity;
 
 import com.radixdlt.crypto.encryption.EncryptedPrivateKey;
+import com.radixdlt.crypto.exception.CryptoException;
 import com.radixdlt.identifiers.EUID;
 
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.ECDSASignature;

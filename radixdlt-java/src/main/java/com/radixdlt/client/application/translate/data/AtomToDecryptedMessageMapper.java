@@ -38,10 +38,10 @@ import com.radixdlt.client.application.translate.AtomToExecutedActionsMapper;
 import com.radixdlt.client.application.translate.data.DecryptedMessage.EncryptionState;
 import com.radixdlt.crypto.encryption.EncryptedPrivateKey;
 import com.radixdlt.crypto.encryption.Encryptor;
+import com.radixdlt.crypto.exception.CryptoException;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.atommodel.message.MessageParticle;
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.crypto.CryptoException;
 
 import io.reactivex.Observable;
 import io.reactivex.Single;

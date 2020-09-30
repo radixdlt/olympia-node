@@ -41,12 +41,23 @@ mainClassName = 'com.radixdlt.cli.RadixCLI'
 compileJava {
     options.compilerArgs += ["-Aproject=${project.group}/${project.name}"]
 }
+
+configurations.all {
+    resolutionStrategy.eachDependency {
+        if(it.requested.name == 'guava') {
+            it.useTarget 'com.google.guava:guava:29.0-jre'
+        }
+        if(it.requested.name == 'json') {
+            it.useTarget 'org.json:json:20180813'
+        }
+    }
+}
+
 dependencies {
     compile 'org.codehaus.groovy:groovy-all:3.0.5'
     compile 'com.google.code.gson:gson:2.8.2'
     compile 'commons-cli:commons-cli:1.4'
     compile 'info.picocli:picocli:4.4.0'
-    compile('com.google.guava:guava:27.1-jre') { force = true }
     annotationProcessor 'info.picocli:picocli-codegen:4.4.0'
     compile project(":radixdlt-java")
 }
