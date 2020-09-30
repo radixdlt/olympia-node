@@ -331,7 +331,6 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 
 	@Override
 	public void processBFTUpdate(BFTUpdate update) {
-		log.trace("Processed {}", update);
 	}
 
 	// TODO: Verify headers match
