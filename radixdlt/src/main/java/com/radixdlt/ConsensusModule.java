@@ -34,6 +34,7 @@ import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTSyncRequestProcessor;
+import com.radixdlt.consensus.bft.NewViewSigner;
 import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
 import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
@@ -73,6 +74,7 @@ public final class ConsensusModule extends AbstractModule {
 		NextCommandGenerator nextCommandGenerator,
 		Hasher hasher,
 		HashSigner signer,
+		NewViewSigner newViewSigner,
 		HashVerifier verifier,
 		TimeSupplier timeSupplier,
 		SystemCounters counters
@@ -101,6 +103,7 @@ public final class ConsensusModule extends AbstractModule {
 				.proposerElection(proposerElection)
 				.validatorSet(validatorSet)
 				.timeSupplier(timeSupplier)
+				.newViewSigner(newViewSigner)
 				.build();
 	}
 

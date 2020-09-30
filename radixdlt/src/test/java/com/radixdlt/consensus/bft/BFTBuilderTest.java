@@ -55,6 +55,7 @@ public class BFTBuilderTest {
 	private Pacemaker pacemaker;
 	private VertexStore vertexStore;
 	private VertexStoreSync vertexStoreSync;
+	private NewViewSigner newViewSigner;
 	private BFTNode self;
 
 	@Before
@@ -73,6 +74,7 @@ public class BFTBuilderTest {
 		self = mock(BFTNode.class);
 		infoSender = mock(BFTInfoSender.class);
 		hasher = mock(Hasher.class);
+		newViewSigner = mock(NewViewSigner.class);
 	}
 
 	@Test
@@ -95,6 +97,7 @@ public class BFTBuilderTest {
 			.pacemaker(pacemaker)
 			.vertexStore(vertexStore)
 			.bftSyncer(vertexStoreSync)
+			.newViewSigner(newViewSigner)
 			.self(self)
 			.build();
 

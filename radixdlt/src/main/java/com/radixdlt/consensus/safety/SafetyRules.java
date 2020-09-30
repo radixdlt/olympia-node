@@ -20,13 +20,11 @@ package com.radixdlt.consensus.safety;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.HashSigner;
-import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimestampedVoteData;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.BFTHeader;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -34,7 +32,6 @@ import com.radixdlt.consensus.safety.SafetyState.Builder;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.Hash;
 
-import com.radixdlt.utils.Longs;
 import java.util.Objects;
 
 /**
@@ -87,25 +84,6 @@ public final class SafetyRules {
 		}
 
 		return new VoteData(proposedHeader, parent, toCommit);
-	}
-
-	/**
-	 * Create a signed new-view
-	 * @param nextView the view of the new-view
-	 * @param highestQC highest known qc
-	 * @param highestCommittedQC highest known committed qc
-	 * @return a signed new-view
-	 */
-	public NewView signNewView(View nextView, QuorumCertificate highestQC, QuorumCertificate highestCommittedQC) {
-		// TODO make signing more robust by including author in signed hash
-		ECDSASignature signature = this.signer.sign(Hash.hash256(Longs.toByteArray(nextView.number())));
-		return new NewView(
-			this.self,
-			nextView,
-			highestQC,
-			highestCommittedQC,
-			signature
-		);
 	}
 
 	/**

@@ -50,6 +50,7 @@ public final class BFTBuilder {
 	private HashSigner signer;
 	private HashVerifier verifier = ECPublicKey::verify;
 	private BFTInfoSender infoSender;
+	private NewViewSigner newViewSigner;
 
 	// BFT Stateful objects
 	private Pacemaker pacemaker;
@@ -138,6 +139,11 @@ public final class BFTBuilder {
 		return this;
 	}
 
+	public BFTBuilder newViewSigner(NewViewSigner newViewSigner) {
+		this.newViewSigner = newViewSigner;
+		return this;
+	}
+
 	public BFTEventProcessor build() {
 		final SafetyRules safetyRules = new SafetyRules(self, SafetyState.initialState(), hasher, countingSigner(counters, signer));
 		// PendingVotes needs a hasher that produces unique values, as it indexes by hash
@@ -148,6 +154,7 @@ public final class BFTBuilder {
 			nextCommandGenerator,
 			eventSender,
 			safetyRules,
+			newViewSigner,
 			pacemaker,
 			vertexStore,
 			bftSyncer,

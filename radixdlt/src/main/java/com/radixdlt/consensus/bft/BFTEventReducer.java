@@ -113,6 +113,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private final Pacemaker pacemaker;
 	private final ProposerElection proposerElection;
 	private final SafetyRules safetyRules;
+	private final NewViewSigner newViewSigner;
 	private final BFTValidatorSet validatorSet;
 	private final SystemCounters counters;
 	private final TimeSupplier timeSupplier;
@@ -128,6 +129,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		NextCommandGenerator nextCommandGenerator,
 		BFTEventSender sender,
 		SafetyRules safetyRules,
+		NewViewSigner newViewSigner,
 		Pacemaker pacemaker,
 		VertexStore vertexStore,
 		BFTSyncer bftSyncer,
@@ -152,12 +154,13 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		this.counters = Objects.requireNonNull(counters);
 		this.infoSender = Objects.requireNonNull(infoSender);
 		this.timeSupplier = Objects.requireNonNull(timeSupplier);
+		this.newViewSigner = Objects.requireNonNull(newViewSigner);
 		this.hasher = Objects.requireNonNull(hasher);
 	}
 
 	// Hotstuff's Event-Driven OnNextSyncView
 	private void proceedToView(View nextView) {
-		NewView newView = safetyRules.signNewView(nextView, this.vertexStore.getHighestQC(), this.vertexStore.getHighestCommittedQC());
+		NewView newView = newViewSigner.signNewView(nextView, this.vertexStore.getHighestQC(), this.vertexStore.getHighestCommittedQC());
 		BFTNode nextLeader = this.proposerElection.getProposer(nextView);
 		log.trace("Sending NEW_VIEW to {}: {}", () -> nextLeader, () ->  newView);
 		this.sender.sendNewView(newView, nextLeader);

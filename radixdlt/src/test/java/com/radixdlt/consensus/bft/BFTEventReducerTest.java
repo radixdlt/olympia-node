@@ -68,6 +68,7 @@ public class BFTEventReducerTest {
 	private SystemCounters counters;
 	private BFTInfoSender infoSender;
 	private BFTNode self;
+	private NewViewSigner newViewSigner;
 	private Hasher hasher;
 
 	@Before
@@ -85,6 +86,7 @@ public class BFTEventReducerTest {
 		this.infoSender = mock(BFTInfoSender.class);
 		this.self = mock(BFTNode.class);
 		this.hasher = mock(Hasher.class);
+		this.newViewSigner = mock(NewViewSigner.class);
 
 		when(hasher.hash(any())).thenReturn(mock(Hash.class));
 
@@ -93,6 +95,7 @@ public class BFTEventReducerTest {
 			nextCommandGenerator,
 			sender,
 			safetyRules,
+			newViewSigner,
 			pacemaker,
 			vertexStore,
 			vertexStoreSync,
