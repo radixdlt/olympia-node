@@ -68,6 +68,28 @@ jacocoTestReport {
     }
 }
 
+configurations.all {
+    resolutionStrategy.eachDependency {
+        if(it.requested.name == 'guava') {
+            it.useTarget 'com.google.guava:guava:29.0-jre'
+        }
+        if(it.requested.name == 'json') {
+            it.useTarget 'org.json:json:20180813'
+        }
+    }
+}
+
+configurations.all {
+    resolutionStrategy.eachDependency {
+        if(it.requested.name == 'guava') {
+            it.useTarget 'com.google.guava:guava:29.0-jre'
+        }
+        if(it.requested.name == 'json') {
+            it.useTarget 'org.json:json:20180813'
+        }
+    }
+}
+
 dependencies {
     api 'com.github.radixdlt:radixdlt-java-common:integration~switch-to-factory-methods-SNAPSHOT'
 
