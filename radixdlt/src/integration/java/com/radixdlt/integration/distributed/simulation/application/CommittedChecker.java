@@ -49,7 +49,7 @@ public class CommittedChecker implements TestInvariant {
 						.timeout(10, TimeUnit.SECONDS)
 						.firstOrError()
 						.ignoreElement()
-						.onErrorReturn(e -> new TestInvariantError(e.getMessage() + " " + command))
+						.onErrorReturn(e -> new TestInvariantError( "Submitted command has not been committed in 10 seconds: " + command))
 			);
 	}
 }

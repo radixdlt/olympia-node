@@ -252,9 +252,6 @@ public final class VertexStore {
 		final BFTCommittedUpdate bftCommittedUpdate = new BFTCommittedUpdate(path, proof);
 		this.vertexStoreEventSender.sendCommitted(bftCommittedUpdate);
 
-		// TODO: Stop vertex store if end of epoch?
-		// TODO: if (ledgerStateWithProof.isEndOfEpoch()) ...
-
 		VerifiedCommandsAndProof verifiedCommandsAndProof = new VerifiedCommandsAndProof(commands, proof);
 		this.ledger.commit(verifiedCommandsAndProof);
 

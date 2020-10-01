@@ -326,6 +326,17 @@ public class SimulationTest {
 			return this;
 		}
 
+		public Builder addRadixEngineValidatorRegisterUnregisterMempoolSubmissions() {
+			this.runnableBuilder.add(nodes -> {
+				RadixEngineValidatorRegistratorAndUnregistrator randomValidatorSubmittor
+					= new RadixEngineValidatorRegistratorAndUnregistrator(nodes);
+				NodeSelector nodeSelector = this.ledgerType.hasEpochs ? new EpochsNodeSelector() : new BFTValidatorSetNodeSelector();
+				LocalMempoolPeriodicSubmittor submittor = new LocalMempoolPeriodicSubmittor(randomValidatorSubmittor, nodeSelector);
+				return submittor::run;
+			});
+			return this;
+		}
+
 		public Builder addRadixEngineValidatorRegisterUnregisterMempoolSubmissions(String submittedInvariantName) {
 			this.runnableBuilder.add(nodes -> {
 				RadixEngineValidatorRegistratorAndUnregistrator randomValidatorSubmittor

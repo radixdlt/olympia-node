@@ -123,7 +123,7 @@ public class RadixEngineModule extends AbstractModule {
 		EngineStore<LedgerAtom> engineStore,
 		AtomChecker<LedgerAtom> ledgerAtomChecker
 	) {
-		final int minValidators = 1; // Default 1 so can debug in IDE, possibly from properties at some point
+		final int minValidators = 2; // TODO: Fix pacemaker so can Default 1 so can debug in IDE, possibly from properties at some point
 
 		RadixEngine<LedgerAtom> radixEngine = new RadixEngine<>(
 			constraintMachine,
