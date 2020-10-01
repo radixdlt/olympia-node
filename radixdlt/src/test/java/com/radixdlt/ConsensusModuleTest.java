@@ -38,14 +38,15 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
-import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
+import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker.PacemakerInfoSender;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.SignedNewViewToLeaderSender.BFTNewViewSender;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
-import com.radixdlt.consensus.sync.VertexStoreSync.SyncVerticesRequestSender;
+import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
@@ -87,6 +88,7 @@ public class ConsensusModuleTest {
 				bind(Ledger.class).toInstance(mock(Ledger.class));
 				bind(SyncLedgerRequestSender.class).toInstance(mock(SyncLedgerRequestSender.class));
 				bind(BFTEventSender.class).toInstance(mock(BFTEventSender.class));
+				bind(BFTNewViewSender.class).toInstance(mock(BFTNewViewSender.class));
 				bind(SyncVerticesRequestSender.class).toInstance(mock(SyncVerticesRequestSender.class));
 				bind(SyncVerticesResponseSender.class).toInstance(mock(SyncVerticesResponseSender.class));
 				bind(VertexStoreEventSender.class).toInstance(mock(VertexStoreEventSender.class));
@@ -97,7 +99,7 @@ public class ConsensusModuleTest {
 				bind(HashVerifier.class).toInstance(mock(HashVerifier.class));
 				bind(HashSigner.class).toInstance(mock(HashSigner.class));
 				bind(BFTNode.class).annotatedWith(Names.named("self")).toInstance(mock(BFTNode.class));
-				bind(BFTInfoSender.class).toInstance(mock(BFTInfoSender.class));
+				bind(PacemakerInfoSender.class).toInstance(mock(PacemakerInfoSender.class));
 				bind(PacemakerTimeoutSender.class).toInstance(mock(PacemakerTimeoutSender.class));
 				bind(BFTConfiguration.class).toInstance(bftConfiguration);
 			}

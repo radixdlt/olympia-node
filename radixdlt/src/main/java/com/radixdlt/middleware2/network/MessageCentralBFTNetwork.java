@@ -18,6 +18,7 @@
 package com.radixdlt.middleware2.network;
 
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.SignedNewViewToLeaderSender.BFTNewViewSender;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.util.Objects;
 
@@ -47,7 +48,7 @@ import io.reactivex.rxjava3.subjects.PublishSubject;
  * BFT Network sending and receiving layer used on top of the MessageCentral
  * layer.
  */
-public final class MessageCentralBFTNetwork implements BFTEventSender, BFTEventsRx {
+public final class MessageCentralBFTNetwork implements BFTEventSender, BFTNewViewSender, BFTEventsRx {
 	private static final Logger log = LogManager.getLogger();
 
 	private final BFTNode self;
@@ -91,12 +92,12 @@ public final class MessageCentralBFTNetwork implements BFTEventSender, BFTEvents
 	}
 
 	@Override
-	public void sendNewView(NewView newView, BFTNode newViewLeader) {
-		if (this.self.equals(newViewLeader)) {
+	public void sendNewView(NewView newView, BFTNode nextLeader) {
+		if (this.self.equals(nextLeader)) {
 			this.localMessages.onNext(newView);
 		} else {
 			ConsensusEventMessage message = new ConsensusEventMessage(this.magic, newView);
-			send(message, newViewLeader);
+			send(message, nextLeader);
 		}
 	}
 

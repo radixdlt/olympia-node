@@ -127,6 +127,17 @@ jacocoTestReport {
     }
 }
 
+configurations.all {
+    resolutionStrategy.eachDependency {
+        if(it.requested.name == 'guava') {
+            it.useTarget 'com.google.guava:guava:29.0-jre'
+        }
+        if(it.requested.name == 'json') {
+            it.useTarget 'org.json:json:20180813'
+        }
+    }
+}
+
 dependencies {
     compile 'com.radixdlt:radix-engine-library:feature~simple-branching-SNAPSHOT'
     compile 'io.reactivex.rxjava3:rxjava:3.0.0'

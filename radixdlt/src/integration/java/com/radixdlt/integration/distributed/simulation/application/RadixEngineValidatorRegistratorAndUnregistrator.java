@@ -22,12 +22,12 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.Atom;
+import com.radixdlt.atommodel.AtomAlreadySignedException;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.middleware.ParticleGroup;
@@ -82,7 +82,7 @@ public class RadixEngineValidatorRegistratorAndUnregistrator implements CommandG
 			ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom);
 			final byte[] payload = DefaultSerialization.getInstance().toDson(clientAtom, Output.ALL);
 			command = new Command(payload);
-		} catch (CryptoException | LedgerAtomConversionException e) {
+		} catch (AtomAlreadySignedException | LedgerAtomConversionException e) {
 			throw new RuntimeException();
 		}
 

@@ -22,7 +22,6 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.bft.View;
 
 import java.util.Objects;
-import java.util.Optional;
 
 /**
  * The state maintained to ensure the safety of the consensus system.
@@ -30,17 +29,15 @@ import java.util.Optional;
 public final class SafetyState {
 	private final View lastVotedView; // the last view this node voted on (and is thus safe)
 	private final View lockedView; // the highest 2-chain head
-	private final QuorumCertificate genericQC; // the highest 1-chain head
 
 	@Inject
 	protected SafetyState() {
-		this(View.genesis(), View.genesis(), null);
+		this(View.genesis(), View.genesis());
 	}
 
-	SafetyState(View lastVotedView, View lockedView, QuorumCertificate genericQC) {
+	SafetyState(View lastVotedView, View lockedView) {
 		this.lastVotedView = Objects.requireNonNull(lastVotedView);
 		this.lockedView = Objects.requireNonNull(lockedView);
-		this.genericQC = genericQC;
 	}
 
 	static class Builder {
@@ -66,17 +63,10 @@ public final class SafetyState {
 			return this;
 		}
 
-		public Builder qc(QuorumCertificate genericQC) {
-			this.genericQC = genericQC;
-			this.changed = true;
-			return this;
-		}
-
 		public SafetyState build() {
 			return changed ? new SafetyState(
 				lastVotedView == null ? original.lastVotedView : lastVotedView,
-				lockedView == null ? original.lockedView : lockedView,
-				genericQC == null ? original.genericQC : genericQC
+				lockedView == null ? original.lockedView : lockedView
 			) : original;
 		}
 	}
@@ -99,30 +89,21 @@ public final class SafetyState {
 		}
 		SafetyState that = (SafetyState) o;
 		return Objects.equals(lastVotedView, that.lastVotedView)
-			&& Objects.equals(lockedView, that.lockedView)
-			&& Objects.equals(genericQC, that.genericQC);
+			&& Objects.equals(lockedView, that.lockedView);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(lastVotedView, lockedView, genericQC);
+		return Objects.hash(lastVotedView, lockedView);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("SafetyState{lastVotedView=%s, lockedView=%s, genericQC=%s}", lastVotedView, lockedView, genericQC);
+		return String.format("SafetyState{lastVotedView=%s, lockedView=%s}", lastVotedView, lockedView);
 	}
 
 	public View getLastVotedView() {
 		return lastVotedView;
-	}
-
-	public Optional<QuorumCertificate> getGenericQC() {
-		return Optional.ofNullable(genericQC);
-	}
-
-	public Optional<View> getGenericView() {
-		return getGenericQC().map(QuorumCertificate::getView);
 	}
 
 	public View getLockedView() {

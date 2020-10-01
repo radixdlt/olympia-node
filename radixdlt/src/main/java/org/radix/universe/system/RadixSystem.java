@@ -20,12 +20,12 @@ package org.radix.universe.system;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.network.transport.TransportInfo;
 
 import org.radix.containers.BasicContainer;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.CryptoException;
 
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput;
@@ -145,8 +145,8 @@ public class RadixSystem extends BasicContainer
 	@JsonProperty("key")
 	void setJsonKey(byte[] newKey) throws DeserializeException {
 		try {
-			key = new ECPublicKey(newKey);
-		} catch (CryptoException cex) {
+			key = ECPublicKey.fromBytes(newKey);
+		} catch (PublicKeyException cex) {
 			throw new DeserializeException("Invalid key", cex);
 		}
 	}

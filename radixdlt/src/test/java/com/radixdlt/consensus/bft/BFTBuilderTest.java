@@ -30,12 +30,10 @@ import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
-import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
-import com.radixdlt.consensus.bft.BFTEventReducer.EndOfEpochSender;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.consensus.sync.VertexStoreSync;
+import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
@@ -46,9 +44,7 @@ import org.junit.Test;
 public class BFTBuilderTest {
 	private NextCommandGenerator nextCommandGenerator;
 	private BFTEventSender eventSender;
-	private EndOfEpochSender endOfEpochSender;
 	private SystemCounters counters;
-	private BFTInfoSender infoSender;
 	private BFTValidatorSet validatorSet;
 	private ProposerElection proposerElection;
 	private Hasher hasher;
@@ -56,14 +52,13 @@ public class BFTBuilderTest {
 	private HashVerifier verifier = ECPublicKey::verify;
 	private Pacemaker pacemaker;
 	private VertexStore vertexStore;
-	private VertexStoreSync vertexStoreSync;
+	private BFTSync vertexStoreSync;
 	private BFTNode self;
 
 	@Before
 	public void setup() {
 		nextCommandGenerator = mock(NextCommandGenerator.class);
 		eventSender = mock(BFTEventSender.class);
-		endOfEpochSender = mock(EndOfEpochSender.class);
 		counters = mock(SystemCounters.class);
 		validatorSet = mock(BFTValidatorSet.class);
 		proposerElection = mock(ProposerElection.class);
@@ -72,9 +67,8 @@ public class BFTBuilderTest {
 		verifier = mock(HashVerifier.class);
 		pacemaker = mock(Pacemaker.class);
 		vertexStore = mock(VertexStore.class);
-		vertexStoreSync = mock(VertexStoreSync.class);
+		vertexStoreSync = mock(BFTSync.class);
 		self = mock(BFTNode.class);
-		infoSender = mock(BFTInfoSender.class);
 		hasher = mock(Hasher.class);
 	}
 
@@ -87,9 +81,7 @@ public class BFTBuilderTest {
 		BFTEventProcessor processor = BFTBuilder.create()
 			.nextCommandGenerator(nextCommandGenerator)
 			.eventSender(eventSender)
-			.endOfEpochSender(endOfEpochSender)
 			.counters(counters)
-			.infoSender(infoSender)
 			.timeSupplier(System::currentTimeMillis)
 			.validatorSet(validatorSet)
 			.proposerElection(proposerElection)

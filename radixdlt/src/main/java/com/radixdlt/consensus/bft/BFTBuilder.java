@@ -23,8 +23,6 @@ import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
-import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
-import com.radixdlt.consensus.bft.BFTEventReducer.EndOfEpochSender;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
@@ -41,7 +39,6 @@ public final class BFTBuilder {
 	// Connected modules
 	private NextCommandGenerator nextCommandGenerator;
 	private BFTEventSender eventSender;
-	private EndOfEpochSender endOfEpochSender;
 	private SystemCounters counters;
 	private TimeSupplier timeSupplier;
 
@@ -51,7 +48,6 @@ public final class BFTBuilder {
 	private Hasher hasher;
 	private HashSigner signer;
 	private HashVerifier verifier = ECPublicKey::verify;
-	private BFTInfoSender infoSender;
 
 	// BFT Stateful objects
 	private Pacemaker pacemaker;
@@ -99,11 +95,6 @@ public final class BFTBuilder {
 		return this;
 	}
 
-	public BFTBuilder endOfEpochSender(EndOfEpochSender endOfEpochSender) {
-		this.endOfEpochSender = endOfEpochSender;
-		return this;
-	}
-
 	public BFTBuilder validatorSet(BFTValidatorSet validatorSet) {
 		this.validatorSet = validatorSet;
 		return this;
@@ -111,11 +102,6 @@ public final class BFTBuilder {
 
 	public BFTBuilder counters(SystemCounters counters) {
 		this.counters = counters;
-		return this;
-	}
-
-	public BFTBuilder infoSender(BFTInfoSender infoSender) {
-		this.infoSender = infoSender;
 		return this;
 	}
 
@@ -154,7 +140,6 @@ public final class BFTBuilder {
 			self,
 			nextCommandGenerator,
 			eventSender,
-			endOfEpochSender,
 			safetyRules,
 			pacemaker,
 			vertexStore,
@@ -163,7 +148,6 @@ public final class BFTBuilder {
 			proposerElection,
 			validatorSet,
 			counters,
-			infoSender,
 			timeSupplier,
 			hasher
 		);
