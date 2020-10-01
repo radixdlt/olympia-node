@@ -22,11 +22,11 @@ import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
@@ -191,13 +191,13 @@ public class Atom {
 	}
 
 	// SIGNATURES //
-	public boolean verify(Collection<ECPublicKey> keys) throws CryptoException {
+	public boolean verify(Collection<ECPublicKey> keys) throws PublicKeyException {
 		return this.verify(keys, keys.size());
 	}
 
-	public boolean verify(Collection<ECPublicKey> keys, int requirement) throws CryptoException {
+	public boolean verify(Collection<ECPublicKey> keys, int requirement) throws PublicKeyException {
 		if (this.signatures.isEmpty()) {
-			throw new CryptoException("No signatures set, can not verify");
+			throw new PublicKeyException("No signatures set, can not verify");
 		}
 
 		int verified = 0;
@@ -220,9 +220,9 @@ public class Atom {
 		return verified >= requirement;
 	}
 
-	public boolean verify(ECPublicKey key) throws CryptoException {
+	public boolean verify(ECPublicKey key) throws PublicKeyException {
 		if (this.signatures.isEmpty()) {
-			throw new CryptoException("No signatures set, can not verify");
+			throw new PublicKeyException("No signatures set, can not verify");
 		}
 
 		Hash hash = this.getHash();
@@ -248,7 +248,7 @@ public class Atom {
 		this.signatures.put(id, signature);
 	}
 
-	public void sign(ECKeyPair key) throws CryptoException {
+	public void sign(ECKeyPair key) throws AtomAlreadySignedException {
 		if (!this.signatures.isEmpty()) {
 			throw new AtomAlreadySignedException("Atom already signed, cannot sign again.");
 		}
@@ -257,7 +257,7 @@ public class Atom {
 		this.setSignature(key.euid(), key.sign(hash.toByteArray()));
 	}
 
-	public void sign(Collection<ECKeyPair> keys) throws CryptoException {
+	public void sign(Collection<ECKeyPair> keys) throws AtomAlreadySignedException {
 		if (!this.signatures.isEmpty()) {
 			throw new AtomAlreadySignedException("Atom already signed, cannot sign again.");
 		}
