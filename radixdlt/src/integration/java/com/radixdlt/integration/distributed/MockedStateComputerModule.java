@@ -32,6 +32,7 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 
+import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import java.util.Optional;
 
@@ -60,8 +61,8 @@ public class MockedStateComputerModule extends AbstractModule {
 	private StateComputer stateComputer() {
 		return new StateComputer() {
 			@Override
-			public Optional<BFTValidatorSet> prepare(ImmutableList<Command> commands, View view) {
-				return Optional.empty();
+			public StateComputerResult prepare(ImmutableList<Command> commands, View view) {
+				return new StateComputerResult();
 			}
 
 			@Override

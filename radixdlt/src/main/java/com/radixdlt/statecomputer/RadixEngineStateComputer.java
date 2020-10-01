@@ -19,6 +19,7 @@ package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSet.Builder;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -28,6 +29,7 @@ import com.radixdlt.engine.RadixEngine.RadixEngineBranch;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
+import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.middleware2.store.StoredCommittedCommand;
@@ -89,10 +91,6 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 		this.committedAtomSender = Objects.requireNonNull(committedAtomSender);
 	}
 
-	public VerifiedLedgerHeaderAndProof getEpochProof(long epoch) {
-		return epochProofs.get(epoch);
-	}
-
 	// TODO Move this to a different class class when unstored committed atoms is fixed
 	@Override
 	public VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start, int batchSize) {
@@ -145,26 +143,30 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 	}
 
 	@Override
-	public Optional<BFTValidatorSet> prepare(ImmutableList<Command> uncommittedChain, View view) {
+	public StateComputerResult prepare(ImmutableList<Command> uncommittedChain, View view) {
 		RadixEngineBranch<LedgerAtom> transientBranch = this.radixEngine.transientBranch();
+		Builder<Command> failedCommandsBuilder = ImmutableSet.builder();
 		for (Command command : uncommittedChain) {
 			ClientAtom clientAtom = mapCommand(command);
 			if (clientAtom != null) {
 				try {
 					transientBranch.checkAndStore(clientAtom);
 				} catch (RadixEngineException e) {
+					failedCommandsBuilder.add(command);
 				}
 			}
 		}
+
+		ImmutableSet<Command> failedCommands = failedCommandsBuilder.build();
 
 		this.radixEngine.deleteBranches();
 
 		if (view.compareTo(epochChangeView) >= 0) {
 			RadixEngineValidatorSetBuilder validatorSetBuilder = transientBranch.getComputedState(RadixEngineValidatorSetBuilder.class);
-			return Optional.of(validatorSetBuilder.build());
+			return new StateComputerResult(failedCommands, validatorSetBuilder.build());
 		}
 
-		return Optional.empty();
+		return new StateComputerResult(failedCommands);
 	}
 
 	private ClientAtom mapCommand(Command command) {

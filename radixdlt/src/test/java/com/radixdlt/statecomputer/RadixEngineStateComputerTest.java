@@ -78,25 +78,6 @@ public class RadixEngineStateComputerTest {
 	}
 
 	@Test
-	public void when_prepare_vertex_metadata_equal_to_high_view__then_should_return_epoch_change() {
-		VerifiedVertex vertex = mock(VerifiedVertex.class);
-		when(vertex.getView()).thenReturn(epochHighView);
-		RadixEngineValidatorSetBuilder builder = mock(RadixEngineValidatorSetBuilder.class);
-		RadixEngineBranch<LedgerAtom> branch = TypedMocks.rmock(RadixEngineBranch.class);
-		when(radixEngine.transientBranch()).thenReturn(branch);
-		when(branch.getComputedState(any())).thenReturn(builder);
-		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
-		when(builder.build()).thenReturn(validatorSet);
-
-		assertThat(stateComputer.prepare(ImmutableList.of(), epochHighView)).contains(validatorSet);
-	}
-
-	@Test
-	public void when_prepare_vertex_metadata_lower_to_high_view__then_should_return_not_epoch_change() {
-		assertThat(stateComputer.prepare(ImmutableList.of(), epochHighView.previous())).isEmpty();
-	}
-
-	@Test
 	public void when_execute_vertex_with_command__then_is_stored_in_engine() throws Exception {
 		ClientAtom clientAtom = mock(ClientAtom.class);
 		CMInstruction cmInstruction = mock(CMInstruction.class);

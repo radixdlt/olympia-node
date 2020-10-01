@@ -18,6 +18,7 @@
 package com.radixdlt.ledger;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.Command;
@@ -44,8 +45,34 @@ import java.util.stream.Stream;
  * Synchronizes execution
  */
 public final class StateComputerLedger implements Ledger, NextCommandGenerator {
+	public static class StateComputerResult {
+		private final ImmutableSet<Command> failedCommands;
+		private final BFTValidatorSet nextValidatorSet;
+
+		public StateComputerResult(ImmutableSet<Command> failedCommands, BFTValidatorSet nextValidatorSet) {
+			this.failedCommands = Objects.requireNonNull(failedCommands);
+			this.nextValidatorSet = nextValidatorSet;
+		}
+
+		public StateComputerResult(ImmutableSet<Command> failedCommands) {
+			this(failedCommands, null);
+		}
+
+		public StateComputerResult() {
+			this(ImmutableSet.of(), null);
+		}
+
+		Optional<BFTValidatorSet> getNextValidatorSet() {
+			return Optional.ofNullable(nextValidatorSet);
+		}
+
+		ImmutableSet<Command> getFailedCommands() {
+			return failedCommands;
+		}
+	}
+
 	public interface StateComputer {
-		Optional<BFTValidatorSet> prepare(ImmutableList<Command> commands, View view);
+		StateComputerResult prepare(ImmutableList<Command> commands, View view);
 		void commit(VerifiedCommandsAndProof verifiedCommandsAndProof);
 	}
 
@@ -104,26 +131,33 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 				return Optional.empty();
 			}
 
-			Optional<ImmutableList<Command>> prevCommandsMaybe = this.verifier.verifyAndGetExtension(
+			ImmutableList<Command> concatenatedCommands = this.verifier.verifyAndGetExtension(
 				this.currentLedgerHeader.getAccumulatorState(),
 				prevCommands,
 				parentAccumulatorState
+			).orElseThrow(() -> new IllegalStateException("Evidence of safety break current: "
+				+ this.currentLedgerHeader.getAccumulatorState() + " prepare head: " + parentAccumulatorState)
 			);
 
-			ImmutableList<Command> uncommittedCommands = prevCommandsMaybe
-				.orElseThrow(() -> new IllegalStateException("Evidence of safety break."));
+			final ImmutableList<Command> uncommittedCommands;
+
 			final LedgerHeader parent = vertex.getParentHeader().getLedgerHeader();
+			if (parent.isEndOfEpoch() || vertex.getCommand() == null) {
+				// Don't execute atom if in process of epoch change
+				uncommittedCommands = concatenatedCommands;
+			} else {
+				uncommittedCommands = Streams.concat(concatenatedCommands.stream(), Stream.of(vertex.getCommand()))
+					.collect(ImmutableList.toImmutableList());
+			}
+			StateComputerResult result = stateComputer.prepare(uncommittedCommands, vertex.getView());
+
 			final AccumulatorState accumulatorState;
 			if (parent.isEndOfEpoch() || vertex.getCommand() == null) {
 				// Don't execute atom if in process of epoch change
 				accumulatorState = parent.getAccumulatorState();
 			} else {
 				accumulatorState = this.accumulator.accumulate(parent.getAccumulatorState(), vertex.getCommand());
-				uncommittedCommands = Streams.concat(uncommittedCommands.stream(), Stream.of(vertex.getCommand()))
-					.collect(ImmutableList.toImmutableList());
 			}
-
-			Optional<BFTValidatorSet> nextValidatorSet = stateComputer.prepare(uncommittedCommands, vertex.getView());
 
 			final long timestamp = vertex.getQC().getTimestampedSignatures().weightedTimestamp();
 			LedgerHeader ledgerHeader = LedgerHeader.create(
@@ -131,7 +165,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 				vertex.getView(),
 				accumulatorState,
 				timestamp,
-				nextValidatorSet.orElse(null)
+				result.getNextValidatorSet().orElse(null)
 			);
 
 			return Optional.of(ledgerHeader);

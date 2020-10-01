@@ -45,6 +45,7 @@ import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.utils.TypedMocks;
 
@@ -173,7 +174,9 @@ public class StateComputerLedgerTest {
 
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of(mock(BFTValidator.class)));
-		when(stateComputer.prepare(eq(ImmutableList.of()), eq(view))).thenReturn(Optional.of(validatorSet));
+		StateComputerResult result = mock(StateComputerResult.class);
+		when(result.getNextValidatorSet()).thenReturn(Optional.of(validatorSet));
+		when(stateComputer.prepare(eq(ImmutableList.of()), eq(view))).thenReturn(result);
 		when(accumulatorVerifier.verifyAndGetExtension(any(), any(), any())).thenReturn(Optional.of(ImmutableList.of()));
 
 		Optional<LedgerHeader> nextPrepared = stateComputerLedger.prepare(new LinkedList<>(), vertex);

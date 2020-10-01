@@ -18,6 +18,7 @@
 package com.radixdlt.integration.distributed;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
@@ -34,6 +35,7 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 
+import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import java.util.Optional;
 import java.util.function.Function;
@@ -80,11 +82,11 @@ public class MockedStateComputerWithEpochsModule extends AbstractModule {
 		return new StateComputer() {
 			private long epoch = 1;
 			@Override
-			public Optional<BFTValidatorSet> prepare(ImmutableList<Command> commands, View view) {
+			public StateComputerResult prepare(ImmutableList<Command> commands, View view) {
 				if (view.compareTo(epochHighView) >= 0) {
-					return Optional.of(validatorSetMapping.apply(epoch + 1));
+					return new StateComputerResult(ImmutableSet.of(), validatorSetMapping.apply(epoch + 1));
 				} else {
-					return Optional.empty();
+					return new StateComputerResult();
 				}
 			}
 
