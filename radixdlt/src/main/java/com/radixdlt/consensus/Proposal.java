@@ -21,9 +21,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.errorprone.annotations.Immutable;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -66,8 +65,8 @@ public final class Proposal implements RequiresSyncConsensusEvent {
 		@JsonProperty("author") byte[] author,
 		@JsonProperty("signature") ECDSASignature signature,
 		@JsonProperty("payload") long payload
-	) throws CryptoException {
-		this(vertex, committedQC, BFTNode.create(new ECPublicKey(author)), signature, payload);
+	) throws PublicKeyException {
+		this(vertex, committedQC, BFTNode.fromPublicKeyBytes(author), signature, payload);
 	}
 
 	public Proposal(UnverifiedVertex vertex, QuorumCertificate committedQC, BFTNode author, ECDSASignature signature, long payload) {

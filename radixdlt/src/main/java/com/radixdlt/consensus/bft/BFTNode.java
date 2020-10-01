@@ -18,6 +18,8 @@
 package com.radixdlt.consensus.bft;
 
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.exception.PublicKeyException;
+
 import java.util.Objects;
 
 /**
@@ -37,6 +39,10 @@ public final class BFTNode {
 
 	public static BFTNode create(ECPublicKey key) {
 		return new BFTNode(key, key.euid().toString().substring(0, 6));
+	}
+
+	public static BFTNode fromPublicKeyBytes(byte[] key) throws PublicKeyException {
+		return create(ECPublicKey.fromBytes(key));
 	}
 
 	public ECPublicKey getKey() {

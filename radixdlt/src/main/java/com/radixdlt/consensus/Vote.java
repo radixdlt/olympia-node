@@ -21,9 +21,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.errorprone.annotations.Immutable;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -63,8 +62,8 @@ public final class Vote implements ConsensusEvent {
 		@JsonProperty("vote_data") TimestampedVoteData voteData,
 		@JsonProperty("signature") ECDSASignature signature,
 		@JsonProperty("payload") long payload
-	) throws CryptoException {
-		this(BFTNode.create(new ECPublicKey(author)), voteData, signature, payload);
+	) throws PublicKeyException {
+		this(BFTNode.fromPublicKeyBytes(author), voteData, signature, payload);
 	}
 
 	public Vote(BFTNode author, TimestampedVoteData voteData, ECDSASignature signature, long payload) {

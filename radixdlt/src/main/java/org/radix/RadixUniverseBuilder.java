@@ -19,10 +19,13 @@ package org.radix;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.atommodel.AtomAlreadySignedException;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.atommodel.Atom;
+import com.radixdlt.crypto.exception.CryptoException;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.atommodel.message.MessageParticle;
 import com.radixdlt.atomos.RRIParticle;
@@ -31,7 +34,6 @@ import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.identifiers.RRI;
 
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware.SpunParticle;
@@ -178,7 +180,7 @@ public final class RadixUniverseBuilder {
 			if (!genesisAtom.verify(this.universeKey.getPublicKey())) {
 				throw new IllegalStateException("Signature verification failed - GENESIS TRANSACTION HASH: " + genesisAtom.getHash());
 			}
-		} catch (CryptoException ex) {
+		} catch (PublicKeyException | AtomAlreadySignedException ex) {
 			throw new IllegalStateException("Error while signing universe", ex);
 		}
 

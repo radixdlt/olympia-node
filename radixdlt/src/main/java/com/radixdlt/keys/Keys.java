@@ -21,9 +21,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.RadixKeyStore;
+import com.radixdlt.crypto.exception.KeyStoreException;
+import com.radixdlt.crypto.exception.PrivateKeyException;
+import com.radixdlt.crypto.exception.PublicKeyException;
 
 /**
  * Helper methods for key handling.
@@ -60,7 +62,7 @@ public final class Keys {
 		String keyName,
 		String keyStorePasswordEnv,
 		String keyPasswordEnv
-	) throws IOException, CryptoException {
+	) throws IOException, KeyStoreException, PrivateKeyException, PublicKeyException {
 		char[] keyPassword = readPassword(keyPasswordEnv);
 		char[] keyStorePassword = readPassword(keyStorePasswordEnv);
 		try (RadixKeyStore ks = RadixKeyStore.fromFile(new File(keyStorePath), keyStorePassword, true)) {

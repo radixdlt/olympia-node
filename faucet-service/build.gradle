@@ -36,8 +36,19 @@ versionFile {
     file = new File("$buildDir/resources/main", 'version.properties')
 }
 
+configurations.all {
+    resolutionStrategy.eachDependency {
+        if(it.requested.name == 'guava') {
+            it.useTarget 'com.google.guava:guava:29.0-jre'
+        }
+        if(it.requested.name == 'json') {
+            it.useTarget 'org.json:json:20180813'
+        }
+    }
+}
+
 dependencies {
-    compile 'com.radixdlt:radixdlt-java:feature~rpnv1-185-token-fees-SNAPSHOT'
+    compile 'com.radixdlt:radixdlt-java:rc~1.0-beta.16-SNAPSHOT'
     compile 'io.undertow:undertow-core:2.0.6.Final'
     testCompile group: 'junit', name: 'junit', version: '4.12'
 
