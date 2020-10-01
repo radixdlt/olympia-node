@@ -25,6 +25,12 @@ import javax.annotation.Nullable;
  * TODO: Fix interfaces as it seems like a still rather awkward interface
  */
 public interface BFTSyncer {
+	enum SyncResult {
+		SYNCED,
+		IN_PROGRESS,
+		INVALID
+	}
+
 	/**
 	 * Initiate a sync to a given QC and a committedQC. Returns true if already synced
 	 * otherwise will initiate a syncing process.
@@ -36,7 +42,5 @@ public interface BFTSyncer {
 	 * @param author the original author of the qc
 	 * @return true if already synced, false otherwise
 	 */
-	boolean syncToQC(QuorumCertificate qc, QuorumCertificate committedQC, @Nullable BFTNode author);
-
-	void clearSyncs();
+	SyncResult syncToQC(QuorumCertificate qc, QuorumCertificate committedQC, @Nullable BFTNode author);
 }

@@ -29,7 +29,7 @@ import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.BFTSyncRequestProcessor;
 import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.liveness.PacemakerRx;
-import com.radixdlt.consensus.sync.VertexStoreSync;
+import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.utils.ThreadFactories;
 import io.reactivex.rxjava3.core.Observable;
@@ -70,7 +70,7 @@ public class BFTRunner implements ModuleRunner {
 		PacemakerRx pacemakerRx,
 		SyncVerticesRPCRx rpcRx,
 		BFTEventProcessor bftEventProcessor,
-		VertexStoreSync vertexStoreSync,
+		BFTSync vertexStoreSync,
 		BFTSyncRequestProcessor requestProcessor,
 		@Named("self") BFTNode self
 	) {

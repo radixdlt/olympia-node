@@ -33,6 +33,7 @@ public interface SystemCounters {
 		BFT_REJECTED("bft.rejected"),
 		BFT_TIMEOUT("bft.timeout"),
 		BFT_VERTEX_STORE_SIZE("bft.vertex_store_size"),
+		BFT_VERTEX_STORE_FORKS("bft.vertex_store_forks"),
 		BFT_VOTE_RTT_COUNT("bft.vote_rtt.count"),
 		BFT_VOTE_RTT_MAX("bft.vote_rtt.max"),
 		BFT_VOTE_RTT_MEAN("bft.vote_rtt.mean"),

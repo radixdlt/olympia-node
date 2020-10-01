@@ -29,6 +29,7 @@ import com.radixdlt.consensus.bft.BFTUpdateProcessor;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdateProcessor;
@@ -50,9 +51,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Manages keeping the VertexStore in sync for consensus
+ * Manages keeping the VertexStore and pacemaker in sync for consensus
  */
-public final class VertexStoreSync implements BFTSyncResponseProcessor, BFTUpdateProcessor, BFTSyncer, LedgerUpdateProcessor<LedgerUpdate> {
+public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcessor, BFTSyncer, LedgerUpdateProcessor<LedgerUpdate> {
 	private enum SyncStage {
 		PREPARING,
 		GET_COMMITTED_VERTICES,
@@ -70,8 +71,8 @@ public final class VertexStoreSync implements BFTSyncResponseProcessor, BFTUpdat
 		private SyncStage syncStage;
 		private final LinkedList<VerifiedVertex> fetched = new LinkedList<>();
 
-		SyncState(Hash localSyncId, QuorumCertificate qc, QuorumCertificate committedQC, BFTNode author) {
-			this.localSyncId = localSyncId;
+		SyncState(QuorumCertificate qc, QuorumCertificate committedQC, BFTNode author) {
+			this.localSyncId = qc.getProposed().getVertexId();
 			Pair<BFTHeader, VerifiedLedgerHeaderAndProof> pair = committedQC.getCommittedAndLedgerStateProof()
 				.orElseThrow(() -> new IllegalStateException("committedQC must have a commit"));
 			this.committedHeader = pair.getFirst();
@@ -115,6 +116,7 @@ public final class VertexStoreSync implements BFTSyncResponseProcessor, BFTUpdat
 
 	private static final Logger log = LogManager.getLogger();
 	private final VertexStore vertexStore;
+	private final Pacemaker pacemaker;
 	private final Map<Hash, SyncState> syncing = new HashMap<>();
 	private final TreeMap<LedgerHeader, List<Hash>> ledgerSyncing;
 	private final Map<Pair<Hash, Integer>, List<Hash>> bftSyncing = new HashMap<>();
@@ -122,14 +124,16 @@ public final class VertexStoreSync implements BFTSyncResponseProcessor, BFTUpdat
 	private final SyncLedgerRequestSender syncLedgerRequestSender;
 	private VerifiedLedgerHeaderAndProof currentLedgerHeader;
 
-	public VertexStoreSync(
+	public BFTSync(
 		VertexStore vertexStore,
+		Pacemaker pacemaker,
 		Comparator<LedgerHeader> ledgerHeaderComparator,
 		SyncVerticesRequestSender requestSender,
 		SyncLedgerRequestSender syncLedgerRequestSender,
 		VerifiedLedgerHeaderAndProof currentLedgerHeader
 	) {
 		this.vertexStore = vertexStore;
+		this.pacemaker = pacemaker;
 		this.ledgerSyncing = new TreeMap<>(ledgerHeaderComparator);
 		this.requestSender = requestSender;
 		this.syncLedgerRequestSender = syncLedgerRequestSender;
@@ -137,45 +141,38 @@ public final class VertexStoreSync implements BFTSyncResponseProcessor, BFTUpdat
 	}
 
 	@Override
-	public boolean syncToQC(QuorumCertificate qc, QuorumCertificate committedQC, @Nullable BFTNode author) {
+	public SyncResult syncToQC(QuorumCertificate qc, QuorumCertificate committedQC, @Nullable BFTNode author) {
+		final Hash vertexId = qc.getProposed().getVertexId();
 		if (qc.getProposed().getView().compareTo(vertexStore.getRoot().getView()) < 0) {
-			return true;
+			return SyncResult.INVALID;
 		}
 
 		if (vertexStore.addQC(qc)) {
-			return true;
+			// TODO: check if already sent highest
+			this.pacemaker.processQC(vertexStore.getHighestQC(), vertexStore.getHighestCommittedQC());
+			return SyncResult.SYNCED;
 		}
 
 		// TODO: Move this check into pre-check
 		// Bad genesis qc, ignore...
 		if (qc.getView().isGenesis()) {
 			log.warn("SYNC_TO_QC: Bad Genesis: {} {}", qc, committedQC);
-			return false;
+			return SyncResult.INVALID;
 		}
 
 		log.trace("SYNC_TO_QC: Need sync: {} {}", qc, committedQC);
 
-		final Hash vertexId = qc.getProposed().getVertexId();
 		if (syncing.containsKey(vertexId)) {
-			// TODO: what if this committedQC is greater than the one currently in the queue
-			// TODO: then should possibly replace the current one
-			return false;
+			return SyncResult.IN_PROGRESS;
 		}
 
 		if (author == null) {
 			throw new IllegalStateException("Syncing required but author wasn't provided.");
 		}
 
-		this.startSync(vertexId, qc, committedQC, author);
+		this.startSync(qc, committedQC, author);
 
-		return false;
-	}
-
-	@Override
-	public void clearSyncs() {
-		ledgerSyncing.clear();
-		bftSyncing.clear();
-		syncing.clear();
+		return SyncResult.IN_PROGRESS;
 	}
 
 	private boolean requiresLedgerSync(SyncState syncState) {
@@ -188,9 +185,9 @@ public final class VertexStoreSync implements BFTSyncResponseProcessor, BFTUpdat
 		return false;
 	}
 
-	private void startSync(Hash vertexId, QuorumCertificate qc, QuorumCertificate committedQC, BFTNode author) {
-		final SyncState syncState = new SyncState(vertexId, qc, committedQC, author);
-		syncing.put(vertexId, syncState);
+	private void startSync(QuorumCertificate qc, QuorumCertificate committedQC, BFTNode author) {
+		final SyncState syncState = new SyncState(qc, committedQC, author);
+		syncing.put(syncState.localSyncId, syncState);
 		if (requiresLedgerSync(syncState)) {
 			this.doCommittedSync(syncState);
 		} else {
@@ -236,9 +233,8 @@ public final class VertexStoreSync implements BFTSyncResponseProcessor, BFTUpdat
 		}
 
 		// At this point we are guaranteed to be in sync with the committed state
-		if (!vertexStore.addQC(syncState.qc)) {
-			doQCSync(syncState);
-		}
+		this.syncing.remove(syncState.localSyncId);
+		this.syncToQC(syncState.qc, syncState.committedQC, syncState.author);
 	}
 
 	private void processVerticesResponseForCommittedSync(SyncState syncState, GetVerticesResponse response) {
@@ -270,9 +266,10 @@ public final class VertexStoreSync implements BFTSyncResponseProcessor, BFTUpdat
 	private void processVerticesResponseForQCSync(SyncState syncState, GetVerticesResponse response) {
 		VerifiedVertex vertex = response.getVertices().get(0);
 		syncState.fetched.addFirst(vertex);
-		Hash nextVertexId = vertex.getParentId();
+		Hash parentId = vertex.getParentId();
 
-		if (vertexStore.containsVertex(nextVertexId)) {
+		if (vertexStore.containsVertex(parentId)) {
+			// TODO: combine
 			for (VerifiedVertex v: syncState.fetched) {
 				if (!vertexStore.addQC(v.getQC())) {
 					log.info("GET_VERTICES failed: {}", syncState.qc);
@@ -281,12 +278,15 @@ public final class VertexStoreSync implements BFTSyncResponseProcessor, BFTUpdat
 
 				vertexStore.insertVertex(v);
 			}
-			vertexStore.addQC(syncState.qc);
+
+			// Finish it off
+			this.syncing.remove(syncState.localSyncId);
+			this.syncToQC(syncState.qc, syncState.committedQC, syncState.author);
 		} else {
 			log.info("SYNC_VERTICES: Sending further GetVerticesRequest for qc={} fetched={} root={}",
 				syncState.qc, syncState.fetched.size(), vertexStore.getRoot());
 
-			this.sendBFTSyncRequest(syncState, nextVertexId, 1);
+			this.sendBFTSyncRequest(syncState, parentId, 1);
 		}
 	}
 
@@ -331,8 +331,6 @@ public final class VertexStoreSync implements BFTSyncResponseProcessor, BFTUpdat
 
 	@Override
 	public void processBFTUpdate(BFTUpdate update) {
-		log.trace("Processed {}", update);
-		syncing.remove(update.getInsertedVertex().getId());
 	}
 
 	// TODO: Verify headers match

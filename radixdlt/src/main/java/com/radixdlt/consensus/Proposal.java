@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.errorprone.annotations.Immutable;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.serialization.DsonOutput;
@@ -80,6 +81,11 @@ public final class Proposal implements RequiresSyncConsensusEvent {
 	@Override
 	public long getEpoch() {
 		return vertex.getQC().getProposed().getLedgerHeader().getEpoch();
+	}
+
+	@Override
+	public View getView() {
+		return vertex.getView();
 	}
 
 	@Override

@@ -31,7 +31,7 @@ public class NoneCommittedInvariant implements TestInvariant {
 	public Observable<TestInvariantError> check(RunningNetwork network) {
 		return Observable.merge(
 			network.getNodes().stream().map(
-				node -> network.getInfo(node).committedVertices().map(v -> Pair.of(node, v)))
+				node -> network.getInfo(node).bftCommittedUpdates().map(v -> Pair.of(node, v)))
 				.collect(Collectors.toList())
 		).map(pair -> new TestInvariantError(pair.getFirst() + " node committed a vertex " + pair.getSecond()));
 	}

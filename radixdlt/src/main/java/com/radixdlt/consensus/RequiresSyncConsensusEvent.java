@@ -17,6 +17,8 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.consensus.bft.View;
+
 /**
  * A consensus event which requires syncing to be effectively
  * processed
@@ -34,4 +36,10 @@ public interface RequiresSyncConsensusEvent extends ConsensusEvent {
 	 * @return highest known committed QC of peer
 	 */
 	QuorumCertificate getCommittedQC();
+
+	/**
+	 * Get the view the consensus event is meant for
+	 * @return view of consensus event
+	 */
+	View getView();
 }

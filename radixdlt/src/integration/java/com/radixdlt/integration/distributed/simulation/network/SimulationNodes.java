@@ -28,12 +28,9 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.name.Named;
 import com.google.inject.name.Names;
 import com.google.inject.util.Modules;
-import com.radixdlt.ConsensusModule;
-import com.radixdlt.ConsensusRxModule;
 import com.radixdlt.ModuleRunner;
-import com.radixdlt.SystemInfoRxModule;
 import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.bft.VerifiedVertex;
+import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
@@ -101,9 +98,6 @@ public class SimulationNodes {
 					return BFTNode.create(selfKey.getPublicKey());
 				}
 			},
-			new ConsensusModule(pacemakerTimeout, 2.0, 0), // Use constant timeout for now
-			new ConsensusRxModule(),
-			new SystemInfoRxModule(),
 			new SimulationNetworkModule(underlyingNetwork),
 			baseModule
 		);
@@ -130,7 +124,7 @@ public class SimulationNodes {
 
 		Observable<EpochChange> latestEpochChanges();
 
-		Observable<Pair<BFTNode, VerifiedVertex>> committedVertices();
+		Observable<Pair<BFTNode, BFTCommittedUpdate>> bftCommittedUpdates();
 
 		Observable<Pair<BFTNode, LedgerUpdate>> ledgerUpdates();
 
@@ -182,11 +176,11 @@ public class SimulationNodes {
 			}
 
 			@Override
-			public Observable<Pair<BFTNode, VerifiedVertex>> committedVertices() {
-				Set<Observable<Pair<BFTNode, VerifiedVertex>>> committedVertices = nodeInstances.stream()
+			public Observable<Pair<BFTNode, BFTCommittedUpdate>> bftCommittedUpdates() {
+				Set<Observable<Pair<BFTNode, BFTCommittedUpdate>>> committedVertices = nodeInstances.stream()
 					.map(i -> {
 						BFTNode node = i.getInstance(Key.get(BFTNode.class, Names.named("self")));
-						return i.getInstance(InfoRx.class).committedVertices()
+						return i.getInstance(InfoRx.class).bftCommittedUpdates()
 							.map(v -> Pair.of(node, v));
 					})
 					.collect(Collectors.toSet());

@@ -98,6 +98,7 @@ public final class NewView implements RequiresSyncConsensusEvent {
 		return author;
 	}
 
+	@Override
 	public View getView() {
 		return view;
 	}
