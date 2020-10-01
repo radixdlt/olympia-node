@@ -32,9 +32,8 @@ repositories {
 }
 
 test {
+    jvmArgs ['-Djavax.net.ssl.trustStore=/etc/ssl/certs/java/cacerts','-Djavax.net.ssl.trustStoreType=jks']
     systemProperty "java.security.egd", "file:/dev/urandom"
-    systemProperty "javax.net.ssl.trustStore", "/etc/ssl/certs/java/cacerts"
-    systemProperty "javax.net.ssl", ".trustStoreType=jks"
     systemProperties(System.getProperties())
 }
 
