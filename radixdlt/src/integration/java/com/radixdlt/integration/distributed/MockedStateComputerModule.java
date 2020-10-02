@@ -34,7 +34,6 @@ import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import java.util.Optional;
 
 public class MockedStateComputerModule extends AbstractModule {
 	@Provides

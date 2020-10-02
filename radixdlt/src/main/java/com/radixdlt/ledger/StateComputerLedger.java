@@ -120,8 +120,9 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 
 	@Override
 	public Optional<LedgerHeader> prepare(LinkedList<VerifiedVertex> previous, VerifiedVertex vertex) {
-		AccumulatorState parentAccumulatorState = vertex.getParentHeader().getLedgerHeader().getAccumulatorState();
-		ImmutableList<Command> prevCommands = previous.stream()
+		final LedgerHeader parent = vertex.getParentHeader().getLedgerHeader();
+		final AccumulatorState parentAccumulatorState = parent.getAccumulatorState();
+		final ImmutableList<Command> prevCommands = previous.stream()
 			.map(VerifiedVertex::getCommand)
 			.filter(Objects::nonNull)
 			.collect(ImmutableList.toImmutableList());
@@ -131,7 +132,12 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 				return Optional.empty();
 			}
 
-			ImmutableList<Command> concatenatedCommands = this.verifier.verifyAndGetExtension(
+			// Don't execute atom if in process of epoch change
+			if (parent.isEndOfEpoch()) {
+				return Optional.of(parent);
+			}
+
+			final ImmutableList<Command> concatenatedCommands = this.verifier.verifyAndGetExtension(
 				this.currentLedgerHeader.getAccumulatorState(),
 				prevCommands,
 				parentAccumulatorState
@@ -141,18 +147,16 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 
 			final ImmutableList<Command> uncommittedCommands;
 
-			final LedgerHeader parent = vertex.getParentHeader().getLedgerHeader();
-			if (parent.isEndOfEpoch() || vertex.getCommand() == null) {
-				// Don't execute atom if in process of epoch change
+			if (vertex.getCommand() == null) {
 				uncommittedCommands = concatenatedCommands;
 			} else {
 				uncommittedCommands = Streams.concat(concatenatedCommands.stream(), Stream.of(vertex.getCommand()))
 					.collect(ImmutableList.toImmutableList());
 			}
-			StateComputerResult result = stateComputer.prepare(uncommittedCommands, vertex.getView());
+			final StateComputerResult result = stateComputer.prepare(uncommittedCommands, vertex.getView());
 
 			final AccumulatorState accumulatorState;
-			if (parent.isEndOfEpoch() || vertex.getCommand() == null) {
+			if (vertex.getCommand() == null) {// || result.getFailedCommands().contains(vertex.getCommand())) {
 				// Don't execute atom if in process of epoch change
 				accumulatorState = parent.getAccumulatorState();
 			} else {

@@ -26,9 +26,8 @@ import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.Hash;
-import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.utils.DsonSHA256Hasher;
 
 /**
  * Module which maintains crypto primitives for consensus
@@ -39,21 +38,7 @@ public final class CryptoModule extends AbstractModule {
 		// Configuration
 		bind(HashVerifier.class).toInstance(ECPublicKey::verify);
 		bind(Serialization.class).toProvider(DefaultSerialization::getInstance);
-	}
-
-	@Provides
-	Hasher hasher(Serialization serialization) {
-		return new Hasher() {
-			@Override
-			public Hash hash(Object o) {
-				return Hash.of(serialization.toDson(o, Output.HASH));
-			}
-
-			@Override
-			public Hash hashBytes(byte[] bytes) {
-				return Hash.of(bytes);
-			}
-		};
+		bind(Hasher.class).to(DsonSHA256Hasher.class);
 	}
 
 	@Provides

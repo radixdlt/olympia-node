@@ -37,7 +37,6 @@ import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import java.util.Optional;
 import java.util.function.Function;
 
 public class MockedStateComputerWithEpochsModule extends AbstractModule {

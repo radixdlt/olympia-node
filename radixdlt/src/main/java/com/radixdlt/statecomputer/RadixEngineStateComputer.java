@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSet.Builder;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngine.RadixEngineBranch;
@@ -42,7 +41,6 @@ import com.radixdlt.sync.CommittedReader;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.TreeMap;
 import java.util.function.Consumer;
 
