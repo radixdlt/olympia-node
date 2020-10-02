@@ -20,11 +20,13 @@ package com.radixdlt.consensus.bft;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
+import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.UInt256;
 import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
@@ -50,10 +52,10 @@ public final class BFTValidator {
 
 	@JsonCreator
 	private BFTValidator(
-		@JsonProperty("node") ECPublicKey nodeKey,
+		@JsonProperty("node") String nodeKey,
 		@JsonProperty("power") UInt256 power
 	) {
-		this.node = Objects.requireNonNull(BFTNode.create(nodeKey));
+		this.node = Objects.requireNonNull(toBFTNode(nodeKey));
 		this.power = Objects.requireNonNull(power);
 	}
 
@@ -79,8 +81,20 @@ public final class BFTValidator {
 
 	@JsonProperty("node")
 	@DsonOutput(Output.ALL)
-	private ECPublicKey getSerializerView() {
-		return this.node.getKey();
+	private String getSerializerNodeKey() {
+		return encodePublicKey(this.node);
+	}
+
+	private static String encodePublicKey(BFTNode key) {
+		return Bytes.toHexString(key.getKey().getBytes());
+	}
+
+	private static BFTNode toBFTNode(String str) {
+		try {
+			return BFTNode.fromPublicKeyBytes(Bytes.fromHexString(str));
+		} catch (PublicKeyException e) {
+			throw new IllegalStateException("Error decoding public key", e);
+		}
 	}
 
 	@Override
