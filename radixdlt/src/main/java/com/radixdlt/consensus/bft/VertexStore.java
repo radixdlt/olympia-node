@@ -188,29 +188,31 @@ public final class VertexStore {
 			throw new MissingParentException(vertex.getParentId());
 		}
 
-		if (!vertex.hasDirectParent()) {
-			counters.increment(CounterType.BFT_INDIRECT_PARENT);
-		}
-
-		// TODO: Don't check for state computer errors for now so that we don't
-		// TODO: have to deal with failing leader proposals
-		// TODO: Reinstate this when ProposalGenerator + Mempool can guarantee correct proposals
-		// TODO: (also see commitVertex->storeAtom)
-		if (!vertices.containsKey(vertex.getId())) {
-			vertices.put(vertex.getId(), vertex);
-			int numChildren = vertexNumChildren.merge(vertex.getParentId(), 1, Integer::sum);
-			if (numChildren > 1) {
-				this.counters.increment(CounterType.BFT_VERTEX_STORE_FORKS);
-			}
-
-			updateVertexStoreSize();
-
-			final BFTUpdate update = new BFTUpdate(vertex);
-			bftUpdateSender.sendBFTUpdate(update);
-		}
-
 		LinkedList<VerifiedVertex> previous = getPathFromRoot(vertex.getParentId());
-		return ledger.prepare(previous, vertex)
+		Optional<PreparedVertex> preparedVertexMaybe = ledger.prepare(previous, vertex);
+		preparedVertexMaybe.ifPresent(preparedVertex -> {
+			// TODO: Don't check for state computer errors for now so that we don't
+			// TODO: have to deal with failing leader proposals
+			// TODO: Reinstate this when ProposalGenerator + Mempool can guarantee correct proposals
+			// TODO: (also see commitVertex->storeAtom)
+			if (!vertices.containsKey(vertex.getId())) {
+				vertices.put(vertex.getId(), vertex);
+				int numChildren = vertexNumChildren.merge(vertex.getParentId(), 1, Integer::sum);
+				if (numChildren > 1) {
+					this.counters.increment(CounterType.BFT_VERTEX_STORE_FORKS);
+				}
+				if (!vertex.hasDirectParent()) {
+					this.counters.increment(CounterType.BFT_INDIRECT_PARENT);
+				}
+
+				updateVertexStoreSize();
+
+				final BFTUpdate update = new BFTUpdate(vertex);
+				bftUpdateSender.sendBFTUpdate(update);
+			}
+		});
+
+		return preparedVertexMaybe
 			.map(executedVertex -> new BFTHeader(vertex.getView(), vertex.getId(), executedVertex.getLedgerHeader()));
 	}
 
