@@ -214,7 +214,7 @@ public final class VertexStore {
 
 		LinkedList<VerifiedVertex> previous = getPathFromRoot(vertex.getParentId());
 		return ledger.prepare(previous, vertex)
-			.map(ledgerHeader -> new BFTHeader(vertex.getView(), vertex.getId(), ledgerHeader));
+			.map(executedVertex -> new BFTHeader(vertex.getView(), vertex.getId(), executedVertex.getLedgerHeader()));
 	}
 
 	/**

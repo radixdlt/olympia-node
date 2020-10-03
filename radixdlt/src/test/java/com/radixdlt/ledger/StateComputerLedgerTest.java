@@ -39,6 +39,7 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.ExecutedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
@@ -76,6 +77,8 @@ public class StateComputerLedgerTest {
 	private UnverifiedVertex genesis;
 	private VerifiedVertex genesisVertex;
 	private QuorumCertificate genesisQC;
+
+	private final Command nextCommand = new Command(new byte[] {0});
 
 	private final long genesisEpoch = 3L;
 	private final long genesisStateVersion = 123L;
@@ -155,13 +158,13 @@ public class StateComputerLedgerTest {
 		final VerifiedVertex proposedVertex = new VerifiedVertex(unverifiedVertex, hasher.hash(unverifiedVertex));
 
 		// Act
-		Optional<LedgerHeader> nextPrepared = sut.prepare(new LinkedList<>(), proposedVertex);
+		Optional<ExecutedVertex> nextPrepared = sut.prepare(new LinkedList<>(), proposedVertex);
 
 		// Assert
 		assertThat(nextPrepared)
-			.hasValueSatisfying(l -> assertThat(l.isEndOfEpoch()).isFalse());
+			.hasValueSatisfying(x -> assertThat(x.getLedgerHeader().isEndOfEpoch()).isFalse());
 		assertThat(nextPrepared)
-			.hasValueSatisfying(l -> assertThat(l.getAccumulatorState()).isEqualTo(ledgerHeader.getAccumulatorState()));
+			.hasValueSatisfying(x -> assertThat(x.getLedgerHeader().getAccumulatorState()).isEqualTo(ledgerHeader.getAccumulatorState()));
 	}
 
 	@Test
@@ -169,17 +172,17 @@ public class StateComputerLedgerTest {
 		// Arrange
 		genesisIsEndOfEpoch(true);
 		when(stateComputer.prepare(any(), any())).thenReturn(new StateComputerResult());
-		final UnverifiedVertex unverifiedVertex = new UnverifiedVertex(genesisQC, View.of(1), new Command(new byte[] { 0 }));
+		final UnverifiedVertex unverifiedVertex = new UnverifiedVertex(genesisQC, View.of(1), nextCommand);
 		final VerifiedVertex proposedVertex = new VerifiedVertex(unverifiedVertex, hasher.hash(unverifiedVertex));
 
 		// Act
-		Optional<LedgerHeader> nextPrepared = sut.prepare(new LinkedList<>(), proposedVertex);
+		Optional<ExecutedVertex> nextPrepared = sut.prepare(new LinkedList<>(), proposedVertex);
 
 		// Assert
 		assertThat(nextPrepared)
-			.hasValueSatisfying(l -> assertThat(l.isEndOfEpoch()).isTrue());
+			.hasValueSatisfying(x -> assertThat(x.getLedgerHeader().isEndOfEpoch()).isTrue());
 		assertThat(nextPrepared)
-			.hasValueSatisfying(l -> assertThat(l.getAccumulatorState()).isEqualTo(ledgerHeader.getAccumulatorState()));
+			.hasValueSatisfying(x -> assertThat(x.getLedgerHeader().getAccumulatorState()).isEqualTo(ledgerHeader.getAccumulatorState()));
 	}
 
 	@Test
@@ -189,20 +192,19 @@ public class StateComputerLedgerTest {
 		when(stateComputer.prepare(any(), any())).thenReturn(new StateComputerResult());
 
 		// Act
-		final Command command = new Command(new byte[] { 0 });
-		final UnverifiedVertex unverifiedVertex = new UnverifiedVertex(genesisQC, View.of(1), command);
+		final UnverifiedVertex unverifiedVertex = new UnverifiedVertex(genesisQC, View.of(1), nextCommand);
 		final VerifiedVertex proposedVertex = new VerifiedVertex(unverifiedVertex, hasher.hash(unverifiedVertex));
-		Optional<LedgerHeader> nextPrepared = sut.prepare(new LinkedList<>(), proposedVertex);
+		Optional<ExecutedVertex> nextPrepared = sut.prepare(new LinkedList<>(), proposedVertex);
 
 		// Assert
-		assertThat(nextPrepared).hasValueSatisfying(l -> assertThat(l.isEndOfEpoch()).isFalse());
-		assertThat(nextPrepared.flatMap(l ->
+		assertThat(nextPrepared).hasValueSatisfying(x -> assertThat(x.getLedgerHeader().isEndOfEpoch()).isFalse());
+		assertThat(nextPrepared.flatMap(x ->
 			accumulatorVerifier.verifyAndGetExtension(
 				ledgerHeader.getAccumulatorState(),
-				ImmutableList.of(command),
-				l.getAccumulatorState()
+				ImmutableList.of(nextCommand),
+				x.getLedgerHeader().getAccumulatorState()
 			))
-		).contains(ImmutableList.of(command));
+		).contains(ImmutableList.of(nextCommand));
 	}
 
 	@Test
@@ -210,7 +212,6 @@ public class StateComputerLedgerTest {
 		// Arrange
 		genesisIsEndOfEpoch(false);
 		when(stateComputer.prepare(any(), any())).thenReturn(new StateComputerResult());
-		final Command command = new Command(new byte[] { 0 });
 		final AccumulatorState accumulatorState = new AccumulatorState(genesisStateVersion - 1, Hash.ZERO_HASH);
 		final LedgerHeader ledgerHeader = LedgerHeader.create(
 			genesisEpoch,
@@ -227,7 +228,7 @@ public class StateComputerLedgerTest {
 			ledgerHeader,
 			new TimestampedECDSASignatures()
 		);
-		VerifiedCommandsAndProof verified = new VerifiedCommandsAndProof(ImmutableList.of(command), header);
+		VerifiedCommandsAndProof verified = new VerifiedCommandsAndProof(ImmutableList.of(nextCommand), header);
 
 		// Act
 		sut.commit(verified);

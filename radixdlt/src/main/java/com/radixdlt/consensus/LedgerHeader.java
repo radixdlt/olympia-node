@@ -106,6 +106,16 @@ public final class LedgerHeader {
 		return new LedgerHeader(epoch, view, accumulatorState, timestamp, validatorSet == null ? null : validatorSet.getValidators());
 	}
 
+	public LedgerHeader updateViewAndTimestamp(View view, long timestamp) {
+		return new LedgerHeader(
+			this.epoch,
+			view,
+			this.accumulatorState,
+			timestamp,
+			this.nextValidators
+		);
+	}
+
 	@JsonProperty("view")
 	@DsonOutput(Output.ALL)
 	private Long getSerializerView() {

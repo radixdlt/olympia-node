@@ -61,7 +61,7 @@ public class VertexStoreTest {
 		// No type check issues with mocking generic here
 		Ledger ssc = mock(Ledger.class);
 		this.ledger = ssc;
-		when(this.ledger.prepare(any(), any())).thenReturn(Optional.of(mock(LedgerHeader.class)));
+		when(this.ledger.prepare(any(), any())).thenReturn(Optional.of(mock(ExecutedVertex.class)));
 		this.vertexStoreEventSender = mock(VertexStoreEventSender.class);
 		this.counters = mock(SystemCounters.class);
 		this.bftUpdateSender = mock(BFTUpdateSender.class);

@@ -26,6 +26,8 @@ import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.Ledger;
+import com.radixdlt.consensus.bft.ExecutedVertex;
+import com.radixdlt.consensus.bft.ExecutedVertex.CommandStatus;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
@@ -119,13 +121,14 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	}
 
 	@Override
-	public Optional<LedgerHeader> prepare(LinkedList<VerifiedVertex> previous, VerifiedVertex vertex) {
-		final LedgerHeader parent = vertex.getParentHeader().getLedgerHeader();
-		final AccumulatorState parentAccumulatorState = parent.getAccumulatorState();
+	public Optional<ExecutedVertex> prepare(LinkedList<VerifiedVertex> previous, VerifiedVertex vertex) {
+		final LedgerHeader parentHeader = vertex.getParentHeader().getLedgerHeader();
+		final AccumulatorState parentAccumulatorState = parentHeader.getAccumulatorState();
 		final ImmutableList<Command> prevCommands = previous.stream()
 			.map(VerifiedVertex::getCommand)
 			.filter(Objects::nonNull)
 			.collect(ImmutableList.toImmutableList());
+		final long timestamp = vertex.getQC().getTimestampedSignatures().weightedTimestamp();
 
 		synchronized (lock) {
 			if (this.currentLedgerHeader.getStateVersion() > parentAccumulatorState.getStateVersion()) {
@@ -133,8 +136,11 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			}
 
 			// Don't execute atom if in process of epoch change
-			if (parent.isEndOfEpoch()) {
-				return Optional.of(parent);
+			if (parentHeader.isEndOfEpoch()) {
+				final ExecutedVertex executedVertex = vertex
+					.withHeader(parentHeader.updateViewAndTimestamp(vertex.getView(), timestamp))
+					.andCommandStatus(CommandStatus.IGNORED);
+				return Optional.of(executedVertex);
 			}
 
 			final ImmutableList<Command> concatenatedCommands = this.verifier.verifyAndGetExtension(
@@ -155,24 +161,29 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			}
 			final StateComputerResult result = stateComputer.prepare(uncommittedCommands, vertex.getView());
 
+			final CommandStatus commandStatus;
 			final AccumulatorState accumulatorState;
-			if (vertex.getCommand() == null) {// || result.getFailedCommands().contains(vertex.getCommand())) {
-				// Don't execute atom if in process of epoch change
-				accumulatorState = parent.getAccumulatorState();
+			if (vertex.getCommand() == null) {
+				commandStatus = CommandStatus.IGNORED;
+				accumulatorState = parentHeader.getAccumulatorState();
+			/* } else if (result.getFailedCommands().contains(vertex.getCommand())) {
+				commandStatus = CommandStatus.FAILED;
+				accumulatorState = parentHeader.getAccumulatorState();
+			 */
 			} else {
-				accumulatorState = this.accumulator.accumulate(parent.getAccumulatorState(), vertex.getCommand());
+				commandStatus = CommandStatus.SUCCESS;
+				accumulatorState = this.accumulator.accumulate(parentHeader.getAccumulatorState(), vertex.getCommand());
 			}
 
-			final long timestamp = vertex.getQC().getTimestampedSignatures().weightedTimestamp();
-			LedgerHeader ledgerHeader = LedgerHeader.create(
-				parent.getEpoch(),
+			final LedgerHeader ledgerHeader = LedgerHeader.create(
+				parentHeader.getEpoch(),
 				vertex.getView(),
 				accumulatorState,
 				timestamp,
 				result.getNextValidatorSet().orElse(null)
 			);
 
-			return Optional.of(ledgerHeader);
+			return Optional.of(vertex.withHeader(ledgerHeader).andCommandStatus(commandStatus));
 		}
 	}
 
