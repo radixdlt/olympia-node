@@ -58,7 +58,7 @@ public final class VertexStore {
 	private final BFTUpdateSender bftUpdateSender;
 	private final Ledger ledger;
 	private final SystemCounters counters;
-	private final Map<Hash, VerifiedVertex> vertices = new HashMap<>();
+	private final Map<Hash, PreparedVertex> vertices = new HashMap<>();
 	private final Map<Hash, Integer> vertexNumChildren = new HashMap<>();
 
 	// These should never be null
@@ -195,8 +195,8 @@ public final class VertexStore {
 			// TODO: have to deal with failing leader proposals
 			// TODO: Reinstate this when ProposalGenerator + Mempool can guarantee correct proposals
 			// TODO: (also see commitVertex->storeAtom)
-			if (!vertices.containsKey(vertex.getId())) {
-				vertices.put(vertex.getId(), vertex);
+			if (!vertices.containsKey(preparedVertex.getId())) {
+				vertices.put(vertex.getId(), preparedVertex);
 				int numChildren = vertexNumChildren.merge(vertex.getParentId(), 1, Integer::sum);
 				if (numChildren > 1) {
 					this.counters.increment(CounterType.BFT_VERTEX_STORE_FORKS);
@@ -229,7 +229,7 @@ public final class VertexStore {
 		}
 
 		final Hash vertexId = header.getVertexId();
-		final VerifiedVertex tipVertex = vertices.get(vertexId);
+		final VerifiedVertex tipVertex = vertices.get(vertexId).getVertex();
 		if (tipVertex == null) {
 			throw new IllegalStateException("Committing vertex not in store: " + header);
 		}
@@ -262,10 +262,10 @@ public final class VertexStore {
 	public LinkedList<VerifiedVertex> getPathFromRoot(Hash vertexId) {
 		final LinkedList<VerifiedVertex> path = new LinkedList<>();
 
-		VerifiedVertex vertex = vertices.get(vertexId);
+		PreparedVertex vertex = vertices.get(vertexId);
 		while (vertex != null) {
-			path.addFirst(vertex);
-			vertex = vertices.get(vertex.getParentId());
+			path.addFirst(vertex.getVertex());
+			vertex = vertices.get(vertex.getVertex().getParentId());
 		}
 
 		return path;
@@ -304,10 +304,10 @@ public final class VertexStore {
 		Hash nextId = vertexId;
 		ImmutableList.Builder<VerifiedVertex> builder = ImmutableList.builderWithExpectedSize(count);
 		for (int i = 0; i < count; i++) {
-			VerifiedVertex vertex = this.vertices.get(nextId);
+			final PreparedVertex preparedVertex = this.vertices.get(nextId);
 			final VerifiedVertex verifiedVertex;
-			if (vertex != null) {
-				verifiedVertex = vertex;
+			if (preparedVertex != null) {
+				verifiedVertex = preparedVertex.getVertex();
 			} else if (nextId.equals(rootVertex.getId())) {
 				verifiedVertex = rootVertex;
 			} else {
@@ -315,7 +315,7 @@ public final class VertexStore {
 			}
 
 			builder.add(verifiedVertex);
-			nextId = vertex.getParentId();
+			nextId = verifiedVertex.getParentId();
 		}
 
 		return Optional.of(builder.build());

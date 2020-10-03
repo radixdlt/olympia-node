@@ -18,6 +18,7 @@
 package com.radixdlt.consensus.bft;
 
 import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.crypto.Hash;
 import java.util.Objects;
 
 public final class PreparedVertex {
@@ -35,6 +36,10 @@ public final class PreparedVertex {
 		this.vertex = Objects.requireNonNull(vertex);
 		this.ledgerHeader = Objects.requireNonNull(ledgerHeader);
 		this.commandStatus = commandStatus;
+	}
+
+	public Hash getId() {
+		return vertex.getId();
 	}
 
 	/**
