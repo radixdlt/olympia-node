@@ -20,7 +20,7 @@ package com.radixdlt.consensus.bft;
 import com.radixdlt.consensus.LedgerHeader;
 import java.util.Objects;
 
-public final class ExecutedVertex {
+public final class PreparedVertex {
 	public enum CommandStatus {
 		SUCCESS, IGNORED, FAILED
 	}
@@ -31,7 +31,7 @@ public final class ExecutedVertex {
 
 	private final CommandStatus commandStatus;
 
-	ExecutedVertex(VerifiedVertex vertex, LedgerHeader ledgerHeader, CommandStatus commandStatus) {
+	PreparedVertex(VerifiedVertex vertex, LedgerHeader ledgerHeader, CommandStatus commandStatus) {
 		this.vertex = Objects.requireNonNull(vertex);
 		this.ledgerHeader = Objects.requireNonNull(ledgerHeader);
 		this.commandStatus = commandStatus;

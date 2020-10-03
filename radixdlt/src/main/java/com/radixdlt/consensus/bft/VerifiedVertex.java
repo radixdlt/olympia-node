@@ -22,7 +22,7 @@ import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.UnverifiedVertex;
-import com.radixdlt.consensus.bft.ExecutedVertex.CommandStatus;
+import com.radixdlt.consensus.bft.PreparedVertex.CommandStatus;
 import com.radixdlt.crypto.Hash;
 import java.util.Objects;
 
@@ -86,11 +86,11 @@ public final class VerifiedVertex {
 
 
 	public interface ExecutedVertexBuilder {
-		ExecutedVertex andCommandStatus(CommandStatus commandStatus);
+		PreparedVertex andCommandStatus(CommandStatus commandStatus);
 	}
 
 	public ExecutedVertexBuilder withHeader(LedgerHeader ledgerHeader) {
-		return status -> new ExecutedVertex(this, ledgerHeader, status);
+		return status -> new PreparedVertex(this, ledgerHeader, status);
 	}
 
 	@Override
