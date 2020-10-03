@@ -62,10 +62,9 @@ public final class VertexStore {
 	private final Map<Hash, Integer> vertexNumChildren = new HashMap<>();
 
 	// These should never be null
-	private Hash rootId;
+	private VerifiedVertex rootVertex;
 	private QuorumCertificate highestQC;
 	private QuorumCertificate highestCommittedQC;
-	private VerifiedLedgerHeaderAndProof ledgerHeaderAndProof;
 
 	public VertexStore(
 		VerifiedVertex rootVertex,
@@ -108,7 +107,7 @@ public final class VertexStore {
 	}
 
 	public VerifiedVertex getRoot() {
-		return this.vertices.get(this.rootId);
+		return rootVertex;
 	}
 
 	public void rebuild(VerifiedVertex rootVertex, QuorumCertificate rootQC, QuorumCertificate rootCommitQC, List<VerifiedVertex> vertices) {
@@ -127,11 +126,10 @@ public final class VertexStore {
 
 		this.vertices.clear();
 		this.vertexNumChildren.clear();
-		this.rootId = rootVertex.getId();
+		this.rootVertex = rootVertex;
 		this.highestQC = rootQC;
 		this.vertexStoreEventSender.highQC(rootQC);
 		this.highestCommittedQC = rootCommitQC;
-		this.vertices.put(rootVertex.getId(), rootVertex);
 
 		for (VerifiedVertex vertex : vertices) {
 			if (!addQC(vertex.getQC())) {
@@ -142,13 +140,12 @@ public final class VertexStore {
 		}
 	}
 
-
 	public boolean containsVertex(Hash vertexId) {
-		return vertices.containsKey(vertexId);
+		return vertices.containsKey(vertexId) || rootVertex.getId().equals(vertexId);
 	}
 
 	public boolean addQC(QuorumCertificate qc) {
-		if (!vertices.containsKey(qc.getProposed().getVertexId())) {
+		if (!this.containsVertex(qc.getProposed().getVertexId())) {
 			return false;
 		}
 
@@ -187,7 +184,7 @@ public final class VertexStore {
 	 * @return a bft header if creation of next header is successful.
 	 */
 	public Optional<BFTHeader> insertVertex(VerifiedVertex vertex) {
-		if (!vertices.containsKey(vertex.getParentId())) {
+		if (!this.containsVertex(vertex.getParentId())) {
 			throw new MissingParentException(vertex.getParentId());
 		}
 
@@ -225,7 +222,7 @@ public final class VertexStore {
 	 * @param header the proof of commit
 	 */
 	private void commit(BFTHeader header, VerifiedLedgerHeaderAndProof proof) {
-		if (header.getView().compareTo(this.getRoot().getView()) <= 0) {
+		if (header.getView().compareTo(this.rootVertex.getView()) <= 0) {
 			return;
 		}
 
@@ -239,7 +236,7 @@ public final class VertexStore {
 
 		// TODO: Must prune all other children of root
 		path.forEach(v -> {
-			vertices.remove(v.getParentId());
+			vertices.remove(v.getId());
 			vertexNumChildren.remove(v.getParentId());
 		});
 
@@ -255,7 +252,7 @@ public final class VertexStore {
 		VerifiedCommandsAndProof verifiedCommandsAndProof = new VerifiedCommandsAndProof(commands, proof);
 		this.ledger.commit(verifiedCommandsAndProof);
 
-		rootId = header.getVertexId();
+		rootVertex = tipVertex;
 
 		updateVertexStoreSize();
 	}
@@ -264,7 +261,7 @@ public final class VertexStore {
 		final LinkedList<VerifiedVertex> path = new LinkedList<>();
 
 		VerifiedVertex vertex = vertices.get(vertexId);
-		while (vertex != null && !vertex.getId().equals(rootId)) {
+		while (vertex != null) {
 			path.addFirst(vertex);
 			vertex = vertices.get(vertex.getParentId());
 		}
@@ -306,11 +303,16 @@ public final class VertexStore {
 		ImmutableList.Builder<VerifiedVertex> builder = ImmutableList.builderWithExpectedSize(count);
 		for (int i = 0; i < count; i++) {
 			VerifiedVertex vertex = this.vertices.get(nextId);
-			if (vertex == null) {
+			final VerifiedVertex verifiedVertex;
+			if (vertex != null) {
+				verifiedVertex = vertex;
+			} else if (nextId.equals(rootVertex.getId())) {
+				verifiedVertex = rootVertex;
+			} else {
 				return Optional.empty();
 			}
 
-			builder.add(vertex);
+			builder.add(verifiedVertex);
 			nextId = vertex.getParentId();
 		}
 
