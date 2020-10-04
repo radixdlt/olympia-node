@@ -19,9 +19,9 @@ package com.radixdlt.constraintmachine;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.hash.HashCode;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.Hash;
 import java.util.Objects;
 
 /**
@@ -29,12 +29,12 @@ import java.util.Objects;
  */
 public final class CMInstruction {
 	private final ImmutableList<CMMicroInstruction> microInstructions;
-	private final Hash witness;
+	private final HashCode witness;
 	private final ImmutableMap<EUID, ECDSASignature> signatures;
 
 	public CMInstruction(
 		ImmutableList<CMMicroInstruction> microInstructions,
-		Hash witness,
+		HashCode witness,
 		ImmutableMap<EUID, ECDSASignature> signatures
 	) {
 		this.microInstructions = Objects.requireNonNull(microInstructions);
@@ -46,7 +46,7 @@ public final class CMInstruction {
 		return microInstructions;
 	}
 
-	public Hash getWitness() {
+	public HashCode getWitness() {
 		return witness;
 	}
 

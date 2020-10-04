@@ -27,7 +27,7 @@ import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.CMStores;
@@ -166,7 +166,7 @@ public class RadixEngineTest {
 
 		RadixEngineAtom atom = mock(RadixEngineAtom.class);
 		ImmutableList<CMMicroInstruction> insts = ImmutableList.of(CMMicroInstruction.checkSpin(mock(IndexedParticle.class), Spin.UP));
-		when(atom.getCMInstruction()).thenReturn(new CMInstruction(insts, Hash.random(), ImmutableMap.of()));
+		when(atom.getCMInstruction()).thenReturn(new CMInstruction(insts, HashUtils.random256(), ImmutableMap.of()));
 		assertThatThrownBy(() -> radixEngine.checkAndStore(atom))
 			.isInstanceOf(RadixEngineException.class)
 			.matches(e -> ((RadixEngineException) e).getDataPointer().equals(DataPointer.ofParticle(0, 0)), "points to 1st particle")

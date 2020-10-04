@@ -273,6 +273,25 @@ public final class ParticleGroup {
 		return new ParticleGroupBuilder();
 	}
 
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		ParticleGroup that = (ParticleGroup) o;
+		return version == that.version
+				&& Objects.equals(particles, that.particles)
+				&& Objects.equals(metaData, that.metaData);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(particles, metaData, version);
+	}
+
 	/**
 	 * A builder for immutable {@link ParticleGroup}s
 	 */

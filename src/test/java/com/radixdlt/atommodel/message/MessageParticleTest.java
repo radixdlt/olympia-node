@@ -19,7 +19,11 @@ package com.radixdlt.atommodel.message;
 
 import static org.mockito.Mockito.mock;
 
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.RadixAddress;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import nl.jqno.equalsverifier.Warning;
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
 
@@ -34,5 +38,14 @@ public class MessageParticleTest {
 		Assertions.assertThatThrownBy(() ->
 				new MessageParticle(null, from, new byte[0], ""))
 				.isInstanceOf(NullPointerException.class);
+	}
+
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(MessageParticle.class)
+				.suppress(Warning.NONFINAL_FIELDS)
+				.withIgnoredFields("version")
+				.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+				.verify();
 	}
 }

@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
  */
 @SerializerId2("radix.particles.mutable_supply_token_definition")
 public final class MutableSupplyTokenDefinitionParticle extends Particle {
+
 	public enum TokenTransition {
 		MINT,
 		BURN
@@ -163,5 +164,29 @@ public final class MutableSupplyTokenDefinitionParticle extends Particle {
 		return String.format("%s[(%s:%s:%s), (am%s), (%s)]", getClass().getSimpleName(),
 			String.valueOf(name), String.valueOf(rri), String.valueOf(granularity),
 			String.valueOf(description), tokenPermissionsStr);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (!(o instanceof MutableSupplyTokenDefinitionParticle)) {
+			return false;
+		}
+		MutableSupplyTokenDefinitionParticle that = (MutableSupplyTokenDefinitionParticle) o;
+		return Objects.equals(rri, that.rri)
+				&& Objects.equals(name, that.name)
+				&& Objects.equals(description, that.description)
+				&& Objects.equals(granularity, that.granularity)
+				&& Objects.equals(iconUrl, that.iconUrl)
+				&& Objects.equals(url, that.url)
+				&& Objects.equals(tokenPermissions, that.tokenPermissions)
+				&& Objects.equals(getDestinations(), that.getDestinations());
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(rri, name, description, granularity, iconUrl, url, tokenPermissions, getDestinations());
 	}
 }

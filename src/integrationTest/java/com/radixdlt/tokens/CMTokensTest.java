@@ -21,6 +21,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.hash.HashCode;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
@@ -32,7 +33,7 @@ import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
@@ -85,7 +86,7 @@ public class CMTokensTest {
 			this.permissions
 		);
 
-		Hash witness = Hash.random();
+		HashCode witness = HashUtils.random256();
 
 		CMInstruction cmInstruction = new CMInstruction(
 			ImmutableList.of(
@@ -135,7 +136,7 @@ public class CMTokensTest {
 			this.permissions
 		);
 
-		Hash witness = Hash.random();
+		HashCode witness = HashUtils.random256();
 
 		CMInstruction cmInstruction = new CMInstruction(
 			ImmutableList.of(
@@ -189,7 +190,7 @@ public class CMTokensTest {
 			this.permissions
 		);
 
-		Hash witness = Hash.random();
+		HashCode witness = HashUtils.random256();
 
 		CMInstruction cmInstruction = new CMInstruction(
 			ImmutableList.of(
@@ -242,7 +243,7 @@ public class CMTokensTest {
 			this.permissions
 		);
 
-		Hash witness = Hash.random();
+		HashCode witness = HashUtils.random256();
 
 		CMInstruction cmInstruction = new CMInstruction(
 			ImmutableList.of(

@@ -18,28 +18,26 @@
 package com.radixdlt.universe;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.Atom;
-import com.radixdlt.crypto.exception.PublicKeyException;
-import com.radixdlt.identifiers.EUID;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.Hasher;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
+import com.radixdlt.serialization.SerializeWithHid;
 import com.radixdlt.utils.Bytes;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Supplier;
 
 @SerializerId2("radix.universe")
+@SerializeWithHid
 public class Universe {
 
 	/**
@@ -236,8 +234,6 @@ public class Universe {
 	@DsonOutput(Output.ALL)
 	private ImmutableList<Atom> genesis;
 
-	private final Supplier<Hash> cachedHash = Suppliers.memoize(this::doGetHash);
-
 	private ECPublicKey creator;
 
 	private ECDSASignature signature;
@@ -360,26 +356,12 @@ public class Universe {
 		this.signature = signature;
 	}
 
-	public void sign(ECKeyPair key) {
-		this.signature = key.sign(getHash());
+	public static void sign(Universe universe, ECKeyPair key, Hasher hasher) {
+		universe.setSignature(key.sign(hasher.hash(universe)));
 	}
 
-	public boolean verify(ECPublicKey key) {
-		return key.verify(getHash(), signature);
-	}
-
-	private Hash doGetHash() {
-		return Hash.of(DefaultSerialization.getInstance().toDson(this, Output.HASH));
-	}
-
-	public Hash getHash() {
-		return cachedHash.get();
-	}
-
-	@JsonProperty("hid")
-	@DsonOutput(Output.API)
-	public final EUID euid() {
-		return getHash().euid();
+	public static boolean verify(Universe universe, ECPublicKey key, Hasher hasher) {
+		return key.verify(hasher.hash(universe), universe.getSignature());
 	}
 
 	// Type - 1 getter, 1 setter

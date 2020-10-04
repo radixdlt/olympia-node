@@ -20,7 +20,7 @@ package com.radixdlt.constraintmachine;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.HashUtils;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -29,6 +29,7 @@ import java.util.Optional;
 import static org.mockito.Mockito.mock;
 
 public class ConstraintMachineTest {
+
 	@Test
 	public void test_invalid_instruction_sequence() {
 		ConstraintMachine cm = new ConstraintMachine(
@@ -36,7 +37,7 @@ public class ConstraintMachineTest {
 			tt -> null
 		);
 		ConstraintMachine.CMValidationState validationState = new ConstraintMachine.CMValidationState(
-			Hash.ZERO_HASH,
+			HashUtils.zero256(),
 			ImmutableMap.of()
 		);
 		Assert.assertEquals(Optional.of(CMErrorCode.INVALID_INSTRUCTION_SEQUENCE), cm.validateMicroInstructions(validationState, ImmutableList.of(

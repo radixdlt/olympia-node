@@ -17,13 +17,13 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.google.common.hash.HashCode;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.store.SpinStateMachine;
 import java.util.HashMap;
 import java.util.List;
@@ -80,11 +80,11 @@ public final class ConstraintMachine {
 		private boolean particleRemainingIsInput;
 		private UsedData particleRemainingUsed = null;
 		private final Map<Particle, Spin> currentSpins;
-		private final Hash witness;
+		private final HashCode witness;
 		private final Map<EUID, ECDSASignature> signatures;
 		private final Map<ECPublicKey, Boolean> isSignedByCache = new HashMap<>();
 
-		CMValidationState(Hash witness, Map<EUID, ECDSASignature> signatures) {
+		CMValidationState(HashCode witness, Map<EUID, ECDSASignature> signatures) {
 			this.currentSpins = new HashMap<>();
 			this.witness = witness;
 			this.signatures = signatures;

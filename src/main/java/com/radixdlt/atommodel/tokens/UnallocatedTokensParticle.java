@@ -35,7 +35,7 @@ import java.util.stream.Collectors;
  *  A particle which represents an amount of unallocated tokens which can be minted.
  */
 @SerializerId2("radix.particles.unallocated_tokens")
-public class UnallocatedTokensParticle extends Particle {
+public final class UnallocatedTokensParticle extends Particle {
 	@JsonProperty("tokenDefinitionReference")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private RRI tokenDefinitionReference;
@@ -137,5 +137,27 @@ public class UnallocatedTokensParticle extends Particle {
 
 	public long getNonce() {
 		return this.nonce;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (!(o instanceof UnallocatedTokensParticle)) {
+			return false;
+		}
+		UnallocatedTokensParticle that = (UnallocatedTokensParticle) o;
+		return nonce == that.nonce
+				&& Objects.equals(tokenDefinitionReference, that.tokenDefinitionReference)
+				&& Objects.equals(granularity, that.granularity)
+				&& Objects.equals(amount, that.amount)
+				&& Objects.equals(tokenPermissions, that.tokenPermissions)
+				&& Objects.equals(getDestinations(), that.getDestinations());
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(tokenDefinitionReference, granularity, nonce, amount, tokenPermissions, getDestinations());
 	}
 }
