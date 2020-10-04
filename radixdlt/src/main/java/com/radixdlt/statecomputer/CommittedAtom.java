@@ -19,9 +19,9 @@ package com.radixdlt.statecomputer;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.constraintmachine.CMInstruction;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
@@ -116,7 +116,7 @@ public final class CommittedAtom implements LedgerAtom {
 	}
 
 	@Override
-	public Hash getPowFeeHash() {
+	public HashCode getPowFeeHash() {
 		return clientAtom.getPowFeeHash();
 	}
 

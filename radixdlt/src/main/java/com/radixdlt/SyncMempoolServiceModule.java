@@ -21,6 +21,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.SharedMempool;
@@ -51,23 +52,25 @@ public class SyncMempoolServiceModule extends AbstractModule {
 		RadixEngine<LedgerAtom> radixEngine,
 		Serialization serialization,
 		AtomToClientAtomConverter converter,
-		SubmissionControlSender submissionControlSender
+		SubmissionControlSender submissionControlSender,
+		Hasher hasher
 	) {
 		return new SubmissionControlImpl(
 			mempool,
 			radixEngine,
 			serialization,
 			converter,
-			submissionControlSender
+			submissionControlSender,
+			hasher
 		);
 	}
 
 	@Provides
 	@Singleton
-	private AtomToClientAtomConverter converter() {
+	private AtomToClientAtomConverter converter(Hasher hasher) {
 		return atom -> {
 			try {
-				return ClientAtom.convertFromApiAtom(atom);
+				return ClientAtom.convertFromApiAtom(atom, hasher);
 			} catch (LedgerAtomConversionException e) {
 				throw new AtomConversionException(e.getDataPointer(), e);
 			}

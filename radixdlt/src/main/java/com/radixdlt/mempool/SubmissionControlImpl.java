@@ -18,6 +18,7 @@
 package com.radixdlt.mempool;
 
 import com.radixdlt.consensus.Command;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
@@ -49,19 +50,22 @@ public class SubmissionControlImpl implements SubmissionControl {
 	private final Serialization serialization;
 	private final AtomToClientAtomConverter converter;
 	private final SubmissionControlSender submissionControlSender;
+	private final Hasher hasher;
 
 	public SubmissionControlImpl(
 		Mempool mempool,
 		RadixEngine<LedgerAtom> radixEngine,
 		Serialization serialization,
 		AtomToClientAtomConverter converter,
-		SubmissionControlSender submissionControlSender
+		SubmissionControlSender submissionControlSender,
+		Hasher hasher
 	) {
 		this.mempool = Objects.requireNonNull(mempool);
 		this.radixEngine = Objects.requireNonNull(radixEngine);
 		this.serialization = Objects.requireNonNull(serialization);
 		this.submissionControlSender = Objects.requireNonNull(submissionControlSender);
 		this.converter = Objects.requireNonNull(converter);
+		this.hasher = hasher;
 	}
 
 	@Override
@@ -110,7 +114,7 @@ public class SubmissionControlImpl implements SubmissionControl {
 		} catch (AtomConversionException e) {
 			log.info(
 				"Rejecting atom {} due to conversion issues.",
-				rawAtom.getAID()
+				Atom.aidOf(rawAtom, hasher)
 			);
 			this.submissionControlSender.sendDeserializeFailure(rawAtom, e);
 		}

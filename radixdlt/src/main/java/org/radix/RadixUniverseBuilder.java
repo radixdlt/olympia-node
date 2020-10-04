@@ -24,6 +24,8 @@ import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.atommodel.Atom;
+import com.radixdlt.consensus.Sha256Hasher;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.atommodel.message.MessageParticle;
@@ -59,6 +61,8 @@ public final class RadixUniverseBuilder {
 	private final UniverseType universeType;
 	private long universeTimestamp = TimeUnit.SECONDS.toMillis(1577836800L); // Midnight Jan 1, 2020
 	private ECKeyPair universeKey = ECKeyPair.generateNew();
+
+	private final Hasher hasher = Sha256Hasher.withDefaultSerialization();
 
 	private RadixUniverseBuilder(UniverseType type) {
 		this.universeType = type;
@@ -111,9 +115,10 @@ public final class RadixUniverseBuilder {
 			.creator(universeKey.getPublicKey())
 			.addAtom(universeAtom)
 			.build();
-		universe.sign(this.universeKey);
 
-		if (!universe.verify(this.universeKey.getPublicKey())) {
+		Universe.sign(universe, this.universeKey, hasher);
+
+		if (!Universe.verify(universe, this.universeKey.getPublicKey(), hasher)) {
 			throw new IllegalStateException("Signature verification failed for " + name + " universe");
 		}
 		return Pair.of(this.universeKey, universe);
@@ -175,9 +180,9 @@ public final class RadixUniverseBuilder {
 		genesisAtom.addParticleGroupWith(helloUniverseMessage, Spin.UP);
 		genesisAtom.addParticleGroup(ParticleGroup.of(xrdParticles));
 		try {
-			genesisAtom.sign(this.universeKey);
-			if (!genesisAtom.verify(this.universeKey.getPublicKey())) {
-				throw new IllegalStateException("Signature verification failed - GENESIS TRANSACTION HASH: " + genesisAtom.getHash());
+			Atom.sign(genesisAtom, this.universeKey, hasher);
+			if (!Atom.verify(genesisAtom, this.universeKey.getPublicKey(), hasher)) {
+				throw new IllegalStateException("Signature verification failed - GENESIS TRANSACTION HASH: " + hasher.hash(genesisAtom));
 			}
 		} catch (PublicKeyException | AtomAlreadySignedException ex) {
 			throw new IllegalStateException("Error while signing universe", ex);

@@ -17,7 +17,7 @@
 
 package com.radixdlt.middleware2.network;
 
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.HashUtils;
 import org.radix.serialization.SerializeMessageObject;
 
 public class GetVerticesRequestMessageSerializeTest extends SerializeMessageObject<GetVerticesRequestMessage> {
@@ -26,6 +26,6 @@ public class GetVerticesRequestMessageSerializeTest extends SerializeMessageObje
 	}
 
 	private static GetVerticesRequestMessage get() {
-		return new GetVerticesRequestMessage(1234, Hash.random(), 1);
+		return new GetVerticesRequestMessage(1234, HashUtils.random256(), 1);
 	}
 }

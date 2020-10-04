@@ -17,8 +17,8 @@
 
 package com.radixdlt.consensus.sync;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.crypto.Hash;
 import java.util.Objects;
 
 /**
@@ -26,10 +26,10 @@ import java.util.Objects;
  */
 public final class GetVerticesRequest {
 	private final BFTNode sender;
-	private final Hash vertexId;
+	private final HashCode vertexId;
 	private final int count;
 
-	public GetVerticesRequest(BFTNode sender, Hash vertexId, int count) {
+	public GetVerticesRequest(BFTNode sender, HashCode vertexId, int count) {
 		this.sender = Objects.requireNonNull(sender);
 		this.vertexId = Objects.requireNonNull(vertexId);
 		this.count = count;
@@ -39,7 +39,7 @@ public final class GetVerticesRequest {
 		return sender;
 	}
 
-	public Hash getVertexId() {
+	public HashCode getVertexId() {
 		return vertexId;
 	}
 

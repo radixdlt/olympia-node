@@ -23,7 +23,7 @@ import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.utils.Longs;
 import java.util.Objects;
 
@@ -33,11 +33,13 @@ import java.util.Objects;
 public final class NewViewSigner {
 	private final HashSigner signer;
 	private final BFTNode self;
+	private final Hasher hasher;
 
 	@Inject
-	public NewViewSigner(@Named("self") BFTNode self, HashSigner signer) {
+	public NewViewSigner(@Named("self") BFTNode self, HashSigner signer, Hasher hasher) {
 		this.self = Objects.requireNonNull(self);
 		this.signer = Objects.requireNonNull(signer);
+		this.hasher = Objects.requireNonNull(hasher);
 	}
 
 	/**
@@ -48,7 +50,7 @@ public final class NewViewSigner {
 	 */
 	public NewView signNewView(View nextView, HighQC syncInfo) {
 		// TODO make signing more robust by including author in signed hash
-		ECDSASignature signature = this.signer.sign(Hash.hash256(Longs.toByteArray(nextView.number())));
+		ECDSASignature signature = this.signer.sign(hasher.hashBytes(Longs.toByteArray(nextView.number())));
 		return new NewView(this.self, nextView, syncInfo, signature);
 	}
 }

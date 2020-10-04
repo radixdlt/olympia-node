@@ -17,10 +17,12 @@
 
 package com.radixdlt.middleware2;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.atomos.Result;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atommodel.Atom;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.AtomChecker;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.universe.Universe;
@@ -36,15 +38,16 @@ public class PowFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 	private final Set<AID> genesisAtomIDs;
 	private final PowFeeComputer powFeeComputer;
 
-	private final Hash target;
+	private final HashCode target;
 
 	public PowFeeLedgerAtomChecker(
 		Universe universe,
 		PowFeeComputer powFeeComputer,
-		Hash target
+		HashCode target,
+		Hasher hasher
 	) {
 		this.genesisAtomIDs = universe.getGenesis().stream()
-			.map(Atom::getAID)
+			.map(atom -> Atom.aidOf(atom, hasher))
 			.collect(ImmutableSet.toImmutableSet());
 		this.powFeeComputer = powFeeComputer;
 		this.target = target;
@@ -73,8 +76,8 @@ public class PowFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 				return Result.error("atom fee invalid, metadata contains invalid powNonce: " + powNonceString);
 			}
 
-			Hash powSpent = powFeeComputer.computePowSpent(atom, powNonce);
-			if (powSpent.compareTo(target) >= 0) {
+			HashCode powSpent = powFeeComputer.computePowSpent(atom, powNonce);
+			if (HashUtils.compare(powSpent, target) >= 0) {
 				return Result.error("atom fee invalid: '" + powSpent + "' does not meet target '" + target + "'");
 			}
 		}

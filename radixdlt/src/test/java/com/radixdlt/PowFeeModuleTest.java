@@ -17,6 +17,8 @@
 
 package com.radixdlt;
 
+import com.radixdlt.consensus.Sha256Hasher;
+import com.radixdlt.crypto.Hasher;
 import org.junit.Test;
 
 import com.google.inject.AbstractModule;
@@ -37,6 +39,7 @@ public class PowFeeModuleTest {
 		protected void configure() {
 			bind(Integer.class).annotatedWith(Names.named("magic")).toInstance(0);
 			bind(Universe.class).toInstance(mock(Universe.class));
+			bind(Hasher.class).toInstance(Sha256Hasher.withDefaultSerialization());
 		}
 	}
 

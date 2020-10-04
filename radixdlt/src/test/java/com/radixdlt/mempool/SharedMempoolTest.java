@@ -17,8 +17,9 @@
 
 package com.radixdlt.mempool;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.HashUtils;
 import java.util.Set;
 
 import org.junit.Before;
@@ -33,7 +34,7 @@ import static org.mockito.Mockito.*;
 import static org.hamcrest.Matchers.*;
 
 public class SharedMempoolTest {
-	private static final Hash TEST_HASH = makeHash(1234);
+	private static final HashCode TEST_HASH = makeHash(1234);
 
 	private LocalMempool localMempool;
 	private MempoolNetworkTx mempoolNetworkTx;
@@ -52,7 +53,6 @@ public class SharedMempoolTest {
 	public void when_adding_atom__then_atom_is_added_and_sent()
 		throws MempoolFullException, MempoolDuplicateException {
 		Command mockCommand = mock(Command.class);
-		when(mockCommand.getHash()).thenReturn(TEST_HASH);
 		this.sharedMempool.add(mockCommand);
 		verify(this.localMempool, times(1)).add(any());
 		verify(this.mempoolNetworkTx, times(1)).sendMempoolSubmission(any());
@@ -72,7 +72,7 @@ public class SharedMempoolTest {
 
 	@Test
 	public void when_atoms_requested__then_local_mempool_called() {
-		Set<Hash> seen = Sets.newHashSet();
+		Set<HashCode> seen = Sets.newHashSet();
 		this.sharedMempool.getCommands(1, seen);
 		verify(this.localMempool, times(1)).getCommands(eq(1), same(seen));
 	}
@@ -94,9 +94,9 @@ public class SharedMempoolTest {
 		assertThat(tostring, containsString(SharedMempool.class.getSimpleName()));
 	}
 
-	private static Hash makeHash(int n) {
+	private static HashCode makeHash(int n) {
 		byte[] temp = new byte[256];
 		Ints.copyTo(n, temp, 256 - Integer.BYTES);
-		return Hash.of(temp);
+		return HashUtils.sha256(temp);
 	}
 }

@@ -25,8 +25,10 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
 import org.radix.network.messaging.Message;
 
+import java.util.Objects;
+
 @SerializerId2("message.consensus.get_epoch_request")
-public class GetEpochRequestMessage extends Message {
+public final class GetEpochRequestMessage extends Message {
 	private BFTNode author;
 
 	@JsonProperty("epoch")
@@ -68,5 +70,25 @@ public class GetEpochRequestMessage extends Message {
 	@Override
 	public String toString() {
 		return String.format("%s{author=%s epoch=%s}", getClass().getSimpleName(), author, epoch);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		GetEpochRequestMessage that = (GetEpochRequestMessage) o;
+		return epoch == that.epoch
+				&& Objects.equals(author, that.author)
+				&& Objects.equals(getTimestamp(), that.getTimestamp())
+				&& Objects.equals(getMagic(), that.getMagic());
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(author, epoch, getTimestamp(), getMagic());
 	}
 }

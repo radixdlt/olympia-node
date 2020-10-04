@@ -22,11 +22,15 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.hash.HashCode;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atommodel.message.MessageParticle;
+import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware.SpunParticle;
@@ -35,9 +39,13 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
 public class ClientAtomTest {
+
+	private final Hasher hasher = Sha256Hasher.withDefaultSerialization();
+
 	@Test
 	public void equalsContract() {
 		EqualsVerifier.forClass(ClientAtom.class)
+			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 			.verify();
 	}
 
@@ -52,7 +60,7 @@ public class ClientAtomTest {
 	@Test
 	public void testConvertToApiAtom() throws Exception {
 		Atom atom = createApiAtom();
-		final ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom);
+		final ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom, hasher);
 		Atom fromLedgerAtom = ClientAtom.convertToApiAtom(clientAtom);
 		assertThat(atom).isEqualTo(fromLedgerAtom);
 	}
@@ -60,8 +68,8 @@ public class ClientAtomTest {
 	@Test
 	public void testGetters() throws Exception {
 		Atom atom = createApiAtom();
-		final ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom);
-		assertThat(atom.getAID()).isEqualTo(clientAtom.getAID());
+		final ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom, hasher);
+		assertThat(Atom.aidOf(atom, hasher)).isEqualTo(clientAtom.getAID());
 		assertThat(atom.getMetaData()).isEqualTo(clientAtom.getMetaData());
 		assertThat(clientAtom.getCMInstruction()).isNotNull();
 	}

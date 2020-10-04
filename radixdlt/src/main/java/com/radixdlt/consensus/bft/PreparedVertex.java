@@ -19,9 +19,9 @@ package com.radixdlt.consensus.bft;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.utils.Pair;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -49,11 +49,11 @@ public final class PreparedVertex {
 		this.commandExceptions = Objects.requireNonNull(commandExceptions);
 	}
 
-	public Hash getId() {
+	public HashCode getId() {
 		return vertex.getId();
 	}
 
-	public Hash getParentId() {
+	public HashCode getParentId() {
 		return vertex.getParentId();
 	}
 

@@ -19,6 +19,8 @@ package com.radixdlt.fees;
 
 import java.nio.charset.StandardCharsets;
 
+import com.radixdlt.consensus.Sha256Hasher;
+import com.radixdlt.crypto.Hasher;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -43,7 +45,10 @@ import static org.junit.Assert.assertEquals;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class FeeTableTest {
-    private static final UInt256 MINIMUM_FEE = UInt256.FIVE;
+
+	private final Hasher hasher = Sha256Hasher.withDefaultSerialization();
+
+	private static final UInt256 MINIMUM_FEE = UInt256.FIVE;
 	private static final ImmutableList<FeeEntry> FEE_ENTRIES = ImmutableList.of(
 		PerParticleFeeEntry.of(MessageParticle.class, 0, UInt256.THREE)
 	);
@@ -71,7 +76,7 @@ public class FeeTableTest {
     		ParticleGroup.of(SpunParticle.up(new MessageParticle(from, to, "test message 2".getBytes(StandardCharsets.UTF_8))))
     	);
     	Atom a = new Atom(particleGroups, ImmutableMap.of(), ImmutableMap.of());
-    	ClientAtom ca = ClientAtom.convertFromApiAtom(a);
+    	ClientAtom ca = ClientAtom.convertFromApiAtom(a, hasher);
     	UInt256 fee = ft.feeFor(ca, a.particles(Spin.UP).collect(ImmutableSet.toImmutableSet()), 0);
     	assertEquals(UInt256.SIX, fee);
     }
@@ -80,7 +85,7 @@ public class FeeTableTest {
     public void testFeeForAtomMinimum() throws LedgerAtomConversionException {
     	FeeTable ft = get();
     	Atom a = new Atom(ImmutableList.of(), ImmutableMap.of(), ImmutableMap.of());
-    	ClientAtom ca = ClientAtom.convertFromApiAtom(a);
+    	ClientAtom ca = ClientAtom.convertFromApiAtom(a, hasher);
     	UInt256 fee = ft.feeFor(ca, ImmutableSet.of(), 0);
     	assertEquals(UInt256.FIVE, fee);
     }
@@ -98,7 +103,7 @@ public class FeeTableTest {
     		ParticleGroup.of(SpunParticle.up(new MessageParticle(from, to, "test message 3".getBytes(StandardCharsets.UTF_8))))
     	);
     	Atom a = new Atom(particleGroups, ImmutableMap.of(), ImmutableMap.of());
-    	ClientAtom ca = ClientAtom.convertFromApiAtom(a);
+    	ClientAtom ca = ClientAtom.convertFromApiAtom(a, hasher);
     	ImmutableSet<Particle> outputs = a.particles(Spin.UP).collect(ImmutableSet.toImmutableSet());
     	assertThatThrownBy(() -> ft.feeFor(ca, outputs, 1))
     		.isInstanceOf(ArithmeticException.class)

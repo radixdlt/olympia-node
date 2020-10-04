@@ -24,11 +24,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.consensus.Hasher;
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.epoch.EpochChange;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.epochs.EpochChangeManager;
 import com.radixdlt.epochs.EpochChangeManager.EpochsLedgerUpdateSender;
 import java.util.Optional;
@@ -55,7 +55,7 @@ public class EpochChangeManagerTest {
 		when(tailHeader.getEpoch()).thenReturn(genesisEpoch);
 		when(tailHeader.isEndOfEpoch()).thenReturn(true);
 		when(tailHeader.getStateVersion()).thenReturn(1234L);
-		when(hasher.hash(any())).thenReturn(mock(Hash.class));
+		when(hasher.hash(any())).thenReturn(mock(HashCode.class));
 
 		LedgerUpdate ledgerUpdate = mock(LedgerUpdate.class);
 		when(ledgerUpdate.getTail()).thenReturn(tailHeader);

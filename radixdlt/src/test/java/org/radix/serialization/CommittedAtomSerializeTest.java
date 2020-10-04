@@ -19,18 +19,19 @@ package org.radix.serialization;
 
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atommodel.message.MessageParticle;
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.BFTHeader;
+import com.radixdlt.consensus.*;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.ClientAtom.LedgerAtomConversionException;
 import com.radixdlt.statecomputer.CommittedAtom;
 
 public class CommittedAtomSerializeTest extends SerializeObject<CommittedAtom> {
+
+	private static final Hasher hasher = Sha256Hasher.withDefaultSerialization();
+
 	public CommittedAtomSerializeTest() {
 		super(CommittedAtom.class, CommittedAtomSerializeTest::get);
 	}
@@ -46,16 +47,16 @@ public class CommittedAtomSerializeTest extends SerializeObject<CommittedAtom> {
 	private static CommittedAtom get(Atom atom) {
 		final ClientAtom clientAtom;
 		try {
-			clientAtom = ClientAtom.convertFromApiAtom(atom);
+			clientAtom = ClientAtom.convertFromApiAtom(atom, hasher);
 		} catch (LedgerAtomConversionException e) {
 			throw new IllegalStateException();
 		}
 
-		LedgerHeader ledgerHeader = LedgerHeader.genesis(Hash.ZERO_HASH, null);
+		LedgerHeader ledgerHeader = LedgerHeader.genesis(HashUtils.zero256(), null);
 		VerifiedLedgerHeaderAndProof proof = new VerifiedLedgerHeaderAndProof(
 			BFTHeader.ofGenesisAncestor(ledgerHeader),
 			BFTHeader.ofGenesisAncestor(ledgerHeader),
-			0L, Hash.random(), ledgerHeader,
+			0L, HashUtils.random256(), ledgerHeader,
 			new TimestampedECDSASignatures()
 		);
 

@@ -18,7 +18,8 @@
 package com.radixdlt.mempool;
 
 import com.radixdlt.consensus.Command;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.Hasher;
+import com.radixdlt.consensus.Sha256Hasher;
 import java.util.List;
 
 import org.junit.Before;
@@ -35,14 +36,16 @@ import static org.hamcrest.Matchers.*;
 public class LocalMempoolTest {
 	private LocalMempool mempool;
 
+	private final Hasher hasher = Sha256Hasher.withDefaultSerialization();
+
 	@Before
 	public void setUp() {
-		this.mempool = new LocalMempool(2);
+		this.mempool = new LocalMempool(2, hasher);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
 	public void when_constructing_with_negative_size__then_exception_is_thrown() {
-		assertNotNull(new LocalMempool(-1));
+		assertNotNull(new LocalMempool(-1, hasher));
 		fail();
 	}
 
@@ -50,7 +53,6 @@ public class LocalMempoolTest {
 	public void when_adding_atom_with_same_aid__then_exception_is_thrown()
 		throws MempoolFullException, MempoolDuplicateException {
 		Command command = mock(Command.class);
-		when(command.getHash()).thenReturn(Hash.ZERO_HASH);
 
 		this.mempool.add(command);
 		this.mempool.add(command);
@@ -77,7 +79,7 @@ public class LocalMempoolTest {
 		Command command = makeCommand(1234);
 		this.mempool.add(command);
 		assertEquals(1, this.mempool.count());
-		this.mempool.removeCommitted(command.getHash());
+		this.mempool.removeCommitted(hasher.hash(command));
 		assertEquals(0, this.mempool.count());
 	}
 
@@ -87,7 +89,7 @@ public class LocalMempoolTest {
 		Command command = makeCommand(1234);
 		this.mempool.add(command);
 		assertEquals(1, this.mempool.count());
-		this.mempool.removeRejected(command.getHash());
+		this.mempool.removeRejected(hasher.hash(command));
 		assertEquals(0, this.mempool.count());
 	}
 
@@ -133,7 +135,7 @@ public class LocalMempoolTest {
 		this.mempool.add(command);
 		assertEquals(1, this.mempool.count()); // precondition
 
-		List<Command> commands = this.mempool.getCommands(1, Sets.newHashSet(command.getHash()));
+		List<Command> commands = this.mempool.getCommands(1, Sets.newHashSet(hasher.hash(command)));
 		assertTrue(commands.isEmpty());
 		assertEquals(1, this.mempool.count()); // postcondition
 	}

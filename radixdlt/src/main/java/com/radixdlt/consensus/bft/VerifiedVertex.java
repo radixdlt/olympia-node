@@ -24,7 +24,7 @@ import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.UnverifiedVertex;
-import com.radixdlt.crypto.Hash;
+import com.google.common.hash.HashCode;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -33,9 +33,9 @@ import java.util.Optional;
  */
 public final class VerifiedVertex {
 	private final UnverifiedVertex vertex;
-	private final Hash id;
+	private final HashCode id;
 
-	public VerifiedVertex(UnverifiedVertex vertex, Hash id) {
+	public VerifiedVertex(UnverifiedVertex vertex, HashCode id) {
 		this.vertex = Objects.requireNonNull(vertex);
 		this.id = Objects.requireNonNull(id);
 	}
@@ -78,11 +78,11 @@ public final class VerifiedVertex {
 		return vertex.getQC();
 	}
 
-	public Hash getId() {
+	public HashCode getId() {
 		return id;
 	}
 
-	public Hash getParentId() {
+	public HashCode getParentId() {
 		return vertex.getQC().getProposed().getVertexId();
 	}
 

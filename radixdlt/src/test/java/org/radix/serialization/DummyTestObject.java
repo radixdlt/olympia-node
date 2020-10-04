@@ -17,6 +17,7 @@
 
 package org.radix.serialization;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
 
@@ -29,7 +30,7 @@ import java.util.Random;
 
 import com.radixdlt.identifiers.EUID;
 import org.radix.containers.BasicContainer;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.utils.UInt128;
 
@@ -67,7 +68,7 @@ public class DummyTestObject extends BasicContainer {
 
 	@JsonProperty("theHash")
 	@DsonOutput(Output.ALL)
-	private Hash theHash;
+	private HashCode theHash;
 
 	@JsonProperty("bytes")
 	@DsonOutput(Output.ALL)
@@ -95,7 +96,7 @@ public class DummyTestObject extends BasicContainer {
 			this.bfalse = false;
 			this.num = 0x123456789abcdefL;
 			this.id = new EUID(UInt128.from(r.nextLong(), r.nextLong()));
-			this.theHash = Hash.of(randomData);
+			this.theHash = HashUtils.sha256(randomData);
 			this.bytes = randomData.clone();
 			this.string = getClass().getName();
 			this.array = new ArrayList<>(Collections.nCopies(10, id));

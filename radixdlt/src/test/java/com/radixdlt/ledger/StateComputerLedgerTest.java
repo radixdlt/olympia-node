@@ -28,10 +28,9 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.DefaultSerialization;
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
@@ -43,13 +42,14 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.consensus.Sha256Hasher;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.mempool.Mempool;
-import com.radixdlt.utils.DsonSHA256Hasher;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.TypedMocks;
 
@@ -83,7 +83,7 @@ public class StateComputerLedgerTest {
 
 	private final long genesisEpoch = 3L;
 	private final long genesisStateVersion = 123L;
-	private final Hasher hasher = new DsonSHA256Hasher(DefaultSerialization.getInstance());
+	private final Hasher hasher = Sha256Hasher.withDefaultSerialization();
 
 	@Before
 	public void setup() {
@@ -97,7 +97,7 @@ public class StateComputerLedgerTest {
 		this.accumulator = new SimpleLedgerAccumulatorAndVerifier(hasher);
 		this.accumulatorVerifier = new SimpleLedgerAccumulatorAndVerifier(hasher);
 
-		this.ledgerHeader = LedgerHeader.genesis(Hash.ZERO_HASH, null);
+		this.ledgerHeader = LedgerHeader.genesis(HashUtils.zero256(), null);
 		this.genesis = UnverifiedVertex.createGenesis(ledgerHeader);
 		this.genesisVertex = new VerifiedVertex(genesis, hasher.hash(genesis));
 		this.genesisQC = QuorumCertificate.ofGenesis(genesisVertex, ledgerHeader);
@@ -112,7 +112,8 @@ public class StateComputerLedgerTest {
 			ledgerUpdateSender,
 			accumulator,
 			accumulatorVerifier,
-			counters
+			counters,
+			hasher
 		);
 	}
 
@@ -120,7 +121,7 @@ public class StateComputerLedgerTest {
 		this.ledgerHeader = LedgerHeader.create(
 			genesisEpoch,
 			View.of(5),
-			new AccumulatorState(genesisStateVersion, Hash.ZERO_HASH),
+			new AccumulatorState(genesisStateVersion, HashUtils.zero256()),
 			12345,
 			endOfEpoch ? BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE))) : null
 		);
@@ -138,7 +139,8 @@ public class StateComputerLedgerTest {
 			ledgerUpdateSender,
 			accumulator,
 			accumulatorVerifier,
-			counters
+			counters,
+			hasher
 		);
 	}
 
@@ -213,7 +215,7 @@ public class StateComputerLedgerTest {
 		// Arrange
 		genesisIsEndOfEpoch(false);
 		when(stateComputer.prepare(any(), any(), any())).thenReturn(new StateComputerResult(ImmutableList.of(nextCommand), ImmutableMap.of()));
-		final AccumulatorState accumulatorState = new AccumulatorState(genesisStateVersion - 1, Hash.ZERO_HASH);
+		final AccumulatorState accumulatorState = new AccumulatorState(genesisStateVersion - 1, HashUtils.zero256());
 		final LedgerHeader ledgerHeader = LedgerHeader.create(
 			genesisEpoch,
 			View.of(2),
@@ -224,7 +226,7 @@ public class StateComputerLedgerTest {
 			mock(BFTHeader.class),
 			mock(BFTHeader.class),
 			12345,
-			mock(Hash.class),
+			mock(HashCode.class),
 			ledgerHeader,
 			new TimestampedECDSASignatures()
 		);

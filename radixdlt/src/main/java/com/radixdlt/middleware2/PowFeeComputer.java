@@ -17,8 +17,8 @@
 
 package com.radixdlt.middleware2;
 
+import com.google.common.hash.HashCode;
 import com.google.inject.name.Named;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.utils.POW;
 import javax.inject.Inject;
 
@@ -33,8 +33,8 @@ public final class PowFeeComputer {
 		this.magic = magic;
 	}
 
-	public Hash computePowSpent(LedgerAtom ledgerAtom, long powNonce) {
-		final Hash powFeeHash = ledgerAtom.getPowFeeHash();
+	public HashCode computePowSpent(LedgerAtom ledgerAtom, long powNonce) {
+		final HashCode powFeeHash = ledgerAtom.getPowFeeHash();
 		POW pow = new POW(this.magic, powFeeHash, powNonce);
 		return pow.getHash();
 	}

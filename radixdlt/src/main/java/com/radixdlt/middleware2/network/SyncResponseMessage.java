@@ -24,6 +24,8 @@ import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import org.radix.network.messaging.Message;
 
+import java.util.Objects;
+
 /**
  * Message with sync atoms as a response to sync request
  */
@@ -51,5 +53,24 @@ public final class SyncResponseMessage extends Message {
 	@Override
 	public String toString() {
 		return String.format("%s{commands=%s}", getClass().getSimpleName(), commands);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		SyncResponseMessage that = (SyncResponseMessage) o;
+		return Objects.equals(commands, that.commands)
+				&& Objects.equals(getTimestamp(), that.getTimestamp())
+				&& Objects.equals(getMagic(), that.getMagic());
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(commands, getTimestamp(), getMagic());
 	}
 }

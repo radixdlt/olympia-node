@@ -18,6 +18,8 @@
 package com.radixdlt.mempool;
 
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.Sha256Hasher;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.SubmissionControlImpl.SubmissionControlSender;
 import com.radixdlt.middleware2.ClientAtom;
@@ -50,6 +52,7 @@ public class SubmissionControlImplTest {
 	private SubmissionControlSender sender;
 	private SubmissionControlImpl submissionControl;
 	private AtomToClientAtomConverter converter;
+	private Hasher hasher;
 
 	@Before
 	public void setUp() {
@@ -61,7 +64,9 @@ public class SubmissionControlImplTest {
 		this.serialization = mock(Serialization.class);
 		this.converter = mock(AtomToClientAtomConverter.class);
 		this.sender = mock(SubmissionControlSender.class);
-		this.submissionControl = new SubmissionControlImpl(this.mempool, this.radixEngine, this.serialization, this.converter, this.sender);
+		this.hasher = Sha256Hasher.withDefaultSerialization();
+		this.submissionControl = new SubmissionControlImpl(this.mempool, this.radixEngine, this.serialization,
+				this.converter, this.sender, this.hasher);
 	}
 
 	@Test
@@ -116,7 +121,6 @@ public class SubmissionControlImplTest {
 		JSONObject atomJson = mock(JSONObject.class);
 		Atom atom = mock(Atom.class);
 		AID aid = mock(AID.class);
-		when(atom.getAID()).thenReturn(aid);
 		doReturn(atom).when(this.serialization).fromJsonObject(eq(atomJson), eq(Atom.class));
 		when(converter.convert(eq(atom))).thenThrow(mock(AtomConversionException.class));
 		// No type check issues with mocking generic here
@@ -149,7 +153,6 @@ public class SubmissionControlImplTest {
 		throws Exception {
 		doNothing().when(this.radixEngine).staticCheck(any());
 		Atom atomMock = throwingMock(Atom.class);
-		doReturn(AID.ZERO).when(atomMock).getAID();
 		doReturn(atomMock).when(this.serialization).fromJsonObject(any(), any());
 		doNothing().when(this.mempool).add(any());
 

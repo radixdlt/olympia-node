@@ -18,10 +18,10 @@
 package com.radixdlt.ledger;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.Hasher;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.Hasher;
 import java.util.Objects;
 import java.util.Optional;
 import javax.annotation.concurrent.ThreadSafe;
@@ -41,9 +41,9 @@ public class SimpleLedgerAccumulatorAndVerifier implements LedgerAccumulator, Le
 	@Override
 	public AccumulatorState accumulate(AccumulatorState parent, Command nextCommand) {
 		byte[] concat = new byte[32 * 2];
-		parent.getAccumulatorHash().copyTo(concat, 0);
-		nextCommand.getHash().copyTo(concat, 32);
-		Hash nextAccumulatorHash = hasher.hashBytes(concat);
+		System.arraycopy(parent.getAccumulatorHash().asBytes(), 0, concat, 0, 32);
+		System.arraycopy(hasher.hash(nextCommand).asBytes(), 0, concat, 32, 32);
+		HashCode nextAccumulatorHash = hasher.hashBytes(concat);
 		return new AccumulatorState(
 			parent.getStateVersion() + 1,
 			nextAccumulatorHash

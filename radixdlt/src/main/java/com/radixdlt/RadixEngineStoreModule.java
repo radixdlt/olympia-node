@@ -26,7 +26,6 @@ import com.google.inject.name.Named;
 import com.radixdlt.consensus.AddressBookGenesisValidatorSetProvider;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.UnverifiedVertex;
@@ -37,6 +36,7 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.ClientAtom.LedgerAtomConversionException;
 import com.radixdlt.middleware2.LedgerAtom;
@@ -147,13 +147,14 @@ public class RadixEngineStoreModule extends AbstractModule {
 		Serialization serialization,
 		Universe universe,
 		CommittedAtomsStore committedAtomsStore,
-		BFTValidatorSet validatorSet
+		BFTValidatorSet validatorSet,
+		Hasher hasher
 	) throws LedgerAtomConversionException, DeserializeException, NextCommittedLimitReachedException {
-		final ClientAtom genesisAtom = ClientAtom.convertFromApiAtom(universe.getGenesis().get(0));
+		final ClientAtom genesisAtom = ClientAtom.convertFromApiAtom(universe.getGenesis().get(0), hasher);
 		byte[] payload = serialization.toDson(genesisAtom, Output.ALL);
 		Command command = new Command(payload);
 		VerifiedLedgerHeaderAndProof genesisLedgerHeader = VerifiedLedgerHeaderAndProof.genesis(
-			command.getHash(),
+			hasher.hash(command),
 			validatorSet
 		);
 
@@ -168,8 +169,8 @@ public class RadixEngineStoreModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private AtomIndexer buildAtomIndexer(Serialization serialization) {
-		return atom -> EngineAtomIndices.from(atom, serialization);
+	private AtomIndexer buildAtomIndexer(Serialization serialization, Hasher hasher) {
+		return atom -> EngineAtomIndices.from(atom, serialization, hasher);
 	}
 
 	@Provides
@@ -180,7 +181,8 @@ public class RadixEngineStoreModule extends AbstractModule {
 		CommandToBinaryConverter commandToBinaryConverter,
 		ClientAtomToBinaryConverter clientAtomToBinaryConverter,
 		AtomIndexer atomIndexer,
-		Serialization serialization
+		Serialization serialization,
+		Hasher hasher
 	) {
 		return new CommittedAtomsStore(
 			committedAtomSender,
@@ -188,7 +190,8 @@ public class RadixEngineStoreModule extends AbstractModule {
 			commandToBinaryConverter,
 			clientAtomToBinaryConverter,
 			atomIndexer,
-			serialization
+			serialization,
+			hasher
 		);
 	}
 

@@ -26,14 +26,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.Hasher;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.TimestampedECDSASignature;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.sync.RemoteSyncResponseSignaturesVerifier.InvalidSignaturesSender;
@@ -49,7 +49,7 @@ public class RemoteSyncResponseSignaturesVerifierTest {
 	private HashVerifier hashVerifier;
 
 	private RemoteSyncResponse response;
-	private Hash headerHash;
+	private HashCode headerHash;
 
 	@Before
 	public void setup() {
@@ -71,7 +71,7 @@ public class RemoteSyncResponseSignaturesVerifierTest {
 		VoteData voteData = mock(VoteData.class);
 		when(tail.toVoteData()).thenReturn(voteData);
 		when(commandsAndProof.getTail()).thenReturn(tail);
-		this.headerHash = mock(Hash.class);
+		this.headerHash = mock(HashCode.class);
 		when(hasher.hash(any())).thenReturn(headerHash);
 		TimestampedECDSASignatures timestampedECDSASignatures = mock(TimestampedECDSASignatures.class);
 		BFTNode node = mock(BFTNode.class);

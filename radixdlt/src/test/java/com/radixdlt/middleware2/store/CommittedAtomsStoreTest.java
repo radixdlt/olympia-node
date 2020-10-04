@@ -25,13 +25,14 @@ import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
@@ -53,6 +54,7 @@ public class CommittedAtomsStoreTest {
 	private CommittedAtomSender committedAtomSender;
 	private AtomIndexer atomIndexer;
 	private Serialization serialization;
+	private Hasher hasher;
 
 	@Before
 	public void setUp() {
@@ -62,6 +64,7 @@ public class CommittedAtomsStoreTest {
 		this.clientAtomToBinaryConverter = mock(ClientAtomToBinaryConverter.class);
 		this.atomIndexer = mock(AtomIndexer.class);
 		this.serialization = mock(Serialization.class);
+		this.hasher = Sha256Hasher.withDefaultSerialization();
 
 		this.committedAtomsStore = new CommittedAtomsStore(
 			committedAtomSender,
@@ -69,7 +72,8 @@ public class CommittedAtomsStoreTest {
 			commandToBinaryConverter,
 			clientAtomToBinaryConverter,
 			atomIndexer,
-			serialization
+			serialization,
+			hasher
 		);
 	}
 
@@ -126,7 +130,6 @@ public class CommittedAtomsStoreTest {
 	@Test
 	public void when_get_spin_and_particle_exists__then_should_return_spin() {
 		Particle particle = mock(Particle.class);
-		when(particle.euid()).thenReturn(EUID.ONE);
 		SearchCursor searchCursor = mock(SearchCursor.class);
 		AID aid = mock(AID.class);
 		when(searchCursor.get()).thenReturn(aid);

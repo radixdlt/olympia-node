@@ -18,6 +18,7 @@
 package com.radixdlt.middleware2.store;
 
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngineAtom;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
@@ -60,7 +61,7 @@ public class EngineAtomIndices {
 		this.duplicateIndices = duplicateIndices;
 	}
 
-	public static EngineAtomIndices from(RadixEngineAtom radixEngineAtom, Serialization serialization) {
+	public static EngineAtomIndices from(RadixEngineAtom radixEngineAtom, Serialization serialization, Hasher hasher) {
 		ImmutableSet.Builder<StoreIndex> uniqueIndices = ImmutableSet.builder();
 		ImmutableSet.Builder<StoreIndex> duplicateIndices = ImmutableSet.builder();
 
@@ -90,7 +91,7 @@ public class EngineAtomIndices {
 							throw new IllegalStateException("Unknown SPIN state for particle " + nextSpin);
 					}
 
-					final byte[] indexableBytes = toByteArray(indexType, i.getParticle().euid());
+					final byte[] indexableBytes = toByteArray(indexType, Particle.euidOf(i.getParticle(), hasher));
 					uniqueIndices.add(new StoreIndex(indexableBytes));
 				});
 

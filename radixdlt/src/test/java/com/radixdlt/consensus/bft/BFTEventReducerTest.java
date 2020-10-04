@@ -18,8 +18,9 @@
 package com.radixdlt.consensus.bft;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.Hasher;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.LedgerHeader;
@@ -38,7 +39,7 @@ import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyViolationException;
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.HashUtils;
 import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
@@ -83,7 +84,7 @@ public class BFTEventReducerTest {
 		this.self = mock(BFTNode.class);
 		this.hasher = mock(Hasher.class);
 
-		when(hasher.hash(any())).thenReturn(mock(Hash.class));
+		when(hasher.hash(any())).thenReturn(mock(HashCode.class));
 
 		this.reducer = new BFTEventReducer(
 			self,
@@ -123,7 +124,7 @@ public class BFTEventReducerTest {
 		View view = mock(View.class);
 		when(qc.getView()).thenReturn(view);
 		BFTHeader header = mock(BFTHeader.class);
-		Hash id = mock(Hash.class);
+		HashCode id = mock(HashCode.class);
 		when(header.getVertexId()).thenReturn(id);
 		when(qc.getProposed()).thenReturn(header);
 		when(pendingVotes.insertVote(eq(vote), eq(validatorSet))).thenReturn(Optional.of(qc));
@@ -145,8 +146,8 @@ public class BFTEventReducerTest {
 	@Test
 	public void when_processing_vote_as_not_proposer__then_nothing_happens() {
 		Vote voteMessage = mock(Vote.class);
-		BFTHeader proposal = new BFTHeader(View.of(2), Hash.random(), mock(LedgerHeader.class));
-		BFTHeader parent = new BFTHeader(View.of(1), Hash.random(), mock(LedgerHeader.class));
+		BFTHeader proposal = new BFTHeader(View.of(2), HashUtils.random256(), mock(LedgerHeader.class));
+		BFTHeader parent = new BFTHeader(View.of(1), HashUtils.random256(), mock(LedgerHeader.class));
 		VoteData voteData = new VoteData(proposal, parent, null);
 		when(voteMessage.getVoteData()).thenReturn(voteData);
 

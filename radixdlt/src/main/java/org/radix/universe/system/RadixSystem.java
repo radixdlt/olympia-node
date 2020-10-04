@@ -18,6 +18,7 @@
 package org.radix.universe.system;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 import com.radixdlt.crypto.exception.PublicKeyException;
@@ -161,5 +162,23 @@ public class RadixSystem extends BasicContainer
 	@Override
 	public String toString() {
 		return key == null ? "null" : key.euid().toString();
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		RadixSystem that = (RadixSystem) o;
+		return agentVersion == that.agentVersion
+				&& protocolVersion == that.protocolVersion
+				&& timestamp == that.timestamp
+				&& Objects.equals(agent, that.agent)
+				&& Objects.equals(transports, that.transports)
+				&& Objects.equals(key, that.key);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(agentVersion, protocolVersion, agent, timestamp, transports, key);
 	}
 }

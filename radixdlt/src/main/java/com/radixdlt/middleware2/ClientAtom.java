@@ -21,14 +21,16 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.hash.HashCode;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.Atom;
+import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware.SpunParticle;
@@ -62,7 +64,7 @@ public final class ClientAtom implements LedgerAtom {
 	private transient ImmutableMap<String, String> metaData;
 
 	private transient AID aid;
-	private transient Hash powFeeHash;
+	private transient HashCode powFeeHash;
 	private byte[] rawAtom;
 
 	private ClientAtom() {
@@ -73,7 +75,7 @@ public final class ClientAtom implements LedgerAtom {
 		AID aid,
 		CMInstruction cmInstruction,
 		ImmutableMap<String, String> metaData,
-		Hash powFeeHash,
+		HashCode powFeeHash,
 		byte[] rawAtom
 	) {
 		this.aid = Objects.requireNonNull(aid);
@@ -91,14 +93,15 @@ public final class ClientAtom implements LedgerAtom {
 
 	@JsonProperty("raw")
 	private void setSerializerAtom(byte[] atomBytes) {
+		Hasher hasher = Sha256Hasher.withDefaultSerialization(); // TODO: luk
 		Objects.requireNonNull(atomBytes);
 		try {
 			this.rawAtom = atomBytes;
 			final Atom atom = DefaultSerialization.getInstance().fromDson(atomBytes, Atom.class);
-			this.aid = atom.getAID();
+			this.aid = Atom.aidOf(atom, hasher);
 			this.metaData = ImmutableMap.copyOf(atom.getMetaData());
-			this.cmInstruction = convertToCMInstruction(atom);
-			this.powFeeHash = atom.copyExcludingMetadata(Atom.METADATA_POW_NONCE_KEY).getHash();
+			this.cmInstruction = convertToCMInstruction(atom, hasher);
+			this.powFeeHash = hasher.hash(atom.copyExcludingMetadata(Atom.METADATA_POW_NONCE_KEY));
 		} catch (DeserializeException | LedgerAtomConversionException e) {
 			throw new IllegalStateException("Failed to deserialize atomBytes");
 		}
@@ -120,7 +123,7 @@ public final class ClientAtom implements LedgerAtom {
 	}
 
 	@Override
-	public Hash getPowFeeHash() {
+	public HashCode getPowFeeHash() {
 		return powFeeHash;
 	}
 
@@ -196,11 +199,11 @@ public final class ClientAtom implements LedgerAtom {
 		return microInstructionsBuilder.build();
 	}
 
-	static CMInstruction convertToCMInstruction(Atom atom) throws LedgerAtomConversionException {
+	static CMInstruction convertToCMInstruction(Atom atom, Hasher hasher) throws LedgerAtomConversionException {
 		final ImmutableList<CMMicroInstruction> microInstructions = toCMMicroInstructions(atom.getParticleGroups());
 		return new CMInstruction(
 			microInstructions,
-			atom.getHash(),
+			hasher.hash(atom),
 			ImmutableMap.copyOf(atom.getSignatures())
 		);
 	}
@@ -225,7 +228,7 @@ public final class ClientAtom implements LedgerAtom {
 	 * @return an atom to be stored on ledger
 	 * @throws LedgerAtomConversionException on conversion errors
 	 */
-	public static ClientAtom convertFromApiAtom(Atom atom) throws LedgerAtomConversionException {
+	public static ClientAtom convertFromApiAtom(Atom atom, Hasher hasher) throws LedgerAtomConversionException {
 		final byte[] rawAtom = DefaultSerialization.getInstance().toDson(atom, Output.PERSIST);
 		final int computedSize = rawAtom.length;
 
@@ -233,13 +236,13 @@ public final class ClientAtom implements LedgerAtom {
 			throw new LedgerAtomConversionException(DataPointer.ofAtom(), "Atom too big");
 		}
 
-		final CMInstruction cmInstruction = convertToCMInstruction(atom);
+		final CMInstruction cmInstruction = convertToCMInstruction(atom, hasher);
 
 		return new ClientAtom(
-			atom.getAID(),
+			Atom.aidOf(atom, hasher),
 			cmInstruction,
 			ImmutableMap.copyOf(atom.getMetaData()),
-			atom.copyExcludingMetadata(Atom.METADATA_POW_NONCE_KEY).getHash(),
+			hasher.hash(atom.copyExcludingMetadata(Atom.METADATA_POW_NONCE_KEY)),
 			rawAtom
 		);
 	}

@@ -22,9 +22,10 @@ import static org.mockito.Mockito.mock;
 import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.constraintmachine.CMInstruction;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.utils.TypedMocks;
@@ -44,7 +45,7 @@ public class CommittedAtomTest {
 		this.clientAtom = mock(ClientAtom.class);
 		when(clientAtom.getAID()).thenReturn(mock(AID.class));
 		when(clientAtom.getCMInstruction()).thenReturn(mock(CMInstruction.class));
-		when(clientAtom.getPowFeeHash()).thenReturn(mock(Hash.class));
+		when(clientAtom.getPowFeeHash()).thenReturn(mock(HashCode.class));
 		when(clientAtom.getMetaData()).thenReturn(TypedMocks.rmock(ImmutableMap.class));
 		this.proof = mock(VerifiedLedgerHeaderAndProof.class);
 		this.committedAtom = new CommittedAtom(clientAtom, 12345L, proof);
@@ -63,6 +64,7 @@ public class CommittedAtomTest {
 	@Test
 	public void equalsContract() {
 		EqualsVerifier.forClass(CommittedAtom.class)
+			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 			.verify();
 	}
 

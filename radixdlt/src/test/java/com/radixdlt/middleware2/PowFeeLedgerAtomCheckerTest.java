@@ -19,9 +19,12 @@ package com.radixdlt.middleware2;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.universe.Universe;
 import org.junit.Before;
@@ -38,18 +41,21 @@ public class PowFeeLedgerAtomCheckerTest {
 	private PowFeeLedgerAtomChecker checker;
 	private Universe universe;
 	private PowFeeComputer powFeeComputer;
-	private Hash target;
+	private HashCode target;
+	private Hasher hasher;
 
 	@Before
 	public void setUp() {
+		this.hasher = Sha256Hasher.withDefaultSerialization();
 		this.universe = mock(Universe.class);
 		when(universe.getGenesis()).thenReturn(Collections.emptyList());
 		this.powFeeComputer = mock(PowFeeComputer.class);
-		this.target = mock(Hash.class);
+		this.target = HashCode.fromBytes(new byte[2]);
 		this.checker = new PowFeeLedgerAtomChecker(
 			universe,
 			powFeeComputer,
-			target
+			target,
+			hasher
 		);
 	}
 
@@ -58,7 +64,7 @@ public class PowFeeLedgerAtomCheckerTest {
 		when(universe.getGenesis()).thenReturn(Collections.emptyList());
 		ClientAtom ledgerAtom = mock(ClientAtom.class);
 		CMInstruction cmInstruction = new CMInstruction(
-			ImmutableList.of(mock(CMMicroInstruction.class)), Hash.random(), ImmutableMap.of()
+			ImmutableList.of(mock(CMMicroInstruction.class)), HashUtils.random256(), ImmutableMap.of()
 		);
 		when(ledgerAtom.getAID()).thenReturn(mock(AID.class));
 		when(ledgerAtom.getCMInstruction()).thenReturn(cmInstruction);
@@ -68,9 +74,9 @@ public class PowFeeLedgerAtomCheckerTest {
 				"powNonce", "0"
 			)
 		);
-		Hash powSpent = mock(Hash.class);
+
+		HashCode powSpent = HashCode.fromBytes(new byte[1]);
 		when(powFeeComputer.computePowSpent(eq(ledgerAtom), eq(0L))).thenReturn(powSpent);
-		when(powSpent.compareTo(eq(target))).thenReturn(-1);
 		assertThat(checker.check(ledgerAtom).isSuccess()).isTrue();
 	}
 
@@ -78,7 +84,7 @@ public class PowFeeLedgerAtomCheckerTest {
 	public void when_validating_atom_without_particles__result_has_error() {
 		ClientAtom ledgerAtom = mock(ClientAtom.class);
 		CMInstruction cmInstruction = new CMInstruction(
-			ImmutableList.of(), Hash.random(), ImmutableMap.of()
+			ImmutableList.of(), HashUtils.random256(), ImmutableMap.of()
 		);
 		when(ledgerAtom.getAID()).thenReturn(mock(AID.class));
 		when(ledgerAtom.getCMInstruction()).thenReturn(cmInstruction);
@@ -92,7 +98,7 @@ public class PowFeeLedgerAtomCheckerTest {
 	public void when_validating_atom_without_metadata__result_has_error() {
 		LedgerAtom ledgerAtom = mock(ClientAtom.class);
 		CMInstruction cmInstruction = new CMInstruction(
-			ImmutableList.of(mock(CMMicroInstruction.class)), Hash.random(), ImmutableMap.of()
+			ImmutableList.of(mock(CMMicroInstruction.class)), HashUtils.random256(), ImmutableMap.of()
 		);
 		when(ledgerAtom.getAID()).thenReturn(mock(AID.class));
 		when(ledgerAtom.getCMInstruction()).thenReturn(cmInstruction);

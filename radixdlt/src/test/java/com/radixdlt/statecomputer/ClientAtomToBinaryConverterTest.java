@@ -24,8 +24,10 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atomos.RRIParticle;
+import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
@@ -37,6 +39,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class ClientAtomToBinaryConverterTest {
+
+	private final Hasher hasher = Sha256Hasher.withDefaultSerialization();
+
 	private ClientAtomToBinaryConverter clientAtomToBinaryConverter;
 
 	@Before
@@ -59,7 +64,7 @@ public class ClientAtomToBinaryConverterTest {
 			ImmutableMap.of("timestamp", "0")
 		);
 
-		ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom);
+		ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom, hasher);
 
 		byte[] serializedAtom = clientAtomToBinaryConverter.toLedgerEntryContent(clientAtom);
 		ClientAtom deserializedAtom = clientAtomToBinaryConverter.toAtom(serializedAtom);

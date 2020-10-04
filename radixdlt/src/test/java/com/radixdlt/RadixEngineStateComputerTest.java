@@ -33,12 +33,14 @@ import com.radixdlt.atommodel.AtomAlreadySignedException;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.middleware.ParticleGroup;
@@ -63,6 +65,8 @@ public class RadixEngineStateComputerTest {
 	private Serialization serialization = DefaultSerialization.getInstance();
 	private BFTValidatorSet validatorSet;
 	private EngineStore<LedgerAtom> engineStore;
+
+	private static final Hasher hasher = Sha256Hasher.withDefaultSerialization();
 
 	private Module getExternalModule() {
 		return new AbstractModule() {
@@ -109,8 +113,8 @@ public class RadixEngineStateComputerTest {
 		Atom atom = new Atom();
 		atom.addParticleGroup(particleGroup);
 		try {
-			atom.sign(keyPair);
-			ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom);
+			Atom.sign(atom, keyPair, hasher);
+			ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom, hasher);
 			final byte[] payload = DefaultSerialization.getInstance().toDson(clientAtom, Output.ALL);
 			return new Command(payload);
 		} catch (AtomAlreadySignedException | LedgerAtomConversionException e) {

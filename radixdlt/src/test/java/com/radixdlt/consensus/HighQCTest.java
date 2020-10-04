@@ -1,7 +1,8 @@
 package com.radixdlt.consensus;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 import org.junit.Test;
@@ -18,12 +19,12 @@ public class HighQCTest extends SerializeObject<HighQC> {
 
 	private static HighQC get() {
 		View view = View.of(1234567891L);
-		Hash id = Hash.random();
+		HashCode id = HashUtils.random256();
 
-		LedgerHeader ledgerHeader = LedgerHeader.genesis(Hash.ZERO_HASH, null);
+		LedgerHeader ledgerHeader = LedgerHeader.genesis(HashUtils.zero256(), null);
 		BFTHeader header = new BFTHeader(view, id, ledgerHeader);
-		BFTHeader parent = new BFTHeader(View.of(1234567890L), Hash.random(), ledgerHeader);
-		BFTHeader commit = new BFTHeader(View.of(1234567889L), Hash.random(), ledgerHeader);
+		BFTHeader parent = new BFTHeader(View.of(1234567890L), HashUtils.random256(), ledgerHeader);
+		BFTHeader commit = new BFTHeader(View.of(1234567889L), HashUtils.random256(), ledgerHeader);
 		VoteData voteData = new VoteData(header, parent, commit);
 		QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 		return HighQC.from(qc, qc);
@@ -73,6 +74,7 @@ public class HighQCTest extends SerializeObject<HighQC> {
 	@Test
 	public void equalsContract() {
 		EqualsVerifier.forClass(HighQC.class)
+			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 			.verify();
 	}
 }

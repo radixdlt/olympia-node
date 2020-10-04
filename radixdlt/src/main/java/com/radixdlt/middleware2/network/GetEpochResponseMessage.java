@@ -28,7 +28,7 @@ import java.util.Objects;
 import org.radix.network.messaging.Message;
 
 @SerializerId2("message.consensus.get_epoch_response")
-public class GetEpochResponseMessage extends Message {
+public final class GetEpochResponseMessage extends Message {
 	@JsonProperty("ancestor")
 	@DsonOutput(Output.ALL)
 	private final VerifiedLedgerHeaderAndProof ancestor;
@@ -70,5 +70,25 @@ public class GetEpochResponseMessage extends Message {
 	@Override
 	public String toString() {
 		return String.format("%s{ancestor=%s}", getClass().getSimpleName(), ancestor);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		GetEpochResponseMessage that = (GetEpochResponseMessage) o;
+		return Objects.equals(ancestor, that.ancestor)
+				&& Objects.equals(author, that.author)
+				&& Objects.equals(getTimestamp(), that.getTimestamp())
+				&& Objects.equals(getMagic(), that.getMagic());
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(ancestor, author, getTimestamp(), getMagic());
 	}
 }

@@ -18,7 +18,7 @@
 package com.radixdlt.middleware2.network;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.crypto.Hash;
+import com.google.common.hash.HashCode;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
@@ -32,7 +32,7 @@ import org.radix.network.messaging.Message;
 public final class GetVerticesRequestMessage extends Message {
 	@JsonProperty("vertexId")
 	@DsonOutput(Output.ALL)
-	private final Hash vertexId;
+	private final HashCode vertexId;
 
 	@JsonProperty("count")
 	@DsonOutput(Output.ALL)
@@ -45,13 +45,13 @@ public final class GetVerticesRequestMessage extends Message {
 		this.count = 0;
 	}
 
-	GetVerticesRequestMessage(int magic, Hash vertexId, int count) {
+	GetVerticesRequestMessage(int magic, HashCode vertexId, int count) {
 		super(magic);
 		this.vertexId = Objects.requireNonNull(vertexId);
 		this.count = count;
 	}
 
-	public Hash getVertexId() {
+	public HashCode getVertexId() {
 		return vertexId;
 	}
 
@@ -62,5 +62,25 @@ public final class GetVerticesRequestMessage extends Message {
 	@Override
 	public String toString() {
 		return String.format("%s[%s]", getClass().getSimpleName(), vertexId);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		GetVerticesRequestMessage that = (GetVerticesRequestMessage) o;
+		return count == that.count
+				&& Objects.equals(vertexId, that.vertexId)
+				&& Objects.equals(getTimestamp(), that.getTimestamp())
+				&& Objects.equals(getMagic(), that.getMagic());
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(vertexId, count, getTimestamp(), getMagic());
 	}
 }

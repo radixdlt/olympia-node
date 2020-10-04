@@ -17,10 +17,11 @@
 
 package com.radixdlt;
 
+import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.AtomChecker;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.PowFeeComputer;
@@ -31,18 +32,21 @@ import com.radixdlt.universe.Universe;
  * Module which provides a POW fee checker
  */
 public class PowFeeModule extends AbstractModule {
-	private static final Hash DEFAULT_FEE_TARGET = new Hash("0000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
+
+	private static final HashCode DEFAULT_FEE_TARGET = HashCode.fromString("0000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
 
 	@Provides
 	@Singleton
 	private AtomChecker<LedgerAtom> powFeeLedgerAtomChecker(
 		Universe universe,
-		PowFeeComputer powFeeComputer
+		PowFeeComputer powFeeComputer,
+		Hasher hasher
 	) {
 		return new PowFeeLedgerAtomChecker(
 			universe,
 			powFeeComputer,
-			DEFAULT_FEE_TARGET
+			DEFAULT_FEE_TARGET,
+			hasher
 		);
 	}
 

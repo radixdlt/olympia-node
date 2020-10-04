@@ -20,7 +20,11 @@ package com.radixdlt.mempool.messages;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.Command;
+import com.radixdlt.crypto.HashUtils;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import nl.jqno.equalsverifier.Warning;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -42,5 +46,14 @@ public class MempoolAtomAddedMessageTest {
 	@Test
 	public void sensibleToString() {
 		assertThat(message.toString()).contains(MempoolAtomAddedMessage.class.getSimpleName());
+	}
+
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(MempoolAtomAddedMessage.class)
+				.withIgnoredFields("instance")
+				.suppress(Warning.NONFINAL_FIELDS)
+				.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+				.verify();
 	}
 }

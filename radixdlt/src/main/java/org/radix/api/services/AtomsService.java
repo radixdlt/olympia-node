@@ -25,9 +25,8 @@ import com.radixdlt.api.SubmissionFailure;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.PreparedVertex;
-import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.engine.RadixEngine.RadixEngineBranch;
 import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.mempool.SubmissionControl;
 
@@ -92,6 +91,8 @@ public class AtomsService {
 	private final CommittedAtomsRx committedAtomsRx;
 	private final Observable<BFTCommittedUpdate> committedUpdates;
 
+	private final Hasher hasher;
+
 	public AtomsService(
 		SubmissionErrorsRx submissionErrorsRx,
 		CommittedAtomsRx committedAtomsRx,
@@ -99,7 +100,8 @@ public class AtomsService {
 		LedgerEntryStore store,
 		SubmissionControl submissionControl,
 		CommandToBinaryConverter commandToBinaryConverter,
-		ClientAtomToBinaryConverter clientAtomToBinaryConverter
+		ClientAtomToBinaryConverter clientAtomToBinaryConverter,
+		Hasher hasher
 	) {
 		this.submissionErrorsRx = Objects.requireNonNull(submissionErrorsRx);
 		this.submissionControl = Objects.requireNonNull(submissionControl);
@@ -109,6 +111,7 @@ public class AtomsService {
 		this.disposable = new CompositeDisposable();
 		this.committedAtomsRx = committedAtomsRx;
 		this.committedUpdates = Objects.requireNonNull(committedUpdates);
+		this.hasher = hasher;
 	}
 
 	private void processExecutedCommand(CommittedAtomWithResult committedAtomWithResult) {
@@ -144,12 +147,12 @@ public class AtomsService {
 	}
 
 	private void processDeserializationFailure(DeserializationFailure e) {
-		List<SingleAtomListener> subscribers = this.deleteOnEventSingleAtomObservers.remove(e.getAtom().getAID());
+		List<SingleAtomListener> subscribers = this.deleteOnEventSingleAtomObservers.remove(Atom.aidOf(e.getAtom(), hasher));
 		if (subscribers != null) {
-			subscribers.forEach(subscriber -> subscriber.onError(e.getAtom().getAID(), e.getException()));
+			subscribers.forEach(subscriber -> subscriber.onError(Atom.aidOf(e.getAtom(), hasher), e.getException()));
 		}
 
-		for (AtomStatusListener singleAtomListener : this.singleAtomObservers.getOrDefault(e.getAtom().getAID(), Collections.emptyList())) {
+		for (AtomStatusListener singleAtomListener : this.singleAtomObservers.getOrDefault(Atom.aidOf(e.getAtom(), hasher), Collections.emptyList())) {
 			singleAtomListener.onError(e.getException());
 		}
 	}
@@ -233,7 +236,7 @@ public class AtomsService {
 
 	public org.radix.api.observable.Observable<ObservedAtomEvents> getAtomEvents(AtomQuery atomQuery) {
 		return observer -> {
-			final AtomEventObserver atomEventObserver = new AtomEventObserver(atomQuery, observer, executorService, store, commandToBinaryConverter, clientAtomToBinaryConverter);
+			final AtomEventObserver atomEventObserver = new AtomEventObserver(atomQuery, observer, executorService, store, commandToBinaryConverter, clientAtomToBinaryConverter, hasher);
 			atomEventObserver.start();
 			this.atomEventObservers.add(atomEventObserver);
 

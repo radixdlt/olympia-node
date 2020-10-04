@@ -19,12 +19,12 @@ package com.radixdlt.ledger;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -38,7 +38,7 @@ import javax.annotation.concurrent.Immutable;
  */
 @Immutable
 @SerializerId2("ledger.ledger_header_and_proof")
-public class DtoLedgerHeaderAndProof {
+public final class DtoLedgerHeaderAndProof {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
@@ -61,7 +61,7 @@ public class DtoLedgerHeaderAndProof {
 	// committed vertexId
 	@JsonProperty("opaque3")
 	@DsonOutput(Output.ALL)
-	private final Hash opaque3;
+	private final HashCode opaque3;
 
 	// committed ledgerState
 	@JsonProperty("ledgerState")
@@ -77,7 +77,7 @@ public class DtoLedgerHeaderAndProof {
 		@JsonProperty("opaque0") BFTHeader opaque0,
 		@JsonProperty("opaque1") BFTHeader opaque1,
 		@JsonProperty("opaque2") long opaque2,
-		@JsonProperty("opaque3") Hash opaque3,
+		@JsonProperty("opaque3") HashCode opaque3,
 		@JsonProperty("ledgerState") LedgerHeader ledgerHeader,
 		@JsonProperty("signatures") TimestampedECDSASignatures signatures
 	) {
@@ -113,7 +113,7 @@ public class DtoLedgerHeaderAndProof {
 		return opaque2;
 	}
 
-	public Hash getOpaque3() {
+	public HashCode getOpaque3() {
 		return opaque3;
 	}
 
@@ -128,5 +128,27 @@ public class DtoLedgerHeaderAndProof {
 	@Override
 	public String toString() {
 		return String.format("%s{header=%s}", this.getClass().getSimpleName(), this.ledgerHeader);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		DtoLedgerHeaderAndProof that = (DtoLedgerHeaderAndProof) o;
+		return opaque2 == that.opaque2
+				&& Objects.equals(opaque0, that.opaque0)
+				&& Objects.equals(opaque1, that.opaque1)
+				&& Objects.equals(opaque3, that.opaque3)
+				&& Objects.equals(ledgerHeader, that.ledgerHeader)
+				&& Objects.equals(signatures, that.signatures);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(opaque0, opaque1, opaque2, opaque3, ledgerHeader, signatures);
 	}
 }

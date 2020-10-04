@@ -20,6 +20,9 @@ package com.radixdlt.network.messaging;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.concurrent.CompletableFuture;
+
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.Hasher;
 import org.radix.Radix;
 
 import com.radixdlt.counters.SystemCounters;
@@ -58,6 +61,7 @@ class MessageDispatcher {
 	private final TimeSupplier timeSource;
 	private final LocalSystem localSystem;
 	private final AddressBook addressBook;
+	private final Hasher hasher;
 
 	MessageDispatcher(
 		SystemCounters counters,
@@ -65,7 +69,8 @@ class MessageDispatcher {
 		Serialization serialization,
 		TimeSupplier timeSource,
 		LocalSystem localSystem,
-		AddressBook addressBook
+		AddressBook addressBook,
+		Hasher hasher
 	) {
 		this.messageTtlMs = config.messagingTimeToLive(30_000L);
 		this.counters = counters;
@@ -73,6 +78,7 @@ class MessageDispatcher {
 		this.timeSource = timeSource;
 		this.localSystem = localSystem;
 		this.addressBook = addressBook;
+		this.hasher = hasher;
 	}
 
 	CompletableFuture<SendResult> send(TransportManager transportManager, final MessageEvent outboundMessage) {
@@ -89,7 +95,7 @@ class MessageDispatcher {
 		if (message instanceof SignedMessage) {
 			SignedMessage signedMessage = (SignedMessage) message;
 			if (signedMessage.getSignature() == null) {
-				signedMessage.sign(this.localSystem.getKeyPair());
+				signedMessage.sign(this.localSystem.getKeyPair(), hasher);
 			}
 		}
 
@@ -193,7 +199,8 @@ class MessageDispatcher {
 	}
 
 	private boolean checkSignature(SignedMessage message, RadixSystem system) {
-		return message.verify(system.getKey());
+		HashCode hash = hasher.hash(message);
+		return system.getKey().verify(hash, message.getSignature());
 	}
 
 	private SendResult updateStatistics(SendResult result) {

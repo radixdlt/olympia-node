@@ -17,8 +17,8 @@
 
 package com.radixdlt.consensus.bft;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.RequiresSyncConsensusEvent;
-import com.radixdlt.crypto.Hash;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -59,7 +59,7 @@ public final class SyncQueues {
 		 * @return the top of the queue if requirements are met
 		 */
 		@Nullable
-		public RequiresSyncConsensusEvent peek(@Nullable Hash vertexId) {
+		public RequiresSyncConsensusEvent peek(@Nullable HashCode vertexId) {
 			RequiresSyncConsensusEvent e = queue.peek();
 
 			if (e == null) {
