@@ -18,8 +18,9 @@
 package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ImmutableSet.Builder;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.View;
@@ -140,31 +141,55 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 		);
 	}
 
+	private void execute(
+		RadixEngineBranch<LedgerAtom> branch,
+		Command next,
+		ImmutableSet.Builder<Command> successBuilder,
+		ImmutableMap.Builder<Command, Exception> errorBuilder
+	) {
+		ClientAtom clientAtom = mapCommand(next);
+		if (clientAtom == null) {
+			return;
+		}
+
+		try {
+			branch.checkAndStore(clientAtom);
+		} catch (RadixEngineException e) {
+			errorBuilder.put(next, e);
+			return;
+		}
+
+		successBuilder.add(next);
+	}
+
 	@Override
-	public StateComputerResult prepare(ImmutableList<Command> uncommittedChain, View view) {
+	public StateComputerResult prepare(ImmutableList<Command> previous, Command next, View view) {
 		RadixEngineBranch<LedgerAtom> transientBranch = this.radixEngine.transientBranch();
-		Builder<Command> failedCommandsBuilder = ImmutableSet.builder();
-		for (Command command : uncommittedChain) {
+		for (Command command : previous) {
 			ClientAtom clientAtom = mapCommand(command);
 			if (clientAtom != null) {
 				try {
 					transientBranch.checkAndStore(clientAtom);
 				} catch (RadixEngineException e) {
-					failedCommandsBuilder.add(command);
 				}
 			}
 		}
 
-		ImmutableSet<Command> failedCommands = failedCommandsBuilder.build();
+		final ImmutableSet.Builder<Command> successBuilder = ImmutableSet.builder();
+		final ImmutableMap.Builder<Command, Exception> exceptionBuilder = ImmutableMap.builder();
+
+		if (next != null) {
+			this.execute(transientBranch, next, successBuilder, exceptionBuilder);
+		}
 
 		this.radixEngine.deleteBranches();
 
 		if (view.compareTo(epochChangeView) >= 0) {
 			RadixEngineValidatorSetBuilder validatorSetBuilder = transientBranch.getComputedState(RadixEngineValidatorSetBuilder.class);
-			return new StateComputerResult(failedCommands, validatorSetBuilder.build());
+			return new StateComputerResult(successBuilder.build(), exceptionBuilder.build(), validatorSetBuilder.build());
 		}
 
-		return new StateComputerResult(failedCommands);
+		return new StateComputerResult(successBuilder.build(), exceptionBuilder.build());
 	}
 
 	private ClientAtom mapCommand(Command command) {

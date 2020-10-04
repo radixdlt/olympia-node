@@ -17,6 +17,7 @@
 
 package com.radixdlt.integration.distributed.simulation.invariants.ledger;
 
+import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.integration.distributed.simulation.TestInvariant;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.utils.Pair;
@@ -33,16 +34,16 @@ public class ConsensusToLedgerCommittedInvariant implements TestInvariant {
 	public Observable<TestInvariantError> check(RunningNetwork network) {
 		return network.bftCommittedUpdates()
 			.map(Pair::getSecond)
-			.concatMap(committedUpdate -> Observable.fromStream(committedUpdate.getCommitted().stream()))
-			.filter(v -> v.getCommand() != null)
-			.flatMapMaybe(v -> network
+			.concatMap(committedUpdate -> Observable.fromStream(committedUpdate.getCommitted().stream()
+				.flatMap(PreparedVertex::getCommands)))
+			.flatMapMaybe(cmd -> network
 				.ledgerUpdates()
-				.filter(nodeAndCmd -> nodeAndCmd.getSecond().getNewCommands().contains(v.getCommand()))
+				.filter(nodeAndCmd -> nodeAndCmd.getSecond().getNewCommands().contains(cmd))
 				.timeout(10, TimeUnit.SECONDS)
 				.firstOrError()
 				.ignoreElement()
 				.onErrorReturn(e -> new TestInvariantError(
-					"Committed vertex " + v + " has not been inserted into the ledger after 10 seconds")
+					"Committed command in vertex has not been inserted into the ledger after 10 seconds")
 				)
 			);
 	}

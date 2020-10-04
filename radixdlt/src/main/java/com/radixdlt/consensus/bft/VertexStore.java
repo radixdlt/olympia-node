@@ -243,8 +243,7 @@ public final class VertexStore {
 		});
 
 		final ImmutableList<Command> commands = path.stream()
-			.map(PreparedVertex::getCommand)
-			.filter(Objects::nonNull)
+			.flatMap(PreparedVertex::getCommands)
 			.collect(ImmutableList.toImmutableList());
 
 		this.counters.add(CounterType.BFT_PROCESSED, path.size());

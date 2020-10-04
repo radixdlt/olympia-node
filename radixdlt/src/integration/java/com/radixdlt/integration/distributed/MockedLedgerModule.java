@@ -17,8 +17,9 @@
 
 package com.radixdlt.integration.distributed;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.bft.PreparedVertex;
-import com.radixdlt.consensus.bft.PreparedVertex.CommandStatus;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 
@@ -49,7 +50,10 @@ public class MockedLedgerModule extends AbstractModule {
 				final LedgerHeader ledgerHeader = vertex.getParentHeader().getLedgerHeader()
 					.updateViewAndTimestamp(vertex.getView(), timestamp);
 
-				return Optional.of(vertex.withHeader(ledgerHeader).andCommandStatus(CommandStatus.SUCCESS));
+				return Optional.of(vertex.withHeader(ledgerHeader).andCommands(
+					vertex.getCommand() != null ? ImmutableSet.of(vertex.getCommand()) : ImmutableSet.of(),
+					ImmutableMap.of()
+				));
 			}
 
 			@Override

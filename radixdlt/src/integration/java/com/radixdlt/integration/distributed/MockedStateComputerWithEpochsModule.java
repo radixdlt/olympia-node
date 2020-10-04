@@ -18,6 +18,7 @@
 package com.radixdlt.integration.distributed;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
@@ -81,11 +82,18 @@ public class MockedStateComputerWithEpochsModule extends AbstractModule {
 		return new StateComputer() {
 			private long epoch = 1;
 			@Override
-			public StateComputerResult prepare(ImmutableList<Command> commands, View view) {
+			public StateComputerResult prepare(ImmutableList<Command> previous, Command next, View view) {
 				if (view.compareTo(epochHighView) >= 0) {
-					return new StateComputerResult(ImmutableSet.of(), validatorSetMapping.apply(epoch + 1));
+					return new StateComputerResult(
+						next == null ? ImmutableSet.of() : ImmutableSet.of(next),
+						ImmutableMap.of(),
+						validatorSetMapping.apply(epoch + 1)
+					);
 				} else {
-					return new StateComputerResult();
+					return new StateComputerResult(
+						next == null ? ImmutableSet.of() : ImmutableSet.of(next),
+						ImmutableMap.of()
+					);
 				}
 			}
 

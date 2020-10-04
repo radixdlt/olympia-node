@@ -18,6 +18,8 @@
 package com.radixdlt.integration.distributed;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.radixdlt.consensus.BFTConfiguration;
@@ -60,8 +62,8 @@ public class MockedStateComputerModule extends AbstractModule {
 	private StateComputer stateComputer() {
 		return new StateComputer() {
 			@Override
-			public StateComputerResult prepare(ImmutableList<Command> commands, View view) {
-				return new StateComputerResult();
+			public StateComputerResult prepare(ImmutableList<Command> previous, Command next, View view) {
+				return new StateComputerResult(next == null ? ImmutableSet.of() : ImmutableSet.of(next), ImmutableMap.of());
 			}
 
 			@Override

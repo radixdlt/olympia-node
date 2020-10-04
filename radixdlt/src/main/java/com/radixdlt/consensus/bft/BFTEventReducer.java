@@ -155,7 +155,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			} else {
 				final List<PreparedVertex> preparedVertices = vertexStore.getPathFromRoot(highestQC.getProposed().getVertexId());
 				final Set<Hash> prepared = preparedVertices.stream()
-					.map(PreparedVertex::getCommand)
+					.flatMap(PreparedVertex::getCommands)
 					.filter(Objects::nonNull)
 					.map(Command::getHash)
 					.collect(Collectors.toSet());

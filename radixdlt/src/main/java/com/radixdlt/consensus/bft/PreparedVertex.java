@@ -17,26 +17,33 @@
 
 package com.radixdlt.consensus.bft;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.utils.Pair;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 public final class PreparedVertex {
-	public enum CommandStatus {
-		SUCCESS, IGNORED, FAILED
-	}
-
 	private final VerifiedVertex vertex;
 
 	private final LedgerHeader ledgerHeader;
 
-	private final CommandStatus commandStatus;
+	private final ImmutableSet<Command> successfulCommands;
+	private final ImmutableMap<Command, Exception> commandExceptions;
 
-	PreparedVertex(VerifiedVertex vertex, LedgerHeader ledgerHeader, CommandStatus commandStatus) {
+	PreparedVertex(
+		VerifiedVertex vertex,
+		LedgerHeader ledgerHeader,
+		ImmutableSet<Command> successfulCommands,
+		ImmutableMap<Command, Exception> commandExceptions
+	) {
 		this.vertex = Objects.requireNonNull(vertex);
 		this.ledgerHeader = Objects.requireNonNull(ledgerHeader);
-		this.commandStatus = commandStatus;
+		this.successfulCommands = Objects.requireNonNull(successfulCommands);
+		this.commandExceptions = commandExceptions;
 	}
 
 	public Hash getId() {
@@ -51,8 +58,19 @@ public final class PreparedVertex {
 		return vertex.getView();
 	}
 
-	public Command getCommand() {
-		return commandStatus == CommandStatus.SUCCESS ? vertex.getCommand() : null;
+	public Stream<Command> successfulCommands() {
+		return successfulCommands.stream();
+	}
+
+	public Stream<Pair<Command, Exception>> errorCommands() {
+		return Stream.of(vertex.getCommand())
+			.filter(Objects::nonNull)
+			.filter(commandExceptions::containsKey)
+			.map(cmd -> Pair.of(cmd, commandExceptions.get(cmd)));
+	}
+
+	public Stream<Command> getCommands() {
+		return Stream.concat(successfulCommands(), errorCommands().map(Pair::getFirst));
 	}
 
 	/**
@@ -69,13 +87,5 @@ public final class PreparedVertex {
 	 */
 	public VerifiedVertex getVertex() {
 		return vertex;
-	}
-
-	/**
-	 * Retrieve the status of the command. Should NOT be persisted on ledger
-	 * @return status of command in vertex
-	 */
-	public CommandStatus getCommandStatus() {
-		return commandStatus;
 	}
 }
