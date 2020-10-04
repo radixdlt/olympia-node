@@ -180,7 +180,7 @@ public class SimulationNodes {
 				Set<Observable<Pair<BFTNode, BFTCommittedUpdate>>> committedVertices = nodeInstances.stream()
 					.map(i -> {
 						BFTNode node = i.getInstance(Key.get(BFTNode.class, Names.named("self")));
-						return i.getInstance(InfoRx.class).bftCommittedUpdates()
+						return i.getInstance(Key.get(new TypeLiteral<Observable<BFTCommittedUpdate>>() { }))
 							.map(v -> Pair.of(node, v));
 					})
 					.collect(Collectors.toSet());

@@ -22,6 +22,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
+import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.systeminfo.InMemorySystemInfoManager;
 import com.radixdlt.systeminfo.InfoRx;
@@ -32,6 +33,7 @@ import com.radixdlt.middleware2.InfoSupplier;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.properties.RuntimeProperties;
 
+import io.reactivex.rxjava3.core.Observable;
 import java.util.Objects;
 
 import org.radix.Radix;
@@ -56,10 +58,10 @@ public class SystemInfoModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private InMemorySystemInfoManager infoStateRunner(InfoRx infoRx) {
+	private InMemorySystemInfoManager infoStateRunner(InfoRx infoRx, Observable<BFTCommittedUpdate> committedUpdates) {
 		final int vertexBufferSize = runtimeProperties.get("api.debug.vertex_buffer_size", DEFAULT_VERTEX_BUFFER_SIZE);
 		final long vertexUpdateFrequency = runtimeProperties.get("api.debug.vertex_update_freq", DEFAULT_VERTEX_UPDATE_FREQ);
-		return new InMemorySystemInfoManager(infoRx, vertexBufferSize, vertexUpdateFrequency);
+		return new InMemorySystemInfoManager(infoRx, committedUpdates, vertexBufferSize, vertexUpdateFrequency);
 	}
 
 	@Provides

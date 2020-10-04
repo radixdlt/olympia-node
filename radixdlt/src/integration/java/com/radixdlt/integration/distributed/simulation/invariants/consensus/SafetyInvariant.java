@@ -31,7 +31,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
-import java.util.stream.Collectors;
 
 /**
  * Checks that validator nodes do not commit on conflicting vertices
@@ -66,11 +65,7 @@ public class SafetyInvariant implements TestInvariant {
 		final TreeMap<EpochView, VerifiedVertex> committedVertices = new TreeMap<>();
 		final Map<BFTNode, EpochView> lastCommittedByNode = new HashMap<>();
 
-		return Observable.merge(
-			network.getNodes().stream().map(
-				node -> network.getInfo(node).bftCommittedUpdates().map(v -> Pair.of(node, v)))
-				.collect(Collectors.toList())
-		)
+		return network.bftCommittedUpdates()
 			.concatMap(nodeAndVertices -> Observable.fromStream(nodeAndVertices.getSecond().getCommitted().stream()
 				.map(PreparedVertex::getVertex))
 				.map(v -> Pair.of(nodeAndVertices.getFirst(), v))

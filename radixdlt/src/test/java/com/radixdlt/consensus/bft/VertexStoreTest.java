@@ -23,7 +23,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
@@ -189,14 +188,5 @@ public class VertexStoreTest {
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		when(qc.getProposed()).thenReturn(header);
 		assertThat(vertexStore.addQC(qc)).isFalse();
-	}
-
-	@Test
-	public void when_get_vertices_with_size_2__then_should_return_both() {
-		Hash id = mock(Hash.class);
-		VerifiedVertex vertex = nextVertex.apply(id);
-		vertexStore.insertVertex(vertex);
-		assertThat(vertexStore.getVertices(id, 2))
-			.contains(ImmutableList.of(vertex, genesisVertex));
 	}
 }

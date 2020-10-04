@@ -21,16 +21,14 @@ import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.mock;
 import static org.powermock.api.mockito.PowerMockito.when;
 
-import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
-import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.systeminfo.InMemorySystemInfoManager;
 import com.radixdlt.systeminfo.InfoRx;
 import com.radixdlt.consensus.Timeout;
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.subjects.PublishSubject;
 import java.util.concurrent.TimeUnit;
 import org.junit.Before;
 import org.junit.Test;
@@ -45,8 +43,8 @@ public class InMemorySystemInfoManagerTest {
 		when(infoRx.timeouts()).thenReturn(Observable.never());
 		when(infoRx.currentViews()).thenReturn(Observable.never());
 		when(infoRx.highQCs()).thenReturn(Observable.never());
-		when(infoRx.bftCommittedUpdates()).thenReturn(Observable.never());
-		this.runner = new InMemorySystemInfoManager(infoRx, 1, 1);
+		Observable<BFTCommittedUpdate> bftCommittedUpdates = PublishSubject.create();
+		this.runner = new InMemorySystemInfoManager(infoRx, bftCommittedUpdates, 1, 1);
 	}
 
 	@Test

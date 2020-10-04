@@ -44,7 +44,7 @@ public class MockedLedgerModule extends AbstractModule {
 	Ledger syncedLedger() {
 		return new Ledger() {
 			@Override
-			public Optional<PreparedVertex> prepare(LinkedList<VerifiedVertex> previous, VerifiedVertex vertex) {
+			public Optional<PreparedVertex> prepare(LinkedList<PreparedVertex> previous, VerifiedVertex vertex) {
 				final long timestamp = vertex.getQC().getTimestampedSignatures().weightedTimestamp();
 				final LedgerHeader ledgerHeader = vertex.getParentHeader().getLedgerHeader()
 					.updateViewAndTimestamp(vertex.getView(), timestamp);
