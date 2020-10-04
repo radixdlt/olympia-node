@@ -121,11 +121,11 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	}
 
 	@Override
-	public Optional<PreparedVertex> prepare(LinkedList<VerifiedVertex> previous, VerifiedVertex vertex) {
+	public Optional<PreparedVertex> prepare(LinkedList<PreparedVertex> previous, VerifiedVertex vertex) {
 		final LedgerHeader parentHeader = vertex.getParentHeader().getLedgerHeader();
 		final AccumulatorState parentAccumulatorState = parentHeader.getAccumulatorState();
 		final ImmutableList<Command> prevCommands = previous.stream()
-			.map(VerifiedVertex::getCommand)
+			.map(PreparedVertex::getCommand)
 			.filter(Objects::nonNull)
 			.collect(ImmutableList.toImmutableList());
 		final long timestamp = vertex.getQC().getTimestampedSignatures().weightedTimestamp();
@@ -166,7 +166,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			if (vertex.getCommand() == null) {
 				commandStatus = CommandStatus.IGNORED;
 				accumulatorState = parentHeader.getAccumulatorState();
-			/* } else if (result.getFailedCommands().contains(vertex.getCommand())) {
+			/*} else if (result.getFailedCommands().contains(vertex.getCommand())) {
 				commandStatus = CommandStatus.FAILED;
 				accumulatorState = parentHeader.getAccumulatorState();
 			 */

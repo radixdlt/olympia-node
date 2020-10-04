@@ -35,7 +35,7 @@ public interface Ledger {
 	 * @param vertex vertex to prepare
 	 * @return the results of executing the prepare stage
 	 */
-	Optional<PreparedVertex> prepare(LinkedList<VerifiedVertex> previous, VerifiedVertex vertex);
+	Optional<PreparedVertex> prepare(LinkedList<PreparedVertex> previous, VerifiedVertex vertex);
 
 	/**
 	 * Commit a command

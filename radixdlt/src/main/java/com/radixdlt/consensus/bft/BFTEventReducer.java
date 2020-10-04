@@ -153,9 +153,9 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			if (highestQC.getProposed().getLedgerHeader().isEndOfEpoch()) {
 				nextCommand = null;
 			} else {
-				final List<VerifiedVertex> preparedVertices = vertexStore.getPathFromRoot(highestQC.getProposed().getVertexId());
+				final List<PreparedVertex> preparedVertices = vertexStore.getPathFromRoot(highestQC.getProposed().getVertexId());
 				final Set<Hash> prepared = preparedVertices.stream()
-					.map(VerifiedVertex::getCommand)
+					.map(PreparedVertex::getCommand)
 					.filter(Objects::nonNull)
 					.map(Command::getHash)
 					.collect(Collectors.toSet());

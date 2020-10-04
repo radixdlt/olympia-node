@@ -188,7 +188,7 @@ public final class VertexStore {
 			throw new MissingParentException(vertex.getParentId());
 		}
 
-		LinkedList<VerifiedVertex> previous = getPathFromRoot(vertex.getParentId());
+		LinkedList<PreparedVertex> previous = getPathFromRoot(vertex.getParentId());
 		Optional<PreparedVertex> preparedVertexMaybe = ledger.prepare(previous, vertex);
 		preparedVertexMaybe.ifPresent(preparedVertex -> {
 			// TODO: Don't check for state computer errors for now so that we don't
@@ -196,8 +196,8 @@ public final class VertexStore {
 			// TODO: Reinstate this when ProposalGenerator + Mempool can guarantee correct proposals
 			// TODO: (also see commitVertex->storeAtom)
 			if (!vertices.containsKey(preparedVertex.getId())) {
-				vertices.put(vertex.getId(), preparedVertex);
-				int numChildren = vertexNumChildren.merge(vertex.getParentId(), 1, Integer::sum);
+				vertices.put(preparedVertex.getId(), preparedVertex);
+				int numChildren = vertexNumChildren.merge(preparedVertex.getParentId(), 1, Integer::sum);
 				if (numChildren > 1) {
 					this.counters.increment(CounterType.BFT_VERTEX_STORE_FORKS);
 				}
@@ -234,7 +234,7 @@ public final class VertexStore {
 			throw new IllegalStateException("Committing vertex not in store: " + header);
 		}
 
-		final ImmutableList<VerifiedVertex> path = ImmutableList.copyOf(getPathFromRoot(tipVertex.getId()));
+		final ImmutableList<PreparedVertex> path = ImmutableList.copyOf(getPathFromRoot(tipVertex.getId()));
 
 		// TODO: Must prune all other children of root
 		path.forEach(v -> {
@@ -243,7 +243,7 @@ public final class VertexStore {
 		});
 
 		final ImmutableList<Command> commands = path.stream()
-			.map(VerifiedVertex::getCommand)
+			.map(PreparedVertex::getCommand)
 			.filter(Objects::nonNull)
 			.collect(ImmutableList.toImmutableList());
 
@@ -259,13 +259,13 @@ public final class VertexStore {
 		updateVertexStoreSize();
 	}
 
-	public LinkedList<VerifiedVertex> getPathFromRoot(Hash vertexId) {
-		final LinkedList<VerifiedVertex> path = new LinkedList<>();
+	public LinkedList<PreparedVertex> getPathFromRoot(Hash vertexId) {
+		final LinkedList<PreparedVertex> path = new LinkedList<>();
 
 		PreparedVertex vertex = vertices.get(vertexId);
 		while (vertex != null) {
-			path.addFirst(vertex.getVertex());
-			vertex = vertices.get(vertex.getVertex().getParentId());
+			path.addFirst(vertex);
+			vertex = vertices.get(vertex.getParentId());
 		}
 
 		return path;

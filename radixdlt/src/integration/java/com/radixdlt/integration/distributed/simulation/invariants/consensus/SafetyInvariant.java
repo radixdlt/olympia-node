@@ -17,6 +17,7 @@
 
 package com.radixdlt.integration.distributed.simulation.invariants.consensus;
 
+import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.bft.View;
@@ -70,7 +71,8 @@ public class SafetyInvariant implements TestInvariant {
 				node -> network.getInfo(node).bftCommittedUpdates().map(v -> Pair.of(node, v)))
 				.collect(Collectors.toList())
 		)
-			.concatMap(nodeAndVertices -> Observable.fromStream(nodeAndVertices.getSecond().getCommitted().stream())
+			.concatMap(nodeAndVertices -> Observable.fromStream(nodeAndVertices.getSecond().getCommitted().stream()
+				.map(PreparedVertex::getVertex))
 				.map(v -> Pair.of(nodeAndVertices.getFirst(), v))
 			)
 			.flatMap(nodeAndVertex -> {

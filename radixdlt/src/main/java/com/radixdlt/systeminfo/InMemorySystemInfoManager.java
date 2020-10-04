@@ -20,6 +20,7 @@ package com.radixdlt.systeminfo;
 import com.google.common.collect.EvictingQueue;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
+import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Timeout;
@@ -82,7 +83,7 @@ public final class InMemorySystemInfoManager {
 		if (this.vertexUpdateFrequency > 0) {
 			this.infoRx.bftCommittedUpdates()
 				.observeOn(Schedulers.io())
-				.concatMap(committed -> Observable.fromStream(committed.getCommitted().stream()))
+				.concatMap(committed -> Observable.fromStream(committed.getCommitted().stream().map(PreparedVertex::getVertex)))
 				.filter(v -> (v.getView().number() % vertexUpdateFrequency) == 0)
 				.subscribe(vertexRingBuffer::add);
 		}

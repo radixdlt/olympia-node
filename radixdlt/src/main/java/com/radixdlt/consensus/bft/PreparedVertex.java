@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus.bft;
 
+import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.crypto.Hash;
 import java.util.Objects;
@@ -40,6 +41,18 @@ public final class PreparedVertex {
 
 	public Hash getId() {
 		return vertex.getId();
+	}
+
+	public Hash getParentId() {
+		return vertex.getParentId();
+	}
+
+	public View getView() {
+		return vertex.getView();
+	}
+
+	public Command getCommand() {
+		return commandStatus == CommandStatus.SUCCESS ? vertex.getCommand() : null;
 	}
 
 	/**
