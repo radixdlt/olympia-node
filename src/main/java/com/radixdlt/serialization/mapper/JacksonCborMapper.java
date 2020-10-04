@@ -18,15 +18,16 @@
 package com.radixdlt.serialization.mapper;
 
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.KeyDeserializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
 import com.fasterxml.jackson.databind.ser.FilterProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import com.radixdlt.crypto.Hash;
+import com.google.common.hash.HashCode;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RRI;
@@ -39,6 +40,7 @@ import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 
 import java.io.IOException;
+import java.util.Optional;
 import java.util.function.Function;
 
 /**
@@ -48,6 +50,10 @@ import java.util.function.Function;
 public class JacksonCborMapper extends ObjectMapper {
 	private static final long serialVersionUID = 4917479892309630214L;
 
+	public static JacksonCborMapper create(SerializerIds idLookup, FilterProvider filterProvider, boolean sortProperties) {
+		return new JacksonCborMapper(idLookup, filterProvider, sortProperties, Optional.empty());
+	}
+
 	/**
 	 * Create an {@link RadixObjectMapperConfigurator} that will serialize to/from
 	 * CBOR encoded DSON.
@@ -56,13 +62,16 @@ public class JacksonCborMapper extends ObjectMapper {
 	 * 		ID lookup
 	 * @param filterProvider A {@link FilterProvider} to use for filtering
 	 * 		serialized fields
+	 * @param serializationModifier optional BeanSerializerModifier to mix in the serialization
 	 * @return A freshly created {@link JacksonCborMapper}
 	 */
-	public static JacksonCborMapper create(SerializerIds idLookup, FilterProvider filterProvider, boolean sortProperties) {
-		return new JacksonCborMapper(idLookup, filterProvider, sortProperties);
+	public static JacksonCborMapper create(SerializerIds idLookup, FilterProvider filterProvider, boolean sortProperties,
+										   Optional<BeanSerializerModifier> serializationModifier) {
+		return new JacksonCborMapper(idLookup, filterProvider, sortProperties, serializationModifier);
 	}
 
-	private JacksonCborMapper(SerializerIds idLookup, FilterProvider filterProvider, boolean sortProperties) {
+	private JacksonCborMapper(SerializerIds idLookup, FilterProvider filterProvider, boolean sortProperties,
+							  Optional<BeanSerializerModifier> serializationModifier) {
 		super(new RadixCBORFactory());
 		RadixObjectMapperConfigurator.configure(this, idLookup, filterProvider, sortProperties);
 		SimpleModule cborModule = new SimpleModule();
@@ -73,10 +82,10 @@ public class JacksonCborMapper extends ObjectMapper {
 				JacksonCodecConstants.EUID_VALUE,
 				EUID::toByteArray
 		));
-		cborModule.addSerializer(Hash.class, new JacksonCborObjectBytesSerializer<>(
-				Hash.class,
+		cborModule.addSerializer(HashCode.class, new JacksonCborObjectBytesSerializer<>(
+				HashCode.class,
 				JacksonCodecConstants.HASH_VALUE,
-				Hash::toByteArray
+				HashCode::asBytes
 		));
 		cborModule.addSerializer(byte[].class, new JacksonCborObjectBytesSerializer<>(
 				byte[].class,
@@ -127,10 +136,10 @@ public class JacksonCborMapper extends ObjectMapper {
 				JacksonCodecConstants.EUID_VALUE,
 				EUID::new
 		));
-		cborModule.addDeserializer(Hash.class, new JacksonCborObjectBytesDeserializer<>(
-				Hash.class,
+		cborModule.addDeserializer(HashCode.class, new JacksonCborObjectBytesDeserializer<>(
+				HashCode.class,
 				JacksonCodecConstants.HASH_VALUE,
-				Hash::new
+				HashCode::fromBytes
 		));
 		cborModule.addDeserializer(byte[].class, new JacksonCborObjectBytesDeserializer<>(
 				byte[].class,
@@ -176,6 +185,8 @@ public class JacksonCborMapper extends ObjectMapper {
 				return AID.from(key.substring(JacksonCodecConstants.STR_VALUE_LEN));
 			}
 		});
+
+		serializationModifier.ifPresent(cborModule::setSerializerModifier);
 
 		registerModule(cborModule);
 	}

@@ -20,7 +20,7 @@ package com.radixdlt.identifiers;
 import com.google.common.base.Suppliers;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.utils.Base58;
 
@@ -59,7 +59,7 @@ public final class RadixAddress {
 		byte[] addressBytes = new byte[1 + digest.length + 4];
 		addressBytes[0] = magic;
 		System.arraycopy(digest, 0, addressBytes, 1, digest.length);
-		byte[] check = Hash.hash256(addressBytes, 0, digest.length + 1);
+		byte[] check = HashUtils.sha256(addressBytes, 0, digest.length + 1).asBytes();
 		System.arraycopy(check, 0, addressBytes, digest.length + 1, 4);
 
 		this.addressBytes = addressBytes;
@@ -68,7 +68,7 @@ public final class RadixAddress {
 
 	public static RadixAddress from(byte[] raw) {
 		try {
-			byte[] check = Hash.hash256(raw, 0, raw.length - 4);
+			byte[] check = HashUtils.sha256(raw, 0, raw.length - 4).asBytes();
 			for (int i = 0; i < 4; ++i) {
 				if (check[i] != raw[raw.length - 4 + i]) {
 					throw new IllegalArgumentException("Address " + Base58.toBase58(raw) + " checksum mismatch");

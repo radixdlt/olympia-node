@@ -21,7 +21,6 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
-import com.radixdlt.crypto.Hash;
 import java.io.IOException;
 
 /**
@@ -43,7 +42,7 @@ class JacksonJsonStringDeserializer extends StdDeserializer<String> {
 	public String deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
 		String value = p.getValueAsString();
 		if (!value.startsWith(JacksonCodecConstants.STR_STR_VALUE)) {
-			throw new InvalidFormatException(p, "Expecting string", value, Hash.class);
+			throw new InvalidFormatException(p, "Expecting string", value, String.class);
 		}
 		return value.substring(JacksonCodecConstants.STR_VALUE_LEN);
 	}

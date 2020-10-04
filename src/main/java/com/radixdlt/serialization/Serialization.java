@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.ser.FilterProvider;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.mapper.JacksonCborMapper;
 import com.radixdlt.serialization.mapper.JacksonJsonMapper;
@@ -32,6 +33,8 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Map;
+import java.util.Arrays;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collector;
@@ -73,25 +76,43 @@ public class Serialization {
 		availableOutputs.remove(Output.NONE);
 
 		noneProvider = filterProviderFor(ImmutableMap.of());
-		Map<Class<?>, ImmutableSet<String>> allFields =  availableOutputs.stream()
+		Map<Class<?>, ImmutableSet<String>> allFields = availableOutputs.stream()
 				.flatMap(output -> policy.getIncludedFields(output).entrySet().stream())
 				.collect(Collectors.groupingBy(Map.Entry::getKey, flatMapping(e -> e.getValue().stream(), ImmutableSet.toImmutableSet())));
 		allProvider = filterProviderFor(ImmutableMap.copyOf(allFields));
 
 		ImmutableMap.Builder<Output, JacksonCborMapper> dsonBuilder = ImmutableMap.builder();
-		for (Output e : availableOutputs) {
-			dsonBuilder.put(e, JacksonCborMapper.create(idLookup, filterProviderFor(policy.getIncludedFields(e)), true));
-		}
+
+		JacksonCborMapper hashDsonMapper = JacksonCborMapper.create(idLookup, filterProviderFor(policy.getIncludedFields(Output.HASH)), true);
+
+		JacksonCborMapper apiDsonMapper = JacksonCborMapper.create(idLookup, filterProviderFor(policy.getIncludedFields(Output.API)),
+				true, Optional.of(new ApiSerializationModifier(hashDsonMapper)));
+
+		dsonBuilder.put(Output.HASH, hashDsonMapper);
+		dsonBuilder.put(Output.API, apiDsonMapper);
 		dsonBuilder.put(Output.NONE, JacksonCborMapper.create(idLookup, noneProvider, true));
 		dsonBuilder.put(Output.ALL, JacksonCborMapper.create(idLookup, allProvider, true));
+		for (Output e : Arrays.asList(Output.PERSIST, Output.WIRE)) {
+			dsonBuilder.put(e, JacksonCborMapper.create(idLookup, filterProviderFor(policy.getIncludedFields(e)), true));
+		}
+
 		dsonMappers = dsonBuilder.build();
 
 		ImmutableMap.Builder<Output, JacksonJsonMapper> jsonBuilder = ImmutableMap.builder();
-		for (Output e : availableOutputs) {
-			jsonBuilder.put(e, JacksonJsonMapper.create(idLookup, filterProviderFor(policy.getIncludedFields(e)), false));
-		}
+
+		JacksonJsonMapper hashJsonMapper = JacksonJsonMapper.create(idLookup, filterProviderFor(policy.getIncludedFields(Output.HASH)), false);
+
+		JacksonJsonMapper apiJsonMapper = JacksonJsonMapper.create(idLookup, filterProviderFor(policy.getIncludedFields(Output.API)),
+				false, Optional.of(new ApiSerializationModifier(hashDsonMapper)));
+
+		jsonBuilder.put(Output.HASH, hashJsonMapper);
+		jsonBuilder.put(Output.API, apiJsonMapper);
 		jsonBuilder.put(Output.NONE, JacksonJsonMapper.create(idLookup, noneProvider, false));
 		jsonBuilder.put(Output.ALL, JacksonJsonMapper.create(idLookup, allProvider, false));
+		for (Output e : Lists.newArrayList(Output.PERSIST, Output.WIRE)) {
+			jsonBuilder.put(e, JacksonJsonMapper.create(idLookup, filterProviderFor(policy.getIncludedFields(e)), false));
+		}
+
 		jsonMappers = jsonBuilder.build();
 	}
 

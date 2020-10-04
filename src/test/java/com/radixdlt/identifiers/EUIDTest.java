@@ -28,6 +28,7 @@ import static org.junit.Assert.assertTrue;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.google.common.base.Strings;
+import com.google.common.hash.HashCode;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.UInt128;
 import java.util.Arrays;
@@ -208,5 +209,11 @@ public class EUIDTest {
 		assertEquals(UInt128.SIZE - 2, EUID.ZERO.routingDistanceFrom(EUID.TWO));
 
 		assertEquals(0, EUID.ZERO.routingDistanceFrom(minusOne));
+	}
+
+	@Test
+	public void testCreateFromHashCode() {
+		HashCode hash = HashCode.fromLong(1234);
+		assertEquals(EUID.fromHash(hash), new EUID(hash.asBytes()));
 	}
 }

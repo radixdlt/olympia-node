@@ -20,6 +20,7 @@ package com.radixdlt.crypto;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.common.base.Suppliers;
+import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.encryption.ECIES;
 import com.radixdlt.crypto.exception.ECIESException;
 import com.radixdlt.crypto.exception.PublicKeyException;
@@ -78,8 +79,8 @@ public final class ECPublicKey {
         return ECKeyUtils.spec().getCurve().decodePoint(this.publicKey);
     }
 
-    public boolean verify(Hash hash, ECDSASignature signature) {
-        return verify(hash.toByteArray(), signature);
+    public boolean verify(HashCode hash, ECDSASignature signature) {
+        return verify(hash.asBytes(), signature);
     }
 
     public boolean verify(byte[] hash, ECDSASignature signature) {
@@ -117,6 +118,6 @@ public final class ECPublicKey {
     }
 
     private EUID computeUID() {
-        return EUID.hash256(getBytes());
+        return EUID.sha256(getBytes());
     }
 }

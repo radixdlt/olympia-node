@@ -41,7 +41,7 @@ import com.radixdlt.SecurityCritical;
 import com.radixdlt.SecurityCritical.SecurityKind;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECKeyUtils;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.exception.MacMismatchException;
 import com.radixdlt.crypto.keystore.Cipherparams;
 import com.radixdlt.crypto.keystore.Crypto;
@@ -161,7 +161,7 @@ public final class PrivateKeyEncrypter {
         byte[] result = new byte[derivedKey.length + cipherText.length];
         result = ByteBuffer.wrap(result).put(derivedKey).put(cipherText).array();
 
-        return Hash.hash256(result);
+        return HashUtils.sha256(result).asBytes();
     }
 
     private static String getSalt() {

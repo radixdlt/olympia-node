@@ -18,6 +18,8 @@
 package com.radixdlt.crypto;
 
 
+import com.google.common.hash.HashCode;
+
 import java.util.List;
 
 public interface Signatures {
@@ -36,7 +38,7 @@ public interface Signatures {
      * @param message The hashed data to check against (the data that has been signed).
      * @return The possibly empty list of valid signatories for the provided hash.
      */
-    List<ECPublicKey> signedMessage(Hash message);
+    List<ECPublicKey> signedMessage(HashCode message);
 
     /**
      * Returns a new instance of {@link Signatures}, concatenated with the {@code signature},

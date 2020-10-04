@@ -40,11 +40,11 @@ public final class Crypt {
 		throw new IllegalStateException("Can't construct");
 	}
 
-	public static byte[] encrypt(byte[] iv, byte[] data, byte[] keyE) throws CryptOperationException {
+	static byte[] encrypt(byte[] iv, byte[] data, byte[] keyE) throws CryptOperationException {
 		return crypt(CryptOperation.ENCRYPT, iv, data, keyE);
 	}
 
-	public static byte[] decrypt(byte[] iv, byte[] data, byte[] keyE) throws CryptOperationException {
+	static byte[] decrypt(byte[] iv, byte[] data, byte[] keyE) throws CryptOperationException {
 		return crypt(CryptOperation.DECRYPT, iv, data, keyE);
 	}
 
