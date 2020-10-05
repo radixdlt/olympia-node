@@ -172,6 +172,7 @@ public class RadixJsonRpcClient {
 	 * Generic helper method for calling a JSON-RPC method. Deserializes the received json.
 	 *
 	 * @param method name of JSON-RPC method
+	 * @param params request parameters
 	 * @return response from rpc method
 	 */
 	public Single<JsonRpcResponse> jsonRpcCall(String method, JsonElement params) {

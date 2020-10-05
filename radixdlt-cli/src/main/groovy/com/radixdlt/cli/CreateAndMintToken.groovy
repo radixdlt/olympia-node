@@ -52,7 +52,7 @@ class CreateAndMintToken implements Runnable {
     @CommandLine.Option(names = ["-a", "--amount"], paramLabel = "AMOUNT", description = " Amount to send")
     BigDecimal amount
 
-    @CommandLine.Option(names = ["-n", "--token-name"], paramLabel = "TOKEN_NAME", description = " Unique name of the token", required = true)
+    @CommandLine.Option(names = ["-t", "--token-name"], paramLabel = "TOKEN_NAME", description = " Unique name of the token", required = true)
     String tokenName
 
     @CommandLine.Option(names = ["-d", "--token-desc"], paramLabel = "TOKEN_DESCRIPTION", description = "Description of token")

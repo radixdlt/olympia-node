@@ -25,15 +25,15 @@ package com.radixdlt.client.application.identity;
 import com.radixdlt.crypto.ECKeyPair;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.io.Writer;
 import java.security.GeneralSecurityException;
 
+import com.radixdlt.crypto.RadixKeyStore;
 import com.radixdlt.crypto.encryption.PrivateKeyEncrypter;
+import com.radixdlt.crypto.exception.KeyStoreException;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import org.bouncycastle.util.encoders.Base64;
@@ -49,6 +49,8 @@ public class RadixIdentities {
 	 * Creates a radix identity from a private key
 	 * @param privateKeyBase64 the private key encoded in base 64
 	 * @return a radix identity
+	 * @throws PrivateKeyException in case of issues with private key used to create identity
+	 * @throws PublicKeyException in case of issues with preparing public key
 	 */
 	public static RadixIdentity fromPrivateKeyBase64(String privateKeyBase64)
 			throws PrivateKeyException, PublicKeyException {
@@ -69,7 +71,9 @@ public class RadixIdentities {
 	 * the associated radix identity
 	 * @param keyFile the file to load or create
 	 * @return a radix identity
-	 * @throws IOException
+	 * @throws IOException in case of I/O errors
+	 * @throws PrivateKeyException in case of issues with private key used to create identity
+	 * @throws PublicKeyException in case of issues with preparing public key
 	 */
 	public static RadixIdentity loadOrCreateFile(File keyFile)
 			throws IOException, PrivateKeyException, PublicKeyException {
@@ -92,7 +96,9 @@ public class RadixIdentities {
 	 * the associated radix identity
 	 * @param filePath the path of the file to load or create
 	 * @return a radix identity
-	 * @throws IOException
+	 * @throws IOException in case of I/O errors
+	 * @throws PrivateKeyException in case of issues with private key used to create identity
+	 * @throws PublicKeyException in case of issues with preparing public key
 	 */
 	public static RadixIdentity loadOrCreateFile(String filePath)
 			throws IOException, PrivateKeyException, PublicKeyException {
@@ -102,35 +108,22 @@ public class RadixIdentities {
 	/**
 	 * Loads or creates an encrypted file containing a private key and returns
 	 * the associated radix identity
-	 * @param keyFile the file to load or create
-	 * @param password the password to decrypt the encrypted file
-	 * @return a radix identity
-	 * @throws IOException
-	 */
-	public static RadixIdentity loadOrCreateEncryptedFile(File keyFile, String password)
-			throws IOException, GeneralSecurityException, PrivateKeyException, PublicKeyException {
-		if (!keyFile.exists()) {
-			try (Writer writer = new FileWriter(keyFile)) {
-				return createNewEncryptedIdentity(writer, password);
-			}
-		} else {
-			try (Reader reader = new FileReader(keyFile)) {
-				return readEncryptedIdentity(reader, password);
-			}
-		}
-	}
-
-	/**
-	 * Loads or creates an encrypted file containing a private key and returns
-	 * the associated radix identity
 	 * @param filePath the path of the file to load or create
 	 * @param password the password to decrypt the encrypted file
+	 * @param keyName name of keypair to use from key store
 	 * @return a radix identity
-	 * @throws IOException
+	 * @throws IOException in case of I/O errors
+	 * @throws PrivateKeyException in case of issues with private key used to create identity
+	 * @throws PublicKeyException in case of issues with preparing public key
+	 * @throws KeyStoreException in case of issues accessing keystore and retrieving keypair
 	 */
-	public static RadixIdentity loadOrCreateEncryptedFile(String filePath, String password)
-			throws IOException, GeneralSecurityException, PrivateKeyException, PublicKeyException {
-		return loadOrCreateEncryptedFile(new File(filePath), password);
+	public static RadixIdentity loadOrCreateEncryptedFile(String filePath, String password, String keyName)
+			throws IOException, PrivateKeyException, PublicKeyException, KeyStoreException {
+		var keyFile = new File(filePath);
+		var keyStore = RadixKeyStore.fromFile(keyFile, password.toCharArray(), !keyFile.exists());
+		var keyPair = keyStore.readKeyPair(keyName, !keyFile.exists());
+
+		return new LocalRadixIdentity(keyPair);
 	}
 
 	/**
@@ -139,7 +132,10 @@ public class RadixIdentities {
 	 * @param writer the writer to write the encrypted private key to
 	 * @param password the password to encrypt the private key with
 	 * @return the radix identity created
-	 * @throws IOException
+	 * @throws IOException in case of I/O errors
+	 * @throws GeneralSecurityException in case of issues during encryption of private key
+	 * @throws PrivateKeyException in case of issues with private key used to create identity
+	 * @throws PublicKeyException in case of issues with preparing public key
 	 */
 	public static RadixIdentity createNewEncryptedIdentity(Writer writer, String password)
 			throws IOException, GeneralSecurityException, PrivateKeyException, PublicKeyException {
@@ -154,7 +150,10 @@ public class RadixIdentities {
 	 * @param reader the reader to read the encrypted private key from
 	 * @param password the password to decrypt the private key with
 	 * @return the decrypted radix identity
-	 * @throws IOException
+	 * @throws IOException in case of I/O errors
+	 * @throws GeneralSecurityException in case of issues during decryption of private key
+	 * @throws PrivateKeyException in case of issues with private key used to create identity
+	 * @throws PublicKeyException in case of issues with preparing public key
 	 */
 	public static RadixIdentity readEncryptedIdentity(Reader reader, String password)
 			throws IOException, GeneralSecurityException, PrivateKeyException, PublicKeyException {

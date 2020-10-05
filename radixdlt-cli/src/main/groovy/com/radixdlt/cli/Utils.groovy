@@ -31,15 +31,19 @@ import okhttp3.Request
 
 class Utils {
     static String RADIX_BOOTSTRAP_TRUSTED_NODE = "RADIX_BOOTSTRAP_TRUSTED_NODE"
+    public static final String KEYFILE_NAME = System.getenv("RADCLI_ENCRYPTED_KEYFILE")
+    public static final String UNENCRYPTED_KEYFILE_NAME = System.getenv("RADCLI_UNENCRYPTED_KEYFILE")
+    public static final String KEYFILE_PASSWORD = System.getenv("RADCLI_PWD")
+    public static final String KEY_NAME = System.getenv("RADCLI_KEYNAME")
 
     static RadixIdentity getIdentiyUsingEnvVar() {
         RadixIdentity identity
-        if (System.getenv("RADCLI_ENCRYPTED_KEYFILE") != null && System.getenv("RADCLI_PWD") != null) {
-            identity = RadixIdentities.loadOrCreateEncryptedFile(System.getenv("RADCLI_ENCRYPTED_KEYFILE"), System.getenv("RADCLI_PWD"))
-        } else if (System.getenv("RADCLI_UNENCRYPTED_KEYFILE") != null) {
-            identity = RadixIdentities.loadOrCreateFile(System.getenv("RADCLI_UNENCRYPTED_KEYFILE"))
+        if (KEYFILE_NAME != null && KEYFILE_PASSWORD != null && KEY_NAME != null) {
+            identity = RadixIdentities.loadOrCreateEncryptedFile(KEYFILE_NAME, KEYFILE_PASSWORD, KEY_NAME)
+        } else if (UNENCRYPTED_KEYFILE_NAME != null) {
+            identity = RadixIdentities.loadOrCreateFile(UNENCRYPTED_KEYFILE_NAME)
         } else {
-            System.err.println("Key required in form of environment variable [RADCLI_ENCRYPTED_KEYFILE & RADCLI_PWD] or RADCLI_UNENCRYPTED_KEYFILE")
+            System.err.println("Key required in form of environment variable [RADCLI_ENCRYPTED_KEYFILE & RADCLI_PWD & RADCLI_KEYNAME] or RADCLI_UNENCRYPTED_KEYFILE")
             System.err.println("Run help -h option to check the usage")
 
             System.exit(-1)
@@ -48,34 +52,23 @@ class Utils {
         return identity
     }
 
-    static RadixIdentity getIdentity(String keyFile, String password, String unEncryptedKeyFile) {
-        RadixIdentity identity
-
-        if (keyFile != null) {
-            if (password == null) {
-                System.err.println("password required")
-                System.exit(-1)
-                return
-            }
-            identity = RadixIdentities.loadOrCreateEncryptedFile(keyFile, password)
-        } else if (unEncryptedKeyFile != null) {
-            identity = RadixIdentities.loadOrCreateFile(unEncryptedKeyFile)
-        } else {
-            System.err.println("key required")
+    static RadixIdentity getIdentity(String keyFile, String password, String keyName) {
+        if (keyFile == null || password == null) {
+            System.err.println("Key file name and password are required")
             System.exit(-1)
-            return
         }
-        return identity
+        return RadixIdentities.loadOrCreateEncryptedFile(keyFile, password, keyName)
     }
 
-    static RadixIdentity getIdentity(IdentityInfo info) {
 
+    static RadixIdentity getIdentity(IdentityInfo info) {
         if (info?.encrypted != null) {
-            return getIdentity(info.encrypted.keyStore, info.encrypted.password, null)
+            return getIdentity(info.encrypted.keyStore, info.encrypted.password, info.encrypted.keypair)
         } else if (info?.unencryptedKeyFile != null) {
-            return getIdentity(null, null, info.unencryptedKeyFile)
+            return RadixIdentities.loadOrCreateFile(info.unencryptedKeyFile)
+        } else {
+            return getIdentiyUsingEnvVar()
         }
-        return getIdentiyUsingEnvVar()
     }
 
     static RadixApplicationAPI getAPI(IdentityInfo identityInfo) {

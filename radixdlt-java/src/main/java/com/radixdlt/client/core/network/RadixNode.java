@@ -62,6 +62,7 @@ public final class RadixNode {
 
 	/**
 	 * Get the http URL for this radix node
+	 * @param path node-local part of URL
 	 * @return request object pointing to the http endpoint
 	 */
 	public Request getHttpEndpoint(String path) {

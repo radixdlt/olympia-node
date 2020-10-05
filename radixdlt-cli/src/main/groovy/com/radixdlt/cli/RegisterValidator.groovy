@@ -60,7 +60,7 @@ class RegisterValidator implements Runnable {
 				.collect(Collectors.<RadixAddress>toSet())
 		RadixApplicationAPI api = Utils.getAPI(identityInfo)
 		api.pullOnce(api.getAddress()).blockingAwait()
-		api.registerValidator(api.getAddress(), allowedDelegators, infoUrl).blockUntilComplete()
+		api.registerValidator(api.getAddress(), allowedDelegators as Set<RadixAddress>, infoUrl).blockUntilComplete()
 		println("Registered ${api.getAddress()} as a validator:")
 		printf("  url: %s%n", infoUrl == null ? "<not set>" : infoUrl)
 		printf("  allowedDelegators: %s%n", allowedDelegators.isEmpty() ? "<not set, allows any>" : allowedDelegators)

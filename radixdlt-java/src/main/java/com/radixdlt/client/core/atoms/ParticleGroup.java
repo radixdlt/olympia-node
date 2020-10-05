@@ -44,7 +44,6 @@ import com.radixdlt.client.core.atoms.particles.SpunParticle;
 
 /**
  * A group of particles representing one intent, e.g. a transfer.
- * <p>
  */
 @SerializerId2("radix.particle_group")
 public class ParticleGroup {
@@ -92,6 +91,7 @@ public class ParticleGroup {
 
 	/**
 	 * Get a stream of the spun particles in this group
+	 * @return The spun particles in this group
 	 */
 	public final Stream<SpunParticle> spunParticles() {
 		return this.particles.stream();
@@ -116,6 +116,9 @@ public class ParticleGroup {
 
 	/**
 	 * Get a {@link ParticleGroup} consisting of the given particles
+	 *
+	 * @param particles particles to include in this group
+	 * @return instance of {@link ParticleGroup}
 	 */
 	public static ParticleGroup of(Iterable<SpunParticle> particles) {
 		Objects.requireNonNull(particles, "particles is required");
@@ -125,6 +128,10 @@ public class ParticleGroup {
 
 	/**
 	 * Get a {@link ParticleGroup} consisting of the given particles
+	 *
+	 * @param particles particles to include in this group
+	 * @param metaData extra metadata for group
+	 * @return instance of {@link ParticleGroup}
 	 */
 	public static ParticleGroup of(Iterable<SpunParticle> particles, Map<String, String> metaData) {
 		Objects.requireNonNull(particles, "particles is required");
@@ -135,6 +142,9 @@ public class ParticleGroup {
 
 	/**
 	 * Get a {@link ParticleGroup} consisting of the given particles
+	 *
+	 * @param particles particles to include in this group
+	 * @return instance of {@link ParticleGroup}
 	 */
 	public static ParticleGroup of(SpunParticle... particles) {
 		Objects.requireNonNull(particles, "particles is required");
@@ -144,6 +154,7 @@ public class ParticleGroup {
 
 	/**
 	 * Whether this {@link ParticleGroup} contains any particles
+	 * @return {@code true} if group contains particles
 	 */
 	public boolean hasParticles() {
 		return !this.particles.isEmpty();

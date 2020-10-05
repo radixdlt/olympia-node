@@ -91,7 +91,9 @@ public final class RadixUniverse {
 	/**
 	 * Creates a universe with peer discovery through epics
 	 *
+	 * @param config universe config
 	 * @param discoveryEpics epics which are responsible for peer discovery
+	 * @param initialNetwork nodes in initial network
 	 * @return the created universe
 	 */
 	public static RadixUniverse create(
@@ -105,7 +107,10 @@ public final class RadixUniverse {
 	/**
 	 * Creates a universe with peer discovery through epics
 	 *
+	 * @param config universe config
 	 * @param discoveryEpics epics which are responsible for peer discovery
+	 * @param initialNetwork nodes in initial network
+	 * @param webSockets web sockets
 	 * @return the created universe
 	 */
 	public static RadixUniverse create(
