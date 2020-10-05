@@ -55,6 +55,7 @@ public class AtomsServiceTest {
 		atomsService = new AtomsService(
 			this.submissionErrorsRx,
 			() -> this.committedAtomsSubject,
+			PublishSubject.create(),
 			this.store,
 			this.submissionControl,
 			this.commandToBinaryConverter,

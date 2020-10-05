@@ -100,18 +100,13 @@ public class AtomStatusEpic {
 			}
 
 			@Override
-			public void onStoredFailure(CommittedAtom committedAtom, RadixEngineException exception) {
+			public void onStoredFailure(RadixEngineException exception) {
 				JSONObject data = new JSONObject();
-				data.put("aid", committedAtom.getAID());
+				data.put("aid", aid);
 				data.put("pointerToIssue", exception.getDataPointer());
 				if (exception.getCmError() != null) {
 					data.put("cmError", exception.getCmError().getErrMsg());
 				}
-
-				// TODO: serialize vertexMetadata
-				VerifiedLedgerHeaderAndProof ledgerState = committedAtom.getStateAndProof();
-				data.put("stateVersion", ledgerState.getStateVersion());
-				data.put("epoch", ledgerState.getEpoch());
 
 				final AtomStatus atomStatus;
 				switch (exception.getErrorCode()) {
