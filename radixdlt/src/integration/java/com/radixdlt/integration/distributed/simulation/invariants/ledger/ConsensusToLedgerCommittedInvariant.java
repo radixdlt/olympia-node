@@ -17,11 +17,16 @@
 
 package com.radixdlt.integration.distributed.simulation.invariants.ledger;
 
+import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.integration.distributed.simulation.TestInvariant;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.disposables.Disposable;
+import io.reactivex.rxjava3.subjects.BehaviorSubject;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -32,19 +37,27 @@ public class ConsensusToLedgerCommittedInvariant implements TestInvariant {
 
 	@Override
 	public Observable<TestInvariantError> check(RunningNetwork network) {
+		BehaviorSubject<Set<Command>> committedCommands = BehaviorSubject.create();
+		Disposable d = network.ledgerUpdates().<Set<Command>>scan(
+			new HashSet<>(),
+			(set, next) -> {
+				set.addAll(next.getSecond().getNewCommands());
+				return set;
+			}
+		).subscribe(committedCommands::onNext);
+
 		return network.bftCommittedUpdates()
 			.map(Pair::getSecond)
 			.concatMap(committedUpdate -> Observable.fromStream(committedUpdate.getCommitted().stream()
-				.flatMap(PreparedVertex::getCommands)))
-			.flatMapMaybe(cmd -> network
-				.ledgerUpdates()
-				.filter(nodeAndCmd -> nodeAndCmd.getSecond().getNewCommands().contains(cmd))
+				.flatMap(PreparedVertex::successfulCommands)))
+			.flatMapMaybe(cmd -> committedCommands
+				.filter(cmdSet -> cmdSet.contains(cmd))
 				.timeout(10, TimeUnit.SECONDS)
 				.firstOrError()
 				.ignoreElement()
 				.onErrorReturn(e -> new TestInvariantError(
 					"Committed command in vertex has not been inserted into the ledger after 10 seconds")
 				)
-			);
+			).doFinally(d::dispose);
 	}
 }

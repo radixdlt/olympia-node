@@ -18,6 +18,7 @@
 package com.radixdlt.integration.distributed.simulation.application;
 
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.integration.distributed.simulation.TestInvariant;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
 import io.reactivex.rxjava3.core.Observable;
@@ -44,8 +45,10 @@ public class CommittedChecker implements TestInvariant {
 		return submittedCommands
 			.doOnNext(cmd -> log.debug("Submitted command: {}", cmd))
 			.flatMapMaybe(command -> network
-					.ledgerUpdates()
-						.filter(nodeAndCmd -> nodeAndCmd.getSecond().getNewCommands().contains(command))
+					.bftCommittedUpdates()
+						.filter(nodeAndCmd -> nodeAndCmd.getSecond().getCommitted().stream()
+							.flatMap(PreparedVertex::getCommands)
+							.anyMatch(command::equals))
 						.timeout(10, TimeUnit.SECONDS)
 						.firstOrError()
 						.ignoreElement()
