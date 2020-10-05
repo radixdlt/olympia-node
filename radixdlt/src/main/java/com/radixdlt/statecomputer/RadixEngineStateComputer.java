@@ -31,7 +31,6 @@ import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.middleware2.store.StoredCommittedCommand;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
@@ -97,22 +96,11 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 
 		// TODO: verify start
 		long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
-
-		// TODO: This may still return an empty list as we still count state versions for atoms which
-		// TODO: never make it into the radix engine due to state errors. This is because we only check
-		// TODO: validity on commit rather than on proposal/prepare.
-		final TreeMap<Long, StoredCommittedCommand> storedCommittedAtoms;
 		try {
-			storedCommittedAtoms = committedCommandsReader.getNextCommittedCommands(stateVersion, batchSize);
+			return committedCommandsReader.getNextCommittedCommands(stateVersion, batchSize);
 		} catch (NextCommittedLimitReachedException e) {
 			return null;
 		}
-
-		final VerifiedLedgerHeaderAndProof nextHeader = storedCommittedAtoms.firstEntry().getValue().getStateAndProof();
-		return new VerifiedCommandsAndProof(
-			storedCommittedAtoms.values().stream().map(StoredCommittedCommand::getCommand).collect(ImmutableList.toImmutableList()),
-			nextHeader
-		);
 	}
 
 	private void execute(

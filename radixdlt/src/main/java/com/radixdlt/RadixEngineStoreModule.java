@@ -152,7 +152,7 @@ public class RadixEngineStoreModule extends AbstractModule {
 			initialValidatorSetProvider.getGenesisValidatorSet()
 		);
 
-		if (committedAtomsStore.getNextCommittedCommands(genesisLedgerHeader.getStateVersion() - 1, 1).isEmpty()) {
+		if (committedAtomsStore.getNextCommittedCommands(genesisLedgerHeader.getStateVersion() - 1, 1) == null) {
 			ClientAtom clientAtom = serialization.fromDson(command.getPayload(), ClientAtom.class);
 			CommittedAtom committedAtom = new CommittedAtom(clientAtom, genesisLedgerHeader.getStateVersion(), genesisLedgerHeader);
 			committedAtomsStore.storeAtom(committedAtom);

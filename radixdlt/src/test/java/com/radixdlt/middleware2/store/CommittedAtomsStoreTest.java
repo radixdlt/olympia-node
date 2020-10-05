@@ -40,10 +40,8 @@ import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.SearchCursor;
-import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
 import java.util.HashSet;
 import java.util.Optional;
-import java.util.stream.LongStream;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -144,24 +142,5 @@ public class CommittedAtomsStoreTest {
 		when(store.get(eq(aid))).thenReturn(Optional.of(ledgerEntry));
 
 		assertThat(committedAtomsStore.getSpin(particle)).isEqualTo(Spin.DOWN);
-	}
-
-	@Test
-	public void when_get_committed_atoms__should_return_atoms() throws NextCommittedLimitReachedException {
-		ImmutableList<AID> aids = ImmutableList.of(mock(AID.class), mock(AID.class), mock(AID.class), mock(AID.class));
-		ImmutableList<LedgerEntry> entries = LongStream.range(0, 4).mapToObj(i -> {
-			LedgerEntry e = mock(LedgerEntry.class);
-			when(e.getStateVersion()).thenReturn(i);
-			return e;
-		}).collect(ImmutableList.toImmutableList());
-		when(this.store.getNextCommittedLedgerEntries(eq(3L), eq(4)))
-				.thenReturn(entries);
-		for (int i = 0; i < aids.size(); i++) {
-			when(this.store.get(eq(aids.get(i)))).thenReturn(Optional.of(entries.get(i)));
-			when(entries.get(i).getContent()).thenReturn(new byte[i]);
-			when(this.commandToBinaryConverter.toCommand(any())).thenReturn(mock(StoredCommittedCommand.class));
-		}
-
-		assertThat(this.committedAtomsStore.getNextCommittedCommands(3, 4)).hasSize(4);
 	}
 }
