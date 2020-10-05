@@ -130,7 +130,6 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		final AccumulatorState parentAccumulatorState = parentHeader.getAccumulatorState();
 		final ImmutableList<Command> prevCommands = previous.stream()
 			.flatMap(PreparedVertex::successfulCommands)
-			.filter(Objects::nonNull)
 			.collect(ImmutableList.toImmutableList());
 		final long timestamp = vertex.getQC().getTimestampedSignatures().weightedTimestamp();
 
@@ -178,6 +177,15 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	}
 
 	@Override
+	public void commit(ImmutableList<PreparedVertex> vertices, VerifiedLedgerHeaderAndProof proof) {
+		final ImmutableList<Command> commands = vertices.stream()
+			.flatMap(PreparedVertex::successfulCommands)
+			.collect(ImmutableList.toImmutableList());
+		VerifiedCommandsAndProof verifiedCommandsAndProof = new VerifiedCommandsAndProof(commands, proof);
+		this.commit(verifiedCommandsAndProof);
+	}
+
+	@Override
 	public void commit(VerifiedCommandsAndProof verifiedCommandsAndProof) {
 		this.counters.increment(CounterType.LEDGER_PROCESSED);
 		synchronized (lock) {
@@ -212,7 +220,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			this.counters.set(CounterType.LEDGER_STATE_VERSION, this.currentLedgerHeader.getStateVersion());
 
 			verifiedExtension.get().forEach(cmd -> this.mempool.removeCommitted(cmd.getHash()));
-			BaseLedgerUpdate ledgerUpdate = new BaseLedgerUpdate(commandsToStore, nextHeader.getNextValidatorSet().orElse(null));
+			BaseLedgerUpdate ledgerUpdate = new BaseLedgerUpdate(commandsToStore);
 			ledgerUpdateSender.sendLedgerUpdate(ledgerUpdate);
 		}
 	}

@@ -17,7 +17,6 @@
 
 package com.radixdlt.consensus.bft;
 
-import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Ledger;
@@ -27,7 +26,6 @@ import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.utils.Pair;
 import java.util.Collections;
 import java.util.HashMap;
@@ -234,9 +232,8 @@ public final class VertexStore {
 			throw new IllegalStateException("Committing vertex not in store: " + header);
 		}
 
-		final ImmutableList<PreparedVertex> path = ImmutableList.copyOf(getPathFromRoot(tipVertex.getId()));
-
 		// TODO: Must prune all other children of root
+		final ImmutableList<PreparedVertex> path = ImmutableList.copyOf(getPathFromRoot(tipVertex.getId()));
 		path.forEach(v -> {
 			vertices.remove(v.getId());
 			vertexNumChildren.remove(v.getParentId());
@@ -244,12 +241,7 @@ public final class VertexStore {
 		this.counters.add(CounterType.BFT_PROCESSED, path.size());
 		final BFTCommittedUpdate bftCommittedUpdate = new BFTCommittedUpdate(path, proof);
 		this.vertexStoreEventSender.sendCommitted(bftCommittedUpdate);
-
-		final ImmutableList<Command> commands = path.stream()
-			.flatMap(PreparedVertex::successfulCommands)
-			.collect(ImmutableList.toImmutableList());
-		VerifiedCommandsAndProof verifiedCommandsAndProof = new VerifiedCommandsAndProof(commands, proof);
-		this.ledger.commit(verifiedCommandsAndProof);
+		this.ledger.commit(path, proof);
 
 		rootVertex = tipVertex;
 

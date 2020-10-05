@@ -26,11 +26,9 @@ import java.util.Optional;
 
 public final class BaseLedgerUpdate implements LedgerUpdate {
 	private final VerifiedCommandsAndProof verifiedCommandsAndProof;
-	private final BFTValidatorSet validatorSet;
 
-	public BaseLedgerUpdate(VerifiedCommandsAndProof verifiedCommandsAndProof, BFTValidatorSet validatorSet) {
+	public BaseLedgerUpdate(VerifiedCommandsAndProof verifiedCommandsAndProof) {
 		this.verifiedCommandsAndProof = Objects.requireNonNull(verifiedCommandsAndProof);
-		this.validatorSet = validatorSet;
 	}
 
 	@Override
@@ -45,7 +43,7 @@ public final class BaseLedgerUpdate implements LedgerUpdate {
 
 	@Override
 	public Optional<BFTValidatorSet> getNextValidatorSet() {
-		return Optional.ofNullable(validatorSet);
+		return verifiedCommandsAndProof.getHeader().getNextValidatorSet();
 	}
 
 	@Override

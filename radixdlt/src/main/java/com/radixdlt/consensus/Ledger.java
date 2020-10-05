@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
@@ -37,8 +38,10 @@ public interface Ledger {
 	 */
 	Optional<PreparedVertex> prepare(LinkedList<PreparedVertex> previous, VerifiedVertex vertex);
 
+	void commit(ImmutableList<PreparedVertex> vertices, VerifiedLedgerHeaderAndProof proof);
+
 	/**
-	 * Commit a command
+	 * Commit commands
 	 * @param verifiedCommandsAndProof the command to commit
 	 */
 	void commit(VerifiedCommandsAndProof verifiedCommandsAndProof);

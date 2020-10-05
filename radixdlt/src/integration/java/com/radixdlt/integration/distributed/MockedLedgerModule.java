@@ -17,8 +17,10 @@
 
 package com.radixdlt.integration.distributed;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
@@ -54,6 +56,11 @@ public class MockedLedgerModule extends AbstractModule {
 					vertex.getCommand() != null ? ImmutableSet.of(vertex.getCommand()) : ImmutableSet.of(),
 					ImmutableMap.of()
 				));
+			}
+
+			@Override
+			public void commit(ImmutableList<PreparedVertex> vertices, VerifiedLedgerHeaderAndProof proof) {
+				// Nothing to do here
 			}
 
 			@Override
