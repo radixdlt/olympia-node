@@ -30,7 +30,6 @@ import com.radixdlt.identifiers.EUID;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.middleware2.store.InMemoryCommittedEpochProofsStore;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.middleware2.LedgerAtom;
@@ -62,14 +61,12 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 	private final RadixEngine<LedgerAtom> radixEngine;
 	private final View epochChangeView;
 	private final CommittedCommandsReader committedCommandsReader;
-	private final InMemoryCommittedEpochProofsStore committedEpochProofsStore;
 
 	public RadixEngineStateComputer(
 		Serialization serialization,
 		RadixEngine<LedgerAtom> radixEngine,
 		View epochChangeView,
-		CommittedCommandsReader committedCommandsReader,
-		InMemoryCommittedEpochProofsStore committedEpochProofsStore
+		CommittedCommandsReader committedCommandsReader
 	) {
 		if (epochChangeView.isGenesis()) {
 			throw new IllegalArgumentException("Epoch change view must not be genesis.");
@@ -79,7 +76,6 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 		this.radixEngine = Objects.requireNonNull(radixEngine);
 		this.epochChangeView = epochChangeView;
 		this.committedCommandsReader = Objects.requireNonNull(committedCommandsReader);
-		this.committedEpochProofsStore = Objects.requireNonNull(committedEpochProofsStore);
 	}
 
 	// TODO Move this to a different class class when unstored committed atoms is fixed
@@ -162,10 +158,6 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 		long firstVersion = stateVersion - verifiedCommandsAndProof.getCommands().size() + 1;
 		for (int i = 0; i < verifiedCommandsAndProof.getCommands().size(); i++) {
 			this.commitCommand(firstVersion + i, verifiedCommandsAndProof.getCommands().get(i), headerAndProof);
-		}
-
-		if (headerAndProof.isEndOfEpoch()) {
-			committedEpochProofsStore.commit(headerAndProof);
 		}
 	}
 }
