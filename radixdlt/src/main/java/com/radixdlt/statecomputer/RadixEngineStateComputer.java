@@ -27,7 +27,6 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngine.RadixEngineBranch;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.EUID;
-import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.serialization.DeserializeException;
@@ -35,15 +34,13 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
-import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
-import com.radixdlt.sync.CommittedReader;
 import java.util.Objects;
 import java.util.function.Consumer;
 
 /**
  * Wraps the Radix Engine and emits messages based on success or failure
  */
-public final class RadixEngineStateComputer implements StateComputer, CommittedReader {
+public final class RadixEngineStateComputer implements StateComputer {
 
 	// TODO: Refactor committed command when commit logic is re-written
 	// TODO: as currently it's mostly loosely coupled logic
@@ -60,13 +57,11 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 	private final Serialization serialization;
 	private final RadixEngine<LedgerAtom> radixEngine;
 	private final View epochChangeView;
-	private final CommittedCommandsReader committedCommandsReader;
 
 	public RadixEngineStateComputer(
 		Serialization serialization,
 		RadixEngine<LedgerAtom> radixEngine,
-		View epochChangeView,
-		CommittedCommandsReader committedCommandsReader
+		View epochChangeView
 	) {
 		if (epochChangeView.isGenesis()) {
 			throw new IllegalArgumentException("Epoch change view must not be genesis.");
@@ -75,19 +70,6 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 		this.serialization = Objects.requireNonNull(serialization);
 		this.radixEngine = Objects.requireNonNull(radixEngine);
 		this.epochChangeView = epochChangeView;
-		this.committedCommandsReader = Objects.requireNonNull(committedCommandsReader);
-	}
-
-	// TODO Move this to a different class class when unstored committed atoms is fixed
-	@Override
-	public VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start, int batchSize) {
-		// TODO: verify start
-		long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
-		try {
-			return committedCommandsReader.getNextCommittedCommands(stateVersion, batchSize);
-		} catch (NextCommittedLimitReachedException e) {
-			return null;
-		}
 	}
 
 	private void execute(

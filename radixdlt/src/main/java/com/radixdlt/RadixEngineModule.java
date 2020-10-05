@@ -34,7 +34,6 @@ import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.AtomChecker;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.statecomputer.CommittedCommandsReader;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.serialization.Serialization;
@@ -42,7 +41,6 @@ import com.radixdlt.statecomputer.RadixEngineValidatorSetBuilder;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
-import com.radixdlt.sync.CommittedReader;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -62,21 +60,18 @@ public class RadixEngineModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		bind(StateComputer.class).to(RadixEngineStateComputer.class);
-		bind(CommittedReader.class).to(RadixEngineStateComputer.class);
 	}
 
 	@Provides
 	@Singleton
 	private RadixEngineStateComputer radixEngineStateComputer(
 		Serialization serialization,
-		RadixEngine<LedgerAtom> radixEngine,
-		CommittedCommandsReader committedCommandsReader
+		RadixEngine<LedgerAtom> radixEngine
 	) {
 		return new RadixEngineStateComputer(
 			serialization,
 			radixEngine,
-			epochHighView,
-			committedCommandsReader
+			epochHighView
 		);
 	}
 

@@ -35,7 +35,6 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.statecomputer.CommittedCommandsReader;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.store.EngineStore;
@@ -51,7 +50,6 @@ public class RadixEngineModuleTest {
 			bind(CommittedAtomSender.class).toInstance(mock(CommittedAtomSender.class));
 			bind(ECKeyPair.class).annotatedWith(Names.named("self")).toInstance(ECKeyPair.generateNew());
 			bind(new TypeLiteral<EngineStore<LedgerAtom>>() { }).toInstance(TypedMocks.rmock(EngineStore.class));
-			bind(CommittedCommandsReader.class).toInstance(mock(CommittedCommandsReader.class));
 			bind(Integer.class).annotatedWith(Names.named("magic")).toInstance(1);
 			BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 			BFTValidator validator1 = mock(BFTValidator.class);

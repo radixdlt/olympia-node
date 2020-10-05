@@ -35,7 +35,6 @@ import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
-import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.TypedMocks;
 
@@ -45,7 +44,6 @@ import org.junit.Test;
 public class RadixEngineStateComputerTest {
 	private Serialization serialization;
 	private RadixEngineStateComputer stateComputer;
-	private CommittedAtomsStore committedAtomsStore;
 	private RadixEngine<LedgerAtom> radixEngine;
 	private View epochHighView;
 
@@ -53,13 +51,11 @@ public class RadixEngineStateComputerTest {
 	public void setup() {
 		this.serialization = mock(Serialization.class);
 		this.radixEngine = TypedMocks.rmock(RadixEngine.class);
-		this.committedAtomsStore = mock(CommittedAtomsStore.class);
 		this.epochHighView = View.of(100);
 		this.stateComputer = new RadixEngineStateComputer(
 			serialization,
 			radixEngine,
-			epochHighView,
-			committedAtomsStore
+			epochHighView
 		);
 	}
 

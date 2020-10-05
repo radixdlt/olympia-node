@@ -26,6 +26,7 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
+import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.store.EngineAtomIndices.IndexType;
@@ -34,7 +35,6 @@ import com.radixdlt.serialization.SerializationUtils;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.middleware2.LedgerAtom;
-import com.radixdlt.statecomputer.CommittedCommandsReader;
 import com.radixdlt.statecomputer.CommittedAtoms;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.store.SearchCursor;
@@ -46,6 +46,7 @@ import com.radixdlt.store.LedgerEntryStore;
 
 import com.radixdlt.store.StoreIndex.LedgerIndexType;
 import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
+import com.radixdlt.sync.CommittedReader;
 import java.util.Objects;
 import java.util.function.BiFunction;
 import org.apache.logging.log4j.LogManager;
@@ -53,7 +54,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.Optional;
 
-public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, CommittedCommandsReader {
+public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, CommittedReader {
 	private static final Logger log = LogManager.getLogger();
 
 	private final Serialization serialization;
@@ -169,9 +170,8 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		return v;
 	}
 
-	@Override
-	public VerifiedCommandsAndProof getNextCommittedCommands(long stateVersion, int limit) throws NextCommittedLimitReachedException {
-		ImmutableList<StoredCommittedCommand> storedCommittedCommands = store.getNextCommittedLedgerEntries(stateVersion, limit).stream()
+	public VerifiedCommandsAndProof getNextCommittedCommands(long stateVersion, int batchSize) throws NextCommittedLimitReachedException {
+		ImmutableList<StoredCommittedCommand> storedCommittedCommands = store.getNextCommittedLedgerEntries(stateVersion, batchSize).stream()
 			.map(e -> commandToBinaryConverter.toCommand(e.getContent()))
 			.collect(ImmutableList.toImmutableList());
 
@@ -184,6 +184,13 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 			storedCommittedCommands.stream().map(StoredCommittedCommand::getCommand).collect(ImmutableList.toImmutableList()),
 			nextHeader
 		);
+	}
+
+	@Override
+	public VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start, int batchSize) throws NextCommittedLimitReachedException {
+		// TODO: verify start
+		long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
+		return this.getNextCommittedCommands(stateVersion, batchSize);
 	}
 
 	@Override

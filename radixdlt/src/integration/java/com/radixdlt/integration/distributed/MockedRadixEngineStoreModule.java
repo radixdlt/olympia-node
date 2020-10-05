@@ -34,16 +34,12 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.statecomputer.CommittedCommandsReader;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 
 public class MockedRadixEngineStoreModule extends AbstractModule {
 	@Override
 	public void configure() {
-		bind(CommittedCommandsReader.class).toInstance((stateVersion, limit) -> {
-			throw new UnsupportedOperationException();
-		});
 		bind(Serialization.class).toInstance(DefaultSerialization.getInstance());
 		bind(Integer.class).annotatedWith(Names.named("magic")).toInstance(1);
 		bind(new TypeLiteral<EngineStore<LedgerAtom>>() { }).to(new TypeLiteral<InMemoryEngineStore<LedgerAtom>>() { })

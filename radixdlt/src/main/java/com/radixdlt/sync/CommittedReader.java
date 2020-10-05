@@ -19,10 +19,12 @@ package com.radixdlt.sync;
 
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
 
 /**
  * Reader of committed commands
  */
 public interface CommittedReader {
-	VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start, int batchSize);
+	VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start, int batchSize)
+		throws NextCommittedLimitReachedException;
 }

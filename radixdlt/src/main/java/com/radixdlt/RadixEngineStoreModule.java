@@ -51,11 +51,11 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.middleware2.store.CommandToBinaryConverter;
 import com.radixdlt.statecomputer.CommittedAtom;
-import com.radixdlt.statecomputer.CommittedCommandsReader;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
+import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.universe.Universe;
 
 import java.util.function.BiFunction;
@@ -70,7 +70,7 @@ public class RadixEngineStoreModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		bind(new TypeLiteral<EngineStore<CommittedAtom>>() { }).to(CommittedAtomsStore.class).in(Scopes.SINGLETON);
-		bind(CommittedCommandsReader.class).to(CommittedAtomsStore.class);
+		bind(CommittedReader.class).to(CommittedAtomsStore.class);
 		bind(InMemoryCommittedEpochProofsStore.class).in(Scopes.SINGLETON);
 	}
 

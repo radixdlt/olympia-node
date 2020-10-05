@@ -23,6 +23,7 @@ import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.middleware2.store.InMemoryCommittedEpochProofsStore;
+import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -78,7 +79,15 @@ public class RemoteSyncServiceProcessor {
 
 		log.info("REMOTE_SYNC_REQUEST: {}", syncRequest);
 
-		VerifiedCommandsAndProof committedCommands = committedReader.getNextCommittedCommands(currentHeader, batchSize);
+
+		final VerifiedCommandsAndProof committedCommands;
+		try {
+			committedCommands = committedReader.getNextCommittedCommands(currentHeader, batchSize);
+		} catch (NextCommittedLimitReachedException e) {
+			log.warn("REMOTE_SYNC_REQUEST: Unable to serve sync request {}.", syncRequest);
+			return;
+		}
+
 		if (committedCommands == null) {
 			log.warn("REMOTE_SYNC_REQUEST: Unable to serve sync request {}.", syncRequest);
 			return;

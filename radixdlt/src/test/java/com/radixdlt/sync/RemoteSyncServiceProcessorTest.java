@@ -35,6 +35,7 @@ import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.middleware2.store.InMemoryCommittedEpochProofsStore;
+import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -54,7 +55,7 @@ public class RemoteSyncServiceProcessorTest {
 	}
 
 	@Test
-	public void when_remote_sync_request__then_process_it() {
+	public void when_remote_sync_request__then_process_it() throws NextCommittedLimitReachedException {
 		RemoteSyncRequest request = mock(RemoteSyncRequest.class);
 		DtoLedgerHeaderAndProof header = mock(DtoLedgerHeaderAndProof.class);
 		when(header.getOpaque0()).thenReturn(mock(BFTHeader.class));
@@ -89,7 +90,7 @@ public class RemoteSyncServiceProcessorTest {
 	}
 
 	@Test
-	public void when_remote_sync_request_and_null_return__then_dont_do_anything() {
+	public void when_remote_sync_request_and_null_return__then_dont_do_anything() throws NextCommittedLimitReachedException {
 		RemoteSyncRequest request = mock(RemoteSyncRequest.class);
 		DtoLedgerHeaderAndProof header = mock(DtoLedgerHeaderAndProof.class);
 		when(header.getOpaque0()).thenReturn(mock(BFTHeader.class));
