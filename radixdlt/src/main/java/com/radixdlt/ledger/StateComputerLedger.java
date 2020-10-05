@@ -34,14 +34,12 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.mempool.Mempool;
-import com.radixdlt.utils.Pair;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Stream;
 
 /**
  * Synchronizes execution
@@ -131,7 +129,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		final LedgerHeader parentHeader = vertex.getParentHeader().getLedgerHeader();
 		final AccumulatorState parentAccumulatorState = parentHeader.getAccumulatorState();
 		final ImmutableList<Command> prevCommands = previous.stream()
-			.flatMap(v -> Stream.concat(v.successfulCommands(), v.errorCommands().map(Pair::getFirst)))
+			.flatMap(PreparedVertex::successfulCommands)
 			.filter(Objects::nonNull)
 			.collect(ImmutableList.toImmutableList());
 		final long timestamp = vertex.getQC().getTimestampedSignatures().weightedTimestamp();
@@ -159,14 +157,9 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 
 			final StateComputerResult result = stateComputer.prepare(concatenatedCommands, vertex.getCommand(), vertex.getView());
 
-			final AccumulatorState accumulatorState;
-			if (vertex.getCommand() == null) {
-				accumulatorState = parentHeader.getAccumulatorState();
-			/*} else if (result.getFailedCommands().contains(vertex.getCommand())) {
-				accumulatorState = parentHeader.getAccumulatorState();
-			 */
-			} else {
-				accumulatorState = this.accumulator.accumulate(parentHeader.getAccumulatorState(), vertex.getCommand());
+			AccumulatorState accumulatorState = parentHeader.getAccumulatorState();
+			for (Command cmd : result.getSuccessfulCommands()) {
+				accumulatorState = this.accumulator.accumulate(accumulatorState, cmd);
 			}
 
 			final LedgerHeader ledgerHeader = LedgerHeader.create(

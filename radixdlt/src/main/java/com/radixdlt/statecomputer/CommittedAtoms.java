@@ -18,7 +18,6 @@
 package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomWithResult;
 import java.util.function.Consumer;

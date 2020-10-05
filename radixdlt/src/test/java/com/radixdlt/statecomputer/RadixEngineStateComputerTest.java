@@ -22,7 +22,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -44,7 +43,6 @@ import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.utils.TypedMocks;
 
 import org.junit.Before;
@@ -56,7 +54,6 @@ public class RadixEngineStateComputerTest {
 	private CommittedAtomsStore committedAtomsStore;
 	private RadixEngine<LedgerAtom> radixEngine;
 	private View epochHighView;
-	private CommittedAtomSender committedAtomSender;
 
 	@Before
 	public void setup() {
@@ -64,13 +61,11 @@ public class RadixEngineStateComputerTest {
 		this.radixEngine = TypedMocks.rmock(RadixEngine.class);
 		this.committedAtomsStore = mock(CommittedAtomsStore.class);
 		this.epochHighView = View.of(100);
-		this.committedAtomSender = mock(CommittedAtomSender.class);
 		this.stateComputer = new RadixEngineStateComputer(
 			serialization,
 			radixEngine,
 			epochHighView,
-			committedAtomsStore,
-			committedAtomSender
+			committedAtomsStore
 		);
 	}
 
@@ -96,7 +91,6 @@ public class RadixEngineStateComputerTest {
 		stateComputer.commit(command);
 
 		verify(radixEngine, times(1)).checkAndStore(any());
-		verify(committedAtomSender, never()).sendCommittedAtom(any());
 	}
 
 	@Test

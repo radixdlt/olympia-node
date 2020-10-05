@@ -241,15 +241,13 @@ public final class VertexStore {
 			vertices.remove(v.getId());
 			vertexNumChildren.remove(v.getParentId());
 		});
-
-		final ImmutableList<Command> commands = path.stream()
-			.flatMap(PreparedVertex::getCommands)
-			.collect(ImmutableList.toImmutableList());
-
 		this.counters.add(CounterType.BFT_PROCESSED, path.size());
 		final BFTCommittedUpdate bftCommittedUpdate = new BFTCommittedUpdate(path, proof);
 		this.vertexStoreEventSender.sendCommitted(bftCommittedUpdate);
 
+		final ImmutableList<Command> commands = path.stream()
+			.flatMap(PreparedVertex::successfulCommands)
+			.collect(ImmutableList.toImmutableList());
 		VerifiedCommandsAndProof verifiedCommandsAndProof = new VerifiedCommandsAndProof(commands, proof);
 		this.ledger.commit(verifiedCommandsAndProof);
 

@@ -25,6 +25,8 @@ import com.radixdlt.api.SubmissionFailure;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.PreparedVertex;
+import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.engine.RadixEngine.RadixEngineBranch;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.mempool.SubmissionControl;
@@ -166,7 +168,9 @@ public class AtomsService {
 					.forEach(cmdErr -> {
 						ClientAtom clientAtom = cmdErr.getFirst().map(clientAtomToBinaryConverter::toAtom);
 						Exception e = cmdErr.getSecond();
-						this.processExecutionFailure(clientAtom, (RadixEngineException) e);
+						if (e instanceof RadixEngineException) {
+							this.processExecutionFailure(clientAtom, (RadixEngineException) e);
+						}
 					})
 				);
 		this.disposable.add(committedUpdatesDisposable);

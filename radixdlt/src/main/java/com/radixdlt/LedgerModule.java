@@ -21,14 +21,22 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.Ledger;
+import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof.OrderByEpochAndVersionComparator;
+import com.radixdlt.consensus.bft.BFTCommittedUpdate;
+import com.radixdlt.consensus.bft.PreparedVertex;
+import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.StateComputerLedger;
+import com.radixdlt.mempool.Mempool;
+import com.radixdlt.utils.Pair;
 import java.util.Comparator;
 
 /**
@@ -46,5 +54,23 @@ public class LedgerModule extends AbstractModule {
 	@Provides
 	private Comparator<AccumulatorState> accumulatorStateComparator() {
 		return Comparator.comparingLong(AccumulatorState::getStateVersion);
+	}
+
+	@ProvidesIntoSet
+	private VertexStoreEventSender eventSender(Mempool mempool) {
+		return new VertexStoreEventSender() {
+			@Override
+			public void sendCommitted(BFTCommittedUpdate committedUpdate) {
+				committedUpdate.getCommitted().stream()
+					.flatMap(PreparedVertex::errorCommands)
+					.map(Pair::getFirst)
+					.map(Command::getHash)
+					.forEach(mempool::removeRejected);
+			}
+
+			@Override
+			public void highQC(QuorumCertificate qc) {
+			}
+		};
 	}
 }

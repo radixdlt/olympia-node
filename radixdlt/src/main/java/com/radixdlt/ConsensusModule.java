@@ -20,6 +20,7 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.google.inject.multibindings.Multibinder;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTEventProcessor;
@@ -29,7 +30,9 @@ import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.bft.BFTBuilder;
+import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.bft.SignedNewViewToLeaderSender;
 import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker.PacemakerInfoSender;
@@ -55,6 +58,7 @@ import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.network.TimeSupplier;
 import java.util.Comparator;
+import java.util.Set;
 
 /**
  * Module responsible for running BFT validator logic
@@ -69,6 +73,26 @@ public final class ConsensusModule extends AbstractModule {
 		this.pacemakerTimeout = pacemakerTimeout;
 		this.pacemakerRate = pacemakerRate;
 		this.pacemakerMaxExponent = pacemakerMaxExponent;
+	}
+
+	@Override
+	public void configure() {
+		Multibinder.newSetBinder(binder(), VertexStoreEventSender.class);
+	}
+
+	@Provides
+	private VertexStoreEventSender sender(Set<VertexStoreEventSender> senders) {
+		return new VertexStoreEventSender() {
+			@Override
+			public void sendCommitted(BFTCommittedUpdate committedUpdate) {
+				senders.forEach(s -> s.sendCommitted(committedUpdate));
+			}
+
+			@Override
+			public void highQC(QuorumCertificate qc) {
+				senders.forEach(s -> s.highQC(qc));
+			}
+		};
 	}
 
 	@Provides

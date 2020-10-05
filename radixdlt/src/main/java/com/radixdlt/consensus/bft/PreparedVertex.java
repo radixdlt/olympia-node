@@ -63,10 +63,7 @@ public final class PreparedVertex {
 	}
 
 	public Stream<Pair<Command, Exception>> errorCommands() {
-		return Stream.of(vertex.getCommand())
-			.filter(Objects::nonNull)
-			.filter(commandExceptions::containsKey)
-			.map(cmd -> Pair.of(cmd, commandExceptions.get(cmd)));
+		return commandExceptions.entrySet().stream().map(e -> Pair.of(e.getKey(), e.getValue()));
 	}
 
 	public Stream<Command> getCommands() {

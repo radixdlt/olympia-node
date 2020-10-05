@@ -142,14 +142,10 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 		ImmutableSet.Builder<Command> successBuilder,
 		ImmutableMap.Builder<Command, Exception> errorBuilder
 	) {
-		ClientAtom clientAtom = mapCommand(next);
-		if (clientAtom == null) {
-			return;
-		}
-
 		try {
+			ClientAtom clientAtom = mapCommand(next);
 			branch.checkAndStore(clientAtom);
-		} catch (RadixEngineException e) {
+		} catch (RadixEngineException | DeserializeException e) {
 			errorBuilder.put(next, e);
 			return;
 		}
@@ -161,12 +157,11 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 	public StateComputerResult prepare(ImmutableList<Command> previous, Command next, View view) {
 		RadixEngineBranch<LedgerAtom> transientBranch = this.radixEngine.transientBranch();
 		for (Command command : previous) {
-			ClientAtom clientAtom = mapCommand(command);
-			if (clientAtom != null) {
-				try {
-					transientBranch.checkAndStore(clientAtom);
-				} catch (RadixEngineException e) {
-				}
+			try {
+				ClientAtom clientAtom = mapCommand(command);
+				transientBranch.checkAndStore(clientAtom);
+			} catch (RadixEngineException | DeserializeException e) {
+				throw new IllegalStateException();
 			}
 		}
 
@@ -187,25 +182,19 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 		return new StateComputerResult(successBuilder.build(), exceptionBuilder.build());
 	}
 
-	private ClientAtom mapCommand(Command command) {
-		try {
-			return serialization.fromDson(command.getPayload(), ClientAtom.class);
-		} catch (DeserializeException e) {
-			return null;
-		}
+	private ClientAtom mapCommand(Command command) throws DeserializeException {
+		return serialization.fromDson(command.getPayload(), ClientAtom.class);
 	}
 
 	private void commitCommand(long version, Command command, VerifiedLedgerHeaderAndProof proof) {
 		boolean storedInRadixEngine = false;
-		final ClientAtom clientAtom = this.mapCommand(command);
-		if (clientAtom != null) {
+		try {
+			final ClientAtom clientAtom = this.mapCommand(command);
 			final CommittedAtom committedAtom = new CommittedAtom(clientAtom, version, proof);
-			try {
-				// TODO: execute list of commands instead
-				this.radixEngine.checkAndStore(committedAtom);
-				storedInRadixEngine = true;
-			} catch (RadixEngineException e) {
-			}
+			// TODO: execute list of commands instead
+			this.radixEngine.checkAndStore(committedAtom);
+			storedInRadixEngine = true;
+		} catch (RadixEngineException | DeserializeException e) {
 		}
 
 		if (!storedInRadixEngine) {
