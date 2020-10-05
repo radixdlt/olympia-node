@@ -34,24 +34,25 @@ import picocli.CommandLine.Option
  * </pre>
  * The password is required and it should not be empty.
  */
-@Command(name = "generate-key",mixinStandardHelpOptions = true,
-        description = "Generate key")
+@Command(name = "generate-key", mixinStandardHelpOptions = true,
+		description = "Generate key")
 class KeyGenerator implements Runnable {
 
-    @Option(names = ["-p", "--password"], paramLabel = "PASSWORD", description = "password", required = true)
-    String password
+	@Option(names = ["-p", "--password"], paramLabel = "PASSWORD", description = "password", required = true)
+	String password
 
-    @Override
-    void run() {
-        if (password == null || password.isBlank()) {
-            println "The password must be provided"
-            System.exit(-1)
-        }
+	@Override
+	void run() {
+		if (password == null || password.isBlank()) {
+			println "The password must be provided"
+			return
+		}
 
-        PrintWriter writer = new PrintWriter(System.out)
-        RadixIdentities.createNewEncryptedIdentity(writer, password)
-        writer.flush()
-        writer.close()
-        System.exit(0)
-    }
+		PrintWriter writer = new PrintWriter(System.out)
+		//TODO: we need use other type of keystore here as well
+		RadixIdentities.createNewEncryptedIdentity(writer, password)
+		writer.flush()
+		writer.close()
+		println "Done"
+	}
 }

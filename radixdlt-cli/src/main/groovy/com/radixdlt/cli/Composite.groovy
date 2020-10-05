@@ -26,22 +26,35 @@ import picocli.CommandLine
 
 
 class Composite {
-    static class Encrypted {
-        @CommandLine.Option(names = ["-k", "--keystore"], paramLabel = "KEYSTORE", description = "location of keystore file.", required = true)
-        String keyStore
+	static class Encrypted {
+		@CommandLine.Option(names = ["-k", "--keystore"], paramLabel = "KEYSTORE", description = "location of keystore file.", required = true)
+		String keyStore
 
-        @CommandLine.Option(names = ["-p", "--password"], paramLabel = "PASSWORD", description = "keystore password", required = true)
-        String password
+		@CommandLine.Option(names = ["-p", "--password"], paramLabel = "PASSWORD", description = "keystore password", required = true)
+		String password
 
-        @CommandLine.Option(names = ["-n", "--keypair-name"], paramLabel = "KEYPAIR_NAME", description = "name of keypair to use", required = true)
-        String keypair
-    }
+		@CommandLine.Option(names = ["-n", "--keypair-name"], paramLabel = "KEYPAIR_NAME", description = "name of keypair to use", required = true)
+		String keypair
 
-    static class IdentityInfo {
-        @CommandLine.ArgGroup(exclusive = false)
-        Encrypted encrypted
+		boolean isInvalid() {
+			if (keyStore == null || keyStore.isBlank()) {
+				println "Keystore name must not be empty"
+			} else if (password == null || password.isBlank()) {
+				println "Password must not be empty"
+			} else if (keypair == null || keypair.isBlank()) {
+				println "Keypair name must not be empty"
+			} else {
+				return false
+			}
+			return true
+		}
+	}
 
-        @CommandLine.Option(names = ["-u", "--unencryptedkeyfile"], paramLabel = "UNENCRYPTED_KEYFILE", description = "location of unencrypted keyfile.")
-        String unencryptedKeyFile
-    }
+	static class IdentityInfo {
+		@CommandLine.ArgGroup(exclusive = false)
+		Encrypted encrypted
+
+		@CommandLine.Option(names = ["-u", "--unencryptedkeyfile"], paramLabel = "UNENCRYPTED_KEYFILE", description = "location of unencrypted keyfile.")
+		String unencryptedKeyFile
+	}
 }

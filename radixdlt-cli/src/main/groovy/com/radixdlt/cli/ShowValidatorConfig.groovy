@@ -24,6 +24,7 @@ package com.radixdlt.cli
 
 import com.radixdlt.client.application.RadixApplicationAPI
 import com.radixdlt.client.atommodel.validators.RegisteredValidatorParticle
+import com.radixdlt.client.core.atoms.particles.Particle
 import com.radixdlt.identifiers.RadixAddress
 import picocli.CommandLine
 
@@ -54,15 +55,15 @@ class ShowValidatorConfig implements Runnable {
 		def latestValidatorRegistration = api.getAtomStore().getUpParticles(api.getAddress(), null)
 				.filter({ particle -> particle instanceof RegisteredValidatorParticle })
 				.findFirst()
-		if (latestValidatorRegistration.isPresent()) {
+
+		latestValidatorRegistration.ifPresentOrElse(validator -> {
 			println "Current validator configuration at ${address}:"
-			def validator = latestValidatorRegistration.get()
 			def url = validator.getUrl()
 			def allowedDelegators = validator.getAllowedDelegators()
 			printf("  url: %s%n", url == null ? "<not set>" : url)
 			printf("  allowedDelegators: %s%n", allowedDelegators == null ? "<not set, allows any>" : allowedDelegators)
-		} else {
-			println "No active validator configuration at ${address}"
-		}
+		},
+			() -> println "No active validator configuration at ${address}")
+		println "Done"
 	}
 }

@@ -33,25 +33,24 @@ import picocli.CommandLine
  * </pre>
  */
 @CommandLine.Command(name = "get-stored-atoms", mixinStandardHelpOptions = true,
-        description = "Get stored Atoms")
+		description = "Get stored Atoms")
 class GetStoredAtoms implements Runnable {
-    @CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
-    Composite.IdentityInfo identityInfo
+	@CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
+	Composite.IdentityInfo identityInfo
 
-    @Override
-    void run() {
-        RadixApplicationAPI api = Utils.getAPI(identityInfo)
+	@Override
+	void run() {
+		RadixApplicationAPI api = Utils.getAPI(identityInfo)
 
-        println "Retrieving atoms..."
-        api.pull()
-        def atomStore = api.getAtomStore()
-        def observations = atomStore.getAtomObservations(api.getAddress())
-        observations.filter({ it -> return it.isHead() }).blockingFirst()
+		println "Retrieving atoms..."
+		api.pull()
+		def atomStore = api.getAtomStore()
+		def observations = atomStore.getAtomObservations(api.getAddress())
+		observations.filter({ it -> return it.isHead() }).blockingFirst()
 
-        println "Atom ID's:"
-        atomStore.getStoredAtoms(api.getAddress()).each(it -> printf("  %s", it.getAid()))
-        println "Done"
-        System.exit(0)
-    }
+		println "Atom ID's:"
+		atomStore.getStoredAtoms(api.getAddress()).each(it -> printf("  %s", it.getAid()))
+		println "Done"
+	}
 }
 

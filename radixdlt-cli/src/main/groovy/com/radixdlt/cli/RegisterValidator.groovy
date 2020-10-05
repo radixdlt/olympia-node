@@ -64,5 +64,6 @@ class RegisterValidator implements Runnable {
 		println("Registered ${api.getAddress()} as a validator:")
 		printf("  url: %s%n", infoUrl == null ? "<not set>" : infoUrl)
 		printf("  allowedDelegators: %s%n", allowedDelegators.isEmpty() ? "<not set, allows any>" : allowedDelegators)
+		println "Done"
 	}
 }

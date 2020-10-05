@@ -46,5 +46,6 @@ class UnregisterValidator implements Runnable {
 		api.pullOnce(api.getAddress()).blockingAwait()
 		api.unregisterValidator(api.getAddress()).blockUntilComplete()
 		println("Unregistered ${api.getAddress()} as a validator")
+		println "Done"
 	}
 }

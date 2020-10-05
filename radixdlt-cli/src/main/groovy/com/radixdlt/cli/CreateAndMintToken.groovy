@@ -44,64 +44,63 @@ import picocli.CommandLine
  * </ul>
  */
 @CommandLine.Command(name = "create-mint-token", mixinStandardHelpOptions = true,
-        description = "Create or Mint or Create and Mint token")
+		description = "Create or Mint or Create and Mint token")
 class CreateAndMintToken implements Runnable {
-    @CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
-    Composite.IdentityInfo identityInfo
+	@CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
+	Composite.IdentityInfo identityInfo
 
-    @CommandLine.Option(names = ["-a", "--amount"], paramLabel = "AMOUNT", description = " Amount to send")
-    BigDecimal amount
+	@CommandLine.Option(names = ["-a", "--amount"], paramLabel = "AMOUNT", description = " Amount to send")
+	BigDecimal amount
 
-    @CommandLine.Option(names = ["-t", "--token-name"], paramLabel = "TOKEN_NAME", description = " Unique name of the token", required = true)
-    String tokenName
+	@CommandLine.Option(names = ["-t", "--token-name"], paramLabel = "TOKEN_NAME", description = " Unique name of the token", required = true)
+	String tokenName
 
-    @CommandLine.Option(names = ["-d", "--token-desc"], paramLabel = "TOKEN_DESCRIPTION", description = "Description of token")
-    String tokenDescription = "(no description provided)"
+	@CommandLine.Option(names = ["-d", "--token-desc"], paramLabel = "TOKEN_DESCRIPTION", description = "Description of token")
+	String tokenDescription = "(no description provided)"
 
-    @CommandLine.Option(names = ["-r", "--use-existing"], paramLabel = "USE_EXISTING_TOKEN", description = " Use existing token instead of creating new")
-    boolean useExisting;
+	@CommandLine.Option(names = ["-r", "--use-existing"], paramLabel = "USE_EXISTING_TOKEN", description = " Use existing token instead of creating new")
+	boolean useExisting;
 
-    @Override
-    void run() {
-        if (tokenName.isBlank()) {
-            println "Token name must not be empty"
-            System.exit(-1)
-        }
+	@Override
+	void run() {
+		if (tokenName.isBlank()) {
+			println "Token name must not be empty"
+			return
+		}
 
-        if (useExisting && amount != null && amount <= BigDecimal.ZERO) {
-            println "If existing token is used, then greater than zero amount must be provided"
-            System.exit(-1)
-        }
+		if (useExisting && amount != null && amount <= BigDecimal.ZERO) {
+			println "If existing token is used, then greater than zero amount must be provided"
+			return
+		}
 
-        RadixApplicationAPI api = Utils.getAPI(identityInfo)
-        RRI tokenRRI = RRI.of(api.getAddress(), tokenName)
-        RadixApplicationAPI.Transaction transaction = api.createTransaction()
+		RadixApplicationAPI api = Utils.getAPI(identityInfo)
+		RRI tokenRRI = RRI.of(api.getAddress(), tokenName)
+		RadixApplicationAPI.Transaction transaction = api.createTransaction()
 
-        if (!useExisting) {
-            println "Creating token ${tokenName} with ${tokenDescription}"
+		if (!useExisting) {
+			println "Creating token ${tokenName} with ${tokenDescription}"
 
-            transaction.stage(CreateTokenAction.create(
-                    tokenRRI,
-                    "${tokenName}",
-                    "${tokenDescription}",
-                    BigDecimal.ZERO,
-                    TokenUnitConversions.getMinimumGranularity(),
-                    CreateTokenAction.TokenSupplyType.MUTABLE
-            ))
-        } else {
-            println "Using existing token ${tokenName}"
-        }
+			transaction.stage(CreateTokenAction.create(
+					tokenRRI,
+					"${tokenName}",
+					"${tokenDescription}",
+					BigDecimal.ZERO,
+					TokenUnitConversions.getMinimumGranularity(),
+					CreateTokenAction.TokenSupplyType.MUTABLE
+			))
+		} else {
+			println "Using existing token ${tokenName}"
+		}
 
-        if (amount != null && amount > BigDecimal.ZERO) {
-            println "Minting token for ${amount}"
-            transaction.stage(MintTokensAction.create(tokenRRI, api.getAddress(), BigDecimal.valueOf(amount)))
-        }
+		if (amount != null && amount > BigDecimal.ZERO) {
+			println "Minting token for ${amount}"
+			transaction.stage(MintTokensAction.create(tokenRRI, api.getAddress(), BigDecimal.valueOf(amount)))
+		}
 
-        println "Committing transaction..."
-        transaction.commitAndPush()
-            .toObservable()
-            .blockingSubscribe({ it -> println it })
-        println "Done"
-        System.exit(0)
-    }
+		println "Committing transaction..."
+		transaction.commitAndPush()
+				.toObservable()
+				.blockingSubscribe({ it -> println it })
+		println "Done"
+	}
 }

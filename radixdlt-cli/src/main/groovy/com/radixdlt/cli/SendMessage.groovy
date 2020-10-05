@@ -35,27 +35,27 @@ import picocli.CommandLine
  * </pre>
  */
 @CommandLine.Command(name = "send-message", mixinStandardHelpOptions = true,
-        description = "Send Message")
+		description = "Send Message")
 class SendMessage implements Runnable {
 
-    @CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
-    Composite.IdentityInfo identityInfo
+	@CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
+	Composite.IdentityInfo identityInfo
 
-    @CommandLine.Option(names = ["-m", "--message"], paramLabel = "MESSAGE", description = "message to send", required = true)
-    String messageString
+	@CommandLine.Option(names = ["-m", "--message"], paramLabel = "MESSAGE", description = "message to send", required = true)
+	String messageString
 
-    @CommandLine.Option(names = ["-d", "--address"], paramLabel = "ADDRESS", description = "Address to which message is sent", required = true)
-    String addressString
+	@CommandLine.Option(names = ["-d", "--address"], paramLabel = "ADDRESS", description = "Address to which message is sent", required = true)
+	String addressString
 
-    @Override
-    void run() {
-        RadixApplicationAPI api = Utils.getAPI(identityInfo)
-        RadixAddress address = RadixAddress.from(addressString)
+	@Override
+	void run() {
+		RadixApplicationAPI api = Utils.getAPI(identityInfo)
+		RadixAddress address = RadixAddress.from(addressString)
 
-        println "Sending message '${messageString}' to address ${address}"
-        RadixApplicationAPI.Result result = api.sendMessage(address, messageString.getBytes(RadixConstants.STANDARD_CHARSET), true)
-        result.blockUntilComplete()
-        println "Message sent successfully. AtomID of resulting atom : ${result.getAtom().getAid()}"
-        System.exit(0)
-    }
+		println "Sending message '${messageString}' to address ${address}"
+		RadixApplicationAPI.Result result = api.sendMessage(address, messageString.getBytes(RadixConstants.STANDARD_CHARSET), true)
+		result.blockUntilComplete()
+		println "Message sent successfully. AtomID of resulting atom : ${result.getAtom().getAid()}"
+		println "Done"
+	}
 }

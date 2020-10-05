@@ -26,25 +26,30 @@ import picocli.CommandLine.Command
 
 //@Grab('info.picocli:picocli:2.0.3')
 
-@Command(name = "radix", version = "1.0",
-        mixinStandardHelpOptions = true,
-        description = "Radix CLI", subcommands = [
-                KeyGenerator.class, GetMessage.class,
-                SendMessage.class, GetDetails.class,
-                GetStoredAtoms.class, CreateAndMintToken.class,
-                RegisterValidator.class, UnregisterValidator.class,
-                ShowValidatorConfig.class, ValidatorKeyGenerator.class
-        ])
+@Command(name = "radix",
+		version = "1.0",
+		mixinStandardHelpOptions = true,
+//		description = "Radix CLI",
+		subcommands = [
+				KeyGenerator.class, GetMessages.class,
+				SendMessage.class, GetDetails.class,
+				GetStoredAtoms.class, CreateAndMintToken.class,
+				RegisterValidator.class, UnregisterValidator.class,
+				ShowValidatorConfig.class, ValidatorKeyGenerator.class
+		])
 class RadixCLI implements Runnable {
+	@Override
+	void run() {
+		print "Radix Command Line Utility "
+	}
 
-    @Override
-    void run() {
-        print "Running Radix CLI"
-    }
+	static void main(String[] args) {
+		CommandLine cmd = new CommandLine(new RadixCLI())
 
-    static void main(String[] args) {
-        CommandLine cmd = new CommandLine(new RadixCLI())
         cmd.execute(args)
-    }
+        if (args.length == 0) {
+            cmd.printVersionHelp(System.out)
+            cmd.usage(System.out)
+		}
+	}
 }
-

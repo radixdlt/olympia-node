@@ -21,19 +21,31 @@
  */
 package com.radixdlt.cli
 
-import com.google.gson.TypeAdapter
-import com.google.gson.stream.JsonReader
-import com.google.gson.stream.JsonWriter
-import com.radixdlt.identifiers.RadixAddress
+import com.radixdlt.client.application.RadixApplicationAPI
+import picocli.CommandLine
 
-class RadixAddressTypeAdapter extends TypeAdapter<RadixAddress> {
-    @Override
-    void write(JsonWriter out, RadixAddress address) throws IOException {
-        out.value(address.toString())
-    }
+/**
+ * This command shows all messages received so far
+ * <br>
+ * Usage:
+ * <pre>
+ *  $ radixdlt-cli get-messages [-k=<keystore name>] [-p=<keystore password>]
+ * </pre>
+ */
+@CommandLine.Command(name = "get-messages", mixinStandardHelpOptions = true,
+		description = "Get all the messages")
+class GetMessages implements Runnable {
+	@CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
+	Composite.IdentityInfo identityInfo
 
-    @Override
-    RadixAddress read(JsonReader reader) throws IOException {
-        return RadixAddress.from(reader.nextString())
-    }
+	@Override
+	void run() {
+		RadixApplicationAPI api = Utils.getAPI(identityInfo)
+		println "Retrieving messages..."
+		api.pull()
+		println "Messages:"
+		api.observeMessages().blockingSubscribe(it -> println "  ${it}")
+		println "Done"
+	}
 }
+
