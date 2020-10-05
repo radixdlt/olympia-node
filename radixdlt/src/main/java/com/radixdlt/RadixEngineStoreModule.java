@@ -42,6 +42,7 @@ import com.radixdlt.middleware2.ClientAtom.LedgerAtomConversionException;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.middleware2.store.CommittedAtomsStore.AtomIndexer;
+import com.radixdlt.middleware2.store.InMemoryCommittedEpochProofsStore;
 import com.radixdlt.middleware2.store.EngineAtomIndices;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.serialization.DeserializeException;
@@ -70,6 +71,7 @@ public class RadixEngineStoreModule extends AbstractModule {
 	protected void configure() {
 		bind(new TypeLiteral<EngineStore<CommittedAtom>>() { }).to(CommittedAtomsStore.class).in(Scopes.SINGLETON);
 		bind(CommittedCommandsReader.class).to(CommittedAtomsStore.class);
+		bind(InMemoryCommittedEpochProofsStore.class).in(Scopes.SINGLETON);
 	}
 
 	@Provides

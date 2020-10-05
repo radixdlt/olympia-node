@@ -30,6 +30,7 @@ import com.radixdlt.identifiers.EUID;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.middleware2.store.InMemoryCommittedEpochProofsStore;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.middleware2.LedgerAtom;
@@ -38,7 +39,6 @@ import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
 import com.radixdlt.sync.CommittedReader;
 import java.util.Objects;
-import java.util.TreeMap;
 import java.util.function.Consumer;
 
 /**
@@ -62,13 +62,14 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 	private final RadixEngine<LedgerAtom> radixEngine;
 	private final View epochChangeView;
 	private final CommittedCommandsReader committedCommandsReader;
-	private final TreeMap<Long, VerifiedLedgerHeaderAndProof> epochProofs = new TreeMap<>();
+	private final InMemoryCommittedEpochProofsStore committedEpochProofsStore;
 
 	public RadixEngineStateComputer(
 		Serialization serialization,
 		RadixEngine<LedgerAtom> radixEngine,
 		View epochChangeView,
-		CommittedCommandsReader committedCommandsReader
+		CommittedCommandsReader committedCommandsReader,
+		InMemoryCommittedEpochProofsStore committedEpochProofsStore
 	) {
 		if (epochChangeView.isGenesis()) {
 			throw new IllegalArgumentException("Epoch change view must not be genesis.");
@@ -78,22 +79,12 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 		this.radixEngine = Objects.requireNonNull(radixEngine);
 		this.epochChangeView = epochChangeView;
 		this.committedCommandsReader = Objects.requireNonNull(committedCommandsReader);
+		this.committedEpochProofsStore = Objects.requireNonNull(committedEpochProofsStore);
 	}
 
 	// TODO Move this to a different class class when unstored committed atoms is fixed
 	@Override
 	public VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start, int batchSize) {
-		if (start.getLedgerHeader().isEndOfEpoch()) {
-			long currentEpoch = start.getLedgerHeader().getEpoch() + 1;
-			long nextEpoch = currentEpoch + 1;
-			VerifiedLedgerHeaderAndProof nextEpochProof = epochProofs.get(nextEpoch);
-			if (nextEpochProof == null) {
-				return null;
-			}
-
-			return new VerifiedCommandsAndProof(ImmutableList.of(), nextEpochProof);
-		}
-
 		// TODO: verify start
 		long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
 		try {
@@ -174,7 +165,7 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 		}
 
 		if (headerAndProof.isEndOfEpoch()) {
-			epochProofs.put(headerAndProof.getEpoch() + 1, headerAndProof);
+			committedEpochProofsStore.commit(headerAndProof);
 		}
 	}
 }

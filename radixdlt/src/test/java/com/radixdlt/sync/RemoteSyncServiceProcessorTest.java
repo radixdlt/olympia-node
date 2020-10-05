@@ -34,6 +34,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.middleware2.store.InMemoryCommittedEpochProofsStore;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -41,13 +42,15 @@ public class RemoteSyncServiceProcessorTest {
 
 	private RemoteSyncServiceProcessor processor;
 	private CommittedReader reader;
+	private InMemoryCommittedEpochProofsStore proofsStore;
 	private StateSyncNetwork network;
 
 	@Before
 	public void setUp() {
 		this.reader = mock(CommittedReader.class);
+		this.proofsStore = mock(InMemoryCommittedEpochProofsStore.class);
 		this.network =  mock(StateSyncNetwork.class);
-		this.processor = new RemoteSyncServiceProcessor(reader, network, 1);
+		this.processor = new RemoteSyncServiceProcessor(reader, proofsStore, network, 1);
 	}
 
 	@Test

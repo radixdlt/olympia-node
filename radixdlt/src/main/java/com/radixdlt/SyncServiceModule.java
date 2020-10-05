@@ -28,6 +28,7 @@ import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.middleware2.store.InMemoryCommittedEpochProofsStore;
 import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.sync.RemoteSyncResponseAccumulatorVerifier;
 import com.radixdlt.sync.RemoteSyncResponseAccumulatorVerifier.InvalidAccumulatorSender;
@@ -104,10 +105,12 @@ public class SyncServiceModule extends AbstractModule {
 	@Singleton
 	private RemoteSyncServiceProcessor remoteSyncServiceProcessor(
 		CommittedReader committedReader,
+		InMemoryCommittedEpochProofsStore epochProofsStore,
 		StateSyncNetwork stateSyncNetwork
 	) {
 		return new RemoteSyncServiceProcessor(
 			committedReader,
+			epochProofsStore,
 			stateSyncNetwork,
 			BATCH_SIZE
 		);

@@ -34,6 +34,7 @@ import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.AtomChecker;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.middleware2.store.InMemoryCommittedEpochProofsStore;
 import com.radixdlt.statecomputer.CommittedCommandsReader;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.middleware2.LedgerAtom;
@@ -70,13 +71,15 @@ public class RadixEngineModule extends AbstractModule {
 	private RadixEngineStateComputer radixEngineStateComputer(
 		Serialization serialization,
 		RadixEngine<LedgerAtom> radixEngine,
-		CommittedCommandsReader committedCommandsReader
+		CommittedCommandsReader committedCommandsReader,
+		InMemoryCommittedEpochProofsStore committedEpochProofsStore
 	) {
 		return new RadixEngineStateComputer(
 			serialization,
 			radixEngine,
 			epochHighView,
-			committedCommandsReader
+			committedCommandsReader,
+			committedEpochProofsStore
 		);
 	}
 

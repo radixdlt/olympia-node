@@ -58,17 +58,6 @@ class InMemoryCommittedReader implements LedgerUpdateSender, CommittedReader {
 
 	@Override
 	public VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start, int batchSize) {
-		if (start.getLedgerHeader().isEndOfEpoch()) {
-			long currentEpoch = start.getLedgerHeader().getEpoch() + 1;
-			long nextEpoch = currentEpoch + 1;
-			VerifiedLedgerHeaderAndProof nextEpochProof = epochProofs.get(nextEpoch);
-			if (nextEpochProof == null) {
-				return null;
-			}
-
-			return new VerifiedCommandsAndProof(ImmutableList.of(), nextEpochProof);
-		}
-
 		final long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
 		Entry<Long, VerifiedCommandsAndProof> entry = commandsAndProof.higherEntry(stateVersion);
 		if (entry != null) {
