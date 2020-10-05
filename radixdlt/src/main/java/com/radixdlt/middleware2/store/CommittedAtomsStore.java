@@ -99,7 +99,6 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 					return Optional.of(clientAtom);
 				});
 		} else {
-			log.debug("getAtomByParticle returned empty result");
 			return Optional.empty();
 		}
 	}

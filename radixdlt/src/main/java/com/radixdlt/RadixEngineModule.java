@@ -38,7 +38,6 @@ import com.radixdlt.statecomputer.CommittedCommandsReader;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.statecomputer.RadixEngineValidatorSetBuilder;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
@@ -71,15 +70,13 @@ public class RadixEngineModule extends AbstractModule {
 	private RadixEngineStateComputer radixEngineStateComputer(
 		Serialization serialization,
 		RadixEngine<LedgerAtom> radixEngine,
-		CommittedCommandsReader committedCommandsReader,
-		CommittedAtomSender committedAtomSender
+		CommittedCommandsReader committedCommandsReader
 	) {
 		return new RadixEngineStateComputer(
 			serialization,
 			radixEngine,
 			epochHighView,
-			committedCommandsReader,
-			committedAtomSender
+			committedCommandsReader
 		);
 	}
 

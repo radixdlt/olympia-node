@@ -19,7 +19,6 @@ package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
@@ -55,7 +54,6 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 	public interface CommittedAtomWithResult {
 		CommittedAtom getCommittedAtom();
 		CommittedAtomWithResult ifSuccess(Consumer<ImmutableSet<EUID>> successConsumer);
-		CommittedAtomWithResult ifError(Consumer<RadixEngineException> errorConsumer);
 	}
 
 	// TODO: Remove this temporary interface
@@ -67,7 +65,6 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 	private final RadixEngine<LedgerAtom> radixEngine;
 	private final View epochChangeView;
 	private final CommittedCommandsReader committedCommandsReader;
-	private final CommittedAtomSender committedAtomSender;
 	private final Object lock = new Object();
 	private final TreeMap<Long, StoredCommittedCommand> unstoredCommittedAtoms = new TreeMap<>();
 	private final TreeMap<Long, VerifiedLedgerHeaderAndProof> epochProofs = new TreeMap<>();
@@ -76,8 +73,7 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 		Serialization serialization,
 		RadixEngine<LedgerAtom> radixEngine,
 		View epochChangeView,
-		CommittedCommandsReader committedCommandsReader,
-		CommittedAtomSender committedAtomSender
+		CommittedCommandsReader committedCommandsReader
 	) {
 		if (epochChangeView.isGenesis()) {
 			throw new IllegalArgumentException("Epoch change view must not be genesis.");
@@ -87,7 +83,6 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 		this.radixEngine = Objects.requireNonNull(radixEngine);
 		this.epochChangeView = epochChangeView;
 		this.committedCommandsReader = Objects.requireNonNull(committedCommandsReader);
-		this.committedAtomSender = Objects.requireNonNull(committedAtomSender);
 	}
 
 	// TODO Move this to a different class class when unstored committed atoms is fixed
@@ -210,12 +205,6 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 				this.radixEngine.checkAndStore(committedAtom);
 				storedInRadixEngine = true;
 			} catch (RadixEngineException e) {
-				// TODO: Don't check for state computer errors for now so that we don't
-				// TODO: have to deal with failing leader proposals
-				// TODO: Reinstate this when ProposalGenerator + Mempool can guarantee correct proposals
-
-				// TODO: move VIRTUAL_STATE_CONFLICT to static check
-				committedAtomSender.sendCommittedAtom(CommittedAtoms.error(committedAtom, e));
 			}
 		}
 
