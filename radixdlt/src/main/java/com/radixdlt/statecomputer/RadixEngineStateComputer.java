@@ -38,8 +38,6 @@ import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
 import com.radixdlt.sync.CommittedReader;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.TreeMap;
 import java.util.function.Consumer;
@@ -65,8 +63,6 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 	private final RadixEngine<LedgerAtom> radixEngine;
 	private final View epochChangeView;
 	private final CommittedCommandsReader committedCommandsReader;
-	private final Object lock = new Object();
-	private final TreeMap<Long, StoredCommittedCommand> unstoredCommittedAtoms = new TreeMap<>();
 	private final TreeMap<Long, VerifiedLedgerHeaderAndProof> epochProofs = new TreeMap<>();
 
 	public RadixEngineStateComputer(
@@ -112,24 +108,7 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 			return null;
 		}
 
-		final VerifiedLedgerHeaderAndProof nextHeader;
-		if (storedCommittedAtoms.firstEntry() != null) {
-			nextHeader = storedCommittedAtoms.firstEntry().getValue().getStateAndProof();
-		} else {
-			Entry<Long, StoredCommittedCommand> uncommittedEntry = unstoredCommittedAtoms.higherEntry(stateVersion);
-			if (uncommittedEntry == null) {
-				return null;
-			}
-			nextHeader = uncommittedEntry.getValue().getStateAndProof();
-		}
-
-		synchronized (lock) {
-			final long proofStateVersion = nextHeader.getStateVersion();
-			Map<Long, StoredCommittedCommand> unstoredToReturn
-				= unstoredCommittedAtoms.subMap(stateVersion, false, proofStateVersion, true);
-			storedCommittedAtoms.putAll(unstoredToReturn);
-		}
-
+		final VerifiedLedgerHeaderAndProof nextHeader = storedCommittedAtoms.firstEntry().getValue().getStateAndProof();
 		return new VerifiedCommandsAndProof(
 			storedCommittedAtoms.values().stream().map(StoredCommittedCommand::getCommand).collect(ImmutableList.toImmutableList()),
 			nextHeader
@@ -187,22 +166,13 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 	}
 
 	private void commitCommand(long version, Command command, VerifiedLedgerHeaderAndProof proof) {
-		boolean storedInRadixEngine = false;
 		try {
 			final ClientAtom clientAtom = this.mapCommand(command);
 			final CommittedAtom committedAtom = new CommittedAtom(clientAtom, version, proof);
 			// TODO: execute list of commands instead
 			this.radixEngine.checkAndStore(committedAtom);
-			storedInRadixEngine = true;
 		} catch (RadixEngineException | DeserializeException e) {
-		}
-
-		if (!storedInRadixEngine) {
-			StoredCommittedCommand storedCommittedCommand = new StoredCommittedCommand(
-				command,
-				proof
-			);
-			this.unstoredCommittedAtoms.put(version, storedCommittedCommand);
+			throw new IllegalStateException("Trying to commit bad command", e);
 		}
 	}
 
@@ -213,6 +183,10 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 		long firstVersion = stateVersion - verifiedCommandsAndProof.getCommands().size() + 1;
 		for (int i = 0; i < verifiedCommandsAndProof.getCommands().size(); i++) {
 			this.commitCommand(firstVersion + i, verifiedCommandsAndProof.getCommands().get(i), headerAndProof);
+		}
+
+		if (headerAndProof.isEndOfEpoch()) {
+			epochProofs.put(headerAndProof.getEpoch() + 1, headerAndProof);
 		}
 	}
 }
