@@ -24,6 +24,9 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import java.util.Objects;
 
+/**
+ * Default object hasher
+ */
 public final class DsonSHA256Hasher implements Hasher {
 	private final Serialization serialization;
 

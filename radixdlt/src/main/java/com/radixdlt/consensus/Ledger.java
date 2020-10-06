@@ -38,6 +38,11 @@ public interface Ledger {
 	 */
 	Optional<PreparedVertex> prepare(LinkedList<PreparedVertex> previous, VerifiedVertex vertex);
 
+	/**
+	 * Commit prepared vertices from bft consensus
+	 * @param vertices vertices to commit
+	 * @param proof proof of commit
+	 */
 	void commit(ImmutableList<PreparedVertex> vertices, VerifiedLedgerHeaderAndProof proof);
 
 	/**

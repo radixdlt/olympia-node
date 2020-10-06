@@ -20,6 +20,9 @@ package com.radixdlt.middleware2.store;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Stores epoch proofs in memory
+ */
 public final class InMemoryCommittedEpochProofsStore {
 	private final ConcurrentHashMap<Long, VerifiedLedgerHeaderAndProof> epochProofs = new ConcurrentHashMap<>();
 

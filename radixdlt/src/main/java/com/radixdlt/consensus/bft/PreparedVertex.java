@@ -26,6 +26,9 @@ import com.radixdlt.utils.Pair;
 import java.util.Objects;
 import java.util.stream.Stream;
 
+/**
+ * Vertex which has been executed in the prepare phase
+ */
 public final class PreparedVertex {
 	private final VerifiedVertex vertex;
 
@@ -43,7 +46,7 @@ public final class PreparedVertex {
 		this.vertex = Objects.requireNonNull(vertex);
 		this.ledgerHeader = Objects.requireNonNull(ledgerHeader);
 		this.successfulCommands = Objects.requireNonNull(successfulCommands);
-		this.commandExceptions = commandExceptions;
+		this.commandExceptions = Objects.requireNonNull(commandExceptions);
 	}
 
 	public Hash getId() {
