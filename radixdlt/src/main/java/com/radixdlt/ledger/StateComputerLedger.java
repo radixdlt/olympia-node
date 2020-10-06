@@ -64,15 +64,15 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			this(successfulCommands, failedCommands, null);
 		}
 
-		Optional<BFTValidatorSet> getNextValidatorSet() {
+		public Optional<BFTValidatorSet> getNextValidatorSet() {
 			return Optional.ofNullable(nextValidatorSet);
 		}
 
-		ImmutableSet<Command> getSuccessfulCommands() {
+		public ImmutableSet<Command> getSuccessfulCommands() {
 			return successfulCommands;
 		}
 
-		ImmutableMap<Command, Exception> getFailedCommands() {
+		public ImmutableMap<Command, Exception> getFailedCommands() {
 			return failedCommands;
 		}
 	}
