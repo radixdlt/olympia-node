@@ -293,12 +293,12 @@ public final class VertexStore {
 		Hash nextId = vertexId;
 		ImmutableList.Builder<VerifiedVertex> builder = ImmutableList.builderWithExpectedSize(count);
 		for (int i = 0; i < count; i++) {
-			final PreparedVertex preparedVertex = this.vertices.get(nextId);
 			final VerifiedVertex verifiedVertex;
-			if (preparedVertex != null) {
-				verifiedVertex = preparedVertex.getVertex();
-			} else if (nextId.equals(rootVertex.getId())) {
+			if (nextId.equals(rootVertex.getId())) {
 				verifiedVertex = rootVertex;
+			} else if (this.vertices.containsKey(nextId)) {
+				final PreparedVertex preparedVertex = this.vertices.get(nextId);
+				verifiedVertex = preparedVertex.getVertex();
 			} else {
 				return Optional.empty();
 			}
