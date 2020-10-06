@@ -19,8 +19,8 @@ package com.radixdlt.middleware2.network;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Hasher;
-import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
+import com.radixdlt.consensus.SyncInfo;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
@@ -108,12 +108,8 @@ public class MessageCentralValidatorSync implements SyncVerticesRequestSender, S
 	}
 
 	@Override
-	public void sendGetVerticesErrorResponse(BFTNode node, QuorumCertificate highestQC, QuorumCertificate highestCommittedQC) {
-		GetVerticesErrorResponseMessage response = new GetVerticesErrorResponseMessage(
-			this.magic,
-			highestQC,
-			highestCommittedQC
-		);
+	public void sendGetVerticesErrorResponse(BFTNode node, SyncInfo syncInfo) {
+		GetVerticesErrorResponseMessage response = new GetVerticesErrorResponseMessage(this.magic, syncInfo);
 		final Optional<Peer> peerMaybe = this.addressBook.peer(node.getKey().euid());
 		peerMaybe.ifPresentOrElse(
 			p -> this.messageCentral.send(p, response),
@@ -166,11 +162,7 @@ public class MessageCentralValidatorSync implements SyncVerticesRequestSender, S
 				}
 
 				BFTNode node = BFTNode.create(src.getSystem().getKey());
-				return new GetVerticesErrorResponse(
-					node,
-					msg.getHighestQC(),
-					msg.getHighestCommittedQC()
-				);
+				return new GetVerticesErrorResponse(node, msg.syncInfo());
 			}
 		);
 	}

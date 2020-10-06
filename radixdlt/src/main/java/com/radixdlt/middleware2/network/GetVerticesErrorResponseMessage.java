@@ -18,7 +18,7 @@
 package com.radixdlt.middleware2.network;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.SyncInfo;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
@@ -27,37 +27,28 @@ import org.radix.network.messaging.Message;
 
 @SerializerId2("message.consensus.vertices_error_response")
 public class GetVerticesErrorResponseMessage extends Message {
-	@JsonProperty("highest_qc")
+	@JsonProperty("sync_info")
 	@DsonOutput(Output.ALL)
-	private final QuorumCertificate highestQC;
-
-	@JsonProperty("highest_committed_qc")
-	@DsonOutput(Output.ALL)
-	private final QuorumCertificate highestCommittedQC;
+	private SyncInfo syncInfo;
 
 	GetVerticesErrorResponseMessage() {
 		// Serializer only
 		super(0);
-		this.highestQC = null;
-		this.highestCommittedQC = null;
+		this.syncInfo = null;
 	}
 
-	GetVerticesErrorResponseMessage(int magic, QuorumCertificate highestQC, QuorumCertificate highestCommittedQC) {
+	GetVerticesErrorResponseMessage(int magic, SyncInfo syncInfo) {
 		super(magic);
-		this.highestQC = Objects.requireNonNull(highestQC);
-		this.highestCommittedQC = Objects.requireNonNull(highestCommittedQC);
+		this.syncInfo = Objects.requireNonNull(syncInfo);
 	}
 
-	public QuorumCertificate getHighestQC() {
-		return highestQC;
-	}
-
-	public QuorumCertificate getHighestCommittedQC() {
-		return highestCommittedQC;
+	public SyncInfo syncInfo() {
+		return this.syncInfo;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{highQC=%s}", getClass().getSimpleName(), highestQC);
+		return String.format("%s{%s}", getClass().getSimpleName(), this.syncInfo);
 	}
+
 }

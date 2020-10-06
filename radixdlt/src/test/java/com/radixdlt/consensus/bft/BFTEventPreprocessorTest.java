@@ -29,6 +29,7 @@ import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.SyncInfo;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Vote;
@@ -88,10 +89,12 @@ public class BFTEventPreprocessorTest {
 		BFTHeader proposed = mock(BFTHeader.class);
 		when(qc.getProposed()).thenReturn(proposed);
 		when(proposed.getVertexId()).thenReturn(vertexId);
-		when(newView.getQC()).thenReturn(qc);
 		QuorumCertificate committedQC = mock(QuorumCertificate.class);
-		when(newView.getCommittedQC()).thenReturn(committedQC);
-		when(vertexStoreSync.syncToQC(eq(qc), eq(committedQC), any())).thenReturn(synced ? SyncResult.SYNCED : SyncResult.IN_PROGRESS);
+		SyncInfo syncInfo = mock(SyncInfo.class);
+		when(syncInfo.highestQC()).thenReturn(qc);
+		when(syncInfo.highestCommittedQC()).thenReturn(committedQC);
+		when(newView.syncInfo()).thenReturn(syncInfo);
+		when(vertexStoreSync.syncToQC(any(), any())).thenReturn(synced ? SyncResult.SYNCED : SyncResult.IN_PROGRESS);
 		return newView;
 	}
 
@@ -108,10 +111,12 @@ public class BFTEventPreprocessorTest {
 		when(vertex.getQC()).thenReturn(qc);
 
 		QuorumCertificate committedQC = mock(QuorumCertificate.class);
-		when(proposal.getCommittedQC()).thenReturn(committedQC);
-		when(proposal.getQC()).thenReturn(qc);
+		SyncInfo syncInfo = mock(SyncInfo.class);
+		when(syncInfo.highestQC()).thenReturn(qc);
+		when(syncInfo.highestCommittedQC()).thenReturn(committedQC);
+		when(proposal.syncInfo()).thenReturn(syncInfo);
 
-		when(vertexStoreSync.syncToQC(eq(qc), eq(committedQC), any())).thenReturn(synced ? SyncResult.SYNCED : SyncResult.IN_PROGRESS);
+		when(vertexStoreSync.syncToQC(any(), any())).thenReturn(synced ? SyncResult.SYNCED : SyncResult.IN_PROGRESS);
 		return proposal;
 	}
 

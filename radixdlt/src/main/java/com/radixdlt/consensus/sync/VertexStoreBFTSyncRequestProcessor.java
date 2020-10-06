@@ -19,7 +19,7 @@ package com.radixdlt.consensus.sync;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
-import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.SyncInfo;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTSyncRequestProcessor;
 import com.radixdlt.consensus.bft.VerifiedVertex;
@@ -51,10 +51,9 @@ public final class VertexStoreBFTSyncRequestProcessor implements BFTSyncRequestP
 		/**
 		 * Send an error response to a given request
 		 * @param node the node to send to
-		 * @param highestQC highestQC sync info
-		 * @param highestCommittedQC highestCommittedQC sync info
+		 * @param syncInfo sync info
 		 */
-		void sendGetVerticesErrorResponse(BFTNode node, QuorumCertificate highestQC, QuorumCertificate highestCommittedQC);
+		void sendGetVerticesErrorResponse(BFTNode node, SyncInfo syncInfo);
 	}
 
 	@Inject
@@ -74,11 +73,7 @@ public final class VertexStoreBFTSyncRequestProcessor implements BFTSyncRequestP
 				log.trace("SYNC_VERTICES: Sending Response {}", fetched);
 				this.syncVerticesResponseSender.sendGetVerticesResponse(request.getSender(), fetched);
 			},
-			() -> this.syncVerticesResponseSender.sendGetVerticesErrorResponse(
-				request.getSender(),
-				vertexStore.getHighestQC(),
-				vertexStore.getHighestCommittedQC()
-			)
+			() -> this.syncVerticesResponseSender.sendGetVerticesErrorResponse(request.getSender(), vertexStore.syncInfo())
 		);
 	}
 }

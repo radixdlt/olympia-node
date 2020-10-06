@@ -19,6 +19,7 @@ package com.radixdlt.middleware2.network;
 
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.SyncInfo;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.crypto.Hash;
@@ -31,10 +32,9 @@ public class GetVerticesErrorResponseMessageSerializeTest extends SerializeMessa
 
 	private static GetVerticesErrorResponseMessage get() {
 		LedgerHeader ledgerHeader = LedgerHeader.genesis(Hash.ZERO_HASH);
-		return new GetVerticesErrorResponseMessage(
-			12345,
-			QuorumCertificate.ofGenesis(new VerifiedVertex(UnverifiedVertex.createGenesis(ledgerHeader), Hash.ZERO_HASH), ledgerHeader),
-			QuorumCertificate.ofGenesis(new VerifiedVertex(UnverifiedVertex.createGenesis(ledgerHeader), Hash.ZERO_HASH), ledgerHeader)
-		);
+		VerifiedVertex verifiedVertex = new VerifiedVertex(UnverifiedVertex.createGenesis(ledgerHeader), Hash.ZERO_HASH);
+		QuorumCertificate qc = QuorumCertificate.ofGenesis(verifiedVertex, ledgerHeader);
+		SyncInfo syncInfo = SyncInfo.from(qc, qc);
+		return new GetVerticesErrorResponseMessage(12345, syncInfo);
 	}
 }

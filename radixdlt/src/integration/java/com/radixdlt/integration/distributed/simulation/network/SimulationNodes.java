@@ -53,7 +53,6 @@ import java.util.stream.Collectors;
  * A multi-node bft test network where the network and latencies of each message is simulated.
  */
 public class SimulationNodes {
-	private final int pacemakerTimeout;
 	private final SimulationNetwork underlyingNetwork;
 	private final ImmutableList<Injector> nodeInstances;
 	private final List<ECKeyPair> nodes;
@@ -70,7 +69,6 @@ public class SimulationNodes {
 	public SimulationNodes(
 		List<ECKeyPair> nodes,
 		SimulationNetwork underlyingNetwork,
-		int pacemakerTimeout,
 		Module baseModule,
 		Module overrideModule,
 		Map<ECKeyPair, Module> byzantineNodeModules
@@ -80,7 +78,6 @@ public class SimulationNodes {
 		this.overrideModule = overrideModule;
 		this.byzantineNodeModules = byzantineNodeModules;
 		this.underlyingNetwork = Objects.requireNonNull(underlyingNetwork);
-		this.pacemakerTimeout = pacemakerTimeout;
 		this.nodeInstances = nodes.stream().map(this::createBFTInstance).collect(ImmutableList.toImmutableList());
 	}
 

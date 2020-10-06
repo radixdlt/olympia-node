@@ -28,6 +28,7 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.SyncInfo;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
@@ -52,15 +53,17 @@ public class VertexStoreBFTSyncRequestProcessorTest {
 		when(vertexStore.getVertices(any(), anyInt())).thenReturn(Optional.empty());
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		QuorumCertificate committedQC = mock(QuorumCertificate.class);
-		when(vertexStore.getHighestQC()).thenReturn(qc);
-		when(vertexStore.getHighestCommittedQC()).thenReturn(committedQC);
+		SyncInfo syncInfo = mock(SyncInfo.class);
+		when(syncInfo.highestQC()).thenReturn(qc);
+		when(syncInfo.highestCommittedQC()).thenReturn(committedQC);
+		when(vertexStore.syncInfo()).thenReturn(syncInfo);
 
 		GetVerticesRequest request = mock(GetVerticesRequest.class);
 		BFTNode sender = mock(BFTNode.class);
 		when(request.getSender()).thenReturn(sender);
 		requestProcessor.processGetVerticesRequest(request);
 
-		verify(responseSender, times(1)).sendGetVerticesErrorResponse(eq(sender), eq(qc), eq(committedQC));
+		verify(responseSender, times(1)).sendGetVerticesErrorResponse(eq(sender), eq(syncInfo));
 		verify(responseSender, never()).sendGetVerticesResponse(any(), any());
 	}
 
@@ -70,15 +73,17 @@ public class VertexStoreBFTSyncRequestProcessorTest {
 		when(vertexStore.getVertices(any(), anyInt())).thenReturn(Optional.of(ImmutableList.of()));
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		QuorumCertificate committedQC = mock(QuorumCertificate.class);
-		when(vertexStore.getHighestQC()).thenReturn(qc);
-		when(vertexStore.getHighestCommittedQC()).thenReturn(committedQC);
+		SyncInfo syncInfo = mock(SyncInfo.class);
+		when(syncInfo.highestQC()).thenReturn(qc);
+		when(syncInfo.highestCommittedQC()).thenReturn(committedQC);
+		when(vertexStore.syncInfo()).thenReturn(syncInfo);
 
 		GetVerticesRequest request = mock(GetVerticesRequest.class);
 		BFTNode sender = mock(BFTNode.class);
 		when(request.getSender()).thenReturn(sender);
 		requestProcessor.processGetVerticesRequest(request);
 
-		verify(responseSender, never()).sendGetVerticesErrorResponse(any(), any(), any());
+		verify(responseSender, never()).sendGetVerticesErrorResponse(any(), any());
 		verify(responseSender, times(1)).sendGetVerticesResponse(eq(sender), any());
 	}
 }

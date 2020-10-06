@@ -127,7 +127,6 @@ public class SimulationTest {
 	private final LatencyProvider latencyProvider;
 	private final ImmutableSet<SimulationNetworkActor> runners;
 	private final ImmutableMap<String, TestInvariant> checks;
-	private final int pacemakerTimeout;
 	private final Module baseNodeModule;
 	private final Module overrideModule;
 	private final Map<ECKeyPair, Module> byzantineNodeModules;
@@ -147,7 +146,6 @@ public class SimulationTest {
 		this.baseNodeModule = baseNodeModule;
 		this.overrideModule = overrideModule;
 		this.byzantineNodeModules = byzantineNodeModules;
-		this.pacemakerTimeout = pacemakerTimeout;
 		this.checks = checks;
 		this.runners = runners;
 	}
@@ -650,7 +648,6 @@ public class SimulationTest {
 		SimulationNodes bftNetwork = new SimulationNodes(
 			nodes,
 			network,
-			pacemakerTimeout,
 			baseNodeModule, overrideModule,
 			byzantineNodeModules
 		);

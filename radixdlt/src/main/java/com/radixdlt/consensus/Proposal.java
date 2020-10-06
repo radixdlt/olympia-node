@@ -38,7 +38,7 @@ import java.util.Objects;
 @Immutable // author cannot be but is effectively final because of serializer
 public final class Proposal implements RequiresSyncConsensusEvent {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
+	@DsonOutput(Output.ALL)
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
 	@JsonProperty("vertex")
@@ -89,13 +89,8 @@ public final class Proposal implements RequiresSyncConsensusEvent {
 	}
 
 	@Override
-	public QuorumCertificate getQC() {
-		return vertex.getQC();
-	}
-
-	@Override
-	public QuorumCertificate getCommittedQC() {
-		return committedQC;
+	public SyncInfo syncInfo() {
+		return SyncInfo.from(vertex.getQC(), committedQC);
 	}
 
 	@Override

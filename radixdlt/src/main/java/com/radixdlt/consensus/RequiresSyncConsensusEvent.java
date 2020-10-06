@@ -26,16 +26,11 @@ import com.radixdlt.consensus.bft.View;
 public interface RequiresSyncConsensusEvent extends ConsensusEvent {
 
 	/**
-	 * Get the QC associated with event
-	 * @return qc associated with event
+	 * Retrieves the {@link SyncInfo} associated with the event.
+	 *
+	 * @return {@linke SyncInfo} associated with event
 	 */
-	QuorumCertificate getQC();
-
-	/**
-	 * Get the highest known committed QC of peer
-	 * @return highest known committed QC of peer
-	 */
-	QuorumCertificate getCommittedQC();
+	SyncInfo syncInfo();
 
 	/**
 	 * Get the view the consensus event is meant for
