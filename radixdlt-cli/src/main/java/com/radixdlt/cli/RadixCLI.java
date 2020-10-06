@@ -19,33 +19,36 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-package com.radixdlt.cli
+package com.radixdlt.cli;
 
-import com.radixdlt.client.application.RadixApplicationAPI
-import picocli.CommandLine
+import picocli.CommandLine;
+import picocli.CommandLine.Command;
 
-/**
- * This command shows current details
- * <br>
- * Usage:
- * <pre>
- *  $ radixdlt-cli get-details [-k=<keystore name>] [-p=<keystore password>]
- * </pre>
- */
-@CommandLine.Command(name = "get-details", mixinStandardHelpOptions = true,
-		description = "Get details such as address, public key, native token ref")
-class GetDetails implements Runnable {
+import static com.radixdlt.cli.Utils.println;
 
-	@CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
-	Composite.IdentityInfo identityInfo
-
+@Command(name = "radix",
+		version = "1.0",
+		mixinStandardHelpOptions = true,
+		subcommands = {
+				KeyGenerator.class, GetMessages.class,
+				SendMessage.class, GetDetails.class,
+				GetStoredAtoms.class, CreateAndMintToken.class,
+				RegisterValidator.class, UnregisterValidator.class,
+				ShowValidatorConfig.class, ValidatorKeyGenerator.class
+		})
+public class RadixCLI implements Runnable {
 	@Override
-	void run() {
-		RadixApplicationAPI api = Utils.getAPI(identityInfo)
+	public void run() {
+		println("Radix Command Line Utility ");
+	}
 
-		println("My address:\t " + api.getAddress())
-		println("My public key:\t " + api.getPublicKey())
-		println("Native token ref:\t " + api.getNativeTokenRef().toString())
-		println "Done"
+	public static void main(String[] args) {
+		CommandLine cmd = new CommandLine(new RadixCLI());
+		cmd.execute(args);
+
+		if (args.length == 0) {
+			cmd.printVersionHelp(System.out);
+			cmd.usage(System.out);
+		}
 	}
 }

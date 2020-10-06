@@ -19,33 +19,47 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-package com.radixdlt.cli
+package com.radixdlt.cli;
 
-import com.radixdlt.client.application.RadixApplicationAPI
-import picocli.CommandLine
+import com.radixdlt.client.application.RadixApplicationAPI;
+import com.radixdlt.client.core.ledger.AtomObservation;
+import picocli.CommandLine;
+
+import static com.radixdlt.cli.Utils.printf;
+import static com.radixdlt.cli.Utils.println;
 
 /**
- * This command shows all messages received so far
+ * This command shows stored atoms
  * <br>
  * Usage:
  * <pre>
- *  $ radixdlt-cli get-messages [-k=<keystore name>] [-p=<keystore password>]
+ *  $ radixdlt-cli get-stored-atoms [-k=<keystore name>] [-p=<keystore password>]
  * </pre>
  */
-@CommandLine.Command(name = "get-messages", mixinStandardHelpOptions = true,
-		description = "Get all the messages")
-class GetMessages implements Runnable {
+@CommandLine.Command(name = "get-stored-atoms", mixinStandardHelpOptions = true,
+		description = "Get stored Atoms")
+public class GetStoredAtoms implements Runnable {
 	@CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
-	Composite.IdentityInfo identityInfo
+	private Composite.IdentityInfo identityInfo;
 
 	@Override
-	void run() {
-		RadixApplicationAPI api = Utils.getAPI(identityInfo)
-		println "Retrieving messages..."
-		api.pull()
-		println "Messages:"
-		api.observeMessages().blockingSubscribe(it -> println "  ${it}")
-		println "Done"
+	public void run() {
+		RadixApplicationAPI api = Utils.getAPI(identityInfo);
+
+		println("Retrieving atoms...");
+		api.pull();
+		var atomStore = api.getAtomStore();
+		var observations = atomStore.getAtomObservations(api.getAddress());
+		observations.filter(AtomObservation::isHead).blockingFirst();
+
+		println("Atom ID's:");
+		atomStore.getStoredAtoms(api.getAddress()).forEach(it -> printf("  %s", it.getAid()));
+		println("Done");
+	}
+
+	public GetStoredAtoms identityInfo(final Composite.IdentityInfo identityInfo) {
+		this.identityInfo = identityInfo;
+		return this;
 	}
 }
 

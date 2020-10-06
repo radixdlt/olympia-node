@@ -1,12 +1,20 @@
 package com.radixdlt.cli;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class RadixCLITest {
+	private static final String KEYSTORE_FILENAME = "keystore.ks";
+
+	@Before
+	public void setUp() {
+		cleanupKeystore();
+	}
 
 	@Test
 	public void helpIsDisplayedIfInvokedWithoutParameters() {
@@ -48,20 +56,37 @@ public class RadixCLITest {
 	}
 
 	@Test
-	public void validatorKeyIsGenerated() {
-		//Make sure file is not present
-		final File keyStoreFile = new File("keystore.ks");
-		keyStoreFile.delete();
-
+	public void validatorKeyIsGeneratedForNewKeystore() {
 		try (OutputCapture capture = OutputCapture.startStdout()) {
 			RadixCLI.main(new String[] {"generate-validator-key", "-k=keystore.ks", "-n=node", "-p=nopass"});
-
 			final String output = capture.stop().replace("\n", " ").trim();
-			System.out.println("[" + output + "]");
+
 			assertTrue(output.startsWith("Writing key node (pubKey: "));
 			assertTrue(output.endsWith("to new keystore keystore.ks Done"));
 		} finally {
-			keyStoreFile.delete();
+			cleanupKeystore();
 		}
+	}
+
+	@Test
+	public void validatorKeyIsGeneratedForExistingKeystore() {
+		try (OutputCapture ignore = OutputCapture.startStdout()) {
+			RadixCLI.main(new String[] {"generate-validator-key", "-k=keystore.ks", "-n=node", "-p=nopass"});
+			ignore.stop();
+		}
+
+		try (OutputCapture capture = OutputCapture.startStdout()) {
+			RadixCLI.main(new String[] {"generate-validator-key", "-k=keystore.ks", "-n=node", "-p=nopass"});
+			final String output = capture.stop().replace("\n", " ").trim();
+
+			assertTrue(output.startsWith("Writing key node (pubKey: "));
+			assertTrue(output.endsWith("to existing keystore keystore.ks Done"));
+		} finally {
+			cleanupKeystore();
+		}
+	}
+
+	private void cleanupKeystore() {
+		new File(KEYSTORE_FILENAME).delete();
 	}
 }

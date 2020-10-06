@@ -19,37 +19,40 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-package com.radixdlt.cli
+package com.radixdlt.cli;
 
-import picocli.CommandLine
-import picocli.CommandLine.Command
+import com.radixdlt.client.application.RadixApplicationAPI;
+import picocli.CommandLine;
 
-//@Grab('info.picocli:picocli:2.0.3')
+import static com.radixdlt.cli.Utils.println;
 
-@Command(name = "radix",
-		version = "1.0",
-		mixinStandardHelpOptions = true,
-//		description = "Radix CLI",
-		subcommands = [
-				KeyGenerator.class, GetMessages.class,
-				SendMessage.class, GetDetails.class,
-				GetStoredAtoms.class, CreateAndMintToken.class,
-				RegisterValidator.class, UnregisterValidator.class,
-				ShowValidatorConfig.class, ValidatorKeyGenerator.class
-		])
-class RadixCLI implements Runnable {
+/**
+ * This command shows all messages received so far
+ * <br>
+ * Usage:
+ * <pre>
+ *  $ radixdlt-cli get-messages [-k=<keystore name>] [-p=<keystore password>]
+ * </pre>
+ */
+@CommandLine.Command(name = "get-messages", mixinStandardHelpOptions = true,
+		description = "Get all the messages")
+public class GetMessages implements Runnable {
+	@CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
+	private Composite.IdentityInfo identityInfo;
+
 	@Override
-	void run() {
-		print "Radix Command Line Utility "
+	public void run() {
+		RadixApplicationAPI api = Utils.getAPI(identityInfo);
+		println("Retrieving messages...");
+		api.pull();
+		println("Messages:");
+		api.observeMessages().blockingSubscribe(it -> println("  " + it.toString()));
+		println("Done");
 	}
 
-	static void main(String[] args) {
-		CommandLine cmd = new CommandLine(new RadixCLI())
-
-        cmd.execute(args)
-        if (args.length == 0) {
-            cmd.printVersionHelp(System.out)
-            cmd.usage(System.out)
-		}
+	public GetMessages identityInfo(final Composite.IdentityInfo identityInfo) {
+		this.identityInfo = identityInfo;
+		return this;
 	}
 }
+
