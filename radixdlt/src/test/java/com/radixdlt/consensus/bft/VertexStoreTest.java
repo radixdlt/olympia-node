@@ -174,7 +174,7 @@ public class VertexStoreTest {
 
 	@Test
 	public void adding_a_qc_should_update_highest_qc() {
-		// Assemble
+		// Arrange
 		final List<VerifiedVertex> vertices = Stream.generate(this.nextVertex).limit(4).collect(Collectors.toList());
 		sut.insertVertex(vertices.get(0));
 
@@ -189,7 +189,7 @@ public class VertexStoreTest {
 
 	@Test
 	public void adding_a_qc_with_commit_should_commit_vertices_to_ledger() {
-		// Assemble
+		// Arrange
 		final List<VerifiedVertex> vertices = Stream.generate(this.nextVertex).limit(4).collect(Collectors.toList());
 		sut.insertVertex(vertices.get(0));
 		sut.insertVertex(vertices.get(1));
@@ -213,7 +213,7 @@ public class VertexStoreTest {
 
 	@Test
 	public void adding_a_qc_which_has_not_been_inserted_should_return_false() {
-		// Assemble
+		// Arrange
 		this.nextVertex.get();
 
 		// Act
