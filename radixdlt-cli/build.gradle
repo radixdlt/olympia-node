@@ -27,10 +27,16 @@ buildscript {
         classpath 'com.github.jengelman.gradle.plugins:shadow:6.0.0'
     }
 }
+
 apply plugin: 'java'
+apply plugin: 'jacoco'
+apply plugin: 'checkstyle'
+apply plugin: 'org.sonarqube'
+apply plugin: 'project-report'
 apply plugin: 'com.github.johnrengelman.shadow'
-apply plugin: 'groovy'
+apply plugin: 'com.adarshr.test-logger'
 apply plugin: 'application'
+
 repositories {
     jcenter()
     maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
@@ -38,8 +44,38 @@ repositories {
 }
 
 mainClassName = 'com.radixdlt.cli.RadixCLI'
+
 compileJava {
+    options.compilerArgs += '-proc:none'
+}
+
+compileTestJava {
+    options.compilerArgs += '-proc:none'
     options.compilerArgs += ["-Aproject=${project.group}/${project.name}"]
+}
+
+checkstyle {
+    configFile rootProject.file('.checkstyle.xml')
+    toolVersion '8.10.1'
+    showViolations = true
+}
+
+checkstyleTest {
+    configFile rootProject.file('.checkstyle_test.xml')
+}
+
+test {
+    systemProperty "java.security.egd", "file:/dev/urandom"
+}
+
+jacoco {
+    toolVersion = "0.8.5"
+}
+
+jacocoTestReport {
+    reports {
+        xml.enabled true
+    }
 }
 
 configurations.all {
@@ -54,10 +90,14 @@ configurations.all {
 }
 
 dependencies {
-    compile 'org.codehaus.groovy:groovy-all:3.0.5'
     compile 'com.google.code.gson:gson:2.8.2'
     compile 'commons-cli:commons-cli:1.4'
     compile 'info.picocli:picocli:4.4.0'
+
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+    testCompile group: 'org.mockito', name: 'mockito-core', version: '3.5.10'
+    testCompile group: 'org.assertj', name: 'assertj-core', version: '3.11.1'
+
     annotationProcessor 'info.picocli:picocli-codegen:4.4.0'
     compile project(":radixdlt-java")
 }

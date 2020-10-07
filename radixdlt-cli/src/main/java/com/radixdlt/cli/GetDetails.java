@@ -19,39 +19,35 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-package com.radixdlt.cli
+package com.radixdlt.cli;
 
-import com.radixdlt.client.application.RadixApplicationAPI
-import picocli.CommandLine
+import com.radixdlt.client.application.RadixApplicationAPI;
+import picocli.CommandLine;
+
+import static com.radixdlt.cli.Utils.println;
 
 /**
- * This command shows stored atoms
+ * This command shows current details
  * <br>
  * Usage:
  * <pre>
- *  $ radixdlt-cli get-stored-atoms [-k=<keystore name>] [-p=<keystore password>]
+ *  $ radixdlt-cli get-details [-k=<keystore name>] [-p=<keystore password>]
  * </pre>
  */
-@CommandLine.Command(name = "get-stored-atoms", mixinStandardHelpOptions = true,
-        description = "Get stored Atoms")
-class GetStoredAtoms implements Runnable {
-    @CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
-    Composite.IdentityInfo identityInfo
+@CommandLine.Command(name = "get-details", mixinStandardHelpOptions = true,
+		description = "Get details such as address, public key, native token ref")
+public class GetDetails implements Runnable {
 
-    @Override
-    void run() {
-        RadixApplicationAPI api = Utils.getAPI(identityInfo)
+	@CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
+	private Composite.IdentityInfo identityInfo;
 
-        println "Retrieving atoms..."
-        api.pull()
-        def atomStore = api.getAtomStore()
-        def observations = atomStore.getAtomObservations(api.getAddress())
-        observations.filter({ it -> return it.isHead() }).blockingFirst()
+	@Override
+	public void run() {
+		RadixApplicationAPI api = Utils.getAPI(identityInfo);
 
-        println "Atom ID's:"
-        atomStore.getStoredAtoms(api.getAddress()).each(it -> printf("  %s", it.getAid()))
-        println "Done"
-        System.exit(0)
-    }
+		println("My address:\t " + api.getAddress());
+		println("My public key:\t " + api.getPublicKey());
+		println("Native token ref:\t " + api.getNativeTokenRef().toString());
+		println("Done");
+	}
 }
-

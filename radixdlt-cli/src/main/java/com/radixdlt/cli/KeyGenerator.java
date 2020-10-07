@@ -19,11 +19,19 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-package com.radixdlt.cli
+package com.radixdlt.cli;
 
-import com.radixdlt.client.application.identity.RadixIdentities
-import picocli.CommandLine.Command
-import picocli.CommandLine.Option
+import com.radixdlt.client.application.identity.RadixIdentities;
+import com.radixdlt.crypto.exception.PrivateKeyException;
+import com.radixdlt.crypto.exception.PublicKeyException;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.security.GeneralSecurityException;
+
+import static com.radixdlt.cli.Utils.println;
 
 /**
  * This command generates new private key and prints it to standard output.
@@ -34,24 +42,30 @@ import picocli.CommandLine.Option
  * </pre>
  * The password is required and it should not be empty.
  */
-@Command(name = "generate-key",mixinStandardHelpOptions = true,
-        description = "Generate key")
-class KeyGenerator implements Runnable {
+@Command(name = "generate-key", mixinStandardHelpOptions = true,
+		description = "Generate key")
+public class KeyGenerator implements Runnable {
 
-    @Option(names = ["-p", "--password"], paramLabel = "PASSWORD", description = "password", required = true)
-    String password
+	@Option(names = {"-p", "--password"}, paramLabel = "PASSWORD", description = "password", required = true)
+	private String password;
 
-    @Override
-    void run() {
-        if (password == null || password.isBlank()) {
-            println "The password must be provided"
-            System.exit(-1)
-        }
+	@Override
+	public void run() {
+		if (password == null || password.isBlank()) {
+			println("The password must be provided");
+			return;
+		}
 
-        PrintWriter writer = new PrintWriter(System.out)
-        RadixIdentities.createNewEncryptedIdentity(writer, password)
-        writer.flush()
-        writer.close()
-        System.exit(0)
-    }
+		PrintWriter writer = new PrintWriter(System.out);
+
+		try {
+			RadixIdentities.createNewEncryptedIdentity(writer, password);
+		} catch (IOException | GeneralSecurityException | PrivateKeyException | PublicKeyException e) {
+			println("Unable to generate keys due to following error:\n" + e.getMessage());
+			return;
+		}
+		writer.flush();
+		writer.close();
+		println("Done");
+	}
 }

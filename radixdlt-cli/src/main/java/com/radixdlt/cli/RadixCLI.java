@@ -19,21 +19,36 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-package com.radixdlt.cli
+package com.radixdlt.cli;
 
-import com.google.gson.TypeAdapter
-import com.google.gson.stream.JsonReader
-import com.google.gson.stream.JsonWriter
-import com.radixdlt.identifiers.RadixAddress
+import picocli.CommandLine;
+import picocli.CommandLine.Command;
 
-class RadixAddressTypeAdapter extends TypeAdapter<RadixAddress> {
-    @Override
-    void write(JsonWriter out, RadixAddress address) throws IOException {
-        out.value(address.toString())
-    }
+import static com.radixdlt.cli.Utils.println;
 
-    @Override
-    RadixAddress read(JsonReader reader) throws IOException {
-        return RadixAddress.from(reader.nextString())
-    }
+@Command(name = "radix",
+		version = "1.0",
+		mixinStandardHelpOptions = true,
+		subcommands = {
+				KeyGenerator.class, GetMessages.class,
+				SendMessage.class, GetDetails.class,
+				GetStoredAtoms.class, CreateAndMintToken.class,
+				RegisterValidator.class, UnregisterValidator.class,
+				ShowValidatorConfig.class, ValidatorKeyGenerator.class
+		})
+public class RadixCLI implements Runnable {
+	@Override
+	public void run() {
+		println("Radix Command Line Utility ");
+	}
+
+	public static void main(String[] args) {
+		CommandLine cmd = new CommandLine(new RadixCLI());
+		cmd.execute(args);
+
+		if (args.length == 0) {
+			cmd.printVersionHelp(System.out);
+			cmd.usage(System.out);
+		}
+	}
 }

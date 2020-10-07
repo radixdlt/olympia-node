@@ -19,26 +19,38 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+package com.radixdlt.cli;
 
-package com.radixdlt.cli
+import com.radixdlt.client.application.RadixApplicationAPI;
+import picocli.CommandLine;
 
-import picocli.CommandLine
+import static com.radixdlt.cli.Utils.printfln;
+import static com.radixdlt.cli.Utils.println;
 
+/**
+ * This command shows stored atoms
+ * <br>
+ * Usage:
+ * <pre>
+ *  $ radixdlt-cli get-stored-atoms [-k=<keystore name>] [-p=<keystore password>]
+ * </pre>
+ */
+@CommandLine.Command(name = "get-stored-atoms", mixinStandardHelpOptions = true,
+		description = "Get stored Atoms")
+public class GetStoredAtoms implements Runnable {
+	@CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
+	private Composite.IdentityInfo identityInfo;
 
-class Composite {
-    static class Encrypted {
-        @CommandLine.Option(names = ["-k", "--keystore"], paramLabel = "KEYSTORE", description = "location of keystore file.", required = true)
-        String keyStore
+	@Override
+	public void run() {
+		RadixApplicationAPI api = Utils.getAPI(identityInfo);
 
-        @CommandLine.Option(names = ["-p", "--password"], paramLabel = "PASSWORD", description = "password", required = true)
-        String password
-    }
+		println("Retrieving atoms...");
+		api.pullOnce(api.getAddress()).blockingAwait();
 
-    static class IdentityInfo {
-        @CommandLine.ArgGroup(exclusive = false)
-        Encrypted encrypted
-
-        @CommandLine.Option(names = ["-u", "--unencryptedkeyfile"], paramLabel = "UNENCRYPTED_KEYFILE", description = "location of unencrypted keyfile.")
-        String unencryptedKeyFile
-    }
+		println("Atom ID's:");
+		api.getAtomStore().getStoredAtoms(api.getAddress()).forEach(it -> printfln("  %s", it.getAid()));
+		println("Done");
+	}
 }
+

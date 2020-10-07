@@ -20,14 +20,19 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-package com.radixdlt.cli
+package com.radixdlt.cli;
 
-import com.google.common.collect.ImmutableSet
-import com.radixdlt.client.application.RadixApplicationAPI
-import com.radixdlt.identifiers.RadixAddress
-import picocli.CommandLine
+import com.google.common.collect.ImmutableSet;
+import com.radixdlt.client.application.RadixApplicationAPI;
+import com.radixdlt.identifiers.RadixAddress;
+import picocli.CommandLine;
 
-import java.util.stream.Collectors
+import java.util.Arrays;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import static com.radixdlt.cli.Utils.printf;
+import static com.radixdlt.cli.Utils.println;
 
 /**
  * Register the validator
@@ -42,27 +47,33 @@ import java.util.stream.Collectors
  */
 @CommandLine.Command(name = "register-validator", mixinStandardHelpOptions = true,
 		description = "Register as a Validator")
-class RegisterValidator implements Runnable {
+public class RegisterValidator implements Runnable {
 
 	@CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
-	Composite.IdentityInfo identityInfo
+	private Composite.IdentityInfo identityInfo;
 
-	@CommandLine.Option(names = ["-i", "--info-url"], paramLabel = "INFO_URL", description = "info url", required = false)
-	String infoUrl
+	@CommandLine.Option(names = {"-i", "--info-url"}, paramLabel = "INFO_URL", description = "info url", required = false)
+	private String infoUrl;
 
-	@CommandLine.Option(names = ["-a", "--allow-delegators"], paramLabel = "ALLOWED_DELEGATORS", description = "addresses to allow as delegators to this validator", required = false)
-	String[] allowedDelegators
+	@CommandLine.Option(
+			names = {"-a", "--allow-delegators"},
+			paramLabel = "ALLOWED_DELEGATORS",
+			description = "addresses to allow as delegators to this validator", required = false
+	)
+	private String[] allowedDelegators;
 
 	@Override
-	void run() {
-		def allowedDelegators = allowedDelegators == null ? ImmutableSet.of() : Arrays.stream(allowedDelegators)
-				.map(RadixAddress.&from)
-				.collect(Collectors.<RadixAddress>toSet())
-		RadixApplicationAPI api = Utils.getAPI(identityInfo)
-		api.pullOnce(api.getAddress()).blockingAwait()
-		api.registerValidator(api.getAddress(), allowedDelegators, infoUrl).blockUntilComplete()
-		println("Registered ${api.getAddress()} as a validator:")
-		printf("  url: %s%n", infoUrl == null ? "<not set>" : infoUrl)
-		printf("  allowedDelegators: %s%n", allowedDelegators.isEmpty() ? "<not set, allows any>" : allowedDelegators)
+	public void run() {
+		Set<RadixAddress> delegators = allowedDelegators == null ? ImmutableSet.of() : Arrays.stream(allowedDelegators)
+				.map(RadixAddress::from)
+				.collect(Collectors.toSet());
+
+		RadixApplicationAPI api = Utils.getAPI(identityInfo);
+		api.pullOnce(api.getAddress()).blockingAwait();
+		api.registerValidator(api.getAddress(), delegators, infoUrl).blockUntilComplete();
+		printf("Registered %s as a validator:\n", api.getAddress());
+		printf("  url: %s%n\n", infoUrl == null ? "<not set>" : infoUrl);
+		printf("  allowedDelegators: %s%n\n", delegators.isEmpty() ? "<not set, allows any>" : allowedDelegators);
+		println("Done");
 	}
 }

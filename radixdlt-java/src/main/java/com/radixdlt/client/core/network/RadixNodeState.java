@@ -79,6 +79,8 @@ public class RadixNodeState {
 
 	/**
 	 * Status of {@link RadixNode}'s client
+	 *
+	 * @return current connection status
 	 */
 	public WebSocketStatus getStatus() {
 		return status;
@@ -86,6 +88,8 @@ public class RadixNodeState {
 
 	/**
 	 * Node runner data of {@link RadixNode}
+	 *
+	 * @return optional node runner data
 	 */
 	public Optional<NodeRunnerData> getData() {
 		return Optional.ofNullable(this.data);
@@ -93,6 +97,8 @@ public class RadixNodeState {
 
 	/**
 	 * API Version of {@link RadixNode}'s client
+	 *
+	 * @return optional node state version
 	 */
 	public Optional<Integer> getVersion() {
 		return Optional.ofNullable(this.version);
@@ -100,6 +106,8 @@ public class RadixNodeState {
 
 	/**
 	 * Universe configuration of {@link RadixNode}'s client
+	 *
+	 * @return optional universe config
 	 */
 	public Optional<RadixUniverseConfig> getUniverseConfig() {
 		return Optional.ofNullable(this.universeConfig);

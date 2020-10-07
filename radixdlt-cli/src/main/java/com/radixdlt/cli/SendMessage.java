@@ -19,12 +19,16 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-package com.radixdlt.cli
+package com.radixdlt.cli;
 
-import com.radixdlt.client.application.RadixApplicationAPI
-import com.radixdlt.identifiers.RadixAddress
-import com.radixdlt.utils.RadixConstants
-import picocli.CommandLine
+
+import com.radixdlt.client.application.RadixApplicationAPI;
+import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.utils.RadixConstants;
+import picocli.CommandLine;
+
+import static com.radixdlt.cli.Utils.printfln;
+import static com.radixdlt.cli.Utils.println;
 
 /**
  * Send message to specified address
@@ -35,27 +39,30 @@ import picocli.CommandLine
  * </pre>
  */
 @CommandLine.Command(name = "send-message", mixinStandardHelpOptions = true,
-        description = "Send Message")
-class SendMessage implements Runnable {
+		description = "Send Message")
+public class SendMessage implements Runnable {
 
-    @CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
-    Composite.IdentityInfo identityInfo
+	@CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
+	private
+	Composite.IdentityInfo identityInfo;
 
-    @CommandLine.Option(names = ["-m", "--message"], paramLabel = "MESSAGE", description = "message to send", required = true)
-    String messageString
+	@CommandLine.Option(names = {"-m", "--message"}, paramLabel = "MESSAGE", description = "message to send", required = true)
+	private
+	String messageString;
 
-    @CommandLine.Option(names = ["-d", "--address"], paramLabel = "ADDRESS", description = "Address to which message is sent", required = true)
-    String addressString
+	@CommandLine.Option(names = {"-d", "--address"}, paramLabel = "ADDRESS", description = "Address to which message is sent", required = true)
+	private
+	String addressString;
 
-    @Override
-    void run() {
-        RadixApplicationAPI api = Utils.getAPI(identityInfo)
-        RadixAddress address = RadixAddress.from(addressString)
+	@Override
+	public void run() {
+		RadixApplicationAPI api = Utils.getAPI(identityInfo);
+		RadixAddress address = RadixAddress.from(addressString);
 
-        println "Sending message '${messageString}' to address ${address}"
-        RadixApplicationAPI.Result result = api.sendMessage(address, messageString.getBytes(RadixConstants.STANDARD_CHARSET), true)
-        result.blockUntilComplete()
-        println "Message sent successfully. AtomID of resulting atom : ${result.getAtom().getAid()}"
-        System.exit(0)
-    }
+		printfln("Sending message '%s' to address %s", messageString, address);
+		RadixApplicationAPI.Result result = api.sendMessage(address, messageString.getBytes(RadixConstants.STANDARD_CHARSET), true);
+		result.blockUntilComplete();
+		printfln("Message sent successfully. AtomID of resulting atom : %s", result.getAtom().getAid());
+		println("Done");
+	}
 }

@@ -100,6 +100,8 @@ public class HttpClients {
 	/**
 	 * Builds OkHttpClient to be used for secure connections with self signed
 	 * certificates.
+	 *
+	 * @return created client
 	 */
 	public static OkHttpClient getSslAllTrustingClient() {
 		synchronized (LOCK) {

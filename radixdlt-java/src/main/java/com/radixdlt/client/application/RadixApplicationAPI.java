@@ -133,6 +133,7 @@ public class RadixApplicationAPI {
 	/**
 	 * Creates an API with the default actions and reducers
 	 *
+	 * @param bootstrap bootstrap configuration
 	 * @param identity the identity of user of API
 	 * @return an api instance
 	 */
@@ -268,6 +269,7 @@ public class RadixApplicationAPI {
 	/**
 	 * Retrieve the address for the current universe given a public key
 	 *
+	 * @param publicKey public key
 	 * @return an address based on the current universe and a given public key
 	 */
 	public RadixAddress getAddress(ECPublicKey publicKey) {
@@ -389,6 +391,7 @@ public class RadixApplicationAPI {
 	/**
 	 * Returns a stream of the latest state of a given token
 	 *
+	 * @param tokenRRI The symbol of the token
 	 * @return a cold observable of the latest state of the token
 	 */
 	public Observable<TokenState> observeTokenDef(RRI tokenRRI) {
@@ -399,6 +402,7 @@ public class RadixApplicationAPI {
 	/**
 	 * Retrieve the token state of the given rri
 	 *
+	 * @param tokenRRI The symbol of the token
 	 * @return the token state of the rri
 	 */
 	public TokenState getTokenDef(RRI tokenRRI) {
@@ -469,7 +473,7 @@ public class RadixApplicationAPI {
 	 * Returns a never ending stream of token transfers stored at a given address.
 	 * pull() must be called to continually retrieve the latest transfers.
 	 *
-	 * @param address the address to retrieve the token transfers from
+	 * @param address The address to retrieve the token transfers from
 	 * @return a cold observable of the token transfers at the given address
 	 */
 	public Observable<TokenTransfer> observeTokenTransfers(RadixAddress address) {
@@ -493,6 +497,7 @@ public class RadixApplicationAPI {
 	 * Returns a stream of the latest balances at a given address.
 	 * pull() must be called to continually retrieve the latest balances.
 	 *
+	 * @param address the address to observe balances of
 	 * @return a cold observable of the latest balances at an address
 	 */
 	public Observable<Map<RRI, BigDecimal>> observeBalances(RadixAddress address) {
@@ -505,6 +510,7 @@ public class RadixApplicationAPI {
 	 * Returns a stream of the latest balances at the current address
 	 * pull() must be called to continually retrieve the latest balances.
 	 *
+	 * @param tokenRRI The symbol of the token
 	 * @return a cold observable of the latest balances at the current address
 	 */
 	public Observable<BigDecimal> observeBalance(RRI tokenRRI) {
@@ -515,6 +521,8 @@ public class RadixApplicationAPI {
 	 * Returns a stream of the latest balance of a given token at a given address
 	 * pull() must be called to continually retrieve the latest balance.
 	 *
+	 * @param address The address to observe balances of
+	 * @param token The symbol of the token
 	 * @return a cold observable of the latest balance of a token at a given address
 	 */
 	public Observable<BigDecimal> observeBalance(RadixAddress address, RRI token) {
@@ -528,6 +536,7 @@ public class RadixApplicationAPI {
 	 * Returns a stream of the latest stake balance at a given address.
 	 * pull() must be called to continually retrieve the latest balances.
 	 *
+	 * @param address the address to observe stake balance of
 	 * @return a cold observable of the latest stake balances at an address
 	 */
 	public Observable<Map<RRI, BigDecimal>> observeStake(RadixAddress address) {
@@ -733,6 +742,7 @@ public class RadixApplicationAPI {
 	/**
 	 * Transfers an amount of a token to an address
 	 *
+	 * @param token  the symbol of the token
 	 * @param to     the address to transfer tokens to
 	 * @param amount the amount and token type
 	 * @return result of the transaction
@@ -744,6 +754,7 @@ public class RadixApplicationAPI {
 	/**
 	 * Transfers an amount of a token with a message attachment to an address
 	 *
+	 * @param token  the symbol of the token
 	 * @param to      the address to transfer tokens to
 	 * @param amount  the amount and token type
 	 * @param message message to be encrypted and attached to transfer
@@ -768,6 +779,7 @@ public class RadixApplicationAPI {
 	/**
 	 * Transfers an amount of tokens with an attachment to an address
 	 *
+	 * @param token  the symbol of the token
 	 * @param to         the address to send tokens to
 	 * @param amount     the amount and token type
 	 * @param attachment the data attached to the transaction
@@ -780,6 +792,8 @@ public class RadixApplicationAPI {
 	/**
 	 * Transfers an amount of tokens to an address
 	 *
+	 * @param token  the symbol of the token
+	 * @param from   the address to send tokens from
 	 * @param to     the address to send tokens to
 	 * @param amount the amount and token type
 	 * @return result of the transaction
@@ -792,6 +806,8 @@ public class RadixApplicationAPI {
 	 * Transfers an amount of a token with a data attachment to an address with a unique property
 	 * meaning that no other transaction can be executed with the same unique bytes
 	 *
+	 * @param token      the symbol of the token
+	 * @param from       the address to send tokens from
 	 * @param to         the address to send tokens to
 	 * @param amount     the amount and token type
 	 * @param attachment the data attached to the transaction
@@ -834,10 +850,10 @@ public class RadixApplicationAPI {
 	/**
 	 * Stakes a certain amount of a token from an address to a delegate.
 	 *
-	 * @param from       the address to stake tokens from
-	 * @param delegate   the address to delegate the staked tokens to
 	 * @param amount     the amount of the token type
 	 * @param token      the token type
+	 * @param from       the address to stake tokens from
+	 * @param delegate   the address to delegate the staked tokens to
 	 * @return result of the transaction
 	 */
 	public Result stakeTokens(
@@ -994,6 +1010,7 @@ public class RadixApplicationAPI {
 	 *
 	 * @param atom                atom to submit
 	 * @param completeOnStoreOnly if true, result will only complete on a store event
+	 * @param originNode          the origin node
 	 * @return the result of the submission
 	 */
 	public Result submitAtom(Atom atom, boolean completeOnStoreOnly, RadixNode originNode) {

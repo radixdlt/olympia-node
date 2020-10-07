@@ -20,10 +20,13 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-package com.radixdlt.cli
+package com.radixdlt.cli;
 
-import com.radixdlt.client.application.RadixApplicationAPI
-import picocli.CommandLine
+import com.radixdlt.client.application.RadixApplicationAPI;
+import picocli.CommandLine;
+
+import static com.radixdlt.cli.Utils.printfln;
+import static com.radixdlt.cli.Utils.println;
 
 /**
  * Unregister the validator
@@ -35,16 +38,17 @@ import picocli.CommandLine
  */
 @CommandLine.Command(name = "unregister-validator", mixinStandardHelpOptions = true,
 		description = "Unregister as a Validator")
-class UnregisterValidator implements Runnable {
+public class UnregisterValidator implements Runnable {
 
 	@CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
-	Composite.IdentityInfo identityInfo
+	private Composite.IdentityInfo identityInfo;
 
 	@Override
-	void run() {
-		RadixApplicationAPI api = Utils.getAPI(identityInfo)
-		api.pullOnce(api.getAddress()).blockingAwait()
-		api.unregisterValidator(api.getAddress()).blockUntilComplete()
-		println("Unregistered ${api.getAddress()} as a validator")
+	public void run() {
+		RadixApplicationAPI api = Utils.getAPI(identityInfo);
+		api.pullOnce(api.getAddress()).blockingAwait();
+		api.unregisterValidator(api.getAddress()).blockUntilComplete();
+		printfln("Unregistered %s as a validator", api.getAddress());
+		println("Done");
 	}
 }
