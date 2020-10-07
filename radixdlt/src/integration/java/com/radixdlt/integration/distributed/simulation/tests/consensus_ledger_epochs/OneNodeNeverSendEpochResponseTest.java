@@ -49,7 +49,8 @@ public class OneNodeNeverSendEpochResponseTest {
 		.checkConsensusNoTimeouts("noTimeouts")
 		.checkConsensusAllProposalsHaveDirectParents("directParents")
 		.checkLedgerInOrder("ledgerInOrder")
-		.checkLedgerProcessesConsensusCommitted("consensusToLedger");
+		.checkLedgerProcessesConsensusCommitted("consensusToLedger")
+		.addTimestampChecker("timestamps");
 
 	private static Function<Long, IntStream> randomEpochToNodesMapper(Function<Long, Random> randomSupplier) {
 		return epoch -> {

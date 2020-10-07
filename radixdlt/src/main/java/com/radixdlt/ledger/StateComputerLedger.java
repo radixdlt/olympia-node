@@ -102,7 +102,16 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			accumulatorState = this.accumulator.accumulate(parent.getAccumulatorState(), vertex.getCommand());
 		}
 
-		final long timestamp = vertex.getQC().getTimestampedSignatures().weightedTimestamp();
+		final long timestamp;
+		// if vertex has genesis parent then QC is mocked so just use previous timestamp
+		// this does have the edge case of never increasing timestamps if configuration is
+		// one view per epoch but good enough for now
+		if (vertex.getQC().getProposed().getView().isGenesis()) {
+			timestamp = vertex.getQC().getProposed().getLedgerHeader().timestamp();
+		} else {
+			timestamp = vertex.getQC().getTimestampedSignatures().weightedTimestamp();
+		}
+
 		return LedgerHeader.create(
 			parent.getEpoch(),
 			vertex.getView(),
