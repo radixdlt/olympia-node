@@ -52,11 +52,11 @@ public final class Utils {
 			return RadixIdentities.loadOrCreateFile(UNENCRYPTED_KEYFILE_NAME);
 		}
 
-		System.err.println("Key required in form of environment variable ["
+		println("Key required in form of environment variable ["
 				+ "RADCLI_ENCRYPTED_KEYFILE & RADCLI_PWD & RADCLI_KEYNAME] "
 				+ "or RADCLI_UNENCRYPTED_KEYFILE"
 		);
-		System.err.println("Run help -h option to check the usage");
+		println("Run help -h option to check the usage");
 
 		System.exit(-1);
 		return null;
@@ -65,7 +65,7 @@ public final class Utils {
 	public static RadixIdentity getIdentity(String keyFile, String password, String keyName)
 			throws PrivateKeyException, KeyStoreException, PublicKeyException, IOException {
 		if (keyFile == null || password == null) {
-			System.err.println("Key file name and password are required");
+			println("Key file name and password are required");
 			System.exit(-1);
 		}
 		return RadixIdentities.loadOrCreateEncryptedFile(keyFile, password, keyName);
