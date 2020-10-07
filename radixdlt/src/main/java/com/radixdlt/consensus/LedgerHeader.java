@@ -100,6 +100,15 @@ public final class LedgerHeader {
 		long epoch,
 		View view,
 		AccumulatorState accumulatorState,
+		long timestamp
+	) {
+		return new LedgerHeader(epoch, view, accumulatorState, timestamp, null);
+	}
+
+	public static LedgerHeader create(
+		long epoch,
+		View view,
+		AccumulatorState accumulatorState,
 		long timestamp,
 		BFTValidatorSet validatorSet
 	) {

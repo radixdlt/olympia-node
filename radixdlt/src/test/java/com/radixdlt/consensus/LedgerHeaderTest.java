@@ -36,7 +36,7 @@ public class LedgerHeaderTest {
 	public void setup() {
 		this.timestamp = 12345678L;
 		this.accumulatorState = mock(AccumulatorState.class);
-		this.ledgerHeader = LedgerHeader.create(0, View.genesis(), accumulatorState, timestamp, null);
+		this.ledgerHeader = LedgerHeader.create(0, View.genesis(), accumulatorState, timestamp);
 	}
 
 	@Test

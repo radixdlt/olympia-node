@@ -75,7 +75,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private void execute(
 		RadixEngineBranch<LedgerAtom> branch,
 		Command next,
-		ImmutableSet.Builder<Command> successBuilder,
+		ImmutableList.Builder<Command> successBuilder,
 		ImmutableMap.Builder<Command, Exception> errorBuilder
 	) {
 		try {
@@ -97,11 +97,11 @@ public final class RadixEngineStateComputer implements StateComputer {
 				ClientAtom clientAtom = mapCommand(command);
 				transientBranch.checkAndStore(clientAtom);
 			} catch (RadixEngineException | DeserializeException e) {
-				throw new IllegalStateException();
+				throw new IllegalStateException("Re-execution of already prepared atom failed", e);
 			}
 		}
 
-		final ImmutableSet.Builder<Command> successBuilder = ImmutableSet.builder();
+		final ImmutableList.Builder<Command> successBuilder = ImmutableList.builder();
 		final ImmutableMap.Builder<Command, Exception> exceptionBuilder = ImmutableMap.builder();
 
 		if (next != null) {
@@ -129,6 +129,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 			// TODO: execute list of commands instead
 			this.radixEngine.checkAndStore(committedAtom);
 		} catch (RadixEngineException | DeserializeException e) {
+			// TODO: Remove throwing of exception
+			// TODO: Exception could be because of byzantine quorum
 			throw new IllegalStateException("Trying to commit bad command", e);
 		}
 	}

@@ -136,8 +136,7 @@ public class RadixEngineStoreModule extends AbstractModule {
 			proof.getEpoch() + 1,
 			View.genesis(),
 			proof.getAccumulatorState(),
-			proof.timestamp(),
-			null
+			proof.timestamp()
 		);
 		QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
 		return new BFTConfiguration(validatorSet, verifiedGenesisVertex, genesisQC);

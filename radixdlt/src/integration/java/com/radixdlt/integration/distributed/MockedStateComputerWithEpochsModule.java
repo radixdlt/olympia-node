@@ -19,7 +19,6 @@ package com.radixdlt.integration.distributed;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
@@ -60,8 +59,7 @@ public class MockedStateComputerWithEpochsModule extends AbstractModule {
 			proof.getEpoch() + 1,
 			View.genesis(),
 			proof.getAccumulatorState(),
-			proof.timestamp(),
-			null
+			proof.timestamp()
 		);
 		QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
 		return new BFTConfiguration(
@@ -85,13 +83,13 @@ public class MockedStateComputerWithEpochsModule extends AbstractModule {
 			public StateComputerResult prepare(ImmutableList<Command> previous, Command next, View view) {
 				if (view.compareTo(epochHighView) >= 0) {
 					return new StateComputerResult(
-						next == null ? ImmutableSet.of() : ImmutableSet.of(next),
+						next == null ? ImmutableList.of() : ImmutableList.of(next),
 						ImmutableMap.of(),
 						validatorSetMapping.apply(epoch + 1)
 					);
 				} else {
 					return new StateComputerResult(
-						next == null ? ImmutableSet.of() : ImmutableSet.of(next),
+						next == null ? ImmutableList.of() : ImmutableList.of(next),
 						ImmutableMap.of()
 					);
 				}

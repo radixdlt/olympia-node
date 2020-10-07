@@ -38,7 +38,7 @@ import javax.annotation.concurrent.Immutable;
 @SerializerId2("consensus.bft_validator")
 public final class BFTValidator {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
+	@DsonOutput({Output.ALL})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
 	// Power associated with each validator, could e.g. be based on staked tokens

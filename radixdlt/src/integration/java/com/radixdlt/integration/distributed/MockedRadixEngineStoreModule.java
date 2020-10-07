@@ -52,8 +52,7 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 			proof.getEpoch() + 1,
 			View.genesis(),
 			proof.getAccumulatorState(),
-			proof.timestamp(),
-			null
+			proof.timestamp()
 		);
 		UnverifiedVertex genesis = UnverifiedVertex.createGenesis(nextLedgerHeader);
 		VerifiedVertex verifiedGenesis = new VerifiedVertex(genesis, Hash.ZERO_HASH);

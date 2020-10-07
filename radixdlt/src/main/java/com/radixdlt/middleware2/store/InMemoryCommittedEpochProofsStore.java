@@ -28,15 +28,13 @@ public final class InMemoryCommittedEpochProofsStore {
 
 	public void commit(VerifiedLedgerHeaderAndProof verifiedLedgerHeaderAndProof) {
 		if (!verifiedLedgerHeaderAndProof.isEndOfEpoch()) {
-			throw new IllegalArgumentException();
+			throw new IllegalArgumentException("Proof must be end of epoch");
 		}
 
 		epochProofs.put(verifiedLedgerHeaderAndProof.getEpoch() + 1, verifiedLedgerHeaderAndProof);
 	}
 
 	public VerifiedLedgerHeaderAndProof getEpochProof(long epoch) {
-		System.out.println("PROOFS: " + epochProofs);
-
 		return epochProofs.get(epoch);
 	}
 }

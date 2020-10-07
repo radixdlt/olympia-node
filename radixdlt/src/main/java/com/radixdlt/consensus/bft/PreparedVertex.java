@@ -17,8 +17,8 @@
 
 package com.radixdlt.consensus.bft;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.crypto.Hash;
@@ -34,13 +34,13 @@ public final class PreparedVertex {
 
 	private final LedgerHeader ledgerHeader;
 
-	private final ImmutableSet<Command> successfulCommands;
+	private final ImmutableList<Command> successfulCommands;
 	private final ImmutableMap<Command, Exception> commandExceptions;
 
 	PreparedVertex(
 		VerifiedVertex vertex,
 		LedgerHeader ledgerHeader,
-		ImmutableSet<Command> successfulCommands,
+		ImmutableList<Command> successfulCommands,
 		ImmutableMap<Command, Exception> commandExceptions
 	) {
 		this.vertex = Objects.requireNonNull(vertex);
@@ -87,5 +87,10 @@ public final class PreparedVertex {
 	 */
 	public VerifiedVertex getVertex() {
 		return vertex;
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{vertex=%s ledgerHeader=%s}", this.getClass().getSimpleName(), this.vertex, this.ledgerHeader);
 	}
 }

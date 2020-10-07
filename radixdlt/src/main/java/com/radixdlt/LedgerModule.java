@@ -56,6 +56,8 @@ public class LedgerModule extends AbstractModule {
 		return Comparator.comparingLong(AccumulatorState::getStateVersion);
 	}
 
+
+	// TODO: This is a temporary fix until Mempool is fixed
 	@ProvidesIntoSet
 	private VertexStoreEventSender eventSender(Mempool mempool) {
 		return new VertexStoreEventSender() {
@@ -70,6 +72,7 @@ public class LedgerModule extends AbstractModule {
 
 			@Override
 			public void highQC(QuorumCertificate qc) {
+				// Not required
 			}
 		};
 	}

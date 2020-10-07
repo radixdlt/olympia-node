@@ -19,7 +19,6 @@ package com.radixdlt.integration.distributed;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.radixdlt.consensus.BFTConfiguration;
@@ -44,8 +43,7 @@ public class MockedStateComputerModule extends AbstractModule {
 			proof.getEpoch() + 1,
 			View.genesis(),
 			proof.getAccumulatorState(),
-			proof.timestamp(),
-			null
+			proof.timestamp()
 		);
 		UnverifiedVertex genesis = UnverifiedVertex.createGenesis(nextLedgerHeader);
 		VerifiedVertex verifiedGenesis = new VerifiedVertex(genesis, Hash.ZERO_HASH);
@@ -63,7 +61,7 @@ public class MockedStateComputerModule extends AbstractModule {
 		return new StateComputer() {
 			@Override
 			public StateComputerResult prepare(ImmutableList<Command> previous, Command next, View view) {
-				return new StateComputerResult(next == null ? ImmutableSet.of() : ImmutableSet.of(next), ImmutableMap.of());
+				return new StateComputerResult(next == null ? ImmutableList.of() : ImmutableList.of(next), ImmutableMap.of());
 			}
 
 			@Override

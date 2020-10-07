@@ -155,12 +155,12 @@ public class AtomsService {
 	}
 
 	public void start() {
-		io.reactivex.rxjava3.disposables.Disposable lastStoredAtomDisposable = committedAtomsRx.committedAtoms()
+		var lastStoredAtomDisposable = committedAtomsRx.committedAtoms()
 			.observeOn(Schedulers.io())
 			.subscribe(this::processExecutedCommand);
 		this.disposable.add(lastStoredAtomDisposable);
 
-		io.reactivex.rxjava3.disposables.Disposable committedUpdatesDisposable = committedUpdates
+		var committedUpdatesDisposable = committedUpdates
 			.observeOn(Schedulers.io())
 			.subscribe(update ->
 				update.getCommitted().stream()
@@ -175,12 +175,12 @@ public class AtomsService {
 				);
 		this.disposable.add(committedUpdatesDisposable);
 
-		io.reactivex.rxjava3.disposables.Disposable submissionFailuresDisposable = submissionErrorsRx.submissionFailures()
+		var submissionFailuresDisposable = submissionErrorsRx.submissionFailures()
 			.observeOn(Schedulers.io())
 			.subscribe(this::processSubmissionFailure);
 		this.disposable.add(submissionFailuresDisposable);
 
-		io.reactivex.rxjava3.disposables.Disposable deserializationFailures = submissionErrorsRx.deserializationFailures()
+		var deserializationFailures = submissionErrorsRx.deserializationFailures()
 			.observeOn(Schedulers.io())
 			.subscribe(this::processDeserializationFailure);
 		this.disposable.add(deserializationFailures);

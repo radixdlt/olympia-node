@@ -28,7 +28,6 @@ import static org.mockito.Mockito.verify;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.Hasher;
@@ -71,7 +70,7 @@ public class VertexStoreTest {
 	private Hasher hasher = new DsonSHA256Hasher(DefaultSerialization.getInstance());
 
 	private static final LedgerHeader MOCKED_HEADER = LedgerHeader.create(
-		0, View.genesis(), new AccumulatorState(0, Hash.ZERO_HASH), 0, null
+		0, View.genesis(), new AccumulatorState(0, Hash.ZERO_HASH), 0
 	);
 
 	@Before
@@ -82,7 +81,7 @@ public class VertexStoreTest {
 		// TODO: replace mock with the real thing
 		doAnswer(invocation -> {
 			VerifiedVertex verifiedVertex = invocation.getArgument(1);
-			return Optional.of(new PreparedVertex(verifiedVertex, MOCKED_HEADER, ImmutableSet.of(), ImmutableMap.of()));
+			return Optional.of(new PreparedVertex(verifiedVertex, MOCKED_HEADER, ImmutableList.of(), ImmutableMap.of()));
 		}).when(ledger).prepare(any(), any());
 
 		this.vertexStoreEventSender = mock(VertexStoreEventSender.class);
