@@ -27,9 +27,12 @@ buildscript {
         classpath 'com.github.jengelman.gradle.plugins:shadow:6.0.0'
     }
 }
+
 apply plugin: 'java'
+apply plugin: 'jacoco'
 apply plugin: 'checkstyle'
 apply plugin: 'org.sonarqube'
+apply plugin: 'project-report'
 apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'com.adarshr.test-logger'
 apply plugin: 'application'
