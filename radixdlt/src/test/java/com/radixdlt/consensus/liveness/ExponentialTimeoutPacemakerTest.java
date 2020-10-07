@@ -21,7 +21,7 @@ import com.google.common.collect.Lists;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.SyncInfo;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -175,7 +175,7 @@ public class ExponentialTimeoutPacemakerTest {
 		NewView newViewWithoutSignature = mock(NewView.class);
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		when(qc.getView()).thenReturn(View.of(1L));
-		SyncInfo syncInfo = mock(SyncInfo.class);
+		HighQC syncInfo = mock(HighQC.class);
 		when(syncInfo.highestQC()).thenReturn(qc);
 		when(newViewWithoutSignature.syncInfo()).thenReturn(syncInfo);
 		when(newViewWithoutSignature.getView()).thenReturn(View.of(2L));
@@ -236,7 +236,7 @@ public class ExponentialTimeoutPacemakerTest {
 
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		when(qc.getView()).thenReturn(View.of(1));
-		SyncInfo syncInfo = mock(SyncInfo.class);
+		HighQC syncInfo = mock(HighQC.class);
 		when(syncInfo.highestQC()).thenReturn(qc);
 		when(newView.syncInfo()).thenReturn(syncInfo);
 
@@ -255,7 +255,7 @@ public class ExponentialTimeoutPacemakerTest {
 		NewView newView = makeNewViewFor(view);
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		when(qc.getView()).thenReturn(View.genesis());
-		SyncInfo syncInfo = mock(SyncInfo.class);
+		HighQC syncInfo = mock(HighQC.class);
 		when(syncInfo.highestQC()).thenReturn(qc);
 		when(newView.syncInfo()).thenReturn(syncInfo);
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
@@ -282,7 +282,7 @@ public class ExponentialTimeoutPacemakerTest {
 		when(qc.getView()).thenReturn(view);
 		when(qc.getCommittedAndLedgerStateProof())
 			.thenReturn(Optional.of(Pair.of(mock(BFTHeader.class), mock(VerifiedLedgerHeaderAndProof.class))));
-		SyncInfo syncInfo = mock(SyncInfo.class);
+		HighQC syncInfo = mock(HighQC.class);
 		when(syncInfo.highestQC()).thenReturn(qc);
 		when(syncInfo.highestCommittedQC()).thenReturn(qc);
 
@@ -424,7 +424,7 @@ public class ExponentialTimeoutPacemakerTest {
 		if (!view.isGenesis()) {
 			when(qc.getView()).thenReturn(view.previous());
 		}
-		SyncInfo syncInfo = mock(SyncInfo.class);
+		HighQC syncInfo = mock(HighQC.class);
 		when(syncInfo.highestQC()).thenReturn(qc);
 		when(newView.syncInfo()).thenReturn(syncInfo);
 		when(newView.getView()).thenReturn(view);

@@ -23,7 +23,7 @@ import static org.mockito.Mockito.when;
 
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.NewView;
-import com.radixdlt.consensus.SyncInfo;
+import com.radixdlt.consensus.HighQC;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -43,7 +43,7 @@ public class NewViewSignerTest {
 		View view = mock(View.class);
 		when(view.number()).thenReturn(1L);
 
-		NewView newView = newViewSigner.signNewView(view, mock(SyncInfo.class));
+		NewView newView = newViewSigner.signNewView(view, mock(HighQC.class));
 
 		assertThat(newView.getAuthor()).isEqualTo(self);
 	}

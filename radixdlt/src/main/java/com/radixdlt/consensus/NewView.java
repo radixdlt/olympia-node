@@ -45,7 +45,7 @@ public final class NewView implements RequiresSyncConsensusEvent {
 
 	@JsonProperty("sync_info")
 	@DsonOutput(Output.ALL)
-	private final SyncInfo syncInfo;
+	private final HighQC syncInfo;
 
 	private final BFTNode author;
 
@@ -59,13 +59,13 @@ public final class NewView implements RequiresSyncConsensusEvent {
 	NewView(
 		@JsonProperty("author") byte[] author,
 		@JsonProperty("view") Long view,
-		@JsonProperty("sync_info") SyncInfo syncInfo,
+		@JsonProperty("sync_info") HighQC syncInfo,
 		@JsonProperty("signature") ECDSASignature signature
 	) throws PublicKeyException {
 		this(BFTNode.fromPublicKeyBytes(author), view != null ? View.of(view) : null, syncInfo, signature);
 	}
 
-	public NewView(BFTNode author, View view, SyncInfo syncInfo, ECDSASignature signature) {
+	public NewView(BFTNode author, View view, HighQC syncInfo, ECDSASignature signature) {
 		this.author = Objects.requireNonNull(author);
 		this.view = Objects.requireNonNull(view);
 		this.syncInfo = Objects.requireNonNull(syncInfo);
@@ -78,7 +78,7 @@ public final class NewView implements RequiresSyncConsensusEvent {
 	}
 
 	@Override
-	public SyncInfo syncInfo() {
+	public HighQC syncInfo() {
 		return this.syncInfo;
 	}
 

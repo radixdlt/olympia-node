@@ -30,7 +30,7 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.SyncInfo;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.UnverifiedVertex;
@@ -118,7 +118,7 @@ public class MessageCentralValidatorSyncTest {
 	public void when_send_error_response__then_message_central_will_send_error_response() {
 		Peer peer = mock(Peer.class);
 		QuorumCertificate qc = mock(QuorumCertificate.class);
-		SyncInfo syncInfo = mock(SyncInfo.class);
+		HighQC syncInfo = mock(HighQC.class);
 		when(syncInfo.highestQC()).thenReturn(qc);
 		when(syncInfo.highestCommittedQC()).thenReturn(qc);
 		BFTNode node = mock(BFTNode.class);

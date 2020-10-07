@@ -18,7 +18,7 @@
 package com.radixdlt.middleware2.network;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.consensus.SyncInfo;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
@@ -29,7 +29,7 @@ import org.radix.network.messaging.Message;
 public class GetVerticesErrorResponseMessage extends Message {
 	@JsonProperty("sync_info")
 	@DsonOutput(Output.ALL)
-	private SyncInfo syncInfo;
+	private HighQC syncInfo;
 
 	GetVerticesErrorResponseMessage() {
 		// Serializer only
@@ -37,12 +37,12 @@ public class GetVerticesErrorResponseMessage extends Message {
 		this.syncInfo = null;
 	}
 
-	GetVerticesErrorResponseMessage(int magic, SyncInfo syncInfo) {
+	GetVerticesErrorResponseMessage(int magic, HighQC syncInfo) {
 		super(magic);
 		this.syncInfo = Objects.requireNonNull(syncInfo);
 	}
 
-	public SyncInfo syncInfo() {
+	public HighQC syncInfo() {
 		return this.syncInfo;
 	}
 

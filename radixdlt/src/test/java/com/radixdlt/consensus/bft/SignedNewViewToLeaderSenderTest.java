@@ -25,7 +25,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.consensus.NewView;
-import com.radixdlt.consensus.SyncInfo;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.bft.SignedNewViewToLeaderSender.BFTNewViewSender;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import org.junit.Before;
@@ -54,7 +54,7 @@ public class SignedNewViewToLeaderSenderTest {
 		BFTNode node = mock(BFTNode.class);
 		when(proposerElection.getProposer(eq(view))).thenReturn(node);
 
-		this.sender.sendProceedToNextView(view, mock(SyncInfo.class));
+		this.sender.sendProceedToNextView(view, mock(HighQC.class));
 
 		verify(newViewSender, times(1)).sendNewView(eq(newView), eq(node));
 	}

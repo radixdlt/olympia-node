@@ -20,7 +20,7 @@ package com.radixdlt.consensus.liveness;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.RateLimiter;
 import com.radixdlt.consensus.NewView;
-import com.radixdlt.consensus.SyncInfo;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import org.apache.logging.log4j.Level;
@@ -38,7 +38,7 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 	 * Hotstuff's Event-Driven OnNextSyncView
  	 */
 	public interface ProceedToViewSender {
-		void sendProceedToNextView(View view, SyncInfo syncInfo);
+		void sendProceedToNextView(View view, HighQC syncInfo);
 	}
 
 	/**
@@ -72,7 +72,7 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 
 	private final RateLimiter newViewLogLimiter = RateLimiter.create(1.0);
 
-	private SyncInfo syncInfo;
+	private HighQC syncInfo;
 
 	private View currentView = View.genesis();
 	private View lastSyncView = View.genesis();
@@ -166,7 +166,7 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 	}
 
 	@Override
-	public void processQC(SyncInfo syncInfo) {
+	public void processQC(HighQC syncInfo) {
 		this.syncInfo = syncInfo;
 		this.highestCommitView = syncInfo.highestCommittedQC().getView();
 		processNextView(syncInfo.highestQC().getView());

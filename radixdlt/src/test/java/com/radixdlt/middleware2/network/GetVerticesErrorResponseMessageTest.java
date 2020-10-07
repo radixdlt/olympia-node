@@ -24,7 +24,7 @@ import static org.mockito.Mockito.when;
 
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.SyncInfo;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import org.junit.Test;
@@ -35,7 +35,7 @@ public class GetVerticesErrorResponseMessageTest {
 		VerifiedVertex verifiedVertex = mock(VerifiedVertex.class);
 		when(verifiedVertex.getView()).thenReturn(View.genesis());
 		QuorumCertificate qc = QuorumCertificate.ofGenesis(verifiedVertex, mock(LedgerHeader.class));
-		SyncInfo syncInfo = SyncInfo.from(qc, qc);
+		HighQC syncInfo = HighQC.from(qc, qc);
 		GetVerticesErrorResponseMessage msg1 = new GetVerticesErrorResponseMessage(0, syncInfo);
 		String s1 = msg1.toString();
 		assertThat(s1, containsString(GetVerticesErrorResponseMessage.class.getSimpleName()));

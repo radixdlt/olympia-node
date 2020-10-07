@@ -26,11 +26,11 @@ import com.radixdlt.consensus.bft.View;
 public interface RequiresSyncConsensusEvent extends ConsensusEvent {
 
 	/**
-	 * Retrieves the {@link SyncInfo} associated with the event.
+	 * Retrieves the {@link HighQC} associated with the event.
 	 *
 	 * @return {@linke SyncInfo} associated with event
 	 */
-	SyncInfo syncInfo();
+	HighQC syncInfo();
 
 	/**
 	 * Get the view the consensus event is meant for

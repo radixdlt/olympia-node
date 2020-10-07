@@ -20,19 +20,19 @@ package com.radixdlt.consensus.bft;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mock;
 
-import com.radixdlt.consensus.SyncInfo;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import org.junit.Before;
 import org.junit.Test;
 
 public class GetVerticesErrorResponseTest {
-	private SyncInfo syncInfo;
+	private HighQC syncInfo;
 	private GetVerticesErrorResponse response;
 	private BFTNode node;
 
 	@Before
 	public void setUp() {
-		this.syncInfo = mock(SyncInfo.class);
+		this.syncInfo = mock(HighQC.class);
 		this.node = mock(BFTNode.class);
 		this.response = new GetVerticesErrorResponse(this.node, this.syncInfo);
 	}

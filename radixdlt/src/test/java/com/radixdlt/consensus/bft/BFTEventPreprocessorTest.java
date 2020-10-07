@@ -29,7 +29,7 @@ import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.SyncInfo;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Vote;
@@ -90,7 +90,7 @@ public class BFTEventPreprocessorTest {
 		when(qc.getProposed()).thenReturn(proposed);
 		when(proposed.getVertexId()).thenReturn(vertexId);
 		QuorumCertificate committedQC = mock(QuorumCertificate.class);
-		SyncInfo syncInfo = mock(SyncInfo.class);
+		HighQC syncInfo = mock(HighQC.class);
 		when(syncInfo.highestQC()).thenReturn(qc);
 		when(syncInfo.highestCommittedQC()).thenReturn(committedQC);
 		when(newView.syncInfo()).thenReturn(syncInfo);
@@ -111,7 +111,7 @@ public class BFTEventPreprocessorTest {
 		when(vertex.getQC()).thenReturn(qc);
 
 		QuorumCertificate committedQC = mock(QuorumCertificate.class);
-		SyncInfo syncInfo = mock(SyncInfo.class);
+		HighQC syncInfo = mock(HighQC.class);
 		when(syncInfo.highestQC()).thenReturn(qc);
 		when(syncInfo.highestCommittedQC()).thenReturn(committedQC);
 		when(proposal.syncInfo()).thenReturn(syncInfo);

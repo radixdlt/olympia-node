@@ -37,7 +37,7 @@ import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.SyncInfo;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.UnverifiedVertex;
@@ -343,7 +343,7 @@ public class EpochManagerTest {
 		when(authorValidator.getNode()).thenReturn(node);
 
 		when(pacemaker.getCurrentView()).thenReturn(View.genesis());
-		when(vertexStore.syncInfo()).thenReturn(mock(SyncInfo.class));
+		when(vertexStore.syncInfo()).thenReturn(mock(HighQC.class));
 		when(vertexStoreSync.syncToQC(any(), any())).thenReturn(SyncResult.SYNCED);
 
 		Proposal proposal = mock(Proposal.class);
@@ -406,7 +406,7 @@ public class EpochManagerTest {
 
 	@Test
 	public void when_next_epoch__then_get_vertices_rpc_should_be_forwarded_to_vertex_store() {
-		when(vertexStore.syncInfo()).thenReturn(mock(SyncInfo.class));
+		when(vertexStore.syncInfo()).thenReturn(mock(HighQC.class));
 
 		BFTEventProcessor eventProcessor = mock(BFTEventProcessor.class);
 		when(bftFactory.create(any(), any(), any(), any(), any(), any())).thenReturn(eventProcessor);

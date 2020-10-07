@@ -20,7 +20,7 @@ package com.radixdlt.middleware2.network;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
-import com.radixdlt.consensus.SyncInfo;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
@@ -108,7 +108,7 @@ public class MessageCentralValidatorSync implements SyncVerticesRequestSender, S
 	}
 
 	@Override
-	public void sendGetVerticesErrorResponse(BFTNode node, SyncInfo syncInfo) {
+	public void sendGetVerticesErrorResponse(BFTNode node, HighQC syncInfo) {
 		GetVerticesErrorResponseMessage response = new GetVerticesErrorResponseMessage(this.magic, syncInfo);
 		final Optional<Peer> peerMaybe = this.addressBook.peer(node.getKey().euid());
 		peerMaybe.ifPresentOrElse(

@@ -17,7 +17,7 @@
 
 package com.radixdlt.consensus.sync;
 
-import com.radixdlt.consensus.SyncInfo;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.bft.BFTNode;
 import java.util.Objects;
 
@@ -26,9 +26,9 @@ import java.util.Objects;
  */
 public final class GetVerticesErrorResponse {
 	private final BFTNode sender;
-	private final SyncInfo syncInfo;
+	private final HighQC syncInfo;
 
-	public GetVerticesErrorResponse(BFTNode sender, SyncInfo syncInfo) {
+	public GetVerticesErrorResponse(BFTNode sender, HighQC syncInfo) {
 		this.sender = Objects.requireNonNull(sender);
 		this.syncInfo = Objects.requireNonNull(syncInfo);
 	}
@@ -37,7 +37,7 @@ public final class GetVerticesErrorResponse {
 		return this.sender;
 	}
 
-	public SyncInfo syncInfo() {
+	public HighQC syncInfo() {
 		return this.syncInfo;
 	}
 

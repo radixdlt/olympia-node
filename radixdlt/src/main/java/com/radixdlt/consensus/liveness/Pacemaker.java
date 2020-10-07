@@ -18,7 +18,7 @@
 package com.radixdlt.consensus.liveness;
 
 import com.radixdlt.consensus.NewView;
-import com.radixdlt.consensus.SyncInfo;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.bft.View;
 
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -38,7 +38,7 @@ public interface Pacemaker extends PacemakerState {
 	 * Signifies to the pacemaker that a quorum has agreed that a view has been completed
 	 * @param syncInfo the sync info
 	 */
-	void processQC(SyncInfo syncInfo);
+	void processQC(HighQC syncInfo);
 
 	// FIXME: Temporary
 	void processNextView(View view);

@@ -19,7 +19,7 @@ package com.radixdlt.consensus.sync;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
-import com.radixdlt.consensus.SyncInfo;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTSyncRequestProcessor;
 import com.radixdlt.consensus.bft.VerifiedVertex;
@@ -53,7 +53,7 @@ public final class VertexStoreBFTSyncRequestProcessor implements BFTSyncRequestP
 		 * @param node the node to send to
 		 * @param syncInfo sync info
 		 */
-		void sendGetVerticesErrorResponse(BFTNode node, SyncInfo syncInfo);
+		void sendGetVerticesErrorResponse(BFTNode node, HighQC syncInfo);
 	}
 
 	@Inject

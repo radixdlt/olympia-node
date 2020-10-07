@@ -35,7 +35,7 @@ public class NewViewTest {
 	public void setUp() {
 		this.view = View.of(1L);
 		this.author = mock(BFTNode.class);
-		this.testObject = new NewView(author, view, mock(SyncInfo.class), null);
+		this.testObject = new NewView(author, view, mock(HighQC.class), null);
 	}
 
 	@Test
