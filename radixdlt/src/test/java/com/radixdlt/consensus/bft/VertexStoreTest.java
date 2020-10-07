@@ -183,8 +183,8 @@ public class VertexStoreTest {
 		sut.addQC(qc);
 
 		// Assert
-		assertThat(sut.getHighestQC()).isEqualTo(qc);
-		assertThat(sut.getHighestCommittedQC()).isEqualTo(rootQC);
+		assertThat(sut.syncInfo().highestQC()).isEqualTo(qc);
+		assertThat(sut.syncInfo().highestCommittedQC()).isEqualTo(rootQC);
 	}
 
 	@Test
@@ -201,8 +201,8 @@ public class VertexStoreTest {
 
 		// Assert
 		assertThat(success).isTrue();
-		assertThat(sut.getHighestQC()).isEqualTo(qc);
-		assertThat(sut.getHighestCommittedQC()).isEqualTo(qc);
+		assertThat(sut.syncInfo().highestQC()).isEqualTo(qc);
+		assertThat(sut.syncInfo().highestCommittedQC()).isEqualTo(qc);
 		assertThat(sut.getVertices(vertices.get(2).getId(), 3)).hasValue(ImmutableList.of(
 			vertices.get(2), vertices.get(1), vertices.get(0)
 		));

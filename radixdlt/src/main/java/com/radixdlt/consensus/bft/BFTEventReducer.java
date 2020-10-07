@@ -24,6 +24,7 @@ import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Vote;
@@ -130,11 +131,12 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	@Override
 	public void processVote(Vote vote) {
 		updateRttStatistics(vote);
-		log.trace("VOTE: Processing {}", () -> vote);
+		log.trace("VOTE: Processing {}", vote);
 		// accumulate votes into QCs in store
 		this.pendingVotes.insertVote(vote, this.validatorSet).ifPresent(qc -> {
-			log.trace("VOTE: Formed QC: {}", () -> qc);
-			bftSyncer.syncToQC(qc, vertexStore.getHighestCommittedQC(), vote.getAuthor());
+			log.trace("VOTE: Formed QC: {}", qc);
+			HighQC syncInfo = HighQC.from(qc, vertexStore.syncInfo().highestCommittedQC());
+			bftSyncer.syncToQC(syncInfo, vote.getAuthor());
 		});
 	}
 
@@ -143,8 +145,9 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		log.trace("NEW_VIEW: Processing {}", () -> newView);
 		this.pacemaker.processNewView(newView, validatorSet).ifPresent(view -> {
 			// Hotstuff's Event-Driven OnBeat
-			final QuorumCertificate highestQC = vertexStore.getHighestQC();
-			final QuorumCertificate highestCommitted = vertexStore.getHighestCommittedQC();
+			final HighQC syncInfo = vertexStore.syncInfo();
+			final QuorumCertificate highestQC = syncInfo.highestQC();
+			final QuorumCertificate highestCommitted = syncInfo.highestCommittedQC();
 
 			final Command nextCommand;
 
@@ -213,7 +216,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 	@Override
 	public void start() {
-		this.pacemaker.processQC(this.vertexStore.getHighestQC(), this.vertexStore.getHighestCommittedQC());
+		this.pacemaker.processQC(this.vertexStore.syncInfo());
 	}
 
 	private void updateRttStatistics(Vote vote) {

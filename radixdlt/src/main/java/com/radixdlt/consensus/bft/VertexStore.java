@@ -19,6 +19,7 @@ package com.radixdlt.consensus.bft;
 
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.counters.SystemCounters;
@@ -261,21 +262,12 @@ public final class VertexStore {
 	}
 
 	/**
-	 * Retrieves the highest committed qc in the store
-	 * @return the highest committed qc
-	 */
-	public QuorumCertificate getHighestCommittedQC() {
-		return this.highestCommittedQC;
-	}
-
-	/**
-	 * Retrieves the highest qc in the store
-	 * Thread-safe.
+	 * Retrieves the highest QC and highest committed QC in the store.
 	 *
-	 * @return the highest quorum certificate
+	 * @return the highest QCs
 	 */
-	public QuorumCertificate getHighestQC() {
-		return this.highestQC;
+	public HighQC syncInfo() {
+		return HighQC.from(this.highestQC, this.highestCommittedQC);
 	}
 
 	/**

@@ -17,7 +17,7 @@
 
 package com.radixdlt.consensus.sync;
 
-import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.bft.BFTNode;
 import java.util.Objects;
 
@@ -26,29 +26,23 @@ import java.util.Objects;
  */
 public final class GetVerticesErrorResponse {
 	private final BFTNode sender;
-	private final QuorumCertificate highestQC;
-	private final QuorumCertificate highestCommittedQC;
+	private final HighQC syncInfo;
 
-	public GetVerticesErrorResponse(BFTNode sender, QuorumCertificate highestQC, QuorumCertificate highestCommittedQC) {
+	public GetVerticesErrorResponse(BFTNode sender, HighQC syncInfo) {
 		this.sender = Objects.requireNonNull(sender);
-		this.highestQC = Objects.requireNonNull(highestQC);
-		this.highestCommittedQC = Objects.requireNonNull(highestCommittedQC);
+		this.syncInfo = Objects.requireNonNull(syncInfo);
 	}
 
 	public BFTNode getSender() {
-		return sender;
+		return this.sender;
 	}
 
-	public QuorumCertificate getHighestQC() {
-		return highestQC;
-	}
-
-	public QuorumCertificate getHighestCommittedQC() {
-		return highestCommittedQC;
+	public HighQC syncInfo() {
+		return this.syncInfo;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{highQC=%s highCommittedQC=%s}", this.getClass().getSimpleName(), highestQC, highestCommittedQC);
+		return String.format("%s{%s->%s}", this.getClass().getSimpleName(), this.sender, this.syncInfo);
 	}
 }

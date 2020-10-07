@@ -30,6 +30,7 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.UnverifiedVertex;
@@ -117,13 +118,16 @@ public class MessageCentralValidatorSyncTest {
 	public void when_send_error_response__then_message_central_will_send_error_response() {
 		Peer peer = mock(Peer.class);
 		QuorumCertificate qc = mock(QuorumCertificate.class);
+		HighQC syncInfo = mock(HighQC.class);
+		when(syncInfo.highestQC()).thenReturn(qc);
+		when(syncInfo.highestCommittedQC()).thenReturn(qc);
 		BFTNode node = mock(BFTNode.class);
 		ECPublicKey ecPublicKey = mock(ECPublicKey.class);
 		when(ecPublicKey.euid()).thenReturn(mock(EUID.class));
 		when(node.getKey()).thenReturn(ecPublicKey);
 		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
 
-		sync.sendGetVerticesErrorResponse(node, qc, qc);
+		sync.sendGetVerticesErrorResponse(node, syncInfo);
 
 		verify(messageCentral, times(1)).send(eq(peer), any(GetVerticesErrorResponseMessage.class));
 	}

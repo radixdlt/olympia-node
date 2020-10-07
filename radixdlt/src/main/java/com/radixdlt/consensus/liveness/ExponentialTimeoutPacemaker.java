@@ -20,7 +20,7 @@ package com.radixdlt.consensus.liveness;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.RateLimiter;
 import com.radixdlt.consensus.NewView;
-import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import org.apache.logging.log4j.Level;
@@ -38,7 +38,7 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 	 * Hotstuff's Event-Driven OnNextSyncView
  	 */
 	public interface ProceedToViewSender {
-		void sendProceedToNextView(View view, QuorumCertificate qc, QuorumCertificate highestCommittedQC);
+		void sendProceedToNextView(View view, HighQC syncInfo);
 	}
 
 	/**
@@ -72,8 +72,7 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 
 	private final RateLimiter newViewLogLimiter = RateLimiter.create(1.0);
 
-	private QuorumCertificate qc;
-	private QuorumCertificate highestCommittedQC;
+	private HighQC syncInfo;
 
 	private View currentView = View.genesis();
 	private View lastSyncView = View.genesis();
@@ -124,7 +123,7 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 		log.log(logLevel, "Starting View: {} with timeout {}ms", nextView, timeout);
 		this.currentView = nextView;
 		this.timeoutSender.scheduleTimeout(this.currentView, timeout);
-		this.proceedToViewSender.sendProceedToNextView(this.currentView, qc, highestCommittedQC);
+		this.proceedToViewSender.sendProceedToNextView(this.currentView, this.syncInfo);
 		this.pacemakerInfoSender.sendCurrentView(this.currentView);
 	}
 
@@ -150,7 +149,7 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 
 		// If QC of new-view was from previous view, then we are guaranteed to have the highest QC for this view
 		// and can proceed
-		final View qcView = newView.getQC().getView();
+		final View qcView = newView.syncInfo().highestQC().getView();
 		final boolean highestQC = !qcView.isGenesis() && qcView.next().equals(this.currentView);
 
 		if (!this.pendingNewViews.insertNewView(newView, validatorSet).isPresent() && !highestQC) {
@@ -167,11 +166,10 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 	}
 
 	@Override
-	public void processQC(QuorumCertificate qc, QuorumCertificate highestCommittedQC) {
-		this.qc = qc;
-		this.highestCommittedQC = highestCommittedQC;
-		this.highestCommitView = highestCommittedQC.getView();
-		processNextView(qc.getView());
+	public void processQC(HighQC syncInfo) {
+		this.syncInfo = syncInfo;
+		this.highestCommitView = syncInfo.highestCommittedQC().getView();
+		processNextView(syncInfo.highestQC().getView());
 	}
 
 	@Override

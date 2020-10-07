@@ -151,7 +151,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	}
 
 	private boolean processNewViewInternal(NewView newView) {
-		log.trace("{}: NEW_VIEW: PreProcessing {}", this.self::getSimpleName, () -> newView);
+		log.trace("{}: NEW_VIEW: PreProcessing {}", this.self, newView);
 
 		// only do something if we're actually the leader for the view
 		final View view = newView.getView();
@@ -166,7 +166,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 			return true;
 		}
 
-		SyncResult syncResult = this.bftSyncer.syncToQC(newView.getQC(), newView.getCommittedQC(), newView.getAuthor());
+		SyncResult syncResult = this.bftSyncer.syncToQC(newView.syncInfo(), newView.getAuthor());
 		switch (syncResult) {
 			case SYNCED:
 				forwardTo.processNewView(newView);
@@ -204,7 +204,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 			return true;
 		}
 
-		SyncResult syncResult = this.bftSyncer.syncToQC(proposal.getQC(), proposal.getCommittedQC(), proposal.getAuthor());
+		SyncResult syncResult = this.bftSyncer.syncToQC(proposal.syncInfo(), proposal.getAuthor());
 		switch (syncResult) {
 			case SYNCED:
 				forwardTo.processProposal(proposal);
