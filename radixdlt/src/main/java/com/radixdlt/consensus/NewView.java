@@ -43,17 +43,13 @@ public final class NewView implements RequiresSyncConsensusEvent {
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("qc")
+	@JsonProperty("sync_info")
 	@DsonOutput(Output.ALL)
-	private final QuorumCertificate qc;
+	private final HighQC syncInfo;
 
 	private final BFTNode author;
 
 	private final View view;
-
-	@JsonProperty("committedQC")
-	@DsonOutput(Output.ALL)
-	private final QuorumCertificate committedQC;
 
 	@JsonProperty("signature")
 	@DsonOutput(Output.ALL)
@@ -63,34 +59,27 @@ public final class NewView implements RequiresSyncConsensusEvent {
 	NewView(
 		@JsonProperty("author") byte[] author,
 		@JsonProperty("view") Long view,
-		@JsonProperty("qc") QuorumCertificate qc,
-		@JsonProperty("committedQC") QuorumCertificate committedQC,
+		@JsonProperty("sync_info") HighQC syncInfo,
 		@JsonProperty("signature") ECDSASignature signature
 	) throws PublicKeyException {
-		this(BFTNode.fromPublicKeyBytes(author), view != null ? View.of(view) : null, qc, committedQC, signature);
+		this(BFTNode.fromPublicKeyBytes(author), view != null ? View.of(view) : null, syncInfo, signature);
 	}
 
-	public NewView(BFTNode author, View view, QuorumCertificate qc, QuorumCertificate committedQC, ECDSASignature signature) {
+	public NewView(BFTNode author, View view, HighQC syncInfo, ECDSASignature signature) {
 		this.author = Objects.requireNonNull(author);
 		this.view = Objects.requireNonNull(view);
-		this.qc = Objects.requireNonNull(qc);
-		this.committedQC = committedQC;
+		this.syncInfo = Objects.requireNonNull(syncInfo);
 		this.signature = signature;
 	}
 
 	@Override
 	public long getEpoch() {
-		return qc.getProposed().getLedgerHeader().getEpoch();
+		return this.syncInfo.highestQC().getProposed().getLedgerHeader().getEpoch();
 	}
 
 	@Override
-	public QuorumCertificate getCommittedQC() {
-		return committedQC;
-	}
-
-	@Override
-	public QuorumCertificate getQC() {
-		return qc;
+	public HighQC syncInfo() {
+		return this.syncInfo;
 	}
 
 	@Override
@@ -130,20 +119,19 @@ public final class NewView implements RequiresSyncConsensusEvent {
 		NewView newView = (NewView) o;
 		return Objects.equals(author, newView.author)
 			&& Objects.equals(view, newView.view)
-			&& Objects.equals(qc, newView.qc)
-			&& Objects.equals(signature, newView.signature)
-			&& Objects.equals(committedQC, newView.committedQC);
+			&& Objects.equals(syncInfo, newView.syncInfo)
+			&& Objects.equals(signature, newView.signature);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(author, view, qc, signature, committedQC);
+		return Objects.hash(author, view, syncInfo, signature);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{epoch=%s view=%s qc=%s author=%s}",
-			getClass().getSimpleName(), this.getEpoch(), view, qc, author.getSimpleName()
+		return String.format("%s{epoch=%s view=%s syncInfo=%s author=%s}",
+			getClass().getSimpleName(), this.getEpoch(), view, syncInfo, author
 		);
 	}
 }

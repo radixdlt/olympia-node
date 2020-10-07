@@ -21,6 +21,7 @@ import com.google.common.collect.Lists;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -151,7 +152,7 @@ public class ExponentialTimeoutPacemakerTest {
 	public void when_process_timeout_for_earlier_view__then_view_should_not_change() {
 		assertThat(pacemaker.getCurrentView()).isEqualTo(View.of(0L));
 		pacemaker.processNextView(View.of(0L));
-		verify(proceedToViewSender, times(1)).sendProceedToNextView(eq(View.of(1L)), any(), any());
+		verify(proceedToViewSender, times(1)).sendProceedToNextView(eq(View.of(1L)), any());
 		assertThat(pacemaker.getCurrentView()).isEqualByComparingTo(View.of(1L));
 		pacemaker.processLocalTimeout(View.of(0L));
 		assertThat(pacemaker.getCurrentView()).isEqualByComparingTo(View.of(1L));
@@ -161,10 +162,10 @@ public class ExponentialTimeoutPacemakerTest {
 	public void when_process_qc_twice_for_same_view__then_view_should_not_change() {
 		assertThat(pacemaker.getCurrentView()).isEqualByComparingTo(View.of(0L));
 		pacemaker.processNextView(View.of(0L));
-		verify(proceedToViewSender, times(1)).sendProceedToNextView(eq(View.of(1L)), any(), any());
+		verify(proceedToViewSender, times(1)).sendProceedToNextView(eq(View.of(1L)), any());
 		assertThat(pacemaker.getCurrentView()).isEqualByComparingTo(View.of(1L));
 		pacemaker.processNextView(View.of(0L));
-		verify(proceedToViewSender, times(1)).sendProceedToNextView(any(), any(), any());
+		verify(proceedToViewSender, times(1)).sendProceedToNextView(any(), any());
 		assertThat(pacemaker.getCurrentView()).isEqualByComparingTo(View.of(1L));
 		assertThat(pacemaker.getCurrentView()).isEqualByComparingTo(View.of(1L));
 	}
@@ -174,7 +175,9 @@ public class ExponentialTimeoutPacemakerTest {
 		NewView newViewWithoutSignature = mock(NewView.class);
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		when(qc.getView()).thenReturn(View.of(1L));
-		when(newViewWithoutSignature.getQC()).thenReturn(qc);
+		HighQC syncInfo = mock(HighQC.class);
+		when(syncInfo.highestQC()).thenReturn(qc);
+		when(newViewWithoutSignature.syncInfo()).thenReturn(syncInfo);
 		when(newViewWithoutSignature.getView()).thenReturn(View.of(2L));
 		when(newViewWithoutSignature.getSignature()).thenReturn(Optional.empty());
 		when(newViewWithoutSignature.getAuthor()).thenReturn(mock(BFTNode.class));
@@ -233,7 +236,9 @@ public class ExponentialTimeoutPacemakerTest {
 
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		when(qc.getView()).thenReturn(View.of(1));
-		when(newView.getQC()).thenReturn(qc);
+		HighQC syncInfo = mock(HighQC.class);
+		when(syncInfo.highestQC()).thenReturn(qc);
+		when(newView.syncInfo()).thenReturn(syncInfo);
 
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		pacemaker.processNextView(View.of(1));
@@ -250,7 +255,9 @@ public class ExponentialTimeoutPacemakerTest {
 		NewView newView = makeNewViewFor(view);
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		when(qc.getView()).thenReturn(View.genesis());
-		when(newView.getQC()).thenReturn(qc);
+		HighQC syncInfo = mock(HighQC.class);
+		when(syncInfo.highestQC()).thenReturn(qc);
+		when(newView.syncInfo()).thenReturn(syncInfo);
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		ValidationState validationState = mock(ValidationState.class);
 		when(validationState.addSignature(any(), anyLong(), any())).thenReturn(true);
@@ -275,8 +282,11 @@ public class ExponentialTimeoutPacemakerTest {
 		when(qc.getView()).thenReturn(view);
 		when(qc.getCommittedAndLedgerStateProof())
 			.thenReturn(Optional.of(Pair.of(mock(BFTHeader.class), mock(VerifiedLedgerHeaderAndProof.class))));
+		HighQC syncInfo = mock(HighQC.class);
+		when(syncInfo.highestQC()).thenReturn(qc);
+		when(syncInfo.highestCommittedQC()).thenReturn(qc);
 
-		this.pacemaker.processQC(qc, qc);
+		this.pacemaker.processQC(syncInfo);
 
 		verify(this.timeoutSender, times(1)).scheduleTimeout(eq(view.next()), eq(this.timeout));
 		assertThat(this.pacemaker.getCurrentView()).isEqualTo(view.next());
@@ -414,7 +424,9 @@ public class ExponentialTimeoutPacemakerTest {
 		if (!view.isGenesis()) {
 			when(qc.getView()).thenReturn(view.previous());
 		}
-		when(newView.getQC()).thenReturn(qc);
+		HighQC syncInfo = mock(HighQC.class);
+		when(syncInfo.highestQC()).thenReturn(qc);
+		when(newView.syncInfo()).thenReturn(syncInfo);
 		when(newView.getView()).thenReturn(view);
 		when(newView.getSignature()).thenReturn(Optional.of(new ECDSASignature()));
 		BFTNode node = mock(BFTNode.class);

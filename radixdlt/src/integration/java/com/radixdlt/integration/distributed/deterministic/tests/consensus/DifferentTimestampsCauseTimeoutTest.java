@@ -204,7 +204,7 @@ public class DifferentTimestampsCauseTimeoutTest {
 	}
 
 	private Proposal mutateProposal(Proposal p, int destination) {
-		QuorumCertificate committedQC = p.getCommittedQC();
+		QuorumCertificate committedQC = p.syncInfo().highestCommittedQC();
 		BFTNode author = p.getAuthor();
 		UnverifiedVertex vertex = p.getVertex();
 		ECDSASignature signature = p.getSignature();

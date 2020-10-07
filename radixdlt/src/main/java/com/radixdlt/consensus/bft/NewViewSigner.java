@@ -21,7 +21,7 @@ import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.NewView;
-import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.utils.Longs;
@@ -43,19 +43,12 @@ public final class NewViewSigner {
 	/**
 	 * Create a signed new-view
 	 * @param nextView the view of the new-view
-	 * @param highestQC highest known qc
-	 * @param highestCommittedQC highest known committed qc
+	 * @param syncInfo highest known qc and committed qc
 	 * @return a signed new-view
 	 */
-	public NewView signNewView(View nextView, QuorumCertificate highestQC, QuorumCertificate highestCommittedQC) {
+	public NewView signNewView(View nextView, HighQC syncInfo) {
 		// TODO make signing more robust by including author in signed hash
 		ECDSASignature signature = this.signer.sign(Hash.hash256(Longs.toByteArray(nextView.number())));
-		return new NewView(
-			this.self,
-			nextView,
-			highestQC,
-			highestCommittedQC,
-			signature
-		);
+		return new NewView(this.self, nextView, syncInfo, signature);
 	}
 }

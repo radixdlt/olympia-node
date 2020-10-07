@@ -18,7 +18,6 @@
 package com.radixdlt.consensus.safety;
 
 import com.google.inject.Inject;
-import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.bft.View;
 
 import java.util.Objects;
@@ -44,7 +43,6 @@ public final class SafetyState {
 		private final SafetyState original;
 		private View lastVotedView;
 		private View lockedView;
-		private QuorumCertificate genericQC;
 		private boolean changed = false;
 
 		private Builder(SafetyState safetyState) {
