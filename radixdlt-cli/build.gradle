@@ -29,6 +29,7 @@ buildscript {
 }
 apply plugin: 'java'
 apply plugin: 'checkstyle'
+apply plugin: 'org.sonarqube'
 apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'com.adarshr.test-logger'
 apply plugin: 'application'
