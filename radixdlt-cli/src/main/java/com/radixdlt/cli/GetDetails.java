@@ -50,9 +50,4 @@ public class GetDetails implements Runnable {
 		println("Native token ref:\t " + api.getNativeTokenRef().toString());
 		println("Done");
 	}
-
-	public GetDetails identityInfo(final Composite.IdentityInfo identityInfo) {
-		this.identityInfo = identityInfo;
-		return this;
-	}
 }

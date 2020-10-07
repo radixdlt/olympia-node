@@ -68,9 +68,4 @@ public class KeyGenerator implements Runnable {
 		writer.close();
 		println("Done");
 	}
-
-	public KeyGenerator password(final String password) {
-		this.password = password;
-		return this;
-	}
 }

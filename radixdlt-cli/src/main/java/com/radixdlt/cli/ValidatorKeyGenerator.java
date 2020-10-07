@@ -80,9 +80,4 @@ public class ValidatorKeyGenerator implements Runnable {
 
 		println("Done");
 	}
-
-	public ValidatorKeyGenerator keystoreDetails(final Composite.Encrypted keystoreDetails) {
-		this.keystoreDetails = keystoreDetails;
-		return this;
-	}
 }

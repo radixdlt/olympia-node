@@ -22,10 +22,9 @@
 package com.radixdlt.cli;
 
 import com.radixdlt.client.application.RadixApplicationAPI;
-import com.radixdlt.client.core.ledger.AtomObservation;
 import picocli.CommandLine;
 
-import static com.radixdlt.cli.Utils.printf;
+import static com.radixdlt.cli.Utils.printfln;
 import static com.radixdlt.cli.Utils.println;
 
 /**
@@ -47,19 +46,11 @@ public class GetStoredAtoms implements Runnable {
 		RadixApplicationAPI api = Utils.getAPI(identityInfo);
 
 		println("Retrieving atoms...");
-		api.pull();
-		var atomStore = api.getAtomStore();
-		var observations = atomStore.getAtomObservations(api.getAddress());
-		observations.filter(AtomObservation::isHead).blockingFirst();
+		api.pullOnce(api.getAddress()).blockingAwait();
 
 		println("Atom ID's:");
-		atomStore.getStoredAtoms(api.getAddress()).forEach(it -> printf("  %s", it.getAid()));
+		api.getAtomStore().getStoredAtoms(api.getAddress()).forEach(it -> printfln("  %s", it.getAid()));
 		println("Done");
-	}
-
-	public GetStoredAtoms identityInfo(final Composite.IdentityInfo identityInfo) {
-		this.identityInfo = identityInfo;
-		return this;
 	}
 }
 

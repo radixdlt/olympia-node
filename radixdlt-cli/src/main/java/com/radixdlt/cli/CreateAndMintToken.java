@@ -112,29 +112,4 @@ public class CreateAndMintToken implements Runnable {
 				.blockingSubscribe(it -> println(it.toString()));
 		println("Done");
 	}
-
-	public CreateAndMintToken identityInfo(final Composite.IdentityInfo identityInfo) {
-		this.identityInfo = identityInfo;
-		return this;
-	}
-
-	public CreateAndMintToken amount(final BigDecimal amount) {
-		this.amount = amount;
-		return this;
-	}
-
-	public CreateAndMintToken tokenName(final String tokenName) {
-		this.tokenName = tokenName;
-		return this;
-	}
-
-	public CreateAndMintToken tokenDescription(final String tokenDescription) {
-		this.tokenDescription = tokenDescription;
-		return this;
-	}
-
-	public CreateAndMintToken useExisting(final boolean useExisting) {
-		this.useExisting = useExisting;
-		return this;
-	}
 }

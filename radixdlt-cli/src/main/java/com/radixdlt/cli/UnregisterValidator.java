@@ -51,9 +51,4 @@ public class UnregisterValidator implements Runnable {
 		printfln("Unregistered %s as a validator", api.getAddress());
 		println("Done");
 	}
-
-	public UnregisterValidator identityInfo(final Composite.IdentityInfo identityInfo) {
-		this.identityInfo = identityInfo;
-		return this;
-	}
 }

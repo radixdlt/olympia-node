@@ -54,27 +54,16 @@ public class Composite {
 			return keyStore;
 		}
 
-		public Encrypted keyStore(final String keyStore) {
-			this.keyStore = keyStore;
-			return this;
-		}
-
 		public String password() {
 			return password;
-		}
-
-		public Encrypted password(final String password) {
-			this.password = password;
-			return this;
 		}
 
 		public String keypair() {
 			return keypair;
 		}
 
-		public Encrypted keypair(final String keypair) {
+		public void keypair(final String keypair) {
 			this.keypair = keypair;
-			return this;
 		}
 	}
 
@@ -93,18 +82,8 @@ public class Composite {
 			return encrypted;
 		}
 
-		public IdentityInfo encrypted(final Encrypted encrypted) {
-			this.encrypted = encrypted;
-			return this;
-		}
-
 		public String unencryptedKeyFile() {
 			return unencryptedKeyFile;
-		}
-
-		public IdentityInfo unencryptedKeyFile(final String unencryptedKeyFile) {
-			this.unencryptedKeyFile = unencryptedKeyFile;
-			return this;
 		}
 	}
 }

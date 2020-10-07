@@ -76,19 +76,4 @@ public class RegisterValidator implements Runnable {
 		printf("  allowedDelegators: %s%n\n", delegators.isEmpty() ? "<not set, allows any>" : allowedDelegators);
 		println("Done");
 	}
-
-	public RegisterValidator identityInfo(final Composite.IdentityInfo identityInfo) {
-		this.identityInfo = identityInfo;
-		return this;
-	}
-
-	public RegisterValidator infoUrl(final String infoUrl) {
-		this.infoUrl = infoUrl;
-		return this;
-	}
-
-	public RegisterValidator allowedDelegators(final String[] allowedDelegators) {
-		this.allowedDelegators = allowedDelegators;
-		return this;
-	}
 }

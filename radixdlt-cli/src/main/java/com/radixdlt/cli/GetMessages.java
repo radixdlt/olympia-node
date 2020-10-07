@@ -47,12 +47,6 @@ public class GetMessages implements Runnable {
 		api.pull();
 		println("Messages:");
 		api.observeMessages().blockingSubscribe(it -> println("  " + it.toString()));
-		println("Done");
-	}
-
-	public GetMessages identityInfo(final Composite.IdentityInfo identityInfo) {
-		this.identityInfo = identityInfo;
-		return this;
 	}
 }
 

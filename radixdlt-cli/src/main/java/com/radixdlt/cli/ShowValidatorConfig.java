@@ -92,14 +92,4 @@ public class ShowValidatorConfig implements Runnable {
 		printfln("  url: %s", url);
 		printfln("  allowed delegators: %s", delegators);
 	}
-
-	public ShowValidatorConfig identityInfo(final Composite.IdentityInfo identityInfo) {
-		this.identityInfo = identityInfo;
-		return this;
-	}
-
-	public ShowValidatorConfig addressString(final String addressString) {
-		this.addressString = addressString;
-		return this;
-	}
 }

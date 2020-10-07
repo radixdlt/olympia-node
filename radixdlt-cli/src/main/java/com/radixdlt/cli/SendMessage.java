@@ -65,19 +65,4 @@ public class SendMessage implements Runnable {
 		printfln("Message sent successfully. AtomID of resulting atom : %s", result.getAtom().getAid());
 		println("Done");
 	}
-
-	public SendMessage identityInfo(final Composite.IdentityInfo identityInfo) {
-		this.identityInfo = identityInfo;
-		return this;
-	}
-
-	public SendMessage messageString(final String messageString) {
-		this.messageString = messageString;
-		return this;
-	}
-
-	public SendMessage addressString(final String addressString) {
-		this.addressString = addressString;
-		return this;
-	}
 }
