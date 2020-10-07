@@ -68,6 +68,16 @@ test {
     systemProperty "java.security.egd", "file:/dev/urandom"
 }
 
+jacoco {
+    toolVersion = "0.8.5"
+}
+
+jacocoTestReport {
+    reports {
+        xml.enabled true
+    }
+}
+
 configurations.all {
     resolutionStrategy.eachDependency {
         if(it.requested.name == 'guava') {
