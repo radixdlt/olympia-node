@@ -54,6 +54,7 @@ public class StaticValidatorsTest {
 		SimulationTest bftTest = bftTestBuilder
 			.ledgerAndEpochs(View.of(100), e -> IntStream.range(0, 4))
 			.checkEpochsHighViewCorrect("epochHighView", View.of(99))
+			.addTimestampChecker("timestamps")
 			.build();
 
 		TestResults results = bftTest.run();
@@ -65,6 +66,7 @@ public class StaticValidatorsTest {
 		SimulationTest bftTest = bftTestBuilder
 			.ledgerAndEpochs(View.of(100), e -> IntStream.range(0, 4))
 			.checkEpochsHighViewCorrect("epochHighView", View.of(100))
+			.addTimestampChecker("timestamps")
 			.build();
 
 		TestResults results = bftTest.run();

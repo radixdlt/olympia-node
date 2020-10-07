@@ -113,6 +113,7 @@ public class StateComputerLedgerTest {
 
 		BFTHeader parent = mock(BFTHeader.class);
 		when(parent.getLedgerHeader()).thenReturn(ledgerHeader);
+		when(parent.getView()).thenReturn(View.of(1));
 		when(vertex.getParentHeader()).thenReturn(parent);
 
 		LedgerHeader nextPrepared = stateComputerLedger.prepare(vertex);
@@ -136,6 +137,7 @@ public class StateComputerLedgerTest {
 
 		BFTHeader parent = mock(BFTHeader.class);
 		when(parent.getLedgerHeader()).thenReturn(ledgerHeader);
+		when(parent.getView()).thenReturn(View.of(1));
 		when(vertex.getParentHeader()).thenReturn(parent);
 
 		LedgerHeader nextPrepared = stateComputerLedger.prepare(vertex);
@@ -159,6 +161,7 @@ public class StateComputerLedgerTest {
 
 		BFTHeader parent = mock(BFTHeader.class);
 		when(parent.getLedgerHeader()).thenReturn(ledgerHeader);
+		when(parent.getView()).thenReturn(View.of(1));
 		when(vertex.getParentHeader()).thenReturn(parent);
 
 		when(stateComputer.prepare(eq(vertex))).thenReturn(true);
@@ -181,6 +184,7 @@ public class StateComputerLedgerTest {
 		when(accumulatorState.getStateVersion()).thenReturn(12345L);
 		when(accumulatorState.getAccumulatorHash()).thenReturn(mock(Hash.class));
 		when(parentHeader.getAccumulatorState()).thenReturn(accumulatorState);
+		when(parentHeader.getView()).thenReturn(View.of(1));
 		AccumulatorState nextAccumulateState = mock(AccumulatorState.class);
 		when(nextAccumulateState.getStateVersion()).thenReturn(12346L);
 		when(nextAccumulateState.getAccumulatorHash()).thenReturn(mock(Hash.class));
@@ -188,6 +192,7 @@ public class StateComputerLedgerTest {
 		when(accumulator.accumulate(eq(accumulatorState), eq(command))).thenReturn(nextAccumulateState);
 		BFTHeader parent = mock(BFTHeader.class);
 		when(parent.getLedgerHeader()).thenReturn(parentHeader);
+		when(parent.getView()).thenReturn(View.of(1));
 		when(vertex.getParentHeader()).thenReturn(parent);
 		when(vertex.getCommand()).thenReturn(command);
 
