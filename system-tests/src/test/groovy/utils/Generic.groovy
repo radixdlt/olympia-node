@@ -51,4 +51,14 @@ class Generic {
         def result = ("${name}" =~ /.*:(.*)]/).findAll()
         return result.size() > 0 ? (result[0][1]).replace(' ','') : name
     }
+
+    static String [] getAWSCredentials(){
+        String AWS_SECRET_ACCESS_KEY = System.getenv("AWS_SECRET_ACCESS_KEY")
+        String AWS_ACCESS_KEY_ID = System.getenv("AWS_ACCESS_KEY_ID")
+
+        return ["AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}",
+                "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}"
+        ]
+
+    }
 }

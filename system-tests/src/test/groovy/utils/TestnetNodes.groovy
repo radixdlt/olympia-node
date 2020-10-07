@@ -18,7 +18,7 @@ class TestnetNodes {
     String keyVolume = "key-volume"
     private String sshDestinationLocDir = "/ansible/ssh"
     private String sshDestinationFileName = "testnet"
-    String ansibleImage = "eu.gcr.io/lunar-arc-236318/node-ansible:latest"
+    String ansibleImage = "eu.gcr.io/lunar-arc-236318/node-ansible:python3"
 
     static TestnetNodes getInstance() {
         return instance

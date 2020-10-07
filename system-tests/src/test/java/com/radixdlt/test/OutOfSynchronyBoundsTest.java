@@ -8,11 +8,11 @@ import com.radixdlt.test.DockerNetwork;
 import com.radixdlt.test.RemoteBFTNetworkBridge;
 import com.radixdlt.test.RemoteBFTTest;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.checkerframework.checker.units.qual.C;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -23,6 +23,7 @@ import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import utils.CmdHelper;
+import utils.EphemeralNetworkCreator;
 import utils.Generic;
 import utils.SlowNodeSetup;
 
@@ -70,6 +71,7 @@ public class OutOfSynchronyBoundsTest {
 	@Category(Cluster.class)
 	public static class ClusterTests {
 
+		private EphemeralNetworkCreator ephemeralNetworkCreator;
 		private SlowNodeSetup slowNodeSetup;
 		private StaticClusterNetwork network;
 
@@ -78,13 +80,33 @@ public class OutOfSynchronyBoundsTest {
 
 
 		@Before
-		public void setupSlowNode() {
-			network = StaticClusterNetwork.clusterInfo(4);
+		public void setupCluster() {
+			String SSH_IDENTITY = Optional.ofNullable(System.getenv("SSH_IDENTITY")).orElse(System.getenv("HOME") + "/.ssh/id_rsa");
+			String SSH_IDENTITY_PUB = Optional.ofNullable(System.getenv("SSH_IDENTITY_PUB")).orElse(System.getenv("HOME") + "/.ssh/id_rsa.pub");
+
+
+			//Creating named volume and copying over the file to volume works with or without docker in docker setup
+			ephemeralNetworkCreator = EphemeralNetworkCreator.builder()
+				.withTerraformImage("eu.gcr.io/lunar-arc-236318/node-terraform:latest")
+				.withKeyVolume("key-volume")
+				.withTotalNumofNodes(10)
+				.withTerraformOptions(Collections.emptyList() )
+				.build();
+			ephemeralNetworkCreator.copyfileToNamedVolume(SSH_IDENTITY);
+			ephemeralNetworkCreator.copyfileToNamedVolume(SSH_IDENTITY_PUB,"/terraform/ssh","testnet.pub");
+			ephemeralNetworkCreator.copyfileToNamedVolume("/Users/shambu/project/radixdlt-iac/projects/testnet/ssh/dev-container-repo-uploader.json",
+				"/ansible/ssh","dev-container-repo-uploader.json");
+			ephemeralNetworkCreator.pullImage();
+			ephemeralNetworkCreator.plan();
+			ephemeralNetworkCreator.setup();
+			ephemeralNetworkCreator.deploy();
+
+			network = StaticClusterNetwork.clusterInfo(10);
 			String sshKeylocation = Optional.ofNullable(System.getenv("SSH_IDENTITY")).orElse(System.getenv("HOME") + "/.ssh/id_rsa");
 
 			//Creating named volume and copying over the file to volume works with or without docker in docker setup
 			slowNodeSetup = SlowNodeSetup.builder()
-				.withAnsibleImage("eu.gcr.io/lunar-arc-236318/node-ansible:latest")
+				.withAnsibleImage("eu.gcr.io/lunar-arc-236318/node-ansible:python3")
 				.withKeyVolume("key-volume")
 				.usingCluster(network.getClusterName())
 				.usingAnsiblePlaybook("slow-down-node.yml")
@@ -93,6 +115,10 @@ public class OutOfSynchronyBoundsTest {
 			slowNodeSetup.copyfileToNamedVolume(sshKeylocation);
 			slowNodeSetup.pullImage();
 			slowNodeSetup.setup();
+
+			ArrayList<String> setNodesToIgnore = new ArrayList<String>();
+			RemoteBFTTest testOutOfSynchronyBounds = outOfSynchronyTestBuilder(setNodesToIgnore).network(RemoteBFTNetworkBridge.of(network)).build();
+			testOutOfSynchronyBounds.runBlocking(CmdHelper.getTestDurationInSeconds(), TimeUnit.SECONDS);
 		}
 
 
@@ -105,7 +131,7 @@ public class OutOfSynchronyBoundsTest {
 
 		@After
 		public void removeSlowNodesettings(){
-			slowNodeSetup.tearDown();
+			ephemeralNetworkCreator.teardown();
 		}
 	}
 }
