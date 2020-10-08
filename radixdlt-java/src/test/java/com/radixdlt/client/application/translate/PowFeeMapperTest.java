@@ -32,7 +32,7 @@ import static org.mockito.Mockito.when;
 import com.radixdlt.test.util.TypedMocks;
 import com.google.common.collect.Maps;
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.crypto.Hash;
+import com.google.common.hash.HashCode;
 import com.radixdlt.client.core.pow.ProofOfWork;
 import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
 import java.util.Collections;
@@ -46,14 +46,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class PowFeeMapperTest {
 	@Test
 	public void testNormalMap() {
-		Hash hash = mock(Hash.class);
-		when(hash.toByteArray()).thenReturn(new byte[] {});
+		HashCode hash = mock(HashCode.class);
+		when(hash.asBytes()).thenReturn(new byte[] {});
 		ProofOfWorkBuilder builder = mock(ProofOfWorkBuilder.class);
 		ProofOfWork pow = mock(ProofOfWork.class);
 		when(builder.build(anyInt(), any(), anyInt())).thenReturn(pow);
 		when(pow.getNonce()).thenReturn(1L);
 
-		Function<Atom, Hash> hasher = TypedMocks.rmock(Function.class);
+		Function<Atom, HashCode> hasher = TypedMocks.rmock(Function.class);
 		when(hasher.apply(any())).thenReturn(hash);
 		PowFeeProcessor powFeeMapper = new PowFeeProcessor(hasher, 0, builder);
 

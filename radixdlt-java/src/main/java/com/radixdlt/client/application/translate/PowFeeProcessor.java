@@ -23,8 +23,8 @@
 package com.radixdlt.client.application.translate;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.hash.HashCode;
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.core.pow.ProofOfWork;
 import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
@@ -38,11 +38,11 @@ import java.util.function.Function;
 public class PowFeeProcessor implements FeeProcessor {
 	private static final int LEADING = 16;
 
-	private final Function<Atom, Hash> hasher;
+	private final Function<Atom, HashCode> hasher;
 	private final int universeMagic;
 	private final ProofOfWorkBuilder powBuilder;
 
-	public PowFeeProcessor(Function<Atom, Hash> hasher, int universeMagic, ProofOfWorkBuilder powBuilder) {
+	public PowFeeProcessor(Function<Atom, HashCode> hasher, int universeMagic, ProofOfWorkBuilder powBuilder) {
 		this.hasher = Objects.requireNonNull(hasher, "hasher is required");
 		this.universeMagic = universeMagic;
 		this.powBuilder = Objects.requireNonNull(powBuilder, "powBuilder is required");
@@ -50,7 +50,7 @@ public class PowFeeProcessor implements FeeProcessor {
 
 	@Override
 	public void process(ActionProcessor actionProcessor, MetadataProcessor metadataProcessor, RadixAddress address, Atom atom) {
-		final byte[] seed = this.hasher.apply(atom).toByteArray();
+		final byte[] seed = this.hasher.apply(atom).asBytes();
 		ProofOfWork pow = this.powBuilder.build(universeMagic, seed, LEADING);
 		metadataProcessor.process(ImmutableMap.of(Atom.METADATA_POW_NONCE_KEY, String.valueOf(pow.getNonce())));
 	}

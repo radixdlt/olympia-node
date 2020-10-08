@@ -25,6 +25,8 @@ package com.radixdlt.client.core.address;
 import org.junit.Test;
 
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 public class RadixUniverseConfigsTestConfig {
 
@@ -32,5 +34,7 @@ public class RadixUniverseConfigsTestConfig {
 	public void createDevelopmentUniverseFromJson() {
 		RadixUniverseConfig betanet = RadixUniverseConfigs.getLocalnet();
 		assertNotNull(betanet);
+		assertEquals("852b5d7bf8d4e2cf149269a165e25f68ebcb5e5e8a53c189a2dc6c1860d3e50b", betanet.getHash().toString());
+		assertFalse(betanet.euid().getValue().isZero());
 	}
 }

@@ -29,7 +29,7 @@ import java.math.BigDecimal;
 import org.junit.Test;
 import com.radixdlt.utils.UInt256;
 
-import com.radixdlt.crypto.Hash;
+import com.google.common.hash.HashCode;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -40,7 +40,7 @@ public class TokenBalanceReducerTest {
 	@Test
 	public void testSimpleBalance() {
 		TransferrableTokensParticle minted = mock(TransferrableTokensParticle.class);
-		Hash hash = mock(Hash.class);
+		HashCode hash = mock(HashCode.class);
 		when(minted.getAmount()).thenReturn(UInt256.TEN);
 		when(minted.getGranularity()).thenReturn(UInt256.ONE);
 		when(minted.getHash()).thenReturn(hash);
