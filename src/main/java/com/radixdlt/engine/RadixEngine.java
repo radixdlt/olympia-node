@@ -19,6 +19,7 @@ package com.radixdlt.engine;
 
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.DataPointer;
+import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.constraintmachine.CMInstruction;
@@ -161,7 +162,7 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 	}
 
 	public void staticCheck(T atom) throws RadixEngineException {
-		final Optional<CMError> error = constraintMachine.validate(atom.getCMInstruction());
+		final Optional<CMError> error = constraintMachine.validate(atom.getCMInstruction(), PermissionLevel.USER);
 		if (error.isPresent()) {
 			CMError e = error.get();
 			throw new RadixEngineException(RadixEngineErrorCode.CM_ERROR, e.getErrorDescription(), e.getDataPointer(), e);

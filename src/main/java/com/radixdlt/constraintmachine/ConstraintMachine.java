@@ -74,7 +74,8 @@ public final class ConstraintMachine {
 		this.particleProcedures = particleProcedures;
 	}
 
-	public static final class CMValidationState {
+	public static final class CMValidationState implements WitnessData {
+		private PermissionLevel permissionLevel;
 		private TransitionToken currentTransitionToken = null;
 		private Particle particleRemaining = null;
 		private boolean particleRemainingIsInput;
@@ -84,7 +85,8 @@ public final class ConstraintMachine {
 		private final Map<EUID, ECDSASignature> signatures;
 		private final Map<ECPublicKey, Boolean> isSignedByCache = new HashMap<>();
 
-		CMValidationState(Hash witness, Map<EUID, ECDSASignature> signatures) {
+		CMValidationState(PermissionLevel permissionLevel, Hash witness, Map<EUID, ECDSASignature> signatures) {
+			this.permissionLevel = permissionLevel;
 			this.currentSpins = new HashMap<>();
 			this.witness = witness;
 			this.signatures = signatures;
@@ -103,6 +105,7 @@ public final class ConstraintMachine {
 			return true;
 		}
 
+		@Override
 		public boolean isSignedBy(ECPublicKey publicKey) {
 			return this.isSignedByCache.computeIfAbsent(publicKey, this::verifySignedWith);
 		}
@@ -113,7 +116,7 @@ public final class ConstraintMachine {
 			}
 
 			final ECDSASignature signature = signatures.get(publicKey.euid());
-			return signature != null && publicKey.verify(witness, signature);
+			return publicKey.verify(witness, signature);
 		}
 
 		boolean has(Particle p) {
@@ -242,6 +245,16 @@ public final class ConstraintMachine {
 			);
 		}
 
+		if (validationState.permissionLevel.compareTo(transitionProcedure.requiredPermissionLevel()) < 0) {
+			return Optional.of(
+				new CMError(
+					dp,
+					CMErrorCode.INVALID_EXECUTION_PERMISSION,
+					validationState
+				)
+			);
+		}
+
 		final UsedData inputUsed = validationState.getInputUsed();
 		final UsedData outputUsed = validationState.getOutputUsed();
 
@@ -291,7 +304,7 @@ public final class ConstraintMachine {
 					final WitnessValidator<Particle> witnessValidator = testInput ? transitionProcedure.inputWitnessValidator()
 						: transitionProcedure.outputWitnessValidator();
 					final WitnessValidatorResult inputWitness = witnessValidator.validate(
-						testInput ? inputParticle : outputParticle, validationState::isSignedBy
+						testInput ? inputParticle : outputParticle, validationState
 					);
 
 					if (inputWitness.isError()) {
@@ -395,8 +408,8 @@ public final class ConstraintMachine {
 	 * @param cmInstruction instruction to validate
 	 * @return the first error found, otherwise an empty optional
 	 */
-	public Optional<CMError> validate(CMInstruction cmInstruction) {
-		final CMValidationState validationState = new CMValidationState(
+	public Optional<CMError> validate(CMInstruction cmInstruction, PermissionLevel permissionLevel) {
+		final CMValidationState validationState = new CMValidationState(permissionLevel,
 			cmInstruction.getWitness(),
 			cmInstruction.getSignatures()
 		);

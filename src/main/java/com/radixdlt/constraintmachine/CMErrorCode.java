@@ -34,6 +34,7 @@ public enum CMErrorCode {
 	TRANSITION_PRECONDITION_FAILURE("Transition Precondition failure"),
 	TRANSITION_ERROR("Transition error"),
 	ARITHMETIC_ERROR("Arithmetic error"),
+	INVALID_EXECUTION_PERMISSION("Invalid execution permission"),
 	INVALID_INSTRUCTION_SEQUENCE("Invalid instruction sequence");
 
 	private final String description;

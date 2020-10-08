@@ -36,6 +36,7 @@ public class ConstraintMachineTest {
 			tt -> null
 		);
 		ConstraintMachine.CMValidationState validationState = new ConstraintMachine.CMValidationState(
+			PermissionLevel.USER,
 			Hash.ZERO_HASH,
 			ImmutableMap.of()
 		);
