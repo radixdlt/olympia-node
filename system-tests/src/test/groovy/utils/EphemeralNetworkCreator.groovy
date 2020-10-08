@@ -1,5 +1,7 @@
 package utils
 
+import com.radixdlt.test.StaticClusterNetwork
+
 /*
  docker run -it  --rm
  -e AWS_SECRET_ACCESS_KEY
@@ -104,8 +106,29 @@ class EphemeralNetworkCreator {
         return error
     }
 
+    List<String> nodesToBringdown(String nodeToBringdown){
+        def output,error
+        //TODO need more parameterisation
+        def runString = "bash -c".tokenize() << (
+                "docker run --rm  -v key-volume:/ansible/ssh " +
+                        "-e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e RADIXDLT_UNIVERSE  " +
+                        " eu.gcr.io/lunar-arc-236318/node-ansible:python3" +
+                        " control-node.yml -i aws-inventory  " +
+                        "--limit ${nodeToBringdown} -t down "
+        )
+        (output,error)=CmdHelper.runCommand(runString,["RADIXDLT_UNIVERSE=${System.getenv('RADIXDLT_UNIVERSE')}"] as String[])
+        return error
+    }
+
     static Builder builder() {
         return new Builder()
+    }
+
+    StaticClusterNetwork getNetwork(int i) {
+        return StaticClusterNetwork.clusterInfo(
+                10,
+                "-e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}" ,
+                "-i aws-inventory");
     }
 
 

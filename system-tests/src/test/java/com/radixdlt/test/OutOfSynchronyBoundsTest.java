@@ -2,11 +2,7 @@ package com.radixdlt.test;
 
 import static com.radixdlt.test.AssertionChecks.*;
 
-import com.radixdlt.test.AssertionChecks;
-import com.radixdlt.test.Docker;
-import com.radixdlt.test.DockerNetwork;
-import com.radixdlt.test.RemoteBFTNetworkBridge;
-import com.radixdlt.test.RemoteBFTTest;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Optional;
@@ -83,7 +79,8 @@ public class OutOfSynchronyBoundsTest {
 		public void setupCluster() {
 			String SSH_IDENTITY = Optional.ofNullable(System.getenv("SSH_IDENTITY")).orElse(System.getenv("HOME") + "/.ssh/id_rsa");
 			String SSH_IDENTITY_PUB = Optional.ofNullable(System.getenv("SSH_IDENTITY_PUB")).orElse(System.getenv("HOME") + "/.ssh/id_rsa.pub");
-
+			String AWS_SECRET_ACCESS_KEY = System.getenv("AWS_SECRET_ACCESS_KEY");
+			String AWS_ACCESS_KEY_ID = System.getenv("AWS_ACCESS_KEY_ID");
 
 			//Creating named volume and copying over the file to volume works with or without docker in docker setup
 			ephemeralNetworkCreator = EphemeralNetworkCreator.builder()
@@ -99,24 +96,43 @@ public class OutOfSynchronyBoundsTest {
 			ephemeralNetworkCreator.pullImage();
 			ephemeralNetworkCreator.plan();
 			ephemeralNetworkCreator.setup();
+			ephemeralNetworkCreator.nodesToBringdown("tag_Environment_ephemeralnet");
 			ephemeralNetworkCreator.deploy();
 
-			network = StaticClusterNetwork.clusterInfo(10);
+			network = ephemeralNetworkCreator.getNetwork(10);
+
+
+			RemoteBFTTest test = AssertionChecks.slowNodeTestBuilder()
+				.network(RemoteBFTNetworkBridge.of(network))
+				.waitUntilResponsive()
+				.startConsensusOnRun() // in case we're the first to access the cluster
+				.build();
+			test.runBlocking(CmdHelper.getTestDurationInSeconds(), TimeUnit.SECONDS);
+
 			String sshKeylocation = Optional.ofNullable(System.getenv("SSH_IDENTITY")).orElse(System.getenv("HOME") + "/.ssh/id_rsa");
 
-			//Creating named volume and copying over the file to volume works with or without docker in docker setup
-			slowNodeSetup = SlowNodeSetup.builder()
-				.withAnsibleImage("eu.gcr.io/lunar-arc-236318/node-ansible:python3")
-				.withKeyVolume("key-volume")
-				.usingCluster(network.getClusterName())
-				.usingAnsiblePlaybook("slow-down-node.yml")
-				.nodesToSlowDown(1)
-				.build();
-			slowNodeSetup.copyfileToNamedVolume(sshKeylocation);
-			slowNodeSetup.pullImage();
-			slowNodeSetup.setup();
+//			//Creating named volume and copying over the file to volume works with or without docker in docker setup
+//			slowNodeSetup= SlowNodeSetup.builder()
+//				.withImage("eu.gcr.io/lunar-arc-236318/node-ansible:python3")
+//				.nodesToSlowDown(1)
+//				.runOptions("--rm   -e AWS_SECRET_ACCESS_KEY="+ AWS_SECRET_ACCESS_KEY +
+//					" -e AWS_ACCESS_KEY_ID=" + AWS_ACCESS_KEY_ID +
+//					" -v key-volume:/ansible/ssh --name node-ansible")
+//				.cmdOptions("-i aws-inventory")
+//				.usingCluster(network.getClusterName())
+//				.build();
+//
+//			slowNodeSetup.copyfileToNamedVolume(sshKeylocation,"key-volume");
+//			slowNodeSetup.pullImage();
+//			slowNodeSetup.setup();
+
+			String nodeURL = network.getNodeIds().iterator().next();
+			String nodeToBringdown = Generic.getDomainName(nodeURL);
+
+			ephemeralNetworkCreator.nodesToBringdown(nodeToBringdown);
 
 			ArrayList<String> setNodesToIgnore = new ArrayList<String>();
+			setNodesToIgnore.add(nodeURL);
 			RemoteBFTTest testOutOfSynchronyBounds = outOfSynchronyTestBuilder(setNodesToIgnore).network(RemoteBFTNetworkBridge.of(network)).build();
 			testOutOfSynchronyBounds.runBlocking(CmdHelper.getTestDurationInSeconds(), TimeUnit.SECONDS);
 		}
@@ -131,7 +147,8 @@ public class OutOfSynchronyBoundsTest {
 
 		@After
 		public void removeSlowNodesettings(){
-			ephemeralNetworkCreator.teardown();
+//			slowNodeSetup.tearDown();
+//			ephemeralNetworkCreator.teardown();
 		}
 	}
 }

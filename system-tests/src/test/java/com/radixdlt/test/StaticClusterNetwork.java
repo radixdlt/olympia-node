@@ -105,6 +105,13 @@ public class StaticClusterNetwork implements RemoteBFTNetwork {
 		return new StaticClusterNetwork(nodesList,System.getenv(STATIC_CLUSTER_TESTNET_NAME));
 	}
 
+	public static StaticClusterNetwork extractFromTestnet(int expectedNumNodes,String dockerOptions,String cmdOptions){
+		ImmutableSet<String> nodesList = TestnetNodes.getInstance()
+			.usingDockerRunOptions(dockerOptions)
+			.usingCmdOptions(cmdOptions)
+			.nodeURLList();
+		return new StaticClusterNetwork(nodesList,System.getenv(STATIC_CLUSTER_TESTNET_NAME));
+	}
 	/**
 	 * Creates a static cluster BFT network of the cluster .
 	 * Based on whether static cluster name is avaliable as environment variable it uses ansible to fetch nodes information.
@@ -118,6 +125,10 @@ public class StaticClusterNetwork implements RemoteBFTNetwork {
 		}else{
 			return StaticClusterNetwork.extractFromTestnet(expectedNumNodes);
 		}
+	}
+
+	public static StaticClusterNetwork clusterInfo(int expectedNumNodes,String dockerOptions,String cmdOptions){
+		return StaticClusterNetwork.extractFromTestnet(expectedNumNodes,dockerOptions,cmdOptions);
 	}
 	/**
 	 * Extracts cluster node URLs out of the STATIC_CLUSTER_NODE_URLS_PROPERTY.
