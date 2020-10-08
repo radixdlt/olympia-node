@@ -31,8 +31,11 @@ import com.radixdlt.store.CMStores;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.SpinStateMachine;
 
+import com.radixdlt.store.TransientEngineStore;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -44,7 +47,7 @@ import java.util.function.UnaryOperator;
  * Top Level Class for the Radix Engine, a real-time, shardable, distributed state machine.
  */
 public final class RadixEngine<T extends RadixEngineAtom> {
-	private class ApplicationStateComputer<U, V extends Particle> {
+	private static class ApplicationStateComputer<U, V extends Particle, T extends RadixEngineAtom> {
 		private final Class<V> particleClass;
 		private final BiFunction<U, V, U> outputReducer;
 		private final BiFunction<U, V, U> inputReducer;
@@ -62,7 +65,16 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 			this.inputReducer = inputReducer;
 		}
 
-		void initialize() {
+		ApplicationStateComputer<U, V, T> copy() {
+			return new ApplicationStateComputer<>(
+				particleClass,
+				curValue,
+				outputReducer,
+				inputReducer
+			);
+		}
+
+		void initialize(EngineStore<T> engineStore) {
 			curValue = engineStore.compute(particleClass, curValue, inputReducer, outputReducer);
 		}
 
@@ -80,10 +92,12 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 
 	private final ConstraintMachine constraintMachine;
 	private final CMStore virtualizedCMStore;
+	private final UnaryOperator<CMStore> virtualStoreLayer;
 	private final EngineStore<T> engineStore;
 	private final AtomChecker<T> checker;
 	private final Object stateUpdateEngineLock = new Object();
-	private final Map<Class<?>, ApplicationStateComputer<?, ?>> stateComputers = new HashMap<>();
+	private final Map<Class<?>, ApplicationStateComputer<?, ?, T>> stateComputers = new HashMap<>();
+	private final List<RadixEngineBranch<T>> branches = new ArrayList<>();
 
 	public RadixEngine(
 		ConstraintMachine constraintMachine,
@@ -100,6 +114,7 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		AtomChecker<T> checker
 	) {
 		this.constraintMachine = Objects.requireNonNull(constraintMachine);
+		this.virtualStoreLayer = Objects.requireNonNull(virtualStoreLayer);
 		this.virtualizedCMStore = virtualStoreLayer.apply(CMStores.empty());
 		this.engineStore = Objects.requireNonNull(engineStore);
 		this.checker = checker;
@@ -124,11 +139,11 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		BiFunction<U, V, U> outputReducer,
 		BiFunction<U, V, U> inputReducer
 	) {
-		ApplicationStateComputer<U, V> applicationStateComputer = new ApplicationStateComputer<>(
+		ApplicationStateComputer<U, V, T> applicationStateComputer = new ApplicationStateComputer<>(
 			particleClass, initial, outputReducer, inputReducer
 		);
 		synchronized (stateUpdateEngineLock) {
-			applicationStateComputer.initialize();
+			applicationStateComputer.initialize(this.engineStore);
 			stateComputers.put(initial.getClass(), applicationStateComputer);
 		}
 	}
@@ -161,6 +176,67 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 	}
 
 	/**
+	 * A cheap radix engine branch which is purely transient
+	 * @param <T> the type of engine atom
+	 */
+	public static class RadixEngineBranch<T extends RadixEngineAtom> {
+		private final RadixEngine<T> engine;
+
+		private RadixEngineBranch(
+			ConstraintMachine constraintMachine,
+			UnaryOperator<CMStore> virtualStoreLayer,
+			EngineStore<T> parentStore,
+			AtomChecker<T> checker,
+			Map<Class<?>, ApplicationStateComputer<?, ?, T>> stateComputers
+		) {
+			TransientEngineStore<T> transientEngineStore = new TransientEngineStore<>(
+				parentStore
+			);
+
+			this.engine = new RadixEngine<>(
+				constraintMachine,
+				virtualStoreLayer,
+				transientEngineStore,
+				checker
+			);
+
+			engine.stateComputers.putAll(stateComputers);
+		}
+
+		public void checkAndStore(T atom) throws RadixEngineException {
+			engine.checkAndStore(atom);
+		}
+
+		public <U> U getComputedState(Class<U> applicationStateClass) {
+			return engine.getComputedState(applicationStateClass);
+		}
+	}
+
+	public void deleteBranches() {
+		synchronized (stateUpdateEngineLock) {
+			branches.clear();
+		}
+	}
+
+	public RadixEngineBranch<T> transientBranch() {
+		synchronized (stateUpdateEngineLock) {
+			Map<Class<?>, ApplicationStateComputer<?, ?, T>> branchedStateComputers = new HashMap<>();
+			this.stateComputers.forEach((c, computer) -> branchedStateComputers.put(c, computer.copy()));
+			RadixEngineBranch<T> branch = new RadixEngineBranch<>(
+				this.constraintMachine,
+				this.virtualStoreLayer,
+				this.engineStore,
+				this.checker,
+				branchedStateComputers
+			);
+
+			branches.add(branch);
+
+			return branch;
+		}
+	}
+
+	/**
 	 * Atomically stores the given atom into the store. If the atom
 	 * has any conflicts or dependency issues the atom will not be stored.
 	 *
@@ -171,6 +247,12 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		this.staticCheck(atom);
 
 		synchronized (stateUpdateEngineLock) {
+			if (!branches.isEmpty()) {
+				throw new IllegalStateException(
+					String.format("%s transient branches still exist. Must delete branches before storing additional atoms.", branches.size())
+				);
+			}
+
 			// TODO Feature: Return updated state for some given query (e.g. for current validator set)
 			stateCheckAndStoreInternal(atom);
 		}
