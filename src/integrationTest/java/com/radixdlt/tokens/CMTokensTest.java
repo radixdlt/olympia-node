@@ -30,6 +30,7 @@ import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
@@ -101,7 +102,7 @@ public class CMTokensTest {
 			)
 		);
 
-		Optional<CMError> error = cm.validate(cmInstruction);
+		Optional<CMError> error = cm.validate(cmInstruction, PermissionLevel.USER);
 		assertThat(error).isEmpty();
 	}
 
@@ -153,7 +154,7 @@ public class CMTokensTest {
 			)
 		);
 
-		Optional<CMError> error = cm.validate(cmInstruction);
+		Optional<CMError> error = cm.validate(cmInstruction, PermissionLevel.USER);
 		error.map(CMError::getCmValidationState).ifPresent(System.out::println);
 		assertThat(error).isEmpty();
 	}
@@ -207,7 +208,7 @@ public class CMTokensTest {
 			)
 		);
 
-		Optional<CMError> error = cm.validate(cmInstruction);
+		Optional<CMError> error = cm.validate(cmInstruction, PermissionLevel.USER);
 		error.map(CMError::getCmValidationState).ifPresent(System.out::println);
 		assertThat(error).isEmpty();
 	}
@@ -260,7 +261,7 @@ public class CMTokensTest {
 			)
 		);
 
-		Optional<CMError> error = cm.validate(cmInstruction);
+		Optional<CMError> error = cm.validate(cmInstruction, PermissionLevel.USER);
 		error.map(CMError::getCmValidationState).ifPresent(System.out::println);
 		assertThat(error).isEmpty();
 	}

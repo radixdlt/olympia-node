@@ -1,6 +1,6 @@
-package com.radixdlt.constraintmachine;
+package com.radixdlt.engine;
 
-import com.radixdlt.engine.RadixEngineAtom;
+import com.radixdlt.constraintmachine.CMInstruction;
 import java.util.Objects;
 
 public class BaseAtom implements RadixEngineAtom {

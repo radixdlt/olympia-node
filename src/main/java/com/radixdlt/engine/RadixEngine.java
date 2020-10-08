@@ -162,7 +162,11 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 	}
 
 	public void staticCheck(T atom) throws RadixEngineException {
-		final Optional<CMError> error = constraintMachine.validate(atom.getCMInstruction(), PermissionLevel.USER);
+		staticCheck(atom, PermissionLevel.USER);
+	}
+
+	public void staticCheck(T atom, PermissionLevel permissionLevel) throws RadixEngineException {
+		final Optional<CMError> error = constraintMachine.validate(atom.getCMInstruction(), permissionLevel);
 		if (error.isPresent()) {
 			CMError e = error.get();
 			throw new RadixEngineException(RadixEngineErrorCode.CM_ERROR, e.getErrorDescription(), e.getDataPointer(), e);
@@ -238,14 +242,26 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 	}
 
 	/**
+	 * Atomically stores the given atom into the store with default permission level USER.
+	 * If the atom has any conflicts or dependency issues the atom will not be stored.
+	 *
+	 * @param atom atom to store
+	 * @throws RadixEngineException on state conflict, dependency issues or bad atom
+	 */
+	public void checkAndStore(T atom) throws RadixEngineException {
+		checkAndStore(atom, PermissionLevel.USER);
+	}
+
+	/**
 	 * Atomically stores the given atom into the store. If the atom
 	 * has any conflicts or dependency issues the atom will not be stored.
 	 *
 	 * @param atom the atom to store
+	 * @param permissionLevel permission level to execute on
 	 * @throws RadixEngineException on state conflict or dependency issues
 	 */
-	public void checkAndStore(T atom) throws RadixEngineException {
-		this.staticCheck(atom);
+	public void checkAndStore(T atom, PermissionLevel permissionLevel) throws RadixEngineException {
+		this.staticCheck(atom, permissionLevel);
 
 		synchronized (stateUpdateEngineLock) {
 			if (!branches.isEmpty()) {

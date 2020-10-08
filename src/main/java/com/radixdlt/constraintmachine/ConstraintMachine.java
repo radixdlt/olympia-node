@@ -245,7 +245,8 @@ public final class ConstraintMachine {
 			);
 		}
 
-		if (validationState.permissionLevel.compareTo(transitionProcedure.requiredPermissionLevel()) < 0) {
+		final PermissionLevel requiredPermissionLevel = transitionProcedure.requiredPermissionLevel();
+		if (validationState.permissionLevel.compareTo(requiredPermissionLevel) < 0) {
 			return Optional.of(
 				new CMError(
 					dp,
