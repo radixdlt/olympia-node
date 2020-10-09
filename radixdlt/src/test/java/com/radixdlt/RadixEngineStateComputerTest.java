@@ -50,6 +50,7 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 
+import com.radixdlt.statecomputer.RadixEngineStateComputer.RadixEngineCommand;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.utils.UInt256;
@@ -95,7 +96,7 @@ public class RadixEngineStateComputerTest {
 		).injectMembers(this);
 	}
 
-	private static Command registerCommand(ECKeyPair keyPair) {
+	private static RadixEngineCommand registerCommand(ECKeyPair keyPair) {
 		RadixAddress address = new RadixAddress((byte) 0, keyPair.getPublicKey());
 		RegisteredValidatorParticle registeredValidatorParticle = new RegisteredValidatorParticle(
 			address, ImmutableSet.of(), 1
@@ -113,7 +114,8 @@ public class RadixEngineStateComputerTest {
 			atom.sign(keyPair);
 			ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom);
 			final byte[] payload = DefaultSerialization.getInstance().toDson(clientAtom, Output.ALL);
-			return new Command(payload);
+			Command cmd = new Command(payload);
+			return new RadixEngineCommand(cmd, clientAtom);
 		} catch (AtomAlreadySignedException | LedgerAtomConversionException e) {
 			throw new RuntimeException();
 		}
@@ -145,15 +147,15 @@ public class RadixEngineStateComputerTest {
 	public void executing_epoch_high_view_with_register_should_return_new_next_validator_set() {
 		// Assemble
 		ECKeyPair keyPair = ECKeyPair.generateNew();
-		Command cmd = registerCommand(keyPair);
+		RadixEngineCommand cmd = registerCommand(keyPair);
 		BFTNode node = BFTNode.create(keyPair.getPublicKey());
 
 		// Action
-		StateComputerResult result = sut.prepare(ImmutableList.of(), cmd, View.of(10));
+		StateComputerResult result = sut.prepare(ImmutableList.of(), cmd.command(), View.of(10));
 
 		// Assert
 		assertThat(result.getSuccessfulCommands()).hasOnlyOneElementSatisfying(s ->
-			assertThat(s.command()).isEqualTo(cmd)
+			assertThat(s.command()).isEqualTo(cmd.command())
 		);
 		assertThat(result.getFailedCommands()).isEmpty();
 		assertThat(result.getNextValidatorSet()).hasValueSatisfying(s -> {
@@ -166,12 +168,11 @@ public class RadixEngineStateComputerTest {
 	public void executing_epoch_high_view_with_previous_registered_should_return_new_next_validator_set() {
 		// Assemble
 		ECKeyPair keyPair = ECKeyPair.generateNew();
-		Command cmd = registerCommand(keyPair);
-		SuccessfulCommand successfulCommand = () -> cmd;
+		RadixEngineCommand cmd = registerCommand(keyPair);
 		BFTNode node = BFTNode.create(keyPair.getPublicKey());
 
 		// Action
-		StateComputerResult result = sut.prepare(ImmutableList.of(successfulCommand), null, View.of(10));
+		StateComputerResult result = sut.prepare(ImmutableList.of(cmd), null, View.of(10));
 
 		// Assert
 		assertThat(result.getSuccessfulCommands()).isEmpty();

@@ -73,10 +73,13 @@ public final class RadixEngineStateComputer implements StateComputer {
 		this.epochChangeView = epochChangeView;
 	}
 
-	private static class RadixEngineCommand implements SuccessfulCommand {
+	public static class RadixEngineCommand implements SuccessfulCommand {
 		private final Command command;
-		RadixEngineCommand(Command command) {
+		private final ClientAtom clientAtom;
+
+		public RadixEngineCommand(Command command, ClientAtom clientAtom) {
 			this.command = command;
+			this.clientAtom = clientAtom;
 		}
 
 		@Override
@@ -94,7 +97,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		final RadixEngineCommand radixEngineCommand;
 		try {
 			ClientAtom clientAtom = mapCommand(next);
-			radixEngineCommand = new RadixEngineCommand(next);
+			radixEngineCommand = new RadixEngineCommand(next, clientAtom);
 			branch.checkAndStore(clientAtom);
 		} catch (RadixEngineException | DeserializeException e) {
 			errorBuilder.put(next, e);
@@ -108,10 +111,12 @@ public final class RadixEngineStateComputer implements StateComputer {
 	public StateComputerResult prepare(ImmutableList<SuccessfulCommand> previous, Command next, View view) {
 		RadixEngineBranch<LedgerAtom> transientBranch = this.radixEngine.transientBranch();
 		for (SuccessfulCommand command : previous) {
+			// TODO: fix this cast with generics. Currently the fix would become a bit too messy
+			final RadixEngineCommand radixEngineCommand = (RadixEngineCommand) command;
+			final ClientAtom clientAtom = radixEngineCommand.clientAtom;
 			try {
-				ClientAtom clientAtom = mapCommand(command.command());
 				transientBranch.checkAndStore(clientAtom);
-			} catch (RadixEngineException | DeserializeException e) {
+			} catch (RadixEngineException e) {
 				throw new IllegalStateException("Re-execution of already prepared atom failed", e);
 			}
 		}
