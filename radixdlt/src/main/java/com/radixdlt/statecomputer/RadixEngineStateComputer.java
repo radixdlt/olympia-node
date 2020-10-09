@@ -22,13 +22,14 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngine.RadixEngineBranch;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
-import com.radixdlt.ledger.StateComputerLedger.SuccessfulCommand;
+import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
@@ -73,7 +74,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		this.epochChangeView = epochChangeView;
 	}
 
-	public static class RadixEngineCommand implements SuccessfulCommand {
+	public static class RadixEngineCommand implements PreparedCommand {
 		private final Command command;
 		private final ClientAtom clientAtom;
 
@@ -91,26 +92,29 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private void execute(
 		RadixEngineBranch<LedgerAtom> branch,
 		Command next,
-		ImmutableList.Builder<SuccessfulCommand> successBuilder,
+		View view,
+		ImmutableList.Builder<PreparedCommand> successBuilder,
 		ImmutableMap.Builder<Command, Exception> errorBuilder
 	) {
-		final RadixEngineCommand radixEngineCommand;
-		try {
-			ClientAtom clientAtom = mapCommand(next);
-			radixEngineCommand = new RadixEngineCommand(next, clientAtom);
-			branch.checkAndStore(clientAtom);
-		} catch (RadixEngineException | DeserializeException e) {
-			errorBuilder.put(next, e);
-			return;
-		}
+		if (next != null) {
+			final RadixEngineCommand radixEngineCommand;
+			try {
+				ClientAtom clientAtom = mapCommand(next);
+				radixEngineCommand = new RadixEngineCommand(next, clientAtom);
+				branch.checkAndStore(clientAtom);
+			} catch (RadixEngineException | DeserializeException e) {
+				errorBuilder.put(next, e);
+				return;
+			}
 
-		successBuilder.add(radixEngineCommand);
+			successBuilder.add(radixEngineCommand);
+		}
 	}
 
 	@Override
-	public StateComputerResult prepare(ImmutableList<SuccessfulCommand> previous, Command next, View view) {
+	public StateComputerResult prepare(ImmutableList<PreparedCommand> previous, Command next, View view) {
 		RadixEngineBranch<LedgerAtom> transientBranch = this.radixEngine.transientBranch();
-		for (SuccessfulCommand command : previous) {
+		for (PreparedCommand command : previous) {
 			// TODO: fix this cast with generics. Currently the fix would become a bit too messy
 			final RadixEngineCommand radixEngineCommand = (RadixEngineCommand) command;
 			final ClientAtom clientAtom = radixEngineCommand.clientAtom;
@@ -121,21 +125,24 @@ public final class RadixEngineStateComputer implements StateComputer {
 			}
 		}
 
-		final ImmutableList.Builder<SuccessfulCommand> successBuilder = ImmutableList.builder();
+		final ImmutableList.Builder<PreparedCommand> successBuilder = ImmutableList.builder();
 		final ImmutableMap.Builder<Command, Exception> exceptionBuilder = ImmutableMap.builder();
 
-		if (next != null) {
-			this.execute(transientBranch, next, successBuilder, exceptionBuilder);
-		}
+		//SystemParticle lastSystemParticle = transientBranch.getComputedState(SystemParticle.class);
+		//final SystemParticle nextSystemParticle;
 
-		this.radixEngine.deleteBranches();
-
+		final BFTValidatorSet validatorSet;
 		if (view.compareTo(epochChangeView) >= 0) {
 			RadixEngineValidatorSetBuilder validatorSetBuilder = transientBranch.getComputedState(RadixEngineValidatorSetBuilder.class);
-			return new StateComputerResult(successBuilder.build(), exceptionBuilder.build(), validatorSetBuilder.build());
+			validatorSet = validatorSetBuilder.build();
+		} else {
+			validatorSet = null;
 		}
 
-		return new StateComputerResult(successBuilder.build(), exceptionBuilder.build());
+		this.execute(transientBranch, next, view, successBuilder, exceptionBuilder);
+
+		this.radixEngine.deleteBranches();
+		return new StateComputerResult(successBuilder.build(), exceptionBuilder.build(), validatorSet);
 	}
 
 	private ClientAtom mapCommand(Command command) throws DeserializeException {

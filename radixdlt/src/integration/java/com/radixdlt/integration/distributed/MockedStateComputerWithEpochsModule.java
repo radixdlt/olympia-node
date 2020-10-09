@@ -36,7 +36,7 @@ import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
-import com.radixdlt.ledger.StateComputerLedger.SuccessfulCommand;
+import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import java.util.function.Function;
 
@@ -81,7 +81,7 @@ public class MockedStateComputerWithEpochsModule extends AbstractModule {
 		return new StateComputer() {
 			private long epoch = 1;
 			@Override
-			public StateComputerResult prepare(ImmutableList<SuccessfulCommand> previous, Command next, View view) {
+			public StateComputerResult prepare(ImmutableList<PreparedCommand> previous, Command next, View view) {
 				if (view.compareTo(epochHighView) >= 0) {
 					return new StateComputerResult(
 						next == null ? ImmutableList.of() : ImmutableList.of(() -> next),

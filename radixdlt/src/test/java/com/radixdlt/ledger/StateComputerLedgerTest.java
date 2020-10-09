@@ -44,11 +44,11 @@ import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
-import com.radixdlt.ledger.StateComputerLedger.SuccessfulCommand;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.utils.DsonSHA256Hasher;
 import com.radixdlt.utils.Pair;
@@ -81,7 +81,7 @@ public class StateComputerLedgerTest {
 	private QuorumCertificate genesisQC;
 
 	private final Command nextCommand = new Command(new byte[] {0});
-	private final SuccessfulCommand successfulNextCommand = () -> nextCommand;
+	private final PreparedCommand successfulNextCommand = () -> nextCommand;
 
 	private final long genesisEpoch = 3L;
 	private final long genesisStateVersion = 123L;

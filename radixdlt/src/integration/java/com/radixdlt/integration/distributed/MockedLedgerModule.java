@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.ledger.StateComputerLedger.SuccessfulCommand;
+import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 
 import com.google.inject.AbstractModule;
@@ -56,7 +56,7 @@ public class MockedLedgerModule extends AbstractModule {
 					.withHeader(ledgerHeader)
 					.andCommands(
 						vertex.getCommand()
-							.<SuccessfulCommand>map(cmd -> () -> cmd)
+							.<PreparedCommand>map(cmd -> () -> cmd)
 							.map(ImmutableList::of)
 							.orElse(ImmutableList.of()),
 						ImmutableMap.of()

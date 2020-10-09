@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.ledger.StateComputerLedger.SuccessfulCommand;
+import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
 import com.radixdlt.utils.Pair;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -35,18 +35,18 @@ public final class PreparedVertex {
 
 	private final LedgerHeader ledgerHeader;
 
-	private final ImmutableList<SuccessfulCommand> successfulCommands;
+	private final ImmutableList<PreparedCommand> preparedCommands;
 	private final ImmutableMap<Command, Exception> commandExceptions;
 
 	PreparedVertex(
 		VerifiedVertex vertex,
 		LedgerHeader ledgerHeader,
-		ImmutableList<SuccessfulCommand> successfulCommands,
+		ImmutableList<PreparedCommand> preparedCommands,
 		ImmutableMap<Command, Exception> commandExceptions
 	) {
 		this.vertex = Objects.requireNonNull(vertex);
 		this.ledgerHeader = Objects.requireNonNull(ledgerHeader);
-		this.successfulCommands = Objects.requireNonNull(successfulCommands);
+		this.preparedCommands = Objects.requireNonNull(preparedCommands);
 		this.commandExceptions = Objects.requireNonNull(commandExceptions);
 	}
 
@@ -62,8 +62,8 @@ public final class PreparedVertex {
 		return vertex.getView();
 	}
 
-	public Stream<SuccessfulCommand> successfulCommands() {
-		return successfulCommands.stream();
+	public Stream<PreparedCommand> successfulCommands() {
+		return preparedCommands.stream();
 	}
 
 	public Stream<Pair<Command, Exception>> errorCommands() {
@@ -71,7 +71,7 @@ public final class PreparedVertex {
 	}
 
 	public Stream<Command> getCommands() {
-		return Stream.concat(successfulCommands().map(SuccessfulCommand::command), errorCommands().map(Pair::getFirst));
+		return Stream.concat(successfulCommands().map(PreparedCommand::command), errorCommands().map(Pair::getFirst));
 	}
 
 	/**
