@@ -31,8 +31,8 @@ public class SyncResponseMessageSerializeTest extends SerializeMessageObject<Syn
 	private static SyncResponseMessage get() {
 		return new SyncResponseMessage(1234, new DtoCommandsAndProof(
 			ImmutableList.of(),
-			VerifiedLedgerHeaderAndProof.genesis(Hash.ZERO_HASH).toDto(),
-			VerifiedLedgerHeaderAndProof.genesis(Hash.ZERO_HASH).toDto()
+			VerifiedLedgerHeaderAndProof.genesis(Hash.ZERO_HASH, null).toDto(),
+			VerifiedLedgerHeaderAndProof.genesis(Hash.ZERO_HASH, null).toDto()
 		));
 	}
 }

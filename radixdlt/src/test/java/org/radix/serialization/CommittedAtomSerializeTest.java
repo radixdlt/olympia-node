@@ -51,7 +51,7 @@ public class CommittedAtomSerializeTest extends SerializeObject<CommittedAtom> {
 			throw new IllegalStateException();
 		}
 
-		LedgerHeader ledgerHeader = LedgerHeader.genesis(Hash.ZERO_HASH);
+		LedgerHeader ledgerHeader = LedgerHeader.genesis(Hash.ZERO_HASH, null);
 		VerifiedLedgerHeaderAndProof proof = new VerifiedLedgerHeaderAndProof(
 			BFTHeader.ofGenesisAncestor(ledgerHeader),
 			BFTHeader.ofGenesisAncestor(ledgerHeader),

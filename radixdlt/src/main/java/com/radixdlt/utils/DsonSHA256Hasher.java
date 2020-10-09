@@ -15,29 +15,33 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.utils;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.google.inject.Inject;
+import com.radixdlt.consensus.Hasher;
+import com.radixdlt.crypto.Hash;
+import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.serialization.Serialization;
 import java.util.Objects;
 
 /**
- * Vertex Store update of committed vertices
+ * Default object hasher
  */
-public final class BFTCommittedUpdate {
-	private final ImmutableList<PreparedVertex> committed;
-	private final VerifiedLedgerHeaderAndProof proof;
+public final class DsonSHA256Hasher implements Hasher {
+	private final Serialization serialization;
 
-	BFTCommittedUpdate(ImmutableList<PreparedVertex> committed, VerifiedLedgerHeaderAndProof proof) {
-		this.committed = Objects.requireNonNull(committed);
-		this.proof = Objects.requireNonNull(proof);
+	@Inject
+	public DsonSHA256Hasher(Serialization serialization) {
+		this.serialization = Objects.requireNonNull(serialization);
 	}
 
-	public ImmutableList<PreparedVertex> getCommitted() {
-		return committed;
+	@Override
+	public Hash hash(Object o) {
+		return Hash.of(serialization.toDson(o, Output.HASH));
 	}
 
-	public VerifiedLedgerHeaderAndProof getProof() {
-		return proof;
+	@Override
+	public Hash hashBytes(byte[] bytes) {
+		return Hash.of(bytes);
 	}
 }

@@ -41,6 +41,7 @@ import com.radixdlt.utils.RTTStatistics;
 
 import java.util.EnumMap;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
@@ -155,9 +156,9 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			if (highestQC.getProposed().getLedgerHeader().isEndOfEpoch()) {
 				nextCommand = null;
 			} else {
-				final List<VerifiedVertex> preparedVertices = vertexStore.getPathFromRoot(highestQC.getProposed().getVertexId());
+				final List<PreparedVertex> preparedVertices = vertexStore.getPathFromRoot(highestQC.getProposed().getVertexId());
 				final Set<Hash> prepared = preparedVertices.stream()
-					.map(VerifiedVertex::getCommand)
+					.flatMap(PreparedVertex::getCommands)
 					.filter(Objects::nonNull)
 					.map(Command::getHash)
 					.collect(Collectors.toSet());
@@ -185,15 +186,18 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			return;
 		}
 
-		final BFTHeader header = vertexStore.insertVertex(proposedVertex);
 		final BFTNode currentLeader = this.proposerElection.getProposer(updatedView);
-		try {
-			final Vote vote = safetyRules.voteFor(proposedVertex, header, this.timeSupplier.currentTime(), proposal.getPayload());
-			log.trace("PROPOSAL: Sending VOTE to {}: {}", () -> currentLeader, () -> vote);
-			sender.sendVote(vote, currentLeader);
-		} catch (SafetyViolationException e) {
-			log.error(() -> new FormattedMessage("PROPOSAL: Rejected {}", proposedVertex), e);
-		}
+		final Optional<BFTHeader> maybeHeader = vertexStore.insertVertex(proposedVertex);
+		// The header may not be present if the ledger is ahead of consensus
+		maybeHeader.ifPresent(header -> {
+			try {
+				final Vote vote = safetyRules.voteFor(proposedVertex, header, this.timeSupplier.currentTime(), proposal.getPayload());
+				log.trace("PROPOSAL: Sending VOTE to {}: {}", () -> currentLeader, () -> vote);
+				sender.sendVote(vote, currentLeader);
+			} catch (SafetyViolationException e) {
+				log.error(() -> new FormattedMessage("PROPOSAL: Rejected {}", proposedVertex), e);
+			}
+		});
 
 		// If not currently leader or next leader, Proceed to next view
 		if (!Objects.equals(currentLeader, this.self)) {

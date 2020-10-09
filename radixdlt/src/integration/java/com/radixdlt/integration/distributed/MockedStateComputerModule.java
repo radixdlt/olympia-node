@@ -17,9 +17,12 @@
 
 package com.radixdlt.integration.distributed;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.radixdlt.consensus.BFTConfiguration;
+import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.UnverifiedVertex;
@@ -30,8 +33,8 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 
+import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import java.util.Optional;
 
 public class MockedStateComputerModule extends AbstractModule {
 	@Provides
@@ -40,8 +43,7 @@ public class MockedStateComputerModule extends AbstractModule {
 			proof.getEpoch() + 1,
 			View.genesis(),
 			proof.getAccumulatorState(),
-			proof.timestamp(),
-			false
+			proof.timestamp()
 		);
 		UnverifiedVertex genesis = UnverifiedVertex.createGenesis(nextLedgerHeader);
 		VerifiedVertex verifiedGenesis = new VerifiedVertex(genesis, Hash.ZERO_HASH);
@@ -50,21 +52,20 @@ public class MockedStateComputerModule extends AbstractModule {
 	}
 
 	@Provides
-	private VerifiedLedgerHeaderAndProof genesisMetadata() {
-		return VerifiedLedgerHeaderAndProof.genesis(Hash.ZERO_HASH);
+	private VerifiedLedgerHeaderAndProof genesisMetadata(BFTValidatorSet validatorSet) {
+		return VerifiedLedgerHeaderAndProof.genesis(Hash.ZERO_HASH, validatorSet);
 	}
 
 	@Provides
 	private StateComputer stateComputer() {
 		return new StateComputer() {
 			@Override
-			public boolean prepare(VerifiedVertex vertex) {
-				return false;
+			public StateComputerResult prepare(ImmutableList<Command> previous, Command next, View view) {
+				return new StateComputerResult(next == null ? ImmutableList.of() : ImmutableList.of(next), ImmutableMap.of());
 			}
 
 			@Override
-			public Optional<BFTValidatorSet> commit(VerifiedCommandsAndProof command) {
-				return Optional.empty();
+			public void commit(VerifiedCommandsAndProof command) {
 			}
 		};
 	}

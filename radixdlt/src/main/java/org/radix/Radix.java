@@ -22,6 +22,7 @@ import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.systeminfo.InMemorySystemInfoManager;
 import com.radixdlt.api.CommittedAtomsRx;
@@ -38,6 +39,7 @@ import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Bytes;
 
+import io.reactivex.rxjava3.core.Observable;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -182,9 +184,13 @@ public final class Radix
 		LedgerEntryStore store = globalInjector.getInjector().getInstance(LedgerEntryStore.class);
 		SubmissionErrorsRx submissionErrorsRx = globalInjector.getInjector().getInstance(SubmissionErrorsRx.class);
 		CommittedAtomsRx committedAtomsRx = globalInjector.getInjector().getInstance(CommittedAtomsRx.class);
+		Observable<BFTCommittedUpdate> committedUpdates = globalInjector.getInjector()
+			.getInstance(Key.get(new TypeLiteral<Observable<BFTCommittedUpdate>>() { }));
 		RadixHttpServer httpServer = new RadixHttpServer(
 			infoStateRunner,
-			submissionErrorsRx, committedAtomsRx,
+			submissionErrorsRx,
+			committedAtomsRx,
+			committedUpdates,
 			consensusRunner,
 			store,
 			submissionControl,

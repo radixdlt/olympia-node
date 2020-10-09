@@ -20,9 +20,9 @@ package com.radixdlt.integration.distributed.simulation.invariants.epochs;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.integration.distributed.simulation.TestInvariant;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
+import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
  * Invariant which checks that a committed vertex never goes above some view
@@ -36,9 +36,8 @@ public class EpochViewInvariant implements TestInvariant {
 
 	@Override
 	public Observable<TestInvariantError> check(RunningNetwork network) {
-		return Observable.merge(
-			network.getNodes().stream().map(node -> network.getInfo(node).bftCommittedUpdates()).collect(Collectors.toList())
-		)
+		return network.bftCommittedUpdates()
+			.map(Pair::getSecond)
 			.concatMap(committedUpdate -> Observable.fromStream(committedUpdate.getCommitted().stream()))
 			.flatMap(vertex -> {
 				final View view = vertex.getView();

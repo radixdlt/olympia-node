@@ -20,10 +20,12 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.multibindings.Multibinder;
+import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.epochs.EpochChangeManager;
 import com.radixdlt.epochs.EpochChangeManager.EpochsLedgerUpdateSender;
 import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
+import com.radixdlt.middleware2.store.InMemoryCommittedEpochProofsStore;
 import java.util.Set;
 
 /**
@@ -53,5 +55,14 @@ public class EpochsLedgerUpdateModule extends AbstractModule {
 		Hasher hasher
 	) {
 		return new EpochChangeManager(epochsLedgerUpdateSender, hasher);
+	}
+
+	@ProvidesIntoSet
+	private LedgerUpdateSender updateSender(InMemoryCommittedEpochProofsStore proofsStore) {
+		return update -> {
+			if (update.getTail().isEndOfEpoch()) {
+				proofsStore.commit(update.getTail());
+			}
+		};
 	}
 }

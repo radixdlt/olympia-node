@@ -17,9 +17,13 @@
 
 package com.radixdlt.sync;
 
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.middleware2.store.InMemoryCommittedEpochProofsStore;
+import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -31,12 +35,14 @@ public class RemoteSyncServiceProcessor {
 	private static final Logger log = LogManager.getLogger();
 
 	private final CommittedReader committedReader;
+	private final InMemoryCommittedEpochProofsStore committedEpochProofsStore;
 	private final StateSyncNetwork stateSyncNetwork;
 
 	private final int batchSize;
 
 	public RemoteSyncServiceProcessor(
 		CommittedReader committedReader,
+		InMemoryCommittedEpochProofsStore committedEpochProofsStore,
 		StateSyncNetwork stateSyncNetwork,
 		int batchSize
 	) {
@@ -44,14 +50,44 @@ public class RemoteSyncServiceProcessor {
 			throw new IllegalArgumentException();
 		}
 		this.committedReader = Objects.requireNonNull(committedReader);
+		this.committedEpochProofsStore = Objects.requireNonNull(committedEpochProofsStore);
 		this.batchSize = batchSize;
 		this.stateSyncNetwork = Objects.requireNonNull(stateSyncNetwork);
 	}
 
 	public void processRemoteSyncRequest(RemoteSyncRequest syncRequest) {
-		log.info("REMOTE_SYNC_REQUEST: {}", syncRequest);
 		DtoLedgerHeaderAndProof currentHeader = syncRequest.getCurrentHeader();
-		VerifiedCommandsAndProof committedCommands = committedReader.getNextCommittedCommands(currentHeader, batchSize);
+
+		if (currentHeader.getLedgerHeader().isEndOfEpoch()) {
+			log.info("REMOTE_EPOCH_SYNC_REQUEST: {}", syncRequest);
+			long currentEpoch = currentHeader.getLedgerHeader().getEpoch() + 1;
+			long nextEpoch = currentEpoch + 1;
+			VerifiedLedgerHeaderAndProof nextEpochProof = committedEpochProofsStore.getEpochProof(nextEpoch);
+			if (nextEpochProof == null) {
+				log.warn("REMOTE_EPOCH_SYNC_REQUEST: Unable to serve epoch sync request {}.", syncRequest);
+				return;
+			}
+
+			DtoCommandsAndProof dtoCommandsAndProof = new DtoCommandsAndProof(
+				ImmutableList.of(),
+				currentHeader, nextEpochProof.toDto()
+			);
+			log.info("REMOTE_EPOCH_SYNC_REQUEST: Sending response {}", dtoCommandsAndProof);
+			stateSyncNetwork.sendSyncResponse(syncRequest.getNode(), dtoCommandsAndProof);
+			return;
+		}
+
+		log.info("REMOTE_SYNC_REQUEST: {}", syncRequest);
+
+
+		final VerifiedCommandsAndProof committedCommands;
+		try {
+			committedCommands = committedReader.getNextCommittedCommands(currentHeader, batchSize);
+		} catch (NextCommittedLimitReachedException e) {
+			log.warn("REMOTE_SYNC_REQUEST: Unable to serve sync request {}.", syncRequest);
+			return;
+		}
+
 		if (committedCommands == null) {
 			log.warn("REMOTE_SYNC_REQUEST: Unable to serve sync request {}.", syncRequest);
 			return;

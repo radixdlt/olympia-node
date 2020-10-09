@@ -208,69 +208,11 @@ public class BFTEventReducerTest {
 		Vote vote = mock(Vote.class);
 		doReturn(vote).when(safetyRules).voteFor(any(), any(), anyLong(), anyLong());
 		when(vertexStore.syncInfo()).thenReturn(mock(HighQC.class));
+		when(vertexStore.insertVertex(any())).thenReturn(Optional.of(mock(BFTHeader.class)));
 
 		reducer.processProposal(proposal);
 
 		verify(sender, times(1)).sendVote(eq(vote), any());
 		verify(pacemaker, times(1)).processNextView(any());
-	}
-
-	@Test
-	public void when_processing_valid_stored_proposal_and_next_leader__then_atom_is_voted_on_and_new_view() throws SafetyViolationException {
-		View currentView = View.of(123);
-		QuorumCertificate currentQC = mock(QuorumCertificate.class);
-		when(currentQC.getView()).thenReturn(currentView);
-
-		when(proposerElection.getProposer(eq(currentView))).thenReturn(mock(BFTNode.class));
-		when(proposerElection.getProposer(eq(currentView.next()))).thenReturn(self);
-
-		UnverifiedVertex proposedVertex = mock(UnverifiedVertex.class);
-		when(proposedVertex.getCommand()).thenReturn(mock(Command.class));
-		QuorumCertificate qc = mock(QuorumCertificate.class);
-		View qcView = mock(View.class);
-		when(qc.getView()).thenReturn(qcView);
-		when(proposedVertex.getQC()).thenReturn(qc);
-		when(proposedVertex.getView()).thenReturn(currentView);
-
-		Proposal proposal = mock(Proposal.class);
-		when(proposal.getVertex()).thenReturn(proposedVertex);
-
-		when(pacemaker.getCurrentView()).thenReturn(currentView);
-		Vote vote = mock(Vote.class);
-		doReturn(vote).when(safetyRules).voteFor(any(), any(), anyLong(), anyLong());
-
-		reducer.processProposal(proposal);
-
-		verify(sender, times(1)).sendVote(eq(vote), any());
-		verify(pacemaker, times(0)).processNextView(any());
-	}
-
-	@Test
-	public void when_processing_valid_stored_proposal_and_leader__then_atom_is_voted_on_and_no_new_view() throws SafetyViolationException {
-		View currentView = View.of(123);
-		QuorumCertificate currentQC = mock(QuorumCertificate.class);
-		when(currentQC.getView()).thenReturn(currentView);
-
-		when(proposerElection.getProposer(eq(currentView))).thenReturn(self);
-
-		UnverifiedVertex proposedVertex = mock(UnverifiedVertex.class);
-		when(proposedVertex.getCommand()).thenReturn(mock(Command.class));
-		QuorumCertificate qc = mock(QuorumCertificate.class);
-		View qcView = mock(View.class);
-		when(qc.getView()).thenReturn(qcView);
-		when(proposedVertex.getQC()).thenReturn(qc);
-		when(proposedVertex.getView()).thenReturn(currentView);
-
-		Proposal proposal = mock(Proposal.class);
-		when(proposal.getVertex()).thenReturn(proposedVertex);
-
-		when(pacemaker.getCurrentView()).thenReturn(currentView);
-		Vote vote = mock(Vote.class);
-		doReturn(vote).when(safetyRules).voteFor(any(), any(), anyLong(), anyLong());
-
-		reducer.processProposal(proposal);
-
-		verify(sender, times(1)).sendVote(eq(vote), any());
-		verify(pacemaker, times(0)).processNextView(any());
 	}
 }

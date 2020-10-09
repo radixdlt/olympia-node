@@ -46,8 +46,8 @@ public class RadixEngineValidatorSetBuilderTest {
 		);
 		RadixAddress address = mock(RadixAddress.class);
 		when(address.getPublicKey()).thenReturn(ECKeyPair.generateNew().getPublicKey());
-		builder.addValidator(address);
-		assertThat(builder.build().getValidators()).hasSize(2);
+		RadixEngineValidatorSetBuilder nextBuilder = builder.addValidator(address);
+		assertThat(nextBuilder.build().getValidators()).hasSize(2);
 	}
 
 	@Test

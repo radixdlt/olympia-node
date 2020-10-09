@@ -42,6 +42,7 @@ import com.radixdlt.middleware2.ClientAtom.LedgerAtomConversionException;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.middleware2.store.CommittedAtomsStore.AtomIndexer;
+import com.radixdlt.middleware2.store.InMemoryCommittedEpochProofsStore;
 import com.radixdlt.middleware2.store.EngineAtomIndices;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.serialization.DeserializeException;
@@ -50,11 +51,11 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.middleware2.store.CommandToBinaryConverter;
 import com.radixdlt.statecomputer.CommittedAtom;
-import com.radixdlt.statecomputer.CommittedCommandsReader;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
+import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.universe.Universe;
 
 import java.util.function.BiFunction;
@@ -69,7 +70,8 @@ public class RadixEngineStoreModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		bind(new TypeLiteral<EngineStore<CommittedAtom>>() { }).to(CommittedAtomsStore.class).in(Scopes.SINGLETON);
-		bind(CommittedCommandsReader.class).to(CommittedAtomsStore.class);
+		bind(CommittedReader.class).to(CommittedAtomsStore.class);
+		bind(InMemoryCommittedEpochProofsStore.class).in(Scopes.SINGLETON);
 	}
 
 	@Provides
@@ -117,9 +119,14 @@ public class RadixEngineStoreModule extends AbstractModule {
 	}
 
 	@Provides
+	private BFTValidatorSet validatorSet(AddressBookGenesisValidatorSetProvider initialValidatorSetProvider) {
+		return initialValidatorSetProvider.getGenesisValidatorSet();
+	}
+
+	@Provides
 	@Singleton
 	private BFTConfiguration initialConfig(
-		AddressBookGenesisValidatorSetProvider initialValidatorSetProvider,
+		BFTValidatorSet validatorSet,
 		VerifiedLedgerHeaderAndProof proof,
 		Hasher hasher
 	) {
@@ -129,11 +136,9 @@ public class RadixEngineStoreModule extends AbstractModule {
 			proof.getEpoch() + 1,
 			View.genesis(),
 			proof.getAccumulatorState(),
-			proof.timestamp(),
-			false
+			proof.timestamp()
 		);
 		QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
-		BFTValidatorSet validatorSet = initialValidatorSetProvider.getGenesisValidatorSet();
 		return new BFTConfiguration(validatorSet, verifiedGenesisVertex, genesisQC);
 	}
 
@@ -141,14 +146,18 @@ public class RadixEngineStoreModule extends AbstractModule {
 	private VerifiedLedgerHeaderAndProof genesisHeader(
 		Serialization serialization,
 		Universe universe,
-		CommittedAtomsStore committedAtomsStore
+		CommittedAtomsStore committedAtomsStore,
+		BFTValidatorSet validatorSet
 	) throws LedgerAtomConversionException, DeserializeException, NextCommittedLimitReachedException {
 		final ClientAtom genesisAtom = ClientAtom.convertFromApiAtom(universe.getGenesis().get(0));
 		byte[] payload = serialization.toDson(genesisAtom, Output.ALL);
 		Command command = new Command(payload);
-		VerifiedLedgerHeaderAndProof genesisLedgerHeader = VerifiedLedgerHeaderAndProof.genesis(command.getHash());
+		VerifiedLedgerHeaderAndProof genesisLedgerHeader = VerifiedLedgerHeaderAndProof.genesis(
+			command.getHash(),
+			validatorSet
+		);
 
-		if (committedAtomsStore.getNextCommittedCommands(genesisLedgerHeader.getStateVersion() - 1, 1).isEmpty()) {
+		if (committedAtomsStore.getNextCommittedCommands(genesisLedgerHeader.getStateVersion() - 1, 1) == null) {
 			ClientAtom clientAtom = serialization.fromDson(command.getPayload(), ClientAtom.class);
 			CommittedAtom committedAtom = new CommittedAtom(clientAtom, genesisLedgerHeader.getStateVersion(), genesisLedgerHeader);
 			committedAtomsStore.storeAtom(committedAtom);

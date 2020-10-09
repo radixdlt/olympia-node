@@ -18,6 +18,8 @@
 package com.radixdlt;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
@@ -63,6 +65,8 @@ public final class SystemInfoRxModule extends AbstractModule {
 				highQCs.send(qc);
 			}
 		};
+		Multibinder.newSetBinder(binder(), VertexStoreEventSender.class).addBinding()
+			.toInstance(eventSender);
 
 		InfoRx infoRx = new InfoRx() {
 			@Override
@@ -79,16 +83,11 @@ public final class SystemInfoRxModule extends AbstractModule {
 			public Observable<QuorumCertificate> highQCs() {
 				return highQCs.rx();
 			}
-
-			@Override
-			public Observable<BFTCommittedUpdate> bftCommittedUpdates() {
-				return committed.rx();
-			}
 		};
 
 		bind(EpochInfoSender.class).toInstance(epochInfoSender);
-		bind(VertexStoreEventSender.class).toInstance(eventSender);
 		bind(InfoRx.class).toInstance(infoRx);
+		bind(new TypeLiteral<Observable<BFTCommittedUpdate>>() { }).toInstance(committed.rx());
 	}
 
 }

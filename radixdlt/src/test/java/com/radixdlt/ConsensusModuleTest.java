@@ -45,7 +45,6 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.SignedNewViewToLeaderSender.BFTNewViewSender;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
-import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
@@ -67,9 +66,9 @@ public class ConsensusModuleTest {
 	@Before
 	public void setup() {
 		this.bftConfiguration = mock(BFTConfiguration.class);
-		UnverifiedVertex genesis = UnverifiedVertex.createGenesis(LedgerHeader.genesis(Hash.ZERO_HASH));
+		UnverifiedVertex genesis = UnverifiedVertex.createGenesis(LedgerHeader.genesis(Hash.ZERO_HASH, null));
 		VerifiedVertex hashedGenesis = new VerifiedVertex(genesis, Hash.ZERO_HASH);
-		QuorumCertificate qc = QuorumCertificate.ofGenesis(hashedGenesis, LedgerHeader.genesis(Hash.ZERO_HASH));
+		QuorumCertificate qc = QuorumCertificate.ofGenesis(hashedGenesis, LedgerHeader.genesis(Hash.ZERO_HASH, null));
 		when(bftConfiguration.getGenesisVertex()).thenReturn(hashedGenesis);
 		when(bftConfiguration.getGenesisQC()).thenReturn(qc);
 		when(bftConfiguration.getGenesisHeader()).thenReturn(mock(VerifiedLedgerHeaderAndProof.class));
@@ -91,7 +90,6 @@ public class ConsensusModuleTest {
 				bind(BFTNewViewSender.class).toInstance(mock(BFTNewViewSender.class));
 				bind(SyncVerticesRequestSender.class).toInstance(mock(SyncVerticesRequestSender.class));
 				bind(SyncVerticesResponseSender.class).toInstance(mock(SyncVerticesResponseSender.class));
-				bind(VertexStoreEventSender.class).toInstance(mock(VertexStoreEventSender.class));
 				bind(NextCommandGenerator.class).toInstance(mock(NextCommandGenerator.class));
 				bind(SystemCounters.class).toInstance(mock(SystemCounters.class));
 				bind(TimeSupplier.class).toInstance(mock(TimeSupplier.class));

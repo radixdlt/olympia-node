@@ -36,7 +36,7 @@ public class VoteSerializeTest extends SerializeObject<Vote> {
 		View view = View.of(1234567891L);
 		Hash id = Hash.random();
 
-		LedgerHeader ledgerHeader = LedgerHeader.genesis(Hash.ZERO_HASH);
+		LedgerHeader ledgerHeader = LedgerHeader.genesis(Hash.ZERO_HASH, null);
 		BFTHeader header = new BFTHeader(view, id, ledgerHeader);
 		BFTHeader parent = new BFTHeader(View.of(1234567890L), Hash.random(), ledgerHeader);
 		VoteData voteData = new VoteData(header, parent, null);

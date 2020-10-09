@@ -26,6 +26,8 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
+import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
+import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.store.EngineAtomIndices.IndexType;
 import com.radixdlt.serialization.Serialization;
@@ -33,7 +35,6 @@ import com.radixdlt.serialization.SerializationUtils;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.middleware2.LedgerAtom;
-import com.radixdlt.statecomputer.CommittedCommandsReader;
 import com.radixdlt.statecomputer.CommittedAtoms;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.store.SearchCursor;
@@ -45,16 +46,15 @@ import com.radixdlt.store.LedgerEntryStore;
 
 import com.radixdlt.store.StoreIndex.LedgerIndexType;
 import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
+import com.radixdlt.sync.CommittedReader;
 import java.util.Objects;
-import java.util.TreeMap;
 import java.util.function.BiFunction;
-import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Optional;
 
-public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, CommittedCommandsReader {
+public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, CommittedReader {
 	private static final Logger log = LogManager.getLogger();
 
 	private final Serialization serialization;
@@ -99,7 +99,6 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 					return Optional.of(clientAtom);
 				});
 		} else {
-			log.debug("getAtomByParticle returned empty result");
 			return Optional.empty();
 		}
 	}
@@ -171,18 +170,27 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		return v;
 	}
 
+	public VerifiedCommandsAndProof getNextCommittedCommands(long stateVersion, int batchSize) throws NextCommittedLimitReachedException {
+		ImmutableList<StoredCommittedCommand> storedCommittedCommands = store.getNextCommittedLedgerEntries(stateVersion, batchSize).stream()
+			.map(e -> commandToBinaryConverter.toCommand(e.getContent()))
+			.collect(ImmutableList.toImmutableList());
+
+		if (storedCommittedCommands.isEmpty()) {
+			return null;
+		}
+
+		final VerifiedLedgerHeaderAndProof nextHeader = storedCommittedCommands.get(0).getStateAndProof();
+		return new VerifiedCommandsAndProof(
+			storedCommittedCommands.stream().map(StoredCommittedCommand::getCommand).collect(ImmutableList.toImmutableList()),
+			nextHeader
+		);
+	}
+
 	@Override
-	public TreeMap<Long, StoredCommittedCommand> getNextCommittedCommands(long stateVersion, int limit) throws NextCommittedLimitReachedException {
-		ImmutableList<LedgerEntry> entries = store.getNextCommittedLedgerEntries(stateVersion, limit);
-		return entries.stream()
-			.collect(Collectors.toMap(
-				LedgerEntry::getStateVersion,
-				e -> commandToBinaryConverter.toCommand(e.getContent()),
-				(o, n) -> {
-					throw new IllegalStateException("Duplicate keys found!");
-				},
-				TreeMap::new
-			));
+	public VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start, int batchSize) throws NextCommittedLimitReachedException {
+		// TODO: verify start
+		long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
+		return this.getNextCommittedCommands(stateVersion, batchSize);
 	}
 
 	@Override

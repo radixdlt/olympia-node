@@ -23,6 +23,7 @@ import com.google.inject.Provides;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -47,6 +48,10 @@ public class IncorrectAlwaysAcceptingAccumulatorVerifierModule extends AbstractM
 				if (current.getStateVersion() + 1 < firstVersion) {
 					// Missing versions
 					return Optional.empty();
+				}
+
+				if (commands.isEmpty()) {
+					return (Objects.equals(current, tail)) ? Optional.of(ImmutableList.of()) : Optional.empty();
 				}
 
 				final int startIndex = (int) (current.getStateVersion() + 1 - firstVersion);
