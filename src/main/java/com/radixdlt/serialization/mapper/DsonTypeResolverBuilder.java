@@ -68,9 +68,11 @@ class DsonTypeResolverBuilder extends ObjectMapper.DefaultTypeResolverBuilder {
 	}
 
     @Override
-	protected TypeIdResolver idResolver(MapperConfig<?> config, JavaType baseType,
-										PolymorphicTypeValidator subtypeValidator, Collection<NamedType> subtypes,
-										boolean forSer, boolean forDeser) {
+	protected TypeIdResolver idResolver(
+			MapperConfig<?> config, JavaType baseType,
+			PolymorphicTypeValidator subtypeValidator, Collection<NamedType> subtypes,
+			boolean forSer, boolean forDeser
+	) {
 		return new DsonTypeIdResolver(baseType, config.getTypeFactory(), idLookup);
 	}
 }
