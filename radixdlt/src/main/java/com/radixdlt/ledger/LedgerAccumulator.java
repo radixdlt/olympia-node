@@ -17,7 +17,7 @@
 
 package com.radixdlt.ledger;
 
-import com.radixdlt.consensus.Command;
+import com.radixdlt.crypto.Hash;
 
 /**
  * Accumulates commands into a single version hash which represents
@@ -27,5 +27,5 @@ import com.radixdlt.consensus.Command;
  */
 @FunctionalInterface
 public interface LedgerAccumulator {
-	AccumulatorState accumulate(AccumulatorState parent, Command nextCommand);
+	AccumulatorState accumulate(AccumulatorState parent, Hash hash);
 }

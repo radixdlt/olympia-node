@@ -66,7 +66,7 @@ public class LedgerModule extends AbstractModule {
 				committedUpdate.getCommitted().stream()
 					.flatMap(PreparedVertex::errorCommands)
 					.map(Pair::getFirst)
-					.map(Command::getHash)
+					.map(Command::hash)
 					.forEach(mempool::removeRejected);
 			}
 

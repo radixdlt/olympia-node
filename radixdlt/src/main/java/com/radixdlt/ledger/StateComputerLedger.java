@@ -44,13 +44,22 @@ import java.util.Set;
  * Synchronizes execution
  */
 public final class StateComputerLedger implements Ledger, NextCommandGenerator {
+	public interface SuccessfulCommand extends HasHash {
+		Command command();
+
+		@Override
+		default Hash hash() {
+			return command().hash();
+		}
+	}
+
 	public static class StateComputerResult {
-		private final ImmutableList<Command> successfulCommands;
+		private final ImmutableList<SuccessfulCommand> successfulCommands;
 		private final ImmutableMap<Command, Exception> failedCommands;
 		private final BFTValidatorSet nextValidatorSet;
 
 		public StateComputerResult(
-			ImmutableList<Command> successfulCommands,
+			ImmutableList<SuccessfulCommand> successfulCommands,
 			ImmutableMap<Command, Exception> failedCommands,
 			BFTValidatorSet nextValidatorSet
 		) {
@@ -59,7 +68,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			this.nextValidatorSet = nextValidatorSet;
 		}
 
-		public StateComputerResult(ImmutableList<Command> successfulCommands, ImmutableMap<Command, Exception> failedCommands) {
+		public StateComputerResult(ImmutableList<SuccessfulCommand> successfulCommands, ImmutableMap<Command, Exception> failedCommands) {
 			this(successfulCommands, failedCommands, null);
 		}
 
@@ -67,7 +76,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			return Optional.ofNullable(nextValidatorSet);
 		}
 
-		public ImmutableList<Command> getSuccessfulCommands() {
+		public ImmutableList<SuccessfulCommand> getSuccessfulCommands() {
 			return successfulCommands;
 		}
 
@@ -77,7 +86,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	}
 
 	public interface StateComputer {
-		StateComputerResult prepare(ImmutableList<Command> previous, Command next, View view);
+		StateComputerResult prepare(ImmutableList<SuccessfulCommand> previous, Command next, View view);
 		void commit(VerifiedCommandsAndProof verifiedCommandsAndProof);
 	}
 
@@ -127,7 +136,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	public Optional<PreparedVertex> prepare(LinkedList<PreparedVertex> previous, VerifiedVertex vertex) {
 		final LedgerHeader parentHeader = vertex.getParentHeader().getLedgerHeader();
 		final AccumulatorState parentAccumulatorState = parentHeader.getAccumulatorState();
-		final ImmutableList<Command> prevCommands = previous.stream()
+		final ImmutableList<SuccessfulCommand> prevCommands = previous.stream()
 			.flatMap(PreparedVertex::successfulCommands)
 			.collect(ImmutableList.toImmutableList());
 		final long timestamp;
@@ -153,7 +162,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 				return Optional.of(preparedVertex);
 			}
 
-			final ImmutableList<Command> concatenatedCommands = this.verifier.verifyAndGetExtension(
+			final ImmutableList<SuccessfulCommand> concatenatedCommands = this.verifier.verifyAndGetExtension(
 				this.currentLedgerHeader.getAccumulatorState(),
 				prevCommands,
 				parentAccumulatorState
@@ -161,11 +170,15 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 				+ this.currentLedgerHeader.getAccumulatorState() + " prepare head: " + parentAccumulatorState)
 			);
 
-			final StateComputerResult result = stateComputer.prepare(concatenatedCommands, vertex.getCommand().orElse(null), vertex.getView());
+			final StateComputerResult result = stateComputer.prepare(
+				concatenatedCommands,
+				vertex.getCommand().orElse(null),
+				vertex.getView()
+			);
 
 			AccumulatorState accumulatorState = parentHeader.getAccumulatorState();
-			for (Command cmd : result.getSuccessfulCommands()) {
-				accumulatorState = this.accumulator.accumulate(accumulatorState, cmd);
+			for (SuccessfulCommand cmd : result.getSuccessfulCommands()) {
+				accumulatorState = this.accumulator.accumulate(accumulatorState, cmd.hash());
 			}
 
 			final LedgerHeader ledgerHeader = LedgerHeader.create(
@@ -187,6 +200,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	public void commit(ImmutableList<PreparedVertex> vertices, VerifiedLedgerHeaderAndProof proof) {
 		final ImmutableList<Command> commands = vertices.stream()
 			.flatMap(PreparedVertex::successfulCommands)
+			.map(SuccessfulCommand::command)
 			.collect(ImmutableList.toImmutableList());
 		VerifiedCommandsAndProof verifiedCommandsAndProof = new VerifiedCommandsAndProof(commands, proof);
 		this.commit(verifiedCommandsAndProof);
@@ -226,7 +240,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			this.currentLedgerHeader = nextHeader;
 			this.counters.set(CounterType.LEDGER_STATE_VERSION, this.currentLedgerHeader.getStateVersion());
 
-			verifiedExtension.get().forEach(cmd -> this.mempool.removeCommitted(cmd.getHash()));
+			verifiedExtension.get().forEach(cmd -> this.mempool.removeCommitted(cmd.hash()));
 			BaseLedgerUpdate ledgerUpdate = new BaseLedgerUpdate(commandsToStore);
 			ledgerUpdateSender.sendLedgerUpdate(ledgerUpdate);
 		}

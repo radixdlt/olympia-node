@@ -18,7 +18,6 @@
 package com.radixdlt.ledger;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.Command;
 import java.util.Optional;
 
 /**
@@ -27,6 +26,10 @@ import java.util.Optional;
  * All implementations should be stateless.
  */
 public interface LedgerAccumulatorVerifier {
-	boolean verify(AccumulatorState head, ImmutableList<Command> commands, AccumulatorState tail);
-	Optional<ImmutableList<Command>> verifyAndGetExtension(AccumulatorState current, ImmutableList<Command> commands, AccumulatorState tail);
+	<T extends HasHash> boolean verify(AccumulatorState head, ImmutableList<T> commands, AccumulatorState tail);
+	<T extends HasHash> Optional<ImmutableList<T>> verifyAndGetExtension(
+		AccumulatorState current,
+		ImmutableList<T> commands,
+		AccumulatorState tail
+	);
 }

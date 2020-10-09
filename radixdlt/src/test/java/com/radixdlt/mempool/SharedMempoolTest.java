@@ -52,7 +52,7 @@ public class SharedMempoolTest {
 	public void when_adding_atom__then_atom_is_added_and_sent()
 		throws MempoolFullException, MempoolDuplicateException {
 		Command mockCommand = mock(Command.class);
-		when(mockCommand.getHash()).thenReturn(TEST_HASH);
+		when(mockCommand.hash()).thenReturn(TEST_HASH);
 		this.sharedMempool.add(mockCommand);
 		verify(this.localMempool, times(1)).add(any());
 		verify(this.mempoolNetworkTx, times(1)).sendMempoolSubmission(any());

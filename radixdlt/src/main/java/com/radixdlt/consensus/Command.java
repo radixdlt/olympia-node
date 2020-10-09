@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Suppliers;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.ledger.HasHash;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -37,7 +38,7 @@ import javax.annotation.concurrent.Immutable;
  */
 @Immutable
 @SerializerId2("consensus.command")
-public final class Command {
+public final class Command implements HasHash {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
@@ -70,7 +71,8 @@ public final class Command {
 	}
 
 	// TODO: Remove this and move to hasher
-	public Hash getHash() {
+	@Override
+	public Hash hash() {
 		return this.cachedHash.get();
 	}
 
@@ -91,6 +93,6 @@ public final class Command {
 
 	@Override
 	public String toString() {
-		return String.format("%s{hash=%s}", this.getClass().getSimpleName(), this.getHash());
+		return String.format("%s{hash=%s}", this.getClass().getSimpleName(), this.hash());
 	}
 }

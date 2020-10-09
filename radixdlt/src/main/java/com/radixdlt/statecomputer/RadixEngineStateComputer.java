@@ -28,6 +28,7 @@ import com.radixdlt.engine.RadixEngine.RadixEngineBranch;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
+import com.radixdlt.ledger.StateComputerLedger.SuccessfulCommand;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
@@ -72,36 +73,50 @@ public final class RadixEngineStateComputer implements StateComputer {
 		this.epochChangeView = epochChangeView;
 	}
 
+	private static class RadixEngineCommand implements SuccessfulCommand {
+		private final Command command;
+		RadixEngineCommand(Command command) {
+			this.command = command;
+		}
+
+		@Override
+		public Command command() {
+			return command;
+		}
+	}
+
 	private void execute(
 		RadixEngineBranch<LedgerAtom> branch,
 		Command next,
-		ImmutableList.Builder<Command> successBuilder,
+		ImmutableList.Builder<SuccessfulCommand> successBuilder,
 		ImmutableMap.Builder<Command, Exception> errorBuilder
 	) {
+		final RadixEngineCommand radixEngineCommand;
 		try {
 			ClientAtom clientAtom = mapCommand(next);
+			radixEngineCommand = new RadixEngineCommand(next);
 			branch.checkAndStore(clientAtom);
 		} catch (RadixEngineException | DeserializeException e) {
 			errorBuilder.put(next, e);
 			return;
 		}
 
-		successBuilder.add(next);
+		successBuilder.add(radixEngineCommand);
 	}
 
 	@Override
-	public StateComputerResult prepare(ImmutableList<Command> previous, Command next, View view) {
+	public StateComputerResult prepare(ImmutableList<SuccessfulCommand> previous, Command next, View view) {
 		RadixEngineBranch<LedgerAtom> transientBranch = this.radixEngine.transientBranch();
-		for (Command command : previous) {
+		for (SuccessfulCommand command : previous) {
 			try {
-				ClientAtom clientAtom = mapCommand(command);
+				ClientAtom clientAtom = mapCommand(command.command());
 				transientBranch.checkAndStore(clientAtom);
 			} catch (RadixEngineException | DeserializeException e) {
 				throw new IllegalStateException("Re-execution of already prepared atom failed", e);
 			}
 		}
 
-		final ImmutableList.Builder<Command> successBuilder = ImmutableList.builder();
+		final ImmutableList.Builder<SuccessfulCommand> successBuilder = ImmutableList.builder();
 		final ImmutableMap.Builder<Command, Exception> exceptionBuilder = ImmutableMap.builder();
 
 		if (next != null) {

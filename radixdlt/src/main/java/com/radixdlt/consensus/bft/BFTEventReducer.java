@@ -160,7 +160,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 				final Set<Hash> prepared = preparedVertices.stream()
 					.flatMap(PreparedVertex::getCommands)
 					.filter(Objects::nonNull)
-					.map(Command::getHash)
+					.map(Command::hash)
 					.collect(Collectors.toSet());
 
 				nextCommand = nextCommandGenerator.generateNextCommand(view, prepared);

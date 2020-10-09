@@ -41,6 +41,7 @@ import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
+import com.radixdlt.ledger.StateComputerLedger.SuccessfulCommand;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.ClientAtom.LedgerAtomConversionException;
@@ -151,7 +152,9 @@ public class RadixEngineStateComputerTest {
 		StateComputerResult result = sut.prepare(ImmutableList.of(), cmd, View.of(10));
 
 		// Assert
-		assertThat(result.getSuccessfulCommands()).contains(cmd);
+		assertThat(result.getSuccessfulCommands()).hasOnlyOneElementSatisfying(s ->
+			assertThat(s.command()).isEqualTo(cmd)
+		);
 		assertThat(result.getFailedCommands()).isEmpty();
 		assertThat(result.getNextValidatorSet()).hasValueSatisfying(s -> {
 			assertThat(s.getValidators()).hasSize(3);
@@ -164,10 +167,11 @@ public class RadixEngineStateComputerTest {
 		// Assemble
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		Command cmd = registerCommand(keyPair);
+		SuccessfulCommand successfulCommand = () -> cmd;
 		BFTNode node = BFTNode.create(keyPair.getPublicKey());
 
 		// Action
-		StateComputerResult result = sut.prepare(ImmutableList.of(cmd), null, View.of(10));
+		StateComputerResult result = sut.prepare(ImmutableList.of(successfulCommand), null, View.of(10));
 
 		// Assert
 		assertThat(result.getSuccessfulCommands()).isEmpty();

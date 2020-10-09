@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.ledger.StateComputerLedger.SuccessfulCommand;
 import com.radixdlt.utils.Pair;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -34,13 +35,13 @@ public final class PreparedVertex {
 
 	private final LedgerHeader ledgerHeader;
 
-	private final ImmutableList<Command> successfulCommands;
+	private final ImmutableList<SuccessfulCommand> successfulCommands;
 	private final ImmutableMap<Command, Exception> commandExceptions;
 
 	PreparedVertex(
 		VerifiedVertex vertex,
 		LedgerHeader ledgerHeader,
-		ImmutableList<Command> successfulCommands,
+		ImmutableList<SuccessfulCommand> successfulCommands,
 		ImmutableMap<Command, Exception> commandExceptions
 	) {
 		this.vertex = Objects.requireNonNull(vertex);
@@ -61,7 +62,7 @@ public final class PreparedVertex {
 		return vertex.getView();
 	}
 
-	public Stream<Command> successfulCommands() {
+	public Stream<SuccessfulCommand> successfulCommands() {
 		return successfulCommands.stream();
 	}
 
@@ -70,7 +71,7 @@ public final class PreparedVertex {
 	}
 
 	public Stream<Command> getCommands() {
-		return Stream.concat(successfulCommands(), errorCommands().map(Pair::getFirst));
+		return Stream.concat(successfulCommands().map(SuccessfulCommand::command), errorCommands().map(Pair::getFirst));
 	}
 
 	/**

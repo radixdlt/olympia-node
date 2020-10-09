@@ -153,7 +153,7 @@ public class RadixEngineStoreModule extends AbstractModule {
 		byte[] payload = serialization.toDson(genesisAtom, Output.ALL);
 		Command command = new Command(payload);
 		VerifiedLedgerHeaderAndProof genesisLedgerHeader = VerifiedLedgerHeaderAndProof.genesis(
-			command.getHash(),
+			command.hash(),
 			validatorSet
 		);
 
