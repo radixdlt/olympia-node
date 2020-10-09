@@ -51,9 +51,9 @@ public class MockedLedgerModule extends AbstractModule {
 				final LedgerHeader ledgerHeader = vertex.getParentHeader().getLedgerHeader()
 					.updateViewAndTimestamp(vertex.getView(), timestamp);
 
-				return Optional.of(vertex.withHeader(ledgerHeader).andCommands(
-					vertex.getCommand().map(ImmutableList::of).orElse(ImmutableList.of()),
-					ImmutableMap.of()
+				return Optional.of(vertex
+					.withHeader(ledgerHeader)
+					.andCommands(vertex.getCommand().map(ImmutableList::of).orElse(ImmutableList.of()), ImmutableMap.of()
 				));
 			}
 

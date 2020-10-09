@@ -115,7 +115,9 @@ public class RadixEngineModule extends AbstractModule {
 		EngineStore<LedgerAtom> engineStore,
 		AtomChecker<LedgerAtom> ledgerAtomChecker
 	) {
-		final int minValidators = 2; // TODO: Fix pacemaker so can Default 1 so can debug in IDE, possibly from properties at some point
+		// TODO: Fix pacemaker so can Default 1 so can debug in IDE, possibly from properties at some point
+		// TODO: Specifically, simulation test with engine, epochs and mempool gets stuck on a single validator
+		final int minValidators = 2;
 
 		RadixEngine<LedgerAtom> radixEngine = new RadixEngine<>(
 			constraintMachine,
