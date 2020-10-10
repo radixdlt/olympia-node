@@ -54,13 +54,12 @@ public class SystemTest {
 		);
 		CMInstruction instruction = new CMInstruction(
 			instructions,
-			Hash.ZERO_HASH,
 			ImmutableMap.of()
 		);
 
 		// Act
 		// Assert
-		assertThatThrownBy(() -> this.engine.checkAndStore(new BaseAtom(instruction)))
+		assertThatThrownBy(() -> this.engine.checkAndStore(new BaseAtom(instruction, Hash.ZERO_HASH)))
 			.isInstanceOf(RadixEngineException.class)
 			.extracting(e -> ((RadixEngineException) e).getCmError().getErrorCode())
 			.isEqualTo(CMErrorCode.INVALID_EXECUTION_PERMISSION);
@@ -80,12 +79,11 @@ public class SystemTest {
 		);
 		CMInstruction instruction = new CMInstruction(
 			instructions,
-			Hash.ZERO_HASH,
 			ImmutableMap.of()
 		);
 
 		// Act
-		this.engine.checkAndStore(new BaseAtom(instruction), PermissionLevel.SYSTEM);
+		this.engine.checkAndStore(new BaseAtom(instruction, Hash.ZERO_HASH), PermissionLevel.SYSTEM);
 
 		// Assert
 		assertThat(this.store.getSpin(nextSystemParticle)).isEqualTo(Spin.UP);

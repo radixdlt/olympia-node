@@ -166,7 +166,7 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 	}
 
 	public void staticCheck(T atom, PermissionLevel permissionLevel) throws RadixEngineException {
-		final Optional<CMError> error = constraintMachine.validate(atom.getCMInstruction(), permissionLevel);
+		final Optional<CMError> error = constraintMachine.validate(atom.getCMInstruction(), atom.getWitness(), permissionLevel);
 		if (error.isPresent()) {
 			CMError e = error.get();
 			throw new RadixEngineException(RadixEngineErrorCode.CM_ERROR, e.getErrorDescription(), e.getDataPointer(), e);

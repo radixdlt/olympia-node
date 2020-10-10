@@ -96,13 +96,12 @@ public class CMTokensTest {
 				CMMicroInstruction.push(output),
 				CMMicroInstruction.particleGroup()
 			),
-			witness,
 			ImmutableMap.of(
 				sender.euid(), sender.sign(witness)
 			)
 		);
 
-		Optional<CMError> error = cm.validate(cmInstruction, PermissionLevel.USER);
+		Optional<CMError> error = cm.validate(cmInstruction, witness, PermissionLevel.USER);
 		assertThat(error).isEmpty();
 	}
 
@@ -148,13 +147,12 @@ public class CMTokensTest {
 				CMMicroInstruction.push(input1),
 				CMMicroInstruction.particleGroup()
 			),
-			witness,
 			ImmutableMap.of(
 				sender.euid(), sender.sign(witness)
 			)
 		);
 
-		Optional<CMError> error = cm.validate(cmInstruction, PermissionLevel.USER);
+		Optional<CMError> error = cm.validate(cmInstruction, witness, PermissionLevel.USER);
 		error.map(CMError::getCmValidationState).ifPresent(System.out::println);
 		assertThat(error).isEmpty();
 	}
@@ -202,13 +200,12 @@ public class CMTokensTest {
 				CMMicroInstruction.push(input1),
 				CMMicroInstruction.particleGroup()
 			),
-			witness,
 			ImmutableMap.of(
 				sender.euid(), sender.sign(witness)
 			)
 		);
 
-		Optional<CMError> error = cm.validate(cmInstruction, PermissionLevel.USER);
+		Optional<CMError> error = cm.validate(cmInstruction, witness, PermissionLevel.USER);
 		error.map(CMError::getCmValidationState).ifPresent(System.out::println);
 		assertThat(error).isEmpty();
 	}
@@ -255,13 +252,12 @@ public class CMTokensTest {
 				CMMicroInstruction.push(output1),
 				CMMicroInstruction.particleGroup()
 			),
-			witness,
 			ImmutableMap.of(
 				sender.euid(), sender.sign(witness)
 			)
 		);
 
-		Optional<CMError> error = cm.validate(cmInstruction, PermissionLevel.USER);
+		Optional<CMError> error = cm.validate(cmInstruction, witness, PermissionLevel.USER);
 		error.map(CMError::getCmValidationState).ifPresent(System.out::println);
 		assertThat(error).isEmpty();
 	}

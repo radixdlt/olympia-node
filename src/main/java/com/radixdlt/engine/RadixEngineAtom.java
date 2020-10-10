@@ -18,6 +18,7 @@
 package com.radixdlt.engine;
 
 import com.radixdlt.constraintmachine.CMInstruction;
+import com.radixdlt.crypto.Hash;
 
 /**
  * Radix Engine interface for retrieving a sequence of instructions to
@@ -30,4 +31,7 @@ public interface RadixEngineAtom {
 	 * @return sequence of instructions
 	 */
 	CMInstruction getCMInstruction();
+
+	// TODO: Change witness to be something implicit rather than explicit
+	Hash getWitness();
 }

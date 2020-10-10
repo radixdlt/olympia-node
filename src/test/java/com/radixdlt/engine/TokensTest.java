@@ -79,12 +79,11 @@ public class TokensTest {
 		);
 		CMInstruction instruction = new CMInstruction(
 			instructions,
-			Hash.ZERO_HASH,
 			ImmutableMap.of(keyPair.euid(), keyPair.sign(Hash.ZERO_HASH))
 		);
 
 		// Act
-		this.engine.checkAndStore(new BaseAtom(instruction));
+		this.engine.checkAndStore(new BaseAtom(instruction, Hash.ZERO_HASH));
 
 		// Assert
 		// TODO: Fix below assertion

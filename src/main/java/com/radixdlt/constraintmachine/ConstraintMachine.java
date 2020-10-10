@@ -409,9 +409,10 @@ public final class ConstraintMachine {
 	 * @param cmInstruction instruction to validate
 	 * @return the first error found, otherwise an empty optional
 	 */
-	public Optional<CMError> validate(CMInstruction cmInstruction, PermissionLevel permissionLevel) {
-		final CMValidationState validationState = new CMValidationState(permissionLevel,
-			cmInstruction.getWitness(),
+	public Optional<CMError> validate(CMInstruction cmInstruction, Hash witness, PermissionLevel permissionLevel) {
+		final CMValidationState validationState = new CMValidationState(
+			permissionLevel,
+			witness,
 			cmInstruction.getSignatures()
 		);
 
