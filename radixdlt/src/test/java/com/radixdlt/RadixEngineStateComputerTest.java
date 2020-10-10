@@ -143,7 +143,7 @@ public class RadixEngineStateComputerTest {
 	}
 
 	@Test
-	public void executing_epoch_high_view_with_register_should_return_new_next_validator_set() {
+	public void executing_epoch_high_view_with_register_should_not_return_new_next_validator_set() {
 		// Assemble
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		RadixEngineCommand cmd = registerCommand(keyPair);
@@ -158,8 +158,8 @@ public class RadixEngineStateComputerTest {
 		);
 		assertThat(result.getFailedCommands()).isEmpty();
 		assertThat(result.getNextValidatorSet()).hasValueSatisfying(s -> {
-			assertThat(s.getValidators()).hasSize(3);
-			assertThat(s.getValidators()).extracting(BFTValidator::getNode).contains(node);
+			assertThat(s.getValidators()).hasSize(2);
+			assertThat(s.getValidators()).extracting(BFTValidator::getNode).doesNotContain(node);
 		});
 	}
 

@@ -34,7 +34,6 @@ import com.radixdlt.EpochsLedgerUpdateModule;
 import com.radixdlt.EpochsLedgerUpdateRxModule;
 import com.radixdlt.LedgerLocalMempoolModule;
 import com.radixdlt.PersistenceModule;
-import com.radixdlt.PowFeeModule;
 import com.radixdlt.RadixEngineModule;
 import com.radixdlt.RadixEngineRxModule;
 import com.radixdlt.RadixEngineStoreModule;
@@ -108,9 +107,6 @@ public class GlobalInjector {
 		final Module feeModule;
 		final String feeModuleName = properties.get("debug.fee_module", "token");
 		switch (feeModuleName.toLowerCase()) {
-		case "pow":
-			feeModule = new PowFeeModule();
-			break;
 		case "token":
 			feeModule = new TokenFeeModule();
 			break;

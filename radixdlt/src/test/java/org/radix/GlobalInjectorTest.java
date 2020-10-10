@@ -56,12 +56,6 @@ public class GlobalInjectorTest {
 	}
 
 	@Test
-	public void testInjectorNotNullPow() {
-		setup("pow");
-		assertNotNull(this.globalInjector.getInjector());
-	}
-
-	@Test
 	public void testInjectorNotNullToken() {
 		setup("token");
 		assertNotNull(this.globalInjector.getInjector());

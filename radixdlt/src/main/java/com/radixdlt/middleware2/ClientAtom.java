@@ -120,11 +120,6 @@ public final class ClientAtom implements LedgerAtom {
 	}
 
 	@Override
-	public Hash getPowFeeHash() {
-		return powFeeHash;
-	}
-
-	@Override
 	public int hashCode() {
 		return Objects.hash(Arrays.hashCode(rawAtom));
 	}
