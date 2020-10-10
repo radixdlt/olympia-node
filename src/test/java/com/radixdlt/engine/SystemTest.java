@@ -46,10 +46,8 @@ public class SystemTest {
 		SystemParticle systemParticle = new SystemParticle(0, 0, 0);
 		SystemParticle nextSystemParticle = new SystemParticle(0, 1, 1);
 		ImmutableList<CMMicroInstruction> instructions = ImmutableList.of(
-			CMMicroInstruction.checkSpin(systemParticle, Spin.UP),
-			CMMicroInstruction.push(systemParticle),
-			CMMicroInstruction.checkSpin(nextSystemParticle, Spin.NEUTRAL),
-			CMMicroInstruction.push(nextSystemParticle),
+			CMMicroInstruction.checkSpinAndPush(systemParticle, Spin.UP),
+			CMMicroInstruction.checkSpinAndPush(nextSystemParticle, Spin.NEUTRAL),
 			CMMicroInstruction.particleGroup()
 		);
 		CMInstruction instruction = new CMInstruction(
@@ -71,10 +69,8 @@ public class SystemTest {
 		SystemParticle systemParticle = new SystemParticle(0, 0, 0);
 		SystemParticle nextSystemParticle = new SystemParticle(0, 1, 1);
 		ImmutableList<CMMicroInstruction> instructions = ImmutableList.of(
-			CMMicroInstruction.checkSpin(systemParticle, Spin.UP),
-			CMMicroInstruction.push(systemParticle),
-			CMMicroInstruction.checkSpin(nextSystemParticle, Spin.NEUTRAL),
-			CMMicroInstruction.push(nextSystemParticle),
+			CMMicroInstruction.checkSpinAndPush(systemParticle, Spin.UP),
+			CMMicroInstruction.checkSpinAndPush(nextSystemParticle, Spin.NEUTRAL),
 			CMMicroInstruction.particleGroup()
 		);
 		CMInstruction instruction = new CMInstruction(

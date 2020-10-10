@@ -30,8 +30,7 @@ public class InMemoryEngineStoreTest {
 		Particle particle = mock(Particle.class);
 		when(cmInstruction.getMicroInstructions())
 			.thenReturn(ImmutableList.of(
-				CMMicroInstruction.checkSpin(particle, Spin.NEUTRAL),
-				CMMicroInstruction.push(particle)
+				CMMicroInstruction.checkSpinAndPush(particle, Spin.NEUTRAL)
 			));
 
 		this.store.storeAtom(atom);
@@ -52,8 +51,7 @@ public class InMemoryEngineStoreTest {
 		Particle particle = mock(Particle.class);
 		when(cmInstruction.getMicroInstructions())
 			.thenReturn(ImmutableList.of(
-				CMMicroInstruction.checkSpin(particle, Spin.NEUTRAL),
-				CMMicroInstruction.push(particle)
+				CMMicroInstruction.checkSpinAndPush(particle, Spin.NEUTRAL)
 			));
 
 		this.store.storeAtom(atom);

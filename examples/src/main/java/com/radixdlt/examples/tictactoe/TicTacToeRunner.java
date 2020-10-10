@@ -149,12 +149,10 @@ public class TicTacToeRunner {
 
 			ImmutableList.Builder<CMMicroInstruction> instructions = ImmutableList.builder();
 			if (prevBoard != null) {
-				instructions.add(CMMicroInstruction.checkSpin(prevBoard, Spin.UP));
-				instructions.add(CMMicroInstruction.push(prevBoard));
+				instructions.add(CMMicroInstruction.checkSpinAndPush(prevBoard, Spin.UP));
 			}
 			if (nextBoard != null) {
-				instructions.add(CMMicroInstruction.checkSpin(nextBoard, Spin.NEUTRAL));
-				instructions.add(CMMicroInstruction.push(nextBoard));
+				instructions.add(CMMicroInstruction.checkSpinAndPush(nextBoard, Spin.NEUTRAL));
 			}
 			instructions.add(CMMicroInstruction.particleGroup());
 

@@ -347,23 +347,18 @@ public final class ConstraintMachine {
 		for (CMMicroInstruction cmMicroInstruction : microInstructions) {
 			final DataPointer dp = DataPointer.ofParticle(particleGroupIndex, particleIndex);
 			switch (cmMicroInstruction.getMicroOp()) {
-				case CHECK_NEUTRAL:
-				case CHECK_UP:
-					final Result staticCheckResult = particleStaticCheck.apply(cmMicroInstruction.getParticle());
+				case CHECK_NEUTRAL_THEN_UP:
+				case CHECK_UP_THEN_DOWN:
+					final Particle nextParticle = cmMicroInstruction.getParticle();
+					final Result staticCheckResult = particleStaticCheck.apply(nextParticle);
 					if (staticCheckResult.isError()) {
 						return Optional.of(new CMError(dp, CMErrorCode.INVALID_PARTICLE, validationState, staticCheckResult.getErrorMessage()));
 					}
 
 					final Spin checkSpin = cmMicroInstruction.getCheckSpin();
-					boolean updated = validationState.checkSpin(cmMicroInstruction.getParticle(), checkSpin);
+					boolean updated = validationState.checkSpin(nextParticle, checkSpin);
 					if (!updated) {
 						return Optional.of(new CMError(dp, CMErrorCode.INTERNAL_SPIN_CONFLICT, validationState));
-					}
-					break;
-				case PUSH:
-					final Particle nextParticle = cmMicroInstruction.getParticle();
-					if (!validationState.has(nextParticle)) {
-						return Optional.of(new CMError(dp, CMErrorCode.INVALID_INSTRUCTION_SEQUENCE, validationState));
 					}
 
 					final boolean isInput = validationState.push(nextParticle);

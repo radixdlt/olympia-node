@@ -69,12 +69,9 @@ public class TokensTest {
 			ImmutableMap.of()
 		);
 		ImmutableList<CMMicroInstruction> instructions = ImmutableList.of(
-			CMMicroInstruction.checkSpin(rriParticle, Spin.UP),
-			CMMicroInstruction.push(rriParticle),
-			CMMicroInstruction.checkSpin(tokenDefinitionParticle, Spin.NEUTRAL),
-			CMMicroInstruction.push(tokenDefinitionParticle),
-			CMMicroInstruction.checkSpin(transferrableTokensParticle, Spin.NEUTRAL),
-			CMMicroInstruction.push(transferrableTokensParticle),
+			CMMicroInstruction.checkSpinAndPush(rriParticle, Spin.UP),
+			CMMicroInstruction.checkSpinAndPush(tokenDefinitionParticle, Spin.NEUTRAL),
+			CMMicroInstruction.checkSpinAndPush(transferrableTokensParticle, Spin.NEUTRAL),
 			CMMicroInstruction.particleGroup()
 		);
 		CMInstruction instruction = new CMInstruction(
@@ -86,8 +83,7 @@ public class TokensTest {
 		this.engine.checkAndStore(new BaseAtom(instruction, Hash.ZERO_HASH));
 
 		// Assert
-		// TODO: Fix below assertion
-		//assertThat(this.store.getSpin(rriParticle)).isEqualTo(Spin.DOWN);
+		assertThat(this.store.getSpin(rriParticle)).isEqualTo(Spin.DOWN);
 		assertThat(this.store.getSpin(tokenDefinitionParticle)).isEqualTo(Spin.UP);
 		assertThat(this.store.getSpin(transferrableTokensParticle)).isEqualTo(Spin.UP);
 	}

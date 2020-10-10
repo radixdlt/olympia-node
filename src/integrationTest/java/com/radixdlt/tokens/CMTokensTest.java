@@ -90,10 +90,8 @@ public class CMTokensTest {
 
 		CMInstruction cmInstruction = new CMInstruction(
 			ImmutableList.of(
-				CMMicroInstruction.checkSpin(input, Spin.UP),
-				CMMicroInstruction.push(input),
-				CMMicroInstruction.checkSpin(output, Spin.NEUTRAL),
-				CMMicroInstruction.push(output),
+				CMMicroInstruction.checkSpinAndPush(input, Spin.UP),
+				CMMicroInstruction.checkSpinAndPush(output, Spin.NEUTRAL),
 				CMMicroInstruction.particleGroup()
 			),
 			ImmutableMap.of(
@@ -139,12 +137,9 @@ public class CMTokensTest {
 
 		CMInstruction cmInstruction = new CMInstruction(
 			ImmutableList.of(
-				CMMicroInstruction.checkSpin(input0, Spin.UP),
-				CMMicroInstruction.push(input0),
-				CMMicroInstruction.checkSpin(output, Spin.NEUTRAL),
-				CMMicroInstruction.push(output),
-				CMMicroInstruction.checkSpin(input1, Spin.UP),
-				CMMicroInstruction.push(input1),
+				CMMicroInstruction.checkSpinAndPush(input0, Spin.UP),
+				CMMicroInstruction.checkSpinAndPush(output, Spin.NEUTRAL),
+				CMMicroInstruction.checkSpinAndPush(input1, Spin.UP),
 				CMMicroInstruction.particleGroup()
 			),
 			ImmutableMap.of(
@@ -192,12 +187,9 @@ public class CMTokensTest {
 
 		CMInstruction cmInstruction = new CMInstruction(
 			ImmutableList.of(
-				CMMicroInstruction.checkSpin(output, Spin.NEUTRAL),
-				CMMicroInstruction.push(output),
-				CMMicroInstruction.checkSpin(input0, Spin.UP),
-				CMMicroInstruction.push(input0),
-				CMMicroInstruction.checkSpin(input1, Spin.UP),
-				CMMicroInstruction.push(input1),
+				CMMicroInstruction.checkSpinAndPush(output, Spin.NEUTRAL),
+				CMMicroInstruction.checkSpinAndPush(input0, Spin.UP),
+				CMMicroInstruction.checkSpinAndPush(input1, Spin.UP),
 				CMMicroInstruction.particleGroup()
 			),
 			ImmutableMap.of(
@@ -244,12 +236,9 @@ public class CMTokensTest {
 
 		CMInstruction cmInstruction = new CMInstruction(
 			ImmutableList.of(
-				CMMicroInstruction.checkSpin(input, Spin.UP),
-				CMMicroInstruction.push(input),
-				CMMicroInstruction.checkSpin(output0, Spin.NEUTRAL),
-				CMMicroInstruction.push(output0),
-				CMMicroInstruction.checkSpin(output1, Spin.NEUTRAL),
-				CMMicroInstruction.push(output1),
+				CMMicroInstruction.checkSpinAndPush(input, Spin.UP),
+				CMMicroInstruction.checkSpinAndPush(output0, Spin.NEUTRAL),
+				CMMicroInstruction.checkSpinAndPush(output1, Spin.NEUTRAL),
 				CMMicroInstruction.particleGroup()
 			),
 			ImmutableMap.of(

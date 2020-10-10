@@ -110,10 +110,8 @@ public class RadixEngineTest {
 		CMInstruction cmInstruction = mock(CMInstruction.class);
 		Particle particle = mock(Particle.class);
 		when(cmInstruction.getMicroInstructions()).thenReturn(ImmutableList.of(
-			CMMicroInstruction.checkSpin(particle, Spin.NEUTRAL),
-			CMMicroInstruction.push(particle),
-			CMMicroInstruction.checkSpin(particle, Spin.UP),
-			CMMicroInstruction.push(particle)
+			CMMicroInstruction.checkSpinAndPush(particle, Spin.NEUTRAL),
+			CMMicroInstruction.checkSpinAndPush(particle, Spin.UP)
 		));
 		when(engineStore.getSpin(eq(particle))).thenReturn(Spin.NEUTRAL);
 		when(radixEngineAtom.getCMInstruction()).thenReturn(cmInstruction);
@@ -164,7 +162,7 @@ public class RadixEngineTest {
 		);
 
 		RadixEngineAtom atom = mock(RadixEngineAtom.class);
-		ImmutableList<CMMicroInstruction> insts = ImmutableList.of(CMMicroInstruction.checkSpin(mock(IndexedParticle.class), Spin.UP));
+		ImmutableList<CMMicroInstruction> insts = ImmutableList.of(CMMicroInstruction.checkSpinAndPush(mock(IndexedParticle.class), Spin.UP));
 		when(atom.getCMInstruction()).thenReturn(new CMInstruction(insts, ImmutableMap.of()));
 		assertThatThrownBy(() -> radixEngine.checkAndStore(atom))
 			.isInstanceOf(RadixEngineException.class)
