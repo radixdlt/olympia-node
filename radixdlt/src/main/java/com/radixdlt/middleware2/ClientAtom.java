@@ -25,12 +25,14 @@ import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
+import com.radixdlt.constraintmachine.CMMicroInstruction.CMMicroOp;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.middleware.ParticleGroup;
+import com.radixdlt.middleware.ParticleGroup.ParticleGroupBuilder;
 import com.radixdlt.middleware.SpunParticle;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput;
@@ -39,9 +41,8 @@ import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.store.SpinStateMachine;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
@@ -99,7 +100,7 @@ public final class ClientAtom implements LedgerAtom {
 			this.witness = atom.getHash();
 			this.metaData = ImmutableMap.copyOf(atom.getMetaData());
 			this.cmInstruction = convertToCMInstruction(atom);
-		} catch (DeserializeException | LedgerAtomConversionException e) {
+		} catch (DeserializeException e) {
 			throw new IllegalStateException("Failed to deserialize atomBytes");
 		}
 	}
@@ -151,24 +152,28 @@ public final class ClientAtom implements LedgerAtom {
 		}
 	}
 
-	static ImmutableList<CMMicroInstruction> toCMMicroInstructions(List<ParticleGroup> particleGroups) throws LedgerAtomConversionException {
-		final HashMap<Particle, Spin> spins = new HashMap<>();
+	static List<ParticleGroup> toParticleGroups(ImmutableList<CMMicroInstruction> instructions) {
+		List<ParticleGroup> pgs = new ArrayList<>();
+		ParticleGroupBuilder curPg = ParticleGroup.builder();
+		for (CMMicroInstruction instruction : instructions) {
+			if (instruction.getMicroOp() == CMMicroOp.PARTICLE_GROUP) {
+				ParticleGroup pg = curPg.build();
+				pgs.add(pg);
+				curPg = ParticleGroup.builder();
+			} else {
+				curPg.addParticle(instruction.getParticle(), instruction.getNextSpin());
+			}
+		}
+		return pgs;
+	}
+
+	static ImmutableList<CMMicroInstruction> toCMMicroInstructions(List<ParticleGroup> particleGroups) {
 		final ImmutableList.Builder<CMMicroInstruction> microInstructionsBuilder = new Builder<>();
 		for (int i = 0; i < particleGroups.size(); i++) {
 			ParticleGroup pg = particleGroups.get(i);
-			if (pg.isEmpty()) {
-				throw new LedgerAtomConversionException(DataPointer.ofParticleGroup(i), "Particle group must not be empty");
-			}
-			final HashSet<Particle> seen = new HashSet<>();
 			for (int j = 0; j < pg.getParticleCount(); j++) {
 				SpunParticle sp = pg.getSpunParticle(j);
 				Particle particle = sp.getParticle();
-
-				if (seen.contains(particle)) {
-					throw new LedgerAtomConversionException(DataPointer.ofParticle(i, j), "Particle transition must be unique in group");
-				}
-				seen.add(particle);
-
 				Spin checkSpin = SpinStateMachine.prev(sp.getSpin());
 				microInstructionsBuilder.add(CMMicroInstruction.checkSpinAndPush(particle, checkSpin));
 			}
@@ -178,7 +183,7 @@ public final class ClientAtom implements LedgerAtom {
 		return microInstructionsBuilder.build();
 	}
 
-	static CMInstruction convertToCMInstruction(Atom atom) throws LedgerAtomConversionException {
+	static CMInstruction convertToCMInstruction(Atom atom) {
 		final ImmutableList<CMMicroInstruction> microInstructions = toCMMicroInstructions(atom.getParticleGroups());
 		return new CMInstruction(
 			microInstructions,
@@ -192,11 +197,8 @@ public final class ClientAtom implements LedgerAtom {
 	 * @return an api atom
 	 */
 	public static Atom convertToApiAtom(ClientAtom atom) {
-		try {
-			return DefaultSerialization.getInstance().fromDson(atom.rawAtom, Atom.class);
-		} catch (DeserializeException e) {
-			throw new IllegalStateException("Could not convert back to api atom " + atom, e);
-		}
+		List<ParticleGroup> pgs = toParticleGroups(atom.cmInstruction.getMicroInstructions());
+		return new Atom(pgs, atom.cmInstruction.getSignatures(), atom.metaData);
 	}
 
 	/**
