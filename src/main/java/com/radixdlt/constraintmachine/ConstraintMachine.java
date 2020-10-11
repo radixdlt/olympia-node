@@ -98,7 +98,7 @@ public final class ConstraintMachine {
 
 		public boolean checkSpin(Particle particle, Spin spin) {
 			if (currentSpins.containsKey(particle)) {
-				return false;
+				return currentSpins.get(particle).equals(spin);
 			}
 
 			this.currentSpins.put(particle, spin);
@@ -356,8 +356,8 @@ public final class ConstraintMachine {
 					}
 
 					final Spin checkSpin = cmMicroInstruction.getCheckSpin();
-					boolean updated = validationState.checkSpin(nextParticle, checkSpin);
-					if (!updated) {
+					boolean noConflict = validationState.checkSpin(nextParticle, checkSpin);
+					if (!noConflict) {
 						return Optional.of(new CMError(dp, CMErrorCode.INTERNAL_SPIN_CONFLICT, validationState));
 					}
 
