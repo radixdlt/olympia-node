@@ -33,7 +33,6 @@ import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware.SpunParticle;
 import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.middleware2.ClientAtom.LedgerAtomConversionException;
 import com.radixdlt.utils.UInt256;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -62,7 +61,7 @@ public class FeeTableTest {
     }
 
     @Test
-    public void testFeeForAtomNotMinimum() throws LedgerAtomConversionException {
+    public void testFeeForAtomNotMinimum() {
     	FeeTable ft = get();
     	RadixAddress from = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
     	RadixAddress to = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
@@ -77,7 +76,7 @@ public class FeeTableTest {
     }
 
     @Test
-    public void testFeeForAtomMinimum() throws LedgerAtomConversionException {
+    public void testFeeForAtomMinimum() {
     	FeeTable ft = get();
     	Atom a = new Atom(ImmutableList.of(), ImmutableMap.of(), ImmutableMap.of());
     	ClientAtom ca = ClientAtom.convertFromApiAtom(a);
@@ -86,7 +85,7 @@ public class FeeTableTest {
     }
 
     @Test
-    public void testFeeOverflow() throws LedgerAtomConversionException {
+    public void testFeeOverflow() {
     	ImmutableList<FeeEntry> feeEntries = ImmutableList.of(
 			PerParticleFeeEntry.of(MessageParticle.class, 0, UInt256.MAX_VALUE),
 			PerBytesFeeEntry.of(1, 0, UInt256.MAX_VALUE)

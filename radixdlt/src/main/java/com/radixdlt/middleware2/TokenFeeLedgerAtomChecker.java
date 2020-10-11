@@ -51,6 +51,8 @@ import javax.inject.Named;
  * needed for both consensus and governance.
  */
 public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
+	private static final int MAX_ATOM_SIZE = 1024 * 1024;
+
 	private final FeeTable feeTable;
 	private final RRI feeTokenRri;
 	private final Serialization serialization;
@@ -82,6 +84,11 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 				completeAtom = ClientAtom.convertToApiAtom(((CommittedAtom) atom).getClientAtom());
 			} else {
 				throw new IllegalStateException("Unknown LedgerAtom type: " + atom.getClass());
+			}
+
+			final int totalSize = this.serialization.toDson(atom, Output.PERSIST).length;
+			if (totalSize > MAX_ATOM_SIZE) {
+				return Result.error("atom too big: " + totalSize);
 			}
 
 			Atom atomWithoutFeeGroup = completeAtom.copyExcludingGroups(this::isFeeGroup);

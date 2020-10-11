@@ -28,9 +28,7 @@ import com.radixdlt.mempool.SubmissionControl;
 import com.radixdlt.mempool.SubmissionControlImpl;
 import com.radixdlt.mempool.SubmissionControlImpl.SubmissionControlSender;
 import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.middleware2.ClientAtom.LedgerAtomConversionException;
 import com.radixdlt.middleware2.LedgerAtom;
-import com.radixdlt.middleware2.converters.AtomConversionException;
 import com.radixdlt.middleware2.converters.AtomToClientAtomConverter;
 import com.radixdlt.serialization.Serialization;
 
@@ -65,12 +63,6 @@ public class SyncMempoolServiceModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private AtomToClientAtomConverter converter() {
-		return atom -> {
-			try {
-				return ClientAtom.convertFromApiAtom(atom);
-			} catch (LedgerAtomConversionException e) {
-				throw new AtomConversionException(e.getDataPointer(), e);
-			}
-		};
+		return ClientAtom::convertFromApiAtom;
 	}
 }

@@ -43,7 +43,6 @@ import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.middleware2.ClientAtom.LedgerAtomConversionException;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
@@ -115,7 +114,7 @@ public class RadixEngineStateComputerTest {
 			final byte[] payload = DefaultSerialization.getInstance().toDson(clientAtom, Output.ALL);
 			Command cmd = new Command(payload);
 			return new RadixEngineCommand(cmd, clientAtom);
-		} catch (AtomAlreadySignedException | LedgerAtomConversionException e) {
+		} catch (AtomAlreadySignedException e) {
 			throw new RuntimeException();
 		}
 	}

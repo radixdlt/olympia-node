@@ -26,7 +26,6 @@ import com.radixdlt.atommodel.Atom;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.CMMicroInstruction.CMMicroOp;
-import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.Hash;
@@ -44,6 +43,7 @@ import com.radixdlt.store.SpinStateMachine;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
 
@@ -57,10 +57,9 @@ public final class ClientAtom implements LedgerAtom {
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	private static final int MAX_ATOM_SIZE = 1024 * 1024;
-
 	private transient CMInstruction cmInstruction;
 	private transient ImmutableMap<String, String> metaData;
+	private transient ImmutableList<Map<String, String>> perGroupMetadata;
 
 	private transient AID aid;
 	private transient Hash witness;
@@ -75,11 +74,13 @@ public final class ClientAtom implements LedgerAtom {
 		Hash witness,
 		CMInstruction cmInstruction,
 		ImmutableMap<String, String> metaData,
+		ImmutableList<Map<String, String>> perGroupMetadata,
 		byte[] rawAtom
 	) {
 		this.aid = Objects.requireNonNull(aid);
 		this.witness = Objects.requireNonNull(witness);
 		this.metaData = Objects.requireNonNull(metaData);
+		this.perGroupMetadata = Objects.requireNonNull(perGroupMetadata);
 		this.cmInstruction = Objects.requireNonNull(cmInstruction);
 		this.rawAtom = Objects.requireNonNull(rawAtom);
 	}
@@ -140,23 +141,17 @@ public final class ClientAtom implements LedgerAtom {
 		return Arrays.equals(other.rawAtom, this.rawAtom);
 	}
 
-	public static class LedgerAtomConversionException extends Exception {
-		private final DataPointer dataPointer;
-		LedgerAtomConversionException(DataPointer dataPointer, String error) {
-			super(error);
-			this.dataPointer = dataPointer;
-		}
-
-		public DataPointer getDataPointer() {
-			return dataPointer;
-		}
-	}
-
-	static List<ParticleGroup> toParticleGroups(ImmutableList<CMMicroInstruction> instructions) {
+	static List<ParticleGroup> toParticleGroups(
+		ImmutableList<CMMicroInstruction> instructions,
+		ImmutableList<Map<String, String>> perGroupMetadata
+	) {
 		List<ParticleGroup> pgs = new ArrayList<>();
+		int groupIndex = 0;
 		ParticleGroupBuilder curPg = ParticleGroup.builder();
 		for (CMMicroInstruction instruction : instructions) {
 			if (instruction.getMicroOp() == CMMicroOp.PARTICLE_GROUP) {
+				perGroupMetadata.get(groupIndex).forEach(curPg::addMetaData);
+				groupIndex++;
 				ParticleGroup pg = curPg.build();
 				pgs.add(pg);
 				curPg = ParticleGroup.builder();
@@ -197,7 +192,7 @@ public final class ClientAtom implements LedgerAtom {
 	 * @return an api atom
 	 */
 	public static Atom convertToApiAtom(ClientAtom atom) {
-		List<ParticleGroup> pgs = toParticleGroups(atom.cmInstruction.getMicroInstructions());
+		List<ParticleGroup> pgs = toParticleGroups(atom.cmInstruction.getMicroInstructions(), atom.perGroupMetadata);
 		return new Atom(pgs, atom.cmInstruction.getSignatures(), atom.metaData);
 	}
 
@@ -206,23 +201,19 @@ public final class ClientAtom implements LedgerAtom {
 	 *
 	 * @param atom the atom to convert
 	 * @return an atom to be stored on ledger
-	 * @throws LedgerAtomConversionException on conversion errors
 	 */
-	public static ClientAtom convertFromApiAtom(Atom atom) throws LedgerAtomConversionException {
+	public static ClientAtom convertFromApiAtom(Atom atom) {
 		final byte[] rawAtom = DefaultSerialization.getInstance().toDson(atom, Output.PERSIST);
-		final int computedSize = rawAtom.length;
-
-		if (computedSize > MAX_ATOM_SIZE) {
-			throw new LedgerAtomConversionException(DataPointer.ofAtom(), "Atom too big");
-		}
-
 		final CMInstruction cmInstruction = convertToCMInstruction(atom);
-
+		final ImmutableList<Map<String, String>> perGroupMetadata = atom.getParticleGroups().stream()
+			.map(ParticleGroup::getMetaData)
+			.collect(ImmutableList.toImmutableList());
 		return new ClientAtom(
 			atom.getAID(),
 			atom.getHash(),
 			cmInstruction,
 			ImmutableMap.copyOf(atom.getMetaData()),
+			perGroupMetadata,
 			rawAtom
 		);
 	}
