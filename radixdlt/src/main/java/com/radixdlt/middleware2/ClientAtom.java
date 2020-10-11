@@ -62,7 +62,7 @@ public final class ClientAtom implements LedgerAtom {
 	private transient ImmutableMap<String, String> metaData;
 
 	private transient AID aid;
-	private transient Hash powFeeHash;
+	private transient Hash witness;
 	private byte[] rawAtom;
 
 	private ClientAtom() {
@@ -71,15 +71,15 @@ public final class ClientAtom implements LedgerAtom {
 
 	private ClientAtom(
 		AID aid,
+		Hash witness,
 		CMInstruction cmInstruction,
 		ImmutableMap<String, String> metaData,
-		Hash powFeeHash,
 		byte[] rawAtom
 	) {
 		this.aid = Objects.requireNonNull(aid);
+		this.witness = Objects.requireNonNull(witness);
 		this.metaData = Objects.requireNonNull(metaData);
 		this.cmInstruction = Objects.requireNonNull(cmInstruction);
-		this.powFeeHash = Objects.requireNonNull(powFeeHash);
 		this.rawAtom = Objects.requireNonNull(rawAtom);
 	}
 
@@ -96,9 +96,9 @@ public final class ClientAtom implements LedgerAtom {
 			this.rawAtom = atomBytes;
 			final Atom atom = DefaultSerialization.getInstance().fromDson(atomBytes, Atom.class);
 			this.aid = atom.getAID();
+			this.witness = atom.getHash();
 			this.metaData = ImmutableMap.copyOf(atom.getMetaData());
 			this.cmInstruction = convertToCMInstruction(atom);
-			this.powFeeHash = atom.copyExcludingMetadata(Atom.METADATA_POW_NONCE_KEY).getHash();
 		} catch (DeserializeException | LedgerAtomConversionException e) {
 			throw new IllegalStateException("Failed to deserialize atomBytes");
 		}
@@ -107,6 +107,11 @@ public final class ClientAtom implements LedgerAtom {
 	@Override
 	public CMInstruction getCMInstruction() {
 		return cmInstruction;
+	}
+
+	@Override
+	public Hash getWitness() {
+		return witness;
 	}
 
 	@Override
@@ -164,26 +169,8 @@ public final class ClientAtom implements LedgerAtom {
 				}
 				seen.add(particle);
 
-				Spin currentSpin = spins.get(particle);
-				if (currentSpin == null) {
-					Spin checkSpin = SpinStateMachine.prev(sp.getSpin());
-					microInstructionsBuilder.add(CMMicroInstruction.checkSpin(particle, checkSpin));
-				} else {
-					if (!SpinStateMachine.canTransition(currentSpin, sp.getSpin())) {
-						throw new LedgerAtomConversionException(
-							DataPointer.ofParticle(i, j),
-							String.format(
-								"Invalid internal spin %s->%s for %s particle",
-								currentSpin,
-								sp.getSpin(),
-								sp.getParticle().getClass().getSimpleName()
-							)
-						);
-					}
-				}
-
-				spins.put(particle, sp.getSpin());
-				microInstructionsBuilder.add(CMMicroInstruction.push(particle));
+				Spin checkSpin = SpinStateMachine.prev(sp.getSpin());
+				microInstructionsBuilder.add(CMMicroInstruction.checkSpinAndPush(particle, checkSpin));
 			}
 			microInstructionsBuilder.add(CMMicroInstruction.particleGroup());
 		}
@@ -195,7 +182,6 @@ public final class ClientAtom implements LedgerAtom {
 		final ImmutableList<CMMicroInstruction> microInstructions = toCMMicroInstructions(atom.getParticleGroups());
 		return new CMInstruction(
 			microInstructions,
-			atom.getHash(),
 			ImmutableMap.copyOf(atom.getSignatures())
 		);
 	}
@@ -232,10 +218,31 @@ public final class ClientAtom implements LedgerAtom {
 
 		return new ClientAtom(
 			atom.getAID(),
+			atom.getHash(),
 			cmInstruction,
 			ImmutableMap.copyOf(atom.getMetaData()),
-			atom.copyExcludingMetadata(Atom.METADATA_POW_NONCE_KEY).getHash(),
 			rawAtom
 		);
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder builder = new StringBuilder();
+		builder.append(this.getClass().getSimpleName());
+		builder.append(":\n");
+		for (CMMicroInstruction microInstruction : cmInstruction.getMicroInstructions()) {
+			if (microInstruction.isCheckSpin()) {
+				builder.append(microInstruction.getParticle());
+				builder.append(": ");
+				builder.append(microInstruction.getCheckSpin());
+				builder.append(" -> ");
+				builder.append(microInstruction.getNextSpin());
+				builder.append("\n");
+			} else {
+				builder.append("---\n");
+			}
+		}
+
+		return builder.toString();
 	}
 }

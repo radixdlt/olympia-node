@@ -81,7 +81,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 	public void when_validating_atom_without_particles__result_has_error() {
 		ClientAtom ledgerAtom = mock(ClientAtom.class);
 		CMInstruction cmInstruction = new CMInstruction(
-			ImmutableList.of(), Hash.random(), ImmutableMap.of()
+			ImmutableList.of(), ImmutableMap.of()
 		);
 		when(ledgerAtom.getAID()).thenReturn(mock(AID.class));
 		when(ledgerAtom.getCMInstruction()).thenReturn(cmInstruction);

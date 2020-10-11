@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.constraintmachine.CMInstruction;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
@@ -85,6 +86,11 @@ public final class CommittedAtom implements LedgerAtom {
 	@Override
 	public CMInstruction getCMInstruction() {
 		return clientAtom.getCMInstruction();
+	}
+
+	@Override
+	public Hash getWitness() {
+		return clientAtom.getWitness();
 	}
 
 	@Override

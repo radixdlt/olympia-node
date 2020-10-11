@@ -91,7 +91,7 @@ public class SubmissionControlImpl implements SubmissionControl {
 		} catch (RadixEngineException e) {
 			log.info(
 				"Rejecting atom {} with error '{}' at '{}' with message '{}'.",
-				atom.getAID(),
+				atom,
 				e.getErrorCode(),
 				e.getDataPointer(),
 				e.getMessage()

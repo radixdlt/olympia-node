@@ -92,60 +92,6 @@ public class ClientAtomTest {
 	}
 
 	@Test
-	public void when_validating_an_up_to_up_cm_particle__error_is_returned() {
-		Particle particle0 = mock(Particle.class);
-
-		assertThatThrownBy(() ->
-			ClientAtom.toCMMicroInstructions(
-				ImmutableList.of(
-					ParticleGroup.of(
-						SpunParticle.up(particle0)
-					),
-					ParticleGroup.of(
-						SpunParticle.up(particle0)
-					)
-				)
-			)
-		)
-			.isInstanceOf(LedgerAtomConversionException.class)
-			.hasFieldOrPropertyWithValue("dataPointer", DataPointer.ofParticle(1, 0));
-	}
-
-	@Test
-	public void when_validating_a_down_to_down_cm_particle__error_is_returned() {
-		Particle particle0 = mock(Particle.class);
-		assertThatThrownBy(() ->
-			ClientAtom.toCMMicroInstructions(
-				ImmutableList.of(
-					ParticleGroup.of(
-						SpunParticle.down(particle0)
-					),
-					ParticleGroup.of(
-						SpunParticle.down(particle0)
-					)
-				)
-			)
-		).isInstanceOf(LedgerAtomConversionException.class);
-	}
-
-	@Test
-	public void when_validating_a_down_to_up_cm_particle__error_is_returned() {
-		Particle particle0 = mock(Particle.class);
-		assertThatThrownBy(() ->
-			ClientAtom.toCMMicroInstructions(
-				ImmutableList.of(
-					ParticleGroup.of(
-						SpunParticle.down(particle0)
-					),
-					ParticleGroup.of(
-						SpunParticle.up(particle0)
-					)
-				)
-			)
-		).isInstanceOf(LedgerAtomConversionException.class);
-	}
-
-	@Test
 	public void when_checking_two_duplicate_particles__error_is_returned() {
 		Particle particle0 = mock(Particle.class);
 		assertThatThrownBy(() ->
