@@ -369,6 +369,16 @@ public final class ConstraintMachine {
 					particleIndex++;
 					break;
 				case PARTICLE_GROUP:
+					if (particleIndex == 0) {
+						return Optional.of(
+							new CMError(
+								DataPointer.ofParticleGroup(particleGroupIndex),
+								CMErrorCode.EMPTY_PARTICLE_GROUP,
+								validationState
+							)
+						);
+					}
+
 					if (!validationState.isEmpty()) {
 						return Optional.of(
 							new CMError(

@@ -19,6 +19,8 @@ package com.radixdlt.engine;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.atommodel.system.SystemConstraintScrypt;
+import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.CMInstruction;
@@ -27,10 +29,12 @@ import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.CMStores;
 import com.radixdlt.store.EngineStore;
+import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.test.utils.TypedMocks;
 
 import java.util.Optional;
@@ -71,6 +75,28 @@ public class RadixEngineTest {
 			virtualStore,
 			engineStore
 		);
+	}
+
+	@Test
+	public void empty_particle_group_should_throw_error() {
+		CMAtomOS cmAtomOS = new CMAtomOS();
+		cmAtomOS.load(new SystemConstraintScrypt());
+		ConstraintMachine cm = new ConstraintMachine.Builder()
+			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
+			.setParticleTransitionProcedures(cmAtomOS.buildTransitionProcedures())
+			.build();
+		RadixEngine<RadixEngineAtom> engine = new RadixEngine<>(
+			cm,
+			cmAtomOS.buildVirtualLayer(),
+			new InMemoryEngineStore<>()
+		);
+
+		CMInstruction cmInstruction = new CMInstruction(
+			ImmutableList.of(CMMicroInstruction.particleGroup()),
+			ImmutableMap.of()
+		);
+		assertThatThrownBy(() -> engine.checkAndStore(new BaseAtom(cmInstruction, Hash.ZERO_HASH)))
+			.isInstanceOf(RadixEngineException.class);
 	}
 
 	@Test
