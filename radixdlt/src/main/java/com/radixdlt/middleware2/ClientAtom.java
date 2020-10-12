@@ -311,22 +311,6 @@ public final class ClientAtom implements LedgerAtom {
 
 	@Override
 	public String toString() {
-		StringBuilder builder = new StringBuilder();
-		builder.append(this.getClass().getSimpleName());
-		builder.append(": ").append(signatures).append(" ").append(metaData);
-		for (CMMicroInstruction microInstruction : instructions) {
-			if (microInstruction.isCheckSpin()) {
-				builder.append(microInstruction.getParticle());
-				builder.append(": ");
-				builder.append(microInstruction.getCheckSpin());
-				builder.append(" -> ");
-				builder.append(microInstruction.getNextSpin());
-				builder.append("\n");
-			} else {
-				builder.append("---\n");
-			}
-		}
-
-		return builder.toString();
+		return String.format("%s {aid=%s}", this.getClass().getSimpleName(), this.aid);
 	}
 }
