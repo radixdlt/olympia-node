@@ -16,7 +16,13 @@ import com.radixdlt.constraintmachine.WitnessValidator;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import java.util.Optional;
 
-public class SystemConstraintScrypt implements ConstraintScrypt {
+/**
+ * Allows for the update of the epoch, timestamp and view state.
+ * Currently there is only a single system particle that should be in
+ * existence.
+ * TODO: use a non-radix-address path to store this system info
+ */
+public final class SystemConstraintScrypt implements ConstraintScrypt {
 	private static Result staticCheck(SystemParticle systemParticle) {
 		if (systemParticle.getEpoch() < 0) {
 			return Result.error("Epoch is less than 0");
@@ -47,7 +53,7 @@ public class SystemConstraintScrypt implements ConstraintScrypt {
 			new TransitionProcedure<SystemParticle, VoidUsedData, SystemParticle, VoidUsedData>() {
 				@Override
 				public PermissionLevel requiredPermissionLevel() {
-					return PermissionLevel.SYSTEM;
+					return PermissionLevel.SUPER_USER;
 				}
 
 				@Override

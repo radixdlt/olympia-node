@@ -4,7 +4,10 @@ import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.crypto.Hash;
 import java.util.Objects;
 
-public class BaseAtom implements RadixEngineAtom {
+/**
+ * Simple atom used for testing
+ */
+public final class BaseAtom implements RadixEngineAtom {
 	private final CMInstruction cmInstruction;
 	private final Hash witness;
 

@@ -7,5 +7,5 @@ package com.radixdlt.constraintmachine;
  */
 public enum PermissionLevel {
 	USER,
-	SYSTEM
+	SUPER_USER // ordering matters
 }

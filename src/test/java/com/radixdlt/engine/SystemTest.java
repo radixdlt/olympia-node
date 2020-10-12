@@ -79,7 +79,7 @@ public class SystemTest {
 		);
 
 		// Act
-		this.engine.checkAndStore(new BaseAtom(instruction, Hash.ZERO_HASH), PermissionLevel.SYSTEM);
+		this.engine.checkAndStore(new BaseAtom(instruction, Hash.ZERO_HASH), PermissionLevel.SUPER_USER);
 
 		// Assert
 		assertThat(this.store.getSpin(nextSystemParticle)).isEqualTo(Spin.UP);
