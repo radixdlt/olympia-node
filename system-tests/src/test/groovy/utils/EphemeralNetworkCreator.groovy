@@ -120,7 +120,7 @@ class EphemeralNetworkCreator {
     StaticClusterNetwork getNetwork(int i) {
         return StaticClusterNetwork.clusterInfo(
                 10,
-                null ,
+                "-v ${keyVolume}:${ansibleSecretsDir} " ,
                 "-i aws-inventory")
     }
 
