@@ -18,7 +18,6 @@
 package com.radixdlt;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.atIndex;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -31,6 +30,7 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.name.Named;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atommodel.AtomAlreadySignedException;
+import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.consensus.Command;
@@ -38,9 +38,11 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.middleware.ParticleGroup;
@@ -97,6 +99,27 @@ public class RadixEngineStateComputerTest {
 		).injectMembers(this);
 	}
 
+	private static RadixEngineCommand systemUpdateCommand(ECKeyPair keyPair) {
+		RadixAddress address = new RadixAddress((byte) 0, keyPair.getPublicKey());
+		SystemParticle lastSystemParticle = new SystemParticle(0, 0, 0);
+		SystemParticle nextSystemParticle = new SystemParticle(0, 1, 0);
+		ParticleGroup particleGroup = ParticleGroup.builder()
+			.addParticle(lastSystemParticle, Spin.DOWN)
+			.addParticle(nextSystemParticle, Spin.UP)
+			.build();
+		Atom atom = new Atom();
+		atom.addParticleGroup(particleGroup);
+		try {
+			atom.sign(keyPair);
+			ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom);
+			final byte[] payload = DefaultSerialization.getInstance().toDson(clientAtom, Output.ALL);
+			Command cmd = new Command(payload);
+			return new RadixEngineCommand(cmd, clientAtom, PermissionLevel.USER);
+		} catch (AtomAlreadySignedException e) {
+			throw new RuntimeException();
+		}
+	}
+
 	private static RadixEngineCommand registerCommand(ECKeyPair keyPair) {
 		RadixAddress address = new RadixAddress((byte) 0, keyPair.getPublicKey());
 		RegisteredValidatorParticle registeredValidatorParticle = new RegisteredValidatorParticle(
@@ -135,7 +158,7 @@ public class RadixEngineStateComputerTest {
 
 	@Test
 	public void executing_epoch_high_view_should_return_next_validator_set() {
-		// Action
+		// Act
 		StateComputerResult result = sut.prepare(ImmutableList.of(), null, View.of(10));
 
 		// Assert
@@ -146,19 +169,16 @@ public class RadixEngineStateComputerTest {
 
 	@Test
 	public void executing_epoch_high_view_with_register_should_not_return_new_next_validator_set() {
-		// Assemble
+		// Arrange
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		RadixEngineCommand cmd = registerCommand(keyPair);
 		BFTNode node = BFTNode.create(keyPair.getPublicKey());
 
-		// Action
+		// Act
 		StateComputerResult result = sut.prepare(ImmutableList.of(), cmd.command(), View.of(10));
 
 		// Assert
-		assertThat(result.getSuccessfulCommands()).has(
-			new Condition<>(s -> s.command().equals(cmd.command()), "Command is successful"),
-			atIndex(1)
-		);
+		assertThat(result.getSuccessfulCommands()).hasSize(1); // since high view, command is not executed
 		assertThat(result.getNextValidatorSet()).hasValueSatisfying(s -> {
 			assertThat(s.getValidators()).hasSize(2);
 			assertThat(s.getValidators()).extracting(BFTValidator::getNode).doesNotContain(node);
@@ -167,12 +187,12 @@ public class RadixEngineStateComputerTest {
 
 	@Test
 	public void executing_epoch_high_view_with_previous_registered_should_return_new_next_validator_set() {
-		// Assemble
+		// Arrange
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		RadixEngineCommand cmd = registerCommand(keyPair);
 		BFTNode node = BFTNode.create(keyPair.getPublicKey());
 
-		// Action
+		// Act
 		StateComputerResult result = sut.prepare(ImmutableList.of(cmd), null, View.of(10));
 
 		// Assert
@@ -182,5 +202,27 @@ public class RadixEngineStateComputerTest {
 			assertThat(s.getValidators()).hasSize(3);
 			assertThat(s.getValidators()).extracting(BFTValidator::getNode).contains(node);
 		});
+	}
+
+	@Test
+	public void executing_system_update_from_vertex_should_fail() {
+		// Arrange
+		ECKeyPair keyPair = ECKeyPair.generateNew();
+		RadixEngineCommand cmd = systemUpdateCommand(keyPair);
+
+		// Act
+		StateComputerResult result = sut.prepare(ImmutableList.of(), cmd.command(), View.of(1));
+
+		// Assert
+		assertThat(result.getSuccessfulCommands()).hasSize(1);
+		assertThat(result.getFailedCommands()).hasValueSatisfying(
+			new Condition<>(
+				e -> {
+					RadixEngineException ex = (RadixEngineException) e;
+					return ex.getCmError().getErrorCode().equals(CMErrorCode.INVALID_EXECUTION_PERMISSION);
+				},
+				"Is invalid_execution_permission error"
+			)
+		);
 	}
 }

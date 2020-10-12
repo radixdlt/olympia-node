@@ -96,6 +96,43 @@ public final class RadixEngineStateComputer implements StateComputer {
 		}
 	}
 
+	private BFTValidatorSet executeSystemUpdate(
+		RadixEngineBranch<LedgerAtom> branch,
+		View view,
+		ImmutableList.Builder<PreparedCommand> successBuilder
+	) {
+		final SystemParticle lastSystemParticle = branch.getComputedState(SystemParticle.class);
+		final long epoch = lastSystemParticle.getView() >= epochChangeView.number()
+			? lastSystemParticle.getEpoch() + 1
+			: lastSystemParticle.getEpoch();
+		final SystemParticle nextSystemParticle = new SystemParticle(epoch, view.number(), 0);
+		final ClientAtom systemUpdate = ClientAtom.create(
+			ImmutableList.of(
+				CMMicroInstruction.checkSpinAndPush(lastSystemParticle, Spin.UP),
+				CMMicroInstruction.checkSpinAndPush(nextSystemParticle, Spin.NEUTRAL),
+				CMMicroInstruction.particleGroup()
+			)
+		);
+		try {
+			branch.checkAndStore(systemUpdate, PermissionLevel.SUPER_USER);
+		} catch (RadixEngineException e) {
+			throw new IllegalStateException("Failed to execute system update.", e);
+		}
+		RadixEngineCommand radixEngineCommand = new RadixEngineCommand(
+			new Command(serialization.toDson(systemUpdate, Output.ALL)),
+			systemUpdate,
+			PermissionLevel.SUPER_USER
+		);
+		successBuilder.add(radixEngineCommand);
+
+		if (view.compareTo(epochChangeView) >= 0) {
+			RadixEngineValidatorSetBuilder validatorSetBuilder = branch.getComputedState(RadixEngineValidatorSetBuilder.class);
+			return validatorSetBuilder.build();
+		} else {
+			return null;
+		}
+	}
+
 	private void execute(
 		RadixEngineBranch<LedgerAtom> branch,
 		Command next,
@@ -135,40 +172,12 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 		final ImmutableList.Builder<PreparedCommand> successBuilder = ImmutableList.builder();
 		final ImmutableMap.Builder<Command, Exception> exceptionBuilder = ImmutableMap.builder();
-
-		final SystemParticle lastSystemParticle = transientBranch.getComputedState(SystemParticle.class);
-		long epoch = lastSystemParticle.getView() >= epochChangeView.number() ? lastSystemParticle.getEpoch() + 1 : lastSystemParticle.getEpoch();
-		final SystemParticle nextSystemParticle = new SystemParticle(epoch, view.number(), 0);
-		final ClientAtom systemUpdate = ClientAtom.create(
-			ImmutableList.of(
-				CMMicroInstruction.checkSpinAndPush(lastSystemParticle, Spin.UP),
-				CMMicroInstruction.checkSpinAndPush(nextSystemParticle, Spin.NEUTRAL),
-				CMMicroInstruction.particleGroup()
-			)
-		);
-		try {
-			transientBranch.checkAndStore(systemUpdate, PermissionLevel.SYSTEM);
-		} catch (RadixEngineException e) {
-			throw new IllegalStateException("Failed to execute system update.", e);
+		final BFTValidatorSet validatorSet = this.executeSystemUpdate(transientBranch, view, successBuilder);
+		if (validatorSet == null) {
+			this.execute(transientBranch, next, successBuilder, exceptionBuilder);
 		}
-		RadixEngineCommand radixEngineCommand = new RadixEngineCommand(
-			new Command(serialization.toDson(systemUpdate, Output.ALL)),
-			systemUpdate,
-			PermissionLevel.SYSTEM
-		);
-		successBuilder.add(radixEngineCommand);
-
-		final BFTValidatorSet validatorSet;
-		if (view.compareTo(epochChangeView) >= 0) {
-			RadixEngineValidatorSetBuilder validatorSetBuilder = transientBranch.getComputedState(RadixEngineValidatorSetBuilder.class);
-			validatorSet = validatorSetBuilder.build();
-		} else {
-			validatorSet = null;
-		}
-
-		this.execute(transientBranch, next, successBuilder, exceptionBuilder);
-
 		this.radixEngine.deleteBranches();
+
 		return new StateComputerResult(successBuilder.build(), exceptionBuilder.build(), validatorSet);
 	}
 
@@ -181,8 +190,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 			final ClientAtom clientAtom = this.mapCommand(command);
 			final CommittedAtom committedAtom = new CommittedAtom(clientAtom, version, proof);
 			// TODO: execute list of commands instead
-			// TODO: Include permission level in command
-			this.radixEngine.checkAndStore(committedAtom, PermissionLevel.SYSTEM);
+			// TODO: Include permission level in committed command
+			this.radixEngine.checkAndStore(committedAtom, PermissionLevel.SUPER_USER);
 		} catch (RadixEngineException | DeserializeException e) {
 			// TODO: Remove throwing of exception
 			// TODO: Exception could be because of byzantine quorum
