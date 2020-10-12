@@ -212,6 +212,10 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 			engine.checkAndStore(atom);
 		}
 
+		public void checkAndStore(T atom, PermissionLevel permissionLevel) throws RadixEngineException {
+			engine.checkAndStore(atom, permissionLevel);
+		}
+
 		public <U> U getComputedState(Class<U> applicationStateClass) {
 			return engine.getComputedState(applicationStateClass);
 		}
