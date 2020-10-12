@@ -308,7 +308,7 @@ public class SimulationNetwork {
 		}
 
 		private void logMessage(MessageInTransit message) {
-			log.trace("Received {}" , message);
+			log.trace("Received {}", message);
 		}
 	}
 
