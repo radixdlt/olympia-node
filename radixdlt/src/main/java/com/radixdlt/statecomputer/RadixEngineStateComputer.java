@@ -32,6 +32,7 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngine.RadixEngineBranch;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.EUID;
+import com.radixdlt.ledger.ByzantineQuorumException;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
 import com.radixdlt.middleware2.ClientAtom;
@@ -197,19 +198,47 @@ public final class RadixEngineStateComputer implements StateComputer {
 			// TODO: Include permission level in committed command
 			this.radixEngine.checkAndStore(committedAtom, PermissionLevel.SUPER_USER);
 		} catch (RadixEngineException | DeserializeException e) {
-			// TODO: Remove throwing of exception
-			// TODO: Exception could be because of byzantine quorum
-			throw new IllegalStateException("Trying to commit bad command", e);
+			throw new ByzantineQuorumException("Trying to commit bad command", e);
 		}
 	}
 
 	@Override
 	public void commit(VerifiedCommandsAndProof verifiedCommandsAndProof) {
+		final SystemParticle lastSystemParticle = radixEngine.getComputedState(SystemParticle.class);
+		final long currentEpoch = lastSystemParticle.getEpoch();
+		boolean epochChange = false;
+
 		final VerifiedLedgerHeaderAndProof headerAndProof = verifiedCommandsAndProof.getHeader();
 		long stateVersion = headerAndProof.getAccumulatorState().getStateVersion();
 		long firstVersion = stateVersion - verifiedCommandsAndProof.getCommands().size() + 1;
 		for (int i = 0; i < verifiedCommandsAndProof.getCommands().size(); i++) {
 			this.commitCommand(firstVersion + i, verifiedCommandsAndProof.getCommands().get(i), headerAndProof);
+
+			long nextEpoch = radixEngine.getComputedState(SystemParticle.class).getEpoch();
+			if (nextEpoch > currentEpoch) {
+				// TODO: revert commands and log as proof of byzantine quorum rather than throw illegal state exception
+				if (i != verifiedCommandsAndProof.getCommands().size() - 1) {
+					throw new ByzantineQuorumException("change of epoch did not occur on last command");
+				}
+				epochChange = true;
+				break;
+			}
+		}
+
+		// Verify that output of radix engine and signed output match
+		// TODO: Always follow radix engine as its a deeper source of truth and just mark validator set as malicious
+		if (epochChange) {
+			RadixEngineValidatorSetBuilder validatorSetBuilder = radixEngine.getComputedState(RadixEngineValidatorSetBuilder.class);
+			BFTValidatorSet reNextValidatorSet = validatorSetBuilder.build();
+			BFTValidatorSet signedValidatorSet = verifiedCommandsAndProof.getHeader().getNextValidatorSet()
+				.orElseThrow(() -> new ByzantineQuorumException("RE has changed epochs but proofs don't show."));
+			if (!reNextValidatorSet.equals(signedValidatorSet)) {
+				throw new ByzantineQuorumException("RE validator set does not agree with signed validator set");
+			}
+		} else {
+			if (verifiedCommandsAndProof.getHeader().getNextValidatorSet().isPresent()) {
+				throw new ByzantineQuorumException("Trying to change epochs when RE isn't");
+			}
 		}
 	}
 }

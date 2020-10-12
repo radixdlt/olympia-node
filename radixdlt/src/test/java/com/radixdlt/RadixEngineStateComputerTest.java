@@ -53,6 +53,7 @@ import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.ledger.ByzantineQuorumException;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.middleware.ParticleGroup;
@@ -109,9 +110,9 @@ public class RadixEngineStateComputerTest {
 		).injectMembers(this);
 	}
 
-	private static RadixEngineCommand systemUpdateCommand(long prevView, long nextView) {
+	private static RadixEngineCommand systemUpdateCommand(long prevView, long nextView, long nextEpoch) {
 		SystemParticle lastSystemParticle = new SystemParticle(0, prevView, 0);
-		SystemParticle nextSystemParticle = new SystemParticle(0, nextView, 0);
+		SystemParticle nextSystemParticle = new SystemParticle(nextEpoch, nextView, 0);
 		ClientAtom clientAtom = ClientAtom.create(
 			ImmutableList.of(
 				CMMicroInstruction.checkSpinAndPush(lastSystemParticle, Spin.UP),
@@ -211,7 +212,7 @@ public class RadixEngineStateComputerTest {
 	@Test
 	public void preparing_system_update_from_vertex_should_fail() {
 		// Arrange
-		RadixEngineCommand cmd = systemUpdateCommand(0, 1);
+		RadixEngineCommand cmd = systemUpdateCommand(0, 1, 0);
 
 		// Act
 		StateComputerResult result = sut.prepare(ImmutableList.of(), cmd.command(), View.of(1), 1);
@@ -233,7 +234,7 @@ public class RadixEngineStateComputerTest {
 	@Test
 	public void committing_epoch_high_views_should_fail() {
 		// Arrange
-		RadixEngineCommand cmd0 = systemUpdateCommand(0, 10);
+		RadixEngineCommand cmd0 = systemUpdateCommand(0, 10, 0);
 		VerifiedLedgerHeaderAndProof verifiedLedgerHeaderAndProof = new VerifiedLedgerHeaderAndProof(
 			mock(BFTHeader.class),
 			mock(BFTHeader.class),
@@ -250,6 +251,59 @@ public class RadixEngineStateComputerTest {
 		// Act
 		// Assert
 		assertThatThrownBy(() -> sut.commit(commandsAndProof))
-			.isInstanceOf(IllegalStateException.class);
+			.isInstanceOf(ByzantineQuorumException.class);
+	}
+
+
+	// TODO: should catch this and log it somewhere as proof of byzantine quorum
+	@Test
+	public void committing_epoch_change_with_additional_cmds_should_fail() {
+		// Arrange
+		ECKeyPair keyPair = ECKeyPair.generateNew();
+		RadixEngineCommand cmd0 = systemUpdateCommand(0, 0, 1);
+		RadixEngineCommand cmd1 = registerCommand(keyPair);
+		VerifiedLedgerHeaderAndProof verifiedLedgerHeaderAndProof = new VerifiedLedgerHeaderAndProof(
+			mock(BFTHeader.class),
+			mock(BFTHeader.class),
+			0,
+			Hash.ZERO_HASH,
+			LedgerHeader.create(0, View.of(9), new AccumulatorState(3, Hash.ZERO_HASH), 1),
+			new TimestampedECDSASignatures()
+		);
+		VerifiedCommandsAndProof commandsAndProof = new VerifiedCommandsAndProof(
+			ImmutableList.of(cmd0.command(), cmd1.command()),
+			verifiedLedgerHeaderAndProof
+		);
+
+		// Act
+		// Assert
+		assertThatThrownBy(() -> sut.commit(commandsAndProof))
+			.isInstanceOf(ByzantineQuorumException.class);
+	}
+
+	// TODO: should catch this and log it somewhere as proof of byzantine quorum
+	@Test
+	public void committing_epoch_change_with_different_validator_signed_should_fail() {
+		// Arrange
+		ECKeyPair keyPair = ECKeyPair.generateNew();
+		RadixEngineCommand cmd0 = systemUpdateCommand(0, 0, 1);
+		RadixEngineCommand cmd1 = registerCommand(keyPair);
+		VerifiedLedgerHeaderAndProof verifiedLedgerHeaderAndProof = new VerifiedLedgerHeaderAndProof(
+			mock(BFTHeader.class),
+			mock(BFTHeader.class),
+			0,
+			Hash.ZERO_HASH,
+			LedgerHeader.create(0, View.of(9), new AccumulatorState(3, Hash.ZERO_HASH), 1, this.validatorSet),
+			new TimestampedECDSASignatures()
+		);
+		VerifiedCommandsAndProof commandsAndProof = new VerifiedCommandsAndProof(
+			ImmutableList.of(cmd1.command(), cmd0.command()),
+			verifiedLedgerHeaderAndProof
+		);
+
+		// Act
+		// Assert
+		assertThatThrownBy(() -> sut.commit(commandsAndProof))
+			.isInstanceOf(ByzantineQuorumException.class);
 	}
 }
