@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngine.RadixEngineBranch;
 import com.radixdlt.engine.RadixEngineException;
@@ -57,11 +58,13 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private final Serialization serialization;
 	private final RadixEngine<LedgerAtom> radixEngine;
 	private final View epochChangeView;
+	private final Hasher hasher;
 
 	public RadixEngineStateComputer(
 		Serialization serialization,
 		RadixEngine<LedgerAtom> radixEngine,
-		View epochChangeView
+		View epochChangeView,
+		Hasher hasher
 	) {
 		if (epochChangeView.isGenesis()) {
 			throw new IllegalArgumentException("Epoch change view must not be genesis.");
@@ -70,6 +73,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		this.serialization = Objects.requireNonNull(serialization);
 		this.radixEngine = Objects.requireNonNull(radixEngine);
 		this.epochChangeView = epochChangeView;
+		this.hasher = hasher;
 	}
 
 	private void execute(
@@ -119,7 +123,9 @@ public final class RadixEngineStateComputer implements StateComputer {
 	}
 
 	private ClientAtom mapCommand(Command command) throws DeserializeException {
-		return serialization.fromDson(command.getPayload(), ClientAtom.class);
+		ClientAtom clientAtom = serialization.fromDson(command.getPayload(), ClientAtom.class);
+		clientAtom.init(hasher, serialization);
+		return clientAtom;
 	}
 
 	private void commitCommand(long version, Command command, VerifiedLedgerHeaderAndProof proof) {

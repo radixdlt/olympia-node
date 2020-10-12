@@ -26,9 +26,11 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.CMInstruction;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.ledger.AccumulatorState;
@@ -46,16 +48,19 @@ public class RadixEngineStateComputerTest {
 	private RadixEngineStateComputer stateComputer;
 	private RadixEngine<LedgerAtom> radixEngine;
 	private View epochHighView;
+	private Hasher hasher;
 
 	@Before
 	public void setup() {
 		this.serialization = mock(Serialization.class);
 		this.radixEngine = TypedMocks.rmock(RadixEngine.class);
 		this.epochHighView = View.of(100);
+		this.hasher = Sha256Hasher.withDefaultSerialization();
 		this.stateComputer = new RadixEngineStateComputer(
 			serialization,
 			radixEngine,
-			epochHighView
+			epochHighView,
+			hasher
 		);
 	}
 

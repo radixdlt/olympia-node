@@ -73,6 +73,7 @@ public class RadixEngineStateComputerTest {
 			public void configure() {
 				bind(Serialization.class).toInstance(serialization);
 				bind(BFTValidatorSet.class).toInstance(validatorSet);
+				bind(Hasher.class).toInstance(Sha256Hasher.withDefaultSerialization());
 				bind(new TypeLiteral<EngineStore<LedgerAtom>>() { }).toInstance(engineStore);
 			}
 

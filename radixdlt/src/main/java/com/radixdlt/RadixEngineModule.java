@@ -32,6 +32,7 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.AtomChecker;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
@@ -66,12 +67,14 @@ public class RadixEngineModule extends AbstractModule {
 	@Singleton
 	private RadixEngineStateComputer radixEngineStateComputer(
 		Serialization serialization,
-		RadixEngine<LedgerAtom> radixEngine
+		RadixEngine<LedgerAtom> radixEngine,
+		Hasher hasher
 	) {
 		return new RadixEngineStateComputer(
 			serialization,
 			radixEngine,
-			epochHighView
+			epochHighView,
+			hasher
 		);
 	}
 

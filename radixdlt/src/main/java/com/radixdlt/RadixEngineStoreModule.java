@@ -160,6 +160,7 @@ public class RadixEngineStoreModule extends AbstractModule {
 
 		if (committedAtomsStore.getNextCommittedCommands(genesisLedgerHeader.getStateVersion() - 1, 1) == null) {
 			ClientAtom clientAtom = serialization.fromDson(command.getPayload(), ClientAtom.class);
+			clientAtom.init(hasher, serialization);
 			CommittedAtom committedAtom = new CommittedAtom(clientAtom, genesisLedgerHeader.getStateVersion(), genesisLedgerHeader);
 			committedAtomsStore.storeAtom(committedAtom);
 		}

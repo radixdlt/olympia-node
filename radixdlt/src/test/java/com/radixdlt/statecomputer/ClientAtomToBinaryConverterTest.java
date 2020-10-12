@@ -46,7 +46,7 @@ public class ClientAtomToBinaryConverterTest {
 
 	@Before
 	public void setUp() {
-		clientAtomToBinaryConverter = new ClientAtomToBinaryConverter(DefaultSerialization.getInstance());
+		clientAtomToBinaryConverter = new ClientAtomToBinaryConverter(DefaultSerialization.getInstance(), hasher);
 	}
 
 	@Test

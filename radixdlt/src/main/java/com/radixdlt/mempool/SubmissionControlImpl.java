@@ -72,7 +72,9 @@ public class SubmissionControlImpl implements SubmissionControl {
 	public void submitCommand(Command command) throws MempoolRejectedException, MempoolFullException, MempoolDuplicateException {
 		ClientAtom clientAtom = command.map(payload -> {
 			try {
-				return serialization.fromDson(payload, ClientAtom.class);
+				ClientAtom ca = serialization.fromDson(payload, ClientAtom.class);
+				ca.init(hasher, serialization);
+				return ca;
 			} catch (DeserializeException e) {
 				return null;
 			}

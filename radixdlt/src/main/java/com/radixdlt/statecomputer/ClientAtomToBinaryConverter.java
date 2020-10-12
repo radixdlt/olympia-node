@@ -18,6 +18,7 @@
 package com.radixdlt.statecomputer;
 
 import com.google.inject.Inject;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput;
@@ -28,10 +29,12 @@ import com.radixdlt.serialization.Serialization;
  */
 public class ClientAtomToBinaryConverter {
 	private final Serialization serializer;
+	private final Hasher hasher;
 
 	@Inject
-	public ClientAtomToBinaryConverter(Serialization serializer) {
+	public ClientAtomToBinaryConverter(Serialization serializer, Hasher hasher) {
 		this.serializer = serializer;
+		this.hasher = hasher;
 	}
 
 	public byte[] toLedgerEntryContent(ClientAtom clientAtom) {
@@ -40,7 +43,9 @@ public class ClientAtomToBinaryConverter {
 
 	public ClientAtom toAtom(byte[] ledgerEntryContent) {
 		try {
-			return serializer.fromDson(ledgerEntryContent, ClientAtom.class);
+			ClientAtom clientAtom = serializer.fromDson(ledgerEntryContent, ClientAtom.class);
+			clientAtom.init(hasher, serializer);
+			return clientAtom;
 		} catch (DeserializeException e) {
 			throw new IllegalStateException("Deserialization of Atom failed", e);
 		}

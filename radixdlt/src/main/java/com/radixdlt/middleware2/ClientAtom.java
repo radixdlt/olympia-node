@@ -24,7 +24,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.Atom;
-import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.DataPointer;
@@ -34,12 +33,13 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware.SpunParticle;
-import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
+import com.radixdlt.serialization.Serialization;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.store.SpinStateMachine;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -92,12 +92,14 @@ public final class ClientAtom implements LedgerAtom {
 	}
 
 	@JsonProperty("raw")
-	private void setSerializerAtom(byte[] atomBytes) {
-		Hasher hasher = Sha256Hasher.withDefaultSerialization(); // TODO: luk
-		Objects.requireNonNull(atomBytes);
+	private void setSerializerAtom(byte[] rawAtom) {
+		Objects.requireNonNull(rawAtom);
+		this.rawAtom = rawAtom;
+	}
+
+	public void init(Hasher hasher, Serialization serialization) {
 		try {
-			this.rawAtom = atomBytes;
-			final Atom atom = DefaultSerialization.getInstance().fromDson(atomBytes, Atom.class);
+			final Atom atom = serialization.fromDson(this.rawAtom, Atom.class);
 			this.aid = Atom.aidOf(atom, hasher);
 			this.metaData = ImmutableMap.copyOf(atom.getMetaData());
 			this.cmInstruction = convertToCMInstruction(atom, hasher);
