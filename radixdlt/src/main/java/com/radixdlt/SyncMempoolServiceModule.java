@@ -27,9 +27,7 @@ import com.radixdlt.mempool.SharedMempool;
 import com.radixdlt.mempool.SubmissionControl;
 import com.radixdlt.mempool.SubmissionControlImpl;
 import com.radixdlt.mempool.SubmissionControlImpl.SubmissionControlSender;
-import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
-import com.radixdlt.middleware2.converters.AtomToClientAtomConverter;
 import com.radixdlt.serialization.Serialization;
 
 /**
@@ -48,21 +46,13 @@ public class SyncMempoolServiceModule extends AbstractModule {
 		Mempool mempool,
 		RadixEngine<LedgerAtom> radixEngine,
 		Serialization serialization,
-		AtomToClientAtomConverter converter,
 		SubmissionControlSender submissionControlSender
 	) {
 		return new SubmissionControlImpl(
 			mempool,
 			radixEngine,
 			serialization,
-			converter,
 			submissionControlSender
 		);
-	}
-
-	@Provides
-	@Singleton
-	private AtomToClientAtomConverter converter() {
-		return ClientAtom::convertFromApiAtom;
 	}
 }
