@@ -54,18 +54,14 @@ class EphemeralNetworkCreator {
 
         def runString ="bash -c".tokenize() << (
                 "docker run --rm -v ${keyVolume}:${sshDestinationLocDir} " +
-                        "-e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} " +
-                        "-e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}  " +
                         "--name node-terraform ${terraformImage} plan " as String)
-        CmdHelper.runCommand(runString, [] as String[],true)
+        CmdHelper.runCommand(runString,[] as String[],true)
     }
 
     void teardown(){
 
         def runString ="bash -c".tokenize() << (
                 "docker run --rm -v ${keyVolume}:${sshDestinationLocDir} " +
-                        "-e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} " +
-                        "-e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}  " +
                         "--name node-terraform ${terraformImage} destroy ${autoApprove} " as String)
         CmdHelper.runCommand(runString, [] as String[],true)
     }
@@ -74,8 +70,6 @@ class EphemeralNetworkCreator {
         List<String[]> output, error
         def runString ="bash -c".tokenize() << (
                 "docker run --rm -v ${keyVolume}:${sshDestinationLocDir} " +
-                        "-e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} " +
-                        "-e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}  " +
                         "--name node-terraform ${terraformImage} output | grep node_ | cut -d'\"' -f 4" as String)
         (hosts, error)= CmdHelper.runCommand(runString, [] as String[],true)
     }
@@ -84,7 +78,6 @@ class EphemeralNetworkCreator {
         //docker run --rm -v key-volume:/ansible/ssh --name node-ansible -e RADIXDLT_UNIVERSE eu.gcr.io/lunar-arc-236318/node-ansible:python3  check.yml -i aws-inventory  --limit tag_Environment_ephemeralnet --check
         def runString = "bash -c".tokenize() << (
                 "docker run --rm  -v key-volume:/ansible/ssh " +
-                        "-e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}  " +
                         " eu.gcr.io/lunar-arc-236318/node-ansible:python3" +
                         " provision.yml -i aws-inventory  --limit tag_Environment_ephemeralnet"
         )
@@ -94,7 +87,6 @@ class EphemeralNetworkCreator {
         def output,error
         def runString = "bash -c".tokenize() << (
                 "docker run --rm  -v key-volume:/ansible/ssh " +
-                        "-e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e RADIXDLT_UNIVERSE  " +
                         " eu.gcr.io/lunar-arc-236318/node-ansible:python3" +
                         " deploy.yml -i aws-inventory  " +
                         "--limit tag_Environment_ephemeralnet " +
@@ -111,7 +103,6 @@ class EphemeralNetworkCreator {
         //TODO need more parameterisation
         def runString = "bash -c".tokenize() << (
                 "docker run --rm  -v key-volume:/ansible/ssh " +
-                        "-e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e RADIXDLT_UNIVERSE  " +
                         " eu.gcr.io/lunar-arc-236318/node-ansible:python3" +
                         " control-node.yml -i aws-inventory  " +
                         "--limit ${nodeToBringdown} -t down "
@@ -127,7 +118,7 @@ class EphemeralNetworkCreator {
     StaticClusterNetwork getNetwork(int i) {
         return StaticClusterNetwork.clusterInfo(
                 10,
-                "-e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}" ,
+                null ,
                 "-i aws-inventory");
     }
 

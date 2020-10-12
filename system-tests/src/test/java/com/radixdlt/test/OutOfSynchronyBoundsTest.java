@@ -68,7 +68,6 @@ public class OutOfSynchronyBoundsTest {
 	public static class ClusterTests {
 
 		private EphemeralNetworkCreator ephemeralNetworkCreator;
-		private SlowNodeSetup slowNodeSetup;
 		private StaticClusterNetwork network;
 
 		@Rule
@@ -79,6 +78,8 @@ public class OutOfSynchronyBoundsTest {
 		public void setupCluster() {
 			String SSH_IDENTITY = Optional.ofNullable(System.getenv("SSH_IDENTITY")).orElse(System.getenv("HOME") + "/.ssh/id_rsa");
 			String SSH_IDENTITY_PUB = Optional.ofNullable(System.getenv("SSH_IDENTITY_PUB")).orElse(System.getenv("HOME") + "/.ssh/id_rsa.pub");
+			String AWS_CREDENTIAL = System.getenv("AWS_CREDENTIAL");
+			String GCP_CREDENTIAL = System.getenv("GCP_CREDENTIAL");
 			String AWS_SECRET_ACCESS_KEY = System.getenv("AWS_SECRET_ACCESS_KEY");
 			String AWS_ACCESS_KEY_ID = System.getenv("AWS_ACCESS_KEY_ID");
 
@@ -91,7 +92,9 @@ public class OutOfSynchronyBoundsTest {
 				.build();
 			ephemeralNetworkCreator.copyfileToNamedVolume(SSH_IDENTITY);
 			ephemeralNetworkCreator.copyfileToNamedVolume(SSH_IDENTITY_PUB,"/terraform/ssh","testnet.pub");
-			ephemeralNetworkCreator.copyfileToNamedVolume("/Users/shambu/project/radixdlt-iac/projects/testnet/ssh/dev-container-repo-uploader.json",
+			ephemeralNetworkCreator.copyfileToNamedVolume(AWS_CREDENTIAL, "/terraform/ssh","aws-env-file.sh");
+			ephemeralNetworkCreator.copyfileToNamedVolume(AWS_CREDENTIAL,"/ansible/ssh","aws-env-file.sh");
+			ephemeralNetworkCreator.copyfileToNamedVolume(GCP_CREDENTIAL,
 				"/ansible/ssh","dev-container-repo-uploader.json");
 			ephemeralNetworkCreator.pullImage();
 			ephemeralNetworkCreator.plan();
@@ -105,26 +108,11 @@ public class OutOfSynchronyBoundsTest {
 			RemoteBFTTest test = AssertionChecks.slowNodeTestBuilder()
 				.network(RemoteBFTNetworkBridge.of(network))
 				.waitUntilResponsive()
-				.startConsensusOnRun() // in case we're the first to access the cluster
+				.startConsensusOnRun()
 				.build();
 			test.runBlocking(CmdHelper.getTestDurationInSeconds(), TimeUnit.SECONDS);
 
 			String sshKeylocation = Optional.ofNullable(System.getenv("SSH_IDENTITY")).orElse(System.getenv("HOME") + "/.ssh/id_rsa");
-
-//			//Creating named volume and copying over the file to volume works with or without docker in docker setup
-//			slowNodeSetup= SlowNodeSetup.builder()
-//				.withImage("eu.gcr.io/lunar-arc-236318/node-ansible:python3")
-//				.nodesToSlowDown(1)
-//				.runOptions("--rm   -e AWS_SECRET_ACCESS_KEY="+ AWS_SECRET_ACCESS_KEY +
-//					" -e AWS_ACCESS_KEY_ID=" + AWS_ACCESS_KEY_ID +
-//					" -v key-volume:/ansible/ssh --name node-ansible")
-//				.cmdOptions("-i aws-inventory")
-//				.usingCluster(network.getClusterName())
-//				.build();
-//
-//			slowNodeSetup.copyfileToNamedVolume(sshKeylocation,"key-volume");
-//			slowNodeSetup.pullImage();
-//			slowNodeSetup.setup();
 
 			String nodeURL = network.getNodeIds().iterator().next();
 			String nodeToBringdown = Generic.getDomainName(nodeURL);
@@ -147,8 +135,7 @@ public class OutOfSynchronyBoundsTest {
 
 		@After
 		public void removeSlowNodesettings(){
-//			slowNodeSetup.tearDown();
-//			ephemeralNetworkCreator.teardown();
+			ephemeralNetworkCreator.teardown();
 		}
 	}
 }
