@@ -91,7 +91,7 @@ public class RadixEngineModule extends AbstractModule {
 		os.load(new TokensConstraintScrypt());
 		os.load(new UniqueParticleConstraintScrypt());
 		os.load(new MessageParticleConstraintScrypt());
-		os.load(new SystemConstraintScrypt());
+		os.load(new SystemConstraintScrypt(epochHighView.number()));
 		return os;
 	}
 

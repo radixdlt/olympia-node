@@ -63,20 +63,20 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 	private final Serialization serialization;
 	private final RadixEngine<LedgerAtom> radixEngine;
-	private final View epochChangeView;
+	private final View epochCeilingView;
 
 	public RadixEngineStateComputer(
 		Serialization serialization,
 		RadixEngine<LedgerAtom> radixEngine,
-		View epochChangeView
+		View epochCeilingView
 	) {
-		if (epochChangeView.isGenesis()) {
+		if (epochCeilingView.isGenesis()) {
 			throw new IllegalArgumentException("Epoch change view must not be genesis.");
 		}
 
 		this.serialization = Objects.requireNonNull(serialization);
 		this.radixEngine = Objects.requireNonNull(radixEngine);
-		this.epochChangeView = epochChangeView;
+		this.epochCeilingView = epochCeilingView;
 	}
 
 	public static class RadixEngineCommand implements PreparedCommand {
@@ -105,7 +105,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		final SystemParticle lastSystemParticle = branch.getComputedState(SystemParticle.class);
 		final BFTValidatorSet validatorSet;
 		final SystemParticle nextSystemParticle;
-		if (view.compareTo(epochChangeView) >= 0) {
+		if (view.compareTo(epochCeilingView) >= 0) {
 			RadixEngineValidatorSetBuilder validatorSetBuilder = branch.getComputedState(RadixEngineValidatorSetBuilder.class);
 			validatorSet = validatorSetBuilder.build();
 			nextSystemParticle = new SystemParticle(lastSystemParticle.getEpoch() + 1, 0, timestamp);
