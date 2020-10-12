@@ -103,10 +103,17 @@ public final class RadixEngineStateComputer implements StateComputer {
 		ImmutableList.Builder<PreparedCommand> successBuilder
 	) {
 		final SystemParticle lastSystemParticle = branch.getComputedState(SystemParticle.class);
-		final long epoch = lastSystemParticle.getView() >= epochChangeView.number()
-			? lastSystemParticle.getEpoch() + 1
-			: lastSystemParticle.getEpoch();
-		final SystemParticle nextSystemParticle = new SystemParticle(epoch, view.number(), timestamp);
+		final BFTValidatorSet validatorSet;
+		final SystemParticle nextSystemParticle;
+		if (view.compareTo(epochChangeView) >= 0) {
+			RadixEngineValidatorSetBuilder validatorSetBuilder = branch.getComputedState(RadixEngineValidatorSetBuilder.class);
+			validatorSet = validatorSetBuilder.build();
+			nextSystemParticle = new SystemParticle(lastSystemParticle.getEpoch() + 1, 0, timestamp);
+		} else {
+			validatorSet = null;
+			nextSystemParticle = new SystemParticle(lastSystemParticle.getEpoch(), view.number(), timestamp);
+		}
+
 		final ClientAtom systemUpdate = ClientAtom.create(
 			ImmutableList.of(
 				CMMicroInstruction.checkSpinAndPush(lastSystemParticle, Spin.UP),
@@ -126,12 +133,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		);
 		successBuilder.add(radixEngineCommand);
 
-		if (view.compareTo(epochChangeView) >= 0) {
-			RadixEngineValidatorSetBuilder validatorSetBuilder = branch.getComputedState(RadixEngineValidatorSetBuilder.class);
-			return validatorSetBuilder.build();
-		} else {
-			return null;
-		}
+		return validatorSet;
 	}
 
 	private void executeUserCommand(
