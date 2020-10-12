@@ -10,16 +10,16 @@ class EphemeralNetworkCreator {
     private String terraformSecretsDir = "/terraform/ssh"
     private String ansibleSecretsDir = "/ansible/ssh"
     private String autoApprove = "-auto-approve"
-    private List<String> hosts;
+    private List<String> hosts
     private String TF_VAR_nodes_10= " { node_1, node_2, node_3, node_4  ,node_5 , node_6, node_7 , node_8 , node_9, node_10}"
     private String TF_VAR_nodes_4= "'{ node_1={}, node_2={}, node_3={}, node_4={} }'"
 
-    public final static String ENV_SSH_IDENTITY = "SSH_IDENTITY";
-    public final static String ENV_SSH_IDENTITY_PUB = "SSH_IDENTITY_PUB";
-    public final static String ENV_AWS_CREDENTIAL = "AWS_CREDENTIAL";
-    public final static String ENV_GCP_CREDENTIAL = "GCP_CREDENTIAL";
-    public final static String ENV_CORE_TAG = "CORE_TAG";
-    public final static String ENV_TESTNET_NAME = "TESTNET_NAME";
+    public final static String ENV_SSH_IDENTITY = "SSH_IDENTITY"
+    public final static String ENV_SSH_IDENTITY_PUB = "SSH_IDENTITY_PUB"
+    public final static String ENV_AWS_CREDENTIAL = "AWS_CREDENTIAL"
+    public final static String ENV_GCP_CREDENTIAL = "GCP_CREDENTIAL"
+    public final static String ENV_CORE_TAG = "CORE_TAG"
+    public final static String ENV_TESTNET_NAME = "TESTNET_NAME"
 
 
     private EphemeralNetworkCreator(String terraformImage,
@@ -31,18 +31,20 @@ class EphemeralNetworkCreator {
         this.keyVolume = keyVolume
         this.tf_Opts = tf_Opts
     }
-    void copyToTFSecrets(String fileLocation,  String sshDestinationFileName="testnet" ) {
+
+    void copyToTFSecrets(String fileLocation, String sshDestinationFileName = "testnet") {
         CmdHelper.runCommand("docker container create --name dummy -v ${keyVolume}:${terraformSecretsDir} curlimages/curl:7.70.0")
         CmdHelper.runCommand("docker cp ${fileLocation} dummy:${terraformSecretsDir}/${sshDestinationFileName}")
         CmdHelper.runCommand("docker rm -f dummy")
     }
 
-    void copyToAnsibleSecrets(String fileLocation,  String sshDestinationFileName="testnet" ) {
+    void copyToAnsibleSecrets(String fileLocation, String sshDestinationFileName = "testnet") {
         CmdHelper.runCommand("docker container create --name dummy -v ${keyVolume}:${ansibleSecretsDir} curlimages/curl:7.70.0")
         CmdHelper.runCommand("docker cp ${fileLocation} dummy:${ansibleSecretsDir}/${sshDestinationFileName}")
         CmdHelper.runCommand("docker rm -f dummy")
     }
-    void setTotalNumberOfNodes(int totalNumberOfNodes){
+
+    void setTotalNumberOfNodes(int totalNumberOfNodes) {
         this.totalNumofNodes = totalNumberOfNodes
     }
 
@@ -119,7 +121,7 @@ class EphemeralNetworkCreator {
         return StaticClusterNetwork.clusterInfo(
                 10,
                 null ,
-                "-i aws-inventory");
+                "-i aws-inventory")
     }
 
 
