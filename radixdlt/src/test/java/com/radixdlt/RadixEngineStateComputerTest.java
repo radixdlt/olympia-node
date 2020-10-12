@@ -148,7 +148,7 @@ public class RadixEngineStateComputerTest {
 	@Test
 	public void executing_non_epoch_high_view_should_return_no_validator_set() {
 		// Action
-		StateComputerResult result = sut.prepare(ImmutableList.of(), null, View.of(9));
+		StateComputerResult result = sut.prepare(ImmutableList.of(), null, View.of(9), 1);
 
 		// Assert
 		assertThat(result.getSuccessfulCommands()).hasSize(1);
@@ -159,7 +159,7 @@ public class RadixEngineStateComputerTest {
 	@Test
 	public void executing_epoch_high_view_should_return_next_validator_set() {
 		// Act
-		StateComputerResult result = sut.prepare(ImmutableList.of(), null, View.of(10));
+		StateComputerResult result = sut.prepare(ImmutableList.of(), null, View.of(10), 1);
 
 		// Assert
 		assertThat(result.getSuccessfulCommands()).hasSize(1);
@@ -175,7 +175,7 @@ public class RadixEngineStateComputerTest {
 		BFTNode node = BFTNode.create(keyPair.getPublicKey());
 
 		// Act
-		StateComputerResult result = sut.prepare(ImmutableList.of(), cmd.command(), View.of(10));
+		StateComputerResult result = sut.prepare(ImmutableList.of(), cmd.command(), View.of(10), 1);
 
 		// Assert
 		assertThat(result.getSuccessfulCommands()).hasSize(1); // since high view, command is not executed
@@ -193,7 +193,7 @@ public class RadixEngineStateComputerTest {
 		BFTNode node = BFTNode.create(keyPair.getPublicKey());
 
 		// Act
-		StateComputerResult result = sut.prepare(ImmutableList.of(cmd), null, View.of(10));
+		StateComputerResult result = sut.prepare(ImmutableList.of(cmd), null, View.of(10), 1);
 
 		// Assert
 		assertThat(result.getSuccessfulCommands()).hasSize(1);
@@ -211,7 +211,7 @@ public class RadixEngineStateComputerTest {
 		RadixEngineCommand cmd = systemUpdateCommand(keyPair);
 
 		// Act
-		StateComputerResult result = sut.prepare(ImmutableList.of(), cmd.command(), View.of(1));
+		StateComputerResult result = sut.prepare(ImmutableList.of(), cmd.command(), View.of(1), 1);
 
 		// Assert
 		assertThat(result.getSuccessfulCommands()).hasSize(1);

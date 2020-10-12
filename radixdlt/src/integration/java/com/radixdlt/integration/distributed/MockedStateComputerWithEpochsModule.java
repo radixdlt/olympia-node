@@ -81,7 +81,7 @@ public class MockedStateComputerWithEpochsModule extends AbstractModule {
 		return new StateComputer() {
 			private long epoch = 1;
 			@Override
-			public StateComputerResult prepare(ImmutableList<PreparedCommand> previous, Command next, View view) {
+			public StateComputerResult prepare(ImmutableList<PreparedCommand> previous, Command next, View view, long timstamp) {
 				if (view.compareTo(epochHighView) >= 0) {
 					return new StateComputerResult(
 						next == null ? ImmutableList.of() : ImmutableList.of(() -> next),

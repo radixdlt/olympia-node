@@ -99,13 +99,14 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private BFTValidatorSet executeSystemUpdate(
 		RadixEngineBranch<LedgerAtom> branch,
 		View view,
+		long timestamp,
 		ImmutableList.Builder<PreparedCommand> successBuilder
 	) {
 		final SystemParticle lastSystemParticle = branch.getComputedState(SystemParticle.class);
 		final long epoch = lastSystemParticle.getView() >= epochChangeView.number()
 			? lastSystemParticle.getEpoch() + 1
 			: lastSystemParticle.getEpoch();
-		final SystemParticle nextSystemParticle = new SystemParticle(epoch, view.number(), 0);
+		final SystemParticle nextSystemParticle = new SystemParticle(epoch, view.number(), timestamp);
 		final ClientAtom systemUpdate = ClientAtom.create(
 			ImmutableList.of(
 				CMMicroInstruction.checkSpinAndPush(lastSystemParticle, Spin.UP),
@@ -133,7 +134,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		}
 	}
 
-	private void execute(
+	private void executeUserCommand(
 		RadixEngineBranch<LedgerAtom> branch,
 		Command next,
 		ImmutableList.Builder<PreparedCommand> successBuilder,
@@ -155,7 +156,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	}
 
 	@Override
-	public StateComputerResult prepare(ImmutableList<PreparedCommand> previous, Command next, View view) {
+	public StateComputerResult prepare(ImmutableList<PreparedCommand> previous, Command next, View view, long timestamp) {
 		RadixEngineBranch<LedgerAtom> transientBranch = this.radixEngine.transientBranch();
 		for (PreparedCommand command : previous) {
 			// TODO: fix this cast with generics. Currently the fix would become a bit too messy
@@ -172,9 +173,10 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 		final ImmutableList.Builder<PreparedCommand> successBuilder = ImmutableList.builder();
 		final ImmutableMap.Builder<Command, Exception> exceptionBuilder = ImmutableMap.builder();
-		final BFTValidatorSet validatorSet = this.executeSystemUpdate(transientBranch, view, successBuilder);
+		final BFTValidatorSet validatorSet = this.executeSystemUpdate(transientBranch, view, timestamp, successBuilder);
+		// Don't execute command if changing epochs
 		if (validatorSet == null) {
-			this.execute(transientBranch, next, successBuilder, exceptionBuilder);
+			this.executeUserCommand(transientBranch, next, successBuilder, exceptionBuilder);
 		}
 		this.radixEngine.deleteBranches();
 
