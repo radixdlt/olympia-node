@@ -20,7 +20,7 @@ public class RadixObjectMapperConfiguratorTest {
 			ClasspathScanningSerializerIds.create(),
 			new ClassScanningSerializationPolicy(
 					ImmutableList.of(OrderedPropertyBean.class, OrderedPropertyBean2.class)
-			) {}
+			) { }
 	);
 
 	@Test
