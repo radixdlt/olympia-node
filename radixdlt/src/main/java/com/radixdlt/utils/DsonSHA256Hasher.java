@@ -15,34 +15,33 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.sync;
+package com.radixdlt.utils;
 
-import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.google.inject.Inject;
+import com.radixdlt.consensus.Hasher;
+import com.radixdlt.crypto.Hash;
+import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.serialization.Serialization;
 import java.util.Objects;
 
 /**
- * An error response to the GetVertices call
+ * Default object hasher
  */
-public final class GetVerticesErrorResponse {
-	private final BFTNode sender;
-	private final HighQC syncInfo;
+public final class DsonSHA256Hasher implements Hasher {
+	private final Serialization serialization;
 
-	public GetVerticesErrorResponse(BFTNode sender, HighQC syncInfo) {
-		this.sender = Objects.requireNonNull(sender);
-		this.syncInfo = Objects.requireNonNull(syncInfo);
-	}
-
-	public BFTNode getSender() {
-		return this.sender;
-	}
-
-	public HighQC syncInfo() {
-		return this.syncInfo;
+	@Inject
+	public DsonSHA256Hasher(Serialization serialization) {
+		this.serialization = Objects.requireNonNull(serialization);
 	}
 
 	@Override
-	public String toString() {
-		return String.format("%s{%s->%s}", this.getClass().getSimpleName(), this.sender, this.syncInfo);
+	public Hash hash(Object o) {
+		return Hash.of(serialization.toDson(o, Output.HASH));
+	}
+
+	@Override
+	public Hash hashBytes(byte[] bytes) {
+		return Hash.of(bytes);
 	}
 }

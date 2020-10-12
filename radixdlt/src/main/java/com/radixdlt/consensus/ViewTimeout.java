@@ -50,7 +50,7 @@ public final class ViewTimeout implements ConsensusEvent {
 
 	@JsonProperty("sync_info")
 	@DsonOutput(Output.ALL)
-	private final SyncInfo syncInfo;
+	private final HighQC syncInfo;
 
 	@JsonProperty("signature")
 	@DsonOutput(Output.ALL)
@@ -64,14 +64,14 @@ public final class ViewTimeout implements ConsensusEvent {
 	 * @param signature The signature covering {@code viewTimeoutData}
 	 * @return A newly constructed {@code ViewTimeout}
 	 */
-	public static ViewTimeout from(ViewTimeoutData viewTimeoutData, SyncInfo syncInfo, ECDSASignature signature) {
+	public static ViewTimeout from(ViewTimeoutData viewTimeoutData, HighQC syncInfo, ECDSASignature signature) {
 		return new ViewTimeout(viewTimeoutData, syncInfo, signature);
 	}
 
 	@JsonCreator
 	private ViewTimeout(
 		@JsonProperty("view_timeout_data") ViewTimeoutData viewTimeoutData,
-		@JsonProperty("sync_info") SyncInfo syncInfo,
+		@JsonProperty("sync_info") HighQC syncInfo,
 		@JsonProperty("signature") ECDSASignature signature
 	) {
 		this.viewTimeoutData = Objects.requireNonNull(viewTimeoutData);
@@ -90,7 +90,7 @@ public final class ViewTimeout implements ConsensusEvent {
 	}
 
 	@Override
-	public SyncInfo syncInfo() {
+	public HighQC syncInfo() {
 		return this.syncInfo;
 	}
 

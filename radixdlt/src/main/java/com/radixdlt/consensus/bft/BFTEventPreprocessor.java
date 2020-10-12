@@ -20,7 +20,7 @@ package com.radixdlt.consensus.bft;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.ConsensusEvent;
-import com.radixdlt.consensus.SyncInfo;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTSyncer.SyncResult;
@@ -220,7 +220,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		return syncUp(proposal.syncInfo(), proposal.getAuthor(), () -> forwardTo.processProposal(proposal));
 	}
 
-	private boolean syncUp(SyncInfo syncInfo, BFTNode author, Runnable whenSynced) {
+	private boolean syncUp(HighQC syncInfo, BFTNode author, Runnable whenSynced) {
 		SyncResult syncResult = this.bftSyncer.syncToQC(syncInfo, author);
 		switch (syncResult) {
 			case SYNCED:

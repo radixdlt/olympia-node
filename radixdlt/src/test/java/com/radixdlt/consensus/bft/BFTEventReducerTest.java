@@ -20,8 +20,8 @@ package com.radixdlt.consensus.bft;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.SyncInfo;
 import com.radixdlt.consensus.ViewTimeout;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
@@ -63,7 +63,7 @@ public class BFTEventReducerTest {
 	@Test
 	public void when_start__then_should_proceed_to_first_view() {
 		QuorumCertificate qc = mock(QuorumCertificate.class);
-		SyncInfo syncInfo = mock(SyncInfo.class);
+		HighQC syncInfo = mock(HighQC.class);
 		View view = mock(View.class);
 		when(qc.getView()).thenReturn(view);
 		when(syncInfo.highestQC()).thenReturn(qc);
@@ -94,7 +94,7 @@ public class BFTEventReducerTest {
 		VoteData voteData = new VoteData(proposal, parent, null);
 		when(voteMessage.getVoteData()).thenReturn(voteData);
 
-		SyncInfo syncInfo = mock(SyncInfo.class);
+		HighQC syncInfo = mock(HighQC.class);
 		when(syncInfo.highestCommittedQC()).thenReturn(mock(QuorumCertificate.class));
 
 		when(pacemaker.processVote(any())).thenReturn(Optional.of(mock(QuorumCertificate.class)));
@@ -116,7 +116,7 @@ public class BFTEventReducerTest {
 		VoteData voteData = new VoteData(proposal, parent, null);
 		when(voteMessage.getVoteData()).thenReturn(voteData);
 
-		SyncInfo syncInfo = mock(SyncInfo.class);
+		HighQC syncInfo = mock(HighQC.class);
 		when(syncInfo.highestCommittedQC()).thenReturn(mock(QuorumCertificate.class));
 
 		when(pacemaker.processVote(eq(voteMessage))).thenReturn(Optional.of(mock(QuorumCertificate.class)));

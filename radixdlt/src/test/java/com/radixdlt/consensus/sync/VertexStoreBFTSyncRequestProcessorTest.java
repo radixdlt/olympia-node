@@ -28,7 +28,7 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.SyncInfo;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
@@ -53,7 +53,7 @@ public class VertexStoreBFTSyncRequestProcessorTest {
 		when(vertexStore.getVertices(any(), anyInt())).thenReturn(Optional.empty());
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		QuorumCertificate committedQC = mock(QuorumCertificate.class);
-		SyncInfo syncInfo = mock(SyncInfo.class);
+		HighQC syncInfo = mock(HighQC.class);
 		when(syncInfo.highestQC()).thenReturn(qc);
 		when(syncInfo.highestCommittedQC()).thenReturn(committedQC);
 		when(vertexStore.syncInfo()).thenReturn(syncInfo);
@@ -73,7 +73,7 @@ public class VertexStoreBFTSyncRequestProcessorTest {
 		when(vertexStore.getVertices(any(), anyInt())).thenReturn(Optional.of(ImmutableList.of()));
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		QuorumCertificate committedQC = mock(QuorumCertificate.class);
-		SyncInfo syncInfo = mock(SyncInfo.class);
+		HighQC syncInfo = mock(HighQC.class);
 		when(syncInfo.highestQC()).thenReturn(qc);
 		when(syncInfo.highestCommittedQC()).thenReturn(committedQC);
 		when(vertexStore.syncInfo()).thenReturn(syncInfo);

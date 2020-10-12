@@ -28,22 +28,19 @@ import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.consensus.BFTConfiguration;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.AtomChecker;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.statecomputer.CommittedCommandsReader;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.statecomputer.RadixEngineValidatorSetBuilder;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
-import com.radixdlt.sync.CommittedReader;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -63,23 +60,18 @@ public class RadixEngineModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		bind(StateComputer.class).to(RadixEngineStateComputer.class);
-		bind(CommittedReader.class).to(RadixEngineStateComputer.class);
 	}
 
 	@Provides
 	@Singleton
 	private RadixEngineStateComputer radixEngineStateComputer(
 		Serialization serialization,
-		RadixEngine<LedgerAtom> radixEngine,
-		CommittedCommandsReader committedCommandsReader,
-		CommittedAtomSender committedAtomSender
+		RadixEngine<LedgerAtom> radixEngine
 	) {
 		return new RadixEngineStateComputer(
 			serialization,
 			radixEngine,
-			epochHighView,
-			committedCommandsReader,
-			committedAtomSender
+			epochHighView
 		);
 	}
 
@@ -117,13 +109,15 @@ public class RadixEngineModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private RadixEngine<LedgerAtom> getRadixEngine(
-		BFTConfiguration initialConfig,
+		BFTValidatorSet validatorSet,
 		ConstraintMachine constraintMachine,
 		UnaryOperator<CMStore> virtualStoreLayer,
 		EngineStore<LedgerAtom> engineStore,
 		AtomChecker<LedgerAtom> ledgerAtomChecker
 	) {
-		final int minValidators = 1; // Default 1 so can debug in IDE, possibly from properties at some point
+		// TODO: Fix pacemaker so can Default 1 so can debug in IDE, possibly from properties at some point
+		// TODO: Specifically, simulation test with engine, epochs and mempool gets stuck on a single validator
+		final int minValidators = 2;
 
 		RadixEngine<LedgerAtom> radixEngine = new RadixEngine<>(
 			constraintMachine,
@@ -138,7 +132,7 @@ public class RadixEngineModule extends AbstractModule {
 		//   .ofType(RegisteredValidatorParticle.class)
 		//   .toWindowedSet(initialValidatorSet, RegisteredValidatorParticle.class, p -> p.getAddress(), 2)
 		//   .build();
-		Set<ECPublicKey> initialValidatorKeys = initialConfig.getValidatorSet().getValidators().stream()
+		Set<ECPublicKey> initialValidatorKeys = validatorSet.getValidators().stream()
 			.map(v -> v.getNode().getKey())
 			.collect(Collectors.toCollection(HashSet::new));
 		radixEngine.addStateComputer(

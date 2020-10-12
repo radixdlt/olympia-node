@@ -17,6 +17,10 @@
 
 package com.radixdlt.integration.distributed;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 
@@ -27,6 +31,8 @@ import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.consensus.LedgerHeader;
+import java.util.LinkedList;
+import java.util.Optional;
 
 public class MockedLedgerModule extends AbstractModule {
 	@Override
@@ -40,14 +46,20 @@ public class MockedLedgerModule extends AbstractModule {
 	Ledger syncedLedger() {
 		return new Ledger() {
 			@Override
-			public LedgerHeader prepare(VerifiedVertex vertex) {
-				return LedgerHeader.create(
-					vertex.getParentHeader().getLedgerHeader().getEpoch(),
-					vertex.getView(),
-					vertex.getParentHeader().getLedgerHeader().getAccumulatorState(),
-					0L,
-					false
-				);
+			public Optional<PreparedVertex> prepare(LinkedList<PreparedVertex> previous, VerifiedVertex vertex) {
+				final long timestamp = vertex.getQC().getTimestampedSignatures().weightedTimestamp();
+				final LedgerHeader ledgerHeader = vertex.getParentHeader().getLedgerHeader()
+					.updateViewAndTimestamp(vertex.getView(), timestamp);
+
+				return Optional.of(vertex
+					.withHeader(ledgerHeader)
+					.andCommands(vertex.getCommand().map(ImmutableList::of).orElse(ImmutableList.of()), ImmutableMap.of()
+				));
+			}
+
+			@Override
+			public void commit(ImmutableList<PreparedVertex> vertices, VerifiedLedgerHeaderAndProof proof) {
+				// Nothing to do here
 			}
 
 			@Override

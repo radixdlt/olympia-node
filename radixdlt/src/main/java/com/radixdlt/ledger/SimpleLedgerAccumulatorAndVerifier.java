@@ -61,10 +61,18 @@ public class SimpleLedgerAccumulatorAndVerifier implements LedgerAccumulator, Le
 
 	@Override
 	public Optional<ImmutableList<Command>> verifyAndGetExtension(AccumulatorState current, ImmutableList<Command> commands, AccumulatorState tail) {
+		if (tail.getStateVersion() < current.getStateVersion()) {
+			throw new IllegalArgumentException(String.format("Tail %s is has lower state version than current %s", tail, current));
+		}
+
 		final long firstVersion = tail.getStateVersion() - commands.size() + 1;
 		if (current.getStateVersion() + 1 < firstVersion) {
 			// Missing versions
 			return Optional.empty();
+		}
+
+		if (commands.isEmpty()) {
+			return Objects.equals(current, tail) ? Optional.of(ImmutableList.of()) : Optional.empty();
 		}
 
 		final int startIndex = (int) (current.getStateVersion() + 1 - firstVersion);

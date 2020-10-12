@@ -18,6 +18,7 @@
 package org.radix.api.http;
 
 import com.radixdlt.ModuleRunner;
+import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.systeminfo.InMemorySystemInfoManager;
@@ -36,6 +37,7 @@ import com.radixdlt.universe.Universe;
 import com.stijndewitt.undertow.cors.AllowAll;
 import com.stijndewitt.undertow.cors.Filter;
 
+import io.reactivex.rxjava3.core.Observable;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
@@ -97,6 +99,7 @@ public final class RadixHttpServer {
 		InMemorySystemInfoManager infoStateRunner,
 		SubmissionErrorsRx submissionErrorsRx,
 		CommittedAtomsRx committedAtomsRx,
+		Observable<BFTCommittedUpdate> committedUpdates,
 		ModuleRunner consensusRunner,
 		LedgerEntryStore store,
 		SubmissionControl submissionControl,
@@ -116,7 +119,9 @@ public final class RadixHttpServer {
 		this.localSystem = Objects.requireNonNull(localSystem);
 		this.peers = new ConcurrentHashMap<>();
 		this.atomsService = new AtomsService(
-			submissionErrorsRx, committedAtomsRx,
+			submissionErrorsRx,
+			committedAtomsRx,
+			committedUpdates,
 			store,
 			submissionControl,
 			commandToBinaryConverter,

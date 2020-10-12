@@ -21,6 +21,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
+import com.radixdlt.middleware2.store.InMemoryCommittedEpochProofsStore;
 import com.radixdlt.sync.CommittedReader;
 
 public class MockedCommittedReaderModule extends AbstractModule {
@@ -30,5 +31,6 @@ public class MockedCommittedReaderModule extends AbstractModule {
 		committedSenders.addBinding().to(InMemoryCommittedReader.class).in(Scopes.SINGLETON);
 		bind(CommittedReader.class).to(InMemoryCommittedReader.class).in(Scopes.SINGLETON);
 		bind(InMemoryCommittedReader.class).in(Scopes.SINGLETON);
+		bind(InMemoryCommittedEpochProofsStore.class).in(Scopes.SINGLETON);
 	}
 }

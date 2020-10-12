@@ -69,6 +69,7 @@ import com.radixdlt.integration.distributed.simulation.application.NodeSelector;
 import com.radixdlt.integration.distributed.simulation.application.RadixEngineValidatorRegistrator;
 import com.radixdlt.integration.distributed.simulation.application.RadixEngineValidatorRegistratorAndUnregistrator;
 import com.radixdlt.integration.distributed.simulation.application.RegisteredValidatorChecker;
+import com.radixdlt.integration.distributed.simulation.application.TimestampChecker;
 import com.radixdlt.integration.distributed.simulation.invariants.epochs.EpochViewInvariant;
 import com.radixdlt.integration.distributed.simulation.application.LocalMempoolPeriodicSubmittor;
 import com.radixdlt.integration.distributed.simulation.invariants.ledger.ConsensusToLedgerCommittedInvariant;
@@ -310,6 +311,12 @@ public class SimulationTest {
 			return this;
 		}
 
+		public Builder addTimestampChecker(String invariantName) {
+			TimestampChecker timestampChecker = new TimestampChecker();
+			this.checksBuilder.put(invariantName, nodes -> timestampChecker);
+			return this;
+		}
+
 		public Builder addMempoolSubmissionsSteadyState(String invariantName) {
 			IncrementalBytes incrementalBytes = new IncrementalBytes();
 			NodeSelector nodeSelector = this.ledgerType.hasEpochs ? new EpochsNodeSelector() : new BFTValidatorSetNodeSelector();
@@ -321,6 +328,17 @@ public class SimulationTest {
 			this.runnableBuilder.add(nodes -> mempoolSubmission::run);
 			this.checksBuilder.put(invariantName, nodes -> committedChecker);
 
+			return this;
+		}
+
+		public Builder addRadixEngineValidatorRegisterUnregisterMempoolSubmissions() {
+			this.runnableBuilder.add(nodes -> {
+				RadixEngineValidatorRegistratorAndUnregistrator randomValidatorSubmittor
+					= new RadixEngineValidatorRegistratorAndUnregistrator(nodes);
+				NodeSelector nodeSelector = this.ledgerType.hasEpochs ? new EpochsNodeSelector() : new BFTValidatorSetNodeSelector();
+				LocalMempoolPeriodicSubmittor submittor = new LocalMempoolPeriodicSubmittor(randomValidatorSubmittor, nodeSelector);
+				return submittor::run;
+			});
 			return this;
 		}
 

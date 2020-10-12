@@ -19,7 +19,7 @@ package com.radixdlt.middleware2.network;
 
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.SyncInfo;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.ViewTimeoutData;
@@ -39,12 +39,12 @@ public class ConsensusEventMessageSerializeTest extends SerializeMessageObject<C
 	}
 
 	private static ConsensusEventMessage get() {
-		LedgerHeader ledgerHeader = LedgerHeader.genesis(Hash.ZERO_HASH);
+		LedgerHeader ledgerHeader = LedgerHeader.genesis(Hash.ZERO_HASH, null);
 		BFTHeader header = new BFTHeader(View.of(1), Hash.ZERO_HASH, ledgerHeader);
 		BFTHeader parent = new BFTHeader(View.of(0), Hash.ZERO_HASH, ledgerHeader);
 		VoteData voteData = new VoteData(header, parent, null);
 		QuorumCertificate quorumCertificate = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-		SyncInfo syncInfo = SyncInfo.from(quorumCertificate, quorumCertificate);
+		HighQC syncInfo = HighQC.from(quorumCertificate, quorumCertificate);
 		BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
 		ViewTimeoutData viewTimeoutData = ViewTimeoutData.from(author, 12345L, View.of(67890L));
 		ViewTimeout testView = ViewTimeout.from(viewTimeoutData, syncInfo, new ECDSASignature());

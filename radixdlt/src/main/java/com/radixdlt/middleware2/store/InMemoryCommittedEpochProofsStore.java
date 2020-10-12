@@ -15,21 +15,26 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.middleware2.network;
+package com.radixdlt.middleware2.store;
 
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.Hash;
-import org.radix.serialization.SerializeMessageObject;
+import java.util.concurrent.ConcurrentHashMap;
 
-public class GetEpochResponseMessageSerializeTest extends SerializeMessageObject<GetEpochResponseMessage> {
-	public GetEpochResponseMessageSerializeTest() {
-		super(GetEpochResponseMessage.class, GetEpochResponseMessageSerializeTest::get);
+/**
+ * Stores epoch proofs in memory
+ */
+public final class InMemoryCommittedEpochProofsStore {
+	private final ConcurrentHashMap<Long, VerifiedLedgerHeaderAndProof> epochProofs = new ConcurrentHashMap<>();
+
+	public void commit(VerifiedLedgerHeaderAndProof verifiedLedgerHeaderAndProof) {
+		if (!verifiedLedgerHeaderAndProof.isEndOfEpoch()) {
+			throw new IllegalArgumentException("Proof must be end of epoch");
+		}
+
+		epochProofs.put(verifiedLedgerHeaderAndProof.getEpoch() + 1, verifiedLedgerHeaderAndProof);
 	}
 
-	private static GetEpochResponseMessage get() {
-		BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
-		return new GetEpochResponseMessage(author, 12345, VerifiedLedgerHeaderAndProof.genesis(Hash.ZERO_HASH, null));
+	public VerifiedLedgerHeaderAndProof getEpochProof(long epoch) {
+		return epochProofs.get(epoch);
 	}
 }

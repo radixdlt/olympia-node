@@ -39,13 +39,13 @@ public class ViewTimeoutTest extends SerializeObject<ViewTimeout> {
 		BFTNode author = BFTNode.create(pubKey);
 		ViewTimeoutData viewTimeoutData = ViewTimeoutData.from(author, 5678L, View.of(1234));
 		AccumulatorState accumulatorState = new AccumulatorState(3L, Hash.ZERO_HASH);
-		LedgerHeader ledgerHeader = LedgerHeader.create(5678L, View.of(1200), accumulatorState, 123456789L, false);
+		LedgerHeader ledgerHeader = LedgerHeader.create(5678L, View.of(1200), accumulatorState, 123456789L, null);
 		BFTHeader proposed = new BFTHeader(View.of(1202), Hash.ZERO_HASH, ledgerHeader);
 		BFTHeader parent = new BFTHeader(View.of(1201), Hash.ZERO_HASH, ledgerHeader);
 		BFTHeader committed = new BFTHeader(View.of(1200), Hash.ZERO_HASH, ledgerHeader);
 		VoteData voteData = new VoteData(proposed, parent, committed);
 		QuorumCertificate highestQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-		SyncInfo syncInfo = SyncInfo.from(highestQC, highestQC);
+		HighQC syncInfo = HighQC.from(highestQC, highestQC);
 		ECDSASignature signature = new ECDSASignature();
 		return ViewTimeout.from(viewTimeoutData, syncInfo, signature);
 	}

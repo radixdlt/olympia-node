@@ -29,7 +29,7 @@ import java.util.Set;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.SyncInfo;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -69,7 +69,7 @@ public final class ControlledSender implements DeterministicSender {
 	}
 
 	@Override
-	public void sendGetVerticesErrorResponse(BFTNode node, SyncInfo syncInfo) {
+	public void sendGetVerticesErrorResponse(BFTNode node, HighQC syncInfo) {
 		GetVerticesErrorResponse response = new GetVerticesErrorResponse(this.self, syncInfo);
 		int receiver = this.network.lookup(node);
 		handleMessage(MessageRank.EARLIEST_POSSIBLE, new ControlledMessage(this.senderIndex, receiver, response));

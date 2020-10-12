@@ -75,9 +75,9 @@ public class DeterministicNetworkModule extends AbstractModule {
 		bind(BFTUpdateSender.class).to(DeterministicSender.class);
 		bind(LocalTimeoutSender.class).to(DeterministicSender.class);
 		bind(SyncEpochsRPCSender.class).to(DeterministicSender.class);
-		bind(VertexStoreEventSender.class).to(DeterministicSender.class);
 
 		// TODO: Remove multibind?
+		Multibinder.newSetBinder(binder(), VertexStoreEventSender.class).addBinding().to(DeterministicSender.class);
 		Multibinder.newSetBinder(binder(), EpochsLedgerUpdateSender.class).addBinding().to(DeterministicSender.class);
 
 		bind(EpochInfoSender.class).toInstance(emptyInfoSender);

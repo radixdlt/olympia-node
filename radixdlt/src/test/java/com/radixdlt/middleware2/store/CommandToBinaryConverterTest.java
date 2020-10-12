@@ -40,7 +40,7 @@ public class CommandToBinaryConverterTest {
 
 	@Test
 	public void test_atom_content_transformation_to_byte_array_and_back() {
-		LedgerHeader ledgerHeader = LedgerHeader.genesis(Hash.ZERO_HASH);
+		LedgerHeader ledgerHeader = LedgerHeader.genesis(Hash.ZERO_HASH, null);
 		VerifiedLedgerHeaderAndProof proof = new VerifiedLedgerHeaderAndProof(
 			new BFTHeader(View.of(1), Hash.random(), ledgerHeader),
 			new BFTHeader(View.of(1), Hash.random(), ledgerHeader),

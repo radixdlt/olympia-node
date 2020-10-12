@@ -18,43 +18,35 @@
 package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.engine.RadixEngine.RadixEngineBranch;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.EUID;
-import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
+import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.middleware2.store.StoredCommittedCommand;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
-import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
-import com.radixdlt.sync.CommittedReader;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.TreeMap;
 import java.util.function.Consumer;
 
 /**
  * Wraps the Radix Engine and emits messages based on success or failure
  */
-public final class RadixEngineStateComputer implements StateComputer, CommittedReader {
+public final class RadixEngineStateComputer implements StateComputer {
 
 	// TODO: Refactor committed command when commit logic is re-written
 	// TODO: as currently it's mostly loosely coupled logic
 	public interface CommittedAtomWithResult {
 		CommittedAtom getCommittedAtom();
 		CommittedAtomWithResult ifSuccess(Consumer<ImmutableSet<EUID>> successConsumer);
-		CommittedAtomWithResult ifError(Consumer<RadixEngineException> errorConsumer);
 	}
 
 	// TODO: Remove this temporary interface
@@ -65,18 +57,11 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 	private final Serialization serialization;
 	private final RadixEngine<LedgerAtom> radixEngine;
 	private final View epochChangeView;
-	private final CommittedCommandsReader committedCommandsReader;
-	private final CommittedAtomSender committedAtomSender;
-	private final Object lock = new Object();
-	private final TreeMap<Long, StoredCommittedCommand> unstoredCommittedAtoms = new TreeMap<>();
-	private final TreeMap<Long, VerifiedLedgerHeaderAndProof> epochProofs = new TreeMap<>();
 
 	public RadixEngineStateComputer(
 		Serialization serialization,
 		RadixEngine<LedgerAtom> radixEngine,
-		View epochChangeView,
-		CommittedCommandsReader committedCommandsReader,
-		CommittedAtomSender committedAtomSender
+		View epochChangeView
 	) {
 		if (epochChangeView.isGenesis()) {
 			throw new IllegalArgumentException("Epoch change view must not be genesis.");
@@ -85,121 +70,78 @@ public final class RadixEngineStateComputer implements StateComputer, CommittedR
 		this.serialization = Objects.requireNonNull(serialization);
 		this.radixEngine = Objects.requireNonNull(radixEngine);
 		this.epochChangeView = epochChangeView;
-		this.committedCommandsReader = Objects.requireNonNull(committedCommandsReader);
-		this.committedAtomSender = Objects.requireNonNull(committedAtomSender);
 	}
 
-	public VerifiedLedgerHeaderAndProof getEpochProof(long epoch) {
-		return epochProofs.get(epoch);
-	}
-
-	// TODO Move this to a different class class when unstored committed atoms is fixed
-	@Override
-	public VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start, int batchSize) {
-		if (start.getLedgerHeader().isEndOfEpoch()) {
-			long currentEpoch = start.getLedgerHeader().getEpoch() + 1;
-			long nextEpoch = currentEpoch + 1;
-			VerifiedLedgerHeaderAndProof nextEpochProof = epochProofs.get(nextEpoch);
-			if (nextEpochProof == null) {
-				return null;
-			}
-
-			return new VerifiedCommandsAndProof(ImmutableList.of(), nextEpochProof);
-		}
-
-		// TODO: verify start
-		long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
-
-		// TODO: This may still return an empty list as we still count state versions for atoms which
-		// TODO: never make it into the radix engine due to state errors. This is because we only check
-		// TODO: validity on commit rather than on proposal/prepare.
-		final TreeMap<Long, StoredCommittedCommand> storedCommittedAtoms;
+	private void execute(
+		RadixEngineBranch<LedgerAtom> branch,
+		Command next,
+		ImmutableList.Builder<Command> successBuilder,
+		ImmutableMap.Builder<Command, Exception> errorBuilder
+	) {
 		try {
-			storedCommittedAtoms = committedCommandsReader.getNextCommittedCommands(stateVersion, batchSize);
-		} catch (NextCommittedLimitReachedException e) {
-			return null;
+			ClientAtom clientAtom = mapCommand(next);
+			branch.checkAndStore(clientAtom);
+		} catch (RadixEngineException | DeserializeException e) {
+			errorBuilder.put(next, e);
+			return;
 		}
 
-		final VerifiedLedgerHeaderAndProof nextHeader;
-		if (storedCommittedAtoms.firstEntry() != null) {
-			nextHeader = storedCommittedAtoms.firstEntry().getValue().getStateAndProof();
-		} else {
-			Entry<Long, StoredCommittedCommand> uncommittedEntry = unstoredCommittedAtoms.higherEntry(stateVersion);
-			if (uncommittedEntry == null) {
-				return null;
-			}
-			nextHeader = uncommittedEntry.getValue().getStateAndProof();
-		}
-
-		synchronized (lock) {
-			final long proofStateVersion = nextHeader.getStateVersion();
-			Map<Long, StoredCommittedCommand> unstoredToReturn
-				= unstoredCommittedAtoms.subMap(stateVersion, false, proofStateVersion, true);
-			storedCommittedAtoms.putAll(unstoredToReturn);
-		}
-
-		return new VerifiedCommandsAndProof(
-			storedCommittedAtoms.values().stream().map(StoredCommittedCommand::getCommand).collect(ImmutableList.toImmutableList()),
-			nextHeader
-		);
+		successBuilder.add(next);
 	}
 
 	@Override
-	public boolean prepare(VerifiedVertex vertex) {
-		return vertex.getView().compareTo(epochChangeView) >= 0;
+	public StateComputerResult prepare(ImmutableList<Command> previous, Command next, View view) {
+		RadixEngineBranch<LedgerAtom> transientBranch = this.radixEngine.transientBranch();
+		for (Command command : previous) {
+			try {
+				ClientAtom clientAtom = mapCommand(command);
+				transientBranch.checkAndStore(clientAtom);
+			} catch (RadixEngineException | DeserializeException e) {
+				throw new IllegalStateException("Re-execution of already prepared atom failed", e);
+			}
+		}
+
+		final ImmutableList.Builder<Command> successBuilder = ImmutableList.builder();
+		final ImmutableMap.Builder<Command, Exception> exceptionBuilder = ImmutableMap.builder();
+
+		if (next != null) {
+			this.execute(transientBranch, next, successBuilder, exceptionBuilder);
+		}
+
+		this.radixEngine.deleteBranches();
+
+		if (view.compareTo(epochChangeView) >= 0) {
+			RadixEngineValidatorSetBuilder validatorSetBuilder = transientBranch.getComputedState(RadixEngineValidatorSetBuilder.class);
+			return new StateComputerResult(successBuilder.build(), exceptionBuilder.build(), validatorSetBuilder.build());
+		}
+
+		return new StateComputerResult(successBuilder.build(), exceptionBuilder.build());
 	}
 
-	private ClientAtom mapCommand(Command command) {
-		try {
-			return serialization.fromDson(command.getPayload(), ClientAtom.class);
-		} catch (DeserializeException e) {
-			return null;
-		}
+	private ClientAtom mapCommand(Command command) throws DeserializeException {
+		return serialization.fromDson(command.getPayload(), ClientAtom.class);
 	}
 
 	private void commitCommand(long version, Command command, VerifiedLedgerHeaderAndProof proof) {
-		boolean storedInRadixEngine = false;
-		final ClientAtom clientAtom = this.mapCommand(command);
-		if (clientAtom != null) {
+		try {
+			final ClientAtom clientAtom = this.mapCommand(command);
 			final CommittedAtom committedAtom = new CommittedAtom(clientAtom, version, proof);
-			try {
-				// TODO: execute list of commands instead
-				this.radixEngine.checkAndStore(committedAtom);
-				storedInRadixEngine = true;
-			} catch (RadixEngineException e) {
-				// TODO: Don't check for state computer errors for now so that we don't
-				// TODO: have to deal with failing leader proposals
-				// TODO: Reinstate this when ProposalGenerator + Mempool can guarantee correct proposals
-
-				// TODO: move VIRTUAL_STATE_CONFLICT to static check
-				committedAtomSender.sendCommittedAtom(CommittedAtoms.error(committedAtom, e));
-			}
-		}
-
-		if (!storedInRadixEngine) {
-			StoredCommittedCommand storedCommittedCommand = new StoredCommittedCommand(
-				command,
-				proof
-			);
-			this.unstoredCommittedAtoms.put(version, storedCommittedCommand);
+			// TODO: execute list of commands instead
+			this.radixEngine.checkAndStore(committedAtom);
+		} catch (RadixEngineException | DeserializeException e) {
+			// TODO: Remove throwing of exception
+			// TODO: Exception could be because of byzantine quorum
+			throw new IllegalStateException("Trying to commit bad command", e);
 		}
 	}
 
 	@Override
-	public Optional<BFTValidatorSet> commit(VerifiedCommandsAndProof verifiedCommandsAndProof) {
+	public void commit(VerifiedCommandsAndProof verifiedCommandsAndProof) {
 		final VerifiedLedgerHeaderAndProof headerAndProof = verifiedCommandsAndProof.getHeader();
 		long stateVersion = headerAndProof.getAccumulatorState().getStateVersion();
 		long firstVersion = stateVersion - verifiedCommandsAndProof.getCommands().size() + 1;
 		for (int i = 0; i < verifiedCommandsAndProof.getCommands().size(); i++) {
 			this.commitCommand(firstVersion + i, verifiedCommandsAndProof.getCommands().get(i), headerAndProof);
 		}
-
-		if (headerAndProof.isEndOfEpoch()) {
-			this.epochProofs.put(headerAndProof.getEpoch() + 1, headerAndProof);
-			RadixEngineValidatorSetBuilder validatorSetBuilder = this.radixEngine.getComputedState(RadixEngineValidatorSetBuilder.class);
-			return Optional.of(validatorSetBuilder.build());
-		}
-
-		return Optional.empty();
 	}
 }

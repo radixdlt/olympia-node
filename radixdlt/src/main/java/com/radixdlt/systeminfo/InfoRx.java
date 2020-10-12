@@ -17,7 +17,6 @@
 
 package com.radixdlt.systeminfo;
 
-import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.epoch.EpochView;
@@ -44,10 +43,4 @@ public interface InfoRx {
 	 * @return flow of qcs
 	 */
 	Observable<QuorumCertificate> highQCs();
-
-	/**
-	 * Retrieve rx flow of vertices which have been committed
-	 * @return flow of vertices
-	 */
-	Observable<BFTCommittedUpdate> bftCommittedUpdates();
 }

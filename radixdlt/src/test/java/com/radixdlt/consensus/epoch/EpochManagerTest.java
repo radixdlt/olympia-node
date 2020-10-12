@@ -36,7 +36,7 @@ import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.SyncInfo;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.ViewTimeout;
@@ -117,7 +117,7 @@ public class EpochManagerTest {
 		this.syncRequestSender = mock(SyncLedgerRequestSender.class);
 
 		EpochChange initial = mock(EpochChange.class);
-		when(initial.getProof()).thenReturn(VerifiedLedgerHeaderAndProof.genesis(mock(Hash.class)));
+		when(initial.getProof()).thenReturn(VerifiedLedgerHeaderAndProof.genesis(mock(Hash.class), null));
 		when(initial.getEpoch()).thenReturn(1L);
 		BFTConfiguration config = mock(BFTConfiguration.class);
 		when(config.getValidatorSet()).thenReturn(BFTValidatorSet.from(ImmutableSet.of()));
@@ -346,7 +346,7 @@ public class EpochManagerTest {
 		when(authorValidator.getNode()).thenReturn(node);
 
 		when(pacemaker.getCurrentView()).thenReturn(View.genesis());
-		when(vertexStore.syncInfo()).thenReturn(mock(SyncInfo.class));
+		when(vertexStore.syncInfo()).thenReturn(mock(HighQC.class));
 		when(vertexStoreSync.syncToQC(any(), any())).thenReturn(SyncResult.SYNCED);
 
 		Proposal proposal = mock(Proposal.class);
@@ -409,7 +409,7 @@ public class EpochManagerTest {
 
 	@Test
 	public void when_next_epoch__then_get_vertices_rpc_should_be_forwarded_to_vertex_store() {
-		when(vertexStore.syncInfo()).thenReturn(mock(SyncInfo.class));
+		when(vertexStore.syncInfo()).thenReturn(mock(HighQC.class));
 
 		BFTEventProcessor eventProcessor = mock(BFTEventProcessor.class);
 		when(bftFactory.create(any(), any(), any(), any(), any(), any())).thenReturn(eventProcessor);

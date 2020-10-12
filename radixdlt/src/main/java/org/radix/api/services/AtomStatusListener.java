@@ -26,6 +26,6 @@ import com.radixdlt.statecomputer.CommittedAtom;
  */
 public interface AtomStatusListener {
 	void onStored(CommittedAtom committedAtom);
-	void onStoredFailure(CommittedAtom committedAtom, RadixEngineException e);
+	void onStoredFailure(RadixEngineException e);
 	void onError(Throwable e);
 }

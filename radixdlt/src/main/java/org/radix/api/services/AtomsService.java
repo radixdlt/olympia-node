@@ -23,6 +23,9 @@ import com.radixdlt.api.CommittedAtomsRx;
 import com.radixdlt.api.SubmissionErrorsRx;
 import com.radixdlt.api.SubmissionFailure;
 import com.radixdlt.atommodel.Atom;
+import com.radixdlt.consensus.bft.BFTCommittedUpdate;
+import com.radixdlt.consensus.bft.PreparedVertex;
+import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.mempool.SubmissionControl;
 
@@ -30,6 +33,7 @@ import com.radixdlt.middleware2.store.StoredCommittedCommand;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomWithResult;
+import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import com.radixdlt.middleware2.ClientAtom;
@@ -57,7 +61,6 @@ import org.radix.api.AtomQuery;
 import org.radix.api.observable.AtomEventObserver;
 import org.radix.api.observable.Disposable;
 import org.radix.api.observable.ObservedAtomEvents;
-import org.radix.api.observable.Observable;
 import com.radixdlt.identifiers.AID;
 
 public class AtomsService {
@@ -85,10 +88,12 @@ public class AtomsService {
 
 	private final SubmissionErrorsRx submissionErrorsRx;
 	private final CommittedAtomsRx committedAtomsRx;
+	private final Observable<BFTCommittedUpdate> committedUpdates;
 
 	public AtomsService(
 		SubmissionErrorsRx submissionErrorsRx,
 		CommittedAtomsRx committedAtomsRx,
+		Observable<BFTCommittedUpdate> committedUpdates,
 		LedgerEntryStore store,
 		SubmissionControl submissionControl,
 		CommandToBinaryConverter commandToBinaryConverter,
@@ -101,20 +106,26 @@ public class AtomsService {
 		this.clientAtomToBinaryConverter = Objects.requireNonNull(clientAtomToBinaryConverter);
 		this.disposable = new CompositeDisposable();
 		this.committedAtomsRx = committedAtomsRx;
+		this.committedUpdates = Objects.requireNonNull(committedUpdates);
 	}
 
 	private void processExecutedCommand(CommittedAtomWithResult committedAtomWithResult) {
 		CommittedAtom committedAtom = committedAtomWithResult.getCommittedAtom();
 		committedAtomWithResult.ifSuccess(indicies -> this.atomEventObservers.forEach(observer -> observer.tryNext(committedAtom, indicies)));
 		for (SingleAtomListener subscriber : this.deleteOnEventSingleAtomObservers.getOrDefault(committedAtom.getAID(), Collections.emptyList())) {
-			committedAtomWithResult
-				.ifSuccess(indicies -> subscriber.onStored())
-				.ifError(subscriber::onStoredFailure);
+			committedAtomWithResult.ifSuccess(indicies -> subscriber.onStored());
 		}
 		for (AtomStatusListener atomStatusListener : this.singleAtomObservers.getOrDefault(committedAtom.getAID(), Collections.emptyList())) {
-			committedAtomWithResult
-				.ifSuccess(indicies -> atomStatusListener.onStored(committedAtom))
-				.ifError(e -> atomStatusListener.onStoredFailure(committedAtom, e));
+			committedAtomWithResult.ifSuccess(indicies -> atomStatusListener.onStored(committedAtom));
+		}
+	}
+
+	private void processExecutionFailure(ClientAtom atom, RadixEngineException e) {
+		for (SingleAtomListener subscriber : this.deleteOnEventSingleAtomObservers.getOrDefault(atom.getAID(), Collections.emptyList())) {
+			subscriber.onStoredFailure(e);
+		}
+		for (AtomStatusListener atomStatusListener : this.singleAtomObservers.getOrDefault(atom.getAID(), Collections.emptyList())) {
+			atomStatusListener.onStoredFailure(e);
 		}
 	}
 
@@ -142,17 +153,32 @@ public class AtomsService {
 	}
 
 	public void start() {
-		io.reactivex.rxjava3.disposables.Disposable lastStoredAtomDisposable = committedAtomsRx.committedAtoms()
+		var lastStoredAtomDisposable = committedAtomsRx.committedAtoms()
 			.observeOn(Schedulers.io())
 			.subscribe(this::processExecutedCommand);
 		this.disposable.add(lastStoredAtomDisposable);
 
-		io.reactivex.rxjava3.disposables.Disposable submissionFailuresDisposable = submissionErrorsRx.submissionFailures()
+		var committedUpdatesDisposable = committedUpdates
+			.observeOn(Schedulers.io())
+			.subscribe(update ->
+				update.getCommitted().stream()
+					.flatMap(PreparedVertex::errorCommands)
+					.forEach(cmdErr -> {
+						ClientAtom clientAtom = cmdErr.getFirst().map(clientAtomToBinaryConverter::toAtom);
+						Exception e = cmdErr.getSecond();
+						if (e instanceof RadixEngineException) {
+							this.processExecutionFailure(clientAtom, (RadixEngineException) e);
+						}
+					})
+				);
+		this.disposable.add(committedUpdatesDisposable);
+
+		var submissionFailuresDisposable = submissionErrorsRx.submissionFailures()
 			.observeOn(Schedulers.io())
 			.subscribe(this::processSubmissionFailure);
 		this.disposable.add(submissionFailuresDisposable);
 
-		io.reactivex.rxjava3.disposables.Disposable deserializationFailures = submissionErrorsRx.deserializationFailures()
+		var deserializationFailures = submissionErrorsRx.deserializationFailures()
 			.observeOn(Schedulers.io())
 			.subscribe(this::processDeserializationFailure);
 		this.disposable.add(deserializationFailures);
@@ -203,7 +229,7 @@ public class AtomsService {
 		return () -> this.singleAtomObservers.get(aid).remove(subscriber);
 	}
 
-	public Observable<ObservedAtomEvents> getAtomEvents(AtomQuery atomQuery) {
+	public org.radix.api.observable.Observable<ObservedAtomEvents> getAtomEvents(AtomQuery atomQuery) {
 		return observer -> {
 			final AtomEventObserver atomEventObserver = new AtomEventObserver(atomQuery, observer, executorService, store, commandToBinaryConverter, clientAtomToBinaryConverter);
 			atomEventObserver.start();

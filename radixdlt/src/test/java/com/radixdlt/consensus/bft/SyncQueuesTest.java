@@ -23,7 +23,7 @@ import static org.mockito.Mockito.when;
 
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.ConsensusEvent;
-import com.radixdlt.consensus.SyncInfo;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.bft.SyncQueues.SyncQueue;
 import com.radixdlt.crypto.Hash;
@@ -62,7 +62,7 @@ public class SyncQueuesTest {
 		ConsensusEvent event0 = mock(ConsensusEvent.class);
 		Hash vertexId = mock(Hash.class);
 		QuorumCertificate qc = mock(QuorumCertificate.class);
-		SyncInfo syncInfo = mock(SyncInfo.class);
+		HighQC syncInfo = mock(HighQC.class);
 		when(syncInfo.highestQC()).thenReturn(qc);
 		BFTHeader header = mock(BFTHeader.class);
 		when(header.getVertexId()).thenReturn(vertexId);

@@ -17,7 +17,7 @@
 
 package com.radixdlt.consensus.bft;
 
-import com.radixdlt.consensus.SyncInfo;
+import com.radixdlt.consensus.HighQC;
 
 import javax.annotation.Nullable;
 
@@ -38,9 +38,9 @@ public interface BFTSyncer {
 	 * An author is used because the author will most likely have the corresponding vertices
 	 * still in memory.
 	 *
-	 * @param syncInfo the {@link SyncInfo} to sync to
+	 * @param syncInfo the {@link HighQC} to sync to
 	 * @param author the original author of the qc
 	 * @return {@code SyncResult.SYNCED} if already synced
 	 */
-	SyncResult syncToQC(SyncInfo syncInfo, @Nullable BFTNode author);
+	SyncResult syncToQC(HighQC syncInfo, @Nullable BFTNode author);
 }

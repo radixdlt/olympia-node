@@ -25,15 +25,15 @@ import java.util.Objects;
  * Vertex Store update of committed vertices
  */
 public final class BFTCommittedUpdate {
-	private final ImmutableList<VerifiedVertex> committed;
+	private final ImmutableList<PreparedVertex> committed;
 	private final VerifiedLedgerHeaderAndProof proof;
 
-	BFTCommittedUpdate(ImmutableList<VerifiedVertex> committed, VerifiedLedgerHeaderAndProof proof) {
+	BFTCommittedUpdate(ImmutableList<PreparedVertex> committed, VerifiedLedgerHeaderAndProof proof) {
 		this.committed = Objects.requireNonNull(committed);
 		this.proof = Objects.requireNonNull(proof);
 	}
 
-	public ImmutableList<VerifiedVertex> getCommitted() {
+	public ImmutableList<PreparedVertex> getCommitted() {
 		return committed;
 	}
 

@@ -18,7 +18,6 @@
 package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomWithResult;
 import java.util.function.Consumer;
@@ -47,45 +46,10 @@ public final class CommittedAtoms {
 			successConsumer.accept(indicies);
 			return this;
 		}
-
-		@Override
-		public CommittedAtomWithResult ifError(Consumer<RadixEngineException> errorConsumer) {
-			return this;
-		}
-	}
-
-	private static class CommittedAtomWithResultException implements CommittedAtomWithResult {
-		private final CommittedAtom committedAtom;
-		private final RadixEngineException exception;
-
-		private CommittedAtomWithResultException(CommittedAtom committedAtom, RadixEngineException exception) {
-			this.committedAtom = committedAtom;
-			this.exception = exception;
-		}
-
-		@Override
-		public CommittedAtom getCommittedAtom() {
-			return committedAtom;
-		}
-
-		@Override
-		public CommittedAtomWithResult ifSuccess(Consumer<ImmutableSet<EUID>> successConsumer) {
-			return this;
-		}
-
-		@Override
-		public CommittedAtomWithResult ifError(Consumer<RadixEngineException> errorConsumer) {
-			errorConsumer.accept(exception);
-			return this;
-		}
 	}
 
 	public static CommittedAtomWithResult success(CommittedAtom committedAtom, ImmutableSet<EUID> indicies) {
 		return new CommittedAtomWithResultSuccess(committedAtom, indicies);
-	}
-
-	public static CommittedAtomWithResult error(CommittedAtom committedAtom, RadixEngineException e) {
-		return new CommittedAtomWithResultException(committedAtom, e);
 	}
 
 	private CommittedAtoms() {

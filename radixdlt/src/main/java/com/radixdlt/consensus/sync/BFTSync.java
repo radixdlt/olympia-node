@@ -21,7 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.SyncInfo;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTSyncer;
@@ -64,14 +64,14 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 
 	private static class SyncState {
 		private final Hash localSyncId;
-		private final SyncInfo syncInfo;
+		private final HighQC syncInfo;
 		private final BFTHeader committedHeader;
 		private final VerifiedLedgerHeaderAndProof committedProof;
 		private final BFTNode author;
 		private SyncStage syncStage;
 		private final LinkedList<VerifiedVertex> fetched = new LinkedList<>();
 
-		SyncState(SyncInfo syncInfo, BFTNode author) {
+		SyncState(HighQC syncInfo, BFTNode author) {
 			this.localSyncId = syncInfo.highestQC().getProposed().getVertexId();
 			Pair<BFTHeader, VerifiedLedgerHeaderAndProof> pair = syncInfo.highestCommittedQC().getCommittedAndLedgerStateProof()
 				.orElseThrow(() -> new IllegalStateException("committedQC must have a commit"));
@@ -86,7 +86,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 			this.syncStage = syncStage;
 		}
 
-		SyncInfo syncInfo() {
+		HighQC syncInfo() {
 			return this.syncInfo;
 		}
 
@@ -140,7 +140,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 	}
 
 	@Override
-	public SyncResult syncToQC(SyncInfo syncInfo, @Nullable BFTNode author) {
+	public SyncResult syncToQC(HighQC syncInfo, @Nullable BFTNode author) {
 		final QuorumCertificate qc = syncInfo.highestQC();
 		final Hash vertexId = qc.getProposed().getVertexId();
 		if (qc.getProposed().getView().compareTo(vertexStore.getRoot().getView()) < 0) {
@@ -185,7 +185,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 		return false;
 	}
 
-	private void startSync(SyncInfo syncInfo, BFTNode author) {
+	private void startSync(HighQC syncInfo, BFTNode author) {
 		final SyncState syncState = new SyncState(syncInfo, author);
 		syncing.put(syncState.localSyncId, syncState);
 		if (requiresLedgerSync(syncState)) {

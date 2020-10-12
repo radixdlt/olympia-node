@@ -46,7 +46,7 @@ public final class Vote implements ConsensusEvent {
 
 	@JsonProperty("sync_info")
 	@DsonOutput(Output.ALL)
-	private final SyncInfo syncInfo;
+	private final HighQC syncInfo;
 
 	@JsonProperty("vote_data")
 	@DsonOutput(Output.ALL)
@@ -61,12 +61,12 @@ public final class Vote implements ConsensusEvent {
 		@JsonProperty("author") byte[] author,
 		@JsonProperty("vote_data") TimestampedVoteData voteData,
 		@JsonProperty("signature") ECDSASignature signature,
-		@JsonProperty("sync_info") SyncInfo syncInfo
+		@JsonProperty("sync_info") HighQC syncInfo
 	) throws PublicKeyException {
 		this(BFTNode.fromPublicKeyBytes(author), voteData, signature, syncInfo);
 	}
 
-	public Vote(BFTNode author, TimestampedVoteData voteData, ECDSASignature signature, SyncInfo syncInfo) {
+	public Vote(BFTNode author, TimestampedVoteData voteData, ECDSASignature signature, HighQC syncInfo) {
 		this.author = Objects.requireNonNull(author);
 		this.voteData = Objects.requireNonNull(voteData);
 		this.signature = Objects.requireNonNull(signature);
@@ -84,7 +84,7 @@ public final class Vote implements ConsensusEvent {
 	}
 
 	@Override
-	public SyncInfo syncInfo() {
+	public HighQC syncInfo() {
 		return this.syncInfo;
 	}
 

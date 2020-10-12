@@ -19,8 +19,8 @@ package com.radixdlt.consensus.bft;
 
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.SyncInfo;
 import com.radixdlt.consensus.ViewTimeout;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import org.apache.logging.log4j.LogManager;
@@ -60,7 +60,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		log.trace("Vote: Processing {}", vote);
 		// accumulate votes into QCs in store
 		this.pacemaker.processVote(vote).ifPresent(qc -> {
-			SyncInfo syncInfo = SyncInfo.from(qc, this.vertexStore.syncInfo().highestCommittedQC());
+			HighQC syncInfo = HighQC.from(qc, this.vertexStore.syncInfo().highestCommittedQC());
 			// If we are not yet synced, we rely on the syncer to process the QC once received
 			this.bftSyncer.syncToQC(syncInfo, vote.getAuthor());
 		});

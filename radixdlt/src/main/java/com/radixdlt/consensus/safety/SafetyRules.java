@@ -20,10 +20,10 @@ package com.radixdlt.consensus.safety;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.Hasher;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.SyncInfo;
 import com.radixdlt.consensus.TimestampedVoteData;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.ViewTimeout;
@@ -93,7 +93,7 @@ public final class SafetyRules {
 	/**
 	 * Sign a view timeout for the specified view.
 	 */
-	public ViewTimeout viewTimeout(View view, SyncInfo syncInfo) {
+	public ViewTimeout viewTimeout(View view, HighQC syncInfo) {
 		long epoch = syncInfo.highestQC().getProposed().getLedgerHeader().getEpoch();
 		ViewTimeoutData viewTimeoutData = ViewTimeoutData.from(this.self, epoch, view);
 		ECDSASignature signature = this.signer.sign(this.hasher.hash(viewTimeoutData));
@@ -110,7 +110,7 @@ public final class SafetyRules {
 	 * @return A vote result containing the vote and any committed vertices
 	 * @throws SafetyViolationException In case the vertex would violate a safety invariant
 	 */
-	public Vote voteFor(VerifiedVertex proposedVertex, BFTHeader proposedHeader, long timestamp, SyncInfo syncInfo) throws SafetyViolationException {
+	public Vote voteFor(VerifiedVertex proposedVertex, BFTHeader proposedHeader, long timestamp, HighQC syncInfo) throws SafetyViolationException {
 		// ensure vertex does not violate earlier votes
 		if (proposedVertex.getView().compareTo(this.state.getLastVotedView()) <= 0) {
 			throw new SafetyViolationException(proposedVertex, this.state, String.format(

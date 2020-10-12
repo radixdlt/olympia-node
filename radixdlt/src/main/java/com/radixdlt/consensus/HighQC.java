@@ -33,8 +33,8 @@ import com.radixdlt.serialization.DsonOutput.Output;
  * Current state of synchronisation for sending node.
  */
 @Immutable
-@SerializerId2("consensus.sync_info")
-public final class SyncInfo {
+@SerializerId2("consensus.high_qc")
+public final class HighQC {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(Output.ALL)
 	SerializerDummy serializer = SerializerDummy.DUMMY;
@@ -48,16 +48,17 @@ public final class SyncInfo {
 	private final QuorumCertificate highestCommittedQC;
 
 	@JsonCreator
-	private static SyncInfo serializerCreate(
+	private static HighQC serializerCreate(
 		@JsonProperty("highest_qc") QuorumCertificate highestQC,
 		@JsonProperty("committed_qc") QuorumCertificate highestCommittedQC
 	) {
-		return new SyncInfo(highestQC, highestCommittedQC);
+		return new HighQC(highestQC, highestCommittedQC);
 	}
 
-	private SyncInfo(QuorumCertificate highestQC, QuorumCertificate highestCommittedQC) {
+	private HighQC(QuorumCertificate highestQC, QuorumCertificate highestCommittedQC) {
 		this.highestQC = Objects.requireNonNull(highestQC);
-		// Don't include separate committedQC if it is the same as highQC
+		// Don't include separate committedQC if it is the same as highQC.
+		// This significantly reduces the serialised size of the object.
 		if (highestCommittedQC == null || highestQC.equals(highestCommittedQC)) {
 			this.highestCommittedQC = null;
 		} else {
@@ -66,14 +67,18 @@ public final class SyncInfo {
 	}
 
 	/**
-	 * Creates a {@link SyncInfo} from the specified QCs.
+	 * Creates a {@link HighQC} from the specified QCs.
+	 * <p>
+	 * Note that highestCommittedQC->committed needs to be an ancestor of
+	 * highestQC->proposed, but highestCommittedQC->proposed does not need
+	 * to be an ancestor of highestQC->proposed.
 	 *
 	 * @param highestQC The highest QC we have seen
 	 * @param highestCommittedQC The highest QC we have committed
-	 * @return A new {@link SyncInfo}
+	 * @return A new {@link HighQC}
 	 */
-	public static SyncInfo from(QuorumCertificate highestQC, QuorumCertificate highestCommittedQC) {
-		return new SyncInfo(highestQC, Objects.requireNonNull(highestCommittedQC));
+	public static HighQC from(QuorumCertificate highestQC, QuorumCertificate highestCommittedQC) {
+		return new HighQC(highestQC, Objects.requireNonNull(highestCommittedQC));
 	}
 
 	public QuorumCertificate highestQC() {
@@ -94,8 +99,8 @@ public final class SyncInfo {
 		if (this == o) {
 			return true;
 		}
-		if (o instanceof SyncInfo) {
-			SyncInfo that = (SyncInfo) o;
+		if (o instanceof HighQC) {
+			HighQC that = (HighQC) o;
 			return Objects.equals(this.highestCommittedQC, that.highestCommittedQC)
 				&& Objects.equals(this.highestQC, that.highestQC);
 		}

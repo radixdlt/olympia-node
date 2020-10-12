@@ -19,7 +19,6 @@ package org.radix.serialization;
 
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.SyncInfo;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -28,6 +27,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.TimestampedVoteData;
 import com.radixdlt.consensus.BFTHeader;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.crypto.Hash;
 
@@ -40,14 +40,14 @@ public class VoteSerializeTest extends SerializeObject<Vote> {
 		View view = View.of(1234567891L);
 		Hash id = Hash.random();
 
-		LedgerHeader ledgerHeader = LedgerHeader.genesis(Hash.ZERO_HASH);
+		LedgerHeader ledgerHeader = LedgerHeader.genesis(Hash.ZERO_HASH, null);
 		BFTHeader header = new BFTHeader(view, id, ledgerHeader);
 		BFTHeader parent = new BFTHeader(View.of(1234567890L), Hash.random(), ledgerHeader);
 		VoteData voteData = new VoteData(header, parent, null);
 		TimestampedVoteData timestampedVoteData = new TimestampedVoteData(voteData, 123456L);
 		BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
 		QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-		SyncInfo syncInfo = SyncInfo.from(qc, qc);
+		HighQC syncInfo = HighQC.from(qc, qc);
 		return new Vote(author, timestampedVoteData, new ECDSASignature(), syncInfo);
 	}
 }

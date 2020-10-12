@@ -17,12 +17,16 @@
 
 package com.radixdlt.consensus.bft;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.crypto.Hash;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * A vertex which has been verified with hash id
@@ -40,8 +44,8 @@ public final class VerifiedVertex {
 		return vertex;
 	}
 
-	public Command getCommand() {
-		return vertex.getCommand();
+	public Optional<Command> getCommand() {
+		return Optional.ofNullable(vertex.getCommand());
 	}
 
 	public boolean touchesGenesis() {
@@ -80,6 +84,18 @@ public final class VerifiedVertex {
 
 	public Hash getParentId() {
 		return vertex.getQC().getProposed().getVertexId();
+	}
+
+
+	public interface PreparedVertexBuilder {
+		PreparedVertex andCommands(
+			ImmutableList<Command> successfulCommands,
+			ImmutableMap<Command, Exception> commandExceptions
+		);
+	}
+
+	public PreparedVertexBuilder withHeader(LedgerHeader ledgerHeader) {
+		return (success, exceptions) -> new PreparedVertex(this, ledgerHeader, success, exceptions);
 	}
 
 	@Override

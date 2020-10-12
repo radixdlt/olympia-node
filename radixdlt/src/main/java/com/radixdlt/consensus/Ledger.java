@@ -17,8 +17,12 @@
 
 package com.radixdlt.consensus;
 
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import java.util.LinkedList;
+import java.util.Optional;
 
 /**
  * A distributed computer which manages the computed state in a BFT.
@@ -28,13 +32,21 @@ public interface Ledger {
 	 * Given a proposed vertex, executes prepare stage on
 	 * the state computer, the result of which gets persisted on ledger.
 	 *
-	 * @param vertex the vertex to compute
+	 * @param previous parents of given vertex
+	 * @param vertex vertex to prepare
 	 * @return the results of executing the prepare stage
 	 */
-	LedgerHeader prepare(VerifiedVertex vertex);
+	Optional<PreparedVertex> prepare(LinkedList<PreparedVertex> previous, VerifiedVertex vertex);
 
 	/**
-	 * Commit a command
+	 * Commit prepared vertices from bft consensus
+	 * @param vertices vertices to commit
+	 * @param proof proof of commit
+	 */
+	void commit(ImmutableList<PreparedVertex> vertices, VerifiedLedgerHeaderAndProof proof);
+
+	/**
+	 * Commit commands
 	 * @param verifiedCommandsAndProof the command to commit
 	 */
 	void commit(VerifiedCommandsAndProof verifiedCommandsAndProof);

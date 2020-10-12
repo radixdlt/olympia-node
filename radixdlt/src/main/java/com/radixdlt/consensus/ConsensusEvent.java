@@ -49,5 +49,5 @@ public interface ConsensusEvent {
 	 *
 	 * @return {@link SyncInfo} associated with event
 	 */
-	SyncInfo syncInfo();
+	HighQC syncInfo();
 }

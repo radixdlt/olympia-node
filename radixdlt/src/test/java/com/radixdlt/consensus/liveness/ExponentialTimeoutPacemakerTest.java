@@ -34,14 +34,14 @@ import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.SyncInfo;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.HighQC;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker.PacemakerInfoSender;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyViolationException;
@@ -149,7 +149,7 @@ public class ExponentialTimeoutPacemakerTest {
 	@Test
 	public void when_view_1_view_timeout_with_quorum__then_next_view_and_timeout_scheduled() {
 		ViewTimeout viewTimeout = mock(ViewTimeout.class);
-		SyncInfo syncInfo = mock(SyncInfo.class);
+		HighQC syncInfo = mock(HighQC.class);
 		QuorumCertificate highQC = mock(QuorumCertificate.class);
 		BFTHeader header = mock(BFTHeader.class);
 		LedgerHeader ledgerHeader = mock(LedgerHeader.class);
@@ -175,7 +175,7 @@ public class ExponentialTimeoutPacemakerTest {
 	@Test
 	public void when_view_1_view_timeout_with_quorum__then_next_view_and_timeout_scheduled_with_command() {
 		ViewTimeout viewTimeout = mock(ViewTimeout.class);
-		SyncInfo syncInfo = mock(SyncInfo.class);
+		HighQC syncInfo = mock(HighQC.class);
 		QuorumCertificate highQC = mock(QuorumCertificate.class);
 		BFTHeader header = mock(BFTHeader.class);
 		LedgerHeader ledgerHeader = mock(LedgerHeader.class);
@@ -265,6 +265,7 @@ public class ExponentialTimeoutPacemakerTest {
 		when(proposal.getView()).thenReturn(View.of(0));
 		when(proposal.getVertex()).thenReturn(mock(UnverifiedVertex.class));
 		when(this.hasher.hash(any())).thenReturn(mock(Hash.class));
+		when(this.vertexStore.insertVertex(any())).thenReturn(Optional.of(mock(BFTHeader.class)));
 
 		this.pacemaker.processProposal(proposal);
 		assertThat(this.pacemaker.getCurrentView()).isEqualTo(View.of(0));
@@ -288,7 +289,7 @@ public class ExponentialTimeoutPacemakerTest {
 
 	@Test
 	public void when_process_qc_for_wrong_view__then_ignored() {
-		SyncInfo syncInfo = mock(SyncInfo.class);
+		HighQC syncInfo = mock(HighQC.class);
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		when(qc.getView()).thenReturn(View.of(1));
 		when(syncInfo.highestQC()).thenReturn(qc);
@@ -306,7 +307,7 @@ public class ExponentialTimeoutPacemakerTest {
 
 	@Test
 	public void when_process_qc_for_current_view__then_processed() {
-		SyncInfo syncInfo = mock(SyncInfo.class);
+		HighQC syncInfo = mock(HighQC.class);
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		when(qc.getView()).thenReturn(View.of(0));
 		when(syncInfo.highestQC()).thenReturn(qc);

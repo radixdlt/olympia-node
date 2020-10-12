@@ -17,13 +17,13 @@
 
 package com.radixdlt.statecomputer;
 
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
-import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -34,9 +34,9 @@ import javax.annotation.concurrent.NotThreadSafe;
  */
 @NotThreadSafe
 public final class RadixEngineValidatorSetBuilder {
-	private final HashSet<ECPublicKey> validators;
+	private final ImmutableSet<ECPublicKey> validators;
+	private final ImmutableSet<ECPublicKey> lastGoodSet;
 	private final Predicate<Set<ECPublicKey>> validatorSetCheck;
-	private HashSet<ECPublicKey> lastGoodSet;
 
 	public RadixEngineValidatorSetBuilder(Set<ECPublicKey> initialSet, Predicate<Set<ECPublicKey>> validatorSetCheck) {
 		if (!validatorSetCheck.test(initialSet)) {
@@ -44,25 +44,44 @@ public final class RadixEngineValidatorSetBuilder {
 				String.format("Initial validator set %s should pass check: %s", initialSet, validatorSetCheck)
 			);
 		}
-		this.validators = new HashSet<>(initialSet);
-		this.lastGoodSet = new HashSet<>(initialSet);
+		this.validators = ImmutableSet.copyOf(initialSet);
+		this.lastGoodSet = ImmutableSet.copyOf(initialSet);
 		this.validatorSetCheck = Objects.requireNonNull(validatorSetCheck);
 	}
 
+	private RadixEngineValidatorSetBuilder(
+		ImmutableSet<ECPublicKey> validators,
+		ImmutableSet<ECPublicKey> lastGoodSet,
+		Predicate<Set<ECPublicKey>> validatorSetCheck
+	) {
+		this.validators = validators;
+		this.lastGoodSet = lastGoodSet;
+		this.validatorSetCheck = validatorSetCheck;
+	}
+
 	public RadixEngineValidatorSetBuilder removeValidator(RadixAddress validatorAddress) {
-		this.validators.remove(validatorAddress.getPublicKey());
-		if (this.validatorSetCheck.test(this.validators)) {
-			this.lastGoodSet = new HashSet<>(this.validators);
+		ImmutableSet<ECPublicKey> nextValidators = validators.stream()
+			.filter(e -> !e.equals(validatorAddress.getPublicKey()))
+			.collect(ImmutableSet.toImmutableSet());
+
+		if (this.validatorSetCheck.test(nextValidators)) {
+			return new RadixEngineValidatorSetBuilder(nextValidators, nextValidators, validatorSetCheck);
 		}
-		return this;
+
+		return new RadixEngineValidatorSetBuilder(nextValidators, lastGoodSet, validatorSetCheck);
 	}
 
 	public RadixEngineValidatorSetBuilder addValidator(RadixAddress validatorAddress) {
-		this.validators.add(validatorAddress.getPublicKey());
-		if (this.validatorSetCheck.test(this.validators)) {
-			this.lastGoodSet = new HashSet<>(this.validators);
+		ImmutableSet<ECPublicKey> nextValidators = ImmutableSet.<ECPublicKey>builder()
+			.addAll(validators)
+			.add(validatorAddress.getPublicKey())
+			.build();
+
+		if (this.validatorSetCheck.test(nextValidators)) {
+			return new RadixEngineValidatorSetBuilder(nextValidators, nextValidators, validatorSetCheck);
 		}
-		return this;
+
+		return new RadixEngineValidatorSetBuilder(nextValidators, lastGoodSet, validatorSetCheck);
 	}
 
 	BFTValidatorSet build() {

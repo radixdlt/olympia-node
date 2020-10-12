@@ -21,9 +21,9 @@ import java.util.Optional;
 
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.SyncInfo;
 import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.bft.View;
 
 /**
@@ -65,5 +65,5 @@ public interface Pacemaker extends PacemakerState {
 	 * @param syncInfo the sync info for the view
 	 * @return {@code true} if proceeded to a new view
 	 */
-	boolean processQC(SyncInfo syncInfo);
+	boolean processQC(HighQC syncInfo);
 }

@@ -26,15 +26,16 @@ import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.SyncInfo;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.HighQC;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyViolationException;
 import com.radixdlt.crypto.ECDSASignature;
@@ -205,15 +206,18 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 		}
 
 		final VerifiedVertex proposedVertex = new VerifiedVertex(proposal.getVertex(), this.hasher.hash(proposal.getVertex()));
-		final BFTHeader header = this.vertexStore.insertVertex(proposedVertex);
-		final BFTNode nextLeader = this.proposerElection.getProposer(this.currentView.next());
-		try {
-			final Vote vote = this.safetyRules.voteFor(proposedVertex, header, this.timeSupplier.currentTime(), this.vertexStore.syncInfo());
-			log.trace("Proposal: Sending vote to {}: {}", nextLeader, vote);
-			this.proceedToViewSender.sendVote(vote, nextLeader);
-		} catch (SafetyViolationException e) {
-			log.error(() -> new FormattedMessage("Proposal: Rejected {}", proposedVertex), e);
-		}
+		final Optional<BFTHeader> maybeHeader = this.vertexStore.insertVertex(proposedVertex);
+		// The header may not be present if the ledger is ahead of consensus
+		maybeHeader.ifPresent(header -> {
+			final BFTNode nextLeader = this.proposerElection.getProposer(this.currentView.next());
+			try {
+				final Vote vote = this.safetyRules.voteFor(proposedVertex, header, this.timeSupplier.currentTime(), this.vertexStore.syncInfo());
+				log.trace("Proposal: Sending vote to {}: {}", nextLeader, vote);
+				this.proceedToViewSender.sendVote(vote, nextLeader);
+			} catch (SafetyViolationException e) {
+				log.error(() -> new FormattedMessage("Proposal: Rejected {}", proposedVertex), e);
+			}
+		});
 	}
 
 
@@ -251,7 +255,7 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 	}
 
 	@Override
-	public boolean processQC(SyncInfo syncInfo) {
+	public boolean processQC(HighQC syncInfo) {
 		log.trace("QuorumCertificate: {}", syncInfo);
 		// check if a new view can be started
 		View view = syncInfo.highestQC().getView();
@@ -288,7 +292,7 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 	}
 
 	private Proposal generateProposal(View view) {
-		final SyncInfo syncInfo = this.vertexStore.syncInfo();
+		final HighQC syncInfo = this.vertexStore.syncInfo();
 		final QuorumCertificate highestQC = syncInfo.highestQC();
 		final QuorumCertificate highestCommitted = syncInfo.highestCommittedQC();
 
@@ -299,14 +303,14 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 		if (highestQC.getProposed().getLedgerHeader().isEndOfEpoch()) {
 			nextCommand = null;
 		} else {
-			final List<VerifiedVertex> preparedVertices = vertexStore.getPathFromRoot(highestQC.getProposed().getVertexId());
-			final Set<Hash> prepared = preparedVertices.stream()
-				.map(VerifiedVertex::getCommand)
-				.filter(Objects::nonNull)
-				.map(Command::getHash)
-				.collect(Collectors.toSet());
+            final List<PreparedVertex> preparedVertices = vertexStore.getPathFromRoot(highestQC.getProposed().getVertexId());
+            final Set<Hash> prepared = preparedVertices.stream()
+                .flatMap(PreparedVertex::getCommands)
+                .filter(Objects::nonNull)
+                .map(Command::getHash)
+                .collect(Collectors.toSet());
 
-			nextCommand = nextCommandGenerator.generateNextCommand(view, prepared);
+            nextCommand = nextCommandGenerator.generateNextCommand(view, prepared);
 		}
 
 		final UnverifiedVertex proposedVertex = UnverifiedVertex.createVertex(highestQC, view, nextCommand);
