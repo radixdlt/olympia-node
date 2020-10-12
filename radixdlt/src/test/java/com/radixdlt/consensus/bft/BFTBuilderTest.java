@@ -25,16 +25,12 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.BFTEventProcessor;
-import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
-import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.sync.BFTSync;
-import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.UInt256;
@@ -42,13 +38,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class BFTBuilderTest {
-	private NextCommandGenerator nextCommandGenerator;
-	private BFTEventSender eventSender;
-	private SystemCounters counters;
 	private BFTValidatorSet validatorSet;
 	private ProposerElection proposerElection;
 	private Hasher hasher;
-	private HashSigner signer;
 	private HashVerifier verifier = ECPublicKey::verify;
 	private Pacemaker pacemaker;
 	private VertexStore vertexStore;
@@ -57,13 +49,9 @@ public class BFTBuilderTest {
 
 	@Before
 	public void setup() {
-		nextCommandGenerator = mock(NextCommandGenerator.class);
-		eventSender = mock(BFTEventSender.class);
-		counters = mock(SystemCounters.class);
 		validatorSet = mock(BFTValidatorSet.class);
 		proposerElection = mock(ProposerElection.class);
 		hasher = mock(Hasher.class);
-		signer = mock(HashSigner.class);
 		verifier = mock(HashVerifier.class);
 		pacemaker = mock(Pacemaker.class);
 		vertexStore = mock(VertexStore.class);
@@ -79,14 +67,9 @@ public class BFTBuilderTest {
 		when(verifier.verify(any(), any(), any())).thenReturn(false);
 
 		BFTEventProcessor processor = BFTBuilder.create()
-			.nextCommandGenerator(nextCommandGenerator)
-			.eventSender(eventSender)
-			.counters(counters)
-			.timeSupplier(System::currentTimeMillis)
 			.validatorSet(validatorSet)
 			.proposerElection(proposerElection)
 			.hasher(hasher)
-			.signer(signer)
 			.verifier(verifier)
 			.pacemaker(pacemaker)
 			.vertexStore(vertexStore)

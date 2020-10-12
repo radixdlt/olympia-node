@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger;
+package com.radixdlt.integration.distributed.simulation.tests.consensus;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
@@ -29,18 +29,15 @@ import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
 /**
- * Dropping random new-views and proposals should cause consensus to fork quite a bit.
+ * Dropping random vote and view-timeout messages should cause consensus to fork quite a bit.
  * This is to test that safety should always be preserved even in multiple forking situations.
  */
-public class RandomNewViewDropperTest {
+public class RandomVoteAndViewTimeoutDropperTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(4)
-		.ledger()
-		.addRandomNewViewDropper(0.4)
+		.addRandomVoteAndViewTimeoutDropper(0.4)
 		.checkConsensusSafety("safety")
-		.checkConsensusLiveness("liveness", 20, TimeUnit.SECONDS)
-		.checkLedgerInOrder("ledgerInOrder")
-		.checkLedgerProcessesConsensusCommitted("consensusToLedger");
+		.checkConsensusLiveness("liveness", 20, TimeUnit.SECONDS);
 
 	/**
 	 * Tests a configuration of 4 nodes with a dropping proposal adversary
@@ -55,7 +52,6 @@ public class RandomNewViewDropperTest {
 			.map(s -> s.get(CounterType.BFT_VERTEX_STORE_FORKS))
 			.mapToLong(l -> l)
 			.summaryStatistics();
-
 		System.out.println(statistics);
 
 		assertThat(results.getCheckResults()).allSatisfy((name, error) -> AssertionsForClassTypes.assertThat(error).isNotPresent());

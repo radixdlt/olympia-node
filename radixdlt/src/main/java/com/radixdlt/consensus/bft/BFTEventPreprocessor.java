@@ -18,10 +18,10 @@
 package com.radixdlt.consensus.bft;
 
 import com.radixdlt.consensus.BFTEventProcessor;
-import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.RequiresSyncConsensusEvent;
-import com.radixdlt.consensus.UnverifiedVertex;
+import com.radixdlt.consensus.ConsensusEvent;
+import com.radixdlt.consensus.SyncInfo;
+import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTSyncer.SyncResult;
 import com.radixdlt.consensus.bft.SyncQueues.SyncQueue;
@@ -73,42 +73,52 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	// TODO: Cleanup
 	// TODO: remove queues and treat each message independently
 	private boolean clearAndExecute(SyncQueue queue, View view) {
-		final RequiresSyncConsensusEvent event = queue.clearViewAndGetNext(view);
+		final ConsensusEvent event = queue.clearViewAndGetNext(view);
 		if (event == null) {
 			return false;
 		}
 
 		// Explicitly using switch case method here rather than functional method
 		// to process these events due to much better performance
-		if (event instanceof NewView) {
-			final NewView newView = (NewView) event;
-			return this.processNewViewInternal(newView);
-		}
-
 		if (event instanceof Proposal) {
 			final Proposal proposal = (Proposal) event;
-			return this.processProposalInternal(proposal);
+			return processProposalInternal(proposal);
+		}
+
+		if (event instanceof ViewTimeout) {
+			final ViewTimeout viewTimeout = (ViewTimeout) event;
+			return processViewTimeoutInternal(viewTimeout);
+		}
+
+		if (event instanceof Vote) {
+			final Vote vote = (Vote) event;
+			return processVoteInternal(vote);
 		}
 
 		throw new IllegalStateException("Unexpected consensus event: " + event);
 	}
 
 	private boolean peekAndExecute(SyncQueue queue, Hash vertexId) {
-		final RequiresSyncConsensusEvent event = queue.peek(vertexId);
+		final ConsensusEvent event = queue.peek(vertexId);
 		if (event == null) {
 			return false;
 		}
 
 		// Explicitly using switch case method here rather than functional method
 		// to process these events due to much better performance
-		if (event instanceof NewView) {
-			final NewView newView = (NewView) event;
-			return this.processNewViewInternal(newView);
-		}
-
 		if (event instanceof Proposal) {
 			final Proposal proposal = (Proposal) event;
-			return this.processProposalInternal(proposal);
+			return processProposalInternal(proposal);
+		}
+
+		if (event instanceof ViewTimeout) {
+			final ViewTimeout viewTimeout = (ViewTimeout) event;
+			return processViewTimeoutInternal(viewTimeout);
+		}
+
+		if (event instanceof Vote) {
+			final Vote vote = (Vote) event;
+			return processVoteInternal(vote);
 		}
 
 		throw new IllegalStateException("Unexpected consensus event: " + event);
@@ -133,99 +143,28 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 
 	@Override
 	public void processVote(Vote vote) {
-		log.trace("{}: VOTE: PreProcessing {}", this.self::getSimpleName, () -> vote);
-
-		// only do something if we're actually the leader for the vote
-		final View view = vote.getVoteData().getProposed().getView();
-		// TODO: currently we don't check view of vote relative to our pacemakerState. This opens
-		// TODO: up to dos attacks on calculation of next proposer if ProposerElection is
-		// TODO: an expensive operation. Need to figure out a way of mitigating this problem
-		// TODO: perhaps through filter views too out of bounds
-		if (!Objects.equals(proposerElection.getProposer(view), this.self)) {
-			log.warn("{}: VOTE: Ignoring confused vote {} for {}",
-				this.self::getSimpleName, vote::hashCode, vote.getVoteData().getProposed()::getView);
-			return;
-		}
-
-		forwardTo.processVote(vote);
-	}
-
-	private boolean processNewViewInternal(NewView newView) {
-		log.trace("{}: NEW_VIEW: PreProcessing {}", this.self, newView);
-
-		// only do something if we're actually the leader for the view
-		final View view = newView.getView();
-		if (!Objects.equals(proposerElection.getProposer(view), this.self)) {
-			log.warn("{}: NEW_VIEW: Got confused new-view {} for view {}", this.self::getSimpleName, () -> newView, newView::getView);
-			return true;
-		}
-
-		final View currentView = pacemakerState.getCurrentView();
-		if (newView.getView().compareTo(currentView) < 0) {
-			log.trace("{}: NEW_VIEW: Ignoring {} Current is: {}", this.self::getSimpleName, newView::getView, () -> currentView);
-			return true;
-		}
-
-		SyncResult syncResult = this.bftSyncer.syncToQC(newView.syncInfo(), newView.getAuthor());
-		switch (syncResult) {
-			case SYNCED:
-				forwardTo.processNewView(newView);
-				return true;
-			case INVALID:
-				return true;
-			case IN_PROGRESS:
-				return false;
-			default:
-				throw new IllegalStateException("Unknown syncResult " + syncResult);
+		log.trace("Vote: PreProcessing {}", vote);
+		if (queues.isEmptyElseAdd(vote) && !processVoteInternal(vote)) {
+			log.debug("ViewTimeout: Queuing {}, waiting for Sync", vote);
+			queues.add(vote);
 		}
 	}
 
 	@Override
-	public void processNewView(NewView newView) {
-		log.trace("{}: NEW_VIEW: Queueing {}", this.self, newView);
-		if (queues.isEmptyElseAdd(newView)) {
-			if (!processNewViewInternal(newView)) {
-				log.debug("{}: NEW_VIEW: Queuing {} Waiting for Sync", this.self, newView);
-				queues.add(newView);
-			}
-		} else {
-			log.trace("{}: NEW_VIEW added to queue", this.self);
-		}
-	}
-
-	private boolean processProposalInternal(Proposal proposal) {
-		log.trace("{}: PROPOSAL: PreProcessing {}", this.self::getSimpleName, () -> proposal);
-
-		final UnverifiedVertex proposedVertex = proposal.getVertex();
-		final View proposedVertexView = proposedVertex.getView();
-		final View currentView = this.pacemakerState.getCurrentView();
-		if (proposedVertexView.compareTo(currentView) < 0) {
-			log.trace("{}: PROPOSAL: Ignoring view {} Current is: {}", this.self::getSimpleName, () -> proposedVertexView, () -> currentView);
-			return true;
-		}
-
-		SyncResult syncResult = this.bftSyncer.syncToQC(proposal.syncInfo(), proposal.getAuthor());
-		switch (syncResult) {
-			case SYNCED:
-				forwardTo.processProposal(proposal);
-				return true;
-			case INVALID:
-				return true;
-			case IN_PROGRESS:
-				return false;
-			default:
-				throw new IllegalStateException("Unknown syncResult " + syncResult);
+	public void processViewTimeout(ViewTimeout newView) {
+		log.trace("ViewTimeout: PreProcessing {}", newView);
+		if (queues.isEmptyElseAdd(newView) && !processViewTimeoutInternal(newView)) {
+			log.debug("ViewTimeout: Queuing {}, waiting for Sync", newView);
+			queues.add(newView);
 		}
 	}
 
 	@Override
 	public void processProposal(Proposal proposal) {
-		log.trace("{}: PROPOSAL: Queueing {}", this.self::getSimpleName, () -> proposal);
-		if (queues.isEmptyElseAdd(proposal)) {
-			if (!processProposalInternal(proposal)) {
-				log.debug("{}: PROPOSAL: Queuing {} Waiting for Sync", this.self::getSimpleName, () -> proposal);
-				queues.add(proposal);
-			}
+		log.trace("Proposal: PreProcessing {}", proposal);
+		if (queues.isEmptyElseAdd(proposal) && !processProposalInternal(proposal)) {
+			log.debug("Proposal: Queuing {}, waiting for Sync", proposal);
+			queues.add(proposal);
 		}
 	}
 
@@ -250,5 +189,75 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	@Override
 	public void start() {
 		forwardTo.start();
+	}
+
+	private boolean processViewTimeoutInternal(ViewTimeout viewTimeout) {
+		log.trace("ViewTimeout: PreProcessing {}", viewTimeout);
+
+		// Only do something if we're on the same view, and are the leader for the next view
+		if (!checkForCurrentViewAndIAmNextLeader("ViewTimeout", viewTimeout.getView(), viewTimeout)) {
+			return true;
+		}
+		return syncUp(viewTimeout.syncInfo(), viewTimeout.getAuthor(), () -> this.forwardTo.processViewTimeout(viewTimeout));
+	}
+
+	private boolean processVoteInternal(Vote vote) {
+		log.trace("Vote: PreProcessing {}", vote);
+
+		// Only do something if we're on the same view, and are the leader for the next view
+		if (!checkForCurrentViewAndIAmNextLeader("Vote", vote.getView(), vote)) {
+			return true;
+		}
+		return syncUp(vote.syncInfo(), vote.getAuthor(), () -> this.forwardTo.processVote(vote));
+	}
+
+	private boolean processProposalInternal(Proposal proposal) {
+		log.trace("Proposal: PreProcessing {}", proposal);
+
+		if (!onCurrentView("Proposal", proposal.getVertex().getView(), proposal)) {
+			return true;
+		}
+		return syncUp(proposal.syncInfo(), proposal.getAuthor(), () -> forwardTo.processProposal(proposal));
+	}
+
+	private boolean syncUp(SyncInfo syncInfo, BFTNode author, Runnable whenSynced) {
+		SyncResult syncResult = this.bftSyncer.syncToQC(syncInfo, author);
+		switch (syncResult) {
+			case SYNCED:
+				whenSynced.run();
+				return true;
+			case INVALID:
+				return true;
+			case IN_PROGRESS:
+				return false;
+			default:
+				throw new IllegalStateException("Unknown syncResult " + syncResult);
+		}
+	}
+
+	private boolean checkForCurrentViewAndIAmNextLeader(String what, View view, Object thing) {
+		if (!onCurrentView(what, view, thing)) {
+			return false;
+		}
+		// TODO: currently we don't check view of vote relative to our pacemakerState. This opens
+		// TODO: up to dos attacks on calculation of next proposer if ProposerElection is
+		// TODO: an expensive operation. Need to figure out a way of mitigating this problem
+		// TODO: perhaps through filter views too out of bounds
+		BFTNode nextLeader = proposerElection.getProposer(view.next());
+		boolean iAmTheNextLeader = Objects.equals(nextLeader, this.self);
+		if (!iAmTheNextLeader) {
+			log.warn("{}: Confused message for view {} (should be send to {}, I am {}): {}", what, view, nextLeader, this.self, thing);
+			return false;
+		}
+		return true;
+	}
+
+	private boolean onCurrentView(String what, View view, Object thing) {
+		final View currentView = this.pacemakerState.getCurrentView();
+		if (view.compareTo(currentView) < 0) {
+			log.trace("{}: Ignoring view {}, current is {}: {}", what, view, currentView, thing);
+			return false;
+		}
+		return true;
 	}
 }

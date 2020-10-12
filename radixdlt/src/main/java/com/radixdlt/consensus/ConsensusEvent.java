@@ -18,10 +18,11 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.View;
 
 /**
- * A message meant for consensus. Currently a marker interface so that all consensus
- * related messages can be handled within a single rxjava stream.
+ * A consensus event which requires syncing to be effectively
+ * processed
  */
 public interface ConsensusEvent {
 
@@ -32,8 +33,21 @@ public interface ConsensusEvent {
 	long getEpoch();
 
 	/**
+	 * Get the view the consensus event is meant for
+	 * @return view of consensus event
+	 */
+	View getView();
+
+	/**
 	 * Get the node author of this consensus message
 	 * @return the node author
 	 */
 	BFTNode getAuthor();
+
+	/**
+	 * Retrieves the {@link SyncInfo} associated with the event.
+	 *
+	 * @return {@link SyncInfo} associated with event
+	 */
+	SyncInfo syncInfo();
 }

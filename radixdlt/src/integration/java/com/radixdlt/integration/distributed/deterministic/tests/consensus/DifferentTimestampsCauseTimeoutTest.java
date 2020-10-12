@@ -29,7 +29,6 @@ import org.junit.Test;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignature;
@@ -57,11 +56,6 @@ public class DifferentTimestampsCauseTimeoutTest {
 		final int numNodes = 4;
 
 		LinkedList<Pair<ChannelId, Class<?>>> processingSequence = Lists.newLinkedList();
-		processingSequence.add(Pair.of(ChannelId.of(0, 1), NewView.class));
-		processingSequence.add(Pair.of(ChannelId.of(1, 1), NewView.class));
-		processingSequence.add(Pair.of(ChannelId.of(2, 1), NewView.class));
-		processingSequence.add(Pair.of(ChannelId.of(3, 1), NewView.class));
-
 		// Proposal here has genesis qc, which has no timestamps
 		processingSequence.add(Pair.of(ChannelId.of(1, 0), Proposal.class));
 		processingSequence.add(Pair.of(ChannelId.of(0, 0), BFTUpdate.class));
@@ -72,15 +66,10 @@ public class DifferentTimestampsCauseTimeoutTest {
 		processingSequence.add(Pair.of(ChannelId.of(1, 3), Proposal.class));
 		processingSequence.add(Pair.of(ChannelId.of(3, 3), BFTUpdate.class));
 
-		processingSequence.add(Pair.of(ChannelId.of(0, 1), Vote.class));
-		processingSequence.add(Pair.of(ChannelId.of(1, 1), Vote.class));
-		processingSequence.add(Pair.of(ChannelId.of(2, 1), Vote.class));
-		processingSequence.add(Pair.of(ChannelId.of(3, 1), Vote.class));
-
-		processingSequence.add(Pair.of(ChannelId.of(0, 2), NewView.class));
-		processingSequence.add(Pair.of(ChannelId.of(1, 2), NewView.class));
-		processingSequence.add(Pair.of(ChannelId.of(2, 2), NewView.class));
-		processingSequence.add(Pair.of(ChannelId.of(3, 2), NewView.class));
+		processingSequence.add(Pair.of(ChannelId.of(0, 2), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 2), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 2), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(3, 2), Vote.class));
 
 		// Proposal here should have timestamps from previous view
 		// They are not mutated in this test
@@ -93,15 +82,10 @@ public class DifferentTimestampsCauseTimeoutTest {
 		processingSequence.add(Pair.of(ChannelId.of(2, 3), Proposal.class));
 		processingSequence.add(Pair.of(ChannelId.of(3, 3), BFTUpdate.class));
 
-		processingSequence.add(Pair.of(ChannelId.of(0, 2), Vote.class));
-		processingSequence.add(Pair.of(ChannelId.of(1, 2), Vote.class));
-		processingSequence.add(Pair.of(ChannelId.of(2, 2), Vote.class));
-		processingSequence.add(Pair.of(ChannelId.of(3, 2), Vote.class));
-
-		processingSequence.add(Pair.of(ChannelId.of(0, 3), NewView.class));
-		processingSequence.add(Pair.of(ChannelId.of(1, 3), NewView.class));
-		processingSequence.add(Pair.of(ChannelId.of(2, 3), NewView.class));
-		processingSequence.add(Pair.of(ChannelId.of(3, 3), NewView.class));
+		processingSequence.add(Pair.of(ChannelId.of(0, 3), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 3), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 3), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(3, 3), Vote.class));
 
 		processingSequence.add(Pair.of(ChannelId.of(3, 0), Proposal.class));
 		processingSequence.add(Pair.of(ChannelId.of(0, 0), BFTUpdate.class));
@@ -125,10 +109,6 @@ public class DifferentTimestampsCauseTimeoutTest {
 		final int numNodes = 4;
 
 		LinkedList<Pair<ChannelId, Class<?>>> processingSequence = Lists.newLinkedList();
-		processingSequence.add(Pair.of(ChannelId.of(0, 1), NewView.class));
-		processingSequence.add(Pair.of(ChannelId.of(1, 1), NewView.class));
-		processingSequence.add(Pair.of(ChannelId.of(2, 1), NewView.class));
-		processingSequence.add(Pair.of(ChannelId.of(3, 1), NewView.class));
 
 		// Proposal here has genesis qc, which has no timestamps
 		processingSequence.add(Pair.of(ChannelId.of(1, 0), Proposal.class));
@@ -140,15 +120,10 @@ public class DifferentTimestampsCauseTimeoutTest {
 		processingSequence.add(Pair.of(ChannelId.of(1, 3), Proposal.class));
 		processingSequence.add(Pair.of(ChannelId.of(3, 3), BFTUpdate.class));
 
-		processingSequence.add(Pair.of(ChannelId.of(0, 1), Vote.class));
-		processingSequence.add(Pair.of(ChannelId.of(1, 1), Vote.class));
-		processingSequence.add(Pair.of(ChannelId.of(2, 1), Vote.class));
-		processingSequence.add(Pair.of(ChannelId.of(3, 1), Vote.class));
-
-		processingSequence.add(Pair.of(ChannelId.of(0, 2), NewView.class));
-		processingSequence.add(Pair.of(ChannelId.of(1, 2), NewView.class));
-		processingSequence.add(Pair.of(ChannelId.of(2, 2), NewView.class));
-		processingSequence.add(Pair.of(ChannelId.of(3, 2), NewView.class));
+		processingSequence.add(Pair.of(ChannelId.of(0, 2), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 2), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 2), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(3, 2), Vote.class));
 
 		// Proposal here should have timestamps from previous view
 		// They are mutated in this test
@@ -161,10 +136,10 @@ public class DifferentTimestampsCauseTimeoutTest {
 		processingSequence.add(Pair.of(ChannelId.of(2, 3), Proposal.class));
 		processingSequence.add(Pair.of(ChannelId.of(3, 3), BFTUpdate.class));
 
-		processingSequence.add(Pair.of(ChannelId.of(0, 2), Vote.class));
-		processingSequence.add(Pair.of(ChannelId.of(1, 2), Vote.class));
-		processingSequence.add(Pair.of(ChannelId.of(2, 2), Vote.class));
-		processingSequence.add(Pair.of(ChannelId.of(3, 2), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(0, 3), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 3), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 3), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(3, 3), Vote.class));
 
 		// Timeouts from nodes
 		processingSequence.add(Pair.of(ChannelId.of(0, 0), LocalTimeout.class));
@@ -209,7 +184,7 @@ public class DifferentTimestampsCauseTimeoutTest {
 		UnverifiedVertex vertex = p.getVertex();
 		ECDSASignature signature = p.getSignature();
 
-		return new Proposal(mutateVertex(vertex, destination), committedQC, author, signature, 0L);
+		return new Proposal(mutateVertex(vertex, destination), committedQC, author, signature);
 	}
 
 	private UnverifiedVertex mutateVertex(UnverifiedVertex v, int destination) {

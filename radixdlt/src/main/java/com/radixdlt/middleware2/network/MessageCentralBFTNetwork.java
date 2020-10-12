@@ -18,7 +18,9 @@
 package com.radixdlt.middleware2.network;
 
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.SignedNewViewToLeaderSender.BFTNewViewSender;
+import com.radixdlt.consensus.liveness.ProceedToViewSender;
+import com.radixdlt.consensus.liveness.ProposalBroadcaster;
+
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.util.Objects;
 
@@ -31,9 +33,8 @@ import org.radix.network.messaging.Message;
 
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.BFTEventsRx;
-import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
-import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
@@ -48,7 +49,7 @@ import io.reactivex.rxjava3.subjects.PublishSubject;
  * BFT Network sending and receiving layer used on top of the MessageCentral
  * layer.
  */
-public final class MessageCentralBFTNetwork implements BFTEventSender, BFTNewViewSender, BFTEventsRx {
+public final class MessageCentralBFTNetwork implements ProposalBroadcaster, ProceedToViewSender, BFTEventsRx {
 	private static final Logger log = LogManager.getLogger();
 
 	private final BFTNode self;
@@ -92,22 +93,22 @@ public final class MessageCentralBFTNetwork implements BFTEventSender, BFTNewVie
 	}
 
 	@Override
-	public void sendNewView(NewView newView, BFTNode nextLeader) {
+	public void sendViewTimeout(ViewTimeout viewTimeout, BFTNode nextLeader) {
 		if (this.self.equals(nextLeader)) {
-			this.localMessages.onNext(newView);
+			this.localMessages.onNext(viewTimeout);
 		} else {
-			ConsensusEventMessage message = new ConsensusEventMessage(this.magic, newView);
+			ConsensusEventMessage message = new ConsensusEventMessage(this.magic, viewTimeout);
 			send(message, nextLeader);
 		}
 	}
 
 	@Override
-	public void sendVote(Vote vote, BFTNode leader) {
-		if (this.self.equals(leader)) {
+	public void sendVote(Vote vote, BFTNode nextLeader) {
+		if (this.self.equals(nextLeader)) {
 			this.localMessages.onNext(vote);
 		} else {
 			ConsensusEventMessage message = new ConsensusEventMessage(this.magic, vote);
-			send(message, leader);
+			send(message, nextLeader);
 		}
 	}
 

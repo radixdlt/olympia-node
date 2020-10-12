@@ -21,10 +21,9 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
+import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.SyncInfo;
-import com.radixdlt.consensus.bft.SignedNewViewToLeaderSender.BFTNewViewSender;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
@@ -33,12 +32,13 @@ import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
-import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
+import com.radixdlt.consensus.liveness.ProceedToViewSender;
+import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.sync.RemoteSyncResponse;
@@ -56,10 +56,15 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 /**
  * Simple simulated network implementation that just sends messages to itself with a configurable latency.
  */
 public class SimulationNetwork {
+	private static Logger log = LogManager.getLogger();
+
 	public static final int DEFAULT_LATENCY = 50;
 
 	public static final class MessageInTransit {
@@ -103,12 +108,12 @@ public class SimulationNetwork {
 
 		@Override
 		public String toString() {
-			return String.format("%s %s -> %s %d %d",
-				content,
+			return String.format("%s -> %s %d %d %s",
 				sender.getSimpleName(),
 				receiver.getSimpleName(),
 				delay,
-				delayAfterPrevious
+				delayAfterPrevious,
+				content
 			);
 		}
 	}
@@ -142,6 +147,7 @@ public class SimulationNetwork {
 		private LatencyProvider latencyProvider = msg -> DEFAULT_LATENCY;
 
 		private Builder() {
+			// Nothing
 		}
 
 		public Builder latencyProvider(LatencyProvider latencyProvider) {
@@ -159,7 +165,7 @@ public class SimulationNetwork {
 	}
 
 	public class SimulatedNetworkImpl implements
-		BFTEventSender, BFTNewViewSender, SyncVerticesRequestSender, SyncVerticesResponseSender, SyncEpochsRPCSender, BFTEventsRx,
+		ProposalBroadcaster, ProceedToViewSender, SyncVerticesRequestSender, SyncVerticesResponseSender, SyncEpochsRPCSender, BFTEventsRx,
 		SyncVerticesRPCRx, SyncEpochsRPCRx, StateSyncNetwork {
 		private final Observable<Object> myMessages;
 		private final BFTNode thisNode;
@@ -190,6 +196,7 @@ public class SimulationNetwork {
 						}
 					})
 					.concatMap(p -> Observable.just(p.value()).delay(p.value().delayAfterPrevious, TimeUnit.MILLISECONDS))
+					.doOnNext(this::logMessage)
 					.map(MessageInTransit::getContent)
 				)
 				.publish()
@@ -199,48 +206,48 @@ public class SimulationNetwork {
 		@Override
 		public void broadcastProposal(Proposal proposal, Set<BFTNode> nodes) {
 			for (BFTNode reader : nodes) {
-				receivedMessages.onNext(MessageInTransit.newMessage(proposal, thisNode, reader));
+				logAndSend(MessageInTransit.newMessage(proposal, thisNode, reader));
 			}
 		}
 
 		@Override
-		public void sendNewView(NewView newView, BFTNode newViewLeader) {
-			receivedMessages.onNext(MessageInTransit.newMessage(newView, thisNode, newViewLeader));
+		public void sendViewTimeout(ViewTimeout viewTimeout, BFTNode newViewLeader) {
+			logAndSend(MessageInTransit.newMessage(viewTimeout, thisNode, newViewLeader));
 		}
 
 		@Override
 		public void sendVote(Vote vote, BFTNode leader) {
-			receivedMessages.onNext(MessageInTransit.newMessage(vote, thisNode, leader));
+			logAndSend(MessageInTransit.newMessage(vote, thisNode, leader));
 		}
 
 		@Override
 		public void sendGetVerticesRequest(BFTNode node, Hash id, int count) {
 			final GetVerticesRequest request = new GetVerticesRequest(thisNode, id, count);
-			receivedMessages.onNext(MessageInTransit.newMessage(request, thisNode, node));
+			logAndSend(MessageInTransit.newMessage(request, thisNode, node));
 		}
 
 		@Override
 		public void sendGetVerticesResponse(BFTNode node, ImmutableList<VerifiedVertex> vertices) {
 			GetVerticesResponse vertexResponse = new GetVerticesResponse(thisNode, vertices);
-			receivedMessages.onNext(MessageInTransit.newMessage(vertexResponse, thisNode, node));
+			logAndSend(MessageInTransit.newMessage(vertexResponse, thisNode, node));
 		}
 
 		@Override
 		public void sendGetVerticesErrorResponse(BFTNode node, SyncInfo syncInfo) {
 			GetVerticesErrorResponse vertexResponse = new GetVerticesErrorResponse(thisNode, syncInfo);
-			receivedMessages.onNext(MessageInTransit.newMessage(vertexResponse, thisNode, node));
+			logAndSend(MessageInTransit.newMessage(vertexResponse, thisNode, node));
 		}
 
 		@Override
 		public void sendGetEpochRequest(BFTNode node, long epoch) {
 			GetEpochRequest getEpochRequest = new GetEpochRequest(thisNode, epoch);
-			receivedMessages.onNext(MessageInTransit.newMessage(getEpochRequest, thisNode, node));
+			logAndSend(MessageInTransit.newMessage(getEpochRequest, thisNode, node));
 		}
 
 		@Override
 		public void sendGetEpochResponse(BFTNode node, VerifiedLedgerHeaderAndProof ancestor) {
 			GetEpochResponse getEpochResponse = new GetEpochResponse(thisNode, ancestor);
-			receivedMessages.onNext(MessageInTransit.newMessage(getEpochResponse, thisNode, node));
+			logAndSend(MessageInTransit.newMessage(getEpochResponse, thisNode, node));
 		}
 
 		@Override
@@ -286,13 +293,22 @@ public class SimulationNetwork {
 		@Override
 		public void sendSyncRequest(BFTNode node, DtoLedgerHeaderAndProof currentHeader) {
 			RemoteSyncRequest syncRequest = new RemoteSyncRequest(thisNode, currentHeader);
-			receivedMessages.onNext(MessageInTransit.newMessage(syncRequest, thisNode, node));
+			logAndSend(MessageInTransit.newMessage(syncRequest, thisNode, node));
 		}
 
 		@Override
 		public void sendSyncResponse(BFTNode node, DtoCommandsAndProof commandsAndProof) {
 			RemoteSyncResponse syncResponse = new RemoteSyncResponse(thisNode, commandsAndProof);
-			receivedMessages.onNext(MessageInTransit.newMessage(syncResponse, thisNode, node));
+			logAndSend(MessageInTransit.newMessage(syncResponse, thisNode, node));
+		}
+
+		private void logAndSend(MessageInTransit message) {
+			log.trace("Send {}", message);
+			receivedMessages.onNext(message);
+		}
+
+		private void logMessage(MessageInTransit message) {
+			log.trace("Received {}" , message);
 		}
 	}
 

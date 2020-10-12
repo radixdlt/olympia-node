@@ -18,7 +18,6 @@
 package com.radixdlt.integration.distributed.deterministic.tests.consensus;
 
 import com.google.common.collect.Lists;
-import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTUpdate;
@@ -46,10 +45,6 @@ public class OneSlowNodeTest {
 
 		LinkedList<Pair<ChannelId, Class<?>>> processingSequence = Lists.newLinkedList();
 		for (int curLeader = 1; curLeader <= 2; curLeader++) {
-			processingSequence.add(Pair.of(ChannelId.of(1, curLeader), NewView.class));
-			processingSequence.add(Pair.of(ChannelId.of(2, curLeader), NewView.class));
-			processingSequence.add(Pair.of(ChannelId.of(3, curLeader), NewView.class));
-
 			processingSequence.add(Pair.of(ChannelId.of(curLeader, 1), Proposal.class));
 			processingSequence.add(Pair.of(ChannelId.of(1, 1), BFTUpdate.class));
 			processingSequence.add(Pair.of(ChannelId.of(curLeader, 2), Proposal.class));
@@ -57,14 +52,16 @@ public class OneSlowNodeTest {
 			processingSequence.add(Pair.of(ChannelId.of(curLeader, 3), Proposal.class));
 			processingSequence.add(Pair.of(ChannelId.of(3, 3), BFTUpdate.class));
 
-			processingSequence.add(Pair.of(ChannelId.of(1, curLeader), Vote.class));
-			processingSequence.add(Pair.of(ChannelId.of(2, curLeader), Vote.class));
-			processingSequence.add(Pair.of(ChannelId.of(3, curLeader), Vote.class));
+
+			processingSequence.add(Pair.of(ChannelId.of(1, nextLeader(curLeader, numNodes)), Vote.class));
+			processingSequence.add(Pair.of(ChannelId.of(2, nextLeader(curLeader, numNodes)), Vote.class));
+			processingSequence.add(Pair.of(ChannelId.of(3, nextLeader(curLeader, numNodes)), Vote.class));
 		}
-		// Delayed initial NewView from node 0 to (then) leader 1
-		processingSequence.add(Pair.of(ChannelId.of(0, 1), NewView.class));
 		// Delayed initial Proposal from (then) leader 1 to node 0
 		processingSequence.add(Pair.of(ChannelId.of(1, 0), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(0, 0), BFTUpdate.class));
+		// Delayed initial Vote from node 0 to (then) next leader 2
+		processingSequence.add(Pair.of(ChannelId.of(0, 2), Vote.class));
 
 		DeterministicTest.builder()
 			.numNodes(numNodes)
@@ -72,6 +69,10 @@ public class OneSlowNodeTest {
 			.messageMutator(delayMessagesForNode(0))
 			.build()
 			.run();
+	}
+
+	private int nextLeader(int curLeader, int numNodes) {
+		return (curLeader + 1) % numNodes;
 	}
 
 	private static MessageSelector sequenceSelector(LinkedList<Pair<ChannelId, Class<?>>> processingSequence) {

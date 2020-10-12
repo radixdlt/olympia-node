@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.errorprone.annotations.Immutable;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.serialization.DsonOutput;
@@ -30,19 +31,22 @@ import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 
 import java.util.Objects;
-import java.util.Optional;
 
 /**
  * Represents a vote on a vertex
  */
+@Immutable
 @SerializerId2("consensus.vote")
-@Immutable // author cannot be but is effectively final because of serializer
 public final class Vote implements ConsensusEvent {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
+	@DsonOutput(Output.ALL)
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
 	private final BFTNode author;
+
+	@JsonProperty("sync_info")
+	@DsonOutput(Output.ALL)
+	private final SyncInfo syncInfo;
 
 	@JsonProperty("vote_data")
 	@DsonOutput(Output.ALL)
@@ -50,27 +54,23 @@ public final class Vote implements ConsensusEvent {
 
 	@JsonProperty("signature")
 	@DsonOutput(Output.ALL)
-	private final ECDSASignature signature; // may be null if not signed (e.g. for genesis)
-
-	@JsonProperty("payload")
-	@DsonOutput(Output.ALL)
-	private final long payload;
+	private final ECDSASignature signature;
 
 	@JsonCreator
 	Vote(
 		@JsonProperty("author") byte[] author,
 		@JsonProperty("vote_data") TimestampedVoteData voteData,
 		@JsonProperty("signature") ECDSASignature signature,
-		@JsonProperty("payload") long payload
+		@JsonProperty("sync_info") SyncInfo syncInfo
 	) throws PublicKeyException {
-		this(BFTNode.fromPublicKeyBytes(author), voteData, signature, payload);
+		this(BFTNode.fromPublicKeyBytes(author), voteData, signature, syncInfo);
 	}
 
-	public Vote(BFTNode author, TimestampedVoteData voteData, ECDSASignature signature, long payload) {
+	public Vote(BFTNode author, TimestampedVoteData voteData, ECDSASignature signature, SyncInfo syncInfo) {
 		this.author = Objects.requireNonNull(author);
 		this.voteData = Objects.requireNonNull(voteData);
-		this.signature = signature;
-		this.payload = payload;
+		this.signature = Objects.requireNonNull(signature);
+		this.syncInfo = Objects.requireNonNull(syncInfo);
 	}
 
 	@Override
@@ -83,6 +83,16 @@ public final class Vote implements ConsensusEvent {
 		return author;
 	}
 
+	@Override
+	public SyncInfo syncInfo() {
+		return this.syncInfo;
+	}
+
+	@Override
+	public View getView() {
+		return getVoteData().getProposed().getView();
+	}
+
 	public VoteData getVoteData() {
 		return voteData.getVoteData();
 	}
@@ -91,12 +101,8 @@ public final class Vote implements ConsensusEvent {
 		return voteData;
 	}
 
-	public Optional<ECDSASignature> getSignature() {
-		return Optional.ofNullable(this.signature);
-	}
-
-	public long getPayload() {
-		return this.payload;
+	public ECDSASignature getSignature() {
+		return this.signature;
 	}
 
 	@JsonProperty("author")
@@ -107,13 +113,13 @@ public final class Vote implements ConsensusEvent {
 
 	@Override
 	public String toString() {
-		return String.format("%s{epoch=%s view=%s author=%s}", getClass().getSimpleName(),
-			this.getEpoch(), voteData.getProposed().getView(), author.getSimpleName());
+		return String.format("%s{epoch=%s view=%s author=%s %s}", getClass().getSimpleName(),
+			getEpoch(), getView(), author, syncInfo);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.author, this.voteData, this.signature, this.payload);
+		return Objects.hash(this.author, this.voteData, this.signature, this.syncInfo);
 	}
 
 	@Override
@@ -123,11 +129,10 @@ public final class Vote implements ConsensusEvent {
 		}
 		if (o instanceof Vote) {
 			Vote other = (Vote) o;
-			return
-				this.payload == other.payload
-					&& Objects.equals(this.author, other.author)
-					&& Objects.equals(this.voteData, other.voteData)
-					&& Objects.equals(this.signature, other.signature);
+			return Objects.equals(this.author, other.author)
+				&& Objects.equals(this.voteData, other.voteData)
+				&& Objects.equals(this.signature, other.signature)
+				&& Objects.equals(this.syncInfo, other.syncInfo);
 		}
 		return false;
 	}

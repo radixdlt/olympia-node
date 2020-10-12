@@ -37,12 +37,11 @@ import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
+import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker.PacemakerInfoSender;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.SignedNewViewToLeaderSender.BFTNewViewSender;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
@@ -50,6 +49,7 @@ import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
+import com.radixdlt.consensus.liveness.ProceedToViewSender;
 import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.Hash;
@@ -77,6 +77,7 @@ public class ConsensusModuleTest {
 		BFTValidator validator = mock(BFTValidator.class);
 		when(validator.getPower()).thenReturn(UInt256.ONE);
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of(validator));
+		when(validatorSet.nodes()).thenReturn(ImmutableSet.of(mock(BFTNode.class)));
 		when(bftConfiguration.getValidatorSet()).thenReturn(validatorSet);
 	}
 
@@ -87,8 +88,8 @@ public class ConsensusModuleTest {
 				bind(BFTUpdateSender.class).toInstance(mock(BFTUpdateSender.class));
 				bind(Ledger.class).toInstance(mock(Ledger.class));
 				bind(SyncLedgerRequestSender.class).toInstance(mock(SyncLedgerRequestSender.class));
-				bind(BFTEventSender.class).toInstance(mock(BFTEventSender.class));
-				bind(BFTNewViewSender.class).toInstance(mock(BFTNewViewSender.class));
+				bind(ProceedToViewSender.class).toInstance(mock(ProceedToViewSender.class));
+				bind(ProposalBroadcaster.class).toInstance(mock(ProposalBroadcaster.class));
 				bind(SyncVerticesRequestSender.class).toInstance(mock(SyncVerticesRequestSender.class));
 				bind(SyncVerticesResponseSender.class).toInstance(mock(SyncVerticesResponseSender.class));
 				bind(VertexStoreEventSender.class).toInstance(mock(VertexStoreEventSender.class));

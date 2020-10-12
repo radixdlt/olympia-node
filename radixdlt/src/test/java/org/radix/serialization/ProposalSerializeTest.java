@@ -50,6 +50,6 @@ public class ProposalSerializeTest extends SerializeObject<Proposal> {
 		// add a particle to ensure atom is valid and has at least one shard
 		UnverifiedVertex vertex = UnverifiedVertex.createVertex(qc, view, command);
 		BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
-		return new Proposal(vertex, qc, author, new ECDSASignature(), 123456L);
+		return new Proposal(vertex, qc, author, new ECDSASignature());
 	}
 }

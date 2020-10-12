@@ -111,7 +111,7 @@ public final class PendingVotes {
 		ValidationState validationState = this.voteState.computeIfAbsent(voteDataHash, k -> validatorSet.newValidationState());
 
 		// try to form a QC with the added signature according to the requirements
-		final ECDSASignature signature = vote.getSignature().orElseThrow(() -> new IllegalArgumentException("vote is missing signature"));
+		final ECDSASignature signature = vote.getSignature();
 		if (!(validationState.addSignature(node, timestampedVoteData.getNodeTimestamp(), signature) && validationState.complete())) {
 			return Optional.empty();
 		}

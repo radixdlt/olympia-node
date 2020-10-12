@@ -17,9 +17,9 @@
 
 package com.radixdlt.consensus.liveness;
 
-import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
+import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.ValidationState;
 import com.radixdlt.consensus.bft.BFTValidator;
@@ -30,53 +30,37 @@ import java.util.Collections;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Optional;
-
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class PendingNewViewsTest {
-	private PendingNewViews pendingNewViews;
+public class PendingViewTimeoutsTest {
+	private PendingViewTimeouts pendingNewViews;
 
 	@Before
 	public void setup() {
-		this.pendingNewViews = new PendingNewViews();
+		this.pendingNewViews = new PendingViewTimeouts();
 	}
 
 	@Test
 	public void when_inserting_newview_not_from_validator_set__no_qc_is_returned() {
-		NewView newView = makeSignedNewViewFor(mock(BFTNode.class), View.genesis());
-		NewView newView2 = makeSignedNewViewFor(mock(BFTNode.class), View.genesis());
+		ViewTimeout newView = makeSignedViewTimeoutFor(mock(BFTNode.class), View.genesis());
+		ViewTimeout newView2 = makeSignedViewTimeoutFor(mock(BFTNode.class), View.genesis());
 
 		BFTValidatorSet validatorSet = BFTValidatorSet.from(
 			Collections.singleton(BFTValidator.from(newView.getAuthor(), UInt256.ONE))
 		);
 
-		assertThat(this.pendingNewViews.insertNewView(newView2, validatorSet)).isEmpty();
-	}
-
-
-	@Test
-	public void when_inserting_newview_not_signed__exception_is_thrown() {
-		NewView newView = makeUnsignedNewViewFor(mock(BFTNode.class), View.genesis());
-
-		BFTValidatorSet validatorSet = BFTValidatorSet.from(
-			Collections.singleton(BFTValidator.from(newView.getAuthor(), UInt256.ONE))
-		);
-
-		assertThatThrownBy(() -> pendingNewViews.insertNewView(newView, validatorSet))
-			.isInstanceOf(IllegalArgumentException.class);
+		assertThat(this.pendingNewViews.insertViewTimeout(newView2, validatorSet)).isEmpty();
 	}
 
 	@Test
 	public void when_inserting_valid_and_accepted_newview__qc_is_formed() {
 		BFTNode author = mock(BFTNode.class);
-		NewView newView = makeSignedNewViewFor(author, View.genesis());
+		ViewTimeout newView = makeSignedViewTimeoutFor(author, View.genesis());
 
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		ValidationState validationState = mock(ValidationState.class);
@@ -87,13 +71,13 @@ public class PendingNewViewsTest {
 		when(validatorSet.newValidationState()).thenReturn(validationState);
 		when(validatorSet.containsNode(any())).thenReturn(true);
 
-		assertThat(this.pendingNewViews.insertNewView(newView, validatorSet)).contains(newView.getView());
+		assertThat(this.pendingNewViews.insertViewTimeout(newView, validatorSet)).contains(newView.getView());
 	}
 
 	@Test
 	public void when_inserting_again__previous_newview_is_removed() {
 		BFTNode author = mock(BFTNode.class);
-		NewView newView = makeSignedNewViewFor(author, View.genesis());
+		ViewTimeout newView = makeSignedViewTimeoutFor(author, View.genesis());
 
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		ValidationState validationState = mock(ValidationState.class);
@@ -104,37 +88,31 @@ public class PendingNewViewsTest {
 		when(validatorSet.containsNode(any())).thenReturn(true);
 
 		// Preconditions
-		assertThat(this.pendingNewViews.insertNewView(newView, validatorSet)).isNotPresent();
-		assertEquals(1, this.pendingNewViews.newViewStateSize());
-		assertEquals(1, this.pendingNewViews.previousNewViewsSize());
+		assertThat(this.pendingNewViews.insertViewTimeout(newView, validatorSet)).isNotPresent();
+		assertEquals(1, this.pendingNewViews.viewTimeoutStateSize());
+		assertEquals(1, this.pendingNewViews.previousViewTimeoutSize());
 
-		NewView newView2 = makeSignedNewViewFor(author, View.of(1));
+		ViewTimeout newView2 = makeSignedViewTimeoutFor(author, View.of(1));
 
 		// Should not change size with different new view for same author
-		assertThat(this.pendingNewViews.insertNewView(newView2, validatorSet)).isNotPresent();
-		assertEquals(1, this.pendingNewViews.newViewStateSize());
-		assertEquals(1, this.pendingNewViews.previousNewViewsSize());
+		assertThat(this.pendingNewViews.insertViewTimeout(newView2, validatorSet)).isNotPresent();
+		assertEquals(1, this.pendingNewViews.viewTimeoutStateSize());
+		assertEquals(1, this.pendingNewViews.previousViewTimeoutSize());
 
 		// Should not change size with repeat new view
-		assertThat(this.pendingNewViews.insertNewView(newView2, validatorSet)).isNotPresent();
-		assertEquals(1, this.pendingNewViews.newViewStateSize());
-		assertEquals(1, this.pendingNewViews.previousNewViewsSize());
+		assertThat(this.pendingNewViews.insertViewTimeout(newView2, validatorSet)).isNotPresent();
+		assertEquals(1, this.pendingNewViews.viewTimeoutStateSize());
+		assertEquals(1, this.pendingNewViews.previousViewTimeoutSize());
 	}
 
-	private NewView makeUnsignedNewViewFor(BFTNode author, View view) {
-		NewView newView = makeNewViewWithoutSignatureFor(author, view);
-		when(newView.getSignature()).thenReturn(Optional.empty());
+	private ViewTimeout makeSignedViewTimeoutFor(BFTNode author, View view) {
+		ViewTimeout newView = makeViewTimeoutWithoutSignatureFor(author, view);
+		when(newView.signature()).thenReturn(new ECDSASignature());
 		return newView;
 	}
 
-	private NewView makeSignedNewViewFor(BFTNode author, View view) {
-		NewView newView = makeNewViewWithoutSignatureFor(author, view);
-		when(newView.getSignature()).thenReturn(Optional.of(new ECDSASignature()));
-		return newView;
-	}
-
-	private NewView makeNewViewWithoutSignatureFor(BFTNode author, View view) {
-		NewView newView = mock(NewView.class);
+	private ViewTimeout makeViewTimeoutWithoutSignatureFor(BFTNode author, View view) {
+		ViewTimeout newView = mock(ViewTimeout.class);
 		when(newView.getAuthor()).thenReturn(author);
 		when(newView.getView()).thenReturn(view);
 		return newView;

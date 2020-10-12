@@ -19,8 +19,8 @@ package com.radixdlt.middleware2.network;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.consensus.ConsensusEvent;
-import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -33,9 +33,9 @@ import org.radix.network.messaging.Message;
  */
 @SerializerId2("message.consensus.event")
 public class ConsensusEventMessage extends Message {
-	@JsonProperty("newview")
+	@JsonProperty("view_timeout")
 	@DsonOutput(Output.ALL)
-	private final NewView newView;
+	private final ViewTimeout viewTimeout;
 
 	@JsonProperty("proposal")
 	@DsonOutput(Output.ALL)
@@ -48,28 +48,28 @@ public class ConsensusEventMessage extends Message {
 	ConsensusEventMessage() {
 		// Serializer only
 		super(0);
-		this.newView = null;
+		this.viewTimeout = null;
 		this.proposal = null;
 		this.vote = null;
 	}
 
-	ConsensusEventMessage(int magic, NewView newView) {
+	ConsensusEventMessage(int magic, ViewTimeout viewTimeout) {
 		super(magic);
-		this.newView = newView;
+		this.viewTimeout = viewTimeout;
 		this.proposal = null;
 		this.vote = null;
 	}
 
 	ConsensusEventMessage(int magic, Proposal proposal) {
 		super(magic);
-		this.newView = null;
+		this.viewTimeout = null;
 		this.proposal = proposal;
 		this.vote = null;
 	}
 
 	ConsensusEventMessage(int magic, Vote vote) {
 		super(magic);
-		this.newView = null;
+		this.viewTimeout = null;
 		this.proposal = null;
 		this.vote = vote;
 	}
@@ -83,8 +83,8 @@ public class ConsensusEventMessage extends Message {
 	}
 
 	private ConsensusEvent consensusMessageInternal() {
-		if (this.newView != null) {
-			return this.newView;
+		if (this.viewTimeout != null) {
+			return this.viewTimeout;
 		}
 
 		if (this.proposal != null) {

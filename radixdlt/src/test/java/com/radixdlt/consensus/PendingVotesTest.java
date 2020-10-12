@@ -29,10 +29,7 @@ import java.util.Collections;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Optional;
-
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -57,20 +54,6 @@ public class PendingVotesTest {
 	public void equalsContractForPreviousVote() {
 		EqualsVerifier.forClass(PendingVotes.PreviousVote.class)
 			.verify();
-	}
-
-	@Test
-	public void when_inserting_a_vote_without_signature__then_exception_is_thrown() {
-		Vote voteWithoutSignature = makeUnsignedVoteFor(mock(BFTNode.class), View.genesis(), Hash.random());
-
-		VoteData voteData = mock(VoteData.class);
-		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
-		when(validatorSet.containsNode(any())).thenReturn(true);
-		BFTHeader proposed = voteWithoutSignature.getVoteData().getProposed();
-		when(voteData.getProposed()).thenReturn(proposed);
-
-		assertThatThrownBy(() -> pendingVotes.insertVote(voteWithoutSignature, validatorSet))
-			.isInstanceOf(IllegalArgumentException.class);
 	}
 
 	@Test
@@ -140,15 +123,9 @@ public class PendingVotesTest {
 		assertEquals(1, this.pendingVotes.previousVotesSize());
 	}
 
-	private Vote makeUnsignedVoteFor(BFTNode author, View parentView, Hash vertexId) {
-		Vote vote = makeVoteWithoutSignatureFor(author, parentView, vertexId);
-		when(vote.getSignature()).thenReturn(Optional.empty());
-		return vote;
-	}
-
 	private Vote makeSignedVoteFor(BFTNode author, View parentView, Hash vertexId) {
 		Vote vote = makeVoteWithoutSignatureFor(author, parentView, vertexId);
-		when(vote.getSignature()).thenReturn(Optional.of(new ECDSASignature()));
+		when(vote.getSignature()).thenReturn(new ECDSASignature());
 		return vote;
 	}
 

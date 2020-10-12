@@ -77,7 +77,7 @@ import com.radixdlt.integration.distributed.simulation.network.DroppingLatencyPr
 import com.radixdlt.integration.distributed.simulation.network.OneNodePerEpochResponseDropper;
 import com.radixdlt.integration.distributed.simulation.network.OneProposalPerViewDropper;
 import com.radixdlt.integration.distributed.simulation.network.RandomLatencyProvider;
-import com.radixdlt.integration.distributed.simulation.network.RandomNewViewDropper;
+import com.radixdlt.integration.distributed.simulation.network.RandomVoteAndViewTimeoutDropper;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.mempool.LocalMempool;
@@ -196,8 +196,8 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder addRandomNewViewDropper(double drops) {
-			this.latencyProvider.addDropper(new RandomNewViewDropper(new Random(), drops));
+		public Builder addRandomVoteAndViewTimeoutDropper(double drops) {
+			this.latencyProvider.addDropper(new RandomVoteAndViewTimeoutDropper(new Random(), drops));
 			return this;
 		}
 
@@ -559,7 +559,7 @@ public class SimulationTest {
 		return new Builder();
 	}
 
-	private Observable<Pair<String, Optional<TestInvariantError>>> runChecks(RunningNetwork runningNetwork, java.time.Duration duration) {
+	private Observable<Pair<String, Optional<TestInvariantError>>> runChecks(RunningNetwork runningNetwork, Duration duration) {
 		List<Pair<String, Observable<Pair<String, TestInvariantError>>>> assertions = this.checks.keySet().stream()
 			.map(name -> {
 				TestInvariant check = this.checks.get(name);

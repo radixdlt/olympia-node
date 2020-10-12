@@ -108,6 +108,10 @@ public final class BFTValidatorSet {
 		return validators.values();
 	}
 
+	public ImmutableSet<BFTNode> nodes() {
+		return validators.keySet();
+	}
+
 	public ImmutableMap<BFTNode, BFTValidator> validatorsByKey() {
 		return validators;
 	}

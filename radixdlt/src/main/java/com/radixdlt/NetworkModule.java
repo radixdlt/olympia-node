@@ -26,12 +26,12 @@ import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
-import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.SignedNewViewToLeaderSender.BFTNewViewSender;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
+import com.radixdlt.consensus.liveness.ProceedToViewSender;
+import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.mempool.MempoolNetworkRx;
 import com.radixdlt.mempool.MempoolNetworkTx;
 import com.radixdlt.middleware2.network.MessageCentralBFTNetwork;
@@ -64,8 +64,8 @@ public final class NetworkModule extends AbstractModule {
 		bind(SyncVerticesRPCRx.class).to(MessageCentralValidatorSync.class);
 
 		// Network BFT messages
-		bind(BFTEventSender.class).to(MessageCentralBFTNetwork.class);
-		bind(BFTNewViewSender.class).to(MessageCentralBFTNetwork.class);
+		bind(ProposalBroadcaster.class).to(MessageCentralBFTNetwork.class);
+		bind(ProceedToViewSender.class).to(MessageCentralBFTNetwork.class);
 		bind(BFTEventsRx.class).to(MessageCentralBFTNetwork.class);
 	}
 

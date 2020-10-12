@@ -35,7 +35,6 @@ import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.consensus.LedgerHeader;
-import java.util.Collections;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -127,37 +126,6 @@ public class VertexStoreTest {
 			new VertexStore(
 				genesisVertex,
 				badRootQC,
-				ledger,
-				bftUpdateSender,
-				vertexStoreEventSender,
-				counters
-			)
-		).isInstanceOf(IllegalStateException.class);
-	}
-
-	@Test
-	public void when_vertex_store_created_with_correct_vertices__then_exception_is_not_thrown() {
-		VerifiedVertex nextVertex = this.nextVertex.apply(mock(Hash.class));
-		this.vertexStore = new VertexStore(
-			genesisVertex,
-			rootQC,
-			Collections.singletonList(nextVertex),
-			ledger,
-			bftUpdateSender,
-			vertexStoreEventSender,
-			counters
-		);
-	}
-
-	@Test
-	public void when_vertex_store_created_with_incorrect_vertices__then_exception_is_thrown() {
-		this.nextVertex.apply(mock(Hash.class));
-
-		assertThatThrownBy(() ->
-			new VertexStore(
-				genesisVertex,
-				rootQC,
-				Collections.singletonList(this.nextVertex.apply(mock(Hash.class))),
 				ledger,
 				bftUpdateSender,
 				vertexStoreEventSender,

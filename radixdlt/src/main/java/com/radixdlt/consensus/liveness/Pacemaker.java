@@ -17,37 +17,53 @@
 
 package com.radixdlt.consensus.liveness;
 
-import com.radixdlt.consensus.NewView;
-import com.radixdlt.consensus.SyncInfo;
-import com.radixdlt.consensus.bft.View;
-
-import com.radixdlt.consensus.bft.BFTValidatorSet;
 import java.util.Optional;
+
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.SyncInfo;
+import com.radixdlt.consensus.ViewTimeout;
+import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.bft.View;
 
 /**
  * Manages the pacemaker state machine.
  */
 public interface Pacemaker extends PacemakerState {
 	/**
-	 * Signifies to the pacemaker that a timeout for a given view is processed
-	 * @param view the view to timeout
+	 * Signifies to the pacemaker that a vote has been received.
+	 *
+	 * @param vote the vote received
+	 * @return an {@link Optional} {@link QuorumCertificate} if a
+	 * 		quorum was formed with this vote
 	 */
+	Optional<QuorumCertificate> processVote(Vote vote);
+
+	/**
+	 * Signifies to the pacemaker that a proposal has been received.
+	 *
+	 * @param proposal the proposal received
+	 */
+	void processProposal(Proposal proposal);
+
+	// FIXME: To be removed when TCs implemented
+	void processViewTimeout(ViewTimeout viewTimeout);
+
+	/**
+	 * Processes a local timeout, causing the pacemaker to move to the next
+	 * view if the timeout is for the current view.
+	 *
+	 * @param view the view the local timeout is for
+	 */
+	// FIXME: Note functionality and Javadoc to change once TCs implemented
 	void processLocalTimeout(View view);
 
 	/**
-	 * Signifies to the pacemaker that a quorum has agreed that a view has been completed
-	 * @param syncInfo the sync info
+	 * Signifies to the pacemaker that a quorum has agreed that a view has
+	 * been completed.
+	 *
+	 * @param syncInfo the sync info for the view
+	 * @return {@code true} if proceeded to a new view
 	 */
-	void processQC(SyncInfo syncInfo);
-
-	// FIXME: Temporary
-	void processNextView(View view);
-
-	/**
-	 * Adds a new view message to the pacemaker state
-	 * @param newView the new view message
-	 * @param validatorSet validator set which forms the quorum
-	 * @return optional with view, if the pacemaker gains a quorum of new views
-	 */
-	Optional<View> processNewView(NewView newView, BFTValidatorSet validatorSet);
+	boolean processQC(SyncInfo syncInfo);
 }

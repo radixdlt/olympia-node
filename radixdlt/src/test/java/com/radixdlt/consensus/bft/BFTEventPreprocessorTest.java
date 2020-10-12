@@ -26,14 +26,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.consensus.BFTEventProcessor;
-import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.SyncInfo;
 import com.radixdlt.consensus.UnverifiedVertex;
+import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTSyncer.SyncResult;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
@@ -41,7 +40,6 @@ import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
-import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -68,6 +66,7 @@ public class BFTEventPreprocessorTest {
 
 		when(proposerElection.getProposer(any())).thenReturn(self);
 		when(pacemaker.getCurrentView()).thenReturn(View.of(1));
+		when(syncQueues.isEmptyElseAdd(any())).thenReturn(true);
 
 		this.preprocessor = new BFTEventPreprocessor(
 			self,
@@ -79,11 +78,11 @@ public class BFTEventPreprocessorTest {
 		);
 	}
 
-	private NewView createNewView(boolean goodView, boolean synced) {
-		NewView newView = mock(NewView.class);
-		when(newView.getSignature()).thenReturn(Optional.of(mock(ECDSASignature.class)));
-		when(newView.getAuthor()).thenReturn(self);
-		when(newView.getView()).thenReturn(goodView ? View.of(2) : View.of(0));
+	private ViewTimeout createViewTimeout(View view, boolean synced) {
+		ViewTimeout viewTimeout = mock(ViewTimeout.class);
+		when(viewTimeout.signature()).thenReturn(mock(ECDSASignature.class));
+		when(viewTimeout.getAuthor()).thenReturn(self);
+		when(viewTimeout.getView()).thenReturn(view);
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		Hash vertexId = mock(Hash.class);
 		BFTHeader proposed = mock(BFTHeader.class);
@@ -93,9 +92,9 @@ public class BFTEventPreprocessorTest {
 		SyncInfo syncInfo = mock(SyncInfo.class);
 		when(syncInfo.highestQC()).thenReturn(qc);
 		when(syncInfo.highestCommittedQC()).thenReturn(committedQC);
-		when(newView.syncInfo()).thenReturn(syncInfo);
+		when(viewTimeout.syncInfo()).thenReturn(syncInfo);
 		when(vertexStoreSync.syncToQC(any(), any())).thenReturn(synced ? SyncResult.SYNCED : SyncResult.IN_PROGRESS);
-		return newView;
+		return viewTimeout;
 	}
 
 	private Proposal createProposal(boolean goodView, boolean synced) {
@@ -123,37 +122,41 @@ public class BFTEventPreprocessorTest {
 	@Test
 	public void when_process_vote_as_not_proposer__then_vote_gets_thrown_away() {
 		Vote vote = mock(Vote.class);
-		VoteData voteData = mock(VoteData.class);
-		BFTHeader header = mock(BFTHeader.class);
-		when(header.getView()).thenReturn(View.of(1));
-		when(voteData.getProposed()).thenReturn(header);
-		when(vote.getVoteData()).thenReturn(voteData);
-		when(proposerElection.getProposer(eq(View.of(1)))).thenReturn(mock(BFTNode.class));
+		when(vote.getView()).thenReturn(View.of(1));
+		when(proposerElection.getProposer(eq(View.of(2)))).thenReturn(mock(BFTNode.class));
 		preprocessor.processVote(vote);
 		verify(forwardTo, never()).processVote(vote);
 	}
 
 	@Test
-	public void when_process_vote__event_gets_forwarded() {
+	public void when_process_vote_as_next_proposer__then_vote_gets_forwarded() {
 		Vote vote = mock(Vote.class);
-		VoteData voteData = mock(VoteData.class);
-		BFTHeader header = mock(BFTHeader.class);
-		when(header.getView()).thenReturn(View.of(1));
-		when(voteData.getProposed()).thenReturn(header);
-		when(vote.getVoteData()).thenReturn(voteData);
-		when(vote.getSignature()).thenReturn(Optional.of(mock(ECDSASignature.class)));
-		when(vote.getAuthor()).thenReturn(mock(BFTNode.class));
+		when(vote.getView()).thenReturn(View.of(1));
+		when(proposerElection.getProposer(any())).thenReturn(mock(BFTNode.class));
+		when(proposerElection.getProposer(eq(View.of(2)))).thenReturn(self);
+		when(vertexStoreSync.syncToQC(any(), any())).thenReturn(SyncResult.SYNCED);
 		preprocessor.processVote(vote);
 		verify(forwardTo, times(1)).processVote(vote);
 	}
 
 	@Test
-	public void when_process_irrelevant_new_view__event_gets_thrown_away() {
-		NewView newView = createNewView(false, true);
+	public void when_process_vote_unsynced__event_not_forwarded() {
+		Vote vote = mock(Vote.class);
+		when(vote.getView()).thenReturn(View.of(1));
+		when(vote.getSignature()).thenReturn(mock(ECDSASignature.class));
+		when(vote.getAuthor()).thenReturn(mock(BFTNode.class));
+		when(vertexStoreSync.syncToQC(any(), any())).thenReturn(SyncResult.IN_PROGRESS);
+		preprocessor.processVote(vote);
+		verify(forwardTo, never()).processVote(vote);
+	}
+
+	@Test
+	public void when_process_irrelevant_view_timeout__event_gets_thrown_away() {
+		ViewTimeout viewTimeout = createViewTimeout(View.of(0), true);
 		when(syncQueues.isEmptyElseAdd(any())).thenReturn(true);
-		preprocessor.processNewView(newView);
+		preprocessor.processViewTimeout(viewTimeout);
 		verify(syncQueues, never()).add(any());
-		verify(forwardTo, never()).processNewView(any());
+		verify(forwardTo, never()).processViewTimeout(any());
 	}
 
 	@Test
@@ -166,22 +169,23 @@ public class BFTEventPreprocessorTest {
 	}
 
 	@Test
-	public void when_processing_new_view_as_not_proposer__then_new_view_get_thrown_away() {
-		NewView newView = createNewView(true, true);
-		when(syncQueues.isEmptyElseAdd(eq(newView))).thenReturn(true);
+	public void when_processing_view_timeout_as_not_proposer__then_view_timeout_get_thrown_away() {
+		ViewTimeout viewTimeout = createViewTimeout(View.of(0), true);
+		when(syncQueues.isEmptyElseAdd(eq(viewTimeout))).thenReturn(true);
 		when(proposerElection.getProposer(View.of(2))).thenReturn(mock(BFTNode.class));
-		when(newView.getAuthor()).thenReturn(self);
-		preprocessor.processNewView(newView);
-		verify(forwardTo, never()).processNewView(any());
+		when(viewTimeout.getAuthor()).thenReturn(self);
+		preprocessor.processViewTimeout(viewTimeout);
+		verify(forwardTo, never()).processViewTimeout(any());
 	}
 
 	@Test
-	public void when_process_new_view_not_synced__then_new_view_is_queued() {
-		NewView newView = createNewView(true, false);
-		when(syncQueues.isEmptyElseAdd(eq(newView))).thenReturn(true);
-		preprocessor.processNewView(newView);
-		verify(syncQueues, times(1)).add(eq(newView));
-		verify(forwardTo, never()).processNewView(any());
+	public void when_process_view_timeout_not_synced__then_view_timeout_is_queued() {
+		ViewTimeout viewTimeout = createViewTimeout(View.of(1), false);
+		when(syncQueues.isEmptyElseAdd(eq(viewTimeout))).thenReturn(true);
+		when(vertexStoreSync.syncToQC(any(), any())).thenReturn(SyncResult.IN_PROGRESS);
+		preprocessor.processViewTimeout(viewTimeout);
+		verify(syncQueues, times(1)).add(eq(viewTimeout));
+		verify(forwardTo, never()).processViewTimeout(any());
 	}
 
 	@Test
@@ -194,12 +198,13 @@ public class BFTEventPreprocessorTest {
 	}
 
 	@Test
-	public void when_process_new_view_synced__then_new_view_is_forwarded() {
-		NewView newView = createNewView(true, true);
-		when(syncQueues.isEmptyElseAdd(eq(newView))).thenReturn(true);
-		preprocessor.processNewView(newView);
+	public void when_process_view_timeout_synced__then_view_timeout_is_forwarded() {
+		ViewTimeout viewTimeout = createViewTimeout(View.of(1), true);
+		when(syncQueues.isEmptyElseAdd(eq(viewTimeout))).thenReturn(true);
+		when(vertexStoreSync.syncToQC(any(), any())).thenReturn(SyncResult.SYNCED);
+		preprocessor.processViewTimeout(viewTimeout);
 		verify(syncQueues, never()).add(any());
-		verify(forwardTo, times(1)).processNewView(eq(newView));
+		verify(forwardTo, times(1)).processViewTimeout(eq(viewTimeout));
 	}
 
 	@Test

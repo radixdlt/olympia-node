@@ -22,7 +22,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.RequiresSyncConsensusEvent;
+import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.SyncInfo;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.bft.SyncQueues.SyncQueue;
@@ -35,7 +35,7 @@ public class SyncQueuesTest {
 		BFTNode node = mock(BFTNode.class);
 		SyncQueues syncQueues = new SyncQueues();
 
-		RequiresSyncConsensusEvent event = mock(RequiresSyncConsensusEvent.class);
+		ConsensusEvent event = mock(ConsensusEvent.class);
 		when(event.getAuthor()).thenReturn(node);
 
 		assertThat(syncQueues.isEmptyElseAdd(event)).isTrue();
@@ -46,9 +46,9 @@ public class SyncQueuesTest {
 		BFTNode node = mock(BFTNode.class);
 		SyncQueues syncQueues = new SyncQueues();
 
-		RequiresSyncConsensusEvent event0 = mock(RequiresSyncConsensusEvent.class);
+		ConsensusEvent event0 = mock(ConsensusEvent.class);
 		when(event0.getAuthor()).thenReturn(node);
-		RequiresSyncConsensusEvent event1 = mock(RequiresSyncConsensusEvent.class);
+		ConsensusEvent event1 = mock(ConsensusEvent.class);
 		when(event1.getAuthor()).thenReturn(node);
 		syncQueues.add(event0);
 		assertThat(syncQueues.isEmptyElseAdd(event1)).isFalse();
@@ -59,7 +59,7 @@ public class SyncQueuesTest {
 		BFTNode node = mock(BFTNode.class);
 		SyncQueues syncQueues = new SyncQueues();
 
-		RequiresSyncConsensusEvent event0 = mock(RequiresSyncConsensusEvent.class);
+		ConsensusEvent event0 = mock(ConsensusEvent.class);
 		Hash vertexId = mock(Hash.class);
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		SyncInfo syncInfo = mock(SyncInfo.class);

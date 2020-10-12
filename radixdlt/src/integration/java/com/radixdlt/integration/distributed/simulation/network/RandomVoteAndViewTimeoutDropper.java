@@ -17,27 +17,29 @@
 
 package com.radixdlt.integration.distributed.simulation.network;
 
-import com.radixdlt.consensus.NewView;
+import com.radixdlt.consensus.ViewTimeout;
+import com.radixdlt.consensus.Vote;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.MessageInTransit;
 import java.util.Objects;
 import java.util.Random;
 import java.util.function.Predicate;
 
 /**
- * Drops random new view messages
+ * Drops random vote and view timeout messages
  */
-public class RandomNewViewDropper implements Predicate<MessageInTransit> {
+public class RandomVoteAndViewTimeoutDropper implements Predicate<MessageInTransit> {
 	private final Random random;
 	private final double drops;
 
-	public RandomNewViewDropper(Random random, double drops) {
+	public RandomVoteAndViewTimeoutDropper(Random random, double drops) {
 		this.random = Objects.requireNonNull(random);
 		this.drops = drops;
 	}
 
 	@Override
 	public boolean test(MessageInTransit msg) {
-		if (msg.getContent() instanceof NewView) {
+		Object content = msg.getContent();
+		if (content instanceof ViewTimeout || content instanceof Vote) {
 			return random.nextDouble() < drops;
 		}
 

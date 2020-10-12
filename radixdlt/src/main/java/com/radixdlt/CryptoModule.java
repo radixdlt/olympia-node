@@ -24,8 +24,9 @@ import com.google.inject.name.Named;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.Hasher;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
@@ -37,20 +38,21 @@ public final class CryptoModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		// Configuration
-		bind(HashVerifier.class).toInstance(ECPublicKey::verify);
 		bind(Serialization.class).toProvider(DefaultSerialization::getInstance);
 	}
 
 	@Provides
-	Hasher hasher(Serialization serialization) {
+	Hasher hasher(Serialization serialization, SystemCounters counters) {
 		return new Hasher() {
 			@Override
 			public Hash hash(Object o) {
-				return Hash.of(serialization.toDson(o, Output.HASH));
+				// Call hashBytes to ensure counters incremented
+				return this.hashBytes(serialization.toDson(o, Output.HASH));
 			}
 
 			@Override
 			public Hash hashBytes(byte[] bytes) {
+				counters.add(CounterType.HASHED_BYTES, bytes.length);
 				return Hash.of(bytes);
 			}
 		};
@@ -58,9 +60,22 @@ public final class CryptoModule extends AbstractModule {
 
 	@Provides
 	@Singleton
+	HashVerifier hashVerifier(SystemCounters counters) {
+		return (pubKey, hash, signature) -> {
+			counters.increment(CounterType.SIGNATURES_VERIFIED);
+			return pubKey.verify(hash, signature);
+		};
+	}
+
+	@Provides
+	@Singleton
 	HashSigner hashSigner(
-		@Named("self") ECKeyPair selfKey
+		@Named("self") ECKeyPair selfKey,
+		SystemCounters counters
 	) {
-		return selfKey::sign;
+		return hash -> {
+			counters.increment(CounterType.SIGNATURES_SIGNED);
+			return selfKey.sign(hash);
+		};
 	}
 }

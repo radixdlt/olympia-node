@@ -36,7 +36,7 @@ import java.util.Objects;
  */
 @SerializerId2("consensus.proposal")
 @Immutable // author cannot be but is effectively final because of serializer
-public final class Proposal implements RequiresSyncConsensusEvent {
+public final class Proposal implements ConsensusEvent {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(Output.ALL)
 	SerializerDummy serializer = SerializerDummy.DUMMY;
@@ -55,27 +55,21 @@ public final class Proposal implements RequiresSyncConsensusEvent {
 	@DsonOutput(Output.ALL)
 	private final QuorumCertificate committedQC;
 
-	@JsonProperty("payload")
-	@DsonOutput(Output.ALL)
-	private final long payload;
-
 	@JsonCreator
 	Proposal(
 		@JsonProperty("vertex") UnverifiedVertex vertex,
 		@JsonProperty("committedQC") QuorumCertificate committedQC,
 		@JsonProperty("author") byte[] author,
-		@JsonProperty("signature") ECDSASignature signature,
-		@JsonProperty("payload") long payload
+		@JsonProperty("signature") ECDSASignature signature
 	) throws PublicKeyException {
-		this(vertex, committedQC, BFTNode.fromPublicKeyBytes(author), signature, payload);
+		this(vertex, committedQC, BFTNode.fromPublicKeyBytes(author), signature);
 	}
 
-	public Proposal(UnverifiedVertex vertex, QuorumCertificate committedQC, BFTNode author, ECDSASignature signature, long payload) {
+	public Proposal(UnverifiedVertex vertex, QuorumCertificate committedQC, BFTNode author, ECDSASignature signature) {
 		this.vertex = Objects.requireNonNull(vertex);
 		this.committedQC = committedQC;
 		this.author = Objects.requireNonNull(author);
 		this.signature = Objects.requireNonNull(signature);
-		this.payload = payload;
 	}
 
 	@Override
@@ -106,10 +100,6 @@ public final class Proposal implements RequiresSyncConsensusEvent {
 		return signature;
 	}
 
-	public long getPayload() {
-		return this.payload;
-	}
-
 	@JsonProperty("author")
 	@DsonOutput(Output.ALL)
 	private byte[] getSerializerAuthor() {
@@ -124,7 +114,7 @@ public final class Proposal implements RequiresSyncConsensusEvent {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.author, this.vertex, this.signature, this.committedQC, this.payload);
+		return Objects.hash(this.author, this.vertex, this.signature, this.committedQC);
 	}
 
 	@Override
@@ -134,12 +124,10 @@ public final class Proposal implements RequiresSyncConsensusEvent {
 		}
 		if (o instanceof Proposal) {
 			Proposal other = (Proposal) o;
-			return
-				this.payload == other.payload
-					&& Objects.equals(this.author, other.author)
-					&& Objects.equals(this.vertex, other.vertex)
-					&& Objects.equals(this.signature, other.signature)
-					&& Objects.equals(this.committedQC, other.committedQC);
+			return Objects.equals(this.author, other.author)
+				&& Objects.equals(this.vertex, other.vertex)
+				&& Objects.equals(this.signature, other.signature)
+				&& Objects.equals(this.committedQC, other.committedQC);
 		}
 		return false;
 	}
