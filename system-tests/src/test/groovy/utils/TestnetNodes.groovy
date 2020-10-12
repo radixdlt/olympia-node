@@ -6,7 +6,6 @@ import org.apache.logging.log4j.Logger
 
 class TestnetNodes {
 
-//    private static TestnetNodes instance
     private static final Logger logger = LogManager.getLogger(TestnetNodes.class);
     private static final String scheme = "https"
     private String additionalCommandOptions
