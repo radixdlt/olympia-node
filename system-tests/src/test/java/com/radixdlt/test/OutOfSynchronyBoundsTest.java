@@ -71,7 +71,7 @@ public class OutOfSynchronyBoundsTest {
 	}
 
 
-	@Category(Cluster.class)
+	@Category(EphemeralCluster.class)
 	@RunWith(Parameterized.class)
 	public static class ClusterTests {
 
@@ -119,7 +119,6 @@ public class OutOfSynchronyBoundsTest {
 
 
 		@Test
-		@Category(Cluster.class)
 		public void tests() {
 			String name = Generic.extractTestName(this.name.getMethodName());
 			logger.info("Test name is " + name);
