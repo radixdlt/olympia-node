@@ -79,8 +79,9 @@ public class RadixEngineTest {
 
 	@Test
 	public void empty_particle_group_should_throw_error() {
+		// Arrange
 		CMAtomOS cmAtomOS = new CMAtomOS();
-		cmAtomOS.load(new SystemConstraintScrypt());
+		cmAtomOS.load(new SystemConstraintScrypt(10));
 		ConstraintMachine cm = new ConstraintMachine.Builder()
 			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
 			.setParticleTransitionProcedures(cmAtomOS.buildTransitionProcedures())
@@ -91,6 +92,8 @@ public class RadixEngineTest {
 			new InMemoryEngineStore<>()
 		);
 
+		// Act
+		// Assert
 		CMInstruction cmInstruction = new CMInstruction(
 			ImmutableList.of(CMMicroInstruction.particleGroup()),
 			ImmutableMap.of()

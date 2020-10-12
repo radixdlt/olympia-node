@@ -23,7 +23,14 @@ import java.util.Optional;
  * TODO: use a non-radix-address path to store this system info
  */
 public final class SystemConstraintScrypt implements ConstraintScrypt {
-	private static Result staticCheck(SystemParticle systemParticle) {
+
+	private final long epochViewCeiling;
+
+	public SystemConstraintScrypt(long epochViewCeiling) {
+		this.epochViewCeiling = epochViewCeiling;
+	}
+
+	private Result staticCheck(SystemParticle systemParticle) {
 		if (systemParticle.getEpoch() < 0) {
 			return Result.error("Epoch is less than 0");
 		}
@@ -36,14 +43,18 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 			return Result.error("View is less than 0");
 		}
 
-		return  Result.success();
+		if (systemParticle.getView() >= epochViewCeiling) {
+			return Result.error("View is greater than epochHighView of " + epochViewCeiling);
+		}
+
+		return Result.success();
 	}
 
 	@Override
 	public void main(SysCalls os) {
 		os.registerParticle(SystemParticle.class, ParticleDefinition.<SystemParticle>builder()
 			.addressMapper(p -> ImmutableSet.of())
-			.staticValidation(SystemConstraintScrypt::staticCheck)
+			.staticValidation(this::staticCheck)
 			.virtualizeSpin(p -> p.getView() == 0 && p.getEpoch() == 0 && p.getTimestamp() == 0 ? Spin.UP : null)
 			.build()
 		);
@@ -70,6 +81,10 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 
 					if (inputParticle.getEpoch() + 1 != outputParticle.getEpoch()) {
 						return Result.error("Bad next epoch");
+					}
+
+					if (outputParticle.getView() != 0) {
+						return Result.error("Change of epochs must start with view 0.");
 					}
 
 					return Result.success();
