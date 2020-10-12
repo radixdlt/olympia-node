@@ -126,14 +126,17 @@ dependencies {
     api 'org.bouncycastle:bcpkix-jdk15to18:1.65'
 
     api 'org.json:json:20180813'
-    api 'com.fasterxml.jackson.core:jackson-core:2.9.9'
-    api 'com.fasterxml.jackson.core:jackson-databind:2.9.9'
-    api 'com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.9.9'
-    api('com.fasterxml.jackson.datatype:jackson-datatype-json-org:2.9.9') {
+
+    api 'com.github.radixdlt:jackson-databind:feature~strict-property-ordering-downgraded-version-SNAPSHOT'
+
+    api 'com.fasterxml.jackson.core:jackson-core:2.11.3'
+    api 'com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.11.3'
+    api('com.fasterxml.jackson.datatype:jackson-datatype-json-org:2.11.3') {
         // Use our JSON lib
         exclude group: 'org.json', module: 'json'
     }
-    api('com.fasterxml.jackson.datatype:jackson-datatype-guava:2.9.9') {
+
+    api('com.fasterxml.jackson.datatype:jackson-datatype-guava:2.11.3') {
         // Use our Guava lib
         exclude group: 'com.google.guava', module: 'guava'
     }

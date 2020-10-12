@@ -46,7 +46,6 @@ import java.util.function.Function;
  * to the subset of <a href="http://cbor.io/">CBOR</a> that DSON uses.
  */
 public class JacksonCborMapper extends ObjectMapper {
-
 	private static final long serialVersionUID = 4917479892309630214L;
 
 	/**
