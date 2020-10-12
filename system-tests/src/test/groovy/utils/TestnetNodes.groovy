@@ -6,13 +6,13 @@ import org.apache.logging.log4j.Logger
 
 class TestnetNodes {
 
-    private static TestnetNodes instance
+//    private static TestnetNodes instance
     private static final Logger logger = LogManager.getLogger(TestnetNodes.class);
     private static final String scheme = "https"
     private String additionalCommandOptions
     private String additionalDockerOptions
 
-    private TestnetNodes() {
+    public TestnetNodes() {
     }
 
 
@@ -22,20 +22,15 @@ class TestnetNodes {
     private String sshDestinationFileName = "testnet"
     String ansibleImage = "eu.gcr.io/lunar-arc-236318/node-ansible:python3"
 
-    static TestnetNodes getInstance() {
-        if (instance == null)
-            instance = new TestnetNodes()
-        return instance
-    }
 
     TestnetNodes usingCmdOptions(String cmdOptions) {
-        instance.additionalCommandOptions = cmdOptions
-        return instance
+        this.additionalCommandOptions = cmdOptions
+        return this
     }
 
     TestnetNodes usingDockerRunOptions(String additionalDockerOptions) {
-        instance.additionalDockerOptions = additionalDockerOptions
-        return instance
+        this.additionalDockerOptions = additionalDockerOptions
+        return this
     }
 
     String getNodesURls() {

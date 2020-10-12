@@ -38,8 +38,6 @@ class SlowNodeSetup {
                             "${addtionalDockerCmdOptions?:''} " +
                             "--limit ${clusterName}[${it - 1}] -t setup ")
             CmdHelper.runCommand(runnerCommand)
-//            CmdHelper.runCommand("docker run --rm  -v ${keyVolume}:/ansible/ssh --name node-ansible ${image}  "
-//                    + "${playbook} -vv  --limit ${clusterName}[${it - 1}] -t setup")
         }
 
     }

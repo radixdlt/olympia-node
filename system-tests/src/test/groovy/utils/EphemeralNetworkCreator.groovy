@@ -2,13 +2,6 @@ package utils
 
 import com.radixdlt.test.StaticClusterNetwork
 
-/*
- docker run -it  --rm
- -e AWS_SECRET_ACCESS_KEY
- -e AWS_ACCESS_KEY_ID
- -v /Users/shambu/project/radixdlt-iac/projects/testnet/ssh:/terraform/ssh
-  eu.gcr.io/lunar-arc-236318/node-terraform:task-RPNV1-315-10nodes-1-outofsynchrony-a8939e6
-* */
 class EphemeralNetworkCreator {
 
     String terraformImage, keyVolume, ansibleImage
@@ -18,6 +11,8 @@ class EphemeralNetworkCreator {
     private String ansibleSecretsDir = "/ansible/ssh"
     private String autoApprove = "-auto-approve"
     private List<String> hosts;
+    private String TF_VAR_nodes_10= " { node_1, node_2, node_3, node_4  ,node_5 , node_6, node_7 , node_8 , node_9, node_10}"
+    private String TF_VAR_nodes_4= "'{ node_1={}, node_2={}, node_3={}, node_4={} }'"
 
     public final static String ENV_SSH_IDENTITY = "SSH_IDENTITY";
     public final static String ENV_SSH_IDENTITY_PUB = "SSH_IDENTITY_PUB";
@@ -30,13 +25,11 @@ class EphemeralNetworkCreator {
     private EphemeralNetworkCreator(String terraformImage,
                                     String keyVolume,
                                     List<String> tf_Opts,
-                                    int totalNumOfnodes,
                                     String ansibleImage){
         this.terraformImage = terraformImage
         this.ansibleImage = ansibleImage
         this.keyVolume = keyVolume
         this.tf_Opts = tf_Opts
-        this.totalNumofNodes = totalNumOfnodes
     }
     void copyToTFSecrets(String fileLocation,  String sshDestinationFileName="testnet" ) {
         CmdHelper.runCommand("docker container create --name dummy -v ${keyVolume}:${terraformSecretsDir} curlimages/curl:7.70.0")
@@ -49,6 +42,9 @@ class EphemeralNetworkCreator {
         CmdHelper.runCommand("docker cp ${fileLocation} dummy:${ansibleSecretsDir}/${sshDestinationFileName}")
         CmdHelper.runCommand("docker rm -f dummy")
     }
+    void setTotalNumberOfNodes(int totalNumberOfNodes){
+        this.totalNumofNodes = totalNumberOfNodes
+    }
 
     void pullImage() {
         CmdHelper.runCommand("docker pull ${terraformImage}")
@@ -57,8 +53,11 @@ class EphemeralNetworkCreator {
 
     void setup(){
         def runString ="bash -c".tokenize() << (
-                "docker run --rm -v ${keyVolume}:${terraformSecretsDir} " +
-                        "--name node-terraform ${terraformImage} apply ${autoApprove}  " as String)
+                "docker run --rm -v " +
+                        "${keyVolume}:${terraformSecretsDir} " +
+                        "--name node-terraform ${terraformImage} apply " +
+                        "-var-file='${totalNumofNodes}-nodes.tfvars' " +
+                        "${autoApprove}  " as String)
         CmdHelper.runCommand(runString,[] as String[],true)
 
     }
@@ -67,7 +66,8 @@ class EphemeralNetworkCreator {
 
         def runString ="bash -c".tokenize() << (
                 "docker run --rm -v ${keyVolume}:${terraformSecretsDir} " +
-                        "--name node-terraform ${terraformImage} plan " as String)
+                        "--name node-terraform ${terraformImage} plan " +
+                        "-var-file='${totalNumofNodes}-nodes.tfvars'" as String)
         CmdHelper.runCommand(runString,[] as String[],true)
     }
 
@@ -75,7 +75,9 @@ class EphemeralNetworkCreator {
 
         def runString ="bash -c".tokenize() << (
                 "docker run --rm -v ${keyVolume}:${terraformSecretsDir} " +
-                        "--name node-terraform ${terraformImage} destroy ${autoApprove} " as String)
+                        "--name node-terraform ${terraformImage} destroy " +
+                        "-var-file='${totalNumofNodes}-nodes.tfvars' " +
+                        "${autoApprove} " as String)
         CmdHelper.runCommand(runString, [] as String[],true)
     }
 
@@ -143,18 +145,13 @@ class EphemeralNetworkCreator {
             return this
         }
 
-        Builder withTotalNumofNodes(int totalNumofNodes) {
-            this.totalNumofNodes = totalNumofNodes
-            return this
-        }
-
         Builder withTerraformOptions(List<String> tf_opts){
             this.tf_Opts = tf_opts
             return this
         }
 
         EphemeralNetworkCreator build() {
-            return new EphemeralNetworkCreator(this.terraformImage, this.keyVolume, this.tf_Opts, this.totalNumofNodes,this.ansibleImage)
+            return new EphemeralNetworkCreator(this.terraformImage, this.keyVolume, this.tf_Opts, this.ansibleImage)
         }
     }
 }

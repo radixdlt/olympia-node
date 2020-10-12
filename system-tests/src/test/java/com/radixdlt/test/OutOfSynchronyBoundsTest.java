@@ -5,6 +5,8 @@ import static java.util.stream.Collectors.toList;
 
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -20,6 +22,7 @@ import org.junit.experimental.runners.Enclosed;
 import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 import utils.Constants;
 import utils.CmdHelper;
 import utils.EphemeralNetworkCreator;
@@ -69,6 +72,7 @@ public class OutOfSynchronyBoundsTest {
 
 
 	@Category(Cluster.class)
+	@RunWith(Parameterized.class)
 	public static class ClusterTests {
 
 		private EphemeralNetworkCreator ephemeralNetworkCreator;
@@ -77,6 +81,16 @@ public class OutOfSynchronyBoundsTest {
 		@Rule
 		public TestName name = new TestName();
 
+		private int networkSize;
+
+		public ClusterTests(int networkSize) {
+			this.networkSize = networkSize;
+		}
+
+		@Parameters(name = "{index}: given_{0}_correct_bfts_in_cluster_network__when_one_node_is_down__then_all_other_instances_should_get_same_commits_and_progress_should_be_made")
+		public static Collection<Object[]> data() {
+			return Arrays.asList(new Object[][]{{10},{4}});
+		}
 
 		@Before
 		public void setupCluster() {
@@ -86,14 +100,12 @@ public class OutOfSynchronyBoundsTest {
 				.orElse(System.getenv("HOME") + "/.ssh/id_rsa.pub");
 			String AWS_CREDENTIAL = System.getenv(EphemeralNetworkCreator.ENV_AWS_CREDENTIAL);
 			String GCP_CREDENTIAL = System.getenv(EphemeralNetworkCreator.ENV_GCP_CREDENTIAL);
-			String CORE_TAG = Optional.ofNullable(System.getenv(EphemeralNetworkCreator.ENV_CORE_TAG)).orElse(":HEAD-043ccbdc");
-			String TESTNET_NAME = System.getenv(EphemeralNetworkCreator.ENV_TESTNET_NAME);
+
 
 			ephemeralNetworkCreator = EphemeralNetworkCreator.builder()
 				.withTerraformImage("eu.gcr.io/lunar-arc-236318/node-terraform:latest")
 				.withAnsibleImage("eu.gcr.io/lunar-arc-236318/node-ansible:python3")
 				.withKeyVolume("key-volume")
-				.withTotalNumofNodes(10)
 				.withTerraformOptions(Collections.emptyList()).build();
 
 			ephemeralNetworkCreator.copyToTFSecrets(SSH_IDENTITY);
@@ -103,20 +115,32 @@ public class OutOfSynchronyBoundsTest {
 			ephemeralNetworkCreator.copyToAnsibleSecrets(AWS_CREDENTIAL, Constants.getAWS_CREDENTIAL_FILE());
 			ephemeralNetworkCreator.copyToAnsibleSecrets(GCP_CREDENTIAL, Constants.getGCP_CREDENTIAL_FILE());
 
+		}
+
+
+		@Test
+		@Category(Cluster.class)
+		public void tests() {
+			String name = Generic.extractTestName(this.name.getMethodName());
+			logger.info("Test name is " + name);
+
+			String CORE_TAG = Optional.ofNullable(System.getenv(EphemeralNetworkCreator.ENV_CORE_TAG)).orElse(":HEAD-043ccbdc");
+			String TESTNET_NAME = System.getenv(EphemeralNetworkCreator.ENV_TESTNET_NAME);
+			ephemeralNetworkCreator.setTotalNumberOfNodes(networkSize);
 			ephemeralNetworkCreator.pullImage();
 			ephemeralNetworkCreator.plan();
 			ephemeralNetworkCreator.setup();
 			ephemeralNetworkCreator.nodesToBringdown(TESTNET_NAME);
 			ephemeralNetworkCreator.deploy(Collections.emptyList(),
 				Stream
-				.of(" -i aws-inventory  ",
-					"--limit " + TESTNET_NAME + " ",
-					"-e RADIXDLT_UNIVERSE ",
-					"-e core_tag=" + CORE_TAG + " ",
-					"-e boot_nodes=\"{{ groups['"+ TESTNET_NAME +"'] | join(',') }}\" ",
-					"-e quorum_size=10 -e consensus_start_on_boot=true").collect(toList()));
+					.of(" -i aws-inventory  ",
+						"--limit " + TESTNET_NAME + " ",
+						"-e RADIXDLT_UNIVERSE ",
+						"-e core_tag=" + CORE_TAG + " ",
+						"-e boot_nodes=\"{{ groups['"+ TESTNET_NAME +"'] | join(',') }}\" ",
+						"-e quorum_size="+ networkSize +" -e consensus_start_on_boot=true").collect(toList()));
 
-			network = ephemeralNetworkCreator.getNetwork(10);
+			network = ephemeralNetworkCreator.getNetwork(networkSize);
 
 			RemoteBFTTest test = AssertionChecks.slowNodeTestBuilder()
 				.network(RemoteBFTNetworkBridge.of(network))
@@ -125,15 +149,6 @@ public class OutOfSynchronyBoundsTest {
 				.build();
 			test.runBlocking(30, TimeUnit.SECONDS);
 
-
-		}
-
-
-		@Test
-		@Category(Cluster.class)
-		public void given_10_correct_bfts_in_cluster_network__when_one_node_is_down__then_all_other_instances_should_get_same_commits_and_progress_should_be_made() {
-			String name = Generic.extractTestName(this.name.getMethodName());
-			logger.info("Test name is " + name);
 			String nodeURL = network.getNodeIds().iterator().next();
 			String nodeToBringdown = Generic.getDomainName(nodeURL);
 
