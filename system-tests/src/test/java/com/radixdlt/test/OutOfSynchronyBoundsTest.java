@@ -1,12 +1,14 @@
 package com.radixdlt.test;
 
 import static com.radixdlt.test.AssertionChecks.*;
+import static java.util.stream.Collectors.toList;
 
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.After;
@@ -18,10 +20,10 @@ import org.junit.experimental.runners.Enclosed;
 import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import utils.Constants;
 import utils.CmdHelper;
 import utils.EphemeralNetworkCreator;
 import utils.Generic;
-import utils.SlowNodeSetup;
 
 @RunWith(Enclosed.class)
 public class OutOfSynchronyBoundsTest {
@@ -54,7 +56,9 @@ public class OutOfSynchronyBoundsTest {
 				ArrayList<String> setNodesToIgnore = new ArrayList<String>();
 				setNodesToIgnore.add(nodeNetworkSlowed);
 
-				RemoteBFTTest testOutOfSynchronyBounds = outOfSynchronyTestBuilder(setNodesToIgnore).network(RemoteBFTNetworkBridge.of(network)).build();
+				RemoteBFTTest testOutOfSynchronyBounds = outOfSynchronyTestBuilder(setNodesToIgnore)
+					.network(RemoteBFTNetworkBridge.of(network))
+					.build();
 
 				testOutOfSynchronyBounds.runBlocking(CmdHelper.getTestDurationInSeconds(), TimeUnit.SECONDS);
 
@@ -76,53 +80,52 @@ public class OutOfSynchronyBoundsTest {
 
 		@Before
 		public void setupCluster() {
-			String SSH_IDENTITY = Optional.ofNullable(System.getenv("SSH_IDENTITY")).orElse(System.getenv("HOME") + "/.ssh/id_rsa");
-			String SSH_IDENTITY_PUB = Optional.ofNullable(System.getenv("SSH_IDENTITY_PUB")).orElse(System.getenv("HOME") + "/.ssh/id_rsa.pub");
-			String AWS_CREDENTIAL = System.getenv("AWS_CREDENTIAL");
-			String GCP_CREDENTIAL = System.getenv("GCP_CREDENTIAL");
-			String AWS_SECRET_ACCESS_KEY = System.getenv("AWS_SECRET_ACCESS_KEY");
-			String AWS_ACCESS_KEY_ID = System.getenv("AWS_ACCESS_KEY_ID");
+			String SSH_IDENTITY = Optional.ofNullable(System.getenv(EphemeralNetworkCreator.ENV_SSH_IDENTITY))
+				.orElse(System.getenv("HOME") + "/.ssh/id_rsa");
+			String SSH_IDENTITY_PUB = Optional.ofNullable(System.getenv(EphemeralNetworkCreator.ENV_SSH_IDENTITY_PUB))
+				.orElse(System.getenv("HOME") + "/.ssh/id_rsa.pub");
+			String AWS_CREDENTIAL = System.getenv(EphemeralNetworkCreator.ENV_AWS_CREDENTIAL);
+			String GCP_CREDENTIAL = System.getenv(EphemeralNetworkCreator.ENV_GCP_CREDENTIAL);
+			String CORE_TAG = Optional.ofNullable(System.getenv(EphemeralNetworkCreator.ENV_CORE_TAG)).orElse(":HEAD-043ccbdc");
+			String TESTNET_NAME = System.getenv(EphemeralNetworkCreator.ENV_TESTNET_NAME);
 
-			//Creating named volume and copying over the file to volume works with or without docker in docker setup
 			ephemeralNetworkCreator = EphemeralNetworkCreator.builder()
 				.withTerraformImage("eu.gcr.io/lunar-arc-236318/node-terraform:latest")
+				.withAnsibleImage("eu.gcr.io/lunar-arc-236318/node-ansible:python3")
 				.withKeyVolume("key-volume")
 				.withTotalNumofNodes(10)
-				.withTerraformOptions(Collections.emptyList() )
-				.build();
-			ephemeralNetworkCreator.copyfileToNamedVolume(SSH_IDENTITY);
-			ephemeralNetworkCreator.copyfileToNamedVolume(SSH_IDENTITY_PUB,"/terraform/ssh","testnet.pub");
-			ephemeralNetworkCreator.copyfileToNamedVolume(AWS_CREDENTIAL, "/terraform/ssh","aws-env-file.sh");
-			ephemeralNetworkCreator.copyfileToNamedVolume(AWS_CREDENTIAL,"/ansible/ssh","aws-env-file.sh");
-			ephemeralNetworkCreator.copyfileToNamedVolume(GCP_CREDENTIAL,
-				"/ansible/ssh","dev-container-repo-uploader.json");
+				.withTerraformOptions(Collections.emptyList()).build();
+
+			ephemeralNetworkCreator.copyToTFSecrets(SSH_IDENTITY);
+			ephemeralNetworkCreator.copyToTFSecrets(SSH_IDENTITY_PUB,  Constants.getTESTNET_SSH_KEY_FILE_NAME());
+			ephemeralNetworkCreator.copyToTFSecrets(AWS_CREDENTIAL,  Constants.getAWS_CREDENTIAL_FILE());
+
+			ephemeralNetworkCreator.copyToAnsibleSecrets(AWS_CREDENTIAL, Constants.getAWS_CREDENTIAL_FILE());
+			ephemeralNetworkCreator.copyToAnsibleSecrets(GCP_CREDENTIAL, Constants.getGCP_CREDENTIAL_FILE());
+
 			ephemeralNetworkCreator.pullImage();
 			ephemeralNetworkCreator.plan();
 			ephemeralNetworkCreator.setup();
-			ephemeralNetworkCreator.nodesToBringdown("tag_Environment_ephemeralnet");
-			ephemeralNetworkCreator.deploy();
+			ephemeralNetworkCreator.nodesToBringdown(TESTNET_NAME);
+			ephemeralNetworkCreator.deploy(Collections.emptyList(),
+				Stream
+				.of(" -i aws-inventory  ",
+					"--limit " + TESTNET_NAME + " ",
+					"-e RADIXDLT_UNIVERSE ",
+					"-e core_tag=" + CORE_TAG + " ",
+					"-e boot_nodes=\"{{ groups['"+ TESTNET_NAME +"'] | join(',') }}\" ",
+					"-e quorum_size=10 -e consensus_start_on_boot=true").collect(toList()));
 
 			network = ephemeralNetworkCreator.getNetwork(10);
-
 
 			RemoteBFTTest test = AssertionChecks.slowNodeTestBuilder()
 				.network(RemoteBFTNetworkBridge.of(network))
 				.waitUntilResponsive()
 				.startConsensusOnRun()
 				.build();
-			test.runBlocking(CmdHelper.getTestDurationInSeconds(), TimeUnit.SECONDS);
+			test.runBlocking(30, TimeUnit.SECONDS);
 
-			String sshKeylocation = Optional.ofNullable(System.getenv("SSH_IDENTITY")).orElse(System.getenv("HOME") + "/.ssh/id_rsa");
 
-			String nodeURL = network.getNodeIds().iterator().next();
-			String nodeToBringdown = Generic.getDomainName(nodeURL);
-
-			ephemeralNetworkCreator.nodesToBringdown(nodeToBringdown);
-
-			ArrayList<String> setNodesToIgnore = new ArrayList<String>();
-			setNodesToIgnore.add(nodeURL);
-			RemoteBFTTest testOutOfSynchronyBounds = outOfSynchronyTestBuilder(setNodesToIgnore).network(RemoteBFTNetworkBridge.of(network)).build();
-			testOutOfSynchronyBounds.runBlocking(CmdHelper.getTestDurationInSeconds(), TimeUnit.SECONDS);
 		}
 
 
@@ -131,10 +134,21 @@ public class OutOfSynchronyBoundsTest {
 		public void given_10_correct_bfts_in_cluster_network__when_one_node_is_down__then_all_other_instances_should_get_same_commits_and_progress_should_be_made() {
 			String name = Generic.extractTestName(this.name.getMethodName());
 			logger.info("Test name is " + name);
+			String nodeURL = network.getNodeIds().iterator().next();
+			String nodeToBringdown = Generic.getDomainName(nodeURL);
+
+			ephemeralNetworkCreator.nodesToBringdown(nodeToBringdown);
+
+			ArrayList<String> setNodesToIgnore = new ArrayList<String>();
+			setNodesToIgnore.add(nodeURL);
+			RemoteBFTTest testOutOfSynchronyBounds = outOfSynchronyTestBuilder(setNodesToIgnore)
+				.network(RemoteBFTNetworkBridge.of(network))
+				.build();
+			testOutOfSynchronyBounds.runBlocking(CmdHelper.getTestDurationInSeconds(), TimeUnit.SECONDS);
 		}
 
 		@After
-		public void removeSlowNodesettings(){
+		public void removeSlowNodesettings() {
 			ephemeralNetworkCreator.teardown();
 		}
 	}

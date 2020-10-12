@@ -11,40 +11,53 @@ import com.radixdlt.test.StaticClusterNetwork
 * */
 class EphemeralNetworkCreator {
 
-    String terraformImage, keyVolume
+    String terraformImage, keyVolume, ansibleImage
     List<String> tf_Opts
     int totalNumofNodes
-    private String sshDestinationLocDir = "/terraform/ssh"
-    private String sshDestinationFileName = "testnet"
+    private String terraformSecretsDir = "/terraform/ssh"
+    private String ansibleSecretsDir = "/ansible/ssh"
     private String autoApprove = "-auto-approve"
-    private String AWS_SECRET_ACCESS_KEY,AWS_ACCESS_KEY_ID
     private List<String> hosts;
+
+    public final static String ENV_SSH_IDENTITY = "SSH_IDENTITY";
+    public final static String ENV_SSH_IDENTITY_PUB = "SSH_IDENTITY_PUB";
+    public final static String ENV_AWS_CREDENTIAL = "AWS_CREDENTIAL";
+    public final static String ENV_GCP_CREDENTIAL = "GCP_CREDENTIAL";
+    public final static String ENV_CORE_TAG = "CORE_TAG";
+    public final static String ENV_TESTNET_NAME = "TESTNET_NAME";
+
 
     private EphemeralNetworkCreator(String terraformImage,
                                     String keyVolume,
                                     List<String> tf_Opts,
-                                    int totalNumOfnodes ){
+                                    int totalNumOfnodes,
+                                    String ansibleImage){
         this.terraformImage = terraformImage
+        this.ansibleImage = ansibleImage
         this.keyVolume = keyVolume
         this.tf_Opts = tf_Opts
         this.totalNumofNodes = totalNumOfnodes
-        this.AWS_SECRET_ACCESS_KEY = System.getenv("AWS_SECRET_ACCESS_KEY")
-        this.AWS_ACCESS_KEY_ID = System.getenv("AWS_ACCESS_KEY_ID")
     }
-    void copyfileToNamedVolume(String fileLocation, String sshDestinationLocDir="/terraform/ssh", String sshDestinationFileName="testnet" ) {
-        CmdHelper.runCommand("docker container create --name dummy -v ${keyVolume}:${sshDestinationLocDir} curlimages/curl:7.70.0")
-        CmdHelper.runCommand("docker cp ${fileLocation} dummy:${sshDestinationLocDir}/${sshDestinationFileName}")
+    void copyToTFSecrets(String fileLocation,  String sshDestinationFileName="testnet" ) {
+        CmdHelper.runCommand("docker container create --name dummy -v ${keyVolume}:${terraformSecretsDir} curlimages/curl:7.70.0")
+        CmdHelper.runCommand("docker cp ${fileLocation} dummy:${terraformSecretsDir}/${sshDestinationFileName}")
+        CmdHelper.runCommand("docker rm -f dummy")
+    }
+
+    void copyToAnsibleSecrets(String fileLocation,  String sshDestinationFileName="testnet" ) {
+        CmdHelper.runCommand("docker container create --name dummy -v ${keyVolume}:${ansibleSecretsDir} curlimages/curl:7.70.0")
+        CmdHelper.runCommand("docker cp ${fileLocation} dummy:${ansibleSecretsDir}/${sshDestinationFileName}")
         CmdHelper.runCommand("docker rm -f dummy")
     }
 
     void pullImage() {
         CmdHelper.runCommand("docker pull ${terraformImage}")
+        CmdHelper.runCommand("docker pull ${ansibleImage}")
     }
 
     void setup(){
         def runString ="bash -c".tokenize() << (
-                "docker run --rm -v ${keyVolume}:${sshDestinationLocDir} " +
-                        "-e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}  " +
+                "docker run --rm -v ${keyVolume}:${terraformSecretsDir} " +
                         "--name node-terraform ${terraformImage} apply ${autoApprove}  " as String)
         CmdHelper.runCommand(runString,[] as String[],true)
 
@@ -53,7 +66,7 @@ class EphemeralNetworkCreator {
     void plan(){
 
         def runString ="bash -c".tokenize() << (
-                "docker run --rm -v ${keyVolume}:${sshDestinationLocDir} " +
+                "docker run --rm -v ${keyVolume}:${terraformSecretsDir} " +
                         "--name node-terraform ${terraformImage} plan " as String)
         CmdHelper.runCommand(runString,[] as String[],true)
     }
@@ -61,7 +74,7 @@ class EphemeralNetworkCreator {
     void teardown(){
 
         def runString ="bash -c".tokenize() << (
-                "docker run --rm -v ${keyVolume}:${sshDestinationLocDir} " +
+                "docker run --rm -v ${keyVolume}:${terraformSecretsDir} " +
                         "--name node-terraform ${terraformImage} destroy ${autoApprove} " as String)
         CmdHelper.runCommand(runString, [] as String[],true)
     }
@@ -69,45 +82,30 @@ class EphemeralNetworkCreator {
     String getHosts(){
         List<String[]> output, error
         def runString ="bash -c".tokenize() << (
-                "docker run --rm -v ${keyVolume}:${sshDestinationLocDir} " +
+                "docker run --rm -v ${keyVolume}:${terraformSecretsDir} " +
                         "--name node-terraform ${terraformImage} output | grep node_ | cut -d'\"' -f 4" as String)
         (hosts, error)= CmdHelper.runCommand(runString, [] as String[],true)
     }
 
-    String provision(){
-        //docker run --rm -v key-volume:/ansible/ssh --name node-ansible -e RADIXDLT_UNIVERSE eu.gcr.io/lunar-arc-236318/node-ansible:python3  check.yml -i aws-inventory  --limit tag_Environment_ephemeralnet --check
-        def runString = "bash -c".tokenize() << (
-                "docker run --rm  -v key-volume:/ansible/ssh " +
-                        " eu.gcr.io/lunar-arc-236318/node-ansible:python3" +
-                        " provision.yml -i aws-inventory  --limit tag_Environment_ephemeralnet"
-        )
-        CmdHelper.runCommand(runString,[] as String[],true)
-    }
-    List<String> deploy(){
+    List<String> deploy(List<String> dockerOptions, List<String> ansibleOptions){
         def output,error
         def runString = "bash -c".tokenize() << (
-                "docker run --rm  -v key-volume:/ansible/ssh " +
-                        " eu.gcr.io/lunar-arc-236318/node-ansible:python3" +
-                        " deploy.yml -i aws-inventory  " +
-                        "--limit tag_Environment_ephemeralnet " +
-                        "-e 'core_tag=:HEAD-043ccbdc' " +
-                        "-e boot_nodes=\"{{ groups['tag_Environment_ephemeralnet'] | join(',') }}\" " +
-                        " -e quorum_size=10 -e consensus_start_on_boot=true"
-        )
+                "docker run --rm  -e RADIXDLT_UNIVERSE -v ${keyVolume}:${ansibleSecretsDir} " +
+                        "${ansibleImage} " +
+                        "deploy.yml " +
+                        " ${Generic.listToDelimitedString(ansibleOptions," ")}" as String)
         (output,error)=CmdHelper.runCommand(runString,["RADIXDLT_UNIVERSE=${System.getenv('RADIXDLT_UNIVERSE')}"] as String[])
         return error
     }
 
     List<String> nodesToBringdown(String nodeToBringdown){
         def output,error
-        //TODO need more parameterisation
         def runString = "bash -c".tokenize() << (
-                "docker run --rm  -v key-volume:/ansible/ssh " +
-                        " eu.gcr.io/lunar-arc-236318/node-ansible:python3" +
-                        " control-node.yml -i aws-inventory  " +
-                        "--limit ${nodeToBringdown} -t down "
-        )
-        (output,error)=CmdHelper.runCommand(runString,["RADIXDLT_UNIVERSE=${System.getenv('RADIXDLT_UNIVERSE')}"] as String[])
+                "docker run --rm  -v ${keyVolume}:${ansibleSecretsDir} " +
+                        "${ansibleImage} " +
+                        "control-node.yml -i aws-inventory  " +
+                        "--limit ${nodeToBringdown} -t down " as String)
+        (output,error)=CmdHelper.runCommand(runString)
         return error
     }
 
@@ -124,7 +122,7 @@ class EphemeralNetworkCreator {
 
 
     static class Builder {
-        String terraformImage, keyVolume
+        String terraformImage,ansibleImage, keyVolume
         List<String> tf_Opts
         int totalNumofNodes
 
@@ -133,6 +131,10 @@ class EphemeralNetworkCreator {
 
         Builder withTerraformImage(String terraformImage) {
             this.terraformImage = terraformImage
+            return this
+        }
+        Builder withAnsibleImage(String ansibleImage) {
+            this.ansibleImage = ansibleImage
             return this
         }
 
@@ -152,7 +154,7 @@ class EphemeralNetworkCreator {
         }
 
         EphemeralNetworkCreator build() {
-            return new EphemeralNetworkCreator(this.terraformImage, this.keyVolume, this.tf_Opts, this.totalNumofNodes)
+            return new EphemeralNetworkCreator(this.terraformImage, this.keyVolume, this.tf_Opts, this.totalNumofNodes,this.ansibleImage)
         }
     }
 }
