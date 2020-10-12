@@ -18,6 +18,7 @@
 package com.radixdlt;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.atIndex;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -37,6 +38,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.RadixAddress;
@@ -53,6 +55,7 @@ import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.utils.UInt256;
 import java.util.stream.Stream;
+import org.assertj.core.api.Condition;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -113,7 +116,7 @@ public class RadixEngineStateComputerTest {
 			ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom);
 			final byte[] payload = DefaultSerialization.getInstance().toDson(clientAtom, Output.ALL);
 			Command cmd = new Command(payload);
-			return new RadixEngineCommand(cmd, clientAtom);
+			return new RadixEngineCommand(cmd, clientAtom, PermissionLevel.USER);
 		} catch (AtomAlreadySignedException e) {
 			throw new RuntimeException();
 		}
@@ -125,7 +128,7 @@ public class RadixEngineStateComputerTest {
 		StateComputerResult result = sut.prepare(ImmutableList.of(), null, View.of(9));
 
 		// Assert
-		assertThat(result.getSuccessfulCommands()).isEmpty();
+		assertThat(result.getSuccessfulCommands()).hasSize(1);
 		assertThat(result.getFailedCommands()).isEmpty();
 		assertThat(result.getNextValidatorSet()).isEmpty();
 	}
@@ -136,7 +139,7 @@ public class RadixEngineStateComputerTest {
 		StateComputerResult result = sut.prepare(ImmutableList.of(), null, View.of(10));
 
 		// Assert
-		assertThat(result.getSuccessfulCommands()).isEmpty();
+		assertThat(result.getSuccessfulCommands()).hasSize(1);
 		assertThat(result.getFailedCommands()).isEmpty();
 		assertThat(result.getNextValidatorSet()).contains(this.validatorSet);
 	}
@@ -152,10 +155,10 @@ public class RadixEngineStateComputerTest {
 		StateComputerResult result = sut.prepare(ImmutableList.of(), cmd.command(), View.of(10));
 
 		// Assert
-		assertThat(result.getSuccessfulCommands()).hasOnlyOneElementSatisfying(s ->
-			assertThat(s.command()).isEqualTo(cmd.command())
+		assertThat(result.getSuccessfulCommands()).has(
+			new Condition<>(s -> s.command().equals(cmd.command()), "Command is successful"),
+			atIndex(1)
 		);
-		assertThat(result.getFailedCommands()).isEmpty();
 		assertThat(result.getNextValidatorSet()).hasValueSatisfying(s -> {
 			assertThat(s.getValidators()).hasSize(2);
 			assertThat(s.getValidators()).extracting(BFTValidator::getNode).doesNotContain(node);
@@ -173,7 +176,7 @@ public class RadixEngineStateComputerTest {
 		StateComputerResult result = sut.prepare(ImmutableList.of(cmd), null, View.of(10));
 
 		// Assert
-		assertThat(result.getSuccessfulCommands()).isEmpty();
+		assertThat(result.getSuccessfulCommands()).hasSize(1);
 		assertThat(result.getFailedCommands()).isEmpty();
 		assertThat(result.getNextValidatorSet()).hasValueSatisfying(s -> {
 			assertThat(s.getValidators()).hasSize(3);

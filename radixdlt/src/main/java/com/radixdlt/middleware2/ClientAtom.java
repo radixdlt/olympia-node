@@ -43,6 +43,7 @@ import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.store.SpinStateMachine;
+import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -126,9 +127,33 @@ public final class ClientAtom implements LedgerAtom {
 		this.signatures = Objects.requireNonNull(signatures);
 	}
 
+	public static ClientAtom create(
+		ImmutableList<CMMicroInstruction> instructions
+	) {
+		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		serializedInstructions(instructions).forEach(outputStream::writeBytes);
+		Hash witness = Hash.of(outputStream.toByteArray());
+		AID aid = AID.from(witness.toByteArray());
+		return new ClientAtom(
+			aid,
+			witness,
+			instructions,
+			ImmutableMap.of(),
+			ImmutableMap.of(),
+			instructions.stream()
+				.filter(i -> i.getMicroOp() == CMMicroOp.PARTICLE_GROUP)
+				.map(i -> ImmutableMap.<String, String>of())
+				.collect(ImmutableList.toImmutableList())
+		);
+	}
+
 	@JsonProperty("instructions")
 	@DsonOutput(Output.ALL)
 	private ImmutableList<byte[]> getSerializerInstructions() {
+		return serializedInstructions(this.instructions).collect(ImmutableList.toImmutableList());
+	}
+
+	private static Stream<byte[]> serializedInstructions(ImmutableList<CMMicroInstruction> instructions) {
 		return instructions.stream().flatMap(i -> {
 			if (i.getMicroOp() == CMMicroOp.PARTICLE_GROUP) {
 				return Stream.of(new byte[] {0});
@@ -145,7 +170,7 @@ public final class ClientAtom implements LedgerAtom {
 				byte[] particleDson = DefaultSerialization.getInstance().toDson(i.getParticle(), Output.ALL);
 				return Stream.of(instByte, particleDson);
 			}
-		}).collect(ImmutableList.toImmutableList());
+		});
 	}
 
 	private static ImmutableList<CMMicroInstruction> toInstructions(ImmutableList<byte[]> bytesList) {

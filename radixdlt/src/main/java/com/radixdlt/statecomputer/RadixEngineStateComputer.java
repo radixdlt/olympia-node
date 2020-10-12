@@ -20,10 +20,14 @@ package com.radixdlt.statecomputer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.constraintmachine.CMMicroInstruction;
+import com.radixdlt.constraintmachine.PermissionLevel;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngine.RadixEngineBranch;
 import com.radixdlt.engine.RadixEngineException;
@@ -32,6 +36,7 @@ import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
@@ -77,10 +82,12 @@ public final class RadixEngineStateComputer implements StateComputer {
 	public static class RadixEngineCommand implements PreparedCommand {
 		private final Command command;
 		private final ClientAtom clientAtom;
+		private final PermissionLevel permissionLevel;
 
-		public RadixEngineCommand(Command command, ClientAtom clientAtom) {
+		public RadixEngineCommand(Command command, ClientAtom clientAtom, PermissionLevel permissionLevel) {
 			this.command = command;
 			this.clientAtom = clientAtom;
+			this.permissionLevel = permissionLevel;
 		}
 
 		@Override
@@ -92,7 +99,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private void execute(
 		RadixEngineBranch<LedgerAtom> branch,
 		Command next,
-		View view,
 		ImmutableList.Builder<PreparedCommand> successBuilder,
 		ImmutableMap.Builder<Command, Exception> errorBuilder
 	) {
@@ -100,7 +106,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			final RadixEngineCommand radixEngineCommand;
 			try {
 				ClientAtom clientAtom = mapCommand(next);
-				radixEngineCommand = new RadixEngineCommand(next, clientAtom);
+				radixEngineCommand = new RadixEngineCommand(next, clientAtom, PermissionLevel.USER);
 				branch.checkAndStore(clientAtom);
 			} catch (RadixEngineException | DeserializeException e) {
 				errorBuilder.put(next, e);
@@ -117,9 +123,11 @@ public final class RadixEngineStateComputer implements StateComputer {
 		for (PreparedCommand command : previous) {
 			// TODO: fix this cast with generics. Currently the fix would become a bit too messy
 			final RadixEngineCommand radixEngineCommand = (RadixEngineCommand) command;
-			final ClientAtom clientAtom = radixEngineCommand.clientAtom;
 			try {
-				transientBranch.checkAndStore(clientAtom);
+				transientBranch.checkAndStore(
+					radixEngineCommand.clientAtom,
+					radixEngineCommand.permissionLevel
+				);
 			} catch (RadixEngineException e) {
 				throw new IllegalStateException("Re-execution of already prepared atom failed", e);
 			}
@@ -128,8 +136,27 @@ public final class RadixEngineStateComputer implements StateComputer {
 		final ImmutableList.Builder<PreparedCommand> successBuilder = ImmutableList.builder();
 		final ImmutableMap.Builder<Command, Exception> exceptionBuilder = ImmutableMap.builder();
 
-		//SystemParticle lastSystemParticle = transientBranch.getComputedState(SystemParticle.class);
-		//final SystemParticle nextSystemParticle;
+		final SystemParticle lastSystemParticle = transientBranch.getComputedState(SystemParticle.class);
+		long epoch = lastSystemParticle.getView() >= epochChangeView.number() ? lastSystemParticle.getEpoch() + 1 : lastSystemParticle.getEpoch();
+		final SystemParticle nextSystemParticle = new SystemParticle(epoch, view.number(), 0);
+		final ClientAtom systemUpdate = ClientAtom.create(
+			ImmutableList.of(
+				CMMicroInstruction.checkSpinAndPush(lastSystemParticle, Spin.UP),
+				CMMicroInstruction.checkSpinAndPush(nextSystemParticle, Spin.NEUTRAL),
+				CMMicroInstruction.particleGroup()
+			)
+		);
+		try {
+			transientBranch.checkAndStore(systemUpdate, PermissionLevel.SYSTEM);
+		} catch (RadixEngineException e) {
+			throw new IllegalStateException("Failed to execute system update.", e);
+		}
+		RadixEngineCommand radixEngineCommand = new RadixEngineCommand(
+			new Command(serialization.toDson(systemUpdate, Output.ALL)),
+			systemUpdate,
+			PermissionLevel.SYSTEM
+		);
+		successBuilder.add(radixEngineCommand);
 
 		final BFTValidatorSet validatorSet;
 		if (view.compareTo(epochChangeView) >= 0) {
@@ -139,7 +166,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			validatorSet = null;
 		}
 
-		this.execute(transientBranch, next, view, successBuilder, exceptionBuilder);
+		this.execute(transientBranch, next, successBuilder, exceptionBuilder);
 
 		this.radixEngine.deleteBranches();
 		return new StateComputerResult(successBuilder.build(), exceptionBuilder.build(), validatorSet);
@@ -154,7 +181,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 			final ClientAtom clientAtom = this.mapCommand(command);
 			final CommittedAtom committedAtom = new CommittedAtom(clientAtom, version, proof);
 			// TODO: execute list of commands instead
-			this.radixEngine.checkAndStore(committedAtom);
+			// TODO: Include permission level in command
+			this.radixEngine.checkAndStore(committedAtom, PermissionLevel.SYSTEM);
 		} catch (RadixEngineException | DeserializeException e) {
 			// TODO: Remove throwing of exception
 			// TODO: Exception could be because of byzantine quorum
