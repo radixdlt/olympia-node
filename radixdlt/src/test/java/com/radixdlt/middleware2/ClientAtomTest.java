@@ -34,7 +34,9 @@ import org.junit.Test;
 public class ClientAtomTest {
 	@Test
 	public void equalsContract() {
-		EqualsVerifier.forClass(ClientAtom.class)
+		EqualsVerifier
+			.forClass(ClientAtom.class)
+			.withIgnoredFields("metaData", "perGroupMetadata", "instructions", "signatures", "witness")
 			.verify();
 	}
 
