@@ -100,12 +100,14 @@ public class OutOfSynchronyBoundsTest {
 				.orElse(System.getenv("HOME") + "/.ssh/id_rsa.pub");
 			String AWS_CREDENTIAL = System.getenv(EphemeralNetworkCreator.ENV_AWS_CREDENTIAL);
 			String GCP_CREDENTIAL = System.getenv(EphemeralNetworkCreator.ENV_GCP_CREDENTIAL);
+			String CREDENTIAL_VOL_NAME = Optional.ofNullable(System.getenv(Constants.getCREDENTIAL_VOL_NAME()))
+				.orElse("key-volume");
 
 
 			ephemeralNetworkCreator = EphemeralNetworkCreator.builder()
 				.withTerraformImage("eu.gcr.io/lunar-arc-236318/node-terraform:latest")
 				.withAnsibleImage("eu.gcr.io/lunar-arc-236318/node-ansible:python3")
-				.withKeyVolume("key-volume")
+				.withKeyVolume(CREDENTIAL_VOL_NAME)
 				.withTerraformOptions(Collections.emptyList()).build();
 
 			ephemeralNetworkCreator.copyToTFSecrets(SSH_IDENTITY);
