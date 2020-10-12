@@ -85,7 +85,7 @@ public class MessageCentralBFTNetworkTest {
 	}
 
 	@Test
-	public void when_send_new_view__then_message_central_should_be_sent_new_view_message() {
+	public void when_send_view_timeout__then_message_central_should_be_sent_message() {
 		ViewTimeout viewTimeout = mock(ViewTimeout.class);
 		ECPublicKey leaderPk = ECKeyPair.generateNew().getPublicKey();
 		BFTNode leader = mock(BFTNode.class);
@@ -99,11 +99,11 @@ public class MessageCentralBFTNetworkTest {
 	}
 
 	@Test
-	public void when_send_new_view_to_nonexistent__then_no_message_sent() {
-		ViewTimeout newView = mock(ViewTimeout.class);
+	public void when_send_view_timeout_to_nonexistent__then_no_message_sent() {
+		ViewTimeout viewTimeout = mock(ViewTimeout.class);
 		BFTNode node = mock(BFTNode.class);
 		when(node.getKey()).thenReturn(mock(ECPublicKey.class));
-		network.sendViewTimeout(newView, node);
+		network.sendViewTimeout(viewTimeout, node);
 		verify(messageCentral, never()).send(any(), any());
 	}
 

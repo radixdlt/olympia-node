@@ -35,8 +35,8 @@ public class GetVerticesErrorResponseMessageTest {
 		VerifiedVertex verifiedVertex = mock(VerifiedVertex.class);
 		when(verifiedVertex.getView()).thenReturn(View.genesis());
 		QuorumCertificate qc = QuorumCertificate.ofGenesis(verifiedVertex, mock(LedgerHeader.class));
-		HighQC syncInfo = HighQC.from(qc, qc);
-		GetVerticesErrorResponseMessage msg1 = new GetVerticesErrorResponseMessage(0, syncInfo);
+		HighQC highQC = HighQC.from(qc, qc);
+		GetVerticesErrorResponseMessage msg1 = new GetVerticesErrorResponseMessage(0, highQC);
 		String s1 = msg1.toString();
 		assertThat(s1, containsString(GetVerticesErrorResponseMessage.class.getSimpleName()));
 	}

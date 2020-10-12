@@ -149,18 +149,18 @@ public class ExponentialTimeoutPacemakerTest {
 	@Test
 	public void when_view_1_view_timeout_with_quorum__then_next_view_and_timeout_scheduled() {
 		ViewTimeout viewTimeout = mock(ViewTimeout.class);
-		HighQC syncInfo = mock(HighQC.class);
+		HighQC hqc = mock(HighQC.class);
 		QuorumCertificate highQC = mock(QuorumCertificate.class);
 		BFTHeader header = mock(BFTHeader.class);
 		LedgerHeader ledgerHeader = mock(LedgerHeader.class);
 
 		when(viewTimeout.getView()).thenReturn(View.of(1));
 		when(this.pendingViewTimeouts.insertViewTimeout(any(), any())).thenReturn(Optional.of(View.of(1)));
-		when(syncInfo.highestQC()).thenReturn(highQC);
+		when(hqc.highestQC()).thenReturn(highQC);
 		when(highQC.getProposed()).thenReturn(header);
 		when(header.getLedgerHeader()).thenReturn(ledgerHeader);
 		when(ledgerHeader.isEndOfEpoch()).thenReturn(true);
-		when(this.vertexStore.syncInfo()).thenReturn(syncInfo);
+		when(this.vertexStore.highQC()).thenReturn(hqc);
 		when(this.signer.sign(Mockito.<Hash>any())).thenReturn(new ECDSASignature());
 		when(this.proposerElection.getProposer(eq(View.of(2)))).thenReturn(this.self);
 
@@ -175,18 +175,18 @@ public class ExponentialTimeoutPacemakerTest {
 	@Test
 	public void when_view_1_view_timeout_with_quorum__then_next_view_and_timeout_scheduled_with_command() {
 		ViewTimeout viewTimeout = mock(ViewTimeout.class);
-		HighQC syncInfo = mock(HighQC.class);
+		HighQC hqc = mock(HighQC.class);
 		QuorumCertificate highQC = mock(QuorumCertificate.class);
 		BFTHeader header = mock(BFTHeader.class);
 		LedgerHeader ledgerHeader = mock(LedgerHeader.class);
 
 		when(viewTimeout.getView()).thenReturn(View.of(1));
 		when(this.pendingViewTimeouts.insertViewTimeout(any(), any())).thenReturn(Optional.of(View.of(1)));
-		when(syncInfo.highestQC()).thenReturn(highQC);
+		when(hqc.highestQC()).thenReturn(highQC);
 		when(highQC.getProposed()).thenReturn(header);
 		when(header.getLedgerHeader()).thenReturn(ledgerHeader);
 		when(ledgerHeader.isEndOfEpoch()).thenReturn(false);
-		when(this.vertexStore.syncInfo()).thenReturn(syncInfo);
+		when(this.vertexStore.highQC()).thenReturn(hqc);
 		when(this.signer.sign(Mockito.<Hash>any())).thenReturn(new ECDSASignature());
 		when(this.proposerElection.getProposer(eq(View.of(2)))).thenReturn(this.self);
 
@@ -289,11 +289,11 @@ public class ExponentialTimeoutPacemakerTest {
 
 	@Test
 	public void when_process_qc_for_wrong_view__then_ignored() {
-		HighQC syncInfo = mock(HighQC.class);
+		HighQC highQC = mock(HighQC.class);
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		when(qc.getView()).thenReturn(View.of(1));
-		when(syncInfo.highestQC()).thenReturn(qc);
-		when(syncInfo.highestCommittedQC()).thenReturn(qc);
+		when(highQC.highestQC()).thenReturn(qc);
+		when(highQC.highestCommittedQC()).thenReturn(qc);
 
 		// Move ahead for a bit so we can send in a QC for a lower view
 		this.pacemaker.processLocalTimeout(View.of(0));
@@ -301,24 +301,24 @@ public class ExponentialTimeoutPacemakerTest {
 		this.pacemaker.processLocalTimeout(View.of(2));
 		assertThat(this.pacemaker.getCurrentView()).isEqualTo(View.of(3));
 
-		assertThat(this.pacemaker.processQC(syncInfo)).isFalse();
+		assertThat(this.pacemaker.processQC(highQC)).isFalse();
 		assertThat(this.pacemaker.getCurrentView()).isEqualTo(View.of(3));
 	}
 
 	@Test
 	public void when_process_qc_for_current_view__then_processed() {
-		HighQC syncInfo = mock(HighQC.class);
+		HighQC highQC = mock(HighQC.class);
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		when(qc.getView()).thenReturn(View.of(0));
-		when(syncInfo.highestQC()).thenReturn(qc);
-		when(syncInfo.highestCommittedQC()).thenReturn(qc);
+		when(highQC.highestQC()).thenReturn(qc);
+		when(highQC.highestCommittedQC()).thenReturn(qc);
 
-		assertThat(this.pacemaker.processQC(syncInfo)).isTrue();
+		assertThat(this.pacemaker.processQC(highQC)).isTrue();
 		assertThat(this.pacemaker.getCurrentView()).isEqualTo(View.of(1));
 		assertThat(this.pacemaker.highestCommitView()).isEqualTo(View.of(0));
 
 		when(qc.getView()).thenReturn(View.of(1));
-		assertThat(this.pacemaker.processQC(syncInfo)).isTrue();
+		assertThat(this.pacemaker.processQC(highQC)).isTrue();
 		assertThat(this.pacemaker.getCurrentView()).isEqualTo(View.of(2));
 		assertThat(this.pacemaker.highestCommitView()).isEqualTo(View.of(1));
 	}

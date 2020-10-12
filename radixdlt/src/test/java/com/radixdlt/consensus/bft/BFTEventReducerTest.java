@@ -63,13 +63,13 @@ public class BFTEventReducerTest {
 	@Test
 	public void when_start__then_should_proceed_to_first_view() {
 		QuorumCertificate qc = mock(QuorumCertificate.class);
-		HighQC syncInfo = mock(HighQC.class);
+		HighQC highQC = mock(HighQC.class);
 		View view = mock(View.class);
 		when(qc.getView()).thenReturn(view);
-		when(syncInfo.highestQC()).thenReturn(qc);
-		when(vertexStore.syncInfo()).thenReturn(syncInfo);
+		when(highQC.highestQC()).thenReturn(qc);
+		when(vertexStore.highQC()).thenReturn(highQC);
 		reducer.start();
-		verify(pacemaker, times(1)).processQC(syncInfo);
+		verify(pacemaker, times(1)).processQC(highQC);
 		verifyNoMoreInteractions(pacemaker);
 	}
 
@@ -94,11 +94,11 @@ public class BFTEventReducerTest {
 		VoteData voteData = new VoteData(proposal, parent, null);
 		when(voteMessage.getVoteData()).thenReturn(voteData);
 
-		HighQC syncInfo = mock(HighQC.class);
-		when(syncInfo.highestCommittedQC()).thenReturn(mock(QuorumCertificate.class));
+		HighQC highQC = mock(HighQC.class);
+		when(highQC.highestCommittedQC()).thenReturn(mock(QuorumCertificate.class));
 
 		when(pacemaker.processVote(any())).thenReturn(Optional.of(mock(QuorumCertificate.class)));
-		when(vertexStore.syncInfo()).thenReturn(syncInfo);
+		when(vertexStore.highQC()).thenReturn(highQC);
 		when(vertexStoreSync.syncToQC(any(), any())).thenReturn(SyncResult.SYNCED);
 
 		reducer.processVote(voteMessage);
@@ -116,11 +116,11 @@ public class BFTEventReducerTest {
 		VoteData voteData = new VoteData(proposal, parent, null);
 		when(voteMessage.getVoteData()).thenReturn(voteData);
 
-		HighQC syncInfo = mock(HighQC.class);
-		when(syncInfo.highestCommittedQC()).thenReturn(mock(QuorumCertificate.class));
+		HighQC highQC = mock(HighQC.class);
+		when(highQC.highestCommittedQC()).thenReturn(mock(QuorumCertificate.class));
 
 		when(pacemaker.processVote(eq(voteMessage))).thenReturn(Optional.of(mock(QuorumCertificate.class)));
-		when(vertexStore.syncInfo()).thenReturn(syncInfo);
+		when(vertexStore.highQC()).thenReturn(highQC);
 		when(vertexStoreSync.syncToQC(any(), any())).thenReturn(SyncResult.IN_PROGRESS);
 
 		reducer.processVote(voteMessage);

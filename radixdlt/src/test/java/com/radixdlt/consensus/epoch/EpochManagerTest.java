@@ -346,7 +346,7 @@ public class EpochManagerTest {
 		when(authorValidator.getNode()).thenReturn(node);
 
 		when(pacemaker.getCurrentView()).thenReturn(View.genesis());
-		when(vertexStore.syncInfo()).thenReturn(mock(HighQC.class));
+		when(vertexStore.highQC()).thenReturn(mock(HighQC.class));
 		when(vertexStoreSync.syncToQC(any(), any())).thenReturn(SyncResult.SYNCED);
 
 		Proposal proposal = mock(Proposal.class);
@@ -409,7 +409,7 @@ public class EpochManagerTest {
 
 	@Test
 	public void when_next_epoch__then_get_vertices_rpc_should_be_forwarded_to_vertex_store() {
-		when(vertexStore.syncInfo()).thenReturn(mock(HighQC.class));
+		when(vertexStore.highQC()).thenReturn(mock(HighQC.class));
 
 		BFTEventProcessor eventProcessor = mock(BFTEventProcessor.class);
 		when(bftFactory.create(any(), any(), any(), any(), any(), any())).thenReturn(eventProcessor);

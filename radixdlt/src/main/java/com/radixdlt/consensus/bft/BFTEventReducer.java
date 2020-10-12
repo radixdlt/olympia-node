@@ -60,9 +60,9 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		log.trace("Vote: Processing {}", vote);
 		// accumulate votes into QCs in store
 		this.pacemaker.processVote(vote).ifPresent(qc -> {
-			HighQC syncInfo = HighQC.from(qc, this.vertexStore.syncInfo().highestCommittedQC());
+			HighQC highQC = HighQC.from(qc, this.vertexStore.highQC().highestCommittedQC());
 			// If we are not yet synced, we rely on the syncer to process the QC once received
-			this.bftSyncer.syncToQC(syncInfo, vote.getAuthor());
+			this.bftSyncer.syncToQC(highQC, vote.getAuthor());
 		});
 	}
 
@@ -86,6 +86,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 	@Override
 	public void start() {
-		this.pacemaker.processQC(this.vertexStore.syncInfo());
+		this.pacemaker.processQC(this.vertexStore.highQC());
 	}
 }

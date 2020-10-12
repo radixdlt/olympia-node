@@ -47,7 +47,7 @@ public class VoteSerializeTest extends SerializeObject<Vote> {
 		TimestampedVoteData timestampedVoteData = new TimestampedVoteData(voteData, 123456L);
 		BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
 		QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-		HighQC syncInfo = HighQC.from(qc, qc);
-		return new Vote(author, timestampedVoteData, new ECDSASignature(), syncInfo);
+		HighQC highQC = HighQC.from(qc, qc);
+		return new Vote(author, timestampedVoteData, new ECDSASignature(), highQC);
 	}
 }

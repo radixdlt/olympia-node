@@ -27,28 +27,28 @@ import org.radix.network.messaging.Message;
 
 @SerializerId2("message.consensus.vertices_error_response")
 public class GetVerticesErrorResponseMessage extends Message {
-	@JsonProperty("sync_info")
+	@JsonProperty("high_qc")
 	@DsonOutput(Output.ALL)
-	private HighQC syncInfo;
+	private HighQC highQC;
 
 	GetVerticesErrorResponseMessage() {
 		// Serializer only
 		super(0);
-		this.syncInfo = null;
+		this.highQC = null;
 	}
 
-	GetVerticesErrorResponseMessage(int magic, HighQC syncInfo) {
+	GetVerticesErrorResponseMessage(int magic, HighQC highQC) {
 		super(magic);
-		this.syncInfo = Objects.requireNonNull(syncInfo);
+		this.highQC = Objects.requireNonNull(highQC);
 	}
 
-	public HighQC syncInfo() {
-		return this.syncInfo;
+	public HighQC highQC() {
+		return this.highQC;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{%s}", getClass().getSimpleName(), this.syncInfo);
+		return String.format("%s{%s}", getClass().getSimpleName(), this.highQC);
 	}
 
 }

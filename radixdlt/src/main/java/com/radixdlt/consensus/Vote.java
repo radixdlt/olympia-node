@@ -44,9 +44,9 @@ public final class Vote implements ConsensusEvent {
 
 	private final BFTNode author;
 
-	@JsonProperty("sync_info")
+	@JsonProperty("high_qc")
 	@DsonOutput(Output.ALL)
-	private final HighQC syncInfo;
+	private final HighQC highQC;
 
 	@JsonProperty("vote_data")
 	@DsonOutput(Output.ALL)
@@ -61,16 +61,16 @@ public final class Vote implements ConsensusEvent {
 		@JsonProperty("author") byte[] author,
 		@JsonProperty("vote_data") TimestampedVoteData voteData,
 		@JsonProperty("signature") ECDSASignature signature,
-		@JsonProperty("sync_info") HighQC syncInfo
+		@JsonProperty("high_qc") HighQC highQC
 	) throws PublicKeyException {
-		this(BFTNode.fromPublicKeyBytes(author), voteData, signature, syncInfo);
+		this(BFTNode.fromPublicKeyBytes(author), voteData, signature, highQC);
 	}
 
-	public Vote(BFTNode author, TimestampedVoteData voteData, ECDSASignature signature, HighQC syncInfo) {
+	public Vote(BFTNode author, TimestampedVoteData voteData, ECDSASignature signature, HighQC highQC) {
 		this.author = Objects.requireNonNull(author);
 		this.voteData = Objects.requireNonNull(voteData);
 		this.signature = Objects.requireNonNull(signature);
-		this.syncInfo = Objects.requireNonNull(syncInfo);
+		this.highQC = Objects.requireNonNull(highQC);
 	}
 
 	@Override
@@ -84,8 +84,8 @@ public final class Vote implements ConsensusEvent {
 	}
 
 	@Override
-	public HighQC syncInfo() {
-		return this.syncInfo;
+	public HighQC highQC() {
+		return this.highQC;
 	}
 
 	@Override
@@ -114,12 +114,12 @@ public final class Vote implements ConsensusEvent {
 	@Override
 	public String toString() {
 		return String.format("%s{epoch=%s view=%s author=%s %s}", getClass().getSimpleName(),
-			getEpoch(), getView(), author, syncInfo);
+			getEpoch(), getView(), author, highQC);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.author, this.voteData, this.signature, this.syncInfo);
+		return Objects.hash(this.author, this.voteData, this.signature, this.highQC);
 	}
 
 	@Override
@@ -132,7 +132,7 @@ public final class Vote implements ConsensusEvent {
 			return Objects.equals(this.author, other.author)
 				&& Objects.equals(this.voteData, other.voteData)
 				&& Objects.equals(this.signature, other.signature)
-				&& Objects.equals(this.syncInfo, other.syncInfo);
+				&& Objects.equals(this.highQC, other.highQC);
 		}
 		return false;
 	}

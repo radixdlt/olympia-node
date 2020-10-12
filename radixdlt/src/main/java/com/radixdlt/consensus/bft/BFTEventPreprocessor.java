@@ -151,11 +151,11 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	}
 
 	@Override
-	public void processViewTimeout(ViewTimeout newView) {
-		log.trace("ViewTimeout: PreProcessing {}", newView);
-		if (queues.isEmptyElseAdd(newView) && !processViewTimeoutInternal(newView)) {
-			log.debug("ViewTimeout: Queuing {}, waiting for Sync", newView);
-			queues.add(newView);
+	public void processViewTimeout(ViewTimeout viewTimeout) {
+		log.trace("ViewTimeout: PreProcessing {}", viewTimeout);
+		if (queues.isEmptyElseAdd(viewTimeout) && !processViewTimeoutInternal(viewTimeout)) {
+			log.debug("ViewTimeout: Queuing {}, waiting for Sync", viewTimeout);
+			queues.add(viewTimeout);
 		}
 	}
 
@@ -198,7 +198,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		if (!checkForCurrentViewAndIAmNextLeader("ViewTimeout", viewTimeout.getView(), viewTimeout)) {
 			return true;
 		}
-		return syncUp(viewTimeout.syncInfo(), viewTimeout.getAuthor(), () -> this.forwardTo.processViewTimeout(viewTimeout));
+		return syncUp(viewTimeout.highQC(), viewTimeout.getAuthor(), () -> this.forwardTo.processViewTimeout(viewTimeout));
 	}
 
 	private boolean processVoteInternal(Vote vote) {
@@ -208,7 +208,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		if (!checkForCurrentViewAndIAmNextLeader("Vote", vote.getView(), vote)) {
 			return true;
 		}
-		return syncUp(vote.syncInfo(), vote.getAuthor(), () -> this.forwardTo.processVote(vote));
+		return syncUp(vote.highQC(), vote.getAuthor(), () -> this.forwardTo.processVote(vote));
 	}
 
 	private boolean processProposalInternal(Proposal proposal) {
@@ -217,11 +217,11 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		if (!onCurrentView("Proposal", proposal.getVertex().getView(), proposal)) {
 			return true;
 		}
-		return syncUp(proposal.syncInfo(), proposal.getAuthor(), () -> forwardTo.processProposal(proposal));
+		return syncUp(proposal.highQC(), proposal.getAuthor(), () -> forwardTo.processProposal(proposal));
 	}
 
-	private boolean syncUp(HighQC syncInfo, BFTNode author, Runnable whenSynced) {
-		SyncResult syncResult = this.bftSyncer.syncToQC(syncInfo, author);
+	private boolean syncUp(HighQC highQC, BFTNode author, Runnable whenSynced) {
+		SyncResult syncResult = this.bftSyncer.syncToQC(highQC, author);
 		switch (syncResult) {
 			case SYNCED:
 				whenSynced.run();

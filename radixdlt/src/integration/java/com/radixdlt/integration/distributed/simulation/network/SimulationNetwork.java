@@ -211,8 +211,8 @@ public class SimulationNetwork {
 		}
 
 		@Override
-		public void sendViewTimeout(ViewTimeout viewTimeout, BFTNode newViewLeader) {
-			logAndSend(MessageInTransit.newMessage(viewTimeout, thisNode, newViewLeader));
+		public void sendViewTimeout(ViewTimeout viewTimeout, BFTNode nextLeader) {
+			logAndSend(MessageInTransit.newMessage(viewTimeout, thisNode, nextLeader));
 		}
 
 		@Override
@@ -233,8 +233,8 @@ public class SimulationNetwork {
 		}
 
 		@Override
-		public void sendGetVerticesErrorResponse(BFTNode node, HighQC syncInfo) {
-			GetVerticesErrorResponse vertexResponse = new GetVerticesErrorResponse(thisNode, syncInfo);
+		public void sendGetVerticesErrorResponse(BFTNode node, HighQC highQC) {
+			GetVerticesErrorResponse vertexResponse = new GetVerticesErrorResponse(thisNode, highQC);
 			logAndSend(MessageInTransit.newMessage(vertexResponse, thisNode, node));
 		}
 

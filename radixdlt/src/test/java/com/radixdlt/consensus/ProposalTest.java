@@ -52,7 +52,7 @@ public class ProposalTest {
 	@Test
 	public void testGetters() {
 		assertThat(this.proposal.getVertex()).isEqualTo(vertex);
-		assertThat(this.proposal.syncInfo()).isEqualTo(HighQC.from(this.qc, this.commitQc));
+		assertThat(this.proposal.highQC()).isEqualTo(HighQC.from(this.qc, this.commitQc));
 	}
 
 	@Test

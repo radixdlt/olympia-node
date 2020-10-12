@@ -62,8 +62,8 @@ public interface Pacemaker extends PacemakerState {
 	 * Signifies to the pacemaker that a quorum has agreed that a view has
 	 * been completed.
 	 *
-	 * @param syncInfo the sync info for the view
+	 * @param highQC the sync info for the view
 	 * @return {@code true} if proceeded to a new view
 	 */
-	boolean processQC(HighQC syncInfo);
+	boolean processQC(HighQC highQC);
 }

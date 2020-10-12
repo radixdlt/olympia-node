@@ -44,10 +44,10 @@ public class ConsensusEventMessageSerializeTest extends SerializeMessageObject<C
 		BFTHeader parent = new BFTHeader(View.of(0), Hash.ZERO_HASH, ledgerHeader);
 		VoteData voteData = new VoteData(header, parent, null);
 		QuorumCertificate quorumCertificate = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-		HighQC syncInfo = HighQC.from(quorumCertificate, quorumCertificate);
+		HighQC highQC = HighQC.from(quorumCertificate, quorumCertificate);
 		BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
 		ViewTimeoutData viewTimeoutData = ViewTimeoutData.from(author, 12345L, View.of(67890L));
-		ViewTimeout testView = ViewTimeout.from(viewTimeoutData, syncInfo, new ECDSASignature());
+		ViewTimeout testView = ViewTimeout.from(viewTimeoutData, highQC, new ECDSASignature());
 		return new ConsensusEventMessage(1234, testView);
 	}
 }

@@ -48,9 +48,9 @@ public final class ViewTimeout implements ConsensusEvent {
 	@DsonOutput(Output.ALL)
 	private final ViewTimeoutData viewTimeoutData;
 
-	@JsonProperty("sync_info")
+	@JsonProperty("high_qc")
 	@DsonOutput(Output.ALL)
-	private final HighQC syncInfo;
+	private final HighQC highQC;
 
 	@JsonProperty("signature")
 	@DsonOutput(Output.ALL)
@@ -60,22 +60,22 @@ public final class ViewTimeout implements ConsensusEvent {
 	 * Creates a view timeout message from the specified arguments.
 	 *
 	 * @param viewTimeoutData The signed data indicating the view that timed out
-	 * @param syncInfo Current synchronisation state for the author
+	 * @param highQC Current synchronisation state for the author
 	 * @param signature The signature covering {@code viewTimeoutData}
 	 * @return A newly constructed {@code ViewTimeout}
 	 */
-	public static ViewTimeout from(ViewTimeoutData viewTimeoutData, HighQC syncInfo, ECDSASignature signature) {
-		return new ViewTimeout(viewTimeoutData, syncInfo, signature);
+	public static ViewTimeout from(ViewTimeoutData viewTimeoutData, HighQC highQC, ECDSASignature signature) {
+		return new ViewTimeout(viewTimeoutData, highQC, signature);
 	}
 
 	@JsonCreator
 	private ViewTimeout(
 		@JsonProperty("view_timeout_data") ViewTimeoutData viewTimeoutData,
-		@JsonProperty("sync_info") HighQC syncInfo,
+		@JsonProperty("high_qc") HighQC highQC,
 		@JsonProperty("signature") ECDSASignature signature
 	) {
 		this.viewTimeoutData = Objects.requireNonNull(viewTimeoutData);
-		this.syncInfo = Objects.requireNonNull(syncInfo);
+		this.highQC = Objects.requireNonNull(highQC);
 		this.signature = Objects.requireNonNull(signature);
 	}
 
@@ -90,8 +90,8 @@ public final class ViewTimeout implements ConsensusEvent {
 	}
 
 	@Override
-	public HighQC syncInfo() {
-		return this.syncInfo;
+	public HighQC highQC() {
+		return this.highQC;
 	}
 
 	@Override
@@ -115,7 +115,7 @@ public final class ViewTimeout implements ConsensusEvent {
 		if (o instanceof ViewTimeout) {
 			ViewTimeout that = (ViewTimeout) o;
 			return Objects.equals(this.viewTimeoutData, that.viewTimeoutData)
-				&& Objects.equals(this.syncInfo, that.syncInfo)
+				&& Objects.equals(this.highQC, that.highQC)
 				&& Objects.equals(this.signature, that.signature);
 		}
 		return false;
@@ -123,12 +123,12 @@ public final class ViewTimeout implements ConsensusEvent {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.viewTimeoutData, this.syncInfo, this.signature);
+		return Objects.hash(this.viewTimeoutData, this.highQC, this.signature);
 	}
 
 	@Override
 	public String toString() {
 		return String.format("%s{author=%s epoch=%s view=%s %s}",
-			getClass().getSimpleName(), getAuthor(), getEpoch(), getView(), syncInfo());
+			getClass().getSimpleName(), getAuthor(), getEpoch(), getView(), highQC());
 	}
 }

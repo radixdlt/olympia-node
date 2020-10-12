@@ -34,7 +34,7 @@ public class VoteTest {
 	private Vote testObject;
 	private VoteData voteData;
 	private TimestampedVoteData timestampedVoteData;
-	private HighQC syncInfo;
+	private HighQC highQC;
 
 	@Before
 	public void setUp() {
@@ -42,8 +42,8 @@ public class VoteTest {
 		this.voteData = new VoteData(BFTHeader.ofGenesisAncestor(mock(LedgerHeader.class)), parent, null);
 		this.timestampedVoteData = new TimestampedVoteData(this.voteData, 123456L);
 		this.author = mock(BFTNode.class);
-		this.syncInfo = mock(HighQC.class);
-		this.testObject = new Vote(author, timestampedVoteData, new ECDSASignature(), syncInfo);
+		this.highQC = mock(HighQC.class);
+		this.testObject = new Vote(author, timestampedVoteData, new ECDSASignature(), highQC);
 	}
 
 	@Test
@@ -57,7 +57,7 @@ public class VoteTest {
 		assertEquals(this.testObject.getEpoch(), voteData.getProposed().getLedgerHeader().getEpoch());
 		assertEquals(this.voteData, this.testObject.getVoteData());
 		assertEquals(this.author, this.testObject.getAuthor());
-		assertEquals(this.syncInfo, this.testObject.syncInfo());
+		assertEquals(this.highQC, this.testObject.highQC());
 	}
 
 	@Test

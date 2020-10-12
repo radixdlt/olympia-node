@@ -89,10 +89,10 @@ public class BFTEventPreprocessorTest {
 		when(qc.getProposed()).thenReturn(proposed);
 		when(proposed.getVertexId()).thenReturn(vertexId);
 		QuorumCertificate committedQC = mock(QuorumCertificate.class);
-		HighQC syncInfo = mock(HighQC.class);
-		when(syncInfo.highestQC()).thenReturn(qc);
-		when(syncInfo.highestCommittedQC()).thenReturn(committedQC);
-		when(viewTimeout.syncInfo()).thenReturn(syncInfo);
+		HighQC highQC = mock(HighQC.class);
+		when(highQC.highestQC()).thenReturn(qc);
+		when(highQC.highestCommittedQC()).thenReturn(committedQC);
+		when(viewTimeout.highQC()).thenReturn(highQC);
 		when(vertexStoreSync.syncToQC(any(), any())).thenReturn(synced ? SyncResult.SYNCED : SyncResult.IN_PROGRESS);
 		return viewTimeout;
 	}
@@ -110,10 +110,10 @@ public class BFTEventPreprocessorTest {
 		when(vertex.getQC()).thenReturn(qc);
 
 		QuorumCertificate committedQC = mock(QuorumCertificate.class);
-		HighQC syncInfo = mock(HighQC.class);
-		when(syncInfo.highestQC()).thenReturn(qc);
-		when(syncInfo.highestCommittedQC()).thenReturn(committedQC);
-		when(proposal.syncInfo()).thenReturn(syncInfo);
+		HighQC highQC = mock(HighQC.class);
+		when(highQC.highestQC()).thenReturn(qc);
+		when(highQC.highestCommittedQC()).thenReturn(committedQC);
+		when(proposal.highQC()).thenReturn(highQC);
 
 		when(vertexStoreSync.syncToQC(any(), any())).thenReturn(synced ? SyncResult.SYNCED : SyncResult.IN_PROGRESS);
 		return proposal;

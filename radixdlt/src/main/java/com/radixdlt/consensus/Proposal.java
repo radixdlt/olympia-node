@@ -83,7 +83,7 @@ public final class Proposal implements ConsensusEvent {
 	}
 
 	@Override
-	public HighQC syncInfo() {
+	public HighQC highQC() {
 		return HighQC.from(vertex.getQC(), committedQC);
 	}
 

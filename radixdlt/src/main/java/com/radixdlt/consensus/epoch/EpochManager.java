@@ -104,7 +104,7 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdatePro
 
 	public interface EpochInfoSender {
 		/**
-		 * Signify that the bft node is on a new view
+		 * Signify that the bft node is starting a new view
 		 * @param epochView the epoch and view the bft node has changed to
 		 */
 		void sendCurrentView(EpochView epochView);

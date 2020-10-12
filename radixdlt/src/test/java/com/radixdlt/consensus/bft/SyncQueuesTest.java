@@ -62,13 +62,13 @@ public class SyncQueuesTest {
 		ConsensusEvent event0 = mock(ConsensusEvent.class);
 		Hash vertexId = mock(Hash.class);
 		QuorumCertificate qc = mock(QuorumCertificate.class);
-		HighQC syncInfo = mock(HighQC.class);
-		when(syncInfo.highestQC()).thenReturn(qc);
+		HighQC highQC = mock(HighQC.class);
+		when(highQC.highestQC()).thenReturn(qc);
 		BFTHeader header = mock(BFTHeader.class);
 		when(header.getVertexId()).thenReturn(vertexId);
 		when(qc.getProposed()).thenReturn(header);
 		when(event0.getAuthor()).thenReturn(node);
-		when(event0.syncInfo()).thenReturn(syncInfo);
+		when(event0.highQC()).thenReturn(highQC);
 		syncQueues.add(event0);
 
 		for (SyncQueue syncQueue : syncQueues.getQueues()) {

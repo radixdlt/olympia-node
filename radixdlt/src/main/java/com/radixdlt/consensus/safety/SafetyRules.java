@@ -93,11 +93,11 @@ public final class SafetyRules {
 	/**
 	 * Sign a view timeout for the specified view.
 	 */
-	public ViewTimeout viewTimeout(View view, HighQC syncInfo) {
-		long epoch = syncInfo.highestQC().getProposed().getLedgerHeader().getEpoch();
+	public ViewTimeout viewTimeout(View view, HighQC highQC) {
+		long epoch = highQC.highestQC().getProposed().getLedgerHeader().getEpoch();
 		ViewTimeoutData viewTimeoutData = ViewTimeoutData.from(this.self, epoch, view);
 		ECDSASignature signature = this.signer.sign(this.hasher.hash(viewTimeoutData));
-		return ViewTimeout.from(viewTimeoutData, syncInfo, signature);
+		return ViewTimeout.from(viewTimeoutData, highQC, signature);
 	}
 
 	/**
@@ -106,11 +106,11 @@ public final class SafetyRules {
 	 * @param proposedVertex The proposed vertex
 	 * @param proposedHeader results of vertex execution
 	 * @param timestamp timestamp to use for the vote in milliseconds since epoch
-	 * @param syncInfo our current sync state
+	 * @param highQC our current sync state
 	 * @return A vote result containing the vote and any committed vertices
 	 * @throws SafetyViolationException In case the vertex would violate a safety invariant
 	 */
-	public Vote voteFor(VerifiedVertex proposedVertex, BFTHeader proposedHeader, long timestamp, HighQC syncInfo) throws SafetyViolationException {
+	public Vote voteFor(VerifiedVertex proposedVertex, BFTHeader proposedHeader, long timestamp, HighQC highQC) throws SafetyViolationException {
 		// ensure vertex does not violate earlier votes
 		if (proposedVertex.getView().compareTo(this.state.getLastVotedView()) <= 0) {
 			throw new SafetyViolationException(proposedVertex, this.state, String.format(
@@ -138,6 +138,6 @@ public final class SafetyRules {
 
 		// TODO make signing more robust by including author in signed hash
 		ECDSASignature signature = this.signer.sign(voteHash);
-		return new Vote(this.self, timestampedVoteData, signature, syncInfo);
+		return new Vote(this.self, timestampedVoteData, signature, highQC);
 	}
 }

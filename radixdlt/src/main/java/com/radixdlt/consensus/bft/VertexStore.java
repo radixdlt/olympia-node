@@ -245,7 +245,7 @@ public final class VertexStore {
 	 *
 	 * @return the highest QCs
 	 */
-	public HighQC syncInfo() {
+	public HighQC highQC() {
 		return HighQC.from(this.highestQC, this.highestCommittedQC);
 	}
 

@@ -33,7 +33,7 @@ import org.apache.commons.collections4.MapUtils;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
-public class RandomNewViewDropperTest {
+public class RandomVoteAndViewTimeoutDropperTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(8)
 		.numInitialValidators(4)

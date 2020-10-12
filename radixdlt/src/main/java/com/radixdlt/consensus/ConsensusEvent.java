@@ -45,9 +45,9 @@ public interface ConsensusEvent {
 	BFTNode getAuthor();
 
 	/**
-	 * Retrieves the {@link SyncInfo} associated with the event.
+	 * Retrieves the {@link HighQC} associated with the event.
 	 *
-	 * @return {@link SyncInfo} associated with event
+	 * @return {@link HighQC} associated with event
 	 */
-	HighQC syncInfo();
+	HighQC highQC();
 }

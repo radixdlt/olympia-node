@@ -69,8 +69,8 @@ public final class ControlledSender implements DeterministicSender {
 	}
 
 	@Override
-	public void sendGetVerticesErrorResponse(BFTNode node, HighQC syncInfo) {
-		GetVerticesErrorResponse response = new GetVerticesErrorResponse(this.self, syncInfo);
+	public void sendGetVerticesErrorResponse(BFTNode node, HighQC highQC) {
+		GetVerticesErrorResponse response = new GetVerticesErrorResponse(this.self, highQC);
 		int receiver = this.network.lookup(node);
 		handleMessage(MessageRank.EARLIEST_POSSIBLE, new ControlledMessage(this.senderIndex, receiver, response));
 	}

@@ -38,29 +38,29 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class PendingViewTimeoutsTest {
-	private PendingViewTimeouts pendingNewViews;
+	private PendingViewTimeouts pendingViewTimeouts;
 
 	@Before
 	public void setup() {
-		this.pendingNewViews = new PendingViewTimeouts();
+		this.pendingViewTimeouts = new PendingViewTimeouts();
 	}
 
 	@Test
-	public void when_inserting_newview_not_from_validator_set__no_qc_is_returned() {
-		ViewTimeout newView = makeSignedViewTimeoutFor(mock(BFTNode.class), View.genesis());
-		ViewTimeout newView2 = makeSignedViewTimeoutFor(mock(BFTNode.class), View.genesis());
+	public void when_inserting_view_timeout_not_from_validator_set__no_qc_is_returned() {
+		ViewTimeout viewTimeout = makeSignedViewTimeoutFor(mock(BFTNode.class), View.genesis());
+		ViewTimeout viewTimeout2 = makeSignedViewTimeoutFor(mock(BFTNode.class), View.genesis());
 
 		BFTValidatorSet validatorSet = BFTValidatorSet.from(
-			Collections.singleton(BFTValidator.from(newView.getAuthor(), UInt256.ONE))
+			Collections.singleton(BFTValidator.from(viewTimeout.getAuthor(), UInt256.ONE))
 		);
 
-		assertThat(this.pendingNewViews.insertViewTimeout(newView2, validatorSet)).isEmpty();
+		assertThat(this.pendingViewTimeouts.insertViewTimeout(viewTimeout2, validatorSet)).isEmpty();
 	}
 
 	@Test
-	public void when_inserting_valid_and_accepted_newview__qc_is_formed() {
+	public void when_inserting_valid_and_accepted_view_timeout__qc_is_formed() {
 		BFTNode author = mock(BFTNode.class);
-		ViewTimeout newView = makeSignedViewTimeoutFor(author, View.genesis());
+		ViewTimeout viewTimeout = makeSignedViewTimeoutFor(author, View.genesis());
 
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		ValidationState validationState = mock(ValidationState.class);
@@ -71,13 +71,13 @@ public class PendingViewTimeoutsTest {
 		when(validatorSet.newValidationState()).thenReturn(validationState);
 		when(validatorSet.containsNode(any())).thenReturn(true);
 
-		assertThat(this.pendingNewViews.insertViewTimeout(newView, validatorSet)).contains(newView.getView());
+		assertThat(this.pendingViewTimeouts.insertViewTimeout(viewTimeout, validatorSet)).contains(viewTimeout.getView());
 	}
 
 	@Test
-	public void when_inserting_again__previous_newview_is_removed() {
+	public void when_inserting_again__previous_view_timeout_is_removed() {
 		BFTNode author = mock(BFTNode.class);
-		ViewTimeout newView = makeSignedViewTimeoutFor(author, View.genesis());
+		ViewTimeout viewTimeout = makeSignedViewTimeoutFor(author, View.genesis());
 
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		ValidationState validationState = mock(ValidationState.class);
@@ -88,33 +88,33 @@ public class PendingViewTimeoutsTest {
 		when(validatorSet.containsNode(any())).thenReturn(true);
 
 		// Preconditions
-		assertThat(this.pendingNewViews.insertViewTimeout(newView, validatorSet)).isNotPresent();
-		assertEquals(1, this.pendingNewViews.viewTimeoutStateSize());
-		assertEquals(1, this.pendingNewViews.previousViewTimeoutSize());
+		assertThat(this.pendingViewTimeouts.insertViewTimeout(viewTimeout, validatorSet)).isNotPresent();
+		assertEquals(1, this.pendingViewTimeouts.viewTimeoutStateSize());
+		assertEquals(1, this.pendingViewTimeouts.previousViewTimeoutSize());
 
-		ViewTimeout newView2 = makeSignedViewTimeoutFor(author, View.of(1));
+		ViewTimeout viewTimeout2 = makeSignedViewTimeoutFor(author, View.of(1));
 
-		// Should not change size with different new view for same author
-		assertThat(this.pendingNewViews.insertViewTimeout(newView2, validatorSet)).isNotPresent();
-		assertEquals(1, this.pendingNewViews.viewTimeoutStateSize());
-		assertEquals(1, this.pendingNewViews.previousViewTimeoutSize());
+		// Should not change size with different view timeout for same author
+		assertThat(this.pendingViewTimeouts.insertViewTimeout(viewTimeout2, validatorSet)).isNotPresent();
+		assertEquals(1, this.pendingViewTimeouts.viewTimeoutStateSize());
+		assertEquals(1, this.pendingViewTimeouts.previousViewTimeoutSize());
 
-		// Should not change size with repeat new view
-		assertThat(this.pendingNewViews.insertViewTimeout(newView2, validatorSet)).isNotPresent();
-		assertEquals(1, this.pendingNewViews.viewTimeoutStateSize());
-		assertEquals(1, this.pendingNewViews.previousViewTimeoutSize());
+		// Should not change size with repeat view timeout
+		assertThat(this.pendingViewTimeouts.insertViewTimeout(viewTimeout2, validatorSet)).isNotPresent();
+		assertEquals(1, this.pendingViewTimeouts.viewTimeoutStateSize());
+		assertEquals(1, this.pendingViewTimeouts.previousViewTimeoutSize());
 	}
 
 	private ViewTimeout makeSignedViewTimeoutFor(BFTNode author, View view) {
-		ViewTimeout newView = makeViewTimeoutWithoutSignatureFor(author, view);
-		when(newView.signature()).thenReturn(new ECDSASignature());
-		return newView;
+		ViewTimeout viewTimeout = makeViewTimeoutWithoutSignatureFor(author, view);
+		when(viewTimeout.signature()).thenReturn(new ECDSASignature());
+		return viewTimeout;
 	}
 
 	private ViewTimeout makeViewTimeoutWithoutSignatureFor(BFTNode author, View view) {
-		ViewTimeout newView = mock(ViewTimeout.class);
-		when(newView.getAuthor()).thenReturn(author);
-		when(newView.getView()).thenReturn(view);
-		return newView;
+		ViewTimeout viewTimeout = mock(ViewTimeout.class);
+		when(viewTimeout.getAuthor()).thenReturn(author);
+		when(viewTimeout.getView()).thenReturn(view);
+		return viewTimeout;
 	}
 }

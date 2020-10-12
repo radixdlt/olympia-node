@@ -45,9 +45,9 @@ public class ViewTimeoutTest extends SerializeObject<ViewTimeout> {
 		BFTHeader committed = new BFTHeader(View.of(1200), Hash.ZERO_HASH, ledgerHeader);
 		VoteData voteData = new VoteData(proposed, parent, committed);
 		QuorumCertificate highestQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-		HighQC syncInfo = HighQC.from(highestQC, highestQC);
+		HighQC highQC = HighQC.from(highestQC, highestQC);
 		ECDSASignature signature = new ECDSASignature();
-		return ViewTimeout.from(viewTimeoutData, syncInfo, signature);
+		return ViewTimeout.from(viewTimeoutData, highQC, signature);
 	}
 
 	@Test

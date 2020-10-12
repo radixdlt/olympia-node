@@ -53,17 +53,17 @@ public class VertexStoreBFTSyncRequestProcessorTest {
 		when(vertexStore.getVertices(any(), anyInt())).thenReturn(Optional.empty());
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		QuorumCertificate committedQC = mock(QuorumCertificate.class);
-		HighQC syncInfo = mock(HighQC.class);
-		when(syncInfo.highestQC()).thenReturn(qc);
-		when(syncInfo.highestCommittedQC()).thenReturn(committedQC);
-		when(vertexStore.syncInfo()).thenReturn(syncInfo);
+		HighQC highQC = mock(HighQC.class);
+		when(highQC.highestQC()).thenReturn(qc);
+		when(highQC.highestCommittedQC()).thenReturn(committedQC);
+		when(vertexStore.highQC()).thenReturn(highQC);
 
 		GetVerticesRequest request = mock(GetVerticesRequest.class);
 		BFTNode sender = mock(BFTNode.class);
 		when(request.getSender()).thenReturn(sender);
 		requestProcessor.processGetVerticesRequest(request);
 
-		verify(responseSender, times(1)).sendGetVerticesErrorResponse(eq(sender), eq(syncInfo));
+		verify(responseSender, times(1)).sendGetVerticesErrorResponse(eq(sender), eq(highQC));
 		verify(responseSender, never()).sendGetVerticesResponse(any(), any());
 	}
 
@@ -73,10 +73,10 @@ public class VertexStoreBFTSyncRequestProcessorTest {
 		when(vertexStore.getVertices(any(), anyInt())).thenReturn(Optional.of(ImmutableList.of()));
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		QuorumCertificate committedQC = mock(QuorumCertificate.class);
-		HighQC syncInfo = mock(HighQC.class);
-		when(syncInfo.highestQC()).thenReturn(qc);
-		when(syncInfo.highestCommittedQC()).thenReturn(committedQC);
-		when(vertexStore.syncInfo()).thenReturn(syncInfo);
+		HighQC highQC = mock(HighQC.class);
+		when(highQC.highestQC()).thenReturn(qc);
+		when(highQC.highestCommittedQC()).thenReturn(committedQC);
+		when(vertexStore.highQC()).thenReturn(highQC);
 
 		GetVerticesRequest request = mock(GetVerticesRequest.class);
 		BFTNode sender = mock(BFTNode.class);

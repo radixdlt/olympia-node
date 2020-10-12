@@ -144,7 +144,7 @@ public class DifferentTimestampsCauseTimeoutTest {
 		// Timeouts from nodes
 		processingSequence.add(Pair.of(ChannelId.of(0, 0), LocalTimeout.class));
 		processingSequence.add(Pair.of(ChannelId.of(1, 1), LocalTimeout.class));
-		// 2 (leader) will have already moved on to next view from the NewView messages
+		// 2 (leader) will have already moved on to next view
 		processingSequence.add(Pair.of(ChannelId.of(3, 3), LocalTimeout.class));
 
 		// TODO: this test isn't exactly right and should be updated so that
@@ -179,7 +179,7 @@ public class DifferentTimestampsCauseTimeoutTest {
 	}
 
 	private Proposal mutateProposal(Proposal p, int destination) {
-		QuorumCertificate committedQC = p.syncInfo().highestCommittedQC();
+		QuorumCertificate committedQC = p.highQC().highestCommittedQC();
 		BFTNode author = p.getAuthor();
 		UnverifiedVertex vertex = p.getVertex();
 		ECDSASignature signature = p.getSignature();

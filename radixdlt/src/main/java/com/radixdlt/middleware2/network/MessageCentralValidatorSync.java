@@ -108,8 +108,8 @@ public class MessageCentralValidatorSync implements SyncVerticesRequestSender, S
 	}
 
 	@Override
-	public void sendGetVerticesErrorResponse(BFTNode node, HighQC syncInfo) {
-		GetVerticesErrorResponseMessage response = new GetVerticesErrorResponseMessage(this.magic, syncInfo);
+	public void sendGetVerticesErrorResponse(BFTNode node, HighQC highQC) {
+		GetVerticesErrorResponseMessage response = new GetVerticesErrorResponseMessage(this.magic, highQC);
 		final Optional<Peer> peerMaybe = this.addressBook.peer(node.getKey().euid());
 		peerMaybe.ifPresentOrElse(
 			p -> this.messageCentral.send(p, response),
@@ -162,7 +162,7 @@ public class MessageCentralValidatorSync implements SyncVerticesRequestSender, S
 				}
 
 				BFTNode node = BFTNode.create(src.getSystem().getKey());
-				return new GetVerticesErrorResponse(node, msg.syncInfo());
+				return new GetVerticesErrorResponse(node, msg.highQC());
 			}
 		);
 	}

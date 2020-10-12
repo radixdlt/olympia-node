@@ -64,7 +64,7 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 	public interface PacemakerInfoSender {
 
 		/**
-		 * Signify that the bft node is on a new view
+		 * Signify that the bft node is starting a new view
 		 * @param view the view the bft node has changed to
 		 */
 		void sendCurrentView(View view);
@@ -211,7 +211,7 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 		maybeHeader.ifPresent(header -> {
 			final BFTNode nextLeader = this.proposerElection.getProposer(this.currentView.next());
 			try {
-				final Vote vote = this.safetyRules.voteFor(proposedVertex, header, this.timeSupplier.currentTime(), this.vertexStore.syncInfo());
+				final Vote vote = this.safetyRules.voteFor(proposedVertex, header, this.timeSupplier.currentTime(), this.vertexStore.highQC());
 				log.trace("Proposal: Sending vote to {}: {}", nextLeader, vote);
 				this.proceedToViewSender.sendVote(vote, nextLeader);
 			} catch (SafetyViolationException e) {
@@ -231,7 +231,7 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 		}
 		this.pendingViewTimeouts.insertViewTimeout(viewTimeout, this.validatorSet)
 			.filter(this::shouldProceedToNextView)
-			.ifPresent(newView -> {
+			.ifPresent(vt -> {
 				log.trace("ViewTimeout: Formed quorum at view {}", view);
 				this.lastQuorumView = view;
 				this.updateView(view.next());
@@ -248,20 +248,20 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 		}
 		View nextView = view.next();
 		final BFTNode nextLeader = this.proposerElection.getProposer(nextView);
-		ViewTimeout viewTimeout = this.safetyRules.viewTimeout(view, this.vertexStore.syncInfo());
+		ViewTimeout viewTimeout = this.safetyRules.viewTimeout(view, this.vertexStore.highQC());
 		this.proceedToViewSender.sendViewTimeout(viewTimeout, nextLeader);
 		this.pacemakerInfoSender.sendTimeoutProcessed(view);
 		this.updateView(nextView);
 	}
 
 	@Override
-	public boolean processQC(HighQC syncInfo) {
-		log.trace("QuorumCertificate: {}", syncInfo);
+	public boolean processQC(HighQC highQC) {
+		log.trace("QuorumCertificate: {}", highQC);
 		// check if a new view can be started
-		View view = syncInfo.highestQC().getView();
+		View view = highQC.highestQC().getView();
 		if (shouldProceedToNextView(view)) {
 			this.lastQuorumView = view;
-			this.highestCommitView = syncInfo.highestCommittedQC().getView();
+			this.highestCommitView = highQC.highestCommittedQC().getView();
 			this.updateView(view.next());
 			return true;
 		}
@@ -292,9 +292,9 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 	}
 
 	private Proposal generateProposal(View view) {
-		final HighQC syncInfo = this.vertexStore.syncInfo();
-		final QuorumCertificate highestQC = syncInfo.highestQC();
-		final QuorumCertificate highestCommitted = syncInfo.highestCommittedQC();
+		final HighQC highQC = this.vertexStore.highQC();
+		final QuorumCertificate highestQC = highQC.highestQC();
+		final QuorumCertificate highestCommitted = highQC.highestCommittedQC();
 
 		final Command nextCommand;
 
