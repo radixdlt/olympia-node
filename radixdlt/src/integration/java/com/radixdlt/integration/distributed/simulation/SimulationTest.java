@@ -21,9 +21,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
+import com.google.inject.Guice;
 import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
+import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.ConsensusRunnerModule;
@@ -74,11 +76,11 @@ import com.radixdlt.integration.distributed.simulation.invariants.epochs.EpochVi
 import com.radixdlt.integration.distributed.simulation.application.LocalMempoolPeriodicSubmittor;
 import com.radixdlt.integration.distributed.simulation.invariants.ledger.ConsensusToLedgerCommittedInvariant;
 import com.radixdlt.integration.distributed.simulation.invariants.ledger.LedgerInOrderInvariant;
-import com.radixdlt.integration.distributed.simulation.network.DroppingLatencyProvider;
 import com.radixdlt.integration.distributed.simulation.network.OneNodePerEpochResponseDropper;
 import com.radixdlt.integration.distributed.simulation.network.OneProposalPerViewDropper;
 import com.radixdlt.integration.distributed.simulation.network.RandomLatencyProvider;
 import com.radixdlt.integration.distributed.simulation.network.RandomNewViewDropper;
+import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.MessageInTransit;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.mempool.LocalMempool;
@@ -102,6 +104,7 @@ import io.reactivex.rxjava3.core.Single;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -109,6 +112,7 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -125,7 +129,7 @@ public class SimulationTest {
 	}
 
 	private final ImmutableList<ECKeyPair> nodes;
-	private final LatencyProvider latencyProvider;
+	private final SimulationNetwork simulationNetwork;
 	private final ImmutableSet<SimulationNetworkActor> runners;
 	private final ImmutableMap<String, TestInvariant> checks;
 	private final Module baseNodeModule;
@@ -134,8 +138,7 @@ public class SimulationTest {
 
 	private SimulationTest(
 		ImmutableList<ECKeyPair> nodes,
-		LatencyProvider latencyProvider,
-		int pacemakerTimeout,
+		SimulationNetwork simulationNetwork,
 		Module baseNodeModule,
 		Module overrideModule,
 		Map<ECKeyPair, Module> byzantineNodeModules,
@@ -143,7 +146,7 @@ public class SimulationTest {
 		ImmutableSet<SimulationNetworkActor> runners
 	) {
 		this.nodes = nodes;
-		this.latencyProvider = latencyProvider;
+		this.simulationNetwork = simulationNetwork;
 		this.baseNodeModule = baseNodeModule;
 		this.overrideModule = overrideModule;
 		this.byzantineNodeModules = byzantineNodeModules;
@@ -167,7 +170,7 @@ public class SimulationTest {
 			}
 		}
 
-		private final DroppingLatencyProvider latencyProvider = new DroppingLatencyProvider();
+		private LatencyProvider baseLatency = msg -> SimulationNetwork.DEFAULT_LATENCY;
 		private final ImmutableMap.Builder<String, Function<List<ECKeyPair>, TestInvariant>> checksBuilder = ImmutableMap.builder();
 		private final ImmutableList.Builder<Function<List<ECKeyPair>, SimulationNetworkActor>> runnableBuilder = ImmutableList.builder();
 		private ImmutableList<ECKeyPair> nodes = ImmutableList.of(ECKeyPair.generateNew());
@@ -176,6 +179,8 @@ public class SimulationTest {
 		private Function<Long, IntStream> epochToNodeIndexMapper;
 		private LedgerType ledgerType = LedgerType.MOCKED_LEDGER;
 		private int numInitialValidators = 0;
+
+		private List<Module> networkModules = new ArrayList<>();
 		private Module overrideModule = null;
 		private final ImmutableMap.Builder<ECKeyPair, Module> byzantineModules = ImmutableMap.builder();
 
@@ -198,42 +203,63 @@ public class SimulationTest {
 		}
 
 		public Builder addRandomNewViewDropper(double drops) {
-			this.latencyProvider.addDropper(new RandomNewViewDropper(new Random(), drops));
+			this.networkModules.add(new AbstractModule() {
+				@ProvidesIntoSet
+				Predicate<MessageInTransit> dropper() {
+					return new RandomNewViewDropper(new Random(), drops);
+				}
+			});
 			return this;
 		}
 
 		public Builder addVerticesSyncDropper() {
-			this.latencyProvider.addDropper(msg -> {
-				if (msg.getContent() instanceof GetVerticesRequest) {
-					return true;
-				}
+			this.networkModules.add(new AbstractModule() {
+				@ProvidesIntoSet
+				Predicate<MessageInTransit> dropper() {
+					return msg -> {
+						if (msg.getContent() instanceof GetVerticesRequest) {
+							return true;
+						}
 
-				if (msg.getContent() instanceof GetVerticesResponse) {
-					return true;
-				}
+						if (msg.getContent() instanceof GetVerticesResponse) {
+							return true;
+						}
 
-				return false;
+						return false;
+					};
+				}
 			});
 			return this;
 		}
 
 
 		public Builder addOneNodeNeverReceiveProposalDropper() {
-			this.latencyProvider.addDropper(new OneProposalPerViewDropper(
-				ImmutableList.of(BFTNode.create(nodes.get(0).getPublicKey())), new Random())
-			);
+			this.networkModules.add(new AbstractModule() {
+				@ProvidesIntoSet
+				Predicate<MessageInTransit> dropper(ImmutableList<BFTNode> nodes) {
+					return new OneProposalPerViewDropper(nodes.subList(0, 1), new Random());
+				}
+			});
 			return this;
 		}
 
 		public Builder addOneNodePerEpochResponseDropper() {
-			this.latencyProvider.addDropper(new OneNodePerEpochResponseDropper());
+			this.networkModules.add(new AbstractModule() {
+				@ProvidesIntoSet
+				Predicate<MessageInTransit> dropper() {
+					return new OneNodePerEpochResponseDropper();
+				}
+			});
 			return this;
 		}
 
 		public Builder addOneProposalPerViewDropper() {
-			ImmutableList<BFTNode> bftNodes = nodes.stream().map(kp -> BFTNode.create(kp.getPublicKey()))
-				.collect(ImmutableList.toImmutableList());
-			this.latencyProvider.addDropper(new OneProposalPerViewDropper(bftNodes, new Random()));
+			this.networkModules.add(new AbstractModule() {
+				@ProvidesIntoSet
+				Predicate<MessageInTransit> dropper(ImmutableList<BFTNode> nodes) {
+					return new OneProposalPerViewDropper(nodes, new Random());
+				}
+			});
 			return this;
 		}
 
@@ -264,7 +290,7 @@ public class SimulationTest {
 			Map<BFTNode, Integer> nodeLatencies = IntStream.range(0, numNodes)
 				.boxed()
 				.collect(Collectors.toMap(i -> BFTNode.create(this.nodes.get(i).getPublicKey()), i -> latencies[i]));
-			this.latencyProvider.setBase(msg -> Math.max(nodeLatencies.get(msg.getSender()), nodeLatencies.get(msg.getReceiver())));
+			this.baseLatency = msg -> Math.max(nodeLatencies.get(msg.getSender()), nodeLatencies.get(msg.getReceiver()));
 			return this;
 		}
 
@@ -307,7 +333,7 @@ public class SimulationTest {
 
 
 		public Builder randomLatency(int minLatency, int maxLatency) {
-			this.latencyProvider.setBase(new RandomLatencyProvider(minLatency, maxLatency));
+			this.baseLatency = new RandomLatencyProvider(minLatency, maxLatency);
 			return this;
 		}
 
@@ -424,6 +450,7 @@ public class SimulationTest {
 
 		public SimulationTest build() {
 			ImmutableList.Builder<Module> modules = ImmutableList.builder();
+
 			final Random sharedRandom = new Random();
 
 			final long limit = numInitialValidators == 0 ? Long.MAX_VALUE : numInitialValidators;
@@ -551,7 +578,6 @@ public class SimulationTest {
 			ImmutableSet<SimulationNetworkActor> runners = this.runnableBuilder.build().stream()
 				.map(f -> f.apply(nodes))
 				.collect(ImmutableSet.toImmutableSet());
-
 			ImmutableMap<String, TestInvariant> checks = this.checksBuilder.build().entrySet()
 				.stream()
 				.collect(
@@ -561,11 +587,20 @@ public class SimulationTest {
 					)
 				);
 
+			networkModules.add(new AbstractModule() {
+				@Provides
+				ImmutableList<BFTNode> nodes() {
+					return nodes.stream().map(node -> BFTNode.create(node.getPublicKey())).collect(ImmutableList.toImmutableList());
+				}
+			});
+			networkModules.add(new SimulationNetworkModule(baseLatency));
+			final SimulationNetwork simulationNetwork = Guice.createInjector(networkModules).getInstance(SimulationNetwork.class);
+
 			return new SimulationTest(
 				nodes,
-				latencyProvider.copyOf(),
-				pacemakerTimeout,
-				Modules.combine(modules.build()), overrideModule,
+				simulationNetwork,
+				Modules.combine(modules.build()),
+				overrideModule,
 				byzantineModules.build(),
 				checks,
 				runners
@@ -659,14 +694,11 @@ public class SimulationTest {
 	 * @return test results
 	 */
 	public TestResults run(Duration duration) {
-		SimulationNetwork network = SimulationNetwork.builder()
-			.latencyProvider(this.latencyProvider)
-			.build();
-
 		SimulationNodes bftNetwork = new SimulationNodes(
 			nodes,
-			network,
-			baseNodeModule, overrideModule,
+			simulationNetwork,
+			baseNodeModule,
+			overrideModule,
 			byzantineNodeModules
 		);
 		RunningNetwork runningNetwork = bftNetwork.start();

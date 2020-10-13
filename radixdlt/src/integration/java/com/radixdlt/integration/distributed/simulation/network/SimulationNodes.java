@@ -35,7 +35,7 @@ import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
-import com.radixdlt.integration.distributed.simulation.SimulationNetworkModule;
+import com.radixdlt.integration.distributed.simulation.NodeNetworkMessagesModule;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.systeminfo.InfoRx;
@@ -95,7 +95,7 @@ public class SimulationNodes {
 					return BFTNode.create(selfKey.getPublicKey());
 				}
 			},
-			new SimulationNetworkModule(underlyingNetwork),
+			new NodeNetworkMessagesModule(underlyingNetwork),
 			baseModule
 		);
 

@@ -18,6 +18,7 @@
 package com.radixdlt.integration.distributed.simulation.network;
 
 import com.google.common.collect.ImmutableList;
+import com.google.inject.Inject;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
@@ -132,30 +133,11 @@ public class SimulationNetwork {
 	private final Map<BFTNode, SimulatedNetworkImpl> receivers = new ConcurrentHashMap<>();
 	private final LatencyProvider latencyProvider;
 
-	private SimulationNetwork(LatencyProvider latencyProvider) {
+	@Inject
+	public SimulationNetwork(LatencyProvider latencyProvider) {
 		this.latencyProvider = latencyProvider;
 		this.receivedMessages = ReplaySubject.<MessageInTransit>create(20) // To catch startup timing issues
 			.toSerialized();
-	}
-
-	public static class Builder {
-		private LatencyProvider latencyProvider = msg -> DEFAULT_LATENCY;
-
-		private Builder() {
-		}
-
-		public Builder latencyProvider(LatencyProvider latencyProvider) {
-			this.latencyProvider = latencyProvider;
-			return this;
-		}
-
-		public SimulationNetwork build() {
-			return new SimulationNetwork(latencyProvider);
-		}
-	}
-
-	public static Builder builder() {
-		return new Builder();
 	}
 
 	public class SimulatedNetworkImpl implements

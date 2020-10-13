@@ -43,7 +43,7 @@ public class SimulationNetworkTest {
 
 	@Test
 	public void when_send_new_view_to_self__then_should_receive_it() {
-		SimulationNetwork network = SimulationNetwork.builder().build();
+		SimulationNetwork network = new SimulationNetwork(msg -> 50);
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
 		network.getNetwork(node1).bftEvents()
 			.subscribe(testObserver);
@@ -55,7 +55,7 @@ public class SimulationNetworkTest {
 
 	@Test
 	public void when_send_new_view_to_self_twice__then_should_receive_both() {
-		SimulationNetwork network = SimulationNetwork.builder().build();
+		SimulationNetwork network = new SimulationNetwork(msg -> 50);
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
 		network.getNetwork(node1).bftEvents()
 			.subscribe(testObserver);
@@ -68,7 +68,7 @@ public class SimulationNetworkTest {
 
 	@Test
 	public void when_self_and_other_send_new_view_to_self__then_should_receive_both() {
-		SimulationNetwork network = SimulationNetwork.builder().build();
+		SimulationNetwork network = new SimulationNetwork(msg -> 50);
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
 		network.getNetwork(node1).bftEvents()
 			.subscribe(testObserver);
@@ -81,7 +81,7 @@ public class SimulationNetworkTest {
 
 	@Test
 	public void when_send_vote_to_self__then_should_receive_it() {
-		SimulationNetwork network = SimulationNetwork.builder().build();
+		SimulationNetwork network = new SimulationNetwork(msg -> 50);
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
 		network.getNetwork(node1).bftEvents()
 			.subscribe(testObserver);
@@ -93,7 +93,7 @@ public class SimulationNetworkTest {
 
 	@Test
 	public void when_broadcast_proposal__then_should_receive_it() {
-		SimulationNetwork network = SimulationNetwork.builder().build();
+		SimulationNetwork network = new SimulationNetwork(msg -> 50);
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
 		network.getNetwork(node1).bftEvents()
 			.subscribe(testObserver);
@@ -105,10 +105,7 @@ public class SimulationNetworkTest {
 
 	@Test
 	public void when_disabling_messages_and_send_new_view_message_to_other_node__then_should_not_receive_it() {
-		SimulationNetwork network = SimulationNetwork.builder()
-			.latencyProvider(msg -> -1)
-			.build();
-
+		SimulationNetwork network = new SimulationNetwork(msg -> -1);
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
 		network.getNetwork(node2).bftEvents()
 			.subscribe(testObserver);
@@ -120,7 +117,7 @@ public class SimulationNetworkTest {
 
 	@Test
 	public void when_send_get_vertex_request_to_another_node__then_should_receive_it() {
-		SimulationNetwork network = SimulationNetwork.builder().build();
+		SimulationNetwork network = new SimulationNetwork(msg -> 50);
 		Hash vertexId = mock(Hash.class);
 
 		TestObserver<GetVerticesRequest> rpcRequestListener =
