@@ -19,12 +19,18 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
+import com.google.inject.AbstractModule;
+import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
+import com.radixdlt.integration.distributed.simulation.network.RandomNewViewDropper;
+import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.MessageInTransit;
 import java.util.LongSummaryStatistics;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
@@ -35,7 +41,12 @@ import org.junit.Test;
 public class RandomNewViewDropperTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(4)
-		.addRandomNewViewDropper(0.4)
+		.addNetworkModule(new AbstractModule() {
+			@ProvidesIntoSet
+			Predicate<MessageInTransit> dropper() {
+				return new RandomNewViewDropper(new Random(), 0.4);
+			}
+		})
 		.checkConsensusSafety("safety")
 		.checkConsensusLiveness("liveness", 20, TimeUnit.SECONDS);
 

@@ -25,7 +25,6 @@ import com.google.inject.Guice;
 import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
-import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.ConsensusRunnerModule;
@@ -45,10 +44,8 @@ import com.radixdlt.SyncServiceModule;
 import com.radixdlt.SyncRxModule;
 import com.radixdlt.SyncRunnerModule;
 import com.radixdlt.SystemInfoRxModule;
-import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.integration.distributed.MockedBFTConfigurationModule;
@@ -76,11 +73,7 @@ import com.radixdlt.integration.distributed.simulation.invariants.epochs.EpochVi
 import com.radixdlt.integration.distributed.simulation.application.LocalMempoolPeriodicSubmittor;
 import com.radixdlt.integration.distributed.simulation.invariants.ledger.ConsensusToLedgerCommittedInvariant;
 import com.radixdlt.integration.distributed.simulation.invariants.ledger.LedgerInOrderInvariant;
-import com.radixdlt.integration.distributed.simulation.network.OneNodePerEpochResponseDropper;
-import com.radixdlt.integration.distributed.simulation.network.OneProposalPerViewDropper;
 import com.radixdlt.integration.distributed.simulation.network.RandomLatencyProvider;
-import com.radixdlt.integration.distributed.simulation.network.RandomNewViewDropper;
-import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.MessageInTransit;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.mempool.LocalMempool;
@@ -112,7 +105,6 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -180,7 +172,7 @@ public class SimulationTest {
 		private LedgerType ledgerType = LedgerType.MOCKED_LEDGER;
 		private int numInitialValidators = 0;
 
-		private List<Module> networkModules = new ArrayList<>();
+		private final List<Module> networkModules = new ArrayList<>();
 		private Module overrideModule = null;
 		private final ImmutableMap.Builder<ECKeyPair, Module> byzantineModules = ImmutableMap.builder();
 
@@ -202,64 +194,8 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder addRandomNewViewDropper(double drops) {
-			this.networkModules.add(new AbstractModule() {
-				@ProvidesIntoSet
-				Predicate<MessageInTransit> dropper() {
-					return new RandomNewViewDropper(new Random(), drops);
-				}
-			});
-			return this;
-		}
-
-		public Builder addVerticesSyncDropper() {
-			this.networkModules.add(new AbstractModule() {
-				@ProvidesIntoSet
-				Predicate<MessageInTransit> dropper() {
-					return msg -> {
-						if (msg.getContent() instanceof GetVerticesRequest) {
-							return true;
-						}
-
-						if (msg.getContent() instanceof GetVerticesResponse) {
-							return true;
-						}
-
-						return false;
-					};
-				}
-			});
-			return this;
-		}
-
-
-		public Builder addOneNodeNeverReceiveProposalDropper() {
-			this.networkModules.add(new AbstractModule() {
-				@ProvidesIntoSet
-				Predicate<MessageInTransit> dropper(ImmutableList<BFTNode> nodes) {
-					return new OneProposalPerViewDropper(nodes.subList(0, 1), new Random());
-				}
-			});
-			return this;
-		}
-
-		public Builder addOneNodePerEpochResponseDropper() {
-			this.networkModules.add(new AbstractModule() {
-				@ProvidesIntoSet
-				Predicate<MessageInTransit> dropper() {
-					return new OneNodePerEpochResponseDropper();
-				}
-			});
-			return this;
-		}
-
-		public Builder addOneProposalPerViewDropper() {
-			this.networkModules.add(new AbstractModule() {
-				@ProvidesIntoSet
-				Predicate<MessageInTransit> dropper(ImmutableList<BFTNode> nodes) {
-					return new OneProposalPerViewDropper(nodes, new Random());
-				}
-			});
+		public Builder addNetworkModule(Module module) {
+			this.networkModules.add(module);
 			return this;
 		}
 
@@ -291,6 +227,11 @@ public class SimulationTest {
 				.boxed()
 				.collect(Collectors.toMap(i -> BFTNode.create(this.nodes.get(i).getPublicKey()), i -> latencies[i]));
 			this.baseLatency = msg -> Math.max(nodeLatencies.get(msg.getSender()), nodeLatencies.get(msg.getReceiver()));
+			return this;
+		}
+
+		public Builder randomLatency(int minLatency, int maxLatency) {
+			this.baseLatency = new RandomLatencyProvider(minLatency, maxLatency);
 			return this;
 		}
 
@@ -328,12 +269,6 @@ public class SimulationTest {
 		public Builder ledgerAndRadixEngineWithEpochHighView(View epochHighView) {
 			this.ledgerType = LedgerType.LEDGER_AND_LOCALMEMPOOL_AND_EPOCHS_AND_RADIXENGINE;
 			this.epochHighView = epochHighView;
-			return this;
-		}
-
-
-		public Builder randomLatency(int minLatency, int maxLatency) {
-			this.baseLatency = new RandomLatencyProvider(minLatency, maxLatency);
 			return this;
 		}
 
