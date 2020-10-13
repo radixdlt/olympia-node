@@ -114,7 +114,7 @@ public class RadixEngineStateComputerTest {
 		Atom atom = new Atom();
 		atom.addParticleGroup(particleGroup);
 		try {
-			Atom.sign(atom, keyPair, hasher);
+			atom.sign(keyPair, hasher);
 			ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom, hasher);
 			final byte[] payload = DefaultSerialization.getInstance().toDson(clientAtom, Output.ALL);
 			return new Command(payload);

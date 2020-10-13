@@ -180,8 +180,8 @@ public final class RadixUniverseBuilder {
 		genesisAtom.addParticleGroupWith(helloUniverseMessage, Spin.UP);
 		genesisAtom.addParticleGroup(ParticleGroup.of(xrdParticles));
 		try {
-			Atom.sign(genesisAtom, this.universeKey, hasher);
-			if (!Atom.verify(genesisAtom, this.universeKey.getPublicKey(), hasher)) {
+			genesisAtom.sign(this.universeKey, hasher);
+			if (!genesisAtom.verify(this.universeKey.getPublicKey(), hasher)) {
 				throw new IllegalStateException("Signature verification failed - GENESIS TRANSACTION HASH: " + hasher.hash(genesisAtom));
 			}
 		} catch (PublicKeyException | AtomAlreadySignedException ex) {

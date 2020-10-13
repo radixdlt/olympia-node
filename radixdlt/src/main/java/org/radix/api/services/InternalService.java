@@ -124,7 +124,7 @@ public final class InternalService {
 								atom.addParticleGroupWith(rriParticle, Spin.DOWN, unique, Spin.UP);
 							}
 
-							Atom.sign(atom, this.owner, hasher);
+							atom.sign(this.owner, hasher);
 
 							ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom, hasher);
 							submissionControl.submitAtom(clientAtom);

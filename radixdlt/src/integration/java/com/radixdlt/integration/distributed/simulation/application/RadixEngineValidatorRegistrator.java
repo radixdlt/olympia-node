@@ -80,7 +80,7 @@ public final class RadixEngineValidatorRegistrator implements CommandGenerator {
 		atom.addParticleGroup(particleGroup);
 		final Command command;
 		try {
-			Atom.sign(atom, keyPair, hasher);
+			atom.sign(keyPair, hasher);
 			ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom, hasher);
 			final byte[] payload = DefaultSerialization.getInstance().toDson(clientAtom, Output.ALL);
 			command = new Command(payload);
