@@ -25,6 +25,8 @@ import com.google.inject.Guice;
 import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
+import com.google.inject.Singleton;
+import com.google.inject.name.Named;
 import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.ConsensusRunnerModule;
@@ -162,7 +164,6 @@ public class SimulationTest {
 			}
 		}
 
-		private LatencyProvider baseLatency = msg -> SimulationNetwork.DEFAULT_LATENCY;
 		private final ImmutableMap.Builder<String, Function<List<ECKeyPair>, TestInvariant>> checksBuilder = ImmutableMap.builder();
 		private final ImmutableList.Builder<Function<List<ECKeyPair>, SimulationNetworkActor>> runnableBuilder = ImmutableList.builder();
 		private ImmutableList<ECKeyPair> nodes = ImmutableList.of(ECKeyPair.generateNew());
@@ -216,22 +217,42 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder numNodesAndLatencies(int numNodes, int... latencies) {
-			if (latencies.length != numNodes) {
-				throw new IllegalArgumentException(String.format("Number of latencies (%d) not equal to numNodes (%d)", numNodes, latencies.length));
-			}
-			this.nodes = Stream.generate(ECKeyPair::generateNew)
-				.limit(numNodes)
-				.collect(ImmutableList.toImmutableList());
-			Map<BFTNode, Integer> nodeLatencies = IntStream.range(0, numNodes)
-				.boxed()
-				.collect(Collectors.toMap(i -> BFTNode.create(this.nodes.get(i).getPublicKey()), i -> latencies[i]));
-			this.baseLatency = msg -> Math.max(nodeLatencies.get(msg.getSender()), nodeLatencies.get(msg.getReceiver()));
+		public Builder defaultLatency() {
+			this.networkModules.add(new AbstractModule() {
+				@Provides
+				@Singleton
+				@Named("base")
+				LatencyProvider base() {
+					return msg -> SimulationNetwork.DEFAULT_LATENCY;
+				}
+			});
+			return this;
+		}
+
+		public Builder oneOutOfBoundsLatency(int inBoundsLatency, int outOfBoundsLatency) {
+			this.networkModules.add(new AbstractModule() {
+				@Provides
+				@Singleton
+				@Named("base")
+				LatencyProvider base(ImmutableList<BFTNode> nodes) {
+					Map<BFTNode, Integer> nodeLatencies = IntStream.range(0, nodes.size())
+						.boxed()
+						.collect(Collectors.toMap(nodes::get, i -> i == 0 ? outOfBoundsLatency : inBoundsLatency));
+					return msg -> Math.max(nodeLatencies.get(msg.getSender()), nodeLatencies.get(msg.getReceiver()));
+				}
+			});
 			return this;
 		}
 
 		public Builder randomLatency(int minLatency, int maxLatency) {
-			this.baseLatency = new RandomLatencyProvider(minLatency, maxLatency);
+			this.networkModules.add(new AbstractModule() {
+				@Provides
+				@Singleton
+				@Named("base")
+				LatencyProvider base() {
+					return new RandomLatencyProvider(minLatency, maxLatency);
+				}
+			});
 			return this;
 		}
 
@@ -528,7 +549,7 @@ public class SimulationTest {
 					return nodes.stream().map(node -> BFTNode.create(node.getPublicKey())).collect(ImmutableList.toImmutableList());
 				}
 			});
-			networkModules.add(new SimulationNetworkModule(baseLatency));
+			networkModules.add(new SimulationNetworkModule());
 			final SimulationNetwork simulationNetwork = Guice.createInjector(networkModules).getInstance(SimulationNetwork.class);
 
 			return new SimulationTest(

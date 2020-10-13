@@ -38,6 +38,7 @@ public class RandomValidatorsTest {
 	private static final int numNodes = 50;
 
 	private final Builder bftTestBuilder = SimulationTest.builder()
+		.defaultLatency()
 		.pacemakerTimeout(5000)
 		.numNodes(numNodes)
 		.checkEpochsHighViewCorrect("epochHighView", View.of(100))

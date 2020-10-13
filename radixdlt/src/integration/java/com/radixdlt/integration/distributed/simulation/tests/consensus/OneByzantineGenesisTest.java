@@ -34,6 +34,7 @@ import org.junit.Test;
 public class OneByzantineGenesisTest {
 	SimulationTest.Builder bftTestBuilder = SimulationTest.builder()
 		.pacemakerTimeout(1000)
+		.defaultLatency()
 		.checkConsensusSafety("safety");
 
 	@Test

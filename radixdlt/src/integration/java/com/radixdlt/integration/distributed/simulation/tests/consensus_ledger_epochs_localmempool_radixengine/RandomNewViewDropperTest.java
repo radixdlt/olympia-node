@@ -42,6 +42,7 @@ import org.junit.Test;
 public class RandomNewViewDropperTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(8)
+		.defaultLatency()
 		.numInitialValidators(4)
 		.ledgerAndRadixEngineWithEpochHighView(View.of(10))
 		.addNetworkModule(new AbstractModule() {

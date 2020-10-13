@@ -40,6 +40,7 @@ public class UniformLatencyTest {
 	public void given_4_correct_bfts__then_should_pass_sanity_tests_over_1_minute() {
 		SimulationTest bftTest = SimulationTest.builder()
 			.numNodes(4)
+			.defaultLatency()
 			.checkConsensusSafety("safety")
 			.checkConsensusLiveness("liveness")
 			.checkConsensusNoTimeouts("noTimeouts")

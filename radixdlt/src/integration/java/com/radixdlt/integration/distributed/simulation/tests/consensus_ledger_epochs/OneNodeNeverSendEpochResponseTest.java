@@ -45,6 +45,7 @@ public class OneNodeNeverSendEpochResponseTest {
 	private static final int numNodes = 10;
 
 	private final Builder bftTestBuilder = SimulationTest.builder()
+		.defaultLatency()
 		.addNetworkModule(new AbstractModule() {
 			@ProvidesIntoSet
 			Predicate<MessageInTransit> dropper() {

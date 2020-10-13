@@ -39,7 +39,8 @@ public class FPlusOneOutOfBoundsTest {
 	@Test
 	public void given_0_out_of_3_nodes_out_of_synchrony_bounds() {
 		SimulationTest test = bftTestBuilder
-			.numNodesAndLatencies(3, latency, latency, latency)
+			.numNodes(3)
+			.randomLatency(50, 50)
 			.build();
 
 		TestResults results = test.run();
@@ -52,7 +53,8 @@ public class FPlusOneOutOfBoundsTest {
 	@Test
 	public void given_1_out_of_3_nodes_out_of_synchrony_bounds() {
 		SimulationTest test = bftTestBuilder
-			.numNodesAndLatencies(3, latency, latency, outOfBoundsLatency)
+			.numNodes(3)
+			.oneOutOfBoundsLatency(latency, outOfBoundsLatency)
 			.build();
 
 		TestResults results = test.run();

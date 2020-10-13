@@ -41,6 +41,7 @@ public class RandomValidatorsTest {
 	private static final int numNodes = 10;
 
 	private final Builder bftTestBuilder = SimulationTest.builder()
+		.defaultLatency()
 		.ledgerAndEpochsAndSync(View.of(3), goodRandomEpochToNodesMapper()) // TODO: investigate why this fails with View.of(10)
 		.pacemakerTimeout(5000)
 		.numNodes(numNodes)

@@ -29,6 +29,7 @@ import org.junit.Test;
 
 public class StaticValidatorsTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
+		.defaultLatency()
 		.numNodes(4)
 		.checkConsensusSafety("safety")
 		.checkConsensusLiveness("liveness", 1000, TimeUnit.MILLISECONDS)

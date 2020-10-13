@@ -37,7 +37,8 @@ public class OneSlowNodeTest {
 	private final int trips = 8;
 	private final int synchronousTimeout = maxLatency * trips;
 	private final Builder bftTestBuilder = SimulationTest.builder()
-		.numNodesAndLatencies(4, minLatency, minLatency, minLatency, maxLatency)
+		.numNodes(4)
+		.oneOutOfBoundsLatency(minLatency, maxLatency)
 		.addNetworkModule(new NetworkBFTSyncDropperModule())
 		.pacemakerTimeout(synchronousTimeout)
 		.checkConsensusSafety("safety")

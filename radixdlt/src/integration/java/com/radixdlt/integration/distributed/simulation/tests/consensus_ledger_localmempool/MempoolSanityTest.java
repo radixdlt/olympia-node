@@ -35,6 +35,7 @@ import org.junit.Test;
 public class MempoolSanityTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(4)
+		.defaultLatency()
 		.ledgerAndMempool()
 		.checkConsensusSafety("safety")
 		.checkConsensusLiveness("liveness", 1000, TimeUnit.MILLISECONDS)

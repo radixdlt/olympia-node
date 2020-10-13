@@ -33,6 +33,7 @@ import org.junit.Test;
 public class SanityTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(4)
+		.defaultLatency()
 		.ledger()
 		.checkConsensusSafety("safety")
 		.checkConsensusLiveness("liveness", 1000, TimeUnit.MILLISECONDS)

@@ -41,6 +41,7 @@ import org.junit.Test;
 public class RandomNewViewDropperTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(4)
+		.defaultLatency()
 		.addNetworkModule(new AbstractModule() {
 			@ProvidesIntoSet
 			Predicate<MessageInTransit> dropper() {

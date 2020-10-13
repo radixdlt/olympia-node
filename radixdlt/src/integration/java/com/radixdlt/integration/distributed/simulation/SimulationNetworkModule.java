@@ -23,6 +23,7 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
+import com.google.inject.name.Named;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.LatencyProvider;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.MessageInTransit;
@@ -30,12 +31,6 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 public class SimulationNetworkModule extends AbstractModule {
-	private final LatencyProvider base;
-
-	public SimulationNetworkModule(LatencyProvider base) {
-		this.base = base;
-	}
-
 	@Override
 	protected void configure() {
 		Multibinder.newSetBinder(binder(), new TypeLiteral<Predicate<MessageInTransit>>() { });
@@ -44,7 +39,10 @@ public class SimulationNetworkModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private LatencyProvider latencyProvider(Set<Predicate<MessageInTransit>> droppers) {
+	private LatencyProvider latencyProvider(
+		@Named("base") LatencyProvider base,
+		Set<Predicate<MessageInTransit>> droppers
+	) {
 		return msg -> {
 			if (droppers.stream().anyMatch(f -> f.test(msg))) {
 				return -1; // -1 Drops the message

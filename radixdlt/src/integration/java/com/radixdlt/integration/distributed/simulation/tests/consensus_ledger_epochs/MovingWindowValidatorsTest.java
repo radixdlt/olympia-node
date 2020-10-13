@@ -32,6 +32,7 @@ import org.junit.Test;
 public class MovingWindowValidatorsTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(4)
+		.defaultLatency()
 		.checkConsensusSafety("safety")
 		.checkConsensusNoTimeouts("noTimeouts")
 		.checkConsensusAllProposalsHaveDirectParents("directParents")

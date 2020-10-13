@@ -33,6 +33,7 @@ import org.junit.Test;
 public class IncreasingValidatorsTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(50)
+		.defaultLatency()
 		.numInitialValidators(2) // Can't be 1 otherwise epochs move too fast, TODO: Fix with mempool-aware pacemaker
 		.ledgerAndRadixEngineWithEpochHighView(View.of(10))
 		.checkConsensusSafety("safety")
