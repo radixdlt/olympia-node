@@ -19,7 +19,9 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
+import com.google.inject.util.Modules;
 import com.radixdlt.integration.distributed.NetworkBFTSyncDropperModule;
+import com.radixdlt.integration.distributed.simulation.RandomLatencyModule;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
@@ -43,9 +45,11 @@ public class RandomLatencyTest {
 	private final int synchronousTimeout = maxLatency * trips;
 
 	private Builder bftTestBuilder = SimulationTest.builder()
-		.randomLatency(minLatency, maxLatency)
+		.networkModule(Modules.combine(
+			new RandomLatencyModule(minLatency, maxLatency),
+			new NetworkBFTSyncDropperModule()
+		))
 		.pacemakerTimeout(synchronousTimeout) // Since no syncing needed 6*MTT required
-		.addNetworkModule(new NetworkBFTSyncDropperModule())
 		.checkConsensusLiveness("liveness", synchronousTimeout, TimeUnit.MILLISECONDS)
 		.checkConsensusSafety("safety")
 		.checkConsensusAllProposalsHaveDirectParents("directParents")

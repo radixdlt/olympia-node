@@ -19,6 +19,7 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
+import com.radixdlt.integration.distributed.simulation.FixedLatencyModule;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import org.junit.Test;
@@ -39,8 +40,8 @@ public class UniformLatencyTest {
 	@Test
 	public void given_4_correct_bfts__then_should_pass_sanity_tests_over_1_minute() {
 		SimulationTest bftTest = SimulationTest.builder()
+			.networkModule(new FixedLatencyModule())
 			.numNodes(4)
-			.defaultLatency()
 			.checkConsensusSafety("safety")
 			.checkConsensusLiveness("liveness")
 			.checkConsensusNoTimeouts("noTimeouts")

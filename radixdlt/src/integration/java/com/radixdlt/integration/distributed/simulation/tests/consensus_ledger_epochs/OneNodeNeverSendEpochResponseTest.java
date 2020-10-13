@@ -21,7 +21,9 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.google.inject.util.Modules;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.integration.distributed.simulation.FixedLatencyModule;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
@@ -45,13 +47,15 @@ public class OneNodeNeverSendEpochResponseTest {
 	private static final int numNodes = 10;
 
 	private final Builder bftTestBuilder = SimulationTest.builder()
-		.defaultLatency()
-		.addNetworkModule(new AbstractModule() {
-			@ProvidesIntoSet
-			Predicate<MessageInTransit> dropper() {
-				return new OneNodePerEpochResponseDropper();
+		.networkModule(Modules.combine(
+			new FixedLatencyModule(),
+			new AbstractModule() {
+				@ProvidesIntoSet
+				Predicate<MessageInTransit> dropper() {
+					return new OneNodePerEpochResponseDropper();
+				}
 			}
-		})
+		))
 		.pacemakerTimeout(5000)
 		.numNodes(numNodes)
 		.ledgerAndEpochs(View.of(4), goodRandomEpochToNodesMapper())

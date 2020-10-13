@@ -19,6 +19,7 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
+import com.radixdlt.integration.distributed.simulation.OneOutOfBoundsLatencyModule;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
@@ -50,7 +51,7 @@ public class OneOutOfBoundsTest {
 	public void given_1_out_of_4_nodes_out_of_synchrony_bounds() {
 		SimulationTest test = bftTestBuilder
 			.numNodes(4)
-			.oneOutOfBoundsLatency(latency, outOfBoundsLatency)
+			.networkModule(new OneOutOfBoundsLatencyModule(latency, outOfBoundsLatency))
 			.build();
 
 		TestResults results = test.run();

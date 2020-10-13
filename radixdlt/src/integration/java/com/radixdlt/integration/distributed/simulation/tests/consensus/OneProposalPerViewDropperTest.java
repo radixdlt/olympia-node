@@ -22,8 +22,10 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.google.inject.util.Modules;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
+import com.radixdlt.integration.distributed.simulation.RandomLatencyModule;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
@@ -44,14 +46,16 @@ public class OneProposalPerViewDropperTest {
 	private final int synchronousTimeout = maxLatency * trips;
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(4)
-		.randomLatency(minLatency, maxLatency)
+		.networkModule(Modules.combine(
+			new RandomLatencyModule(minLatency, maxLatency),
+			new AbstractModule() {
+				@ProvidesIntoSet
+				Predicate<MessageInTransit> dropper(ImmutableList<BFTNode> nodes) {
+					return new OneProposalPerViewDropper(nodes, new Random());
+				}
+			})
+		)
 		.pacemakerTimeout(synchronousTimeout)
-		.addNetworkModule(new AbstractModule() {
-			@ProvidesIntoSet
-			Predicate<MessageInTransit> dropper(ImmutableList<BFTNode> nodes) {
-				return new OneProposalPerViewDropper(nodes, new Random());
-			}
-		})
 		.checkConsensusSafety("safety")
 		.checkConsensusNoTimeouts("noTimeouts");
 

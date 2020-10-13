@@ -25,8 +25,6 @@ import com.google.inject.Guice;
 import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
-import com.google.inject.Singleton;
-import com.google.inject.name.Named;
 import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.ConsensusRunnerModule;
@@ -75,7 +73,6 @@ import com.radixdlt.integration.distributed.simulation.invariants.epochs.EpochVi
 import com.radixdlt.integration.distributed.simulation.application.LocalMempoolPeriodicSubmittor;
 import com.radixdlt.integration.distributed.simulation.invariants.ledger.ConsensusToLedgerCommittedInvariant;
 import com.radixdlt.integration.distributed.simulation.invariants.ledger.LedgerInOrderInvariant;
-import com.radixdlt.integration.distributed.simulation.network.RandomLatencyProvider;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.mempool.LocalMempool;
@@ -89,7 +86,6 @@ import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
-import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.LatencyProvider;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.utils.DurationParser;
 import com.radixdlt.utils.Pair;
@@ -99,7 +95,6 @@ import io.reactivex.rxjava3.core.Single;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -173,7 +168,7 @@ public class SimulationTest {
 		private LedgerType ledgerType = LedgerType.MOCKED_LEDGER;
 		private int numInitialValidators = 0;
 
-		private final List<Module> networkModules = new ArrayList<>();
+		private Module networkModule;
 		private Module overrideModule = null;
 		private final ImmutableMap.Builder<ECKeyPair, Module> byzantineModules = ImmutableMap.builder();
 
@@ -195,8 +190,8 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder addNetworkModule(Module module) {
-			this.networkModules.add(module);
+		public Builder networkModule(Module networkModule) {
+			this.networkModule = networkModule;
 			return this;
 		}
 
@@ -214,45 +209,6 @@ public class SimulationTest {
 			this.nodes = Stream.generate(ECKeyPair::generateNew)
 				.limit(numNodes)
 				.collect(ImmutableList.toImmutableList());
-			return this;
-		}
-
-		public Builder defaultLatency() {
-			this.networkModules.add(new AbstractModule() {
-				@Provides
-				@Singleton
-				@Named("base")
-				LatencyProvider base() {
-					return msg -> SimulationNetwork.DEFAULT_LATENCY;
-				}
-			});
-			return this;
-		}
-
-		public Builder oneOutOfBoundsLatency(int inBoundsLatency, int outOfBoundsLatency) {
-			this.networkModules.add(new AbstractModule() {
-				@Provides
-				@Singleton
-				@Named("base")
-				LatencyProvider base(ImmutableList<BFTNode> nodes) {
-					Map<BFTNode, Integer> nodeLatencies = IntStream.range(0, nodes.size())
-						.boxed()
-						.collect(Collectors.toMap(nodes::get, i -> i == 0 ? outOfBoundsLatency : inBoundsLatency));
-					return msg -> Math.max(nodeLatencies.get(msg.getSender()), nodeLatencies.get(msg.getReceiver()));
-				}
-			});
-			return this;
-		}
-
-		public Builder randomLatency(int minLatency, int maxLatency) {
-			this.networkModules.add(new AbstractModule() {
-				@Provides
-				@Singleton
-				@Named("base")
-				LatencyProvider base() {
-					return new RandomLatencyProvider(minLatency, maxLatency);
-				}
-			});
 			return this;
 		}
 
@@ -406,6 +362,13 @@ public class SimulationTest {
 
 		public SimulationTest build() {
 			ImmutableList.Builder<Module> modules = ImmutableList.builder();
+			Module nodesModule = new AbstractModule() {
+				@Provides
+				ImmutableList<BFTNode> nodes() {
+					return nodes.stream().map(node -> BFTNode.create(node.getPublicKey())).collect(ImmutableList.toImmutableList());
+				}
+			};
+			modules.add(nodesModule);
 
 			final Random sharedRandom = new Random();
 
@@ -416,11 +379,6 @@ public class SimulationTest {
 					bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
 					bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
 					bind(Random.class).toInstance(sharedRandom);
-				}
-
-				@Provides
-				ImmutableList<BFTNode> nodes() {
-					return nodes.stream().map(node -> BFTNode.create(node.getPublicKey())).collect(ImmutableList.toImmutableList());
 				}
 
 				@Provides
@@ -543,14 +501,11 @@ public class SimulationTest {
 					)
 				);
 
-			networkModules.add(new AbstractModule() {
-				@Provides
-				ImmutableList<BFTNode> nodes() {
-					return nodes.stream().map(node -> BFTNode.create(node.getPublicKey())).collect(ImmutableList.toImmutableList());
-				}
-			});
-			networkModules.add(new SimulationNetworkModule());
-			final SimulationNetwork simulationNetwork = Guice.createInjector(networkModules).getInstance(SimulationNetwork.class);
+			final SimulationNetwork simulationNetwork = Guice.createInjector(
+				nodesModule,
+				new SimulationNetworkModule(),
+				networkModule
+			).getInstance(SimulationNetwork.class);
 
 			return new SimulationTest(
 				nodes,

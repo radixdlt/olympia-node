@@ -20,6 +20,7 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_e
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.integration.distributed.simulation.FixedLatencyModule;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
@@ -32,8 +33,8 @@ import org.junit.Test;
  */
 public class IncreasingValidatorsTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
+		.networkModule(new FixedLatencyModule())
 		.numNodes(50)
-		.defaultLatency()
 		.numInitialValidators(2) // Can't be 1 otherwise epochs move too fast, TODO: Fix with mempool-aware pacemaker
 		.ledgerAndRadixEngineWithEpochHighView(View.of(10))
 		.checkConsensusSafety("safety")

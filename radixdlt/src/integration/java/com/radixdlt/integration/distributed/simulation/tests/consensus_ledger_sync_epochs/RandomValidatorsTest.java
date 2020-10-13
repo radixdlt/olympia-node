@@ -21,6 +21,7 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.google.inject.AbstractModule;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.integration.distributed.simulation.FixedLatencyModule;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
@@ -41,7 +42,7 @@ public class RandomValidatorsTest {
 	private static final int numNodes = 10;
 
 	private final Builder bftTestBuilder = SimulationTest.builder()
-		.defaultLatency()
+		.networkModule(new FixedLatencyModule())
 		.ledgerAndEpochsAndSync(View.of(3), goodRandomEpochToNodesMapper()) // TODO: investigate why this fails with View.of(10)
 		.pacemakerTimeout(5000)
 		.numNodes(numNodes)

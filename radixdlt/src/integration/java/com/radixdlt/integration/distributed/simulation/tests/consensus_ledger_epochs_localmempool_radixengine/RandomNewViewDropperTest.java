@@ -21,8 +21,10 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.google.inject.util.Modules;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.integration.distributed.simulation.FixedLatencyModule;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
@@ -42,15 +44,17 @@ import org.junit.Test;
 public class RandomNewViewDropperTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(8)
-		.defaultLatency()
+		.networkModule(Modules.combine(
+			new FixedLatencyModule(),
+			new AbstractModule() {
+				@ProvidesIntoSet
+				Predicate<MessageInTransit> dropper() {
+					return new RandomNewViewDropper(new Random(), 0.2);
+				}
+			})
+		)
 		.numInitialValidators(4)
 		.ledgerAndRadixEngineWithEpochHighView(View.of(10))
-		.addNetworkModule(new AbstractModule() {
-			@ProvidesIntoSet
-			Predicate<MessageInTransit> dropper() {
-				return new RandomNewViewDropper(new Random(), 0.2);
-			}
-		})
 		.checkConsensusSafety("safety")
 		.checkConsensusLiveness("liveness", 20, TimeUnit.SECONDS)
 		.checkLedgerInOrder("ledgerInOrder")
