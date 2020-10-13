@@ -94,6 +94,9 @@ class SlowNodeSetup {
         }
 
         SlowNodeSetup build() {
+            Objects.requireNonNull(this.image)
+            Objects.requireNonNull(this.clusterName)
+            Objects.requireNonNull(this.numOfSlowNodes)
             return new SlowNodeSetup(this.image, this.runOptions, this.cmdOptions, this.numOfSlowNodes, this.clusterName)
         }
     }

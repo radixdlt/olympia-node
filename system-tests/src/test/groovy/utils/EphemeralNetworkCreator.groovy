@@ -153,6 +153,9 @@ class EphemeralNetworkCreator {
         }
 
         EphemeralNetworkCreator build() {
+            Objects.requireNonNull(this.terraformImage)
+            Objects.requireNonNull(this.keyVolume)
+            Objects.requireNonNull(this.ansibleImage)
             return new EphemeralNetworkCreator(this.terraformImage, this.keyVolume, this.tf_Opts, this.ansibleImage)
         }
     }
