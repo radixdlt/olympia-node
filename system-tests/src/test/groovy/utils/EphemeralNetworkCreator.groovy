@@ -2,6 +2,9 @@ package utils
 
 import com.radixdlt.test.StaticClusterNetwork
 
+import java.nio.file.Files
+import java.nio.file.Paths
+
 class EphemeralNetworkCreator {
 
     String terraformImage, keyVolume, ansibleImage
@@ -125,7 +128,7 @@ class EphemeralNetworkCreator {
                 "-i aws-inventory")
     }
 
-    void captureLogs(String networkGroup) {
+    void captureLogs(String networkGroup,String testName) {
 
         def output,error
         def fetchLogsCmd = "bash -c".tokenize() << (
@@ -134,9 +137,11 @@ class EphemeralNetworkCreator {
                         "check.yml -i aws-inventory  " +
                         "--limit ${networkGroup} -t fetch_logs " as String)
         (output,error)=CmdHelper.runCommand(fetchLogsCmd)
+        Files.createDirectories(Paths.get("${System.getProperty('logs.dir')}/logs/${testName}"));
+
         CmdHelper.runCommand("docker container create --name dummy -v ${keyVolume}-logs:${ansibleWorkDir}/target curlimages/curl:7.70.0")
 
-        CmdHelper.runCommand("docker cp dummy:${ansibleWorkDir}/target/ build/logs")
+        CmdHelper.runCommand("docker cp dummy:${ansibleWorkDir}/target/ ${System.getProperty('logs.dir')}/logs/${testName}")
         CmdHelper.runCommand("docker rm -f dummy")
 
     }

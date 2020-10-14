@@ -78,5 +78,6 @@ task ephemeralClusterSystemTests(type: Test) {
     }
     testLogging.showStandardStreams = true
     systemProperties System.getProperties()
+    systemProperties['logs.dir'] = "${testResultsDir}/ephemeralClusterSystemTests"
     exclude "Runner.class"
 }
