@@ -24,6 +24,9 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 
+/**
+ * A Hasher implementation that uses sha256 hashing algorithm.
+ */
 public class Sha256Hasher implements Hasher {
 
 	private final Serialization serialization;
