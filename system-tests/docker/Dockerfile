@@ -14,6 +14,8 @@ RUN apt-get update \
 RUN wget -q https://services.gradle.org/distributions/gradle-6.6.1-bin.zip \
     && unzip gradle-6.6.1-bin.zip -d /opt \
     && rm gradle-6.6.1-bin.zip
+#you might need this if using docker on windows
+RUN if uname -a | grep -q "microsoft"; then apt-get install iproute2 -y --no-install-recommends; fi;
 
 # Set Gradle in the environment variables
 ENV GRADLE_HOME=/opt/gradle-6.6.1
