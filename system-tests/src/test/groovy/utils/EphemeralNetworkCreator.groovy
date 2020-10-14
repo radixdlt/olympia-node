@@ -141,10 +141,9 @@ class EphemeralNetworkCreator {
         (output,error)=CmdHelper.runCommand(fetchLogsCmd)
         Files.createDirectories(Paths.get("${System.getProperty('logs.dir')}/logs/${testName}"));
 
-        CmdHelper.runCommand("docker container create --name dummy -v ${keyVolume}-logs:${ansibleWorkDir}/target curlimages/curl:7.70.0")
-
-        CmdHelper.runCommand("docker cp dummy:${ansibleWorkDir}/target/ ${System.getProperty('logs.dir')}/logs/${testName}")
-        CmdHelper.runCommand("docker rm -f dummy")
+        (output,error) = CmdHelper.runCommand("docker container create -v ${keyVolume}-logs:${ansibleWorkDir}/target curlimages/curl:7.70.0")
+        CmdHelper.runCommand("docker cp ${output[0]}:${ansibleWorkDir}/target/ ${System.getProperty('logs.dir')}/logs/${testName}")
+        CmdHelper.runCommand("docker rm -f ${output[0]}")
 
     }
 

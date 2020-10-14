@@ -94,8 +94,8 @@ public class OutOfSynchronyBoundsTest {
 		@Parameters(name = "{index}: given_{0}_correct_bfts_in_cluster_network__when_{1}_node_is_down__then_all_other_instances_should_get_same_commits_and_progress_should_be_made")
 		public static Collection<Object[]> data() {
 			return Arrays.asList(new Object[][]{
-//				{10,1},
-//				{10,3},
+				{10,1},
+				{10,3},
 				{4,1}
 			});
 		}
