@@ -32,7 +32,7 @@ import org.junit.Test;
 
 public class MovingWindowValidatorsTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
-		.numNodes(4)
+		.numNodes(4, 2)
 		.networkModule(new FixedLatencyModule())
 		.checkConsensusSafety("safety")
 		.checkConsensusNoTimeouts("noTimeouts")

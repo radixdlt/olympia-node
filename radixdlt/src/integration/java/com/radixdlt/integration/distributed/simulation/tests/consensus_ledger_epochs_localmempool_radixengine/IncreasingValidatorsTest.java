@@ -34,8 +34,7 @@ import org.junit.Test;
 public class IncreasingValidatorsTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.networkModule(new FixedLatencyModule())
-		.numNodes(50)
-		.numInitialValidators(2) // Can't be 1 otherwise epochs move too fast, TODO: Fix with mempool-aware pacemaker
+		.numNodes(50, 2) // Can't be 1 otherwise epochs move too fast, TODO: Fix with mempool-aware pacemaker
 		.ledgerAndRadixEngineWithEpochHighView(View.of(10))
 		.checkConsensusSafety("safety")
 		.checkConsensusLiveness("liveness", 1000, TimeUnit.MILLISECONDS)

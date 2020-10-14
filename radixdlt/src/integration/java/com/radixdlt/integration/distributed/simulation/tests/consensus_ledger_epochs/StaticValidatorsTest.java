@@ -31,7 +31,7 @@ import org.junit.Test;
 public class StaticValidatorsTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.networkModule(new FixedLatencyModule())
-		.numNodes(4)
+		.numNodes(4, 2)
 		.checkConsensusSafety("safety")
 		.checkConsensusLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
 		.checkConsensusNoTimeouts("noTimeouts")

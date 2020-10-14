@@ -55,7 +55,6 @@ import java.util.stream.Collectors;
 public class SimulationNodes {
 	private final SimulationNetwork underlyingNetwork;
 	private final ImmutableList<Injector> nodeInstances;
-	private final List<ECKeyPair> nodes;
 	private final Module baseModule;
 	private final Module overrideModule;
 	private final Map<ECKeyPair, Module> byzantineNodeModules;
@@ -64,7 +63,6 @@ public class SimulationNodes {
 	 * Create a BFT test network with an underlying simulated network.
 	 * @param nodes The nodes on the network
 	 * @param underlyingNetwork the network simulator
-	 * @param pacemakerTimeout a fixed pacemaker timeout used for all nodes
 	 */
 	public SimulationNodes(
 		List<ECKeyPair> nodes,
@@ -73,7 +71,6 @@ public class SimulationNodes {
 		Module overrideModule,
 		Map<ECKeyPair, Module> byzantineNodeModules
 	) {
-		this.nodes = nodes;
 		this.baseModule = baseModule;
 		this.overrideModule = overrideModule;
 		this.byzantineNodeModules = byzantineNodeModules;
@@ -143,11 +140,14 @@ public class SimulationNodes {
 			moduleRunner.start();
 		}
 
+		final List<BFTNode> bftNodes = this.nodeInstances.stream()
+			.map(i -> i.getInstance(Key.get(BFTNode.class, Names.named("self"))))
+			.collect(Collectors.toList());
+
 		return new RunningNetwork() {
 			@Override
 			public List<BFTNode> getNodes() {
-				// Just do first instance for now
-				return nodeInstances.get(0).getInstance(Key.get(new TypeLiteral<ImmutableList<BFTNode>>() { }));
+				return bftNodes;
 			}
 
 			@Override
@@ -217,10 +217,10 @@ public class SimulationNodes {
 
 			@Override
 			public Map<BFTNode, SystemCounters> getSystemCounters() {
-				return nodes.stream()
+				return bftNodes.stream()
 					.collect(Collectors.toMap(
-						node -> BFTNode.create(node.getPublicKey()),
-						node -> nodeInstances.get(nodes.indexOf(node)).getInstance(SystemCounters.class)
+						node -> node,
+						node -> nodeInstances.get(bftNodes.indexOf(node)).getInstance(SystemCounters.class)
 					));
 			}
 		};

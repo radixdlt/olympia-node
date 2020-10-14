@@ -166,8 +166,9 @@ public class SimulationTest {
 		private View epochHighView = null;
 		private Function<Long, IntStream> epochToNodeIndexMapper;
 		private LedgerType ledgerType = LedgerType.MOCKED_LEDGER;
-		private int numInitialValidators = 0;
 
+		private Module initialNodesModule;
+		private ImmutableList.Builder<Module> modules = ImmutableList.builder();
 		private Module networkModule;
 		private Module overrideModule = null;
 		private final ImmutableMap.Builder<ECKeyPair, Module> byzantineModules = ImmutableMap.builder();
@@ -200,20 +201,37 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder numInitialValidators(int numInitialValidators) {
-			this.numInitialValidators = numInitialValidators;
+		public Builder numNodes(int numNodes, int numInitialValidators) {
+			this.nodes = Stream.generate(ECKeyPair::generateNew)
+				.limit(numNodes)
+				.collect(ImmutableList.toImmutableList());
+
+			final ImmutableList<BFTNode> bftNodes =
+				nodes.stream().map(node -> BFTNode.create(node.getPublicKey())).collect(ImmutableList.toImmutableList());
+
+			this.initialNodesModule = new AbstractModule() {
+				@Provides
+				ImmutableList<BFTNode> nodes() {
+					return bftNodes;
+				}
+			};
+
+			modules.add(new AbstractModule() {
+				@Provides
+				BFTValidatorSet initialValidatorSet() {
+					return BFTValidatorSet.from(bftNodes.stream().limit(numInitialValidators)
+						.map(node -> BFTValidator.from(node, UInt256.ONE)));
+				}
+			});
+
 			return this;
 		}
 
 		public Builder numNodes(int numNodes) {
-			this.nodes = Stream.generate(ECKeyPair::generateNew)
-				.limit(numNodes)
-				.collect(ImmutableList.toImmutableList());
-			return this;
+			return this.numNodes(numNodes, numNodes);
 		}
 
 		public Builder ledgerAndEpochs(View epochHighView, Function<Long, IntStream> epochToNodeIndexMapper) {
-			this.numInitialValidators = 2;
 			this.ledgerType = LedgerType.LEDGER_AND_EPOCHS;
 			this.epochHighView = epochHighView;
 			this.epochToNodeIndexMapper = epochToNodeIndexMapper;
@@ -231,7 +249,6 @@ public class SimulationTest {
 		}
 
 		public Builder ledgerAndEpochsAndSync(View epochHighView, Function<Long, IntStream> epochToNodeIndexMapper) {
-			this.numInitialValidators = 2;
 			this.ledgerType = LedgerType.LEDGER_AND_EPOCHS_AND_SYNC;
 			this.epochHighView = epochHighView;
 			this.epochToNodeIndexMapper = epochToNodeIndexMapper;
@@ -361,29 +378,13 @@ public class SimulationTest {
 		}
 
 		public SimulationTest build() {
-			ImmutableList.Builder<Module> modules = ImmutableList.builder();
-			Module nodesModule = new AbstractModule() {
-				@Provides
-				ImmutableList<BFTNode> nodes() {
-					return nodes.stream().map(node -> BFTNode.create(node.getPublicKey())).collect(ImmutableList.toImmutableList());
-				}
-			};
-			modules.add(nodesModule);
-
-			final Random sharedRandom = new Random();
-
-			final long limit = numInitialValidators == 0 ? Long.MAX_VALUE : numInitialValidators;
 			modules.add(new AbstractModule() {
+				final Random sharedRandom = new Random();
 				@Override
 				public void configure() {
 					bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
 					bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
 					bind(Random.class).toInstance(sharedRandom);
-				}
-
-				@Provides
-				BFTValidatorSet initialValidatorSet(ImmutableList<BFTNode> nodes) {
-					return BFTValidatorSet.from(nodes.stream().limit(limit).map(node -> BFTValidator.from(node, UInt256.ONE)));
 				}
 			});
 			modules.add(new NoFeeModule());
@@ -502,7 +503,7 @@ public class SimulationTest {
 				);
 
 			final SimulationNetwork simulationNetwork = Guice.createInjector(
-				nodesModule,
+				initialNodesModule,
 				new SimulationNetworkModule(),
 				networkModule
 			).getInstance(SimulationNetwork.class);

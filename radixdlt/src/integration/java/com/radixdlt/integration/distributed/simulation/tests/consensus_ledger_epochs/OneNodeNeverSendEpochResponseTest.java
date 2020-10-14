@@ -57,7 +57,7 @@ public class OneNodeNeverSendEpochResponseTest {
 			}
 		))
 		.pacemakerTimeout(5000)
-		.numNodes(numNodes)
+		.numNodes(numNodes, 2)
 		.ledgerAndEpochs(View.of(4), goodRandomEpochToNodesMapper())
 		.checkConsensusSafety("safety")
 		.checkConsensusLiveness("liveness", 5000, TimeUnit.MILLISECONDS)

@@ -33,9 +33,8 @@ import org.junit.Test;
  */
 public class RandomValidatorsTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
-		.numNodes(4)
+		.numNodes(4, 2)
 		.networkModule(new FixedLatencyModule())
-		.numInitialValidators(2)
 		.ledgerAndRadixEngineWithEpochHighView(View.of(10))
 		.checkEpochsHighViewCorrect("epochHighView", View.of(100))
 		.checkConsensusSafety("safety")

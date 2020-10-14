@@ -43,7 +43,7 @@ import org.junit.Test;
 
 public class RandomNewViewDropperTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
-		.numNodes(8)
+		.numNodes(8, 4)
 		.networkModule(Modules.combine(
 			new FixedLatencyModule(),
 			new AbstractModule() {
@@ -53,7 +53,6 @@ public class RandomNewViewDropperTest {
 				}
 			})
 		)
-		.numInitialValidators(4)
 		.ledgerAndRadixEngineWithEpochHighView(View.of(10))
 		.checkConsensusSafety("safety")
 		.checkConsensusLiveness("liveness", 20, TimeUnit.SECONDS)

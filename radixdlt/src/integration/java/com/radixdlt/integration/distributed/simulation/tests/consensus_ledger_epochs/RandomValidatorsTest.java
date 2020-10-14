@@ -41,7 +41,7 @@ public class RandomValidatorsTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.networkModule(new FixedLatencyModule())
 		.pacemakerTimeout(5000)
-		.numNodes(numNodes)
+		.numNodes(numNodes, 2)
 		.checkEpochsHighViewCorrect("epochHighView", View.of(100))
 		.checkConsensusSafety("safety")
 		.checkConsensusLiveness("liveness", 5000, TimeUnit.MILLISECONDS)
