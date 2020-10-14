@@ -37,15 +37,17 @@ class EphemeralNetworkCreator {
     }
 
     void copyToTFSecrets(String fileLocation, String sshDestinationFileName = "testnet") {
-        CmdHelper.runCommand("docker container create --name dummy -v ${keyVolume}:${terraformSecretsDir} curlimages/curl:7.70.0")
-        CmdHelper.runCommand("docker cp ${fileLocation} dummy:${terraformSecretsDir}/${sshDestinationFileName}")
-        CmdHelper.runCommand("docker rm -f dummy")
+        def output,error
+        (output,error) = CmdHelper.runCommand("docker container create -v ${keyVolume}:${terraformSecretsDir} curlimages/curl:7.70.0")
+        CmdHelper.runCommand("docker cp ${fileLocation} ${output[0]}:${terraformSecretsDir}/${sshDestinationFileName}")
+        CmdHelper.runCommand("docker rm -f ${output[0]}")
     }
 
     void copyToAnsibleSecrets(String fileLocation, String sshDestinationFileName = "testnet") {
-        CmdHelper.runCommand("docker container create --name dummy -v ${keyVolume}:${ansibleSecretsDir} curlimages/curl:7.70.0")
-        CmdHelper.runCommand("docker cp ${fileLocation} dummy:${ansibleSecretsDir}/${sshDestinationFileName}")
-        CmdHelper.runCommand("docker rm -f dummy")
+        def output,error
+        (output,error) = CmdHelper.runCommand("docker container create -v ${keyVolume}:${ansibleSecretsDir} curlimages/curl:7.70.0")
+        CmdHelper.runCommand("docker cp ${fileLocation} ${output[0]}:${ansibleSecretsDir}/${sshDestinationFileName}")
+        CmdHelper.runCommand("docker rm -f ${output[0]}")
     }
 
     void setTotalNumberOfNodes(int totalNumberOfNodes) {
