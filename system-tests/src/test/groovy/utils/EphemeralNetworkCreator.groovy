@@ -9,6 +9,7 @@ class EphemeralNetworkCreator {
     int totalNumofNodes
     private String terraformSecretsDir = "/terraform/ssh"
     private String ansibleSecretsDir = "/ansible/ssh"
+    private String ansibleWorkDir = "/ansible/playbooks"
     private String autoApprove = "-auto-approve"
     private List<String> hosts
     private String TF_VAR_nodes_10= " { node_1, node_2, node_3, node_4  ,node_5 , node_6, node_7 , node_8 , node_9, node_10}"
@@ -122,6 +123,23 @@ class EphemeralNetworkCreator {
                 10,
                 "-v ${keyVolume}:${ansibleSecretsDir} " ,
                 "-i aws-inventory")
+    }
+
+    void captureLogs(String networkGroup) {
+
+        def output,error
+        def fetchLogsCmd = "bash -c".tokenize() << (
+                "docker run --rm  -v ${keyVolume}:${ansibleSecretsDir} -v ${keyVolume}-logs:${ansibleWorkDir}/target " +
+                        "${ansibleImage} " +
+                        "check.yml -i aws-inventory  " +
+                        "--limit ${networkGroup} -t fetch_logs " as String)
+        (output,error)=CmdHelper.runCommand(fetchLogsCmd)
+        CmdHelper.runCommand("docker container create --name dummy -v ${keyVolume}-logs:${ansibleWorkDir}/target curlimages/curl:7.70.0")
+
+        CmdHelper.runCommand("docker cp dummy:${ansibleWorkDir}/target/ build/logs")
+        CmdHelper.runCommand("docker rm -f dummy")
+
+
     }
 
 

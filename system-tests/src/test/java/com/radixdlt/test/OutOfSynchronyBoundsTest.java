@@ -84,6 +84,7 @@ public class OutOfSynchronyBoundsTest {
 		public TestName name = new TestName();
 
 		private int networkSize,nodesCrashed;
+		List<String> crashedNodesURLs;
 
 		public ClusterTests(int networkSize,int nodesCrashed) {
 			this.networkSize = networkSize;
@@ -93,8 +94,8 @@ public class OutOfSynchronyBoundsTest {
 		@Parameters(name = "{index}: given_{0}_correct_bfts_in_cluster_network__when_{1}_node_is_down__then_all_other_instances_should_get_same_commits_and_progress_should_be_made")
 		public static Collection<Object[]> data() {
 			return Arrays.asList(new Object[][]{
-				{10,1},
-				{10,3},
+//				{10,1},
+//				{10,3},
 				{4,1}
 			});
 		}
@@ -157,7 +158,7 @@ public class OutOfSynchronyBoundsTest {
 				.build();
 			test.runBlocking(30, TimeUnit.SECONDS);
 
-			List<String> crashedNodesURLs = new ArrayList<>(network.getNodeIds())
+			crashedNodesURLs = new ArrayList<>(network.getNodeIds())
 				.stream()
 				.limit(nodesCrashed)
 				.collect(Collectors.toList());
@@ -176,7 +177,14 @@ public class OutOfSynchronyBoundsTest {
 		}
 
 		@After
-		public void removeSlowNodesettings() {
+		public void removeCluster() {
+			String TESTNET_NAME = System.getenv(EphemeralNetworkCreator.ENV_TESTNET_NAME);
+			List<String> runningNodes = new ArrayList<>(network.getNodeIds())
+				.stream()
+				.filter(nodeUrl -> !crashedNodesURLs.contains(nodeUrl))
+				.map(Generic::getDomainName)
+				.collect(Collectors.toList());
+			ephemeralNetworkCreator.captureLogs(Generic.listToDelimitedString(runningNodes,","));
 			ephemeralNetworkCreator.teardown();
 		}
 	}
