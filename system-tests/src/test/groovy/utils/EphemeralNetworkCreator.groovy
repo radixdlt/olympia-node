@@ -139,6 +139,10 @@ class EphemeralNetworkCreator {
         CmdHelper.runCommand("docker cp dummy:${ansibleWorkDir}/target/ build/logs")
         CmdHelper.runCommand("docker rm -f dummy")
 
+    }
+
+    void volumeCleanUp(){
+        CmdHelper.runCommand("docker volume rm -f ${keyVolume} ${keyVolume}-logs ")
 
     }
 
