@@ -35,7 +35,7 @@ public class OneNodeNeverReceiveProposalDropperTest {
 		.numNodes(4)
 		.networkModules(
 			NetworkLatencies.random(10, 200),
-			NetworkDroppers.oneNodeAllReceivedProposalsDropped()
+			NetworkDroppers.fNodesAllReceivedProposalsDropped()
 		)
 		.pacemakerTimeout(5000)
 		.ledgerAndSync()

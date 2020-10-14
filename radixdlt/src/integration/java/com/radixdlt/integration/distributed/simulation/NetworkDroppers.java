@@ -28,26 +28,28 @@ import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.integration.distributed.simulation.network.MessageDropper;
 import com.radixdlt.integration.distributed.simulation.network.OneNodePerEpochResponseDropper;
-import com.radixdlt.integration.distributed.simulation.network.OneProposalPerViewDropper;
+import com.radixdlt.integration.distributed.simulation.network.FProposalsPerViewDropper;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.MessageInTransit;
 import java.util.Random;
 import java.util.function.Predicate;
 
 public final class NetworkDroppers {
-	public static Module oneRandomProposalPerViewDropped() {
+	// TODO: This doesn't work with epochs yet
+	public static Module fRandomProposalsPerViewDropped() {
 		return new AbstractModule() {
 			@ProvidesIntoSet
 			Predicate<MessageInTransit> dropper(ImmutableList<BFTNode> nodes, Random random) {
-				return new OneProposalPerViewDropper(nodes, random);
+				return new FProposalsPerViewDropper(nodes, random);
 			}
 		};
 	}
 
-	public static Module oneNodeAllReceivedProposalsDropped() {
+	// TODO: This doesn't work with epochs yet
+	public static Module fNodesAllReceivedProposalsDropped() {
 		return new AbstractModule() {
 			@ProvidesIntoSet
-			Predicate<MessageInTransit> dropper(ImmutableList<BFTNode> nodes, Random random) {
-				return new OneProposalPerViewDropper(nodes.subList(0, 1), random);
+			Predicate<MessageInTransit> dropper(ImmutableList<BFTNode> nodes) {
+				return new FProposalsPerViewDropper(nodes);
 			}
 		};
 	}
@@ -66,6 +68,21 @@ public final class NetworkDroppers {
 			@ProvidesIntoSet
 			Predicate<MessageInTransit> dropper() {
 				return new OneNodePerEpochResponseDropper();
+			}
+		};
+	}
+
+	public static Module bftSyncMessagesDropped(double dropRate) {
+		return new AbstractModule() {
+			@ProvidesIntoSet
+			Predicate<MessageInTransit> dropper(Random random) {
+				return new MessageDropper(
+					random,
+					dropRate,
+					GetVerticesResponse.class,
+					GetVerticesErrorResponse.class,
+					GetVerticesRequest.class
+				);
 			}
 		};
 	}

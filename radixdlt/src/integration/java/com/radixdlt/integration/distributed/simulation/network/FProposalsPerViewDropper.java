@@ -23,22 +23,34 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.MessageInTransit;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.function.Predicate;
 
 /**
  * Drops one proposal per view
  */
-public class OneProposalPerViewDropper implements Predicate<MessageInTransit> {
-	private final Map<View, BFTNode> proposalToDrop = new HashMap<>();
+public class FProposalsPerViewDropper implements Predicate<MessageInTransit> {
+	private final Map<View, Set<BFTNode>> proposalToDrop = new HashMap<>();
 	private final Map<View, Integer> proposalCount = new HashMap<>();
-	private final ImmutableList<BFTNode> nodes;
+	private final ImmutableList<BFTNode> validatorSet;
 	private final Random random;
+	private final int faultySize;
 
-	public OneProposalPerViewDropper(ImmutableList<BFTNode> nodes, Random random) {
-		this.nodes = nodes;
+	public FProposalsPerViewDropper(ImmutableList<BFTNode> validatorSet, Random random) {
+		this.validatorSet = validatorSet;
 		this.random = random;
+		this.faultySize = (validatorSet.size() - 1) / 3;
+	}
+
+	public FProposalsPerViewDropper(ImmutableList<BFTNode> validatorSet) {
+		this.validatorSet = validatorSet;
+		this.random = null;
+		this.faultySize = (validatorSet.size() - 1) / 3;
 	}
 
 	@Override
@@ -46,13 +58,21 @@ public class OneProposalPerViewDropper implements Predicate<MessageInTransit> {
 		if (msg.getContent() instanceof Proposal) {
 			final Proposal proposal = (Proposal) msg.getContent();
 			final View view = proposal.getVertex().getView();
-			final BFTNode nodeToDrop = proposalToDrop.computeIfAbsent(view, v -> nodes.get(random.nextInt(nodes.size())));
-			if (proposalCount.merge(view, 1, Integer::sum).equals(nodes.size())) {
+			final Set<BFTNode> nodesToDrop = proposalToDrop.computeIfAbsent(view, v -> {
+				List<BFTNode> nodes = new LinkedList<>(validatorSet);
+				Set<BFTNode> nextFaultySet = new HashSet<>();
+				for (int i = 0; i < faultySize; i++) {
+					BFTNode nextFaultyNode = nodes.remove(random == null ? i : random.nextInt(nodes.size()));
+					nextFaultySet.add(nextFaultyNode);
+				}
+				return nextFaultySet;
+			});
+			if (proposalCount.merge(view, 1, Integer::sum).equals(validatorSet.size())) {
 				proposalToDrop.remove(view);
 				proposalCount.remove(view);
 			}
 
-			return msg.getReceiver().equals(nodeToDrop);
+			return nodesToDrop.contains(msg.getReceiver());
 		}
 
 		return false;

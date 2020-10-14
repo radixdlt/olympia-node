@@ -49,7 +49,7 @@ public class ByzantineSyncTest {
 		.numNodes(4)
 		.networkModules(
 			NetworkLatencies.random(10, 200),
-			NetworkDroppers.oneNodeAllReceivedProposalsDropped()
+			NetworkDroppers.fNodesAllReceivedProposalsDropped()
 		)
 		.addByzantineModuleToAll(new AbstractModule() {
 			@Override
