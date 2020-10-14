@@ -171,18 +171,19 @@ public class SimulationTest {
 		private ImmutableList.Builder<Module> modules = ImmutableList.builder();
 		private Module networkModule;
 		private Module overrideModule = null;
-		private final ImmutableMap.Builder<ECKeyPair, Module> byzantineModules = ImmutableMap.builder();
+		private Function<ImmutableList<ECKeyPair>, ImmutableMap<ECKeyPair, Module>> byzantineModuleCreator = i -> ImmutableMap.of();
 
 		private Builder() {
 		}
 
 		public Builder addSingleByzantineModule(Module byzantineModule) {
-			byzantineModules.put(nodes.get(0), byzantineModule);
+			this.byzantineModuleCreator = nodes -> ImmutableMap.of(nodes.get(0), byzantineModule);
 			return this;
 		}
 
 		public Builder addByzantineModuleToAll(Module byzantineModule) {
-			nodes.forEach(k -> byzantineModules.put(k, byzantineModule));
+			this.byzantineModuleCreator = nodes -> nodes.stream()
+				.collect(ImmutableMap.<ECKeyPair, ECKeyPair, Module>toImmutableMap(n -> n, n -> byzantineModule));
 			return this;
 		}
 
@@ -193,6 +194,11 @@ public class SimulationTest {
 
 		public Builder networkModules(Module... networkModules) {
 			this.networkModule = Modules.combine(networkModules);
+			return this;
+		}
+
+		public Builder addNetworkModule(Module networkModule) {
+			this.networkModule = Modules.combine(this.networkModule, networkModule);
 			return this;
 		}
 
@@ -513,7 +519,7 @@ public class SimulationTest {
 				simulationNetwork,
 				Modules.combine(modules.build()),
 				overrideModule,
-				byzantineModules.build(),
+				byzantineModuleCreator.apply(this.nodes),
 				checks,
 				runners
 			);
