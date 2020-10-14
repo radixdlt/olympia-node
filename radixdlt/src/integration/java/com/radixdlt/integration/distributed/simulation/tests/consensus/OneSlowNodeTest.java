@@ -19,9 +19,8 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.google.inject.util.Modules;
-import com.radixdlt.integration.distributed.NetworkBFTSyncDropperModule;
-import com.radixdlt.integration.distributed.simulation.OneOutOfBoundsLatencyModule;
+import com.radixdlt.integration.distributed.simulation.NetworkDroppers;
+import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
@@ -40,10 +39,10 @@ public class OneSlowNodeTest {
 	private final int synchronousTimeout = maxLatency * trips;
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(4)
-		.networkModule(Modules.combine(
-			new OneOutOfBoundsLatencyModule(minLatency, maxLatency),
-			new NetworkBFTSyncDropperModule()
-		))
+		.networkModules(
+			NetworkLatencies.oneOutOfBounds(minLatency, maxLatency),
+			NetworkDroppers.bftSyncMessagesDropped()
+		)
 		.pacemakerTimeout(synchronousTimeout)
 		.checkConsensusSafety("safety")
 		.checkConsensusAllProposalsHaveDirectParents("directParents")

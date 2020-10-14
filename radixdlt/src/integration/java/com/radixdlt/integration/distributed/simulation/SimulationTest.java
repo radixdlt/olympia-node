@@ -191,8 +191,8 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder networkModule(Module networkModule) {
-			this.networkModule = networkModule;
+		public Builder networkModules(Module... networkModules) {
+			this.networkModule = Modules.combine(networkModules);
 			return this;
 		}
 

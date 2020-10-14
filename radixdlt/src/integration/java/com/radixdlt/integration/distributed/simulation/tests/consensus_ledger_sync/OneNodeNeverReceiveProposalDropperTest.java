@@ -19,37 +19,24 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_s
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.google.common.collect.ImmutableList;
-import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.ProvidesIntoSet;
-import com.google.inject.util.Modules;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.integration.distributed.simulation.RandomLatencyModule;
+import com.radixdlt.integration.distributed.simulation.NetworkDroppers;
+import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
-import com.radixdlt.integration.distributed.simulation.network.OneProposalPerViewDropper;
-import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.MessageInTransit;
 import java.util.LongSummaryStatistics;
-import java.util.Random;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Predicate;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
 public class OneNodeNeverReceiveProposalDropperTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(4)
-		.networkModule(Modules.combine(
-			new RandomLatencyModule(10, 200),
-			new AbstractModule() {
-				@ProvidesIntoSet
-				Predicate<MessageInTransit> dropper(ImmutableList<BFTNode> nodes) {
-					return new OneProposalPerViewDropper(nodes.subList(0, 1), new Random());
-				}
-			}
-		))
+		.networkModules(
+			NetworkLatencies.random(10, 200),
+			NetworkDroppers.oneNodeAllReceivedProposalsDropped()
+		)
 		.pacemakerTimeout(5000)
 		.ledgerAndSync()
 		.checkConsensusSafety("safety")

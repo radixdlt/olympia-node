@@ -19,7 +19,7 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.radixdlt.integration.distributed.simulation.FixedLatencyModule;
+import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
@@ -34,7 +34,7 @@ import org.junit.Test;
 public class SanityTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(4)
-		.networkModule(new FixedLatencyModule())
+		.networkModules(NetworkLatencies.fixed())
 		.ledger()
 		.checkConsensusSafety("safety")
 		.checkConsensusLiveness("liveness", 1000, TimeUnit.MILLISECONDS)

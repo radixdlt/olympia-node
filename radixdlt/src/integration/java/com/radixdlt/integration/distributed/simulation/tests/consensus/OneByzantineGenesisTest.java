@@ -21,7 +21,7 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.integration.distributed.MockedBFTConfigurationModule;
-import com.radixdlt.integration.distributed.simulation.FixedLatencyModule;
+import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import java.util.concurrent.TimeUnit;
@@ -34,7 +34,7 @@ import org.junit.Test;
  */
 public class OneByzantineGenesisTest {
 	SimulationTest.Builder bftTestBuilder = SimulationTest.builder()
-		.networkModule(new FixedLatencyModule())
+		.networkModules(NetworkLatencies.fixed())
 		.pacemakerTimeout(1000)
 		.checkConsensusSafety("safety");
 
