@@ -185,8 +185,8 @@ public class OutOfSynchronyBoundsTest {
 				.map(Generic::getDomainName)
 				.collect(Collectors.toList());
 			ephemeralNetworkCreator.captureLogs(Generic.listToDelimitedString(runningNodes,","));
-			ephemeralNetworkCreator.volumeCleanUp();
 			ephemeralNetworkCreator.teardown();
+			ephemeralNetworkCreator.volumeCleanUp();
 		}
 	}
 }
