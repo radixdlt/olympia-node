@@ -19,18 +19,35 @@ package com.radixdlt.integration.distributed.simulation.network;
 
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.MessageInTransit;
 import java.util.Arrays;
+import java.util.Random;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class MessageDropper implements Predicate<MessageInTransit> {
 	private final Set<Class<?>> msgClassesToDrop;
+	private final Random random;
+	private final double dropRate;
+
+
 	public MessageDropper(Class<?>... msgClasses) {
 		this.msgClassesToDrop = Arrays.stream(msgClasses).collect(Collectors.toSet());
+		this.dropRate = 0.0;
+		this.random = null;
+	}
+
+	public MessageDropper(Random random, double dropRate, Class<?>... msgClasses) {
+		this.msgClassesToDrop = Arrays.stream(msgClasses).collect(Collectors.toSet());
+		this.random = random;
+		this.dropRate = dropRate;
 	}
 
 	@Override
 	public boolean test(MessageInTransit messageInTransit) {
-		return msgClassesToDrop.stream().anyMatch(c -> c.isInstance(messageInTransit.getContent()));
+		if (msgClassesToDrop.stream().noneMatch(c -> c.isInstance(messageInTransit.getContent()))) {
+			return false;
+		}
+
+		return random == null || random.nextDouble() < dropRate;
 	}
 }

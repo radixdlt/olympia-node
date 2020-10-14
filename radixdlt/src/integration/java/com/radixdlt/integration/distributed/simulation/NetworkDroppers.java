@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
@@ -28,7 +29,6 @@ import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.integration.distributed.simulation.network.MessageDropper;
 import com.radixdlt.integration.distributed.simulation.network.OneNodePerEpochResponseDropper;
 import com.radixdlt.integration.distributed.simulation.network.OneProposalPerViewDropper;
-import com.radixdlt.integration.distributed.simulation.network.RandomNewViewDropper;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.MessageInTransit;
 import java.util.Random;
 import java.util.function.Predicate;
@@ -56,7 +56,7 @@ public final class NetworkDroppers {
 		return new AbstractModule() {
 			@ProvidesIntoSet
 			Predicate<MessageInTransit> dropper(Random random) {
-				return new RandomNewViewDropper(random, drops);
+				return new MessageDropper(random, drops, NewView.class);
 			}
 		};
 	}
