@@ -147,6 +147,31 @@ public class RadixKeyStoreTest {
 	}
 
 	/**
+	 * Test method for {@link RadixKeyStore#readKeyPair(String, boolean)}.
+	 */
+	@Test
+	public void testReadKeyPairSuccess() throws IOException, KeyStoreException, PrivateKeyException, PublicKeyException {
+		final File file = newFile("keystore.ks");
+		final var originalKeypair = ECKeyPair.generateNew();
+		final var storePassword = "nopass".toCharArray();
+		final var keyPairName = "node";
+
+		try (RadixKeyStore ks = RadixKeyStore.fromFile(file, storePassword, true)) {
+			assertTrue(file.exists());
+
+			ks.writeKeyPair(keyPairName, originalKeypair);
+		}
+
+		final File renamedFile = new File(TEST_KS_FILENAME);
+		file.renameTo(renamedFile);
+
+		try (RadixKeyStore ks = RadixKeyStore.fromFile(renamedFile, storePassword, false)) {
+			var loadedKeypair = ks.readKeyPair(keyPairName, false);
+			assertThat(loadedKeypair).isEqualTo(originalKeypair);
+		}
+	}
+
+	/**
 	 * Test method for {@link RadixKeyStore#close()}.
 	 */
 	@Test
