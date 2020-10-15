@@ -154,15 +154,19 @@ public final class ClientAtom implements LedgerAtom {
 	}
 
 	private static Stream<byte[]> serializedInstructions(ImmutableList<CMMicroInstruction> instructions) {
+		final byte[] particleGroupByteCode = new byte[] {0};
+		final byte[] checkNeutralThenUpByteCode = new byte[] {1};
+		final byte[] checkUpThenDownByteCode = new byte[] {2};
+
 		return instructions.stream().flatMap(i -> {
 			if (i.getMicroOp() == CMMicroOp.PARTICLE_GROUP) {
-				return Stream.of(new byte[] {0});
+				return Stream.of(particleGroupByteCode);
 			} else {
 				final byte[] instByte;
 				if (i.getMicroOp() == CMMicroOp.CHECK_NEUTRAL_THEN_UP) {
-					instByte = new byte[] {1};
+					instByte = checkNeutralThenUpByteCode;
 				} else if (i.getMicroOp() == CMMicroOp.CHECK_UP_THEN_DOWN) {
-					instByte = new byte[] {2};
+					instByte = checkUpThenDownByteCode;
 				} else {
 					throw new IllegalStateException();
 				}
