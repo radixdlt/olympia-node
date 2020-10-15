@@ -57,5 +57,6 @@ public class RadixCLI implements Runnable {
 			cmd.printVersionHelp(System.out);
 			cmd.usage(System.out);
 		}
+		System.exit(0);
 	}
 }
