@@ -121,7 +121,7 @@ public class RadixIdentities {
 			throws IOException, PrivateKeyException, PublicKeyException, KeyStoreException {
 		var keyFile = new File(filePath);
 		var keyStore = RadixKeyStore.fromFile(keyFile, password.toCharArray(), !keyFile.exists());
-		var keyPair = keyStore.readKeyPair(keyName, false);
+		var keyPair = keyStore.readKeyPair(keyName, !keyFile.exists());
 
 		return new LocalRadixIdentity(keyPair);
 	}
