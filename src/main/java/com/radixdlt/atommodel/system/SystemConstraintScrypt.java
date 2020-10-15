@@ -81,14 +81,9 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 						if (inputParticle.getView() >= outputParticle.getView()) {
 							return Result.error("Next view must be greater than previous.");
 						}
-
-						return Result.success();
-					}
-
-					if (inputParticle.getEpoch() + 1 != outputParticle.getEpoch()) {
+					} else if (inputParticle.getEpoch() + 1 != outputParticle.getEpoch()) {
 						return Result.error("Bad next epoch");
 					}
-
 					return Result.success();
 				}
 
