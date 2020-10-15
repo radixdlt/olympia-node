@@ -51,7 +51,7 @@ public class RadixCLITest {
 			RadixCLI.main(new String[] {"generate-validator-key"});
 
 			final String output = capture.stop();
-			assertTrue(output.startsWith("Error: Missing required argument(s): (-k=KEYSTORE -p=PASSWORD -n=KEYPAIR_NAME)"));
+			assertTrue(output.startsWith("Error: Missing required argument(s): (-k=KEYSTORE -p=PASSWORD [-n=KEYPAIR_NAME])"));
 		}
 	}
 

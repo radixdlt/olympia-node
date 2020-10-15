@@ -6,6 +6,7 @@
 examples/out/
 out/
 *.key
+*.ks
 build/
 bin/
 
