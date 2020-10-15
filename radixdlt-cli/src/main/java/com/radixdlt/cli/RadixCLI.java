@@ -21,8 +21,11 @@
  */
 package com.radixdlt.cli;
 
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
+
+import java.security.Security;
 
 import static com.radixdlt.cli.Utils.println;
 
@@ -37,6 +40,10 @@ import static com.radixdlt.cli.Utils.println;
 				ShowValidatorConfig.class, ValidatorKeyGenerator.class
 		})
 public class RadixCLI implements Runnable {
+	static {
+		Security.insertProviderAt(new BouncyCastleProvider(), 1);
+	}
+
 	@Override
 	public void run() {
 		println("Radix Command Line Utility ");
