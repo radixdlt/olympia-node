@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,23 +15,14 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.engine;
-
-import com.google.common.hash.HashCode;
-import com.radixdlt.constraintmachine.CMInstruction;
+package com.radixdlt.constraintmachine;
 
 /**
- * Radix Engine interface for retrieving a sequence of instructions to
- * verify and store in the engine.
+ * Ordered Execution level which specifies what level of permission the
+ * constraint machine is running on. Depending on this level, some particle
+ * transitions may be allowed or not.
  */
-public interface RadixEngineAtom {
-
-	/**
-	 * Retrieve the sequence of instructions
-	 * @return sequence of instructions
-	 */
-	CMInstruction getCMInstruction();
-
-	// TODO: Change witness to be something implicit rather than explicit
-	HashCode getWitness();
+public enum PermissionLevel {
+	USER,
+	SUPER_USER // ordering matters
 }

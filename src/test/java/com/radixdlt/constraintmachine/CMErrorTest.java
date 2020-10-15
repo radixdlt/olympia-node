@@ -10,13 +10,15 @@ public class CMErrorTest {
 	public void equalsContract() {
 
 		ConstraintMachine.CMValidationState state0 = new ConstraintMachine.CMValidationState(
-				HashUtils.zero256(),
-				ImmutableMap.of()
+			PermissionLevel.USER,
+			HashUtils.zero256(),
+			ImmutableMap.of()
 		);
 
 		ConstraintMachine.CMValidationState state1 = new ConstraintMachine.CMValidationState(
-				HashUtils.random256(),
-				ImmutableMap.of()
+			PermissionLevel.USER,
+			HashUtils.random256(),
+			ImmutableMap.of()
 		);
 
 		EqualsVerifier.forClass(CMError.class)

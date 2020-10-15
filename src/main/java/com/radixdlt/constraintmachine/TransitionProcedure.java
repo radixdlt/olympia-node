@@ -23,6 +23,11 @@ import com.radixdlt.atomos.Result;
  * Application level "Bytecode" to be run per particle in the Constraint machine
  */
 public interface TransitionProcedure<I extends Particle, N extends UsedData, O extends Particle, U extends UsedData> {
+	// TODO: move permission level to the "OS" level of paths rather than transitions
+	default PermissionLevel requiredPermissionLevel() {
+		return PermissionLevel.USER;
+	}
+
 	Result precondition(
 		I inputParticle, N inputUsed,
 		O outputParticle, U outputUsed

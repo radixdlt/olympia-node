@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.atommodel.routines.CreateCombinedTransitionRoutine;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.UsedCompute;
 import com.radixdlt.constraintmachine.UsedData;
@@ -117,9 +118,12 @@ final class ConstraintScryptEnv implements SysCalls {
 				}
 
 				final Set<RadixAddress> addresses = particleDefinition.getAddressMapper().apply(p);
+				// FIXME: Removed this check for the system particle. Reinstate once paths implemented.
+				/*
 				if (addresses.isEmpty()) {
 					return Result.error("address required");
 				}
+				*/
 
 				for (RadixAddress address : addresses) {
 					Result addressResult = addressChecker.apply(address);
@@ -217,6 +221,11 @@ final class ConstraintScryptEnv implements SysCalls {
 
 		final TransitionProcedure<Particle, UsedData, Particle, UsedData> transformedProcedure
 			= new TransitionProcedure<Particle, UsedData, Particle, UsedData>() {
+				@Override
+				public PermissionLevel requiredPermissionLevel() {
+					return procedure.requiredPermissionLevel();
+				}
+
 				@Override
 				public Result precondition(Particle inputParticle, UsedData inputUsed, Particle outputParticle, UsedData outputUsed) {
 					// RRIs must be the same across RRI particle transitions

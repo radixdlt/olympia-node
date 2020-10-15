@@ -9,6 +9,8 @@ import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.engine.BaseAtom;
 import com.radixdlt.engine.RadixEngineAtom;
 import org.junit.Before;
 import org.junit.Test;
@@ -24,12 +26,11 @@ public class InMemoryEngineStoreTest {
 	@Test
 	public void when_store__then_can_retrieve_spin_of_particle() {
 		CMInstruction cmInstruction = mock(CMInstruction.class);
-		RadixEngineAtom atom = () -> cmInstruction;
+		RadixEngineAtom atom = new BaseAtom(cmInstruction, HashUtils.zero256());
 		Particle particle = mock(Particle.class);
 		when(cmInstruction.getMicroInstructions())
 			.thenReturn(ImmutableList.of(
-				CMMicroInstruction.checkSpin(particle, Spin.NEUTRAL),
-				CMMicroInstruction.push(particle)
+				CMMicroInstruction.checkSpinAndPush(particle, Spin.NEUTRAL)
 			));
 
 		this.store.storeAtom(atom);
@@ -46,12 +47,11 @@ public class InMemoryEngineStoreTest {
 	@Test
 	public void when_store__then_can_retrieve_state() {
 		CMInstruction cmInstruction = mock(CMInstruction.class);
-		RadixEngineAtom atom = () -> cmInstruction;
+		RadixEngineAtom atom = new BaseAtom(cmInstruction, HashUtils.zero256());
 		Particle particle = mock(Particle.class);
 		when(cmInstruction.getMicroInstructions())
 			.thenReturn(ImmutableList.of(
-				CMMicroInstruction.checkSpin(particle, Spin.NEUTRAL),
-				CMMicroInstruction.push(particle)
+				CMMicroInstruction.checkSpinAndPush(particle, Spin.NEUTRAL)
 			));
 
 		this.store.storeAtom(atom);

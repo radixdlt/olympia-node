@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -19,19 +19,27 @@ package com.radixdlt.engine;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.constraintmachine.CMInstruction;
+import java.util.Objects;
 
 /**
- * Radix Engine interface for retrieving a sequence of instructions to
- * verify and store in the engine.
+ * Simple atom used for testing
  */
-public interface RadixEngineAtom {
+public final class BaseAtom implements RadixEngineAtom {
+	private final CMInstruction cmInstruction;
+	private final HashCode witness;
 
-	/**
-	 * Retrieve the sequence of instructions
-	 * @return sequence of instructions
-	 */
-	CMInstruction getCMInstruction();
+	public BaseAtom(CMInstruction cmInstruction, HashCode witness) {
+		this.cmInstruction = Objects.requireNonNull(cmInstruction);
+		this.witness = Objects.requireNonNull(witness);
+	}
 
-	// TODO: Change witness to be something implicit rather than explicit
-	HashCode getWitness();
+	@Override
+	public CMInstruction getCMInstruction() {
+		return cmInstruction;
+	}
+
+	@Override
+	public HashCode getWitness() {
+		return witness;
+	}
 }

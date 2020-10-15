@@ -18,7 +18,6 @@
 package com.radixdlt.store;
 
 import com.radixdlt.constraintmachine.CMMicroInstruction;
-import com.radixdlt.constraintmachine.CMMicroInstruction.CMMicroOp;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.engine.RadixEngineAtom;
@@ -38,8 +37,8 @@ public final class InMemoryEngineStore<T extends RadixEngineAtom> implements Eng
 	public void storeAtom(T atom) {
 		synchronized (lock) {
 			for (CMMicroInstruction microInstruction : atom.getCMInstruction().getMicroInstructions()) {
-				if (microInstruction.getMicroOp() == CMMicroOp.PUSH) {
-					Spin nextSpin = SpinStateMachine.next(getSpin(microInstruction.getParticle()));
+				if (microInstruction.isPush()) {
+					Spin nextSpin = microInstruction.getNextSpin();
 					storedParticles.put(
 						microInstruction.getParticle(),
 						Pair.of(nextSpin, atom)
