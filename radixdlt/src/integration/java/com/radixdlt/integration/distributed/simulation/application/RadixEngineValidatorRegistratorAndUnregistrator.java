@@ -32,7 +32,6 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.middleware2.ClientAtom.LedgerAtomConversionException;
 import com.radixdlt.serialization.DsonOutput.Output;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
@@ -82,7 +81,7 @@ public class RadixEngineValidatorRegistratorAndUnregistrator implements CommandG
 			ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom);
 			final byte[] payload = DefaultSerialization.getInstance().toDson(clientAtom, Output.ALL);
 			command = new Command(payload);
-		} catch (AtomAlreadySignedException | LedgerAtomConversionException e) {
+		} catch (AtomAlreadySignedException e) {
 			throw new RuntimeException();
 		}
 

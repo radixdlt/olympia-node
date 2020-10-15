@@ -50,7 +50,7 @@ public class LocalMempoolTest {
 	public void when_adding_atom_with_same_aid__then_exception_is_thrown()
 		throws MempoolFullException, MempoolDuplicateException {
 		Command command = mock(Command.class);
-		when(command.getHash()).thenReturn(Hash.ZERO_HASH);
+		when(command.hash()).thenReturn(Hash.ZERO_HASH);
 
 		this.mempool.add(command);
 		this.mempool.add(command);
@@ -77,7 +77,7 @@ public class LocalMempoolTest {
 		Command command = makeCommand(1234);
 		this.mempool.add(command);
 		assertEquals(1, this.mempool.count());
-		this.mempool.removeCommitted(command.getHash());
+		this.mempool.removeCommitted(command.hash());
 		assertEquals(0, this.mempool.count());
 	}
 
@@ -87,7 +87,7 @@ public class LocalMempoolTest {
 		Command command = makeCommand(1234);
 		this.mempool.add(command);
 		assertEquals(1, this.mempool.count());
-		this.mempool.removeRejected(command.getHash());
+		this.mempool.removeRejected(command.hash());
 		assertEquals(0, this.mempool.count());
 	}
 
@@ -133,7 +133,7 @@ public class LocalMempoolTest {
 		this.mempool.add(command);
 		assertEquals(1, this.mempool.count()); // precondition
 
-		List<Command> commands = this.mempool.getCommands(1, Sets.newHashSet(command.getHash()));
+		List<Command> commands = this.mempool.getCommands(1, Sets.newHashSet(command.hash()));
 		assertTrue(commands.isEmpty());
 		assertEquals(1, this.mempool.count()); // postcondition
 	}

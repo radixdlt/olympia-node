@@ -27,7 +27,6 @@ import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.middleware2.ClientAtom.LedgerAtomConversionException;
 import com.radixdlt.statecomputer.CommittedAtom;
 
 public class CommittedAtomSerializeTest extends SerializeObject<CommittedAtom> {
@@ -44,12 +43,7 @@ public class CommittedAtomSerializeTest extends SerializeObject<CommittedAtom> {
 	}
 
 	private static CommittedAtom get(Atom atom) {
-		final ClientAtom clientAtom;
-		try {
-			clientAtom = ClientAtom.convertFromApiAtom(atom);
-		} catch (LedgerAtomConversionException e) {
-			throw new IllegalStateException();
-		}
+		final ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom);
 
 		LedgerHeader ledgerHeader = LedgerHeader.genesis(Hash.ZERO_HASH, null);
 		VerifiedLedgerHeaderAndProof proof = new VerifiedLedgerHeaderAndProof(

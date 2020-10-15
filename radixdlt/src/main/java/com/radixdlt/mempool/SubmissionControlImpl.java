@@ -22,7 +22,6 @@ import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.converters.AtomConversionException;
-import com.radixdlt.middleware2.converters.AtomToClientAtomConverter;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput.Output;
 import java.util.Objects;
@@ -47,21 +46,18 @@ public class SubmissionControlImpl implements SubmissionControl {
 	private final Mempool mempool;
 	private final RadixEngine<LedgerAtom> radixEngine;
 	private final Serialization serialization;
-	private final AtomToClientAtomConverter converter;
 	private final SubmissionControlSender submissionControlSender;
 
 	public SubmissionControlImpl(
 		Mempool mempool,
 		RadixEngine<LedgerAtom> radixEngine,
 		Serialization serialization,
-		AtomToClientAtomConverter converter,
 		SubmissionControlSender submissionControlSender
 	) {
 		this.mempool = Objects.requireNonNull(mempool);
 		this.radixEngine = Objects.requireNonNull(radixEngine);
 		this.serialization = Objects.requireNonNull(serialization);
 		this.submissionControlSender = Objects.requireNonNull(submissionControlSender);
-		this.converter = Objects.requireNonNull(converter);
 	}
 
 	@Override
@@ -91,7 +87,7 @@ public class SubmissionControlImpl implements SubmissionControl {
 		} catch (RadixEngineException e) {
 			log.info(
 				"Rejecting atom {} with error '{}' at '{}' with message '{}'.",
-				atom.getAID(),
+				atom,
 				e.getErrorCode(),
 				e.getDataPointer(),
 				e.getMessage()
@@ -103,17 +99,9 @@ public class SubmissionControlImpl implements SubmissionControl {
 	@Override
 	public void submitAtom(JSONObject atomJson, Consumer<ClientAtom> deserialisationCallback) throws MempoolFullException, MempoolDuplicateException {
 		final Atom rawAtom = this.serialization.fromJsonObject(atomJson, Atom.class);
-		try {
-			final ClientAtom atom = converter.convert(rawAtom);
-			deserialisationCallback.accept(atom);
-			submitAtom(atom);
-		} catch (AtomConversionException e) {
-			log.info(
-				"Rejecting atom {} due to conversion issues.",
-				rawAtom.getAID()
-			);
-			this.submissionControlSender.sendDeserializeFailure(rawAtom, e);
-		}
+		final ClientAtom atom = ClientAtom.convertFromApiAtom(rawAtom);
+		deserialisationCallback.accept(atom);
+		submitAtom(atom);
 	}
 
 	@Override

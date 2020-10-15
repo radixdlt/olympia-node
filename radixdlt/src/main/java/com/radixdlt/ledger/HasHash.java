@@ -15,14 +15,10 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.middleware2.converters;
+package com.radixdlt.ledger;
 
-import com.radixdlt.atommodel.Atom;
-import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.crypto.Hash;
 
-/**
- * Converts an api atom to an atom which can be run in a RadixEngine.
- */
-public interface AtomToClientAtomConverter {
-	ClientAtom convert(Atom atom) throws AtomConversionException;
+public interface HasHash {
+	Hash hash();
 }

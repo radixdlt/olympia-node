@@ -33,7 +33,7 @@ public class CommandTest {
 
 	@Test
 	public void testGetters() {
-		assertThat(this.command.getHash()).isNotNull();
+		assertThat(this.command.hash()).isNotNull();
 		assertThat(this.command.getPayload()).isEqualTo(new byte[] {1, 2, 3});
 	}
 

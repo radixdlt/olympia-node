@@ -89,6 +89,11 @@ public final class CommittedAtom implements LedgerAtom {
 	}
 
 	@Override
+	public Hash getWitness() {
+		return clientAtom.getWitness();
+	}
+
+	@Override
 	public AID getAID() {
 		return clientAtom.getAID();
 	}
@@ -113,11 +118,6 @@ public final class CommittedAtom implements LedgerAtom {
 	@Override
 	public ImmutableMap<String, String> getMetaData() {
 		return clientAtom.getMetaData();
-	}
-
-	@Override
-	public Hash getPowFeeHash() {
-		return clientAtom.getPowFeeHash();
 	}
 
 	@Override
