@@ -161,6 +161,7 @@ public final class ConsensusModule extends AbstractModule {
 	@Singleton
 	private Pacemaker pacemaker(
 		@Named("self") BFTNode self,
+		SystemCounters counters,
 		BFTConfiguration configuration,
 		VertexStore vertexStore,
 		ProposerElection proposerElection,
@@ -183,6 +184,7 @@ public final class ConsensusModule extends AbstractModule {
 			this.pacemakerMaxExponent,
 
 			self,
+			counters,
 
 			pendingVotes,
 			pendingViewTimeouts,

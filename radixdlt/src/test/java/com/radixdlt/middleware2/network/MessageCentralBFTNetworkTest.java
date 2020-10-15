@@ -21,6 +21,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.ViewTimeout;
@@ -59,7 +60,7 @@ public class MessageCentralBFTNetworkTest {
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
 		network.bftEvents().subscribe(testObserver);
 		ViewTimeout viewTimeout = mock(ViewTimeout.class);
-		network.sendViewTimeout(viewTimeout, self);
+		network.broadcastViewTimeout(viewTimeout, ImmutableSet.of(self));
 		testObserver.awaitCount(1);
 		testObserver.assertValue(viewTimeout);
 	}
@@ -94,7 +95,7 @@ public class MessageCentralBFTNetworkTest {
 		when(peer.getNID()).thenReturn(leaderPk.euid());
 		when(addressBook.peer(leaderPk.euid())).thenReturn(Optional.of(peer));
 
-		network.sendViewTimeout(viewTimeout, leader);
+		network.broadcastViewTimeout(viewTimeout, ImmutableSet.of(leader));
 		verify(messageCentral, times(1)).send(eq(peer), any(ConsensusEventMessage.class));
 	}
 
@@ -103,7 +104,7 @@ public class MessageCentralBFTNetworkTest {
 		ViewTimeout viewTimeout = mock(ViewTimeout.class);
 		BFTNode node = mock(BFTNode.class);
 		when(node.getKey()).thenReturn(mock(ECPublicKey.class));
-		network.sendViewTimeout(viewTimeout, node);
+		network.broadcastViewTimeout(viewTimeout, ImmutableSet.of(node));
 		verify(messageCentral, never()).send(any(), any());
 	}
 

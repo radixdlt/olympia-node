@@ -28,6 +28,7 @@ import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker.PacemakerInfoSender;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyState;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.network.TimeSupplier;
 
 /**
@@ -40,6 +41,7 @@ public class ExponentialTimeoutPacemakerFactory implements PacemakerFactory {
 	private final double rate;
 	private final int maxExponent;
 	private final BFTNode self;
+	private final SystemCounters counters;
 	private final NextCommandGenerator nextCommandGenerator;
 	private final TimeSupplier timeSupplier;
 	private final Hasher hasher;
@@ -52,6 +54,7 @@ public class ExponentialTimeoutPacemakerFactory implements PacemakerFactory {
 		double rate,
 		int maxExponent,
 		BFTNode self,
+		SystemCounters counters,
 		NextCommandGenerator nextCommandGenerator,
 		TimeSupplier timeSupplier,
 		Hasher hasher,
@@ -63,6 +66,7 @@ public class ExponentialTimeoutPacemakerFactory implements PacemakerFactory {
 		this.rate = rate;
 		this.maxExponent = maxExponent;
 		this.self = Objects.requireNonNull(self);
+		this.counters = Objects.requireNonNull(counters);
 		this.nextCommandGenerator = Objects.requireNonNull(nextCommandGenerator);
 		this.timeSupplier = Objects.requireNonNull(timeSupplier);
 		this.hasher = Objects.requireNonNull(hasher);
@@ -88,6 +92,7 @@ public class ExponentialTimeoutPacemakerFactory implements PacemakerFactory {
 			rate,
 			maxExponent,
 			self,
+			counters,
 			pendingVotes,
 			pendingViewTimeouts,
 			validatorSet,

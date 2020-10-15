@@ -45,6 +45,7 @@ import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker.PacemakerInfoSender;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyViolationException;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.network.TimeSupplier;
@@ -86,6 +87,7 @@ public class ExponentialTimeoutPacemakerTest {
 	private int maxExponent = (int) Math.ceil(Math.log(MAX_TIMEOUT / this.timeout) / Math.log(this.rate));
 
 	private BFTNode self = mock(BFTNode.class);
+	private SystemCounters counters = mock(SystemCounters.class);
 	private NextCommandGenerator nextCommandGenerator = mock(NextCommandGenerator.class);
 	private TimeSupplier timeSupplier = mock(TimeSupplier.class);
 	private Hasher hasher = mock(Hasher.class);
@@ -109,6 +111,7 @@ public class ExponentialTimeoutPacemakerTest {
 		this.pacemaker = new ExponentialTimeoutPacemaker(
 			this.timeout, this.rate, this.maxExponent,
 			this.self,
+			this.counters,
 			this.pendingVotes,
 			this.pendingViewTimeouts,
 			this.validatorSet,
@@ -464,6 +467,7 @@ public class ExponentialTimeoutPacemakerTest {
 		return new ExponentialTimeoutPacemaker(
 			timeout, rate, maxExponent,
 			this.self,
+			this.counters,
 			this.pendingVotes,
 			this.pendingViewTimeouts,
 			this.validatorSet,

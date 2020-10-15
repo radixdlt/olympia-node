@@ -128,7 +128,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	public void processBFTUpdate(BFTUpdate update) {
 		Hash vertexId = update.getInsertedVertex().getId();
 
-		log.trace("{}: LOCAL_SYNC: {}", this.self::getSimpleName, () -> vertexId);
+		log.trace("LOCAL_SYNC: {}", vertexId);
 		for (SyncQueue queue : queues.getQueues()) {
 			if (peekAndExecute(queue, vertexId)) {
 				queue.pop();
@@ -145,7 +145,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	public void processVote(Vote vote) {
 		log.trace("Vote: PreProcessing {}", vote);
 		if (queues.isEmptyElseAdd(vote) && !processVoteInternal(vote)) {
-			log.debug("ViewTimeout: Queuing {}, waiting for Sync", vote);
+			log.debug("Vote: Queuing {}, waiting for Sync", vote);
 			queues.add(vote);
 		}
 	}
@@ -174,7 +174,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		forwardTo.processLocalTimeout(view);
 		final View nextView = this.pacemakerState.getCurrentView();
 		if (!curView.equals(nextView)) {
-			log.debug("{}: LOCAL_TIMEOUT: Clearing Queues: {}", this.self::getSimpleName, () -> queues);
+			log.debug("LocalTimeout: Clearing Queues: {}", queues);
 			for (SyncQueue queue : queues.getQueues()) {
 				if (clearAndExecute(queue, nextView.previous())) {
 					queue.pop();
@@ -194,8 +194,8 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	private boolean processViewTimeoutInternal(ViewTimeout viewTimeout) {
 		log.trace("ViewTimeout: PreProcessing {}", viewTimeout);
 
-		// Only do something if we're on the same view, and are the leader for the next view
-		if (!checkForCurrentViewAndIAmNextLeader("ViewTimeout", viewTimeout.getView(), viewTimeout)) {
+		// Only do something if it's a view on or after our current
+		if (!onCurrentView("ViewTimeout", viewTimeout.getView(), viewTimeout)) {
 			return true;
 		}
 		return syncUp(viewTimeout.highQC(), viewTimeout.getAuthor(), () -> this.forwardTo.processViewTimeout(viewTimeout));
@@ -204,7 +204,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	private boolean processVoteInternal(Vote vote) {
 		log.trace("Vote: PreProcessing {}", vote);
 
-		// Only do something if we're on the same view, and are the leader for the next view
+		// Only do something if it's a view on or after our current, and we are the leader for the next view
 		if (!checkForCurrentViewAndIAmNextLeader("Vote", vote.getView(), vote)) {
 			return true;
 		}
@@ -214,6 +214,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	private boolean processProposalInternal(Proposal proposal) {
 		log.trace("Proposal: PreProcessing {}", proposal);
 
+		// Only do something if it's a view on or after our current
 		if (!onCurrentView("Proposal", proposal.getVertex().getView(), proposal)) {
 			return true;
 		}
@@ -236,9 +237,19 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	}
 
 	private boolean checkForCurrentViewAndIAmNextLeader(String what, View view, Object thing) {
-		if (!onCurrentView(what, view, thing)) {
+		return onCurrentView(what, view, thing) && iAmNextLeader(what, view, thing);
+	}
+
+	private boolean onCurrentView(String what, View view, Object thing) {
+		final View currentView = this.pacemakerState.getCurrentView();
+		if (view.compareTo(currentView) < 0) {
+			log.trace("{}: Ignoring view {}, current is {}: {}", what, view, currentView, thing);
 			return false;
 		}
+		return true;
+	}
+
+	private boolean iAmNextLeader(String what, View view, Object thing) {
 		// TODO: currently we don't check view of vote relative to our pacemakerState. This opens
 		// TODO: up to dos attacks on calculation of next proposer if ProposerElection is
 		// TODO: an expensive operation. Need to figure out a way of mitigating this problem
@@ -246,16 +257,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		BFTNode nextLeader = proposerElection.getProposer(view.next());
 		boolean iAmTheNextLeader = Objects.equals(nextLeader, this.self);
 		if (!iAmTheNextLeader) {
-			log.warn("{}: Confused message for view {} (should be send to {}, I am {}): {}", what, view, nextLeader, this.self, thing);
-			return false;
-		}
-		return true;
-	}
-
-	private boolean onCurrentView(String what, View view, Object thing) {
-		final View currentView = this.pacemakerState.getCurrentView();
-		if (view.compareTo(currentView) < 0) {
-			log.trace("{}: Ignoring view {}, current is {}: {}", what, view, currentView, thing);
+			log.warn("{}: Confused message for view {} (should be sent to {}, I am {}): {}", what, view, nextLeader, this.self, thing);
 			return false;
 		}
 		return true;

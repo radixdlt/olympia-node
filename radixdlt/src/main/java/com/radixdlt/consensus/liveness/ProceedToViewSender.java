@@ -17,6 +17,8 @@
 
 package com.radixdlt.consensus.liveness;
 
+import java.util.Set;
+
 import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -36,8 +38,8 @@ public interface ProceedToViewSender {
 	 * Send a view timeout message to the specified validator.
 	 *
 	 * @param viewTimeout the view timeout message
-	 * @param nextLeader the validator the message gets sent to
+	 * @param nodes the validators to broadcast the message to
 	 */
-	// FIXME: To be removed when TCs implemented
-	void sendViewTimeout(ViewTimeout viewTimeout, BFTNode nextLeader);
+	// FIXME: To be change when TCs implemented
+	void broadcastViewTimeout(ViewTimeout viewTimeout, Set<BFTNode> nodes);
 }

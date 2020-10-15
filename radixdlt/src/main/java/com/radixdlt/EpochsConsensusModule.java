@@ -123,6 +123,7 @@ public class EpochsConsensusModule extends AbstractModule {
 	@Provides
 	private PacemakerFactory pacemakerFactory(
 		@Named("self") BFTNode self,
+		SystemCounters counters,
 		NextCommandGenerator nextCommandGenerator,
 		TimeSupplier timeSupplier,
 		Hasher hasher,
@@ -135,6 +136,7 @@ public class EpochsConsensusModule extends AbstractModule {
 			this.pacemakerRate,
 			this.pacemakerMaxExponent,
 			self,
+			counters,
 			nextCommandGenerator,
 			timeSupplier,
 			hasher,

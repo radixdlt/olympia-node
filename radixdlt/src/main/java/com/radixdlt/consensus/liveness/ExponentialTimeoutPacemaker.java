@@ -38,6 +38,8 @@ import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyViolationException;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.network.TimeSupplier;
@@ -83,6 +85,7 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 	private final int maxExponent;
 
 	private final BFTNode self;
+	private final SystemCounters counters;
 
 	private final PendingVotes pendingVotes;
 	private final PendingViewTimeouts pendingViewTimeouts;
@@ -116,6 +119,7 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 		int maxExponent,
 
 		BFTNode self,
+		SystemCounters counters,
 
 		PendingVotes pendingVotes,
 		PendingViewTimeouts pendingViewTimeouts,
@@ -153,6 +157,7 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 		this.maxExponent = maxExponent;
 
 		this.self = Objects.requireNonNull(self);
+		this.counters = Objects.requireNonNull(counters);
 
 		this.pendingVotes = Objects.requireNonNull(pendingVotes);
 		this.pendingViewTimeouts = Objects.requireNonNull(pendingViewTimeouts);
@@ -170,8 +175,8 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 		this.proceedToViewSender = Objects.requireNonNull(proceedToViewSender);
 		this.timeoutSender = Objects.requireNonNull(timeoutSender);
 		this.pacemakerInfoSender = Objects.requireNonNull(pacemakerInfoSender);
-		log.debug("{} with max timeout {}*{}^{}ms",
-			getClass().getSimpleName(), this.timeoutMilliseconds, this.rate, this.maxExponent);
+		log.debug("{} for {} with max timeout {}*{}^{}ms",
+			getClass().getSimpleName(), this.self, this.timeoutMilliseconds, this.rate, this.maxExponent);
 
 	}
 
@@ -246,12 +251,14 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 			log.trace("LocalTimeout: Ignoring view {}, current is {}", view, this.currentView);
 			return;
 		}
-		View nextView = view.next();
-		final BFTNode nextLeader = this.proposerElection.getProposer(nextView);
 		ViewTimeout viewTimeout = this.safetyRules.viewTimeout(view, this.vertexStore.highQC());
-		this.proceedToViewSender.sendViewTimeout(viewTimeout, nextLeader);
+		this.proceedToViewSender.broadcastViewTimeout(viewTimeout, this.validatorSet.nodes());
 		this.pacemakerInfoSender.sendTimeoutProcessed(view);
-		this.updateView(nextView);
+
+		Level logLevel = this.logLimiter.tryAcquire() ? Level.INFO : Level.TRACE;
+		long timeout = timeout(uncommittedViews(view));
+		log.log(logLevel, "LocalTimeout: Restarting view {} timeout for {}ms", view, timeout);
+		this.timeoutSender.scheduleTimeout(view, timeout);
 	}
 
 	@Override
@@ -288,6 +295,7 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 		if (this.self.equals(this.proposerElection.getProposer(nextView))) {
 			Proposal proposal = generateProposal(this.currentView);
 			this.sender.broadcastProposal(proposal, this.validatorSet.nodes());
+			this.counters.increment(CounterType.BFT_PROPOSALS_MADE);
 		}
 	}
 

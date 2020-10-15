@@ -93,12 +93,14 @@ public final class MessageCentralBFTNetwork implements ProposalBroadcaster, Proc
 	}
 
 	@Override
-	public void sendViewTimeout(ViewTimeout viewTimeout, BFTNode nextLeader) {
-		if (this.self.equals(nextLeader)) {
-			this.localMessages.onNext(viewTimeout);
-		} else {
-			ConsensusEventMessage message = new ConsensusEventMessage(this.magic, viewTimeout);
-			send(message, nextLeader);
+	public void broadcastViewTimeout(ViewTimeout viewTimeout, Set<BFTNode> nodes) {
+		for (BFTNode node : nodes) {
+			if (this.self.equals(node)) {
+				this.localMessages.onNext(viewTimeout);
+			} else {
+				ConsensusEventMessage message = new ConsensusEventMessage(this.magic, viewTimeout);
+				send(message, node);
+			}
 		}
 	}
 
