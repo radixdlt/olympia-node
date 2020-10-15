@@ -166,8 +166,12 @@ public class RadixSystem extends BasicContainer
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
 		RadixSystem that = (RadixSystem) o;
 		return agentVersion == that.agentVersion
 				&& protocolVersion == that.protocolVersion

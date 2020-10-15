@@ -41,7 +41,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * serialization / deserialization speed
  */
 @SerializerId2("test.dummy_test_object_1")
-public class DummyTestObject extends BasicContainer {
+public final class DummyTestObject extends BasicContainer {
 	private static final Random r = new Random(0);
 	private static final byte[] randomData;
 

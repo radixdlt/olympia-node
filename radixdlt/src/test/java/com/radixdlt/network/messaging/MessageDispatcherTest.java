@@ -45,6 +45,7 @@ import org.radix.universe.system.SystemMessage;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Semaphore;
@@ -67,11 +68,48 @@ public class MessageDispatcherTest extends RadixTest {
 		DummySignedMessage() {
 			super(0);
 		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) {
+				return true;
+			}
+			if (o == null || getClass() != o.getClass()) {
+				return false;
+			}
+			DummySignedMessage that = (DummySignedMessage) o;
+			return Objects.equals(getTimestamp(), that.getTimestamp())
+					&& Objects.equals(getMagic(), that.getMagic())
+					&& Objects.equals(getSignature(), that.getSignature());
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(getTimestamp(), getMagic(), getSignature());
+		}
 	}
 
 	static class DummyMessage extends Message {
 		DummyMessage() {
 			super(0);
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) {
+				return true;
+			}
+			if (o == null || getClass() != o.getClass()) {
+				return false;
+			}
+			DummyMessage that = (DummyMessage) o;
+			return Objects.equals(getTimestamp(), that.getTimestamp())
+					&& Objects.equals(getMagic(), that.getMagic());
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(getTimestamp(), getMagic());
 		}
 	}
 

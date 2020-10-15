@@ -27,7 +27,7 @@ import com.radixdlt.network.transport.TransportException;
 import com.radixdlt.network.transport.TransportInfo;
 import com.radixdlt.network.transport.TransportMetadata;
 
-final class PeerWithNid extends Peer {
+public final class PeerWithNid extends Peer {
 
 	private final EUID nid;
 
