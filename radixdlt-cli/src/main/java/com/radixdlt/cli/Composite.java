@@ -34,7 +34,12 @@ public class Composite {
 		@CommandLine.Option(names = {"-p", "--password"}, paramLabel = "PASSWORD", description = "keystore password", required = true)
 		private String password;
 
-		@CommandLine.Option(names = {"-n", "--keypair-name"}, paramLabel = "KEYPAIR_NAME", description = "name of keypair to use", required = true)
+		@CommandLine.Option(
+				names = {"-n", "--keypair-name"},
+				paramLabel = "KEYPAIR_NAME",
+				description = "name of keypair to use",
+				required = true,
+				defaultValue = "node")
 		private String keypair;
 
 		boolean isInvalid() {
