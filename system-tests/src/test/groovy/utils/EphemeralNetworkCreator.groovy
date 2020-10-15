@@ -2,6 +2,9 @@ package utils
 
 import com.radixdlt.test.StaticClusterNetwork
 
+import java.nio.file.Files
+import java.nio.file.Paths
+
 class EphemeralNetworkCreator {
 
     String terraformImage, keyVolume, ansibleImage
@@ -9,6 +12,7 @@ class EphemeralNetworkCreator {
     int totalNumofNodes
     private String terraformSecretsDir = "/terraform/ssh"
     private String ansibleSecretsDir = "/ansible/ssh"
+    private String ansibleWorkDir = "/ansible/playbooks"
     private String autoApprove = "-auto-approve"
     private List<String> hosts
     private String TF_VAR_nodes_10= " { node_1, node_2, node_3, node_4  ,node_5 , node_6, node_7 , node_8 , node_9, node_10}"
@@ -33,15 +37,17 @@ class EphemeralNetworkCreator {
     }
 
     void copyToTFSecrets(String fileLocation, String sshDestinationFileName = "testnet") {
-        CmdHelper.runCommand("docker container create --name dummy -v ${keyVolume}:${terraformSecretsDir} curlimages/curl:7.70.0")
-        CmdHelper.runCommand("docker cp ${fileLocation} dummy:${terraformSecretsDir}/${sshDestinationFileName}")
-        CmdHelper.runCommand("docker rm -f dummy")
+        def output,error
+        (output,error) = CmdHelper.runCommand("docker container create -v ${keyVolume}:${terraformSecretsDir} curlimages/curl:7.70.0")
+        CmdHelper.runCommand("docker cp ${fileLocation} ${output[0]}:${terraformSecretsDir}/${sshDestinationFileName}")
+        CmdHelper.runCommand("docker rm -f ${output[0]}")
     }
 
     void copyToAnsibleSecrets(String fileLocation, String sshDestinationFileName = "testnet") {
-        CmdHelper.runCommand("docker container create --name dummy -v ${keyVolume}:${ansibleSecretsDir} curlimages/curl:7.70.0")
-        CmdHelper.runCommand("docker cp ${fileLocation} dummy:${ansibleSecretsDir}/${sshDestinationFileName}")
-        CmdHelper.runCommand("docker rm -f dummy")
+        def output,error
+        (output,error) = CmdHelper.runCommand("docker container create -v ${keyVolume}:${ansibleSecretsDir} curlimages/curl:7.70.0")
+        CmdHelper.runCommand("docker cp ${fileLocation} ${output[0]}:${ansibleSecretsDir}/${sshDestinationFileName}")
+        CmdHelper.runCommand("docker rm -f ${output[0]}")
     }
 
     void setTotalNumberOfNodes(int totalNumberOfNodes) {
@@ -120,8 +126,30 @@ class EphemeralNetworkCreator {
     StaticClusterNetwork getNetwork(int i) {
         return StaticClusterNetwork.clusterInfo(
                 10,
-                null ,
+                "-v ${keyVolume}:${ansibleSecretsDir} " ,
                 "-i aws-inventory")
+    }
+
+    void captureLogs(String networkGroup,String testName) {
+
+        def output,error
+        def fetchLogsCmd = "bash -c".tokenize() << (
+                "docker run --rm  -v ${keyVolume}:${ansibleSecretsDir} -v ${keyVolume}-logs:${ansibleWorkDir}/target " +
+                        "${ansibleImage} " +
+                        "check.yml -i aws-inventory  " +
+                        "--limit ${networkGroup} -t fetch_logs " as String)
+        (output,error)=CmdHelper.runCommand(fetchLogsCmd)
+        Files.createDirectories(Paths.get("${System.getProperty('logs.dir')}/logs/${testName}"));
+
+        (output,error) = CmdHelper.runCommand("docker container create -v ${keyVolume}-logs:${ansibleWorkDir}/target curlimages/curl:7.70.0")
+        CmdHelper.runCommand("docker cp ${output[0]}:${ansibleWorkDir}/target/ ${System.getProperty('logs.dir')}/logs/${testName}")
+        CmdHelper.runCommand("docker rm -f ${output[0]}")
+
+    }
+
+    void volumeCleanUp(){
+        CmdHelper.runCommand("docker volume rm -f ${keyVolume} ${keyVolume}-logs ")
+
     }
 
 
@@ -153,6 +181,9 @@ class EphemeralNetworkCreator {
         }
 
         EphemeralNetworkCreator build() {
+            Objects.requireNonNull(this.terraformImage)
+            Objects.requireNonNull(this.keyVolume)
+            Objects.requireNonNull(this.ansibleImage)
             return new EphemeralNetworkCreator(this.terraformImage, this.keyVolume, this.tf_Opts, this.ansibleImage)
         }
     }

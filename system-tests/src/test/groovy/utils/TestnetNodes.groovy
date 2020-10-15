@@ -62,8 +62,8 @@ class TestnetNodes {
 
             def output, error
             def runCommand = "bash -c".tokenize() << (
-                    "docker run --rm  -v ${keyVolume}:/ansible/ssh " +
-                            "${additionalDockerOptions ?: ''} " +
+                    "docker run --rm  " +
+                            "${additionalDockerOptions ?: '-v ${keyVolume}:/ansible/ssh'} " +
                             "--name node-ansible ${ansibleImage}  " +
                             "check.yml " +
                             "${additionalCommandOptions ?: ''} " +

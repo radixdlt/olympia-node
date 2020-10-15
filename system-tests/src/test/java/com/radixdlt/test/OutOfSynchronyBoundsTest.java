@@ -8,8 +8,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -71,7 +73,7 @@ public class OutOfSynchronyBoundsTest {
 	}
 
 
-	@Category(Cluster.class)
+	@Category(EphemeralCluster.class)
 	@RunWith(Parameterized.class)
 	public static class ClusterTests {
 
@@ -81,15 +83,21 @@ public class OutOfSynchronyBoundsTest {
 		@Rule
 		public TestName name = new TestName();
 
-		private int networkSize;
+		private int networkSize,nodesCrashed;
+		List<String> crashedNodesURLs;
 
-		public ClusterTests(int networkSize) {
+		public ClusterTests(int networkSize,int nodesCrashed) {
 			this.networkSize = networkSize;
+			this.nodesCrashed = nodesCrashed;
 		}
 
-		@Parameters(name = "{index}: given_{0}_correct_bfts_in_cluster_network__when_one_node_is_down__then_all_other_instances_should_get_same_commits_and_progress_should_be_made")
+		@Parameters(name = "{index}: given_{0}_correct_bfts_in_cluster_network__when_{1}_node_is_down__then_all_other_instances_should_get_same_commits_and_progress_should_be_made")
 		public static Collection<Object[]> data() {
-			return Arrays.asList(new Object[][]{{10},{4}});
+			return Arrays.asList(new Object[][]{
+				{10,1},
+				{10,3},
+				{4,1}
+			});
 		}
 
 		@Before
@@ -100,12 +108,14 @@ public class OutOfSynchronyBoundsTest {
 				.orElse(System.getenv("HOME") + "/.ssh/id_rsa.pub");
 			String AWS_CREDENTIAL = System.getenv(EphemeralNetworkCreator.ENV_AWS_CREDENTIAL);
 			String GCP_CREDENTIAL = System.getenv(EphemeralNetworkCreator.ENV_GCP_CREDENTIAL);
+			String CREDENTIAL_VOL_NAME = Optional.ofNullable(System.getenv(Constants.getCREDENTIAL_VOL_NAME()))
+				.orElse("key-volume");
 
 
 			ephemeralNetworkCreator = EphemeralNetworkCreator.builder()
 				.withTerraformImage("eu.gcr.io/lunar-arc-236318/node-terraform:latest")
 				.withAnsibleImage("eu.gcr.io/lunar-arc-236318/node-ansible:python3")
-				.withKeyVolume("key-volume")
+				.withKeyVolume(CREDENTIAL_VOL_NAME)
 				.withTerraformOptions(Collections.emptyList()).build();
 
 			ephemeralNetworkCreator.copyToTFSecrets(SSH_IDENTITY);
@@ -119,7 +129,6 @@ public class OutOfSynchronyBoundsTest {
 
 
 		@Test
-		@Category(Cluster.class)
 		public void tests() {
 			String name = Generic.extractTestName(this.name.getMethodName());
 			logger.info("Test name is " + name);
@@ -149,22 +158,37 @@ public class OutOfSynchronyBoundsTest {
 				.build();
 			test.runBlocking(30, TimeUnit.SECONDS);
 
-			String nodeURL = network.getNodeIds().iterator().next();
-			String nodeToBringdown = Generic.getDomainName(nodeURL);
+			crashedNodesURLs = new ArrayList<>(network.getNodeIds())
+				.stream()
+				.limit(nodesCrashed)
+				.collect(Collectors.toList());
+			String nodesToBringdown = Generic.listToDelimitedString(crashedNodesURLs
+																	.stream()
+																	.map(Generic::getDomainName)
+																	.collect(Collectors.toList()),",");
 
-			ephemeralNetworkCreator.nodesToBringdown(nodeToBringdown);
+			ephemeralNetworkCreator.nodesToBringdown(nodesToBringdown);
 
-			ArrayList<String> setNodesToIgnore = new ArrayList<String>();
-			setNodesToIgnore.add(nodeURL);
-			RemoteBFTTest testOutOfSynchronyBounds = outOfSynchronyTestBuilder(setNodesToIgnore)
+
+			RemoteBFTTest testOutOfSynchronyBounds = outOfSynchronyTestBuilder((ArrayList<String>) crashedNodesURLs)
 				.network(RemoteBFTNetworkBridge.of(network))
 				.build();
 			testOutOfSynchronyBounds.runBlocking(CmdHelper.getTestDurationInSeconds(), TimeUnit.SECONDS);
 		}
 
 		@After
-		public void removeSlowNodesettings() {
+		public void removeCluster() {
+			String TESTNET_NAME = System.getenv(EphemeralNetworkCreator.ENV_TESTNET_NAME);
+			List<String> runningNodes = new ArrayList<>(network.getNodeIds())
+				.stream()
+				.filter(nodeUrl -> !crashedNodesURLs.contains(nodeUrl))
+				.map(Generic::getDomainName)
+				.collect(Collectors.toList());
+			ephemeralNetworkCreator.captureLogs(
+				Generic.listToDelimitedString(runningNodes,","),
+				Generic.extractTestName(this.name.getMethodName()));
 			ephemeralNetworkCreator.teardown();
+			ephemeralNetworkCreator.volumeCleanUp();
 		}
 	}
 }

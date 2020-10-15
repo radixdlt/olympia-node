@@ -71,3 +71,13 @@ task clusterSystemTests(type: Test) {
     systemProperties System.getProperties()
     exclude "Runner.class"
 }
+
+task ephemeralClusterSystemTests(type: Test) {
+    useJUnit {
+        includeCategories 'com.radixdlt.test.EphemeralCluster'
+    }
+    testLogging.showStandardStreams = true
+    systemProperties System.getProperties()
+    systemProperties['logs.dir'] = "${testResultsDir}/ephemeralClusterSystemTests"
+    exclude "Runner.class"
+}
