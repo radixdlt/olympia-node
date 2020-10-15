@@ -27,12 +27,9 @@ import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.store.StoreIndex;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationUtils;
-import com.radixdlt.store.SpinStateMachine;
 import com.radixdlt.utils.Longs;
 
-import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class EngineAtomIndices {
 	public enum IndexType {
@@ -65,20 +62,10 @@ public class EngineAtomIndices {
 		ImmutableSet.Builder<StoreIndex> uniqueIndices = ImmutableSet.builder();
 		ImmutableSet.Builder<StoreIndex> duplicateIndices = ImmutableSet.builder();
 
-		Map<Particle, Spin> curSpins = radixEngineAtom.getCMInstruction().getMicroInstructions().stream()
-				.filter(CMMicroInstruction::isCheckSpin)
-				.collect(Collectors.toMap(
-						CMMicroInstruction::getParticle,
-						CMMicroInstruction::getCheckSpin
-				));
-
 		radixEngineAtom.getCMInstruction().getMicroInstructions().stream()
-				.filter(i -> i.getMicroOp() == CMMicroInstruction.CMMicroOp.PUSH)
+				.filter(CMMicroInstruction::isPush)
 				.forEach(i -> {
-					Spin curSpin = curSpins.get(i.getParticle());
-					Spin nextSpin = SpinStateMachine.next(curSpin);
-					curSpins.put(i.getParticle(), nextSpin);
-
+					Spin nextSpin = i.getNextSpin();
 					final IndexType indexType;
 					switch (nextSpin) {
 						case UP:

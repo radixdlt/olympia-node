@@ -51,7 +51,7 @@ public class ConsensusToLedgerCommittedInvariant implements TestInvariant {
 			.concatMap(committedUpdate -> Observable.fromStream(committedUpdate.getCommitted().stream()
 				.flatMap(PreparedVertex::successfulCommands)))
 			.flatMapMaybe(cmd -> committedCommands
-				.filter(cmdSet -> cmdSet.contains(cmd))
+				.filter(cmdSet -> cmdSet.contains(cmd.command()))
 				.timeout(10, TimeUnit.SECONDS)
 				.firstOrError()
 				.ignoreElement()

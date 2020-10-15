@@ -20,6 +20,7 @@ package com.radixdlt.ledger;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -45,6 +46,7 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
 import com.radixdlt.counters.SystemCounters;
@@ -80,10 +82,21 @@ public class StateComputerLedgerTest {
 	private QuorumCertificate genesisQC;
 
 	private final Command nextCommand = new Command(new byte[] {0});
+	private final Hasher hasher = Sha256Hasher.withDefaultSerialization();
+	private final PreparedCommand successfulNextCommand = new PreparedCommand() {
+		@Override
+		public Command command() {
+			return nextCommand;
+		}
+
+		@Override
+		public HashCode hash() {
+			return hasher.hash(nextCommand);
+		}
+	};
 
 	private final long genesisEpoch = 3L;
 	private final long genesisStateVersion = 123L;
-	private final Hasher hasher = Sha256Hasher.withDefaultSerialization();
 
 	@Before
 	public void setup() {
@@ -156,7 +169,7 @@ public class StateComputerLedgerTest {
 	public void should_not_change_accumulator_when_there_is_no_command() {
 		// Arrange
 		genesisIsEndOfEpoch(false);
-		when(stateComputer.prepare(any(), any(), any())).thenReturn(new StateComputerResult(ImmutableList.of(), ImmutableMap.of()));
+		when(stateComputer.prepare(any(), any(), any(), anyLong())).thenReturn(new StateComputerResult(ImmutableList.of(), ImmutableMap.of()));
 		final UnverifiedVertex unverifiedVertex = new UnverifiedVertex(genesisQC, View.of(1), null);
 		final VerifiedVertex proposedVertex = new VerifiedVertex(unverifiedVertex, hasher.hash(unverifiedVertex));
 
@@ -174,7 +187,8 @@ public class StateComputerLedgerTest {
 	public void should_not_change_header_when_past_end_of_epoch_even_with_command() {
 		// Arrange
 		genesisIsEndOfEpoch(true);
-		when(stateComputer.prepare(any(), any(), any())).thenReturn(new StateComputerResult(ImmutableList.of(nextCommand), ImmutableMap.of()));
+		when(stateComputer.prepare(any(), any(), any(), anyLong()))
+			.thenReturn(new StateComputerResult(ImmutableList.of(successfulNextCommand), ImmutableMap.of()));
 		final UnverifiedVertex unverifiedVertex = new UnverifiedVertex(genesisQC, View.of(1), nextCommand);
 		final VerifiedVertex proposedVertex = new VerifiedVertex(unverifiedVertex, hasher.hash(unverifiedVertex));
 
@@ -192,7 +206,8 @@ public class StateComputerLedgerTest {
 	public void should_accumulate_when_next_command_valid() {
 		// Arrange
 		genesisIsEndOfEpoch(false);
-		when(stateComputer.prepare(any(), any(), any())).thenReturn(new StateComputerResult(ImmutableList.of(nextCommand), ImmutableMap.of()));
+		when(stateComputer.prepare(any(), any(), any(), anyLong()))
+			.thenReturn(new StateComputerResult(ImmutableList.of(successfulNextCommand), ImmutableMap.of()));
 
 		// Act
 		final UnverifiedVertex unverifiedVertex = new UnverifiedVertex(genesisQC, View.of(1), nextCommand);
@@ -205,6 +220,7 @@ public class StateComputerLedgerTest {
 			accumulatorVerifier.verifyAndGetExtension(
 				ledgerHeader.getAccumulatorState(),
 				ImmutableList.of(nextCommand),
+				hasher::hash,
 				x.getLedgerHeader().getAccumulatorState()
 			))
 		).contains(ImmutableList.of(nextCommand));
@@ -214,7 +230,8 @@ public class StateComputerLedgerTest {
 	public void should_do_nothing_if_committing_lower_state_version() {
 		// Arrange
 		genesisIsEndOfEpoch(false);
-		when(stateComputer.prepare(any(), any(), any())).thenReturn(new StateComputerResult(ImmutableList.of(nextCommand), ImmutableMap.of()));
+		when(stateComputer.prepare(any(), any(), any(), anyLong()))
+			.thenReturn(new StateComputerResult(ImmutableList.of(successfulNextCommand), ImmutableMap.of()));
 		final AccumulatorState accumulatorState = new AccumulatorState(genesisStateVersion - 1, HashUtils.zero256());
 		final LedgerHeader ledgerHeader = LedgerHeader.create(
 			genesisEpoch,

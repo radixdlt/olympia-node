@@ -24,7 +24,6 @@ import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.middleware2.ClientAtom.LedgerAtomConversionException;
 
 public class ClientAtomSerializeTest extends SerializeObject<ClientAtom> {
 
@@ -43,14 +42,7 @@ public class ClientAtomSerializeTest extends SerializeObject<ClientAtom> {
 	}
 
 	private static ClientAtom get(Atom atom) {
-		final ClientAtom clientAtom;
-		try {
-			clientAtom = ClientAtom.convertFromApiAtom(atom, hasher);
-		} catch (LedgerAtomConversionException e) {
-			throw new IllegalStateException();
-		}
-
-		return clientAtom;
+		return ClientAtom.convertFromApiAtom(atom, hasher);
 	}
 
 	private static ClientAtom get() {

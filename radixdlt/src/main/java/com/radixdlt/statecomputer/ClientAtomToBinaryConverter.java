@@ -43,9 +43,7 @@ public class ClientAtomToBinaryConverter {
 
 	public ClientAtom toAtom(byte[] ledgerEntryContent) {
 		try {
-			ClientAtom clientAtom = serializer.fromDson(ledgerEntryContent, ClientAtom.class);
-			clientAtom.init(hasher, serializer);
-			return clientAtom;
+			return serializer.fromDson(ledgerEntryContent, ClientAtom.class);
 		} catch (DeserializeException e) {
 			throw new IllegalStateException("Deserialization of Atom failed", e);
 		}

@@ -18,13 +18,14 @@
 package com.radixdlt.integration.distributed;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.radixdlt.consensus.Command;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 
 /**
  * Accumulator verifier which incorrectly always gives false positives.
@@ -34,14 +35,15 @@ public class IncorrectAlwaysAcceptingAccumulatorVerifierModule extends AbstractM
 	private LedgerAccumulatorVerifier badVerifier() {
 		return new LedgerAccumulatorVerifier() {
 			@Override
-			public boolean verify(AccumulatorState head, ImmutableList<Command> commands, AccumulatorState tail) {
+			public boolean verify(AccumulatorState head, ImmutableList<HashCode> commands, AccumulatorState tail) {
 				return true;
 			}
 
 			@Override
-			public Optional<ImmutableList<Command>> verifyAndGetExtension(
+			public <T> Optional<ImmutableList<T>> verifyAndGetExtension(
 				AccumulatorState current,
-				ImmutableList<Command> commands,
+				ImmutableList<T> commands,
+				Function<T, HashCode> hashCodeMapper,
 				AccumulatorState tail
 			) {
 				final long firstVersion = tail.getStateVersion() - commands.size() + 1;

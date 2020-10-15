@@ -17,7 +17,9 @@
 
 package com.radixdlt.middleware2;
 
+import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atomos.Result;
+import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.google.common.collect.ImmutableList;
@@ -51,6 +53,8 @@ import javax.inject.Named;
  * needed for both consensus and governance.
  */
 public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
+	private static final int MAX_ATOM_SIZE = 1024 * 1024;
+
 	private final FeeTable feeTable;
 	private final RRI feeTokenRri;
 	private final Serialization serialization;
@@ -73,27 +77,43 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 		}
 
 		final boolean magic = Objects.equals(atom.getMetaData().get("magic"), "0xdeadbeef");
-		if (!magic) {
-			// FIXME: Should remove at least deser here and do somewhere where it can be more efficient
-			final Atom completeAtom;
-			if (atom instanceof ClientAtom) {
-				completeAtom = ClientAtom.convertToApiAtom((ClientAtom) atom);
-			} else if (atom instanceof CommittedAtom) {
-				completeAtom = ClientAtom.convertToApiAtom(((CommittedAtom) atom).getClientAtom());
-			} else {
-				throw new IllegalStateException("Unknown LedgerAtom type: " + atom.getClass());
-			}
+		if (magic) {
+			return Result.success();
+		}
 
-			Atom atomWithoutFeeGroup = completeAtom.copyExcludingGroups(this::isFeeGroup);
-			Set<Particle> outputParticles = completeAtom.particles(Spin.UP).collect(ImmutableSet.toImmutableSet());
-			int feeSize = this.serialization.toDson(atomWithoutFeeGroup, Output.HASH).length;
+		// no need for fees if a system update
+		// TODO: update should also have no metadata
+		if (atom.getCMInstruction().getMicroInstructions().stream()
+				.filter(CMMicroInstruction::isCheckSpin)
+				.allMatch(i -> i.getParticle() instanceof SystemParticle)
+		) {
+			return Result.success();
+		}
 
-			UInt256 requiredMinimumFee = feeTable.feeFor(atom, outputParticles, feeSize);
-			UInt256 feePaid = computeFeePaid(completeAtom.particleGroups().filter(this::isFeeGroup));
-			if (feePaid.compareTo(requiredMinimumFee) < 0) {
-				String message = String.format("atom fee invalid: '%s' is less than required minimum '%s'", feePaid, requiredMinimumFee);
-				return Result.error(message);
-			}
+		// FIXME: Should remove at least deser here and do somewhere where it can be more efficient
+		final Atom completeAtom;
+		if (atom instanceof ClientAtom) {
+			completeAtom = ClientAtom.convertToApiAtom((ClientAtom) atom);
+		} else if (atom instanceof CommittedAtom) {
+			completeAtom = ClientAtom.convertToApiAtom(((CommittedAtom) atom).getClientAtom());
+		} else {
+			throw new IllegalStateException("Unknown LedgerAtom type: " + atom.getClass());
+		}
+
+		final int totalSize = this.serialization.toDson(atom, Output.PERSIST).length;
+		if (totalSize > MAX_ATOM_SIZE) {
+			return Result.error("atom too big: " + totalSize);
+		}
+
+		Atom atomWithoutFeeGroup = completeAtom.copyExcludingGroups(this::isFeeGroup);
+		Set<Particle> outputParticles = completeAtom.particles(Spin.UP).collect(ImmutableSet.toImmutableSet());
+		int feeSize = this.serialization.toDson(atomWithoutFeeGroup, Output.HASH).length;
+
+		UInt256 requiredMinimumFee = feeTable.feeFor(atom, outputParticles, feeSize);
+		UInt256 feePaid = computeFeePaid(completeAtom.particleGroups().filter(this::isFeeGroup));
+		if (feePaid.compareTo(requiredMinimumFee) < 0) {
+			String message = String.format("atom fee invalid: '%s' is less than required minimum '%s'", feePaid, requiredMinimumFee);
+			return Result.error(message);
 		}
 
 		return Result.success();

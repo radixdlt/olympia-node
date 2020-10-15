@@ -23,7 +23,6 @@ import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.converters.AtomConversionException;
-import com.radixdlt.middleware2.converters.AtomToClientAtomConverter;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput.Output;
 import java.util.Objects;
@@ -48,7 +47,6 @@ public class SubmissionControlImpl implements SubmissionControl {
 	private final Mempool mempool;
 	private final RadixEngine<LedgerAtom> radixEngine;
 	private final Serialization serialization;
-	private final AtomToClientAtomConverter converter;
 	private final SubmissionControlSender submissionControlSender;
 	private final Hasher hasher;
 
@@ -56,7 +54,6 @@ public class SubmissionControlImpl implements SubmissionControl {
 		Mempool mempool,
 		RadixEngine<LedgerAtom> radixEngine,
 		Serialization serialization,
-		AtomToClientAtomConverter converter,
 		SubmissionControlSender submissionControlSender,
 		Hasher hasher
 	) {
@@ -64,7 +61,6 @@ public class SubmissionControlImpl implements SubmissionControl {
 		this.radixEngine = Objects.requireNonNull(radixEngine);
 		this.serialization = Objects.requireNonNull(serialization);
 		this.submissionControlSender = Objects.requireNonNull(submissionControlSender);
-		this.converter = Objects.requireNonNull(converter);
 		this.hasher = hasher;
 	}
 
@@ -72,9 +68,7 @@ public class SubmissionControlImpl implements SubmissionControl {
 	public void submitCommand(Command command) throws MempoolRejectedException, MempoolFullException, MempoolDuplicateException {
 		ClientAtom clientAtom = command.map(payload -> {
 			try {
-				ClientAtom ca = serialization.fromDson(payload, ClientAtom.class);
-				ca.init(hasher, serialization);
-				return ca;
+				return serialization.fromDson(payload, ClientAtom.class);
 			} catch (DeserializeException e) {
 				return null;
 			}
@@ -97,7 +91,7 @@ public class SubmissionControlImpl implements SubmissionControl {
 		} catch (RadixEngineException e) {
 			log.info(
 				"Rejecting atom {} with error '{}' at '{}' with message '{}'.",
-				atom.getAID(),
+				atom,
 				e.getErrorCode(),
 				e.getDataPointer(),
 				e.getMessage()
@@ -109,17 +103,9 @@ public class SubmissionControlImpl implements SubmissionControl {
 	@Override
 	public void submitAtom(JSONObject atomJson, Consumer<ClientAtom> deserialisationCallback) throws MempoolFullException, MempoolDuplicateException {
 		final Atom rawAtom = this.serialization.fromJsonObject(atomJson, Atom.class);
-		try {
-			final ClientAtom atom = converter.convert(rawAtom);
-			deserialisationCallback.accept(atom);
-			submitAtom(atom);
-		} catch (AtomConversionException e) {
-			log.info(
-				"Rejecting atom {} due to conversion issues.",
-				Atom.aidOf(rawAtom, hasher)
-			);
-			this.submissionControlSender.sendDeserializeFailure(rawAtom, e);
-		}
+		final ClientAtom atom = ClientAtom.convertFromApiAtom(rawAtom, hasher);
+		deserialisationCallback.accept(atom);
+		submitAtom(atom);
 	}
 
 	@Override

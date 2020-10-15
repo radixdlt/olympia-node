@@ -18,23 +18,18 @@
 package com.radixdlt.middleware2;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.hash.HashCode;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atommodel.message.MessageParticle;
 import com.radixdlt.consensus.Sha256Hasher;
-import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware.SpunParticle;
-import com.radixdlt.middleware2.ClientAtom.LedgerAtomConversionException;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
@@ -44,9 +39,9 @@ public class ClientAtomTest {
 
 	@Test
 	public void equalsContract() {
-		EqualsVerifier.forClass(ClientAtom.class)
-			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
-			.verify();
+		EqualsVerifier
+			.forClass(ClientAtom.class)
+			.withIgnoredFields("metaData", "perGroupMetadata", "instructions", "signatures", "witness");
 	}
 
 	private static Atom createApiAtom() {
@@ -97,74 +92,5 @@ public class ClientAtomTest {
 				)
 			)
 		);
-	}
-
-	@Test
-	public void when_validating_an_up_to_up_cm_particle__error_is_returned() {
-		Particle particle0 = mock(Particle.class);
-
-		assertThatThrownBy(() ->
-			ClientAtom.toCMMicroInstructions(
-				ImmutableList.of(
-					ParticleGroup.of(
-						SpunParticle.up(particle0)
-					),
-					ParticleGroup.of(
-						SpunParticle.up(particle0)
-					)
-				)
-			)
-		)
-			.isInstanceOf(LedgerAtomConversionException.class)
-			.hasFieldOrPropertyWithValue("dataPointer", DataPointer.ofParticle(1, 0));
-	}
-
-	@Test
-	public void when_validating_a_down_to_down_cm_particle__error_is_returned() {
-		Particle particle0 = mock(Particle.class);
-		assertThatThrownBy(() ->
-			ClientAtom.toCMMicroInstructions(
-				ImmutableList.of(
-					ParticleGroup.of(
-						SpunParticle.down(particle0)
-					),
-					ParticleGroup.of(
-						SpunParticle.down(particle0)
-					)
-				)
-			)
-		).isInstanceOf(LedgerAtomConversionException.class);
-	}
-
-	@Test
-	public void when_validating_a_down_to_up_cm_particle__error_is_returned() {
-		Particle particle0 = mock(Particle.class);
-		assertThatThrownBy(() ->
-			ClientAtom.toCMMicroInstructions(
-				ImmutableList.of(
-					ParticleGroup.of(
-						SpunParticle.down(particle0)
-					),
-					ParticleGroup.of(
-						SpunParticle.up(particle0)
-					)
-				)
-			)
-		).isInstanceOf(LedgerAtomConversionException.class);
-	}
-
-	@Test
-	public void when_checking_two_duplicate_particles__error_is_returned() {
-		Particle particle0 = mock(Particle.class);
-		assertThatThrownBy(() ->
-			ClientAtom.toCMMicroInstructions(
-				ImmutableList.of(
-					ParticleGroup.of(
-						SpunParticle.up(particle0),
-						SpunParticle.down(particle0)
-					)
-				)
-			)
-		).isInstanceOf(LedgerAtomConversionException.class);
 	}
 }

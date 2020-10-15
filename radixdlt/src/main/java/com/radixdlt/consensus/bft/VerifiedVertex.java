@@ -25,6 +25,7 @@ import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.google.common.hash.HashCode;
+import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -89,7 +90,7 @@ public final class VerifiedVertex {
 
 	public interface PreparedVertexBuilder {
 		PreparedVertex andCommands(
-			ImmutableList<Command> successfulCommands,
+			ImmutableList<PreparedCommand> preparedCommands,
 			ImmutableMap<Command, Exception> commandExceptions
 		);
 	}

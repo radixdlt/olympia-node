@@ -85,6 +85,6 @@ public class RadixEngineStateComputerTest {
 
 		stateComputer.commit(command);
 
-		verify(radixEngine, times(1)).checkAndStore(any());
+		verify(radixEngine, times(1)).checkAndStore(any(), any());
 	}
 }

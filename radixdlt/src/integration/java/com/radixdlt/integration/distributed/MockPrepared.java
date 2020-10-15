@@ -15,14 +15,29 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.middleware2.converters;
+package com.radixdlt.integration.distributed;
 
-import com.radixdlt.atommodel.Atom;
-import com.radixdlt.middleware2.ClientAtom;
+import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.Command;
+import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
 
-/**
- * Converts an api atom to an atom which can be run in a RadixEngine.
- */
-public interface AtomToClientAtomConverter {
-	ClientAtom convert(Atom atom) throws AtomConversionException;
+public class MockPrepared implements PreparedCommand {
+
+	private final Command command;
+	private final HashCode hash;
+
+	public MockPrepared(Command command, HashCode hash) {
+		this.command = command;
+		this.hash = hash;
+	}
+
+	@Override
+	public Command command() {
+		return command;
+	}
+
+	@Override
+	public HashCode hash() {
+		return hash;
+	}
 }

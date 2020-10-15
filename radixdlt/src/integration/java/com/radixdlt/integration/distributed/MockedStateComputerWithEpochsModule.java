@@ -36,6 +36,7 @@ import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
+import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import java.util.function.Function;
 
@@ -76,20 +77,20 @@ public class MockedStateComputerWithEpochsModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private StateComputer stateComputer() {
+	private StateComputer stateComputer(Hasher hasher) {
 		return new StateComputer() {
 			private long epoch = 1;
 			@Override
-			public StateComputerResult prepare(ImmutableList<Command> previous, Command next, View view) {
+			public StateComputerResult prepare(ImmutableList<PreparedCommand> previous, Command next, View view, long timstamp) {
 				if (view.compareTo(epochHighView) >= 0) {
 					return new StateComputerResult(
-						next == null ? ImmutableList.of() : ImmutableList.of(next),
+						next == null ? ImmutableList.of() : ImmutableList.of(new MockPrepared(next, hasher.hash(next))),
 						ImmutableMap.of(),
 						validatorSetMapping.apply(epoch + 1)
 					);
 				} else {
 					return new StateComputerResult(
-						next == null ? ImmutableList.of() : ImmutableList.of(next),
+						next == null ? ImmutableList.of() : ImmutableList.of(new MockPrepared(next, hasher.hash(next))),
 						ImmutableMap.of()
 					);
 				}

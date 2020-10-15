@@ -30,7 +30,6 @@ import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.fees.FeeTable;
 import com.radixdlt.fees.PerParticleFeeEntry;
@@ -39,7 +38,6 @@ import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware.SpunParticle;
-import com.radixdlt.middleware2.ClientAtom.LedgerAtomConversionException;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.UInt256;
 
@@ -70,7 +68,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 	}
 
 	@Test
-	public void when_validating_atom_with_particles__result_has_no_error() throws LedgerAtomConversionException {
+	public void when_validating_atom_with_particles__result_has_no_error() {
 		byte[] bytes = new byte[] {
 			0, 1
 		};
@@ -86,7 +84,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 	public void when_validating_atom_without_particles__result_has_error() {
 		ClientAtom ledgerAtom = mock(ClientAtom.class);
 		CMInstruction cmInstruction = new CMInstruction(
-			ImmutableList.of(), HashUtils.random256(), ImmutableMap.of()
+			ImmutableList.of(), ImmutableMap.of()
 		);
 		when(ledgerAtom.getAID()).thenReturn(mock(AID.class));
 		when(ledgerAtom.getCMInstruction()).thenReturn(cmInstruction);
@@ -97,7 +95,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 	}
 
 	@Test
-	public void when_validating_atom_without_fee__result_has_error() throws LedgerAtomConversionException {
+	public void when_validating_atom_without_fee__result_has_error() {
 		RadixAddress address = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
 		UniqueParticle particle = new UniqueParticle("FOO", address, 0L);
 		List<ParticleGroup> particleGroups = ImmutableList.of(ParticleGroup.of(ImmutableList.of(SpunParticle.up(particle))));
@@ -109,7 +107,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 	}
 
 	@Test
-	public void when_validating_atom_with_fee__result_has_no_error() throws LedgerAtomConversionException {
+	public void when_validating_atom_with_fee__result_has_no_error() {
 		RadixAddress address = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
 		UniqueParticle particle1 = new UniqueParticle("FOO", address, 0L);
 		UnallocatedTokensParticle particle2 = new UnallocatedTokensParticle(
@@ -132,7 +130,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 	}
 
 	@Test
-	public void when_validating_atom_with_fee_and_change__result_has_no_error() throws LedgerAtomConversionException {
+	public void when_validating_atom_with_fee_and_change__result_has_no_error() {
 		RadixAddress address = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
 		UniqueParticle particle1 = new UniqueParticle("FOO", address, 0L);
 		UnallocatedTokensParticle particle2 = new UnallocatedTokensParticle(
@@ -165,7 +163,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 	}
 
 	@Test
-	public void when_validating_atom_with_fee_and_metadata__result_has_error() throws LedgerAtomConversionException {
+	public void when_validating_atom_with_fee_and_metadata__result_has_error() {
 		RadixAddress address = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
 		UniqueParticle particle1 = new UniqueParticle("FOO", address, 0L);
 		UnallocatedTokensParticle particle2 = new UnallocatedTokensParticle(

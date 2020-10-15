@@ -18,7 +18,6 @@
 package com.radixdlt.middleware2;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.hash.HashCode;
 import com.radixdlt.engine.RadixEngineAtom;
 import com.radixdlt.identifiers.AID;
 
@@ -27,8 +26,6 @@ import com.radixdlt.identifiers.AID;
  */
 public interface LedgerAtom extends RadixEngineAtom {
 	ImmutableMap<String, String> getMetaData();
-
-	HashCode getPowFeeHash();
 
 	AID getAID();
 }

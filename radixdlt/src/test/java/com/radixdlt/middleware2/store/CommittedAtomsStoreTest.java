@@ -109,8 +109,7 @@ public class CommittedAtomsStoreTest {
 		when(clientAtom.getCMInstruction()).thenReturn(cmInstruction);
 		when(cmInstruction.getMicroInstructions())
 			.thenReturn(ImmutableList.of(
-				CMMicroInstruction.checkSpin(mock(Particle.class), Spin.NEUTRAL),
-				CMMicroInstruction.push(mock(Particle.class))
+				CMMicroInstruction.checkSpinAndPush(mock(Particle.class), Spin.NEUTRAL)
 			));
 		when(command.map(any())).thenReturn(clientAtom);
 		when(committedCommand.getCommand()).thenReturn(command);

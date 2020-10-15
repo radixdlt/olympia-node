@@ -31,9 +31,11 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
+import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 
 public class MockedStateComputerModule extends AbstractModule {
@@ -57,11 +59,16 @@ public class MockedStateComputerModule extends AbstractModule {
 	}
 
 	@Provides
-	private StateComputer stateComputer() {
+	private StateComputer stateComputer(Hasher hasher) {
 		return new StateComputer() {
 			@Override
-			public StateComputerResult prepare(ImmutableList<Command> previous, Command next, View view) {
-				return new StateComputerResult(next == null ? ImmutableList.of() : ImmutableList.of(next), ImmutableMap.of());
+			public StateComputerResult prepare(ImmutableList<PreparedCommand> previous, Command next, View view, long timestamp) {
+				return new StateComputerResult(
+					next == null
+						? ImmutableList.of()
+						: ImmutableList.of(new MockPrepared(next, hasher.hash(next))),
+					ImmutableMap.of()
+				);
 			}
 
 			@Override

@@ -20,10 +20,10 @@ package com.radixdlt.ledger;
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
-import com.radixdlt.consensus.Command;
 import com.radixdlt.crypto.Hasher;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 import javax.annotation.concurrent.ThreadSafe;
 
 /**
@@ -39,10 +39,10 @@ public class SimpleLedgerAccumulatorAndVerifier implements LedgerAccumulator, Le
 	}
 
 	@Override
-	public AccumulatorState accumulate(AccumulatorState parent, Command nextCommand) {
+	public AccumulatorState accumulate(AccumulatorState parent, HashCode hash) {
 		byte[] concat = new byte[32 * 2];
 		System.arraycopy(parent.getAccumulatorHash().asBytes(), 0, concat, 0, 32);
-		System.arraycopy(hasher.hash(nextCommand).asBytes(), 0, concat, 32, 32);
+		System.arraycopy(hash.asBytes(), 0, concat, 32, 32);
 		HashCode nextAccumulatorHash = hasher.hashBytes(concat);
 		return new AccumulatorState(
 			parent.getStateVersion() + 1,
@@ -51,16 +51,21 @@ public class SimpleLedgerAccumulatorAndVerifier implements LedgerAccumulator, Le
 	}
 
 	@Override
-	public boolean verify(AccumulatorState start, ImmutableList<Command> commands, AccumulatorState end) {
+	public boolean verify(AccumulatorState start, ImmutableList<HashCode> hashes, AccumulatorState end) {
 		AccumulatorState accumulatorState = start;
-		for (Command command : commands) {
-			accumulatorState = this.accumulate(accumulatorState, command);
+		for (HashCode hash : hashes) {
+			accumulatorState = this.accumulate(accumulatorState, hash);
 		}
 		return Objects.equals(accumulatorState, end);
 	}
 
 	@Override
-	public Optional<ImmutableList<Command>> verifyAndGetExtension(AccumulatorState current, ImmutableList<Command> commands, AccumulatorState tail) {
+	public <T> Optional<ImmutableList<T>> verifyAndGetExtension(
+		AccumulatorState current,
+		ImmutableList<T> commands,
+		Function<T, HashCode> hashCodeMapper,
+		AccumulatorState tail
+	) {
 		if (tail.getStateVersion() < current.getStateVersion()) {
 			throw new IllegalArgumentException(String.format("Tail %s is has lower state version than current %s", tail, current));
 		}
@@ -76,8 +81,9 @@ public class SimpleLedgerAccumulatorAndVerifier implements LedgerAccumulator, Le
 		}
 
 		final int startIndex = (int) (current.getStateVersion() + 1 - firstVersion);
-		final ImmutableList<Command> extension = commands.subList(startIndex, commands.size());
-		if (!verify(current, extension, tail)) {
+		final ImmutableList<T> extension = commands.subList(startIndex, commands.size());
+		final ImmutableList<HashCode> hashes = extension.stream().map(hashCodeMapper::apply).collect(ImmutableList.toImmutableList());
+		if (!verify(current, hashes, tail)) {
 			// Does not extend
 			return Optional.empty();
 		}
