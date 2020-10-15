@@ -38,10 +38,14 @@ public final class RRIParticle extends Particle {
 	}
 
 	public RRIParticle(RRI rri) {
+		this(rri, 0);
+	}
+
+	public RRIParticle(RRI rri, long nonce) {
 		super(rri.getAddress().euid());
 
 		this.rri = rri;
-		this.nonce = 0;
+		this.nonce = nonce;
 	}
 
 	public RRI getRri() {

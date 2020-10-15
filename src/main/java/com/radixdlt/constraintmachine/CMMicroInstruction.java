@@ -19,9 +19,8 @@ package com.radixdlt.constraintmachine;
 
 public final class CMMicroInstruction {
 	public enum CMMicroOp {
-		CHECK_NEUTRAL,
-		CHECK_UP,
-		PUSH,
+		CHECK_NEUTRAL_THEN_UP,
+		CHECK_UP_THEN_DOWN,
 		PARTICLE_GROUP
 	}
 
@@ -41,29 +40,40 @@ public final class CMMicroInstruction {
 		return particle;
 	}
 
+	public boolean isPush() {
+		return operation == CMMicroOp.CHECK_UP_THEN_DOWN || operation == CMMicroOp.CHECK_NEUTRAL_THEN_UP;
+	}
+
 	public boolean isCheckSpin() {
-		return operation == CMMicroOp.CHECK_NEUTRAL || operation == CMMicroOp.CHECK_UP;
+		return operation == CMMicroOp.CHECK_UP_THEN_DOWN || operation == CMMicroOp.CHECK_NEUTRAL_THEN_UP;
 	}
 
 	public Spin getCheckSpin() {
-		if (operation == CMMicroOp.CHECK_NEUTRAL) {
+		if (operation == CMMicroOp.CHECK_NEUTRAL_THEN_UP) {
 			return Spin.NEUTRAL;
-		} else if (operation == CMMicroOp.CHECK_UP) {
+		} else if (operation == CMMicroOp.CHECK_UP_THEN_DOWN) {
 			return Spin.UP;
 		} else {
 			throw new UnsupportedOperationException(operation + " is not a check spin operation.");
 		}
 	}
 
-	public static CMMicroInstruction push(Particle particle) {
-		return new CMMicroInstruction(CMMicroOp.PUSH, particle);
+	public Spin getNextSpin() {
+		if (operation == CMMicroOp.CHECK_NEUTRAL_THEN_UP) {
+			return Spin.UP;
+		} else if (operation == CMMicroOp.CHECK_UP_THEN_DOWN) {
+			return Spin.DOWN;
+		} else {
+			throw new UnsupportedOperationException(operation + " is not a check spin operation.");
+		}
 	}
 
-	public static CMMicroInstruction checkSpin(Particle particle, Spin spin) {
+
+	public static CMMicroInstruction checkSpinAndPush(Particle particle, Spin spin) {
 		if (spin == Spin.NEUTRAL) {
-			return new CMMicroInstruction(CMMicroOp.CHECK_NEUTRAL, particle);
+			return new CMMicroInstruction(CMMicroOp.CHECK_NEUTRAL_THEN_UP, particle);
 		} else if (spin == Spin.UP) {
-			return new CMMicroInstruction(CMMicroOp.CHECK_UP, particle);
+			return new CMMicroInstruction(CMMicroOp.CHECK_UP_THEN_DOWN, particle);
 		} else {
 			throw new IllegalStateException("Invalid check spin: " + spin);
 		}

@@ -133,6 +133,7 @@ public class TicTacToeRunner {
 
 	static class TicTacToeAtom implements RadixEngineAtom {
 		private final CMInstruction cmInstruction;
+		private final Hash hash;
 		private final AID aid;
 		private final boolean shouldPass;
 
@@ -144,24 +145,27 @@ public class TicTacToeRunner {
 			boolean shouldPass
 		) {
 			this.shouldPass = shouldPass;
+			this.hash = hash;
 
 			ImmutableList.Builder<CMMicroInstruction> instructions = ImmutableList.builder();
 			if (prevBoard != null) {
-				instructions.add(CMMicroInstruction.checkSpin(prevBoard, Spin.UP));
-				instructions.add(CMMicroInstruction.push(prevBoard));
+				instructions.add(CMMicroInstruction.checkSpinAndPush(prevBoard, Spin.UP));
 			}
 			if (nextBoard != null) {
-				instructions.add(CMMicroInstruction.checkSpin(nextBoard, Spin.NEUTRAL));
-				instructions.add(CMMicroInstruction.push(nextBoard));
+				instructions.add(CMMicroInstruction.checkSpinAndPush(nextBoard, Spin.NEUTRAL));
 			}
 			instructions.add(CMMicroInstruction.particleGroup());
 
 			this.cmInstruction = new CMInstruction(
 				instructions.build(),
-				hash,
 				ImmutableMap.of(player.euid(), player.sign(hash))
 			);
 			this.aid = AID.from(hash.toByteArray());
+		}
+
+		@Override
+		public Hash getWitness() {
+			return hash;
 		}
 
 		@Override

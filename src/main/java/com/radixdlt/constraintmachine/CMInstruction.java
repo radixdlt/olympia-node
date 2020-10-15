@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.Hash;
 import java.util.Objects;
 
 /**
@@ -29,25 +28,18 @@ import java.util.Objects;
  */
 public final class CMInstruction {
 	private final ImmutableList<CMMicroInstruction> microInstructions;
-	private final Hash witness;
 	private final ImmutableMap<EUID, ECDSASignature> signatures;
 
 	public CMInstruction(
 		ImmutableList<CMMicroInstruction> microInstructions,
-		Hash witness,
 		ImmutableMap<EUID, ECDSASignature> signatures
 	) {
 		this.microInstructions = Objects.requireNonNull(microInstructions);
-		this.witness = witness;
 		this.signatures = Objects.requireNonNull(signatures);
 	}
 
 	public ImmutableList<CMMicroInstruction> getMicroInstructions() {
 		return microInstructions;
-	}
-
-	public Hash getWitness() {
-		return witness;
 	}
 
 	public ImmutableMap<EUID, ECDSASignature> getSignatures() {

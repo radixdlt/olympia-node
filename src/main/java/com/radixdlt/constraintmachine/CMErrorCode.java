@@ -23,6 +23,7 @@ package com.radixdlt.constraintmachine;
  */
 public enum CMErrorCode {
 	HOOK_ERROR("Hook error"),
+	EMPTY_PARTICLE_GROUP("Empty group"),
 	MISSING_PARTICLE_GROUP("Missing particle group"),
 	INTERNAL_SPIN_CONFLICT("Internal spin conflict"),
 	INVALID_PARTICLE("Invalid particle"),
@@ -34,6 +35,7 @@ public enum CMErrorCode {
 	TRANSITION_PRECONDITION_FAILURE("Transition Precondition failure"),
 	TRANSITION_ERROR("Transition error"),
 	ARITHMETIC_ERROR("Arithmetic error"),
+	INVALID_EXECUTION_PERMISSION("Invalid execution permission"),
 	INVALID_INSTRUCTION_SEQUENCE("Invalid instruction sequence");
 
 	private final String description;
