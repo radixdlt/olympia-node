@@ -54,8 +54,8 @@ public final class LocalMempool implements Mempool {
 			if (this.data.size() >= this.maxSize) {
 				throw new MempoolFullException(command, String.format("Mempool full: %s of %s items", this.data.size(), this.maxSize));
 			}
-			if (null != this.data.put(command.getHash(), command)) {
-				throw new MempoolDuplicateException(command, String.format("Mempool already has command %s", command.getHash()));
+			if (null != this.data.put(command.hash(), command)) {
+				throw new MempoolDuplicateException(command, String.format("Mempool already has command %s", command.hash()));
 			}
 		}
 	}
@@ -84,7 +84,7 @@ public final class LocalMempool implements Mempool {
 				Iterator<Command> i = this.data.values().iterator();
 				while (commands.size() < size && i.hasNext()) {
 					Command a = i.next();
-					if (seen.add(a.getHash())) {
+					if (seen.add(a.hash())) {
 						commands.add(a);
 					}
 				}

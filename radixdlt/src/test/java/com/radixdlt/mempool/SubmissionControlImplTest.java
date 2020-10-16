@@ -17,13 +17,14 @@
 
 package com.radixdlt.mempool;
 
+import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.SubmissionControlImpl.SubmissionControlSender;
+import com.radixdlt.middleware.ParticleGroup;
+import com.radixdlt.middleware.SpunParticle;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
-import com.radixdlt.middleware2.converters.AtomToClientAtomConverter;
-import com.radixdlt.middleware2.converters.AtomConversionException;
 import com.radixdlt.serialization.DeserializeException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -31,7 +32,6 @@ import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.stubbing.Answer;
-import com.radixdlt.identifiers.AID;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.engine.RadixEngine;
@@ -49,7 +49,6 @@ public class SubmissionControlImplTest {
 	private Serialization serialization;
 	private SubmissionControlSender sender;
 	private SubmissionControlImpl submissionControl;
-	private AtomToClientAtomConverter converter;
 
 	@Before
 	public void setUp() {
@@ -59,9 +58,8 @@ public class SubmissionControlImplTest {
 		RadixEngine<LedgerAtom> re = throwingMock(RadixEngine.class);
 		this.radixEngine = re;
 		this.serialization = mock(Serialization.class);
-		this.converter = mock(AtomToClientAtomConverter.class);
 		this.sender = mock(SubmissionControlSender.class);
-		this.submissionControl = new SubmissionControlImpl(this.mempool, this.radixEngine, this.serialization, this.converter, this.sender);
+		this.submissionControl = new SubmissionControlImpl(this.mempool, this.radixEngine, this.serialization, this.sender);
 	}
 
 	@Test
@@ -112,22 +110,6 @@ public class SubmissionControlImplTest {
 	}
 
 	@Test
-	public void when_conversion_fails_then_exception_is_broadcasted_and_atom_is_not_added_to_mempool() throws Exception {
-		JSONObject atomJson = mock(JSONObject.class);
-		Atom atom = mock(Atom.class);
-		AID aid = mock(AID.class);
-		when(atom.getAID()).thenReturn(aid);
-		doReturn(atom).when(this.serialization).fromJsonObject(eq(atomJson), eq(Atom.class));
-		when(converter.convert(eq(atom))).thenThrow(mock(AtomConversionException.class));
-		// No type check issues with mocking generic here
-		@SuppressWarnings("unchecked")
-		Consumer<ClientAtom> callback = mock(Consumer.class);
-		this.submissionControl.submitAtom(atomJson, callback);
-		verify(this.sender, times(1)).sendDeserializeFailure(eq(atom), any());
-		verify(this.mempool, never()).add(any());
-	}
-
-	@Test
 	public void if_deserialisation_fails__then_callback_is_not_called() throws Exception {
 		doThrow(new IllegalArgumentException()).when(this.serialization).fromJsonObject(any(), any());
 
@@ -148,22 +130,21 @@ public class SubmissionControlImplTest {
 	public void after_json_deserialised__then_callback_is_called_and_aid_returned()
 		throws Exception {
 		doNothing().when(this.radixEngine).staticCheck(any());
-		Atom atomMock = throwingMock(Atom.class);
-		doReturn(AID.ZERO).when(atomMock).getAID();
-		doReturn(atomMock).when(this.serialization).fromJsonObject(any(), any());
+		Atom atom = new Atom();
+		atom.addParticleGroup(
+			ParticleGroup.of(
+				SpunParticle.up(new SystemParticle(0, 0, 0))
+			)
+		);
+		doReturn(atom).when(this.serialization).fromJsonObject(any(), any());
 		doNothing().when(this.mempool).add(any());
-
-
-		ClientAtom clientAtom = mock(ClientAtom.class);
-		when(clientAtom.getAID()).thenReturn(AID.ZERO);
-		when(converter.convert(eq(atomMock))).thenReturn(clientAtom);
-		when(serialization.toDson(eq(clientAtom), any())).thenReturn(new byte[] {0, 1, 2, 3});
+		when(serialization.toDson(any(), any())).thenReturn(new byte[] {0, 1, 2, 3});
 		// No type check issues with mocking generic here
 		@SuppressWarnings("unchecked")
 		Consumer<ClientAtom> callback = mock(Consumer.class);
 		this.submissionControl.submitAtom(throwingMock(JSONObject.class), callback);
 
-		verify(callback, times(1)).accept(argThat(a -> a.getAID().equals(AID.ZERO)));
+		verify(callback, times(1)).accept(any());
 		verify(this.sender, never()).sendRadixEngineFailure(any(), any());
 		verify(this.sender, never()).sendDeserializeFailure(any(), any());
 		verify(this.mempool, times(1)).add(any());

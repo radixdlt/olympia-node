@@ -38,7 +38,6 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.middleware2.ClientAtom.LedgerAtomConversionException;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.middleware2.store.CommittedAtomsStore.AtomIndexer;
@@ -148,12 +147,12 @@ public class RadixEngineStoreModule extends AbstractModule {
 		Universe universe,
 		CommittedAtomsStore committedAtomsStore,
 		BFTValidatorSet validatorSet
-	) throws LedgerAtomConversionException, DeserializeException, NextCommittedLimitReachedException {
+	) throws DeserializeException, NextCommittedLimitReachedException {
 		final ClientAtom genesisAtom = ClientAtom.convertFromApiAtom(universe.getGenesis().get(0));
 		byte[] payload = serialization.toDson(genesisAtom, Output.ALL);
 		Command command = new Command(payload);
 		VerifiedLedgerHeaderAndProof genesisLedgerHeader = VerifiedLedgerHeaderAndProof.genesis(
-			command.getHash(),
+			command.hash(),
 			validatorSet
 		);
 

@@ -96,7 +96,7 @@ public final class SometimesByzantineCommittedReader implements LedgerUpdateSend
 			if (accumulator != null) {
 				accumulatorState = request.getLedgerHeader().getAccumulatorState();
 				for (Command command : commands) {
-					accumulatorState = accumulator.accumulate(accumulatorState, command);
+					accumulatorState = accumulator.accumulate(accumulatorState, command.hash());
 				}
 			} else {
 				accumulatorState = base.getHeader().getAccumulatorState();

@@ -19,7 +19,6 @@ package com.radixdlt.ledger;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
-import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.crypto.Hash;
 import java.util.Objects;
@@ -39,10 +38,10 @@ public class SimpleLedgerAccumulatorAndVerifier implements LedgerAccumulator, Le
 	}
 
 	@Override
-	public AccumulatorState accumulate(AccumulatorState parent, Command nextCommand) {
+	public AccumulatorState accumulate(AccumulatorState parent, Hash hash) {
 		byte[] concat = new byte[32 * 2];
 		parent.getAccumulatorHash().copyTo(concat, 0);
-		nextCommand.getHash().copyTo(concat, 32);
+		hash.copyTo(concat, 32);
 		Hash nextAccumulatorHash = hasher.hashBytes(concat);
 		return new AccumulatorState(
 			parent.getStateVersion() + 1,
@@ -51,16 +50,20 @@ public class SimpleLedgerAccumulatorAndVerifier implements LedgerAccumulator, Le
 	}
 
 	@Override
-	public boolean verify(AccumulatorState start, ImmutableList<Command> commands, AccumulatorState end) {
+	public <T extends HasHash> boolean verify(AccumulatorState start, ImmutableList<T> commands, AccumulatorState end) {
 		AccumulatorState accumulatorState = start;
-		for (Command command : commands) {
-			accumulatorState = this.accumulate(accumulatorState, command);
+		for (T command : commands) {
+			accumulatorState = this.accumulate(accumulatorState, command.hash());
 		}
 		return Objects.equals(accumulatorState, end);
 	}
 
 	@Override
-	public Optional<ImmutableList<Command>> verifyAndGetExtension(AccumulatorState current, ImmutableList<Command> commands, AccumulatorState tail) {
+	public <T extends HasHash> Optional<ImmutableList<T>> verifyAndGetExtension(
+		AccumulatorState current,
+		ImmutableList<T> commands,
+		AccumulatorState tail
+	) {
 		if (tail.getStateVersion() < current.getStateVersion()) {
 			throw new IllegalArgumentException(String.format("Tail %s is has lower state version than current %s", tail, current));
 		}
@@ -76,7 +79,7 @@ public class SimpleLedgerAccumulatorAndVerifier implements LedgerAccumulator, Le
 		}
 
 		final int startIndex = (int) (current.getStateVersion() + 1 - firstVersion);
-		final ImmutableList<Command> extension = commands.subList(startIndex, commands.size());
+		final ImmutableList<T> extension = commands.subList(startIndex, commands.size());
 		if (!verify(current, extension, tail)) {
 			// Does not extend
 			return Optional.empty();

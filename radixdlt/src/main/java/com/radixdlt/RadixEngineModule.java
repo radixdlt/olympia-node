@@ -22,6 +22,8 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import com.radixdlt.atommodel.message.MessageParticleConstraintScrypt;
+import com.radixdlt.atommodel.system.SystemConstraintScrypt;
+import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
 import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
@@ -89,6 +91,7 @@ public class RadixEngineModule extends AbstractModule {
 		os.load(new TokensConstraintScrypt());
 		os.load(new UniqueParticleConstraintScrypt());
 		os.load(new MessageParticleConstraintScrypt());
+		os.load(new SystemConstraintScrypt());
 		return os;
 	}
 
@@ -140,6 +143,14 @@ public class RadixEngineModule extends AbstractModule {
 			new RadixEngineValidatorSetBuilder(initialValidatorKeys, new AtLeastNValidators(minValidators)),
 			(builder, p) -> builder.addValidator(p.getAddress()),
 			(builder, p) -> builder.removeValidator(p.getAddress())
+		);
+
+		// TODO: should use different mechanism for constructing system atoms but this is good enough for now
+		radixEngine.addStateComputer(
+			SystemParticle.class,
+			new SystemParticle(0, 0, 0),
+			(prev, p) -> p,
+			(prev, p) -> prev
 		);
 
 		return radixEngine;

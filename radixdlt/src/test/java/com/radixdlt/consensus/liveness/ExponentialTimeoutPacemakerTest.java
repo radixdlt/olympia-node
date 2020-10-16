@@ -224,26 +224,26 @@ public class ExponentialTimeoutPacemakerTest {
 		when(vote.getView()).thenReturn(View.of(1));
 		when(this.pendingVotes.insertVote(any(), any())).thenReturn(Optional.of(qc));
 
-		this.pacemaker.processLocalTimeout(View.of(0));
-		this.pacemaker.processLocalTimeout(View.of(1));
-		this.pacemaker.processLocalTimeout(View.of(2));
+		this.pacemaker.processQC(highQCFor(View.of(0)));
+		this.pacemaker.processQC(highQCFor(View.of(1)));
+		this.pacemaker.processQC(highQCFor(View.of(2)));
 		assertThat(this.pacemaker.getCurrentView()).isEqualTo(View.of(3));
 
 		assertThat(this.pacemaker.processVote(vote)).isEmpty();
 		assertThat(this.pacemaker.getCurrentView()).isEqualTo(View.of(3));
-		verify(this.pendingVotes, times(1)).insertVote(eq(vote), any());
 		verifyNoMoreInteractions(this.pendingVotes);
 	}
 
 	@Test
 	public void when_process_vote_with_quorum__then_processed() {
 		Vote vote = mock(Vote.class);
+
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		when(vote.getView()).thenReturn(View.of(1));
 		when(this.pendingVotes.insertVote(any(), any())).thenReturn(Optional.of(qc));
 
 		// Move to view 1
-		this.pacemaker.processLocalTimeout(View.of(0));
+		this.pacemaker.processQC(highQCFor(View.of(0)));
 		assertThat(this.pacemaker.getCurrentView()).isEqualTo(View.of(1));
 
 		assertThat(this.pacemaker.processVote(vote)).isNotEmpty();
@@ -299,9 +299,9 @@ public class ExponentialTimeoutPacemakerTest {
 		when(highQC.highestCommittedQC()).thenReturn(qc);
 
 		// Move ahead for a bit so we can send in a QC for a lower view
-		this.pacemaker.processLocalTimeout(View.of(0));
-		this.pacemaker.processLocalTimeout(View.of(1));
-		this.pacemaker.processLocalTimeout(View.of(2));
+		this.pacemaker.processQC(highQCFor(View.of(0)));
+		this.pacemaker.processQC(highQCFor(View.of(1)));
+		this.pacemaker.processQC(highQCFor(View.of(2)));
 		assertThat(this.pacemaker.getCurrentView()).isEqualTo(View.of(3));
 
 		assertThat(this.pacemaker.processQC(highQC)).isFalse();
@@ -333,12 +333,12 @@ public class ExponentialTimeoutPacemakerTest {
 
 	@Test
 	public void when_backoff_pow1_5__then_two_pacemakers_can_sync() {
-		assertTrue(testSyncAtRate(1.5, Integer.MAX_VALUE, (long) Math.pow(1.5, 32.0), View.of(35)));
+		assertTrue(testSyncAtRate(1.5, Integer.MAX_VALUE, (long) Math.pow(1.5, 32.0), View.of(33)));
 	}
 
 	@Test
 	public void when_backoff_pow1_2__then_two_pacemakers_can_sync() {
-		assertTrue(testSyncAtRate(1.2, Integer.MAX_VALUE, (long) Math.pow(1.2, 32.0), View.of(42)));
+		assertTrue(testSyncAtRate(1.2, Integer.MAX_VALUE, (long) Math.pow(1.2, 32.0), View.of(39)));
 	}
 
 	@Test
@@ -368,26 +368,19 @@ public class ExponentialTimeoutPacemakerTest {
 			pacemaker[i] = createPacemaker(1L, testRate, numPacemakers, timeoutSender);
 		}
 
-		for (int i = 1; i < numPacemakers; ++i) {
-			for (int j = i; j < numPacemakers; ++j) {
-				pacemaker[j].processLocalTimeout(pacemaker[j].getCurrentView());
-				timeouts.pop();
-			}
-		}
-
-		assertTrue(timeouts.isEmpty());
 		// Preload with initial timeout for each pacemaker
 		for (int i = 0; i < numPacemakers; ++i) {
-			pacemaker[i].processLocalTimeout(pacemaker[i].getCurrentView());
+			pacemaker[i].processQC(highQCFor(View.of(i)));
 		}
 
+		assertEquals(numPacemakers, timeouts.size());
 		while (notSynced(pacemaker)) {
 			assertFalse(anyViewGreaterThan(pacemaker, numPacemakers));
 			assertEquals(numPacemakers, timeouts.size());
 			timeouts.sort(Comparator.comparingLong(th -> th.timeoutTime));
 			TimeoutHolder t0 = timeouts.pop();
 			baseTime.set(t0.timeoutTime);
-			pacemaker[t0.pacemakerIndex].processLocalTimeout(t0.view);
+			pacemaker[t0.pacemakerIndex].processViewTimeout(viewTimeoutFor(t0.view));
 		}
 
 		for (int i = 0; i < numPacemakers; ++i) {
@@ -395,8 +388,14 @@ public class ExponentialTimeoutPacemakerTest {
 		}
 	}
 
+	private ViewTimeout viewTimeoutFor(View view) {
+		ViewTimeout viewTimeout = mock(ViewTimeout.class);
+		when(viewTimeout.getView()).thenReturn(view);
+		return viewTimeout;
+	}
+
 	// Returns true if pacemakers synced, false otherwise
-	public boolean testSyncAtRate(double testRate, int maxExponent, long setuptime, View catchupView) {
+	private boolean testSyncAtRate(double testRate, int maxExponent, long setuptime, View catchupView) {
 		final int maxMaxExponent = (int) Math.floor(Math.log(Long.MAX_VALUE) / Math.log(testRate));
 		final int pacemakerMaxExponent = Math.min(maxExponent, maxMaxExponent);
 
@@ -418,15 +417,15 @@ public class ExponentialTimeoutPacemakerTest {
 		when(this.proposerElection.getProposer(any())).thenReturn(mock(BFTNode.class)); // Not us, so no proposals
 
 		// get pacemaker[0] at least 2 views ahead and until timeout > setuptime
-		pacemaker[0].processLocalTimeout(pacemaker[0].getCurrentView());
+		pacemaker[0].processQC(highQCFor(pacemaker[0].getCurrentView()));
 		timeouts.pop();
-		pacemaker[0].processLocalTimeout(pacemaker[0].getCurrentView());
+		pacemaker[0].processQC(highQCFor(pacemaker[0].getCurrentView()));
 		while (timeouts.getFirst().timeoutTime < setuptime) {
-			pacemaker[0].processLocalTimeout(timeouts.pop().view);
+			pacemaker[0].processQC(highQCFor(timeouts.pop().view));
 		}
 		assertEquals(1, timeouts.size());
 
-		pacemaker[1].processLocalTimeout(pacemaker[1].getCurrentView()); // Timeout on 1 base time 0
+		pacemaker[1].processQC(highQCFor(pacemaker[1].getCurrentView())); // Timeout on 1 base time 0
 		assertEquals(2, timeouts.size());
 		while (notSynced(pacemaker)) {
 			// If we move out of the exponential range, we are going to fail
@@ -437,7 +436,7 @@ public class ExponentialTimeoutPacemakerTest {
 			timeouts.sort(Comparator.comparingLong(th -> th.timeoutTime));
 			TimeoutHolder t0 = timeouts.pop();
 			baseTime.set(t0.timeoutTime);
-			pacemaker[t0.pacemakerIndex].processLocalTimeout(t0.view);
+			pacemaker[t0.pacemakerIndex].processViewTimeout(viewTimeoutFor(t0.view.next()));
 		}
 		assertEquals(catchupView, pacemaker[0].getCurrentView());
 		assertEquals(catchupView, pacemaker[1].getCurrentView());
@@ -489,5 +488,16 @@ public class ExponentialTimeoutPacemakerTest {
 		assertThatThrownBy(() -> createPacemaker(timeout, rate, maxExponent, this.timeoutSender))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageStartingWith(exceptionMessage);
+	}
+
+	private HighQC highQCFor(View view) {
+		HighQC highQC = mock(HighQC.class);
+		QuorumCertificate hqc = mock(QuorumCertificate.class);
+		QuorumCertificate cqc = mock(QuorumCertificate.class);
+		when(hqc.getView()).thenReturn(view);
+		when(cqc.getView()).thenReturn(View.of(0));
+		when(highQC.highestQC()).thenReturn(hqc);
+		when(highQC.highestCommittedQC()).thenReturn(cqc);
+		return highQC;
 	}
 }

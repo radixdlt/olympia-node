@@ -40,7 +40,6 @@ import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyViolationException;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.network.TimeSupplier;
 
@@ -56,7 +55,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * A pacemaker which utilizes a fixed timeout (aka requires a synchronous network).
+ * A pacemaker which utilizes a exponential timeout.
  */
 public final class ExponentialTimeoutPacemaker implements Pacemaker {
 
@@ -98,7 +97,6 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 	private final NextCommandGenerator nextCommandGenerator;
 	private final TimeSupplier timeSupplier;
 	private final Hasher hasher;
-	private final HashSigner signer;
 
 	private final ProposalBroadcaster sender;
 	private final ProceedToViewSender proceedToViewSender;
@@ -169,7 +167,6 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 		this.nextCommandGenerator = Objects.requireNonNull(nextCommandGenerator);
 		this.timeSupplier = Objects.requireNonNull(timeSupplier);
 		this.hasher = Objects.requireNonNull(hasher);
-		this.signer = Objects.requireNonNull(signer);
 
 		this.sender = Objects.requireNonNull(sender);
 		this.proceedToViewSender = Objects.requireNonNull(proceedToViewSender);
@@ -203,7 +200,7 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 
 	@Override
 	public void processProposal(Proposal proposal) {
-		log.trace("Proposal: Processing {}",  proposal);
+		log.trace("Proposal: Processing {}", proposal);
 		final View proposedVertexView = proposal.getView();
 		if (!this.currentView.equals(proposedVertexView)) {
 			log.trace("Proposal: Ignoring view {}, current is: {}", proposedVertexView, this.currentView);
@@ -294,12 +291,14 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 		this.pacemakerInfoSender.sendCurrentView(this.currentView);
 		if (this.self.equals(this.proposerElection.getProposer(nextView))) {
 			Proposal proposal = generateProposal(this.currentView);
+			log.trace("Broadcasting PROPOSAL: {}", () -> proposal);
 			this.sender.broadcastProposal(proposal, this.validatorSet.nodes());
 			this.counters.increment(CounterType.BFT_PROPOSALS_MADE);
 		}
 	}
 
 	private Proposal generateProposal(View view) {
+		// Hotstuff's Event-Driven OnBeat
 		final HighQC highQC = this.vertexStore.highQC();
 		final QuorumCertificate highestQC = highQC.highestQC();
 		final QuorumCertificate highestCommitted = highQC.highestCommittedQC();
@@ -311,20 +310,18 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 		if (highestQC.getProposed().getLedgerHeader().isEndOfEpoch()) {
 			nextCommand = null;
 		} else {
-            final List<PreparedVertex> preparedVertices = vertexStore.getPathFromRoot(highestQC.getProposed().getVertexId());
-            final Set<Hash> prepared = preparedVertices.stream()
-                .flatMap(PreparedVertex::getCommands)
-                .filter(Objects::nonNull)
-                .map(Command::getHash)
-                .collect(Collectors.toSet());
+			final List<PreparedVertex> preparedVertices = vertexStore.getPathFromRoot(highestQC.getProposed().getVertexId());
+			final Set<Hash> prepared = preparedVertices.stream()
+				.flatMap(PreparedVertex::getCommands)
+				.filter(Objects::nonNull)
+				.map(Command::hash)
+				.collect(Collectors.toSet());
 
-            nextCommand = nextCommandGenerator.generateNextCommand(view, prepared);
+			nextCommand = nextCommandGenerator.generateNextCommand(view, prepared);
 		}
 
 		final UnverifiedVertex proposedVertex = UnverifiedVertex.createVertex(highestQC, view, nextCommand);
-		final Hash vertexHash = this.hasher.hash(proposedVertex);
-		final ECDSASignature signature = this.signer.sign(vertexHash);
-		return new Proposal(proposedVertex, highestCommitted, this.self, signature);
+		return safetyRules.signProposal(proposedVertex, highestCommitted);
 	}
 
 	private long uncommittedViews(View v) {

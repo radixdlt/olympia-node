@@ -47,9 +47,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import org.apache.logging.log4j.CloseableThreadContext;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.ThreadContext;
 
 /**
  * A BFT network supporting the EventCoordinatorNetworkSender interface which
@@ -145,9 +145,12 @@ public final class DeterministicNetwork {
 			this.currentTime = Math.max(this.currentTime, controlledMessage.arrivalTime());
 			int receiver = controlledMessage.channelId().receiverIndex();
 			String bftNode = " " + this.nodeLookup.inverse().get(receiver);
-			try (final CloseableThreadContext.Instance ctc = CloseableThreadContext.put("bftNode", bftNode)) {
+			ThreadContext.put("bftNode", bftNode);
+			try {
 				log.debug("Received message {} at {}", controlledMessage, this.currentTime);
 				consensusRunners.get(receiver).handleMessage(controlledMessage.message());
+			} finally {
+				ThreadContext.remove("bftNode");
 			}
 		}
 	}
