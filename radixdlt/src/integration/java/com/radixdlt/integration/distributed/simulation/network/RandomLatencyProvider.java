@@ -17,7 +17,6 @@
 
 package com.radixdlt.integration.distributed.simulation.network;
 
-import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.LatencyProvider;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.MessageInTransit;
 import java.util.Random;
 import org.apache.logging.log4j.LogManager;

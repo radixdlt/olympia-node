@@ -26,7 +26,7 @@ import com.google.inject.name.Named;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.integration.distributed.simulation.network.RandomLatencyProvider;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
-import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.LatencyProvider;
+import com.radixdlt.integration.distributed.simulation.network.LatencyProvider;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;

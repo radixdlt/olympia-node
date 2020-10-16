@@ -27,6 +27,7 @@ import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.ChannelCommunication;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.junit.Before;
 import org.junit.Test;
@@ -34,16 +35,19 @@ import org.junit.Test;
 public class SimulationNetworkTest {
 	private BFTNode node1;
 	private BFTNode node2;
+	private ChannelCommunication channelCommunication;
+	private SimulationNetwork network;
 
 	@Before
 	public void setup() {
 		node1 = mock(BFTNode.class);
 		node2 = mock(BFTNode.class);
+		this.channelCommunication = new InOrderChannels(msg -> 50);
+		this.network = new SimulationNetwork(channelCommunication);
 	}
 
 	@Test
 	public void when_send_new_view_to_self__then_should_receive_it() {
-		SimulationNetwork network = new SimulationNetwork(msg -> 50);
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
 		network.getNetwork(node1).bftEvents()
 			.subscribe(testObserver);
@@ -55,7 +59,6 @@ public class SimulationNetworkTest {
 
 	@Test
 	public void when_send_new_view_to_self_twice__then_should_receive_both() {
-		SimulationNetwork network = new SimulationNetwork(msg -> 50);
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
 		network.getNetwork(node1).bftEvents()
 			.subscribe(testObserver);
@@ -68,7 +71,6 @@ public class SimulationNetworkTest {
 
 	@Test
 	public void when_self_and_other_send_new_view_to_self__then_should_receive_both() {
-		SimulationNetwork network = new SimulationNetwork(msg -> 50);
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
 		network.getNetwork(node1).bftEvents()
 			.subscribe(testObserver);
@@ -81,7 +83,6 @@ public class SimulationNetworkTest {
 
 	@Test
 	public void when_send_vote_to_self__then_should_receive_it() {
-		SimulationNetwork network = new SimulationNetwork(msg -> 50);
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
 		network.getNetwork(node1).bftEvents()
 			.subscribe(testObserver);
@@ -93,7 +94,6 @@ public class SimulationNetworkTest {
 
 	@Test
 	public void when_broadcast_proposal__then_should_receive_it() {
-		SimulationNetwork network = new SimulationNetwork(msg -> 50);
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
 		network.getNetwork(node1).bftEvents()
 			.subscribe(testObserver);
@@ -105,7 +105,7 @@ public class SimulationNetworkTest {
 
 	@Test
 	public void when_disabling_messages_and_send_new_view_message_to_other_node__then_should_not_receive_it() {
-		SimulationNetwork network = new SimulationNetwork(msg -> -1);
+		SimulationNetwork network = new SimulationNetwork(new InOrderChannels(msg -> -1));
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
 		network.getNetwork(node2).bftEvents()
 			.subscribe(testObserver);
@@ -117,7 +117,6 @@ public class SimulationNetworkTest {
 
 	@Test
 	public void when_send_get_vertex_request_to_another_node__then_should_receive_it() {
-		SimulationNetwork network = new SimulationNetwork(msg -> 50);
 		Hash vertexId = mock(Hash.class);
 
 		TestObserver<GetVerticesRequest> rpcRequestListener =

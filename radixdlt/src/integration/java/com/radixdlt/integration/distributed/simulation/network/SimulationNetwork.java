@@ -48,14 +48,12 @@ import com.radixdlt.sync.RemoteSyncRequest;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import io.reactivex.rxjava3.core.Observable;
 
-import io.reactivex.rxjava3.schedulers.Timed;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Simple simulated network implementation that just sends messages to itself with a configurable latency.
@@ -82,12 +80,20 @@ public class SimulationNetwork {
 			return new MessageInTransit(content, sender, receiver, 0, 0);
 		}
 
-		private MessageInTransit delayed(long delay) {
+		MessageInTransit delayed(long delay) {
 			return new MessageInTransit(content, sender, receiver, delay, delay);
 		}
 
-		private MessageInTransit delayAfterPrevious(long delayAfterPrevious) {
+		MessageInTransit delayAfterPrevious(long delayAfterPrevious) {
 			return new MessageInTransit(content, sender, receiver, delay, delayAfterPrevious);
+		}
+
+		public long getDelayAfterPrevious() {
+			return delayAfterPrevious;
+		}
+
+		public long getDelay() {
+			return delay;
 		}
 
 		public Object getContent() {
@@ -114,28 +120,17 @@ public class SimulationNetwork {
 		}
 	}
 
-	/**
-	 * The latency configuration for a network
-	 */
-	public interface LatencyProvider {
-
-		/**
-		 * If >= 0, returns the latency in milliseconds of the next message.
-		 * If < 0, signifies to drop the next message.
-		 *
-		 * @param msg the next message
-		 * @return the latency in milliseconds if >= 0, otherwise a negative number signifies a drop
-		 */
-		int nextLatency(MessageInTransit msg);
+	public interface ChannelCommunication {
+		Observable<MessageInTransit> transform(BFTNode sender, BFTNode receiver, Observable<MessageInTransit> messages);
 	}
 
 	private final Subject<MessageInTransit> receivedMessages;
 	private final Map<BFTNode, SimulatedNetworkImpl> receivers = new ConcurrentHashMap<>();
-	private final LatencyProvider latencyProvider;
+	private final ChannelCommunication channelCommunication;
 
 	@Inject
-	public SimulationNetwork(LatencyProvider latencyProvider) {
-		this.latencyProvider = latencyProvider;
+	public SimulationNetwork(ChannelCommunication channelCommunication) {
+		this.channelCommunication = Objects.requireNonNull(channelCommunication);
 		this.receivedMessages = ReplaySubject.<MessageInTransit>create(20) // To catch startup timing issues
 			.toSerialized();
 	}
@@ -153,6 +148,10 @@ public class SimulationNetwork {
 				.filter(msg -> msg.receiver.equals(node))
 				.groupBy(MessageInTransit::getSender)
 				.flatMap(groupedObservable ->
+					channelCommunication
+						.transform(groupedObservable.getKey(), node, groupedObservable)
+						.map(MessageInTransit::getContent)
+					/*
 					groupedObservable.map(msg -> {
 						if (msg.sender.equals(node)) {
 							return msg;
@@ -173,6 +172,7 @@ public class SimulationNetwork {
 					})
 					.concatMap(p -> Observable.just(p.value()).delay(p.value().delayAfterPrevious, TimeUnit.MILLISECONDS))
 					.map(MessageInTransit::getContent)
+					 */
 				)
 				.publish()
 				.refCount();

@@ -24,8 +24,10 @@ import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.name.Named;
+import com.radixdlt.integration.distributed.simulation.network.InOrderChannels;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
-import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.LatencyProvider;
+import com.radixdlt.integration.distributed.simulation.network.LatencyProvider;
+import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.ChannelCommunication;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.MessageInTransit;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -35,6 +37,7 @@ public class SimulationNetworkModule extends AbstractModule {
 	protected void configure() {
 		Multibinder.newSetBinder(binder(), new TypeLiteral<Predicate<MessageInTransit>>() { });
 		bind(SimulationNetwork.class).in(Scopes.SINGLETON);
+		bind(ChannelCommunication.class).to(InOrderChannels.class).in(Scopes.SINGLETON);
 	}
 
 	@Provides
