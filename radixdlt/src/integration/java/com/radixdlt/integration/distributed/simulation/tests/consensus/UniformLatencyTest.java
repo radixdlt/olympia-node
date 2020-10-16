@@ -31,10 +31,12 @@ public class UniformLatencyTest {
 	 * Sanity test check for a perfect network. 4 is the size used because it is
 	 * the smallest network size where quorum size (3) != network size. The sanity checks
 	 * done are:
-	 * 1. Committed vertices are the same across nodes
-	 * 2. The size of vertex store does not increase for any node
-	 * 3. A timeout never occurs for any node
-	 * 4. Every proposal has a direct parent
+	 * <ol>
+	 *   <li>Committed vertices are the same across nodes
+	 *   <li>The size of vertex store does not increase for any node
+	 *   <li>A timeout never occurs for any node
+	 *   <li>Every proposal has a direct parent
+	 * </ol>
 	 */
 	@Test
 	public void given_4_correct_bfts__then_should_pass_sanity_tests_over_1_minute() {

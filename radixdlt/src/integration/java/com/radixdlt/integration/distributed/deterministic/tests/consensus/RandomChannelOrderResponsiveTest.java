@@ -31,12 +31,12 @@ import java.util.stream.IntStream;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 
 public class RandomChannelOrderResponsiveTest {
 
 	private void run(int numNodes, long viewsToRun) {
-		assertTrue(viewsToRun % numNodes == 0);
+		assertEquals(0, viewsToRun % numNodes);
 
 		final Random random = new Random(12345);
 
@@ -52,7 +52,9 @@ public class RandomChannelOrderResponsiveTest {
 			.map(counters -> counters.get(CounterType.BFT_PROPOSALS_MADE))
 			.collect(ImmutableList.toImmutableList());
 
-		assertThat(proposalsMade).allMatch(l -> l == viewsToRun / numNodes);
+		assertThat(proposalsMade)
+			.hasSize(numNodes)
+			.allMatch(l -> l == viewsToRun / numNodes);
 	}
 
 	@Test

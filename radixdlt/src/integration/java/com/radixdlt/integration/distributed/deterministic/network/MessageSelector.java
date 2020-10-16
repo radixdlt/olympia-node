@@ -92,7 +92,7 @@ public interface MessageSelector {
 	 * 		processing after the specified number of views
 	 */
 	static MessageSelector selectAndStopAt(MessageSelector selector, View view) {
-		final long maxViewNumber = view.number();
+		final long maxViewNumber = view.previous().number();
 		return messageList -> {
 			ControlledMessage message = selector.select(messageList);
 			if (message == null || !(message.message() instanceof Proposal)) {
@@ -109,7 +109,7 @@ public interface MessageSelector {
 	 * views.
 	 *
 	 * @param selector the selector to use
-	 * @param view the last view to process
+	 * @param maxEpochView the last epoch and view to process
 	 * @return a selector that uses the specified selector, and halts
 	 * 		processing after the specified number of epochs and views
 	 */

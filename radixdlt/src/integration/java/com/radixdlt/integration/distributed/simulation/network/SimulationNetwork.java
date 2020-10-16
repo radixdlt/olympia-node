@@ -211,8 +211,10 @@ public class SimulationNetwork {
 		}
 
 		@Override
-		public void sendViewTimeout(ViewTimeout viewTimeout, BFTNode nextLeader) {
-			logAndSend(MessageInTransit.newMessage(viewTimeout, thisNode, nextLeader));
+		public void broadcastViewTimeout(ViewTimeout viewTimeout, Set<BFTNode> nodes) {
+			for (BFTNode reader : nodes) {
+				logAndSend(MessageInTransit.newMessage(viewTimeout, thisNode, reader));
+			}
 		}
 
 		@Override
@@ -303,12 +305,12 @@ public class SimulationNetwork {
 		}
 
 		private void logAndSend(MessageInTransit message) {
-			log.trace("Send {}", message);
+			log.debug("Send {}", message);
 			receivedMessages.onNext(message);
 		}
 
 		private void logMessage(MessageInTransit message) {
-			log.trace("Received {}", message);
+			log.debug("Receive {}", message);
 		}
 	}
 

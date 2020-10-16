@@ -56,45 +56,17 @@ public class DifferentTimestampsCauseTimeoutTest {
 		final int numNodes = 4;
 
 		LinkedList<Pair<ChannelId, Class<?>>> processingSequence = Lists.newLinkedList();
-		// Proposal here has genesis qc, which has no timestamps
-		processingSequence.add(Pair.of(ChannelId.of(1, 0), Proposal.class));
-		processingSequence.add(Pair.of(ChannelId.of(0, 0), BFTUpdate.class));
-		processingSequence.add(Pair.of(ChannelId.of(1, 1), Proposal.class));
-		processingSequence.add(Pair.of(ChannelId.of(1, 1), BFTUpdate.class));
-		processingSequence.add(Pair.of(ChannelId.of(1, 2), Proposal.class));
-		processingSequence.add(Pair.of(ChannelId.of(2, 2), BFTUpdate.class));
-		processingSequence.add(Pair.of(ChannelId.of(1, 3), Proposal.class));
+
+		addTwoViews(processingSequence);
+
+		processingSequence.add(Pair.of(ChannelId.of(3, 3), Proposal.class));
 		processingSequence.add(Pair.of(ChannelId.of(3, 3), BFTUpdate.class));
-
-		processingSequence.add(Pair.of(ChannelId.of(0, 2), Vote.class));
-		processingSequence.add(Pair.of(ChannelId.of(1, 2), Vote.class));
-		processingSequence.add(Pair.of(ChannelId.of(2, 2), Vote.class));
-		processingSequence.add(Pair.of(ChannelId.of(3, 2), Vote.class));
-
-		// Proposal here should have timestamps from previous view
-		// They are not mutated in this test
-		processingSequence.add(Pair.of(ChannelId.of(2, 0), Proposal.class));
-		processingSequence.add(Pair.of(ChannelId.of(0, 0), BFTUpdate.class));
-		processingSequence.add(Pair.of(ChannelId.of(2, 1), Proposal.class));
-		processingSequence.add(Pair.of(ChannelId.of(1, 1), BFTUpdate.class));
-		processingSequence.add(Pair.of(ChannelId.of(2, 2), Proposal.class));
-		processingSequence.add(Pair.of(ChannelId.of(2, 2), BFTUpdate.class));
-		processingSequence.add(Pair.of(ChannelId.of(2, 3), Proposal.class));
-		processingSequence.add(Pair.of(ChannelId.of(3, 3), BFTUpdate.class));
-
-		processingSequence.add(Pair.of(ChannelId.of(0, 3), Vote.class));
-		processingSequence.add(Pair.of(ChannelId.of(1, 3), Vote.class));
-		processingSequence.add(Pair.of(ChannelId.of(2, 3), Vote.class));
-		processingSequence.add(Pair.of(ChannelId.of(3, 3), Vote.class));
-
 		processingSequence.add(Pair.of(ChannelId.of(3, 0), Proposal.class));
 		processingSequence.add(Pair.of(ChannelId.of(0, 0), BFTUpdate.class));
 		processingSequence.add(Pair.of(ChannelId.of(3, 1), Proposal.class));
 		processingSequence.add(Pair.of(ChannelId.of(1, 1), BFTUpdate.class));
 		processingSequence.add(Pair.of(ChannelId.of(3, 2), Proposal.class));
 		processingSequence.add(Pair.of(ChannelId.of(2, 2), BFTUpdate.class));
-		processingSequence.add(Pair.of(ChannelId.of(3, 3), Proposal.class));
-		processingSequence.add(Pair.of(ChannelId.of(3, 3), BFTUpdate.class));
 
 		DeterministicTest.builder()
 			.numNodes(numNodes)
@@ -110,41 +82,12 @@ public class DifferentTimestampsCauseTimeoutTest {
 
 		LinkedList<Pair<ChannelId, Class<?>>> processingSequence = Lists.newLinkedList();
 
-		// Proposal here has genesis qc, which has no timestamps
-		processingSequence.add(Pair.of(ChannelId.of(1, 0), Proposal.class));
-		processingSequence.add(Pair.of(ChannelId.of(0, 0), BFTUpdate.class));
-		processingSequence.add(Pair.of(ChannelId.of(1, 1), Proposal.class));
-		processingSequence.add(Pair.of(ChannelId.of(1, 1), BFTUpdate.class));
-		processingSequence.add(Pair.of(ChannelId.of(1, 2), Proposal.class));
-		processingSequence.add(Pair.of(ChannelId.of(2, 2), BFTUpdate.class));
-		processingSequence.add(Pair.of(ChannelId.of(1, 3), Proposal.class));
-		processingSequence.add(Pair.of(ChannelId.of(3, 3), BFTUpdate.class));
-
-		processingSequence.add(Pair.of(ChannelId.of(0, 2), Vote.class));
-		processingSequence.add(Pair.of(ChannelId.of(1, 2), Vote.class));
-		processingSequence.add(Pair.of(ChannelId.of(2, 2), Vote.class));
-		processingSequence.add(Pair.of(ChannelId.of(3, 2), Vote.class));
-
-		// Proposal here should have timestamps from previous view
-		// They are mutated in this test
-		processingSequence.add(Pair.of(ChannelId.of(2, 0), Proposal.class));
-		processingSequence.add(Pair.of(ChannelId.of(0, 0), BFTUpdate.class));
-		processingSequence.add(Pair.of(ChannelId.of(2, 1), Proposal.class));
-		processingSequence.add(Pair.of(ChannelId.of(1, 1), BFTUpdate.class));
-		processingSequence.add(Pair.of(ChannelId.of(2, 2), Proposal.class));
-		processingSequence.add(Pair.of(ChannelId.of(2, 2), BFTUpdate.class));
-		processingSequence.add(Pair.of(ChannelId.of(2, 3), Proposal.class));
-		processingSequence.add(Pair.of(ChannelId.of(3, 3), BFTUpdate.class));
-
-		processingSequence.add(Pair.of(ChannelId.of(0, 3), Vote.class));
-		processingSequence.add(Pair.of(ChannelId.of(1, 3), Vote.class));
-		processingSequence.add(Pair.of(ChannelId.of(2, 3), Vote.class));
-		processingSequence.add(Pair.of(ChannelId.of(3, 3), Vote.class));
+		addTwoViews(processingSequence);
 
 		// Timeouts from nodes
 		processingSequence.add(Pair.of(ChannelId.of(0, 0), LocalTimeout.class));
 		processingSequence.add(Pair.of(ChannelId.of(1, 1), LocalTimeout.class));
-		// 2 (leader) will have already moved on to next view
+		processingSequence.add(Pair.of(ChannelId.of(2, 2), LocalTimeout.class));
 		processingSequence.add(Pair.of(ChannelId.of(3, 3), LocalTimeout.class));
 
 		// TODO: this test isn't exactly right and should be updated so that
@@ -164,16 +107,53 @@ public class DifferentTimestampsCauseTimeoutTest {
 			.run();
 	}
 
+	private void addTwoViews(LinkedList<Pair<ChannelId, Class<?>>> processingSequence) {
+		// Proposal here has genesis qc, which has no timestamps
+		processingSequence.add(Pair.of(ChannelId.of(1, 1), Proposal.class)); // Messages to self first
+		processingSequence.add(Pair.of(ChannelId.of(1, 1), BFTUpdate.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 0), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(0, 0), BFTUpdate.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 2), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 2), BFTUpdate.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 3), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(3, 3), BFTUpdate.class));
+
+		processingSequence.add(Pair.of(ChannelId.of(2, 2), Vote.class)); // Messages to self first
+		processingSequence.add(Pair.of(ChannelId.of(1, 2), Vote.class)); // Leader votes early as it sees proposal early
+		processingSequence.add(Pair.of(ChannelId.of(0, 2), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(3, 2), Vote.class));
+
+		// Proposal here should have timestamps from previous view
+		// They are mutated as required by the test
+		processingSequence.add(Pair.of(ChannelId.of(2, 2), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 2), BFTUpdate.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 0), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(0, 0), BFTUpdate.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 1), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 1), BFTUpdate.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 3), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(3, 3), BFTUpdate.class));
+
+		processingSequence.add(Pair.of(ChannelId.of(3, 3), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 3), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(0, 3), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 3), Vote.class));
+	}
+
 	private MessageMutator mutateProposalsBy(int factor) {
-		return (rank, message, queue) -> {
+		return (message, queue) -> {
 			ControlledMessage messageToUse = message;
 			Object msg = message.message();
 			if (msg instanceof Proposal) {
 				Proposal p = (Proposal) msg;
 				int receiverIndex = message.channelId().receiverIndex();
-				messageToUse = new ControlledMessage(message.channelId(), mutateProposal(p, receiverIndex * factor));
+				messageToUse = new ControlledMessage(
+					message.channelId(),
+					mutateProposal(p, receiverIndex * factor),
+					message.arrivalTime()
+				);
 			}
-			queue.add(rank, messageToUse);
+			queue.add(messageToUse);
 			return true;
 		};
 	}
@@ -232,7 +212,7 @@ public class DifferentTimestampsCauseTimeoutTest {
 					return message;
 				}
 			}
-			fail(String.format("Can't find %s message %s: %s", msgClass.getSimpleName(), channel, messages));
+			fail(String.format("Can't find %s %s message in: %s", channel, msgClass.getSimpleName(), messages));
 			return null; // Not required, but compiler can't tell that fail throws exception
 		};
 	}

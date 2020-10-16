@@ -47,6 +47,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import org.apache.logging.log4j.CloseableThreadContext;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -56,6 +57,7 @@ import org.apache.logging.log4j.Logger;
  */
 public final class DeterministicNetwork {
 	private static final Logger log = LogManager.getLogger();
+	private static final long DEFAULT_LATENCY = 50L; // virtual milliseconds
 
 	public interface DeterministicSender extends
 		ProposalBroadcaster,
@@ -73,26 +75,32 @@ public final class DeterministicNetwork {
 	private final MessageQueue messageQueue = new MessageQueue();
 	private final MessageSelector messageSelector;
 	private final MessageMutator messageMutator;
+	private final long pacemakerTimeout;
 
 	private final ImmutableBiMap<BFTNode, Integer> nodeLookup;
 	private final ImmutableList<Injector> nodeInstances;
+
+	private long currentTime = 0L;
 
 	/**
 	 * Create a BFT test network for deterministic tests.
 	 * @param nodes The nodes on the network
 	 * @param messageSelector A {@link MessageSelector} for choosing messages to process next
 	 * @param messageMutator A {@link MessageMutator} for mutating and queueing messages
+	 * @param pacemakerTimeout The timeout duration in milliseconds for the pacemaker
 	 * @param syncExecutionModules Guice modules to use for specifying sync execution sub-system
 	 */
 	public DeterministicNetwork(
 		List<BFTNode> nodes,
 		MessageSelector messageSelector,
 		MessageMutator messageMutator,
+		long pacemakerTimeout,
 		Collection<Module> syncExecutionModules,
 		Module overrideModule
 	) {
 		this.messageSelector = Objects.requireNonNull(messageSelector);
 		this.messageMutator = Objects.requireNonNull(messageMutator);
+		this.pacemakerTimeout = pacemakerTimeout;
 		this.nodeLookup = Streams.mapWithIndex(
 			nodes.stream(),
 			(node, index) -> Pair.of(node, (int) index)
@@ -115,6 +123,8 @@ public final class DeterministicNetwork {
 	}
 
 	public void run() {
+		this.currentTime = 0L;
+
 		List<DeterministicConsensusRunner> consensusRunners = this.nodeInstances.stream()
 			.map(i -> i.getInstance(DeterministicConsensusRunner.class))
 			.collect(Collectors.toList());
@@ -122,7 +132,7 @@ public final class DeterministicNetwork {
 		consensusRunners.forEach(DeterministicConsensusRunner::start);
 
 		while (true) {
-			List<ControlledMessage> controlledMessages = this.messageQueue.lowestRankMessages();
+			List<ControlledMessage> controlledMessages = this.messageQueue.lowestTimeMessages();
 			if (controlledMessages.isEmpty()) {
 				throw new IllegalStateException("No messages available (Lost Responsiveness)");
 			}
@@ -132,15 +142,12 @@ public final class DeterministicNetwork {
 				break;
 			}
 			this.messageQueue.remove(controlledMessage);
+			this.currentTime = Math.max(this.currentTime, controlledMessage.arrivalTime());
 			int receiver = controlledMessage.channelId().receiverIndex();
-			Thread thisThread = Thread.currentThread();
-			String oldThreadName = thisThread.getName();
-			thisThread.setName(oldThreadName + " " + this.nodeLookup.inverse().get(receiver));
-			try {
-				log.debug("Received message {}", controlledMessage);
+			String bftNode = " " + this.nodeLookup.inverse().get(receiver);
+			try (final CloseableThreadContext.Instance ctc = CloseableThreadContext.put("bftNode", bftNode)) {
+				log.debug("Received message {} at {}", controlledMessage, this.currentTime);
 				consensusRunners.get(receiver).handleMessage(controlledMessage.message());
-			} finally {
-				thisThread.setName(oldThreadName);
 			}
 		}
 	}
@@ -153,6 +160,10 @@ public final class DeterministicNetwork {
 		return this.nodeInstances.get(nodeIndex).getInstance(SystemCounters.class);
 	}
 
+	public long currentTime() {
+		return this.currentTime;
+	}
+
 	public void dumpMessages(PrintStream out) {
 		this.messageQueue.dump(out);
 	}
@@ -161,19 +172,24 @@ public final class DeterministicNetwork {
 		return this.nodeLookup.get(node);
 	}
 
-	void handleMessage(MessageRank rank, ControlledMessage controlledMessage) {
+	long delayForChannel(ChannelId channelId) {
+		if (channelId.receiverIndex() == channelId.senderIndex()) {
+			return 0L;
+		}
+		return DEFAULT_LATENCY;
+	}
+
+	void handleMessage(ControlledMessage controlledMessage) {
 		log.debug("Sent message {}", controlledMessage);
-		if (!this.messageMutator.mutate(rank, controlledMessage, this.messageQueue)) {
+		if (!this.messageMutator.mutate(controlledMessage, this.messageQueue)) {
 			// If nothing processes this message, we just add it to the queue
-			this.messageQueue.add(rank, controlledMessage);
+			this.messageQueue.add(controlledMessage);
 		}
 	}
 
 	private Injector createBFTInstance(BFTNode self, int index, Collection<Module> syncExecutionModules, Module overrideModule) {
 		Module module = Modules.combine(
-			// An arbitrary timeout for the pacemaker, as time is handled differently
-			// in a deterministic test.
-			new ConsensusModule(1, 2.0, 63),
+			new ConsensusModule(this.pacemakerTimeout, 2.0, 0),
 			new MockedCryptoModule(),
 			new DeterministicNetworkModule(self, createSender(self, index)),
 			Modules.combine(syncExecutionModules)

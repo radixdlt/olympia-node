@@ -48,7 +48,7 @@ public class SimulationNetworkTest {
 		network.getNetwork(node1).bftEvents()
 			.subscribe(testObserver);
 		ViewTimeout viewTimeout = mock(ViewTimeout.class);
-		network.getNetwork(node1).sendViewTimeout(viewTimeout, node1);
+		network.getNetwork(node1).broadcastViewTimeout(viewTimeout, ImmutableSet.of(node1));
 		testObserver.awaitCount(1);
 		testObserver.assertValue(viewTimeout);
 	}
@@ -60,8 +60,8 @@ public class SimulationNetworkTest {
 		network.getNetwork(node1).bftEvents()
 			.subscribe(testObserver);
 		ViewTimeout viewTimeout = mock(ViewTimeout.class);
-		network.getNetwork(node1).sendViewTimeout(viewTimeout, node1);
-		network.getNetwork(node1).sendViewTimeout(viewTimeout, node1);
+		network.getNetwork(node1).broadcastViewTimeout(viewTimeout, ImmutableSet.of(node1));
+		network.getNetwork(node1).broadcastViewTimeout(viewTimeout, ImmutableSet.of(node1));
 		testObserver.awaitCount(2);
 		testObserver.assertValues(viewTimeout, viewTimeout);
 	}
@@ -73,8 +73,8 @@ public class SimulationNetworkTest {
 		network.getNetwork(node1).bftEvents()
 			.subscribe(testObserver);
 		ViewTimeout viewTimeout = mock(ViewTimeout.class);
-		network.getNetwork(node1).sendViewTimeout(viewTimeout, node1);
-		network.getNetwork(node2).sendViewTimeout(viewTimeout, node1);
+		network.getNetwork(node1).broadcastViewTimeout(viewTimeout, ImmutableSet.of(node1));
+		network.getNetwork(node2).broadcastViewTimeout(viewTimeout, ImmutableSet.of(node1));
 		testObserver.awaitCount(2);
 		testObserver.assertValues(viewTimeout, viewTimeout);
 	}
@@ -113,7 +113,7 @@ public class SimulationNetworkTest {
 		network.getNetwork(node2).bftEvents()
 			.subscribe(testObserver);
 		ViewTimeout viewTimeout = mock(ViewTimeout.class);
-		network.getNetwork(node1).sendViewTimeout(viewTimeout, node1);
+		network.getNetwork(node1).broadcastViewTimeout(viewTimeout, ImmutableSet.of(node1));
 		testObserver.awaitCount(1);
 		testObserver.assertEmpty();
 	}
