@@ -23,6 +23,7 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.integration.distributed.simulation.NetworkDroppers;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
+import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
@@ -39,6 +40,7 @@ public class RandomNewViewDropperTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(8, 4)
 		.networkModules(
+			NetworkOrdering.inOrder(),
 			NetworkLatencies.fixed(),
 			NetworkDroppers.randomNewViewsDropped(0.2)
 		)

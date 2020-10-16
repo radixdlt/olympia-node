@@ -21,6 +21,7 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
+import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
@@ -31,7 +32,10 @@ import org.junit.Test;
 public class SanityTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(4)
-		.networkModules(NetworkLatencies.fixed())
+		.networkModules(
+			NetworkOrdering.inOrder(),
+			NetworkLatencies.fixed()
+		)
 		.ledgerAndRadixEngineWithEpochHighView(View.of(10))
 		.checkConsensusSafety("safety")
 		.checkConsensusLiveness("liveness", 1000, TimeUnit.MILLISECONDS)

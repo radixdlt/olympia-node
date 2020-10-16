@@ -22,6 +22,7 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.integration.distributed.simulation.NetworkDroppers;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
+import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
@@ -43,6 +44,7 @@ public class OneNodeNeverSendEpochResponseTest {
 
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.networkModules(
+			NetworkOrdering.inOrder(),
 			NetworkLatencies.fixed(),
 			NetworkDroppers.oneNodePerEpochResponseDropped()
 		)

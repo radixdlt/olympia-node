@@ -21,6 +21,7 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
+import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
@@ -39,7 +40,10 @@ public class RandomValidatorsTest {
 	private static final int numNodes = 50;
 
 	private final Builder bftTestBuilder = SimulationTest.builder()
-		.networkModules(NetworkLatencies.fixed())
+		.networkModules(
+			NetworkOrdering.inOrder(),
+			NetworkLatencies.fixed()
+		)
 		.pacemakerTimeout(5000)
 		.numNodes(numNodes, 2)
 		.checkEpochsHighViewCorrect("epochHighView", View.of(100))

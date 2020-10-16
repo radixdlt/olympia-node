@@ -20,6 +20,7 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
+import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
@@ -33,6 +34,10 @@ public class OneOutOfBoundsTest {
 	private final int outOfBoundsLatency = synchronousTimeout;
 	// TODO: Add 1 timeout check
 	private final Builder bftTestBuilder = SimulationTest.builder()
+		.networkModules(
+			NetworkOrdering.inOrder(),
+			NetworkLatencies.oneOutOfBounds(latency, outOfBoundsLatency)
+		)
 		.pacemakerTimeout(synchronousTimeout)
 		.checkConsensusLiveness("liveness", 2 * synchronousTimeout, TimeUnit.MILLISECONDS)
 		.checkConsensusSafety("safety");
@@ -44,7 +49,6 @@ public class OneOutOfBoundsTest {
 	public void given_1_out_of_4_nodes_out_of_synchrony_bounds() {
 		SimulationTest test = bftTestBuilder
 			.numNodes(4)
-			.networkModules(NetworkLatencies.oneOutOfBounds(latency, outOfBoundsLatency))
 			.build();
 
 		TestResults results = test.run();

@@ -21,6 +21,7 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.radixdlt.integration.distributed.simulation.NetworkDroppers;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
+import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
@@ -40,6 +41,7 @@ public class OneSlowNodeTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(4)
 		.networkModules(
+			NetworkOrdering.inOrder(),
 			NetworkLatencies.oneOutOfBounds(minLatency, maxLatency),
 			NetworkDroppers.bftSyncMessagesDropped()
 		)

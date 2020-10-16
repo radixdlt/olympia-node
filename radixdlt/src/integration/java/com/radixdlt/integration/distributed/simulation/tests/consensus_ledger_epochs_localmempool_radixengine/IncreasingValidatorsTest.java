@@ -21,6 +21,7 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
+import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
@@ -33,7 +34,10 @@ import org.junit.Test;
  */
 public class IncreasingValidatorsTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
-		.networkModules(NetworkLatencies.fixed())
+		.networkModules(
+			NetworkOrdering.inOrder(),
+			NetworkLatencies.fixed()
+		)
 		.numNodes(50, 2) // Can't be 1 otherwise epochs move too fast, TODO: Fix with mempool-aware pacemaker
 		.ledgerAndRadixEngineWithEpochHighView(View.of(10))
 		.checkConsensusSafety("safety")

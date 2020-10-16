@@ -27,6 +27,7 @@ import com.radixdlt.integration.distributed.IncorrectAlwaysAcceptingAccumulatorV
 import com.radixdlt.integration.distributed.SometimesByzantineCommittedReader;
 import com.radixdlt.integration.distributed.simulation.NetworkDroppers;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
+import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
@@ -64,6 +65,7 @@ public class ByzantineSyncTest {
 		this.bftTestBuilder	= SimulationTest.builder()
 			.numNodes(numNodes)
 			.networkModules(
+				NetworkOrdering.inOrder(),
 				NetworkLatencies.random(10, 200),
 				NetworkDroppers.fNodesAllReceivedProposalsDropped()
 			)

@@ -22,6 +22,7 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.integration.distributed.simulation.NetworkDroppers;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
+import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
@@ -50,6 +51,7 @@ public class FNodesNeverReceiveProposalDropperTest {
 		this.bftTestBuilder = SimulationTest.builder()
 			.numNodes(numNodes)
 			.networkModules(
+				NetworkOrdering.inOrder(),
 				NetworkLatencies.fixed(10),
 				NetworkDroppers.fNodesAllReceivedProposalsDropped()
 			)
