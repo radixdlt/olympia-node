@@ -163,6 +163,7 @@ public class TicTacToeRunner {
 			this.aid = AID.from(hash.toByteArray());
 		}
 
+		@Override
 		public Hash getWitness() {
 			return hash;
 		}
