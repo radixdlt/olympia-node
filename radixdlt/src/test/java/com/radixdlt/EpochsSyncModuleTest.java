@@ -41,6 +41,7 @@ import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier;
 import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier.InvalidValidatorSetSender;
 import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier.VerifiedValidatorSetSender;
 import com.radixdlt.sync.StateSyncNetwork;
+import com.radixdlt.sync.SyncPatienceMillis;
 import com.radixdlt.utils.TypedMocks;
 
 import java.util.Comparator;
@@ -68,6 +69,7 @@ public class EpochsSyncModuleTest {
 				bind(StateSyncNetwork.class).toInstance(mock(StateSyncNetwork.class));
 				bind(SyncTimeoutScheduler.class).toInstance(mock(SyncTimeoutScheduler.class));
 				bind(new TypeLiteral<Comparator<AccumulatorState>>() { }).toInstance(TypedMocks.rmock(Comparator.class));
+				bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(200);
 			}
 		};
 	}

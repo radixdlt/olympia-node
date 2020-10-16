@@ -87,6 +87,7 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
 import com.radixdlt.network.TimeSupplier;
+import com.radixdlt.sync.SyncPatienceMillis;
 import com.radixdlt.utils.DurationParser;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
@@ -145,17 +146,20 @@ public class SimulationTest {
 
 	public static class Builder {
 		private enum LedgerType {
-			MOCKED_LEDGER(false),
-			LEDGER(false),
-			LEDGER_AND_SYNC(false),
-			LEDGER_AND_LOCALMEMPOOL(false),
-			LEDGER_AND_EPOCHS(true),
-			LEDGER_AND_EPOCHS_AND_SYNC(true),
-			LEDGER_AND_LOCALMEMPOOL_AND_EPOCHS_AND_RADIXENGINE(true);
+			MOCKED_LEDGER(false, false),
+			LEDGER(false, false),
+			LEDGER_AND_SYNC(false, true),
+			LEDGER_AND_LOCALMEMPOOL(false, false),
+			LEDGER_AND_EPOCHS(true, false),
+			LEDGER_AND_EPOCHS_AND_SYNC(true, true),
+			LEDGER_AND_LOCALMEMPOOL_AND_EPOCHS_AND_RADIXENGINE(true, false);
 
 			private final boolean hasEpochs;
-			LedgerType(boolean hasEpochs) {
+			private final boolean hasSync;
+
+			LedgerType(boolean hasEpochs, boolean hasSync) {
 				this.hasEpochs = hasEpochs;
+				this.hasSync = hasSync;
 			}
 		}
 
@@ -418,8 +422,6 @@ public class SimulationTest {
 					modules.add(new MockedStateComputerModule());
 					modules.add(new MockedSyncServiceModule());
 				} else if (ledgerType == LedgerType.LEDGER_AND_SYNC) {
-					modules.add(new SyncServiceModule());
-					modules.add(new SyncRxModule());
 					modules.add(new MockedLedgerUpdateRxModule());
 					modules.add(new MockedLedgerUpdateSender());
 					modules.add(new MockedConsensusRunnerModule());
@@ -443,10 +445,6 @@ public class SimulationTest {
 					modules.add(new MockedSyncServiceModule());
 					modules.add(new MockedStateComputerModule());
 				} else if (ledgerType == LedgerType.LEDGER_AND_EPOCHS) {
-					modules.add(new EpochsLedgerUpdateModule());
-					modules.add(new EpochsLedgerUpdateRxModule());
-					modules.add(new EpochsConsensusModule(pacemakerTimeout, 2.0, 0)); // constant for now
-					modules.add(new ConsensusRunnerModule());
 					modules.add(new LedgerCommandGeneratorModule());
 					modules.add(new MockedMempoolModule());
 					Function<Long, BFTValidatorSet> epochToValidatorSetMapping =
@@ -458,10 +456,6 @@ public class SimulationTest {
 					modules.add(new MockedStateComputerWithEpochsModule(epochHighView, epochToValidatorSetMapping));
 					modules.add(new MockedSyncServiceModule());
 				} else if (ledgerType == LedgerType.LEDGER_AND_EPOCHS_AND_SYNC) {
-					modules.add(new EpochsLedgerUpdateModule());
-					modules.add(new EpochsLedgerUpdateRxModule());
-					modules.add(new EpochsConsensusModule(pacemakerTimeout, 2.0, 0)); // constant for now
-					modules.add(new ConsensusRunnerModule());
 					modules.add(new MockedCommandGeneratorModule());
 					modules.add(new MockedMempoolModule());
 					Function<Long, BFTValidatorSet> epochToValidatorSetMapping =
@@ -472,15 +466,9 @@ public class SimulationTest {
 								.collect(Collectors.toList())));
 					modules.add(new MockedStateComputerWithEpochsModule(epochHighView, epochToValidatorSetMapping));
 					modules.add(new EpochsSyncModule());
-					modules.add(new SyncServiceModule());
 					modules.add(new SyncRunnerModule());
-					modules.add(new SyncRxModule());
 					modules.add(new MockedCommittedReaderModule());
 				} else if (ledgerType == LedgerType.LEDGER_AND_LOCALMEMPOOL_AND_EPOCHS_AND_RADIXENGINE) {
-					modules.add(new EpochsLedgerUpdateModule());
-					modules.add(new EpochsLedgerUpdateRxModule());
-					modules.add(new EpochsConsensusModule(pacemakerTimeout, 2.0, 0)); // constant for now
-					modules.add(new ConsensusRunnerModule());
 					modules.add(new LedgerCommandGeneratorModule());
 					modules.add(new LedgerLocalMempoolModule(10));
 					modules.add(new AbstractModule() {
@@ -494,6 +482,24 @@ public class SimulationTest {
 					modules.add(new MockedSyncServiceModule());
 					modules.add(new MockedRadixEngineStoreModule());
 				}
+			}
+
+			if (ledgerType.hasEpochs) {
+				modules.add(new EpochsLedgerUpdateModule());
+				modules.add(new EpochsLedgerUpdateRxModule());
+				modules.add(new EpochsConsensusModule(pacemakerTimeout, 2.0, 0)); // constant for now
+				modules.add(new ConsensusRunnerModule());
+			}
+
+			if (ledgerType.hasSync) {
+				modules.add(new AbstractModule() {
+					@Override
+					public void configure() {
+						bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(50);
+					}
+				});
+				modules.add(new SyncServiceModule());
+				modules.add(new SyncRxModule());
 			}
 
 			ImmutableSet<SimulationNetworkActor> runners = this.runnableBuilder.build().stream()

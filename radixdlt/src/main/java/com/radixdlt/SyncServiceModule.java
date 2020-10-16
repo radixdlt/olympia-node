@@ -43,6 +43,7 @@ import com.radixdlt.sync.RemoteSyncServiceProcessor;
 import com.radixdlt.sync.StateSyncNetwork;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncTimeoutScheduler;
+import com.radixdlt.sync.SyncPatienceMillis;
 import java.util.Comparator;
 
 /**
@@ -135,14 +136,15 @@ public class SyncServiceModule extends AbstractModule {
 		Comparator<AccumulatorState> accumulatorComparator,
 		StateSyncNetwork stateSyncNetwork,
 		SyncTimeoutScheduler syncTimeoutScheduler,
-		BFTConfiguration initialConfiguration
+		BFTConfiguration initialConfiguration,
+		@SyncPatienceMillis int syncPatienceMillis
 	) {
 		return new LocalSyncServiceAccumulatorProcessor(
 			stateSyncNetwork,
 			syncTimeoutScheduler,
 			accumulatorComparator,
 			initialConfiguration.getGenesisHeader(),
-			200
+			syncPatienceMillis
 		);
 	}
 }

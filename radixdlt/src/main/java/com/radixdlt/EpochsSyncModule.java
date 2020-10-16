@@ -41,6 +41,7 @@ import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier.InvalidValidator
 import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier.VerifiedValidatorSetSender;
 import com.radixdlt.sync.LocalSyncServiceProcessor;
 import com.radixdlt.sync.StateSyncNetwork;
+import com.radixdlt.sync.SyncPatienceMillis;
 import java.util.Comparator;
 import java.util.Set;
 import java.util.function.Function;
@@ -98,7 +99,8 @@ public class EpochsSyncModule extends AbstractModule {
 	private Function<BFTConfiguration, LocalSyncServiceAccumulatorProcessor> localSyncFactory(
 		Comparator<AccumulatorState> accumulatorComparator,
 		StateSyncNetwork stateSyncNetwork,
-		SyncTimeoutScheduler syncTimeoutScheduler
+		SyncTimeoutScheduler syncTimeoutScheduler,
+		@SyncPatienceMillis int syncPatienceMillis
 	) {
 		return config ->
 			new LocalSyncServiceAccumulatorProcessor(
@@ -106,7 +108,7 @@ public class EpochsSyncModule extends AbstractModule {
 				syncTimeoutScheduler,
 				accumulatorComparator,
 				config.getGenesisHeader(),
-				200
+				syncPatienceMillis
 			);
 	}
 }

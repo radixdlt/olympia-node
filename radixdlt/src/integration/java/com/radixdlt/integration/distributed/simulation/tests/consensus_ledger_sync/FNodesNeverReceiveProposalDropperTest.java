@@ -25,26 +25,42 @@ import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.LongSummaryStatistics;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
-public class OneNodeNeverReceiveProposalDropperTest {
-	private final Builder bftTestBuilder = SimulationTest.builder()
-		.numNodes(4)
-		.networkModules(
-			NetworkLatencies.random(10, 200),
-			NetworkDroppers.fNodesAllReceivedProposalsDropped()
-		)
-		.pacemakerTimeout(5000)
-		.ledgerAndSync()
-		.checkConsensusSafety("safety")
-		.checkConsensusLiveness("liveness", 5000, TimeUnit.MILLISECONDS)
-		.checkConsensusNoTimeouts("noTimeouts")
-		.checkConsensusAllProposalsHaveDirectParents("directParents")
-		.checkLedgerInOrder("ledgerInOrder")
-		.checkLedgerProcessesConsensusCommitted("consensusToLedger");
+@RunWith(Parameterized.class)
+public class FNodesNeverReceiveProposalDropperTest {
+	@Parameters
+	public static Collection<Object[]> numNodes() {
+		return Arrays.asList(new Object[][] {
+			{4}, {100}
+		});
+	}
+
+	private final Builder bftTestBuilder;
+
+	public FNodesNeverReceiveProposalDropperTest(int numNodes) {
+		this.bftTestBuilder = SimulationTest.builder()
+			.numNodes(numNodes)
+			.networkModules(
+				NetworkLatencies.fixed(10),
+				NetworkDroppers.fNodesAllReceivedProposalsDropped()
+			)
+			.pacemakerTimeout(5000)
+			.ledgerAndSync()
+			.checkConsensusSafety("safety")
+			.checkConsensusLiveness("liveness", 5000, TimeUnit.MILLISECONDS)
+			.checkConsensusAllProposalsHaveDirectParents("directParents")
+			.checkLedgerInOrder("ledgerInOrder")
+			.checkLedgerProcessesConsensusCommitted("consensusToLedger");
+	}
 
 	@Test
 	public void sanity_tests_should_pass() {

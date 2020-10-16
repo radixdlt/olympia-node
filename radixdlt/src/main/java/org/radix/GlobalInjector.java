@@ -63,6 +63,7 @@ import com.radixdlt.network.messaging.MessageCentralModule;
 import com.radixdlt.network.transport.tcp.TCPTransportModule;
 import com.radixdlt.network.transport.udp.UDPTransportModule;
 import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.sync.SyncPatienceMillis;
 import com.radixdlt.universe.Universe;
 
 import javax.inject.Inject;
@@ -91,6 +92,8 @@ public class GlobalInjector {
 				bind(BFTNode.class).annotatedWith(Names.named("self")).toProvider(SelfBFTNodeProvider.class);
 
 				bind(PeerManagerConfiguration.class).toInstance(PeerManagerConfiguration.fromRuntimeProperties(properties));
+
+				bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(200);
 			}
 		};
 
