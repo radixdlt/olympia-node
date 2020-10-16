@@ -56,6 +56,7 @@ import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.network.TimeSupplier;
 import java.util.Comparator;
 import java.util.Set;
@@ -196,13 +197,17 @@ public final class ConsensusModule extends AbstractModule {
 		Pacemaker pacemaker,
 		SyncVerticesRequestSender requestSender,
 		SyncLedgerRequestSender syncLedgerRequestSender,
-		BFTConfiguration configuration
+		BFTConfiguration configuration,
+		SystemCounters counters
 	) {
 		return new BFTSync(
 			vertexStore,
 			pacemaker,
 			Comparator.comparingLong((LedgerHeader h) -> h.getAccumulatorState().getStateVersion()),
-			requestSender,
+			(node, id, count)  -> {
+				counters.increment(CounterType.BFT_SYNC_REQUESTS_SENT);
+				requestSender.sendGetVerticesRequest(node, id, count);
+			},
 			syncLedgerRequestSender,
 			configuration.getGenesisHeader()
 		);

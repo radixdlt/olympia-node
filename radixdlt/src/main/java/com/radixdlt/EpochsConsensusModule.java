@@ -54,6 +54,7 @@ import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVertic
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
 import java.util.Comparator;
 
 /**
@@ -146,13 +147,17 @@ public class EpochsConsensusModule extends AbstractModule {
 	private BFTSyncFactory bftSyncFactory(
 		SyncVerticesRequestSender requestSender,
 		SyncLedgerRequestSender syncLedgerRequestSender,
-		BFTConfiguration configuration
+		BFTConfiguration configuration,
+		SystemCounters counters
 	) {
 		return (vertexStore, pacemaker) -> new BFTSync(
 			vertexStore,
 			pacemaker,
 			Comparator.comparingLong((LedgerHeader h) -> h.getAccumulatorState().getStateVersion()),
-			requestSender,
+			(node, id, count)  -> {
+				counters.increment(CounterType.BFT_SYNC_REQUESTS_SENT);
+				requestSender.sendGetVerticesRequest(node, id, count);
+			},
 			syncLedgerRequestSender,
 			configuration.getGenesisHeader()
 		);

@@ -39,6 +39,7 @@ public interface SystemCounters {
 		BFT_VOTE_RTT_MEAN("bft.vote_rtt.mean"),
 		BFT_VOTE_RTT_MIN("bft.vote_rtt.min"),
 		BFT_VOTE_RTT_SIGMA("bft.vote_rtt.sigma"),
+		BFT_SYNC_REQUESTS_SENT("bft.sync.requests_sent"),
 
 		EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS("epoch_manager.queued_consensus_events"),
 
