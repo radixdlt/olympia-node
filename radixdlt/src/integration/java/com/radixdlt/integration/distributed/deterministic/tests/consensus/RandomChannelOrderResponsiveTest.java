@@ -59,11 +59,11 @@ public class RandomChannelOrderResponsiveTest {
 
 	@Test
 	public void when_run_4_correct_nodes_with_channel_order_random_and_timeouts_disabled__then_bft_should_be_responsive() {
-		run(4, 4 * 2500L);
+		run(4, 4 * 25000L);
 	}
 
 	@Test
 	public void when_run_100_correct_nodes_with_channel_order_random_and_timeouts_disabled__then_bft_should_be_responsive() {
-		run(100, 100 * 50L);
+		run(100, 100 * 5L);
 	}
 }

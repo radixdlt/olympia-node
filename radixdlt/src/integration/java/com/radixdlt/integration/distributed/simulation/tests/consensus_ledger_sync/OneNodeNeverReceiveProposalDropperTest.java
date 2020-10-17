@@ -17,7 +17,7 @@
 
 package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_sync;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
@@ -25,19 +25,22 @@ import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import java.util.LongSummaryStatistics;
 import java.util.concurrent.TimeUnit;
-import org.assertj.core.api.AssertionsForClassTypes;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.Test;
 
 public class OneNodeNeverReceiveProposalDropperTest {
+	private static final Logger logger = LogManager.getLogger();
+
 	private final Builder bftTestBuilder = SimulationTest.builder()
-		.numNodes(4)
+		.numNodes(5) // Need at least five nodes to ensure that remote sync occurs, otherwise just vertex sync is required
 		.randomLatency(10, 200)
 		.pacemakerTimeout(5000)
 		.addOneNodeNeverReceiveProposalDropper()
 		.ledgerAndSync()
 		.checkConsensusSafety("safety")
 		.checkConsensusLiveness("liveness", 5000, TimeUnit.MILLISECONDS)
-		.checkConsensusNoTimeouts("noTimeouts")
 		.checkConsensusAllProposalsHaveDirectParents("directParents")
 		.checkLedgerInOrder("ledgerInOrder")
 		.checkLedgerProcessesConsensusCommitted("consensusToLedger");
@@ -47,14 +50,14 @@ public class OneNodeNeverReceiveProposalDropperTest {
 		SimulationTest simulationTest = bftTestBuilder
 			.build();
 		TestResults results = simulationTest.run();
-		assertThat(results.getCheckResults()).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+		assertThat(results.getCheckResults()).allSatisfy((name, err) -> assertThat(err).isEmpty());
 
 		LongSummaryStatistics statistics = results.getNetwork().getSystemCounters().values().stream()
 			.map(s -> s.get(CounterType.SYNC_PROCESSED))
 			.mapToLong(l -> l)
 			.summaryStatistics();
 
-		System.out.println(statistics);
+		logger.info("{}", statistics);
 		assertThat(statistics.getSum()).isGreaterThan(0L);
 	}
 

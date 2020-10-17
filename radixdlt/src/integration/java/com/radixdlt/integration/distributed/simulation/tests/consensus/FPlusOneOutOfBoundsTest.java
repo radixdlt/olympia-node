@@ -17,11 +17,12 @@
 
 package com.radixdlt.integration.distributed.simulation.tests.consensus;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
-
+import static org.assertj.core.api.Assertions.assertThat;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
+
+import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
 public class FPlusOneOutOfBoundsTest {
@@ -29,9 +30,9 @@ public class FPlusOneOutOfBoundsTest {
 	private final int synchronousTimeout = 8 * latency;
 	private final int outOfBoundsLatency = synchronousTimeout;
 	private final Builder bftTestBuilder = SimulationTest.builder()
-		.pacemakerTimeout(2 * synchronousTimeout)
+		.pacemakerTimeout(synchronousTimeout)
 		.checkConsensusSafety("safety")
-		.checkConsensusNoneCommitted("noneCommitted");
+		.checkConsensusLiveness("liveness", synchronousTimeout, TimeUnit.MILLISECONDS);
 
 	/**
 	 * Tests a configuration of 0 out of 3 nodes out of synchrony bounds
@@ -43,7 +44,8 @@ public class FPlusOneOutOfBoundsTest {
 			.build();
 
 		TestResults results = test.run();
-		assertThat(results.getCheckResults()).hasEntrySatisfying("noneCommitted", error -> assertThat(error).isPresent());
+		assertThat(results.getCheckResults())
+			.allSatisfy((name, error) -> assertThat(error).isNotPresent());
 	}
 
 	/**
@@ -56,6 +58,8 @@ public class FPlusOneOutOfBoundsTest {
 			.build();
 
 		TestResults results = test.run();
-		assertThat(results.getCheckResults()).allSatisfy((name, error) -> assertThat(error).isNotPresent());
+		assertThat(results.getCheckResults())
+			.hasEntrySatisfying("liveness", error -> assertThat(error).isPresent())
+			.hasEntrySatisfying("safety", error -> assertThat(error).isNotPresent());
 	}
 }

@@ -17,7 +17,7 @@
 
 package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_sync;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
@@ -34,7 +34,6 @@ import java.util.LongSummaryStatistics;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
 /**
@@ -42,9 +41,10 @@ import org.junit.Test;
  * a safety failure.
  */
 public class ByzantineSyncTest {
-	Logger logger = LogManager.getLogger();
+	private static final Logger logger = LogManager.getLogger();
+
 	private final Builder bftTestBuilder = SimulationTest.builder()
-		.numNodes(4)
+		.numNodes(5) // Need at least five nodes to ensure that remote sync occurs, otherwise just vertex sync is required
 		.randomLatency(10, 200)
 		.addByzantineModuleToAll(new AbstractModule() {
 			@Override
@@ -60,7 +60,6 @@ public class ByzantineSyncTest {
 		.ledgerAndSync()
 		.checkConsensusSafety("safety")
 		.checkConsensusLiveness("liveness", 5000, TimeUnit.MILLISECONDS)
-		.checkConsensusNoTimeouts("noTimeouts")
 		.checkConsensusAllProposalsHaveDirectParents("directParents")
 		.checkLedgerInOrder("ledgerInOrder")
 		.checkLedgerProcessesConsensusCommitted("consensusToLedger");
@@ -70,15 +69,15 @@ public class ByzantineSyncTest {
 		SimulationTest simulationTest = bftTestBuilder
 			.build();
 		TestResults results = simulationTest.run();
-		assertThat(results.getCheckResults()).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+		assertThat(results.getCheckResults()).allSatisfy((name, err) -> assertThat(err).isEmpty());
 
 		LongSummaryStatistics statistics = results.getNetwork().getSystemCounters().values().stream()
 			.map(s -> s.get(CounterType.SYNC_PROCESSED))
 			.mapToLong(l -> l)
 			.summaryStatistics();
 
-		System.out.println(statistics);
-		AssertionsForClassTypes.assertThat(statistics.getSum()).isGreaterThan(0L);
+		logger.info("{}", statistics);
+		assertThat(statistics.getSum()).isGreaterThan(0L);
 	}
 
 	@Test
@@ -87,12 +86,13 @@ public class ByzantineSyncTest {
 			.overrideWithIncorrectModule(new IncorrectAlwaysAcceptingAccumulatorVerifierModule())
 			.build();
 		TestResults results = simulationTest.run();
-		assertThat(results.getCheckResults()).hasEntrySatisfying("ledgerInOrder", error -> assertThat(error).isPresent());
+
 		LongSummaryStatistics statistics = results.getNetwork().getSystemCounters().values().stream()
 			.map(s -> s.get(CounterType.SYNC_PROCESSED))
 			.mapToLong(l -> l)
 			.summaryStatistics();
 
-		logger.info(statistics);
+		logger.info("{}", statistics);
+		assertThat(results.getCheckResults()).hasEntrySatisfying("ledgerInOrder", error -> assertThat(error).isPresent());
 	}
 }
