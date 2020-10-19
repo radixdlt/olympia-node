@@ -49,7 +49,6 @@ public class MovingWindowValidatorsTest {
 			.pacemakerTimeout(5000)
 			.checkConsensusLiveness("liveness", 5000, TimeUnit.MILLISECONDS)
 			.checkEpochsHighViewCorrect("epochHighView", View.of(100))
-			.addTimestampChecker("timestamps")
 			.build();
 		TestResults results = bftTest.run();
 		assertThat(results.getCheckResults()).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
@@ -62,7 +61,6 @@ public class MovingWindowValidatorsTest {
 			.pacemakerTimeout(1000)
 			.checkConsensusLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
 			.checkEpochsHighViewCorrect("epochHighView", View.of(100))
-			.addTimestampChecker("timestamps")
 			.build();
 		TestResults results = bftTest.run();
 		assertThat(results.getCheckResults()).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
@@ -76,7 +74,6 @@ public class MovingWindowValidatorsTest {
 			.pacemakerTimeout(5000)
 			.checkConsensusLiveness("liveness", 5000, TimeUnit.MILLISECONDS) // High timeout to make Travis happy
 			.checkEpochsHighViewCorrect("epochHighView", View.of(100))
-			.addTimestampChecker("timestamps")
 			.build();
 
 		TestResults results = bftTest.run();
