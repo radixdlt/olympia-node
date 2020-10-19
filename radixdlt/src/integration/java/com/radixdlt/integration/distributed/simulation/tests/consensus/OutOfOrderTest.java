@@ -30,6 +30,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.LongSummaryStatistics;
 import java.util.concurrent.TimeUnit;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -43,6 +45,8 @@ import org.junit.runners.Parameterized.Parameters;
  */
 @RunWith(Parameterized.class)
 public final class OutOfOrderTest {
+	private static final Logger logger = LogManager.getLogger();
+
 	@Parameters
 	public static Collection<Object[]> numNodes() {
 		return Arrays.asList(new Object[][] {
@@ -78,7 +82,7 @@ public final class OutOfOrderTest {
 			.map(s -> s.get(CounterType.BFT_SYNC_REQUESTS_SENT))
 			.mapToLong(l -> l)
 			.summaryStatistics();
-		System.out.println(statistics);
+		logger.info(statistics);
 		assertThat(results.getCheckResults()).allSatisfy((name, error) -> AssertionsForClassTypes.assertThat(error).isNotPresent());
 	}
 }

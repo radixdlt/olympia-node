@@ -33,37 +33,24 @@ import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
 import com.radixdlt.sync.CommittedReader;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.LongSummaryStatistics;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
 
 /**
  * Any number/sort of byzantine sync modules should never be able to cause
  * a safety failure.
  */
-@RunWith(Parameterized.class)
 public class ByzantineSyncTest {
-	@Parameters
-	public static Collection<Object[]> numNodes() {
-		return Arrays.asList(new Object[][] {
-			{4}
-		});
-	}
-
 	private static final Logger logger = LogManager.getLogger();
 	private final Builder bftTestBuilder;
 
-	public ByzantineSyncTest(int numNodes) {
+	public ByzantineSyncTest() {
 		this.bftTestBuilder	= SimulationTest.builder()
-			.numNodes(numNodes)
+			.numNodes(4)
 			.networkModules(
 				NetworkOrdering.inOrder(),
 				NetworkLatencies.random(10, 200),
@@ -100,7 +87,7 @@ public class ByzantineSyncTest {
 			.mapToLong(l -> l)
 			.summaryStatistics();
 
-		System.out.println(statistics);
+		logger.info(statistics);
 		AssertionsForClassTypes.assertThat(statistics.getSum()).isGreaterThan(0L);
 	}
 
