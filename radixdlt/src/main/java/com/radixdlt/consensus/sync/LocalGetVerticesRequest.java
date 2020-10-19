@@ -20,6 +20,9 @@ package com.radixdlt.consensus.sync;
 import com.radixdlt.crypto.Hash;
 import java.util.Objects;
 
+/**
+ * Parameters for a local get vertices request
+ */
 public final class LocalGetVerticesRequest {
 	private final Hash vertexId;
 	private final int count;
@@ -51,5 +54,10 @@ public final class LocalGetVerticesRequest {
 
 		return Objects.equals(other.vertexId, this.vertexId)
 			&& other.count == this.count;
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{id=%s count=%s}", this.getClass().getSimpleName(), this.vertexId, this.count);
 	}
 }

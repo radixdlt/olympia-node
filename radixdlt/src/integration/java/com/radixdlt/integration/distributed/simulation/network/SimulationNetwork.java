@@ -131,7 +131,7 @@ public class SimulationNetwork {
 	@Inject
 	public SimulationNetwork(ChannelCommunication channelCommunication) {
 		this.channelCommunication = Objects.requireNonNull(channelCommunication);
-		this.receivedMessages = ReplaySubject.<MessageInTransit>create(20) // To catch startup timing issues
+		this.receivedMessages = ReplaySubject.<MessageInTransit>createWithSize(20) // To catch startup timing issues
 			.toSerialized();
 	}
 
@@ -151,28 +151,6 @@ public class SimulationNetwork {
 					channelCommunication
 						.transform(groupedObservable.getKey(), node, groupedObservable)
 						.map(MessageInTransit::getContent)
-					/*
-					groupedObservable.map(msg -> {
-						if (msg.sender.equals(node)) {
-							return msg;
-						} else {
-							return msg.delayed(latencyProvider.nextLatency(msg));
-						}
-					})
-					.filter(msg -> msg.delay >= 0)
-					.timestamp(TimeUnit.MILLISECONDS)
-					.scan((msg1, msg2) -> {
-						int delayCarryover = (int) Math.max(msg1.time() + msg1.value().delay - msg2.time(), 0);
-						int additionalDelay = (int) (msg2.value().delay - delayCarryover);
-						if (additionalDelay > 0) {
-							return new Timed<>(msg2.value().delayAfterPrevious(additionalDelay), msg2.time(), msg2.unit());
-						} else {
-							return msg2;
-						}
-					})
-					.concatMap(p -> Observable.just(p.value()).delay(p.value().delayAfterPrevious, TimeUnit.MILLISECONDS))
-					.map(MessageInTransit::getContent)
-					 */
 				)
 				.publish()
 				.refCount();

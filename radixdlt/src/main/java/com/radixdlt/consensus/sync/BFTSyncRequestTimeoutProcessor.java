@@ -17,6 +17,9 @@
 
 package com.radixdlt.consensus.sync;
 
+/**
+ * Processes timeouts on a given request
+ */
 public interface BFTSyncRequestTimeoutProcessor {
 	void processGetVerticesLocalTimeout(LocalGetVerticesRequest request);
 }

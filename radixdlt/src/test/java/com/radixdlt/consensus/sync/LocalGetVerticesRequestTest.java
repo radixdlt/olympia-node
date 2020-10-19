@@ -17,21 +17,14 @@
 
 package com.radixdlt.consensus.sync;
 
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.ElementType.PARAMETER;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import javax.inject.Qualifier;
+public class LocalGetVerticesRequestTest {
 
-/**
- * The amount of milliseconds to wait until a retry for another sync
- * request is made
- */
-@Qualifier
-@Target({ FIELD, PARAMETER, METHOD })
-@Retention(RUNTIME)
-public @interface BFTSyncPatienceMillis {
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(LocalGetVerticesRequest.class)
+			.verify();
+	}
 }
