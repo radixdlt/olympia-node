@@ -17,12 +17,14 @@
 
 package com.radixdlt;
 
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
@@ -58,6 +60,7 @@ import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.consensus.sync.BFTSync.BFTSyncTimeoutScheduler;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
+import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
@@ -69,6 +72,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.network.TimeSupplier;
+import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 import org.junit.Before;
 import org.junit.Test;
@@ -104,6 +108,12 @@ public class ConsensusModuleTest {
 		when(bftConfiguration.getValidatorSet()).thenReturn(validatorSet);
 		this.ecKeyPair = ECKeyPair.generateNew();
 		this.requestSender = mock(SyncVerticesRequestSender.class);
+
+		Guice.createInjector(
+			new ConsensusModule(500, 2.0, 32),
+			new CryptoModule(),
+			getExternalModule()
+		).injectMembers(this);
 	}
 
 	private Module getExternalModule() {
@@ -141,15 +151,7 @@ public class ConsensusModuleTest {
 		};
 	}
 
-	@Test
-	public void on_sync_request_timeout_should_retry() {
-		// Arrange
-		Guice.createInjector(
-			new ConsensusModule(500, 2.0, 32),
-			new CryptoModule(),
-			getExternalModule()
-		).injectMembers(this);
-		QuorumCertificate parent = vertexStore.syncInfo().highestQC();
+	private Pair<QuorumCertificate, VerifiedVertex> createNextVertex(QuorumCertificate parent, BFTNode bftNode) {
 		UnverifiedVertex unverifiedVertex = new UnverifiedVertex(parent, View.of(1), new Command(new byte[] {0}));
 		Hash hash = hasher.hash(unverifiedVertex);
 		VerifiedVertex verifiedVertex = new VerifiedVertex(unverifiedVertex, hash);
@@ -163,18 +165,47 @@ public class ConsensusModuleTest {
 			parent.getProposed(),
 			parent.getParent()
 		);
-		BFTNode bftNode = BFTNode.random();
 		QuorumCertificate unsyncedQC = new QuorumCertificate(
 			voteData,
 			new TimestampedECDSASignatures(ImmutableMap.of(bftNode, TimestampedECDSASignature.from(0, UInt256.ONE, new ECDSASignature())))
 		);
-		HighQC unsyncedHighQC = HighQC.from(unsyncedQC, unsyncedQC);
+
+		return Pair.of(unsyncedQC, verifiedVertex);
+	}
+
+	@Test
+	public void on_sync_request_timeout_should_retry() {
+		// Arrange
+		BFTNode bftNode = BFTNode.random();
+		QuorumCertificate parent = vertexStore.syncInfo().highestQC();
+		Pair<QuorumCertificate, VerifiedVertex> nextVertex = createNextVertex(parent, bftNode);
+		HighQC unsyncedHighQC = HighQC.from(nextVertex.getFirst(), nextVertex.getFirst());
 		bftSync.syncToQC(unsyncedHighQC, bftNode);
 
 		// Act
-		bftSync.processGetVerticesLocalTimeout(new LocalGetVerticesRequest(hash, 1));
+		bftSync.processGetVerticesLocalTimeout(new LocalGetVerticesRequest(nextVertex.getSecond().getId(), 1));
 
 		// Assert
-		verify(requestSender, times(2)).sendGetVerticesRequest(eq(bftNode), eq(new LocalGetVerticesRequest(hash, 1)));
+		verify(requestSender, times(2))
+			.sendGetVerticesRequest(eq(bftNode), argThat(r -> r.getCount() == 1 && r.getVertexId().equals(nextVertex.getSecond().getId())));
+	}
+
+	@Test
+	public void on_synced_to_vertex_should_request_for_parent() {
+		// Arrange
+		BFTNode bftNode = BFTNode.random();
+		QuorumCertificate parent = vertexStore.syncInfo().highestQC();
+		Pair<QuorumCertificate, VerifiedVertex> nextVertex = createNextVertex(parent, bftNode);
+		Pair<QuorumCertificate, VerifiedVertex> nextNextVertex = createNextVertex(nextVertex.getFirst(), bftNode);
+		HighQC unsyncedHighQC = HighQC.from(nextNextVertex.getFirst(), nextNextVertex.getFirst());
+		bftSync.syncToQC(unsyncedHighQC, bftNode);
+
+		// Act
+		GetVerticesResponse response = new GetVerticesResponse(bftNode, ImmutableList.of(nextNextVertex.getSecond()));
+		bftSync.processGetVerticesResponse(response);
+
+		// Assert
+		verify(requestSender, times(1))
+			.sendGetVerticesRequest(eq(bftNode), argThat(r -> r.getCount() == 1 && r.getVertexId().equals(nextVertex.getSecond().getId())));
 	}
 }
