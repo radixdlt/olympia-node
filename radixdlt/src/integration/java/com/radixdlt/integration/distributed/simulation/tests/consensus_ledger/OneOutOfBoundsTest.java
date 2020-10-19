@@ -17,14 +17,13 @@
 
 package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
-
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import java.util.concurrent.TimeUnit;
-import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Runs checks with a consensus and ledger module across 4 nodes with a single
@@ -53,7 +52,6 @@ public class OneOutOfBoundsTest {
 			.build();
 
 		TestResults results = test.run();
-		assertThat(results.getCheckResults()).allSatisfy((name, error) -> AssertionsForClassTypes.assertThat(error).isNotPresent());
+		assertThat(results.getCheckResults()).allSatisfy((name, error) -> assertThat(error).isNotPresent());
 	}
-
 }
