@@ -102,7 +102,6 @@ public class ExponentialTimeoutPacemakerFactory implements PacemakerFactory {
 			nextCommandGenerator,
 			timeSupplier,
 			hasher,
-			signer,
 			proposalBroadcaster,
 			proceedToViewSender,
 			timeoutSender,

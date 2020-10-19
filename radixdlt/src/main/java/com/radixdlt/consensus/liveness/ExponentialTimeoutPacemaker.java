@@ -21,7 +21,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.RateLimiter;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.Proposal;
@@ -130,7 +129,6 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 		NextCommandGenerator nextCommandGenerator,
 		TimeSupplier timeSupplier,
 		Hasher hasher,
-		HashSigner signer,
 
 		ProposalBroadcaster sender,
 		ProceedToViewSender proceedToViewSender,

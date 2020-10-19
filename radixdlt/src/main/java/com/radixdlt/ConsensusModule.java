@@ -195,7 +195,6 @@ public final class ConsensusModule extends AbstractModule {
 			nextCommandGenerator,
 			timeSupplier,
 			hasher,
-			signer,
 
 			proposalBroadcaster,
 			proceedToViewSender,
