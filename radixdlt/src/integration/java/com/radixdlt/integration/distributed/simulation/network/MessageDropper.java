@@ -31,9 +31,7 @@ public class MessageDropper implements Predicate<MessageInTransit> {
 
 
 	public MessageDropper(Class<?>... msgClasses) {
-		this.msgClassesToDrop = Arrays.stream(msgClasses).collect(Collectors.toSet());
-		this.dropRate = 0.0;
-		this.random = null;
+		this(null, 0.0, msgClasses);
 	}
 
 	public MessageDropper(Random random, double dropRate, Class<?>... msgClasses) {
