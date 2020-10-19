@@ -47,6 +47,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -198,7 +199,12 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 	private void doQCSync(SyncState syncState) {
 		syncState.setSyncStage(SyncStage.GET_QC_VERTICES);
 		log.debug("SYNC_VERTICES: QC: Sending initial GetVerticesRequest for sync={}", syncState);
-		this.sendBFTSyncRequest(syncState, syncState.highQC().highestQC().getProposed().getVertexId(), 1);
+		ImmutableList<BFTNode> authors = Stream.concat(
+			Stream.of(syncState.author),
+			syncState.highQC().highestQC().getSigners().filter(n -> !n.equals(syncState.author))
+		).collect(ImmutableList.toImmutableList());
+
+		this.sendBFTSyncRequest(syncState.highQC().highestQC().getProposed().getVertexId(), 1, authors, syncState.localSyncId);
 	}
 
 	private void doCommittedSync(SyncState syncState) {
@@ -206,33 +212,32 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 		syncState.setSyncStage(SyncStage.GET_COMMITTED_VERTICES);
 		log.debug("SYNC_VERTICES: Committed: Sending initial GetVerticesRequest for sync={}", syncState);
 		// Retrieve the 3 vertices preceding the committedQC so we can create a valid committed root
-		this.sendBFTSyncRequest(syncState, committedQCId, 3);
+
+		ImmutableList<BFTNode> authors = Stream.concat(
+			Stream.of(syncState.author),
+			syncState.highQC().highestCommittedQC().getSigners().filter(n -> !n.equals(syncState.author))
+		).collect(ImmutableList.toImmutableList());
+
+		this.sendBFTSyncRequest(committedQCId, 3, authors, syncState.localSyncId);
 	}
 
 	/*
-	public void processTimeout(SyncState syncState) {
-		if (syncing.containsKey(syncState.localSyncId)) {
+	public void processTimeout(Hash vertexId, int count) {
+		List<Hash> syncingOnHash = bftSyncing.get(Pair.of(vertexId, count));
+		if (syncingOnHash.isEmpty()) {
+			return;
 		}
-		Pair<Hash, Integer> requestInfo = Pair.of(vertexId, count);
-		List<Hash> syncs = bftSyncing.remove(requestInfo);
-		if (syncs != null) {
-			for (Hash syncTo : syncs) {
-
-			}
-		}
+		SyncState firstSyncState = syncing.get(syncingOnHash.get(0));
 	}
-	 */
+	*/
 
-	private void sendBFTSyncRequest(SyncState syncState, Hash vertexId, int count) {
-		bftSyncing.compute(Pair.of(vertexId, count), (pair, syncing) -> {
-			if (syncing == null) {
-				syncing = new ArrayList<>();
-			}
-			syncing.add(syncState.localSyncId);
-			return syncing;
-		});
-
-		requestSender.sendGetVerticesRequest(syncState.author, vertexId, count);
+	private void sendBFTSyncRequest(Hash vertexId, int count, ImmutableList<BFTNode> authors, Hash syncId) {
+		List<Hash> syncing = bftSyncing.getOrDefault(Pair.of(vertexId, count), new ArrayList<>());
+		if (syncing.isEmpty()) {
+			requestSender.sendGetVerticesRequest(authors.get(0), vertexId, count);
+			bftSyncing.put(Pair.of(vertexId, count), syncing);
+		}
+		syncing.add(syncId);
 	}
 
 	private void rebuildAndSyncQC(SyncState syncState) {
@@ -306,7 +311,13 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 			log.info("SYNC_VERTICES: Sending further GetVerticesRequest for {} fetched={} root={}",
 				syncState.highQC(), syncState.fetched.size(), vertexStore.getRoot());
 
-			this.sendBFTSyncRequest(syncState, parentId, 1);
+
+			ImmutableList<BFTNode> authors = Stream.concat(
+				Stream.of(syncState.author),
+				vertex.getQC().getSigners().filter(n -> !n.equals(syncState.author))
+			).collect(ImmutableList.toImmutableList());
+
+			this.sendBFTSyncRequest(parentId, 1, authors, syncState.localSyncId);
 		}
 	}
 
