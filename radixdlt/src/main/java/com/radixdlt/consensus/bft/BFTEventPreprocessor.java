@@ -74,54 +74,12 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	// TODO: remove queues and treat each message independently
 	private boolean clearAndExecute(SyncQueue queue, View view) {
 		final ConsensusEvent event = queue.clearViewAndGetNext(view);
-		if (event == null) {
-			return false;
-		}
-
-		// Explicitly using switch case method here rather than functional method
-		// to process these events due to much better performance
-		if (event instanceof Proposal) {
-			final Proposal proposal = (Proposal) event;
-			return processProposalInternal(proposal);
-		}
-
-		if (event instanceof ViewTimeout) {
-			final ViewTimeout viewTimeout = (ViewTimeout) event;
-			return processViewTimeoutInternal(viewTimeout);
-		}
-
-		if (event instanceof Vote) {
-			final Vote vote = (Vote) event;
-			return processVoteInternal(vote);
-		}
-
-		throw new IllegalStateException("Unexpected consensus event: " + event);
+		return processQueuedConsensusEvent(event);
 	}
 
 	private boolean peekAndExecute(SyncQueue queue, Hash vertexId) {
 		final ConsensusEvent event = queue.peek(vertexId);
-		if (event == null) {
-			return false;
-		}
-
-		// Explicitly using switch case method here rather than functional method
-		// to process these events due to much better performance
-		if (event instanceof Proposal) {
-			final Proposal proposal = (Proposal) event;
-			return processProposalInternal(proposal);
-		}
-
-		if (event instanceof ViewTimeout) {
-			final ViewTimeout viewTimeout = (ViewTimeout) event;
-			return processViewTimeoutInternal(viewTimeout);
-		}
-
-		if (event instanceof Vote) {
-			final Vote vote = (Vote) event;
-			return processVoteInternal(vote);
-		}
-
-		throw new IllegalStateException("Unexpected consensus event: " + event);
+		return processQueuedConsensusEvent(event);
 	}
 
 	@Override
@@ -189,6 +147,33 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	@Override
 	public void start() {
 		forwardTo.start();
+	}
+
+
+	private boolean processQueuedConsensusEvent(ConsensusEvent event) {
+		if (event == null) {
+			return false;
+		}
+
+		// Explicitly using switch case method here rather than functional method
+		// to process these events due to much better performance
+		if (event instanceof Proposal) {
+			final Proposal proposal = (Proposal) event;
+			return processProposalInternal(proposal);
+		}
+
+		if (event instanceof Vote) {
+			final Vote vote = (Vote) event;
+			return processVoteInternal(vote);
+		}
+
+
+		if (event instanceof ViewTimeout) {
+			final ViewTimeout viewTimeout = (ViewTimeout) event;
+			return processViewTimeoutInternal(viewTimeout);
+		}
+
+		throw new IllegalStateException("Unexpected consensus event: " + event);
 	}
 
 	private boolean processViewTimeoutInternal(ViewTimeout viewTimeout) {
