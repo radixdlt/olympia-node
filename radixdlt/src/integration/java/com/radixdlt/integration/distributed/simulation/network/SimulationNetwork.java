@@ -29,6 +29,8 @@ import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
+import com.radixdlt.consensus.liveness.ProceedToViewSender;
+import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
@@ -37,16 +39,15 @@ import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
-import com.radixdlt.consensus.liveness.ProceedToViewSender;
-import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.sync.RemoteSyncResponse;
 import com.radixdlt.sync.StateSyncNetwork;
 import com.radixdlt.sync.RemoteSyncRequest;
 import com.radixdlt.ledger.DtoCommandsAndProof;
-
 import io.reactivex.rxjava3.core.Observable;
+
+import io.reactivex.rxjava3.schedulers.Timed;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import java.util.Map;
@@ -55,39 +56,37 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 /**
  * Simple simulated network implementation that just sends messages to itself with a configurable latency.
  */
 public class SimulationNetwork {
-	private static Logger log = LogManager.getLogger();
-
 	public static final int DEFAULT_LATENCY = 50;
-	private static final long LOG_WARN_DELAY = DEFAULT_LATENCY / 2;
 
 	public static final class MessageInTransit {
 		private final Object content;
 		private final BFTNode sender;
 		private final BFTNode receiver;
 		private final long delay;
-		private final long timeCreated;
+		private final long delayAfterPrevious;
 
-		private MessageInTransit(Object content, BFTNode sender, BFTNode receiver, long delay, long delayAfterPrevious, long timeCreated) {
+		private MessageInTransit(Object content, BFTNode sender, BFTNode receiver, long delay, long delayAfterPrevious) {
 			this.content = Objects.requireNonNull(content);
 			this.sender = sender;
 			this.receiver = receiver;
 			this.delay = delay;
-			this.timeCreated = timeCreated;
+			this.delayAfterPrevious = delayAfterPrevious;
 		}
 
 		private static MessageInTransit newMessage(Object content, BFTNode sender, BFTNode receiver) {
-			return new MessageInTransit(content, sender, receiver, 0, 0, System.currentTimeMillis());
+			return new MessageInTransit(content, sender, receiver, 0, 0);
 		}
 
 		private MessageInTransit delayed(long delay) {
-			return new MessageInTransit(content, sender, receiver, delay, delay, timeCreated);
+			return new MessageInTransit(content, sender, receiver, delay, delay);
+		}
+
+		private MessageInTransit delayAfterPrevious(long delayAfterPrevious) {
+			return new MessageInTransit(content, sender, receiver, delay, delayAfterPrevious);
 		}
 
 		public Object getContent() {
@@ -104,7 +103,13 @@ public class SimulationNetwork {
 
 		@Override
 		public String toString() {
-			return String.format("%s -> %s %d %s", sender, receiver, delay, content);
+			return String.format("%s %s -> %s %d %d",
+				content,
+				sender.getSimpleName(),
+				receiver.getSimpleName(),
+				delay,
+				delayAfterPrevious
+			);
 		}
 	}
 
@@ -137,7 +142,6 @@ public class SimulationNetwork {
 		private LatencyProvider latencyProvider = msg -> DEFAULT_LATENCY;
 
 		private Builder() {
-			// Nothing
 		}
 
 		public Builder latencyProvider(LatencyProvider latencyProvider) {
@@ -165,11 +169,29 @@ public class SimulationNetwork {
 			// filter only relevant messages (appropriate target and if receiving is allowed)
 			this.myMessages = receivedMessages
 				.filter(msg -> msg.receiver.equals(node))
-				.map(msg -> msg.sender.equals(node) ? msg : msg.delayed(latencyProvider.nextLatency(msg)))
-				.filter(msg -> msg.delay >= 0)
-				.flatMap(this::delayed)
-				.doOnNext(this::checkArrivalAndLogMessage)
-				.map(MessageInTransit::getContent)
+				.groupBy(MessageInTransit::getSender)
+				.flatMap(groupedObservable ->
+					groupedObservable.map(msg -> {
+						if (msg.sender.equals(node)) {
+							return msg;
+						} else {
+							return msg.delayed(latencyProvider.nextLatency(msg));
+						}
+					})
+					.filter(msg -> msg.delay >= 0)
+					.timestamp(TimeUnit.MILLISECONDS)
+					.scan((msg1, msg2) -> {
+						int delayCarryover = (int) Math.max(msg1.time() + msg1.value().delay - msg2.time(), 0);
+						int additionalDelay = (int) (msg2.value().delay - delayCarryover);
+						if (additionalDelay > 0) {
+							return new Timed<>(msg2.value().delayAfterPrevious(additionalDelay), msg2.time(), msg2.unit());
+						} else {
+							return msg2;
+						}
+					})
+					.concatMap(p -> Observable.just(p.value()).delay(p.value().delayAfterPrevious, TimeUnit.MILLISECONDS))
+					.map(MessageInTransit::getContent)
+				)
 				.publish()
 				.refCount();
 		}
@@ -177,50 +199,50 @@ public class SimulationNetwork {
 		@Override
 		public void broadcastProposal(Proposal proposal, Set<BFTNode> nodes) {
 			for (BFTNode reader : nodes) {
-				logAndSend(MessageInTransit.newMessage(proposal, thisNode, reader));
+				receivedMessages.onNext(MessageInTransit.newMessage(proposal, thisNode, reader));
 			}
 		}
 
 		@Override
 		public void broadcastViewTimeout(ViewTimeout viewTimeout, Set<BFTNode> nodes) {
 			for (BFTNode reader : nodes) {
-				logAndSend(MessageInTransit.newMessage(viewTimeout, thisNode, reader));
+				receivedMessages.onNext(MessageInTransit.newMessage(viewTimeout, thisNode, reader));
 			}
 		}
 
 		@Override
 		public void sendVote(Vote vote, BFTNode leader) {
-			logAndSend(MessageInTransit.newMessage(vote, thisNode, leader));
+			receivedMessages.onNext(MessageInTransit.newMessage(vote, thisNode, leader));
 		}
 
 		@Override
 		public void sendGetVerticesRequest(BFTNode node, Hash id, int count) {
 			final GetVerticesRequest request = new GetVerticesRequest(thisNode, id, count);
-			logAndSend(MessageInTransit.newMessage(request, thisNode, node));
+			receivedMessages.onNext(MessageInTransit.newMessage(request, thisNode, node));
 		}
 
 		@Override
 		public void sendGetVerticesResponse(BFTNode node, ImmutableList<VerifiedVertex> vertices) {
 			GetVerticesResponse vertexResponse = new GetVerticesResponse(thisNode, vertices);
-			logAndSend(MessageInTransit.newMessage(vertexResponse, thisNode, node));
+			receivedMessages.onNext(MessageInTransit.newMessage(vertexResponse, thisNode, node));
 		}
 
 		@Override
-		public void sendGetVerticesErrorResponse(BFTNode node, HighQC highQC) {
-			GetVerticesErrorResponse vertexResponse = new GetVerticesErrorResponse(thisNode, highQC);
-			logAndSend(MessageInTransit.newMessage(vertexResponse, thisNode, node));
+		public void sendGetVerticesErrorResponse(BFTNode node, HighQC syncInfo) {
+			GetVerticesErrorResponse vertexResponse = new GetVerticesErrorResponse(thisNode, syncInfo);
+			receivedMessages.onNext(MessageInTransit.newMessage(vertexResponse, thisNode, node));
 		}
 
 		@Override
 		public void sendGetEpochRequest(BFTNode node, long epoch) {
 			GetEpochRequest getEpochRequest = new GetEpochRequest(thisNode, epoch);
-			logAndSend(MessageInTransit.newMessage(getEpochRequest, thisNode, node));
+			receivedMessages.onNext(MessageInTransit.newMessage(getEpochRequest, thisNode, node));
 		}
 
 		@Override
 		public void sendGetEpochResponse(BFTNode node, VerifiedLedgerHeaderAndProof ancestor) {
 			GetEpochResponse getEpochResponse = new GetEpochResponse(thisNode, ancestor);
-			logAndSend(MessageInTransit.newMessage(getEpochResponse, thisNode, node));
+			receivedMessages.onNext(MessageInTransit.newMessage(getEpochResponse, thisNode, node));
 		}
 
 		@Override
@@ -266,36 +288,13 @@ public class SimulationNetwork {
 		@Override
 		public void sendSyncRequest(BFTNode node, DtoLedgerHeaderAndProof currentHeader) {
 			RemoteSyncRequest syncRequest = new RemoteSyncRequest(thisNode, currentHeader);
-			logAndSend(MessageInTransit.newMessage(syncRequest, thisNode, node));
+			receivedMessages.onNext(MessageInTransit.newMessage(syncRequest, thisNode, node));
 		}
 
 		@Override
 		public void sendSyncResponse(BFTNode node, DtoCommandsAndProof commandsAndProof) {
 			RemoteSyncResponse syncResponse = new RemoteSyncResponse(thisNode, commandsAndProof);
-			logAndSend(MessageInTransit.newMessage(syncResponse, thisNode, node));
-		}
-
-		private void logAndSend(MessageInTransit message) {
-			log.debug("Send {}", message);
-			receivedMessages.onNext(message);
-		}
-
-		private void checkArrivalAndLogMessage(MessageInTransit message) {
-			long wantedArrival = message.timeCreated + message.delay;
-			long timediff = System.currentTimeMillis() - wantedArrival;
-			// timediff is not likely to be < 0, but just in case
-			if (timediff < 0 || timediff >= LOG_WARN_DELAY) {
-				log.warn("Message is {}ms late: {}", timediff, message);
-			}
-			log.debug("Receive {}", message);
-		}
-
-		private Observable<MessageInTransit> delayed(MessageInTransit message) {
-			if (message.delay == 0) {
-				return Observable.just(message);
-			}
-			return Observable.timer(message.delay, TimeUnit.MILLISECONDS)
-		    	.flatMap(x -> Observable.just(message));
+			receivedMessages.onNext(MessageInTransit.newMessage(syncResponse, thisNode, node));
 		}
 	}
 
