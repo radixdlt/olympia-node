@@ -98,7 +98,6 @@ public class FProposalsPerViewDropperTest {
 	}
 
 	@Test
-	@Ignore("Remove ignore once sync retries are implemented")
 	public void dropping_sync_adversary_should_cause_no_timeouts_because_of_sync_retries() {
 		SimulationTest test = bftTestBuilder
 			.addNetworkModule(NetworkDroppers.bftSyncMessagesDropped(0.1))

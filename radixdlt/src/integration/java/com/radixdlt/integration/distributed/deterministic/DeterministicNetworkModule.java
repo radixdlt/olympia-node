@@ -27,6 +27,7 @@ import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.bft.SignedNewViewToLeaderSender.BFTNewViewSender;
 import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
+import com.radixdlt.consensus.sync.BFTSync.BFTSyncTimeoutScheduler;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.epoch.EpochView;
@@ -74,6 +75,7 @@ public class DeterministicNetworkModule extends AbstractModule {
 		bind(SyncVerticesResponseSender.class).to(DeterministicSender.class);
 		bind(BFTUpdateSender.class).to(DeterministicSender.class);
 		bind(LocalTimeoutSender.class).to(DeterministicSender.class);
+		bind(BFTSyncTimeoutScheduler.class).to(DeterministicSender.class);
 		bind(SyncEpochsRPCSender.class).to(DeterministicSender.class);
 
 		// TODO: Remove multibind?

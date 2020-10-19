@@ -45,6 +45,7 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.SignedNewViewToLeaderSender.BFTNewViewSender;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
+import com.radixdlt.consensus.sync.BFTSync.BFTSyncTimeoutScheduler;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
@@ -99,6 +100,7 @@ public class ConsensusModuleTest {
 				bind(BFTNode.class).annotatedWith(Names.named("self")).toInstance(mock(BFTNode.class));
 				bind(PacemakerInfoSender.class).toInstance(mock(PacemakerInfoSender.class));
 				bind(PacemakerTimeoutSender.class).toInstance(mock(PacemakerTimeoutSender.class));
+				bind(BFTSyncTimeoutScheduler.class).toInstance(mock(BFTSyncTimeoutScheduler.class));
 				bind(BFTConfiguration.class).toInstance(bftConfiguration);
 			}
 		};

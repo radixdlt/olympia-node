@@ -30,6 +30,7 @@ import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.bft.SignedNewViewToLeaderSender.BFTNewViewSender;
 import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
+import com.radixdlt.consensus.sync.BFTSync.BFTSyncTimeoutScheduler;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
@@ -66,6 +67,7 @@ public final class DeterministicNetwork {
 		BFTUpdateSender,
 		EpochsLedgerUpdateSender,
 		LocalTimeoutSender,
+		BFTSyncTimeoutScheduler,
 		SyncEpochsRPCSender {
 		// Aggregation, no additional stuff
 	}

@@ -28,7 +28,9 @@ import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
+import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import io.reactivex.rxjava3.subjects.Subject;
@@ -41,6 +43,7 @@ public class EpochManagerRunnerTest {
 
 		Subject<EpochsLedgerUpdate> ledgerUpdates = PublishSubject.create();
 		Subject<BFTUpdate> bftUpdates = PublishSubject.create();
+		Subject<Pair<Hash, Integer>> syncTimeouts = PublishSubject.create();
 
 		EpochManager epochManager = mock(EpochManager.class);
 
@@ -68,6 +71,7 @@ public class EpochManagerRunnerTest {
 		EpochManagerRunner consensusRunner = new EpochManagerRunner(
 			ledgerUpdates,
 			bftUpdates,
+			syncTimeouts,
 			networkRx,
 			pacemakerRx,
 			syncVerticesRPCRx,

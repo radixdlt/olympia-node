@@ -45,6 +45,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Random;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -55,12 +56,22 @@ import org.apache.logging.log4j.Logger;
 /**
  * Manages keeping the VertexStore and pacemaker in sync for consensus
  */
-public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcessor, BFTSyncer, LedgerUpdateProcessor<LedgerUpdate> {
+public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcessor, BFTSyncRequestTimeoutProcessor,
+	BFTSyncer, LedgerUpdateProcessor<LedgerUpdate> {
 	private enum SyncStage {
 		PREPARING,
 		GET_COMMITTED_VERTICES,
 		SYNC_TO_COMMIT,
 		GET_QC_VERTICES
+	}
+
+	private static class SyncRequestState {
+		private final ImmutableList<BFTNode> authors;
+		private final List<Hash> syncs = new ArrayList<>();
+
+		SyncRequestState(ImmutableList<BFTNode> authors) {
+			this.authors = Objects.requireNonNull(authors);
+		}
 	}
 
 	private static class SyncState {
@@ -114,14 +125,21 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 		void sendGetVerticesRequest(BFTNode node, Hash id, int count);
 	}
 
+
+	public interface BFTSyncTimeoutScheduler {
+		void scheduleTimeout(Pair<Hash, Integer> request, long milliseconds);
+	}
+
 	private static final Logger log = LogManager.getLogger();
 	private final VertexStore vertexStore;
 	private final Pacemaker pacemaker;
 	private final Map<Hash, SyncState> syncing = new HashMap<>();
 	private final TreeMap<LedgerHeader, List<Hash>> ledgerSyncing;
-	private final Map<Pair<Hash, Integer>, List<Hash>> bftSyncing = new HashMap<>();
+	private final Map<Pair<Hash, Integer>, SyncRequestState> bftSyncing = new HashMap<>();
 	private final SyncVerticesRequestSender requestSender;
 	private final SyncLedgerRequestSender syncLedgerRequestSender;
+	private final BFTSyncTimeoutScheduler timeoutScheduler;
+	private final Random random;
 	private VerifiedLedgerHeaderAndProof currentLedgerHeader;
 
 	public BFTSync(
@@ -130,14 +148,18 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 		Comparator<LedgerHeader> ledgerHeaderComparator,
 		SyncVerticesRequestSender requestSender,
 		SyncLedgerRequestSender syncLedgerRequestSender,
-		VerifiedLedgerHeaderAndProof currentLedgerHeader
+		BFTSyncTimeoutScheduler timeoutScheduler,
+		VerifiedLedgerHeaderAndProof currentLedgerHeader,
+		Random random
 	) {
 		this.vertexStore = vertexStore;
 		this.pacemaker = pacemaker;
 		this.ledgerSyncing = new TreeMap<>(ledgerHeaderComparator);
 		this.requestSender = requestSender;
 		this.syncLedgerRequestSender = syncLedgerRequestSender;
+		this.timeoutScheduler = Objects.requireNonNull(timeoutScheduler);
 		this.currentLedgerHeader = Objects.requireNonNull(currentLedgerHeader);
+		this.random = random;
 	}
 
 	@Override
@@ -221,23 +243,27 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 		this.sendBFTSyncRequest(committedQCId, 3, authors, syncState.localSyncId);
 	}
 
-	/*
-	public void processTimeout(Hash vertexId, int count) {
-		List<Hash> syncingOnHash = bftSyncing.get(Pair.of(vertexId, count));
-		if (syncingOnHash.isEmpty()) {
+	@Override
+	public void processGetVerticesLocalTimeout(Pair<Hash, Integer> request) {
+		SyncRequestState syncRequestState = bftSyncing.get(request);
+		if (syncRequestState == null) {
 			return;
 		}
-		SyncState firstSyncState = syncing.get(syncingOnHash.get(0));
+		int nextIndex = random.nextInt(syncRequestState.authors.size());
+		BFTNode nextNode = syncRequestState.authors.get(nextIndex);
+		this.requestSender.sendGetVerticesRequest(nextNode, request.getFirst(), request.getSecond());
+		this.timeoutScheduler.scheduleTimeout(request, 100);
 	}
-	*/
 
 	private void sendBFTSyncRequest(Hash vertexId, int count, ImmutableList<BFTNode> authors, Hash syncId) {
-		List<Hash> syncing = bftSyncing.getOrDefault(Pair.of(vertexId, count), new ArrayList<>());
-		if (syncing.isEmpty()) {
-			requestSender.sendGetVerticesRequest(authors.get(0), vertexId, count);
-			bftSyncing.put(Pair.of(vertexId, count), syncing);
+		Pair<Hash, Integer> request = Pair.of(vertexId, count);
+		SyncRequestState syncRequestState = bftSyncing.getOrDefault(request, new SyncRequestState(authors));
+		if (syncRequestState.syncs.isEmpty()) {
+			this.timeoutScheduler.scheduleTimeout(request, 100);
+			this.requestSender.sendGetVerticesRequest(authors.get(0), vertexId, count);
+			this.bftSyncing.put(request, syncRequestState);
 		}
-		syncing.add(syncId);
+		syncRequestState.syncs.add(syncId);
 	}
 
 	private void rebuildAndSyncQC(SyncState syncState) {
@@ -339,9 +365,9 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 
 		VerifiedVertex firstVertex = response.getVertices().get(0);
 		Pair<Hash, Integer> requestInfo = Pair.of(firstVertex.getId(), response.getVertices().size());
-		List<Hash> syncs = bftSyncing.remove(requestInfo);
-		if (syncs != null) {
-			for (Hash syncTo : syncs) {
+		SyncRequestState syncRequestState = bftSyncing.remove(requestInfo);
+		if (syncRequestState != null) {
+			for (Hash syncTo : syncRequestState.syncs) {
 				SyncState syncState = syncing.get(syncTo);
 				if (syncState == null) {
 					continue; // sync requirements already satisfied by another sync

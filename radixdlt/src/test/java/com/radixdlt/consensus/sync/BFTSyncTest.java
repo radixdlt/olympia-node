@@ -39,6 +39,7 @@ import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.liveness.Pacemaker;
+import com.radixdlt.consensus.sync.BFTSync.BFTSyncTimeoutScheduler;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.LedgerUpdate;
@@ -48,6 +49,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -59,6 +61,7 @@ public class BFTSyncTest {
 	private SyncVerticesRequestSender syncVerticesRequestSender;
 	private SyncLedgerRequestSender syncLedgerRequestSender;
 	private VerifiedLedgerHeaderAndProof verifiedLedgerHeaderAndProof;
+	private BFTSyncTimeoutScheduler bftSyncTimeoutScheduler;
 
 	@Before
 	public void setup() {
@@ -68,6 +71,7 @@ public class BFTSyncTest {
 		this.syncVerticesRequestSender = mock(SyncVerticesRequestSender.class);
 		this.syncLedgerRequestSender = mock(SyncLedgerRequestSender.class);
 		this.verifiedLedgerHeaderAndProof = mock(VerifiedLedgerHeaderAndProof.class);
+		this.bftSyncTimeoutScheduler = mock(BFTSyncTimeoutScheduler.class);
 
 		bftSync = new BFTSync(
 			vertexStore,
@@ -75,7 +79,9 @@ public class BFTSyncTest {
 			ledgerHeaderComparator,
 			syncVerticesRequestSender,
 			syncLedgerRequestSender,
-			verifiedLedgerHeaderAndProof
+			bftSyncTimeoutScheduler,
+			verifiedLedgerHeaderAndProof,
+			new Random()
 		);
 	}
 

@@ -23,6 +23,7 @@ import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
+import com.radixdlt.utils.Pair;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
@@ -131,6 +132,11 @@ public final class ControlledSender implements DeterministicSender {
 	@Override
 	public void sendLedgerUpdate(EpochsLedgerUpdate epochsLedgerUpdate) {
 		handleMessage(messageRank(epochsLedgerUpdate), new ControlledMessage(this.senderIndex, this.senderIndex, epochsLedgerUpdate));
+	}
+
+	@Override
+	public void scheduleTimeout(Pair<Hash, Integer> request, long milliseconds) {
+		// Ignore bft sync timeouts
 	}
 
 	private void handleMessage(MessageRank eav, ControlledMessage controlledMessage) {
