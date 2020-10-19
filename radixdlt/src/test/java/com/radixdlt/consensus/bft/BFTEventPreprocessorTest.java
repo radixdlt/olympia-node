@@ -25,6 +25,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -34,6 +35,7 @@ import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTSyncer.SyncResult;
+import com.radixdlt.consensus.bft.SyncQueues.SyncQueue;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.sync.BFTSync;
@@ -214,5 +216,25 @@ public class BFTEventPreprocessorTest {
 		preprocessor.processProposal(proposal);
 		verify(syncQueues, never()).add(any());
 		verify(forwardTo, times(1)).processProposal(eq(proposal));
+	}
+
+	@Test
+	public void when_bft_update__then_pending_events_processed() {
+		BFTUpdate bftUpdate = mock(BFTUpdate.class);
+		VerifiedVertex verifiedVertex = mock(VerifiedVertex.class);
+		Hash hash = mock(Hash.class);
+		when(bftUpdate.getInsertedVertex()).thenReturn(verifiedVertex);
+		when(verifiedVertex.getId()).thenReturn(hash);
+		when(this.syncQueues.getQueues()).thenReturn(ImmutableList.of(mock(SyncQueue.class)));
+		preprocessor.processBFTUpdate(bftUpdate);
+		verify(syncQueues, times(1)).getQueues();
+	}
+
+	@Test
+	public void when_local_timeout__then_pending_events_cleared() {
+		when(this.syncQueues.getQueues()).thenReturn(ImmutableList.of(mock(SyncQueue.class)));
+		when(this.pacemaker.getCurrentView()).thenReturn(View.of(0), View.of(1));
+		preprocessor.processLocalTimeout(View.of(0));
+		verify(syncQueues, times(1)).getQueues();
 	}
 }
