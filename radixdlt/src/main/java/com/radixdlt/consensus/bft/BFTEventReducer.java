@@ -43,7 +43,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	public BFTEventReducer(
 		Pacemaker pacemaker,
 		VertexStore vertexStore,
-        BFTSyncer bftSyncer
+		BFTSyncer bftSyncer
 	) {
 		this.pacemaker = Objects.requireNonNull(pacemaker);
 		this.vertexStore = Objects.requireNonNull(vertexStore);
