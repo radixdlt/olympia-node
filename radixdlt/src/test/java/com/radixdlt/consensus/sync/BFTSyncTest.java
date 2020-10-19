@@ -269,6 +269,7 @@ public class BFTSyncTest {
 		BFTHeader committedHeader = mock(BFTHeader.class);
 		when(committedHeader.getView()).thenReturn(View.of(3));
 		BFTHeader committedProposed = mock(BFTHeader.class);
+		when(committedProposed.getVertexId()).thenReturn(Hash.ZERO_HASH);
 		when(committedQC.getProposed()).thenReturn(committedProposed);
 		when(committedQC.getCommittedAndLedgerStateProof())
 			.thenReturn(Optional.of(Pair.of(committedHeader, mock(VerifiedLedgerHeaderAndProof.class))));
