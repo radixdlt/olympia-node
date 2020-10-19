@@ -49,6 +49,7 @@ import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.consensus.sync.BFTSync.BFTSyncTimeoutScheduler;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
+import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.bft.VertexStore;
@@ -202,7 +203,8 @@ public final class ConsensusModule extends AbstractModule {
 		BFTSyncTimeoutScheduler timeoutScheduler,
 		BFTConfiguration configuration,
 		SystemCounters counters,
-		Random random
+		Random random,
+		@BFTSyncPatienceMillis int bftSyncPatienceMillis
 	) {
 		return new BFTSync(
 			vertexStore,
@@ -215,7 +217,8 @@ public final class ConsensusModule extends AbstractModule {
 			syncLedgerRequestSender,
 			timeoutScheduler,
 			configuration.getGenesisHeader(),
-			random
+			random,
+			bftSyncPatienceMillis
 		);
 	}
 

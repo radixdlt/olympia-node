@@ -49,6 +49,7 @@ import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.sync.BFTSync.BFTSyncTimeoutScheduler;
+import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
@@ -152,7 +153,8 @@ public class EpochsConsensusModule extends AbstractModule {
 		BFTSyncTimeoutScheduler timeoutScheduler,
 		BFTConfiguration configuration,
 		SystemCounters counters,
-		Random random
+		Random random,
+		@BFTSyncPatienceMillis int bftSyncPatienceMillis
 	) {
 		return (vertexStore, pacemaker) -> new BFTSync(
 			vertexStore,
@@ -165,7 +167,8 @@ public class EpochsConsensusModule extends AbstractModule {
 			syncLedgerRequestSender,
 			timeoutScheduler,
 			configuration.getGenesisHeader(),
-			random
+			random,
+			bftSyncPatienceMillis
 		);
 	}
 

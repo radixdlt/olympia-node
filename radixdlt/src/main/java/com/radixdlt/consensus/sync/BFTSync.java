@@ -140,6 +140,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 	private final SyncLedgerRequestSender syncLedgerRequestSender;
 	private final BFTSyncTimeoutScheduler timeoutScheduler;
 	private final Random random;
+	private final int bftSyncPatienceMillis;
 	private VerifiedLedgerHeaderAndProof currentLedgerHeader;
 
 	public BFTSync(
@@ -150,7 +151,8 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 		SyncLedgerRequestSender syncLedgerRequestSender,
 		BFTSyncTimeoutScheduler timeoutScheduler,
 		VerifiedLedgerHeaderAndProof currentLedgerHeader,
-		Random random
+		Random random,
+		int bftSyncPatienceMillis
 	) {
 		this.vertexStore = vertexStore;
 		this.pacemaker = pacemaker;
@@ -160,6 +162,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 		this.timeoutScheduler = Objects.requireNonNull(timeoutScheduler);
 		this.currentLedgerHeader = Objects.requireNonNull(currentLedgerHeader);
 		this.random = random;
+		this.bftSyncPatienceMillis = bftSyncPatienceMillis;
 	}
 
 	@Override
@@ -252,14 +255,14 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 		int nextIndex = random.nextInt(syncRequestState.authors.size());
 		BFTNode nextNode = syncRequestState.authors.get(nextIndex);
 		this.requestSender.sendGetVerticesRequest(nextNode, request.getFirst(), request.getSecond());
-		this.timeoutScheduler.scheduleTimeout(request, 100);
+		this.timeoutScheduler.scheduleTimeout(request, bftSyncPatienceMillis);
 	}
 
 	private void sendBFTSyncRequest(Hash vertexId, int count, ImmutableList<BFTNode> authors, Hash syncId) {
 		Pair<Hash, Integer> request = Pair.of(vertexId, count);
 		SyncRequestState syncRequestState = bftSyncing.getOrDefault(request, new SyncRequestState(authors));
 		if (syncRequestState.syncs.isEmpty()) {
-			this.timeoutScheduler.scheduleTimeout(request, 100);
+			this.timeoutScheduler.scheduleTimeout(request, bftSyncPatienceMillis);
 			this.requestSender.sendGetVerticesRequest(authors.get(0), vertexId, count);
 			this.bftSyncing.put(request, syncRequestState);
 		}

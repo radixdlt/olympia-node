@@ -81,7 +81,8 @@ public class BFTSyncTest {
 			syncLedgerRequestSender,
 			bftSyncTimeoutScheduler,
 			verifiedLedgerHeaderAndProof,
-			new Random()
+			new Random(),
+			100
 		);
 	}
 
