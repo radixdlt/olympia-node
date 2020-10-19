@@ -45,9 +45,8 @@ import com.radixdlt.sync.RemoteSyncResponse;
 import com.radixdlt.sync.StateSyncNetwork;
 import com.radixdlt.sync.RemoteSyncRequest;
 import com.radixdlt.ledger.DtoCommandsAndProof;
-import io.reactivex.rxjava3.core.Observable;
 
-import io.reactivex.rxjava3.schedulers.Timed;
+import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import java.util.Map;
@@ -66,32 +65,29 @@ public class SimulationNetwork {
 	private static Logger log = LogManager.getLogger();
 
 	public static final int DEFAULT_LATENCY = 50;
+	private static final long LOG_WARN_DELAY = DEFAULT_LATENCY / 2;
 
 	public static final class MessageInTransit {
 		private final Object content;
 		private final BFTNode sender;
 		private final BFTNode receiver;
 		private final long delay;
-		private final long delayAfterPrevious;
+		private final long timeCreated;
 
-		private MessageInTransit(Object content, BFTNode sender, BFTNode receiver, long delay, long delayAfterPrevious) {
+		private MessageInTransit(Object content, BFTNode sender, BFTNode receiver, long delay, long delayAfterPrevious, long timeCreated) {
 			this.content = Objects.requireNonNull(content);
 			this.sender = sender;
 			this.receiver = receiver;
 			this.delay = delay;
-			this.delayAfterPrevious = delayAfterPrevious;
+			this.timeCreated = timeCreated;
 		}
 
 		private static MessageInTransit newMessage(Object content, BFTNode sender, BFTNode receiver) {
-			return new MessageInTransit(content, sender, receiver, 0, 0);
+			return new MessageInTransit(content, sender, receiver, 0, 0, System.currentTimeMillis());
 		}
 
 		private MessageInTransit delayed(long delay) {
-			return new MessageInTransit(content, sender, receiver, delay, delay);
-		}
-
-		private MessageInTransit delayAfterPrevious(long delayAfterPrevious) {
-			return new MessageInTransit(content, sender, receiver, delay, delayAfterPrevious);
+			return new MessageInTransit(content, sender, receiver, delay, delay, timeCreated);
 		}
 
 		public Object getContent() {
@@ -108,13 +104,7 @@ public class SimulationNetwork {
 
 		@Override
 		public String toString() {
-			return String.format("%s -> %s %d %d %s",
-				sender.getSimpleName(),
-				receiver.getSimpleName(),
-				delay,
-				delayAfterPrevious,
-				content
-			);
+			return String.format("%s -> %s %d %s", sender, receiver, delay, content);
 		}
 	}
 
@@ -175,30 +165,11 @@ public class SimulationNetwork {
 			// filter only relevant messages (appropriate target and if receiving is allowed)
 			this.myMessages = receivedMessages
 				.filter(msg -> msg.receiver.equals(node))
-				.groupBy(MessageInTransit::getSender)
-				.flatMap(groupedObservable ->
-					groupedObservable.map(msg -> {
-						if (msg.sender.equals(node)) {
-							return msg;
-						} else {
-							return msg.delayed(latencyProvider.nextLatency(msg));
-						}
-					})
-					.filter(msg -> msg.delay >= 0)
-					.timestamp(TimeUnit.MILLISECONDS)
-					.scan((msg1, msg2) -> {
-						int delayCarryover = (int) Math.max(msg1.time() + msg1.value().delay - msg2.time(), 0);
-						int additionalDelay = (int) (msg2.value().delay - delayCarryover);
-						if (additionalDelay > 0) {
-							return new Timed<>(msg2.value().delayAfterPrevious(additionalDelay), msg2.time(), msg2.unit());
-						} else {
-							return msg2;
-						}
-					})
-					.concatMap(p -> Observable.just(p.value()).delay(p.value().delayAfterPrevious, TimeUnit.MILLISECONDS))
-					.doOnNext(this::logMessage)
-					.map(MessageInTransit::getContent)
-				)
+				.map(msg -> msg.sender.equals(node) ? msg : msg.delayed(latencyProvider.nextLatency(msg)))
+				.filter(msg -> msg.delay >= 0)
+				.flatMap(this::delayed)
+				.doOnNext(this::checkArrivalAndLogMessage)
+				.map(MessageInTransit::getContent)
 				.publish()
 				.refCount();
 		}
@@ -309,8 +280,22 @@ public class SimulationNetwork {
 			receivedMessages.onNext(message);
 		}
 
-		private void logMessage(MessageInTransit message) {
+		private void checkArrivalAndLogMessage(MessageInTransit message) {
+			long wantedArrival = message.timeCreated + message.delay;
+			long timediff = System.currentTimeMillis() - wantedArrival;
+			// timediff is not likely to be < 0, but just in case
+			if (timediff < 0 || timediff >= LOG_WARN_DELAY) {
+				log.warn("Message is {}ms late: {}", timediff, message);
+			}
 			log.debug("Receive {}", message);
+		}
+
+		private Observable<MessageInTransit> delayed(MessageInTransit message) {
+			if (message.delay == 0) {
+				return Observable.just(message);
+			}
+			return Observable.timer(message.delay, TimeUnit.MILLISECONDS)
+		    	.flatMap(x -> Observable.just(message));
 		}
 	}
 
