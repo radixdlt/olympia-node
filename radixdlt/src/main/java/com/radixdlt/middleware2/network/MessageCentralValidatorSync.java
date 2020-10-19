@@ -25,6 +25,7 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
+import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -34,7 +35,6 @@ import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.messaging.MessageCentral;
@@ -77,7 +77,7 @@ public class MessageCentralValidatorSync implements SyncVerticesRequestSender, S
 	}
 
 	@Override
-	public void sendGetVerticesRequest(BFTNode node, Hash id, int count) {
+	public void sendGetVerticesRequest(BFTNode node, LocalGetVerticesRequest request) {
 		if (this.self.equals(node)) {
 			throw new IllegalStateException("Should never need to retrieve a vertex from self.");
 		}
@@ -88,7 +88,7 @@ public class MessageCentralValidatorSync implements SyncVerticesRequestSender, S
 			return;
 		}
 
-		final GetVerticesRequestMessage vertexRequest = new GetVerticesRequestMessage(this.magic, id, count);
+		final GetVerticesRequestMessage vertexRequest = new GetVerticesRequestMessage(this.magic, request.getVertexId(), request.getCount());
 		this.messageCentral.send(peer.get(), vertexRequest);
 	}
 

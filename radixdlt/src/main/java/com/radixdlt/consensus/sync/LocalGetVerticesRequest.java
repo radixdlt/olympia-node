@@ -17,24 +17,29 @@
 
 package com.radixdlt.consensus.sync;
 
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.Hash;
 import java.util.Objects;
 
 public final class LocalGetVerticesRequest {
 	private final Hash vertexId;
 	private final int count;
-	private final BFTNode to;
 
-	public LocalGetVerticesRequest(BFTNode to, Hash vertexId, int count) {
-		this.to = to;
-		this.vertexId = vertexId;
+	public LocalGetVerticesRequest(Hash vertexId, int count) {
+		this.vertexId = Objects.requireNonNull(vertexId);
 		this.count = count;
+	}
+
+	public Hash getVertexId() {
+		return vertexId;
+	}
+
+	public int getCount() {
+		return count;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(vertexId, to, count);
+		return Objects.hash(vertexId, count);
 	}
 
 	@Override
@@ -45,7 +50,6 @@ public final class LocalGetVerticesRequest {
 		LocalGetVerticesRequest other = (LocalGetVerticesRequest) o;
 
 		return Objects.equals(other.vertexId, this.vertexId)
-			&& Objects.equals(other.to, this.to)
 			&& other.count == this.count;
 	}
 }

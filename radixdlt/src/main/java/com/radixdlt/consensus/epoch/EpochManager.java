@@ -53,16 +53,15 @@ import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdateProcessor;
 import com.radixdlt.sync.LocalSyncRequest;
-import com.radixdlt.utils.Pair;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -430,7 +429,7 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 	}
 
 	@Override
-	public void processGetVerticesLocalTimeout(Pair<Hash, Integer> request) {
+	public void processGetVerticesLocalTimeout(LocalGetVerticesRequest request) {
 		syncRequestTimeoutProcessor.processGetVerticesLocalTimeout(request);
 	}
 

@@ -77,7 +77,7 @@ public class FProposalsPerViewDropperTest {
 			.overrideWithIncorrectModule(new AbstractModule() {
 				@Override
 				protected void configure() {
-					bind(SyncVerticesRequestSender.class).toInstance((node, hash, count) -> { });
+					bind(SyncVerticesRequestSender.class).toInstance((node, request) -> { });
 				}
 			})
 			.build();

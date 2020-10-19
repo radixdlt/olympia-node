@@ -25,8 +25,7 @@ import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 import com.radixdlt.consensus.sync.BFTSync.BFTSyncTimeoutScheduler;
-import com.radixdlt.crypto.Hash;
-import com.radixdlt.utils.Pair;
+import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.utils.ScheduledSenderToRx;
 import com.radixdlt.utils.SenderToRx;
 import com.radixdlt.utils.ThreadFactories;
@@ -48,8 +47,8 @@ public class ConsensusRxModule extends AbstractModule {
 		bind(new TypeLiteral<Observable<BFTUpdate>>() { }).toInstance(bftUpdates.rx());
 		bind(BFTUpdateSender.class).toInstance(bftUpdates::send);
 
-		ScheduledSenderToRx<Pair<Hash, Integer>> syncRequests = new ScheduledSenderToRx<>(ses);
+		ScheduledSenderToRx<LocalGetVerticesRequest> syncRequests = new ScheduledSenderToRx<>(ses);
 		bind(BFTSyncTimeoutScheduler.class).toInstance(syncRequests::scheduleSend);
-		bind(new TypeLiteral<Observable<Pair<Hash, Integer>>>() { }).toInstance(syncRequests.messages());
+		bind(new TypeLiteral<Observable<LocalGetVerticesRequest>>() { }).toInstance(syncRequests.messages());
 	}
 }

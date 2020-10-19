@@ -210,9 +210,9 @@ public final class ConsensusModule extends AbstractModule {
 			vertexStore,
 			pacemaker,
 			Comparator.comparingLong((LedgerHeader h) -> h.getAccumulatorState().getStateVersion()),
-			(node, id, count)  -> {
+			(node, request)  -> {
 				counters.increment(CounterType.BFT_SYNC_REQUESTS_SENT);
-				requestSender.sendGetVerticesRequest(node, id, count);
+				requestSender.sendGetVerticesRequest(node, request);
 			},
 			syncLedgerRequestSender,
 			timeoutScheduler,

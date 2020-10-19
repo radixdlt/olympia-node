@@ -30,9 +30,8 @@ import com.radixdlt.consensus.bft.BFTSyncRequestProcessor;
 import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 import com.radixdlt.consensus.sync.BFTSync;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.ThreadFactories;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Scheduler;
@@ -68,7 +67,7 @@ public class BFTRunner implements ModuleRunner {
 	public BFTRunner(
 		Observable<LedgerUpdate> ledgerUpdates,
 		Observable<BFTUpdate> bftUpdates,
-		Observable<Pair<Hash, Integer>> bftSyncTimeouts,
+		Observable<LocalGetVerticesRequest> bftSyncTimeouts,
 		BFTEventsRx networkRx,
 		PacemakerRx pacemakerRx,
 		SyncVerticesRPCRx rpcRx,

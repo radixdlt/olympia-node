@@ -17,9 +17,6 @@
 
 package com.radixdlt.consensus.sync;
 
-import com.radixdlt.crypto.Hash;
-import com.radixdlt.utils.Pair;
-
 public interface BFTSyncRequestTimeoutProcessor {
-	void processGetVerticesLocalTimeout(Pair<Hash, Integer> request);
+	void processGetVerticesLocalTimeout(LocalGetVerticesRequest request);
 }

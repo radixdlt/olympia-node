@@ -22,8 +22,8 @@ import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
+import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
-import com.radixdlt.utils.Pair;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
@@ -38,7 +38,6 @@ import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.consensus.epoch.LocalTimeout;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.integration.distributed.deterministic.network.DeterministicNetwork.DeterministicSender;
 
 /**
@@ -56,10 +55,10 @@ public final class ControlledSender implements DeterministicSender {
 	}
 
 	@Override
-	public void sendGetVerticesRequest(BFTNode node, Hash id, int count) {
-		GetVerticesRequest request = new GetVerticesRequest(self, id, count);
+	public void sendGetVerticesRequest(BFTNode node, LocalGetVerticesRequest request) {
+		GetVerticesRequest getVerticesRequest = new GetVerticesRequest(self, request.getVertexId(), request.getCount());
 		int receiver = this.network.lookup(node);
-		handleMessage(MessageRank.EARLIEST_POSSIBLE, new ControlledMessage(this.senderIndex, receiver, request));
+		handleMessage(MessageRank.EARLIEST_POSSIBLE, new ControlledMessage(this.senderIndex, receiver, getVerticesRequest));
 	}
 
 	@Override
@@ -135,7 +134,7 @@ public final class ControlledSender implements DeterministicSender {
 	}
 
 	@Override
-	public void scheduleTimeout(Pair<Hash, Integer> request, long milliseconds) {
+	public void scheduleTimeout(LocalGetVerticesRequest request, long milliseconds) {
 		// Ignore bft sync timeouts
 	}
 

@@ -20,7 +20,6 @@ package com.radixdlt.consensus.sync;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -191,7 +190,7 @@ public class BFTSyncTest {
 		SyncResult syncResult = bftSync.syncToQC(syncInfo, author);
 
 		assertThat(syncResult).isEqualTo(SyncResult.IN_PROGRESS);
-		verify(syncVerticesRequestSender, times(1)).sendGetVerticesRequest(any(), any(), eq(1));
+		verify(syncVerticesRequestSender, times(1)).sendGetVerticesRequest(any(), any());
 		verify(syncLedgerRequestSender, never()).sendLocalSyncRequest(any());
 	}
 
@@ -220,7 +219,7 @@ public class BFTSyncTest {
 
 		bftSync.syncToQC(syncInfo, author);
 
-		verify(syncVerticesRequestSender, times(1)).sendGetVerticesRequest(any(), any(), eq(1));
+		verify(syncVerticesRequestSender, times(1)).sendGetVerticesRequest(any(), any());
 		verify(syncLedgerRequestSender, never()).sendLocalSyncRequest(any());
 	}
 
@@ -249,7 +248,7 @@ public class BFTSyncTest {
 
 		bftSync.syncToQC(syncInfo, author);
 
-		verify(syncVerticesRequestSender, times(1)).sendGetVerticesRequest(any(), any(), eq(1));
+		verify(syncVerticesRequestSender, times(1)).sendGetVerticesRequest(any(), any());
 		verify(syncLedgerRequestSender, never()).sendLocalSyncRequest(any());
 	}
 
@@ -280,7 +279,7 @@ public class BFTSyncTest {
 
 		bftSync.syncToQC(syncInfo, author);
 
-		verify(syncVerticesRequestSender, times(1)).sendGetVerticesRequest(any(), any(), eq(3));
+		verify(syncVerticesRequestSender, times(1)).sendGetVerticesRequest(any(), any());
 		verify(syncLedgerRequestSender, never()).sendLocalSyncRequest(any());
 	}
 
@@ -325,7 +324,7 @@ public class BFTSyncTest {
 		);
 		bftSync.processGetVerticesResponse(getVerticesResponse);
 
-		verify(syncVerticesRequestSender, times(1)).sendGetVerticesRequest(any(), any(), anyInt());
+		verify(syncVerticesRequestSender, times(1)).sendGetVerticesRequest(any(), any());
 		verify(syncLedgerRequestSender, times(1)).sendLocalSyncRequest(any());
 	}
 
@@ -402,7 +401,7 @@ public class BFTSyncTest {
 		GetVerticesErrorResponse getVerticesErrorResponse = new GetVerticesErrorResponse(mock(BFTNode.class), syncInfo);
 		bftSync.processGetVerticesErrorResponse(getVerticesErrorResponse);
 
-		verify(syncVerticesRequestSender, times(1)).sendGetVerticesRequest(any(), any(), eq(1));
+		verify(syncVerticesRequestSender, times(1)).sendGetVerticesRequest(any(), any());
 		verify(syncLedgerRequestSender, never()).sendLocalSyncRequest(any());
 	}
 
