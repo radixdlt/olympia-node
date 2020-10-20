@@ -17,8 +17,8 @@
 
 package com.radixdlt.engine;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.constraintmachine.CMInstruction;
-import com.radixdlt.crypto.Hash;
 import java.util.Objects;
 
 /**
@@ -26,9 +26,9 @@ import java.util.Objects;
  */
 public final class BaseAtom implements RadixEngineAtom {
 	private final CMInstruction cmInstruction;
-	private final Hash witness;
+	private final HashCode witness;
 
-	public BaseAtom(CMInstruction cmInstruction, Hash witness) {
+	public BaseAtom(CMInstruction cmInstruction, HashCode witness) {
 		this.cmInstruction = Objects.requireNonNull(cmInstruction);
 		this.witness = Objects.requireNonNull(witness);
 	}
@@ -39,7 +39,7 @@ public final class BaseAtom implements RadixEngineAtom {
 	}
 
 	@Override
-	public Hash getWitness() {
+	public HashCode getWitness() {
 		return witness;
 	}
 }

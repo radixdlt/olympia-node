@@ -25,6 +25,7 @@ import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -34,6 +35,7 @@ import java.util.Set;
  * TODO: from being a particle interface
  */
 abstract class TicTacToeBaseParticle extends Particle {
+
 	enum TicTacToeSquareValue { X, O, EMPTY }
 	public static final int TIC_TAC_TOE_BOARD_SIZE = 9;
 
@@ -72,4 +74,24 @@ abstract class TicTacToeBaseParticle extends Particle {
 	public final Set<RadixAddress> getPlayers() {
 		return ImmutableSet.of(getXPlayer(), getOPlayer());
 	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		TicTacToeBaseParticle that = (TicTacToeBaseParticle) o;
+		return Objects.equals(xPlayer, that.xPlayer) &&
+				Objects.equals(oPlayer, that.oPlayer) &&
+				Objects.equals(board, that.board);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(xPlayer, oPlayer, board);
+	}
+
 }

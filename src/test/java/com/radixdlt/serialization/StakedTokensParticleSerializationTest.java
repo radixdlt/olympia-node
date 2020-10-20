@@ -18,13 +18,17 @@
 package com.radixdlt.serialization;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.hash.HashCode;
 import com.radixdlt.TestSetupUtils;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokenPermission;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import nl.jqno.equalsverifier.Warning;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -69,6 +73,15 @@ public class StakedTokensParticleSerializationTest extends SerializeObjectEngine
 		assertThat(str, containsString(p.getAddress().toString()));
 		assertThat(str, containsString(p.getAmount().toString()));
 		assertThat(str, containsString(p.getDelegateAddress().toString()));
+	}
+
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(StakedTokensParticle.class)
+				.suppress(Warning.NONFINAL_FIELDS)
+				.withIgnoredFields("version")
+				.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+				.verify();
 	}
 
 	private static StakedTokensParticle get() {

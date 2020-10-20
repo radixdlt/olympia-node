@@ -15,23 +15,25 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.engine;
+package com.radixdlt.crypto;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.constraintmachine.CMInstruction;
 
 /**
- * Radix Engine interface for retrieving a sequence of instructions to
- * verify and store in the engine.
+ * An object capable of hashing an object
  */
-public interface RadixEngineAtom {
+public interface Hasher {
 
 	/**
-	 * Retrieve the sequence of instructions
-	 * @return sequence of instructions
+	 * Serializes and hashes an arbitrary object into a byte array.
+	 *
+	 * @param o object to hash
 	 */
-	CMInstruction getCMInstruction();
+	HashCode hash(Object o);
 
-	// TODO: Change witness to be something implicit rather than explicit
-	HashCode getWitness();
+	/**
+	 * Hahes a raw byte array.
+	 * @param bytes byte array to hash
+	 */
+	HashCode hashBytes(byte[] bytes);
 }

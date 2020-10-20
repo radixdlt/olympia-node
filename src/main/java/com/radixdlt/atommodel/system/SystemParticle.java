@@ -19,6 +19,7 @@ package com.radixdlt.atommodel.system;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.Objects;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
@@ -59,6 +60,24 @@ public final class SystemParticle extends Particle {
 
 	public long getTimestamp() {
 		return timestamp;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hashCode(epoch, view, timestamp, getDestinations());
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (!(o instanceof SystemParticle)) {
+			return false;
+		}
+
+		SystemParticle other = (SystemParticle) o;
+		return this.epoch == other.epoch
+			&& this.view == other.view
+			&& this.timestamp == other.timestamp
+			&& Objects.equal(this.getDestinations(), other.getDestinations());
 	}
 
 	@Override

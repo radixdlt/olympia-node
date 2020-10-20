@@ -1,7 +1,7 @@
 package com.radixdlt.constraintmachine;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
@@ -11,13 +11,13 @@ public class CMErrorTest {
 
 		ConstraintMachine.CMValidationState state0 = new ConstraintMachine.CMValidationState(
 			PermissionLevel.USER,
-			Hash.ZERO_HASH,
+			HashUtils.zero256(),
 			ImmutableMap.of()
 		);
 
 		ConstraintMachine.CMValidationState state1 = new ConstraintMachine.CMValidationState(
 			PermissionLevel.USER,
-			Hash.random(),
+			HashUtils.random256(),
 			ImmutableMap.of()
 		);
 
@@ -25,6 +25,5 @@ public class CMErrorTest {
 				.withPrefabValues(ConstraintMachine.CMValidationState.class, state0, state1)
 				.verify();
 	}
-
 
 }

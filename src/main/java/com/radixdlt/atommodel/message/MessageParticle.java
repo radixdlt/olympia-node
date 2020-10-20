@@ -111,4 +111,28 @@ public final class MessageParticle extends Particle {
 		return String.format("%s[(%s:%s)]",
 			getClass().getSimpleName(), String.valueOf(from), String.valueOf(to));
 	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (!(o instanceof MessageParticle)) {
+			return false;
+		}
+		MessageParticle that = (MessageParticle) o;
+		return nonce == that.nonce
+				&& Objects.equals(from, that.from)
+				&& Objects.equals(to, that.to)
+				&& Objects.equals(metaData, that.metaData)
+				&& Arrays.equals(bytes, that.bytes)
+				&& Objects.equals(getDestinations(), that.getDestinations());
+	}
+
+	@Override
+	public int hashCode() {
+		int result = Objects.hash(from, to, metaData, nonce, getDestinations());
+		result = 31 * result + Arrays.hashCode(bytes);
+		return result;
+	}
 }

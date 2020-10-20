@@ -31,7 +31,7 @@ import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import org.junit.Before;
@@ -77,7 +77,7 @@ public class SystemTest {
 
 		// Act
 		// Assert
-		assertThatThrownBy(() -> this.engine.checkAndStore(new BaseAtom(instruction, Hash.ZERO_HASH)))
+		assertThatThrownBy(() -> this.engine.checkAndStore(new BaseAtom(instruction, HashUtils.zero256())))
 			.isInstanceOf(RadixEngineException.class)
 			.extracting(e -> ((RadixEngineException) e).getCmError().getErrorCode())
 			.isEqualTo(CMErrorCode.INVALID_EXECUTION_PERMISSION);
@@ -99,7 +99,7 @@ public class SystemTest {
 		);
 
 		// Act
-		this.engine.checkAndStore(new BaseAtom(instruction, Hash.ZERO_HASH), PermissionLevel.SUPER_USER);
+		this.engine.checkAndStore(new BaseAtom(instruction, HashUtils.zero256()), PermissionLevel.SUPER_USER);
 
 		// Assert
 		assertThat(this.store.getSpin(nextSystemParticle)).isEqualTo(Spin.UP);
@@ -122,7 +122,7 @@ public class SystemTest {
 
 		// Act
 		// Assert
-		assertThatThrownBy(() -> this.engine.checkAndStore(new BaseAtom(instruction, Hash.ZERO_HASH), PermissionLevel.SUPER_USER))
+		assertThatThrownBy(() -> this.engine.checkAndStore(new BaseAtom(instruction, HashUtils.zero256()), PermissionLevel.SUPER_USER))
 			.isInstanceOf(RadixEngineException.class)
 			.extracting(e -> ((RadixEngineException) e).getCmError().getErrorCode())
 			.isEqualTo(CMErrorCode.INVALID_PARTICLE);
