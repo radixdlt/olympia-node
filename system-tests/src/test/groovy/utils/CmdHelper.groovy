@@ -54,7 +54,7 @@ class CmdHelper {
 
         List output
         if (sout) {
-            output = sout.toString().split(System.lineSeparator()).collect({ it })
+            output = sout.toString().split("\n").collect({ it })
             if (logOutput) {
                 logger.info("-----------Output---------")
                 sout.each { logger.info(it) }
@@ -66,7 +66,7 @@ class CmdHelper {
             logger.error("-----------Error---------")
 
             serr.each { logger.error(it) }
-            error = serr.toString().split(System.lineSeparator()).collect({ it })
+            error = serr.toString().split("\n").collect({ it })
             if (failOnError) {
                 throw new Exception(error.toString())
             }
