@@ -116,7 +116,7 @@ public class JacksonJsonMapper extends ObjectMapper {
 				AID::toString
 		));
 
-		jsonModule.addKeySerializer(AID.class, new StdSerializer<>(AID.class) {
+		jsonModule.addKeySerializer(AID.class, new StdSerializer<AID>(AID.class) {
 			@Override
 			public void serialize(AID value, JsonGenerator gen, SerializerProvider provider) throws IOException {
 				gen.writeFieldName(JacksonCodecConstants.AID_STR_VALUE + value.toString());
