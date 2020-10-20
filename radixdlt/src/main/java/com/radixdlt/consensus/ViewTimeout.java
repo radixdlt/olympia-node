@@ -32,7 +32,7 @@ import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
 
 /**
- * Represents a view timeout message from the pacemaker
+ * Represents a remote view timeout message from a validator.
  * <p>
  * A view timeout message signals to the receiver that a view timeout has
  * occurred for the author.

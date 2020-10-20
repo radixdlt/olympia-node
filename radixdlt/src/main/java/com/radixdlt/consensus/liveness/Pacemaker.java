@@ -50,8 +50,10 @@ public interface Pacemaker extends PacemakerState {
 	void processViewTimeout(ViewTimeout viewTimeout);
 
 	/**
-	 * Processes a local timeout, causing the pacemaker to move to the next
-	 * view if the timeout is for the current view.
+	 * Processes a local timeout, causing the pacemaker to broadcast a
+	 * {@link com.radixdlt.consensus.ViewTimeout) to all leaders.
+	 * Once a leader forms a quorum of view timeouts, it will proceed
+	 * to the next view.
 	 *
 	 * @param view the view the local timeout is for
 	 */

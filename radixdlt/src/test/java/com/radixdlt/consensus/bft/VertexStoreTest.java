@@ -45,6 +45,8 @@ import com.radixdlt.crypto.Hash;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.utils.DsonSHA256Hasher;
+
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -145,6 +147,23 @@ public class VertexStoreTest {
 			new VertexStore(
 				genesisVertex,
 				badRootQC,
+				ledger,
+				bftUpdateSender,
+				vertexStoreEventSender,
+				counters
+			)
+		).isInstanceOf(IllegalStateException.class);
+	}
+
+	@Test
+	public void when_vertex_store_created_with_incorrect_vertices__then_exception_is_thrown() {
+		this.nextVertex.get();
+
+		assertThatThrownBy(() ->
+			new VertexStore(
+				genesisVertex,
+				rootQC,
+				Collections.singletonList(this.nextVertex.get()),
 				ledger,
 				bftUpdateSender,
 				vertexStoreEventSender,

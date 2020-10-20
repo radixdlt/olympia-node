@@ -99,13 +99,8 @@ public final class ConsensusModule extends AbstractModule {
 
 	@Provides
 	private BFTFactory bftFactory(
-		ProposalBroadcaster bftEventSender,
-		NextCommandGenerator nextCommandGenerator,
 		Hasher hasher,
-		HashSigner signer,
-		HashVerifier verifier,
-		TimeSupplier timeSupplier,
-		SystemCounters counters
+		HashVerifier verifier
 	) {
 		return (
 			self,

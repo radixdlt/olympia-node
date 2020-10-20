@@ -180,6 +180,7 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 		return this.currentView;
 	}
 
+	// FIXME: To be moved out of pacemaker
 	@Override
 	public Optional<QuorumCertificate> processVote(Vote vote) {
 		View view = vote.getView();
@@ -196,6 +197,7 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 		return maybeQC;
 	}
 
+	// FIXME: To be moved out of pacemaker
 	@Override
 	public void processProposal(Proposal proposal) {
 		log.trace("Proposal: Processing {}", proposal);
