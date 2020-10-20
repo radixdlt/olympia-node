@@ -20,11 +20,12 @@ package com.radixdlt.examples.tictactoe;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.hash.HashCode;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.RadixEngineAtom;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.RadixAddress;
@@ -45,6 +46,7 @@ import static com.radixdlt.examples.tictactoe.TicTacToeBaseParticle.TicTacToeSqu
  * Executable example showing how to use the Radix Engine with the TicTacToeConstraintScrypt
  */
 public class TicTacToeRunner {
+
 	private static XToMoveParticle buildIllegalInitialBoard(ECKeyPair xPlayer, ECKeyPair oPlayer) {
 		return new XToMoveParticle(
 			new RadixAddress((byte) 0, xPlayer.getPublicKey()),
@@ -133,7 +135,7 @@ public class TicTacToeRunner {
 
 	static class TicTacToeAtom implements RadixEngineAtom {
 		private final CMInstruction cmInstruction;
-		private final Hash hash;
+		private final HashCode hash;
 		private final AID aid;
 		private final boolean shouldPass;
 
@@ -141,7 +143,7 @@ public class TicTacToeRunner {
 			TicTacToeBaseParticle prevBoard,
 			TicTacToeBaseParticle nextBoard,
 			ECKeyPair player,
-			Hash hash,
+			HashCode hash,
 			boolean shouldPass
 		) {
 			this.shouldPass = shouldPass;
@@ -160,11 +162,11 @@ public class TicTacToeRunner {
 				instructions.build(),
 				ImmutableMap.of(player.euid(), player.sign(hash))
 			);
-			this.aid = AID.from(hash.toByteArray());
+			this.aid = AID.from(hash.asBytes());
 		}
 
 		@Override
-		public Hash getWitness() {
+		public HashCode getWitness() {
 			return hash;
 		}
 
@@ -214,43 +216,43 @@ public class TicTacToeRunner {
 			// [ , , ]
 			// [ , ]
 			//Illegal Initial board
-			new TicTacToeAtom(null, illegalInitialBoard, xPlayer, Hash.random(), false),
+			new TicTacToeAtom(null, illegalInitialBoard, xPlayer, HashUtils.random256(), false),
 
 			// [ , , ]
 			// [ , , ]
 			// [ , , ]
 			//Legal Initial board
-			new TicTacToeAtom(null, initialBoard, xPlayer, Hash.random(), true),
+			new TicTacToeAtom(null, initialBoard, xPlayer, HashUtils.random256(), true),
 
 			// [ , , ]    [ , , ]
 			// [ , , ] => [ ,X, ]
 			// [ , , ]    [ , , ]
 			//Legal first move
-			new TicTacToeAtom(initialBoard, firstMove, xPlayer, Hash.random(), true),
+			new TicTacToeAtom(initialBoard, firstMove, xPlayer, HashUtils.random256(), true),
 
 			// [ , , ]    [ , , ]
 			// [ , , ] => [ , , ]
 			// [ , , ]    [ , ,X]
 			//Illegal takeback
-			new TicTacToeAtom(initialBoard, illegalTakebackFirstMove, xPlayer, Hash.random(), false),
+			new TicTacToeAtom(initialBoard, illegalTakebackFirstMove, xPlayer, HashUtils.random256(), false),
 
 			// [ , , ]    [ , , ]
 			// [ ,X, ] => [ ,O, ]
 			// [ , , ]    [ , , ]
 			//Illegal overwrite
-			new TicTacToeAtom(firstMove, illegalOMove, oPlayer, Hash.random(), false),
+			new TicTacToeAtom(firstMove, illegalOMove, oPlayer, HashUtils.random256(), false),
 
 			// [ , , ]    [ , , ]
 			// [ ,X, ] => [ ,X, ]
 			// [ , , ]    [ , ,O]
 			//Illegal O move to O move
-			new TicTacToeAtom(firstMove, illegalOtoMoveOtoMove, oPlayer, Hash.random(), false),
+			new TicTacToeAtom(firstMove, illegalOtoMoveOtoMove, oPlayer, HashUtils.random256(), false),
 
 			// [ , , ]    [ , , ]
 			// [ ,X, ] => [ ,X, ]
 			// [ , , ]    [ , ,O]
 			//Legal second move
-			new TicTacToeAtom(firstMove, legalOMove, oPlayer, Hash.random(), true)
+			new TicTacToeAtom(firstMove, legalOMove, oPlayer, HashUtils.random256(), true)
 		);
 
 		// Execute each atom on the engine and see what happens

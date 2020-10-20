@@ -18,18 +18,17 @@
 package com.radixdlt.constraintmachine;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.DefaultSerialization;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.EUID;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.serialization.SerializeWithHid;
 import com.radixdlt.serialization.SerializerConstants;
-import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
+import com.radixdlt.serialization.SerializerDummy;
+
 import java.util.Set;
-import java.util.function.Supplier;
 
 /**
  * A content-identifiable, sub-state of the ledger.
@@ -37,6 +36,7 @@ import java.util.function.Supplier;
  * TODO: Remove serialization stuff out of here
  */
 @SerializerId2("radix.particle")
+@SerializeWithHid
 public abstract class Particle {
 	// TODO: Move this out and up to Atom level
 	@JsonProperty("destinations")
@@ -51,8 +51,6 @@ public abstract class Particle {
 	@JsonProperty("version")
 	@DsonOutput(Output.ALL)
 	private short version = 100;
-
-	private final Supplier<Hash> cachedHash = Suppliers.memoize(this::doGetHash);
 
 	public Particle() {
 		this.destinations = ImmutableSet.of();
@@ -70,43 +68,8 @@ public abstract class Particle {
 		return destinations;
 	}
 
-	@Override
-	public boolean equals(Object o) {
-		if (o == null) {
-			return false;
-		}
-
-		if (o == this) {
-			return true;
-		}
-
-		if (getClass().isInstance(o) && getHash().equals(((Particle) o).getHash())) {
-			return true;
-		}
-
-		return false;
+	public static EUID euidOf(Particle particle, Hasher hasher) {
+		return EUID.fromHash(hasher.hash(particle));
 	}
 
-	@Override
-	public int hashCode() {
-		return getHash().hashCode();
-	}
-
-	private Hash doGetHash() {
-		try {
-			return Hash.of(DefaultSerialization.getInstance().toDson(this, Output.HASH));
-		} catch (Exception e) {
-			throw new RuntimeException("Error generating hash: " + e, e);
-		}
-	}
-
-	public Hash getHash() {
-		return cachedHash.get();
-	}
-
-	@JsonProperty("hid")
-	@DsonOutput(Output.API)
-	public final EUID euid() {
-		return getHash().euid();
-	}
 }

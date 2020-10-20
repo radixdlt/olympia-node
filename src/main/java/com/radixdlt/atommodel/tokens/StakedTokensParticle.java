@@ -155,4 +155,28 @@ public final class StakedTokensParticle extends Particle {
 	public long getNonce() {
 		return this.nonce;
 	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (!(o instanceof StakedTokensParticle)) {
+			return false;
+		}
+		StakedTokensParticle that = (StakedTokensParticle) o;
+		return nonce == that.nonce
+				&& Objects.equals(delegateAddress, that.delegateAddress)
+				&& Objects.equals(address, that.address)
+				&& Objects.equals(tokenDefinitionReference, that.tokenDefinitionReference)
+				&& Objects.equals(granularity, that.granularity)
+				&& Objects.equals(amount, that.amount)
+				&& Objects.equals(tokenPermissions, that.tokenPermissions)
+				&& Objects.equals(getDestinations(), that.getDestinations());
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(delegateAddress, address, tokenDefinitionReference, granularity, nonce, amount, tokenPermissions, getDestinations());
+	}
 }

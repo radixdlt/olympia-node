@@ -17,13 +17,13 @@
 
 package com.radixdlt.constraintmachine;
 
+import com.google.common.hash.HashCode;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.store.SpinStateMachine;
 import java.util.HashMap;
 import java.util.List;
@@ -81,11 +81,11 @@ public final class ConstraintMachine {
 		private boolean particleRemainingIsInput;
 		private UsedData particleRemainingUsed = null;
 		private final Map<Particle, Spin> currentSpins;
-		private final Hash witness;
+		private final HashCode witness;
 		private final Map<EUID, ECDSASignature> signatures;
 		private final Map<ECPublicKey, Boolean> isSignedByCache = new HashMap<>();
 
-		CMValidationState(PermissionLevel permissionLevel, Hash witness, Map<EUID, ECDSASignature> signatures) {
+		CMValidationState(PermissionLevel permissionLevel, HashCode witness, Map<EUID, ECDSASignature> signatures) {
 			this.permissionLevel = permissionLevel;
 			this.currentSpins = new HashMap<>();
 			this.witness = witness;
@@ -414,7 +414,7 @@ public final class ConstraintMachine {
 	 * @param cmInstruction instruction to validate
 	 * @return the first error found, otherwise an empty optional
 	 */
-	public Optional<CMError> validate(CMInstruction cmInstruction, Hash witness, PermissionLevel permissionLevel) {
+	public Optional<CMError> validate(CMInstruction cmInstruction, HashCode witness, PermissionLevel permissionLevel) {
 		final CMValidationState validationState = new CMValidationState(
 			permissionLevel,
 			witness,

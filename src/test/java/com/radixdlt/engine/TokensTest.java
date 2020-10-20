@@ -15,7 +15,7 @@ import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.store.EngineStore;
@@ -76,11 +76,11 @@ public class TokensTest {
 		);
 		CMInstruction instruction = new CMInstruction(
 			instructions,
-			ImmutableMap.of(keyPair.euid(), keyPair.sign(Hash.ZERO_HASH))
+			ImmutableMap.of(keyPair.euid(), keyPair.sign(HashUtils.zero256()))
 		);
 
 		// Act
-		this.engine.checkAndStore(new BaseAtom(instruction, Hash.ZERO_HASH));
+		this.engine.checkAndStore(new BaseAtom(instruction, HashUtils.zero256()));
 
 		// Assert
 		assertThat(this.store.getSpin(rriParticle)).isEqualTo(Spin.DOWN);
