@@ -17,6 +17,7 @@
 
 package com.radixdlt.crypto;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.encryption.EncryptedPrivateKey;
 import com.radixdlt.TestSetupUtils;
 import com.radixdlt.crypto.exception.ECIESException;
@@ -44,6 +45,7 @@ import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertThat;
 
 public class ECKeyPairTest {
+
 	@BeforeClass
 	public static void beforeClass() {
 		TestSetupUtils.installBouncyCastleProvider();
@@ -87,10 +89,10 @@ public class ECKeyPairTest {
 			byte[] pub = key.getPublicKey().getBytes();
 
 			ECKeyPair keyPair = ECKeyPair.fromPrivateKey(priv);
-			ECDSASignature signature = keyPair.sign(Hash.hash256(helloWorld.getBytes(StandardCharsets.UTF_8)));
+			ECDSASignature signature = keyPair.sign(HashUtils.sha256(helloWorld.getBytes(StandardCharsets.UTF_8)).asBytes());
 
 			ECPublicKey pubkey = ECPublicKey.fromBytes(pub);
-			assertTrue(pubkey.verify(Hash.hash256(helloWorld.getBytes(StandardCharsets.UTF_8)), signature));
+			assertTrue(pubkey.verify(HashUtils.sha256(helloWorld.getBytes(StandardCharsets.UTF_8)).asBytes(), signature));
 		}
 	}
 
@@ -163,8 +165,8 @@ public class ECKeyPairTest {
 		ECKeyPair keyPair1 = ECKeyPair.fromSeed(seed);
 		ECKeyPair keyPair2 = ECKeyPair.fromSeed(seed);
 
-		Hash hash1 = Hash.random();
-		Hash hash2 = Hash.random();
+		HashCode hash1 = HashUtils.random256();
+		HashCode hash2 = HashUtils.random256();
 		ECDSASignature signature1 = keyPair1.sign(hash1);
 		ECDSASignature signature2 = keyPair2.sign(hash2);
 
@@ -196,7 +198,7 @@ public class ECKeyPairTest {
 	}
 
 	@Test
-	public void shortFileIsRejected() throws IOException, PrivateKeyException, PublicKeyException {
+	public void shortFileIsRejected() throws IOException {
 		File testKeyPair = new File("test-private-key.ks");
 
 		try (OutputStream outputStream = new FileOutputStream(testKeyPair)) {

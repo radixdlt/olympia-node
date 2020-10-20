@@ -17,12 +17,13 @@
 
 package com.radixdlt.crypto.encryption;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.radixdlt.SecurityCritical;
 import com.radixdlt.SecurityCritical.SecurityKind;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECMultiplicationScalar;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.exception.MacMismatchException;
 import com.radixdlt.crypto.exception.ECIESException;
 import org.bouncycastle.math.ec.ECPoint;
@@ -106,19 +107,21 @@ public final class ECIES {
 	}
 
 	public static byte[] encrypt(byte[] data, ECPublicKey publicKey) throws ECIESException {
-		return encrypt(data, publicKey.getPublicPoint());
+		byte[] iv = new byte[16];
+		secureRandom.nextBytes(iv);
+		return encrypt(data, publicKey.getPublicPoint(), ECKeyPair.generateNew(), iv);
 	}
 
-	private static byte[] encrypt(byte[] data, ECPoint publicKeyPointOnCurve) throws ECIESException {
+	@VisibleForTesting
+	static byte[] encrypt(byte[] data, ECPoint publicKeyPointOnCurve, ECKeyPair ephemeral, byte[] iv) throws ECIESException {
 		try {
 			// 1. The destination is this.getPublicKey()
 			// 2. Generate 16 random bytes using a secure random number generator.
 			// Call them `IV` (as in `initialization vector`)
-			byte[] iv = new byte[16];
-			secureRandom.nextBytes(iv);
+			// Use supplied IV so we can test versus deterministic test vectors.
 
 			// 3. Generate a new ephemeral EC key pair
-			ECKeyPair ephemeral = ECKeyPair.generateNew();
+			// Use the supplied "ephemeral" key so we can test deterministic test vectors.
 
 			// 4. Do an EC point multiply with `publicKeyPointOnCurve` and ephemeral private key. This gives you a point M.
 			ECPoint m = ephemeral.multiply(publicKeyPointOnCurve);
@@ -173,6 +176,6 @@ public final class ECIES {
 	}
 
 	private static byte[] hash(byte[] data) {
-		return Hash.hash512(data);
+		return HashUtils.sha512(data).asBytes();
 	}
 }

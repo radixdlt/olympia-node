@@ -17,21 +17,23 @@
 
 package com.radixdlt.utils;
 
-import com.radixdlt.crypto.Hash;
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
+
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
 public class POW {
 	private final int magic;
-	private final Hash seed;
+	private final HashCode seed;
 	private final long nonce;
 	private final ByteBuffer buffer = ByteBuffer.allocate(32 + 4 + Long.BYTES);
 
-	public POW(int magic, Hash seed) {
+	public POW(int magic, HashCode seed) {
 		this(magic, seed, Long.MIN_VALUE);
 	}
 
-	public POW(int magic, Hash seed, long nonce) {
+	public POW(int magic, HashCode seed, long nonce) {
 		Objects.requireNonNull(seed);
 
 		this.magic = magic;
@@ -43,7 +45,7 @@ public class POW {
 		return magic;
 	}
 
-	public Hash getSeed() {
+	public HashCode getSeed() {
 		return seed;
 	}
 
@@ -51,13 +53,13 @@ public class POW {
 		return nonce;
 	}
 
-	public synchronized Hash getHash() {
+	public synchronized HashCode getHash() {
 		buffer.clear();
 		buffer.putInt(magic);
-		buffer.put(seed.toByteArray());
+		buffer.put(seed.asBytes());
 		buffer.putLong(nonce);
 		buffer.flip();
 
-		return Hash.of(buffer.array());
+		return HashUtils.sha256(buffer.array());
 	}
 }

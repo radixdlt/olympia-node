@@ -21,30 +21,30 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
-import com.radixdlt.crypto.Hash;
+import com.google.common.hash.HashCode;
 import java.io.IOException;
 
 /**
  * Deserializer for translation from JSON encoded {@code Hash} data
  * to a {@code Hash} object.
  */
-class JacksonJsonHashDeserializer extends StdDeserializer<Hash> {
+class JacksonJsonHashCodeDeserializer extends StdDeserializer<HashCode> {
 	private static final long serialVersionUID = -2472482347700365657L;
 
-	JacksonJsonHashDeserializer() {
+	JacksonJsonHashCodeDeserializer() {
 		this(null);
 	}
 
-	JacksonJsonHashDeserializer(Class<Hash> t) {
+	JacksonJsonHashCodeDeserializer(Class<HashCode> t) {
 		super(t);
 	}
 
 	@Override
-	public Hash deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+	public HashCode deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
 		String value = p.getValueAsString();
 		if (!value.startsWith(JacksonCodecConstants.HASH_STR_VALUE)) {
-			throw new InvalidFormatException(p, "Expecting Hash", value, Hash.class);
+			throw new InvalidFormatException(p, "Expecting Hash", value, HashCode.class);
 		}
-		return new Hash(value.substring(JacksonCodecConstants.STR_VALUE_LEN));
+		return HashCode.fromString(value.substring(JacksonCodecConstants.STR_VALUE_LEN));
 	}
 }

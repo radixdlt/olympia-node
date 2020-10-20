@@ -1,6 +1,7 @@
 package com.radixdlt.crypto;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.hash.HashCode;
 import org.junit.Test;
 
 import java.math.BigInteger;
@@ -149,7 +150,7 @@ public class SignaturesTest {
             );
         }
         Signatures signatures = DefaultSignatures.emptySignatures();
-        Hash hashedMessage = hashOfMessage("You must do what you feel is right of course");
+        HashCode hashedMessage = hashOfMessage("You must do what you feel is right of course");
         for (int i = 0; i < numberOfValidSignaturesToCreate + numberOfInvalidSignaturesToCreate; i++) {
             ECKeyPair keyPair = ECKeyPair.generateNew();
             assertNotNull(keyPair);
@@ -179,7 +180,7 @@ public class SignaturesTest {
         return new ECDSASignature(randomBigInt.get(), randomBigInt.get());
     }
 
-    private Hash hashOfMessage(String message) {
-        return new Hash(Hash.hash256(message.getBytes()));
+    private HashCode hashOfMessage(String message) {
+        return HashUtils.sha256(message.getBytes());
     }
 }

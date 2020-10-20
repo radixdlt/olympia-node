@@ -17,6 +17,8 @@
 
 package com.radixdlt.crypto;
 
+import com.google.common.hash.HashCode;
+
 /**
  * An entity capable of producing a {@link Signature} of type {@code <T>} using some {@link SignatureScheme}.
  * @param <T>
@@ -47,7 +49,7 @@ public interface Signing<T extends Signature> extends ECMultiplicationScalar {
      * @param hash A hash of some message to sign.
      * @return A {@link Signature} of type {@code <T>} of {@code hash}.
      */
-    default T sign(Hash hash) {
-        return sign(hash.toByteArray());
+    default T sign(HashCode hash) {
+        return sign(hash.asBytes());
     }
 }

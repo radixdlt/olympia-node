@@ -19,6 +19,7 @@ package com.radixdlt.crypto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
@@ -98,7 +99,7 @@ public final class ECDSASignatures implements Signatures {
 	}
 
 	@Override
-	public List<ECPublicKey> signedMessage(Hash message) {
+	public List<ECPublicKey> signedMessage(HashCode message) {
 		return this.keyToSignature.entrySet().stream()
 				.filter(e -> e.getKey().verify(message, e.getValue()))
 				.map(Map.Entry::getKey)
