@@ -22,7 +22,6 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
@@ -30,6 +29,7 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof.OrderByEpochAndVersio
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
@@ -59,14 +59,14 @@ public class LedgerModule extends AbstractModule {
 
 	// TODO: This is a temporary fix until Mempool is fixed
 	@ProvidesIntoSet
-	private VertexStoreEventSender eventSender(Mempool mempool) {
+	private VertexStoreEventSender eventSender(Mempool mempool, Hasher hasher) {
 		return new VertexStoreEventSender() {
 			@Override
 			public void sendCommitted(BFTCommittedUpdate committedUpdate) {
 				committedUpdate.getCommitted().stream()
 					.flatMap(PreparedVertex::errorCommands)
 					.map(Pair::getFirst)
-					.map(Command::hash)
+					.map(hasher::hash)
 					.forEach(mempool::removeRejected);
 			}
 

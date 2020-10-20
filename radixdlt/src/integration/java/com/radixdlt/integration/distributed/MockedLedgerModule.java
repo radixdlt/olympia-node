@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 
@@ -44,7 +45,7 @@ public class MockedLedgerModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	Ledger syncedLedger() {
+	Ledger syncedLedger(Hasher hasher) {
 		return new Ledger() {
 			@Override
 			public Optional<PreparedVertex> prepare(LinkedList<PreparedVertex> previous, VerifiedVertex vertex) {
@@ -56,7 +57,7 @@ public class MockedLedgerModule extends AbstractModule {
 					.withHeader(ledgerHeader)
 					.andCommands(
 						vertex.getCommand()
-							.<PreparedCommand>map(cmd -> () -> cmd)
+							.<PreparedCommand>map(cmd -> new MockPrepared(cmd, hasher.hash(cmd)))
 							.map(ImmutableList::of)
 							.orElse(ImmutableList.of()),
 						ImmutableMap.of()

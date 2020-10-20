@@ -20,7 +20,7 @@ package com.radixdlt.middleware2.network;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.HashUtils;
 import org.radix.serialization.SerializeMessageObject;
 
 public class GetEpochResponseMessageSerializeTest extends SerializeMessageObject<GetEpochResponseMessage> {
@@ -30,6 +30,6 @@ public class GetEpochResponseMessageSerializeTest extends SerializeMessageObject
 
 	private static GetEpochResponseMessage get() {
 		BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
-		return new GetEpochResponseMessage(author, 12345, VerifiedLedgerHeaderAndProof.genesis(Hash.ZERO_HASH, null));
+		return new GetEpochResponseMessage(author, 12345, VerifiedLedgerHeaderAndProof.genesis(HashUtils.zero256(), null));
 	}
 }

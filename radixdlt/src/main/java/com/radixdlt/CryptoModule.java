@@ -23,11 +23,11 @@ import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.Hasher;
+import com.radixdlt.crypto.Hasher;
+import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.utils.DsonSHA256Hasher;
 
 /**
  * Module which maintains crypto primitives for consensus
@@ -38,7 +38,11 @@ public final class CryptoModule extends AbstractModule {
 		// Configuration
 		bind(HashVerifier.class).toInstance(ECPublicKey::verify);
 		bind(Serialization.class).toProvider(DefaultSerialization::getInstance);
-		bind(Hasher.class).to(DsonSHA256Hasher.class);
+	}
+
+	@Provides
+	Hasher hasher(Serialization serialization) {
+		return new Sha256Hasher(serialization);
 	}
 
 	@Provides

@@ -23,16 +23,16 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.Hasher;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
@@ -72,25 +72,25 @@ public class MockedStateComputerWithEpochsModule extends AbstractModule {
 
 	@Provides
 	private VerifiedLedgerHeaderAndProof genesisProof(BFTValidatorSet validatorSet) {
-		return VerifiedLedgerHeaderAndProof.genesis(Hash.ZERO_HASH, validatorSet);
+		return VerifiedLedgerHeaderAndProof.genesis(HashUtils.zero256(), validatorSet);
 	}
 
 	@Provides
 	@Singleton
-	private StateComputer stateComputer() {
+	private StateComputer stateComputer(Hasher hasher) {
 		return new StateComputer() {
 			private long epoch = 1;
 			@Override
 			public StateComputerResult prepare(ImmutableList<PreparedCommand> previous, Command next, View view, long timstamp) {
 				if (view.compareTo(epochHighView) >= 0) {
 					return new StateComputerResult(
-						next == null ? ImmutableList.of() : ImmutableList.of(() -> next),
+						next == null ? ImmutableList.of() : ImmutableList.of(new MockPrepared(next, hasher.hash(next))),
 						ImmutableMap.of(),
 						validatorSetMapping.apply(epoch + 1)
 					);
 				} else {
 					return new StateComputerResult(
-						next == null ? ImmutableList.of() : ImmutableList.of(() -> next),
+						next == null ? ImmutableList.of() : ImmutableList.of(new MockPrepared(next, hasher.hash(next))),
 						ImmutableMap.of()
 					);
 				}

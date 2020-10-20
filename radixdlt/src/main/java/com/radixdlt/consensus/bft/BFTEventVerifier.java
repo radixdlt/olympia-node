@@ -17,16 +17,16 @@
 
 package com.radixdlt.consensus.bft;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.Hasher;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.TimestampedVoteData;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.utils.Longs;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
@@ -75,7 +75,7 @@ public final class BFTEventVerifier implements BFTEventProcessor {
 
 		// TODO: Remove IllegalArgumentException
 		final TimestampedVoteData voteData = vote.getTimestampedVoteData();
-		final Hash voteHash = this.hasher.hash(voteData);
+		final HashCode voteHash = this.hasher.hash(voteData);
 		final ECDSASignature signature = vote.getSignature().orElseThrow(() -> new IllegalArgumentException("vote is missing signature"));
 		final ECPublicKey key = node.getKey();
 		if (!this.verifier.verify(key, voteHash, signature)) {
@@ -97,7 +97,7 @@ public final class BFTEventVerifier implements BFTEventProcessor {
 		}
 
 		final ECPublicKey key = node.getKey();
-		final Hash newViewId = Hash.of(Longs.toByteArray(newView.getView().number()));
+		final HashCode newViewId = hasher.hashBytes(Longs.toByteArray(newView.getView().number()));
 		// TODO: Remove IllegalArgumentException
 		final ECDSASignature signature = newView.getSignature().orElseThrow(() -> new IllegalArgumentException("new-view is missing signature"));
 		if (!this.verifier.verify(key, newViewId, signature)) {
@@ -119,7 +119,7 @@ public final class BFTEventVerifier implements BFTEventProcessor {
 		}
 
 		final ECPublicKey key = node.getKey();
-		final Hash vertexHash = this.hasher.hash(proposal.getVertex());
+		final HashCode vertexHash = this.hasher.hash(proposal.getVertex());
 		final ECDSASignature signature = proposal.getSignature();
 		if (!this.verifier.verify(key, vertexHash, signature)) {
 			log.info("{}: Ignoring invalid signature from author {}", self::getSimpleName, node::getSimpleName);

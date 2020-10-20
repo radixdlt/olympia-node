@@ -24,7 +24,7 @@ import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.HashUtils;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -40,12 +40,12 @@ public class CommandToBinaryConverterTest {
 
 	@Test
 	public void test_atom_content_transformation_to_byte_array_and_back() {
-		LedgerHeader ledgerHeader = LedgerHeader.genesis(Hash.ZERO_HASH, null);
+		LedgerHeader ledgerHeader = LedgerHeader.genesis(HashUtils.zero256(), null);
 		VerifiedLedgerHeaderAndProof proof = new VerifiedLedgerHeaderAndProof(
-			new BFTHeader(View.of(1), Hash.random(), ledgerHeader),
-			new BFTHeader(View.of(1), Hash.random(), ledgerHeader),
+			new BFTHeader(View.of(1), HashUtils.random256(), ledgerHeader),
+			new BFTHeader(View.of(1), HashUtils.random256(), ledgerHeader),
 			1L,
-			Hash.random(), ledgerHeader,
+			HashUtils.random256(), ledgerHeader,
 			new TimestampedECDSASignatures()
 		);
 		StoredCommittedCommand committedCommand = new StoredCommittedCommand(

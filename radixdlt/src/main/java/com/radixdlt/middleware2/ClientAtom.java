@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.hash.HashCode;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.constraintmachine.CMInstruction;
@@ -29,19 +30,19 @@ import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.CMMicroInstruction.CMMicroOp;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware.ParticleGroup.ParticleGroupBuilder;
 import com.radixdlt.middleware.SpunParticle;
-import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.store.SpinStateMachine;
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
@@ -82,14 +83,14 @@ public final class ClientAtom implements LedgerAtom {
 
 	@JsonProperty("witness")
 	@DsonOutput({Output.ALL})
-	private final Hash witness;
+	private final HashCode witness;
 
 	@JsonCreator
 	private ClientAtom(
 		@JsonProperty("aid") AID aid,
 		@JsonProperty("group_metadata") ImmutableList<Map<String, String>> perGroupMetadata,
 		@JsonProperty("instructions") ImmutableList<byte[]> byteInstructions,
-		@JsonProperty("witness") Hash witness,
+		@JsonProperty("witness") HashCode witness,
 		@JsonProperty("signatures") ImmutableMap<EUID, ECDSASignature> signatures,
 		@JsonProperty("metadata") ImmutableMap<String, String> metaData
 	) {
@@ -113,7 +114,7 @@ public final class ClientAtom implements LedgerAtom {
 
 	private ClientAtom(
 		AID aid,
-		Hash witness,
+		HashCode witness,
 		ImmutableList<CMMicroInstruction> instructions,
 		ImmutableMap<EUID, ECDSASignature> signatures,
 		ImmutableMap<String, String> metaData,
@@ -128,12 +129,13 @@ public final class ClientAtom implements LedgerAtom {
 	}
 
 	public static ClientAtom create(
-		ImmutableList<CMMicroInstruction> instructions
+		ImmutableList<CMMicroInstruction> instructions,
+		Hasher hasher
 	) {
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		serializedInstructions(instructions).forEach(outputStream::writeBytes);
-		Hash witness = Hash.of(outputStream.toByteArray());
-		AID aid = AID.from(witness.toByteArray());
+		HashCode witness = hasher.hashBytes(outputStream.toByteArray());
+		AID aid = AID.from(witness.asBytes());
 		return new ClientAtom(
 			aid,
 			witness,
@@ -216,7 +218,7 @@ public final class ClientAtom implements LedgerAtom {
 	}
 
 	@Override
-	public Hash getWitness() {
+	public HashCode getWitness() {
 		return witness;
 	}
 
@@ -298,14 +300,14 @@ public final class ClientAtom implements LedgerAtom {
 	 * @param atom the atom to convert
 	 * @return an atom to be stored on ledger
 	 */
-	public static ClientAtom convertFromApiAtom(Atom atom) {
+	public static ClientAtom convertFromApiAtom(Atom atom, Hasher hasher) {
 		final ImmutableList<CMMicroInstruction> instructions = toCMMicroInstructions(atom.getParticleGroups());
 		final ImmutableList<Map<String, String>> perGroupMetadata = atom.getParticleGroups().stream()
 			.map(ParticleGroup::getMetaData)
 			.collect(ImmutableList.toImmutableList());
 		return new ClientAtom(
-			atom.getAID(),
-			atom.getHash(),
+			Atom.aidOf(atom, hasher),
+			hasher.hash(atom),
 			instructions,
 			ImmutableMap.copyOf(atom.getSignatures()),
 			ImmutableMap.copyOf(atom.getMetaData()),

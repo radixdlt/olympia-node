@@ -29,6 +29,7 @@ import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware2.ClientAtom;
@@ -43,13 +44,17 @@ import java.util.concurrent.atomic.AtomicLong;
  * Randomly registers and unregisters nodes as validators
  */
 public class RadixEngineValidatorRegistratorAndUnregistrator implements CommandGenerator {
+
 	private final ImmutableMap<ECKeyPair, AtomicLong> nodeNonces;
 	private final PublishSubject<BFTNode> validatorRegistrationSubmissions;
+	private final Hasher hasher;
+
 	private final Random random = new Random();
 
-	public RadixEngineValidatorRegistratorAndUnregistrator(List<ECKeyPair> nodes) {
+	public RadixEngineValidatorRegistratorAndUnregistrator(List<ECKeyPair> nodes, Hasher hasher) {
 		this.nodeNonces = nodes.stream().collect(ImmutableMap.toImmutableMap(n -> n, n -> new AtomicLong(0L)));
 		this.validatorRegistrationSubmissions = PublishSubject.create();
+		this.hasher = hasher;
 	}
 
 	@Override
@@ -77,8 +82,8 @@ public class RadixEngineValidatorRegistratorAndUnregistrator implements CommandG
 		atom.addParticleGroup(particleGroup);
 		final Command command;
 		try {
-			atom.sign(keyPair);
-			ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom);
+			atom.sign(keyPair, hasher);
+			ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom, hasher);
 			final byte[] payload = DefaultSerialization.getInstance().toDson(clientAtom, Output.ALL);
 			command = new Command(payload);
 		} catch (AtomAlreadySignedException e) {

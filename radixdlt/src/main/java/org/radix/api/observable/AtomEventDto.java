@@ -24,11 +24,14 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
 
+import java.util.Objects;
+
 /**
  * An event description concerning an atom and whether it has been stored or deleted.
  */
 @SerializerId2("api.atom_event")
 public final class AtomEventDto extends BasicContainer {
+
 	public enum AtomEventType {
 		STORE, DELETE
 	}
@@ -71,5 +74,20 @@ public final class AtomEventDto extends BasicContainer {
 	@JsonProperty("type")
 	private void setTypeString(String type) {
 		this.type = AtomEventType.valueOf(type.toUpperCase());
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		AtomEventDto that = (AtomEventDto) o;
+		return timestamp == that.timestamp &&
+				Objects.equals(atom, that.atom) &&
+				type == that.type;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(atom, timestamp, type);
 	}
 }

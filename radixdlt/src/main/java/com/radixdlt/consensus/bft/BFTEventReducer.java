@@ -19,7 +19,7 @@ package com.radixdlt.consensus.bft;
 
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.Hasher;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.Proposal;
@@ -35,7 +35,7 @@ import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyViolationException;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.crypto.Hash;
+import com.google.common.hash.HashCode;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.utils.RTTStatistics;
 
@@ -157,10 +157,10 @@ public final class BFTEventReducer implements BFTEventProcessor {
 				nextCommand = null;
 			} else {
 				final List<PreparedVertex> preparedVertices = vertexStore.getPathFromRoot(highestQC.getProposed().getVertexId());
-				final Set<Hash> prepared = preparedVertices.stream()
+				final Set<HashCode> prepared = preparedVertices.stream()
 					.flatMap(PreparedVertex::getCommands)
 					.filter(Objects::nonNull)
-					.map(Command::hash)
+					.map(hasher::hash)
 					.collect(Collectors.toSet());
 
 				nextCommand = nextCommandGenerator.generateNextCommand(view, prepared);

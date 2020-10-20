@@ -41,23 +41,21 @@ public class PeersMessageSerializeTest extends SerializeMessageObject<PeersMessa
 	}
 
 	private static PeersMessage get() {
-		PeersMessage pm = new PeersMessage(1);
 		Peer p1 = new PeerWithSystem(new RadixSystem());
 		Peer p2 = new PeerWithSystem(new RadixSystem());
 		Peer p3 = new PeerWithSystem(new RadixSystem());
-		pm.setPeers(ImmutableList.of(p1, p2, p3));
+		PeersMessage pm = new PeersMessage(1, ImmutableList.of(p1, p2, p3));
 		return pm;
 	}
 
 	@Test
 	public void sensibleToString() {
-		PeersMessage pm = new PeersMessage(1);
 		ECKeyPair key = ECKeyPair.generateNew();
 		TransportInfo ti = TransportInfo.of("DUMMY", StaticTransportMetadata.empty());
 		RadixSystem system = new RadixSystem(
 				key.getPublicKey(), Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION, ImmutableList.of(ti));
 		Peer p = new PeerWithSystem(system);
-		pm.setPeers(ImmutableList.of(p));
+		PeersMessage pm = new PeersMessage(1, ImmutableList.of(p));
 		String s = pm.toString();
 
 		assertThat(s, containsString(PeersMessage.class.getSimpleName()));

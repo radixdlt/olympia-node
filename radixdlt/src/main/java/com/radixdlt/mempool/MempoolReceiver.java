@@ -78,7 +78,7 @@ public final class MempoolReceiver {
 		try {
 			this.submissionControl.submitCommand(command);
 		} catch (MempoolRejectedException ex) {
-			log.info(String.format("Mempool rejected command %s: %s", command.hash(), ex.getMessage()));
+			log.info(String.format("Mempool rejected command %s: %s", command, ex.getMessage()));
 		}
 	}
 }

@@ -23,6 +23,7 @@ import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.LedgerAccumulator;
@@ -38,15 +39,17 @@ import java.util.function.UnaryOperator;
  * A reader which sometimes returns erroneous commands.
  */
 public final class SometimesByzantineCommittedReader implements LedgerUpdateSender, CommittedReader {
+	private final InMemoryCommittedReader correctReader;
+	private final LedgerAccumulator accumulator;
+	private final Hasher hasher;
 	private ReadType currentReadType;
-	private InMemoryCommittedReader correctReader;
-	private LedgerAccumulator accumulator;
 
 	@Inject
-	public SometimesByzantineCommittedReader(Random random, LedgerAccumulator accumulator, InMemoryCommittedReader correctReader) {
+	public SometimesByzantineCommittedReader(Random random, LedgerAccumulator accumulator, InMemoryCommittedReader correctReader, Hasher hasher) {
 		this.correctReader = Objects.requireNonNull(correctReader);
 		this.accumulator = Objects.requireNonNull(accumulator);
 		this.currentReadType = ReadType.values()[random.nextInt(ReadType.values().length)];
+		this.hasher = hasher;
 	}
 
 	@Override
@@ -60,6 +63,12 @@ public final class SometimesByzantineCommittedReader implements LedgerUpdateSend
 		private VerifiedCommandsAndProof base;
 		private TimestampedECDSASignatures overwriteSignatures;
 		private LedgerAccumulator accumulator;
+		private Hasher hasher;
+
+		public ByzantineVerifiedCommandsAndProofBuilder hasher(Hasher hasher) {
+			this.hasher = hasher;
+			return this;
+		}
 
 		public ByzantineVerifiedCommandsAndProofBuilder accumulator(DtoLedgerHeaderAndProof request, LedgerAccumulator accumulator) {
 			this.request = request;
@@ -96,7 +105,7 @@ public final class SometimesByzantineCommittedReader implements LedgerUpdateSend
 			if (accumulator != null) {
 				accumulatorState = request.getLedgerHeader().getAccumulatorState();
 				for (Command command : commands) {
-					accumulatorState = accumulator.accumulate(accumulatorState, command.hash());
+					accumulatorState = accumulator.accumulate(accumulatorState, hasher.hash(command));
 				}
 			} else {
 				accumulatorState = base.getHeader().getAccumulatorState();
@@ -129,7 +138,8 @@ public final class SometimesByzantineCommittedReader implements LedgerUpdateSend
 			VerifiedCommandsAndProof transform(
 				DtoLedgerHeaderAndProof request,
 				VerifiedCommandsAndProof correctCommands,
-				LedgerAccumulator ledgerAccumulator
+				LedgerAccumulator ledgerAccumulator,
+				Hasher hasher
 			) {
 				return correctCommands;
 			}
@@ -139,9 +149,11 @@ public final class SometimesByzantineCommittedReader implements LedgerUpdateSend
 			VerifiedCommandsAndProof transform(
 				DtoLedgerHeaderAndProof request,
 				VerifiedCommandsAndProof correctCommands,
-				LedgerAccumulator ledgerAccumulator
+				LedgerAccumulator ledgerAccumulator,
+				Hasher hasher
 			) {
 				return new ByzantineVerifiedCommandsAndProofBuilder()
+					.hasher(hasher)
 					.base(correctCommands)
 					.replaceCommands(cmd -> new Command(new byte[]{0}))
 					.build();
@@ -152,9 +164,11 @@ public final class SometimesByzantineCommittedReader implements LedgerUpdateSend
 			VerifiedCommandsAndProof transform(
 				DtoLedgerHeaderAndProof request,
 				VerifiedCommandsAndProof correctCommands,
-				LedgerAccumulator accumulator
+				LedgerAccumulator accumulator,
+				Hasher hasher
 			) {
 				return new ByzantineVerifiedCommandsAndProofBuilder()
+					.hasher(hasher)
 					.base(correctCommands)
 					.replaceCommands(cmd -> new Command(new byte[]{0}))
 					.accumulator(request, accumulator)
@@ -167,9 +181,11 @@ public final class SometimesByzantineCommittedReader implements LedgerUpdateSend
 			VerifiedCommandsAndProof transform(
 				DtoLedgerHeaderAndProof request,
 				VerifiedCommandsAndProof correctCommands,
-				LedgerAccumulator accumulator
+				LedgerAccumulator accumulator,
+				Hasher hasher
 			) {
 				return new ByzantineVerifiedCommandsAndProofBuilder()
+					.hasher(hasher)
 					.base(correctCommands)
 					.replaceCommands(cmd -> new Command(new byte[]{0}))
 					.accumulator(request, accumulator)
@@ -180,7 +196,8 @@ public final class SometimesByzantineCommittedReader implements LedgerUpdateSend
 		abstract VerifiedCommandsAndProof transform(
 			DtoLedgerHeaderAndProof request,
 			VerifiedCommandsAndProof correctCommands,
-			LedgerAccumulator ledgerAccumulator
+			LedgerAccumulator ledgerAccumulator,
+			Hasher hasher
 		);
 	}
 
@@ -194,7 +211,7 @@ public final class SometimesByzantineCommittedReader implements LedgerUpdateSend
 
 		if (correctResult != null) {
 			currentReadType = ReadType.values()[(currentReadType.ordinal() + 1) % ReadType.values().length];
-			return currentReadType.transform(start, correctResult, accumulator);
+			return currentReadType.transform(start, correctResult, accumulator, hasher);
 		}
 
 		return null;

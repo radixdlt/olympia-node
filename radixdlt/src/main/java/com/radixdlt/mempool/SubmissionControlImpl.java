@@ -18,6 +18,7 @@
 package com.radixdlt.mempool;
 
 import com.radixdlt.consensus.Command;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
@@ -47,17 +48,20 @@ public class SubmissionControlImpl implements SubmissionControl {
 	private final RadixEngine<LedgerAtom> radixEngine;
 	private final Serialization serialization;
 	private final SubmissionControlSender submissionControlSender;
+	private final Hasher hasher;
 
 	public SubmissionControlImpl(
 		Mempool mempool,
 		RadixEngine<LedgerAtom> radixEngine,
 		Serialization serialization,
-		SubmissionControlSender submissionControlSender
+		SubmissionControlSender submissionControlSender,
+		Hasher hasher
 	) {
 		this.mempool = Objects.requireNonNull(mempool);
 		this.radixEngine = Objects.requireNonNull(radixEngine);
 		this.serialization = Objects.requireNonNull(serialization);
 		this.submissionControlSender = Objects.requireNonNull(submissionControlSender);
+		this.hasher = hasher;
 	}
 
 	@Override
@@ -99,7 +103,7 @@ public class SubmissionControlImpl implements SubmissionControl {
 	@Override
 	public void submitAtom(JSONObject atomJson, Consumer<ClientAtom> deserialisationCallback) throws MempoolFullException, MempoolDuplicateException {
 		final Atom rawAtom = this.serialization.fromJsonObject(atomJson, Atom.class);
-		final ClientAtom atom = ClientAtom.convertFromApiAtom(rawAtom);
+		final ClientAtom atom = ClientAtom.convertFromApiAtom(rawAtom, hasher);
 		deserialisationCallback.accept(atom);
 		submitAtom(atom);
 	}

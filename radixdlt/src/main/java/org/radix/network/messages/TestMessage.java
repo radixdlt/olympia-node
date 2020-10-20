@@ -18,6 +18,8 @@
 package org.radix.network.messages;
 
 import java.security.SecureRandom;
+import java.util.Arrays;
+import java.util.Objects;
 
 import org.radix.network.messaging.Message;
 import com.radixdlt.serialization.DsonOutput;
@@ -69,5 +71,27 @@ public final class TestMessage extends Message {
 
 	public byte[] getJunk() {
 		return junk;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		TestMessage that = (TestMessage) o;
+		return testnonce == that.testnonce
+				&& Arrays.equals(junk, that.junk)
+				&& Objects.equals(getTimestamp(), that.getTimestamp())
+				&& Objects.equals(getMagic(), that.getMagic());
+	}
+
+	@Override
+	public int hashCode() {
+		int result = Objects.hash(testnonce, getTimestamp(), getMagic());
+		result = 31 * result + Arrays.hashCode(junk);
+		return result;
 	}
 }

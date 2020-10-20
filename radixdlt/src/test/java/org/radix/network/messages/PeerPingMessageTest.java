@@ -15,15 +15,22 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package org.radix.network.messages;
 
-import com.radixdlt.crypto.Hash;
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import nl.jqno.equalsverifier.Warning;
+import org.junit.Test;
 
-/**
- * An object capable of hashing an object
- */
-public interface Hasher {
-	Hash hash(Object o);
-
-	Hash hashBytes(byte[] bytes);
+public class PeerPingMessageTest {
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(PeerPingMessage.class)
+				.withIgnoredFields("instance")
+				.suppress(Warning.NONFINAL_FIELDS)
+				.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+				.withRedefinedSuperclass()
+				.verify();
+	}
 }

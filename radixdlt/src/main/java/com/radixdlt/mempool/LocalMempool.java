@@ -16,8 +16,8 @@
  */
 package com.radixdlt.mempool;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.crypto.Hash;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -27,6 +27,7 @@ import javax.annotation.concurrent.GuardedBy;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.radixdlt.crypto.Hasher;
 
 /**
  * Local-only mempool.
@@ -37,15 +38,18 @@ import com.google.common.collect.Maps;
 public final class LocalMempool implements Mempool {
 	private final Object lock = new Object();
 	@GuardedBy("lock")
-	private final LinkedHashMap<Hash, Command> data = Maps.newLinkedHashMap();
+	private final LinkedHashMap<HashCode, Command> data = Maps.newLinkedHashMap();
 
 	private final int maxSize;
 
-	public LocalMempool(int maxSize) {
+	private final Hasher hasher;
+
+	public LocalMempool(int maxSize, Hasher hasher) {
 		if (maxSize <= 0) {
 			throw new IllegalArgumentException("mempool.maxSize must be positive: " + maxSize);
 		}
 		this.maxSize = maxSize;
+		this.hasher = hasher;
 	}
 
 	@Override
@@ -54,21 +58,21 @@ public final class LocalMempool implements Mempool {
 			if (this.data.size() >= this.maxSize) {
 				throw new MempoolFullException(command, String.format("Mempool full: %s of %s items", this.data.size(), this.maxSize));
 			}
-			if (null != this.data.put(command.hash(), command)) {
-				throw new MempoolDuplicateException(command, String.format("Mempool already has command %s", command.hash()));
+			if (null != this.data.put(hasher.hash(command), command)) {
+				throw new MempoolDuplicateException(command, String.format("Mempool already has command %s", hasher.hash(command)));
 			}
 		}
 	}
 
 	@Override
-	public void removeCommitted(Hash cmdHash) {
+	public void removeCommitted(HashCode cmdHash) {
 		synchronized (this.lock) {
 			this.data.remove(cmdHash);
 		}
 	}
 
 	@Override
-	public void removeRejected(Hash cmdHash) {
+	public void removeRejected(HashCode cmdHash) {
 		// For now we just treat this the same as committed atoms.
 		// Once we have a more complete mempool implementation, we
 		// can use this to remove dependent atoms too.
@@ -76,7 +80,7 @@ public final class LocalMempool implements Mempool {
 	}
 
 	@Override
-	public List<Command> getCommands(int count, Set<Hash> seen) {
+	public List<Command> getCommands(int count, Set<HashCode> seen) {
 		synchronized (this.lock) {
 			int size = Math.min(count, this.data.size());
 			if (size > 0) {
@@ -84,7 +88,7 @@ public final class LocalMempool implements Mempool {
 				Iterator<Command> i = this.data.values().iterator();
 				while (commands.size() < size && i.hasNext()) {
 					Command a = i.next();
-					if (seen.add(a.hash())) {
+					if (seen.add(hasher.hash(a))) {
 						commands.add(a);
 					}
 				}

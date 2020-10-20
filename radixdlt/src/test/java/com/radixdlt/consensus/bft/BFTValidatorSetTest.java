@@ -17,13 +17,14 @@
 
 package com.radixdlt.consensus.bft;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.utils.UInt256;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 import static org.hamcrest.Matchers.containsString;
@@ -75,7 +76,7 @@ public class BFTValidatorSetTest {
 		BFTValidator v4 = BFTValidator.from(node4, UInt256.ONE);
 
 		BFTValidatorSet vs = BFTValidatorSet.from(ImmutableSet.of(v1, v2, v3, v4));
-		Hash message = Hash.random();
+		HashCode message = HashUtils.random256();
 
 		// 2 signatures for 4 validators -> fail
 		ValidationState vst1 = vs.newValidationState();
@@ -130,7 +131,7 @@ public class BFTValidatorSetTest {
 		BFTValidator v2 = BFTValidator.from(node2, UInt256.ONE);
 
 		BFTValidatorSet vs = BFTValidatorSet.from(ImmutableSet.of(v1, v2));
-		Hash message = Hash.random();
+		HashCode message = HashUtils.random256();
 		ValidationState vst1 = vs.newValidationState();
 		assertTrue(vst1.addSignature(node1, 0L, k1.sign(message)));
 		assertTrue(vst1.complete());

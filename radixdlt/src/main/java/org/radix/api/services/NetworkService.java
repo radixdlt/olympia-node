@@ -25,6 +25,8 @@ import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.Hasher;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -41,13 +43,17 @@ public class NetworkService {
 	private final LocalSystem localSystem;
 	private final AddressBook addressBook;
 	private final PeerWithSystem localPeer;
+	private final HashCode localPeerHash;
+	private final Hasher hasher;
 
-	public NetworkService(Serialization serialization, LocalSystem localSystem, AddressBook addressBook) {
+	public NetworkService(Serialization serialization, LocalSystem localSystem, AddressBook addressBook, Hasher hasher) {
 		this.serialization = serialization;
 		this.localSystem = localSystem;
 		this.addressBook = addressBook;
+		this.hasher = hasher;
 
 		this.localPeer = new PeerWithSystem(this.localSystem);
+		this.localPeerHash = hasher.hash(localPeer);
 	}
 
 	public JSONObject getSelf() {
@@ -102,7 +108,7 @@ public class NetworkService {
 	public JSONObject getPeer(String id) {
 		try {
 			EUID euid = EUID.valueOf(id);
-			if (euid.equals(this.localPeer.euid())) {
+			if (euid.equals(EUID.fromHash(this.localPeerHash))) {
 				return serialization.toJsonObject(this.localPeer, Output.API);
 			}
 			return this.addressBook.peer(euid)

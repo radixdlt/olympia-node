@@ -27,8 +27,10 @@ import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenT
 import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.unique.UniqueParticle;
+import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.fees.FeeTable;
 import com.radixdlt.fees.PerParticleFeeEntry;
 import com.radixdlt.identifiers.AID;
@@ -49,6 +51,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class TokenFeeLedgerAtomCheckerTest {
+
+	private final Hasher hasher = Sha256Hasher.withDefaultSerialization();
+
 	private TokenFeeLedgerAtomChecker checker;
 	private RRI rri;
 
@@ -71,7 +76,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 		MessageParticle particle = new MessageParticle(address, address, bytes);
 		List<ParticleGroup> particleGroups = ImmutableList.of(ParticleGroup.of(ImmutableList.of(SpunParticle.up(particle))));
 		Atom atom = new Atom(particleGroups, ImmutableMap.of(), ImmutableMap.of());
-		ClientAtom ledgerAtom = ClientAtom.convertFromApiAtom(atom);
+		ClientAtom ledgerAtom = ClientAtom.convertFromApiAtom(atom, hasher);
 		assertThat(checker.check(ledgerAtom).isSuccess()).isTrue();
 	}
 
@@ -95,7 +100,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 		UniqueParticle particle = new UniqueParticle("FOO", address, 0L);
 		List<ParticleGroup> particleGroups = ImmutableList.of(ParticleGroup.of(ImmutableList.of(SpunParticle.up(particle))));
 		Atom atom = new Atom(particleGroups, ImmutableMap.of(), ImmutableMap.of());
-		ClientAtom ledgerAtom = ClientAtom.convertFromApiAtom(atom);
+		ClientAtom ledgerAtom = ClientAtom.convertFromApiAtom(atom, hasher);
 
 		assertThat(checker.check(ledgerAtom).getErrorMessage())
 			.contains("less than required minimum");
@@ -119,7 +124,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 			ParticleGroup.of(ImmutableList.of(SpunParticle.up(particle2)))
 		);
 		Atom atom = new Atom(particleGroups, ImmutableMap.of(), ImmutableMap.of());
-		ClientAtom ledgerAtom = ClientAtom.convertFromApiAtom(atom);
+		ClientAtom ledgerAtom = ClientAtom.convertFromApiAtom(atom, hasher);
 
 		assertThat(checker.check(ledgerAtom).isSuccess()).isTrue();
 	}
@@ -152,7 +157,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 			ParticleGroup.of(ImmutableList.of(SpunParticle.up(particle2), SpunParticle.up(particle3)))
 		);
 		Atom atom = new Atom(particleGroups, ImmutableMap.of(), ImmutableMap.of());
-		ClientAtom ledgerAtom = ClientAtom.convertFromApiAtom(atom);
+		ClientAtom ledgerAtom = ClientAtom.convertFromApiAtom(atom, hasher);
 
 		assertThat(checker.check(ledgerAtom).isSuccess()).isTrue();
 	}
@@ -175,7 +180,7 @@ public class TokenFeeLedgerAtomCheckerTest {
 			ParticleGroup.of(ImmutableList.of(SpunParticle.up(particle2)), ImmutableMap.of("foo", "bar"))
 		);
 		Atom atom = new Atom(particleGroups, ImmutableMap.of(), ImmutableMap.of());
-		ClientAtom ledgerAtom = ClientAtom.convertFromApiAtom(atom);
+		ClientAtom ledgerAtom = ClientAtom.convertFromApiAtom(atom, hasher);
 
 		assertThat(checker.check(ledgerAtom).getErrorMessage())
 			.contains("less than required minimum");
