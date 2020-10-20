@@ -37,6 +37,9 @@ import com.radixdlt.store.InMemoryEngineStore;
 import org.junit.Before;
 import org.junit.Test;
 
+/**
+ * Tests BFT System verification logic
+ */
 public class SystemTest {
 	private RadixEngine<RadixEngineAtom> engine;
 	private EngineStore<RadixEngineAtom> store;
