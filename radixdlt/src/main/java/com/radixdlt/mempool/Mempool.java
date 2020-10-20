@@ -16,8 +16,8 @@
  */
 package com.radixdlt.mempool;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.crypto.Hash;
 import java.util.List;
 import java.util.Set;
 
@@ -45,7 +45,7 @@ public interface Mempool {
 	 *
 	 * @param cmdHash The hash of the command to remove
 	 */
-	void removeCommitted(Hash cmdHash);
+	void removeCommitted(HashCode cmdHash);
 
 	/**
 	 * Remove the referenced atom from the local mempool after it has
@@ -53,7 +53,7 @@ public interface Mempool {
 	 *
 	 * @param cmdHash The hash of the command to remove
 	 */
-	void removeRejected(Hash cmdHash);
+	void removeRejected(HashCode cmdHash);
 
 	/**
 	 * Retrieve a list of atoms from the local mempool for processing by
@@ -66,7 +66,7 @@ public interface Mempool {
 	 * @param seen hashes of commands seen by consensus, but not yet committed to the ledger
 	 * @return A list of commands for processing by consensus
 	 */
-	List<Command> getCommands(int count, Set<Hash> seen);
+	List<Command> getCommands(int count, Set<HashCode> seen);
 
 	/**
 	 * Return approximate count of commands in the mempool.

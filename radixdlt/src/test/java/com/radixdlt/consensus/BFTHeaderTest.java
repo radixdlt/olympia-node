@@ -17,8 +17,9 @@
 
 package com.radixdlt.consensus;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.HashUtils;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -30,13 +31,13 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 public class BFTHeaderTest {
 
 	private BFTHeader testObject;
-	private Hash id;
+	private HashCode id;
 	private LedgerHeader ledgerHeader;
 
 	@Before
 	public void setUp() {
 		View view = View.of(1234567890L);
-		this.id = Hash.random();
+		this.id = HashUtils.random256();
 		this.ledgerHeader = mock(LedgerHeader.class);
 		this.testObject = new BFTHeader(view, id, ledgerHeader);
 	}
@@ -44,6 +45,7 @@ public class BFTHeaderTest {
 	@Test
 	public void equalsContract() {
 		EqualsVerifier.forClass(BFTHeader.class)
+			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 			.verify();
 	}
 

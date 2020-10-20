@@ -17,7 +17,7 @@
 
 package com.radixdlt.consensus.bft;
 
-import com.radixdlt.crypto.Hash;
+import com.google.common.hash.HashCode;
 import java.util.Objects;
 
 /**
@@ -25,7 +25,7 @@ import java.util.Objects;
  * it's parent is missing from the current store.
  */
 class MissingParentException extends RuntimeException {
-	MissingParentException(Hash parentId) {
+	MissingParentException(HashCode parentId) {
 		super("Parent Vertex missing: " + Objects.requireNonNull(parentId));
 	}
 }

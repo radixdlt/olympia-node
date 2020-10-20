@@ -21,7 +21,11 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.crypto.HashUtils;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import nl.jqno.equalsverifier.Warning;
 import org.junit.Test;
 
 public class GetEpochRequestMessageTest {
@@ -30,5 +34,14 @@ public class GetEpochRequestMessageTest {
 		GetEpochRequestMessage msg = new GetEpochRequestMessage(mock(BFTNode.class), 12345, 1);
 		String s1 = msg.toString();
 		assertThat(s1, containsString(GetEpochRequestMessage.class.getSimpleName()));
+	}
+
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(GetEpochRequestMessage.class)
+				.withIgnoredFields("instance")
+				.suppress(Warning.NONFINAL_FIELDS)
+				.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+				.verify();
 	}
 }

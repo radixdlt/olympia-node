@@ -17,17 +17,15 @@
 
 package org.radix.containers;
 
-import com.radixdlt.DefaultSerialization;
-import com.radixdlt.identifiers.EUID;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.serialization.SerializeWithHid;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+@SerializeWithHid
 public abstract class BasicContainer
 {
 	// Placeholder for the serializer ID
@@ -35,81 +33,14 @@ public abstract class BasicContainer
 	@DsonOutput(Output.ALL)
 	private SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	private	Hash	hash = Hash.ZERO_HASH;
-
-	public BasicContainer()
+	protected BasicContainer()
 	{
 		super();
 	}
 
-	/**
-	 * Copy constructor.
-	 * @param copy {@link BasicContainer} to copy values from.
-	 */
-	public BasicContainer(BasicContainer copy) {
-		this();
-		this.hash = copy.hash;
-	}
-
 	@Override
-	public boolean equals(Object o)
-	{
-		if (o == null) return false;
-		if (o == this) return true;
-
-		if (getClass().isInstance(o) && getHash().equals(((BasicContainer)o).getHash()))
-				return true;
-
-		return super.equals(o);
-	}
-
-	@Override
-	public int hashCode()
-	{
-		return getHash().hashCode();
-	}
-
-	// HASHABLE //
-	public synchronized Hash getHash()
-	{
-		try
-		{
-			if (hash == null || hash.equals(Hash.ZERO_HASH)) {
-				byte[] dsonBytes = DefaultSerialization.getInstance().toDson(this, Output.HASH);
-				hash = Hash.of(dsonBytes);
-			}
-
-			return hash;
-		}
-		catch (Exception e)
-		{
-			throw new RuntimeException("Error generating hash: " + e, e);
-		}
-	}
-
-	// HID //
-	@JsonProperty("hid")
-	@DsonOutput(Output.API)
-	public synchronized final EUID euid()
-	{
-		return getHash().euid();
-	}
-
-	/**
-	 * Resets all deterministic content of this object.
-	 * <br><br>
-	 * Hashes, states, signatures and similar should be reset in subclasses.
-	 * @param accessor Currently ignored.
-	 */
-	public void reset(ECKeyPair accessor)
-	{
-		this.hash = Hash.ZERO_HASH;
-	}
-
-	@Override
-	public String toString()
-	{
-		return this.getClass().toString()+": "+euid().toString();
+	public String toString() {
+		return this.getClass().toString() + " " + this.hashCode();
 	}
 
 	public abstract short VERSION();

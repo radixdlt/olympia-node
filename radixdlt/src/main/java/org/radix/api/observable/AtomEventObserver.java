@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.radixdlt.atommodel.Atom;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware2.ClientAtom;
@@ -68,6 +69,7 @@ public class AtomEventObserver {
 	private final LedgerEntryStore store;
 	private final CommandToBinaryConverter commandToBinaryConverter;
 	private final ClientAtomToBinaryConverter clientAtomToBinaryConverter;
+	private final Hasher hasher;
 
 	private final Object syncLock = new Object();
 	private boolean synced = false;
@@ -79,7 +81,8 @@ public class AtomEventObserver {
 		ExecutorService executorService,
 		LedgerEntryStore store,
 		CommandToBinaryConverter commandToBinaryConverter,
-		ClientAtomToBinaryConverter clientAtomToBinaryConverter
+		ClientAtomToBinaryConverter clientAtomToBinaryConverter,
+		Hasher hasher
 	) {
 		this.atomQuery = atomQuery;
 		this.onNext = onNext;
@@ -87,6 +90,7 @@ public class AtomEventObserver {
 		this.store = store;
 		this.commandToBinaryConverter = commandToBinaryConverter;
 		this.clientAtomToBinaryConverter = clientAtomToBinaryConverter;
+		this.hasher = hasher;
 	}
 
 	public boolean isDone() {
@@ -183,7 +187,7 @@ public class AtomEventObserver {
 				this.synced = true;
 				// Note that we filter here so that the filter executes with lock held
 				atomEvents = this.waitingQueue.stream()
-					.filter(aed -> !processedAtomIds.contains(aed.getAtom().getAID()) || aed.getType() == AtomEventType.DELETE)
+					.filter(aed -> !processedAtomIds.contains(Atom.aidOf(aed.getAtom(), hasher)) || aed.getType() == AtomEventType.DELETE)
 					.collect(Collectors.toList());
 				this.waitingQueue.clear();
 			}

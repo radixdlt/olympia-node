@@ -24,7 +24,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
@@ -38,22 +41,27 @@ public class RemoteSyncResponseAccumulatorVerifierTest {
 	private InvalidAccumulatorSender invalidAccumulatorSender;
 	private VerifiedAccumulatorSender verifiedAccumulatorSender;
 	private LedgerAccumulatorVerifier ledgerAccumulatorVerifier;
+	private Hasher hasher;
 
 	@Before
 	public void setup() {
 		this.invalidAccumulatorSender = mock(InvalidAccumulatorSender.class);
 		this.verifiedAccumulatorSender = mock(VerifiedAccumulatorSender.class);
 		this.ledgerAccumulatorVerifier = mock(LedgerAccumulatorVerifier.class);
+		this.hasher = mock(Hasher.class);
+		when(hasher.hash(any())).thenReturn(mock(HashCode.class));
 		this.responseVerifier = new RemoteSyncResponseAccumulatorVerifier(
 			verifiedAccumulatorSender,
 			invalidAccumulatorSender,
-			ledgerAccumulatorVerifier
+			ledgerAccumulatorVerifier,
+			hasher
 		);
 	}
 
 	@Test
 	public void when_process_response_with_bad_verification__then_invalid_commands_sent() {
 		DtoCommandsAndProof dtoCommandsAndProof = mock(DtoCommandsAndProof.class);
+		when(dtoCommandsAndProof.getCommands()).thenReturn(ImmutableList.of());
 		DtoLedgerHeaderAndProof dtoLedgerHeaderAndProof = mock(DtoLedgerHeaderAndProof.class);
 		when(dtoLedgerHeaderAndProof.getLedgerHeader()).thenReturn(mock(LedgerHeader.class));
 		when(dtoCommandsAndProof.getHead()).thenReturn(dtoLedgerHeaderAndProof);
@@ -71,6 +79,7 @@ public class RemoteSyncResponseAccumulatorVerifierTest {
 	@Test
 	public void when_process_response_with_good_accumulator__then_committed_commands_sent() {
 		DtoCommandsAndProof dtoCommandsAndProof = mock(DtoCommandsAndProof.class);
+		when(dtoCommandsAndProof.getCommands()).thenReturn(ImmutableList.of());
 		DtoLedgerHeaderAndProof dtoLedgerHeaderAndProof = mock(DtoLedgerHeaderAndProof.class);
 		when(dtoLedgerHeaderAndProof.getLedgerHeader()).thenReturn(mock(LedgerHeader.class));
 		when(dtoCommandsAndProof.getHead()).thenReturn(dtoLedgerHeaderAndProof);

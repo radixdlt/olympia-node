@@ -21,12 +21,12 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.RequiresSyncConsensusEvent;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.bft.SyncQueues.SyncQueue;
-import com.radixdlt.crypto.Hash;
 import org.junit.Test;
 
 public class SyncQueuesTest {
@@ -60,7 +60,7 @@ public class SyncQueuesTest {
 		SyncQueues syncQueues = new SyncQueues();
 
 		RequiresSyncConsensusEvent event0 = mock(RequiresSyncConsensusEvent.class);
-		Hash vertexId = mock(Hash.class);
+		HashCode vertexId = mock(HashCode.class);
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		HighQC syncInfo = mock(HighQC.class);
 		when(syncInfo.highestQC()).thenReturn(qc);

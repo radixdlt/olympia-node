@@ -19,11 +19,16 @@ package org.radix.serialization;
 
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atommodel.message.MessageParticle;
+import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.middleware2.ClientAtom;
 
 public class ClientAtomSerializeTest extends SerializeObject<ClientAtom> {
+
+	private static final Hasher hasher = Sha256Hasher.withDefaultSerialization();
+
 	public ClientAtomSerializeTest() {
 		super(ClientAtom.class, ClientAtomSerializeTest::get);
 	}
@@ -37,7 +42,7 @@ public class ClientAtomSerializeTest extends SerializeObject<ClientAtom> {
 	}
 
 	private static ClientAtom get(Atom atom) {
-		return ClientAtom.convertFromApiAtom(atom);
+		return ClientAtom.convertFromApiAtom(atom, hasher);
 	}
 
 	private static ClientAtom get() {

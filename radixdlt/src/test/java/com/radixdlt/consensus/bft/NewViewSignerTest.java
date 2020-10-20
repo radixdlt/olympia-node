@@ -24,7 +24,8 @@ import static org.mockito.Mockito.when;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.HighQC;
-
+import com.radixdlt.consensus.Sha256Hasher;
+import com.radixdlt.crypto.Hasher;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -32,10 +33,11 @@ public class NewViewSignerTest {
 	private NewViewSigner newViewSigner;
 	private BFTNode self = mock(BFTNode.class);
 	private HashSigner hashSigner = mock(HashSigner.class);
+	private final Hasher hasher = Sha256Hasher.withDefaultSerialization();
 
 	@Before
 	public void setup() {
-		newViewSigner = new NewViewSigner(self, hashSigner);
+		newViewSigner = new NewViewSigner(self, hashSigner, hasher);
 	}
 
 	@Test

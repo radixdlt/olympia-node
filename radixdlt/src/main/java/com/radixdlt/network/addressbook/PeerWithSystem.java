@@ -116,5 +116,20 @@ public final class PeerWithSystem extends Peer {
 		return String.format("%s[%s:%s]", this.getClass().getSimpleName(), this.system.getNID(), connectionInfo);
 	}
 
-	// Note that we rely on equals(...) and hashCode() from BasicContainer here.
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		PeerWithSystem that = (PeerWithSystem) o;
+		return Objects.equals(system, that.system);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(system);
+	}
 }

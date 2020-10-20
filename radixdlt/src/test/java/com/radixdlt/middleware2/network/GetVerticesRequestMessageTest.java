@@ -20,17 +20,29 @@ package com.radixdlt.middleware2.network;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertThat;
 
-import com.radixdlt.crypto.Hash;
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import nl.jqno.equalsverifier.Warning;
 import org.junit.Test;
 
 public class GetVerticesRequestMessageTest {
 	@Test
 	public void sensibleToString() {
-		Hash vertexId = Hash.random();
+		HashCode vertexId = HashUtils.random256();
 		GetVerticesRequestMessage msg1 = new GetVerticesRequestMessage(0, vertexId, 1);
 		String s1 = msg1.toString();
 		assertThat(s1, containsString(GetVerticesRequestMessage.class.getSimpleName()));
 		assertThat(s1, containsString(vertexId.toString()));
+	}
+
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(GetVerticesRequestMessage.class)
+				.withIgnoredFields("instance")
+				.suppress(Warning.NONFINAL_FIELDS)
+				.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+				.verify();
 	}
 
 }

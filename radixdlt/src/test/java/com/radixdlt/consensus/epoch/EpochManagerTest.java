@@ -65,7 +65,7 @@ import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.counters.SystemCountersImpl;
-import com.radixdlt.crypto.Hash;
+import com.google.common.hash.HashCode;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import java.util.Optional;
 import org.junit.Before;
@@ -116,7 +116,7 @@ public class EpochManagerTest {
 		this.syncRequestSender = mock(SyncLedgerRequestSender.class);
 
 		EpochChange initial = mock(EpochChange.class);
-		when(initial.getProof()).thenReturn(VerifiedLedgerHeaderAndProof.genesis(mock(Hash.class), null));
+		when(initial.getProof()).thenReturn(VerifiedLedgerHeaderAndProof.genesis(mock(HashCode.class), null));
 		when(initial.getEpoch()).thenReturn(1L);
 		BFTConfiguration config = mock(BFTConfiguration.class);
 		when(config.getValidatorSet()).thenReturn(BFTValidatorSet.from(ImmutableSet.of()));

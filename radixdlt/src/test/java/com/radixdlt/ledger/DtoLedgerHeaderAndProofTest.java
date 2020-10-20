@@ -20,11 +20,13 @@ package com.radixdlt.ledger;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.VoteData;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.HashUtils;
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -33,7 +35,7 @@ public class DtoLedgerHeaderAndProofTest {
 	private BFTHeader opaque0;
 	private BFTHeader opaque1;
 	private long opaque2 = 12345;
-	private Hash opaque3;
+	private HashCode opaque3;
 	private LedgerHeader ledgerHeader;
 	private TimestampedECDSASignatures signatures;
 
@@ -41,7 +43,7 @@ public class DtoLedgerHeaderAndProofTest {
 	public void setup() {
 		this.opaque0 = mock(BFTHeader.class);
 		this.opaque1 = mock(BFTHeader.class);
-		this.opaque3 = mock(Hash.class);
+		this.opaque3 = mock(HashCode.class);
 		this.ledgerHeader = mock(LedgerHeader.class);
 		this.signatures = mock(TimestampedECDSASignatures.class);
 		this.ledgerHeaderAndProof = new DtoLedgerHeaderAndProof(
@@ -53,5 +55,12 @@ public class DtoLedgerHeaderAndProofTest {
 	public void when_get_vote_data__then_should_not_be_null() {
 		VoteData voteData = ledgerHeaderAndProof.toVoteData();
 		assertThat(voteData).isNotNull();
+	}
+
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(DtoLedgerHeaderAndProof.class)
+				.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+				.verify();
 	}
 }

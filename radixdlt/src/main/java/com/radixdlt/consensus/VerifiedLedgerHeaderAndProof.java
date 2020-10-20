@@ -21,7 +21,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.HashUtils;
+import com.google.common.hash.HashCode;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.serialization.DsonOutput;
@@ -62,7 +63,7 @@ public final class VerifiedLedgerHeaderAndProof {
 	// committed vertexId
 	@JsonProperty("opaque3")
 	@DsonOutput(Output.ALL)
-	private final Hash opaque3;
+	private final HashCode opaque3;
 
 	// committed ledgerState
 	@JsonProperty("ledgerState")
@@ -78,7 +79,7 @@ public final class VerifiedLedgerHeaderAndProof {
 		@JsonProperty("opaque0") BFTHeader opaque0,
 		@JsonProperty("opaque1") BFTHeader opaque1,
 		@JsonProperty("opaque2") long opaque2,
-		@JsonProperty("opaque3") Hash opaque3,
+		@JsonProperty("opaque3") HashCode opaque3,
 		@JsonProperty("ledgerState") LedgerHeader ledgerHeader,
 		@JsonProperty("signatures") TimestampedECDSASignatures signatures
 	) {
@@ -90,14 +91,14 @@ public final class VerifiedLedgerHeaderAndProof {
 		this.signatures = Objects.requireNonNull(signatures);
 	}
 
-	public static VerifiedLedgerHeaderAndProof genesis(Hash accumulator, BFTValidatorSet nextValidators) {
+	public static VerifiedLedgerHeaderAndProof genesis(HashCode accumulator, BFTValidatorSet nextValidators) {
 		LedgerHeader genesisLedgerHeader = LedgerHeader.genesis(accumulator, nextValidators);
 		BFTHeader header = BFTHeader.ofGenesisAncestor(genesisLedgerHeader);
 		return new VerifiedLedgerHeaderAndProof(
 			header,
 			header,
 			0,
-			Hash.ZERO_HASH,
+			HashUtils.zero256(),
 			genesisLedgerHeader,
 			new TimestampedECDSASignatures()
 		);

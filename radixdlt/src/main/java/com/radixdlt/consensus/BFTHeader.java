@@ -17,13 +17,14 @@
 
 package com.radixdlt.consensus;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.crypto.Hash;
 import java.util.Objects;
 
 import javax.annotation.concurrent.Immutable;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
@@ -44,7 +45,7 @@ public final class BFTHeader {
 
 	@JsonProperty("vertex_id")
 	@DsonOutput(Output.ALL)
-	private final Hash vertexId;
+	private final HashCode vertexId;
 
 	@JsonProperty("ledger_state")
 	@DsonOutput(Output.ALL)
@@ -60,7 +61,7 @@ public final class BFTHeader {
 	// TODO: Move command output to a more opaque data structure
 	public BFTHeader(
 		View view, // consensus data
-		Hash vertexId, // consensus data
+		HashCode vertexId, // consensus data
 		LedgerHeader ledgerHeader
 	) {
 		this.view = view;
@@ -71,7 +72,7 @@ public final class BFTHeader {
 	public static BFTHeader ofGenesisAncestor(LedgerHeader ledgerHeader) {
 		return new BFTHeader(
 			View.genesis(),
-			Hash.ZERO_HASH,
+			HashUtils.zero256(),
 			ledgerHeader
 		);
 	}
@@ -84,7 +85,7 @@ public final class BFTHeader {
 		return view;
 	}
 
-	public Hash getVertexId() {
+	public HashCode getVertexId() {
 		return vertexId;
 	}
 
@@ -101,7 +102,7 @@ public final class BFTHeader {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.view, this.vertexId, this.ledgerHeader);
+		return Objects.hash(this.vertexId, this.view, this.ledgerHeader);
 	}
 
 	@Override

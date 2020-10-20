@@ -19,7 +19,7 @@ package com.radixdlt.ledger;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.crypto.Hash;
+import com.google.common.hash.HashCode;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -41,12 +41,12 @@ public final class AccumulatorState {
 
 	@JsonProperty("accumulator_hash")
 	@DsonOutput(Output.ALL)
-	private final Hash accumulatorHash;
+	private final HashCode accumulatorHash;
 
 	@JsonCreator
 	public AccumulatorState(
 		@JsonProperty("state_version") long stateVersion,
-		@JsonProperty("accumulator_hash") Hash accumulatorHash
+		@JsonProperty("accumulator_hash") HashCode accumulatorHash
 	) {
 		this.stateVersion = stateVersion;
 		this.accumulatorHash = Objects.requireNonNull(accumulatorHash);
@@ -56,7 +56,7 @@ public final class AccumulatorState {
 		return stateVersion;
 	}
 
-	public Hash getAccumulatorHash() {
+	public HashCode getAccumulatorHash() {
 		return accumulatorHash;
 	}
 

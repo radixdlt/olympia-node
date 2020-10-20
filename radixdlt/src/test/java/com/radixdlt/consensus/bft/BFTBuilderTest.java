@@ -27,7 +27,7 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.Hasher;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;

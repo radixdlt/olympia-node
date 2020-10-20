@@ -17,9 +17,10 @@
 
 package com.radixdlt.consensus;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,7 +38,7 @@ public class VoteTest {
 
 	@Before
 	public void setUp() {
-		BFTHeader parent = new BFTHeader(View.of(1234567890L), Hash.random(), mock(LedgerHeader.class));
+		BFTHeader parent = new BFTHeader(View.of(1234567890L), HashUtils.random256(), mock(LedgerHeader.class));
 		this.voteData = new VoteData(BFTHeader.ofGenesisAncestor(mock(LedgerHeader.class)), parent, null);
 		this.timestampedVoteData = new TimestampedVoteData(this.voteData, 123456L);
 		this.author = mock(BFTNode.class);
@@ -48,6 +49,7 @@ public class VoteTest {
 	@Test
 	public void equalsContract() {
 		EqualsVerifier.forClass(Vote.class)
+			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 			.verify();
 	}
 

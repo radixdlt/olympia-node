@@ -15,10 +15,29 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.ledger;
+package com.radixdlt.integration.distributed;
 
-import com.radixdlt.crypto.Hash;
+import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.Command;
+import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
 
-public interface HasHash {
-	Hash hash();
+public class MockPrepared implements PreparedCommand {
+
+	private final Command command;
+	private final HashCode hash;
+
+	public MockPrepared(Command command, HashCode hash) {
+		this.command = command;
+		this.hash = hash;
+	}
+
+	@Override
+	public Command command() {
+		return command;
+	}
+
+	@Override
+	public HashCode hash() {
+		return hash;
+	}
 }

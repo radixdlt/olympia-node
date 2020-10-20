@@ -34,6 +34,7 @@ import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -42,6 +43,7 @@ import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
@@ -69,11 +71,14 @@ public class RadixEngineStateComputerTest {
 	private BFTValidatorSet validatorSet;
 	private EngineStore<LedgerAtom> engineStore;
 
+	private static final Hasher hasher = Sha256Hasher.withDefaultSerialization();
+
 	private Module getExternalModule() {
 		return new AbstractModule() {
 			public void configure() {
 				bind(Serialization.class).toInstance(serialization);
 				bind(BFTValidatorSet.class).toInstance(validatorSet);
+				bind(Hasher.class).toInstance(Sha256Hasher.withDefaultSerialization());
 				bind(new TypeLiteral<EngineStore<LedgerAtom>>() { }).toInstance(engineStore);
 			}
 
@@ -110,11 +115,11 @@ public class RadixEngineStateComputerTest {
 		Atom atom = new Atom();
 		atom.addParticleGroup(particleGroup);
 		try {
-			atom.sign(keyPair);
-			ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom);
+			atom.sign(keyPair, hasher);
+			ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom, hasher);
 			final byte[] payload = DefaultSerialization.getInstance().toDson(clientAtom, Output.ALL);
 			Command cmd = new Command(payload);
-			return new RadixEngineCommand(cmd, clientAtom, PermissionLevel.USER);
+			return new RadixEngineCommand(cmd, hasher.hash(cmd), clientAtom, PermissionLevel.USER);
 		} catch (AtomAlreadySignedException e) {
 			throw new RuntimeException();
 		}
@@ -135,11 +140,11 @@ public class RadixEngineStateComputerTest {
 		Atom atom = new Atom();
 		atom.addParticleGroup(particleGroup);
 		try {
-			atom.sign(keyPair);
-			ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom);
+			atom.sign(keyPair, hasher);
+			ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom, hasher);
 			final byte[] payload = DefaultSerialization.getInstance().toDson(clientAtom, Output.ALL);
 			Command cmd = new Command(payload);
-			return new RadixEngineCommand(cmd, clientAtom, PermissionLevel.USER);
+			return new RadixEngineCommand(cmd, hasher.hash(cmd), clientAtom, PermissionLevel.USER);
 		} catch (AtomAlreadySignedException e) {
 			throw new RuntimeException();
 		}
