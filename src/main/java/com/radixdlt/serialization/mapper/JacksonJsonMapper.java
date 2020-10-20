@@ -107,7 +107,7 @@ public class JacksonJsonMapper extends ObjectMapper {
 				AID::toString
 		));
 
-		jsonModule.addKeySerializer(AID.class, new StdSerializer<AID>(AID.class) {
+		jsonModule.addKeySerializer(AID.class, new StdSerializer<>(AID.class) {
 			@Override
 			public void serialize(AID value, JsonGenerator gen, SerializerProvider provider) throws IOException {
 				gen.writeFieldName(JacksonCodecConstants.AID_STR_VALUE + value.toString());
@@ -168,7 +168,7 @@ public class JacksonJsonMapper extends ObjectMapper {
 					BeanDescription beanDesc,
 					final JsonDeserializer<?> deserializer
 			) {
-				return new JsonDeserializer<Enum>() {
+				return new JsonDeserializer<>() {
 					@Override
 					@SuppressWarnings("unchecked")
 					public Enum deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {

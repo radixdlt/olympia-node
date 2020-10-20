@@ -196,7 +196,7 @@ public class ECKeyPairTest {
 	}
 
 	@Test
-	public void shortFileIsRejected() throws IOException, PrivateKeyException, PublicKeyException {
+	public void shortFileIsRejected() throws IOException {
 		File testKeyPair = new File("test-private-key.ks");
 
 		try (OutputStream outputStream = new FileOutputStream(testKeyPair)) {
