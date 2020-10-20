@@ -123,7 +123,7 @@ public class JacksonCborMapper extends ObjectMapper {
 				Longs::toBytes
 		));
 
-		cborModule.addKeySerializer(AID.class, new StdSerializer<AID>(AID.class) {
+		cborModule.addKeySerializer(AID.class, new StdSerializer<>(AID.class) {
 			@Override
 			public void serialize(AID value, JsonGenerator gen, SerializerProvider provider) throws IOException {
 				gen.writeFieldName(JacksonCodecConstants.AID_STR_VALUE + value.toString());
