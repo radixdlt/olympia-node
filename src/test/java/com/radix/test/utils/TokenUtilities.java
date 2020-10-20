@@ -18,6 +18,7 @@ import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.data.AtomToDecryptedMessageMapper;
 import com.radixdlt.client.application.translate.data.DecryptedMessage;
+import com.radixdlt.client.application.translate.data.DecryptedMessage.EncryptionState;
 import com.radixdlt.client.atommodel.unique.UniqueParticle;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.atoms.Atom;
@@ -88,7 +89,7 @@ public final class TokenUtilities {
 
 				if (txAtom != dummyAtom) {
 					DecryptedMessage msg = decryptMessageFrom(txAtom, api.getIdentity());
-					if (msg != null) {
+					if (msg != null && msg.getEncryptionState() == EncryptionState.DECRYPTED) {
 						String textMsg = new String(msg.getData(), RadixConstants.STANDARD_CHARSET);
 						if (textMsg.startsWith("Sent you ")) {
 							api.pullOnce(api.getAddress()).blockingAwait();
@@ -100,7 +101,7 @@ public final class TokenUtilities {
 						// Probably a hasty message or faucet unsynced.  We need to back off here.
 						log.info("Got message {}->{} from faucet: {}", msg.getFrom(), msg.getTo(), textMsg);
 					} else {
-						log.error("Got no message in atom from faucet. Problem?");
+						log.error("Got no decryptable message in atom from faucet. Problem?");
 					}
 					delayForMs(waitDelayMs);
 				}

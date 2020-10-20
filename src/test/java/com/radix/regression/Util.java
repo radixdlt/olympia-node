@@ -5,7 +5,7 @@ import io.reactivex.disposables.Disposable;
 
 public class Util {
 	public static <T> Observer<T> loggingObserver(String name) {
-		return new Observer<T>() {
+		return new Observer<>() {
 			@Override
 			public void onSubscribe(Disposable d) {
 				System.out.println(System.currentTimeMillis() + " " + name + ": <SUBSCRIBED>");
