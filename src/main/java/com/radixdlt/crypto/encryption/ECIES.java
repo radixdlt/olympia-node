@@ -176,6 +176,6 @@ public final class ECIES {
 	}
 
 	private static byte[] hash(byte[] data) {
-		return HashUtils.sha256(data).asBytes();
+		return HashUtils.sha512(data).asBytes();
 	}
 }
