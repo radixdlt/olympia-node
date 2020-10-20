@@ -17,11 +17,11 @@ git:
 jobs:
   include:
     - stage: check
-      script: ./gradlew check --info
+      script: ./gradlew check --info --refresh-dependencies
     - stage: sonar
-      script: ./gradlew jacocoTestReport sonarqube --info
+      script: ./gradlew jacocoTestReport sonarqube --info --refresh-dependencies
     - stage: integration
-      script: ./gradlew integrationTest
+      script: ./gradlew integrationTest --refresh-dependencies
 
 cache:
   directories:
