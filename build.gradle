@@ -135,7 +135,6 @@ dependencies {
         // Use our JSON lib
         exclude group: 'org.json', module: 'json'
     }
-
     api('com.fasterxml.jackson.datatype:jackson-datatype-guava:2.11.3') {
         // Use our Guava lib
         exclude group: 'com.google.guava', module: 'guava'
