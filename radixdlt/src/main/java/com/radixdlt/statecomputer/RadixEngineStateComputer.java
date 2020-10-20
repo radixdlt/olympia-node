@@ -66,7 +66,17 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private final RadixEngine<LedgerAtom> radixEngine;
 	private final View epochCeilingView;
 
-	public RadixEngineStateComputer(
+	private RadixEngineStateComputer(
+		Serialization serialization,
+		RadixEngine<LedgerAtom> radixEngine,
+		View epochCeilingView
+	) {
+		this.serialization = Objects.requireNonNull(serialization);
+		this.radixEngine = Objects.requireNonNull(radixEngine);
+		this.epochCeilingView = epochCeilingView;
+	}
+
+	public static RadixEngineStateComputer create(
 		Serialization serialization,
 		RadixEngine<LedgerAtom> radixEngine,
 		View epochCeilingView
@@ -75,9 +85,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			throw new IllegalArgumentException("Epoch change view must not be genesis.");
 		}
 
-		this.serialization = Objects.requireNonNull(serialization);
-		this.radixEngine = Objects.requireNonNull(radixEngine);
-		this.epochCeilingView = epochCeilingView;
+		return new RadixEngineStateComputer(serialization, radixEngine, epochCeilingView);
 	}
 
 	public static class RadixEngineCommand implements PreparedCommand {
@@ -214,14 +222,13 @@ public final class RadixEngineStateComputer implements StateComputer {
 		for (int i = 0; i < verifiedCommandsAndProof.getCommands().size(); i++) {
 			this.commitCommand(firstVersion + i, verifiedCommandsAndProof.getCommands().get(i), headerAndProof);
 
-			long nextEpoch = radixEngine.getComputedState(SystemParticle.class).getEpoch();
-			if (nextEpoch > currentEpoch) {
-				// TODO: revert commands and log as proof of byzantine quorum rather than throw illegal state exception
-				if (i != verifiedCommandsAndProof.getCommands().size() - 1) {
-					throw new ByzantineQuorumException("change of epoch did not occur on last command");
-				}
+			final long nextEpoch = radixEngine.getComputedState(SystemParticle.class).getEpoch();
+			final boolean isLastCommand = i == verifiedCommandsAndProof.getCommands().size() - 1;
+			final boolean changingEpoch = nextEpoch > currentEpoch;
+			if (isLastCommand && changingEpoch) {
 				epochChange = true;
-				break;
+			} else if (changingEpoch) {
+				throw new ByzantineQuorumException("change of epoch did not occur on last command");
 			}
 		}
 

@@ -70,7 +70,7 @@ public class RadixEngineModule extends AbstractModule {
 		Serialization serialization,
 		RadixEngine<LedgerAtom> radixEngine
 	) {
-		return new RadixEngineStateComputer(
+		return RadixEngineStateComputer.create(
 			serialization,
 			radixEngine,
 			epochHighView
