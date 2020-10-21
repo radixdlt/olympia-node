@@ -46,9 +46,9 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class FProposalsPerViewDropperTest {
 	@Parameters
-	public static Collection<Object[]> data() {
+	public static Collection<Object[]> testParameters() {
 		return Arrays.asList(new Object[][] {
-			{4}, {50}
+			{4}, {20}//, {50}
 		});
 	}
 
@@ -59,7 +59,7 @@ public class FProposalsPerViewDropperTest {
 			.numNodes(numNodes)
 			.networkModules(
 				NetworkOrdering.inOrder(),
-				NetworkLatencies.fixed(),
+				NetworkLatencies.fixed(10),
 				NetworkDroppers.fRandomProposalsPerViewDropped()
 			)
 			.pacemakerTimeout(5000)

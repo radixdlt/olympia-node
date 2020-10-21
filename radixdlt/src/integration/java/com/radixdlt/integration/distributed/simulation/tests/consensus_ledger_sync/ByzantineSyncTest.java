@@ -52,7 +52,7 @@ public class ByzantineSyncTest {
 			.numNodes(5)
 			.networkModules(
 				NetworkOrdering.inOrder(),
-				NetworkLatencies.random(10, 200),
+				NetworkLatencies.fixed(10),
 				NetworkDroppers.fNodesAllReceivedProposalsDropped()
 			)
 			.addByzantineModuleToAll(new AbstractModule() {

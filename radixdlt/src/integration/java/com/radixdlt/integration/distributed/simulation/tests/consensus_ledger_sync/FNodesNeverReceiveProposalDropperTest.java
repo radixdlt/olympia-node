@@ -45,7 +45,7 @@ public class FNodesNeverReceiveProposalDropperTest {
 	@Parameters
 	public static Collection<Object[]> testParameters() {
 		// Need at least five nodes to ensure that remote sync occurs, otherwise just vertex sync is required
-		return List.of(new Object[][]{{5}, {100}});
+		return List.of(new Object[][]{{5}, {20}});
 	}
 
 	private final Builder bftTestBuilder;
