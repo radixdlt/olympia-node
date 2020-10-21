@@ -17,10 +17,10 @@
 
 package com.radixdlt.consensus.liveness;
 
+import com.radixdlt.crypto.Hasher;
 import java.util.Objects;
 
 import com.radixdlt.consensus.HashSigner;
-import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;

@@ -18,6 +18,10 @@
 package org.radix.serialization;
 
 import com.google.common.base.Strings;
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.Hasher;
+import com.radixdlt.consensus.Sha256Hasher;
+import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
@@ -36,6 +40,9 @@ import static org.mockito.Mockito.*;
  * Check serialization of PeerPingMessage
  */
 public class PeerPingMessageSerializeTest extends SerializeMessageObject<PeerPingMessage> {
+
+	private static final Hasher hasher = Sha256Hasher.withDefaultSerialization();
+
 	public PeerPingMessageSerializeTest() {
 		super(PeerPingMessage.class, PeerPingMessageSerializeTest::get);
 	}
@@ -44,7 +51,10 @@ public class PeerPingMessageSerializeTest extends SerializeMessageObject<PeerPin
 		try {
 			PeerPingMessage pingMessage = new PeerPingMessage(1, 17L, 18L, getLocalSystem());
 			ECKeyPair keyPair = ECKeyPair.fromPrivateKey(Bytes.fromHexString(Strings.repeat("deadbeef", 8)));
-			pingMessage.sign(keyPair, true);
+			HashCode pingMsgHash = hasher.hash(pingMessage);
+			ECDSASignature signature = keyPair
+					.sign(pingMsgHash.asBytes(), true, false);
+			pingMessage.setSignature(signature);
 			return pingMessage;
 		} catch (PrivateKeyException | PublicKeyException e) {
 			throw new IllegalStateException("Failed to create key", e);

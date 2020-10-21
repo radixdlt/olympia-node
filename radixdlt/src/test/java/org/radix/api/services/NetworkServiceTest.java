@@ -19,6 +19,8 @@ package org.radix.api.services;
 
 import java.util.Optional;
 
+import com.radixdlt.DefaultSerialization;
+import com.radixdlt.consensus.Sha256Hasher;
 import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
@@ -45,7 +47,7 @@ public class NetworkServiceTest {
 		this.serialization = mock(Serialization.class);
 		this.localSystem = mock(LocalSystem.class);
 		this.addressBook = mock(AddressBook.class);
-		this.services = new NetworkService(serialization, localSystem, addressBook);
+		this.services = new NetworkService(serialization, localSystem, addressBook, Sha256Hasher.withDefaultSerialization());
 	}
 
 	@Test

@@ -17,9 +17,10 @@
 
 package com.radixdlt.consensus.safety;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.HashSigner;
-import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.HighQC;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VerifiedVertex;
@@ -27,7 +28,6 @@ import com.radixdlt.consensus.safety.SafetyState.Builder;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.Hash;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -49,9 +49,9 @@ public class SafetyRulesTest {
 	public void setup() {
 		this.safetyState = mock(SafetyState.class);
 		Hasher hasher = mock(Hasher.class);
-		when(hasher.hash(any())).thenReturn(mock(Hash.class));
+		when(hasher.hash(any())).thenReturn(mock(HashCode.class));
 		HashSigner hashSigner = mock(HashSigner.class);
-		when(hashSigner.sign(Mockito.<Hash>any())).thenReturn(new ECDSASignature());
+		when(hashSigner.sign(Mockito.<HashCode>any())).thenReturn(new ECDSASignature());
 		this.safetyRules = new SafetyRules(mock(BFTNode.class), safetyState, hasher, hashSigner);
 	}
 

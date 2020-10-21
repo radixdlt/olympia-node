@@ -17,6 +17,10 @@
 
 package com.radixdlt.middleware2.network;
 
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import nl.jqno.equalsverifier.Warning;
 import org.junit.Test;
 
 import com.radixdlt.consensus.Proposal;
@@ -76,4 +80,12 @@ public class ConsensusEventMessageTest {
 		assertNotNull(msg1.getConsensusMessage());
 	}
 
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(ConsensusEventMessage.class)
+				.withIgnoredFields("instance")
+				.suppress(Warning.NONFINAL_FIELDS)
+				.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+				.verify();
+	}
 }

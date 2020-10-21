@@ -22,11 +22,15 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.crypto.HashUtils;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import nl.jqno.equalsverifier.Warning;
 import org.junit.Test;
 
 public class GetVerticesErrorResponseMessageTest {
@@ -39,5 +43,14 @@ public class GetVerticesErrorResponseMessageTest {
 		GetVerticesErrorResponseMessage msg1 = new GetVerticesErrorResponseMessage(0, highQC);
 		String s1 = msg1.toString();
 		assertThat(s1, containsString(GetVerticesErrorResponseMessage.class.getSimpleName()));
+	}
+
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(GetVerticesErrorResponseMessage.class)
+				.withIgnoredFields("instance")
+				.suppress(Warning.NONFINAL_FIELDS)
+				.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+				.verify();
 	}
 }

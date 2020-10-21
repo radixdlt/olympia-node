@@ -17,6 +17,8 @@
 
 package com.radixdlt.consensus.liveness;
 
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.Hasher;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.Optional;
@@ -29,7 +31,6 @@ import org.mockito.Mockito;
 import com.google.common.collect.Lists;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.HashSigner;
-import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.Proposal;
@@ -47,7 +48,6 @@ import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyViolationException;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.network.TimeSupplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -163,7 +163,7 @@ public class ExponentialTimeoutPacemakerTest {
 		when(header.getLedgerHeader()).thenReturn(ledgerHeader);
 		when(ledgerHeader.isEndOfEpoch()).thenReturn(true);
 		when(this.vertexStore.highQC()).thenReturn(hqc);
-		when(this.signer.sign(Mockito.<Hash>any())).thenReturn(new ECDSASignature());
+		when(this.signer.sign(Mockito.<HashCode>any())).thenReturn(new ECDSASignature());
 		when(this.proposerElection.getProposer(eq(View.of(2)))).thenReturn(this.self);
 
 		this.pacemaker.processViewTimeout(viewTimeout);
@@ -189,7 +189,7 @@ public class ExponentialTimeoutPacemakerTest {
 		when(header.getLedgerHeader()).thenReturn(ledgerHeader);
 		when(ledgerHeader.isEndOfEpoch()).thenReturn(false);
 		when(this.vertexStore.highQC()).thenReturn(hqc);
-		when(this.signer.sign(Mockito.<Hash>any())).thenReturn(new ECDSASignature());
+		when(this.signer.sign(Mockito.<HashCode>any())).thenReturn(new ECDSASignature());
 		when(this.proposerElection.getProposer(eq(View.of(2)))).thenReturn(this.self);
 
 		this.pacemaker.processViewTimeout(viewTimeout);
@@ -266,7 +266,7 @@ public class ExponentialTimeoutPacemakerTest {
 		Proposal proposal = mock(Proposal.class);
 		when(proposal.getView()).thenReturn(View.of(0));
 		when(proposal.getVertex()).thenReturn(mock(UnverifiedVertex.class));
-		when(this.hasher.hash(any())).thenReturn(mock(Hash.class));
+		when(this.hasher.hash(any())).thenReturn(mock(HashCode.class));
 		when(this.vertexStore.insertVertex(any())).thenReturn(Optional.of(mock(BFTHeader.class)));
 
 		this.pacemaker.processProposal(proposal);
@@ -281,7 +281,7 @@ public class ExponentialTimeoutPacemakerTest {
 		Proposal proposal = mock(Proposal.class);
 		when(proposal.getView()).thenReturn(View.of(0));
 		when(proposal.getVertex()).thenReturn(mock(UnverifiedVertex.class));
-		when(this.hasher.hash(any())).thenReturn(mock(Hash.class));
+		when(this.hasher.hash(any())).thenReturn(mock(HashCode.class));
 		doThrow(SafetyViolationException.class).when(this.safetyRules).voteFor(any(), any(), anyLong(), any());
 
 		this.pacemaker.processProposal(proposal);

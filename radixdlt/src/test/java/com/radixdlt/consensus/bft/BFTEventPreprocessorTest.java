@@ -26,6 +26,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -41,7 +42,6 @@ import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.Hash;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -86,7 +86,7 @@ public class BFTEventPreprocessorTest {
 		when(viewTimeout.getAuthor()).thenReturn(self);
 		when(viewTimeout.getView()).thenReturn(view);
 		QuorumCertificate qc = mock(QuorumCertificate.class);
-		Hash vertexId = mock(Hash.class);
+		HashCode vertexId = mock(HashCode.class);
 		BFTHeader proposed = mock(BFTHeader.class);
 		when(qc.getProposed()).thenReturn(proposed);
 		when(proposed.getVertexId()).thenReturn(vertexId);
@@ -222,7 +222,7 @@ public class BFTEventPreprocessorTest {
 	public void when_bft_update__then_pending_events_processed() {
 		BFTUpdate bftUpdate = mock(BFTUpdate.class);
 		VerifiedVertex verifiedVertex = mock(VerifiedVertex.class);
-		Hash hash = mock(Hash.class);
+		HashCode hash = mock(HashCode.class);
 		when(bftUpdate.getInsertedVertex()).thenReturn(verifiedVertex);
 		when(verifiedVertex.getId()).thenReturn(hash);
 		when(this.syncQueues.getQueues()).thenReturn(ImmutableList.of(mock(SyncQueue.class)));

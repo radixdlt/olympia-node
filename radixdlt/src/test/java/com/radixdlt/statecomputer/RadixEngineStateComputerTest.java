@@ -25,10 +25,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.CMInstruction;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.ledger.AccumulatorState;
@@ -46,16 +49,19 @@ public class RadixEngineStateComputerTest {
 	private RadixEngineStateComputer stateComputer;
 	private RadixEngine<LedgerAtom> radixEngine;
 	private View epochHighView;
+	private Hasher hasher;
 
 	@Before
 	public void setup() {
 		this.serialization = mock(Serialization.class);
 		this.radixEngine = TypedMocks.rmock(RadixEngine.class);
 		this.epochHighView = View.of(100);
-		this.stateComputer = new RadixEngineStateComputer(
+		this.hasher = Sha256Hasher.withDefaultSerialization();
+		this.stateComputer = RadixEngineStateComputer.create(
 			serialization,
 			radixEngine,
-			epochHighView
+			epochHighView,
+			hasher
 		);
 	}
 
@@ -77,6 +83,7 @@ public class RadixEngineStateComputerTest {
 		VerifiedCommandsAndProof command = mock(VerifiedCommandsAndProof.class);
 		when(command.getHeader()).thenReturn(proof);
 		when(command.getCommands()).thenReturn(ImmutableList.of(mock(Command.class)));
+		when(radixEngine.getComputedState(any())).thenReturn(mock(SystemParticle.class));
 
 		stateComputer.commit(command);
 

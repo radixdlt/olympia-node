@@ -27,6 +27,8 @@ import org.radix.universe.system.SystemMessage;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.primitives.UnsignedLong;
 
+import java.util.Objects;
+
 @SerializerId2("peer.ping")
 public final class PeerPingMessage extends SystemMessage {
 	@JsonProperty("nonce")
@@ -59,5 +61,27 @@ public final class PeerPingMessage extends SystemMessage {
 	public String toString() {
 		return String.format("%s[%s:%s:%s]",
 			getClass().getSimpleName(), getSystem().getNID(), UnsignedLong.fromLongBits(nonce), UnsignedLong.fromLongBits(payload));
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		PeerPingMessage that = (PeerPingMessage) o;
+		return nonce == that.nonce
+				&& payload == that.payload
+				&& Objects.equals(getTimestamp(), that.getTimestamp())
+				&& Objects.equals(getMagic(), that.getMagic())
+				&& Objects.equals(getSystem(), that.getSystem())
+				&& Objects.equals(getSignature(), that.getSignature());
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(nonce, payload, getTimestamp(), getMagic(), getSystem(), getSignature());
 	}
 }

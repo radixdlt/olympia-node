@@ -31,7 +31,7 @@ import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.Hasher;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -51,7 +51,7 @@ import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
 import com.radixdlt.consensus.liveness.ProceedToViewSender;
 import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.utils.UInt256;
 import org.junit.Before;
@@ -66,9 +66,9 @@ public class ConsensusModuleTest {
 	@Before
 	public void setup() {
 		this.bftConfiguration = mock(BFTConfiguration.class);
-		UnverifiedVertex genesis = UnverifiedVertex.createGenesis(LedgerHeader.genesis(Hash.ZERO_HASH, null));
-		VerifiedVertex hashedGenesis = new VerifiedVertex(genesis, Hash.ZERO_HASH);
-		QuorumCertificate qc = QuorumCertificate.ofGenesis(hashedGenesis, LedgerHeader.genesis(Hash.ZERO_HASH, null));
+		UnverifiedVertex genesis = UnverifiedVertex.createGenesis(LedgerHeader.genesis(HashUtils.zero256(), null));
+		VerifiedVertex hashedGenesis = new VerifiedVertex(genesis, HashUtils.zero256());
+		QuorumCertificate qc = QuorumCertificate.ofGenesis(hashedGenesis, LedgerHeader.genesis(HashUtils.zero256(), null));
 		when(bftConfiguration.getGenesisVertex()).thenReturn(hashedGenesis);
 		when(bftConfiguration.getGenesisQC()).thenReturn(qc);
 		when(bftConfiguration.getGenesisHeader()).thenReturn(mock(VerifiedLedgerHeaderAndProof.class));

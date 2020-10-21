@@ -27,7 +27,7 @@ import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.Hasher;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.PendingVotes;

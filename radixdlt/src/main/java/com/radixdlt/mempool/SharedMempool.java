@@ -17,8 +17,8 @@
 
 package com.radixdlt.mempool;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.crypto.Hash;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -54,19 +54,19 @@ public class SharedMempool implements Mempool {
 	}
 
 	@Override
-	public void removeCommitted(Hash cmdHash) {
+	public void removeCommitted(HashCode cmdHash) {
 		this.localMempool.removeCommitted(cmdHash);
 		updateCounts();
 	}
 
 	@Override
-	public void removeRejected(Hash cmdHash) {
+	public void removeRejected(HashCode cmdHash) {
 		this.localMempool.removeRejected(cmdHash);
 		updateCounts();
 	}
 
 	@Override
-	public List<Command> getCommands(int count, Set<Hash> seen) {
+	public List<Command> getCommands(int count, Set<HashCode> seen) {
 		return this.localMempool.getCommands(count, seen);
 	}
 

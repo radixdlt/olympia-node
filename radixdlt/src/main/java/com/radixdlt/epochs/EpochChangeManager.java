@@ -18,7 +18,7 @@
 package com.radixdlt.epochs;
 
 import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.Hasher;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.UnverifiedVertex;

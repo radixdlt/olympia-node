@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus.bft;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.ConsensusEvent;
@@ -27,7 +28,6 @@ import com.radixdlt.consensus.bft.BFTSyncer.SyncResult;
 import com.radixdlt.consensus.bft.SyncQueues.SyncQueue;
 import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.crypto.Hash;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -77,14 +77,14 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		return processQueuedConsensusEvent(event);
 	}
 
-	private boolean peekAndExecute(SyncQueue queue, Hash vertexId) {
+	private boolean peekAndExecute(SyncQueue queue, HashCode vertexId) {
 		final ConsensusEvent event = queue.peek(vertexId);
 		return processQueuedConsensusEvent(event);
 	}
 
 	@Override
 	public void processBFTUpdate(BFTUpdate update) {
-		Hash vertexId = update.getInsertedVertex().getId();
+		HashCode vertexId = update.getInsertedVertex().getId();
 
 		log.trace("LOCAL_SYNC: {}", vertexId);
 		for (SyncQueue queue : queues.getQueues()) {

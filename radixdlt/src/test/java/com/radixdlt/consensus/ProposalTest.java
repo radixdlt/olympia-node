@@ -17,7 +17,9 @@
 
 package com.radixdlt.consensus;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.crypto.HashUtils;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -63,6 +65,7 @@ public class ProposalTest {
 	@Test
 	public void equalsContract() {
 		EqualsVerifier.forClass(Proposal.class)
+			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 			.verify();
 	}
 

@@ -17,10 +17,11 @@
 
 package com.radixdlt.consensus.safety;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.HighQC;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -34,7 +35,6 @@ import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.safety.SafetyState.Builder;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.Hash;
 
 import java.util.Objects;
 
@@ -67,7 +67,7 @@ public final class SafetyRules {
 	 * @return signed proposal object for consensus
 	 */
 	public Proposal signProposal(UnverifiedVertex proposedVertex, QuorumCertificate highestCommittedQC) {
-		final Hash vertexHash = this.hasher.hash(proposedVertex);
+		final HashCode vertexHash = this.hasher.hash(proposedVertex);
 		ECDSASignature signature = this.signer.sign(vertexHash);
 		return new Proposal(proposedVertex, highestCommittedQC, this.self, signature);
 	}
@@ -132,7 +132,7 @@ public final class SafetyRules {
 		final VoteData voteData = constructVoteData(proposedVertex, proposedHeader);
 		final TimestampedVoteData timestampedVoteData = new TimestampedVoteData(voteData, timestamp);
 
-		final Hash voteHash = hasher.hash(timestampedVoteData);
+		final HashCode voteHash = hasher.hash(timestampedVoteData);
 
 		this.state = safetyStateBuilder.build();
 

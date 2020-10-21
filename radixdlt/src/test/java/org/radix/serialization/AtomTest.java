@@ -23,9 +23,12 @@
 package org.radix.serialization;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.hash.HashCode;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atomos.RRIParticle;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.consensus.Sha256Hasher;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import org.junit.Test;
@@ -34,10 +37,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
 public class AtomTest {
+
+	private final Hasher hasher = Sha256Hasher.withDefaultSerialization();
+
 	@Test
 	public void hash_test_atom() {
 		Atom atom = new Atom(ImmutableMap.of());
-		Hash hash = atom.getHash();
+		HashCode hash = hasher.hash(atom);
 		assertIsNotRawDSON(hash);
 		String hashHex = hash.toString();
 		assertEquals("311964d6688530d47baba551393b9a51a5e6a22504133597e3f7c2af5f83a2ce", hashHex);
@@ -48,13 +54,13 @@ public class AtomTest {
 		RadixAddress address = RadixAddress.from("JEbhKQzBn4qJzWJFBbaPioA2GTeaQhuUjYWkanTE6N8VvvPpvM8");
 		RRI rri = RRI.of(address, "FOOBAR");
 		RRIParticle particle = new RRIParticle(rri);
-		Hash hash = particle.getHash();
+		HashCode hash = hasher.hash(particle);
 		assertIsNotRawDSON(hash);
 		String hashHex = hash.toString();
 		assertEquals("a29e3505d9736f4de2a576b2fee1b6a449e56f6b3cbaa86b8388e39a1557c53a", hashHex);
 	}
 
-	private void assertIsNotRawDSON(Hash hash) {
+	private void assertIsNotRawDSON(HashCode hash) {
 		String hashHex = hash.toString();
 		// CBOR/DSON encoding of an object starts with "bf" and ends with "ff", so we are here making
 		// sure that Hash of the object is not just the DSON output, but rather a 256 bit hash digest of it.

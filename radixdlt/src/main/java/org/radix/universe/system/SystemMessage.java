@@ -23,6 +23,8 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
 import org.radix.network.messaging.SignedMessage;
 
+import java.util.Objects;
+
 @SerializerId2("system")
 public class SystemMessage extends SignedMessage {
 	@JsonProperty("system")
@@ -46,5 +48,25 @@ public class SystemMessage extends SignedMessage {
 	@Override
 	public String toString() {
 		return String.format("%s[%s]", getClass().getSimpleName(), this.system.getNID());
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		SystemMessage that = (SystemMessage) o;
+		return Objects.equals(system, that.system)
+				&& Objects.equals(getSignature(), that.getSignature())
+				&& Objects.equals(getTimestamp(), that.getTimestamp())
+				&& Objects.equals(getMagic(), that.getMagic());
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(system, getSignature(), getTimestamp(), getMagic());
 	}
 }

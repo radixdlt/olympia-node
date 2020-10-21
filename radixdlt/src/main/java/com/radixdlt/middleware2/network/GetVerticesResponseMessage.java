@@ -54,4 +54,23 @@ public final class GetVerticesResponseMessage extends Message {
 	public String toString() {
 		return String.format("%s[%s]", getClass().getSimpleName(), vertices);
 	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		GetVerticesResponseMessage that = (GetVerticesResponseMessage) o;
+		return Objects.equals(vertices, that.vertices)
+				&& Objects.equals(getTimestamp(), that.getTimestamp())
+				&& Objects.equals(getMagic(), that.getMagic());
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(vertices, getTimestamp(), getMagic());
+	}
 }

@@ -27,7 +27,7 @@ import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.Hasher;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.Vote;

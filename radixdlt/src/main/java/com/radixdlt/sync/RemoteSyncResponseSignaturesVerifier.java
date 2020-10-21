@@ -17,14 +17,14 @@
 
 package com.radixdlt.sync;
 
+import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.Hasher;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.TimestampedECDSASignature;
 import com.radixdlt.consensus.TimestampedVoteData;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import java.util.Map;
@@ -73,7 +73,7 @@ public final class RemoteSyncResponseSignaturesVerifier implements RemoteSyncRes
 			BFTNode node = nodeAndSignature.getKey();
 			TimestampedECDSASignature signature = nodeAndSignature.getValue();
 			final TimestampedVoteData timestampedVoteData = new TimestampedVoteData(voteData, signature.timestamp());
-			final Hash voteDataHash = this.hasher.hash(timestampedVoteData);
+			final HashCode voteDataHash = this.hasher.hash(timestampedVoteData);
 
 			if (!hashVerifier.verify(node.getKey(), voteDataHash, signature.signature())) {
 				invalidSignaturesSender.sendInvalid(syncResponse);

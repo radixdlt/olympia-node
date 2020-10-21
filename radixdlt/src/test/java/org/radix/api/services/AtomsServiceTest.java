@@ -21,6 +21,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.api.SubmissionErrorsRx;
+import com.radixdlt.consensus.Sha256Hasher;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.mempool.SubmissionControl;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.middleware2.store.CommandToBinaryConverter;
@@ -39,6 +41,7 @@ public class AtomsServiceTest {
 	private SubmissionControl submissionControl;
 	private CommandToBinaryConverter commandToBinaryConverter;
 	private ClientAtomToBinaryConverter clientAtomToBinaryConverter;
+	private Hasher hasher;
 
 	@Before
 	public void setUp() {
@@ -51,6 +54,7 @@ public class AtomsServiceTest {
 		this.store = mock(LedgerEntryStore.class);
 		this.commandToBinaryConverter = mock(CommandToBinaryConverter.class);
 		this.clientAtomToBinaryConverter = mock(ClientAtomToBinaryConverter.class);
+		this.hasher = Sha256Hasher.withDefaultSerialization();
 
 		atomsService = new AtomsService(
 			this.submissionErrorsRx,
@@ -59,7 +63,8 @@ public class AtomsServiceTest {
 			this.store,
 			this.submissionControl,
 			this.commandToBinaryConverter,
-			this.clientAtomToBinaryConverter
+			this.clientAtomToBinaryConverter,
+			this.hasher
 		);
 	}
 

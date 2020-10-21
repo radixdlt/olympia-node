@@ -24,6 +24,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
@@ -32,7 +33,6 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
@@ -151,7 +151,7 @@ public class EpochsRemoteSyncResponseProcessorTest {
 		when(tailHeader.getAccumulatorState()).thenReturn(mock(AccumulatorState.class));
 		when(tail.getOpaque0()).thenReturn(mock(BFTHeader.class));
 		when(tail.getOpaque1()).thenReturn(mock(BFTHeader.class));
-		when(tail.getOpaque3()).thenReturn(mock(Hash.class));
+		when(tail.getOpaque3()).thenReturn(mock(HashCode.class));
 		when(tail.getSignatures()).thenReturn(mock(TimestampedECDSASignatures.class));
 		when(tail.getLedgerHeader()).thenReturn(tailHeader);
 		when(dtoCommandsAndProof.getTail()).thenReturn(tail);

@@ -20,13 +20,13 @@ package com.radixdlt.integration.distributed.simulation.network;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
-import com.radixdlt.crypto.Hash;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.junit.Before;
 import org.junit.Test;
@@ -121,7 +121,7 @@ public class SimulationNetworkTest {
 	@Test
 	public void when_send_get_vertex_request_to_another_node__then_should_receive_it() {
 		SimulationNetwork network = SimulationNetwork.builder().build();
-		Hash vertexId = mock(Hash.class);
+		HashCode vertexId = mock(HashCode.class);
 
 		TestObserver<GetVerticesRequest> rpcRequestListener =
 			network.getNetwork(node2).requests().test();

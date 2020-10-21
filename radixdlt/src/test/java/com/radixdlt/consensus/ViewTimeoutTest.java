@@ -17,16 +17,17 @@
 
 package com.radixdlt.consensus;
 
+import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.View;
+import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 import org.radix.serialization.SerializeObject;
 
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.AccumulatorState;
 
 public class ViewTimeoutTest extends SerializeObject<ViewTimeout> {
@@ -38,11 +39,11 @@ public class ViewTimeoutTest extends SerializeObject<ViewTimeout> {
 		ECPublicKey pubKey = ECKeyPair.generateNew().getPublicKey();
 		BFTNode author = BFTNode.create(pubKey);
 		ViewTimeoutData viewTimeoutData = ViewTimeoutData.from(author, 5678L, View.of(1234));
-		AccumulatorState accumulatorState = new AccumulatorState(3L, Hash.ZERO_HASH);
+		AccumulatorState accumulatorState = new AccumulatorState(3L, HashUtils.zero256());
 		LedgerHeader ledgerHeader = LedgerHeader.create(5678L, View.of(1200), accumulatorState, 123456789L, null);
-		BFTHeader proposed = new BFTHeader(View.of(1202), Hash.ZERO_HASH, ledgerHeader);
-		BFTHeader parent = new BFTHeader(View.of(1201), Hash.ZERO_HASH, ledgerHeader);
-		BFTHeader committed = new BFTHeader(View.of(1200), Hash.ZERO_HASH, ledgerHeader);
+		BFTHeader proposed = new BFTHeader(View.of(1202), HashUtils.zero256(), ledgerHeader);
+		BFTHeader parent = new BFTHeader(View.of(1201), HashUtils.zero256(), ledgerHeader);
+		BFTHeader committed = new BFTHeader(View.of(1200), HashUtils.zero256(), ledgerHeader);
 		VoteData voteData = new VoteData(proposed, parent, committed);
 		QuorumCertificate highestQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 		HighQC highQC = HighQC.from(highestQC, highestQC);
@@ -53,6 +54,7 @@ public class ViewTimeoutTest extends SerializeObject<ViewTimeout> {
 	@Test
 	public void equalsContract() {
 		EqualsVerifier.forClass(ViewTimeout.class)
+			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 			.verify();
 	}
 }

@@ -31,7 +31,8 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.crypto.Hash;
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.mempool.Mempool;
 import java.util.Comparator;
 import java.util.LinkedList;
@@ -44,13 +45,10 @@ import java.util.Set;
  * Synchronizes execution
  */
 public final class StateComputerLedger implements Ledger, NextCommandGenerator {
-	public interface PreparedCommand extends HasHash {
+	public interface PreparedCommand {
 		Command command();
 
-		@Override
-		default Hash hash() {
-			return command().hash();
-		}
+		HashCode hash();
 	}
 
 	public static class StateComputerResult {
@@ -101,6 +99,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	private final SystemCounters counters;
 	private final LedgerAccumulator accumulator;
 	private final LedgerAccumulatorVerifier verifier;
+	private final Hasher hasher;
 
 	private final Object lock = new Object();
 	private VerifiedLedgerHeaderAndProof currentLedgerHeader;
@@ -114,7 +113,8 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		LedgerUpdateSender ledgerUpdateSender,
 		LedgerAccumulator accumulator,
 		LedgerAccumulatorVerifier verifier,
-		SystemCounters counters
+		SystemCounters counters,
+		Hasher hasher
 	) {
 		this.headerComparator = Objects.requireNonNull(headerComparator);
 		this.currentLedgerHeader = initialLedgerState;
@@ -124,10 +124,11 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		this.counters = Objects.requireNonNull(counters);
 		this.accumulator = Objects.requireNonNull(accumulator);
 		this.verifier = Objects.requireNonNull(verifier);
+		this.hasher = Objects.requireNonNull(hasher);
 	}
 
 	@Override
-	public Command generateNextCommand(View view, Set<Hash> prepared) {
+	public Command generateNextCommand(View view, Set<HashCode> prepared) {
 		final List<Command> commands = mempool.getCommands(1, prepared);
 		return !commands.isEmpty() ? commands.get(0) : null;
 	}
@@ -165,6 +166,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			final ImmutableList<PreparedCommand> concatenatedCommands = this.verifier.verifyAndGetExtension(
 				this.currentLedgerHeader.getAccumulatorState(),
 				prevCommands,
+				PreparedCommand::hash,
 				parentAccumulatorState
 			).orElseThrow(() -> new IllegalStateException("Evidence of safety break current: "
 				+ this.currentLedgerHeader.getAccumulatorState() + " prepare head: " + parentAccumulatorState)
@@ -219,16 +221,13 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			Optional<ImmutableList<Command>> verifiedExtension = verifier.verifyAndGetExtension(
 				this.currentLedgerHeader.getAccumulatorState(),
 				verifiedCommandsAndProof.getCommands(),
+				hasher::hash,
 				verifiedCommandsAndProof.getHeader().getAccumulatorState()
 			);
 
 			if (!verifiedExtension.isPresent()) {
-				// This can occur if there is a bug in a commit caller or if there is a quorum of malicious nodes
-				throw new IllegalStateException("Accumulator failure " + currentLedgerHeader + " " + verifiedCommandsAndProof);
+				throw new ByzantineQuorumException("Accumulator failure " + currentLedgerHeader + " " + verifiedCommandsAndProof);
 			}
-
-			// TODO: Add epoch extension verifier, otherwise potential ability to create safety break here with byzantine quorums
-			// TODO: since both consensus or sync can be behind in terms of epoch change sync
 
 			VerifiedCommandsAndProof commandsToStore = new VerifiedCommandsAndProof(
 				verifiedExtension.get(), verifiedCommandsAndProof.getHeader()
@@ -241,7 +240,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			this.currentLedgerHeader = nextHeader;
 			this.counters.set(CounterType.LEDGER_STATE_VERSION, this.currentLedgerHeader.getStateVersion());
 
-			verifiedExtension.get().forEach(cmd -> this.mempool.removeCommitted(cmd.hash()));
+			verifiedExtension.get().forEach(cmd -> this.mempool.removeCommitted(hasher.hash(cmd)));
 			BaseLedgerUpdate ledgerUpdate = new BaseLedgerUpdate(commandsToStore);
 			ledgerUpdateSender.sendLedgerUpdate(ledgerUpdate);
 		}

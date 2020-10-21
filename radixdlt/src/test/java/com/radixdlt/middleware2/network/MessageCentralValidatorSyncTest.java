@@ -28,7 +28,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.Hasher;
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
@@ -39,7 +40,6 @@ import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
@@ -76,7 +76,7 @@ public class MessageCentralValidatorSyncTest {
 
 	@Test
 	public void when_send_rpc_to_self__then_illegal_state_exception_should_be_thrown() {
-		assertThatThrownBy(() -> sync.sendGetVerticesRequest(self, mock(Hash.class), 1))
+		assertThatThrownBy(() -> sync.sendGetVerticesRequest(self, mock(HashCode.class), 1))
 			.isInstanceOf(IllegalStateException.class);
 	}
 
@@ -88,7 +88,7 @@ public class MessageCentralValidatorSyncTest {
 		when(key.euid()).thenReturn(euid);
 		when(node.getKey()).thenReturn(key);
 		when(addressBook.peer(euid)).thenReturn(Optional.empty());
-		sync.sendGetVerticesRequest(node, mock(Hash.class), 1);
+		sync.sendGetVerticesRequest(node, mock(HashCode.class), 1);
 
 		// Some attempt was made to discover peer
 		verify(this.addressBook, times(1)).peer(any(EUID.class));
@@ -141,8 +141,8 @@ public class MessageCentralValidatorSyncTest {
 		when(key.euid()).thenReturn(EUID.ONE);
 		when(system.getKey()).thenReturn(key);
 		when(peer.getSystem()).thenReturn(system);
-		Hash vertexId0 = mock(Hash.class);
-		Hash vertexId1 = mock(Hash.class);
+		HashCode vertexId0 = mock(HashCode.class);
+		HashCode vertexId1 = mock(HashCode.class);
 		doAnswer(inv -> {
 			MessageListener<GetVerticesRequestMessage> messageListener = inv.getArgument(1);
 			messageListener.handleMessage(peer, new GetVerticesRequestMessage(0, vertexId0, 1));

@@ -23,6 +23,7 @@ import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.liveness.Pacemaker;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import java.util.Objects;

@@ -23,7 +23,6 @@ import com.google.inject.Scopes;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.HashSigner;
-import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.epoch.ProposerElectionFactory;
 import com.radixdlt.consensus.Timeout;
@@ -56,6 +55,7 @@ import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVertic
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.network.TimeSupplier;
 
 import java.util.Comparator;

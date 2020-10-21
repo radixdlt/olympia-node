@@ -19,7 +19,7 @@ package com.radixdlt.consensus.bft;
 
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.Hasher;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
 

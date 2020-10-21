@@ -28,7 +28,7 @@ import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTSyncer.SyncResult;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.sync.BFTSync;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.HashUtils;
 import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
@@ -52,7 +52,6 @@ public class BFTEventReducerTest {
 		this.pacemaker = mock(Pacemaker.class);
 		this.vertexStore = mock(VertexStore.class);
 		this.vertexStoreSync = mock(BFTSync.class);
-
 		this.reducer = new BFTEventReducer(
 			pacemaker,
 			vertexStore,
@@ -76,8 +75,8 @@ public class BFTEventReducerTest {
 	@Test
 	public void when_processing_vote_no_quorum__then_pacemaker_processes() {
 		Vote voteMessage = mock(Vote.class);
-		BFTHeader proposal = new BFTHeader(View.of(2), Hash.random(), mock(LedgerHeader.class));
-		BFTHeader parent = new BFTHeader(View.of(1), Hash.random(), mock(LedgerHeader.class));
+		BFTHeader proposal = new BFTHeader(View.of(2), HashUtils.random256(), mock(LedgerHeader.class));
+		BFTHeader parent = new BFTHeader(View.of(1), HashUtils.random256(), mock(LedgerHeader.class));
 		VoteData voteData = new VoteData(proposal, parent, null);
 		when(voteMessage.getVoteData()).thenReturn(voteData);
 
@@ -89,8 +88,8 @@ public class BFTEventReducerTest {
 	@Test
 	public void when_processing_vote_with_quorum_and_synced__then_pacemaker_processes() {
 		Vote voteMessage = mock(Vote.class);
-		BFTHeader proposal = new BFTHeader(View.of(2), Hash.random(), mock(LedgerHeader.class));
-		BFTHeader parent = new BFTHeader(View.of(1), Hash.random(), mock(LedgerHeader.class));
+		BFTHeader proposal = new BFTHeader(View.of(2), HashUtils.random256(), mock(LedgerHeader.class));
+		BFTHeader parent = new BFTHeader(View.of(1), HashUtils.random256(), mock(LedgerHeader.class));
 		VoteData voteData = new VoteData(proposal, parent, null);
 		when(voteMessage.getVoteData()).thenReturn(voteData);
 
@@ -111,8 +110,8 @@ public class BFTEventReducerTest {
 	@Test
 	public void when_processing_vote_with_quorum_and_not_synced__then_pacemaker_processes() {
 		Vote voteMessage = mock(Vote.class);
-		BFTHeader proposal = new BFTHeader(View.of(2), Hash.random(), mock(LedgerHeader.class));
-		BFTHeader parent = new BFTHeader(View.of(1), Hash.random(), mock(LedgerHeader.class));
+		BFTHeader proposal = new BFTHeader(View.of(2), HashUtils.random256(), mock(LedgerHeader.class));
+		BFTHeader parent = new BFTHeader(View.of(1), HashUtils.random256(), mock(LedgerHeader.class));
 		VoteData voteData = new VoteData(proposal, parent, null);
 		when(voteMessage.getVoteData()).thenReturn(voteData);
 

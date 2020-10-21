@@ -26,7 +26,7 @@ import java.util.Objects;
 import org.radix.network.messaging.Message;
 
 @SerializerId2("message.consensus.vertices_error_response")
-public class GetVerticesErrorResponseMessage extends Message {
+public final class GetVerticesErrorResponseMessage extends Message {
 	@JsonProperty("high_qc")
 	@DsonOutput(Output.ALL)
 	private HighQC highQC;
@@ -51,4 +51,22 @@ public class GetVerticesErrorResponseMessage extends Message {
 		return String.format("%s{%s}", getClass().getSimpleName(), this.highQC);
 	}
 
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		GetVerticesErrorResponseMessage that = (GetVerticesErrorResponseMessage) o;
+		return Objects.equals(highQC, that.highQC)
+				&& Objects.equals(getTimestamp(), that.getTimestamp())
+				&& Objects.equals(getMagic(), that.getMagic());
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(highQC, getTimestamp(), getMagic());
+	}
 }

@@ -21,7 +21,7 @@ import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.BFTHeader;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.HashUtils;
 
 public class VoteDataSerializeTest extends SerializeObject<VoteData> {
 	public VoteDataSerializeTest() {
@@ -30,10 +30,10 @@ public class VoteDataSerializeTest extends SerializeObject<VoteData> {
 
 	private static VoteData get() {
 		View view = View.of(1234567890L);
-		LedgerHeader ledgerHeader = LedgerHeader.genesis(Hash.ZERO_HASH, null);
-		BFTHeader committed = new BFTHeader(view, Hash.random(), ledgerHeader);
-		BFTHeader parent = new BFTHeader(view.next(), Hash.random(), ledgerHeader);
-		BFTHeader proposed = new BFTHeader(view.next().next(), Hash.random(), ledgerHeader);
+		LedgerHeader ledgerHeader = LedgerHeader.genesis(HashUtils.zero256(), null);
+		BFTHeader committed = new BFTHeader(view, HashUtils.random256(), ledgerHeader);
+		BFTHeader parent = new BFTHeader(view.next(), HashUtils.random256(), ledgerHeader);
+		BFTHeader proposed = new BFTHeader(view.next().next(), HashUtils.random256(), ledgerHeader);
 		return new VoteData(proposed, parent, committed);
 	}
 }

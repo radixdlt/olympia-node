@@ -43,12 +43,14 @@ import com.radixdlt.SyncServiceModule;
 import com.radixdlt.SyncRxModule;
 import com.radixdlt.SyncRunnerModule;
 import com.radixdlt.SystemInfoRxModule;
+import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.integration.distributed.MockedBFTConfigurationModule;
 import com.radixdlt.integration.distributed.MockedCommandGeneratorModule;
 import com.radixdlt.integration.distributed.MockedCryptoModule;
@@ -119,6 +121,8 @@ import java.util.stream.Stream;
 public class SimulationTest {
 	private static final String ENVIRONMENT_VAR_NAME = "TEST_DURATION"; // Same as used by regression test suite
 	private static final Duration DEFAULT_TEST_DURATION = Duration.ofSeconds(30);
+
+	private static final Hasher hasher = Sha256Hasher.withDefaultSerialization();
 
 	public interface SimulationNetworkActor {
 		void run(RunningNetwork network);
@@ -334,7 +338,7 @@ public class SimulationTest {
 		public Builder addRadixEngineValidatorRegisterUnregisterMempoolSubmissions() {
 			this.runnableBuilder.add(nodes -> {
 				RadixEngineValidatorRegistratorAndUnregistrator randomValidatorSubmittor
-					= new RadixEngineValidatorRegistratorAndUnregistrator(nodes);
+					= new RadixEngineValidatorRegistratorAndUnregistrator(nodes, hasher);
 				NodeSelector nodeSelector = this.ledgerType.hasEpochs ? new EpochsNodeSelector() : new BFTValidatorSetNodeSelector();
 				LocalMempoolPeriodicSubmittor submittor = new LocalMempoolPeriodicSubmittor(randomValidatorSubmittor, nodeSelector);
 				return submittor::run;
@@ -345,7 +349,7 @@ public class SimulationTest {
 		public Builder addRadixEngineValidatorRegisterUnregisterMempoolSubmissions(String submittedInvariantName) {
 			this.runnableBuilder.add(nodes -> {
 				RadixEngineValidatorRegistratorAndUnregistrator randomValidatorSubmittor
-					= new RadixEngineValidatorRegistratorAndUnregistrator(nodes);
+					= new RadixEngineValidatorRegistratorAndUnregistrator(nodes, hasher);
 				NodeSelector nodeSelector = this.ledgerType.hasEpochs ? new EpochsNodeSelector() : new BFTValidatorSetNodeSelector();
 				LocalMempoolPeriodicSubmittor submittor = new LocalMempoolPeriodicSubmittor(randomValidatorSubmittor, nodeSelector);
 				// TODO: Fix hack, hack required due to lack of Guice

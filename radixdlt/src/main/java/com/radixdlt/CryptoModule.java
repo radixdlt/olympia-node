@@ -17,17 +17,18 @@
 
 package com.radixdlt;
 
+import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.Hasher;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.crypto.Hasher;
+import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 
@@ -44,16 +45,18 @@ public final class CryptoModule extends AbstractModule {
 	@Provides
 	Hasher hasher(Serialization serialization, SystemCounters counters) {
 		return new Hasher() {
+			private Sha256Hasher hasher = new Sha256Hasher(serialization);
+
 			@Override
-			public Hash hash(Object o) {
+			public HashCode hash(Object o) {
 				// Call hashBytes to ensure counters incremented
 				return this.hashBytes(serialization.toDson(o, Output.HASH));
 			}
 
 			@Override
-			public Hash hashBytes(byte[] bytes) {
+			public HashCode hashBytes(byte[] bytes) {
 				counters.add(CounterType.HASHED_BYTES, bytes.length);
-				return Hash.of(bytes);
+				return hasher.hashBytes(bytes);
 			}
 		};
 	}
