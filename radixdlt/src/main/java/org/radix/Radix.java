@@ -20,6 +20,7 @@ package org.radix;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
+import com.radixdlt.utils.MemoryLeakDetector;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
@@ -125,6 +126,8 @@ public final class Radix
 
 	public static void main(String[] args) {
 		try {
+			new MemoryLeakDetector().init();
+
 			logVersion();
 			dumpExecutionLocation();
 			// Bouncy Castle is required for loading the node key, so set it up now.
