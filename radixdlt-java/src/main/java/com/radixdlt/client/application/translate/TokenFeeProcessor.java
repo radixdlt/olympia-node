@@ -62,6 +62,10 @@ public final class TokenFeeProcessor implements FeeProcessor {
 	@Override
 	public void process(ActionProcessor actionProcessor, RadixAddress address, Atom atom, Optional<BigDecimal> optionalFee) {
 		BigDecimal feeToPay = optionalFee.orElseGet(() -> feeFor(atom));
+		int signum = feeToPay.signum();
+		if (signum < 0) {
+			throw new IllegalArgumentException("Token fee must be greater than or equal to zero: " + feeToPay);
+		}
 		if (feeToPay.signum() != 0) {
 			actionProcessor.process(BurnTokensAction.create(this.tokenRri, address, feeToPay));
 		}
