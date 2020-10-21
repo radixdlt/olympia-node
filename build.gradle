@@ -1,3 +1,5 @@
+import org.apache.tools.ant.taskdefs.condition.Os
+
 buildscript {
     repositories {
         jcenter()
@@ -32,10 +34,12 @@ repositories {
 }
 
 test {
-    systemProperty "java.security.egd", "file:/dev/urandom"
-    System.setProperty( "javax.net.ssl.trustStore", "/etc/ssl/certs/java/cacerts")
-    System.setProperty( "javax.net.ssl.trustStoreType", "jks")
-    systemProperties(System.getProperties())
+    if (Os.isFamily(Os.FAMILY_UNIX)) { // there's no reason to set these properties on windows
+        systemProperty 'java.security.egd', 'file:/dev/urandom'
+        systemProperty 'javax.net.ssl.trustStore', '/etc/ssl/certs/java/cacerts'
+        systemProperty 'javax.net.ssl.trustStoreType', 'jks'
+    }
+    systemProperties System.getProperties()
 }
 
 subprojects {

@@ -25,7 +25,7 @@ sourceSets {
 }
 
 dependencies {
-    implementation 'com.github.radixdlt:radixdlt-java:1.0-beta.12'
+    implementation 'com.github.radixdlt:radixdlt-java:rc~1.0-beta.17-SNAPSHOT'
     testCompile group: 'io.cucumber', name: 'cucumber-groovy', version: '4.7.1'
     testCompile "org.codehaus.groovy:groovy-all:2.4.12"
     testCompile "io.cucumber:cucumber-core:2.1.0"
@@ -69,5 +69,15 @@ task clusterSystemTests(type: Test) {
     }
     testLogging.showStandardStreams = true
     systemProperties System.getProperties()
+    exclude "Runner.class"
+}
+
+task ephemeralClusterSystemTests(type: Test) {
+    useJUnit {
+        includeCategories 'com.radixdlt.test.EphemeralCluster'
+    }
+    testLogging.showStandardStreams = true
+    systemProperties System.getProperties()
+    systemProperties['logs.dir'] = "${testResultsDir}/ephemeralClusterSystemTests"
     exclude "Runner.class"
 }

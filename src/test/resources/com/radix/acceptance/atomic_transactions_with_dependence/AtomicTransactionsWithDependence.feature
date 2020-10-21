@@ -10,12 +10,7 @@ Feature: Atomic Transactions with Stateful Dependencies
     When I submit a particle group spending a consumable that was created in a group with a lower index
     Then I can observe atom 1 being accepted
 
-  Scenario: 2: Dependent Particle in Particle Group Same as Dependency
-    Given I have access to a suitable Radix network
-    When I submit a particle group spending a consumable that was created in same group
-    Then I can observe atom 1 being rejected with a validation error
-
-  Scenario: 3: Dependent Particle in Particle Group "Before" Dependency
+  Scenario: 2: Dependent Particle in Particle Group "Before" Dependency
     Given I have access to a suitable Radix network
     When I submit a particle group spending a consumable that was created in a group with a higher index
     Then I can observe atom 1 being rejected with a validation error

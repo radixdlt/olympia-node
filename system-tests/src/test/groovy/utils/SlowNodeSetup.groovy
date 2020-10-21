@@ -1,43 +1,57 @@
 package utils
 
 class SlowNodeSetup {
-    String ansibleImage, keyVolume, clusterName, playbook
+    String image, keyVolume, clusterName
     int numOfSlowNodes
+    private String dockerRunOptions
+    private String addtionalDockerCmdOptions
     private String sshDestinationLocDir = "/ansible/ssh"
     private String sshDestinationFileName = "testnet"
 
 
-    private SlowNodeSetup(String ansibleImage, String keyVolume, String clusterName, String playbook, int numOfSlowNodes) {
-        this.ansibleImage = ansibleImage
-        this.keyVolume = keyVolume
-        this.clusterName = clusterName
-        this.playbook = playbook
+    private SlowNodeSetup(String image, String runOptions, String cmdOptions, int numOfSlowNodes, String clusterName) {
+        this.image = image
+        this.dockerRunOptions = runOptions
+        this.addtionalDockerCmdOptions = cmdOptions
         this.numOfSlowNodes = numOfSlowNodes
+        this.clusterName = clusterName
     }
 
-    void copyfileToNamedVolume(String fileLocation) {
+    void copyfileToNamedVolume(String fileLocation, String keyVolume) {
         CmdHelper.runCommand("docker container create --name dummy -v ${keyVolume}:${sshDestinationLocDir} curlimages/curl:7.70.0")
         CmdHelper.runCommand("docker cp ${fileLocation} dummy:${sshDestinationLocDir}/${sshDestinationFileName}")
         CmdHelper.runCommand("docker rm -f dummy")
     }
 
     void pullImage() {
-        CmdHelper.runCommand("docker pull ${ansibleImage}")
+        CmdHelper.runCommand("docker pull ${image}")
     }
 
     void setup() {
 
         (1..numOfSlowNodes).each {
-            CmdHelper.runCommand("docker run --rm  -v ${keyVolume}:/ansible/ssh --name node-ansible ${ansibleImage}  "
-                    + "${playbook} -vv  --limit ${clusterName}[${it - 1}] -t setup")
+            def runnerCommand = "bash -c".tokenize() << (
+                    "docker run " +
+                            "${dockerRunOptions ?: ''} " +
+                            "${this.image} " +
+                            "slow-down-node.yml " +
+                            "${addtionalDockerCmdOptions ?: ''} " +
+                            "--limit ${clusterName}[${it - 1}] -t setup ")
+            CmdHelper.runCommand(runnerCommand)
         }
 
     }
 
     void tearDown() {
         (1..numOfSlowNodes).each {
-            CmdHelper.runCommand("docker run --rm  -v ${keyVolume}:${sshDestinationLocDir} --name node-ansible ${ansibleImage}  "
-                    + "${playbook} -vv  --limit ${clusterName}[${it - 1}] -t teardown")
+            def runnerCommand = "bash -c".tokenize() << (
+                    "docker run " +
+                            "${dockerRunOptions ?: ''} " +
+                            "${this.image} " +
+                            "slow-down-node.yml " +
+                            "${addtionalDockerCmdOptions ?: ''} " +
+                            "--limit ${clusterName}[${it - 1}] -t teardown ")
+            CmdHelper.runCommand(runnerCommand)
         }
         CmdHelper.runCommand("docker volume rm -f ${keyVolume}")
 
@@ -48,29 +62,14 @@ class SlowNodeSetup {
     }
 
     static class Builder {
-        String ansibleImage, keyVolume, clusterName, playbook
+        String image, runOptions, cmdOptions, clusterName
         int numOfSlowNodes
 
         private Builder() {
         }
 
-        Builder withAnsibleImage(String ansibleImage) {
-            this.ansibleImage = ansibleImage
-            return this
-        }
-
-        Builder withKeyVolume(String keyVolume) {
-            this.keyVolume = keyVolume
-            return this
-        }
-
-        Builder usingCluster(String clusterName) {
-            this.clusterName = clusterName
-            return this
-        }
-
-        Builder usingAnsiblePlaybook(String playbook) {
-            this.playbook = playbook
+        Builder withImage(String image) {
+            this.image = image
             return this
         }
 
@@ -79,8 +78,26 @@ class SlowNodeSetup {
             return this
         }
 
+        Builder runOptions(String runOptions) {
+            this.runOptions = runOptions
+            return this
+        }
+
+        Builder cmdOptions(String cmdOptions) {
+            this.cmdOptions = cmdOptions
+            return this
+        }
+
+        Builder usingCluster(String clusterName) {
+            this.clusterName = clusterName
+            return this
+        }
+
         SlowNodeSetup build() {
-            return new SlowNodeSetup(this.ansibleImage, this.keyVolume, this.clusterName, this.playbook, this.numOfSlowNodes)
+            Objects.requireNonNull(this.image)
+            Objects.requireNonNull(this.clusterName)
+            Objects.requireNonNull(this.numOfSlowNodes)
+            return new SlowNodeSetup(this.image, this.runOptions, this.cmdOptions, this.numOfSlowNodes, this.clusterName)
         }
     }
 

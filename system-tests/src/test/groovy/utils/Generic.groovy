@@ -51,4 +51,20 @@ class Generic {
         def result = ("${name}" =~ /.*:(.*)]/).findAll()
         return result.size() > 0 ? (result[0][1]).replace(' ','') : name
     }
+
+    static String [] getAWSCredentials(){
+        String AWS_SECRET_ACCESS_KEY = System.getenv("AWS_SECRET_ACCESS_KEY")
+        String AWS_ACCESS_KEY_ID = System.getenv("AWS_ACCESS_KEY_ID")
+
+        return ["AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}" as String,
+                "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}" as String
+        ]
+
+    }
+
+    static String getDomainName(String url)  {
+        URI uri = new URI(url);
+        String domain = uri.getHost();
+        return domain.startsWith("www.") ? domain.substring(4) : domain;
+    }
 }

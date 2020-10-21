@@ -1,0 +1,3 @@
+# treat these files as binaries, which means git won't mess with the CRLF. Needed for windows.
+*.sh binary
+gradlew binary
