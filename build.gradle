@@ -49,7 +49,7 @@ subprojects {
 }
 
 dependencies {
-    compile 'com.radixdlt:radixdlt-java:1.0-beta.16'
+    compile 'com.radixdlt:radixdlt-java:rc~1.0-beta.17-SNAPSHOT'
     compile group: 'io.reactivex.rxjava2', name: 'rxjava', version: '2.1.14'
     compile group: 'com.google.guava', name: 'guava', version: '27.1-jre'
     testCompile group: 'info.cukes', name: 'cucumber-java', version: '1.2.5'

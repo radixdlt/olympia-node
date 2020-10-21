@@ -21,7 +21,7 @@ import org.junit.Test;
 public class BootstrapTest {
 	@Test
 	public void when_bootstrap_with_down_node_finder__api_should_not_crash() throws InterruptedException {
-		NodeFinder nodeFinder = new NodeFinder("https://highgarden.radixdlt.com/bad-url", 443);
+		NodeFinder nodeFinder = new NodeFinder("https://notexist.radixdlt.com/bad-url", 443);
 		RadixApplicationAPI api = RadixApplicationAPI.create(new BootstrapConfig() {
 			@Override
 			public RadixUniverseConfig getConfig() {
