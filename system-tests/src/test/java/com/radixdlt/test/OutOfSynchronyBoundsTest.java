@@ -36,7 +36,6 @@ public class OutOfSynchronyBoundsTest {
 
 	private static final Logger logger = LogManager.getLogger();
 
-	@RunWith(Parameterized.class)
 	@Category(Docker.class)
 	public static class DockerTests {
 
