@@ -34,7 +34,7 @@ public class GetVerticesErrorResponseMessageSerializeTest extends SerializeMessa
 		LedgerHeader ledgerHeader = LedgerHeader.genesis(HashUtils.zero256(), null);
 		VerifiedVertex verifiedVertex = new VerifiedVertex(UnverifiedVertex.createGenesis(ledgerHeader), HashUtils.zero256());
 		QuorumCertificate qc = QuorumCertificate.ofGenesis(verifiedVertex, ledgerHeader);
-		HighQC syncInfo = HighQC.from(qc, qc);
-		return new GetVerticesErrorResponseMessage(12345, syncInfo);
+		HighQC highQC = HighQC.from(qc, qc);
+		return new GetVerticesErrorResponseMessage(12345, highQC);
 	}
 }

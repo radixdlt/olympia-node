@@ -20,6 +20,7 @@ package com.radixdlt.consensus;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
@@ -34,7 +35,7 @@ public class VoteTest {
 	private Vote testObject;
 	private VoteData voteData;
 	private TimestampedVoteData timestampedVoteData;
-	private long payload;
+	private HighQC highQC;
 
 	@Before
 	public void setUp() {
@@ -42,8 +43,8 @@ public class VoteTest {
 		this.voteData = new VoteData(BFTHeader.ofGenesisAncestor(mock(LedgerHeader.class)), parent, null);
 		this.timestampedVoteData = new TimestampedVoteData(this.voteData, 123456L);
 		this.author = mock(BFTNode.class);
-		this.payload = 123456L;
-		this.testObject = new Vote(author, timestampedVoteData, null, this.payload);
+		this.highQC = mock(HighQC.class);
+		this.testObject = new Vote(author, timestampedVoteData, new ECDSASignature(), highQC);
 	}
 
 	@Test
@@ -58,13 +59,17 @@ public class VoteTest {
 		assertEquals(this.testObject.getEpoch(), voteData.getProposed().getLedgerHeader().getEpoch());
 		assertEquals(this.voteData, this.testObject.getVoteData());
 		assertEquals(this.author, this.testObject.getAuthor());
-		assertEquals(this.payload, this.testObject.getPayload());
+		assertEquals(this.highQC, this.testObject.highQC());
 	}
-
 
 	@Test
 	public void testToString() {
-		assertThat(this.testObject.toString()).isNotNull();
+		assertThat(this.testObject.toString())
+			.isNotNull()
+			.contains(Vote.class.getSimpleName())
+			.contains("epoch=0")
+			.contains("view=0")
+			.contains(this.author.toString());
 	}
 
 }

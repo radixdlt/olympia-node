@@ -31,12 +31,12 @@ import java.util.stream.IntStream;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 
 public class RandomChannelOrderResponsiveTest {
 
 	private void run(int numNodes, long viewsToRun) {
-		assertTrue(viewsToRun % numNodes == 0);
+		assertEquals(0, viewsToRun % numNodes);
 
 		final Random random = new Random(12345);
 
@@ -52,16 +52,18 @@ public class RandomChannelOrderResponsiveTest {
 			.map(counters -> counters.get(CounterType.BFT_PROPOSALS_MADE))
 			.collect(ImmutableList.toImmutableList());
 
-		assertThat(proposalsMade).allMatch(l -> l == viewsToRun / numNodes);
+		assertThat(proposalsMade)
+			.hasSize(numNodes)
+			.allMatch(l -> l == viewsToRun / numNodes);
 	}
 
 	@Test
 	public void when_run_4_correct_nodes_with_channel_order_random_and_timeouts_disabled__then_bft_should_be_responsive() {
-		run(4, 4 * 2500L);
+		run(4, 4 * 25000L);
 	}
 
 	@Test
 	public void when_run_100_correct_nodes_with_channel_order_random_and_timeouts_disabled__then_bft_should_be_responsive() {
-		run(100, 100 * 50L);
+		run(100, 100 * 5L);
 	}
 }

@@ -63,6 +63,7 @@ public final class DeterministicTest {
 		ImmutableList<BFTNode> nodes,
 		MessageSelector messageSelector,
 		MessageMutator messageMutator,
+		long pacemakerTimeout,
 		Collection<Module> modules,
 		Module overrideModule
 	) {
@@ -70,6 +71,7 @@ public final class DeterministicTest {
 			nodes,
 			messageSelector,
 			messageMutator,
+			pacemakerTimeout,
 			modules,
 			overrideModule
 		);
@@ -84,6 +86,7 @@ public final class DeterministicTest {
 		private ImmutableList<BFTNode> nodes = ImmutableList.of(BFTNode.create(ECKeyPair.generateNew().getPublicKey()));
 		private MessageSelector messageSelector = MessageSelector.selectAndStopAfter(MessageSelector.firstSelector(), 30_000L);
 		private MessageMutator messageMutator = MessageMutator.nothing();
+		private long pacemakerTimeout = 1000L;
 		private EpochNodeWeightMapping epochNodeWeightMapping = null;
 		private View epochHighView = null;
 		private Module overrideModule = null;
@@ -143,6 +146,14 @@ public final class DeterministicTest {
 			return this;
 		}
 
+		public Builder pacemakerTimeout(long pacemakerTimeout) {
+			if (pacemakerTimeout <= 0) {
+				throw new IllegalArgumentException("Pacemaker timeout must be positive: " + pacemakerTimeout);
+			}
+			this.pacemakerTimeout = pacemakerTimeout;
+			return this;
+		}
+
 		public DeterministicTest build() {
 			LongFunction<BFTValidatorSet> validatorSetMapping = epochNodeWeightMapping == null
 				? epoch -> completeEqualWeightValidatorSet(this.nodes)
@@ -164,7 +175,7 @@ public final class DeterministicTest {
 				modules.add(new MockedLedgerModule());
 
 				// TODO: remove the following
-				modules.add(new EpochsConsensusModule(1, 2.0, 0));
+				modules.add(new EpochsConsensusModule(this.pacemakerTimeout, 2.0, 0));
 				modules.add(new EpochsLedgerUpdateModule());
 			} else {
 				// TODO: adapter from LongFunction<BFTValidatorSet> to Function<Long, BFTValidatorSet> shouldn't be needed
@@ -176,7 +187,7 @@ public final class DeterministicTest {
 					}
 				});
 				modules.add(new LedgerModule());
-				modules.add(new EpochsConsensusModule(1, 2.0, 0));
+				modules.add(new EpochsConsensusModule(this.pacemakerTimeout, 2.0, 0));
 				modules.add(new EpochsLedgerUpdateModule());
 				modules.add(new LedgerCommandGeneratorModule());
 				modules.add(new MockedSyncServiceModule());
@@ -186,6 +197,7 @@ public final class DeterministicTest {
 				this.nodes,
 				this.messageSelector,
 				this.messageMutator,
+				this.pacemakerTimeout,
 				modules.build(),
 				overrideModule
 			);

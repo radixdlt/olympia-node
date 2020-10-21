@@ -118,16 +118,16 @@ public class MessageCentralValidatorSyncTest {
 	public void when_send_error_response__then_message_central_will_send_error_response() {
 		Peer peer = mock(Peer.class);
 		QuorumCertificate qc = mock(QuorumCertificate.class);
-		HighQC syncInfo = mock(HighQC.class);
-		when(syncInfo.highestQC()).thenReturn(qc);
-		when(syncInfo.highestCommittedQC()).thenReturn(qc);
+		HighQC highQC = mock(HighQC.class);
+		when(highQC.highestQC()).thenReturn(qc);
+		when(highQC.highestCommittedQC()).thenReturn(qc);
 		BFTNode node = mock(BFTNode.class);
 		ECPublicKey ecPublicKey = mock(ECPublicKey.class);
 		when(ecPublicKey.euid()).thenReturn(mock(EUID.class));
 		when(node.getKey()).thenReturn(ecPublicKey);
 		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
 
-		sync.sendGetVerticesErrorResponse(node, syncInfo);
+		sync.sendGetVerticesErrorResponse(node, highQC);
 
 		verify(messageCentral, times(1)).send(eq(peer), any(GetVerticesErrorResponseMessage.class));
 	}

@@ -86,6 +86,7 @@ public class RadixEngineStateComputerTest {
 
 	private Module getExternalModule() {
 		return new AbstractModule() {
+			@Override
 			public void configure() {
 				bind(Serialization.class).toInstance(serialization);
 				bind(BFTValidatorSet.class).toInstance(validatorSet);

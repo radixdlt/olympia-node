@@ -64,20 +64,20 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 
 	private static class SyncState {
 		private final HashCode localSyncId;
-		private final HighQC syncInfo;
+		private final HighQC highQC;
 		private final BFTHeader committedHeader;
 		private final VerifiedLedgerHeaderAndProof committedProof;
 		private final BFTNode author;
 		private SyncStage syncStage;
 		private final LinkedList<VerifiedVertex> fetched = new LinkedList<>();
 
-		SyncState(HighQC syncInfo, BFTNode author) {
-			this.localSyncId = syncInfo.highestQC().getProposed().getVertexId();
-			Pair<BFTHeader, VerifiedLedgerHeaderAndProof> pair = syncInfo.highestCommittedQC().getCommittedAndLedgerStateProof()
+		SyncState(HighQC highQC, BFTNode author) {
+			this.localSyncId = highQC.highestQC().getProposed().getVertexId();
+			Pair<BFTHeader, VerifiedLedgerHeaderAndProof> pair = highQC.highestCommittedQC().getCommittedAndLedgerStateProof()
 				.orElseThrow(() -> new IllegalStateException("committedQC must have a commit"));
 			this.committedHeader = pair.getFirst();
 			this.committedProof = pair.getSecond();
-			this.syncInfo = syncInfo;
+			this.highQC = highQC;
 			this.author = author;
 			this.syncStage = SyncStage.PREPARING;
 		}
@@ -87,12 +87,12 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 		}
 
 		HighQC highQC() {
-			return this.syncInfo;
+			return this.highQC;
 		}
 
 		@Override
 		public String toString() {
-			return String.format("%s{%s syncState=%s}", this.getClass().getSimpleName(), syncInfo, syncStage);
+			return String.format("%s{%s syncState=%s}", this.getClass().getSimpleName(), highQC, syncStage);
 		}
 	}
 
@@ -143,13 +143,14 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 	public SyncResult syncToQC(HighQC highQC, @Nullable BFTNode author) {
 		final QuorumCertificate qc = highQC.highestQC();
 		final HashCode vertexId = qc.getProposed().getVertexId();
+
 		if (qc.getProposed().getView().compareTo(vertexStore.getRoot().getView()) < 0) {
 			return SyncResult.INVALID;
 		}
 
 		if (vertexStore.addQC(qc)) {
 			// TODO: check if already sent highest
-			this.pacemaker.processQC(vertexStore.syncInfo());
+			this.pacemaker.processQC(vertexStore.highQC());
 			return SyncResult.SYNCED;
 		}
 
@@ -278,7 +279,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 			// TODO: combine
 			for (VerifiedVertex v: syncState.fetched) {
 				if (!vertexStore.addQC(v.getQC())) {
-					log.info("GET_VERTICES failed: {}", syncState.syncInfo);
+					log.info("GET_VERTICES failed: {}", syncState.highQC);
 					return;
 				}
 
@@ -287,7 +288,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 
 			// Finish it off
 			this.syncing.remove(syncState.localSyncId);
-			this.syncToQC(syncState.syncInfo, syncState.author);
+			this.syncToQC(syncState.highQC, syncState.author);
 		} else {
 			log.info("SYNC_VERTICES: Sending further GetVerticesRequest for {} fetched={} root={}",
 				syncState.highQC(), syncState.fetched.size(), vertexStore.getRoot());
@@ -303,7 +304,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 		log.info("SYNC_VERTICES: Received GetVerticesErrorResponse {} ", response);
 
 		// error response indicates that the node has moved on from last sync so try and sync to a new sync
-		this.syncToQC(response.syncInfo(), response.getSender());
+		this.syncToQC(response.highQC(), response.getSender());
 	}
 
 	@Override

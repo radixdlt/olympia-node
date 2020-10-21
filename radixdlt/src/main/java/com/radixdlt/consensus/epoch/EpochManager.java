@@ -27,11 +27,11 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.sync.EmptyBFTSyncResponseProcessor;
-import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.BFTSyncResponseProcessor;
 import com.radixdlt.consensus.bft.BFTUpdate;
@@ -104,7 +104,7 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdatePro
 
 	public interface EpochInfoSender {
 		/**
-		 * Signify that the bft node is on a new view
+		 * Signify that the bft node is starting a new view
 		 * @param epochView the epoch and view the bft node has changed to
 		 */
 		void sendCurrentView(EpochView epochView);
@@ -234,7 +234,7 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdatePro
 				epochInfoSender.sendTimeoutProcessed(timeout);
 			}
 		};
-		final Pacemaker pacemaker = pacemakerFactory.create(timeoutSender, infoSender, proposerElection);
+		final Pacemaker pacemaker = pacemakerFactory.create(validatorSet, vertexStore, proposerElection, timeoutSender, infoSender);
 		final BFTSync bftSync = bftSyncFactory.create(vertexStore, pacemaker);
 
 		this.syncBFTResponseProcessor = bftSync;
@@ -365,8 +365,8 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdatePro
 	}
 
 	private void processConsensusEventInternal(ConsensusEvent consensusEvent) {
-		if (consensusEvent instanceof NewView) {
-			bftEventProcessor.processNewView((NewView) consensusEvent);
+		if (consensusEvent instanceof ViewTimeout) {
+			bftEventProcessor.processViewTimeout((ViewTimeout) consensusEvent);
 		} else if (consensusEvent instanceof Proposal) {
 			bftEventProcessor.processProposal((Proposal) consensusEvent);
 		} else if (consensusEvent instanceof Vote) {

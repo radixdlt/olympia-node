@@ -15,26 +15,22 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.liveness;
 
-import com.radixdlt.consensus.bft.View;
+import java.util.Set;
+
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.bft.BFTNode;
 
 /**
- * A consensus event which requires syncing to be effectively
- * processed
+ * Broadcaster of proposal messages.
  */
-public interface RequiresSyncConsensusEvent extends ConsensusEvent {
-
+public interface ProposalBroadcaster {
 	/**
-	 * Retrieves the {@link HighQC} associated with the event.
+	 * Send a proposal to the specified validators.
 	 *
-	 * @return {@linke SyncInfo} associated with event
+	 * @param proposal the proposal message to send
+	 * @param validators the validators to send the message to
 	 */
-	HighQC syncInfo();
-
-	/**
-	 * Get the view the consensus event is meant for
-	 * @return view of consensus event
-	 */
-	View getView();
+	void broadcastProposal(Proposal proposal, Set<BFTNode> validators);
 }

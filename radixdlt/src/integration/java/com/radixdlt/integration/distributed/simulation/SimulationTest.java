@@ -540,7 +540,7 @@ public class SimulationTest {
 		return new Builder();
 	}
 
-	private Observable<Pair<String, Optional<TestInvariantError>>> runChecks(RunningNetwork runningNetwork, java.time.Duration duration) {
+	private Observable<Pair<String, Optional<TestInvariantError>>> runChecks(RunningNetwork runningNetwork, Duration duration) {
 		List<Pair<String, Observable<Pair<String, TestInvariantError>>>> assertions = this.checks.keySet().stream()
 			.map(name -> {
 				TestInvariant check = this.checks.get(name);

@@ -28,6 +28,7 @@ import com.google.common.hash.HashCode;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.utils.Pair;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -73,15 +74,7 @@ public final class VertexStore {
 		VertexStoreEventSender vertexStoreEventSender,
 		SystemCounters counters
 	) {
-		this(
-			rootVertex,
-			rootQC,
-			Collections.emptyList(),
-			ledger,
-			bftUpdateSender,
-			vertexStoreEventSender,
-			counters
-		);
+		this(rootVertex, rootQC, Collections.emptyList(), ledger, bftUpdateSender, vertexStoreEventSender, counters);
 	}
 
 	public VertexStore(
@@ -266,7 +259,7 @@ public final class VertexStore {
 	 *
 	 * @return the highest QCs
 	 */
-	public HighQC syncInfo() {
+	public HighQC highQC() {
 		return HighQC.from(this.highestQC, this.highestCommittedQC);
 	}
 

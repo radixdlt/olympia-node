@@ -17,7 +17,7 @@
 
 package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_sync;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
@@ -37,7 +37,6 @@ import java.util.LongSummaryStatistics;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
 /**
@@ -50,7 +49,7 @@ public class ByzantineSyncTest {
 
 	public ByzantineSyncTest() {
 		this.bftTestBuilder	= SimulationTest.builder()
-			.numNodes(4)
+			.numNodes(5)
 			.networkModules(
 				NetworkOrdering.inOrder(),
 				NetworkLatencies.random(10, 200),
@@ -80,15 +79,15 @@ public class ByzantineSyncTest {
 		SimulationTest simulationTest = bftTestBuilder
 			.build();
 		TestResults results = simulationTest.run();
-		assertThat(results.getCheckResults()).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+		assertThat(results.getCheckResults()).allSatisfy((name, err) -> assertThat(err).isEmpty());
 
 		LongSummaryStatistics statistics = results.getNetwork().getSystemCounters().values().stream()
 			.map(s -> s.get(CounterType.SYNC_PROCESSED))
 			.mapToLong(l -> l)
 			.summaryStatistics();
 
-		logger.info(statistics);
-		AssertionsForClassTypes.assertThat(statistics.getSum()).isGreaterThan(0L);
+		logger.info("{}", statistics);
+		assertThat(statistics.getSum()).isGreaterThan(0L);
 	}
 
 	@Test
@@ -97,12 +96,13 @@ public class ByzantineSyncTest {
 			.overrideWithIncorrectModule(new IncorrectAlwaysAcceptingAccumulatorVerifierModule())
 			.build();
 		TestResults results = simulationTest.run();
-		assertThat(results.getCheckResults()).hasEntrySatisfying("ledgerInOrder", error -> assertThat(error).isPresent());
+
 		LongSummaryStatistics statistics = results.getNetwork().getSystemCounters().values().stream()
 			.map(s -> s.get(CounterType.SYNC_PROCESSED))
 			.mapToLong(l -> l)
 			.summaryStatistics();
 
-		logger.info(statistics);
+		logger.info("{}", statistics);
+		assertThat(results.getCheckResults()).hasEntrySatisfying("ledgerInOrder", error -> assertThat(error).isPresent());
 	}
 }

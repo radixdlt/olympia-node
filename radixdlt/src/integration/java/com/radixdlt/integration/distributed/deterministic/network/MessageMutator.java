@@ -36,7 +36,7 @@ public interface MessageMutator {
 	 * @param queue the queue to me mutated
 	 * @return {@code true} if the message was processed, {@code false} otherwise.
 	 */
-	boolean mutate(MessageRank rank, ControlledMessage message, MessageQueue queue);
+	boolean mutate(ControlledMessage message, MessageQueue queue);
 
 	/**
 	 * Chains this mutator with another.  If this mutator does not
@@ -47,7 +47,7 @@ public interface MessageMutator {
 	 * @return This mutator chained with the specified mutator
 	 */
 	default MessageMutator andThen(MessageMutator next) {
-		return (rank, message, queue) -> mutate(rank, message, queue) || next.mutate(rank, message, queue);
+		return (message, queue) -> mutate(message, queue) || next.mutate(message, queue);
 	}
 
 	/**
@@ -58,7 +58,7 @@ public interface MessageMutator {
 	 * @return A {@code MessageMutator} that does nothing.
 	 */
 	static MessageMutator nothing() {
-		return (rank, message, queue) -> false;
+		return (message, queue) -> false;
 	}
 
 	/**
@@ -66,7 +66,7 @@ public interface MessageMutator {
 	 * @return A {@code MessageMutator} that drops {@code LocalTimeout} messages.
 	 */
 	static MessageMutator dropTimeouts() {
-		return (rank, message, queue) -> message.message() instanceof LocalTimeout;
+		return (message, queue) -> message.message() instanceof LocalTimeout;
 	}
 
 }

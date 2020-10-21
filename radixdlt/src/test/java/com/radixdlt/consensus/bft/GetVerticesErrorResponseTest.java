@@ -26,20 +26,20 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class GetVerticesErrorResponseTest {
-	private HighQC syncInfo;
+	private HighQC highQC;
 	private GetVerticesErrorResponse response;
 	private BFTNode node;
 
 	@Before
 	public void setUp() {
-		this.syncInfo = mock(HighQC.class);
+		this.highQC = mock(HighQC.class);
 		this.node = mock(BFTNode.class);
-		this.response = new GetVerticesErrorResponse(this.node, this.syncInfo);
+		this.response = new GetVerticesErrorResponse(this.node, this.highQC);
 	}
 
 	@Test
 	public void testGetters() {
-		assertThat(this.response.syncInfo()).isEqualTo(this.syncInfo);
+		assertThat(this.response.highQC()).isEqualTo(this.highQC);
 		assertThat(this.response.getSender()).isEqualTo(this.node);
 	}
 

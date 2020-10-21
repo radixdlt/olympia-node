@@ -28,9 +28,10 @@ import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
-import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
+import com.radixdlt.consensus.liveness.ProceedToViewSender;
+import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.messaging.MessageCentral;
@@ -65,7 +66,8 @@ public class NetworkModuleTest {
 			SyncEpochsRPCRx.class,
 			SyncVerticesRequestSender.class,
 			SyncVerticesRPCRx.class,
-			BFTEventSender.class,
+			ProposalBroadcaster.class,
+			ProceedToViewSender.class,
 			BFTEventsRx.class
 		);
 

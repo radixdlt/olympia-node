@@ -18,15 +18,16 @@
 package com.radixdlt.integration.distributed.deterministic.tests.consensus;
 
 import java.util.List;
-import java.util.Random;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.integration.distributed.deterministic.DeterministicTest;
 import com.radixdlt.integration.distributed.deterministic.configuration.EpochNodeWeightMapping;
+import com.radixdlt.integration.distributed.deterministic.network.MessageMutator;
 import com.radixdlt.integration.distributed.deterministic.network.MessageSelector;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.utils.UInt256;
@@ -36,11 +37,11 @@ import static org.assertj.core.api.Assertions.*;
 public class ProposerLoadBalancedTest {
 
 	private ImmutableList<Long> run(int numNodes, long numViews, EpochNodeWeightMapping mapping) {
-		final Random random = new Random(123456);
 
 		DeterministicTest test = DeterministicTest.builder()
 			.numNodes(numNodes)
-			.messageSelector(MessageSelector.selectAndStopAt(MessageSelector.randomSelector(random), View.of(numViews)))
+			.messageSelector(MessageSelector.selectAndStopAt(MessageSelector.firstSelector(), View.of(numViews)))
+			.messageMutator(mutator())
 			.epochNodeWeightMapping(mapping)
 			.build()
 			.run();
@@ -51,10 +52,22 @@ public class ProposerLoadBalancedTest {
 			.collect(ImmutableList.toImmutableList());
 	}
 
+	private MessageMutator mutator() {
+		return (message, queue) -> {
+			if (message.message() instanceof LocalTimeout) {
+				// Discard timeouts
+				return true;
+			}
+			// Process others in submission order
+			queue.add(message.withArrivalTime(0L));
+			return true;
+		};
+	}
+
 	@Test
 	public void when_run_2_nodes_with_very_different_weights__then_proposals_should_match() {
 		final int numNodes = 2;
-		final long proposalChunk = 200_000L; // Actually proposalChunk + 1 proposals run
+		final long proposalChunk = 20_000L; // Actually proposalChunk + 1 proposals run
 		ImmutableList<Long> proposals = this.run(
 			numNodes,
 			proposalChunk + 1,
@@ -72,7 +85,9 @@ public class ProposerLoadBalancedTest {
 			numNodes * proposalsPerNode,
 			EpochNodeWeightMapping.constant(numNodes, 1L)
 		);
-		assertThat(proposals).allMatch(l -> l == proposalsPerNode);
+		assertThat(proposals)
+			.hasSize(numNodes)
+			.allMatch(l -> l == proposalsPerNode);
 	}
 
 	@Test
@@ -84,7 +99,9 @@ public class ProposerLoadBalancedTest {
 			numNodes * proposalsPerNode,
 			EpochNodeWeightMapping.constant(100, 1L)
 		);
-		assertThat(proposals).allMatch(l -> l == proposalsPerNode);
+		assertThat(proposals)
+			.hasSize(numNodes)
+			.allMatch(l -> l == proposalsPerNode);
 	}
 
 	@Test

@@ -37,7 +37,6 @@ public class ProposalTest {
 	private ECDSASignature signature;
 	private QuorumCertificate qc;
 	private QuorumCertificate commitQc;
-	private long payload;
 
 	@Before
 	public void setUp() {
@@ -46,18 +45,16 @@ public class ProposalTest {
 		this.signature = mock(ECDSASignature.class);
 		this.commitQc = mock(QuorumCertificate.class);
 		this.qc = mock(QuorumCertificate.class);
-		this.payload = 123456L;
 
 		when(this.vertex.getQC()).thenReturn(qc);
 
-		this.proposal = new Proposal(vertex, commitQc, node, signature, this.payload);
+		this.proposal = new Proposal(vertex, commitQc, node, signature);
 	}
 
 	@Test
 	public void testGetters() {
 		assertThat(this.proposal.getVertex()).isEqualTo(vertex);
-		assertThat(this.proposal.syncInfo()).isEqualTo(HighQC.from(this.qc, this.commitQc));
-		assertThat(this.proposal.getPayload()).isEqualTo(payload);
+		assertThat(this.proposal.highQC()).isEqualTo(HighQC.from(this.qc, this.commitQc));
 	}
 
 	@Test

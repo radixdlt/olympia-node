@@ -26,23 +26,23 @@ import java.util.Objects;
  */
 public final class GetVerticesErrorResponse {
 	private final BFTNode sender;
-	private final HighQC syncInfo;
+	private final HighQC highQC;
 
-	public GetVerticesErrorResponse(BFTNode sender, HighQC syncInfo) {
+	public GetVerticesErrorResponse(BFTNode sender, HighQC highQC) {
 		this.sender = Objects.requireNonNull(sender);
-		this.syncInfo = Objects.requireNonNull(syncInfo);
+		this.highQC = Objects.requireNonNull(highQC);
 	}
 
 	public BFTNode getSender() {
 		return this.sender;
 	}
 
-	public HighQC syncInfo() {
-		return this.syncInfo;
+	public HighQC highQC() {
+		return this.highQC;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{%s->%s}", this.getClass().getSimpleName(), this.sender, this.syncInfo);
+		return String.format("%s{%s->%s}", this.getClass().getSimpleName(), this.sender, this.highQC);
 	}
 }
