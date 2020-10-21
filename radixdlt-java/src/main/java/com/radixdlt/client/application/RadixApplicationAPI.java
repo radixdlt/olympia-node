@@ -37,7 +37,6 @@ import com.radixdlt.client.application.translate.AtomToExecutedActionsMapper;
 import com.radixdlt.client.application.translate.FeeProcessor;
 import com.radixdlt.client.application.translate.InvalidAddressMagicException;
 import com.radixdlt.client.application.translate.ParticleReducer;
-import com.radixdlt.client.application.translate.PowFeeProcessor;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
@@ -99,7 +98,6 @@ import com.radixdlt.client.core.network.actions.SubmitAtomCompleteAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
-import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
 import io.reactivex.Completable;
 import io.reactivex.Maybe;
 import io.reactivex.Observable;
@@ -1239,11 +1237,6 @@ public class RadixApplicationAPI {
 			return this;
 		}
 
-		public RadixApplicationAPIBuilder powFeeProcessor() {
-			this.feeProcessorBuilder = radixUniverse -> new PowFeeProcessor(Atom::getHash, radixUniverse.getMagic(), new ProofOfWorkBuilder());
-			return this;
-		}
-
 		public RadixApplicationAPIBuilder identity(RadixIdentity identity) {
 			this.identity = identity;
 			return this;
@@ -1386,12 +1379,15 @@ public class RadixApplicationAPI {
 
 		/**
 		 * Creates an atom composed of all of the currently staged particles.
+		 * If the specified fee is non-null, a fee of that amount will be included in
+		 * the built atom, otherwise the fee will be computed based on the atom properties.
 		 *
+		 * @param fee the fee to include in the atom, or {@code null} if the fee should be computed
 		 * @return an unsigned atom
 		 */
-		public Atom buildAtom() {
+		public Atom buildAtomWithFee(@Nullable BigDecimal fee) {
 			Atom feelessAtom = Atom.create(universe.getAtomStore().getStaged(this.uuid), this.metadata);
-			feeProcessor.process(this::actionProcessor, this::addAtomMetadata, getAddress(), feelessAtom);
+			feeProcessor.process(this::actionProcessor, getAddress(), feelessAtom, Optional.ofNullable(fee));
 
 			List<ParticleGroup> particleGroups = universe.getAtomStore().getStagedAndClear(this.uuid);
 			ImmutableMap<String, String> metadataCopy = ImmutableMap.copyOf(this.metadata);
@@ -1401,14 +1397,50 @@ public class RadixApplicationAPI {
 		}
 
 		/**
+		 * Creates an atom composed of all of the currently staged particles.
+		 *
+		 * @return an unsigned atom
+		 */
+		public Atom buildAtom() {
+			return buildAtomWithFee(null);
+		}
+
+		/**
+		 * Commit the transaction onto the ledger.
+		 * If the specified fee is non-null, a fee of that amount will be included in
+		 * the built atom, otherwise the fee will be computed based on the atom properties.
+		 *
+		 * @param fee the fee to include in the atom, or {@code null} if the fee should be computed
+		 * @return the results of committing
+		 */
+		public Result commitAndPushWithFee(@Nullable BigDecimal fee) {
+			final Atom unsignedAtom = buildAtomWithFee(fee);
+			final Single<Atom> atom = identity.addSignature(unsignedAtom);
+			return createAtomSubmission(atom, false, null).connect();
+		}
+
+		/**
 		 * Commit the transaction onto the ledger
 		 *
 		 * @return the results of committing
 		 */
 		public Result commitAndPush() {
-			final Atom unsignedAtom = buildAtom();
+			return commitAndPushWithFee(null);
+		}
+
+		/**
+		 * Commit the transaction onto the ledger via the specified node.
+		 * If the specified fee is non-null, a fee of that amount will be included in
+		 * the built atom, otherwise the fee will be computed based on the atom properties.
+		 *
+		 * @param originNode the originNode to push to
+		 * @param fee the fee to include in the atom, or {@code null} if the fee should be computed
+		 * @return the results of committing
+		 */
+		public Result commitAndPushWithFee(RadixNode originNode, @Nullable BigDecimal fee) {
+			final Atom unsignedAtom = buildAtomWithFee(fee);
 			final Single<Atom> atom = identity.addSignature(unsignedAtom);
-			return createAtomSubmission(atom, false, null).connect();
+			return createAtomSubmission(atom, false, originNode).connect();
 		}
 
 		/**
@@ -1418,9 +1450,7 @@ public class RadixApplicationAPI {
 		 * @return the results of committing
 		 */
 		public Result commitAndPush(RadixNode originNode) {
-			final Atom unsignedAtom = buildAtom();
-			final Single<Atom> atom = identity.addSignature(unsignedAtom);
-			return createAtomSubmission(atom, false, originNode).connect();
+			return commitAndPushWithFee(originNode, null);
 		}
 
 		/**

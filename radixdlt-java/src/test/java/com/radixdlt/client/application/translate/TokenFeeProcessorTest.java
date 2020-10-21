@@ -22,6 +22,8 @@
 
 package com.radixdlt.client.application.translate;
 
+import java.util.Optional;
+
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -33,7 +35,6 @@ import com.radixdlt.utils.UInt256;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -45,15 +46,13 @@ public class TokenFeeProcessorTest {
 		FeeTable feeTable = FeeTable.from(UInt256.TEN, ImmutableList.of());
 		RadixAddress address = mock(RadixAddress.class);
 		ActionProcessor actionProcessor = mock(ActionProcessor.class);
-		MetadataProcessor metadataProcessor = mock(MetadataProcessor.class);
 
 		TokenFeeProcessor tfp = new TokenFeeProcessor(tokenRri, feeTable);
 
 		Atom atom = Atom.create(ImmutableList.of());
 
-		tfp.process(actionProcessor, metadataProcessor, address, atom);
+		tfp.process(actionProcessor, address, atom, Optional.empty());
 
 		verify(actionProcessor, times(1)).process(any());
-		verify(metadataProcessor, never()).process(any());
 	}
 }
