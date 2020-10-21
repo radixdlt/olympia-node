@@ -23,13 +23,13 @@
 package com.radixdlt.client.application.identity;
 
 import java.util.Optional;
+import com.google.common.hash.HashCode;
 
 import io.reactivex.observers.TestObserver;
 import org.junit.Test;
 import com.radixdlt.identifiers.EUID;
 
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECDSASignature;
 
@@ -46,12 +46,12 @@ public class LocalRadixIdentityTest {
 		ECKeyPair keyPair = mock(ECKeyPair.class);
 		ECDSASignature ecSignature = mock(ECDSASignature.class);
 		EUID euid = mock(EUID.class);
-		when(keyPair.sign(any(Hash.class))).thenReturn(ecSignature);
+		when(keyPair.sign(any(HashCode.class))).thenReturn(ecSignature);
 		when(keyPair.euid()).thenReturn(euid);
 
 		Atom signedAtom = mock(Atom.class);
 		when(signedAtom.getSignature(any())).thenReturn(Optional.of(ecSignature));
-		Hash hash = mock(Hash.class);
+		HashCode hash = mock(HashCode.class);
 		Atom atom = mock(Atom.class);
 		when(atom.addSignature(any(), any())).thenReturn(signedAtom);
 		when(atom.getHash()).thenReturn(hash);

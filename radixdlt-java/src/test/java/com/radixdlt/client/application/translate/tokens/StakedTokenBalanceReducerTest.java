@@ -23,7 +23,7 @@
 package com.radixdlt.client.application.translate.tokens;
 
 import com.radixdlt.client.atommodel.tokens.StakedTokensParticle;
-import com.radixdlt.crypto.Hash;
+import com.google.common.hash.HashCode;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.utils.UInt256;
 import org.junit.Test;
@@ -39,7 +39,7 @@ public class StakedTokenBalanceReducerTest {
 	@Test
 	public void testSimpleBalance() {
 		StakedTokensParticle minted = mock(StakedTokensParticle.class);
-		Hash hash = mock(Hash.class);
+		HashCode hash = mock(HashCode.class);
 		when(minted.getAmount()).thenReturn(UInt256.TEN);
 		when(minted.getGranularity()).thenReturn(UInt256.ONE);
 		when(minted.getHash()).thenReturn(hash);
