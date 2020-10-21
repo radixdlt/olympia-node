@@ -58,7 +58,6 @@ public class AtomsSubscribeEpicTest {
 		AtomsService atomsService = mock(AtomsService.class);
 		ObservedAtomEvents observedAtomEvents = mock(ObservedAtomEvents.class);
 		Atom atom = mock(Atom.class);
-		when(atom.getAID()).thenReturn(AID.ZERO);
 		AtomEventDto atomEventDto = mock(AtomEventDto.class);
 		when(atomEventDto.getAtom()).thenReturn(atom);
 		when(observedAtomEvents.atomEvents()).thenReturn(Stream.of(atomEventDto));

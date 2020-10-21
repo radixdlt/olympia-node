@@ -17,10 +17,10 @@
 
 package com.radixdlt.consensus;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.SecurityCritical;
 import com.radixdlt.SecurityCritical.SecurityKind;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.Hash;
 
 /**
  * Signs a hash.
@@ -42,7 +42,7 @@ public interface HashSigner {
 	 * @param hash The hash to sign
 	 * @return The {@link ECDSASignature}
 	 */
-	default ECDSASignature sign(Hash hash) {
-		return sign(hash.toByteArray());
+	default ECDSASignature sign(HashCode hash) {
+		return sign(hash.asBytes());
 	}
 }

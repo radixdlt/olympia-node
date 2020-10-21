@@ -24,9 +24,11 @@ import com.radixdlt.atommodel.AtomAlreadySignedException;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware2.ClientAtom;
@@ -45,6 +47,8 @@ import org.apache.logging.log4j.Logger;
  */
 public final class RadixEngineValidatorRegistrator implements CommandGenerator {
 	private static final Logger log = LogManager.getLogger();
+
+	private final Hasher hasher = Sha256Hasher.withDefaultSerialization();
 
 	private final List<ECKeyPair> nodes;
 	private final PublishSubject<BFTNode> validatorRegistrationSubmissions;
@@ -75,8 +79,8 @@ public final class RadixEngineValidatorRegistrator implements CommandGenerator {
 		atom.addParticleGroup(particleGroup);
 		final Command command;
 		try {
-			atom.sign(keyPair);
-			ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom);
+			atom.sign(keyPair, hasher);
+			ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom, hasher);
 			final byte[] payload = DefaultSerialization.getInstance().toDson(clientAtom, Output.ALL);
 			command = new Command(payload);
 		} catch (AtomAlreadySignedException e) {

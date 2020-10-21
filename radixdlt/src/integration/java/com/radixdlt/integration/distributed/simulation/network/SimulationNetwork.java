@@ -22,20 +22,20 @@ import com.google.inject.Inject;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
+import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.bft.SignedNewViewToLeaderSender.BFTNewViewSender;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
+import com.radixdlt.consensus.liveness.ProceedToViewSender;
+import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
-import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.Vote;
@@ -136,7 +136,7 @@ public class SimulationNetwork {
 	}
 
 	public class SimulatedNetworkImpl implements
-		BFTEventSender, BFTNewViewSender, SyncVerticesRequestSender, SyncVerticesResponseSender, SyncEpochsRPCSender, BFTEventsRx,
+		ProposalBroadcaster, ProceedToViewSender, SyncVerticesRequestSender, SyncVerticesResponseSender, SyncEpochsRPCSender, BFTEventsRx,
 		SyncVerticesRPCRx, SyncEpochsRPCRx, StateSyncNetwork {
 		private final Observable<Object> myMessages;
 		private final BFTNode thisNode;
@@ -164,8 +164,10 @@ public class SimulationNetwork {
 		}
 
 		@Override
-		public void sendNewView(NewView newView, BFTNode newViewLeader) {
-			receivedMessages.onNext(MessageInTransit.newMessage(newView, thisNode, newViewLeader));
+		public void broadcastViewTimeout(ViewTimeout viewTimeout, Set<BFTNode> nodes) {
+			for (BFTNode reader : nodes) {
+				receivedMessages.onNext(MessageInTransit.newMessage(viewTimeout, thisNode, reader));
+			}
 		}
 
 		@Override

@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.LedgerUpdate;
@@ -38,11 +39,13 @@ class InMemoryCommittedReader implements LedgerUpdateSender, CommittedReader {
 
 	private final TreeMap<Long, VerifiedCommandsAndProof> commandsAndProof = new TreeMap<>();
 	private final LedgerAccumulatorVerifier accumulatorVerifier;
+	private final Hasher hasher;
 	private final TreeMap<Long, VerifiedLedgerHeaderAndProof> epochProofs = new TreeMap<>();
 
 	@Inject
-	InMemoryCommittedReader(LedgerAccumulatorVerifier accumulatorVerifier) {
+	InMemoryCommittedReader(LedgerAccumulatorVerifier accumulatorVerifier, Hasher hasher) {
 		this.accumulatorVerifier = Objects.requireNonNull(accumulatorVerifier);
+		this.hasher = Objects.requireNonNull(hasher);
 	}
 
 	@Override
@@ -62,8 +65,12 @@ class InMemoryCommittedReader implements LedgerUpdateSender, CommittedReader {
 		Entry<Long, VerifiedCommandsAndProof> entry = commandsAndProof.higherEntry(stateVersion);
 		if (entry != null) {
 			ImmutableList<Command> cmds = accumulatorVerifier
-				.verifyAndGetExtension(start.getLedgerHeader().getAccumulatorState(), entry.getValue().getCommands(),
-					entry.getValue().getHeader().getAccumulatorState()).orElseThrow(() -> new RuntimeException());
+				.verifyAndGetExtension(
+					start.getLedgerHeader().getAccumulatorState(),
+					entry.getValue().getCommands(),
+					hasher::hash,
+					entry.getValue().getHeader().getAccumulatorState()
+				).orElseThrow(() -> new RuntimeException());
 
 			return new VerifiedCommandsAndProof(cmds, entry.getValue().getHeader());
 		}

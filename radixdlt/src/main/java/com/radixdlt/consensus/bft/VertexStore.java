@@ -24,10 +24,11 @@ import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.crypto.Hash;
+import com.google.common.hash.HashCode;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.utils.Pair;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -57,8 +58,8 @@ public final class VertexStore {
 	private final BFTUpdateSender bftUpdateSender;
 	private final Ledger ledger;
 	private final SystemCounters counters;
-	private final Map<Hash, PreparedVertex> vertices = new HashMap<>();
-	private final Map<Hash, Integer> vertexNumChildren = new HashMap<>();
+	private final Map<HashCode, PreparedVertex> vertices = new HashMap<>();
+	private final Map<HashCode, Integer> vertexNumChildren = new HashMap<>();
 
 	// These should never be null
 	private VerifiedVertex rootVertex;
@@ -73,15 +74,7 @@ public final class VertexStore {
 		VertexStoreEventSender vertexStoreEventSender,
 		SystemCounters counters
 	) {
-		this(
-			rootVertex,
-			rootQC,
-			Collections.emptyList(),
-			ledger,
-			bftUpdateSender,
-			vertexStoreEventSender,
-			counters
-		);
+		this(rootVertex, rootQC, Collections.emptyList(), ledger, bftUpdateSender, vertexStoreEventSender, counters);
 	}
 
 	public VertexStore(
@@ -132,14 +125,20 @@ public final class VertexStore {
 
 		for (VerifiedVertex vertex : vertices) {
 			if (!addQC(vertex.getQC())) {
-				throw new IllegalStateException(String.format("Missing qc=%s", vertex.getQC()));
+				throw new IllegalStateException(String.format("Missing qc=%s vertices=%s", vertex.getQC(), vertices));
 			}
 
-			insertVertex(vertex);
+			// An insertion may have failed due to the ledger being ahead of vertex store
+			// in this case, just stop inserting vertices for now
+			// TODO: fix once more persistent prepare branches are implemented
+			Optional<BFTHeader> maybeInserted = insertVertex(vertex);
+			if (maybeInserted.isEmpty()) {
+				break;
+			}
 		}
 	}
 
-	public boolean containsVertex(Hash vertexId) {
+	public boolean containsVertex(HashCode vertexId) {
 		return vertices.containsKey(vertexId) || rootVertex.getId().equals(vertexId);
 	}
 
@@ -227,7 +226,7 @@ public final class VertexStore {
 			return;
 		}
 
-		final Hash vertexId = header.getVertexId();
+		final HashCode vertexId = header.getVertexId();
 		final VerifiedVertex tipVertex = vertices.get(vertexId).getVertex();
 		if (tipVertex == null) {
 			throw new IllegalStateException("Committing vertex not in store: " + header);
@@ -249,7 +248,7 @@ public final class VertexStore {
 		updateVertexStoreSize();
 	}
 
-	public LinkedList<PreparedVertex> getPathFromRoot(Hash vertexId) {
+	public LinkedList<PreparedVertex> getPathFromRoot(HashCode vertexId) {
 		final LinkedList<PreparedVertex> path = new LinkedList<>();
 
 		PreparedVertex vertex = vertices.get(vertexId);
@@ -266,7 +265,7 @@ public final class VertexStore {
 	 *
 	 * @return the highest QCs
 	 */
-	public HighQC syncInfo() {
+	public HighQC highQC() {
 		return HighQC.from(this.highestQC, this.highestCommittedQC);
 	}
 
@@ -281,8 +280,8 @@ public final class VertexStore {
 	 * @param count the number of vertices to retrieve
 	 * @return the list of vertices if all found, otherwise an empty list
 	 */
-	public Optional<ImmutableList<VerifiedVertex>> getVertices(Hash vertexId, int count) {
-		Hash nextId = vertexId;
+	public Optional<ImmutableList<VerifiedVertex>> getVertices(HashCode vertexId, int count) {
+		HashCode nextId = vertexId;
 		ImmutableList.Builder<VerifiedVertex> builder = ImmutableList.builderWithExpectedSize(count);
 		for (int i = 0; i < count; i++) {
 			final VerifiedVertex verifiedVertex;

@@ -26,29 +26,47 @@ import java.util.Objects;
 import org.radix.network.messaging.Message;
 
 @SerializerId2("message.consensus.vertices_error_response")
-public class GetVerticesErrorResponseMessage extends Message {
-	@JsonProperty("sync_info")
+public final class GetVerticesErrorResponseMessage extends Message {
+	@JsonProperty("high_qc")
 	@DsonOutput(Output.ALL)
-	private HighQC syncInfo;
+	private HighQC highQC;
 
 	GetVerticesErrorResponseMessage() {
 		// Serializer only
 		super(0);
-		this.syncInfo = null;
+		this.highQC = null;
 	}
 
-	GetVerticesErrorResponseMessage(int magic, HighQC syncInfo) {
+	GetVerticesErrorResponseMessage(int magic, HighQC highQC) {
 		super(magic);
-		this.syncInfo = Objects.requireNonNull(syncInfo);
+		this.highQC = Objects.requireNonNull(highQC);
 	}
 
-	public HighQC syncInfo() {
-		return this.syncInfo;
+	public HighQC highQC() {
+		return this.highQC;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{%s}", getClass().getSimpleName(), this.syncInfo);
+		return String.format("%s{%s}", getClass().getSimpleName(), this.highQC);
 	}
 
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		GetVerticesErrorResponseMessage that = (GetVerticesErrorResponseMessage) o;
+		return Objects.equals(highQC, that.highQC)
+				&& Objects.equals(getTimestamp(), that.getTimestamp())
+				&& Objects.equals(getMagic(), that.getMagic());
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(highQC, getTimestamp(), getMagic());
+	}
 }

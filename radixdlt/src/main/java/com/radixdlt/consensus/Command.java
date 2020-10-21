@@ -19,9 +19,7 @@ package com.radixdlt.consensus;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.Suppliers;
-import com.radixdlt.crypto.Hash;
-import com.radixdlt.ledger.HasHash;
+import com.google.common.hash.HashCode;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -30,7 +28,6 @@ import com.radixdlt.serialization.SerializerId2;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import javax.annotation.concurrent.Immutable;
 
 /**
@@ -38,7 +35,7 @@ import javax.annotation.concurrent.Immutable;
  */
 @Immutable
 @SerializerId2("consensus.command")
-public final class Command implements HasHash {
+public final class Command {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
@@ -46,8 +43,6 @@ public final class Command implements HasHash {
 	@JsonProperty("payload")
 	@DsonOutput(Output.ALL)
 	private final byte[] payload;
-
-	private final transient Supplier<Hash> cachedHash = Suppliers.memoize(this::doGetHash);
 
 	@JsonCreator
 	public Command(@JsonProperty("payload") byte[] payload) {
@@ -60,20 +55,6 @@ public final class Command implements HasHash {
 
 	public byte[] getPayload() {
 		return payload;
-	}
-
-	private Hash doGetHash() {
-		try {
-			return Hash.of(payload);
-		} catch (Exception e) {
-			throw new IllegalStateException("Error generating hash: " + e, e);
-		}
-	}
-
-	// TODO: Remove this and move to hasher
-	@Override
-	public Hash hash() {
-		return this.cachedHash.get();
 	}
 
 	@Override
@@ -93,6 +74,9 @@ public final class Command implements HasHash {
 
 	@Override
 	public String toString() {
-		return String.format("%s{hash=%s}", this.getClass().getSimpleName(), this.hash());
+		String payloadHashStr = HashCode.fromBytes(payload).toString();
+		return String.format("%s{payload=%s...}",
+				this.getClass().getSimpleName(),
+				payloadHashStr.substring(0, Math.min(20, payloadHashStr.length())));
 	}
 }

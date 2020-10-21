@@ -17,9 +17,9 @@
 
 package com.radixdlt.integration.distributed.simulation.tests.consensus;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.integration.distributed.MockedBFTConfigurationModule;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
@@ -46,7 +46,7 @@ public class OneByzantineGenesisTest {
 	public void given_2_correct_bfts_and_1_byzantine__then_should_never_make_progress() {
 		SimulationTest bftTest = bftTestBuilder
 			.numNodes(3)
-			.addSingleByzantineModule(new MockedBFTConfigurationModule(Hash.random()))
+			.addSingleByzantineModule(new MockedBFTConfigurationModule(HashUtils.random256()))
 			.checkConsensusNoneCommitted("noneCommitted")
 			.build();
 
@@ -69,12 +69,12 @@ public class OneByzantineGenesisTest {
 	public void given_3_correct_bfts_and_1_byzantine__then_should_make_progress() {
 		SimulationTest bftTest = bftTestBuilder
 			.numNodes(4)
-			.addSingleByzantineModule(new MockedBFTConfigurationModule(Hash.random()))
+			.addSingleByzantineModule(new MockedBFTConfigurationModule(HashUtils.random256()))
 			.checkConsensusLiveness("liveness", 5, TimeUnit.SECONDS)
 			.build();
 
 		TestResults results = bftTest.run();
-		assertThat(results.getCheckResults()).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+		assertThat(results.getCheckResults()).allSatisfy((name, err) -> assertThat(err).isEmpty());
 	}
 
 }

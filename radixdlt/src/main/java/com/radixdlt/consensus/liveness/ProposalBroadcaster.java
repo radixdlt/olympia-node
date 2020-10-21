@@ -15,10 +15,22 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.ledger;
+package com.radixdlt.consensus.liveness;
 
-import com.radixdlt.crypto.Hash;
+import java.util.Set;
 
-public interface HasHash {
-	Hash hash();
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.bft.BFTNode;
+
+/**
+ * Broadcaster of proposal messages.
+ */
+public interface ProposalBroadcaster {
+	/**
+	 * Send a proposal to the specified validators.
+	 *
+	 * @param proposal the proposal message to send
+	 * @param validators the validators to send the message to
+	 */
+	void broadcastProposal(Proposal proposal, Set<BFTNode> validators);
 }

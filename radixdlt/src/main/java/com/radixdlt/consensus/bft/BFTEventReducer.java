@@ -18,36 +18,14 @@
 package com.radixdlt.consensus.bft;
 
 import com.radixdlt.consensus.BFTEventProcessor;
-import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.Hasher;
-import com.radixdlt.consensus.NewView;
-import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.UnverifiedVertex;
-import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
-import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.consensus.safety.SafetyRules;
-import com.radixdlt.consensus.safety.SafetyViolationException;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.crypto.Hash;
-import com.radixdlt.network.TimeSupplier;
-import com.radixdlt.utils.RTTStatistics;
 
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.message.FormattedMessage;
-
 import java.util.Objects;
 
 /**
@@ -59,178 +37,56 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 	private static final Logger log = LogManager.getLogger();
 
-	/**
-	 * Sender of messages to other nodes in the BFT
-	 */
-	public interface BFTEventSender {
-
-		/**
-		 * Broadcast a proposal message to all validators in the network
-		 * @param proposal the proposal to broadcast
-		 * @param nodes the nodes to broadcast to
-		 */
-		void broadcastProposal(Proposal proposal, Set<BFTNode> nodes);
-
-		/**
-		 * Send a vote message to a given validator
-		 * @param vote the vote message
-		 * @param leader the validator the message gets sent to
-		 */
-		void sendVote(Vote vote, BFTNode leader);
-	}
-
-	private final BFTNode self;
 	private final VertexStore vertexStore;
-	private final BFTSyncer bftSyncer;
-	private final PendingVotes pendingVotes;
-	private final NextCommandGenerator nextCommandGenerator;
-	private final BFTEventSender sender;
+    private final BFTSyncer bftSyncer;
 	private final Pacemaker pacemaker;
-	private final ProposerElection proposerElection;
-	private final SafetyRules safetyRules;
-	private final BFTValidatorSet validatorSet;
-	private final SystemCounters counters;
-	private final TimeSupplier timeSupplier;
-	private final RTTStatistics rttStatistics = new RTTStatistics();
-	private final Hasher hasher;
 
 	public BFTEventReducer(
-		BFTNode self,
-		NextCommandGenerator nextCommandGenerator,
-		BFTEventSender sender,
-		SafetyRules safetyRules,
 		Pacemaker pacemaker,
 		VertexStore vertexStore,
-		BFTSyncer bftSyncer,
-		PendingVotes pendingVotes,
-		ProposerElection proposerElection,
-		BFTValidatorSet validatorSet,
-		SystemCounters counters,
-		TimeSupplier timeSupplier,
-		Hasher hasher
+		BFTSyncer bftSyncer
 	) {
-		this.self = Objects.requireNonNull(self);
-		this.nextCommandGenerator = Objects.requireNonNull(nextCommandGenerator);
-		this.sender = Objects.requireNonNull(sender);
-		this.safetyRules = Objects.requireNonNull(safetyRules);
 		this.pacemaker = Objects.requireNonNull(pacemaker);
 		this.vertexStore = Objects.requireNonNull(vertexStore);
 		this.bftSyncer = Objects.requireNonNull(bftSyncer);
-		this.pendingVotes = Objects.requireNonNull(pendingVotes);
-		this.proposerElection = Objects.requireNonNull(proposerElection);
-		this.validatorSet = Objects.requireNonNull(validatorSet);
-		this.counters = Objects.requireNonNull(counters);
-		this.timeSupplier = Objects.requireNonNull(timeSupplier);
-		this.hasher = Objects.requireNonNull(hasher);
 	}
 
 	@Override
 	public void processBFTUpdate(BFTUpdate update) {
+		log.trace("BFTUpdate: Processing {}", update);
 	}
 
 	@Override
 	public void processVote(Vote vote) {
-		updateRttStatistics(vote);
-		log.trace("VOTE: Processing {}", vote);
+		log.trace("Vote: Processing {}", vote);
 		// accumulate votes into QCs in store
-		this.pendingVotes.insertVote(vote, this.validatorSet).ifPresent(qc -> {
-			log.trace("VOTE: Formed QC: {}", qc);
-			HighQC syncInfo = HighQC.from(qc, vertexStore.syncInfo().highestCommittedQC());
-			bftSyncer.syncToQC(syncInfo, vote.getAuthor());
+		this.pacemaker.processVote(vote).ifPresent(qc -> {
+			HighQC highQC = HighQC.from(qc, this.vertexStore.highQC().highestCommittedQC());
+			// If we are not yet synced, we rely on the syncer to process the QC once received
+			this.bftSyncer.syncToQC(highQC, vote.getAuthor());
 		});
 	}
 
 	@Override
-	public void processNewView(NewView newView) {
-		log.trace("NEW_VIEW: Processing {}", () -> newView);
-		this.pacemaker.processNewView(newView, validatorSet).ifPresent(view -> {
-			// Hotstuff's Event-Driven OnBeat
-			final HighQC syncInfo = vertexStore.syncInfo();
-			final QuorumCertificate highestQC = syncInfo.highestQC();
-			final QuorumCertificate highestCommitted = syncInfo.highestCommittedQC();
-
-			final Command nextCommand;
-
-			// Propose null atom in the case that we are at the end of the epoch
-			// TODO: Remove isEndOfEpoch knowledge from consensus
-			if (highestQC.getProposed().getLedgerHeader().isEndOfEpoch()) {
-				nextCommand = null;
-			} else {
-				final List<PreparedVertex> preparedVertices = vertexStore.getPathFromRoot(highestQC.getProposed().getVertexId());
-				final Set<Hash> prepared = preparedVertices.stream()
-					.flatMap(PreparedVertex::getCommands)
-					.filter(Objects::nonNull)
-					.map(Command::hash)
-					.collect(Collectors.toSet());
-
-				nextCommand = nextCommandGenerator.generateNextCommand(view, prepared);
-			}
-
-			final UnverifiedVertex proposedVertex = UnverifiedVertex.createVertex(highestQC, view, nextCommand);
-			final Proposal proposal = safetyRules.signProposal(proposedVertex, highestCommitted, System.nanoTime());
-			log.trace("Broadcasting PROPOSAL: {}", () -> proposal);
-			Set<BFTNode> nodes = validatorSet.getValidators().stream().map(BFTValidator::getNode).collect(Collectors.toSet());
-			this.counters.increment(CounterType.BFT_PROPOSALS_MADE);
-			this.sender.broadcastProposal(proposal, nodes);
-		});
+	public void processViewTimeout(ViewTimeout viewTimeout) {
+		log.trace("ViewTimeout: Processing {}", viewTimeout);
+		this.pacemaker.processViewTimeout(viewTimeout);
 	}
 
 	@Override
 	public void processProposal(Proposal proposal) {
-		log.trace("PROPOSAL: Processing {}", () -> proposal);
-		final VerifiedVertex proposedVertex = new VerifiedVertex(proposal.getVertex(), hasher.hash(proposal.getVertex()));
-		final View proposedVertexView = proposedVertex.getView();
-		final View updatedView = this.pacemaker.getCurrentView();
-		if (proposedVertexView.compareTo(updatedView) != 0) {
-			log.trace("PROPOSAL: Ignoring view {} Current is: {}", () -> proposedVertexView, () -> updatedView);
-			return;
-		}
-
-		final BFTNode currentLeader = this.proposerElection.getProposer(updatedView);
-		final Optional<BFTHeader> maybeHeader = vertexStore.insertVertex(proposedVertex);
-		// The header may not be present if the ledger is ahead of consensus
-		maybeHeader.ifPresent(header -> {
-			try {
-				final Vote vote = safetyRules.voteFor(proposedVertex, header, this.timeSupplier.currentTime(), proposal.getPayload());
-				log.trace("PROPOSAL: Sending VOTE to {}: {}", () -> currentLeader, () -> vote);
-				sender.sendVote(vote, currentLeader);
-			} catch (SafetyViolationException e) {
-				log.error(() -> new FormattedMessage("PROPOSAL: Rejected {}", proposedVertex), e);
-			}
-		});
-
-		// If not currently leader or next leader, Proceed to next view
-		if (!Objects.equals(currentLeader, this.self)) {
-			final BFTNode nextLeader = this.proposerElection.getProposer(updatedView.next());
-			if (!Objects.equals(nextLeader, this.self)) {
-				this.pacemaker.processNextView(updatedView);
-			}
-		}
+		log.trace("Proposal: Processing {}",  proposal);
+		this.pacemaker.processProposal(proposal);
 	}
 
 	@Override
 	public void processLocalTimeout(View view) {
-		log.trace("LOCAL_TIMEOUT: Processing {}", () -> view);
+		log.trace("LocalTimeout: Processing {}", view);
 		this.pacemaker.processLocalTimeout(view);
 	}
 
 	@Override
 	public void start() {
-		this.pacemaker.processQC(this.vertexStore.syncInfo());
-	}
-
-	private void updateRttStatistics(Vote vote) {
-		long durationNanos = System.nanoTime() - vote.getPayload();
-		if (durationNanos >= 0L) {
-			double durationMicros = durationNanos / 1e3;
-			this.rttStatistics.update(durationMicros);
-			EnumMap<CounterType, Long> values = new EnumMap<>(CounterType.class);
-			values.put(CounterType.BFT_VOTE_RTT_MIN,   Math.round(this.rttStatistics.min()));
-			values.put(CounterType.BFT_VOTE_RTT_MAX,   Math.round(this.rttStatistics.max()));
-			values.put(CounterType.BFT_VOTE_RTT_MEAN,  Math.round(this.rttStatistics.mean()));
-			values.put(CounterType.BFT_VOTE_RTT_SIGMA, Math.round(this.rttStatistics.sigma()));
-			values.put(CounterType.BFT_VOTE_RTT_COUNT, this.rttStatistics.count());
-			this.counters.setAll(values);
-		}
+		this.pacemaker.processQC(this.vertexStore.highQC());
 	}
 }

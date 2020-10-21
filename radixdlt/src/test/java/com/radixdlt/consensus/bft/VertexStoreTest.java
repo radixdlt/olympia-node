@@ -28,23 +28,24 @@ import static org.mockito.Mockito.verify;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.DefaultSerialization;
-import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.Hasher;
-import com.radixdlt.consensus.QuorumCertificate;
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.Ledger;
-import com.radixdlt.consensus.TimestampedECDSASignatures;
-import com.radixdlt.consensus.UnverifiedVertex;
+import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.BFTHeader;
+import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.VoteData;
+import com.radixdlt.consensus.UnverifiedVertex;
+import com.radixdlt.consensus.Sha256Hasher;
+import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
-import com.radixdlt.crypto.Hash;
-import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.AccumulatorState;
-import com.radixdlt.utils.DsonSHA256Hasher;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -60,17 +61,17 @@ public class VertexStoreTest {
 	private VerifiedVertex genesisVertex;
 	private Supplier<VerifiedVertex> nextVertex;
 	private Function<Boolean, VerifiedVertex> nextSkippableVertex;
-	private Hash genesisHash;
+	private HashCode genesisHash;
 	private QuorumCertificate rootQC;
 	private VertexStore sut;
 	private Ledger ledger;
 	private VertexStoreEventSender vertexStoreEventSender;
 	private BFTUpdateSender bftUpdateSender;
 	private SystemCounters counters;
-	private Hasher hasher = new DsonSHA256Hasher(DefaultSerialization.getInstance());
+	private Hasher hasher = Sha256Hasher.withDefaultSerialization();
 
 	private static final LedgerHeader MOCKED_HEADER = LedgerHeader.create(
-		0, View.genesis(), new AccumulatorState(0, Hash.ZERO_HASH), 0
+		0, View.genesis(), new AccumulatorState(0, HashUtils.zero256()), 0
 	);
 
 	@Before
@@ -88,7 +89,7 @@ public class VertexStoreTest {
 		this.counters = new SystemCountersImpl();
 		this.bftUpdateSender = mock(BFTUpdateSender.class);
 
-		this.genesisHash = Hash.ZERO_HASH;
+		this.genesisHash = HashUtils.zero256();
 		this.genesisVertex = new VerifiedVertex(UnverifiedVertex.createGenesis(MOCKED_HEADER), genesisHash);
 		this.rootQC = QuorumCertificate.ofGenesis(genesisVertex, MOCKED_HEADER);
 		this.sut = new VertexStore(
@@ -124,7 +125,7 @@ public class VertexStoreTest {
 			}
 
 			UnverifiedVertex rawVertex = UnverifiedVertex.createVertex(qc, view, new Command(new byte[] {}));
-			Hash hash = hasher.hash(rawVertex);
+			HashCode hash = hasher.hash(rawVertex);
 			VerifiedVertex vertex = new VerifiedVertex(rawVertex, hash);
 			lastParentHeader.set(new BFTHeader(view, hash, MOCKED_HEADER));
 			lastGrandParentHeader.set(parentHeader);
@@ -138,7 +139,7 @@ public class VertexStoreTest {
 
 	@Test
 	public void when_vertex_store_created_with_incorrect_roots__then_exception_is_thrown() {
-		BFTHeader nextHeader = new BFTHeader(View.of(1), mock(Hash.class), mock(LedgerHeader.class));
+		BFTHeader nextHeader = new BFTHeader(View.of(1), mock(HashCode.class), mock(LedgerHeader.class));
 		BFTHeader genesisHeader = new BFTHeader(View.of(0), genesisHash, mock(LedgerHeader.class));
 		VoteData voteData = new VoteData(nextHeader, genesisHeader, null);
 		QuorumCertificate badRootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
@@ -182,8 +183,8 @@ public class VertexStoreTest {
 		sut.addQC(qc);
 
 		// Assert
-		assertThat(sut.syncInfo().highestQC()).isEqualTo(qc);
-		assertThat(sut.syncInfo().highestCommittedQC()).isEqualTo(rootQC);
+		assertThat(sut.highQC().highestQC()).isEqualTo(qc);
+		assertThat(sut.highQC().highestCommittedQC()).isEqualTo(rootQC);
 	}
 
 	@Test
@@ -200,8 +201,8 @@ public class VertexStoreTest {
 
 		// Assert
 		assertThat(success).isTrue();
-		assertThat(sut.syncInfo().highestQC()).isEqualTo(qc);
-		assertThat(sut.syncInfo().highestCommittedQC()).isEqualTo(qc);
+		assertThat(sut.highQC().highestQC()).isEqualTo(qc);
+		assertThat(sut.highQC().highestCommittedQC()).isEqualTo(qc);
 		assertThat(sut.getVertices(vertices.get(2).getId(), 3)).hasValue(ImmutableList.of(
 			vertices.get(2), vertices.get(1), vertices.get(0)
 		));

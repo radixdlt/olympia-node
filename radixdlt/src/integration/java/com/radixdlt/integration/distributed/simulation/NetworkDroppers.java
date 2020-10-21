@@ -21,7 +21,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.NewView;
+import com.radixdlt.consensus.ViewTimeout;
+import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
@@ -54,11 +55,11 @@ public final class NetworkDroppers {
 		};
 	}
 
-	public static Module randomNewViewsDropped(double drops) {
+	public static Module randomVotesAndViewTimeoutsDropped(double drops) {
 		return new AbstractModule() {
 			@ProvidesIntoSet
 			Predicate<MessageInTransit> dropper(Random random) {
-				return new MessageDropper(random, drops, NewView.class);
+				return new MessageDropper(random, drops, Vote.class, ViewTimeout.class);
 			}
 		};
 	}

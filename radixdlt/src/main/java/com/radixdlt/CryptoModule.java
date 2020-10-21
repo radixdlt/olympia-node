@@ -17,17 +17,20 @@
 
 package com.radixdlt;
 
+import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.Hasher;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.crypto.Hasher;
+import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.utils.DsonSHA256Hasher;
 
 /**
  * Module which maintains crypto primitives for consensus
@@ -36,16 +39,46 @@ public final class CryptoModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		// Configuration
-		bind(HashVerifier.class).toInstance(ECPublicKey::verify);
 		bind(Serialization.class).toProvider(DefaultSerialization::getInstance);
-		bind(Hasher.class).to(DsonSHA256Hasher.class);
+	}
+
+	@Provides
+	Hasher hasher(Serialization serialization, SystemCounters counters) {
+		return new Hasher() {
+			private Sha256Hasher hasher = new Sha256Hasher(serialization);
+
+			@Override
+			public HashCode hash(Object o) {
+				// Call hashBytes to ensure counters incremented
+				return this.hashBytes(serialization.toDson(o, Output.HASH));
+			}
+
+			@Override
+			public HashCode hashBytes(byte[] bytes) {
+				counters.add(CounterType.HASHED_BYTES, bytes.length);
+				return hasher.hashBytes(bytes);
+			}
+		};
+	}
+
+	@Provides
+	@Singleton
+	HashVerifier hashVerifier(SystemCounters counters) {
+		return (pubKey, hash, signature) -> {
+			counters.increment(CounterType.SIGNATURES_VERIFIED);
+			return pubKey.verify(hash, signature);
+		};
 	}
 
 	@Provides
 	@Singleton
 	HashSigner hashSigner(
-		@Named("self") ECKeyPair selfKey
+		@Named("self") ECKeyPair selfKey,
+		SystemCounters counters
 	) {
-		return selfKey::sign;
+		return hash -> {
+			counters.increment(CounterType.SIGNATURES_SIGNED);
+			return selfKey.sign(hash);
+		};
 	}
 }

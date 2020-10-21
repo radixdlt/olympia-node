@@ -17,22 +17,22 @@
 
 package com.radixdlt.consensus.sync;
 
-import com.radixdlt.crypto.Hash;
+import com.google.common.hash.HashCode;
 import java.util.Objects;
 
 /**
  * Parameters for a local get vertices request
  */
 public final class LocalGetVerticesRequest {
-	private final Hash vertexId;
+	private final HashCode vertexId;
 	private final int count;
 
-	public LocalGetVerticesRequest(Hash vertexId, int count) {
+	public LocalGetVerticesRequest(HashCode vertexId, int count) {
 		this.vertexId = Objects.requireNonNull(vertexId);
 		this.count = count;
 	}
 
-	public Hash getVertexId() {
+	public HashCode getVertexId() {
 		return vertexId;
 	}
 

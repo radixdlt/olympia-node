@@ -20,6 +20,7 @@ package com.radixdlt.integration.distributed;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
+import com.google.common.hash.HashCode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -31,10 +32,10 @@ import com.google.inject.name.Named;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.Hasher;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import java.math.BigInteger;
@@ -52,41 +53,46 @@ public class MockedCryptoModule extends AbstractModule {
 	}
 
 	@Provides
-	private HashVerifier hashVerifier() {
+	private HashVerifier hashVerifier(SystemCounters counters) {
 		return (pubKey, hash, sig) -> {
 			byte[] concat = new byte[64];
-			hash.copyTo(concat, 0);
+			System.arraycopy(hash.asBytes(), 0, concat, 0, hash.asBytes().length);
 			System.arraycopy(pubKey.getBytes(), 0, concat, 32, 32);
 			long hashCode = hashFunction.hashBytes(concat).asLong();
+			counters.increment(SystemCounters.CounterType.SIGNATURES_VERIFIED);
 			return sig.getR().longValue() == hashCode;
 		};
 	}
 
 	@Provides
-	private HashSigner hashSigner(@Named("self") BFTNode node) {
+	private HashSigner hashSigner(
+		@Named("self") BFTNode node,
+		SystemCounters counters
+	) {
 		return h -> {
 			byte[] concat = new byte[64];
 			System.arraycopy(h, 0, concat, 0, 32);
 			System.arraycopy(node.getKey().getBytes(), 0, concat, 32, 32);
 			long hashCode = hashFunction.hashBytes(concat).asLong();
+			counters.increment(SystemCounters.CounterType.SIGNATURES_SIGNED);
 			return new ECDSASignature(BigInteger.valueOf(hashCode), BigInteger.valueOf(hashCode));
 		};
 	}
 
 	@Provides
-	private Hasher hasher(Serialization serialization) {
+	private Hasher hasher(Serialization serialization, SystemCounters counters) {
 		AtomicBoolean running = new AtomicBoolean(false);
 		Hasher hasher = new Hasher() {
 			@Override
-			public Hash hash(Object o) {
+			public HashCode hash(Object o) {
 				byte[] dson = timeWhinge("Serialization", () -> serialization.toDson(o, Output.HASH));
 				return this.hashBytes(dson);
 			}
 
 			@Override
-			public Hash hashBytes(byte[] bytes) {
+			public HashCode hashBytes(byte[] bytes) {
 				byte[] hashCode = timeWhinge("Hashing", () -> hashFunction.hashBytes(bytes).asBytes());
-				return new Hash(hashCode, 0, 32);
+				return HashCode.fromBytes(hashCode);
 			}
 
 			private <T> T timeWhinge(String what, Supplier<T> exec) {

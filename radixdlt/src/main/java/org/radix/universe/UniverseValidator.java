@@ -17,12 +17,14 @@
 
 package org.radix.universe;
 
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.universe.Universe;
 
 public final class UniverseValidator {
-	public static void validate(Universe universe) {
+
+	public static void validate(Universe universe, Hasher hasher) {
 		// Check signature
-		if (!universe.getCreator().verify(universe.getHash(), universe.getSignature())) {
+		if (!universe.getCreator().verify(hasher.hash(universe), universe.getSignature())) {
 			throw new IllegalStateException("Invalid universe signature");
 		}
 	}

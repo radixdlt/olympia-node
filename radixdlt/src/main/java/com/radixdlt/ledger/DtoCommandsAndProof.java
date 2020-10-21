@@ -35,7 +35,7 @@ import javax.annotation.concurrent.Immutable;
 // TODO: Add signature and sender
 @Immutable
 @SerializerId2("ledger.commands_and_proof")
-public class DtoCommandsAndProof {
+public final class DtoCommandsAndProof {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
@@ -78,5 +78,24 @@ public class DtoCommandsAndProof {
 	@Override
 	public String toString() {
 		return String.format("%s{cmds=%s head=%s tail=%s}", this.getClass().getSimpleName(), commands, head, tail);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		DtoCommandsAndProof that = (DtoCommandsAndProof) o;
+		return Objects.equals(commands, that.commands)
+				&& Objects.equals(head, that.head)
+				&& Objects.equals(tail, that.tail);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(commands, head, tail);
 	}
 }

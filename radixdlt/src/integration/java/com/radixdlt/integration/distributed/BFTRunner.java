@@ -20,9 +20,9 @@ package com.radixdlt.integration.distributed;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.BFTEventsRx;
-import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
+import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTUpdate;
@@ -91,8 +91,8 @@ public class BFTRunner implements ModuleRunner {
 			networkRx.bftEvents()
 				.observeOn(singleThreadScheduler)
 				.doOnNext(e -> {
-					if (e instanceof NewView) {
-						bftEventProcessor.processNewView((NewView) e);
+					if (e instanceof ViewTimeout) {
+						bftEventProcessor.processViewTimeout((ViewTimeout) e);
 					} else if (e instanceof Proposal) {
 						bftEventProcessor.processProposal((Proposal) e);
 					} else if (e instanceof Vote) {

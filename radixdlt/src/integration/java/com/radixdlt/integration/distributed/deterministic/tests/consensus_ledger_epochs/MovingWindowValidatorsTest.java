@@ -19,6 +19,7 @@ package com.radixdlt.integration.distributed.deterministic.tests.consensus_ledge
 
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
+import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.integration.distributed.deterministic.DeterministicTest;
@@ -31,6 +32,11 @@ import java.util.stream.IntStream;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+
+import com.radixdlt.integration.distributed.deterministic.network.ChannelId;
+import com.radixdlt.integration.distributed.deterministic.network.ControlledMessage;
+import com.radixdlt.integration.distributed.deterministic.network.MessageMutator;
+
 import static com.radixdlt.integration.distributed.deterministic.network.MessageSelector.*;
 
 public class MovingWindowValidatorsTest {
@@ -44,6 +50,7 @@ public class MovingWindowValidatorsTest {
 		DeterministicTest bftTest = DeterministicTest.builder()
 			.numNodes(numNodes)
 			.epochHighView(highView)
+			.messageMutator(mutator())
 			.messageSelector(selectAndStopAt(firstSelector(), EpochView.of(maxEpoch, highView)))
 			.epochNodeIndexesMapping(windowedEpochToNodesMapper(windowSize, numNodes))
 			.build()
@@ -57,6 +64,28 @@ public class MovingWindowValidatorsTest {
 		assertThat(testCounters)
 			.extracting(sc -> sc.get(CounterType.BFT_PROCESSED))
 			.allMatch(between(maxCount - 3, maxCount));
+	}
+
+	private MessageMutator mutator() {
+		return (message, queue) -> {
+			if (message.message() instanceof LocalTimeout) {
+				// Discard
+				return true;
+			}
+			// Process others in arrival order, local first.
+			// Need to make sure EpochsLedgerUpdate is processed before consensus messages for the new epoch
+			if (nonLocalMessage(message)) {
+				queue.add(message.withArrivalTime(0));
+			} else {
+				queue.addBefore(message.withArrivalTime(0), this::nonLocalMessage);
+			}
+			return true;
+		};
+	}
+
+	private boolean nonLocalMessage(ControlledMessage msg) {
+		ChannelId channelId = msg.channelId();
+		return channelId.senderIndex() != channelId.receiverIndex();
 	}
 
 	@Test

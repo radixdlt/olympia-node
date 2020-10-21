@@ -17,10 +17,14 @@
 
 package com.radixdlt.middleware2.network;
 
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import nl.jqno.equalsverifier.Warning;
 import org.junit.Test;
 
-import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.Vote;
 
 import static org.hamcrest.CoreMatchers.*;
@@ -30,14 +34,14 @@ import static org.mockito.Mockito.*;
 public class ConsensusEventMessageTest {
 
 	@Test
-	public void sensibleToStringNewView() {
-		NewView m = mock(NewView.class);
+	public void sensibleToStringViewTimeout() {
+		ViewTimeout m = mock(ViewTimeout.class);
 		ConsensusEventMessage msg1 = new ConsensusEventMessage(0, m);
 		String s1 = msg1.toString();
 		assertThat(s1, containsString(ConsensusEventMessage.class.getSimpleName()));
 		assertThat(s1, containsString(m.toString()));
 
-		assertTrue(msg1.getConsensusMessage() instanceof NewView);
+		assertTrue(msg1.getConsensusMessage() instanceof ViewTimeout);
 	}
 
 	@Test
@@ -76,4 +80,12 @@ public class ConsensusEventMessageTest {
 		assertNotNull(msg1.getConsensusMessage());
 	}
 
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(ConsensusEventMessage.class)
+				.withIgnoredFields("instance")
+				.suppress(Warning.NONFINAL_FIELDS)
+				.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+				.verify();
+	}
 }

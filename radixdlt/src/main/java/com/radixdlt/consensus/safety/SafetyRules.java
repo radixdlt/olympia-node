@@ -17,20 +17,24 @@
 
 package com.radixdlt.consensus.safety;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.Hasher;
+import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.HighQC;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimestampedVoteData;
 import com.radixdlt.consensus.UnverifiedVertex;
+import com.radixdlt.consensus.ViewTimeout;
+import com.radixdlt.consensus.ViewTimeoutData;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.safety.SafetyState.Builder;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.Hash;
 
 import java.util.Objects;
 
@@ -62,10 +66,10 @@ public final class SafetyRules {
 	 * @param highestCommittedQC highest known committed QC
 	 * @return signed proposal object for consensus
 	 */
-	public Proposal signProposal(UnverifiedVertex proposedVertex, QuorumCertificate highestCommittedQC, long payload) {
-		final Hash vertexHash = this.hasher.hash(proposedVertex);
+	public Proposal signProposal(UnverifiedVertex proposedVertex, QuorumCertificate highestCommittedQC) {
+		final HashCode vertexHash = this.hasher.hash(proposedVertex);
 		ECDSASignature signature = this.signer.sign(vertexHash);
-		return new Proposal(proposedVertex, highestCommittedQC, this.self, signature, payload);
+		return new Proposal(proposedVertex, highestCommittedQC, this.self, signature);
 	}
 
 	private static VoteData constructVoteData(VerifiedVertex proposedVertex, BFTHeader proposedHeader) {
@@ -87,15 +91,26 @@ public final class SafetyRules {
 	}
 
 	/**
+	 * Sign a view timeout for the specified view.
+	 */
+	public ViewTimeout viewTimeout(View view, HighQC highQC) {
+		long epoch = highQC.highestQC().getProposed().getLedgerHeader().getEpoch();
+		ViewTimeoutData viewTimeoutData = ViewTimeoutData.from(this.self, epoch, view);
+		ECDSASignature signature = this.signer.sign(this.hasher.hash(viewTimeoutData));
+		return ViewTimeout.from(viewTimeoutData, highQC, signature);
+	}
+
+	/**
 	 * Vote for a proposed vertex while ensuring that safety invariants are upheld.
 	 *
 	 * @param proposedVertex The proposed vertex
 	 * @param proposedHeader results of vertex execution
 	 * @param timestamp timestamp to use for the vote in milliseconds since epoch
+	 * @param highQC our current sync state
 	 * @return A vote result containing the vote and any committed vertices
 	 * @throws SafetyViolationException In case the vertex would violate a safety invariant
 	 */
-	public Vote voteFor(VerifiedVertex proposedVertex, BFTHeader proposedHeader, long timestamp, long payload) throws SafetyViolationException {
+	public Vote voteFor(VerifiedVertex proposedVertex, BFTHeader proposedHeader, long timestamp, HighQC highQC) throws SafetyViolationException {
 		// ensure vertex does not violate earlier votes
 		if (proposedVertex.getView().compareTo(this.state.getLastVotedView()) <= 0) {
 			throw new SafetyViolationException(proposedVertex, this.state, String.format(
@@ -117,12 +132,12 @@ public final class SafetyRules {
 		final VoteData voteData = constructVoteData(proposedVertex, proposedHeader);
 		final TimestampedVoteData timestampedVoteData = new TimestampedVoteData(voteData, timestamp);
 
-		final Hash voteHash = hasher.hash(timestampedVoteData);
+		final HashCode voteHash = hasher.hash(timestampedVoteData);
 
 		this.state = safetyStateBuilder.build();
 
 		// TODO make signing more robust by including author in signed hash
 		ECDSASignature signature = this.signer.sign(voteHash);
-		return new Vote(this.self, timestampedVoteData, signature, payload);
+		return new Vote(this.self, timestampedVoteData, signature, highQC);
 	}
 }

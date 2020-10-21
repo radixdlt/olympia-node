@@ -34,14 +34,11 @@ public interface SystemCounters {
 		BFT_TIMEOUT("bft.timeout"),
 		BFT_VERTEX_STORE_SIZE("bft.vertex_store_size"),
 		BFT_VERTEX_STORE_FORKS("bft.vertex_store_forks"),
-		BFT_VOTE_RTT_COUNT("bft.vote_rtt.count"),
-		BFT_VOTE_RTT_MAX("bft.vote_rtt.max"),
-		BFT_VOTE_RTT_MEAN("bft.vote_rtt.mean"),
-		BFT_VOTE_RTT_MIN("bft.vote_rtt.min"),
-		BFT_VOTE_RTT_SIGMA("bft.vote_rtt.sigma"),
 		BFT_SYNC_REQUESTS_SENT("bft.sync.requests_sent"),
 
 		EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS("epoch_manager.queued_consensus_events"),
+
+		HASHED_BYTES("hashed.bytes"),
 
 		LEDGER_PROCESSED("ledger.processed"),
 		LEDGER_STATE_VERSION("ledger.state_version"),

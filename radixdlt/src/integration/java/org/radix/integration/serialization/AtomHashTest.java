@@ -18,6 +18,8 @@
 package org.radix.integration.serialization;
 
 import com.radixdlt.atommodel.Atom;
+import com.radixdlt.consensus.Sha256Hasher;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.universe.Universe;
 import org.junit.Test;
 import com.radixdlt.identifiers.RadixAddress;
@@ -30,6 +32,9 @@ import org.radix.integration.RadixTest;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class AtomHashTest extends RadixTest {
+
+	private final Hasher hasher = Sha256Hasher.withDefaultSerialization();
+
 	@Test
 	public void testThatParticleSpinAffectsAtomHash() {
 		Universe universe = getUniverse();
@@ -40,6 +45,6 @@ public class AtomHashTest extends RadixTest {
 		Atom atom2 = new Atom();
 		atom2.addParticleGroupWith(p, Spin.DOWN);
 
-		assertThat(atom1.getHash()).isNotEqualTo(atom2.getHash());
+		assertThat(hasher.hash(atom1)).isNotEqualTo(hasher.hash(atom2));
 	}
 }

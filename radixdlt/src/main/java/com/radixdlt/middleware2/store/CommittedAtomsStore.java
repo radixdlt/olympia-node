@@ -24,6 +24,7 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
@@ -49,20 +50,16 @@ import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
 import com.radixdlt.sync.CommittedReader;
 import java.util.Objects;
 import java.util.function.BiFunction;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.util.Optional;
 
 public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, CommittedReader {
-	private static final Logger log = LogManager.getLogger();
-
 	private final Serialization serialization;
 	private final AtomIndexer atomIndexer;
 	private final LedgerEntryStore store;
 	private final CommandToBinaryConverter commandToBinaryConverter;
 	private final ClientAtomToBinaryConverter clientAtomToBinaryConverter;
 	private final CommittedAtomSender committedAtomSender;
+	private final Hasher hasher;
 
 	public interface AtomIndexer {
 		EngineAtomIndices getIndices(LedgerAtom atom);
@@ -74,7 +71,8 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		CommandToBinaryConverter commandToBinaryConverter,
 		ClientAtomToBinaryConverter clientAtomToBinaryConverter,
 		AtomIndexer atomIndexer,
-		Serialization serialization
+		Serialization serialization,
+		Hasher hasher
 	) {
 		this.committedAtomSender = Objects.requireNonNull(committedAtomSender);
 		this.store = Objects.requireNonNull(store);
@@ -82,12 +80,13 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		this.clientAtomToBinaryConverter = Objects.requireNonNull(clientAtomToBinaryConverter);
 		this.atomIndexer = Objects.requireNonNull(atomIndexer);
 		this.serialization = Objects.requireNonNull(serialization);
+		this.hasher = hasher;
 	}
 
 	private Optional<ClientAtom> getAtomByParticle(Particle particle, boolean isInput) {
 		final byte[] indexableBytes = EngineAtomIndices.toByteArray(
 		isInput ? EngineAtomIndices.IndexType.PARTICLE_DOWN : EngineAtomIndices.IndexType.PARTICLE_UP,
-			particle.euid()
+			Particle.euidOf(particle, hasher)
 		);
 		SearchCursor cursor = store.search(StoreIndex.LedgerIndexType.UNIQUE, new StoreIndex(indexableBytes), LedgerSearchMode.EXACT);
 		if (cursor != null) {

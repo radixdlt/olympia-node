@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.View;
 import java.util.Map;
@@ -25,6 +26,7 @@ import java.util.Optional;
 
 import javax.annotation.concurrent.NotThreadSafe;
 
+import com.radixdlt.crypto.Hasher;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -35,7 +37,6 @@ import com.radixdlt.SecurityCritical.SecurityKind;
 import com.radixdlt.consensus.bft.ValidationState;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.Hash;
 
 /**
  * Manages pending votes for various vertices.
@@ -53,9 +54,9 @@ public final class PendingVotes {
 	// Make sure equals tester can access.
 	static final class PreviousVote {
 		private final View view;
-		private final Hash hash;
+		private final HashCode hash;
 
-		PreviousVote(View view, Hash hash) {
+		PreviousVote(View view, HashCode hash) {
 			this.view = view;
 			this.hash = hash;
 		}
@@ -75,7 +76,7 @@ public final class PendingVotes {
 		}
 	}
 
-	private final Map<Hash, ValidationState> voteState = Maps.newHashMap();
+	private final Map<HashCode, ValidationState> voteState = Maps.newHashMap();
 	private final Map<BFTNode, PreviousVote> previousVotes = Maps.newHashMap();
 	private final Hasher hasher;
 
@@ -101,7 +102,7 @@ public final class PendingVotes {
 
 		final TimestampedVoteData timestampedVoteData = vote.getTimestampedVoteData();
 		final VoteData voteData = timestampedVoteData.getVoteData();
-		final Hash voteDataHash = this.hasher.hash(voteData);
+		final HashCode voteDataHash = this.hasher.hash(voteData);
 		final View voteView = voteData.getProposed().getView();
 		if (!replacePreviousVote(node, voteView, voteDataHash)) {
 			return Optional.empty();
@@ -111,7 +112,7 @@ public final class PendingVotes {
 		ValidationState validationState = this.voteState.computeIfAbsent(voteDataHash, k -> validatorSet.newValidationState());
 
 		// try to form a QC with the added signature according to the requirements
-		final ECDSASignature signature = vote.getSignature().orElseThrow(() -> new IllegalArgumentException("vote is missing signature"));
+		final ECDSASignature signature = vote.getSignature();
 		if (!(validationState.addSignature(node, timestampedVoteData.getNodeTimestamp(), signature) && validationState.complete())) {
 			return Optional.empty();
 		}
@@ -121,7 +122,7 @@ public final class PendingVotes {
 		return Optional.of(qc);
 	}
 
-	private boolean replacePreviousVote(BFTNode author, View voteView, Hash voteHash) {
+	private boolean replacePreviousVote(BFTNode author, View voteView, HashCode voteHash) {
 		PreviousVote thisVote = new PreviousVote(voteView, voteHash);
 		PreviousVote previousVote = this.previousVotes.put(author, thisVote);
 		if (previousVote == null) {

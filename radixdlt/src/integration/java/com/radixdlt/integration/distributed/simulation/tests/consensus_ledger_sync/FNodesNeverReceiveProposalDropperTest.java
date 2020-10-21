@@ -17,7 +17,7 @@
 
 package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_sync;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.integration.distributed.simulation.NetworkDroppers;
@@ -26,11 +26,13 @@ import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.LongSummaryStatistics;
 import java.util.concurrent.TimeUnit;
-import org.assertj.core.api.AssertionsForClassTypes;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -38,11 +40,12 @@ import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
 public class FNodesNeverReceiveProposalDropperTest {
+	private static final Logger logger = LogManager.getLogger();
+
 	@Parameters
-	public static Collection<Object[]> numNodes() {
-		return Arrays.asList(new Object[][] {
-			{4}, {100}
-		});
+	public static Collection<Object[]> testParameters() {
+		// Need at least five nodes to ensure that remote sync occurs, otherwise just vertex sync is required
+		return List.of(new Object[][]{{5}, {20}});
 	}
 
 	private final Builder bftTestBuilder;
@@ -69,14 +72,14 @@ public class FNodesNeverReceiveProposalDropperTest {
 		SimulationTest simulationTest = bftTestBuilder
 			.build();
 		TestResults results = simulationTest.run();
-		assertThat(results.getCheckResults()).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+		assertThat(results.getCheckResults()).allSatisfy((name, err) -> assertThat(err).isEmpty());
 
 		LongSummaryStatistics statistics = results.getNetwork().getSystemCounters().values().stream()
 			.map(s -> s.get(CounterType.SYNC_PROCESSED))
 			.mapToLong(l -> l)
 			.summaryStatistics();
 
-		System.out.println(statistics);
+		logger.info("{}", statistics);
 		assertThat(statistics.getSum()).isGreaterThan(0L);
 	}
 

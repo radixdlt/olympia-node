@@ -20,14 +20,14 @@ package com.radixdlt.integration.distributed.simulation.network;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.ConsensusEvent;
-import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.ChannelCommunication;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.junit.Before;
@@ -48,38 +48,38 @@ public class SimulationNetworkTest {
 	}
 
 	@Test
-	public void when_send_new_view_to_self__then_should_receive_it() {
+	public void when_send_view_timeout_to_self__then_should_receive_it() {
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
 		network.getNetwork(node1).bftEvents()
 			.subscribe(testObserver);
-		NewView newView = mock(NewView.class);
-		network.getNetwork(node1).sendNewView(newView, node1);
+		ViewTimeout viewTimeout = mock(ViewTimeout.class);
+		network.getNetwork(node1).broadcastViewTimeout(viewTimeout, ImmutableSet.of(node1));
 		testObserver.awaitCount(1);
-		testObserver.assertValue(newView);
+		testObserver.assertValue(viewTimeout);
 	}
 
 	@Test
-	public void when_send_new_view_to_self_twice__then_should_receive_both() {
+	public void when_send_view_timeout_to_self_twice__then_should_receive_both() {
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
 		network.getNetwork(node1).bftEvents()
 			.subscribe(testObserver);
-		NewView newView = mock(NewView.class);
-		network.getNetwork(node1).sendNewView(newView, node1);
-		network.getNetwork(node1).sendNewView(newView, node1);
+		ViewTimeout viewTimeout = mock(ViewTimeout.class);
+		network.getNetwork(node1).broadcastViewTimeout(viewTimeout, ImmutableSet.of(node1));
+		network.getNetwork(node1).broadcastViewTimeout(viewTimeout, ImmutableSet.of(node1));
 		testObserver.awaitCount(2);
-		testObserver.assertValues(newView, newView);
+		testObserver.assertValues(viewTimeout, viewTimeout);
 	}
 
 	@Test
-	public void when_self_and_other_send_new_view_to_self__then_should_receive_both() {
+	public void when_self_and_other_send_view_timeout_to_self__then_should_receive_both() {
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
 		network.getNetwork(node1).bftEvents()
 			.subscribe(testObserver);
-		NewView newView = mock(NewView.class);
-		network.getNetwork(node1).sendNewView(newView, node1);
-		network.getNetwork(node2).sendNewView(newView, node1);
+		ViewTimeout viewTimeout = mock(ViewTimeout.class);
+		network.getNetwork(node1).broadcastViewTimeout(viewTimeout, ImmutableSet.of(node1));
+		network.getNetwork(node2).broadcastViewTimeout(viewTimeout, ImmutableSet.of(node1));
 		testObserver.awaitCount(2);
-		testObserver.assertValues(newView, newView);
+		testObserver.assertValues(viewTimeout, viewTimeout);
 	}
 
 	@Test
@@ -105,20 +105,21 @@ public class SimulationNetworkTest {
 	}
 
 	@Test
-	public void when_disabling_messages_and_send_new_view_message_to_other_node__then_should_not_receive_it() {
+		public void when_disabling_messages_and_send_view_timeout_message_to_other_node__then_should_not_receive_it() {
 		SimulationNetwork network = new SimulationNetwork(new InOrderChannels(msg -> -1));
+
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
 		network.getNetwork(node2).bftEvents()
 			.subscribe(testObserver);
-		NewView newView = mock(NewView.class);
-		network.getNetwork(node1).sendNewView(newView, node1);
+		ViewTimeout viewTimeout = mock(ViewTimeout.class);
+		network.getNetwork(node1).broadcastViewTimeout(viewTimeout, ImmutableSet.of(node1));
 		testObserver.awaitCount(1);
 		testObserver.assertEmpty();
 	}
 
 	@Test
 	public void when_send_get_vertex_request_to_another_node__then_should_receive_it() {
-		Hash vertexId = mock(Hash.class);
+		HashCode vertexId = mock(HashCode.class);
 
 		TestObserver<GetVerticesRequest> rpcRequestListener =
 			network.getNetwork(node2).requests().test();

@@ -17,8 +17,8 @@
 
 package com.radixdlt.consensus.bft;
 
-import com.radixdlt.consensus.RequiresSyncConsensusEvent;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.consensus.ConsensusEvent;
+import com.google.common.hash.HashCode;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -43,7 +43,7 @@ public final class SyncQueues {
 	}
 
 	class SyncQueue {
-		private final LinkedList<RequiresSyncConsensusEvent> queue;
+		private final LinkedList<ConsensusEvent> queue;
 
 		private SyncQueue() {
 			this.queue = new LinkedList<>();
@@ -59,14 +59,14 @@ public final class SyncQueues {
 		 * @return the top of the queue if requirements are met
 		 */
 		@Nullable
-		public RequiresSyncConsensusEvent peek(@Nullable Hash vertexId) {
-			RequiresSyncConsensusEvent e = queue.peek();
+		public ConsensusEvent peek(@Nullable HashCode vertexId) {
+			ConsensusEvent e = queue.peek();
 
 			if (e == null) {
 				return null;
 			}
 
-			if (vertexId != null && !e.syncInfo().highestQC().getProposed().getVertexId().equals(vertexId)) {
+			if (vertexId != null && !e.highQC().highestQC().getProposed().getVertexId().equals(vertexId)) {
 				return null;
 			}
 
@@ -77,7 +77,7 @@ public final class SyncQueues {
 			queue.pop();
 		}
 
-		boolean isEmptyElseAdd(RequiresSyncConsensusEvent event) {
+		boolean isEmptyElseAdd(ConsensusEvent event) {
 			if (queue.isEmpty()) {
 				return true;
 			}
@@ -85,14 +85,14 @@ public final class SyncQueues {
 			return false;
 		}
 
-		public void add(RequiresSyncConsensusEvent event) {
+		public void add(ConsensusEvent event) {
 			queue.addLast(event);
 		}
 
-		public RequiresSyncConsensusEvent clearViewAndGetNext(View view) {
-			Iterator<RequiresSyncConsensusEvent> eventsIterator = queue.iterator();
+		public ConsensusEvent clearViewAndGetNext(View view) {
+			Iterator<ConsensusEvent> eventsIterator = queue.iterator();
 			while (eventsIterator.hasNext()) {
-				RequiresSyncConsensusEvent event = eventsIterator.next();
+				ConsensusEvent event = eventsIterator.next();
 				if (event.getView().compareTo(view) <= 0) {
 					eventsIterator.remove();
 				} else {
@@ -113,7 +113,7 @@ public final class SyncQueues {
 		return queues.values();
 	}
 
-	boolean isEmptyElseAdd(RequiresSyncConsensusEvent event) {
+	boolean isEmptyElseAdd(ConsensusEvent event) {
 		return this.getQueue(event.getAuthor()).isEmptyElseAdd(event);
 	}
 
@@ -121,7 +121,7 @@ public final class SyncQueues {
 		return queues.computeIfAbsent(author, a -> new SyncQueue());
 	}
 
-	void add(RequiresSyncConsensusEvent event) {
+	void add(ConsensusEvent event) {
 		queues.computeIfAbsent(event.getAuthor(), a -> new SyncQueue()).add(event);
 	}
 

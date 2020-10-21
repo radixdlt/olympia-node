@@ -15,39 +15,22 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package org.radix.network.messages;
 
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.View;
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.Before;
+import nl.jqno.equalsverifier.Warning;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-
-public class NewViewTest {
-	private BFTNode author;
-	private NewView testObject;
-	private View view;
-
-	@Before
-	public void setUp() {
-		this.view = View.of(1L);
-		this.author = mock(BFTNode.class);
-		this.testObject = new NewView(author, view, mock(HighQC.class), null);
-	}
-
+public class PeerPingMessageTest {
 	@Test
 	public void equalsContract() {
-		EqualsVerifier.forClass(NewView.class)
-			.verify();
+		EqualsVerifier.forClass(PeerPingMessage.class)
+				.withIgnoredFields("instance")
+				.suppress(Warning.NONFINAL_FIELDS)
+				.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+				.withRedefinedSuperclass()
+				.verify();
 	}
-
-	@Test
-	public void testGetters() {
-		assertEquals(this.view, this.testObject.getView());
-		assertEquals(this.author, this.testObject.getAuthor());
-	}
-
 }

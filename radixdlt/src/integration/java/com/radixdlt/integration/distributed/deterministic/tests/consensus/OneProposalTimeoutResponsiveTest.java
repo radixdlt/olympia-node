@@ -41,22 +41,19 @@ public class OneProposalTimeoutResponsiveTest {
 			.run();
 
 		long requiredIndirectParents = (numViews - 1) / dropPeriod; // Edge case if dropPeriod a factor of numViews
-		long requiredTimeouts = numViews / dropPeriod;
+		long requiredTimeouts = numViews / dropPeriod * 2;
 
 		for (int nodeIndex = 0; nodeIndex < numNodes; ++nodeIndex) {
 			SystemCounters counters = test.getSystemCounters(nodeIndex);
 			long numberOfIndirectParents = counters.get(SystemCounters.CounterType.BFT_INDIRECT_PARENT);
 			long numberOfTimeouts = counters.get(SystemCounters.CounterType.BFT_TIMEOUT);
 			assertThat(numberOfIndirectParents).isEqualTo(requiredIndirectParents);
-			// Not every node will timeout on a dropped proposal, as 2f+1 nodes will timeout and then continue.
-			// The remaining f nodes may sync rather than timing out.
-			// The lower bound of the following test is likely to pass, but not guaranteed by anything here.
-			assertThat(numberOfTimeouts).isBetween(1L, requiredTimeouts);
+			assertThat(numberOfTimeouts).isEqualTo(requiredTimeouts);
 		}
 	}
 
 	private static MessageMutator dropSomeProposals(long dropPeriod) {
-		return (rank, message, queue) -> {
+		return (message, queue) -> {
 			Object msg = message.message();
 			if (msg instanceof Proposal) {
 				final Proposal proposal = (Proposal) msg;
@@ -71,12 +68,12 @@ public class OneProposalTimeoutResponsiveTest {
 
 	@Test
 	public void when_run_3_correct_nodes_with_1_timeout__then_bft_should_be_responsive() {
-		this.run(3, 100_000, 100);
+		this.run(3, 50_000, 100);
 	}
 
 	@Test
 	public void when_run_4_correct_nodes_with_1_timeout__then_bft_should_be_responsive() {
-		this.run(4, 100_000, 100);
+		this.run(4, 50_000, 100);
 	}
 
 	@Test

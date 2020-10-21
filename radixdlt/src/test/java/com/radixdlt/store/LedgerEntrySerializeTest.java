@@ -18,7 +18,7 @@
 package com.radixdlt.store;
 
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.HashUtils;
 import org.radix.serialization.SerializeMessageObject;
 
 public class LedgerEntrySerializeTest extends SerializeMessageObject<LedgerEntry> {
@@ -27,7 +27,7 @@ public class LedgerEntrySerializeTest extends SerializeMessageObject<LedgerEntry
 			"{\"test\":\"test\"}".getBytes(),
 			0,
 			0,
-			AID.from(Hash.ZERO_HASH.toByteArray())
+			AID.from(HashUtils.zero256().asBytes())
 		));
 	}
 }

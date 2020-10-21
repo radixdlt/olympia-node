@@ -139,7 +139,7 @@ configurations.all {
 }
 
 dependencies {
-    compile 'com.radixdlt:radix-engine-library:feature~epoch-high-view-SNAPSHOT'
+    compile 'com.radixdlt:radix-engine-library:rc~1.0-beta.17-SNAPSHOT'
     compile 'io.reactivex.rxjava3:rxjava:3.0.0'
     compile 'com.sleepycat:je:18.3.12'
 
@@ -175,6 +175,7 @@ dependencies {
         exclude group: 'com.fasterxml.jackson.core', module: 'jackson-core'
         exclude group: 'com.fasterxml.jackson.core', module: 'jackson-databind'
     }
+    testCompile 'org.reflections:reflections:0.9.11'
 
     // JMH
     testCompile 'org.openjdk.jmh:jmh-core:1.25'

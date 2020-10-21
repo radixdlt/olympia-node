@@ -24,6 +24,8 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
 import org.radix.network.messaging.Message;
 
+import java.util.Objects;
+
 /**
  * Message to request for sync atoms
  */
@@ -52,5 +54,24 @@ public final class SyncRequestMessage extends Message {
 	@Override
 	public String toString() {
 		return String.format("%s{current=%s}", getClass().getSimpleName(), currentHeader);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		SyncRequestMessage that = (SyncRequestMessage) o;
+		return Objects.equals(currentHeader, that.currentHeader)
+				&& Objects.equals(getTimestamp(), that.getTimestamp())
+				&& Objects.equals(getMagic(), that.getMagic());
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(currentHeader, getTimestamp(), getMagic());
 	}
 }

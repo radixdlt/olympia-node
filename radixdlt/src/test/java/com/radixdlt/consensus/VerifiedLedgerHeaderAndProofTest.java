@@ -21,9 +21,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof.OrderByEpochAndVersionComparator;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.ledger.AccumulatorState;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
@@ -40,13 +41,14 @@ public class VerifiedLedgerHeaderAndProofTest {
 	@Test
 	public void equalsContract() {
 		EqualsVerifier.forClass(VerifiedLedgerHeaderAndProof.class)
+			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 			.verify();
 	}
 
 	@Test
 	public void testGetters() {
 		LedgerHeader l0 = mock(LedgerHeader.class);
-		Hash accumulatorHash = mock(Hash.class);
+		HashCode accumulatorHash = mock(HashCode.class);
 		View view = mock(View.class);
 		when(l0.getEpoch()).thenReturn(3L);
 		AccumulatorState accumulatorState = mock(AccumulatorState.class);
@@ -57,7 +59,7 @@ public class VerifiedLedgerHeaderAndProofTest {
 		when(l0.timestamp()).thenReturn(2468L);
 		when(l0.isEndOfEpoch()).thenReturn(true);
 		VerifiedLedgerHeaderAndProof ledgerHeaderAndProof = new VerifiedLedgerHeaderAndProof(
-			mock(BFTHeader.class), mock(BFTHeader.class), 0, mock(Hash.class),
+			mock(BFTHeader.class), mock(BFTHeader.class), 0, mock(HashCode.class),
 			l0,
 			mock(TimestampedECDSASignatures.class)
 		);
@@ -73,14 +75,14 @@ public class VerifiedLedgerHeaderAndProofTest {
 		LedgerHeader l0 = mock(LedgerHeader.class);
 		when(l0.getEpoch()).thenReturn(1L);
 		VerifiedLedgerHeaderAndProof s0 = new VerifiedLedgerHeaderAndProof(
-			mock(BFTHeader.class), mock(BFTHeader.class), 0, mock(Hash.class),
+			mock(BFTHeader.class), mock(BFTHeader.class), 0, mock(HashCode.class),
 			l0,
 			mock(TimestampedECDSASignatures.class)
 		);
 		LedgerHeader l1 = mock(LedgerHeader.class);
 		when(l1.getEpoch()).thenReturn(2L);
 		VerifiedLedgerHeaderAndProof s1 = new VerifiedLedgerHeaderAndProof(
-			mock(BFTHeader.class), mock(BFTHeader.class), 0, mock(Hash.class),
+			mock(BFTHeader.class), mock(BFTHeader.class), 0, mock(HashCode.class),
 			l1,
 			mock(TimestampedECDSASignatures.class)
 		);
@@ -96,7 +98,7 @@ public class VerifiedLedgerHeaderAndProofTest {
 		when(accumulatorState.getStateVersion()).thenReturn(2L);
 		when(l0.getAccumulatorState()).thenReturn(accumulatorState);
 		VerifiedLedgerHeaderAndProof s0 = new VerifiedLedgerHeaderAndProof(
-			mock(BFTHeader.class), mock(BFTHeader.class), 0, mock(Hash.class),
+			mock(BFTHeader.class), mock(BFTHeader.class), 0, mock(HashCode.class),
 			l0,
 			mock(TimestampedECDSASignatures.class)
 		);
@@ -106,7 +108,7 @@ public class VerifiedLedgerHeaderAndProofTest {
 		when(accumulatorState1.getStateVersion()).thenReturn(3L);
 		when(l1.getAccumulatorState()).thenReturn(accumulatorState1);
 		VerifiedLedgerHeaderAndProof s1 = new VerifiedLedgerHeaderAndProof(
-			mock(BFTHeader.class), mock(BFTHeader.class), 0, mock(Hash.class),
+			mock(BFTHeader.class), mock(BFTHeader.class), 0, mock(HashCode.class),
 			l1,
 			mock(TimestampedECDSASignatures.class)
 		);
@@ -123,7 +125,7 @@ public class VerifiedLedgerHeaderAndProofTest {
 		when(l0.getAccumulatorState()).thenReturn(accumulatorState);
 		when(l0.isEndOfEpoch()).thenReturn(false);
 		VerifiedLedgerHeaderAndProof s0 = new VerifiedLedgerHeaderAndProof(
-			mock(BFTHeader.class), mock(BFTHeader.class), 0, mock(Hash.class),
+			mock(BFTHeader.class), mock(BFTHeader.class), 0, mock(HashCode.class),
 			l0,
 			mock(TimestampedECDSASignatures.class)
 		);
@@ -134,7 +136,7 @@ public class VerifiedLedgerHeaderAndProofTest {
 		when(l1.getAccumulatorState()).thenReturn(accumulatorState1);
 		when(l1.isEndOfEpoch()).thenReturn(true);
 		VerifiedLedgerHeaderAndProof s1 = new VerifiedLedgerHeaderAndProof(
-			mock(BFTHeader.class), mock(BFTHeader.class), 0, mock(Hash.class),
+			mock(BFTHeader.class), mock(BFTHeader.class), 0, mock(HashCode.class),
 			l1,
 			mock(TimestampedECDSASignatures.class)
 		);
@@ -151,7 +153,7 @@ public class VerifiedLedgerHeaderAndProofTest {
 		when(l0.getAccumulatorState()).thenReturn(accumulatorState);
 		when(l0.isEndOfEpoch()).thenReturn(true);
 		VerifiedLedgerHeaderAndProof s0 = new VerifiedLedgerHeaderAndProof(
-			mock(BFTHeader.class), mock(BFTHeader.class), 0, mock(Hash.class),
+			mock(BFTHeader.class), mock(BFTHeader.class), 0, mock(HashCode.class),
 			l0,
 			mock(TimestampedECDSASignatures.class)
 		);
@@ -162,7 +164,7 @@ public class VerifiedLedgerHeaderAndProofTest {
 		when(l1.getAccumulatorState()).thenReturn(accumulatorState1);
 		when(l1.isEndOfEpoch()).thenReturn(true);
 		VerifiedLedgerHeaderAndProof s1 = new VerifiedLedgerHeaderAndProof(
-			mock(BFTHeader.class), mock(BFTHeader.class), 0, mock(Hash.class),
+			mock(BFTHeader.class), mock(BFTHeader.class), 0, mock(HashCode.class),
 			l1,
 			mock(TimestampedECDSASignatures.class)
 		);

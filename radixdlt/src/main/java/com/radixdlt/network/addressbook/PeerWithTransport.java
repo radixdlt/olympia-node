@@ -17,6 +17,7 @@
 
 package com.radixdlt.network.addressbook;
 
+import java.util.Objects;
 import java.util.stream.Stream;
 
 import org.radix.universe.system.RadixSystem;
@@ -100,5 +101,20 @@ public final class PeerWithTransport extends Peer {
 		return String.format("%s[%s]", getClass().getSimpleName(), transportInfo);
 	}
 
-	// Note that we rely on equals(...) and hashCode() from BasicContainer here.
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		PeerWithTransport that = (PeerWithTransport) o;
+		return Objects.equals(transportInfo, that.transportInfo);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(transportInfo);
+	}
 }

@@ -17,6 +17,7 @@
 
 package org.radix.serialization;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.Proposal;
@@ -29,7 +30,7 @@ import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.HashUtils;
 
 public class ProposalSerializeTest extends SerializeObject<Proposal> {
 	public ProposalSerializeTest() {
@@ -38,11 +39,11 @@ public class ProposalSerializeTest extends SerializeObject<Proposal> {
 
 	private static Proposal get() {
 		View view = View.of(1234567891L);
-		Hash id = Hash.random();
+		HashCode id = HashUtils.random256();
 
-		LedgerHeader ledgerHeader = LedgerHeader.genesis(Hash.ZERO_HASH, null);
+		LedgerHeader ledgerHeader = LedgerHeader.genesis(HashUtils.zero256(), null);
 		BFTHeader header = new BFTHeader(view, id, ledgerHeader);
-		BFTHeader parent = new BFTHeader(View.of(1234567890L), Hash.random(), ledgerHeader);
+		BFTHeader parent = new BFTHeader(View.of(1234567890L), HashUtils.random256(), ledgerHeader);
 		VoteData voteData = new VoteData(header, parent, null);
 		QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 		Command command = new Command(new byte[] {0, 1, 2, 3});
@@ -50,6 +51,6 @@ public class ProposalSerializeTest extends SerializeObject<Proposal> {
 		// add a particle to ensure atom is valid and has at least one shard
 		UnverifiedVertex vertex = UnverifiedVertex.createVertex(qc, view, command);
 		BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
-		return new Proposal(vertex, qc, author, new ECDSASignature(), 123456L);
+		return new Proposal(vertex, qc, author, new ECDSASignature());
 	}
 }

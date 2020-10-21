@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.radixdlt.crypto.Hasher;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.network.messaging.Message;
@@ -89,7 +90,8 @@ final class MessageCentralImpl implements MessageCentral {
 		TimeSupplier timeSource,
 		EventQueueFactory<MessageEvent> eventQueueFactory,
 		LocalSystem localSystem,
-		SystemCounters counters
+		SystemCounters counters,
+		Hasher hasher
 	) {
 		this.counters = Objects.requireNonNull(counters);
 		this.inboundQueue = eventQueueFactory.createEventQueue(config.messagingInboundQueueMax(8192), MessageEvent.comparator());
@@ -100,7 +102,7 @@ final class MessageCentralImpl implements MessageCentral {
 		this.addressBook = Objects.requireNonNull(addressBook);
 
 		Objects.requireNonNull(timeSource);
-		this.messageDispatcher = new MessageDispatcher(counters, config, serialization, timeSource, localSystem, this.addressBook);
+		this.messageDispatcher = new MessageDispatcher(counters, config, serialization, timeSource, localSystem, this.addressBook, hasher);
 
 		this.transports = Lists.newArrayList(transportManager.transports());
 
@@ -202,7 +204,9 @@ final class MessageCentralImpl implements MessageCentral {
 	private Message deserialize(byte[] in) {
 		try {
 			byte[] uncompressed = Snappy.uncompress(in);
+
 			return serialization.fromDson(uncompressed, Message.class);
+
 		} catch (IOException e) {
 			throw new UncheckedIOException("While deserializing message", e);
 		}

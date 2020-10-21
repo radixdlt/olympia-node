@@ -19,23 +19,25 @@ package com.radixdlt.middleware2.network;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.consensus.ConsensusEvent;
-import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
 import org.radix.network.messaging.Message;
 
+import java.util.Objects;
+
 /**
  * The Data Transfer Object for Consensus messages. Each type of consensus message currently needs to be
  * a parameter in this class due to lack of interface serialization.
  */
 @SerializerId2("message.consensus.event")
-public class ConsensusEventMessage extends Message {
-	@JsonProperty("newview")
+public final class ConsensusEventMessage extends Message {
+	@JsonProperty("view_timeout")
 	@DsonOutput(Output.ALL)
-	private final NewView newView;
+	private final ViewTimeout viewTimeout;
 
 	@JsonProperty("proposal")
 	@DsonOutput(Output.ALL)
@@ -48,28 +50,28 @@ public class ConsensusEventMessage extends Message {
 	ConsensusEventMessage() {
 		// Serializer only
 		super(0);
-		this.newView = null;
+		this.viewTimeout = null;
 		this.proposal = null;
 		this.vote = null;
 	}
 
-	ConsensusEventMessage(int magic, NewView newView) {
+	ConsensusEventMessage(int magic, ViewTimeout viewTimeout) {
 		super(magic);
-		this.newView = newView;
+		this.viewTimeout = viewTimeout;
 		this.proposal = null;
 		this.vote = null;
 	}
 
 	ConsensusEventMessage(int magic, Proposal proposal) {
 		super(magic);
-		this.newView = null;
+		this.viewTimeout = null;
 		this.proposal = proposal;
 		this.vote = null;
 	}
 
 	ConsensusEventMessage(int magic, Vote vote) {
 		super(magic);
-		this.newView = null;
+		this.viewTimeout = null;
 		this.proposal = null;
 		this.vote = vote;
 	}
@@ -83,8 +85,8 @@ public class ConsensusEventMessage extends Message {
 	}
 
 	private ConsensusEvent consensusMessageInternal() {
-		if (this.newView != null) {
-			return this.newView;
+		if (this.viewTimeout != null) {
+			return this.viewTimeout;
 		}
 
 		if (this.proposal != null) {
@@ -101,5 +103,26 @@ public class ConsensusEventMessage extends Message {
 	@Override
 	public String toString() {
 		return String.format("%s[%s]", getClass().getSimpleName(), consensusMessageInternal());
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		ConsensusEventMessage that = (ConsensusEventMessage) o;
+		return Objects.equals(viewTimeout, that.viewTimeout)
+				&& Objects.equals(proposal, that.proposal)
+				&& Objects.equals(vote, that.vote)
+				&& Objects.equals(getTimestamp(), that.getTimestamp())
+				&& Objects.equals(getMagic(), that.getMagic());
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(viewTimeout, proposal, vote, getTimestamp(), getMagic());
 	}
 }

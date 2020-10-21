@@ -17,6 +17,8 @@
 
 package com.radixdlt.consensus.sync;
 
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
@@ -25,6 +27,7 @@ public class LocalGetVerticesRequestTest {
 	@Test
 	public void equalsContract() {
 		EqualsVerifier.forClass(LocalGetVerticesRequest.class)
+			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 			.verify();
 	}
 }

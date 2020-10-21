@@ -18,6 +18,7 @@
 package com.radixdlt.consensus.sync;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -31,7 +32,6 @@ import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.liveness.Pacemaker;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdateProcessor;
 import com.radixdlt.sync.LocalSyncRequest;
@@ -67,7 +67,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 
 	private static class SyncRequestState {
 		private final ImmutableList<BFTNode> authors;
-		private final List<Hash> syncs = new ArrayList<>();
+		private final List<HashCode> syncs = new ArrayList<>();
 
 		SyncRequestState(ImmutableList<BFTNode> authors) {
 			this.authors = Objects.requireNonNull(authors);
@@ -75,21 +75,21 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 	}
 
 	private static class SyncState {
-		private final Hash localSyncId;
-		private final HighQC syncInfo;
+		private final HashCode localSyncId;
+		private final HighQC highQC;
 		private final BFTHeader committedHeader;
 		private final VerifiedLedgerHeaderAndProof committedProof;
 		private final BFTNode author;
 		private SyncStage syncStage;
 		private final LinkedList<VerifiedVertex> fetched = new LinkedList<>();
 
-		SyncState(HighQC syncInfo, BFTNode author) {
-			this.localSyncId = syncInfo.highestQC().getProposed().getVertexId();
-			Pair<BFTHeader, VerifiedLedgerHeaderAndProof> pair = syncInfo.highestCommittedQC().getCommittedAndLedgerStateProof()
+		SyncState(HighQC highQC, BFTNode author) {
+			this.localSyncId = highQC.highestQC().getProposed().getVertexId();
+			Pair<BFTHeader, VerifiedLedgerHeaderAndProof> pair = highQC.highestCommittedQC().getCommittedAndLedgerStateProof()
 				.orElseThrow(() -> new IllegalStateException("committedQC must have a commit"));
 			this.committedHeader = pair.getFirst();
 			this.committedProof = pair.getSecond();
-			this.syncInfo = syncInfo;
+			this.highQC = highQC;
 			this.author = author;
 			this.syncStage = SyncStage.PREPARING;
 		}
@@ -99,12 +99,12 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 		}
 
 		HighQC highQC() {
-			return this.syncInfo;
+			return this.highQC;
 		}
 
 		@Override
 		public String toString() {
-			return String.format("%s{%s syncState=%s}", this.getClass().getSimpleName(), syncInfo, syncStage);
+			return String.format("%s{%s syncState=%s}", this.getClass().getSimpleName(), highQC, syncStage);
 		}
 	}
 
@@ -132,8 +132,8 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 	private static final Logger log = LogManager.getLogger();
 	private final VertexStore vertexStore;
 	private final Pacemaker pacemaker;
-	private final Map<Hash, SyncState> syncing = new HashMap<>();
-	private final TreeMap<LedgerHeader, List<Hash>> ledgerSyncing;
+	private final Map<HashCode, SyncState> syncing = new HashMap<>();
+	private final TreeMap<LedgerHeader, List<HashCode>> ledgerSyncing;
 	private final Map<LocalGetVerticesRequest, SyncRequestState> bftSyncing = new HashMap<>();
 	private final SyncVerticesRequestSender requestSender;
 	private final SyncLedgerRequestSender syncLedgerRequestSender;
@@ -167,14 +167,15 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 	@Override
 	public SyncResult syncToQC(HighQC highQC, @Nullable BFTNode author) {
 		final QuorumCertificate qc = highQC.highestQC();
-		final Hash vertexId = qc.getProposed().getVertexId();
+		final HashCode vertexId = qc.getProposed().getVertexId();
+
 		if (qc.getProposed().getView().compareTo(vertexStore.getRoot().getView()) < 0) {
 			return SyncResult.INVALID;
 		}
 
 		if (vertexStore.addQC(qc)) {
 			// TODO: check if already sent highest
-			this.pacemaker.processQC(vertexStore.syncInfo());
+			this.pacemaker.processQC(vertexStore.highQC());
 			return SyncResult.SYNCED;
 		}
 
@@ -232,7 +233,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 	}
 
 	private void doCommittedSync(SyncState syncState) {
-		final Hash committedQCId = syncState.highQC().highestCommittedQC().getProposed().getVertexId();
+		final HashCode committedQCId = syncState.highQC().highestCommittedQC().getProposed().getVertexId();
 		syncState.setSyncStage(SyncStage.GET_COMMITTED_VERTICES);
 		log.debug("SYNC_VERTICES: Committed: Sending initial GetVerticesRequest for sync={}", syncState);
 		// Retrieve the 3 vertices preceding the committedQC so we can create a valid committed root
@@ -257,7 +258,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 		this.timeoutScheduler.scheduleTimeout(request, bftSyncPatienceMillis);
 	}
 
-	private void sendBFTSyncRequest(Hash vertexId, int count, ImmutableList<BFTNode> authors, Hash syncId) {
+	private void sendBFTSyncRequest(HashCode vertexId, int count, ImmutableList<BFTNode> authors, HashCode syncId) {
 		LocalGetVerticesRequest request = new LocalGetVerticesRequest(vertexId, count);
 		SyncRequestState syncRequestState = bftSyncing.getOrDefault(request, new SyncRequestState(authors));
 		if (syncRequestState.syncs.isEmpty()) {
@@ -319,13 +320,13 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 	private void processVerticesResponseForQCSync(SyncState syncState, GetVerticesResponse response) {
 		VerifiedVertex vertex = response.getVertices().get(0);
 		syncState.fetched.addFirst(vertex);
-		Hash parentId = vertex.getParentId();
+		HashCode parentId = vertex.getParentId();
 
 		if (vertexStore.containsVertex(parentId)) {
 			// TODO: combine
 			for (VerifiedVertex v: syncState.fetched) {
 				if (!vertexStore.addQC(v.getQC())) {
-					log.info("GET_VERTICES failed: {}", syncState.syncInfo);
+					log.info("GET_VERTICES failed: {}", syncState.highQC);
 					return;
 				}
 
@@ -334,7 +335,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 
 			// Finish it off
 			this.syncing.remove(syncState.localSyncId);
-			this.syncToQC(syncState.syncInfo, syncState.author);
+			this.syncToQC(syncState.highQC, syncState.author);
 		} else {
 			log.info("SYNC_VERTICES: Sending further GetVerticesRequest for {} fetched={} root={}",
 				syncState.highQC(), syncState.fetched.size(), vertexStore.getRoot());
@@ -356,7 +357,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 		log.info("SYNC_VERTICES: Received GetVerticesErrorResponse {} ", response);
 
 		// error response indicates that the node has moved on from last sync so try and sync to a new sync
-		this.syncToQC(response.syncInfo(), response.getSender());
+		this.syncToQC(response.highQC(), response.getSender());
 	}
 
 	@Override
@@ -369,7 +370,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 		LocalGetVerticesRequest requestInfo = new LocalGetVerticesRequest(firstVertex.getId(), response.getVertices().size());
 		SyncRequestState syncRequestState = bftSyncing.remove(requestInfo);
 		if (syncRequestState != null) {
-			for (Hash syncTo : syncRequestState.syncs) {
+			for (HashCode syncTo : syncRequestState.syncs) {
 				SyncState syncState = syncing.get(syncTo);
 				if (syncState == null) {
 					continue; // sync requirements already satisfied by another sync
@@ -399,13 +400,13 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 
 		this.currentLedgerHeader = ledgerUpdate.getTail();
 
-		Collection<List<Hash>> listeners = this.ledgerSyncing.headMap(
+		Collection<List<HashCode>> listeners = this.ledgerSyncing.headMap(
 			ledgerUpdate.getTail().getRaw(), true
 		).values();
-		Iterator<List<Hash>> listenersIterator = listeners.iterator();
+		Iterator<List<HashCode>> listenersIterator = listeners.iterator();
 		while (listenersIterator.hasNext()) {
-			List<Hash> syncs = listenersIterator.next();
-			for (Hash syncTo : syncs) {
+			List<HashCode> syncs = listenersIterator.next();
+			for (HashCode syncTo : syncs) {
 				SyncState syncState = syncing.get(syncTo);
 				if (syncState != null) {
 					rebuildAndSyncQC(syncState);

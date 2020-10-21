@@ -28,7 +28,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.Hasher;
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
@@ -40,7 +41,6 @@ import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
@@ -119,16 +119,16 @@ public class MessageCentralValidatorSyncTest {
 	public void when_send_error_response__then_message_central_will_send_error_response() {
 		Peer peer = mock(Peer.class);
 		QuorumCertificate qc = mock(QuorumCertificate.class);
-		HighQC syncInfo = mock(HighQC.class);
-		when(syncInfo.highestQC()).thenReturn(qc);
-		when(syncInfo.highestCommittedQC()).thenReturn(qc);
+		HighQC highQC = mock(HighQC.class);
+		when(highQC.highestQC()).thenReturn(qc);
+		when(highQC.highestCommittedQC()).thenReturn(qc);
 		BFTNode node = mock(BFTNode.class);
 		ECPublicKey ecPublicKey = mock(ECPublicKey.class);
 		when(ecPublicKey.euid()).thenReturn(mock(EUID.class));
 		when(node.getKey()).thenReturn(ecPublicKey);
 		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
 
-		sync.sendGetVerticesErrorResponse(node, syncInfo);
+		sync.sendGetVerticesErrorResponse(node, highQC);
 
 		verify(messageCentral, times(1)).send(eq(peer), any(GetVerticesErrorResponseMessage.class));
 	}
@@ -142,8 +142,8 @@ public class MessageCentralValidatorSyncTest {
 		when(key.euid()).thenReturn(EUID.ONE);
 		when(system.getKey()).thenReturn(key);
 		when(peer.getSystem()).thenReturn(system);
-		Hash vertexId0 = mock(Hash.class);
-		Hash vertexId1 = mock(Hash.class);
+		HashCode vertexId0 = mock(HashCode.class);
+		HashCode vertexId1 = mock(HashCode.class);
 		doAnswer(inv -> {
 			MessageListener<GetVerticesRequestMessage> messageListener = inv.getArgument(1);
 			messageListener.handleMessage(peer, new GetVerticesRequestMessage(0, vertexId0, 1));

@@ -36,13 +36,13 @@ import org.apache.commons.collections4.MapUtils;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
-public class RandomNewViewDropperTest {
+public class RandomVoteAndViewTimeoutDropperTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(8, 4)
 		.networkModules(
 			NetworkOrdering.inOrder(),
 			NetworkLatencies.fixed(),
-			NetworkDroppers.randomNewViewsDropped(0.2)
+			NetworkDroppers.randomVotesAndViewTimeoutsDropped(0.2)
 		)
 		.ledgerAndRadixEngineWithEpochHighView(View.of(10))
 		.checkConsensusSafety("safety")

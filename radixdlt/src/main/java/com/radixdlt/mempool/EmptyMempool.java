@@ -17,8 +17,8 @@
 
 package com.radixdlt.mempool;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.crypto.Hash;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -33,17 +33,17 @@ public class EmptyMempool implements Mempool {
 	}
 
 	@Override
-	public void removeCommitted(Hash cmdHash) {
+	public void removeCommitted(HashCode cmdHash) {
 		// No-op
 	}
 
 	@Override
-	public void removeRejected(Hash cmdHash) {
+	public void removeRejected(HashCode cmdHash) {
 		// No-op
 	}
 
 	@Override
-	public List<Command> getCommands(int count, Set<Hash> seen) {
+	public List<Command> getCommands(int count, Set<HashCode> seen) {
 		return Collections.emptyList();
 	}
 

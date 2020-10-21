@@ -17,8 +17,9 @@
 
 package com.radixdlt.consensus;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
 import org.junit.Test;
@@ -35,10 +36,10 @@ public class UnverifiedVertexTest {
 	@Before
 	public void setUp() {
 		View baseView = View.of(1234567890L);
-		Hash id = Hash.random();
+		HashCode id = HashUtils.random256();
 
 		BFTHeader header = new BFTHeader(baseView.next(), id, mock(LedgerHeader.class));
-		BFTHeader parent = new BFTHeader(baseView, Hash.random(), mock(LedgerHeader.class));
+		BFTHeader parent = new BFTHeader(baseView, HashUtils.random256(), mock(LedgerHeader.class));
 		VoteData voteData = new VoteData(header, parent, parent);
 
 		this.qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
@@ -49,6 +50,7 @@ public class UnverifiedVertexTest {
 	@Test
 	public void equalsContract() {
 		EqualsVerifier.forClass(UnverifiedVertex.class)
+			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 			.verify();
 	}
 

@@ -19,6 +19,10 @@ package com.radixdlt.network.addressbook;
 
 import java.util.stream.Stream;
 
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import nl.jqno.equalsverifier.Warning;
 import org.junit.Before;
 import org.junit.Test;
 import org.radix.universe.system.RadixSystem;
@@ -118,5 +122,14 @@ public class PeerWithSystemTest {
 	@Test
 	public void testGetSystem() {
 		assertThat(this.pws.getSystem(), sameInstance(this.system));
+	}
+
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(PeerWithSystem.class)
+				.withIgnoredFields("banReason", "timestamps")
+				.suppress(Warning.NONFINAL_FIELDS)
+				.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+				.verify();
 	}
 }

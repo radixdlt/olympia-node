@@ -17,15 +17,20 @@
 
 package org.radix.serialization;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.TimestampedVoteData;
 import com.radixdlt.consensus.BFTHeader;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.HashUtils;
 
 public class VoteSerializeTest extends SerializeObject<Vote> {
 	public VoteSerializeTest() {
@@ -34,14 +39,16 @@ public class VoteSerializeTest extends SerializeObject<Vote> {
 
 	private static Vote get() {
 		View view = View.of(1234567891L);
-		Hash id = Hash.random();
+		HashCode id = HashUtils.random256();
 
-		LedgerHeader ledgerHeader = LedgerHeader.genesis(Hash.ZERO_HASH, null);
+		LedgerHeader ledgerHeader = LedgerHeader.genesis(HashUtils.zero256(), null);
 		BFTHeader header = new BFTHeader(view, id, ledgerHeader);
-		BFTHeader parent = new BFTHeader(View.of(1234567890L), Hash.random(), ledgerHeader);
+		BFTHeader parent = new BFTHeader(View.of(1234567890L), HashUtils.random256(), ledgerHeader);
 		VoteData voteData = new VoteData(header, parent, null);
 		TimestampedVoteData timestampedVoteData = new TimestampedVoteData(voteData, 123456L);
 		BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
-		return new Vote(author, timestampedVoteData, null, 0L);
+		QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
+		HighQC highQC = HighQC.from(qc, qc);
+		return new Vote(author, timestampedVoteData, new ECDSASignature(), highQC);
 	}
 }

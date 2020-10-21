@@ -18,7 +18,6 @@
 package com.radixdlt.middleware2.network;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
@@ -35,6 +34,7 @@ import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.messaging.MessageCentral;
@@ -108,8 +108,8 @@ public class MessageCentralValidatorSync implements SyncVerticesRequestSender, S
 	}
 
 	@Override
-	public void sendGetVerticesErrorResponse(BFTNode node, HighQC syncInfo) {
-		GetVerticesErrorResponseMessage response = new GetVerticesErrorResponseMessage(this.magic, syncInfo);
+	public void sendGetVerticesErrorResponse(BFTNode node, HighQC highQC) {
+		GetVerticesErrorResponseMessage response = new GetVerticesErrorResponseMessage(this.magic, highQC);
 		final Optional<Peer> peerMaybe = this.addressBook.peer(node.getKey().euid());
 		peerMaybe.ifPresentOrElse(
 			p -> this.messageCentral.send(p, response),
@@ -162,7 +162,7 @@ public class MessageCentralValidatorSync implements SyncVerticesRequestSender, S
 				}
 
 				BFTNode node = BFTNode.create(src.getSystem().getKey());
-				return new GetVerticesErrorResponse(node, msg.syncInfo());
+				return new GetVerticesErrorResponse(node, msg.highQC());
 			}
 		);
 	}

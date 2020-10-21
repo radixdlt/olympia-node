@@ -22,38 +22,29 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.Hasher;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.Hasher;
+import com.radixdlt.consensus.Sha256Hasher;
+import com.radixdlt.crypto.HashUtils;
 import org.junit.Before;
 import org.junit.Test;
 
 public class SimpleLedgerAccumulatorAndVerifierTest {
 	private SimpleLedgerAccumulatorAndVerifier accumulatorAndVerifier;
+	private Hasher hasher;
 
 	@Before
 	public void setup() {
-		Hasher hasher = new Hasher() {
-			@Override
-			public Hash hash(Object o) {
-				throw new UnsupportedOperationException();
-			}
-
-			@Override
-			public Hash hashBytes(byte[] bytes) {
-				return Hash.of(bytes);
-			}
-		};
-
+		hasher = Sha256Hasher.withDefaultSerialization();
 		accumulatorAndVerifier = new SimpleLedgerAccumulatorAndVerifier(hasher);
 	}
 
 	@Test
 	public void when_accumulate__then_should_verify() {
-		Command command = new Command(new byte[] {0});
-		AccumulatorState headState = new AccumulatorState(345, Hash.ZERO_HASH);
-		AccumulatorState nextState = accumulatorAndVerifier.accumulate(headState, command.hash());
-		assertThat(accumulatorAndVerifier.verify(headState, ImmutableList.of(command), nextState)).isTrue();
+		AccumulatorState headState = new AccumulatorState(345, HashUtils.zero256());
+		AccumulatorState nextState = accumulatorAndVerifier.accumulate(headState, HashUtils.zero256());
+		assertThat(accumulatorAndVerifier.verify(headState, ImmutableList.of(HashUtils.zero256()), nextState)).isTrue();
 	}
 
 	@Test
@@ -63,7 +54,7 @@ public class SimpleLedgerAccumulatorAndVerifierTest {
 		AccumulatorState nextState = mock(AccumulatorState.class);
 		when(nextState.getStateVersion()).thenReturn(1235L);
 
-		assertThat(accumulatorAndVerifier.verifyAndGetExtension(curState, ImmutableList.of(), nextState))
+		assertThat(accumulatorAndVerifier.verifyAndGetExtension(curState, ImmutableList.of(), i -> null, nextState))
 			.isEmpty();
 	}
 
@@ -74,7 +65,7 @@ public class SimpleLedgerAccumulatorAndVerifierTest {
 		AccumulatorState nextState = mock(AccumulatorState.class);
 		when(nextState.getStateVersion()).thenReturn(1236L);
 
-		assertThat(accumulatorAndVerifier.verifyAndGetExtension(curState, ImmutableList.of(mock(Command.class)), nextState))
+		assertThat(accumulatorAndVerifier.verifyAndGetExtension(curState, ImmutableList.of(mock(Command.class)), i -> null, nextState))
 			.isEmpty();
 	}
 
@@ -82,19 +73,18 @@ public class SimpleLedgerAccumulatorAndVerifierTest {
 	public void when_empty_command_truncate_from_perfect_version__then_should_return_empty_list() {
 		AccumulatorState state = mock(AccumulatorState.class);
 		when(state.getStateVersion()).thenReturn(1234L);
-		when(state.getAccumulatorHash()).thenReturn(mock(Hash.class));
+		when(state.getAccumulatorHash()).thenReturn(mock(HashCode.class));
 
-		assertThat(accumulatorAndVerifier.verifyAndGetExtension(state, ImmutableList.of(), state))
+		assertThat(accumulatorAndVerifier.verifyAndGetExtension(state, ImmutableList.of(), i -> null, state))
 			.hasValue(ImmutableList.of());
 	}
 
 	@Test
 	public void when_single_command_truncate_from_perfect_version__then_should_return_equivalent() {
 		Command command = new Command(new byte[] {0});
-		AccumulatorState headState = new AccumulatorState(345, Hash.ZERO_HASH);
-		AccumulatorState nextState = accumulatorAndVerifier.accumulate(headState, command.hash());
-
-		assertThat(accumulatorAndVerifier.verifyAndGetExtension(headState, ImmutableList.of(command), nextState))
+		AccumulatorState headState = new AccumulatorState(345, HashUtils.zero256());
+		AccumulatorState nextState = accumulatorAndVerifier.accumulate(headState, hasher.hash(command));
+		assertThat(accumulatorAndVerifier.verifyAndGetExtension(headState, ImmutableList.of(command), hasher::hash, nextState))
 			.hasValue(ImmutableList.of(command));
 	}
 }

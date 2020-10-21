@@ -38,6 +38,7 @@ public class MessageEventTest {
 	@Test
 	public void equalsContract() {
 		EqualsVerifier.forClass(MessageEvent.class)
+			.withRedefinedSuperclass()
 			.verify();
 	}
 

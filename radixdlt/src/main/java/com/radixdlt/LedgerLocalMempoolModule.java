@@ -20,6 +20,7 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.mempool.LocalMempool;
 
 public class LedgerLocalMempoolModule extends AbstractModule {
@@ -31,7 +32,7 @@ public class LedgerLocalMempoolModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	LocalMempool localMempool() {
-		return new LocalMempool(maxSize);
+	LocalMempool localMempool(Hasher hasher) {
+		return new LocalMempool(maxSize, hasher);
 	}
 }

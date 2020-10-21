@@ -20,7 +20,7 @@ package com.radixdlt.middleware2.network;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.UnverifiedVertex;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.HashUtils;
 import org.radix.serialization.SerializeMessageObject;
 
 public class GetVerticesResponseMessageSerializeTest extends SerializeMessageObject<GetVerticesResponseMessage> {
@@ -29,7 +29,7 @@ public class GetVerticesResponseMessageSerializeTest extends SerializeMessageObj
 	}
 
 	private static GetVerticesResponseMessage get() {
-		LedgerHeader ledgerHeader = LedgerHeader.genesis(Hash.ZERO_HASH, null);
+		LedgerHeader ledgerHeader = LedgerHeader.genesis(HashUtils.zero256(), null);
 		UnverifiedVertex genesisVertex = UnverifiedVertex.createGenesis(ledgerHeader);
 		return new GetVerticesResponseMessage(1234, ImmutableList.of(genesisVertex));
 	}

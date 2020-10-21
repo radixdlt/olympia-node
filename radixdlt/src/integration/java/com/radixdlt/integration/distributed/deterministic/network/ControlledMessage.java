@@ -25,40 +25,52 @@ import java.util.Objects;
 public final class ControlledMessage {
 	private final ChannelId channelId;
 	private final Object message;
+	private final long arrivalTime;
 
-	public ControlledMessage(int senderIndex, int receiverIndex, Object message) {
-		this(ChannelId.of(senderIndex, receiverIndex), message);
-	}
-
-	public ControlledMessage(ChannelId channelId, Object message) {
+	public ControlledMessage(ChannelId channelId, Object message, long arrivalTime) {
 		this.channelId = channelId;
 		this.message = message;
+		this.arrivalTime = arrivalTime;
+	}
+
+	public ControlledMessage withAdditionalDelay(long additionalDelay) {
+		return new ControlledMessage(this.channelId, this.message, this.arrivalTime + additionalDelay);
+	}
+
+	public ControlledMessage withArrivalTime(long arrivalTime) {
+		return new ControlledMessage(this.channelId, this.message, arrivalTime);
 	}
 
 	public ChannelId channelId() {
-		return channelId;
+		return this.channelId;
 	}
 
 	public Object message() {
-		return message;
+		return this.message;
+	}
+
+	public long arrivalTime() {
+		return this.arrivalTime;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.channelId, this.message);
+		return Objects.hash(this.channelId, this.message, this.arrivalTime);
 	}
 
 	@Override
 	public boolean equals(Object o) {
 		if (o instanceof ControlledMessage) {
 			ControlledMessage that = (ControlledMessage) o;
-			return Objects.equals(this.channelId, that.channelId) && Objects.equals(this.message, that.message);
+			return this.arrivalTime == that.arrivalTime
+				&& Objects.equals(this.channelId, that.channelId)
+				&& Objects.equals(this.message, that.message);
 		}
 		return false;
 	}
 
 	@Override
 	public String toString() {
-		return channelId + " " + message;
+		return String.format("%s(%s) %s", channelId, arrivalTime, message);
 	}
 }

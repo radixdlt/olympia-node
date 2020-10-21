@@ -25,6 +25,8 @@ import com.radixdlt.serialization.SerializerId2;
 import org.radix.universe.system.RadixSystem;
 import org.radix.universe.system.SystemMessage;
 
+import java.util.Objects;
+
 @SerializerId2("peer.pong")
 public final class PeerPongMessage extends SystemMessage {
 	@JsonProperty("nonce")
@@ -58,5 +60,27 @@ public final class PeerPongMessage extends SystemMessage {
 	public String toString() {
 		return String.format("%s[%s:%s:%s]",
 			getClass().getSimpleName(), getSystem().getNID(), UnsignedLong.fromLongBits(nonce), UnsignedLong.fromLongBits(payload));
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		PeerPongMessage that = (PeerPongMessage) o;
+		return nonce == that.nonce
+				&& payload == that.payload
+				&& Objects.equals(getTimestamp(), that.getTimestamp())
+				&& Objects.equals(getMagic(), that.getMagic())
+				&& Objects.equals(getSystem(), that.getSystem())
+				&& Objects.equals(getSignature(), that.getSignature());
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(nonce, payload, getTimestamp(), getMagic(), getSystem(), getSignature());
 	}
 }

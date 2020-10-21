@@ -22,8 +22,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.errorprone.annotations.Immutable;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.exception.PublicKeyException;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -31,69 +31,64 @@ import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 
 import java.util.Objects;
-import java.util.Optional;
 
 /**
- * Represents a new-view message from the pacemaker
+ * The signed data contained in a {@link ViewTimeout} message.
+ * <p>
+ * A view timeout message signals to the receiver that a view timeout has occurred for the author.
  */
-@SerializerId2("consensus.newview")
-@Immutable // view and author cannot be but are effectively final because of serializer
-public final class NewView implements RequiresSyncConsensusEvent {
+@Immutable
+@SerializerId2("consensus.view_timeout_data")
+public final class ViewTimeoutData {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
-	SerializerDummy serializer = SerializerDummy.DUMMY;
-
-	@JsonProperty("sync_info")
 	@DsonOutput(Output.ALL)
-	private final HighQC syncInfo;
+	SerializerDummy serializer = SerializerDummy.DUMMY;
 
 	private final BFTNode author;
 
+	@JsonProperty("epoch")
+	@DsonOutput(Output.ALL)
+	private final long epoch;
+
 	private final View view;
 
-	@JsonProperty("signature")
-	@DsonOutput(Output.ALL)
-	private final ECDSASignature signature; // may be null if not signed (e.g. for genesis)
+	/**
+	 * Creates a the data to be signed for a view timeout from the specified
+	 * arguments.
+	 *
+	 * @param author The author of the timeout message
+	 * @param epoch The epoch for the view that timed out
+	 * @param view The view that timed out
+	 */
+	public static ViewTimeoutData from(BFTNode author, long epoch, View view) {
+		return new ViewTimeoutData(author, epoch, view);
+	}
 
 	@JsonCreator
-	NewView(
+	private ViewTimeoutData(
 		@JsonProperty("author") byte[] author,
-		@JsonProperty("view") Long view,
-		@JsonProperty("sync_info") HighQC syncInfo,
-		@JsonProperty("signature") ECDSASignature signature
+		@JsonProperty("epoch") long epoch,
+		@JsonProperty("view") long view
 	) throws PublicKeyException {
-		this(BFTNode.fromPublicKeyBytes(author), view != null ? View.of(view) : null, syncInfo, signature);
+		this(BFTNode.create(ECPublicKey.fromBytes(author)), epoch, View.of(view));
 	}
 
-	public NewView(BFTNode author, View view, HighQC syncInfo, ECDSASignature signature) {
+	private ViewTimeoutData(BFTNode author, long epoch, View view) {
 		this.author = Objects.requireNonNull(author);
+		this.epoch = epoch;
 		this.view = Objects.requireNonNull(view);
-		this.syncInfo = Objects.requireNonNull(syncInfo);
-		this.signature = signature;
 	}
 
-	@Override
-	public long getEpoch() {
-		return this.syncInfo.highestQC().getProposed().getLedgerHeader().getEpoch();
+	public BFTNode author() {
+		return this.author;
 	}
 
-	@Override
-	public HighQC syncInfo() {
-		return this.syncInfo;
+	public long epoch() {
+		return this.epoch;
 	}
 
-	@Override
-	public BFTNode getAuthor() {
-		return author;
-	}
-
-	@Override
-	public View getView() {
-		return view;
-	}
-
-	public Optional<ECDSASignature> getSignature() {
-		return Optional.ofNullable(this.signature);
+	public View view() {
+		return this.view;
 	}
 
 	@JsonProperty("view")
@@ -113,25 +108,22 @@ public final class NewView implements RequiresSyncConsensusEvent {
 		if (this == o) {
 			return true;
 		}
-		if (o == null || getClass() != o.getClass()) {
-			return false;
+		if (o instanceof ViewTimeoutData) {
+			ViewTimeoutData that = (ViewTimeoutData) o;
+			return this.epoch == that.epoch
+				&& Objects.equals(this.author, that.author)
+				&& Objects.equals(this.view, that.view);
 		}
-		NewView newView = (NewView) o;
-		return Objects.equals(author, newView.author)
-			&& Objects.equals(view, newView.view)
-			&& Objects.equals(syncInfo, newView.syncInfo)
-			&& Objects.equals(signature, newView.signature);
+		return false;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(author, view, syncInfo, signature);
+		return Objects.hash(this.author, this.epoch, this.view);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{epoch=%s view=%s syncInfo=%s author=%s}",
-			getClass().getSimpleName(), this.getEpoch(), view, syncInfo, author
-		);
+		return String.format("%s{author=%s epoch=%s view=%s}", getClass().getSimpleName(), this.author, this.epoch, this.view);
 	}
 }

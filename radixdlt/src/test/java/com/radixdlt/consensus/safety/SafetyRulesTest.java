@@ -17,17 +17,20 @@
 
 package com.radixdlt.consensus.safety;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.HashSigner;
-import com.radixdlt.consensus.Hasher;
+import com.radixdlt.consensus.HighQC;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.safety.SafetyState.Builder;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.ECDSASignature;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -46,8 +49,9 @@ public class SafetyRulesTest {
 	public void setup() {
 		this.safetyState = mock(SafetyState.class);
 		Hasher hasher = mock(Hasher.class);
-		when(hasher.hash(any())).thenReturn(mock(Hash.class));
+		when(hasher.hash(any())).thenReturn(mock(HashCode.class));
 		HashSigner hashSigner = mock(HashSigner.class);
+		when(hashSigner.sign(Mockito.<HashCode>any())).thenReturn(new ECDSASignature());
 		this.safetyRules = new SafetyRules(mock(BFTNode.class), safetyState, hasher, hashSigner);
 	}
 
@@ -58,7 +62,7 @@ public class SafetyRulesTest {
 		VerifiedVertex vertex = mock(VerifiedVertex.class);
 		when(vertex.getView()).thenReturn(view);
 
-		assertThatThrownBy(() -> this.safetyRules.voteFor(vertex, mock(BFTHeader.class), 0L, 0L))
+		assertThatThrownBy(() -> this.safetyRules.voteFor(vertex, mock(BFTHeader.class), 0L, mock(HighQC.class)))
 			.isInstanceOf(SafetyViolationException.class);
 	}
 
@@ -72,7 +76,7 @@ public class SafetyRulesTest {
 		when(parent.getView()).thenReturn(View.of(0));
 		when(vertex.getParentHeader()).thenReturn(parent);
 
-		assertThatThrownBy(() -> this.safetyRules.voteFor(vertex, mock(BFTHeader.class), 0L, 0L))
+		assertThatThrownBy(() -> this.safetyRules.voteFor(vertex, mock(BFTHeader.class), 0L, mock(HighQC.class)))
 			.isInstanceOf(SafetyViolationException.class);
 	}
 
@@ -93,7 +97,7 @@ public class SafetyRulesTest {
 		when(grandParent.getView()).thenReturn(mock(View.class));
 		when(vertex.getGrandParentHeader()).thenReturn(grandParent);
 		BFTHeader header = mock(BFTHeader.class);
-		Vote vote = safetyRules.voteFor(vertex, header, 0L, 0L);
+		Vote vote = safetyRules.voteFor(vertex, header, 0L, mock(HighQC.class));
 		assertThat(vote.getVoteData().getProposed()).isEqualTo(header);
 		assertThat(vote.getVoteData().getParent()).isEqualTo(parent);
 		assertThat(vote.getVoteData().getCommitted()).isEmpty();
@@ -115,7 +119,7 @@ public class SafetyRulesTest {
 		BFTHeader grandParent = mock(BFTHeader.class);
 		when(grandParent.getView()).thenReturn(mock(View.class));
 		when(proposal.getGrandParentHeader()).thenReturn(grandParent);
-		Vote vote = safetyRules.voteFor(proposal, mock(BFTHeader.class), 0L, 0L);
+		Vote vote = safetyRules.voteFor(proposal, mock(BFTHeader.class), 0L, mock(HighQC.class));
 		assertThat(vote.getVoteData().getCommitted()).isEmpty();
 	}
 
@@ -137,7 +141,7 @@ public class SafetyRulesTest {
 		when(proposal.getParentHeader()).thenReturn(parent);
 		when(proposal.getView()).thenReturn(View.of(3));
 
-		Vote vote = safetyRules.voteFor(proposal, mock(BFTHeader.class), 0L, 0L);
+		Vote vote = safetyRules.voteFor(proposal, mock(BFTHeader.class), 0L, mock(HighQC.class));
 		assertThat(vote.getVoteData().getCommitted()).hasValue(grandparentHeader);
 	}
 
@@ -159,7 +163,7 @@ public class SafetyRulesTest {
 		when(grandParent.getView()).thenReturn(mock(View.class));
 		when(proposal.getGrandParentHeader()).thenReturn(grandParent);
 
-		Vote vote = safetyRules.voteFor(proposal, mock(BFTHeader.class), 0L, 0L);
+		Vote vote = safetyRules.voteFor(proposal, mock(BFTHeader.class), 0L, mock(HighQC.class));
 		assertThat(vote.getVoteData().getCommitted()).isEmpty();
 	}
 }

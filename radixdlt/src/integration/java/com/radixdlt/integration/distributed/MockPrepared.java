@@ -15,26 +15,29 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.integration.distributed;
 
-import com.radixdlt.consensus.bft.View;
+import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.Command;
+import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
 
-/**
- * A consensus event which requires syncing to be effectively
- * processed
- */
-public interface RequiresSyncConsensusEvent extends ConsensusEvent {
+public class MockPrepared implements PreparedCommand {
 
-	/**
-	 * Retrieves the {@link HighQC} associated with the event.
-	 *
-	 * @return {@linke SyncInfo} associated with event
-	 */
-	HighQC syncInfo();
+	private final Command command;
+	private final HashCode hash;
 
-	/**
-	 * Get the view the consensus event is meant for
-	 * @return view of consensus event
-	 */
-	View getView();
+	public MockPrepared(Command command, HashCode hash) {
+		this.command = command;
+		this.hash = hash;
+	}
+
+	@Override
+	public Command command() {
+		return command;
+	}
+
+	@Override
+	public HashCode hash() {
+		return hash;
+	}
 }

@@ -26,7 +26,7 @@ import com.google.inject.Injector;
 import com.google.inject.name.Names;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTFactory;
-import com.radixdlt.consensus.Hasher;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.epoch.ProposerElectionFactory;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.epoch.VertexStoreFactory;
