@@ -18,6 +18,7 @@
 package org.radix.integration.universe;
 
 import com.radixdlt.atommodel.Atom;
+import com.radixdlt.consensus.Sha256Hasher;
 import org.junit.Test;
 import org.radix.integration.RadixTest;
 import com.radixdlt.universe.Universe;
@@ -30,7 +31,7 @@ public class UniverseValidationTest extends RadixTest {
     public void testLoadingUniverse() throws Exception {
         byte[] bytes = Bytes.fromBase64String(getProperties().get("universe"));
         Universe universe = getSerialization().fromDson(bytes, Universe.class);
-        UniverseValidator.validate(universe);
+        UniverseValidator.validate(universe, Sha256Hasher.withDefaultSerialization());
     }
 
     @Test(expected = UnsupportedOperationException.class)

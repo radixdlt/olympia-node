@@ -17,6 +17,8 @@
 
 package com.radixdlt.network.addressbook;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.network.messaging.MessageCentral;
@@ -251,7 +253,7 @@ public class PeerManager {
 			try {
 				// Deliver known Peers in its entirety, filtered on whitelist and activity
 				// Chunk the sending of Peers so that UDP can handle it
-				PeersMessage peersMessage = new PeersMessage(this.universeMagic);
+				List<Peer> peersList = Lists.newArrayList();
 				List<Peer> peers = addressbook.peers()
 						.filter(Peer::hasNID)
 						.filter(StandardFilters.standardFilter(localSystem.getNID(), whitelist))
@@ -264,15 +266,15 @@ public class PeerManager {
 						continue;
 					}
 
-					peersMessage.getPeers().add(p);
-					if (peersMessage.getPeers().size() == peerMessageBatchSize) {
-						messageCentral.send(peer, peersMessage);
-						peersMessage = new PeersMessage(this.universeMagic);
+					peersList.add(p);
+					if (peersList.size() == peerMessageBatchSize) {
+						messageCentral.send(peer, new PeersMessage(this.universeMagic, ImmutableList.copyOf(peersList)));
+						peersList.clear();
 					}
 				}
 
-				if (!peersMessage.getPeers().isEmpty()) {
-					messageCentral.send(peer, peersMessage);
+				if (!peersList.isEmpty()) {
+					messageCentral.send(peer, new PeersMessage(this.universeMagic, ImmutableList.copyOf(peersList)));
 				}
 			} catch (Exception ex) {
 				log.error(String.format("peers.get %s", peer), ex);

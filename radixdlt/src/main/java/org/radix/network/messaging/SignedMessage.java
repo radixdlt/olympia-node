@@ -17,9 +17,10 @@
 
 package org.radix.network.messaging;
 
+import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 
@@ -49,16 +50,15 @@ public abstract class SignedMessage extends Message {
 		this.signature = signature;
 	}
 
-
-	public void sign(ECKeyPair key) {
-		sign(key, false);
+	public void sign(ECKeyPair key, Hasher hasher) {
+		sign(key, false, hasher);
 	}
 
-	public void sign(ECKeyPair key, boolean deterministic) {
-		this.signature = key.sign(getHash().toByteArray(), true, deterministic);
+	public void sign(ECKeyPair key, boolean deterministic, Hasher hasher) {
+		setSignature(key.sign(hasher.hash(this).asBytes(), true, deterministic));
 	}
 
-	public boolean verify(ECPublicKey key) {
-		return key.verify(getHash(), this.signature);
+	public boolean verify(ECPublicKey key, Hasher hasher) {
+		return key.verify(hasher.hash(this), getSignature());
 	}
 }

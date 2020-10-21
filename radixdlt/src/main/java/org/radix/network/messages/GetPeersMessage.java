@@ -20,8 +20,11 @@ package org.radix.network.messages;
 import org.radix.network.messaging.Message;
 import com.radixdlt.serialization.SerializerId2;
 
+import java.util.Objects;
+
 @SerializerId2("network.message.get_peers")
 public final class GetPeersMessage extends Message {
+
 	GetPeersMessage() {
 		// Serializer only
 		super(0);
@@ -34,5 +37,23 @@ public final class GetPeersMessage extends Message {
 	@Override
 	public String toString() {
 		return getClass().getSimpleName();
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		GetPeersMessage that = (GetPeersMessage) o;
+		return Objects.equals(getTimestamp(), that.getTimestamp())
+				&& Objects.equals(getMagic(), that.getMagic());
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(getTimestamp(), getMagic());
 	}
 }

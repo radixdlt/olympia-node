@@ -18,6 +18,7 @@
 package com.radixdlt.consensus.sync;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -31,7 +32,6 @@ import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.liveness.Pacemaker;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdateProcessor;
 import com.radixdlt.sync.LocalSyncRequest;
@@ -63,7 +63,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 	}
 
 	private static class SyncState {
-		private final Hash localSyncId;
+		private final HashCode localSyncId;
 		private final HighQC syncInfo;
 		private final BFTHeader committedHeader;
 		private final VerifiedLedgerHeaderAndProof committedProof;
@@ -110,15 +110,15 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 		 * @param id the id of the vertex to retrieve
 		 * @param count number of vertices to retrieve
 		 */
-		void sendGetVerticesRequest(BFTNode node, Hash id, int count);
+		void sendGetVerticesRequest(BFTNode node, HashCode id, int count);
 	}
 
 	private static final Logger log = LogManager.getLogger();
 	private final VertexStore vertexStore;
 	private final Pacemaker pacemaker;
-	private final Map<Hash, SyncState> syncing = new HashMap<>();
-	private final TreeMap<LedgerHeader, List<Hash>> ledgerSyncing;
-	private final Map<Pair<Hash, Integer>, List<Hash>> bftSyncing = new HashMap<>();
+	private final Map<HashCode, SyncState> syncing = new HashMap<>();
+	private final TreeMap<LedgerHeader, List<HashCode>> ledgerSyncing;
+	private final Map<Pair<HashCode, Integer>, List<HashCode>> bftSyncing = new HashMap<>();
 	private final SyncVerticesRequestSender requestSender;
 	private final SyncLedgerRequestSender syncLedgerRequestSender;
 	private VerifiedLedgerHeaderAndProof currentLedgerHeader;
@@ -142,7 +142,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 	@Override
 	public SyncResult syncToQC(HighQC highQC, @Nullable BFTNode author) {
 		final QuorumCertificate qc = highQC.highestQC();
-		final Hash vertexId = qc.getProposed().getVertexId();
+		final HashCode vertexId = qc.getProposed().getVertexId();
 		if (qc.getProposed().getView().compareTo(vertexStore.getRoot().getView()) < 0) {
 			return SyncResult.INVALID;
 		}
@@ -202,28 +202,14 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 	}
 
 	private void doCommittedSync(SyncState syncState) {
-		final Hash committedQCId = syncState.highQC().highestCommittedQC().getProposed().getVertexId();
+		final HashCode committedQCId = syncState.highQC().highestCommittedQC().getProposed().getVertexId();
 		syncState.setSyncStage(SyncStage.GET_COMMITTED_VERTICES);
 		log.debug("SYNC_VERTICES: Committed: Sending initial GetVerticesRequest for sync={}", syncState);
 		// Retrieve the 3 vertices preceding the committedQC so we can create a valid committed root
 		this.sendBFTSyncRequest(syncState, committedQCId, 3);
 	}
 
-	/*
-	public void processTimeout(SyncState syncState) {
-		if (syncing.containsKey(syncState.localSyncId)) {
-		}
-		Pair<Hash, Integer> requestInfo = Pair.of(vertexId, count);
-		List<Hash> syncs = bftSyncing.remove(requestInfo);
-		if (syncs != null) {
-			for (Hash syncTo : syncs) {
-
-			}
-		}
-	}
-	 */
-
-	private void sendBFTSyncRequest(SyncState syncState, Hash vertexId, int count) {
+	private void sendBFTSyncRequest(SyncState syncState, HashCode vertexId, int count) {
 		bftSyncing.compute(Pair.of(vertexId, count), (pair, syncing) -> {
 			if (syncing == null) {
 				syncing = new ArrayList<>();
@@ -286,7 +272,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 	private void processVerticesResponseForQCSync(SyncState syncState, GetVerticesResponse response) {
 		VerifiedVertex vertex = response.getVertices().get(0);
 		syncState.fetched.addFirst(vertex);
-		Hash parentId = vertex.getParentId();
+		HashCode parentId = vertex.getParentId();
 
 		if (vertexStore.containsVertex(parentId)) {
 			// TODO: combine
@@ -327,10 +313,10 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 		log.trace("SYNC_VERTICES: Received GetVerticesResponse {}", response);
 
 		VerifiedVertex firstVertex = response.getVertices().get(0);
-		Pair<Hash, Integer> requestInfo = Pair.of(firstVertex.getId(), response.getVertices().size());
-		List<Hash> syncs = bftSyncing.remove(requestInfo);
+		Pair<HashCode, Integer> requestInfo = Pair.of(firstVertex.getId(), response.getVertices().size());
+		List<HashCode> syncs = bftSyncing.remove(requestInfo);
 		if (syncs != null) {
-			for (Hash syncTo : syncs) {
+			for (HashCode syncTo : syncs) {
 				SyncState syncState = syncing.get(syncTo);
 				if (syncState == null) {
 					continue; // sync requirements already satisfied by another sync
@@ -360,13 +346,13 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 
 		this.currentLedgerHeader = ledgerUpdate.getTail();
 
-		Collection<List<Hash>> listeners = this.ledgerSyncing.headMap(
+		Collection<List<HashCode>> listeners = this.ledgerSyncing.headMap(
 			ledgerUpdate.getTail().getRaw(), true
 		).values();
-		Iterator<List<Hash>> listenersIterator = listeners.iterator();
+		Iterator<List<HashCode>> listenersIterator = listeners.iterator();
 		while (listenersIterator.hasNext()) {
-			List<Hash> syncs = listenersIterator.next();
-			for (Hash syncTo : syncs) {
+			List<HashCode> syncs = listenersIterator.next();
+			for (HashCode syncTo : syncs) {
 				SyncState syncState = syncing.get(syncTo);
 				if (syncState != null) {
 					rebuildAndSyncQC(syncState);

@@ -17,10 +17,10 @@
 
 package org.radix.network.messages;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 
+import com.google.common.collect.ImmutableList;
 import org.radix.network.messaging.Message;
 
 import com.radixdlt.network.addressbook.Peer;
@@ -35,28 +35,45 @@ public final class PeersMessage extends Message
 {
 	@JsonProperty("peers")
 	@DsonOutput(Output.ALL)
-	private List<Peer> peers = new ArrayList<>();
+	private final ImmutableList<Peer> peers;
 
+	// For serializer
 	private PeersMessage() {
 		super(0);
-		// For serializer
+		peers = ImmutableList.of();
 	}
 
 	public PeersMessage(int magic) {
+		this(magic, ImmutableList.of());
+	}
+
+	public PeersMessage(int magic, ImmutableList<Peer> peers) {
 		super(magic);
+
+		this.peers = peers;
 	}
 
 	public List<Peer> getPeers() {
 		return peers;
 	}
 
-	public void setPeers(Collection<Peer> peers) {
-		this.peers.clear();
-		this.peers.addAll(peers);
-	}
-
 	@Override
 	public String toString() {
 		return String.format("%s[%s]", getClass().getSimpleName(), peers);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		PeersMessage that = (PeersMessage) o;
+		return Objects.equals(peers, that.peers)
+				&& Objects.equals(getTimestamp(), that.getTimestamp())
+				&& Objects.equals(getMagic(), that.getMagic());
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(peers, getTimestamp(), getMagic());
 	}
 }

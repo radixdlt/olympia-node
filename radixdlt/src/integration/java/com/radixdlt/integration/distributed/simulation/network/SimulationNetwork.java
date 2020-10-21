@@ -19,6 +19,7 @@ package com.radixdlt.integration.distributed.simulation.network;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
@@ -40,7 +41,6 @@ import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.sync.RemoteSyncResponse;
 import com.radixdlt.sync.StateSyncNetwork;
@@ -174,7 +174,7 @@ public class SimulationNetwork {
 		}
 
 		@Override
-		public void sendGetVerticesRequest(BFTNode node, Hash id, int count) {
+		public void sendGetVerticesRequest(BFTNode node, HashCode id, int count) {
 			final GetVerticesRequest request = new GetVerticesRequest(thisNode, id, count);
 			receivedMessages.onNext(MessageInTransit.newMessage(request, thisNode, node));
 		}

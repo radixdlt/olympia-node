@@ -31,7 +31,7 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.EngineStore;
@@ -55,13 +55,13 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 			proof.timestamp()
 		);
 		UnverifiedVertex genesis = UnverifiedVertex.createGenesis(nextLedgerHeader);
-		VerifiedVertex verifiedGenesis = new VerifiedVertex(genesis, Hash.ZERO_HASH);
+		VerifiedVertex verifiedGenesis = new VerifiedVertex(genesis, HashUtils.zero256());
 		QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesis, nextLedgerHeader);
 		return new BFTConfiguration(validatorSet, verifiedGenesis, genesisQC);
 	}
 
 	@Provides
 	public VerifiedLedgerHeaderAndProof genesisVertexMetadata(BFTValidatorSet validatorSet) {
-		return VerifiedLedgerHeaderAndProof.genesis(Hash.ZERO_HASH, validatorSet);
+		return VerifiedLedgerHeaderAndProof.genesis(HashUtils.zero256(), validatorSet);
 	}
 }

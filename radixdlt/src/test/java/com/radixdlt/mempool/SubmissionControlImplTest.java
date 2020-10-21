@@ -19,6 +19,8 @@ package com.radixdlt.mempool;
 
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.Sha256Hasher;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.SubmissionControlImpl.SubmissionControlSender;
 import com.radixdlt.middleware.ParticleGroup;
@@ -49,6 +51,7 @@ public class SubmissionControlImplTest {
 	private Serialization serialization;
 	private SubmissionControlSender sender;
 	private SubmissionControlImpl submissionControl;
+	private Hasher hasher;
 
 	@Before
 	public void setUp() {
@@ -59,7 +62,8 @@ public class SubmissionControlImplTest {
 		this.radixEngine = re;
 		this.serialization = mock(Serialization.class);
 		this.sender = mock(SubmissionControlSender.class);
-		this.submissionControl = new SubmissionControlImpl(this.mempool, this.radixEngine, this.serialization, this.sender);
+		this.hasher = Sha256Hasher.withDefaultSerialization();
+		this.submissionControl = new SubmissionControlImpl(this.mempool, this.radixEngine, this.serialization, this.sender, this.hasher);
 	}
 
 	@Test

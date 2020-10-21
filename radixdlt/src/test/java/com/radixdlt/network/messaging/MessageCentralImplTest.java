@@ -18,6 +18,7 @@
 package com.radixdlt.network.messaging;
 
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
@@ -129,7 +130,8 @@ public class MessageCentralImplTest {
 			System::currentTimeMillis,
 			queueFactory,
 			localSystem,
-			counters
+			counters,
+			Sha256Hasher.withDefaultSerialization()
 		);
 	}
 

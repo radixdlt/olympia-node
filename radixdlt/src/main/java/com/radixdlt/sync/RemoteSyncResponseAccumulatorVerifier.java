@@ -17,7 +17,10 @@
 
 package com.radixdlt.sync;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
@@ -39,16 +42,19 @@ public final class RemoteSyncResponseAccumulatorVerifier implements RemoteSyncRe
 	private final VerifiedAccumulatorSender verifiedSender;
 	private final InvalidAccumulatorSender invalidSyncedCommandsSender;
 	private final LedgerAccumulatorVerifier accumulatorVerifier;
+	private final Hasher hasher;
 
 	@Inject
 	public RemoteSyncResponseAccumulatorVerifier(
 		VerifiedAccumulatorSender verifiedSender,
 		InvalidAccumulatorSender invalidSyncedCommandsSender,
-		LedgerAccumulatorVerifier accumulatorVerifier
+		LedgerAccumulatorVerifier accumulatorVerifier,
+		Hasher hasher
 	) {
 		this.verifiedSender = Objects.requireNonNull(verifiedSender);
 		this.invalidSyncedCommandsSender = Objects.requireNonNull(invalidSyncedCommandsSender);
 		this.accumulatorVerifier = Objects.requireNonNull(accumulatorVerifier);
+		this.hasher = Objects.requireNonNull(hasher);
 	}
 
 	@Override
@@ -59,7 +65,10 @@ public final class RemoteSyncResponseAccumulatorVerifier implements RemoteSyncRe
 
 		AccumulatorState start = commandsAndProof.getHead().getLedgerHeader().getAccumulatorState();
 		AccumulatorState end = commandsAndProof.getTail().getLedgerHeader().getAccumulatorState();
-		if (!this.accumulatorVerifier.verify(start, commandsAndProof.getCommands(), end)) {
+		ImmutableList<HashCode> hashes = commandsAndProof.getCommands().stream()
+			.map(hasher::hash)
+			.collect(ImmutableList.toImmutableList());
+		if (!this.accumulatorVerifier.verify(start, hashes, end)) {
 			invalidSyncedCommandsSender.sendInvalidAccumulator(syncResponse);
 			return;
 		}

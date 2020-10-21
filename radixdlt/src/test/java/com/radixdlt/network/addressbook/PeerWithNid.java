@@ -17,6 +17,7 @@
 
 package com.radixdlt.network.addressbook;
 
+import java.util.Objects;
 import java.util.stream.Stream;
 
 import org.radix.universe.system.RadixSystem;
@@ -26,7 +27,7 @@ import com.radixdlt.network.transport.TransportException;
 import com.radixdlt.network.transport.TransportInfo;
 import com.radixdlt.network.transport.TransportMetadata;
 
-final class PeerWithNid extends Peer {
+public final class PeerWithNid extends Peer {
 
 	private final EUID nid;
 
@@ -79,5 +80,20 @@ final class PeerWithNid extends Peer {
 		return String.format("%s[%s]", getClass().getSimpleName(), this.nid);
 	}
 
-	// Note that we rely on equals(...) and hashCode() from BasicContainer here.
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		PeerWithNid that = (PeerWithNid) o;
+		return Objects.equals(nid, that.nid);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(nid);
+	}
 }

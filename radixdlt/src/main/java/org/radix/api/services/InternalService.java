@@ -17,6 +17,7 @@
 
 package org.radix.api.services;
 
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.middleware2.ClientAtom;
 import java.util.Random;
 
@@ -45,13 +46,15 @@ public final class InternalService {
 	private final SubmissionControl submissionControl;
 	private final RuntimeProperties properties;
 	private final Universe universe;
+	private final Hasher hasher;
 
 	private static boolean spamming = false;
 
-	public InternalService(SubmissionControl submissionControl, RuntimeProperties properties, Universe universe) {
+	public InternalService(SubmissionControl submissionControl, RuntimeProperties properties, Universe universe, Hasher hasher) {
 		this.submissionControl = submissionControl;
 		this.properties = properties;
 		this.universe = universe;
+		this.hasher = hasher;
 	}
 
 	private class Spammer implements Runnable {
@@ -121,9 +124,9 @@ public final class InternalService {
 								atom.addParticleGroupWith(rriParticle, Spin.DOWN, unique, Spin.UP);
 							}
 
-							atom.sign(this.owner);
+							atom.sign(this.owner, hasher);
 
-							ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom);
+							ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom, hasher);
 							submissionControl.submitAtom(clientAtom);
 
 							remainingIterations--;

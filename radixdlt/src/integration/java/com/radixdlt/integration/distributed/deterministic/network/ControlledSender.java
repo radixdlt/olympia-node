@@ -17,6 +17,7 @@
 
 package com.radixdlt.integration.distributed.deterministic.network;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.VerifiedVertex;
@@ -37,7 +38,6 @@ import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.consensus.epoch.LocalTimeout;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.integration.distributed.deterministic.network.DeterministicNetwork.DeterministicSender;
 
 /**
@@ -55,7 +55,7 @@ public final class ControlledSender implements DeterministicSender {
 	}
 
 	@Override
-	public void sendGetVerticesRequest(BFTNode node, Hash id, int count) {
+	public void sendGetVerticesRequest(BFTNode node, HashCode id, int count) {
 		GetVerticesRequest request = new GetVerticesRequest(self, id, count);
 		int receiver = this.network.lookup(node);
 		handleMessage(MessageRank.EARLIEST_POSSIBLE, new ControlledMessage(this.senderIndex, receiver, request));

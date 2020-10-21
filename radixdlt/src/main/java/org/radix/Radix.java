@@ -23,6 +23,8 @@ import com.google.inject.TypeLiteral;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
+import com.radixdlt.consensus.Sha256Hasher;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.systeminfo.InMemorySystemInfoManager;
 import com.radixdlt.api.CommittedAtomsRx;
@@ -186,6 +188,7 @@ public final class Radix
 		CommittedAtomsRx committedAtomsRx = globalInjector.getInjector().getInstance(CommittedAtomsRx.class);
 		Observable<BFTCommittedUpdate> committedUpdates = globalInjector.getInjector()
 			.getInstance(Key.get(new TypeLiteral<Observable<BFTCommittedUpdate>>() { }));
+		Hasher hasher = globalInjector.getInjector().getInstance(Hasher.class);
 		RadixHttpServer httpServer = new RadixHttpServer(
 			infoStateRunner,
 			submissionErrorsRx,
@@ -200,7 +203,8 @@ public final class Radix
 			serialization,
 			properties,
 			localSystem,
-			addressBook
+			addressBook,
+			hasher
 		);
 		httpServer.start(properties);
 
@@ -235,7 +239,7 @@ public final class Radix
 		try {
 			byte[] bytes = Bytes.fromBase64String(properties.get("universe"));
 			Universe u = serialization.fromDson(bytes, Universe.class);
-			UniverseValidator.validate(u);
+			UniverseValidator.validate(u, Sha256Hasher.withDefaultSerialization());
 			return u;
 		} catch (DeserializeException e) {
 			throw new IllegalStateException("Error while deserialising universe", e);

@@ -28,6 +28,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -40,7 +41,6 @@ import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.TypedMocks;
@@ -164,7 +164,7 @@ public class BFTSyncTest {
 		when(vertexStore.getRoot()).thenReturn(rootVertex);
 		when(vertexStore.addQC(any())).thenReturn(false);
 		BFTHeader header = mock(BFTHeader.class);
-		Hash vertexId = mock(Hash.class);
+		HashCode vertexId = mock(HashCode.class);
 		when(header.getVertexId()).thenReturn(vertexId);
 		when(header.getView()).thenReturn(View.of(2));
 		QuorumCertificate qc = mock(QuorumCertificate.class);
@@ -195,7 +195,7 @@ public class BFTSyncTest {
 		when(vertexStore.getRoot()).thenReturn(rootVertex);
 		when(vertexStore.addQC(any())).thenReturn(false);
 		BFTHeader header = mock(BFTHeader.class);
-		Hash vertexId = mock(Hash.class);
+		HashCode vertexId = mock(HashCode.class);
 		when(header.getVertexId()).thenReturn(vertexId);
 		when(header.getView()).thenReturn(View.of(2));
 		QuorumCertificate qc = mock(QuorumCertificate.class);
@@ -224,7 +224,7 @@ public class BFTSyncTest {
 		when(vertexStore.getRoot()).thenReturn(rootVertex);
 		when(vertexStore.addQC(any())).thenReturn(false);
 		BFTHeader header = mock(BFTHeader.class);
-		Hash vertexId = mock(Hash.class);
+		HashCode vertexId = mock(HashCode.class);
 		when(header.getVertexId()).thenReturn(vertexId);
 		when(header.getView()).thenReturn(View.of(3));
 		QuorumCertificate qc = mock(QuorumCertificate.class);
@@ -253,7 +253,7 @@ public class BFTSyncTest {
 		when(vertexStore.getRoot()).thenReturn(rootVertex);
 		when(vertexStore.addQC(any())).thenReturn(false);
 		BFTHeader header = mock(BFTHeader.class);
-		Hash vertexId = mock(Hash.class);
+		HashCode vertexId = mock(HashCode.class);
 		when(header.getVertexId()).thenReturn(vertexId);
 		when(header.getView()).thenReturn(View.of(5));
 		QuorumCertificate qc = mock(QuorumCertificate.class);
@@ -285,7 +285,7 @@ public class BFTSyncTest {
 		when(vertexStore.getRoot()).thenReturn(rootVertex);
 		when(vertexStore.addQC(any())).thenReturn(false);
 		BFTHeader header = mock(BFTHeader.class);
-		Hash vertexId = mock(Hash.class);
+		HashCode vertexId = mock(HashCode.class);
 		when(header.getVertexId()).thenReturn(vertexId);
 		when(header.getView()).thenReturn(View.of(5));
 		QuorumCertificate qc = mock(QuorumCertificate.class);
@@ -295,7 +295,7 @@ public class BFTSyncTest {
 		BFTHeader committedHeader = mock(BFTHeader.class);
 		BFTHeader committedProposed = mock(BFTHeader.class);
 		when(committedQC.getProposed()).thenReturn(committedProposed);
-		Hash committedId = mock(Hash.class);
+		HashCode committedId = mock(HashCode.class);
 		when(committedProposed.getVertexId()).thenReturn(committedId);
 		when(committedHeader.getView()).thenReturn(View.of(3));
 		VerifiedLedgerHeaderAndProof ledgerHeader = mock(VerifiedLedgerHeaderAndProof.class);
@@ -330,7 +330,7 @@ public class BFTSyncTest {
 		when(vertexStore.getRoot()).thenReturn(rootVertex);
 		when(vertexStore.addQC(any())).thenReturn(false);
 		BFTHeader header = mock(BFTHeader.class);
-		Hash vertexId = mock(Hash.class);
+		HashCode vertexId = mock(HashCode.class);
 		when(header.getVertexId()).thenReturn(vertexId);
 		when(header.getView()).thenReturn(View.of(5));
 		QuorumCertificate qc = mock(QuorumCertificate.class);
@@ -340,7 +340,7 @@ public class BFTSyncTest {
 		BFTHeader committedHeader = mock(BFTHeader.class);
 		BFTHeader committedProposed = mock(BFTHeader.class);
 		when(committedQC.getProposed()).thenReturn(committedProposed);
-		Hash committedId = mock(Hash.class);
+		HashCode committedId = mock(HashCode.class);
 		when(committedProposed.getVertexId()).thenReturn(committedId);
 		when(committedHeader.getView()).thenReturn(View.of(3));
 		VerifiedLedgerHeaderAndProof committedLedgerHeader = mock(VerifiedLedgerHeaderAndProof.class);
@@ -377,7 +377,7 @@ public class BFTSyncTest {
 		when(vertexStore.getRoot()).thenReturn(rootVertex);
 		when(vertexStore.addQC(any())).thenReturn(false);
 		BFTHeader header = mock(BFTHeader.class);
-		Hash vertexId = mock(Hash.class);
+		HashCode vertexId = mock(HashCode.class);
 		when(header.getVertexId()).thenReturn(vertexId);
 		when(header.getView()).thenReturn(View.of(2));
 		QuorumCertificate qc = mock(QuorumCertificate.class);
@@ -406,7 +406,7 @@ public class BFTSyncTest {
 		when(vertexStore.getRoot()).thenReturn(rootVertex);
 		when(vertexStore.addQC(any())).thenReturn(false);
 		BFTHeader header = mock(BFTHeader.class);
-		Hash vertexId = mock(Hash.class);
+		HashCode vertexId = mock(HashCode.class);
 		when(header.getVertexId()).thenReturn(vertexId);
 		when(header.getView()).thenReturn(View.of(2));
 		QuorumCertificate qc = mock(QuorumCertificate.class);
@@ -422,7 +422,7 @@ public class BFTSyncTest {
 		when(syncInfo.highestQC()).thenReturn(qc);
 		when(syncInfo.highestCommittedQC()).thenReturn(committedQC);
 		bftSync.syncToQC(syncInfo, author);
-		Hash parentId = mock(Hash.class);
+		HashCode parentId = mock(HashCode.class);
 		when(vertexStore.containsVertex(eq(parentId))).thenReturn(true);
 
 		VerifiedVertex vertex = mock(VerifiedVertex.class);

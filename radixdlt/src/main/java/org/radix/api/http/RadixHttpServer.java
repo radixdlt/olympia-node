@@ -19,6 +19,7 @@ package org.radix.api.http;
 
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.systeminfo.InMemorySystemInfoManager;
@@ -109,7 +110,8 @@ public final class RadixHttpServer {
 		Serialization serialization,
 		RuntimeProperties properties,
 		LocalSystem localSystem,
-		AddressBook addressBook
+		AddressBook addressBook,
+		Hasher hasher
 	) {
 		this.infoStateRunner = Objects.requireNonNull(infoStateRunner);
 		this.consensusRunner = Objects.requireNonNull(consensusRunner);
@@ -125,7 +127,8 @@ public final class RadixHttpServer {
 			store,
 			submissionControl,
 			commandToBinaryConverter,
-			clientAtomToBinaryConverter
+			clientAtomToBinaryConverter,
+			hasher
 		);
 		this.jsonRpcServer = new RadixJsonRpcServer(
 			consensusRunner,
@@ -136,8 +139,8 @@ public final class RadixHttpServer {
 			addressBook,
 			universe
 		);
-		this.internalService = new InternalService(submissionControl, properties, universe);
-		this.networkService = new NetworkService(serialization, localSystem, addressBook);
+		this.internalService = new InternalService(submissionControl, properties, universe, hasher);
+		this.networkService = new NetworkService(serialization, localSystem, addressBook, hasher);
 	}
 
     /**

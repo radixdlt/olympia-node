@@ -20,6 +20,7 @@ package com.radixdlt.statecomputer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.hash.HashCode;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
@@ -28,6 +29,7 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngine.RadixEngineBranch;
 import com.radixdlt.engine.RadixEngineException;
@@ -65,28 +67,47 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private final Serialization serialization;
 	private final RadixEngine<LedgerAtom> radixEngine;
 	private final View epochCeilingView;
+	private final Hasher hasher;
 
-	public RadixEngineStateComputer(
+	private RadixEngineStateComputer(
 		Serialization serialization,
 		RadixEngine<LedgerAtom> radixEngine,
-		View epochCeilingView
+		View epochCeilingView,
+		Hasher hasher
+	) {
+		this.serialization = Objects.requireNonNull(serialization);
+		this.radixEngine = Objects.requireNonNull(radixEngine);
+		this.epochCeilingView = epochCeilingView;
+		this.hasher = hasher;
+	}
+
+	public static RadixEngineStateComputer create(
+		Serialization serialization,
+		RadixEngine<LedgerAtom> radixEngine,
+		View epochCeilingView,
+		Hasher hasher
 	) {
 		if (epochCeilingView.isGenesis()) {
 			throw new IllegalArgumentException("Epoch change view must not be genesis.");
 		}
 
-		this.serialization = Objects.requireNonNull(serialization);
-		this.radixEngine = Objects.requireNonNull(radixEngine);
-		this.epochCeilingView = epochCeilingView;
+		return new RadixEngineStateComputer(serialization, radixEngine, epochCeilingView, hasher);
 	}
 
 	public static class RadixEngineCommand implements PreparedCommand {
 		private final Command command;
+		private final HashCode hash;
 		private final ClientAtom clientAtom;
 		private final PermissionLevel permissionLevel;
 
-		public RadixEngineCommand(Command command, ClientAtom clientAtom, PermissionLevel permissionLevel) {
+		public RadixEngineCommand(
+			Command command,
+			HashCode hash,
+			ClientAtom clientAtom,
+			PermissionLevel permissionLevel
+		) {
 			this.command = command;
+			this.hash = hash;
 			this.clientAtom = clientAtom;
 			this.permissionLevel = permissionLevel;
 		}
@@ -94,6 +115,11 @@ public final class RadixEngineStateComputer implements StateComputer {
 		@Override
 		public Command command() {
 			return command;
+		}
+
+		@Override
+		public HashCode hash() {
+			return hash;
 		}
 	}
 
@@ -120,15 +146,18 @@ public final class RadixEngineStateComputer implements StateComputer {
 				CMMicroInstruction.checkSpinAndPush(lastSystemParticle, Spin.UP),
 				CMMicroInstruction.checkSpinAndPush(nextSystemParticle, Spin.NEUTRAL),
 				CMMicroInstruction.particleGroup()
-			)
+			),
+			hasher
 		);
 		try {
 			branch.checkAndStore(systemUpdate, PermissionLevel.SUPER_USER);
 		} catch (RadixEngineException e) {
 			throw new IllegalStateException("Failed to execute system update.", e);
 		}
+		Command command = new Command(serialization.toDson(systemUpdate, Output.ALL));
 		RadixEngineCommand radixEngineCommand = new RadixEngineCommand(
-			new Command(serialization.toDson(systemUpdate, Output.ALL)),
+			command,
+			hasher.hash(command),
 			systemUpdate,
 			PermissionLevel.SUPER_USER
 		);
@@ -147,7 +176,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 			final RadixEngineCommand radixEngineCommand;
 			try {
 				ClientAtom clientAtom = mapCommand(next);
-				radixEngineCommand = new RadixEngineCommand(next, clientAtom, PermissionLevel.USER);
+				HashCode hash = hasher.hash(next);
+				radixEngineCommand = new RadixEngineCommand(next, hash, clientAtom, PermissionLevel.USER);
 				branch.checkAndStore(clientAtom);
 			} catch (RadixEngineException | DeserializeException e) {
 				errorBuilder.put(next, e);
@@ -170,7 +200,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 					radixEngineCommand.permissionLevel
 				);
 			} catch (RadixEngineException e) {
-				throw new IllegalStateException("Re-execution of already prepared atom failed", e);
+				throw new IllegalStateException("Re-execution of already prepared atom failed: " + radixEngineCommand.clientAtom, e);
 			}
 		}
 
@@ -214,14 +244,13 @@ public final class RadixEngineStateComputer implements StateComputer {
 		for (int i = 0; i < verifiedCommandsAndProof.getCommands().size(); i++) {
 			this.commitCommand(firstVersion + i, verifiedCommandsAndProof.getCommands().get(i), headerAndProof);
 
-			long nextEpoch = radixEngine.getComputedState(SystemParticle.class).getEpoch();
-			if (nextEpoch > currentEpoch) {
-				// TODO: revert commands and log as proof of byzantine quorum rather than throw illegal state exception
-				if (i != verifiedCommandsAndProof.getCommands().size() - 1) {
-					throw new ByzantineQuorumException("change of epoch did not occur on last command");
-				}
+			final long nextEpoch = radixEngine.getComputedState(SystemParticle.class).getEpoch();
+			final boolean isLastCommand = i == verifiedCommandsAndProof.getCommands().size() - 1;
+			final boolean changingEpoch = nextEpoch > currentEpoch;
+			if (isLastCommand && changingEpoch) {
 				epochChange = true;
-				break;
+			} else if (changingEpoch) {
+				throw new ByzantineQuorumException("change of epoch did not occur on last command");
 			}
 		}
 

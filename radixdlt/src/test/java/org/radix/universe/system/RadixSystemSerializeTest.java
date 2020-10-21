@@ -17,6 +17,10 @@
 
 package org.radix.universe.system;
 
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import nl.jqno.equalsverifier.Warning;
 import org.junit.Test;
 import org.radix.Radix;
 import org.radix.serialization.SerializeMessageObject;
@@ -45,5 +49,14 @@ public class RadixSystemSerializeTest extends SerializeMessageObject<RadixSystem
 				key.getPublicKey(), Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION, ImmutableList.of());
 
 		assertEquals(key.getPublicKey().euid().toString(), system.toString());
+	}
+
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(RadixSystem.class)
+				.suppress(Warning.NONFINAL_FIELDS)
+				.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+				.usingGetClass()
+				.verify();
 	}
 }

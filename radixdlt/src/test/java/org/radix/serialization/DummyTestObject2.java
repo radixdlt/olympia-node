@@ -27,7 +27,7 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @SerializerId2("test.dummy_test_object_2")
-public class DummyTestObject2 extends BasicContainer {
+public final class DummyTestObject2 extends BasicContainer {
 
 	@JsonProperty("name")
 	@DsonOutput(Output.ALL)

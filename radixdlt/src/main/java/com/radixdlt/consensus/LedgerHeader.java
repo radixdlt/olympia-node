@@ -23,7 +23,7 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.crypto.Hash;
+import com.google.common.hash.HashCode;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -89,7 +89,7 @@ public final class LedgerHeader {
 		this.timestamp = timestamp;
 	}
 
-	public static LedgerHeader genesis(Hash accumulator, BFTValidatorSet nextValidators) {
+	public static LedgerHeader genesis(HashCode accumulator, BFTValidatorSet nextValidators) {
 		return new LedgerHeader(
 			0, View.genesis(), new AccumulatorState(0, accumulator), 0,
 			nextValidators == null ? null : nextValidators.getValidators()
