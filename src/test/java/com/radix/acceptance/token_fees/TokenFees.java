@@ -130,7 +130,7 @@ public class TokenFees {
 
 	@Then("^I can see that the fee is 40 millirads$")
 	public void i_can_see_that_the_fee_is_40_millirads() {
-		assertEquals(0, atomFee().signum());
+		assertEquals(0, atomFee().compareTo(BigDecimal.valueOf(40, 3)));
 	}
 
 	@When("^I create an atom with a size larger than 3072 bytes,$")
