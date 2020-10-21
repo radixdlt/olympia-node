@@ -26,8 +26,8 @@ import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.LongSummaryStatistics;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
@@ -39,10 +39,8 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class FNodesNeverReceiveProposalDropperTest {
 	@Parameters
-	public static Collection<Object[]> numNodes() {
-		return Arrays.asList(new Object[][] {
-			{4}, {100}
-		});
+	public static Collection<Object[]> testParameters() {
+		return List.of(new Object[][]{{4}, {100}});
 	}
 
 	private final Builder bftTestBuilder;

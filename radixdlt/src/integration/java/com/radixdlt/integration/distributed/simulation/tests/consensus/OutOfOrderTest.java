@@ -26,8 +26,8 @@ import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.LongSummaryStatistics;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
@@ -49,7 +49,7 @@ public final class OutOfOrderTest {
 
 	@Parameters
 	public static Collection<Object[]> numNodes() {
-		return Arrays.asList(new Object[][] {
+		return List.of(new Object[][] {
 			{4}, {100}
 		});
 	}
