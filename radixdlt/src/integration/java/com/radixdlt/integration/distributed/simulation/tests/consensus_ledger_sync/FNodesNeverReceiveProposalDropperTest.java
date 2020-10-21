@@ -20,30 +20,52 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_s
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.integration.distributed.simulation.NetworkDroppers;
+import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
+import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
+import java.util.Collection;
+import java.util.List;
 import java.util.LongSummaryStatistics;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
-public class OneNodeNeverReceiveProposalDropperTest {
+@RunWith(Parameterized.class)
+public class FNodesNeverReceiveProposalDropperTest {
 	private static final Logger logger = LogManager.getLogger();
 
-	private final Builder bftTestBuilder = SimulationTest.builder()
-		.numNodes(5) // Need at least five nodes to ensure that remote sync occurs, otherwise just vertex sync is required
-		.randomLatency(10, 200)
-		.pacemakerTimeout(5000)
-		.addOneNodeNeverReceiveProposalDropper()
-		.ledgerAndSync()
-		.checkConsensusSafety("safety")
-		.checkConsensusLiveness("liveness", 5000, TimeUnit.MILLISECONDS)
-		.checkConsensusAllProposalsHaveDirectParents("directParents")
-		.checkLedgerInOrder("ledgerInOrder")
-		.checkLedgerProcessesConsensusCommitted("consensusToLedger");
+	@Parameters
+	public static Collection<Object[]> testParameters() {
+		// Need at least five nodes to ensure that remote sync occurs, otherwise just vertex sync is required
+		return List.of(new Object[][]{{5}, {20}});
+	}
+
+	private final Builder bftTestBuilder;
+
+	public FNodesNeverReceiveProposalDropperTest(int numNodes) {
+		this.bftTestBuilder = SimulationTest.builder()
+			.numNodes(numNodes)
+			.networkModules(
+				NetworkOrdering.inOrder(),
+				NetworkLatencies.fixed(10),
+				NetworkDroppers.fNodesAllReceivedProposalsDropped()
+			)
+			.pacemakerTimeout(5000)
+			.ledgerAndSync()
+			.checkConsensusSafety("safety")
+			.checkConsensusLiveness("liveness", 5000, TimeUnit.MILLISECONDS)
+			.checkConsensusAllProposalsHaveDirectParents("directParents")
+			.checkLedgerInOrder("ledgerInOrder")
+			.checkLedgerProcessesConsensusCommitted("consensusToLedger");
+	}
 
 	@Test
 	public void sanity_tests_should_pass() {

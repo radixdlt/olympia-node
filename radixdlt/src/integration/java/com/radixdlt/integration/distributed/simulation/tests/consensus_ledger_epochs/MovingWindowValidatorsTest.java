@@ -20,6 +20,8 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_e
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
+import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
@@ -30,7 +32,10 @@ import org.junit.Test;
 
 public class MovingWindowValidatorsTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
-		.numNodes(4)
+		.networkModules(
+			NetworkOrdering.inOrder(),
+			NetworkLatencies.fixed()
+		)
 		.checkConsensusSafety("safety")
 		.checkConsensusNoTimeouts("noTimeouts")
 		.checkConsensusAllProposalsHaveDirectParents("directParents")
@@ -44,6 +49,7 @@ public class MovingWindowValidatorsTest {
 	@Test
 	public void given_correct_1_node_bft_with_4_total_nodes_with_changing_epochs_per_100_views__then_should_pass_bft_and_epoch_invariants() {
 		SimulationTest bftTest = bftTestBuilder
+			.numNodes(4, 2)
 			.ledgerAndEpochs(View.of(100), windowedEpochToNodesMapper(1, 4))
 			.pacemakerTimeout(5000)
 			.checkConsensusLiveness("liveness", 5000, TimeUnit.MILLISECONDS)
@@ -57,6 +63,7 @@ public class MovingWindowValidatorsTest {
 	@Test
 	public void given_correct_3_node_bft_with_4_total_nodes_with_changing_epochs_per_100_views__then_should_pass_bft_and_epoch_invariants() {
 		SimulationTest bftTest = bftTestBuilder
+			.numNodes(4, 2)
 			.ledgerAndEpochs(View.of(100), windowedEpochToNodesMapper(3, 4))
 			.pacemakerTimeout(1000)
 			.checkConsensusLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
@@ -70,7 +77,7 @@ public class MovingWindowValidatorsTest {
 	@Test
 	public void given_correct_25_node_bft_with_50_total_nodes_with_changing_epochs_per_100_views__then_should_pass_bft_and_epoch_invariants() {
 		SimulationTest bftTest = bftTestBuilder
-			.numNodes(100)
+			.numNodes(100, 2)
 			.ledgerAndEpochs(View.of(100), windowedEpochToNodesMapper(25, 50))
 			.pacemakerTimeout(5000)
 			.checkConsensusLiveness("liveness", 5000, TimeUnit.MILLISECONDS) // High timeout to make Travis happy
@@ -85,7 +92,7 @@ public class MovingWindowValidatorsTest {
 	@Test
 	public void given_correct_25_node_bft_with_50_total_nodes_with_changing_epochs_per_1_view__then_should_pass_bft_and_epoch_invariants() {
 		SimulationTest bftTest = bftTestBuilder
-			.numNodes(100)
+			.numNodes(100, 2)
 			.ledgerAndEpochs(View.of(1), windowedEpochToNodesMapper(25, 50))
 			.pacemakerTimeout(5000)
 			.checkConsensusLiveness("liveness", 5000, TimeUnit.MILLISECONDS) // High timeout to make Travis happy

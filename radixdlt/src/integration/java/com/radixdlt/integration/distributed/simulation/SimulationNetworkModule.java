@@ -19,42 +19,36 @@ package com.radixdlt.integration.distributed.simulation;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.Scopes;
+import com.google.inject.Singleton;
+import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.Multibinder;
 import com.google.inject.name.Named;
-import com.radixdlt.consensus.BFTEventsRx;
-import com.radixdlt.consensus.SyncEpochsRPCRx;
-import com.radixdlt.consensus.SyncVerticesRPCRx;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
-import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
-import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
-import com.radixdlt.consensus.liveness.ProceedToViewSender;
-import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
-import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.SimulatedNetworkImpl;
-import com.radixdlt.sync.StateSyncNetwork;
+import com.radixdlt.integration.distributed.simulation.network.LatencyProvider;
+import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.MessageInTransit;
+import java.util.Set;
+import java.util.function.Predicate;
 
 public class SimulationNetworkModule extends AbstractModule {
-	private final SimulationNetwork simulationNetwork;
-
-	public SimulationNetworkModule(SimulationNetwork simulationNetwork) {
-		this.simulationNetwork = simulationNetwork;
-	}
-
 	@Override
 	protected void configure() {
-		bind(BFTEventsRx.class).to(SimulatedNetworkImpl.class);
-		bind(SyncEpochsRPCRx.class).to(SimulatedNetworkImpl.class);
-		bind(SyncVerticesRPCRx.class).to(SimulatedNetworkImpl.class);
-		bind(ProposalBroadcaster.class).to(SimulatedNetworkImpl.class);
-		bind(ProceedToViewSender.class).to(SimulatedNetworkImpl.class);
-		bind(StateSyncNetwork.class).to(SimulatedNetworkImpl.class);
-		bind(SyncVerticesRequestSender.class).to(SimulatedNetworkImpl.class);
-		bind(SyncEpochsRPCSender.class).to(SimulatedNetworkImpl.class);
-		bind(SyncVerticesResponseSender.class).to(SimulatedNetworkImpl.class);
+		Multibinder.newSetBinder(binder(), new TypeLiteral<Predicate<MessageInTransit>>() { });
+		bind(SimulationNetwork.class).in(Scopes.SINGLETON);
 	}
 
 	@Provides
-	private SimulatedNetworkImpl network(@Named("self") BFTNode node) {
-		return simulationNetwork.getNetwork(node);
+	@Singleton
+	private LatencyProvider latencyProvider(
+		@Named("base") LatencyProvider base,
+		Set<Predicate<MessageInTransit>> droppers
+	) {
+		return msg -> {
+			if (droppers.stream().anyMatch(f -> f.test(msg))) {
+				return -1; // -1 Drops the message
+			}
+
+			return base.nextLatency(msg);
+		};
 	}
 }

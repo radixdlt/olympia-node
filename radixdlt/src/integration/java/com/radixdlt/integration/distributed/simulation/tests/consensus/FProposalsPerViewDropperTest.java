@@ -21,27 +21,51 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.google.inject.AbstractModule;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
+import com.radixdlt.integration.distributed.simulation.NetworkDroppers;
+import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
+import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
+import java.util.Arrays;
+import java.util.Collection;
+import org.assertj.core.api.AssertionsForClassTypes;
+import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 /**
  * Simulation with a communication adversary which drops a random proposal message in every
  * round.
+ *
+ * Dropped proposals implies that validators will need to retrieve the information
+ * originally in this proposals via syncing with other nodes.
  */
-public class OneProposalPerViewDropperTest {
-	private final int minLatency = 10;
-	private final int maxLatency = 200;
-	private final int trips = 20;
-	private final int synchronousTimeout = maxLatency * trips;
-	private final Builder bftTestBuilder = SimulationTest.builder()
-		.numNodes(4)
-		.randomLatency(minLatency, maxLatency)
-		.pacemakerTimeout(synchronousTimeout)
-		.addOneProposalPerViewDropper()
-		.checkConsensusSafety("safety")
-		.checkConsensusNoTimeouts("noTimeouts");
+@RunWith(Parameterized.class)
+public class FProposalsPerViewDropperTest {
+	@Parameters
+	public static Collection<Object[]> testParameters() {
+		return Arrays.asList(new Object[][] {
+			{4}, {20}//, {50}
+		});
+	}
+
+	private final Builder bftTestBuilder;
+
+	public FProposalsPerViewDropperTest(int numNodes) {
+		 bftTestBuilder = SimulationTest.builder()
+			.numNodes(numNodes)
+			.networkModules(
+				NetworkOrdering.inOrder(),
+				NetworkLatencies.fixed(10),
+				NetworkDroppers.fRandomProposalsPerViewDropped()
+			)
+			.pacemakerTimeout(5000)
+			.checkConsensusSafety("safety")
+			.checkConsensusNoTimeouts("noTimeouts");
+	}
 
 	/**
 	 * Tests a configuration of 4 nodes with a dropping proposal adversary
@@ -71,5 +95,15 @@ public class OneProposalPerViewDropperTest {
 		SimulationTest test = bftTestBuilder.build();
 		TestResults results = test.run();
 		assertThat(results.getCheckResults()).allSatisfy((name, error) -> assertThat(error).isNotPresent());
+	}
+
+	@Test
+	@Ignore("Remove ignore once sync retries are implemented")
+	public void dropping_sync_adversary_should_cause_no_timeouts_because_of_sync_retries() {
+		SimulationTest test = bftTestBuilder
+			.addNetworkModule(NetworkDroppers.bftSyncMessagesDropped(0.1))
+			.build();
+		TestResults results = test.run();
+		assertThat(results.getCheckResults()).allSatisfy((name, error) -> AssertionsForClassTypes.assertThat(error).isNotPresent());
 	}
 }

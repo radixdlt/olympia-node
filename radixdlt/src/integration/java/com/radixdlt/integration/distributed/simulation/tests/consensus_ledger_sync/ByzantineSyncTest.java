@@ -25,6 +25,9 @@ import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.integration.distributed.IncorrectAlwaysAcceptingAccumulatorVerifierModule;
 import com.radixdlt.integration.distributed.SometimesByzantineCommittedReader;
+import com.radixdlt.integration.distributed.simulation.NetworkDroppers;
+import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
+import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
@@ -42,27 +45,34 @@ import org.junit.Test;
  */
 public class ByzantineSyncTest {
 	private static final Logger logger = LogManager.getLogger();
+	private final Builder bftTestBuilder;
 
-	private final Builder bftTestBuilder = SimulationTest.builder()
-		.numNodes(5) // Need at least five nodes to ensure that remote sync occurs, otherwise just vertex sync is required
-		.randomLatency(10, 200)
-		.addByzantineModuleToAll(new AbstractModule() {
-			@Override
-			protected void configure() {
-				Multibinder<LedgerUpdateSender> committedSenders = Multibinder.newSetBinder(binder(), LedgerUpdateSender.class);
-				committedSenders.addBinding().to(SometimesByzantineCommittedReader.class).in(Scopes.SINGLETON);
-				bind(CommittedReader.class).to(SometimesByzantineCommittedReader.class).in(Scopes.SINGLETON);
-				bind(SometimesByzantineCommittedReader.class).in(Scopes.SINGLETON);
-			}
-		})
-		.pacemakerTimeout(5000)
-		.addOneNodeNeverReceiveProposalDropper()
-		.ledgerAndSync()
-		.checkConsensusSafety("safety")
-		.checkConsensusLiveness("liveness", 5000, TimeUnit.MILLISECONDS)
-		.checkConsensusAllProposalsHaveDirectParents("directParents")
-		.checkLedgerInOrder("ledgerInOrder")
-		.checkLedgerProcessesConsensusCommitted("consensusToLedger");
+	public ByzantineSyncTest() {
+		this.bftTestBuilder	= SimulationTest.builder()
+			.numNodes(5)
+			.networkModules(
+				NetworkOrdering.inOrder(),
+				NetworkLatencies.fixed(10),
+				NetworkDroppers.fNodesAllReceivedProposalsDropped()
+			)
+			.addByzantineModuleToAll(new AbstractModule() {
+				@Override
+				protected void configure() {
+					Multibinder<LedgerUpdateSender> committedSenders = Multibinder.newSetBinder(binder(), LedgerUpdateSender.class);
+					committedSenders.addBinding().to(SometimesByzantineCommittedReader.class).in(Scopes.SINGLETON);
+					bind(CommittedReader.class).to(SometimesByzantineCommittedReader.class).in(Scopes.SINGLETON);
+					bind(SometimesByzantineCommittedReader.class).in(Scopes.SINGLETON);
+				}
+			})
+			.pacemakerTimeout(5000)
+			.ledgerAndSync()
+			.checkConsensusSafety("safety")
+			.checkConsensusLiveness("liveness", 5000, TimeUnit.MILLISECONDS)
+			.checkConsensusNoTimeouts("noTimeouts")
+			.checkConsensusAllProposalsHaveDirectParents("directParents")
+			.checkLedgerInOrder("ledgerInOrder")
+			.checkLedgerProcessesConsensusCommitted("consensusToLedger");
+	}
 
 	@Test
 	public void given_a_sometimes_byzantine_sync_layer__sanity_tests_should_pass() {

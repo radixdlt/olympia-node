@@ -19,6 +19,9 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
+import com.radixdlt.integration.distributed.simulation.NetworkDroppers;
+import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
+import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
@@ -42,9 +45,12 @@ public class RandomLatencyTest {
 	private final int synchronousTimeout = maxLatency * trips;
 
 	private Builder bftTestBuilder = SimulationTest.builder()
-		.randomLatency(minLatency, maxLatency)
+		.networkModules(
+			NetworkOrdering.inOrder(),
+			NetworkLatencies.random(minLatency, maxLatency),
+			NetworkDroppers.bftSyncMessagesDropped()
+		)
 		.pacemakerTimeout(synchronousTimeout) // Since no syncing needed 6*MTT required
-		.addVerticesSyncDropper()
 		.checkConsensusLiveness("liveness", synchronousTimeout, TimeUnit.MILLISECONDS)
 		.checkConsensusSafety("safety")
 		.checkConsensusAllProposalsHaveDirectParents("directParents")

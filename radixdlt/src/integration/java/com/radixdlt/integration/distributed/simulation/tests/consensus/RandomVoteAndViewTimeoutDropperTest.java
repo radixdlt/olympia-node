@@ -20,6 +20,9 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.integration.distributed.simulation.NetworkDroppers;
+import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
+import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
@@ -35,7 +38,11 @@ import org.junit.Test;
 public class RandomVoteAndViewTimeoutDropperTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(4)
-		.addRandomVoteAndViewTimeoutDropper(0.4)
+		.networkModules(
+			NetworkOrdering.inOrder(),
+			NetworkLatencies.fixed(),
+			NetworkDroppers.randomVotesAndViewTimeoutsDropped(0.4)
+		)
 		.checkConsensusSafety("safety")
 		.checkConsensusLiveness("liveness", 20, TimeUnit.SECONDS);
 

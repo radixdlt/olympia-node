@@ -34,6 +34,7 @@ public interface SystemCounters {
 		BFT_TIMEOUT("bft.timeout"),
 		BFT_VERTEX_STORE_SIZE("bft.vertex_store_size"),
 		BFT_VERTEX_STORE_FORKS("bft.vertex_store_forks"),
+		BFT_SYNC_REQUESTS_SENT("bft.sync.requests_sent"),
 
 		EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS("epoch_manager.queued_consensus_events"),
 

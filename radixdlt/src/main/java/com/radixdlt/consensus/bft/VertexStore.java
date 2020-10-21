@@ -125,10 +125,16 @@ public final class VertexStore {
 
 		for (VerifiedVertex vertex : vertices) {
 			if (!addQC(vertex.getQC())) {
-				throw new IllegalStateException(String.format("Missing qc=%s", vertex.getQC()));
+				throw new IllegalStateException(String.format("Missing qc=%s vertices=%s", vertex.getQC(), vertices));
 			}
 
-			insertVertex(vertex);
+			// An insertion may have failed due to the ledger being ahead of vertex store
+			// in this case, just stop inserting vertices for now
+			// TODO: fix once more persistent prepare branches are implemented
+			Optional<BFTHeader> maybeInserted = insertVertex(vertex);
+			if (maybeInserted.isEmpty()) {
+				break;
+			}
 		}
 	}
 

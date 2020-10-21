@@ -204,7 +204,6 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 
 	private void doCommittedSync(SyncState syncState) {
 		final HashCode committedQCId = syncState.highQC().highestCommittedQC().getProposed().getVertexId();
-
 		syncState.setSyncStage(SyncStage.GET_COMMITTED_VERTICES);
 		log.debug("SYNC_VERTICES: Committed: Sending initial GetVerticesRequest for sync={}", syncState);
 		// Retrieve the 3 vertices preceding the committedQC so we can create a valid committed root
@@ -219,6 +218,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 			syncing.add(syncState.localSyncId);
 			return syncing;
 		});
+
 		requestSender.sendGetVerticesRequest(syncState.author, vertexId, count);
 	}
 

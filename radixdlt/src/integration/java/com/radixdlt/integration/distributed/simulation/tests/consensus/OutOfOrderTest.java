@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger;
+package com.radixdlt.integration.distributed.simulation.tests.consensus;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
@@ -26,45 +26,63 @@ import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
+import java.util.Collection;
+import java.util.List;
 import java.util.LongSummaryStatistics;
 import java.util.concurrent.TimeUnit;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 /**
- * Dropping random vote and view-timeout messages should cause consensus to fork quite a bit.
- * This is to test that safety should always be preserved even in multiple forking situations.
+ * Test where network does not guarantee ordering of messages.
+ * BFT logic including BFT-sync should not be dependent on
+ * message ordering so all properties of the system should hold intact.
  */
-public class RandomVoteAndViewTimeoutDropperTest {
-	private final Builder bftTestBuilder = SimulationTest.builder()
-		.numNodes(4)
-		.networkModules(
-			NetworkOrdering.inOrder(),
-			NetworkLatencies.fixed(),
-			NetworkDroppers.randomVotesAndViewTimeoutsDropped(0.4)
-		)
-		.ledger()
-		.checkConsensusSafety("safety")
-		.checkConsensusLiveness("liveness", 20, TimeUnit.SECONDS)
-		.checkLedgerInOrder("ledgerInOrder")
-		.checkLedgerProcessesConsensusCommitted("consensusToLedger");
+@RunWith(Parameterized.class)
+public final class OutOfOrderTest {
+	private static final Logger logger = LogManager.getLogger();
 
-	/**
-	 * Tests a configuration of 4 nodes with a dropping proposal adversary
-	 * Test should fail with GetVertices RPC disabled
-	 */
+	@Parameters
+	public static Collection<Object[]> numNodes() {
+		return List.of(new Object[][] {
+			{4}, {100}
+		});
+	}
+
+	private final int minLatency = 10;
+	private final int maxLatency = 200;
+	private final Builder bftTestBuilder;
+
+	public OutOfOrderTest(int numNodes) {
+		this.bftTestBuilder = SimulationTest.builder()
+			.numNodes(numNodes)
+			.networkModules(
+				NetworkOrdering.outOfOrder(),
+				NetworkLatencies.random(minLatency, maxLatency),
+				NetworkDroppers.fRandomProposalsPerViewDropped()
+			)
+			.pacemakerTimeout(5000)
+			.checkConsensusLiveness("liveness", 5000, TimeUnit.MILLISECONDS)
+			.checkConsensusSafety("safety")
+			.checkConsensusAllProposalsHaveDirectParents("directParents");
+	}
+
 	@Test
-	public void sanity_test() {
-		SimulationTest test = bftTestBuilder.build();
-		TestResults results = test.run();
+	public void out_of_order_messaging_should_not_affect_properties_of_system() {
+		SimulationTest test = bftTestBuilder
+			.build();
 
+		TestResults results = test.run();
 		LongSummaryStatistics statistics = results.getNetwork().getSystemCounters().values().stream()
-			.map(s -> s.get(CounterType.BFT_VERTEX_STORE_FORKS))
+			.map(s -> s.get(CounterType.BFT_SYNC_REQUESTS_SENT))
 			.mapToLong(l -> l)
 			.summaryStatistics();
-
-		System.out.println(statistics);
-
+		logger.info(statistics);
 		assertThat(results.getCheckResults()).allSatisfy((name, error) -> AssertionsForClassTypes.assertThat(error).isNotPresent());
 	}
 }

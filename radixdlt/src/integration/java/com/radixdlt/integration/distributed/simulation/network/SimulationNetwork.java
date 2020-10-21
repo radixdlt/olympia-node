@@ -18,6 +18,7 @@
 package com.radixdlt.integration.distributed.simulation.network;
 
 import com.google.common.collect.ImmutableList;
+import com.google.inject.Inject;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.BFTEventsRx;
@@ -47,14 +48,12 @@ import com.radixdlt.sync.RemoteSyncRequest;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import io.reactivex.rxjava3.core.Observable;
 
-import io.reactivex.rxjava3.schedulers.Timed;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Simple simulated network implementation that just sends messages to itself with a configurable latency.
@@ -81,12 +80,20 @@ public class SimulationNetwork {
 			return new MessageInTransit(content, sender, receiver, 0, 0);
 		}
 
-		private MessageInTransit delayed(long delay) {
+		MessageInTransit delayed(long delay) {
 			return new MessageInTransit(content, sender, receiver, delay, delay);
 		}
 
-		private MessageInTransit delayAfterPrevious(long delayAfterPrevious) {
+		MessageInTransit delayAfterPrevious(long delayAfterPrevious) {
 			return new MessageInTransit(content, sender, receiver, delay, delayAfterPrevious);
+		}
+
+		public long getDelayAfterPrevious() {
+			return delayAfterPrevious;
+		}
+
+		public long getDelay() {
+			return delay;
 		}
 
 		public Object getContent() {
@@ -113,49 +120,19 @@ public class SimulationNetwork {
 		}
 	}
 
-	/**
-	 * The latency configuration for a network
-	 */
-	public interface LatencyProvider {
-
-		/**
-		 * If >= 0, returns the latency in milliseconds of the next message.
-		 * If < 0, signifies to drop the next message.
-		 *
-		 * @param msg the next message
-		 * @return the latency in milliseconds if >= 0, otherwise a negative number signifies a drop
-		 */
-		int nextLatency(MessageInTransit msg);
+	public interface ChannelCommunication {
+		Observable<MessageInTransit> transform(BFTNode sender, BFTNode receiver, Observable<MessageInTransit> messages);
 	}
 
 	private final Subject<MessageInTransit> receivedMessages;
 	private final Map<BFTNode, SimulatedNetworkImpl> receivers = new ConcurrentHashMap<>();
-	private final LatencyProvider latencyProvider;
+	private final ChannelCommunication channelCommunication;
 
-	private SimulationNetwork(LatencyProvider latencyProvider) {
-		this.latencyProvider = latencyProvider;
-		this.receivedMessages = ReplaySubject.<MessageInTransit>create(20) // To catch startup timing issues
+	@Inject
+	public SimulationNetwork(ChannelCommunication channelCommunication) {
+		this.channelCommunication = Objects.requireNonNull(channelCommunication);
+		this.receivedMessages = ReplaySubject.<MessageInTransit>createWithSize(20) // To catch startup timing issues
 			.toSerialized();
-	}
-
-	public static class Builder {
-		private LatencyProvider latencyProvider = msg -> DEFAULT_LATENCY;
-
-		private Builder() {
-		}
-
-		public Builder latencyProvider(LatencyProvider latencyProvider) {
-			this.latencyProvider = latencyProvider;
-			return this;
-		}
-
-		public SimulationNetwork build() {
-			return new SimulationNetwork(latencyProvider);
-		}
-	}
-
-	public static Builder builder() {
-		return new Builder();
 	}
 
 	public class SimulatedNetworkImpl implements
@@ -171,26 +148,9 @@ public class SimulationNetwork {
 				.filter(msg -> msg.receiver.equals(node))
 				.groupBy(MessageInTransit::getSender)
 				.flatMap(groupedObservable ->
-					groupedObservable.map(msg -> {
-						if (msg.sender.equals(node)) {
-							return msg;
-						} else {
-							return msg.delayed(latencyProvider.nextLatency(msg));
-						}
-					})
-					.filter(msg -> msg.delay >= 0)
-					.timestamp(TimeUnit.MILLISECONDS)
-					.scan((msg1, msg2) -> {
-						int delayCarryover = (int) Math.max(msg1.time() + msg1.value().delay - msg2.time(), 0);
-						int additionalDelay = (int) (msg2.value().delay - delayCarryover);
-						if (additionalDelay > 0) {
-							return new Timed<>(msg2.value().delayAfterPrevious(additionalDelay), msg2.time(), msg2.unit());
-						} else {
-							return msg2;
-						}
-					})
-					.concatMap(p -> Observable.just(p.value()).delay(p.value().delayAfterPrevious, TimeUnit.MILLISECONDS))
-					.map(MessageInTransit::getContent)
+					channelCommunication
+						.transform(groupedObservable.getKey(), node, groupedObservable)
+						.map(MessageInTransit::getContent)
 				)
 				.publish()
 				.refCount();
