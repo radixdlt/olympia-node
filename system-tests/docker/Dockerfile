@@ -9,7 +9,8 @@ ENV DEBIAN_FRONTEND noninteractive
 CMD /bin/bash
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends wget curl iputils-ping dnsutils unzip software-properties-common ca-certificates-java \
+    && apt-get install -y --no-install-recommends wget curl iputils-ping dnsutils \
+    unzip software-properties-common ca-certificates-java \
     iproute2 openjdk-11-jdk docker.io
 #install Gradle
 RUN wget -q https://services.gradle.org/distributions/gradle-6.6.1-bin.zip \
