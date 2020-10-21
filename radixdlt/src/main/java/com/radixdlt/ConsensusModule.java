@@ -47,7 +47,9 @@ import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.sync.BFTSync;
+import com.radixdlt.consensus.sync.BFTSync.BFTSyncTimeoutScheduler;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
+import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.bft.VertexStore;
@@ -61,6 +63,7 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.network.TimeSupplier;
 import java.util.Comparator;
+import java.util.Random;
 import java.util.Set;
 
 /**
@@ -214,19 +217,25 @@ public final class ConsensusModule extends AbstractModule {
 		Pacemaker pacemaker,
 		SyncVerticesRequestSender requestSender,
 		SyncLedgerRequestSender syncLedgerRequestSender,
+		BFTSyncTimeoutScheduler timeoutScheduler,
 		BFTConfiguration configuration,
-		SystemCounters counters
+		SystemCounters counters,
+		Random random,
+		@BFTSyncPatienceMillis int bftSyncPatienceMillis
 	) {
 		return new BFTSync(
 			vertexStore,
 			pacemaker,
 			Comparator.comparingLong((LedgerHeader h) -> h.getAccumulatorState().getStateVersion()),
-			(node, id, count)  -> {
+			(node, request)  -> {
 				counters.increment(CounterType.BFT_SYNC_REQUESTS_SENT);
-				requestSender.sendGetVerticesRequest(node, id, count);
+				requestSender.sendGetVerticesRequest(node, request);
 			},
 			syncLedgerRequestSender,
-			configuration.getGenesisHeader()
+			timeoutScheduler,
+			configuration.getGenesisHeader(),
+			random,
+			bftSyncPatienceMillis
 		);
 	}
 

@@ -17,13 +17,13 @@
 
 package com.radixdlt.integration.distributed.deterministic.network;
 
-import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
+import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import java.util.Set;
 
@@ -57,8 +57,8 @@ public final class ControlledSender implements DeterministicSender {
 	}
 
 	@Override
-	public void sendGetVerticesRequest(BFTNode node, HashCode id, int count) {
-		GetVerticesRequest request = new GetVerticesRequest(self, id, count);
+	public void sendGetVerticesRequest(BFTNode node, LocalGetVerticesRequest request) {
+		GetVerticesRequest getVerticesRequest = new GetVerticesRequest(self, request.getVertexId(), request.getCount());
 		ChannelId channelId = ChannelId.of(this.senderIndex, this.network.lookup(node));
 		handleMessage(new ControlledMessage(channelId, request, arrivalTime(channelId)));
 	}
@@ -137,6 +137,11 @@ public final class ControlledSender implements DeterministicSender {
 	@Override
 	public void sendLedgerUpdate(EpochsLedgerUpdate epochsLedgerUpdate) {
 		handleMessage(new ControlledMessage(this.localChannel, epochsLedgerUpdate, arrivalTime(this.localChannel)));
+	}
+
+	@Override
+	public void scheduleTimeout(LocalGetVerticesRequest request, long milliseconds) {
+		// Ignore bft sync timeouts
 	}
 
 	private void handleMessage(ControlledMessage controlledMessage) {

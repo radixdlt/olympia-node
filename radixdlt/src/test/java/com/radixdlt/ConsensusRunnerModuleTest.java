@@ -34,6 +34,8 @@ import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.liveness.PacemakerRx;
+import com.radixdlt.consensus.sync.BFTSync.BFTSyncTimeoutScheduler;
+import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
@@ -67,6 +69,9 @@ public class ConsensusRunnerModuleTest {
 				bind(PacemakerRx.class).toInstance(pacemakerRx);
 
 				bind(EpochManager.class).toInstance(mock(EpochManager.class));
+
+				bind(BFTSyncTimeoutScheduler.class).toInstance(mock(BFTSyncTimeoutScheduler.class));
+				bind(new TypeLiteral<Observable<LocalGetVerticesRequest>>() { }).toInstance(PublishSubject.create());
 			}
 		};
 	}

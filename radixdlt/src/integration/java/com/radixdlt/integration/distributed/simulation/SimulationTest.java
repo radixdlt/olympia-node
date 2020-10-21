@@ -47,6 +47,7 @@ import com.radixdlt.SystemInfoRxModule;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.Hasher;
@@ -399,6 +400,7 @@ public class SimulationTest {
 					bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
 					bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
 					bind(Random.class).toInstance(sharedRandom);
+					bind(Integer.class).annotatedWith(BFTSyncPatienceMillis.class).toInstance(50);
 				}
 			});
 			modules.add(new NoFeeModule());

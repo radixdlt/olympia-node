@@ -17,9 +17,10 @@
 
 package com.radixdlt.integration.distributed.simulation.tests.consensus;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.inject.AbstractModule;
+import com.radixdlt.consensus.sync.BFTSync.BFTSyncTimeoutScheduler;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.integration.distributed.simulation.NetworkDroppers;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
@@ -29,8 +30,6 @@ import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import java.util.Arrays;
 import java.util.Collection;
-import org.assertj.core.api.AssertionsForClassTypes;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -48,7 +47,7 @@ public class FProposalsPerViewDropperTest {
 	@Parameters
 	public static Collection<Object[]> testParameters() {
 		return Arrays.asList(new Object[][] {
-			{4}, {20}//, {50}
+			{4}, {10}//, {50}
 		});
 	}
 
@@ -77,7 +76,7 @@ public class FProposalsPerViewDropperTest {
 			.overrideWithIncorrectModule(new AbstractModule() {
 				@Override
 				protected void configure() {
-					bind(SyncVerticesRequestSender.class).toInstance((node, hash, count) -> { });
+					bind(SyncVerticesRequestSender.class).toInstance((node, request) -> { });
 				}
 			})
 			.build();
@@ -98,12 +97,26 @@ public class FProposalsPerViewDropperTest {
 	}
 
 	@Test
-	@Ignore("Remove ignore once sync retries are implemented")
 	public void dropping_sync_adversary_should_cause_no_timeouts_because_of_sync_retries() {
 		SimulationTest test = bftTestBuilder
 			.addNetworkModule(NetworkDroppers.bftSyncMessagesDropped(0.1))
 			.build();
 		TestResults results = test.run();
-		assertThat(results.getCheckResults()).allSatisfy((name, error) -> AssertionsForClassTypes.assertThat(error).isNotPresent());
+		assertThat(results.getCheckResults()).allSatisfy((name, error) -> assertThat(error).isNotPresent());
+	}
+
+	@Test
+	public void dropping_sync_adversary_with_no_timeout_scheduler_should_cause_timeouts() {
+		SimulationTest test = bftTestBuilder
+			.addNetworkModule(NetworkDroppers.bftSyncMessagesDropped(0.1))
+			.overrideWithIncorrectModule(new AbstractModule() {
+				@Override
+				protected void configure() {
+					bind(BFTSyncTimeoutScheduler.class).toInstance((request, millis) -> { });
+				}
+			})
+			.build();
+		TestResults results = test.run();
+		assertThat(results.getCheckResults()).hasEntrySatisfying("noTimeouts", error -> assertThat(error).isPresent());
 	}
 }

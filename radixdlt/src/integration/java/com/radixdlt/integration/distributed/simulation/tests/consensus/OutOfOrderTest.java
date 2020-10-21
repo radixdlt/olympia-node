@@ -17,7 +17,7 @@
 
 package com.radixdlt.integration.distributed.simulation.tests.consensus;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.integration.distributed.simulation.NetworkDroppers;
@@ -32,7 +32,6 @@ import java.util.LongSummaryStatistics;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -50,7 +49,7 @@ public final class OutOfOrderTest {
 	@Parameters
 	public static Collection<Object[]> numNodes() {
 		return List.of(new Object[][] {
-			{4}, {100}
+			{4}, {10}
 		});
 	}
 
@@ -83,6 +82,6 @@ public final class OutOfOrderTest {
 			.mapToLong(l -> l)
 			.summaryStatistics();
 		logger.info(statistics);
-		assertThat(results.getCheckResults()).allSatisfy((name, error) -> AssertionsForClassTypes.assertThat(error).isNotPresent());
+		assertThat(results.getCheckResults()).allSatisfy((name, error) -> assertThat(error).isNotPresent());
 	}
 }

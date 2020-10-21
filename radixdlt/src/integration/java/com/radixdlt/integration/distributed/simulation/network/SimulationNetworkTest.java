@@ -27,6 +27,7 @@ import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
+import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.ChannelCommunication;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.junit.Before;
@@ -125,7 +126,7 @@ public class SimulationNetworkTest {
 
 		network
 			.getNetwork(node1)
-			.sendGetVerticesRequest(node2, vertexId, 1);
+			.sendGetVerticesRequest(node2, new LocalGetVerticesRequest(vertexId, 1));
 
 		rpcRequestListener.awaitCount(1);
 		rpcRequestListener.assertValueAt(0, r -> r.getVertexId().equals(vertexId));

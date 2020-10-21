@@ -29,6 +29,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.integration.distributed.deterministic.configuration.EpochNodeWeightMapping;
 import com.radixdlt.integration.distributed.deterministic.configuration.NodeIndexAndWeight;
 import com.radixdlt.integration.distributed.deterministic.network.DeterministicNetwork;
@@ -160,6 +161,12 @@ public final class DeterministicTest {
 				: epoch -> partialMixedWeightValidatorSet(epoch, this.nodes, this.epochNodeWeightMapping);
 
 			ImmutableList.Builder<Module> modules = ImmutableList.builder();
+			modules.add(new AbstractModule() {
+				@Override
+				public void configure() {
+					bind(Integer.class).annotatedWith(BFTSyncPatienceMillis.class).toInstance(50);
+				}
+			});
 			modules.add(new LedgerLocalMempoolModule(10));
 			modules.add(new DeterministicMempoolModule());
 

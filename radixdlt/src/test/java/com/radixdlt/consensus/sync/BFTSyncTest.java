@@ -20,7 +20,6 @@ package com.radixdlt.consensus.sync;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -40,7 +39,9 @@ import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.liveness.Pacemaker;
+import com.radixdlt.consensus.sync.BFTSync.BFTSyncTimeoutScheduler;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.TypedMocks;
@@ -48,6 +49,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -59,6 +61,7 @@ public class BFTSyncTest {
 	private SyncVerticesRequestSender syncVerticesRequestSender;
 	private SyncLedgerRequestSender syncLedgerRequestSender;
 	private VerifiedLedgerHeaderAndProof verifiedLedgerHeaderAndProof;
+	private BFTSyncTimeoutScheduler bftSyncTimeoutScheduler;
 
 	@Before
 	public void setup() {
@@ -68,6 +71,7 @@ public class BFTSyncTest {
 		this.syncVerticesRequestSender = mock(SyncVerticesRequestSender.class);
 		this.syncLedgerRequestSender = mock(SyncLedgerRequestSender.class);
 		this.verifiedLedgerHeaderAndProof = mock(VerifiedLedgerHeaderAndProof.class);
+		this.bftSyncTimeoutScheduler = mock(BFTSyncTimeoutScheduler.class);
 
 		bftSync = new BFTSync(
 			vertexStore,
@@ -75,7 +79,10 @@ public class BFTSyncTest {
 			ledgerHeaderComparator,
 			syncVerticesRequestSender,
 			syncLedgerRequestSender,
-			verifiedLedgerHeaderAndProof
+			bftSyncTimeoutScheduler,
+			verifiedLedgerHeaderAndProof,
+			new Random(),
+			100
 		);
 	}
 
@@ -184,7 +191,7 @@ public class BFTSyncTest {
 		SyncResult syncResult = bftSync.syncToQC(highQC, author);
 
 		assertThat(syncResult).isEqualTo(SyncResult.IN_PROGRESS);
-		verify(syncVerticesRequestSender, times(1)).sendGetVerticesRequest(any(), any(), eq(1));
+		verify(syncVerticesRequestSender, times(1)).sendGetVerticesRequest(any(), any());
 		verify(syncLedgerRequestSender, never()).sendLocalSyncRequest(any());
 	}
 
@@ -213,7 +220,7 @@ public class BFTSyncTest {
 
 		bftSync.syncToQC(highQC, author);
 
-		verify(syncVerticesRequestSender, times(1)).sendGetVerticesRequest(any(), any(), eq(1));
+		verify(syncVerticesRequestSender, times(1)).sendGetVerticesRequest(any(), any());
 		verify(syncLedgerRequestSender, never()).sendLocalSyncRequest(any());
 	}
 
@@ -242,7 +249,7 @@ public class BFTSyncTest {
 
 		bftSync.syncToQC(highQC, author);
 
-		verify(syncVerticesRequestSender, times(1)).sendGetVerticesRequest(any(), any(), eq(1));
+		verify(syncVerticesRequestSender, times(1)).sendGetVerticesRequest(any(), any());
 		verify(syncLedgerRequestSender, never()).sendLocalSyncRequest(any());
 	}
 
@@ -263,6 +270,7 @@ public class BFTSyncTest {
 		BFTHeader committedHeader = mock(BFTHeader.class);
 		when(committedHeader.getView()).thenReturn(View.of(3));
 		BFTHeader committedProposed = mock(BFTHeader.class);
+		when(committedProposed.getVertexId()).thenReturn(HashUtils.zero256());
 		when(committedQC.getProposed()).thenReturn(committedProposed);
 		when(committedQC.getCommittedAndLedgerStateProof())
 			.thenReturn(Optional.of(Pair.of(committedHeader, mock(VerifiedLedgerHeaderAndProof.class))));
@@ -273,7 +281,7 @@ public class BFTSyncTest {
 
 		bftSync.syncToQC(highQC, author);
 
-		verify(syncVerticesRequestSender, times(1)).sendGetVerticesRequest(any(), any(), eq(3));
+		verify(syncVerticesRequestSender, times(1)).sendGetVerticesRequest(any(), any());
 		verify(syncLedgerRequestSender, never()).sendLocalSyncRequest(any());
 	}
 
@@ -318,7 +326,7 @@ public class BFTSyncTest {
 		);
 		bftSync.processGetVerticesResponse(getVerticesResponse);
 
-		verify(syncVerticesRequestSender, times(1)).sendGetVerticesRequest(any(), any(), anyInt());
+		verify(syncVerticesRequestSender, times(1)).sendGetVerticesRequest(any(), any());
 		verify(syncLedgerRequestSender, times(1)).sendLocalSyncRequest(any());
 	}
 
@@ -395,7 +403,7 @@ public class BFTSyncTest {
 		GetVerticesErrorResponse getVerticesErrorResponse = new GetVerticesErrorResponse(mock(BFTNode.class), highQC);
 		bftSync.processGetVerticesErrorResponse(getVerticesErrorResponse);
 
-		verify(syncVerticesRequestSender, times(1)).sendGetVerticesRequest(any(), any(), eq(1));
+		verify(syncVerticesRequestSender, times(1)).sendGetVerticesRequest(any(), any());
 		verify(syncLedgerRequestSender, never()).sendLocalSyncRequest(any());
 	}
 

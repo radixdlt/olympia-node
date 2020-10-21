@@ -18,13 +18,14 @@
 package com.radixdlt;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
 import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.PacemakerRx;
+import com.radixdlt.consensus.sync.BFTSync.BFTSyncTimeoutScheduler;
+import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.utils.ScheduledSenderToRx;
 import com.radixdlt.utils.SenderToRx;
 import com.radixdlt.utils.ThreadFactories;
@@ -43,7 +44,11 @@ public class ConsensusRxModule extends AbstractModule {
 
 		// Local messages
 		SenderToRx<BFTUpdate, BFTUpdate> bftUpdates = new SenderToRx<>(u -> u);
-		bind(Key.get(new TypeLiteral<Observable<BFTUpdate>>() { })).toInstance(bftUpdates.rx());
+		bind(new TypeLiteral<Observable<BFTUpdate>>() { }).toInstance(bftUpdates.rx());
 		bind(BFTUpdateSender.class).toInstance(bftUpdates::send);
+
+		ScheduledSenderToRx<LocalGetVerticesRequest> syncRequests = new ScheduledSenderToRx<>(ses);
+		bind(BFTSyncTimeoutScheduler.class).toInstance(syncRequests::scheduleSend);
+		bind(new TypeLiteral<Observable<LocalGetVerticesRequest>>() { }).toInstance(syncRequests.messages());
 	}
 }

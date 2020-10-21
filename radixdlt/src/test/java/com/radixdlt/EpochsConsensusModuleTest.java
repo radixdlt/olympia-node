@@ -48,6 +48,8 @@ import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.liveness.ProceedToViewSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.consensus.sync.BFTSync.BFTSyncTimeoutScheduler;
+import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
@@ -87,7 +89,9 @@ public class EpochsConsensusModuleTest {
 				bind(BFTFactory.class).toInstance(mock(BFTFactory.class));
 				bind(SyncEpochsRPCSender.class).toInstance(mock(SyncEpochsRPCSender.class));
 				bind(LocalTimeoutSender.class).toInstance(mock(LocalTimeoutSender.class));
+				bind(BFTSyncTimeoutScheduler.class).toInstance(mock(BFTSyncTimeoutScheduler.class));
 				bind(VerifiedLedgerHeaderAndProof.class).toInstance(mock(VerifiedLedgerHeaderAndProof.class));
+				bind(Integer.class).annotatedWith(BFTSyncPatienceMillis.class).toInstance(200);
 			}
 		};
 	}

@@ -39,6 +39,7 @@ import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
+import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.network.addressbook.AddressBook;
@@ -76,7 +77,7 @@ public class MessageCentralValidatorSyncTest {
 
 	@Test
 	public void when_send_rpc_to_self__then_illegal_state_exception_should_be_thrown() {
-		assertThatThrownBy(() -> sync.sendGetVerticesRequest(self, mock(HashCode.class), 1))
+		assertThatThrownBy(() -> sync.sendGetVerticesRequest(self, mock(LocalGetVerticesRequest.class)))
 			.isInstanceOf(IllegalStateException.class);
 	}
 
@@ -88,7 +89,7 @@ public class MessageCentralValidatorSyncTest {
 		when(key.euid()).thenReturn(euid);
 		when(node.getKey()).thenReturn(key);
 		when(addressBook.peer(euid)).thenReturn(Optional.empty());
-		sync.sendGetVerticesRequest(node, mock(HashCode.class), 1);
+		sync.sendGetVerticesRequest(node, mock(LocalGetVerticesRequest.class));
 
 		// Some attempt was made to discover peer
 		verify(this.addressBook, times(1)).peer(any(EUID.class));

@@ -26,6 +26,7 @@ import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
+import com.radixdlt.consensus.sync.BFTSyncRequestTimeoutProcessor;
 import com.radixdlt.consensus.sync.EmptyBFTSyncResponseProcessor;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Ledger;
@@ -52,6 +53,7 @@ import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.counters.SystemCounters;
@@ -77,7 +79,7 @@ import org.apache.logging.log4j.Logger;
  * Manages Epochs and the BFT instance (which is mostly epoch agnostic) associated with each epoch
  */
 @NotThreadSafe
-public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdateProcessor {
+public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncRequestTimeoutProcessor, BFTUpdateProcessor {
 	/**
 	 * A sender of GetEpoch RPC requests/responses
 	 */
@@ -138,6 +140,7 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdatePro
 
 	private BFTSyncResponseProcessor syncBFTResponseProcessor;
 	private BFTUpdateProcessor syncBFTUpdateProcessor;
+	private BFTSyncRequestTimeoutProcessor syncRequestTimeoutProcessor;
 	private LedgerUpdateProcessor<LedgerUpdate> syncLedgerUpdateProcessor;
 	private BFTSyncRequestProcessor syncRequestProcessor;
 	private BFTEventProcessor bftEventProcessor;
@@ -188,6 +191,7 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdatePro
 			this.syncRequestProcessor = req -> { };
 			this.syncLedgerUpdateProcessor = update -> { };
 			this.syncBFTUpdateProcessor = update -> { };
+			this.syncRequestTimeoutProcessor = timeout -> { };
 			return;
 		}
 
@@ -240,6 +244,7 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdatePro
 		this.syncBFTResponseProcessor = bftSync;
 		this.syncBFTUpdateProcessor = bftSync;
 		this.syncLedgerUpdateProcessor = bftSync;
+		this.syncRequestTimeoutProcessor = bftSync;
 
 		this.syncRequestProcessor = bftSyncRequestProcessorFactory.create(vertexStore);
 
@@ -411,6 +416,7 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdatePro
 		bftEventProcessor.processLocalTimeout(localTimeout.getView());
 	}
 
+
 	@Override
 	public void processBFTUpdate(BFTUpdate update) {
 		bftEventProcessor.processBFTUpdate(update);
@@ -420,6 +426,11 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTUpdatePro
 	@Override
 	public void processGetVerticesRequest(GetVerticesRequest request) {
 		syncRequestProcessor.processGetVerticesRequest(request);
+	}
+
+	@Override
+	public void processGetVerticesLocalTimeout(LocalGetVerticesRequest request) {
+		syncRequestTimeoutProcessor.processGetVerticesLocalTimeout(request);
 	}
 
 	public void processGetVerticesErrorResponse(GetVerticesErrorResponse response) {

@@ -49,6 +49,8 @@ import com.radixdlt.consensus.liveness.ProceedToViewSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.consensus.sync.BFTSync.BFTSyncTimeoutScheduler;
+import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
@@ -60,6 +62,7 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.network.TimeSupplier;
 
 import java.util.Comparator;
+import java.util.Random;
 
 /**
  * Module which allows for consensus to have multiple epochs
@@ -158,19 +161,25 @@ public class EpochsConsensusModule extends AbstractModule {
 	private BFTSyncFactory bftSyncFactory(
 		SyncVerticesRequestSender requestSender,
 		SyncLedgerRequestSender syncLedgerRequestSender,
+		BFTSyncTimeoutScheduler timeoutScheduler,
 		BFTConfiguration configuration,
-		SystemCounters counters
+		SystemCounters counters,
+		Random random,
+		@BFTSyncPatienceMillis int bftSyncPatienceMillis
 	) {
 		return (vertexStore, pacemaker) -> new BFTSync(
 			vertexStore,
 			pacemaker,
 			Comparator.comparingLong((LedgerHeader h) -> h.getAccumulatorState().getStateVersion()),
-			(node, id, count)  -> {
+			(node, request)  -> {
 				counters.increment(CounterType.BFT_SYNC_REQUESTS_SENT);
-				requestSender.sendGetVerticesRequest(node, id, count);
+				requestSender.sendGetVerticesRequest(node, request);
 			},
 			syncLedgerRequestSender,
-			configuration.getGenesisHeader()
+			timeoutScheduler,
+			configuration.getGenesisHeader(),
+			random,
+			bftSyncPatienceMillis
 		);
 	}
 

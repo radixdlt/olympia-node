@@ -47,6 +47,7 @@ import com.radixdlt.SystemInfoRxModule;
 import com.radixdlt.TokenFeeModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.crypto.ECKeyPair;
@@ -94,6 +95,7 @@ public class GlobalInjector {
 				bind(PeerManagerConfiguration.class).toInstance(PeerManagerConfiguration.fromRuntimeProperties(properties));
 
 				bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(200);
+				bind(Integer.class).annotatedWith(BFTSyncPatienceMillis.class).toInstance(200);
 			}
 		};
 

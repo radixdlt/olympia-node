@@ -30,6 +30,7 @@ import com.radixdlt.consensus.bft.BFTSyncRequestProcessor;
 import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 import com.radixdlt.consensus.sync.BFTSync;
+import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.utils.ThreadFactories;
 import io.reactivex.rxjava3.core.Observable;
@@ -66,6 +67,7 @@ public class BFTRunner implements ModuleRunner {
 	public BFTRunner(
 		Observable<LedgerUpdate> ledgerUpdates,
 		Observable<BFTUpdate> bftUpdates,
+		Observable<LocalGetVerticesRequest> bftSyncTimeouts,
 		BFTEventsRx networkRx,
 		PacemakerRx pacemakerRx,
 		SyncVerticesRPCRx rpcRx,
@@ -116,7 +118,10 @@ public class BFTRunner implements ModuleRunner {
 				}),
 			ledgerUpdates
 				.observeOn(singleThreadScheduler)
-				.doOnNext(vertexStoreSync::processLedgerUpdate)
+				.doOnNext(vertexStoreSync::processLedgerUpdate),
+			bftSyncTimeouts
+				.observeOn(singleThreadScheduler)
+				.doOnNext(vertexStoreSync::processGetVerticesLocalTimeout)
 		));
 
 		this.events = eventCoordinatorEvents

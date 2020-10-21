@@ -19,7 +19,6 @@ package com.radixdlt.integration.distributed.simulation.network;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
-import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
@@ -29,6 +28,7 @@ import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
+import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.ProceedToViewSender;
@@ -176,9 +176,9 @@ public class SimulationNetwork {
 		}
 
 		@Override
-		public void sendGetVerticesRequest(BFTNode node, HashCode id, int count) {
-			final GetVerticesRequest request = new GetVerticesRequest(thisNode, id, count);
-			receivedMessages.onNext(MessageInTransit.newMessage(request, thisNode, node));
+		public void sendGetVerticesRequest(BFTNode node, LocalGetVerticesRequest request) {
+			final GetVerticesRequest getVerticesRequest = new GetVerticesRequest(thisNode, request.getVertexId(), request.getCount());
+			receivedMessages.onNext(MessageInTransit.newMessage(getVerticesRequest, thisNode, node));
 		}
 
 		@Override

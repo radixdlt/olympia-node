@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.utils.Pair;
@@ -30,6 +31,7 @@ import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.serialization.DsonOutput.Output;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 @SerializerId2("consensus.qc")
 public final class QuorumCertificate {
@@ -101,6 +103,10 @@ public final class QuorumCertificate {
 
 	public TimestampedECDSASignatures getTimestampedSignatures() {
 		return signatures;
+	}
+
+	public Stream<BFTNode> getSigners() {
+		return signatures.getSignatures().keySet().stream();
 	}
 
 	@Override
