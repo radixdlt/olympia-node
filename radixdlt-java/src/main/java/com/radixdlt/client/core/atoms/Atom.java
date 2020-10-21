@@ -25,12 +25,13 @@ package com.radixdlt.client.core.atoms;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.hash.HashCode;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.serialization.Serialize;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.serialization.DsonOutput;
@@ -172,12 +173,12 @@ public final class Atom {
 		return Serialize.getInstance().toDson(this, DsonOutput.Output.HASH);
 	}
 
-	public Hash getHash() {
-		return Hash.of(toDson());
+	public HashCode getHash() {
+		return HashUtils.sha256(toDson());
 	}
 
 	public AID getAid() {
-		return AID.from(getHash().toByteArray());
+		return AID.from(getHash().asBytes());
 	}
 
 	/**

@@ -28,19 +28,19 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
+import com.google.common.hash.HashCode;
 import com.radixdlt.client.serialization.Serialize;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.client.atommodel.Accountable;
 import com.radixdlt.client.atommodel.Identifiable;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.RadixAddress;
 
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-
-import com.radixdlt.crypto.Hash;
 
 /**
  * A logical action on the ledger
@@ -95,12 +95,12 @@ public abstract class Particle {
 		return Serialize.getInstance().toDson(this, Output.HASH);
 	}
 
-	public final Hash getHash() {
-		return Hash.of(toDson());
+	public final HashCode getHash() {
+		return HashUtils.sha256(toDson());
 	}
 
 	public final EUID euid() {
-		return this.getHash().euid();
+		return EUID.fromHash(this.getHash());
 	}
 
 	public Set<EUID> getDestinations() {

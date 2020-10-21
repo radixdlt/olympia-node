@@ -22,7 +22,7 @@
 
 package com.radixdlt.client.core.pow;
 
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.HashUtils;
 
 import java.nio.ByteBuffer;
 
@@ -56,7 +56,7 @@ public class ProofOfWork {
 		byteBuffer.putInt(magic);
 		byteBuffer.put(seed);
 		byteBuffer.putLong(nonce);
-		String hashHex = Bytes.toHexString(Hash.hash256(byteBuffer.array()));
+		String hashHex = Bytes.toHexString(HashUtils.sha256(byteBuffer.array()).asBytes());
 		if (hashHex.compareTo(targetHex) > 0) {
 			throw new ProofOfWorkException(hashHex, targetHex);
 		}

@@ -23,11 +23,12 @@
 package com.radixdlt.client.core.address;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.hash.HashCode;
 import com.google.common.io.ByteStreams;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.serialization.Serialize;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RadixAddress;
@@ -156,12 +157,12 @@ public class RadixUniverseConfig {
 		return genesis;
 	}
 
-	public Hash getHash() {
-		return Hash.of(Serialize.getInstance().toDson(this, Output.HASH));
+	public HashCode getHash() {
+		return HashUtils.sha256(Serialize.getInstance().toDson(this, Output.HASH));
 	}
 
 	public EUID euid() {
-		return this.getHash().euid();
+		return EUID.fromHash(this.getHash());
 	}
 
 	@Override

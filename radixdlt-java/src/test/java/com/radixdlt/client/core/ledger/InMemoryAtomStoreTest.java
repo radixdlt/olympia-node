@@ -21,12 +21,11 @@
  */
 
 package com.radixdlt.client.core.ledger;
-
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
-import com.radixdlt.crypto.Hash;
+import com.google.common.hash.HashCode;
 import java.util.Collections;
 import java.util.stream.Stream;
 import org.junit.Test;
@@ -43,7 +42,7 @@ import com.radixdlt.identifiers.AID;
 
 public class InMemoryAtomStoreTest {
 	private AtomObservation mockDeletedAtom(Atom atom, RadixAddress address) {
-		Hash hash = mock(Hash.class);
+		HashCode hash = mock(HashCode.class);
 		AID hid = mock(AID.class);
 		when(atom.getAid()).thenReturn(hid);
 		when(atom.getHash()).thenReturn(hash);
@@ -53,7 +52,7 @@ public class InMemoryAtomStoreTest {
 	}
 
 	private AtomObservation mockStoredAtom(Atom atom, RadixAddress address) {
-		Hash hash = mock(Hash.class);
+		HashCode hash = mock(HashCode.class);
 		AID hid = mock(AID.class);
 		when(atom.getAid()).thenReturn(hid);
 		when(atom.getHash()).thenReturn(hash);
@@ -63,7 +62,7 @@ public class InMemoryAtomStoreTest {
 	}
 
 	private AtomObservation mockStoredAtom(Atom atom, SpunParticle spun0, SpunParticle spun1, RadixAddress address) {
-		Hash hash = mock(Hash.class);
+		HashCode hash = mock(HashCode.class);
 		AID hid = mock(AID.class);
 		when(atom.spunParticles()).thenAnswer(inv -> Stream.of(spun0, spun1));
 		when(atom.particles(any())).thenCallRealMethod().thenCallRealMethod().thenCallRealMethod();
@@ -75,7 +74,7 @@ public class InMemoryAtomStoreTest {
 	}
 
 	private AtomObservation mockStoredAtom(Atom atom, SpunParticle spun, RadixAddress address, boolean soft) {
-		Hash hash = mock(Hash.class);
+		HashCode hash = mock(HashCode.class);
 		AID hid = mock(AID.class);
 		when(atom.spunParticles()).thenAnswer(inv -> Stream.of(spun));
 		when(atom.particles(any())).thenCallRealMethod().thenCallRealMethod().thenCallRealMethod();
