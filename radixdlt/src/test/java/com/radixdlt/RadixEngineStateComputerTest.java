@@ -18,6 +18,8 @@
 package com.radixdlt;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -33,20 +35,29 @@ import com.radixdlt.atommodel.AtomAlreadySignedException;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
+import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.TimestampedECDSASignatures;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.CMErrorCode;
+import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.ledger.ByzantineQuorumException;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
+import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
@@ -104,25 +115,20 @@ public class RadixEngineStateComputerTest {
 		).injectMembers(this);
 	}
 
-	private static RadixEngineCommand systemUpdateCommand(ECKeyPair keyPair) {
-		RadixAddress address = new RadixAddress((byte) 0, keyPair.getPublicKey());
-		SystemParticle lastSystemParticle = new SystemParticle(0, 0, 0);
-		SystemParticle nextSystemParticle = new SystemParticle(0, 1, 0);
-		ParticleGroup particleGroup = ParticleGroup.builder()
-			.addParticle(lastSystemParticle, Spin.DOWN)
-			.addParticle(nextSystemParticle, Spin.UP)
-			.build();
-		Atom atom = new Atom();
-		atom.addParticleGroup(particleGroup);
-		try {
-			atom.sign(keyPair, hasher);
-			ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom, hasher);
-			final byte[] payload = DefaultSerialization.getInstance().toDson(clientAtom, Output.ALL);
-			Command cmd = new Command(payload);
-			return new RadixEngineCommand(cmd, hasher.hash(cmd), clientAtom, PermissionLevel.USER);
-		} catch (AtomAlreadySignedException e) {
-			throw new RuntimeException();
-		}
+	private static RadixEngineCommand systemUpdateCommand(long prevView, long nextView, long nextEpoch) {
+		SystemParticle lastSystemParticle = new SystemParticle(0, prevView, 0);
+		SystemParticle nextSystemParticle = new SystemParticle(nextEpoch, nextView, 0);
+		ClientAtom clientAtom = ClientAtom.create(
+			ImmutableList.of(
+				CMMicroInstruction.checkSpinAndPush(lastSystemParticle, Spin.UP),
+				CMMicroInstruction.checkSpinAndPush(nextSystemParticle, Spin.NEUTRAL),
+				CMMicroInstruction.particleGroup()
+			),
+			hasher
+		);
+		final byte[] payload = DefaultSerialization.getInstance().toDson(clientAtom, Output.ALL);
+		Command cmd = new Command(payload);
+		return new RadixEngineCommand(cmd, hasher.hash(cmd), clientAtom, PermissionLevel.USER);
 	}
 
 	private static RadixEngineCommand registerCommand(ECKeyPair keyPair) {
@@ -191,7 +197,7 @@ public class RadixEngineStateComputerTest {
 	}
 
 	@Test
-	public void executing_epoch_high_view_with_previous_registered_should_return_new_next_validator_set() {
+	public void preparing_epoch_high_view_with_previous_registered_should_return_new_next_validator_set() {
 		// Arrange
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		RadixEngineCommand cmd = registerCommand(keyPair);
@@ -210,10 +216,9 @@ public class RadixEngineStateComputerTest {
 	}
 
 	@Test
-	public void executing_system_update_from_vertex_should_fail() {
+	public void preparing_system_update_from_vertex_should_fail() {
 		// Arrange
-		ECKeyPair keyPair = ECKeyPair.generateNew();
-		RadixEngineCommand cmd = systemUpdateCommand(keyPair);
+		RadixEngineCommand cmd = systemUpdateCommand(0, 1, 0);
 
 		// Act
 		StateComputerResult result = sut.prepare(ImmutableList.of(), cmd.command(), View.of(1), 1);
@@ -229,5 +234,82 @@ public class RadixEngineStateComputerTest {
 				"Is invalid_execution_permission error"
 			)
 		);
+	}
+
+	// TODO: should catch this and log it somewhere as proof of byzantine quorum
+	@Test
+	public void committing_epoch_high_views_should_fail() {
+		// Arrange
+		RadixEngineCommand cmd0 = systemUpdateCommand(0, 10, 0);
+		VerifiedLedgerHeaderAndProof verifiedLedgerHeaderAndProof = new VerifiedLedgerHeaderAndProof(
+			mock(BFTHeader.class),
+			mock(BFTHeader.class),
+			0,
+			HashUtils.zero256(),
+			LedgerHeader.create(0, View.of(11), new AccumulatorState(3, HashUtils.zero256()), 1),
+			new TimestampedECDSASignatures()
+		);
+		VerifiedCommandsAndProof commandsAndProof = new VerifiedCommandsAndProof(
+			ImmutableList.of(cmd0.command()),
+			verifiedLedgerHeaderAndProof
+		);
+
+		// Act
+		// Assert
+		assertThatThrownBy(() -> sut.commit(commandsAndProof))
+			.isInstanceOf(ByzantineQuorumException.class);
+	}
+
+
+	// TODO: should catch this and log it somewhere as proof of byzantine quorum
+	@Test
+	public void committing_epoch_change_with_additional_cmds_should_fail() {
+		// Arrange
+		ECKeyPair keyPair = ECKeyPair.generateNew();
+		RadixEngineCommand cmd0 = systemUpdateCommand(0, 0, 1);
+		RadixEngineCommand cmd1 = registerCommand(keyPair);
+		VerifiedLedgerHeaderAndProof verifiedLedgerHeaderAndProof = new VerifiedLedgerHeaderAndProof(
+			mock(BFTHeader.class),
+			mock(BFTHeader.class),
+			0,
+			HashUtils.zero256(),
+			LedgerHeader.create(0, View.of(9), new AccumulatorState(3, HashUtils.zero256()), 1),
+			new TimestampedECDSASignatures()
+		);
+		VerifiedCommandsAndProof commandsAndProof = new VerifiedCommandsAndProof(
+			ImmutableList.of(cmd0.command(), cmd1.command()),
+			verifiedLedgerHeaderAndProof
+		);
+
+		// Act
+		// Assert
+		assertThatThrownBy(() -> sut.commit(commandsAndProof))
+			.isInstanceOf(ByzantineQuorumException.class);
+	}
+
+	// TODO: should catch this and log it somewhere as proof of byzantine quorum
+	@Test
+	public void committing_epoch_change_with_different_validator_signed_should_fail() {
+		// Arrange
+		ECKeyPair keyPair = ECKeyPair.generateNew();
+		RadixEngineCommand cmd0 = systemUpdateCommand(0, 0, 1);
+		RadixEngineCommand cmd1 = registerCommand(keyPair);
+		VerifiedLedgerHeaderAndProof verifiedLedgerHeaderAndProof = new VerifiedLedgerHeaderAndProof(
+			mock(BFTHeader.class),
+			mock(BFTHeader.class),
+			0,
+			HashUtils.zero256(),
+			LedgerHeader.create(0, View.of(9), new AccumulatorState(3, HashUtils.zero256()), 1, this.validatorSet),
+			new TimestampedECDSASignatures()
+		);
+		VerifiedCommandsAndProof commandsAndProof = new VerifiedCommandsAndProof(
+			ImmutableList.of(cmd1.command(), cmd0.command()),
+			verifiedLedgerHeaderAndProof
+		);
+
+		// Act
+		// Assert
+		assertThatThrownBy(() -> sut.commit(commandsAndProof))
+			.isInstanceOf(ByzantineQuorumException.class);
 	}
 }

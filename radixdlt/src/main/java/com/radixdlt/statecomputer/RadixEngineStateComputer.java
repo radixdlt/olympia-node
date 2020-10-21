@@ -26,14 +26,15 @@ import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.crypto.Hasher;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.PermissionLevel;
 import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngine.RadixEngineBranch;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.EUID;
+import com.radixdlt.ledger.ByzantineQuorumException;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
 import com.radixdlt.middleware2.ClientAtom;
@@ -65,23 +66,32 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 	private final Serialization serialization;
 	private final RadixEngine<LedgerAtom> radixEngine;
-	private final View epochChangeView;
+	private final View epochCeilingView;
 	private final Hasher hasher;
 
-	public RadixEngineStateComputer(
+	private RadixEngineStateComputer(
 		Serialization serialization,
 		RadixEngine<LedgerAtom> radixEngine,
-		View epochChangeView,
+		View epochCeilingView,
 		Hasher hasher
 	) {
-		if (epochChangeView.isGenesis()) {
+		this.serialization = Objects.requireNonNull(serialization);
+		this.radixEngine = Objects.requireNonNull(radixEngine);
+		this.epochCeilingView = epochCeilingView;
+		this.hasher = hasher;
+	}
+
+	public static RadixEngineStateComputer create(
+		Serialization serialization,
+		RadixEngine<LedgerAtom> radixEngine,
+		View epochCeilingView,
+		Hasher hasher
+	) {
+		if (epochCeilingView.isGenesis()) {
 			throw new IllegalArgumentException("Epoch change view must not be genesis.");
 		}
 
-		this.serialization = Objects.requireNonNull(serialization);
-		this.radixEngine = Objects.requireNonNull(radixEngine);
-		this.epochChangeView = epochChangeView;
-		this.hasher = hasher;
+		return new RadixEngineStateComputer(serialization, radixEngine, epochCeilingView, hasher);
 	}
 
 	public static class RadixEngineCommand implements PreparedCommand {
@@ -120,10 +130,17 @@ public final class RadixEngineStateComputer implements StateComputer {
 		ImmutableList.Builder<PreparedCommand> successBuilder
 	) {
 		final SystemParticle lastSystemParticle = branch.getComputedState(SystemParticle.class);
-		final long epoch = lastSystemParticle.getView() >= epochChangeView.number()
-			? lastSystemParticle.getEpoch() + 1
-			: lastSystemParticle.getEpoch();
-		final SystemParticle nextSystemParticle = new SystemParticle(epoch, view.number(), timestamp);
+		final BFTValidatorSet validatorSet;
+		final SystemParticle nextSystemParticle;
+		if (view.compareTo(epochCeilingView) >= 0) {
+			RadixEngineValidatorSetBuilder validatorSetBuilder = branch.getComputedState(RadixEngineValidatorSetBuilder.class);
+			validatorSet = validatorSetBuilder.build();
+			nextSystemParticle = new SystemParticle(lastSystemParticle.getEpoch() + 1, 0, timestamp);
+		} else {
+			validatorSet = null;
+			nextSystemParticle = new SystemParticle(lastSystemParticle.getEpoch(), view.number(), timestamp);
+		}
+
 		final ClientAtom systemUpdate = ClientAtom.create(
 			ImmutableList.of(
 				CMMicroInstruction.checkSpinAndPush(lastSystemParticle, Spin.UP),
@@ -146,12 +163,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		);
 		successBuilder.add(radixEngineCommand);
 
-		if (view.compareTo(epochChangeView) >= 0) {
-			RadixEngineValidatorSetBuilder validatorSetBuilder = branch.getComputedState(RadixEngineValidatorSetBuilder.class);
-			return validatorSetBuilder.build();
-		} else {
-			return null;
-		}
+		return validatorSet;
 	}
 
 	private void executeUserCommand(
@@ -216,19 +228,46 @@ public final class RadixEngineStateComputer implements StateComputer {
 			// TODO: Include permission level in committed command
 			this.radixEngine.checkAndStore(committedAtom, PermissionLevel.SUPER_USER);
 		} catch (RadixEngineException | DeserializeException e) {
-			// TODO: Remove throwing of exception
-			// TODO: Exception could be because of byzantine quorum
-			throw new IllegalStateException("Trying to commit bad command", e);
+			throw new ByzantineQuorumException("Trying to commit bad command", e);
 		}
 	}
 
 	@Override
 	public void commit(VerifiedCommandsAndProof verifiedCommandsAndProof) {
+		final SystemParticle lastSystemParticle = radixEngine.getComputedState(SystemParticle.class);
+		final long currentEpoch = lastSystemParticle.getEpoch();
+		boolean epochChange = false;
+
 		final VerifiedLedgerHeaderAndProof headerAndProof = verifiedCommandsAndProof.getHeader();
 		long stateVersion = headerAndProof.getAccumulatorState().getStateVersion();
 		long firstVersion = stateVersion - verifiedCommandsAndProof.getCommands().size() + 1;
 		for (int i = 0; i < verifiedCommandsAndProof.getCommands().size(); i++) {
 			this.commitCommand(firstVersion + i, verifiedCommandsAndProof.getCommands().get(i), headerAndProof);
+
+			final long nextEpoch = radixEngine.getComputedState(SystemParticle.class).getEpoch();
+			final boolean isLastCommand = i == verifiedCommandsAndProof.getCommands().size() - 1;
+			final boolean changingEpoch = nextEpoch > currentEpoch;
+			if (isLastCommand && changingEpoch) {
+				epochChange = true;
+			} else if (changingEpoch) {
+				throw new ByzantineQuorumException("change of epoch did not occur on last command");
+			}
+		}
+
+		// Verify that output of radix engine and signed output match
+		// TODO: Always follow radix engine as its a deeper source of truth and just mark validator set as malicious
+		if (epochChange) {
+			RadixEngineValidatorSetBuilder validatorSetBuilder = radixEngine.getComputedState(RadixEngineValidatorSetBuilder.class);
+			BFTValidatorSet reNextValidatorSet = validatorSetBuilder.build();
+			BFTValidatorSet signedValidatorSet = verifiedCommandsAndProof.getHeader().getNextValidatorSet()
+				.orElseThrow(() -> new ByzantineQuorumException("RE has changed epochs but proofs don't show."));
+			if (!reNextValidatorSet.equals(signedValidatorSet)) {
+				throw new ByzantineQuorumException("RE validator set does not agree with signed validator set");
+			}
+		} else {
+			if (verifiedCommandsAndProof.getHeader().getNextValidatorSet().isPresent()) {
+				throw new ByzantineQuorumException("Trying to change epochs when RE isn't");
+			}
 		}
 	}
 }

@@ -226,12 +226,8 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			);
 
 			if (!verifiedExtension.isPresent()) {
-				// This can occur if there is a bug in a commit caller or if there is a quorum of malicious nodes
-				throw new IllegalStateException("Accumulator failure " + currentLedgerHeader + " " + verifiedCommandsAndProof);
+				throw new ByzantineQuorumException("Accumulator failure " + currentLedgerHeader + " " + verifiedCommandsAndProof);
 			}
-
-			// TODO: Add epoch extension verifier, otherwise potential ability to create safety break here with byzantine quorums
-			// TODO: since both consensus or sync can be behind in terms of epoch change sync
 
 			VerifiedCommandsAndProof commandsToStore = new VerifiedCommandsAndProof(
 				verifiedExtension.get(), verifiedCommandsAndProof.getHeader()
