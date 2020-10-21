@@ -17,7 +17,7 @@
 
 package com.radixdlt.integration.distributed.simulation.tests.consensus;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.integration.distributed.MockedBFTConfigurationModule;
@@ -68,7 +68,7 @@ public class OneByzantineGenesisTest {
 			.build();
 
 		TestResults results = bftTest.run();
-		assertThat(results.getCheckResults()).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+		assertThat(results.getCheckResults()).allSatisfy((name, err) -> assertThat(err).isEmpty());
 	}
 
 }

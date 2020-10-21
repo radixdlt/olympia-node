@@ -22,16 +22,15 @@ import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
@@ -47,58 +46,63 @@ public final class ControlledSender implements DeterministicSender {
 	private final DeterministicNetwork network;
 	private final BFTNode self;
 	private final int senderIndex;
+	private final ChannelId localChannel;
+
 
 	ControlledSender(DeterministicNetwork network, BFTNode self, int senderIndex) {
 		this.network = network;
 		this.self = self;
 		this.senderIndex = senderIndex;
+		this.localChannel = ChannelId.of(this.senderIndex, this.senderIndex);
 	}
 
 	@Override
 	public void sendGetVerticesRequest(BFTNode node, HashCode id, int count) {
 		GetVerticesRequest request = new GetVerticesRequest(self, id, count);
-		int receiver = this.network.lookup(node);
-		handleMessage(MessageRank.EARLIEST_POSSIBLE, new ControlledMessage(this.senderIndex, receiver, request));
+		ChannelId channelId = ChannelId.of(this.senderIndex, this.network.lookup(node));
+		handleMessage(new ControlledMessage(channelId, request, arrivalTime(channelId)));
 	}
 
 	@Override
 	public void sendGetVerticesResponse(BFTNode node, ImmutableList<VerifiedVertex> vertices) {
 		GetVerticesResponse response = new GetVerticesResponse(self, vertices);
-		int receiver = this.network.lookup(node);
-		handleMessage(MessageRank.EARLIEST_POSSIBLE, new ControlledMessage(this.senderIndex, receiver, response));
+		ChannelId channelId = ChannelId.of(this.senderIndex, this.network.lookup(node));
+		handleMessage(new ControlledMessage(channelId, response, arrivalTime(channelId)));
 	}
 
 	@Override
-	public void sendGetVerticesErrorResponse(BFTNode node, HighQC syncInfo) {
-		GetVerticesErrorResponse response = new GetVerticesErrorResponse(this.self, syncInfo);
-		int receiver = this.network.lookup(node);
-		handleMessage(MessageRank.EARLIEST_POSSIBLE, new ControlledMessage(this.senderIndex, receiver, response));
+	public void sendGetVerticesErrorResponse(BFTNode node, HighQC highQC) {
+		GetVerticesErrorResponse response = new GetVerticesErrorResponse(this.self, highQC);
+		ChannelId channelId = ChannelId.of(this.senderIndex, this.network.lookup(node));
+		handleMessage(new ControlledMessage(channelId, response, arrivalTime(channelId)));
 	}
 
 	@Override
 	public void sendBFTUpdate(BFTUpdate update) {
-		handleMessage(MessageRank.EARLIEST_POSSIBLE, new ControlledMessage(this.senderIndex, this.senderIndex, update));
+		handleMessage(new ControlledMessage(this.localChannel, update, arrivalTime(this.localChannel)));
 	}
 
 	@Override
 	public void broadcastProposal(Proposal proposal, Set<BFTNode> nodes) {
-		MessageRank rank = messageRank(proposal);
 		for (BFTNode node : nodes) {
-			int receiver = this.network.lookup(node);
-			handleMessage(rank, new ControlledMessage(this.senderIndex, receiver, proposal));
+			int receiverIndex = this.network.lookup(node);
+			ChannelId channelId = ChannelId.of(this.senderIndex, receiverIndex);
+			handleMessage(new ControlledMessage(channelId, proposal, arrivalTime(channelId)));
 		}
 	}
 
 	@Override
-	public void sendNewView(NewView newView, BFTNode newViewLeader) {
-		int receiver = this.network.lookup(newViewLeader);
-		handleMessage(messageRank(newView), new ControlledMessage(this.senderIndex, receiver, newView));
+	public void broadcastViewTimeout(ViewTimeout viewTimeout, Set<BFTNode> nodes) {
+		for (BFTNode node : nodes) {
+			ChannelId channelId = ChannelId.of(this.senderIndex, this.network.lookup(node));
+			handleMessage(new ControlledMessage(channelId, viewTimeout, arrivalTime(channelId)));
+		}
 	}
 
 	@Override
-	public void sendVote(Vote vote, BFTNode leader) {
-		int receiver = this.network.lookup(leader);
-		handleMessage(messageRank(vote.getVoteData().getProposed(), 0), new ControlledMessage(this.senderIndex, receiver, vote));
+	public void sendVote(Vote vote, BFTNode nextLeader) {
+		ChannelId channelId = ChannelId.of(this.senderIndex, this.network.lookup(nextLeader));
+		handleMessage(new ControlledMessage(channelId, vote, arrivalTime(channelId)));
 	}
 
 	@Override
@@ -113,7 +117,8 @@ public final class ControlledSender implements DeterministicSender {
 
 	@Override
 	public void scheduleTimeout(LocalTimeout localTimeout, long milliseconds) {
-		handleMessage(messageRank(localTimeout), new ControlledMessage(this.senderIndex, this.senderIndex, localTimeout));
+		ControlledMessage msg = new ControlledMessage(this.localChannel, localTimeout, arrivalTime(this.localChannel) + milliseconds);
+		handleMessage(msg);
 	}
 
 	@Override
@@ -125,41 +130,21 @@ public final class ControlledSender implements DeterministicSender {
 	@Override
 	public void sendGetEpochResponse(BFTNode node, VerifiedLedgerHeaderAndProof ancestor) {
 		GetEpochResponse getEpochResponse = new GetEpochResponse(node, ancestor);
-		handleMessage(messageRank(getEpochResponse), new ControlledMessage(this.senderIndex, this.network.lookup(node), getEpochResponse));
+		ChannelId channelId = ChannelId.of(this.senderIndex, this.network.lookup(node));
+		handleMessage(new ControlledMessage(channelId, getEpochResponse, arrivalTime(channelId)));
 	}
 
 	@Override
 	public void sendLedgerUpdate(EpochsLedgerUpdate epochsLedgerUpdate) {
-		handleMessage(messageRank(epochsLedgerUpdate), new ControlledMessage(this.senderIndex, this.senderIndex, epochsLedgerUpdate));
+		handleMessage(new ControlledMessage(this.localChannel, epochsLedgerUpdate, arrivalTime(this.localChannel)));
 	}
 
-	private void handleMessage(MessageRank eav, ControlledMessage controlledMessage) {
-		this.network.handleMessage(eav, controlledMessage);
+	private void handleMessage(ControlledMessage controlledMessage) {
+		this.network.handleMessage(controlledMessage);
 	}
 
-	private MessageRank messageRank(GetEpochResponse getEpochResponse) {
-		VerifiedLedgerHeaderAndProof proof = getEpochResponse.getEpochProof();
-		return MessageRank.of(proof.getEpoch(), proof.getView().number() + 3);
-	}
-
-	private MessageRank messageRank(EpochsLedgerUpdate epochsLedgerUpdate) {
-		VerifiedLedgerHeaderAndProof proof = epochsLedgerUpdate.getTail();
-		return MessageRank.of(proof.getEpoch(), proof.getView().number() + 3);
-	}
-
-	private MessageRank messageRank(NewView newView) {
-		return MessageRank.of(newView.getEpoch(), newView.getView().number());
-	}
-
-	private MessageRank messageRank(Proposal proposal) {
-		return MessageRank.of(proposal.getEpoch(), proposal.getVertex().getView().number());
-	}
-
-	private MessageRank messageRank(BFTHeader header, long viewIncrement) {
-		return MessageRank.of(header.getLedgerHeader().getEpoch(), header.getView().number() + viewIncrement);
-	}
-
-	private MessageRank messageRank(LocalTimeout localTimeout) {
-		return MessageRank.of(localTimeout.getEpoch(), localTimeout.getView().number() + 2);
+	private long arrivalTime(ChannelId channelId) {
+		long delay = this.network.delayForChannel(channelId);
+		return this.network.currentTime() + delay;
 	}
 }

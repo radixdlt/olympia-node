@@ -45,6 +45,7 @@ import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.AccumulatorState;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -182,8 +183,8 @@ public class VertexStoreTest {
 		sut.addQC(qc);
 
 		// Assert
-		assertThat(sut.syncInfo().highestQC()).isEqualTo(qc);
-		assertThat(sut.syncInfo().highestCommittedQC()).isEqualTo(rootQC);
+		assertThat(sut.highQC().highestQC()).isEqualTo(qc);
+		assertThat(sut.highQC().highestCommittedQC()).isEqualTo(rootQC);
 	}
 
 	@Test
@@ -200,8 +201,8 @@ public class VertexStoreTest {
 
 		// Assert
 		assertThat(success).isTrue();
-		assertThat(sut.syncInfo().highestQC()).isEqualTo(qc);
-		assertThat(sut.syncInfo().highestCommittedQC()).isEqualTo(qc);
+		assertThat(sut.highQC().highestQC()).isEqualTo(qc);
+		assertThat(sut.highQC().highestCommittedQC()).isEqualTo(qc);
 		assertThat(sut.getVertices(vertices.get(2).getId(), 3)).hasValue(ImmutableList.of(
 			vertices.get(2), vertices.get(1), vertices.get(0)
 		));

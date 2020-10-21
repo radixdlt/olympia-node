@@ -55,7 +55,7 @@ public class FProposalDropperResponsiveTest {
 	private static MessageMutator dropNodes(int numNodes, Function<View, Set<Integer>> nodesToDropFunction) {
 		final Map<View, Set<Integer>> proposalsToDrop = new HashMap<>();
 		final Map<View, Integer> proposalCount = new HashMap<>();
-		return (rank, message, queue) -> {
+		return (message, queue) -> {
 			Object msg = message.message();
 			if (msg instanceof Proposal) {
 				final Proposal proposal = (Proposal) msg;

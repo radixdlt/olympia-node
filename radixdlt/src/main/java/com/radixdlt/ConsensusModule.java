@@ -30,19 +30,19 @@ import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.bft.BFTBuilder;
+import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
-import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
-import com.radixdlt.consensus.bft.SignedNewViewToLeaderSender;
 import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker.PacemakerInfoSender;
+import com.radixdlt.consensus.safety.SafetyRules;
+import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTSyncRequestProcessor;
-import com.radixdlt.consensus.bft.NewViewSigner;
-import com.radixdlt.consensus.bft.SignedNewViewToLeaderSender.BFTNewViewSender;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
+import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker;
-import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker.ProceedToViewSender;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
@@ -54,6 +54,8 @@ import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
+import com.radixdlt.consensus.liveness.PendingViewTimeouts;
+import com.radixdlt.consensus.liveness.ProceedToViewSender;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.network.TimeSupplier;
@@ -97,13 +99,8 @@ public final class ConsensusModule extends AbstractModule {
 
 	@Provides
 	private BFTFactory bftFactory(
-		BFTEventSender bftEventSender,
-		NextCommandGenerator nextCommandGenerator,
 		Hasher hasher,
-		HashSigner signer,
-		HashVerifier verifier,
-		TimeSupplier timeSupplier,
-		SystemCounters counters
+		HashVerifier verifier
 	) {
 		return (
 			self,
@@ -115,18 +112,13 @@ public final class ConsensusModule extends AbstractModule {
 		) ->
 			BFTBuilder.create()
 				.self(self)
-				.eventSender(bftEventSender)
-				.nextCommandGenerator(nextCommandGenerator)
 				.hasher(hasher)
-				.signer(signer)
 				.verifier(verifier)
-				.counters(counters)
 				.pacemaker(pacemaker)
 				.vertexStore(vertexStore)
 				.bftSyncer(vertexStoreSync)
 				.proposerElection(proposerElection)
 				.validatorSet(validatorSet)
-				.timeSupplier(timeSupplier)
 				.build();
 	}
 
@@ -161,23 +153,48 @@ public final class ConsensusModule extends AbstractModule {
 	}
 
 	@Provides
-	ProceedToViewSender proceedToViewSender(
-		NewViewSigner newViewSigner,
-		ProposerElection proposerElection,
-		BFTNewViewSender bftNewViewSender
-	) {
-		return new SignedNewViewToLeaderSender(
-			newViewSigner,
-			proposerElection,
-			bftNewViewSender
-		);
-	}
-
-	@Provides
 	@Singleton
-	private Pacemaker pacemaker(ProceedToViewSender proceedToViewSender, PacemakerTimeoutSender timeoutSender, PacemakerInfoSender infoSender) {
+	private Pacemaker pacemaker(
+		@Named("self") BFTNode self,
+		SystemCounters counters,
+		BFTConfiguration configuration,
+		VertexStore vertexStore,
+		ProposerElection proposerElection,
+		NextCommandGenerator nextCommandGenerator,
+		TimeSupplier timeSupplier,
+		Hasher hasher,
+		HashSigner signer,
+		ProposalBroadcaster proposalBroadcaster,
+		ProceedToViewSender proceedToViewSender,
+		PacemakerTimeoutSender timeoutSender,
+		PacemakerInfoSender infoSender
+	) {
+		PendingVotes pendingVotes = new PendingVotes(hasher);
+		PendingViewTimeouts pendingViewTimeouts = new PendingViewTimeouts();
+		BFTValidatorSet validatorSet = configuration.getValidatorSet();
+		SafetyRules safetyRules = new SafetyRules(self, SafetyState.initialState(), hasher, signer);
 		return new ExponentialTimeoutPacemaker(
-			this.pacemakerTimeout, this.pacemakerRate, this.pacemakerMaxExponent, proceedToViewSender, timeoutSender, infoSender
+			this.pacemakerTimeout,
+			this.pacemakerRate,
+			this.pacemakerMaxExponent,
+
+			self,
+			counters,
+
+			pendingVotes,
+			pendingViewTimeouts,
+			validatorSet,
+			vertexStore,
+			proposerElection,
+			safetyRules,
+			nextCommandGenerator,
+			timeSupplier,
+			hasher,
+
+			proposalBroadcaster,
+			proceedToViewSender,
+			timeoutSender,
+			infoSender
 		);
 	}
 

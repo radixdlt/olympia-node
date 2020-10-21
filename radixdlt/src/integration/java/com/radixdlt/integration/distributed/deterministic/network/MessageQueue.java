@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -35,23 +36,55 @@ import com.google.common.collect.Maps;
  */
 public final class MessageQueue {
 
-	private final HashMap<MessageRank, LinkedList<ControlledMessage>> rankedMessages = Maps.newHashMap();
-	private MessageRank minimumMessageRank = null; // Cached minimum view
+	private final HashMap<Long, LinkedList<ControlledMessage>> messagesByTime = Maps.newHashMap();
+	private long minimumMessageTime = Long.MAX_VALUE; // Cached minimum time
 
 	MessageQueue() {
 		// Nothing here for now
 	}
 
-	public boolean add(MessageRank msgRank, ControlledMessage item) {
-		this.rankedMessages.computeIfAbsent(msgRank, k -> Lists.newLinkedList()).add(item);
-		if (this.minimumMessageRank == null || msgRank.compareTo(this.minimumMessageRank) < 0) {
-			this.minimumMessageRank = msgRank;
+	public boolean add(ControlledMessage item) {
+		long messageTime = item.arrivalTime();
+		this.messagesByTime.computeIfAbsent(messageTime, k -> Lists.newLinkedList()).add(item);
+		if (messageTime < this.minimumMessageTime) {
+			this.minimumMessageTime = messageTime;
+		}
+		return true;
+	}
+
+	public boolean addFirst(ControlledMessage item) {
+		long messageTime = item.arrivalTime();
+		this.messagesByTime.computeIfAbsent(messageTime, k -> Lists.newLinkedList()).addFirst(item);
+		if (messageTime < this.minimumMessageTime) {
+			this.minimumMessageTime = messageTime;
+		}
+		return true;
+	}
+
+	public boolean addBefore(ControlledMessage item, Predicate<ControlledMessage> test) {
+		var messageTime = item.arrivalTime();
+		var i = this.messagesByTime.computeIfAbsent(messageTime, k -> Lists.newLinkedList()).listIterator();
+		var inserted = false;
+		while (i.hasNext()) {
+			if (test.test(i.next())) {
+				// Backup and insert
+				i.previous();
+				i.add(item);
+				inserted = true;
+				break;
+			}
+		}
+		if (!inserted) {
+			i.add(item);
+		}
+		if (messageTime < this.minimumMessageTime) {
+			this.minimumMessageTime = messageTime;
 		}
 		return true;
 	}
 
 	void remove(ControlledMessage message) {
-		LinkedList<ControlledMessage> msgs = this.rankedMessages.get(this.minimumMessageRank);
+		LinkedList<ControlledMessage> msgs = this.messagesByTime.get(this.minimumMessageTime);
 		if (msgs == null) {
 			painfulRemove(message);
 			return;
@@ -61,8 +94,8 @@ public final class MessageQueue {
 			return;
 		}
 		if (msgs.isEmpty()) {
-			this.rankedMessages.remove(this.minimumMessageRank);
-			this.minimumMessageRank = minimumKey(this.rankedMessages.keySet());
+			this.messagesByTime.remove(this.minimumMessageTime);
+			this.minimumMessageTime = minimumKey(this.messagesByTime.keySet());
 		}
 	}
 
@@ -71,7 +104,7 @@ public final class MessageQueue {
 			.<ChannelId>comparingInt(ChannelId::senderIndex)
 			.thenComparing(ChannelId::receiverIndex);
 		out.println("{");
-		this.rankedMessages.entrySet().stream()
+		this.messagesByTime.entrySet().stream()
 			.sorted(Map.Entry.comparingByKey())
 			.forEachOrdered(e1 -> {
 				out.format("    %s {%n", e1.getKey());
@@ -83,27 +116,27 @@ public final class MessageQueue {
 		out.println("}");
 	}
 
-	List<ControlledMessage> lowestRankMessages() {
-		if (this.rankedMessages.isEmpty()) {
+	List<ControlledMessage> lowestTimeMessages() {
+		if (this.messagesByTime.isEmpty()) {
 			return Collections.emptyList();
 		}
-		return this.rankedMessages.get(this.minimumMessageRank);
+		return this.messagesByTime.get(this.minimumMessageTime);
 	}
 
 	@Override
 	public String toString() {
-		return this.rankedMessages.toString();
+		return this.messagesByTime.toString();
 	}
 
 	// If not removing message of the lowest rank, then we do it the painful way
 	private void painfulRemove(ControlledMessage message) {
-		List<Map.Entry<MessageRank, LinkedList<ControlledMessage>>> entries = Lists.newArrayList(this.rankedMessages.entrySet());
+		List<Map.Entry<Long, LinkedList<ControlledMessage>>> entries = Lists.newArrayList(this.messagesByTime.entrySet());
 		Collections.sort(entries, Map.Entry.comparingByKey());
-		for (Map.Entry<MessageRank, LinkedList<ControlledMessage>> entry : entries) {
+		for (Map.Entry<Long, LinkedList<ControlledMessage>> entry : entries) {
 			LinkedList<ControlledMessage> msgs = entry.getValue();
 			if (msgs != null && msgs.remove(message)) {
 				if (msgs.isEmpty()) {
-					this.rankedMessages.remove(entry.getKey());
+					this.messagesByTime.remove(entry.getKey());
 					// Can't affect minimumView if we are here
 				}
 				return;
@@ -114,12 +147,10 @@ public final class MessageQueue {
 
 	// Believe it or not, this is faster, when coupled with minimumView
 	// caching, than using a TreeMap for nodes == 100.
-	private static MessageRank minimumKey(Set<MessageRank> eavs) {
+	private static long minimumKey(Set<Long> eavs) {
 		if (eavs.isEmpty()) {
-			return null;
+			return Long.MAX_VALUE;
 		}
-		List<MessageRank> ranks = Lists.newArrayList(eavs);
-		Collections.sort(ranks);
-		return ranks.get(0);
+		return Collections.min(eavs);
 	}
 }

@@ -51,9 +51,9 @@ public final class VertexStoreBFTSyncRequestProcessor implements BFTSyncRequestP
 		/**
 		 * Send an error response to a given request
 		 * @param node the node to send to
-		 * @param syncInfo sync info
+		 * @param highQC sync info
 		 */
-		void sendGetVerticesErrorResponse(BFTNode node, HighQC syncInfo);
+		void sendGetVerticesErrorResponse(BFTNode node, HighQC highQC);
 	}
 
 	@Inject
@@ -73,7 +73,7 @@ public final class VertexStoreBFTSyncRequestProcessor implements BFTSyncRequestP
 				log.trace("SYNC_VERTICES: Sending Response {}", fetched);
 				this.syncVerticesResponseSender.sendGetVerticesResponse(request.getSender(), fetched);
 			},
-			() -> this.syncVerticesResponseSender.sendGetVerticesErrorResponse(request.getSender(), vertexStore.syncInfo())
+			() -> this.syncVerticesResponseSender.sendGetVerticesErrorResponse(request.getSender(), vertexStore.highQC())
 		);
 	}
 }

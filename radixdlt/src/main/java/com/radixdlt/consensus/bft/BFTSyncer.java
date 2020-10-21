@@ -38,9 +38,9 @@ public interface BFTSyncer {
 	 * An author is used because the author will most likely have the corresponding vertices
 	 * still in memory.
 	 *
-	 * @param syncInfo the {@link HighQC} to sync to
+	 * @param highQC the {@link HighQC} to sync to
 	 * @param author the original author of the qc
 	 * @return {@code SyncResult.SYNCED} if already synced
 	 */
-	SyncResult syncToQC(HighQC syncInfo, @Nullable BFTNode author);
+	SyncResult syncToQC(HighQC highQC, @Nullable BFTNode author);
 }

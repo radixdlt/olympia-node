@@ -50,14 +50,9 @@ import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
 import com.radixdlt.sync.CommittedReader;
 import java.util.Objects;
 import java.util.function.BiFunction;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.util.Optional;
 
 public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, CommittedReader {
-	private static final Logger log = LogManager.getLogger();
-
 	private final Serialization serialization;
 	private final AtomIndexer atomIndexer;
 	private final LedgerEntryStore store;

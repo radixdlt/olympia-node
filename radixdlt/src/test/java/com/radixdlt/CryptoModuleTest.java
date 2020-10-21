@@ -26,6 +26,7 @@ import com.google.inject.Injector;
 import com.google.inject.name.Names;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HashVerifier;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.crypto.ECKeyPair;
 import org.junit.Test;
@@ -39,6 +40,7 @@ public class CryptoModuleTest {
 				@Override
 				protected void configure() {
 					bind(ECKeyPair.class).annotatedWith(Names.named("self")).toInstance(mock(ECKeyPair.class));
+					bind(SystemCounters.class).toInstance(mock(SystemCounters.class));
 				}
 			},
 			new CryptoModule()

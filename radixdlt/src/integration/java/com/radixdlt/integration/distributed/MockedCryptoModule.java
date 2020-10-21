@@ -34,6 +34,7 @@ import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
@@ -52,29 +53,34 @@ public class MockedCryptoModule extends AbstractModule {
 	}
 
 	@Provides
-	private HashVerifier hashVerifier() {
+	private HashVerifier hashVerifier(SystemCounters counters) {
 		return (pubKey, hash, sig) -> {
 			byte[] concat = new byte[64];
 			System.arraycopy(hash.asBytes(), 0, concat, 0, hash.asBytes().length);
 			System.arraycopy(pubKey.getBytes(), 0, concat, 32, 32);
 			long hashCode = hashFunction.hashBytes(concat).asLong();
+			counters.increment(SystemCounters.CounterType.SIGNATURES_VERIFIED);
 			return sig.getR().longValue() == hashCode;
 		};
 	}
 
 	@Provides
-	private HashSigner hashSigner(@Named("self") BFTNode node) {
+	private HashSigner hashSigner(
+		@Named("self") BFTNode node,
+		SystemCounters counters
+	) {
 		return h -> {
 			byte[] concat = new byte[64];
 			System.arraycopy(h, 0, concat, 0, 32);
 			System.arraycopy(node.getKey().getBytes(), 0, concat, 32, 32);
 			long hashCode = hashFunction.hashBytes(concat).asLong();
+			counters.increment(SystemCounters.CounterType.SIGNATURES_SIGNED);
 			return new ECDSASignature(BigInteger.valueOf(hashCode), BigInteger.valueOf(hashCode));
 		};
 	}
 
 	@Provides
-	private Hasher hasher(Serialization serialization) {
+	private Hasher hasher(Serialization serialization, SystemCounters counters) {
 		AtomicBoolean running = new AtomicBoolean(false);
 		Hasher hasher = new Hasher() {
 			@Override

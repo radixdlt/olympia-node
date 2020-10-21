@@ -19,12 +19,16 @@ package org.radix.serialization;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.TimestampedVoteData;
 import com.radixdlt.consensus.BFTHeader;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.crypto.HashUtils;
 
@@ -43,6 +47,8 @@ public class VoteSerializeTest extends SerializeObject<Vote> {
 		VoteData voteData = new VoteData(header, parent, null);
 		TimestampedVoteData timestampedVoteData = new TimestampedVoteData(voteData, 123456L);
 		BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
-		return new Vote(author, timestampedVoteData, null, 0L);
+		QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
+		HighQC highQC = HighQC.from(qc, qc);
+		return new Vote(author, timestampedVoteData, new ECDSASignature(), highQC);
 	}
 }

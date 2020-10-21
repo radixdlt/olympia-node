@@ -18,7 +18,6 @@
 package com.radixdlt.integration.distributed.deterministic.tests.consensus;
 
 import com.google.common.collect.Lists;
-import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTUpdate;
@@ -26,7 +25,6 @@ import com.radixdlt.integration.distributed.deterministic.DeterministicTest;
 import com.radixdlt.integration.distributed.deterministic.network.ChannelId;
 import com.radixdlt.integration.distributed.deterministic.network.ControlledMessage;
 import com.radixdlt.integration.distributed.deterministic.network.MessageMutator;
-import com.radixdlt.integration.distributed.deterministic.network.MessageRank;
 import com.radixdlt.integration.distributed.deterministic.network.MessageSelector;
 import com.radixdlt.utils.Pair;
 
@@ -45,26 +43,46 @@ public class OneSlowNodeTest {
 		final int numNodes = 4;
 
 		LinkedList<Pair<ChannelId, Class<?>>> processingSequence = Lists.newLinkedList();
-		for (int curLeader = 1; curLeader <= 2; curLeader++) {
-			processingSequence.add(Pair.of(ChannelId.of(1, curLeader), NewView.class));
-			processingSequence.add(Pair.of(ChannelId.of(2, curLeader), NewView.class));
-			processingSequence.add(Pair.of(ChannelId.of(3, curLeader), NewView.class));
+		// Local proposal first
+		processingSequence.add(Pair.of(ChannelId.of(1, 1), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 1), BFTUpdate.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 2), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 2), BFTUpdate.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 3), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(3, 3), BFTUpdate.class));
 
-			processingSequence.add(Pair.of(ChannelId.of(curLeader, 1), Proposal.class));
-			processingSequence.add(Pair.of(ChannelId.of(1, 1), BFTUpdate.class));
-			processingSequence.add(Pair.of(ChannelId.of(curLeader, 2), Proposal.class));
-			processingSequence.add(Pair.of(ChannelId.of(2, 2), BFTUpdate.class));
-			processingSequence.add(Pair.of(ChannelId.of(curLeader, 3), Proposal.class));
-			processingSequence.add(Pair.of(ChannelId.of(3, 3), BFTUpdate.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 2), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 2), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(3, 2), Vote.class));
 
-			processingSequence.add(Pair.of(ChannelId.of(1, curLeader), Vote.class));
-			processingSequence.add(Pair.of(ChannelId.of(2, curLeader), Vote.class));
-			processingSequence.add(Pair.of(ChannelId.of(3, curLeader), Vote.class));
-		}
-		// Delayed initial NewView from node 0 to (then) leader 1
-		processingSequence.add(Pair.of(ChannelId.of(0, 1), NewView.class));
+		// Local proposal first
+		processingSequence.add(Pair.of(ChannelId.of(2, 2), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 2), BFTUpdate.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 1), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 1), BFTUpdate.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 3), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(3, 3), BFTUpdate.class));
+
+		processingSequence.add(Pair.of(ChannelId.of(3, 3), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 3), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 3), Vote.class));
+
+		// Local proposal from 3->3
+		processingSequence.add(Pair.of(ChannelId.of(3, 3), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(3, 3), BFTUpdate.class));
+
 		// Delayed initial Proposal from (then) leader 1 to node 0
 		processingSequence.add(Pair.of(ChannelId.of(1, 0), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(0, 0), BFTUpdate.class));
+
+		// Other proposals from 3
+		processingSequence.add(Pair.of(ChannelId.of(3, 1), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 1), BFTUpdate.class));
+		processingSequence.add(Pair.of(ChannelId.of(3, 2), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 2), BFTUpdate.class));
+
+		// Delayed initial Vote from node 0 to (then) next leader 2
+		processingSequence.add(Pair.of(ChannelId.of(0, 2), Vote.class));
 
 		DeterministicTest.builder()
 			.numNodes(numNodes)
@@ -95,13 +113,13 @@ public class OneSlowNodeTest {
 	}
 
 	private static MessageMutator delayMessagesForNode(int index) {
-		return (rank, message, queue) -> {
+		return (message, queue) -> {
 			final int receiverIndex = message.channelId().receiverIndex();
 			final int senderIndex = message.channelId().senderIndex();
-			final MessageRank rankToUse = receiverIndex == index || senderIndex == index
-				? MessageRank.of(rank.major(), rank.minor() + 1)
-				: rank;
-			queue.add(rankToUse, message);
+			// Delay non-local messages to victim
+			final long additionalDelay = (receiverIndex == index && senderIndex != index)
+				? 200L : 0L;
+			queue.add(message.withAdditionalDelay(additionalDelay));
 			return true;
 		};
 	}

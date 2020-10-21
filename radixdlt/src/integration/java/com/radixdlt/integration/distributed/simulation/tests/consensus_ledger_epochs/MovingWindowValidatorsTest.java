@@ -17,7 +17,7 @@
 
 package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_epochs;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
@@ -26,7 +26,6 @@ import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResult
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.IntStream;
-import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
 public class MovingWindowValidatorsTest {
@@ -52,7 +51,7 @@ public class MovingWindowValidatorsTest {
 			.addTimestampChecker("timestamps")
 			.build();
 		TestResults results = bftTest.run();
-		assertThat(results.getCheckResults()).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+		assertThat(results.getCheckResults()).allSatisfy((name, err) -> assertThat(err).isEmpty());
 	}
 
 	@Test
@@ -65,7 +64,7 @@ public class MovingWindowValidatorsTest {
 			.addTimestampChecker("timestamps")
 			.build();
 		TestResults results = bftTest.run();
-		assertThat(results.getCheckResults()).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+		assertThat(results.getCheckResults()).allSatisfy((name, err) -> assertThat(err).isEmpty());
 	}
 
 	@Test
@@ -80,7 +79,7 @@ public class MovingWindowValidatorsTest {
 			.build();
 
 		TestResults results = bftTest.run();
-		assertThat(results.getCheckResults()).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+		assertThat(results.getCheckResults()).allSatisfy((name, err) -> assertThat(err).isEmpty());
 	}
 
 	@Test
@@ -94,6 +93,6 @@ public class MovingWindowValidatorsTest {
 			.build();
 
 		TestResults results = bftTest.run();
-		assertThat(results.getCheckResults()).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+		assertThat(results.getCheckResults()).allSatisfy((name, err) -> assertThat(err).isEmpty());
 	}
 }

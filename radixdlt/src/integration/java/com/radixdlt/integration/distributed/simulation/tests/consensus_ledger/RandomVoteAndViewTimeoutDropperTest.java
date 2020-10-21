@@ -15,57 +15,48 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_epochs_localmempool_radixengine;
+package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
-import java.util.List;
 import java.util.LongSummaryStatistics;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import org.apache.commons.collections4.MapUtils;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
-public class RandomNewViewDropperTest {
+/**
+ * Dropping random vote and view-timeout messages should cause consensus to fork quite a bit.
+ * This is to test that safety should always be preserved even in multiple forking situations.
+ */
+public class RandomVoteAndViewTimeoutDropperTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
-		.numNodes(8)
-		.numInitialValidators(4)
-		.ledgerAndRadixEngineWithEpochHighView(View.of(10))
-		.addRandomNewViewDropper(0.2)
+		.numNodes(4)
+		.ledger()
+		.addRandomVoteAndViewTimeoutDropper(0.4)
 		.checkConsensusSafety("safety")
 		.checkConsensusLiveness("liveness", 20, TimeUnit.SECONDS)
 		.checkLedgerInOrder("ledgerInOrder")
-		.checkLedgerProcessesConsensusCommitted("consensusToLedger")
-		.addRadixEngineValidatorRegisterUnregisterMempoolSubmissions();
+		.checkLedgerProcessesConsensusCommitted("consensusToLedger");
 
+	/**
+	 * Tests a configuration of 4 nodes with a dropping proposal adversary
+	 * Test should fail with GetVertices RPC disabled
+	 */
 	@Test
-	public void when_random_validators__then_sanity_checks_should_pass() {
-		SimulationTest simulationTest = bftTestBuilder.build();
-		TestResults results = simulationTest.run();
+	public void sanity_test() {
+		SimulationTest test = bftTestBuilder.build();
+		TestResults results = test.run();
 
-		List<CounterType> counterTypes = List.of(
-			CounterType.BFT_VERTEX_STORE_FORKS,
-			CounterType.BFT_PROCESSED,
-			CounterType.BFT_TIMEOUT,
-			CounterType.LEDGER_STATE_VERSION
-		);
+		LongSummaryStatistics statistics = results.getNetwork().getSystemCounters().values().stream()
+			.map(s -> s.get(CounterType.BFT_VERTEX_STORE_FORKS))
+			.mapToLong(l -> l)
+			.summaryStatistics();
 
-		Map<CounterType, LongSummaryStatistics> statistics = counterTypes.stream()
-			.collect(Collectors.toMap(
-				counterType -> counterType,
-				counterType -> results.getNetwork().getSystemCounters().values()
-					.stream()
-					.mapToLong(s -> s.get(counterType)).summaryStatistics())
-			);
-
-		MapUtils.debugPrint(System.out, "statistics", statistics);
+		System.out.println(statistics);
 
 		assertThat(results.getCheckResults()).allSatisfy((name, error) -> AssertionsForClassTypes.assertThat(error).isNotPresent());
 	}
