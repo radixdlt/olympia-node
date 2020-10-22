@@ -57,8 +57,8 @@ public final class ControlledSender implements DeterministicSender {
 	}
 
 	@Override
-	public void sendGetVerticesRequest(BFTNode node, LocalGetVerticesRequest request) {
-		GetVerticesRequest getVerticesRequest = new GetVerticesRequest(self, request.getVertexId(), request.getCount());
+	public void sendGetVerticesRequest(BFTNode node, LocalGetVerticesRequest localRequest) {
+		GetVerticesRequest request = new GetVerticesRequest(self, localRequest.getVertexId(), localRequest.getCount());
 		ChannelId channelId = ChannelId.of(this.senderIndex, this.network.lookup(node));
 		handleMessage(new ControlledMessage(channelId, request, arrivalTime(channelId)));
 	}
