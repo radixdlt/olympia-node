@@ -139,7 +139,7 @@ configurations.all {
 }
 
 dependencies {
-    compile 'com.radixdlt:radix-engine-library:rc~1.0-beta.17-SNAPSHOT'
+    compile 'com.radixdlt:radix-engine-library:1.0-beta.17'
     compile 'io.reactivex.rxjava3:rxjava:3.0.0'
     compile 'com.sleepycat:je:18.3.12'
 
