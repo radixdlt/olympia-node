@@ -80,7 +80,7 @@ configurations.all {
 }
 
 dependencies {
-    api 'com.github.radixdlt:radixdlt-java-common:rc~1.0-beta.9-SNAPSHOT'
+    api 'com.github.radixdlt:radixdlt-java-common:1.0-beta.9'
 
     api group: 'com.squareup.okhttp3', name: 'okhttp', version: '3.12.11'
     api group: 'com.squareup.okhttp3', name: 'logging-interceptor', version: '3.12.11'
