@@ -19,6 +19,8 @@ docker create  --pid=host --privileged  \
       --network=host --cap-add=NET_ADMIN  \
       -e CONTAINER_NAME -e TEST_DURATION -e RADIXDLT_UNIVERSE=${RADIXDLT_UNIVERSE} \
       --name=${test_executor} radix-system-test \
-      ./gradlew clean dockerSystemTests
+      ./gradlew clean dockerSystemTests --refresh-dependencies
 docker start -a "${test_executor}"
 docker cp $test_executor:src/system-tests .
+test_status=$(docker inspect $test_executor --format='{{.State.ExitCode}}')
+exit $test_status
