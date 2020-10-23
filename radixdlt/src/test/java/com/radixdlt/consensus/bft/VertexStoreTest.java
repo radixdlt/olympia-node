@@ -205,4 +205,19 @@ public class VertexStoreTest {
 		// Assert
 		assertThat(success).isFalse();
 	}
+
+	@Test
+	public void rebuilding_should_emit_updates() {
+		// Arrange
+		final List<VerifiedVertex> vertices = Stream.generate(this.nextVertex).limit(4).collect(Collectors.toList());
+
+		// Act
+		sut.rebuild(vertices.get(0), vertices.get(1).getQC(), vertices.get(3).getQC(), vertices.stream().skip(1).collect(Collectors.toList()));
+
+		// Assert
+		verify(bftUpdateSender, times(1)).sendBFTUpdate(argThat(u -> u.getInsertedVertex().equals(vertices.get(0))));
+		verify(bftUpdateSender, times(1)).sendBFTUpdate(argThat(u -> u.getInsertedVertex().equals(vertices.get(1))));
+		verify(bftUpdateSender, times(1)).sendBFTUpdate(argThat(u -> u.getInsertedVertex().equals(vertices.get(2))));
+		verify(bftUpdateSender, times(1)).sendBFTUpdate(argThat(u -> u.getInsertedVertex().equals(vertices.get(3))));
+	}
 }
