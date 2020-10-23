@@ -188,7 +188,7 @@ public class EpochsConsensusModule extends AbstractModule {
 		BFTUpdateSender updateSender,
 		SystemCounters counters
 	) {
-		return (genesisVertex, genesisQC, ledger, vertexStoreEventSender) -> new VertexStore(
+		return (genesisVertex, genesisQC, ledger, vertexStoreEventSender) -> VertexStore.create(
 			genesisVertex,
 			genesisQC,
 			ledger,

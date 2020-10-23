@@ -248,7 +248,7 @@ public final class ConsensusModule extends AbstractModule {
 		SystemCounters counters,
 		Ledger ledger
 	) {
-		return new VertexStore(
+		return VertexStore.create(
 			bftConfiguration.getGenesisVertex(),
 			bftConfiguration.getGenesisQC(),
 			ledger,

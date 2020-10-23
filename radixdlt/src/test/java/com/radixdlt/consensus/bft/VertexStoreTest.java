@@ -46,7 +46,6 @@ import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.AccumulatorState;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -92,7 +91,7 @@ public class VertexStoreTest {
 		this.genesisHash = HashUtils.zero256();
 		this.genesisVertex = new VerifiedVertex(UnverifiedVertex.createGenesis(MOCKED_HEADER), genesisHash);
 		this.rootQC = QuorumCertificate.ofGenesis(genesisVertex, MOCKED_HEADER);
-		this.sut = new VertexStore(
+		this.sut = VertexStore.create(
 			genesisVertex,
 			rootQC,
 			ledger,
@@ -144,26 +143,9 @@ public class VertexStoreTest {
 		VoteData voteData = new VoteData(nextHeader, genesisHeader, null);
 		QuorumCertificate badRootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 		assertThatThrownBy(() ->
-			new VertexStore(
+			VertexStore.create(
 				genesisVertex,
 				badRootQC,
-				ledger,
-				bftUpdateSender,
-				vertexStoreEventSender,
-				counters
-			)
-		).isInstanceOf(IllegalStateException.class);
-	}
-
-	@Test
-	public void when_vertex_store_created_with_incorrect_vertices__then_exception_is_thrown() {
-		this.nextVertex.get();
-
-		assertThatThrownBy(() ->
-			new VertexStore(
-				genesisVertex,
-				rootQC,
-				Collections.singletonList(this.nextVertex.get()),
 				ledger,
 				bftUpdateSender,
 				vertexStoreEventSender,
