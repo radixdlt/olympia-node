@@ -32,6 +32,7 @@ import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerIds;
+import com.radixdlt.serialization.SerializerId2;
 import java.util.Collection;
 
 /**
@@ -51,23 +52,23 @@ class DsonTypeResolverBuilder extends ObjectMapper.DefaultTypeResolverBuilder {
 		this.idLookup = idLookup;
 	}
 
-    @Override
-    public TypeSerializer buildTypeSerializer(SerializationConfig config, JavaType baseType, Collection<NamedType> subtypes) {
-    	// Serialization handled already
-    	return null;
-    }
+	@Override
+	public TypeSerializer buildTypeSerializer(SerializationConfig config, JavaType baseType, Collection<NamedType> subtypes) {
+		// Serialization handled already
+		return null;
+	}
 
-    @Override
+	@Override
 	public TypeDeserializer buildTypeDeserializer(DeserializationConfig config, JavaType baseType, Collection<NamedType> subtypes) {
-    	return super.buildTypeDeserializer(config, baseType, subtypes);
-    }
+		return super.buildTypeDeserializer(config, baseType, subtypes);
+	}
 
 	@Override
 	public boolean useForType(JavaType t) {
 		return idLookup.isSerializableSuper(t.getRawClass());
 	}
 
-    @Override
+	@Override
 	protected TypeIdResolver idResolver(
 			MapperConfig<?> config, JavaType baseType,
 			PolymorphicTypeValidator subtypeValidator, Collection<NamedType> subtypes,

@@ -17,20 +17,17 @@
 
 package com.radixdlt.serialization;
 
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
 /**
- * Package-local constants.
+ * Annotation for marking interfaces as a roots for serializable classes hierarchies.
  */
-public final class SerializerConstants {
-	private SerializerConstants() {
-		throw new IllegalStateException("Can't construct");
-	}
-
-	// At least this will cause compilation fail when updated
-	public static final Class<SerializerId2> SERIALIZER_ID_ANNOTATION = SerializerId2.class;
-
-	// At least this will cause compilation fail when updated
-	public static final Class<SerializerRoot> SERIALIZER_ROOT_ANNOTATION = SerializerRoot.class;
-
-	// The serialized type field name
-	public static final String SERIALIZER_NAME = "serializer";
+@Documented
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface SerializerRoot {
 }
