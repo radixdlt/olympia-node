@@ -18,7 +18,6 @@
 package com.radixdlt.consensus.bft;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doAnswer;
@@ -134,24 +133,6 @@ public class VertexStoreTest {
 		};
 
 		this.nextVertex = () -> nextSkippableVertex.apply(false);
-	}
-
-	@Test
-	public void when_vertex_store_created_with_incorrect_roots__then_exception_is_thrown() {
-		BFTHeader nextHeader = new BFTHeader(View.of(1), mock(HashCode.class), mock(LedgerHeader.class));
-		BFTHeader genesisHeader = new BFTHeader(View.of(0), genesisHash, mock(LedgerHeader.class));
-		VoteData voteData = new VoteData(nextHeader, genesisHeader, null);
-		QuorumCertificate badRootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-		assertThatThrownBy(() ->
-			VertexStore.create(
-				genesisVertex,
-				badRootQC,
-				ledger,
-				bftUpdateSender,
-				vertexStoreEventSender,
-				counters
-			)
-		).isInstanceOf(IllegalStateException.class);
 	}
 
 	@Test

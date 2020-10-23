@@ -256,9 +256,6 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 		List<HashCode> syncIds = syncRequestState.syncIds.stream().filter(syncing::containsKey).collect(Collectors.toList());
 		for (HashCode syncId : syncIds) {
 			SyncState syncState = syncing.get(syncId);
-			if (syncState == null) {
-				return;
-			}
 
 			// Retry full sync on timeout
 			int nextIndex = random.nextInt(syncRequestState.authors.size());

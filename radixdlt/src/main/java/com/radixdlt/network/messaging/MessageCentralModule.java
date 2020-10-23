@@ -21,11 +21,8 @@ import java.util.Objects;
 
 import com.google.inject.Singleton;
 
-import org.radix.time.Time;
-
 import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.network.transport.FirstMatchTransportManager;
 import com.radixdlt.properties.RuntimeProperties;
 
@@ -36,15 +33,13 @@ import com.radixdlt.properties.RuntimeProperties;
 public final class MessageCentralModule extends AbstractModule {
 
 	private final MessageCentralConfiguration config;
-	private final TimeSupplier timeSource;
 
 	public MessageCentralModule(RuntimeProperties properties) {
-		this(MessageCentralConfiguration.fromRuntimeProperties(properties), Time::currentTimestamp);
+		this(MessageCentralConfiguration.fromRuntimeProperties(properties));
 	}
 
-	MessageCentralModule(MessageCentralConfiguration config, TimeSupplier timeSource) {
+	MessageCentralModule(MessageCentralConfiguration config) {
 		this.config = Objects.requireNonNull(config);
-		this.timeSource = Objects.requireNonNull(timeSource);
 	}
 
 	@Override
@@ -57,6 +52,5 @@ public final class MessageCentralModule extends AbstractModule {
 		// MessageCentral dependencies
 		bind(MessageCentralConfiguration.class).toInstance(this.config);
 		bind(TransportManager.class).to(FirstMatchTransportManager.class);
-		bind(TimeSupplier.class).toInstance(this.timeSource);
 	}
 }

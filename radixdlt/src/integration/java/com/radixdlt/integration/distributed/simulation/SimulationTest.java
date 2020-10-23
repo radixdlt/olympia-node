@@ -89,7 +89,6 @@ import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
-import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.sync.SyncPatienceMillis;
 import com.radixdlt.utils.DurationParser;
 import com.radixdlt.utils.Pair;
@@ -103,7 +102,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -394,30 +392,27 @@ public class SimulationTest {
 
 		public SimulationTest build() {
 			modules.add(new AbstractModule() {
-				final Random sharedRandom = new Random();
 				@Override
 				public void configure() {
 					bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
-					bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
-					bind(Random.class).toInstance(sharedRandom);
 					bind(Integer.class).annotatedWith(BFTSyncPatienceMillis.class).toInstance(50);
 				}
 			});
+			modules.add(new MockedSystemModule());
 			modules.add(new NoFeeModule());
 			modules.add(new MockedCryptoModule());
 			modules.add(new ConsensusModule(pacemakerTimeout, 2.0, 0)); // Use constant timeout for now
 			modules.add(new ConsensusRxModule());
 			modules.add(new SystemInfoRxModule());
+			modules.add(new LedgerRxModule());
 
 			if (ledgerType == LedgerType.MOCKED_LEDGER) {
 				modules.add(new MockedBFTConfigurationModule());
 				modules.add(new MockedLedgerModule());
-				modules.add(new LedgerRxModule());
 				modules.add(new MockedConsensusRunnerModule());
 				modules.add(new MockedLedgerUpdateRxModule());
 			} else {
 				modules.add(new LedgerModule());
-				modules.add(new LedgerRxModule());
 
 				if (ledgerType == LedgerType.LEDGER) {
 					modules.add(new MockedLedgerUpdateRxModule());

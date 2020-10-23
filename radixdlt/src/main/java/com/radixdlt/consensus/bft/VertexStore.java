@@ -94,12 +94,11 @@ public final class VertexStore {
 			throw new IllegalStateException(String.format("rootQC=%s does not match rootVertex=%s", rootQC, rootVertex));
 		}
 
-		final Optional<BFTHeader> header = rootQC.getCommittedAndLedgerStateProof().map(Pair::getFirst);
-		if (!header.isPresent()) {
-			if (!rootQC.getView().isGenesis() || !rootQC.equals(rootQC)) {
-				throw new IllegalStateException(String.format("rootCommit=%s does not have commit", rootQC));
-			}
-		} else if (!header.get().getVertexId().equals(rootVertex.getId())) {
+		final Optional<BFTHeader> maybeHeader = rootQC.getCommittedAndLedgerStateProof().map(Pair::getFirst);
+		final BFTHeader committedHeader = maybeHeader.orElseThrow(
+			() -> new IllegalStateException(String.format("rootCommit=%s does not have commit", rootQC))
+		);
+		if (!committedHeader.getVertexId().equals(rootVertex.getId())) {
 			throw new IllegalStateException(String.format("rootCommitQC=%s does not match rootVertex=%s", rootQC, rootVertex));
 		}
 

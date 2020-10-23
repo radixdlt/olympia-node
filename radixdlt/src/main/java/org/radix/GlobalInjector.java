@@ -44,6 +44,7 @@ import com.radixdlt.LedgerRxModule;
 import com.radixdlt.LedgerModule;
 import com.radixdlt.SyncRxModule;
 import com.radixdlt.SystemInfoRxModule;
+import com.radixdlt.SystemModule;
 import com.radixdlt.TokenFeeModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.View;
@@ -123,6 +124,9 @@ public class GlobalInjector {
 		}
 
 		injector = Guice.createInjector(
+			// System (e.g. time, random)
+			new SystemModule(),
+
 			// Consensus
 			new CryptoModule(),
 			new ConsensusModule(pacemakerTimeout, pacemakerRate, pacemakerMaxExponent),
