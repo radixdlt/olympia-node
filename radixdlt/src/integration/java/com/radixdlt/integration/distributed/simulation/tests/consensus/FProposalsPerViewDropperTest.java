@@ -47,7 +47,7 @@ public class FProposalsPerViewDropperTest {
 	@Parameters
 	public static Collection<Object[]> testParameters() {
 		return Arrays.asList(new Object[][] {
-			{4}, //TODO: fix to make work with more nodes //{5}//, {50}
+			{4}, {20}
 		});
 	}
 

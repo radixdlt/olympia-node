@@ -29,7 +29,6 @@ import com.google.common.hash.HashCode;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.utils.Pair;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -66,21 +65,9 @@ public final class VertexStore {
 	private QuorumCertificate highestQC;
 	private QuorumCertificate highestCommittedQC;
 
-	public VertexStore(
+	private VertexStore(
 		VerifiedVertex rootVertex,
 		QuorumCertificate rootQC,
-		Ledger ledger,
-		BFTUpdateSender bftUpdateSender,
-		VertexStoreEventSender vertexStoreEventSender,
-		SystemCounters counters
-	) {
-		this(rootVertex, rootQC, Collections.emptyList(), ledger, bftUpdateSender, vertexStoreEventSender, counters);
-	}
-
-	public VertexStore(
-		VerifiedVertex rootVertex,
-		QuorumCertificate rootQC,
-		List<VerifiedVertex> vertices,
 		Ledger ledger,
 		BFTUpdateSender bftUpdateSender,
 		VertexStoreEventSender vertexStoreEventSender,
@@ -90,12 +77,39 @@ public final class VertexStore {
 		this.vertexStoreEventSender = Objects.requireNonNull(vertexStoreEventSender);
 		this.bftUpdateSender = Objects.requireNonNull(bftUpdateSender);
 		this.counters = Objects.requireNonNull(counters);
+		this.rootVertex = Objects.requireNonNull(rootVertex);
+		this.highestQC = Objects.requireNonNull(rootQC);
+		this.highestCommittedQC = rootQC;
+	}
 
-		Objects.requireNonNull(rootVertex);
-		Objects.requireNonNull(rootQC);
-		Objects.requireNonNull(vertices);
+	public static VertexStore create(
+		VerifiedVertex rootVertex,
+		QuorumCertificate rootQC,
+		Ledger ledger,
+		BFTUpdateSender bftUpdateSender,
+		VertexStoreEventSender vertexStoreEventSender,
+		SystemCounters counters
+	) {
+		if (!rootQC.getProposed().getVertexId().equals(rootVertex.getId())) {
+			throw new IllegalStateException(String.format("rootQC=%s does not match rootVertex=%s", rootQC, rootVertex));
+		}
 
-		this.rebuild(rootVertex, rootQC, rootQC, vertices);
+		final Optional<BFTHeader> maybeHeader = rootQC.getCommittedAndLedgerStateProof().map(Pair::getFirst);
+		final BFTHeader committedHeader = maybeHeader.orElseThrow(
+			() -> new IllegalStateException(String.format("rootCommit=%s does not have commit", rootQC))
+		);
+		if (!committedHeader.getVertexId().equals(rootVertex.getId())) {
+			throw new IllegalStateException(String.format("rootCommitQC=%s does not match rootVertex=%s", rootQC, rootVertex));
+		}
+
+		return new VertexStore(
+			rootVertex,
+			rootQC,
+			ledger,
+			bftUpdateSender,
+			vertexStoreEventSender,
+			counters
+		);
 	}
 
 	public VerifiedVertex getRoot() {
@@ -122,6 +136,9 @@ public final class VertexStore {
 		this.highestQC = rootQC;
 		this.vertexStoreEventSender.highQC(rootQC);
 		this.highestCommittedQC = rootCommitQC;
+
+		BFTUpdate bftUpdate = new BFTUpdate(rootVertex);
+		bftUpdateSender.sendBFTUpdate(bftUpdate);
 
 		for (VerifiedVertex vertex : vertices) {
 			if (!addQC(vertex.getQC())) {
