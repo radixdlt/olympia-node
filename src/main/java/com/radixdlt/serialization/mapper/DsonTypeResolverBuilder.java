@@ -32,13 +32,12 @@ import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerIds;
-import com.radixdlt.serialization.SerializerId2;
 import java.util.Collection;
 
 /**
  * TypeResolverBuilder that outputs type information for all classes that
  * are part of the serializable class set.  This set consists of all classes
- * annotated with {@link SerializerId2} and their
+ * annotated with {@link com.radixdlt.serialization.SerializerId2} and their
  * superclasses.
  */
 class DsonTypeResolverBuilder extends ObjectMapper.DefaultTypeResolverBuilder {

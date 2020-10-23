@@ -61,10 +61,6 @@ public class ExtendedClientAtom extends ClientAtom {
 
 	@Override
 	public String toString() {
-		return "ExtendedClientAtom(" +
-				"aid: " + aid() + ", " +
-				"metaData: '" + metaData() + "', " +
-				"extra: '" + extra + '\'' +
-				')';
+		return "ExtendedClientAtom(aid: " + aid() + ", metaData: '" + metaData() + "', extra: '" + extra + "')";
 	}
 }

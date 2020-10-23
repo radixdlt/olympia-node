@@ -90,9 +90,6 @@ public class ClientAtom implements LedgerAtom {
 
 	@Override
 	public String toString() {
-		return "ClientAtom(" +
-				"metaData: '" + metaData + '\'' +
-				", aid: " + aid +
-				')';
+		return "ClientAtom(metaData: '" + metaData + "', aid: " + aid + ')';
 	}
 }

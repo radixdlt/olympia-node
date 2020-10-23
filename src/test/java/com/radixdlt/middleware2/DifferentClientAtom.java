@@ -90,9 +90,6 @@ public class DifferentClientAtom implements LedgerAtom {
 
 	@Override
 	public String toString() {
-		return "DifferentClientAtom(" +
-				"metaData: '" + metaData + '\'' +
-				", aid: " + aid +
-				')';
+		return "DifferentClientAtom(metaData: '" + metaData + "', aid: " + aid + ')';
 	}
 }
