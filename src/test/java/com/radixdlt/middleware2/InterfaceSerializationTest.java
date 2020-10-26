@@ -17,7 +17,6 @@
 
 package com.radixdlt.middleware2;
 
-import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.core.ClasspathScanningSerializationPolicy;
