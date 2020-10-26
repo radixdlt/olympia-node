@@ -270,7 +270,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 	}
 
 	private void rebuildAndSyncQC(SyncState syncState) {
-		log.info("SYNC_STATE: Rebuilding and syncing QC: sync={} curRoot={}", syncState, vertexStore.getRoot());
+		log.debug("SYNC_STATE: Rebuilding and syncing QC: sync={} curRoot={}", syncState, vertexStore.getRoot());
 
 		// TODO: check if there are any vertices which haven't been local sync processed yet
 		if (requiresLedgerSync(syncState)) {
@@ -283,7 +283,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 				nonRootVertices
 			);
 		} else {
-			log.info("SYNC_STATE: skipping rebuild");
+			log.debug("SYNC_STATE: skipping rebuild");
 		}
 
 		// At this point we are guaranteed to be in sync with the committed state
@@ -292,7 +292,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 	}
 
 	private void processVerticesResponseForCommittedSync(SyncState syncState, GetVerticesResponse response) {
-		log.info("SYNC_STATE: Processing vertices {} View {} From {}", syncState, response.getVertices().get(0).getView(), response.getSender());
+		log.debug("SYNC_STATE: Processing vertices {} View {} From {}", syncState, response.getVertices().get(0).getView(), response.getSender());
 
 		ImmutableList<BFTNode> signers = ImmutableList.of(syncState.author);
 		syncState.fetched.addAll(response.getVertices());
@@ -337,7 +337,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 			this.syncing.remove(syncState.localSyncId);
 			this.syncToQC(syncState.highQC, syncState.author);
 		} else {
-			log.info("SYNC_VERTICES: Sending further GetVerticesRequest for {} fetched={} root={}",
+			log.debug("SYNC_VERTICES: Sending further GetVerticesRequest for {} fetched={} root={}",
 				syncState.highQC(), syncState.fetched.size(), vertexStore.getRoot());
 
 
@@ -354,7 +354,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 	public void processGetVerticesErrorResponse(GetVerticesErrorResponse response) {
 		// TODO: check response
 
-		log.info("SYNC_VERTICES: Received GetVerticesErrorResponse {} ", response);
+		log.debug("SYNC_VERTICES: Received GetVerticesErrorResponse {} ", response);
 
 		// error response indicates that the node has moved on from last sync so try and sync to a new sync
 		this.syncToQC(response.highQC(), response.getSender());
@@ -364,7 +364,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 	public void processGetVerticesResponse(GetVerticesResponse response) {
 		// TODO: check response
 
-		log.trace("SYNC_VERTICES: Received GetVerticesResponse {}", response);
+		log.debug("SYNC_VERTICES: Received GetVerticesResponse {}", response);
 
 		VerifiedVertex firstVertex = response.getVertices().get(0);
 		LocalGetVerticesRequest requestInfo = new LocalGetVerticesRequest(firstVertex.getId(), response.getVertices().size());
