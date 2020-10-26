@@ -17,6 +17,7 @@
 
 package com.radixdlt.epochs;
 
+import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
@@ -27,7 +28,6 @@ import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceProcessor;
 import com.radixdlt.sync.StateSyncNetwork;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -100,17 +100,13 @@ public class EpochsLocalSyncServiceProcessor implements LocalSyncServiceProcesso
 		if (targetEpoch > currentEpoch.getEpoch()) {
 			log.warn("Request {} is a different epoch from current {} sending epoch sync", request, currentEpoch.getEpoch());
 
-			outsideOfCurrentEpochRequests.compute(targetEpoch, (epoch, list) -> {
-				List<LocalSyncRequest> requests = list == null ? new ArrayList<>() : list;
-				requests.add(request);
-				return requests;
-			});
+			outsideOfCurrentEpochRequests.computeIfAbsent(targetEpoch, epoch -> Lists.newArrayList()).add(request);
 			stateSyncNetwork.sendSyncRequest(request.getTargetNodes().get(0), currentEpoch.getProof().toDto());
 			return;
 		}
 
 		if (targetEpoch < currentEpoch.getEpoch()) {
-			log.warn("Request {} epoch is lower from current {} ignoring", request, currentEpoch.getEpoch());
+			log.trace("Request epoch {} is lower from current {} ignoring: {}", targetEpoch, request, currentEpoch.getEpoch());
 			return;
 		}
 

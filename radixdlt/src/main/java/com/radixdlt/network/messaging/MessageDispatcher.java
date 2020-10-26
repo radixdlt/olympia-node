@@ -170,7 +170,7 @@ class MessageDispatcher {
 			}
 			if (system.getNID().equals(this.localSystem.getNID())) {
 				// Just quietly ignore messages from self
-				log.debug("Ignoring {} message from self", messageType);
+				log.trace("Ignoring {} message from self", messageType);
 				return null;
 			}
 			if (checkPeerBanned(system.getNID(), messageType)) {

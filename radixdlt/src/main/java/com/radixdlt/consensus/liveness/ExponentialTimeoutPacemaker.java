@@ -185,13 +185,13 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 	public Optional<QuorumCertificate> processVote(Vote vote) {
 		View view = vote.getView();
 		if (view.compareTo(this.lastQuorumView) <= 0) {
-			log.debug("Vote: Ignoring vote from view {}, last quorum at {}", view, this.lastQuorumView);
+			log.debug("Vote: Ignoring vote from {} for view {}, last quorum at {}", vote.getAuthor(), view, this.lastQuorumView);
 			return Optional.empty();
 		}
 		Optional<QuorumCertificate> maybeQC = this.pendingVotes.insertVote(vote, this.validatorSet)
 			.filter(qc -> shouldProceedToNextView(view));
 		maybeQC.ifPresent(qc -> {
-			log.debug("Vote: Formed QC: {}", qc);
+			log.trace("Vote: Formed QC: {}", qc);
 			this.counters.increment(CounterType.BFT_VOTE_QUORUMS);
 			this.lastQuorumView = view;
 		});
@@ -236,7 +236,7 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 		this.pendingViewTimeouts.insertViewTimeout(viewTimeout, this.validatorSet)
 			.filter(this::shouldProceedToNextView)
 			.ifPresent(vt -> {
-				log.debug("ViewTimeout: Formed quorum at view {}", view);
+				log.trace("ViewTimeout: Formed quorum at view {}", view);
 				this.counters.increment(CounterType.BFT_TIMEOUT_QUORUMS);
 				this.lastQuorumView = view;
 				this.updateView(view.next());
@@ -294,7 +294,7 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 		this.pacemakerInfoSender.sendCurrentView(this.currentView);
 		if (this.self.equals(this.proposerElection.getProposer(nextView))) {
 			Proposal proposal = generateProposal(this.currentView);
-			log.trace("Broadcasting PROPOSAL: {}", () -> proposal);
+			log.trace("Propose: {}", proposal);
 			this.counters.increment(CounterType.BFT_PROPOSALS_MADE);
 			this.sender.broadcastProposal(proposal, this.validatorSet.nodes());
 		}
