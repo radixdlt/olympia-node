@@ -30,9 +30,6 @@ import org.radix.serialization.TestSetupUtils;
 import com.google.inject.Key;
 import com.google.inject.name.Names;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.EUID;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.universe.Universe;
 import org.radix.universe.system.LocalSystem;
@@ -67,27 +64,9 @@ public class GlobalInjectorTest {
 	}
 
 	@Test
-	public void testNid() {
-		setup("none");
-		testSelfInstance(EUID.class);
-	}
-
-	@Test
 	public void testKeyPair() {
 		setup("none");
 		testSelfInstance(ECKeyPair.class);
-	}
-
-	@Test
-	public void testPublicKey() {
-		setup("none");
-		testSelfInstance(ECPublicKey.class);
-	}
-
-	@Test
-	public void testAddress() {
-		setup("none");
-		testSelfInstance(RadixAddress.class);
 	}
 
 	@Test

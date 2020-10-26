@@ -54,10 +54,7 @@ import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
-import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.middleware2.InfoSupplier;
 import com.radixdlt.SystemInfoModule;
 import com.radixdlt.NetworkModule;
@@ -94,10 +91,7 @@ public class GlobalInjector {
 				bind(Universe.class).toInstance(universe);
 				bind(LocalSystem.class).toProvider(LocalSystemProvider.class).in(Scopes.SINGLETON);
 
-				bind(EUID.class).annotatedWith(Names.named("self")).toProvider(SelfNidProvider.class);
 				bind(ECKeyPair.class).annotatedWith(Names.named("self")).toProvider(SelfKeyPairProvider.class);
-				bind(ECPublicKey.class).annotatedWith(Names.named("self")).toProvider(SelfPublicKeyProvider.class);
-				bind(RadixAddress.class).annotatedWith(Names.named("self")).toProvider(SelfAddressProvider.class);
 				bind(BFTNode.class).annotatedWith(Names.named("self")).toProvider(SelfBFTNodeProvider.class);
 
 				bind(PeerManagerConfiguration.class).toInstance(PeerManagerConfiguration.fromRuntimeProperties(properties));
@@ -213,20 +207,6 @@ public class GlobalInjector {
 		return injector;
 	}
 
-	static class SelfNidProvider implements Provider<EUID> {
-		private final LocalSystem localSystem;
-
-		@Inject
-		SelfNidProvider(LocalSystem localSystem) {
-			this.localSystem = localSystem;
-		}
-
-		@Override
-		public EUID get() {
-			return this.localSystem.getNID();
-		}
-	}
-
 	static class SelfKeyPairProvider implements Provider<ECKeyPair> {
 		private final LocalSystem localSystem;
 
@@ -238,36 +218,6 @@ public class GlobalInjector {
 		@Override
 		public ECKeyPair get() {
 			return this.localSystem.getKeyPair();
-		}
-	}
-
-	static class SelfPublicKeyProvider implements Provider<ECPublicKey> {
-		private final LocalSystem localSystem;
-
-		@Inject
-		SelfPublicKeyProvider(LocalSystem localSystem) {
-			this.localSystem = localSystem;
-		}
-
-		@Override
-		public ECPublicKey get() {
-			return this.localSystem.getKeyPair().getPublicKey();
-		}
-	}
-
-	static class SelfAddressProvider implements Provider<RadixAddress> {
-		private final Universe universe;
-		private final LocalSystem localSystem;
-
-		@Inject
-		SelfAddressProvider(Universe universe, LocalSystem localSystem) {
-			this.universe = universe;
-			this.localSystem = localSystem;
-		}
-
-		@Override
-		public RadixAddress get() {
-			return new RadixAddress((byte) this.universe.getMagic(), this.localSystem.getKey());
 		}
 	}
 

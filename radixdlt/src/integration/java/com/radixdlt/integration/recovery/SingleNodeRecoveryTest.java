@@ -21,8 +21,50 @@ public class SingleNodeRecoveryTest {
 	/*
 	private void setup() {
 		Guice.createInjector(
-			// System (e.g. time, random)
-			new SystemModule(),
+			new AbstractModule() {
+				@Override
+				protected void configure() {
+					bind(DatabaseEnvironment.class).toInstance(dbEnv);
+					bind(Universe.class).toInstance(universe);
+					bind(LocalSystem.class).toProvider(LocalSystemProvider.class).in(Scopes.SINGLETON);
+
+					bind(EUID.class).annotatedWith(Names.named("self")).toProvider(SelfNidProvider.class);
+					bind(ECKeyPair.class).annotatedWith(Names.named("self")).toProvider(SelfKeyPairProvider.class);
+					bind(ECPublicKey.class).annotatedWith(Names.named("self")).toProvider(SelfPublicKeyProvider.class);
+					bind(RadixAddress.class).annotatedWith(Names.named("self")).toProvider(SelfAddressProvider.class);
+					bind(BFTNode.class).annotatedWith(Names.named("self")).toProvider(SelfBFTNodeProvider.class);
+
+					bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(200);
+					bind(Integer.class).annotatedWith(BFTSyncPatienceMillis.class).toInstance(200);
+					bind(Integer.class).annotatedWith(MinValidators.class).toInstance(1);
+				}
+
+				// Default values mean that pacemakers will sync if they are within 5 views of each other.
+				// 5 consecutive failing views will take 1*(2^6)-1 seconds = 63 seconds.
+				@Provides
+				@PacemakerTimeout
+				long pacemakerTimeout() {
+					return 1000L;
+				}
+
+				@Provides
+				@PacemakerRate
+				double pacemakerRate() {
+					return 2.0;
+				}
+
+				@Provides
+				@PacemakerMaxExponent
+				int pacemakerMaxExponent() {
+					return 6;
+				}
+
+				@Provides
+				@EpochCeilingView
+				View epochCeilingView() {
+					return View.of(100L);
+				}
+			},
 
 			// Consensus
 			new CryptoModule(),
@@ -51,19 +93,17 @@ public class SingleNodeRecoveryTest {
 			new EpochsSyncModule(),
 
 			// State Computer
-			new RadixEngineModule(epochHighView),
+			new RadixEngineModule(),
 			new RadixEngineRxModule(),
-			new RadixEngineStoreModule(fixedNodeCount),
+			new RadixEngineStoreModule(),
 
 			// Fees
 			new NoFeeModule(),
 
-			new PersistenceModule(),
-
-			// System Info
-			new SystemInfoModule(properties),
-		)
+			new PersistenceModule()
+		);
 	}
-	 */
 
+
+	 */
 }
