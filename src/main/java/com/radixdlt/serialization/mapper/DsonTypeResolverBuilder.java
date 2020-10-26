@@ -37,7 +37,7 @@ import java.util.Collection;
 /**
  * TypeResolverBuilder that outputs type information for all classes that
  * are part of the serializable class set.  This set consists of all classes
- * annotated with {@link SerializerId2} and their
+ * annotated with {@link com.radixdlt.serialization.SerializerId2} and their
  * superclasses.
  */
 class DsonTypeResolverBuilder extends ObjectMapper.DefaultTypeResolverBuilder {
@@ -51,23 +51,23 @@ class DsonTypeResolverBuilder extends ObjectMapper.DefaultTypeResolverBuilder {
 		this.idLookup = idLookup;
 	}
 
-    @Override
-    public TypeSerializer buildTypeSerializer(SerializationConfig config, JavaType baseType, Collection<NamedType> subtypes) {
-    	// Serialization handled already
-    	return null;
-    }
+	@Override
+	public TypeSerializer buildTypeSerializer(SerializationConfig config, JavaType baseType, Collection<NamedType> subtypes) {
+		// Serialization handled already
+		return null;
+	}
 
-    @Override
+	@Override
 	public TypeDeserializer buildTypeDeserializer(DeserializationConfig config, JavaType baseType, Collection<NamedType> subtypes) {
-    	return super.buildTypeDeserializer(config, baseType, subtypes);
-    }
+		return super.buildTypeDeserializer(config, baseType, subtypes);
+	}
 
 	@Override
 	public boolean useForType(JavaType t) {
 		return idLookup.isSerializableSuper(t.getRawClass());
 	}
 
-    @Override
+	@Override
 	protected TypeIdResolver idResolver(
 			MapperConfig<?> config, JavaType baseType,
 			PolymorphicTypeValidator subtypeValidator, Collection<NamedType> subtypes,
