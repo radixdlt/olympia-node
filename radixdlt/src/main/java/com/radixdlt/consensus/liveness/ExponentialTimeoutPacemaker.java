@@ -192,6 +192,7 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 			.filter(qc -> shouldProceedToNextView(view));
 		maybeQC.ifPresent(qc -> {
 			log.debug("Vote: Formed QC: {}", qc);
+			this.counters.increment(CounterType.BFT_VOTE_QUORUMS);
 			this.lastQuorumView = view;
 		});
 		return maybeQC;
@@ -217,6 +218,7 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 				log.trace("Proposal: Sending vote to {}: {}", nextLeader, vote);
 				this.proceedToViewSender.sendVote(vote, nextLeader);
 			} catch (SafetyViolationException e) {
+				this.counters.increment(CounterType.BFT_REJECTED);
 				log.error(() -> new FormattedMessage("Proposal: Rejected {}", proposedVertex), e);
 			}
 		});
@@ -234,7 +236,8 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 		this.pendingViewTimeouts.insertViewTimeout(viewTimeout, this.validatorSet)
 			.filter(this::shouldProceedToNextView)
 			.ifPresent(vt -> {
-				log.trace("ViewTimeout: Formed quorum at view {}", view);
+				log.debug("ViewTimeout: Formed quorum at view {}", view);
+				this.counters.increment(CounterType.BFT_TIMEOUT_QUORUMS);
 				this.lastQuorumView = view;
 				this.updateView(view.next());
 			});
@@ -292,8 +295,8 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 		if (this.self.equals(this.proposerElection.getProposer(nextView))) {
 			Proposal proposal = generateProposal(this.currentView);
 			log.trace("Broadcasting PROPOSAL: {}", () -> proposal);
-			this.sender.broadcastProposal(proposal, this.validatorSet.nodes());
 			this.counters.increment(CounterType.BFT_PROPOSALS_MADE);
+			this.sender.broadcastProposal(proposal, this.validatorSet.nodes());
 		}
 	}
 
