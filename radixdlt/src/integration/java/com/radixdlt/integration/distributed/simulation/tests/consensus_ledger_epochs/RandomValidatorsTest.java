@@ -52,9 +52,8 @@ public class RandomValidatorsTest {
 		.checkConsensusNoTimeouts("noTimeouts")
 		.checkConsensusAllProposalsHaveDirectParents("directParents")
 		.checkLedgerInOrder("ledgerInOrder")
-		.checkLedgerProcessesConsensusCommitted("consensusToLedger");
-		// FIXME: Reinstate once TimestampChecker fixed
-		//.addTimestampChecker("timestamps");
+		.checkLedgerProcessesConsensusCommitted("consensusToLedger")
+		.addTimestampChecker("timestamps");
 
 	private static Function<Long, IntStream> randomEpochToNodesMapper(Function<Long, Random> randomSupplier) {
 		return epoch -> {
