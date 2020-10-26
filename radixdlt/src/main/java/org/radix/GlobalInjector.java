@@ -24,6 +24,7 @@ import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.name.Names;
+import com.radixdlt.CheckpointModule;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.ConsensusRunnerModule;
 import com.radixdlt.ConsensusRxModule;
@@ -182,7 +183,10 @@ public class GlobalInjector {
 			// State Computer
 			new RadixEngineModule(),
 			new RadixEngineRxModule(),
-			new RadixEngineStoreModule(fixedNodeCount),
+			new RadixEngineStoreModule(),
+
+			// Checkpoints
+			new CheckpointModule(fixedNodeCount),
 
 			// Fees
 			feeModule,
