@@ -25,13 +25,13 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
 
 @SerializerId2("extended_client_atom")
-public class ExtendedClientAtom extends ClientAtom {
+public class TestExtendedClientAtom extends TestClientAtom {
 	@JsonProperty("extra")
 	@DsonOutput({DsonOutput.Output.ALL})
 	private final String extra;
 
 	@JsonCreator
-	private ExtendedClientAtom(
+	private TestExtendedClientAtom(
 			@JsonProperty("aid") AID aid,
 			@JsonProperty("metadata") String metaData,
 			@JsonProperty("extra") String extra
@@ -40,9 +40,9 @@ public class ExtendedClientAtom extends ClientAtom {
 		this.extra = extra;
 	}
 
-	public static ExtendedClientAtom create(String metadata, String extra) {
+	public static TestExtendedClientAtom create(String metadata, String extra) {
 		var id = AID.from(HashUtils.random(AID.BYTES).asBytes());
-		return new ExtendedClientAtom(id, metadata, extra);
+		return new TestExtendedClientAtom(id, metadata, extra);
 	}
 
 	public String extra() {
@@ -51,7 +51,7 @@ public class ExtendedClientAtom extends ClientAtom {
 
 	@Override
 	public boolean equals(Object o) {
-		return super.equals(o) && (o instanceof ExtendedClientAtom) && (extra.equals(((ExtendedClientAtom) o).extra));
+		return super.equals(o) && (o instanceof TestExtendedClientAtom) && (extra.equals(((TestExtendedClientAtom) o).extra));
 	}
 
 	@Override

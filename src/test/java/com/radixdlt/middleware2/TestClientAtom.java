@@ -22,26 +22,27 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 
 @SerializerId2("client_atom")
-public class ClientAtom implements LedgerAtom {
+public class TestClientAtom implements TestLedgerAtom {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
+	@DsonOutput({Output.ALL})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
 	@JsonProperty("metadata")
-	@DsonOutput({DsonOutput.Output.ALL})
+	@DsonOutput({Output.ALL})
 	private final String metaData;
 
 	@JsonProperty("aid")
-	@DsonOutput({DsonOutput.Output.ALL})
+	@DsonOutput({Output.ALL})
 	private final AID aid;
 
 	@JsonCreator
-	protected ClientAtom(
+	protected TestClientAtom(
 			@JsonProperty("aid") AID aid,
 			@JsonProperty("metadata") String metaData
 	) {
@@ -49,9 +50,9 @@ public class ClientAtom implements LedgerAtom {
 		this.metaData = metaData == null ? "no metadata" : metaData;
 	}
 
-	public static ClientAtom create(String metadata) {
+	public static TestClientAtom create(String metadata) {
 		var id = AID.from(HashUtils.random(AID.BYTES).asBytes());
-		return new ClientAtom(id, metadata);
+		return new TestClientAtom(id, metadata);
 	}
 
 	public AID aid() {
@@ -68,11 +69,11 @@ public class ClientAtom implements LedgerAtom {
 			return true;
 		}
 
-		if (!(o instanceof ClientAtom)) {
+		if (!(o instanceof TestClientAtom)) {
 			return false;
 		}
 
-		ClientAtom that = (ClientAtom) o;
+		TestClientAtom that = (TestClientAtom) o;
 
 		if (!metaData.equals(that.metaData)) {
 			return false;

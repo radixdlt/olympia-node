@@ -20,5 +20,5 @@ package com.radixdlt.middleware2;
 import com.radixdlt.serialization.SerializerRoot;
 
 @SerializerRoot
-public interface LedgerAtom {
+public interface TestLedgerAtom {
 }

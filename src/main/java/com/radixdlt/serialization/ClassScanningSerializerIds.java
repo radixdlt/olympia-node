@@ -29,7 +29,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
@@ -140,10 +139,9 @@ public abstract class ClassScanningSerializerIds implements SerializerIds {
 	}
 
 	private void collectInterfaces(Class<?> cls) {
-		var interfaces = Stream.of(cls.getInterfaces())
-				.filter(this::isSerializerRoot)
-				.collect(Collectors.toList());
-		serializableSupertypes.addAll(interfaces);
+		Stream.of(cls.getInterfaces())
+			.filter(this::isSerializerRoot)
+			.forEachOrdered(serializableSupertypes::add);
 	}
 
 	private boolean isSerializerRoot(Class<?> clazz) {

@@ -22,26 +22,27 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 
 @SerializerId2("different_client_atom")
-public class DifferentClientAtom implements LedgerAtom {
+public class TestDifferentClientAtom implements TestLedgerAtom {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
+	@DsonOutput({Output.ALL})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
 	@JsonProperty("datameta")
-	@DsonOutput({DsonOutput.Output.ALL})
+	@DsonOutput({Output.ALL})
 	private final String metaData;
 
 	@JsonProperty("dia")
-	@DsonOutput({DsonOutput.Output.ALL})
+	@DsonOutput({Output.ALL})
 	private final AID aid;
 
 	@JsonCreator
-	private DifferentClientAtom(
+	private TestDifferentClientAtom(
 			@JsonProperty("dia") AID aid,
 			@JsonProperty("datameta") String metaData
 	) {
@@ -49,9 +50,9 @@ public class DifferentClientAtom implements LedgerAtom {
 		this.metaData = metaData == null ? "no metadata" : metaData;
 	}
 
-	public static DifferentClientAtom create(String metadata) {
+	public static TestDifferentClientAtom create(String metadata) {
 		var id = AID.from(HashUtils.random(AID.BYTES).asBytes());
-		return new DifferentClientAtom(id, metadata);
+		return new TestDifferentClientAtom(id, metadata);
 	}
 
 	public AID aid() {
@@ -68,11 +69,11 @@ public class DifferentClientAtom implements LedgerAtom {
 			return true;
 		}
 
-		if (!(o instanceof DifferentClientAtom)) {
+		if (!(o instanceof TestDifferentClientAtom)) {
 			return false;
 		}
 
-		DifferentClientAtom that = (DifferentClientAtom) o;
+		TestDifferentClientAtom that = (TestDifferentClientAtom) o;
 
 		if (!metaData.equals(that.metaData)) {
 			return false;
