@@ -20,7 +20,6 @@ package org.radix.api.jsonrpc;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import com.radixdlt.identifiers.AID;
 import com.radixdlt.atommodel.Atom;
 import org.json.JSONObject;
 import org.junit.Test;
