@@ -287,7 +287,7 @@ public class PeerManager {
 		try {
 			long nonce = message.getNonce();
 			long payload = message.getPayload();
-			log.debug("peer.ping from {}:{}", () -> peer, () -> formatNonce(nonce));
+			log.trace("peer.ping from {}:{}", () -> peer, () -> formatNonce(nonce));
 			messageCentral.send(peer, new PeerPongMessage(this.universeMagic, nonce, payload, localSystem));
 		} catch (Exception ex) {
 			log.error(String.format("peer.ping %s", peer), ex);
@@ -304,9 +304,9 @@ public class PeerManager {
 					long rtt = System.nanoTime() - message.getPayload();
 					if (ourNonce.longValue() == nonce) {
 						this.probes.remove(peer);
-						log.info("Got good peer.pong from {}:{}:{}ns", () -> peer, () -> formatNonce(nonce), () -> rtt);
+						log.trace("Got good peer.pong from {}:{}:{}ns", () -> peer, () -> formatNonce(nonce), () -> rtt);
 					} else {
-						log.debug("Got mismatched peer.pong from {} with nonce '{}', ours '{}' ({}ns)",
+						log.warn("Got mismatched peer.pong from {} with nonce '{}', ours '{}' ({}ns)",
 							() -> peer, () -> formatNonce(nonce), () -> formatNonce(ourNonce), () -> rtt);
 					}
 				}
@@ -349,9 +349,9 @@ public class PeerManager {
 						if (peer.hasSystem()) {
 							this.probes.put(peer, nonce);
 							this.executor.schedule(() -> handleProbeTimeout(peer, nonce), peerProbeTimeoutMs, TimeUnit.MILLISECONDS);
-							log.debug("Probing {}:{}", () -> peer, () -> formatNonce(nonce));
+							log.trace("Probing {}:{}", () -> peer, () -> formatNonce(nonce));
 						} else {
-							log.debug("Nudging {}", peer);
+							log.trace("Nudging {}", peer);
 						}
 						messageCentral.send(peer, ping);
 						peer.setTimestamp(Timestamps.PROBED, Time.currentTimestamp());
@@ -369,7 +369,7 @@ public class PeerManager {
 		synchronized (this.probes) {
 			Long value = this.probes.get(peer);
 			if (value != null && value.longValue() == nonce) {
-				log.info("Removing peer {}:{} because of probe timeout", () -> peer, () -> formatNonce(nonce));
+				log.warn("Removing peer {}:{} because of probe timeout", () -> peer, () -> formatNonce(nonce));
 				this.probes.remove(peer);
 				this.addressbook.removePeer(peer);
 			}
