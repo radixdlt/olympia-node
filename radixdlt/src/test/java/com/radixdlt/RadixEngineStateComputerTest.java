@@ -63,6 +63,7 @@ import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 
 import com.radixdlt.statecomputer.RadixEngineStateComputer.RadixEngineCommand;
@@ -99,6 +100,12 @@ public class RadixEngineStateComputerTest {
 			int magic() {
 				return 0;
 			}
+
+			@Provides
+			@EpochCeilingView
+			View epochCeilingView() {
+				return View.of(10);
+			}
 		};
 	}
 
@@ -110,7 +117,7 @@ public class RadixEngineStateComputerTest {
 		));
 		this.engineStore = new InMemoryEngineStore<>();
 		Guice.createInjector(
-			new RadixEngineModule(View.of(10)),
+			new RadixEngineModule(),
 			new NoFeeModule(),
 			getExternalModule()
 		).injectMembers(this);

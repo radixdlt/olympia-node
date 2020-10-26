@@ -92,6 +92,7 @@ import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
+import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.sync.SyncPatienceMillis;
 import com.radixdlt.utils.DurationParser;
 import com.radixdlt.utils.Pair;
@@ -482,9 +483,10 @@ public class SimulationTest {
 						@Override
 						protected void configure() {
 							bind(Mempool.class).to(LocalMempool.class);
+							bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(epochHighView);
 						}
 					});
-					modules.add(new RadixEngineModule(epochHighView));
+					modules.add(new RadixEngineModule());
 					modules.add(new RadixEngineRxModule());
 					modules.add(new MockedSyncServiceModule());
 					modules.add(new MockedRadixEngineStoreModule());

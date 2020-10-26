@@ -69,6 +69,7 @@ import com.radixdlt.network.messaging.MessageCentralModule;
 import com.radixdlt.network.transport.tcp.TCPTransportModule;
 import com.radixdlt.network.transport.udp.UDPTransportModule;
 import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.sync.SyncPatienceMillis;
 import com.radixdlt.universe.Universe;
 
@@ -122,10 +123,15 @@ public class GlobalInjector {
 			int pacemakerMaxExponent() {
 				return properties.get("consensus.pacemaker_max_exponent", 6);
 			}
+
+			@Provides
+			@EpochCeilingView
+			View epochCeilingView() {
+				return View.of(properties.get("epochs.views_per_epoch", 100L));
+			}
 		};
 
 		final int fixedNodeCount = properties.get("consensus.fixed_node_count", 1);
-		final View epochHighView = View.of(properties.get("epochs.views_per_epoch", 100L));
 		final int mempoolMaxSize = properties.get("mempool.maxSize", 1000);
 
 		final Module feeModule;
@@ -172,7 +178,7 @@ public class GlobalInjector {
 			new EpochsSyncModule(),
 
 			// State Computer
-			new RadixEngineModule(epochHighView),
+			new RadixEngineModule(),
 			new RadixEngineRxModule(),
 			new RadixEngineStoreModule(fixedNodeCount),
 
