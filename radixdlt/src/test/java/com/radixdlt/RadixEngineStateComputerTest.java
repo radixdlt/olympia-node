@@ -64,6 +64,7 @@ import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.EpochCeilingView;
+import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 
 import com.radixdlt.statecomputer.RadixEngineStateComputer.RadixEngineCommand;
@@ -99,6 +100,12 @@ public class RadixEngineStateComputerTest {
 			@Named("magic")
 			int magic() {
 				return 0;
+			}
+
+			@Provides
+			@MinValidators
+			int minValidators() {
+				return 1;
 			}
 
 			@Provides

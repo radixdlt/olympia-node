@@ -38,6 +38,7 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.AtomChecker;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.statecomputer.EpochCeilingView;
+import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.serialization.Serialization;
@@ -118,12 +119,9 @@ public class RadixEngineModule extends AbstractModule {
 		ConstraintMachine constraintMachine,
 		UnaryOperator<CMStore> virtualStoreLayer,
 		EngineStore<LedgerAtom> engineStore,
-		AtomChecker<LedgerAtom> ledgerAtomChecker
+		AtomChecker<LedgerAtom> ledgerAtomChecker,
+		@MinValidators int minValidators
 	) {
-		// TODO: Fix pacemaker so can Default 1 so can debug in IDE, possibly from properties at some point
-		// TODO: Specifically, simulation test with engine, epochs and mempool gets stuck on a single validator
-		final int minValidators = 2;
-
 		RadixEngine<LedgerAtom> radixEngine = new RadixEngine<>(
 			constraintMachine,
 			virtualStoreLayer,

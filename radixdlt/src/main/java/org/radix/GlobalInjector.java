@@ -70,6 +70,7 @@ import com.radixdlt.network.transport.tcp.TCPTransportModule;
 import com.radixdlt.network.transport.udp.UDPTransportModule;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.statecomputer.EpochCeilingView;
+import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.sync.SyncPatienceMillis;
 import com.radixdlt.universe.Universe;
 
@@ -102,6 +103,7 @@ public class GlobalInjector {
 
 				bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(200);
 				bind(Integer.class).annotatedWith(BFTSyncPatienceMillis.class).toInstance(200);
+				bind(Integer.class).annotatedWith(MinValidators.class).toInstance(1);
 			}
 
 			// Default values mean that pacemakers will sync if they are within 5 views of each other.
