@@ -25,28 +25,6 @@ import org.apache.logging.log4j.Logger;
 public interface LogSink {
 
 	/**
-	 * Returns {@code true} if debug logs enabled.
-	 *
-	 * return {@code true} if debug logs enabled.
-	 */
-	boolean isDebugEnabled();
-
-	/**
-	 * Outputs the specified log message at debug level.
-	 *
-	 * @param message The message to output.
-	 */
-	void debug(String message);
-
-	/**
-	 * Outputs the specified log message and exception at debug level.
-	 *
-	 * @param message The message to output.
-	 * @param ex The exception to include.
-	 */
-	void debug(String message, Throwable ex);
-
-	/**
 	 * Returns {@code true} if trace logs enabled.
 	 *
 	 * return {@code true} if trace logs enabled.
@@ -61,6 +39,14 @@ public interface LogSink {
 	void trace(String message);
 
 	/**
+	 * Outputs the specified log message and exception at trace level.
+	 *
+	 * @param message The message to output.
+	 * @param ex The exception to include.
+	 */
+	void trace(String message, Throwable ex);
+
+	/**
 	 * Create a {@link LogSink} using the specified logger.
 	 *
 	 * @param log The logger that will consume log messages
@@ -70,22 +56,6 @@ public interface LogSink {
 		return new LogSink() {
 
 			@Override
-			public boolean isDebugEnabled() {
-				return log.isDebugEnabled();
-			}
-
-			@Override
-			public void debug(String message, Throwable ex) {
-				log.debug(message, ex);
-			}
-
-			@Override
-			public void debug(String message) {
-				log.debug(message);
-			}
-
-
-			@Override
 			public boolean isTraceEnabled() {
 				return log.isTraceEnabled();
 			}
@@ -93,6 +63,11 @@ public interface LogSink {
 			@Override
 			public void trace(String message) {
 				log.trace(message);
+			}
+
+			@Override
+			public void trace(String message, Throwable ex) {
+				log.trace(message, ex);
 			}
 
 		};

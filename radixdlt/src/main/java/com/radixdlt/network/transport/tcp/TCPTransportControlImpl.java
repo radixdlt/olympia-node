@@ -146,7 +146,7 @@ final class TCPTransportControlImpl implements TCPTransportControl {
 
 				CompletableFuture<TransportOutboundConnection> pending = this.pendingMap.get(hostAndPort);
 				if (pending != null) {
-					log.debug("Reuse pending {}", hostAndPort);
+					log.trace("Reuse pending {}", hostAndPort);
 					return pending;
 				}
 
@@ -162,7 +162,7 @@ final class TCPTransportControlImpl implements TCPTransportControl {
 					ChannelFuture cf = transport.createChannel(host, Integer.parseInt(port));
 					final CompletableFuture<TransportOutboundConnection> cfsr0 = new CompletableFuture<>();
 					final CompletableFuture<TransportOutboundConnection> cfsr = cfsr0.whenComplete((obc, t) -> {
-						log.debug("Completed");
+						log.trace("Completed");
 						if (t != null) {
 							// If we are completing exceptionally, then we need to remove the pending connection
 							synchronized (lock) {
@@ -170,15 +170,15 @@ final class TCPTransportControlImpl implements TCPTransportControl {
 							}
 						}
 					});
-					log.debug("Add pending {}", hostAndPort);
+					log.trace("Add pending {}", hostAndPort);
 					this.pendingMap.put(hostAndPort, cfsr);
 					cf.addListener(f -> {
 						Throwable cause = f.cause();
 						if (cause == null) {
-							log.debug("Listener completed");
+							log.trace("Listener completed");
 							cfsr0.complete(outboundFactory.create(cf.channel(), metadata));
 						} else {
-							log.debug("Listener completed exceptionally");
+							log.trace("Listener completed exceptionally");
 							cfsr0.completeExceptionally(cause);
 						}
 					});
@@ -205,7 +205,7 @@ final class TCPTransportControlImpl implements TCPTransportControl {
 		// Requires "lock" to be held
 		void removePending(String host) {
 			if (null != this.pendingMap.remove(host)) {
-				log.debug("Remove pending {}", host);
+				log.trace("Remove pending {}", host);
 			}
 		}
 

@@ -36,30 +36,6 @@ public class LogSinkTest {
 	}
 
 	@Test
-	public void testIsDebugEnabled() {
-		when(log.isDebugEnabled()).thenReturn(true); // false is default
-
-		assertTrue(logSink.isDebugEnabled());
-		verify(log, times(1)).isDebugEnabled();
-		verifyNoMoreInteractions(log);
-	}
-
-	@Test
-	public void testDebugMessage() {
-		logSink.debug("foo");
-		verify(log, times(1)).debug("foo");
-		verifyNoMoreInteractions(log);
-	}
-
-	@Test
-	public void testDebugThrowable() {
-		Throwable t = new Throwable();
-		logSink.debug("bar", t);
-		verify(log, times(1)).debug("bar", t);
-		verifyNoMoreInteractions(log);
-	}
-
-	@Test
 	public void testIsTraceEnabled() {
 		when(log.isTraceEnabled()).thenReturn(true); // false is default
 
@@ -72,6 +48,14 @@ public class LogSinkTest {
 	public void testTraceMessage() {
 		logSink.trace("baz");
 		verify(log, times(1)).trace("baz");
+		verifyNoMoreInteractions(log);
+	}
+
+	@Test
+	public void testTraceThrowable() {
+		Throwable t = new Throwable();
+		logSink.trace("bar", t);
+		verify(log, times(1)).trace("bar", t);
 		verifyNoMoreInteractions(log);
 	}
 }
