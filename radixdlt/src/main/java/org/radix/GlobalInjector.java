@@ -21,6 +21,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
+import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.name.Names;
 import com.radixdlt.ConsensusModule;
@@ -47,6 +48,9 @@ import com.radixdlt.SystemInfoRxModule;
 import com.radixdlt.SystemModule;
 import com.radixdlt.TokenFeeModule;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.PacemakerMaxExponent;
+import com.radixdlt.consensus.bft.PacemakerRate;
+import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.identifiers.RadixAddress;
@@ -98,13 +102,27 @@ public class GlobalInjector {
 				bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(200);
 				bind(Integer.class).annotatedWith(BFTSyncPatienceMillis.class).toInstance(200);
 			}
-		};
 
-		// Default values mean that pacemakers will sync if they are within 5 views of each other.
-		// 5 consecutive failing views will take 1*(2^6)-1 seconds = 63 seconds.
-		final long pacemakerTimeout = properties.get("consensus.pacemaker_timeout_millis", 1000L);
-		final double pacemakerRate = properties.get("consensus.pacemaker_rate", 2.0);
-		final int pacemakerMaxExponent = properties.get("consensus.pacemaker_max_exponent", 6);
+			// Default values mean that pacemakers will sync if they are within 5 views of each other.
+			// 5 consecutive failing views will take 1*(2^6)-1 seconds = 63 seconds.
+			@Provides
+			@PacemakerTimeout
+			long pacemakerTimeout() {
+				return properties.get("consensus.pacemaker_timeout_millis", 1000L);
+			}
+
+			@Provides
+			@PacemakerRate
+			double pacemakerRate() {
+				return properties.get("consensus.pacemaker_rate", 2.0);
+			}
+
+			@Provides
+			@PacemakerMaxExponent
+			int pacemakerMaxExponent() {
+				return properties.get("consensus.pacemaker_max_exponent", 6);
+			}
+		};
 
 		final int fixedNodeCount = properties.get("consensus.fixed_node_count", 1);
 		final View epochHighView = View.of(properties.get("epochs.views_per_epoch", 100L));
@@ -129,7 +147,7 @@ public class GlobalInjector {
 
 			// Consensus
 			new CryptoModule(),
-			new ConsensusModule(pacemakerTimeout, pacemakerRate, pacemakerMaxExponent),
+			new ConsensusModule(),
 			new ConsensusRxModule(),
 			new ConsensusRunnerModule(),
 
@@ -146,7 +164,7 @@ public class GlobalInjector {
 			new SyncMempoolServiceModule(),
 
 			// Epochs - Consensus
-			new EpochsConsensusModule(pacemakerTimeout, pacemakerRate, pacemakerMaxExponent),
+			new EpochsConsensusModule(),
 			// Epochs - Ledger
 			new EpochsLedgerUpdateModule(),
 			new EpochsLedgerUpdateRxModule(),

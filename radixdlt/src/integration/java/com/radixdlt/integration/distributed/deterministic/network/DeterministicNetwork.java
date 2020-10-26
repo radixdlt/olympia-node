@@ -194,7 +194,7 @@ public final class DeterministicNetwork {
 
 	private Injector createBFTInstance(BFTNode self, int index, Collection<Module> syncExecutionModules, Module overrideModule) {
 		Module module = Modules.combine(
-			new ConsensusModule(this.pacemakerTimeout, 2.0, 0),
+			new ConsensusModule(),
 			new MockedCryptoModule(),
 			new DeterministicNetworkModule(self, createSender(self, index)),
 			Modules.combine(syncExecutionModules)

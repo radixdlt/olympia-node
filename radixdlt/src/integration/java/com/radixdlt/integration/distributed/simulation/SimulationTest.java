@@ -45,6 +45,9 @@ import com.radixdlt.SyncRxModule;
 import com.radixdlt.SyncRunnerModule;
 import com.radixdlt.SystemInfoRxModule;
 import com.radixdlt.consensus.Sha256Hasher;
+import com.radixdlt.consensus.bft.PacemakerMaxExponent;
+import com.radixdlt.consensus.bft.PacemakerRate;
+import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
@@ -169,7 +172,7 @@ public class SimulationTest {
 		private final ImmutableMap.Builder<String, Function<List<ECKeyPair>, TestInvariant>> checksBuilder = ImmutableMap.builder();
 		private final ImmutableList.Builder<Function<List<ECKeyPair>, SimulationNetworkActor>> runnableBuilder = ImmutableList.builder();
 		private ImmutableList<ECKeyPair> nodes = ImmutableList.of(ECKeyPair.generateNew());
-		private int pacemakerTimeout = 12 * SimulationNetwork.DEFAULT_LATENCY;
+		private long pacemakerTimeout = 12 * SimulationNetwork.DEFAULT_LATENCY;
 		private View epochHighView = null;
 		private Function<Long, IntStream> epochToNodeIndexMapper;
 		private LedgerType ledgerType = LedgerType.MOCKED_LEDGER;
@@ -209,7 +212,7 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder pacemakerTimeout(int pacemakerTimeout) {
+		public Builder pacemakerTimeout(long pacemakerTimeout) {
 			this.pacemakerTimeout = pacemakerTimeout;
 			return this;
 		}
@@ -396,12 +399,15 @@ public class SimulationTest {
 				public void configure() {
 					bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
 					bind(Integer.class).annotatedWith(BFTSyncPatienceMillis.class).toInstance(50);
+					bind(Long.class).annotatedWith(PacemakerTimeout.class).toInstance(pacemakerTimeout);
+					bind(Double.class).annotatedWith(PacemakerRate.class).toInstance(2.0);
+					bind(Integer.class).annotatedWith(PacemakerMaxExponent.class).toInstance(0); // Use constant timeout for now
 				}
 			});
 			modules.add(new MockedSystemModule());
 			modules.add(new NoFeeModule());
 			modules.add(new MockedCryptoModule());
-			modules.add(new ConsensusModule(pacemakerTimeout, 2.0, 0)); // Use constant timeout for now
+			modules.add(new ConsensusModule());
 			modules.add(new ConsensusRxModule());
 			modules.add(new SystemInfoRxModule());
 			modules.add(new LedgerRxModule());
@@ -488,7 +494,7 @@ public class SimulationTest {
 			if (ledgerType.hasEpochs) {
 				modules.add(new EpochsLedgerUpdateModule());
 				modules.add(new EpochsLedgerUpdateRxModule());
-				modules.add(new EpochsConsensusModule(pacemakerTimeout, 2.0, 0)); // constant for now
+				modules.add(new EpochsConsensusModule()); // constant for now
 				modules.add(new ConsensusRunnerModule());
 			}
 

@@ -28,11 +28,15 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Module;
+import com.google.inject.Provides;
 import com.google.inject.name.Names;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HashVerifier;
+import com.radixdlt.consensus.bft.PacemakerMaxExponent;
+import com.radixdlt.consensus.bft.PacemakerRate;
+import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
@@ -93,13 +97,32 @@ public class EpochsConsensusModuleTest {
 				bind(VerifiedLedgerHeaderAndProof.class).toInstance(mock(VerifiedLedgerHeaderAndProof.class));
 				bind(Integer.class).annotatedWith(BFTSyncPatienceMillis.class).toInstance(200);
 			}
+
+
+			@Provides
+			@PacemakerTimeout
+			long pacemakerTimeout() {
+				return 1000L;
+			}
+
+			@Provides
+			@PacemakerRate
+			double pacemakerRate() {
+				return 2.0;
+			}
+
+			@Provides
+			@PacemakerMaxExponent
+			int pacemakerMaxExponent() {
+				return 6;
+			}
 		};
 	}
 
 	@Test
 	public void when_send_current_view__then_should_use_epoch_info_sender() {
 		Guice.createInjector(
-			new EpochsConsensusModule(500, 2.0, 0), // constant for now
+			new EpochsConsensusModule(), // constant for now
 			getExternalModule()
 		).injectMembers(this);
 
@@ -113,7 +136,7 @@ public class EpochsConsensusModuleTest {
 	@Test
 	public void when_send_timeout_processed__then_should_use_epoch_info_sender() {
 		Guice.createInjector(
-			new EpochsConsensusModule(500, 2.0, 0), // constant for now
+			new EpochsConsensusModule(), // constant for now
 			getExternalModule()
 		).injectMembers(this);
 
