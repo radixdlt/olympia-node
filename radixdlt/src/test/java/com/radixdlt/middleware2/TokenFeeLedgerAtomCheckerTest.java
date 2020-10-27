@@ -116,11 +116,11 @@ public class TokenFeeLedgerAtomCheckerTest {
 		RadixAddress address = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
 		UniqueParticle particle1 = new UniqueParticle("FOO", address, 0L);
 		UnallocatedTokensParticle unallocatedParticle = new UnallocatedTokensParticle(
-				UInt256.FIVE, UInt256.ONE, this.rri, TOKEN_PERMISSIONS_ALL);
+				UInt256.TEN, UInt256.ONE, this.rri, TOKEN_PERMISSIONS_ALL);
 		TransferrableTokensParticle tokenInputParticle = new TransferrableTokensParticle(
-				address, UInt256.TEN, UInt256.ONE, this.rri, TOKEN_PERMISSIONS_ALL);
+				address, UInt256.from(20), UInt256.ONE, this.rri, TOKEN_PERMISSIONS_ALL);
 		TransferrableTokensParticle tokenOutputParticle = new TransferrableTokensParticle(
-				address, UInt256.FIVE, UInt256.ONE, this.rri, TOKEN_PERMISSIONS_ALL);
+				address, UInt256.TEN, UInt256.ONE, this.rri, TOKEN_PERMISSIONS_ALL);
 		List<ParticleGroup> particleGroups = ImmutableList.of(
 			ParticleGroup.of(ImmutableList.of(SpunParticle.up(particle1))),
 			ParticleGroup.of(ImmutableList.of(
