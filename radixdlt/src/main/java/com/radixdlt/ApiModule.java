@@ -18,29 +18,12 @@
 package com.radixdlt;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
 import com.google.inject.Scopes;
-import com.google.inject.Singleton;
-import com.radixdlt.network.TimeSupplier;
-import com.radixdlt.properties.RuntimeProperties;
-import java.security.SecureRandom;
-import java.util.Random;
-import org.radix.time.Time;
+import org.radix.api.http.RadixHttpServer;
 
-/**
- * Module which specifies implementations of system objects such as
- * random and time.
- */
-public class SystemModule extends AbstractModule {
+public class ApiModule extends AbstractModule {
 	@Override
 	public void configure() {
-		bind(Random.class).to(SecureRandom.class).in(Scopes.SINGLETON);
-	}
-
-	@Provides
-	@Singleton
-	TimeSupplier time(RuntimeProperties properties) {
-		Time.start(properties);
-		return Time::currentTimestamp;
+		bind(RadixHttpServer.class).in(Scopes.SINGLETON);
 	}
 }

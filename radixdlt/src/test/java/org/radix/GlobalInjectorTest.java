@@ -23,13 +23,11 @@ import java.io.File;
 import org.assertj.core.util.Files;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.radix.database.DatabaseEnvironment;
 import org.radix.serialization.TestSetupUtils;
 
 import com.google.inject.Key;
 import com.google.inject.name.Names;
 import com.radixdlt.properties.RuntimeProperties;
-import com.radixdlt.universe.Universe;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
