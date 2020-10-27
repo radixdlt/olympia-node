@@ -23,6 +23,9 @@ import com.radixdlt.crypto.exception.CryptoException;
 import com.radixdlt.keys.Keys;
 import java.io.IOException;
 
+/**
+ * Manages a persisted key pair to be used for signing
+ */
 public final class PersistedBFTKeyManager {
 	private final ECKeyPair ecKeyPair;
 

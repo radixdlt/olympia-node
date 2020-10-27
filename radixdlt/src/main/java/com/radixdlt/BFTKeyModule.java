@@ -28,7 +28,10 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.properties.RuntimeProperties;
 
-public class BFTKeyModule extends AbstractModule {
+/**
+ * Configures the key to be used for signing things as a BFT validator.
+ */
+public final class BFTKeyModule extends AbstractModule {
 	@Provides
 	@Singleton
 	PersistedBFTKeyManager bftKeyManager(RuntimeProperties properties) {
