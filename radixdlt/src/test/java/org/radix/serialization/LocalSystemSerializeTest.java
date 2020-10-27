@@ -20,6 +20,7 @@ package org.radix.serialization;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
@@ -39,7 +40,7 @@ public class LocalSystemSerializeTest extends SerializeValue<LocalSystem> {
 	private static LocalSystem get() {
 		try {
 			ECKeyPair keyPair = ECKeyPair.fromPrivateKey(Bytes.fromHexString(Strings.repeat("deadbeef", 8)));
-			return new LocalSystem(ImmutableMap::of, keyPair, Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION, ImmutableList.of(
+			return new LocalSystem(ImmutableMap::of, keyPair.getPublicKey(), Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION, ImmutableList.of(
 					TransportInfo.of(
 							UDPConstants.NAME,
 							StaticTransportMetadata.of(

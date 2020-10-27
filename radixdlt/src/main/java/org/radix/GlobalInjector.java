@@ -22,8 +22,9 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.Provides;
-import com.google.inject.Scopes;
-import com.google.inject.name.Names;
+import com.google.inject.Singleton;
+import com.google.inject.name.Named;
+import com.radixdlt.BFTKeyModule;
 import com.radixdlt.CheckpointModule;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.ConsensusRunnerModule;
@@ -54,7 +55,6 @@ import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.middleware2.InfoSupplier;
 import com.radixdlt.SystemInfoModule;
 import com.radixdlt.NetworkModule;
@@ -72,8 +72,6 @@ import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.sync.SyncPatienceMillis;
 import com.radixdlt.universe.Universe;
 
-import javax.inject.Inject;
-import javax.inject.Provider;
 import org.radix.database.DatabaseEnvironment;
 import org.radix.universe.system.LocalSystem;
 
@@ -89,16 +87,24 @@ public class GlobalInjector {
 				bind(RuntimeProperties.class).toInstance(properties);
 				bind(DatabaseEnvironment.class).toInstance(dbEnv);
 				bind(Universe.class).toInstance(universe);
-				bind(LocalSystem.class).toProvider(LocalSystemProvider.class).in(Scopes.SINGLETON);
-
-				bind(ECKeyPair.class).annotatedWith(Names.named("self")).toProvider(SelfKeyPairProvider.class);
-				bind(BFTNode.class).annotatedWith(Names.named("self")).toProvider(SelfBFTNodeProvider.class);
 
 				bind(PeerManagerConfiguration.class).toInstance(PeerManagerConfiguration.fromRuntimeProperties(properties));
 
 				bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(200);
 				bind(Integer.class).annotatedWith(BFTSyncPatienceMillis.class).toInstance(200);
 				bind(Integer.class).annotatedWith(MinValidators.class).toInstance(1);
+			}
+
+			@Provides
+			@Singleton
+			LocalSystem localSystem(
+				@Named("self") BFTNode self,
+				InfoSupplier infoSupplier,
+				Universe universe,
+				HostIp hostIp
+			) {
+				String host = hostIp.hostIp().orElseThrow(() -> new IllegalStateException("Unable to determine host IP"));
+				return LocalSystem.create(self, infoSupplier, universe, host);
 			}
 
 			// Default values mean that pacemakers will sync if they are within 5 views of each other.
@@ -149,6 +155,7 @@ public class GlobalInjector {
 			new SystemModule(),
 
 			// Consensus
+			new BFTKeyModule(),
 			new CryptoModule(),
 			new ConsensusModule(),
 			new ConsensusRxModule(),
@@ -205,56 +212,5 @@ public class GlobalInjector {
 
 	public Injector getInjector() {
 		return injector;
-	}
-
-	static class SelfKeyPairProvider implements Provider<ECKeyPair> {
-		private final LocalSystem localSystem;
-
-		@Inject
-		SelfKeyPairProvider(LocalSystem localSystem) {
-			this.localSystem = localSystem;
-		}
-
-		@Override
-		public ECKeyPair get() {
-			return this.localSystem.getKeyPair();
-		}
-	}
-
-	static class SelfBFTNodeProvider implements Provider<BFTNode> {
-		private final LocalSystem localSystem;
-
-		@Inject
-		SelfBFTNodeProvider(LocalSystem localSystem) {
-			this.localSystem = localSystem;
-		}
-
-		@Override
-		public BFTNode get() {
-			return BFTNode.create(this.localSystem.getKey());
-		}
-	}
-
-	static class LocalSystemProvider implements Provider<LocalSystem> {
-		private final RuntimeProperties properties;
-		private final Universe universe;
-		private final HostIp hostIp;
-		private final InfoSupplier infoSupplier;
-
-		@Inject
-		public LocalSystemProvider(InfoSupplier infoSupplier, RuntimeProperties properties, Universe universe, HostIp hostIp) {
-			this.infoSupplier = infoSupplier;
-			this.properties = properties;
-			this.universe = universe;
-			this.hostIp = hostIp;
-		}
-
-		@Override
-		public LocalSystem get() {
-			String host = this.hostIp.hostIp()
-				.orElseThrow(() -> new IllegalStateException("Unable to determine host IP"));
-
-			return LocalSystem.create(infoSupplier, this.properties, this.universe, host);
-		}
 	}
 }

@@ -17,6 +17,7 @@
 
 package com.radixdlt.network.messaging;
 
+import com.radixdlt.consensus.HashSigner;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.concurrent.CompletableFuture;
@@ -62,6 +63,7 @@ class MessageDispatcher {
 	private final LocalSystem localSystem;
 	private final AddressBook addressBook;
 	private final Hasher hasher;
+	private final HashSigner hashSigner;
 
 	MessageDispatcher(
 		SystemCounters counters,
@@ -70,7 +72,8 @@ class MessageDispatcher {
 		TimeSupplier timeSource,
 		LocalSystem localSystem,
 		AddressBook addressBook,
-		Hasher hasher
+		Hasher hasher,
+		HashSigner hashSigner
 	) {
 		this.messageTtlMs = config.messagingTimeToLive(30_000L);
 		this.counters = counters;
@@ -79,6 +82,7 @@ class MessageDispatcher {
 		this.localSystem = localSystem;
 		this.addressBook = addressBook;
 		this.hasher = hasher;
+		this.hashSigner = hashSigner;
 	}
 
 	CompletableFuture<SendResult> send(TransportManager transportManager, final MessageEvent outboundMessage) {
@@ -95,7 +99,8 @@ class MessageDispatcher {
 		if (message instanceof SignedMessage) {
 			SignedMessage signedMessage = (SignedMessage) message;
 			if (signedMessage.getSignature() == null) {
-				signedMessage.sign(this.localSystem.getKeyPair(), hasher);
+				byte[] hash = hasher.hash(signedMessage).asBytes();
+				signedMessage.setSignature(hashSigner.sign(hash));
 			}
 		}
 

@@ -19,6 +19,8 @@ package org.radix.serialization;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
@@ -38,6 +40,7 @@ public abstract class RadixTest {
 	private static RuntimeProperties properties;
 	private static LocalSystem localSystem;
 	private static Universe universe;
+	private static ECKeyPair ecKeyPair;
 
 	@BeforeClass
 	public static void startRadixTest() {
@@ -56,7 +59,9 @@ public abstract class RadixTest {
 
 		serialization = DefaultSerialization.getInstance();
 
-		localSystem = LocalSystem.create(ImmutableMap::of, getProperties(), universe, "127.0.0.1");
+		ecKeyPair = ECKeyPair.generateNew();
+
+		localSystem = LocalSystem.create(BFTNode.create(ecKeyPair.getPublicKey()), ImmutableMap::of, universe, "127.0.0.1");
 	}
 
 	public static Serialization getSerialization() {
@@ -73,6 +78,10 @@ public abstract class RadixTest {
 
 	public static LocalSystem getLocalSystem() {
 		return localSystem;
+	}
+
+	public static ECKeyPair getKeyPair() {
+		return ecKeyPair;
 	}
 
 	public static Universe getUniverse() {

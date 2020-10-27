@@ -25,7 +25,7 @@ import com.google.inject.name.Named;
 import com.radixdlt.consensus.AddressBookGenesisValidatorSetProvider;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.middleware2.ClientAtom;
@@ -45,10 +45,10 @@ public class CheckpointModule extends AbstractModule {
 	@Singleton
 	private AddressBookGenesisValidatorSetProvider provider(
 		AddressBook addressBook,
-		@Named("self") ECKeyPair selfKey
+		@Named("self") BFTNode self
 	) {
 		return new AddressBookGenesisValidatorSetProvider(
-			selfKey.getPublicKey(),
+			self.getKey(),
 			addressBook,
 			fixedNodeCount
 		);
