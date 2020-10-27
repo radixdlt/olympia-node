@@ -35,7 +35,6 @@ import org.radix.network.messages.GetPeersMessage;
 import org.radix.network.messages.PeerPingMessage;
 import org.radix.network.messages.PeerPongMessage;
 import org.radix.network.messages.PeersMessage;
-import org.radix.network.messaging.Message;
 import org.radix.time.Time;
 import org.radix.time.Timestamps;
 import org.radix.universe.system.LocalSystem;
@@ -231,31 +230,23 @@ public class PeerManager {
 	}
 
 	private void handleHeartbeatPeersMessage(Peer peer, SystemMessage heartBeatMessage) {
-		//TODO implement HeartBeat handler
+		log.trace("Received SystemMessage from {}", peer);
 	}
 
 	private void handlePeersMessage(Peer peer, PeersMessage peersMessage) {
 		log.trace("Received PeersMessage from {}", peer);
-		if (!knownPeer(peer, peersMessage)) {
-			// Ignore unknown peer
-			return;
-		}
 		List<Peer> peers = peersMessage.getPeers();
 		if (peers != null) {
 			EUID localNid = this.localSystem.getNID();
 			peers.stream()
-			.filter(Peer::hasSystem)
-			.filter(p -> !localNid.equals(p.getNID()))
-			.forEachOrdered(addressbook::updatePeer);
+				.filter(Peer::hasSystem)
+				.filter(p -> !localNid.equals(p.getNID()))
+				.forEachOrdered(addressbook::updatePeer);
 		}
 	}
 
 	private void handleGetPeersMessage(Peer peer, GetPeersMessage getPeersMessage) {
 		log.trace("Received GetPeersMessage from {}", peer);
-		if (!knownPeer(peer, getPeersMessage)) {
-			// Ignore unknown peer
-			return;
-		}
 		try {
 			// Deliver known Peers in its entirety, filtered on whitelist and activity
 			// Chunk the sending of Peers so that UDP can handle it
@@ -289,10 +280,6 @@ public class PeerManager {
 
 	private void handlePeerPingMessage(Peer peer, PeerPingMessage message) {
 		log.trace("Received PeerPingMessage from {}:{}", () -> peer, () -> formatNonce(message.getNonce()));
-		if (!knownPeer(peer, message)) {
-			// Ignore unknown peer
-			return;
-		}
 		try {
 			long nonce = message.getNonce();
 			long payload = message.getPayload();
@@ -305,10 +292,6 @@ public class PeerManager {
 
 	private void handlePeerPongMessage(Peer peer, PeerPongMessage message) {
 		log.trace("Received PeerPongMessage from {}:{}", () -> peer, () -> formatNonce(message.getNonce()));
-		if (!knownPeer(peer, message)) {
-			// Ignore unknown peer
-			return;
-		}
 		try {
 			synchronized (this.probes) {
 				Long ourNonce = this.probes.get(peer);
@@ -376,14 +359,6 @@ public class PeerManager {
 			log.error(String.format("Probe of peer %s failed", peer), ex);
 		}
 		return false;
-	}
-
-	private boolean knownPeer(Peer peer, Message message) {
-		if (peer == null || !peer.hasNID()) {
-			log.debug("Ignoring {} message from unknown peer {}", message.getClass().getSimpleName(), peer);
-			return false;
-		}
-		return true;
 	}
 
 	private void handleProbeTimeout(Peer peer, long nonce) {

@@ -107,8 +107,8 @@ class MessageDispatcher {
 	}
 
 	private CompletableFuture<SendResult> send(Peer peer, TransportOutboundConnection conn, Message message, byte[] bytes) {
-		if (log.isTraceEnabled()) {
-			log.trace("Sending to {}: {}", hostId(peer), message);
+		if (log.isDebugEnabled()) {
+			log.debug("Sending to {}: {}", hostId(peer), message);
 		}
 		this.counters.add(CounterType.NETWORKING_SENT_BYTES, bytes.length);
 		return conn.send(bytes);
@@ -147,8 +147,8 @@ class MessageDispatcher {
 			return;
 		}
 
-		if (log.isTraceEnabled()) {
-			log.trace("Received from {}: {}", hostId(peer), message);
+		if (log.isDebugEnabled()) {
+			log.debug("Received from {}: {}", hostId(peer), message);
 		}
 		listeners.messageReceived(peer, message);
 		this.counters.increment(CounterType.MESSAGES_INBOUND_PROCESSED);
