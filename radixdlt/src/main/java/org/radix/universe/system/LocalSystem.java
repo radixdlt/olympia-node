@@ -17,6 +17,8 @@
 
 package org.radix.universe.system;
 
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.exception.CryptoException;
 import com.radixdlt.middleware2.InfoSupplier;
 import java.io.IOException;
@@ -34,7 +36,6 @@ import com.radixdlt.keys.Keys;
 import com.radixdlt.network.transport.StaticTransportMetadata;
 import com.radixdlt.network.transport.TransportInfo;
 import com.radixdlt.network.transport.tcp.TCPConstants;
-import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
@@ -43,7 +44,6 @@ import com.radixdlt.universe.Universe;
 @SerializerId2("api.local_system")
 // FIXME reimplement localsystem as an interface, extract persistence to elsewhere
 public final class LocalSystem extends RadixSystem {
-	private final ECKeyPair keyPair; // TODO: Remove this
 	private final InfoSupplier infoSupplier;
 
 	LocalSystem() {
@@ -54,24 +54,18 @@ public final class LocalSystem extends RadixSystem {
 	@VisibleForTesting
 	LocalSystem(InfoSupplier infoSupplier) {
 		this.infoSupplier = infoSupplier;
-		this.keyPair = ECKeyPair.generateNew();
 	}
 
 	public LocalSystem(
 		InfoSupplier infoSupplier,
-		ECKeyPair key,
+		ECPublicKey key,
 		String agent,
 		int agentVersion,
 		int protocolVersion,
 		ImmutableList<TransportInfo> supportedTransports
 	) {
-		super(key.getPublicKey(), agent, agentVersion, protocolVersion, supportedTransports);
-		this.keyPair = key;
+		super(key, agent, agentVersion, protocolVersion, supportedTransports);
 		this.infoSupplier = Objects.requireNonNull(infoSupplier);
-	}
-
-	public ECKeyPair getKeyPair() {
-		return this.keyPair;
 	}
 
 	// Property "info" - 1 getter
@@ -89,10 +83,8 @@ public final class LocalSystem extends RadixSystem {
 		return Runtime.getRuntime().availableProcessors();
 	}
 
-	public static LocalSystem create(InfoSupplier infoSupplier, RuntimeProperties properties, Universe universe, String host) {
-		String nodeKeyPath = properties.get("node.key.path", "node.ks");
-		ECKeyPair nodeKey = loadNodeKey(nodeKeyPath);
-		return new LocalSystem(infoSupplier, nodeKey, Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION, defaultTransports(universe, host));
+	public static LocalSystem create(BFTNode self, InfoSupplier infoSupplier, Universe universe, String host) {
+		return new LocalSystem(infoSupplier, self.getKey(), Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION, defaultTransports(universe, host));
 	}
 
 	// FIXME: *Really* need a better way of configuring this other than hardcoding here

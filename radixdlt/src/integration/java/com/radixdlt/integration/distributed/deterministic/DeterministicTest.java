@@ -20,6 +20,7 @@ package com.radixdlt.integration.distributed.deterministic;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
+import com.google.inject.Provides;
 import com.radixdlt.EpochsConsensusModule;
 import com.radixdlt.LedgerCommandGeneratorModule;
 import com.radixdlt.EpochsLedgerUpdateModule;
@@ -28,6 +29,9 @@ import com.radixdlt.LedgerModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.PacemakerMaxExponent;
+import com.radixdlt.consensus.bft.PacemakerRate;
+import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.integration.distributed.deterministic.configuration.EpochNodeWeightMapping;
@@ -64,7 +68,6 @@ public final class DeterministicTest {
 		ImmutableList<BFTNode> nodes,
 		MessageSelector messageSelector,
 		MessageMutator messageMutator,
-		long pacemakerTimeout,
 		Collection<Module> modules,
 		Module overrideModule
 	) {
@@ -72,7 +75,6 @@ public final class DeterministicTest {
 			nodes,
 			messageSelector,
 			messageMutator,
-			pacemakerTimeout,
 			modules,
 			overrideModule
 		);
@@ -166,6 +168,24 @@ public final class DeterministicTest {
 				public void configure() {
 					bind(Integer.class).annotatedWith(BFTSyncPatienceMillis.class).toInstance(50);
 				}
+
+				@Provides
+				@PacemakerTimeout
+				long pacemakerTimeout() {
+					return pacemakerTimeout;
+				}
+
+				@Provides
+				@PacemakerRate
+				double pacemakerRate() {
+					return 2.0;
+				}
+
+				@Provides
+				@PacemakerMaxExponent
+				int pacemakerMaxExponent() {
+					return 0; // Use constant timeout for now
+				}
 			});
 			modules.add(new LedgerLocalMempoolModule(10));
 			modules.add(new DeterministicMempoolModule());
@@ -182,7 +202,7 @@ public final class DeterministicTest {
 				modules.add(new MockedLedgerModule());
 
 				// TODO: remove the following
-				modules.add(new EpochsConsensusModule(this.pacemakerTimeout, 2.0, 0));
+				modules.add(new EpochsConsensusModule());
 				modules.add(new EpochsLedgerUpdateModule());
 			} else {
 				// TODO: adapter from LongFunction<BFTValidatorSet> to Function<Long, BFTValidatorSet> shouldn't be needed
@@ -194,7 +214,7 @@ public final class DeterministicTest {
 					}
 				});
 				modules.add(new LedgerModule());
-				modules.add(new EpochsConsensusModule(this.pacemakerTimeout, 2.0, 0));
+				modules.add(new EpochsConsensusModule());
 				modules.add(new EpochsLedgerUpdateModule());
 				modules.add(new LedgerCommandGeneratorModule());
 				modules.add(new MockedSyncServiceModule());
@@ -204,7 +224,6 @@ public final class DeterministicTest {
 				this.nodes,
 				this.messageSelector,
 				this.messageMutator,
-				this.pacemakerTimeout,
 				modules.build(),
 				overrideModule
 			);

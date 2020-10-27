@@ -45,6 +45,9 @@ import com.radixdlt.SyncRxModule;
 import com.radixdlt.SyncRunnerModule;
 import com.radixdlt.SystemInfoRxModule;
 import com.radixdlt.consensus.Sha256Hasher;
+import com.radixdlt.consensus.bft.PacemakerMaxExponent;
+import com.radixdlt.consensus.bft.PacemakerRate;
+import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
@@ -89,7 +92,8 @@ import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
-import com.radixdlt.network.TimeSupplier;
+import com.radixdlt.statecomputer.EpochCeilingView;
+import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.sync.SyncPatienceMillis;
 import com.radixdlt.utils.DurationParser;
 import com.radixdlt.utils.Pair;
@@ -103,7 +107,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -171,7 +174,7 @@ public class SimulationTest {
 		private final ImmutableMap.Builder<String, Function<List<ECKeyPair>, TestInvariant>> checksBuilder = ImmutableMap.builder();
 		private final ImmutableList.Builder<Function<List<ECKeyPair>, SimulationNetworkActor>> runnableBuilder = ImmutableList.builder();
 		private ImmutableList<ECKeyPair> nodes = ImmutableList.of(ECKeyPair.generateNew());
-		private int pacemakerTimeout = 12 * SimulationNetwork.DEFAULT_LATENCY;
+		private long pacemakerTimeout = 12 * SimulationNetwork.DEFAULT_LATENCY;
 		private View epochHighView = null;
 		private Function<Long, IntStream> epochToNodeIndexMapper;
 		private LedgerType ledgerType = LedgerType.MOCKED_LEDGER;
@@ -211,7 +214,7 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder pacemakerTimeout(int pacemakerTimeout) {
+		public Builder pacemakerTimeout(long pacemakerTimeout) {
 			this.pacemakerTimeout = pacemakerTimeout;
 			return this;
 		}
@@ -394,30 +397,30 @@ public class SimulationTest {
 
 		public SimulationTest build() {
 			modules.add(new AbstractModule() {
-				final Random sharedRandom = new Random();
 				@Override
 				public void configure() {
 					bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
-					bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
-					bind(Random.class).toInstance(sharedRandom);
 					bind(Integer.class).annotatedWith(BFTSyncPatienceMillis.class).toInstance(50);
+					bind(Long.class).annotatedWith(PacemakerTimeout.class).toInstance(pacemakerTimeout);
+					bind(Double.class).annotatedWith(PacemakerRate.class).toInstance(2.0);
+					bind(Integer.class).annotatedWith(PacemakerMaxExponent.class).toInstance(0); // Use constant timeout for now
 				}
 			});
+			modules.add(new MockedSystemModule());
 			modules.add(new NoFeeModule());
 			modules.add(new MockedCryptoModule());
-			modules.add(new ConsensusModule(pacemakerTimeout, 2.0, 0)); // Use constant timeout for now
+			modules.add(new ConsensusModule());
 			modules.add(new ConsensusRxModule());
 			modules.add(new SystemInfoRxModule());
+			modules.add(new LedgerRxModule());
 
 			if (ledgerType == LedgerType.MOCKED_LEDGER) {
 				modules.add(new MockedBFTConfigurationModule());
 				modules.add(new MockedLedgerModule());
-				modules.add(new LedgerRxModule());
 				modules.add(new MockedConsensusRunnerModule());
 				modules.add(new MockedLedgerUpdateRxModule());
 			} else {
 				modules.add(new LedgerModule());
-				modules.add(new LedgerRxModule());
 
 				if (ledgerType == LedgerType.LEDGER) {
 					modules.add(new MockedLedgerUpdateRxModule());
@@ -481,9 +484,13 @@ public class SimulationTest {
 						@Override
 						protected void configure() {
 							bind(Mempool.class).to(LocalMempool.class);
+							bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(epochHighView);
+							// TODO: Fix pacemaker so can Default 1 so can debug in IDE, possibly from properties at some point
+							// TODO: Specifically, simulation test with engine, epochs and mempool gets stuck on a single validator
+							bind(Integer.class).annotatedWith(MinValidators.class).toInstance(2);
 						}
 					});
-					modules.add(new RadixEngineModule(epochHighView));
+					modules.add(new RadixEngineModule());
 					modules.add(new RadixEngineRxModule());
 					modules.add(new MockedSyncServiceModule());
 					modules.add(new MockedRadixEngineStoreModule());
@@ -493,7 +500,7 @@ public class SimulationTest {
 			if (ledgerType.hasEpochs) {
 				modules.add(new EpochsLedgerUpdateModule());
 				modules.add(new EpochsLedgerUpdateRxModule());
-				modules.add(new EpochsConsensusModule(pacemakerTimeout, 2.0, 0)); // constant for now
+				modules.add(new EpochsConsensusModule()); // constant for now
 				modules.add(new ConsensusRunnerModule());
 			}
 

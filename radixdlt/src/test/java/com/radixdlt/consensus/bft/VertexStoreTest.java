@@ -18,7 +18,6 @@
 package com.radixdlt.consensus.bft;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doAnswer;
@@ -46,7 +45,6 @@ import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.AccumulatorState;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -92,7 +90,7 @@ public class VertexStoreTest {
 		this.genesisHash = HashUtils.zero256();
 		this.genesisVertex = new VerifiedVertex(UnverifiedVertex.createGenesis(MOCKED_HEADER), genesisHash);
 		this.rootQC = QuorumCertificate.ofGenesis(genesisVertex, MOCKED_HEADER);
-		this.sut = new VertexStore(
+		this.sut = VertexStore.create(
 			genesisVertex,
 			rootQC,
 			ledger,
@@ -135,41 +133,6 @@ public class VertexStoreTest {
 		};
 
 		this.nextVertex = () -> nextSkippableVertex.apply(false);
-	}
-
-	@Test
-	public void when_vertex_store_created_with_incorrect_roots__then_exception_is_thrown() {
-		BFTHeader nextHeader = new BFTHeader(View.of(1), mock(HashCode.class), mock(LedgerHeader.class));
-		BFTHeader genesisHeader = new BFTHeader(View.of(0), genesisHash, mock(LedgerHeader.class));
-		VoteData voteData = new VoteData(nextHeader, genesisHeader, null);
-		QuorumCertificate badRootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-		assertThatThrownBy(() ->
-			new VertexStore(
-				genesisVertex,
-				badRootQC,
-				ledger,
-				bftUpdateSender,
-				vertexStoreEventSender,
-				counters
-			)
-		).isInstanceOf(IllegalStateException.class);
-	}
-
-	@Test
-	public void when_vertex_store_created_with_incorrect_vertices__then_exception_is_thrown() {
-		this.nextVertex.get();
-
-		assertThatThrownBy(() ->
-			new VertexStore(
-				genesisVertex,
-				rootQC,
-				Collections.singletonList(this.nextVertex.get()),
-				ledger,
-				bftUpdateSender,
-				vertexStoreEventSender,
-				counters
-			)
-		).isInstanceOf(IllegalStateException.class);
 	}
 
 	@Test
@@ -222,5 +185,20 @@ public class VertexStoreTest {
 
 		// Assert
 		assertThat(success).isFalse();
+	}
+
+	@Test
+	public void rebuilding_should_emit_updates() {
+		// Arrange
+		final List<VerifiedVertex> vertices = Stream.generate(this.nextVertex).limit(4).collect(Collectors.toList());
+
+		// Act
+		sut.rebuild(vertices.get(0), vertices.get(1).getQC(), vertices.get(3).getQC(), vertices.stream().skip(1).collect(Collectors.toList()));
+
+		// Assert
+		verify(bftUpdateSender, times(1)).sendBFTUpdate(argThat(u -> u.getInsertedVertex().equals(vertices.get(0))));
+		verify(bftUpdateSender, times(1)).sendBFTUpdate(argThat(u -> u.getInsertedVertex().equals(vertices.get(1))));
+		verify(bftUpdateSender, times(1)).sendBFTUpdate(argThat(u -> u.getInsertedVertex().equals(vertices.get(2))));
+		verify(bftUpdateSender, times(1)).sendBFTUpdate(argThat(u -> u.getInsertedVertex().equals(vertices.get(3))));
 	}
 }

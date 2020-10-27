@@ -61,4 +61,20 @@ public final class EpochsLedgerUpdate implements LedgerUpdate {
 	public String toString() {
 		return String.format("%s{numCmds=%s}", this.getClass().getSimpleName(), base.getNewCommands().size());
 	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(base, epochChange);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (!(o instanceof EpochsLedgerUpdate)) {
+			return false;
+		}
+
+		EpochsLedgerUpdate other = (EpochsLedgerUpdate) o;
+		return Objects.equals(this.base, other.base)
+			&& Objects.equals(this.epochChange, other.epochChange);
+	}
 }

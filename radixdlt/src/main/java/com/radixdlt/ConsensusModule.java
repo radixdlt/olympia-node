@@ -27,6 +27,9 @@ import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HashVerifier;
+import com.radixdlt.consensus.bft.PacemakerMaxExponent;
+import com.radixdlt.consensus.bft.PacemakerRate;
+import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
@@ -71,15 +74,6 @@ import java.util.Set;
  */
 public final class ConsensusModule extends AbstractModule {
 	private static final int ROTATING_WEIGHTED_LEADERS_CACHE_SIZE = 10;
-	private final long pacemakerTimeout;
-	private final double pacemakerRate;
-	private final int pacemakerMaxExponent;
-
-	public ConsensusModule(long pacemakerTimeout, double pacemakerRate, int pacemakerMaxExponent) {
-		this.pacemakerTimeout = pacemakerTimeout;
-		this.pacemakerRate = pacemakerRate;
-		this.pacemakerMaxExponent = pacemakerMaxExponent;
-	}
 
 	@Override
 	public void configure() {
@@ -171,16 +165,19 @@ public final class ConsensusModule extends AbstractModule {
 		ProposalBroadcaster proposalBroadcaster,
 		ProceedToViewSender proceedToViewSender,
 		PacemakerTimeoutSender timeoutSender,
-		PacemakerInfoSender infoSender
+		PacemakerInfoSender infoSender,
+		@PacemakerTimeout long pacemakerTimeout,
+		@PacemakerRate double pacemakerRate,
+		@PacemakerMaxExponent int pacemakerMaxExponent
 	) {
 		PendingVotes pendingVotes = new PendingVotes(hasher);
 		PendingViewTimeouts pendingViewTimeouts = new PendingViewTimeouts();
 		BFTValidatorSet validatorSet = configuration.getValidatorSet();
 		SafetyRules safetyRules = new SafetyRules(self, SafetyState.initialState(), hasher, signer);
 		return new ExponentialTimeoutPacemaker(
-			this.pacemakerTimeout,
-			this.pacemakerRate,
-			this.pacemakerMaxExponent,
+			pacemakerTimeout,
+			pacemakerRate,
+			pacemakerMaxExponent,
 
 			self,
 			counters,
@@ -248,7 +245,7 @@ public final class ConsensusModule extends AbstractModule {
 		SystemCounters counters,
 		Ledger ledger
 	) {
-		return new VertexStore(
+		return VertexStore.create(
 			bftConfiguration.getGenesisVertex(),
 			bftConfiguration.getGenesisQC(),
 			ledger,

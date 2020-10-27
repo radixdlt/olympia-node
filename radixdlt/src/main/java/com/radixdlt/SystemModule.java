@@ -19,30 +19,28 @@ package com.radixdlt;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.Scopes;
 import com.google.inject.Singleton;
+import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.properties.RuntimeProperties;
-import com.radixdlt.store.CursorStore;
-import com.radixdlt.store.LedgerEntryStore;
-import com.radixdlt.store.LedgerEntryStoreView;
-import com.radixdlt.store.berkeley.BerkeleyCursorStore;
-import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
-import org.radix.database.DatabaseEnvironment;
+import java.security.SecureRandom;
+import java.util.Random;
+import org.radix.time.Time;
 
 /**
- * Module which manages persistent storage
+ * Module which specifies implementations of system objects such as
+ * random and time.
  */
-public class PersistenceModule extends AbstractModule {
+public class SystemModule extends AbstractModule {
 	@Override
-	protected void configure() {
-		// TODO: should be singletons?
-		bind(LedgerEntryStore.class).to(BerkeleyLedgerEntryStore.class);
-		bind(LedgerEntryStoreView.class).to(BerkeleyLedgerEntryStore.class);
-		bind(CursorStore.class).to(BerkeleyCursorStore.class);
+	public void configure() {
+		bind(Random.class).to(SecureRandom.class).in(Scopes.SINGLETON);
 	}
 
 	@Provides
 	@Singleton
-	private DatabaseEnvironment databaseEnvironment(RuntimeProperties properties) {
-		return new DatabaseEnvironment(properties);
+	TimeSupplier time(RuntimeProperties properties) {
+		Time.start(properties);
+		return Time::currentTimestamp;
 	}
 }

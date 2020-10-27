@@ -50,4 +50,19 @@ public final class BaseLedgerUpdate implements LedgerUpdate {
 	public String toString() {
 		return String.format("%s{commands=%s}", this.getClass().getSimpleName(), verifiedCommandsAndProof);
 	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(verifiedCommandsAndProof);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (!(o instanceof BaseLedgerUpdate)) {
+			return false;
+		}
+
+		BaseLedgerUpdate other = (BaseLedgerUpdate) o;
+		return Objects.equals(other.verifiedCommandsAndProof, this.verifiedCommandsAndProof);
+	}
 }
