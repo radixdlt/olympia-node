@@ -39,6 +39,10 @@ import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Bytes;
 import org.radix.universe.UniverseValidator;
 
+/**
+ * Configures the module in charge of "weak-subjectivity" or checkpoints
+ * which the node will always align with
+ */
 public class CheckpointModule extends AbstractModule {
 	private final int fixedNodeCount;
 

@@ -21,7 +21,10 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import org.radix.api.http.RadixHttpServer;
 
-public class ApiModule extends AbstractModule {
+/**
+ * Configures the api including http server setup
+ */
+public final class ApiModule extends AbstractModule {
 	@Override
 	public void configure() {
 		bind(RadixHttpServer.class).in(Scopes.SINGLETON);
