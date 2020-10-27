@@ -77,7 +77,6 @@ public final class DeterministicNetwork {
 	private final MessageQueue messageQueue = new MessageQueue();
 	private final MessageSelector messageSelector;
 	private final MessageMutator messageMutator;
-	private final long pacemakerTimeout;
 
 	private final ImmutableBiMap<BFTNode, Integer> nodeLookup;
 	private final ImmutableList<Injector> nodeInstances;
@@ -89,20 +88,17 @@ public final class DeterministicNetwork {
 	 * @param nodes The nodes on the network
 	 * @param messageSelector A {@link MessageSelector} for choosing messages to process next
 	 * @param messageMutator A {@link MessageMutator} for mutating and queueing messages
-	 * @param pacemakerTimeout The timeout duration in milliseconds for the pacemaker
 	 * @param syncExecutionModules Guice modules to use for specifying sync execution sub-system
 	 */
 	public DeterministicNetwork(
 		List<BFTNode> nodes,
 		MessageSelector messageSelector,
 		MessageMutator messageMutator,
-		long pacemakerTimeout,
 		Collection<Module> syncExecutionModules,
 		Module overrideModule
 	) {
 		this.messageSelector = Objects.requireNonNull(messageSelector);
 		this.messageMutator = Objects.requireNonNull(messageMutator);
-		this.pacemakerTimeout = pacemakerTimeout;
 		this.nodeLookup = Streams.mapWithIndex(
 			nodes.stream(),
 			(node, index) -> Pair.of(node, (int) index)

@@ -68,7 +68,6 @@ public final class DeterministicTest {
 		ImmutableList<BFTNode> nodes,
 		MessageSelector messageSelector,
 		MessageMutator messageMutator,
-		long pacemakerTimeout,
 		Collection<Module> modules,
 		Module overrideModule
 	) {
@@ -76,7 +75,6 @@ public final class DeterministicTest {
 			nodes,
 			messageSelector,
 			messageMutator,
-			pacemakerTimeout,
 			modules,
 			overrideModule
 		);
@@ -226,7 +224,6 @@ public final class DeterministicTest {
 				this.nodes,
 				this.messageSelector,
 				this.messageMutator,
-				this.pacemakerTimeout,
 				modules.build(),
 				overrideModule
 			);
