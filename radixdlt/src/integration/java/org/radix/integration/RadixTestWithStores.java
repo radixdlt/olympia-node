@@ -37,7 +37,7 @@ public class RadixTestWithStores extends RadixTest {
 
 	@Before
 	public void beforeEachRadixTest() {
-		GlobalInjector injector = new GlobalInjector(getProperties(), getUniverse());
+		GlobalInjector injector = new GlobalInjector(getProperties());
 		this.messageCentral = injector.getInjector().getInstance(MessageCentral.class);
 		this.addressBook = injector.getInjector().getInstance(AddressBook.class);
 		this.dbEnv = injector.getInjector().getInstance(DatabaseEnvironment.class);
@@ -75,9 +75,5 @@ public class RadixTestWithStores extends RadixTest {
 
 	protected LedgerEntryStore getStore() {
 		return Objects.requireNonNull(store, "store was not initialized");
-	}
-
-	public MessageCentral getMessageCentral() {
-		return Objects.requireNonNull(messageCentral, "messageCentral was not initialized");
 	}
 }

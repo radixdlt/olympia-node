@@ -24,21 +24,45 @@ import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.AddressBookGenesisValidatorSetProvider;
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.network.addressbook.AddressBook;
+import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
+import com.radixdlt.utils.Bytes;
+import org.radix.universe.UniverseValidator;
 
 public class CheckpointModule extends AbstractModule {
 	private final int fixedNodeCount;
 
 	public CheckpointModule(int fixedNodeCount) {
 		this.fixedNodeCount = fixedNodeCount;
+	}
+
+	@Provides
+	@Singleton
+	private Universe universe(RuntimeProperties properties, Serialization serialization) {
+		try {
+			byte[] bytes = Bytes.fromBase64String(properties.get("universe"));
+			Universe u = serialization.fromDson(bytes, Universe.class);
+			UniverseValidator.validate(u, Sha256Hasher.withDefaultSerialization());
+			return u;
+		} catch (DeserializeException e) {
+			throw new IllegalStateException("Error while deserialising universe", e);
+		}
+	}
+
+	@Provides
+	@Named("magic")
+	private int magic(Universe universe) {
+		return universe.getMagic();
 	}
 
 	@Provides

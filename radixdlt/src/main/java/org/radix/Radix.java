@@ -148,15 +148,11 @@ public final class Radix
 	}
 
 	public static void start(RuntimeProperties properties) {
-		Serialization serialization = DefaultSerialization.getInstance();
-		Universe universe = extractUniverseFrom(properties, serialization);
-
 		// set up time services
 		Time.start(properties);
 
 		// TODO Eventually modules should be created using Google Guice injector
-		GlobalInjector globalInjector = new GlobalInjector(properties, universe);
-		// TODO use consensus for application construction (in our case, the engine middleware)
+		GlobalInjector globalInjector = new GlobalInjector(properties);
 
 		// setup networking
 		AddressBook addressBook = globalInjector.getInjector().getInstance(AddressBook.class);
@@ -186,6 +182,8 @@ public final class Radix
 		Observable<BFTCommittedUpdate> committedUpdates = globalInjector.getInjector()
 			.getInstance(Key.get(new TypeLiteral<Observable<BFTCommittedUpdate>>() { }));
 		Hasher hasher = globalInjector.getInjector().getInstance(Hasher.class);
+		Universe universe = globalInjector.getInjector().getInstance(Universe.class);
+		Serialization serialization = globalInjector.getInjector().getInstance(Serialization.class);
 		RadixHttpServer httpServer = new RadixHttpServer(
 			infoStateRunner,
 			submissionErrorsRx,
@@ -229,17 +227,6 @@ public final class Radix
 			log.debug("Execution path: {}", System.getProperty("radix.jar.path"));
 		} catch (URISyntaxException e) {
 			throw new IllegalStateException("Error while fetching execution location", e);
-		}
-	}
-
-	private static Universe extractUniverseFrom(RuntimeProperties properties, Serialization serialization) {
-		try {
-			byte[] bytes = Bytes.fromBase64String(properties.get("universe"));
-			Universe u = serialization.fromDson(bytes, Universe.class);
-			UniverseValidator.validate(u, Sha256Hasher.withDefaultSerialization());
-			return u;
-		} catch (DeserializeException e) {
-			throw new IllegalStateException("Error while deserialising universe", e);
 		}
 	}
 

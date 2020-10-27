@@ -78,13 +78,12 @@ public class GlobalInjector {
 
 	private Injector injector;
 
-	public GlobalInjector(RuntimeProperties properties, Universe universe) {
+	public GlobalInjector(RuntimeProperties properties) {
 		// temporary global module to hook up global things
 		Module globalModule = new AbstractModule() {
 			@Override
 			protected void configure() {
 				bind(RuntimeProperties.class).toInstance(properties);
-				bind(Universe.class).toInstance(universe);
 
 				bind(PeerManagerConfiguration.class).toInstance(PeerManagerConfiguration.fromRuntimeProperties(properties));
 

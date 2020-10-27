@@ -20,13 +20,11 @@ package org.radix.integration;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.universe.Universe;
 
 import org.json.JSONObject;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.radix.Radix;
-import org.radix.RadixUniverseBuilder;
 import org.radix.serialization.TestSetupUtils;
 import org.radix.utils.IOUtils;
 
@@ -36,7 +34,6 @@ public class RadixTest {
 	private static Serialization serialization;
 	private static String dbLocation = null;
 	private static RuntimeProperties properties;
-	private static Universe universe;
 
 	@BeforeClass
 	public static void startRadixTest() throws Exception {
@@ -60,8 +57,6 @@ public class RadixTest {
 			dbLocation = properties.get("db.location", ".//RADIXDB") + "_TEST";
 		}
 		properties.set("db.location", dbLocation);
-
-		universe = RadixUniverseBuilder.test().build().getSecond();
 	}
 
 	@AfterClass
@@ -69,7 +64,6 @@ public class RadixTest {
 		serialization = null;
 		dbLocation = null;
 		properties = null;
-		universe = null;
 	}
 
 	protected Serialization getSerialization() {
@@ -78,9 +72,5 @@ public class RadixTest {
 
 	protected RuntimeProperties getProperties() {
 		return Objects.requireNonNull(properties, "properties was not initialized");
-	}
-
-	protected Universe getUniverse() {
-		return Objects.requireNonNull(universe, "universe was not initialized");
 	}
 }
