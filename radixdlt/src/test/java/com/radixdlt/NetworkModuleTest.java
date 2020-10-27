@@ -23,8 +23,8 @@ import static org.mockito.Mockito.mock;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.google.inject.name.Names;
 import com.radixdlt.consensus.BFTEventsRx;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
@@ -45,7 +45,7 @@ public class NetworkModuleTest {
 	private static class ExternalLedgerModule extends AbstractModule {
 		@Override
 		protected void configure() {
-			bind(BFTNode.class).annotatedWith(Names.named("self")).toInstance(mock(BFTNode.class));
+			bind(BFTNode.class).annotatedWith(Self.class).toInstance(mock(BFTNode.class));
 			bind(Universe.class).toInstance(mock(Universe.class));
 			bind(AddressBook.class).toInstance(mock(AddressBook.class));
 			bind(MessageCentral.class).toInstance(mock(MessageCentral.class));

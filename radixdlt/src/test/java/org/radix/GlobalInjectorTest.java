@@ -17,7 +17,6 @@
 
 package org.radix;
 
-import com.radixdlt.consensus.bft.BFTNode;
 import java.io.File;
 
 import org.assertj.core.util.Files;
@@ -25,8 +24,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.radix.serialization.TestSetupUtils;
 
-import com.google.inject.Key;
-import com.google.inject.name.Names;
 import com.radixdlt.properties.RuntimeProperties;
 
 import static org.junit.Assert.*;
@@ -56,18 +53,6 @@ public class GlobalInjectorTest {
 	@Test(expected = IllegalStateException.class)
 	public void testInjectorInvalidFee() {
 		setup("rhinoplasty");
-	}
-
-	@Test
-	public void testBFTNode() {
-		setup("none");
-		testSelfInstance(BFTNode.class);
-	}
-
-	private <T> void testSelfInstance(Class<T> cls) {
-		Key<T> key = Key.get(cls, Names.named("self"));
-		T obj = this.globalInjector.getInjector().getInstance(key);
-		assertNotNull(obj);
 	}
 
 	private void setup(String feeType) {

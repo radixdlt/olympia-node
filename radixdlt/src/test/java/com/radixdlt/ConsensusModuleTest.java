@@ -33,7 +33,6 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Module;
 import com.google.inject.Provides;
-import com.google.inject.name.Named;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Command;
@@ -42,6 +41,7 @@ import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
@@ -165,15 +165,9 @@ public class ConsensusModuleTest {
 			}
 
 			@Provides
-			@Named("self")
+			@Self
 			private BFTNode bftNode() {
 				return BFTNode.create(ecKeyPair.getPublicKey());
-			}
-
-			@Provides
-			@Named("self")
-			private ECKeyPair keyPair() {
-				return ecKeyPair;
 			}
 		};
 	}

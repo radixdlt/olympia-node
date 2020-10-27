@@ -18,15 +18,10 @@
 package com.radixdlt;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
 import com.google.inject.Scopes;
-import com.google.inject.Singleton;
-import com.google.inject.name.Named;
 import com.radixdlt.consensus.BFTEventsRx;
-import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
@@ -38,10 +33,7 @@ import com.radixdlt.middleware2.network.MessageCentralBFTNetwork;
 import com.radixdlt.middleware2.network.MessageCentralLedgerSync;
 import com.radixdlt.middleware2.network.MessageCentralValidatorSync;
 import com.radixdlt.middleware2.network.SimpleMempoolNetwork;
-import com.radixdlt.network.addressbook.AddressBook;
-import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.sync.StateSyncNetwork;
-import com.radixdlt.universe.Universe;
 
 /**
  * Network related module
@@ -57,6 +49,7 @@ public final class NetworkModule extends AbstractModule {
 
 
 		// Network BFT/Epoch Sync messages
+		bind(MessageCentralValidatorSync.class).in(Scopes.SINGLETON);
 		bind(SyncVerticesResponseSender.class).to(MessageCentralValidatorSync.class);
 		bind(SyncEpochsRPCSender.class).to(MessageCentralValidatorSync.class);
 		bind(SyncEpochsRPCRx.class).to(MessageCentralValidatorSync.class);
@@ -64,46 +57,12 @@ public final class NetworkModule extends AbstractModule {
 		bind(SyncVerticesRPCRx.class).to(MessageCentralValidatorSync.class);
 
 		// Network BFT messages
+		bind(MessageCentralBFTNetwork.class).in(Scopes.SINGLETON);
 		bind(ProposalBroadcaster.class).to(MessageCentralBFTNetwork.class);
 		bind(ProceedToViewSender.class).to(MessageCentralBFTNetwork.class);
 		bind(BFTEventsRx.class).to(MessageCentralBFTNetwork.class);
-	}
 
-
-	@Provides
-	@Singleton
-	MessageCentralValidatorSync validatorSync(
-		@Named("self") BFTNode self,
-		Universe universe,
-		AddressBook addressBook,
-		MessageCentral messageCentral,
-		Hasher hasher
-	) {
-		return new MessageCentralValidatorSync(self, universe, addressBook, messageCentral, hasher);
-	}
-
-	@Provides
-	@Singleton
-	MessageCentralBFTNetwork bftNetwork(
-		@Named("self") BFTNode self,
-		Universe universe,
-		AddressBook addressBook,
-		MessageCentral messageCentral
-	) {
-		return new MessageCentralBFTNetwork(self, universe, addressBook, messageCentral);
-	}
-
-	@Provides
-	@Singleton
-	private StateSyncNetwork stateSyncNetwork(
-		Universe universe,
-		AddressBook addressBook,
-		MessageCentral messageCentral
-	) {
-		return new MessageCentralLedgerSync(
-			universe,
-			addressBook,
-			messageCentral
-		);
+		// Ledger Sync messages
+		bind(StateSyncNetwork.class).to(MessageCentralLedgerSync.class).in(Scopes.SINGLETON);
 	}
 }

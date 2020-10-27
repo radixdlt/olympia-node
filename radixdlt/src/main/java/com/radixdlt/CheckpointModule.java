@@ -27,6 +27,7 @@ import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.middleware2.ClientAtom;
@@ -73,7 +74,7 @@ public class CheckpointModule extends AbstractModule {
 	@Singleton
 	private AddressBookGenesisValidatorSetProvider provider(
 		AddressBook addressBook,
-		@Named("self") BFTNode self
+		@Self BFTNode self
 	) {
 		return new AddressBookGenesisValidatorSetProvider(
 			self.getKey(),

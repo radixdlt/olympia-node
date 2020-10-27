@@ -17,6 +17,7 @@
 
 package com.radixdlt.integration.distributed;
 
+import com.radixdlt.consensus.bft.Self;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
@@ -28,7 +29,6 @@ import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.google.inject.name.Named;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HashVerifier;
@@ -66,7 +66,7 @@ public class MockedCryptoModule extends AbstractModule {
 
 	@Provides
 	private HashSigner hashSigner(
-		@Named("self") BFTNode node,
+		@Self BFTNode node,
 		SystemCounters counters
 	) {
 		return h -> {
