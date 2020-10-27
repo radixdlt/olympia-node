@@ -59,7 +59,7 @@ public final class PeerPongMessage extends SystemMessage {
 	@Override
 	public String toString() {
 		return String.format("%s[%s:%s:%s]",
-			getClass().getSimpleName(), getSystem().getNID(), UnsignedLong.fromLongBits(nonce), UnsignedLong.fromLongBits(payload));
+			getClass().getSimpleName(), getSystem().getNID(), formatNonce(nonce), UnsignedLong.fromLongBits(payload));
 	}
 
 	@Override
@@ -82,5 +82,9 @@ public final class PeerPongMessage extends SystemMessage {
 	@Override
 	public int hashCode() {
 		return Objects.hash(nonce, payload, getTimestamp(), getMagic(), getSystem(), getSignature());
+	}
+
+	private String formatNonce(long nonce) {
+		return Long.toHexString(nonce);
 	}
 }

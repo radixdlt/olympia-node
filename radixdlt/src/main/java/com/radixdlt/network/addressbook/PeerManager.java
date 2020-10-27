@@ -302,8 +302,10 @@ public class PeerManager {
 						this.probes.remove(peer);
 						log.trace("Got good peer.pong from {}:{}:{}ns", () -> peer, () -> formatNonce(nonce), () -> rtt);
 					} else {
-						log.warn("Got mismatched peer.pong from {} with nonce '{}', ours '{}' ({}ns)",
-							() -> peer, () -> formatNonce(nonce), () -> formatNonce(ourNonce), () -> rtt);
+						if (nonce != 0L) {
+							log.warn("Got mismatched peer.pong from {} with nonce '{}', ours '{}' ({}ns)",
+								() -> peer, () -> formatNonce(nonce), () -> formatNonce(ourNonce), () -> rtt);
+						}
 					}
 				}
 			}
@@ -338,16 +340,18 @@ public class PeerManager {
 				}
 				synchronized (this.probes) {
 					if (!this.probes.containsKey(peer)) {
-						long nonce = rng.nextLong();
-						PeerPingMessage ping = new PeerPingMessage(this.universeMagic, nonce, System.nanoTime(), localSystem);
+						final PeerPingMessage ping;
 
 						// Only wait for response if peer has a system, otherwise peer will be upgraded by pong message
 						if (peer.hasSystem()) {
+							long nonce = rng.nextLong();
 							this.probes.put(peer, nonce);
 							this.executor.schedule(() -> handleProbeTimeout(peer, nonce), peerProbeTimeoutMs, TimeUnit.MILLISECONDS);
-							log.trace("Probing {}:{}", () -> peer, () -> formatNonce(nonce));
+							ping = new PeerPingMessage(this.universeMagic, nonce, System.nanoTime(), localSystem);
+							log.debug("Probing {}:{}", () -> peer, () -> formatNonce(nonce));
 						} else {
-							log.trace("Nudging {}", peer);
+							ping = new PeerPingMessage(this.universeMagic, 0L, System.nanoTime(), localSystem);
+							log.debug("Nudging {}", peer);
 						}
 						messageCentral.send(peer, ping);
 						peer.setTimestamp(Timestamps.PROBED, Time.currentTimestamp());
