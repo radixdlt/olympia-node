@@ -35,6 +35,7 @@ import org.radix.network.messages.GetPeersMessage;
 import org.radix.network.messages.PeerPingMessage;
 import org.radix.network.messages.PeerPongMessage;
 import org.radix.network.messages.PeersMessage;
+import org.radix.network.messaging.Message;
 import org.radix.time.Time;
 import org.radix.time.Timestamps;
 import org.radix.universe.system.LocalSystem;
@@ -235,55 +236,63 @@ public class PeerManager {
 
 	private void handlePeersMessage(Peer peer, PeersMessage peersMessage) {
 		log.trace("Received PeersMessage from {}", peer);
-		if (peer != null) {
-			List<Peer> peers = peersMessage.getPeers();
-			if (peers != null) {
-				EUID localNid = this.localSystem.getNID();
-				peers.stream()
-				.filter(Peer::hasSystem)
-				.filter(p -> !localNid.equals(p.getNID()))
-				.forEachOrdered(addressbook::updatePeer);
-			}
+		if (!knownPeer(peer, peersMessage)) {
+			// Ignore unknown peer
+			return;
+		}
+		List<Peer> peers = peersMessage.getPeers();
+		if (peers != null) {
+			EUID localNid = this.localSystem.getNID();
+			peers.stream()
+			.filter(Peer::hasSystem)
+			.filter(p -> !localNid.equals(p.getNID()))
+			.forEachOrdered(addressbook::updatePeer);
 		}
 	}
 
 	private void handleGetPeersMessage(Peer peer, GetPeersMessage getPeersMessage) {
 		log.trace("Received GetPeersMessage from {}", peer);
-		if (peer != null) {
-			try {
-				// Deliver known Peers in its entirety, filtered on whitelist and activity
-				// Chunk the sending of Peers so that UDP can handle it
-				List<Peer> peersList = Lists.newArrayList();
-				List<Peer> peers = addressbook.peers()
-						.filter(Peer::hasNID)
-						.filter(StandardFilters.standardFilter(localSystem.getNID(), whitelist))
-						.filter(StandardFilters.recentlyActive(this.recencyThreshold))
-						.collect(Collectors.toList());
+		if (!knownPeer(peer, getPeersMessage)) {
+			// Ignore unknown peer
+			return;
+		}
+		try {
+			// Deliver known Peers in its entirety, filtered on whitelist and activity
+			// Chunk the sending of Peers so that UDP can handle it
+			List<Peer> peersList = Lists.newArrayList();
+			List<Peer> peers = addressbook.peers()
+					.filter(Peer::hasNID)
+					.filter(StandardFilters.standardFilter(localSystem.getNID(), whitelist))
+					.filter(StandardFilters.recentlyActive(this.recencyThreshold))
+					.collect(Collectors.toList());
 
-				for (Peer p : peers) {
-					if (p.getNID().equals(peer.getNID())) {
-						// Know thyself
-						continue;
-					}
-
-					peersList.add(p);
-					if (peersList.size() == peerMessageBatchSize) {
-						messageCentral.send(peer, new PeersMessage(this.universeMagic, ImmutableList.copyOf(peersList)));
-						peersList.clear();
-					}
+			for (Peer p : peers) {
+				if (p.getNID().equals(peer.getNID())) {
+					// Know thyself
+					continue;
 				}
 
-				if (!peersList.isEmpty()) {
+				peersList.add(p);
+				if (peersList.size() == peerMessageBatchSize) {
 					messageCentral.send(peer, new PeersMessage(this.universeMagic, ImmutableList.copyOf(peersList)));
+					peersList.clear();
 				}
-			} catch (Exception ex) {
-				log.error(String.format("peers.get %s", peer), ex);
 			}
+
+			if (!peersList.isEmpty()) {
+				messageCentral.send(peer, new PeersMessage(this.universeMagic, ImmutableList.copyOf(peersList)));
+			}
+		} catch (Exception ex) {
+			log.error(String.format("peers.get %s", peer), ex);
 		}
 	}
 
 	private void handlePeerPingMessage(Peer peer, PeerPingMessage message) {
 		log.trace("Received PeerPingMessage from {}:{}", () -> peer, () -> formatNonce(message.getNonce()));
+		if (!knownPeer(peer, message)) {
+			// Ignore unknown peer
+			return;
+		}
 		try {
 			long nonce = message.getNonce();
 			long payload = message.getPayload();
@@ -296,6 +305,10 @@ public class PeerManager {
 
 	private void handlePeerPongMessage(Peer peer, PeerPongMessage message) {
 		log.trace("Received PeerPongMessage from {}:{}", () -> peer, () -> formatNonce(message.getNonce()));
+		if (!knownPeer(peer, message)) {
+			// Ignore unknown peer
+			return;
+		}
 		try {
 			synchronized (this.probes) {
 				Long ourNonce = this.probes.get(peer);
@@ -319,12 +332,12 @@ public class PeerManager {
 	private void peersHousekeeping() {
 		try {
 			// Request peers information from connected nodes
-			List<Peer> peers = addressbook.recentPeers().collect(Collectors.toList());
+			List<Peer> peers = addressbook.recentPeers().filter(Peer::hasNID).collect(Collectors.toList());
 			if (!peers.isEmpty()) {
 				int index = rand.nextInt(peers.size());
 				Peer peer = peers.get(index);
 				try {
-					messageCentral.send(peer, new GetPeersMessage(this.universeMagic));
+					messageCentral.send(peer, new GetPeersMessage(this.localSystem, this.universeMagic));
 				} catch (TransportException ioex) {
 					log.info(String.format("Failed to request peer information from %s",  peer), ioex);
 				}
@@ -365,6 +378,14 @@ public class PeerManager {
 		return false;
 	}
 
+	private boolean knownPeer(Peer peer, Message message) {
+		if (peer == null || !peer.hasNID()) {
+			log.debug("Ignoring {} message from unknown peer {}", message.getClass().getSimpleName(), peer);
+			return false;
+		}
+		return true;
+	}
+
 	private void handleProbeTimeout(Peer peer, long nonce) {
 		synchronized (this.probes) {
 			Long value = this.probes.get(peer);
@@ -378,7 +399,7 @@ public class PeerManager {
 
 	private void discoverPeers() {
 		// Probe all the bootstrap hosts so that they know about us
-		GetPeersMessage msg = new GetPeersMessage(this.universeMagic);
+		GetPeersMessage msg = new GetPeersMessage(this.localSystem, this.universeMagic);
 		bootstrapDiscovery.discover(this.addressbook, StandardFilters.standardFilter(localSystem.getNID(), whitelist)).stream()
 			.map(addressbook::peer)
 			.forEachOrdered(peer -> {
