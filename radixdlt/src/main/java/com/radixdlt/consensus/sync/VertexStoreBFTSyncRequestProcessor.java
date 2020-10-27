@@ -66,14 +66,17 @@ public final class VertexStoreBFTSyncRequestProcessor implements BFTSyncRequestP
 	public void processGetVerticesRequest(GetVerticesRequest request) {
 		// TODO: Handle nodes trying to DDOS this endpoint
 
-		log.trace("SYNC_VERTICES: Received GetVerticesRequest {}", request);
+		log.debug("SYNC_VERTICES: Received GetVerticesRequest {}", request);
 		Optional<ImmutableList<VerifiedVertex>> verticesMaybe = vertexStore.getVertices(request.getVertexId(), request.getCount());
 		verticesMaybe.ifPresentOrElse(
 			fetched -> {
-				log.trace("SYNC_VERTICES: Sending Response {}", fetched);
+				log.debug("SYNC_VERTICES: Sending Response {}", fetched);
 				this.syncVerticesResponseSender.sendGetVerticesResponse(request.getSender(), fetched);
 			},
-			() -> this.syncVerticesResponseSender.sendGetVerticesErrorResponse(request.getSender(), vertexStore.highQC())
+			() -> {
+				log.debug("SYNC_VERTICES: Sending error response {}", vertexStore.highQC());
+				this.syncVerticesResponseSender.sendGetVerticesErrorResponse(request.getSender(), vertexStore.highQC());
+			}
 		);
 	}
 }

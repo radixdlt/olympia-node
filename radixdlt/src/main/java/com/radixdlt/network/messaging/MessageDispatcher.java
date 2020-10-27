@@ -232,7 +232,7 @@ class MessageDispatcher {
 	}
 
 	private String hostId(Peer peer) {
-		return peer.supportedTransports()
+		return peer.getClass().getSimpleName() + ":" + peer.supportedTransports()
 			.findFirst()
 			.map(ti -> String.format("%s:%s", ti.name(), ti.metadata()))
 			.orElse("None");
