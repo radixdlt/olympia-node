@@ -72,20 +72,18 @@ import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.sync.SyncPatienceMillis;
 import com.radixdlt.universe.Universe;
 
-import org.radix.database.DatabaseEnvironment;
 import org.radix.universe.system.LocalSystem;
 
 public class GlobalInjector {
 
 	private Injector injector;
 
-	public GlobalInjector(RuntimeProperties properties, DatabaseEnvironment dbEnv, Universe universe) {
+	public GlobalInjector(RuntimeProperties properties, Universe universe) {
 		// temporary global module to hook up global things
 		Module globalModule = new AbstractModule() {
 			@Override
 			protected void configure() {
 				bind(RuntimeProperties.class).toInstance(properties);
-				bind(DatabaseEnvironment.class).toInstance(dbEnv);
 				bind(Universe.class).toInstance(universe);
 
 				bind(PeerManagerConfiguration.class).toInstance(PeerManagerConfiguration.fromRuntimeProperties(properties));
@@ -203,7 +201,7 @@ public class GlobalInjector {
 			new MessageCentralModule(properties),
 			new UDPTransportModule(properties),
 			new TCPTransportModule(properties),
-			new AddressBookModule(dbEnv),
+			new AddressBookModule(),
 			new HostIpModule(properties),
 
 			globalModule

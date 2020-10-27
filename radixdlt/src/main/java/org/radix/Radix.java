@@ -154,11 +154,8 @@ public final class Radix
 		// set up time services
 		Time.start(properties);
 
-		// start database environment
-		DatabaseEnvironment dbEnv = new DatabaseEnvironment(properties);
-
 		// TODO Eventually modules should be created using Google Guice injector
-		GlobalInjector globalInjector = new GlobalInjector(properties, dbEnv, universe);
+		GlobalInjector globalInjector = new GlobalInjector(properties, universe);
 		// TODO use consensus for application construction (in our case, the engine middleware)
 
 		// setup networking

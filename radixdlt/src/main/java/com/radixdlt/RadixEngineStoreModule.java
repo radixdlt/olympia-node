@@ -64,6 +64,7 @@ public class RadixEngineStoreModule extends AbstractModule {
 		bind(InMemoryCommittedEpochProofsStore.class).in(Scopes.SINGLETON);
 	}
 
+
 	@Provides
 	@Singleton
 	private EngineStore<LedgerAtom> engineStore(CommittedAtomsStore committedAtomsStore) {

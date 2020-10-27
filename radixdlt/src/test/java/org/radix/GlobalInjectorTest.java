@@ -76,12 +76,11 @@ public class GlobalInjectorTest {
 		RuntimeProperties properties = mock(RuntimeProperties.class);
 		doReturn("127.0.0.1").when(properties).get(eq("host.ip"), any());
 		doReturn(feeType).when(properties).get(eq("debug.fee_module"), any());
-		DatabaseEnvironment dbEnv = mock(DatabaseEnvironment.class);
 		Universe universe = mock(Universe.class);
 
 		Files.delete(new File("nonesuch.ks"));
 		when(properties.get(eq("node.key.path"), any(String.class))).thenReturn("nonesuch.ks");
 
-		this.globalInjector = new GlobalInjector(properties, dbEnv, universe);
+		this.globalInjector = new GlobalInjector(properties, universe);
 	}
 }
