@@ -36,12 +36,13 @@ import com.radixdlt.middleware.SpunParticle;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.statecomputer.CommittedAtom;
+import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 
 import java.util.List;
+import java.util.Set;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -129,26 +130,25 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 		List<SpunParticle> spunTransferableTokens = grouping.remove(TransferrableTokensParticle.class);
 		List<SpunParticle> spunUnallocatedTokens = grouping.remove(UnallocatedTokensParticle.class);
 		// If there is other "stuff" in the group, or no "burns", then it's not a fee group
-		if (grouping.isEmpty() && spunUnallocatedTokens != null) {
-			ImmutableList<TransferrableTokensParticle> transferableTokens = spunTransferableTokens == null
-				? ImmutableList.of()
-				: spunTransferableTokens.stream()
-					.map(SpunParticle::getParticle)
-					.map(p -> (TransferrableTokensParticle) p)
-					.collect(ImmutableList.toImmutableList());
-			return allUpForFeeToken(spunUnallocatedTokens) && allSameAddressAndForFee(transferableTokens);
+		if (grouping.isEmpty() && spunTransferableTokens != null && spunUnallocatedTokens != null) {
+			final ImmutableList<Pair<Spin, TransferrableTokensParticle>> transferableTokens =
+					spunTransferableTokens.stream()
+							.map(p -> Pair.of(p.getSpin(), (TransferrableTokensParticle) p.getParticle()))
+							.collect(ImmutableList.toImmutableList());
+
+			return allUpForFeeToken(spunUnallocatedTokens)
+					&& allSameAddressAndForFee(transferableTokens)
+					&& noSuperfluousParticles(transferableTokens);
 		}
 		return false;
 	}
 
 	// Check that all transferable particles are in for the same address and for the fee token
-	private boolean allSameAddressAndForFee(ImmutableList<TransferrableTokensParticle> transferableTokens) {
-		if (transferableTokens.isEmpty()) {
-			return true;
-		}
-		RadixAddress addr = transferableTokens.get(0).getAddress();
+	private boolean allSameAddressAndForFee(ImmutableList<Pair<Spin, TransferrableTokensParticle>> transferableTokens) {
+		RadixAddress addr = transferableTokens.get(0).getSecond().getAddress();
 		return transferableTokens.stream()
-			.allMatch(ttp -> ttp.getAddress().equals(addr) && this.feeTokenRri.equals(ttp.getTokDefRef()));
+				.map(Pair::getSecond)
+				.allMatch(ttp -> ttp.getAddress().equals(addr) && this.feeTokenRri.equals(ttp.getTokDefRef()));
 	}
 
 	// Check that all unallocated particles are in the up state and for the fee token
@@ -163,6 +163,26 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 			return this.feeTokenRri.equals(utp.getTokDefRef());
 		}
 		return false;
+	}
+
+	// Check that there is at most one output particle and no input particle is smaller
+	private boolean noSuperfluousParticles(ImmutableList<Pair<Spin, TransferrableTokensParticle>> transferableTokens) {
+		final Map<Spin, List<TransferrableTokensParticle>> particlesBySpin = transferableTokens.stream()
+				.collect(Collectors.groupingBy(Pair::getFirst, Collectors.mapping(Pair::getSecond, Collectors.toList())));
+
+		final List<TransferrableTokensParticle> inputParticles = particlesBySpin.getOrDefault(Spin.DOWN, List.of());
+		final List<TransferrableTokensParticle> outputParticles = particlesBySpin.getOrDefault(Spin.UP, List.of());
+
+		if (outputParticles.isEmpty()) {
+			return true;
+		} else {
+			final UInt256 outputAmount = outputParticles.get(0).getAmount();
+
+			final boolean allInputsGreaterThanOutput = inputParticles.stream()
+					.allMatch(ttp -> ttp.getAmount().compareTo(outputAmount) > 0);
+
+			return outputParticles.size() == 1 && allInputsGreaterThanOutput;
+		}
 	}
 
 	private UInt256 computeFeePaid(Stream<ParticleGroup> feeParticleGroups) {
