@@ -60,7 +60,6 @@ import com.radixdlt.SystemInfoModule;
 import com.radixdlt.NetworkModule;
 import com.radixdlt.NoFeeModule;
 import com.radixdlt.network.addressbook.AddressBookModule;
-import com.radixdlt.network.addressbook.PeerManagerConfiguration;
 import com.radixdlt.network.hostip.HostIp;
 import com.radixdlt.network.hostip.HostIpModule;
 import com.radixdlt.network.messaging.MessageCentralModule;
@@ -84,9 +83,6 @@ public class GlobalInjector {
 			@Override
 			protected void configure() {
 				bind(RuntimeProperties.class).toInstance(properties);
-
-				bind(PeerManagerConfiguration.class).toInstance(PeerManagerConfiguration.fromRuntimeProperties(properties));
-
 				bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(200);
 				bind(Integer.class).annotatedWith(BFTSyncPatienceMillis.class).toInstance(200);
 				bind(Integer.class).annotatedWith(MinValidators.class).toInstance(1);

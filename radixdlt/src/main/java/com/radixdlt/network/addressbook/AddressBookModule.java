@@ -17,6 +17,7 @@
 
 package com.radixdlt.network.addressbook;
 
+import com.radixdlt.properties.RuntimeProperties;
 import org.radix.database.DatabaseEnvironment;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
@@ -31,6 +32,12 @@ public final class AddressBookModule extends AbstractModule {
 	protected void configure() {
 		// The main target
 		bind(AddressBook.class).to(AddressBookImpl.class).in(Singleton.class);
+	}
+
+	@Provides
+	@Singleton
+	PeerManagerConfiguration peerManagerConfiguration(RuntimeProperties properties) {
+		return PeerManagerConfiguration.fromRuntimeProperties(properties);
 	}
 
 	@Provides
