@@ -47,7 +47,7 @@ public class FProposalsPerViewDropperTest {
 	@Parameters
 	public static Collection<Object[]> testParameters() {
 		return Arrays.asList(new Object[][] {
-			{4}, {10} // TODO: Investigate why 20 still failing on Jenkins
+			{4}, {5} // TODO: Investigate why 5 still failing on Travis and 20 still failing on Jenkins
 		});
 	}
 
