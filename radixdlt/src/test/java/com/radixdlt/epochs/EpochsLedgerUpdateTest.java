@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,17 +15,18 @@
  * language governing permissions and limitations under the License.
  */
 
-package org.radix.common;
+package com.radixdlt.epochs;
 
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
 
-public enum Syncronicity {
-	SYNCRONOUS,
-	ASYNCRONOUS;
-
-	@JsonValue
-	@Override
-	public String toString() {
-		return this.name();
+public class EpochsLedgerUpdateTest {
+	@Test
+	public void testEquals() {
+		EqualsVerifier.forClass(EpochsLedgerUpdate.class)
+			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+			.verify();
 	}
 }

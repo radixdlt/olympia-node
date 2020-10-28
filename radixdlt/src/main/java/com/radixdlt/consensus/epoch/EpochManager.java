@@ -18,13 +18,13 @@
 package com.radixdlt.consensus.epoch;
 
 import com.google.common.collect.ImmutableList;
-import com.google.inject.name.Named;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.sync.BFTSyncRequestTimeoutProcessor;
 import com.radixdlt.consensus.sync.EmptyBFTSyncResponseProcessor;
@@ -147,7 +147,7 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 
 	@Inject
 	public EpochManager(
-		@Named("self") BFTNode self,
+		@Self BFTNode self,
 		EpochChange initialEpoch,
 		Ledger ledger,
 		SyncEpochsRPCSender epochsRPCSender,

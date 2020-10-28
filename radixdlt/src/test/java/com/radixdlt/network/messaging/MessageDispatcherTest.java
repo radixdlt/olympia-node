@@ -148,7 +148,9 @@ public class MessageDispatcherTest extends RadixTest {
 		when(addressBook.peer(eq(transportInfo2))).thenReturn(Optional.of(peer2));
 
 		counters = mock(SystemCounters.class);
-		messageDispatcher = new MessageDispatcher(counters, conf, serialization, () -> 30_000, getLocalSystem(), addressBook, hasher);
+		messageDispatcher = new MessageDispatcher(
+			counters, conf, serialization, () -> 30_000, getLocalSystem(), addressBook, hasher, getKeyPair()::sign
+		);
 
 		// Suppression safe here - dummy outbound connection does not need closing
 		@SuppressWarnings("resource")
@@ -162,7 +164,7 @@ public class MessageDispatcherTest extends RadixTest {
 	@Test
 	public void sendSuccessfullyMessage() throws InterruptedException, ExecutionException {
 		SystemMessage message = spy(new SystemMessage(getLocalSystem(), 0));
-		message.sign(getLocalSystem().getKeyPair(), hasher);
+		message.setSignature(getKeyPair().sign(hasher.hash(message)));
 
 		OutboundMessageEvent messageEvent = new OutboundMessageEvent(peer1, message, 10_000);
 
@@ -186,7 +188,7 @@ public class MessageDispatcherTest extends RadixTest {
 	@Test
 	public void receiveSuccessfully() throws InterruptedException {
 		SystemMessage testMessage = spy(new SystemMessage(getLocalSystem(), 0));
-		testMessage.sign(getLocalSystem().getKeyPair(), hasher);
+		testMessage.setSignature(getKeyPair().sign(hasher.hash(testMessage)));
 
 		RadixSystem radixSystem = spy(testMessage.getSystem());
 		doReturn(radixSystem).when(testMessage).getSystem();
@@ -213,7 +215,7 @@ public class MessageDispatcherTest extends RadixTest {
 	@Test
 	public void receiveExpiredMessage() {
 		SystemMessage testMessage = spy(new SystemMessage(getLocalSystem(), 0));
-		testMessage.sign(getLocalSystem().getKeyPair(), hasher);
+		testMessage.setSignature(getKeyPair().sign(hasher.hash(testMessage)));
 
 		when(testMessage.getTimestamp()).thenReturn(10_000L);
 		InboundMessageEvent messageEvent = new InboundMessageEvent(transportInfo1, testMessage, 10_000);
@@ -249,7 +251,7 @@ public class MessageDispatcherTest extends RadixTest {
 	public void receiveDisconnectNullZeroSystem() {
 		RadixSystem localSystem = getLocalSystem();
 		SystemMessage testMessage1 = spy(new SystemMessage(localSystem, 0));
-		testMessage1.sign(getLocalSystem().getKeyPair(), hasher);
+		testMessage1.setSignature(getKeyPair().sign(hasher.hash(testMessage1)));
 
 		when(addressBook.updatePeerSystem(any(), eq(localSystem), any())).thenReturn(peer1);
 
@@ -259,7 +261,7 @@ public class MessageDispatcherTest extends RadixTest {
 		InboundMessageEvent messageEvent1 = new InboundMessageEvent(transportInfo1, testMessage1, 10_000);
 
 		SystemMessage testMessage2 = spy(new SystemMessage(localSystem, 0));
-		testMessage2.sign(getLocalSystem().getKeyPair(), hasher);
+		testMessage2.setSignature(getKeyPair().sign(hasher.hash(testMessage2)));
 
 		RadixSystem radixSystem2 = spy(testMessage2.getSystem());
 		doReturn(radixSystem2).when(testMessage2).getSystem();
@@ -282,7 +284,7 @@ public class MessageDispatcherTest extends RadixTest {
 	@Test
 	public void receiveDisconnectOldPeer() {
 		SystemMessage testMessage = spy(new SystemMessage(getLocalSystem(), 0));
-		testMessage.sign(getLocalSystem().getKeyPair(), hasher);
+		testMessage.setSignature(getKeyPair().sign(hasher.hash(testMessage)));
 
 		RadixSystem radixSystem = spy(testMessage.getSystem());
 		doReturn(radixSystem).when(testMessage).getSystem();
@@ -301,7 +303,7 @@ public class MessageDispatcherTest extends RadixTest {
 	@Test
 	public void receiveSelf() {
 		SystemMessage testMessage = spy(new SystemMessage(getLocalSystem(), 0));
-		testMessage.sign(getLocalSystem().getKeyPair(), hasher);
+		testMessage.setSignature(getKeyPair().sign(hasher.hash(testMessage)));
 
 		RadixSystem radixSystem = spy(testMessage.getSystem());
 		doReturn(radixSystem).when(testMessage).getSystem();
@@ -332,7 +334,7 @@ public class MessageDispatcherTest extends RadixTest {
 	@Test
 	public void receiveSignedMessageGoodSignature() {
 		SignedMessage testMessage = spy(new DummySignedMessage());
-		testMessage.sign(getLocalSystem().getKeyPair(), hasher);
+		testMessage.setSignature(getKeyPair().sign(hasher.hash(testMessage)));
 
 		InboundMessageEvent messageEvent = new InboundMessageEvent(transportInfo1, testMessage, 10_000);
 		MessageListenerList listeners = mock(MessageListenerList.class);
@@ -346,7 +348,7 @@ public class MessageDispatcherTest extends RadixTest {
 	public void receiveSignedMessageBadSignature() {
 		SignedMessage testMessage = spy(new DummySignedMessage());
 		ECKeyPair bogusKey = ECKeyPair.generateNew();
-		testMessage.sign(bogusKey, hasher);
+		testMessage.setSignature(bogusKey.sign(hasher.hash(testMessage)));
 
 		InboundMessageEvent messageEvent = new InboundMessageEvent(transportInfo1, testMessage, 10_000);
 		MessageListenerList listeners = mock(MessageListenerList.class);
@@ -360,7 +362,7 @@ public class MessageDispatcherTest extends RadixTest {
 	@Test
 	public void receiveSignedMessageNoPeer() {
 		SignedMessage testMessage = new DummySignedMessage();
-		testMessage.sign(getLocalSystem().getKeyPair(), hasher);
+		testMessage.setSignature(getKeyPair().sign(hasher.hash(testMessage)));
 
 		InboundMessageEvent messageEvent = new InboundMessageEvent(mock(TransportInfo.class), testMessage, 10_000);
 		MessageListenerList listeners = mock(MessageListenerList.class);

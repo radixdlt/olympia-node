@@ -28,11 +28,14 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Module;
-import com.google.inject.name.Names;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HashVerifier;
+import com.radixdlt.consensus.bft.PacemakerMaxExponent;
+import com.radixdlt.consensus.bft.PacemakerRate;
+import com.radixdlt.consensus.bft.PacemakerTimeout;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
@@ -83,7 +86,7 @@ public class EpochsConsensusModuleTest {
 				bind(Hasher.class).toInstance(mock(Hasher.class));
 				bind(HashVerifier.class).toInstance(mock(HashVerifier.class));
 				bind(HashSigner.class).toInstance(mock(HashSigner.class));
-				bind(BFTNode.class).annotatedWith(Names.named("self")).toInstance(mock(BFTNode.class));
+				bind(BFTNode.class).annotatedWith(Self.class).toInstance(mock(BFTNode.class));
 				bind(BFTConfiguration.class).toInstance(mock(BFTConfiguration.class));
 				bind(EpochInfoSender.class).toInstance(epochInfoSender);
 				bind(BFTFactory.class).toInstance(mock(BFTFactory.class));
@@ -91,7 +94,10 @@ public class EpochsConsensusModuleTest {
 				bind(LocalTimeoutSender.class).toInstance(mock(LocalTimeoutSender.class));
 				bind(BFTSyncTimeoutScheduler.class).toInstance(mock(BFTSyncTimeoutScheduler.class));
 				bind(VerifiedLedgerHeaderAndProof.class).toInstance(mock(VerifiedLedgerHeaderAndProof.class));
-				bind(Integer.class).annotatedWith(BFTSyncPatienceMillis.class).toInstance(200);
+				bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(200);
+				bindConstant().annotatedWith(PacemakerTimeout.class).to(1000L);
+				bindConstant().annotatedWith(PacemakerRate.class).to(2.0);
+				bindConstant().annotatedWith(PacemakerMaxExponent.class).to(6);
 			}
 		};
 	}
@@ -99,7 +105,7 @@ public class EpochsConsensusModuleTest {
 	@Test
 	public void when_send_current_view__then_should_use_epoch_info_sender() {
 		Guice.createInjector(
-			new EpochsConsensusModule(500, 2.0, 0), // constant for now
+			new EpochsConsensusModule(), // constant for now
 			getExternalModule()
 		).injectMembers(this);
 
@@ -113,7 +119,7 @@ public class EpochsConsensusModuleTest {
 	@Test
 	public void when_send_timeout_processed__then_should_use_epoch_info_sender() {
 		Guice.createInjector(
-			new EpochsConsensusModule(500, 2.0, 0), // constant for now
+			new EpochsConsensusModule(), // constant for now
 			getExternalModule()
 		).injectMembers(this);
 

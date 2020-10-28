@@ -27,9 +27,8 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Module;
-import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
-import com.google.inject.name.Named;
+import com.google.inject.name.Names;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atommodel.AtomAlreadySignedException;
 import com.radixdlt.atommodel.system.SystemParticle;
@@ -63,6 +62,8 @@ import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.statecomputer.EpochCeilingView;
+import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 
 import com.radixdlt.statecomputer.RadixEngineStateComputer.RadixEngineCommand;
@@ -92,12 +93,9 @@ public class RadixEngineStateComputerTest {
 				bind(BFTValidatorSet.class).toInstance(validatorSet);
 				bind(Hasher.class).toInstance(Sha256Hasher.withDefaultSerialization());
 				bind(new TypeLiteral<EngineStore<LedgerAtom>>() { }).toInstance(engineStore);
-			}
-
-			@Provides
-			@Named("magic")
-			int magic() {
-				return 0;
+				bindConstant().annotatedWith(Names.named("magic")).to(0);
+				bindConstant().annotatedWith(MinValidators.class).to(1);
+				bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(10));
 			}
 		};
 	}
@@ -110,7 +108,7 @@ public class RadixEngineStateComputerTest {
 		));
 		this.engineStore = new InMemoryEngineStore<>();
 		Guice.createInjector(
-			new RadixEngineModule(View.of(10)),
+			new RadixEngineModule(),
 			new NoFeeModule(),
 			getExternalModule()
 		).injectMembers(this);

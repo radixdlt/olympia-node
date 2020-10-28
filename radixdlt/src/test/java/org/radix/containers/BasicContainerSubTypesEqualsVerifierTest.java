@@ -27,7 +27,7 @@ public class BasicContainerSubTypesEqualsVerifierTest {
         final Map<Class<?>, List<String>> ignoredFieldsByClass = Map.of(
                 Message.class, List.of("instance"),
                 Peer.class, List.of("banReason", "timestamps"),
-                LocalSystem.class, List.of("infoSupplier", "keyPair"));
+                LocalSystem.class, List.of("infoSupplier"));
 
         subTypes.stream()
                 .filter(clazz -> !Modifier.isAbstract(clazz.getModifiers()))

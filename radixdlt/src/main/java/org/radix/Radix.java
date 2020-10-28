@@ -20,28 +20,15 @@ package org.radix;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
+import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.utils.MemoryLeakDetector;
 import com.radixdlt.ModuleRunner;
-import com.radixdlt.DefaultSerialization;
-import com.radixdlt.consensus.bft.BFTCommittedUpdate;
-import com.radixdlt.consensus.Sha256Hasher;
-import com.radixdlt.crypto.Hasher;
-import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.systeminfo.InMemorySystemInfoManager;
-import com.radixdlt.api.CommittedAtomsRx;
-import com.radixdlt.api.SubmissionErrorsRx;
 import com.radixdlt.mempool.MempoolReceiver;
-import com.radixdlt.mempool.SubmissionControl;
-import com.radixdlt.middleware2.store.CommandToBinaryConverter;
-import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.PeerManager;
 import com.radixdlt.properties.RuntimeProperties;
-import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.store.LedgerEntryStore;
-import com.radixdlt.universe.Universe;
-import com.radixdlt.utils.Bytes;
 
-import io.reactivex.rxjava3.core.Observable;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -49,10 +36,6 @@ import org.apache.commons.cli.ParseException;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.JSONObject;
 import org.radix.api.http.RadixHttpServer;
-import org.radix.database.DatabaseEnvironment;
-import org.radix.time.Time;
-import org.radix.universe.UniverseValidator;
-import org.radix.universe.system.LocalSystem;
 import org.radix.utils.IOUtils;
 
 import java.io.IOException;
@@ -61,8 +44,7 @@ import java.net.URISyntaxException;
 import java.security.Security;
 import java.util.Properties;
 
-public final class Radix
-{
+public final class Radix {
 	private static final String SYSTEM_VERSION_DISPLAY;
 	private static final String SYSTEM_VERSION_BRANCH;
 	private static final String SYSTEM_VERSION_COMMIT;
@@ -125,6 +107,8 @@ public final class Radix
 
 	public static void main(String[] args) {
 		try {
+			new MemoryLeakDetector();
+
 			logVersion();
 			dumpExecutionLocation();
 			// Bouncy Castle is required for loading the node key, so set it up now.
@@ -149,29 +133,18 @@ public final class Radix
 	}
 
 	public static void start(RuntimeProperties properties) {
-		Serialization serialization = DefaultSerialization.getInstance();
-		Universe universe = extractUniverseFrom(properties, serialization);
-
-		// set up time services
-		Time.start(properties);
-
-		// start database environment
-		DatabaseEnvironment dbEnv = new DatabaseEnvironment(properties);
-
 		// TODO Eventually modules should be created using Google Guice injector
-		GlobalInjector globalInjector = new GlobalInjector(properties, dbEnv, universe);
-		// TODO use consensus for application construction (in our case, the engine middleware)
+		GlobalInjector globalInjector = new GlobalInjector(properties);
 
 		// setup networking
-		AddressBook addressBook = globalInjector.getInjector().getInstance(AddressBook.class);
-		PeerManager peerManager = globalInjector.getInjector().getInstance(PeerManager.class);
-		LocalSystem localSystem = globalInjector.getInjector().getInstance(LocalSystem.class);
+		final PeerManager peerManager = globalInjector.getInjector().getInstance(PeerManager.class);
 		peerManager.start();
 
 		// Start mempool receiver
-		globalInjector.getInjector().getInstance(MempoolReceiver.class).start();
+		final MempoolReceiver mempoolReceiver = globalInjector.getInjector().getInstance(MempoolReceiver.class);
+		mempoolReceiver.start();
 
-		InMemorySystemInfoManager infoStateRunner = globalInjector.getInjector().getInstance(InMemorySystemInfoManager.class);
+		final InMemorySystemInfoManager infoStateRunner = globalInjector.getInjector().getInstance(InMemorySystemInfoManager.class);
 		infoStateRunner.start();
 
 		final Map<String, ModuleRunner> moduleRunners = globalInjector.getInjector()
@@ -181,39 +154,15 @@ public final class Radix
 		syncRunner.start();
 
 		// start API services
-		SubmissionControl submissionControl = globalInjector.getInjector().getInstance(SubmissionControl.class);
-		CommandToBinaryConverter commandToBinaryConverter = globalInjector.getInjector().getInstance(CommandToBinaryConverter.class);
-		ClientAtomToBinaryConverter clientAtomToBinaryConverter = globalInjector.getInjector().getInstance(ClientAtomToBinaryConverter.class);
-		LedgerEntryStore store = globalInjector.getInjector().getInstance(LedgerEntryStore.class);
-		SubmissionErrorsRx submissionErrorsRx = globalInjector.getInjector().getInstance(SubmissionErrorsRx.class);
-		CommittedAtomsRx committedAtomsRx = globalInjector.getInjector().getInstance(CommittedAtomsRx.class);
-		Observable<BFTCommittedUpdate> committedUpdates = globalInjector.getInjector()
-			.getInstance(Key.get(new TypeLiteral<Observable<BFTCommittedUpdate>>() { }));
-		Hasher hasher = globalInjector.getInjector().getInstance(Hasher.class);
-		RadixHttpServer httpServer = new RadixHttpServer(
-			infoStateRunner,
-			submissionErrorsRx,
-			committedAtomsRx,
-			committedUpdates,
-			consensusRunner,
-			store,
-			submissionControl,
-			commandToBinaryConverter,
-			clientAtomToBinaryConverter,
-			universe,
-			serialization,
-			properties,
-			localSystem,
-			addressBook,
-			hasher
-		);
-		httpServer.start(properties);
+		final RadixHttpServer httpServer = globalInjector.getInjector().getInstance(RadixHttpServer.class);
+		httpServer.start();
 
+		final BFTNode self = globalInjector.getInjector().getInstance(Key.get(BFTNode.class, Self.class));
 		if (properties.get("consensus.start_on_boot", true)) {
 			consensusRunner.start();
-			log.info("Node '{}' started successfully", localSystem.getNID());
+			log.info("Node '{}' started successfully", self);
 		} else {
-			log.info("Node '{}' ready, waiting for start signal", localSystem.getNID());
+			log.info("Node '{}' ready, waiting for start signal", self);
 		}
 	}
 
@@ -233,17 +182,6 @@ public final class Radix
 			log.debug("Execution path: {}", System.getProperty("radix.jar.path"));
 		} catch (URISyntaxException e) {
 			throw new IllegalStateException("Error while fetching execution location", e);
-		}
-	}
-
-	private static Universe extractUniverseFrom(RuntimeProperties properties, Serialization serialization) {
-		try {
-			byte[] bytes = Bytes.fromBase64String(properties.get("universe"));
-			Universe u = serialization.fromDson(bytes, Universe.class);
-			UniverseValidator.validate(u, Sha256Hasher.withDefaultSerialization());
-			return u;
-		} catch (DeserializeException e) {
-			throw new IllegalStateException("Error while deserialising universe", e);
 		}
 	}
 

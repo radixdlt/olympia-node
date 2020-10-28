@@ -20,10 +20,13 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
-import com.google.inject.name.Named;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.bft.PacemakerMaxExponent;
+import com.radixdlt.consensus.bft.PacemakerRate;
+import com.radixdlt.consensus.bft.PacemakerTimeout;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.ProposerElectionFactory;
 import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
@@ -69,15 +72,6 @@ import java.util.Random;
  */
 public class EpochsConsensusModule extends AbstractModule {
 	private static final int ROTATING_WEIGHTED_LEADERS_CACHE_SIZE = 10;
-	private final long pacemakerTimeout;
-	private final double pacemakerRate;
-	private final int pacemakerMaxExponent;
-
-	public EpochsConsensusModule(long pacemakerTimeout, double pacemakerRate, int pacemakerMaxExponent) {
-		this.pacemakerTimeout = pacemakerTimeout;
-		this.pacemakerRate = pacemakerRate;
-		this.pacemakerMaxExponent = pacemakerMaxExponent;
-	}
 
 	@Override
 	protected void configure() {
@@ -126,19 +120,22 @@ public class EpochsConsensusModule extends AbstractModule {
 
 	@Provides
 	private PacemakerFactory pacemakerFactory(
-		@Named("self") BFTNode self,
+		@Self BFTNode self,
 		SystemCounters counters,
 		NextCommandGenerator nextCommandGenerator,
 		TimeSupplier timeSupplier,
 		Hasher hasher,
 		HashSigner signer,
 		ProposalBroadcaster proposalBroadcaster,
-		ProceedToViewSender proceedToViewSender
+		ProceedToViewSender proceedToViewSender,
+		@PacemakerTimeout long pacemakerTimeout,
+		@PacemakerRate double pacemakerRate,
+		@PacemakerMaxExponent int pacemakerMaxExponent
 	) {
 		return new ExponentialTimeoutPacemakerFactory(
-			this.pacemakerTimeout,
-			this.pacemakerRate,
-			this.pacemakerMaxExponent,
+			pacemakerTimeout,
+			pacemakerRate,
+			pacemakerMaxExponent,
 			self,
 			counters,
 			nextCommandGenerator,
@@ -188,7 +185,7 @@ public class EpochsConsensusModule extends AbstractModule {
 		BFTUpdateSender updateSender,
 		SystemCounters counters
 	) {
-		return (genesisVertex, genesisQC, ledger, vertexStoreEventSender) -> new VertexStore(
+		return (genesisVertex, genesisQC, ledger, vertexStoreEventSender) -> VertexStore.create(
 			genesisVertex,
 			genesisQC,
 			ledger,

@@ -18,9 +18,11 @@
 package com.radixdlt.middleware2.network;
 
 import com.google.common.collect.ImmutableList;
+import com.google.inject.Inject;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
@@ -63,8 +65,9 @@ public class MessageCentralValidatorSync implements SyncVerticesRequestSender, S
 	private final MessageCentral messageCentral;
 	private final Hasher hasher;
 
+	@Inject
 	public MessageCentralValidatorSync(
-		BFTNode self,
+		@Self BFTNode self,
 		Universe universe,
 		AddressBook addressBook,
 		MessageCentral messageCentral,

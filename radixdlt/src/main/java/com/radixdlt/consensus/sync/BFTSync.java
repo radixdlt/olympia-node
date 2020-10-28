@@ -67,7 +67,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 
 	private static class SyncRequestState {
 		private final ImmutableList<BFTNode> authors;
-		private final List<HashCode> syncs = new ArrayList<>();
+		private final List<HashCode> syncIds = new ArrayList<>();
 
 		SyncRequestState(ImmutableList<BFTNode> authors) {
 			this.authors = Objects.requireNonNull(authors);
@@ -248,25 +248,32 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 
 	@Override
 	public void processGetVerticesLocalTimeout(LocalGetVerticesRequest request) {
-		SyncRequestState syncRequestState = bftSyncing.get(request);
+		SyncRequestState syncRequestState = bftSyncing.remove(request);
 		if (syncRequestState == null) {
 			return;
 		}
-		int nextIndex = random.nextInt(syncRequestState.authors.size());
-		BFTNode nextNode = syncRequestState.authors.get(nextIndex);
-		this.requestSender.sendGetVerticesRequest(nextNode, request);
-		this.timeoutScheduler.scheduleTimeout(request, bftSyncPatienceMillis);
+
+		List<HashCode> syncIds = syncRequestState.syncIds.stream().filter(syncing::containsKey).collect(Collectors.toList());
+		for (HashCode syncId : syncIds) {
+			SyncState syncState = syncing.get(syncId);
+
+			// Retry full sync on timeout
+			int nextIndex = random.nextInt(syncRequestState.authors.size());
+			BFTNode nextNode = syncRequestState.authors.get(nextIndex);
+			syncing.remove(syncId);
+			syncToQC(syncState.highQC, nextNode);
+		}
 	}
 
 	private void sendBFTSyncRequest(HashCode vertexId, int count, ImmutableList<BFTNode> authors, HashCode syncId) {
 		LocalGetVerticesRequest request = new LocalGetVerticesRequest(vertexId, count);
 		SyncRequestState syncRequestState = bftSyncing.getOrDefault(request, new SyncRequestState(authors));
-		if (syncRequestState.syncs.isEmpty()) {
+		if (syncRequestState.syncIds.isEmpty()) {
 			this.timeoutScheduler.scheduleTimeout(request, bftSyncPatienceMillis);
 			this.requestSender.sendGetVerticesRequest(authors.get(0), request);
 			this.bftSyncing.put(request, syncRequestState);
 		}
-		syncRequestState.syncs.add(syncId);
+		syncRequestState.syncIds.add(syncId);
 	}
 
 	private void rebuildAndSyncQC(SyncState syncState) {
@@ -287,6 +294,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 		}
 
 		// At this point we are guaranteed to be in sync with the committed state
+		// Retry sync
 		this.syncing.remove(syncState.localSyncId);
 		this.syncToQC(syncState.highQC(), syncState.author);
 	}
@@ -340,7 +348,6 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 			log.debug("SYNC_VERTICES: Sending further GetVerticesRequest for {} fetched={} root={}",
 				syncState.highQC(), syncState.fetched.size(), vertexStore.getRoot());
 
-
 			ImmutableList<BFTNode> authors = Stream.concat(
 				Stream.of(syncState.author),
 				vertex.getQC().getSigners().filter(n -> !n.equals(syncState.author))
@@ -354,7 +361,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 	public void processGetVerticesErrorResponse(GetVerticesErrorResponse response) {
 		// TODO: check response
 
-		log.debug("SYNC_VERTICES: Received GetVerticesErrorResponse {} ", response);
+		log.debug("SYNC_VERTICES: Received GetVerticesErrorResponse: {} highQC: {}", response, vertexStore.highQC());
 
 		// error response indicates that the node has moved on from last sync so try and sync to a new sync
 		this.syncToQC(response.highQC(), response.getSender());
@@ -370,7 +377,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 		LocalGetVerticesRequest requestInfo = new LocalGetVerticesRequest(firstVertex.getId(), response.getVertices().size());
 		SyncRequestState syncRequestState = bftSyncing.remove(requestInfo);
 		if (syncRequestState != null) {
-			for (HashCode syncTo : syncRequestState.syncs) {
+			for (HashCode syncTo : syncRequestState.syncIds) {
 				SyncState syncState = syncing.get(syncTo);
 				if (syncState == null) {
 					continue; // sync requirements already satisfied by another sync

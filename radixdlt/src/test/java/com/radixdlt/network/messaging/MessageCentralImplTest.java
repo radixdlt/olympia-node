@@ -20,6 +20,7 @@ package com.radixdlt.network.messaging;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.addressbook.PeerWithSystem;
@@ -126,6 +127,7 @@ public class MessageCentralImplTest {
 		doReturn(outboundQueue).when(outboundQueueFactory).createEventQueue(eq(conf.messagingOutboundQueueMax(0)), any());
 		LocalSystem localSystem = mock(LocalSystem.class);
 		SystemCounters counters = mock(SystemCounters.class);
+		ECKeyPair ecKeyPair = ECKeyPair.generateNew();
 		this.mci = new MessageCentralImpl(
 			new MessagingDummyConfigurations.DummyMessageCentralConfiguration(),
 			serialization,
@@ -136,7 +138,8 @@ public class MessageCentralImplTest {
 			outboundQueueFactory,
 			localSystem,
 			counters,
-			Sha256Hasher.withDefaultSerialization()
+			Sha256Hasher.withDefaultSerialization(),
+			ecKeyPair::sign
 		);
 	}
 
