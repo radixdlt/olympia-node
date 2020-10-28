@@ -28,7 +28,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Module;
-import com.google.inject.Provides;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.HashSigner;
@@ -95,26 +94,10 @@ public class EpochsConsensusModuleTest {
 				bind(LocalTimeoutSender.class).toInstance(mock(LocalTimeoutSender.class));
 				bind(BFTSyncTimeoutScheduler.class).toInstance(mock(BFTSyncTimeoutScheduler.class));
 				bind(VerifiedLedgerHeaderAndProof.class).toInstance(mock(VerifiedLedgerHeaderAndProof.class));
-				bind(Integer.class).annotatedWith(BFTSyncPatienceMillis.class).toInstance(200);
-			}
-
-
-			@Provides
-			@PacemakerTimeout
-			long pacemakerTimeout() {
-				return 1000L;
-			}
-
-			@Provides
-			@PacemakerRate
-			double pacemakerRate() {
-				return 2.0;
-			}
-
-			@Provides
-			@PacemakerMaxExponent
-			int pacemakerMaxExponent() {
-				return 6;
+				bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(200);
+				bindConstant().annotatedWith(PacemakerTimeout.class).to(1000L);
+				bindConstant().annotatedWith(PacemakerRate.class).to(2.0);
+				bindConstant().annotatedWith(PacemakerMaxExponent.class).to(6);
 			}
 		};
 	}

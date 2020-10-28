@@ -400,10 +400,10 @@ public class SimulationTest {
 				@Override
 				public void configure() {
 					bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
-					bind(Integer.class).annotatedWith(BFTSyncPatienceMillis.class).toInstance(50);
-					bind(Long.class).annotatedWith(PacemakerTimeout.class).toInstance(pacemakerTimeout);
-					bind(Double.class).annotatedWith(PacemakerRate.class).toInstance(2.0);
-					bind(Integer.class).annotatedWith(PacemakerMaxExponent.class).toInstance(0); // Use constant timeout for now
+					bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(50);
+					bindConstant().annotatedWith(PacemakerTimeout.class).to(pacemakerTimeout);
+					bindConstant().annotatedWith(PacemakerRate.class).to(2.0);
+					bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0); // Use constant timeout for now
 				}
 			});
 			modules.add(new MockedSystemModule());
