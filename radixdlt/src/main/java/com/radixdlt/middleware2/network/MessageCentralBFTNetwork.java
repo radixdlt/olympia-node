@@ -17,7 +17,9 @@
 
 package com.radixdlt.middleware2.network;
 
+import com.google.inject.Inject;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.liveness.ProceedToViewSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 
@@ -58,8 +60,9 @@ public final class MessageCentralBFTNetwork implements ProposalBroadcaster, Proc
 	private final MessageCentral messageCentral;
 	private final PublishSubject<ConsensusEvent> localMessages;
 
+	@Inject
 	public MessageCentralBFTNetwork(
-		BFTNode self,
+		@Self BFTNode self,
 		Universe universe,
 		AddressBook addressBook,
 		MessageCentral messageCentral

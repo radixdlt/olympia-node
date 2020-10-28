@@ -21,14 +21,11 @@ import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.google.inject.name.Named;
-import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.Sha256Hasher;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 
@@ -41,6 +38,7 @@ public final class CryptoModule extends AbstractModule {
 		// Configuration
 		bind(Serialization.class).toProvider(DefaultSerialization::getInstance);
 	}
+
 
 	@Provides
 	Hasher hasher(Serialization serialization, SystemCounters counters) {
@@ -70,15 +68,4 @@ public final class CryptoModule extends AbstractModule {
 		};
 	}
 
-	@Provides
-	@Singleton
-	HashSigner hashSigner(
-		@Named("self") ECKeyPair selfKey,
-		SystemCounters counters
-	) {
-		return hash -> {
-			counters.increment(CounterType.SIGNATURES_SIGNED);
-			return selfKey.sign(hash);
-		};
-	}
 }

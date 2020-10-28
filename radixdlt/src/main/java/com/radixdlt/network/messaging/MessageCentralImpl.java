@@ -17,6 +17,7 @@
 
 package com.radixdlt.network.messaging;
 
+import com.radixdlt.consensus.HashSigner;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
@@ -91,7 +92,8 @@ final class MessageCentralImpl implements MessageCentral {
 		EventQueueFactory<MessageEvent> eventQueueFactory,
 		LocalSystem localSystem,
 		SystemCounters counters,
-		Hasher hasher
+		Hasher hasher,
+		HashSigner hashSigner
 	) {
 		this.counters = Objects.requireNonNull(counters);
 		this.inboundQueue = eventQueueFactory.createEventQueue(config.messagingInboundQueueMax(8192), MessageEvent.comparator());
@@ -102,7 +104,16 @@ final class MessageCentralImpl implements MessageCentral {
 		this.addressBook = Objects.requireNonNull(addressBook);
 
 		Objects.requireNonNull(timeSource);
-		this.messageDispatcher = new MessageDispatcher(counters, config, serialization, timeSource, localSystem, this.addressBook, hasher);
+		this.messageDispatcher = new MessageDispatcher(
+			counters,
+			config,
+			serialization,
+			timeSource,
+			localSystem,
+			this.addressBook,
+			hasher,
+			hashSigner
+		);
 
 		this.transports = Lists.newArrayList(transportManager.transports());
 

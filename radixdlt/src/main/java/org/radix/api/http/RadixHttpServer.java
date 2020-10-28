@@ -17,6 +17,7 @@
 
 package org.radix.api.http;
 
+import com.google.inject.Inject;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.crypto.Hasher;
@@ -49,6 +50,7 @@ import io.undertow.util.Methods;
 import io.undertow.util.StatusCodes;
 import io.undertow.websockets.core.WebSocketChannel;
 
+import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONArray;
@@ -94,14 +96,16 @@ public final class RadixHttpServer {
 	private final LocalSystem localSystem;
 	private final Serialization serialization;
 	private final InMemorySystemInfoManager infoStateRunner;
+	private final int port;
 	private Undertow server;
 
+	@Inject
 	public RadixHttpServer(
 		InMemorySystemInfoManager infoStateRunner,
 		SubmissionErrorsRx submissionErrorsRx,
 		CommittedAtomsRx committedAtomsRx,
 		Observable<BFTCommittedUpdate> committedUpdates,
-		ModuleRunner consensusRunner,
+		Map<String, ModuleRunner> moduleRunners,
 		LedgerEntryStore store,
 		SubmissionControl submissionControl,
 		CommandToBinaryConverter commandToBinaryConverter,
@@ -114,7 +118,7 @@ public final class RadixHttpServer {
 		Hasher hasher
 	) {
 		this.infoStateRunner = Objects.requireNonNull(infoStateRunner);
-		this.consensusRunner = Objects.requireNonNull(consensusRunner);
+		this.consensusRunner = Objects.requireNonNull(moduleRunners.get("consensus"));
 		this.universe = Objects.requireNonNull(universe);
 		this.serialization = Objects.requireNonNull(serialization);
 		this.apiSerializedUniverse = serialization.toJsonObject(this.universe, DsonOutput.Output.API);
@@ -141,6 +145,7 @@ public final class RadixHttpServer {
 		);
 		this.internalService = new InternalService(submissionControl, properties, universe, hasher);
 		this.networkService = new NetworkService(serialization, localSystem, addressBook, hasher);
+		this.port = properties.get("cp.port", DEFAULT_PORT);
 	}
 
     /**
@@ -152,7 +157,7 @@ public final class RadixHttpServer {
         return Collections.unmodifiableSet(peers.keySet());
     }
 
-	public final void start(RuntimeProperties properties) {
+	public final void start() {
 		this.atomsService.start();
 
 		RoutingHandler handler = Handlers.routing(true); // add path params to query params with this flag
@@ -189,7 +194,6 @@ public final class RadixHttpServer {
 			addTestRoutesTo(handler);
 		}
 
-		Integer port = properties.get("cp.port", DEFAULT_PORT);
 		Filter corsFilter = new Filter(handler);
 		// Disable INFO logging for CORS filter, as it's a bit distracting
 		java.util.logging.Logger.getLogger(corsFilter.getClass().getName()).setLevel(java.util.logging.Level.WARNING);

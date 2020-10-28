@@ -25,12 +25,11 @@ import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
-import com.google.inject.name.Named;
-import com.google.inject.name.Names;
 import com.google.inject.util.Modules;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
@@ -81,15 +80,10 @@ public class SimulationNodes {
 	private Injector createBFTInstance(ECKeyPair self) {
 		Module module = Modules.combine(
 			new AbstractModule() {
-				@Override
-				public void configure() {
-					bind(ECKeyPair.class).annotatedWith(Names.named("self")).toInstance(self);
-				}
-
 				@Provides
-				@Named("self")
-				private BFTNode self(@Named("self") ECKeyPair selfKey) {
-					return BFTNode.create(selfKey.getPublicKey());
+				@Self
+				private BFTNode self() {
+					return BFTNode.create(self.getPublicKey());
 				}
 			},
 			new NodeNetworkMessagesModule(underlyingNetwork),
@@ -141,7 +135,7 @@ public class SimulationNodes {
 		}
 
 		final List<BFTNode> bftNodes = this.nodeInstances.stream()
-			.map(i -> i.getInstance(Key.get(BFTNode.class, Names.named("self"))))
+			.map(i -> i.getInstance(Key.get(BFTNode.class, Self.class)))
 			.collect(Collectors.toList());
 
 		return new RunningNetwork() {
@@ -176,7 +170,7 @@ public class SimulationNodes {
 			public Observable<Pair<BFTNode, BFTCommittedUpdate>> bftCommittedUpdates() {
 				Set<Observable<Pair<BFTNode, BFTCommittedUpdate>>> committedVertices = nodeInstances.stream()
 					.map(i -> {
-						BFTNode node = i.getInstance(Key.get(BFTNode.class, Names.named("self")));
+						BFTNode node = i.getInstance(Key.get(BFTNode.class, Self.class));
 						return i.getInstance(Key.get(new TypeLiteral<Observable<BFTCommittedUpdate>>() { }))
 							.map(v -> Pair.of(node, v));
 					})
@@ -189,7 +183,7 @@ public class SimulationNodes {
 			public Observable<Pair<BFTNode, LedgerUpdate>> ledgerUpdates() {
 				Set<Observable<Pair<BFTNode, LedgerUpdate>>> committedCommands = nodeInstances.stream()
 					.map(i -> {
-						BFTNode node = i.getInstance(Key.get(BFTNode.class, Names.named("self")));
+						BFTNode node = i.getInstance(Key.get(BFTNode.class, Self.class));
 						return i.getInstance(Key.get(new TypeLiteral<Observable<LedgerUpdate>>() { }))
 							.map(v -> Pair.of(node, v));
 					})

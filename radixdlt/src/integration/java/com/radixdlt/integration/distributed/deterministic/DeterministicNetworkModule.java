@@ -20,9 +20,9 @@ package com.radixdlt.integration.distributed.deterministic;
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
-import com.google.inject.name.Names;
 import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.sync.BFTSync.BFTSyncTimeoutScheduler;
@@ -87,6 +87,6 @@ public class DeterministicNetworkModule extends AbstractModule {
 		bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
 		bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
 
-		bind(BFTNode.class).annotatedWith(Names.named("self")).toInstance(this.node);
+		bind(BFTNode.class).annotatedWith(Self.class).toInstance(this.node);
 	}
 }

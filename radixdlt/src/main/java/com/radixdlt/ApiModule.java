@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,17 +15,18 @@
  * language governing permissions and limitations under the License.
  */
 
-package org.radix.common;
+package com.radixdlt;
 
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.inject.AbstractModule;
+import com.google.inject.Scopes;
+import org.radix.api.http.RadixHttpServer;
 
-public enum Syncronicity {
-	SYNCRONOUS,
-	ASYNCRONOUS;
-
-	@JsonValue
+/**
+ * Configures the api including http server setup
+ */
+public final class ApiModule extends AbstractModule {
 	@Override
-	public String toString() {
-		return this.name();
+	public void configure() {
+		bind(RadixHttpServer.class).in(Scopes.SINGLETON);
 	}
 }

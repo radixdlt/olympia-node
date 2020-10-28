@@ -37,6 +37,8 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.AtomChecker;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.statecomputer.EpochCeilingView;
+import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.serialization.Serialization;
@@ -54,12 +56,6 @@ import java.util.stream.Collectors;
  * Module which manages execution of commands
  */
 public class RadixEngineModule extends AbstractModule {
-	private final View epochHighView;
-
-	public RadixEngineModule(View epochHighView) {
-		this.epochHighView = epochHighView;
-	}
-
 	@Override
 	protected void configure() {
 		bind(StateComputer.class).to(RadixEngineStateComputer.class);
@@ -70,19 +66,23 @@ public class RadixEngineModule extends AbstractModule {
 	private RadixEngineStateComputer radixEngineStateComputer(
 		Serialization serialization,
 		RadixEngine<LedgerAtom> radixEngine,
-		Hasher hasher
+		Hasher hasher,
+		@EpochCeilingView View epochCeilingView
 	) {
 		return RadixEngineStateComputer.create(
 			serialization,
 			radixEngine,
-			epochHighView,
+			epochCeilingView,
 			hasher
 		);
 	}
 
 	@Provides
 	@Singleton
-	private CMAtomOS buildCMAtomOS(@Named("magic") int magic) {
+	private CMAtomOS buildCMAtomOS(
+		@Named("magic") int magic,
+		@EpochCeilingView View epochCeilingView
+	) {
 		final CMAtomOS os = new CMAtomOS(addr -> {
 			final int universeMagic = magic & 0xff;
 			if (addr.getMagic() != universeMagic) {
@@ -94,7 +94,7 @@ public class RadixEngineModule extends AbstractModule {
 		os.load(new TokensConstraintScrypt());
 		os.load(new UniqueParticleConstraintScrypt());
 		os.load(new MessageParticleConstraintScrypt());
-		os.load(new SystemConstraintScrypt(epochHighView.number()));
+		os.load(new SystemConstraintScrypt(epochCeilingView.number()));
 		return os;
 	}
 
@@ -119,12 +119,9 @@ public class RadixEngineModule extends AbstractModule {
 		ConstraintMachine constraintMachine,
 		UnaryOperator<CMStore> virtualStoreLayer,
 		EngineStore<LedgerAtom> engineStore,
-		AtomChecker<LedgerAtom> ledgerAtomChecker
+		AtomChecker<LedgerAtom> ledgerAtomChecker,
+		@MinValidators int minValidators
 	) {
-		// TODO: Fix pacemaker so can Default 1 so can debug in IDE, possibly from properties at some point
-		// TODO: Specifically, simulation test with engine, epochs and mempool gets stuck on a single validator
-		final int minValidators = 2;
-
 		RadixEngine<LedgerAtom> radixEngine = new RadixEngine<>(
 			constraintMachine,
 			virtualStoreLayer,

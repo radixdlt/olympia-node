@@ -22,6 +22,7 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.radixdlt.network.TimeSupplier;
+import com.radixdlt.properties.RuntimeProperties;
 import java.security.SecureRandom;
 import java.util.Random;
 import org.radix.time.Time;
@@ -38,7 +39,8 @@ public class SystemModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	TimeSupplier time() {
+	TimeSupplier time(RuntimeProperties properties) {
+		Time.start(properties);
 		return Time::currentTimestamp;
 	}
 }
