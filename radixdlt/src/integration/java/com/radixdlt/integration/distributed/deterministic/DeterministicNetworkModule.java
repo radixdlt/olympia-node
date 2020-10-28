@@ -21,8 +21,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.Timeout;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.sync.BFTSync.BFTSyncTimeoutScheduler;
@@ -45,14 +43,6 @@ import com.radixdlt.network.TimeSupplier;
  * objects used to connect modules in the system.
  */
 public class DeterministicNetworkModule extends AbstractModule {
-	private final BFTNode node;
-	private final DeterministicSender sender;
-
-	public DeterministicNetworkModule(BFTNode node, DeterministicSender sender) {
-		this.node = node;
-		this.sender = sender;
-	}
-
 	@Override
 	protected void configure() {
 		EpochInfoSender emptyInfoSender = new EpochInfoSender() {
@@ -66,8 +56,6 @@ public class DeterministicNetworkModule extends AbstractModule {
 				// Ignore
 			}
 		};
-
-		bind(DeterministicSender.class).toInstance(this.sender);
 
 		bind(ProposalBroadcaster.class).to(DeterministicSender.class);
 		bind(ProceedToViewSender.class).to(DeterministicSender.class);
@@ -86,7 +74,5 @@ public class DeterministicNetworkModule extends AbstractModule {
 
 		bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
 		bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
-
-		bind(BFTNode.class).annotatedWith(Self.class).toInstance(this.node);
 	}
 }

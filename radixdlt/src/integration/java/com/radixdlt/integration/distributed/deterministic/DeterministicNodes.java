@@ -20,14 +20,17 @@ package com.radixdlt.integration.distributed.deterministic;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
+import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.util.Modules;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.integration.distributed.deterministic.network.ControlledMessage;
 import com.radixdlt.integration.distributed.deterministic.network.DeterministicNetwork;
+import com.radixdlt.integration.distributed.deterministic.network.DeterministicNetwork.DeterministicSender;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.Collection;
@@ -62,7 +65,13 @@ public class DeterministicNodes {
 
 	private Injector createBFTInstance(BFTNode self, int index, Collection<Module> modules, Module overrideModule) {
 		Module module = Modules.combine(
-			new DeterministicNetworkModule(self, this.deterministicNetwork.createSender(self, index)),
+			new AbstractModule() {
+				public void configure() {
+					bind(BFTNode.class).annotatedWith(Self.class).toInstance(self);
+					bind(DeterministicSender.class).toInstance(deterministicNetwork.createSender(self, index));
+				}
+			},
+			new DeterministicNetworkModule(),
 			Modules.combine(modules)
 		);
 		if (overrideModule != null) {
