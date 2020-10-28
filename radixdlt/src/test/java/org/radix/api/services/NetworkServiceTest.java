@@ -27,7 +27,7 @@ import org.radix.universe.system.LocalSystem;
 
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.network.addressbook.AddressBook;
-import com.radixdlt.network.addressbook.Peer;
+import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 
@@ -81,7 +81,7 @@ public class NetworkServiceTest {
 
 	@Test
 	public void testGetPeerPresent() {
-		Peer p = mock(Peer.class);
+		PeerWithSystem p = mock(PeerWithSystem.class);
 		when(this.addressBook.peer(any(EUID.class))).thenReturn(Optional.of(p));
 		JSONObject serializedPeer = new JSONObject();
 		when(this.serialization.toJsonObject(any(), any())).thenReturn(serializedPeer);

@@ -50,7 +50,8 @@ public final class MessageCentralModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		// The main target
-		bind(new TypeLiteral<EventQueueFactory<MessageEvent>>() { }).toInstance(SimplePriorityBlockingQueue::new);
+		bind(new TypeLiteral<EventQueueFactory<InboundMessageEvent>>() { }).toInstance(SimplePriorityBlockingQueue::new);
+		bind(new TypeLiteral<EventQueueFactory<OutboundMessageEvent>>() { }).toInstance(SimplePriorityBlockingQueue::new);
 
 		bind(MessageCentral.class).to(MessageCentralImpl.class).in(Singleton.class);
 

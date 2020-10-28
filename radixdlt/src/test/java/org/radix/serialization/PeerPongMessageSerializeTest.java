@@ -47,7 +47,7 @@ public class PeerPongMessageSerializeTest extends SerializeMessageObject<PeerPon
 
 		assertThat(s, containsString(PeerPongMessage.class.getSimpleName()));
 		assertThat(s, containsString(EUID.TWO.toString()));
-		assertThat(s, containsString("1234"));
+		assertThat(s, containsString(Long.toHexString(1234L)));
 		assertThat(s, containsString("5678"));
 	}
 }

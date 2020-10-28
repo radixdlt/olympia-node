@@ -37,7 +37,7 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.network.addressbook.AddressBook;
-import com.radixdlt.network.addressbook.Peer;
+import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageListener;
 import com.radixdlt.universe.Universe;
@@ -115,7 +115,7 @@ public final class MessageCentralBFTNetwork implements ProposalBroadcaster, Proc
 	}
 
 	private boolean send(Message message, BFTNode recipient) {
-		Optional<Peer> peer = this.addressBook.peer(recipient.getKey().euid());
+		Optional<PeerWithSystem> peer = this.addressBook.peer(recipient.getKey().euid());
 
 		if (!peer.isPresent()) {
 			log.error("{}: Peer {} not present", this.self, recipient);

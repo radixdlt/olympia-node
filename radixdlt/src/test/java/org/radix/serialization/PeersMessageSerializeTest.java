@@ -24,7 +24,6 @@ import org.radix.universe.system.RadixSystem;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.network.transport.StaticTransportMetadata;
 import com.radixdlt.network.transport.TransportInfo;
@@ -41,9 +40,9 @@ public class PeersMessageSerializeTest extends SerializeMessageObject<PeersMessa
 	}
 
 	private static PeersMessage get() {
-		Peer p1 = new PeerWithSystem(new RadixSystem());
-		Peer p2 = new PeerWithSystem(new RadixSystem());
-		Peer p3 = new PeerWithSystem(new RadixSystem());
+		PeerWithSystem p1 = new PeerWithSystem(new RadixSystem());
+		PeerWithSystem p2 = new PeerWithSystem(new RadixSystem());
+		PeerWithSystem p3 = new PeerWithSystem(new RadixSystem());
 		PeersMessage pm = new PeersMessage(1, ImmutableList.of(p1, p2, p3));
 		return pm;
 	}
@@ -54,7 +53,7 @@ public class PeersMessageSerializeTest extends SerializeMessageObject<PeersMessa
 		TransportInfo ti = TransportInfo.of("DUMMY", StaticTransportMetadata.empty());
 		RadixSystem system = new RadixSystem(
 				key.getPublicKey(), Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION, ImmutableList.of(ti));
-		Peer p = new PeerWithSystem(system);
+		PeerWithSystem p = new PeerWithSystem(system);
 		PeersMessage pm = new PeersMessage(1, ImmutableList.of(p));
 		String s = pm.toString();
 

@@ -29,7 +29,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.network.addressbook.AddressBook;
-import com.radixdlt.network.addressbook.Peer;
+import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.universe.Universe;
@@ -91,7 +91,7 @@ public class MessageCentralBFTNetworkTest {
 		ECPublicKey leaderPk = ECKeyPair.generateNew().getPublicKey();
 		BFTNode leader = mock(BFTNode.class);
 		when(leader.getKey()).thenReturn(leaderPk);
-		Peer peer = mock(Peer.class);
+		PeerWithSystem peer = mock(PeerWithSystem.class);
 		when(peer.getNID()).thenReturn(leaderPk.euid());
 		when(addressBook.peer(leaderPk.euid())).thenReturn(Optional.of(peer));
 
@@ -114,7 +114,7 @@ public class MessageCentralBFTNetworkTest {
 		ECPublicKey leaderPk = ECKeyPair.generateNew().getPublicKey();
 		BFTNode leader = mock(BFTNode.class);
 		when(leader.getKey()).thenReturn(leaderPk);
-		Peer peer = mock(Peer.class);
+		PeerWithSystem peer = mock(PeerWithSystem.class);
 		when(peer.getNID()).thenReturn(leaderPk.euid());
 		when(addressBook.peer(leaderPk.euid())).thenReturn(Optional.of(peer));
 

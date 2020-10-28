@@ -28,10 +28,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 import com.google.inject.Inject;
 
@@ -39,11 +38,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.net.HostAndPort;
 import com.radixdlt.network.addressbook.AddressBook;
-import com.radixdlt.network.addressbook.Peer;
-import com.radixdlt.network.addressbook.PeerPredicate;
 import com.radixdlt.network.transport.StaticTransportMetadata;
 import com.radixdlt.network.transport.TransportInfo;
 import com.radixdlt.network.transport.tcp.TCPConstants;
@@ -56,10 +54,9 @@ public class BootstrapDiscovery
 	private static final int MAX_DNS_NAME_OCTETS = 253;
 
 	private static final Logger log = LogManager.getLogger();
-	private final RuntimeProperties properties;
-	private final Universe universe;
+	private final int defaultPort;
 
-	private Set<TransportInfo> hosts = new HashSet<>();
+	private final ImmutableSet<TransportInfo> hosts;
 
 	/**
 	 * Safely converts the data recieved by the find-nodes to a potential hostname.
@@ -89,8 +86,14 @@ public class BootstrapDiscovery
 
 	@Inject
 	public BootstrapDiscovery(RuntimeProperties properties, Universe universe) {
-		this.properties = Objects.requireNonNull(properties);
-		this.universe = Objects.requireNonNull(universe);
+		// Default retry total time = 30 * 10 = 300 seconds = 5 minutes
+		int retries = properties.get("network.discovery.connection.retries", 30);
+		// NOTE: min is 10 seconds - we don't allow less
+		int cooldown = Math.max(10_000, properties.get("network.discovery.connection.cooldown", 10_000));
+		int connectionTimeout = properties.get("network.discovery.connection.timeout", 60000);
+		int readTimeout = properties.get("network.discovery.read.timeout", 60000);
+
+		this.defaultPort = universe.getPort();
 
 		// allow nodes to connect to others, bypassing TLS handshake
 		if (properties.get("network.discovery.allow_tls_bypass", 0) == 1) {
@@ -98,7 +101,7 @@ public class BootstrapDiscovery
 			SSLFix.trustAllHosts();
 		}
 
-		HashSet<String> hosts = new HashSet<>();
+		List<String> hostNames = Lists.newArrayList();
 		for (String unparsedURL : properties.get("network.discovery.urls", "").split(",")) {
 			unparsedURL = unparsedURL.trim();
 			if (unparsedURL.isEmpty()) {
@@ -112,30 +115,28 @@ public class BootstrapDiscovery
 					throw new IllegalStateException("cowardly refusing all but HTTPS network.seeds");
 				}
 
-				String host = getNextNode(url);
+				String host = getNextNode(url, retries, cooldown, connectionTimeout, readTimeout);
 				if (host != null) {
 					log.info("seeding from random host: {}",  host);
-					hosts.add(host);
+					hostNames.add(host);
 				}
 			} catch (MalformedURLException ignoreConcreteHost) {
 				// concrete host addresses end up here.
 			}
 		}
 
-		hosts.addAll(Arrays.asList(properties.get("network.seeds", "").split(",")));
+		hostNames.addAll(Arrays.asList(properties.get("network.seeds", "").split(",")));
 
 		Whitelist whitelist = Whitelist.from(properties);
-		for (String host : hosts) {
-			host = host.trim();
-			if (host.isEmpty() || !whitelist.isWhitelisted(host)) {
-				continue;
-			}
-			try {
-				this.hosts.add(toDefaultTransportInfo(host));
-			} catch (IllegalArgumentException | UnknownHostException e) {
-				log.error("Host specification {} does not specify a valid host and port", host);
-			}
-		}
+
+		this.hosts = hostNames.stream()
+			.map(String::trim)
+			.filter(hn -> !hn.isEmpty() && whitelist.isWhitelisted(hn))
+			.distinct()
+			.map(this::toDefaultTransportInfo)
+			.filter(Optional::isPresent)
+			.map(Optional::get)
+			.collect(ImmutableSet.toImmutableSet());
 	}
 
 	/**
@@ -147,15 +148,7 @@ public class BootstrapDiscovery
 	 * - might be compromised (don't trust it)
 	 */
 	@VisibleForTesting
-	String getNextNode(URL nodeFinderURL)
-	{
-		// Default retry total time = 30 * 10 = 300 seconds = 5 minutes
-		long retries = properties.get("network.discovery.connection.retries", 30);
-		// NOTE: min is 10 seconds - we don't allow less
-		int cooldown = Math.max(10_000, properties.get("network.discovery.connection.cooldown", 10_000));
-		int connectionTimeout = properties.get("network.discovery.connection.timeout", 60000);
-		int readTimeout = properties.get("network.discovery.read.timeout", 60000);
-
+	String getNextNode(URL nodeFinderURL, int retries, int cooldown, int connectionTimeout, int readTimeout) {
 		long attempt = 0;
 		byte[] buf = new byte[MAX_DNS_NAME_OCTETS];
 		while (attempt++ != retries)
@@ -223,43 +216,42 @@ public class BootstrapDiscovery
 		return null;
 	}
 
-	public Collection<TransportInfo> discover(AddressBook addressbook, PeerPredicate filter)
-	{
-		List<TransportInfo> results = Lists.newArrayList();
-
-		for (TransportInfo host : hosts) {
-			try {
-				if (filter == null) {
-					results.add(host);
-				} else {
-					Peer peer = addressbook.peer(host);
-
-					if (peer != null && filter.test(peer)) {
-						results.add(host);
-					}
-				}
-			} catch (Exception ex) {
-				log.error("Could not process BootstrapDiscovery for host:"+host, ex);
-			}
-		}
+	/**
+	 * Return a list of discovery hosts that are not currently in the
+	 * address book.
+	 *
+	 * @param addressbook the address book to query whether a host is live
+	 * @return A collection of transports for discovery hosts not in the address book
+	 */
+	public Collection<TransportInfo> discover(AddressBook addressbook) {
+		List<TransportInfo> results = this.hosts.stream()
+			.filter(ti -> addressbook.peer(ti).isEmpty())
+			.collect(Collectors.toList());
 
 		Collections.shuffle(results);
 		return results;
 	}
 
 	@VisibleForTesting
-	TransportInfo toDefaultTransportInfo(String host) throws UnknownHostException {
-		HostAndPort hap = HostAndPort.fromString(host).withDefaultPort(universe.getPort());
+	Optional<TransportInfo> toDefaultTransportInfo(String host) {
+		HostAndPort hap = HostAndPort.fromString(host).withDefaultPort(defaultPort);
 		// Resolve any names so we don't have to do it again and again, and we will also be more
 		// likely to have a canonical representation.
-		InetAddress resolved = InetAddress.getByName(hap.getHost());
-		return TransportInfo.of(
-			TCPConstants.NAME,
-			StaticTransportMetadata.of(
-				TCPConstants.METADATA_HOST, resolved.getHostAddress(),
-				TCPConstants.METADATA_PORT, String.valueOf(hap.getPort())
-			)
-		);
+		InetAddress resolved;
+		try {
+			resolved = InetAddress.getByName(hap.getHost());
+			return Optional.of(
+				TransportInfo.of(
+					TCPConstants.NAME,
+					StaticTransportMetadata.of(
+						TCPConstants.METADATA_HOST, resolved.getHostAddress(),
+						TCPConstants.METADATA_PORT, String.valueOf(hap.getPort())
+					)
+				)
+			);
+		} catch (UnknownHostException e) {
+			return Optional.empty();
+		}
 	}
 
 }

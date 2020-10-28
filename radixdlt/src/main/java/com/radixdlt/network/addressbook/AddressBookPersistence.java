@@ -63,7 +63,7 @@ public class AddressBookPersistence implements PeerPersistence {
 		try {
 			this.peersByNidDB = this.dbEnv.getEnvironment().openDatabase(null, "peers_by_nid", config);
 		} catch (DatabaseException | IllegalArgumentException | IllegalStateException ex) {
-        	throw new RuntimeException("while opening database", ex);
+        	throw new IllegalStateException("while opening database", ex);
 		}
 	}
 
@@ -83,7 +83,7 @@ public class AddressBookPersistence implements PeerPersistence {
 			if (transaction != null) {
 				transaction.abort();
 			}
-			throw new RuntimeException("while resetting database", ex);
+			throw new IllegalStateException("while resetting database", ex);
 		}
 	}
 
@@ -96,14 +96,11 @@ public class AddressBookPersistence implements PeerPersistence {
 	}
 
 	@Override
-	public boolean savePeer(Peer peer) {
-		if (peer.hasNID()) {
-			DatabaseEntry key = new DatabaseEntry(peer.getNID().toByteArray());
-			byte[] bytes = serialization.toDson(peer, Output.PERSIST);
-			DatabaseEntry value = new DatabaseEntry(bytes);
-			return (peersByNidDB.put(null, key, value) == OperationStatus.SUCCESS);
-		}
-		return false;
+	public boolean savePeer(PeerWithSystem peer) {
+		DatabaseEntry key = new DatabaseEntry(peer.getNID().toByteArray());
+		byte[] bytes = serialization.toDson(peer, Output.PERSIST);
+		DatabaseEntry value = new DatabaseEntry(bytes);
+		return (peersByNidDB.put(null, key, value) == OperationStatus.SUCCESS);
 	}
 
 	@Override
@@ -113,13 +110,13 @@ public class AddressBookPersistence implements PeerPersistence {
 	}
 
 	@Override
-	public void forEachPersistedPeer(Consumer<Peer> c) {
+	public void forEachPersistedPeer(Consumer<PeerWithSystem> c) {
 		try (Cursor cursor = this.peersByNidDB.openCursor(null, null)) {
 			DatabaseEntry key = new DatabaseEntry();
 			DatabaseEntry value = new DatabaseEntry();
 
 			while (cursor.getNext(key, value, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-				Peer peer = this.serialization.fromDson(value.getData(), Peer.class);
+				PeerWithSystem peer = this.serialization.fromDson(value.getData(), PeerWithSystem.class);
 				c.accept(peer);
 			}
 		} catch (IOException ex) {

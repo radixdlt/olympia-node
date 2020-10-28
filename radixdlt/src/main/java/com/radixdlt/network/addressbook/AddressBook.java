@@ -35,71 +35,50 @@ import io.reactivex.rxjava3.core.Observable;
 public interface AddressBook {
 
 	/**
-	 * Adds the specified peer to the address book.
-	 * <p>
-	 * This method is thread-safe.
-	 *
-	 * @param peer The {@link Peer} to add to the address book
-	 * @return {@code true} if the peer was added, {@code false} if the peer was already
-	 * 	present
-	 */
-	boolean addPeer(Peer peer);
-
-	/**
 	 * Removes the specified peer to the address book.
 	 * <p>
 	 * This method is thread-safe.
 	 *
-	 * @param peer The {@link Peer} to remove from the address book
+	 * @param nid The node ID of the peer to remove from the address book
 	 * @return {@code true} if the peer was removed, {@code false} if the peer was not
 	 * 	present
 	 */
-	boolean removePeer(Peer peer);
-
-	/**
-	 * Updates a peer's activity in the address book.
-	 * Peers that have been inactive for a period of time are removed from the address
-	 * book by a background scavenging process.
-	 * <p>
-	 * This method is thread-safe.
-	 *
-	 * @param peer The peer to update activity for
-	 * @return {@code true} if the peer was updated, {@code false} if the peer was not
-	 * 	present
-	 */
-	boolean updatePeer(Peer peer);
+	boolean removePeer(EUID nid);
 
 	/**
 	 * Updates a peer's {@link RadixSystem} in the address book.
 	 * <p>
 	 * This method is thread-safe.
 	 *
-	 * @param peer The peer to update the system for
+	 * @param oldPeer The peer to update the system for
+	 * @param system the system to update the peer to
+	 * @param source the source of the message causing the update
 	 * @return the updated peer
 	 */
-	Peer updatePeerSystem(Peer peer, RadixSystem system);
+	PeerWithSystem updatePeerSystem(Optional<PeerWithSystem> oldPeer, RadixSystem system, TransportInfo source);
 
 	/**
-	 * Retrieve the {@link Peer} with the specified Node ID, if known.
+	 * Retrieve the {@link PeerWithSystem} with the specified Node ID, if known.
 	 * <p>
-	 * This method is thread-safe, although the returned {@link Peer}, if any, may
-	 * change status at any time due to external events.
+	 * This method is thread-safe, although the returned {@link PeerWithSystem},
+	 * if any, may change status at any time due to external events.
 	 *
 	 * @param nid The Node ID of the peer to retrieve
-	 * @return the optional {@link Peer} with matching Node ID
+	 * @return the optional {@link PeerWithSystem} with matching Node ID
 	 */
-	Optional<Peer> peer(EUID nid);
+	Optional<PeerWithSystem> peer(EUID nid);
 
 	/**
-	 * Retrieve or create the {@link Peer} with the specified URI.
+	 * Retrieve the {@link PeerWithSystem} contactable using the specified
+	 * transport, if any.
 	 * <p>
-	 * This method is thread-safe, although the returned {@link Peer}, if any, may
-	 * change status at any time due to external events.
+	 * This method is thread-safe, although the returned {@link PeerWithSystem},
+	 * if any, may change status at any time due to external events.
 	 *
-	 * @param uri The URI of the peer to retrieve
-	 * @return the {@link Peer} with the specified URI
+	 * @param uri The transport of the peer to retrieve
+	 * @return the optional {@link PeerWithSystem} with the specified transport
 	 */
-	Peer peer(TransportInfo uri);
+	Optional<PeerWithSystem> peer(TransportInfo uri);
 
 	/**
 	 * Returns a stream of {@link Peer} objects that this address book knows about,
@@ -110,7 +89,7 @@ public interface AddressBook {
 	 *
 	 * @return A {@link Stream} of {@link Peer} objects
 	 */
-	Stream<Peer> peers();
+	Stream<PeerWithSystem> peers();
 
 	/**
 	 * Returns a stream of {@link Peer} objects that this address book knows about
@@ -122,7 +101,7 @@ public interface AddressBook {
 	 *
 	 * @return A {@link Stream} of {@link Peer} objects
 	 */
-	Stream<Peer> recentPeers();
+	Stream<PeerWithSystem> recentPeers();
 
 	/**
 	 * Returns a stream of {@link EUID} for node IDs that this address book knows about.
@@ -149,4 +128,5 @@ public interface AddressBook {
      * @throws IOException if an I/O error occurs
      */
     void close() throws IOException;
+
 }

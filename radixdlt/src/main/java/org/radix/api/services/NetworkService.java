@@ -118,7 +118,7 @@ public class NetworkService {
 		return new JSONObject();
 	}
 
-	private Stream<Peer> selfAndOthers(Stream<Peer> others) {
+	private Stream<PeerWithSystem> selfAndOthers(Stream<PeerWithSystem> others) {
 		return Stream.concat(Stream.of(this.localPeer), others).distinct();
 	}
 }

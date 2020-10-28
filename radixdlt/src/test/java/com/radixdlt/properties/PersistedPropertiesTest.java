@@ -137,10 +137,10 @@ public class PersistedPropertiesTest {
 	public void testToString() {
 		populateData();
 		String result = this.properties.toString();
-		assertThat(result, containsString("int.exist=12"));
-		assertThat(result, containsString("long.exist=12"));
-		assertThat(result, containsString("bool.true=true"));
-		assertThat(result, containsString("bool.true1=1"));
+		assertThat(result, containsString("int.exist"));
+		assertThat(result, containsString("long.exist"));
+		assertThat(result, containsString("bool.true"));
+		assertThat(result, containsString("bool.true1"));
 	}
 
 	private void populateData() {

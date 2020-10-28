@@ -33,6 +33,7 @@ import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.sync.RemoteSyncRequest;
 import com.radixdlt.network.addressbook.Peer;
+import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageListener;
 import com.radixdlt.ledger.DtoCommandsAndProof;
@@ -65,7 +66,7 @@ public class MessageCentralLedgerSyncTest {
 		ECPublicKey key = mock(ECPublicKey.class);
 		when(key.euid()).thenReturn(EUID.ONE);
 		when(node.getKey()).thenReturn(key);
-		Peer peer = mock(Peer.class);
+		PeerWithSystem peer = mock(PeerWithSystem.class);
 		when(peer.hasSystem()).thenReturn(true);
 		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
 		messageCentralLedgerSync.sendSyncRequest(node, mock(DtoLedgerHeaderAndProof.class));
@@ -78,7 +79,7 @@ public class MessageCentralLedgerSyncTest {
 		ECPublicKey key = mock(ECPublicKey.class);
 		when(key.euid()).thenReturn(EUID.ONE);
 		when(node.getKey()).thenReturn(key);
-		Peer peer = mock(Peer.class);
+		PeerWithSystem peer = mock(PeerWithSystem.class);
 		when(peer.hasSystem()).thenReturn(true);
 		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
 		messageCentralLedgerSync.sendSyncResponse(node, mock(DtoCommandsAndProof.class));

@@ -17,22 +17,21 @@
 
 package org.radix.network.messages;
 
-import org.radix.universe.system.RadixSystem;
-import org.radix.universe.system.SystemMessage;
-
+import org.radix.network.messaging.Message;
 import com.radixdlt.serialization.SerializerId2;
 
 import java.util.Objects;
 
 @SerializerId2("network.message.get_peers")
-public final class GetPeersMessage extends SystemMessage {
+public final class GetPeersMessage extends Message {
 
 	GetPeersMessage() {
 		// Serializer only
+		super(0);
 	}
 
-	public GetPeersMessage(RadixSystem system, int magic) {
-		super(system, magic);
+	public GetPeersMessage(int magic) {
+		super(magic);
 	}
 
 	@Override

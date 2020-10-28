@@ -29,14 +29,14 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.network.addressbook.Peer;
 
 /**
- * Inbound and outbound message wrapper with priority, time and destination.
+ * Outbound message wrapper with priority, time and destination.
  * <p>
  * Note that priority is calculated from a fixed table of priorities for
  * specific message types, and cannot be specified by the user.
  * <p>
  * Time is number of nanoseconds since some arbitrary baseline.
  */
-public final class MessageEvent {
+public final class OutboundMessageEvent {
 
 	private static final int DEFAULT_PRIORITY = 0;
 	// Lower (inc -ve) numbers are higher priority than larger numbers
@@ -45,8 +45,8 @@ public final class MessageEvent {
 		PeerPongMessage.class, Integer.MIN_VALUE
 	);
 
-	public static Comparator<MessageEvent> comparator() {
-		return Comparator.comparingInt(MessageEvent::priority).thenComparingLong(MessageEvent::nanoTimeDiff);
+	public static Comparator<OutboundMessageEvent> comparator() {
+		return Comparator.comparingInt(OutboundMessageEvent::priority).thenComparingLong(OutboundMessageEvent::nanoTimeDiff);
 	}
 
 	private final int priority;
@@ -54,7 +54,7 @@ public final class MessageEvent {
 	private final Peer peer;
 	private final Message message;
 
-	MessageEvent(Peer peer, Message message, long nanoTimeDiff) {
+	OutboundMessageEvent(Peer peer, Message message, long nanoTimeDiff) {
 		super();
 
 		this.priority = MESSAGE_PRIORITIES.getOrDefault(message.getClass(), DEFAULT_PRIORITY);
@@ -83,8 +83,7 @@ public final class MessageEvent {
 	}
 
 	/**
-	 * Returns the source (for inbound) or destination (for outbound)
-	 * of the message.
+	 * Returns the destination of the message.
 	 *
 	 * @return the source or destination of the message.
 	 */
@@ -111,8 +110,8 @@ public final class MessageEvent {
 		if (this == obj) {
 			return true;
 		}
-		if (obj instanceof MessageEvent) {
-			MessageEvent that = (MessageEvent) obj;
+		if (obj instanceof OutboundMessageEvent) {
+			OutboundMessageEvent that = (OutboundMessageEvent) obj;
 			return this.priority == that.priority
 				&& this.nanoTimeDiff == that.nanoTimeDiff
 				&& Objects.equals(this.peer, that.peer)

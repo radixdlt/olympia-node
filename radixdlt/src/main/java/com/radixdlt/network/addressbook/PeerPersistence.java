@@ -33,7 +33,7 @@ public interface PeerPersistence extends Closeable  {
 	 * @param peer the peer to save.  The peer must have a valid NID.
 	 * @return {@code true} if the peer was saved, {@code false} otherwise
 	 */
-	boolean savePeer(Peer peer);
+	boolean savePeer(PeerWithSystem peer);
 
 	/**
 	 * Deletes peer identified by specified NID.
@@ -48,5 +48,5 @@ public interface PeerPersistence extends Closeable  {
 	 *
 	 * @param c the consumer to call with each persisted peer
 	 */
-	void forEachPersistedPeer(Consumer<Peer> c);
+	void forEachPersistedPeer(Consumer<PeerWithSystem> c);
 }

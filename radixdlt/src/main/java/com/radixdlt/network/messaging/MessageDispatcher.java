@@ -19,6 +19,7 @@ package com.radixdlt.network.messaging;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 import com.google.common.hash.HashCode;
@@ -31,8 +32,10 @@ import com.radixdlt.identifiers.EUID;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
+import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.network.transport.SendResult;
 import com.radixdlt.network.transport.Transport;
+import com.radixdlt.network.transport.TransportInfo;
 import com.radixdlt.network.transport.TransportOutboundConnection;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -81,7 +84,7 @@ class MessageDispatcher {
 		this.hasher = hasher;
 	}
 
-	CompletableFuture<SendResult> send(TransportManager transportManager, final MessageEvent outboundMessage) {
+	CompletableFuture<SendResult> send(TransportManager transportManager, final OutboundMessageEvent outboundMessage) {
 		final Message message = outboundMessage.message();
 		final Peer peer = outboundMessage.peer();
 
@@ -101,15 +104,13 @@ class MessageDispatcher {
 
 		byte[] bytes = serialize(message);
 		return findTransportAndOpenConnection(transportManager, peer, bytes)
-			.thenCompose(conn -> send(peer, conn, message, bytes))
+			.thenCompose(conn -> send(conn, message, bytes))
 			.thenApply(this::updateStatistics)
 			.exceptionally(t -> completionException(t, peer, message));
 	}
 
-	private CompletableFuture<SendResult> send(Peer peer, TransportOutboundConnection conn, Message message, byte[] bytes) {
-		if (log.isDebugEnabled()) {
-			log.debug("Sending to {}: {}", hostId(peer), message);
-		}
+	private CompletableFuture<SendResult> send(TransportOutboundConnection conn, Message message, byte[] bytes) {
+		log.trace("Sending to {}: {}", conn, message);
 		this.counters.add(CounterType.NETWORKING_SENT_BYTES, bytes.length);
 		return conn.send(bytes);
 	}
@@ -120,82 +121,90 @@ class MessageDispatcher {
 		return SendResult.failure(new IOException(msg, cause));
 	}
 
-	void receive(MessageListenerList listeners, final MessageEvent inboundMessage) {
-		Peer peer = inboundMessage.peer();
+	void receive(MessageListenerList listeners, final InboundMessageEvent inboundMessage) {
+		final TransportInfo source = inboundMessage.source();
 		final Message message = inboundMessage.message();
 
+		Optional<PeerWithSystem> peer = this.addressBook.peer(source);
+
 		long currentTime = timeSource.currentTime();
-		peer.setTimestamp(Timestamps.ACTIVE, currentTime);
+		peer.ifPresent(p -> p.setTimestamp(Timestamps.ACTIVE, currentTime));
 		this.counters.increment(CounterType.MESSAGES_INBOUND_RECEIVED);
 
-		if (currentTime - message.getTimestamp() > messageTtlMs) {
+		boolean isBanned = peer.map(Peer::isBanned).orElse(false);
+		if (isBanned || currentTime - message.getTimestamp() > messageTtlMs) {
 			this.counters.increment(CounterType.MESSAGES_INBOUND_DISCARDED);
 			return;
 		}
 
 		try {
 			if (message instanceof SystemMessage) {
-				peer = handleSystemMessage(peer, (SystemMessage) message);
-				if (peer == null) {
+				peer = handleSystemMessage(peer, source, (SystemMessage) message);
+				if (!peer.isPresent()) {
 					return;
 				}
 			} else if (message instanceof SignedMessage && !handleSignedMessage(peer, (SignedMessage) message)) {
 				return;
 			}
 		} catch (Exception ex) {
-			log.error(message.getClass().getName() + ": Pre-processing from " + inboundMessage.peer() + " failed", ex);
+			String msg = String.format("%s: Pre-processing from %s failed", message.getClass().getSimpleName(), source);
+			log.error(msg, ex);
 			return;
 		}
 
-		if (log.isDebugEnabled()) {
-			log.debug("Received from {}: {}", hostId(peer), message);
+		if (log.isTraceEnabled()) {
+			log.trace("Received from {}: {}", hostId(peer), message);
 		}
-		listeners.messageReceived(peer, message);
-		this.counters.increment(CounterType.MESSAGES_INBOUND_PROCESSED);
+		peer.ifPresent(p -> {
+			listeners.messageReceived(p, message);
+			this.counters.increment(CounterType.MESSAGES_INBOUND_PROCESSED);
+		});
 	}
 
-	private Peer handleSystemMessage(Peer oldPeer, SystemMessage systemMessage) {
+	private Optional<PeerWithSystem> handleSystemMessage(
+		Optional<PeerWithSystem> oldPeer,
+		TransportInfo source,
+		SystemMessage systemMessage
+	) {
 		String messageType = systemMessage.getClass().getSimpleName();
 		RadixSystem system = systemMessage.getSystem();
 		if (checkSignature(systemMessage, system)) {
-			Peer peer = this.addressBook.updatePeerSystem(oldPeer, system);
+			PeerWithSystem peer = this.addressBook.updatePeerSystem(oldPeer, system, source);
 			log.trace("Good signature on {} from {}", messageType, peer);
 			if (system.getNID() == null || EUID.ZERO.equals(system.getNID())) {
 				peer.ban(String.format("%s:%s gave null NID", peer, messageType));
-				return null;
+				return Optional.empty();
 			}
 			if (systemMessage.getSystem().getAgentVersion() <= Radix.REFUSE_AGENT_VERSION) {
 				peer.ban(String.format("Old peer %s %s:%s", peer, system.getAgent(), system.getProtocolVersion()));
-				return null;
+				return Optional.empty();
 			}
 			if (system.getNID().equals(this.localSystem.getNID())) {
 				// Just quietly ignore messages from self
 				log.trace("Ignoring {} message from self", messageType);
-				return null;
+				return Optional.empty();
 			}
 			if (checkPeerBanned(system.getNID(), messageType)) {
-				return null;
+				return Optional.empty();
 			}
-			return peer;
+			return Optional.of(peer);
 		}
 		log.warn("Ignoring {} message from {} - bad signature", messageType, oldPeer);
 		this.counters.increment(CounterType.MESSAGES_INBOUND_BADSIGNATURE);
-		return null;
+		return Optional.empty();
 	}
 
-	private boolean handleSignedMessage(Peer peer, SignedMessage signedMessage) {
+	private boolean handleSignedMessage(Optional<PeerWithSystem> peer, SignedMessage signedMessage) {
 		String messageType = signedMessage.getClass().getSimpleName();
-		if (!peer.hasSystem()) {
-			log.info("Ignoring {} message from {} - no public key for checking signature", messageType, peer);
-			return false;
-		}
-		if (!checkSignature(signedMessage, peer.getSystem())) {
-			log.warn("Ignoring {} message from {} - bad signature", messageType, peer);
-			this.counters.increment(CounterType.MESSAGES_INBOUND_BADSIGNATURE);
-			return false;
-		}
-		log.debug("Good signature on {} message from {}", messageType, peer);
-		return true;
+		return peer.map(p -> {
+			if (!checkSignature(signedMessage, p.getSystem())) {
+				log.warn("Ignoring {} message from {} - bad signature", messageType, peer);
+				this.counters.increment(CounterType.MESSAGES_INBOUND_BADSIGNATURE);
+				return false;
+			}
+			log.trace("Good signature on {} message from {}", messageType, peer);
+			return true;
+		}).orElse(false);
 	}
 
 	private boolean checkSignature(SignedMessage message, RadixSystem system) {
@@ -231,12 +240,17 @@ class MessageDispatcher {
 		}
 	}
 
-	private String hostId(Peer peer) {
-		return peer.getClass().getSimpleName() + ":" + peer.supportedTransports()
+	private String hostId(Optional<PeerWithSystem> peer) {
+		return peer.map(this::hostId).orElse("Unknown");
+	}
+
+	private String hostId(PeerWithSystem peer) {
+		return peer.supportedTransports()
 			.findFirst()
 			.map(ti -> String.format("%s:%s", ti.name(), ti.metadata()))
 			.orElse("None");
 	}
+
 
 	/**
 	 * Return true if we already have information about the given peer being banned.

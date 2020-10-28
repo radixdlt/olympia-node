@@ -52,6 +52,7 @@ import java.security.SecureRandom;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.Semaphore;
@@ -73,10 +74,10 @@ public class PeerManagerTest extends RadixTest {
 	private PeerManager peerManager;
 	private AddressBook addressBook;
 	private BootstrapDiscovery bootstrapDiscovery;
-	private Peer peer1;
-	private Peer peer2;
-	private Peer peer3;
-	private Peer peer4;
+	private PeerWithSystem peer1;
+	private PeerWithSystem peer2;
+	private PeerWithSystem peer3;
+	private PeerWithSystem peer4;
 	private TransportInfo transportInfo3;
 	private TransportInfo transportInfo4;
 	private Multimap<Peer, Message> peerMessageMultimap;
@@ -138,34 +139,34 @@ public class PeerManagerTest extends RadixTest {
 		transportInfo4 = TransportInfo.of(UDPConstants.NAME, transportMetadata4);
 
 		RadixSystem radixSystem1 = spy(new RadixSystem());
-		when(radixSystem1.supportedTransports()).thenAnswer((Answer<Stream<TransportInfo>>) invocation -> Stream.of(transportInfo1));
+		when(radixSystem1.supportedTransports()).thenAnswer(invocation -> Stream.of(transportInfo1));
 		when(radixSystem1.getNID()).thenReturn(EUID.ONE);
 		peer1 = spy(new PeerWithSystem(radixSystem1));
-		when(peer1.getTimestamp(Timestamps.ACTIVE)).thenAnswer((Answer<Long>) invocation -> System.currentTimeMillis());
+		when(peer1.getTimestamp(Timestamps.ACTIVE)).thenAnswer(invocation -> System.currentTimeMillis());
 
 		RadixSystem radixSystem2 = spy(new RadixSystem());
-		when(radixSystem2.supportedTransports()).thenAnswer((Answer<Stream<TransportInfo>>) invocation -> Stream.of(transportInfo2));
+		when(radixSystem2.supportedTransports()).thenAnswer(invocation -> Stream.of(transportInfo2));
 		when(radixSystem2.getNID()).thenReturn(EUID.TWO);
 		peer2 = spy(new PeerWithSystem(radixSystem2));
-		when(peer2.getTimestamp(Timestamps.ACTIVE)).thenAnswer((Answer<Long>) invocation -> System.currentTimeMillis());
+		when(peer2.getTimestamp(Timestamps.ACTIVE)).thenAnswer(invocation -> System.currentTimeMillis());
 
 		RadixSystem radixSystem3 = spy(new RadixSystem());
-		when(radixSystem3.supportedTransports()).thenAnswer((Answer<Stream<TransportInfo>>) invocation -> Stream.of(transportInfo3));
+		when(radixSystem3.supportedTransports()).thenAnswer(invocation -> Stream.of(transportInfo3));
 		when(radixSystem3.getNID()).thenReturn(new EUID(3));
 		peer3 = spy(new PeerWithSystem(radixSystem3));
-		when(peer3.getTimestamp(Timestamps.ACTIVE)).thenAnswer((Answer<Long>) invocation -> System.currentTimeMillis());
+		when(peer3.getTimestamp(Timestamps.ACTIVE)).thenAnswer(invocation -> System.currentTimeMillis());
 
 		RadixSystem radixSystem4 = spy(new RadixSystem());
-		when(radixSystem4.supportedTransports()).thenAnswer((Answer<Stream<TransportInfo>>) invocation -> Stream.of(transportInfo4));
+		when(radixSystem4.supportedTransports()).thenAnswer(invocation -> Stream.of(transportInfo4));
 		when(radixSystem4.getNID()).thenReturn(new EUID(4));
 		peer4 = spy(new PeerWithSystem(radixSystem4));
-		when(peer4.getTimestamp(Timestamps.ACTIVE)).thenAnswer((Answer<Long>) invocation -> System.currentTimeMillis());
+		when(peer4.getTimestamp(Timestamps.ACTIVE)).thenAnswer(invocation -> System.currentTimeMillis());
 
 		addressBook = mock(AddressBook.class);
-		when(addressBook.peer(transportInfo1)).thenReturn(peer1);
-		when(addressBook.peer(transportInfo2)).thenReturn(peer2);
-		when(addressBook.peer(transportInfo3)).thenReturn(peer3);
-		when(addressBook.peer(transportInfo4)).thenReturn(peer4);
+		when(addressBook.peer(transportInfo1)).thenReturn(Optional.of(peer1));
+		when(addressBook.peer(transportInfo2)).thenReturn(Optional.of(peer2));
+		when(addressBook.peer(transportInfo3)).thenReturn(Optional.of(peer3));
+		when(addressBook.peer(transportInfo4)).thenReturn(Optional.of(peer4));
 
 		bootstrapDiscovery = mock(BootstrapDiscovery.class);
 		peerManager = new PeerManager(
@@ -286,12 +287,13 @@ public class PeerManagerTest extends RadixTest {
 
 	@Test
 	public void discoverPeersTest() throws InterruptedException {
-		when(bootstrapDiscovery.discover(eq(addressBook), any())).thenReturn(ImmutableSet.of(transportInfo3, transportInfo4));
-		when(addressBook.peers()).thenAnswer((Answer<Stream<Peer>>) invocation -> Stream.of(peer1, peer2, peer3, peer4));
-		getPeersMessageTest(peer3, peer4, true);
+		when(bootstrapDiscovery.discover(eq(addressBook))).thenReturn(ImmutableSet.of(transportInfo3, transportInfo4));
+		when(addressBook.peers()).thenAnswer(invocation -> Stream.of(peer1, peer2, peer3, peer4));
+		when(addressBook.recentPeers()).thenAnswer(invocation -> Stream.of(peer3, peer4));
+		getPeersMessageTest(peer3, peer4, false);
 	}
 
-	private void getPeersMessageTest(Peer peer1, Peer peer2, boolean probeAll) throws InterruptedException {
+	private void getPeersMessageTest(PeerWithSystem peer1, PeerWithSystem peer2, boolean probeAll) throws InterruptedException {
 		Semaphore semaphore = new Semaphore(0);
 		peerManager.start();
 		// allow peer manager to run 1 sec

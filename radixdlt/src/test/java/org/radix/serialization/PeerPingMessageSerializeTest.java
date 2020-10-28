@@ -69,7 +69,7 @@ public class PeerPingMessageSerializeTest extends SerializeMessageObject<PeerPin
 
 		assertThat(s, containsString(PeerPingMessage.class.getSimpleName()));
 		assertThat(s, containsString(EUID.TWO.toString()));
-		assertThat(s, containsString("1234"));
+		assertThat(s, containsString(Long.toHexString(1234)));
 		assertThat(s, containsString("5678"));
 	}
 }

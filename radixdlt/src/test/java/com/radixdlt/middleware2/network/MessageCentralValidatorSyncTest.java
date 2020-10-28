@@ -44,6 +44,7 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
+import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageListener;
 import com.radixdlt.universe.Universe;
@@ -109,7 +110,7 @@ public class MessageCentralValidatorSyncTest {
 		ECPublicKey ecPublicKey = mock(ECPublicKey.class);
 		when(ecPublicKey.euid()).thenReturn(mock(EUID.class));
 		when(node.getKey()).thenReturn(ecPublicKey);
-		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(mock(Peer.class)));
+		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(mock(PeerWithSystem.class)));
 
 		sync.sendGetVerticesResponse(node, vertices);
 		verify(messageCentral, times(1)).send(any(), any(GetVerticesResponseMessage.class));
@@ -117,7 +118,7 @@ public class MessageCentralValidatorSyncTest {
 
 	@Test
 	public void when_send_error_response__then_message_central_will_send_error_response() {
-		Peer peer = mock(Peer.class);
+		PeerWithSystem peer = mock(PeerWithSystem.class);
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		HighQC highQC = mock(HighQC.class);
 		when(highQC.highestQC()).thenReturn(qc);
@@ -160,14 +161,14 @@ public class MessageCentralValidatorSyncTest {
 
 	@Test
 	public void when_send_get_epoch_request__then_message_central_will_send_get_epoch_request() {
-		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(mock(Peer.class)));
+		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(mock(PeerWithSystem.class)));
 		sync.sendGetEpochRequest(self, 12345);
 		verify(messageCentral, times(1)).send(any(), any(GetEpochRequestMessage.class));
 	}
 
 	@Test
 	public void when_send_get_epoch_response__then_message_central_will_send_get_epoch_response() {
-		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(mock(Peer.class)));
+		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(mock(PeerWithSystem.class)));
 		sync.sendGetEpochResponse(self, mock(VerifiedLedgerHeaderAndProof.class));
 		verify(messageCentral, times(1)).send(any(), any(GetEpochResponseMessage.class));
 	}
