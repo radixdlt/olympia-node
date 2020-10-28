@@ -20,6 +20,7 @@ package org.radix;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.utils.MemoryLeakDetector;
 import com.google.inject.name.Names;
 import com.radixdlt.ModuleRunner;
@@ -156,7 +157,7 @@ public final class Radix {
 		final RadixHttpServer httpServer = globalInjector.getInjector().getInstance(RadixHttpServer.class);
 		httpServer.start();
 
-		final BFTNode self = globalInjector.getInjector().getInstance(Key.get(BFTNode.class, Names.named("self")));
+		final BFTNode self = globalInjector.getInjector().getInstance(Key.get(BFTNode.class, Self.class));
 		if (properties.get("consensus.start_on_boot", true)) {
 			consensusRunner.start();
 			log.info("Node '{}' started successfully", self);
