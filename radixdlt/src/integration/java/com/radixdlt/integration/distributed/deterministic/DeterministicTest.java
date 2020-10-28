@@ -37,6 +37,7 @@ import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.integration.distributed.MockedCryptoModule;
 import com.radixdlt.integration.distributed.deterministic.configuration.EpochNodeWeightMapping;
 import com.radixdlt.integration.distributed.deterministic.configuration.NodeIndexAndWeight;
+import com.radixdlt.integration.distributed.deterministic.network.ControlledMessage;
 import com.radixdlt.integration.distributed.deterministic.network.DeterministicNetwork;
 import com.radixdlt.integration.distributed.deterministic.network.MessageMutator;
 import com.radixdlt.integration.distributed.deterministic.network.MessageSelector;
@@ -49,20 +50,27 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.utils.UInt256;
 
+import io.reactivex.rxjava3.schedulers.Timed;
 import java.io.PrintStream;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.LongFunction;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A deterministic test where each event that occurs in the network
  * is emitted and processed synchronously by the caller.
  */
 public final class DeterministicTest {
+	private static final Logger log = LogManager.getLogger();
+
+	private final DeterministicNodes nodes;
 	private final DeterministicNetwork network;
 
 	private DeterministicTest(
@@ -75,7 +83,12 @@ public final class DeterministicTest {
 		this.network = new DeterministicNetwork(
 			nodes,
 			messageSelector,
-			messageMutator,
+			messageMutator
+		);
+
+		this.nodes = new DeterministicNodes(
+			nodes,
+			this.network,
 			modules,
 			overrideModule
 		);
@@ -246,21 +259,28 @@ public final class DeterministicTest {
 	}
 
 	public DeterministicTest run() {
-		this.network.start();
+		this.nodes.start();
+
 		while (true) {
-			if (this.network.executeNextMessage()) {
+			Optional<Timed<ControlledMessage>> nextMsgMaybe = this.network.nextMessage();
+			if (nextMsgMaybe.isEmpty()) {
 				break;
 			}
+
+			Timed<ControlledMessage> nextMsg = nextMsgMaybe.get();
+
+			this.nodes.handleMessage(nextMsg);
 		}
+
 		return this;
 	}
 
 	public SystemCounters getSystemCounters(int nodeIndex) {
-		return this.network.getSystemCounters(nodeIndex);
+		return this.nodes.getSystemCounters(nodeIndex);
 	}
 
 	public int numNodes() {
-		return this.network.numNodes();
+		return this.nodes.numNodes();
 	}
 
 	// Debugging aid for messages
