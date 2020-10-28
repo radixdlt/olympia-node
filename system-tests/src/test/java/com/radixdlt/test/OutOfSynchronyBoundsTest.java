@@ -134,6 +134,7 @@ public class OutOfSynchronyBoundsTest {
 
 			String CORE_TAG = Optional.ofNullable(System.getenv(EphemeralNetworkCreator.ENV_CORE_TAG)).orElse(":HEAD-043ccbdc");
 			String TESTNET_NAME = System.getenv(EphemeralNetworkCreator.ENV_TESTNET_NAME);
+			String LOG_LEVEL = Optional.ofNullable(System.getenv(EphemeralNetworkCreator.ENV_TESTNET_NAME)).orElse("debug");
 			ephemeralNetworkCreator.setTotalNumberOfNodes(networkSize);
 			ephemeralNetworkCreator.pullImage();
 			ephemeralNetworkCreator.plan();
@@ -145,6 +146,7 @@ public class OutOfSynchronyBoundsTest {
 						"--limit " + TESTNET_NAME + " ",
 						"-e RADIXDLT_UNIVERSE ",
 						"-e core_tag=" + CORE_TAG + " ",
+						"-e core_log_level="+ LOG_LEVEL + " ",
 						"-e boot_nodes=\"{{ groups['"+ TESTNET_NAME +"'] | join(',') }}\" ",
 						"-e quorum_size="+ networkSize +" -e consensus_start_on_boot=true").collect(toList()));
 
