@@ -249,7 +249,7 @@ class MessageDispatcher {
 		return peer.map(this::hostId).orElse("Unknown");
 	}
 
-	private String hostId(PeerWithSystem peer) {
+	private String hostId(Peer peer) {
 		return peer.supportedTransports()
 			.findFirst()
 			.map(ti -> String.format("%s:%s", ti.name(), ti.metadata()))

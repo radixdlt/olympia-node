@@ -425,7 +425,6 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 
 	@Override
 	public void processGetVerticesRequest(GetVerticesRequest request) {
-		log.debug("Received sync request from {} for {}", request.getSender(), request.getVertexId());
 		syncRequestProcessor.processGetVerticesRequest(request);
 	}
 

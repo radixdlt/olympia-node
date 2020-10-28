@@ -294,9 +294,9 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 		this.pacemakerInfoSender.sendCurrentView(this.currentView);
 		if (this.self.equals(this.proposerElection.getProposer(nextView))) {
 			Proposal proposal = generateProposal(this.currentView);
-			log.trace("Propose: {}", proposal);
-			this.counters.increment(CounterType.BFT_PROPOSALS_MADE);
+			log.trace("Broadcasting proposal: {}", proposal);
 			this.sender.broadcastProposal(proposal, this.validatorSet.nodes());
+			this.counters.increment(CounterType.BFT_PROPOSALS_MADE);
 		}
 	}
 

@@ -118,7 +118,7 @@ public final class Radix {
 			start(properties);
 		} catch (Exception ex) {
 			log.fatal("Unable to start", ex);
-			try { Thread.sleep(5000); } catch (InterruptedException e) { }
+			LogManager.shutdown(); // Flush any async logs
 			java.lang.System.exit(-1);
 		}
 	}

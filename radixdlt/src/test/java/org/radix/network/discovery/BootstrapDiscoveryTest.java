@@ -23,18 +23,13 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
-import java.util.Optional;
 import java.util.Set;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.powermock.reflect.Whitebox;
-import org.radix.universe.system.RadixSystem;
-
 import com.google.common.collect.Iterables;
-import com.radixdlt.network.addressbook.AddressBook;
-import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.network.transport.TransportInfo;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.universe.Universe;
@@ -134,31 +129,15 @@ public class BootstrapDiscoveryTest {
 	}
 
 	@Test
-	public void testDiscoverFoundInAddressBook() {
-		doReturn("").when(config).get("network.discovery.urls", "");
-		doReturn("1.1.1.1").when(config).get("network.seeds", "");
-		BootstrapDiscovery discovery = new BootstrapDiscovery(config, universe);
-
-		TransportInfo ti = discovery.toDefaultTransportInfo("1.1.1.1").get();
-		PeerWithSystem pws = new PeerWithSystem(new RadixSystem());
-		AddressBook addressbook = mock(AddressBook.class);
-		when(addressbook.peer(any(TransportInfo.class))).thenReturn(Optional.empty());
-		when(addressbook.peer(eq(ti))).thenReturn(Optional.of(pws));
-		Collection<TransportInfo> results = discovery.discover(addressbook);
-		assertTrue(results.isEmpty());
-	}
-
-	@Test
-	public void testDiscoverNotFoundInAddressBook() {
+	public void testDiscovery() {
 		doReturn("").when(config).get("network.discovery.urls", "");
 		doReturn("1.1.1.1").when(config).get("network.seeds", "");
 		BootstrapDiscovery discovery = new BootstrapDiscovery(config, universe);
 
 		TransportInfo ti = discovery.toDefaultTransportInfo("1.1.1.1").get();
 
-		AddressBook addressbook = mock(AddressBook.class);
-		when(addressbook.peer(any(TransportInfo.class))).thenReturn(Optional.empty());
-		Collection<TransportInfo> results = discovery.discover(addressbook);
+		Collection<TransportInfo> results = discovery.discoveryHosts();
+		assertFalse(results.isEmpty());
 		assertEquals(ti, Iterables.getOnlyElement(results));
 	}
 

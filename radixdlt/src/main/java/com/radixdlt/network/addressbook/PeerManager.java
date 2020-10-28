@@ -312,7 +312,7 @@ public class PeerManager {
 	private void peersHousekeeping() {
 		try {
 			// Request peers information from connected nodes
-			List<Peer> peers = addressbook.recentPeers().filter(Peer::hasNID).collect(Collectors.toList());
+			List<Peer> peers = addressbook.recentPeers().collect(Collectors.toList());
 			if (!peers.isEmpty()) {
 				int index = rand.nextInt(peers.size());
 				Peer peer = peers.get(index);
@@ -339,7 +339,7 @@ public class PeerManager {
 
 					this.probes.put(peer, nonce);
 					this.executor.schedule(() -> handleProbeTimeout(peer, nonce), peerProbeTimeoutMs, TimeUnit.MILLISECONDS);
-					log.debug("Probing {}:{}", () -> peer, () -> formatNonce(nonce));
+					log.trace("Probing {}:{}", () -> peer, () -> formatNonce(nonce));
 					messageCentral.send(peer, ping);
 					peer.setTimestamp(Timestamps.PROBED, Time.currentTimestamp());
 					return true;
@@ -353,12 +353,10 @@ public class PeerManager {
 
 	private boolean nudge(TransportInfo transportInfo) {
 		try {
-			if (transportInfo != null) {
-				log.debug("Nudging {}", transportInfo);
-				final PeerPingMessage ping = new PeerPingMessage(this.universeMagic, 0L, System.nanoTime(), localSystem);
-				messageCentral.sendSystemMessage(transportInfo, ping);
-				return true;
-			}
+			log.trace("Nudging {}", transportInfo);
+			final PeerPingMessage ping = new PeerPingMessage(this.universeMagic, 0L, System.nanoTime(), localSystem);
+			messageCentral.sendSystemMessage(transportInfo, ping);
+			return true;
 		} catch (Exception ex) {
 			log.error(String.format("Nudge for %s failed", transportInfo), ex);
 		}
@@ -369,7 +367,7 @@ public class PeerManager {
 		synchronized (this.probes) {
 			Long value = this.probes.get(peer);
 			if (value != null && value.longValue() == nonce) {
-				log.warn("Removing peer {}:{} because of probe timeout", () -> peer, () -> formatNonce(nonce));
+				log.info("Removing peer {}:{} because of probe timeout", () -> peer, () -> formatNonce(nonce));
 				this.probes.remove(peer);
 				this.addressbook.removePeer(peer.getNID());
 			}
@@ -377,8 +375,9 @@ public class PeerManager {
 	}
 
 	private void discoverPeers() {
-		// Probe all the bootstrap hosts not in the addressbook so that they know about us
-		bootstrapDiscovery.discover(this.addressbook).stream()
+		// Probe all the bootstrap hosts not in the address book so that they know about us
+		bootstrapDiscovery.discoveryHosts().stream()
+			.filter(ti -> this.addressbook.peer(ti).isEmpty())
 			.forEachOrdered(this::nudge);
 	}
 

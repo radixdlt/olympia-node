@@ -41,7 +41,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.net.HostAndPort;
-import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.transport.StaticTransportMetadata;
 import com.radixdlt.network.transport.TransportInfo;
 import com.radixdlt.network.transport.tcp.TCPConstants;
@@ -217,15 +216,12 @@ public class BootstrapDiscovery
 	}
 
 	/**
-	 * Return a list of discovery hosts that are not currently in the
-	 * address book.
+	 * Return a list of transports for discovery hosts.
 	 *
-	 * @param addressbook the address book to query whether a host is live
-	 * @return A collection of transports for discovery hosts not in the address book
+	 * @return A collection of transports for discovery hosts
 	 */
-	public Collection<TransportInfo> discover(AddressBook addressbook) {
+	public Collection<TransportInfo> discoveryHosts() {
 		List<TransportInfo> results = this.hosts.stream()
-			.filter(ti -> addressbook.peer(ti).isEmpty())
 			.collect(Collectors.toList());
 
 		Collections.shuffle(results);
