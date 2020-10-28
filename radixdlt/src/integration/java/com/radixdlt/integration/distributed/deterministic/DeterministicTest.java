@@ -20,6 +20,7 @@ package com.radixdlt.integration.distributed.deterministic;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
+import com.radixdlt.ConsensusModule;
 import com.radixdlt.EpochsConsensusModule;
 import com.radixdlt.LedgerCommandGeneratorModule;
 import com.radixdlt.EpochsLedgerUpdateModule;
@@ -33,6 +34,7 @@ import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
+import com.radixdlt.integration.distributed.MockedCryptoModule;
 import com.radixdlt.integration.distributed.deterministic.configuration.EpochNodeWeightMapping;
 import com.radixdlt.integration.distributed.deterministic.configuration.NodeIndexAndWeight;
 import com.radixdlt.integration.distributed.deterministic.network.DeterministicNetwork;
@@ -172,6 +174,8 @@ public final class DeterministicTest {
 					bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0);
 				}
 			});
+			modules.add(new ConsensusModule());
+			modules.add(new MockedCryptoModule());
 			modules.add(new LedgerLocalMempoolModule(10));
 			modules.add(new DeterministicMempoolModule());
 
@@ -242,7 +246,12 @@ public final class DeterministicTest {
 	}
 
 	public DeterministicTest run() {
-		this.network.run();
+		this.network.start();
+		while (true) {
+			if (this.network.executeNextMessage()) {
+				break;
+			}
+		}
 		return this;
 	}
 

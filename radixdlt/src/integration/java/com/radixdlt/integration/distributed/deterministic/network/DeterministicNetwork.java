@@ -24,7 +24,6 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.util.Modules;
-import com.radixdlt.ConsensusModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
@@ -39,7 +38,6 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.epochs.EpochChangeManager.EpochsLedgerUpdateSender;
 import com.radixdlt.integration.distributed.deterministic.DeterministicConsensusRunner;
 import com.radixdlt.integration.distributed.deterministic.DeterministicNetworkModule;
-import com.radixdlt.integration.distributed.MockedCryptoModule;
 import com.radixdlt.utils.Pair;
 
 import java.io.PrintStream;
@@ -88,13 +86,13 @@ public final class DeterministicNetwork {
 	 * @param nodes The nodes on the network
 	 * @param messageSelector A {@link MessageSelector} for choosing messages to process next
 	 * @param messageMutator A {@link MessageMutator} for mutating and queueing messages
-	 * @param syncExecutionModules Guice modules to use for specifying sync execution sub-system
+	 * @param modules Guice modules to use for a node
 	 */
 	public DeterministicNetwork(
 		List<BFTNode> nodes,
 		MessageSelector messageSelector,
 		MessageMutator messageMutator,
-		Collection<Module> syncExecutionModules,
+		Collection<Module> modules,
 		Module overrideModule
 	) {
 		this.messageSelector = Objects.requireNonNull(messageSelector);
@@ -105,7 +103,7 @@ public final class DeterministicNetwork {
 		).collect(ImmutableBiMap.toImmutableBiMap(Pair::getFirst, Pair::getSecond));
 		this.nodeInstances = Streams.mapWithIndex(
 			nodes.stream(),
-			(node, index) -> createBFTInstance(node, (int) index, syncExecutionModules, overrideModule)
+			(node, index) -> createBFTInstance(node, (int) index, modules, overrideModule)
 		).collect(ImmutableList.toImmutableList());
 
 		log.debug("Nodes {}", this.nodeLookup);
@@ -116,41 +114,45 @@ public final class DeterministicNetwork {
 	 * @param nodeIndex The node index/id that this sender is for
 	 * @return A newly created {@link DeterministicSender} for the specified node
 	 */
-	public DeterministicSender createSender(BFTNode self, int nodeIndex) {
+	private DeterministicSender createSender(BFTNode self, int nodeIndex) {
 		return new ControlledSender(this, self, nodeIndex);
 	}
 
-	public void run() {
+	public void start() {
 		this.currentTime = 0L;
+		this.nodeInstances.stream()
+			.map(i -> i.getInstance(DeterministicConsensusRunner.class))
+			.forEach(DeterministicConsensusRunner::start);
+	}
 
+	public boolean executeNextMessage() {
 		List<DeterministicConsensusRunner> consensusRunners = this.nodeInstances.stream()
 			.map(i -> i.getInstance(DeterministicConsensusRunner.class))
 			.collect(Collectors.toList());
 
-		consensusRunners.forEach(DeterministicConsensusRunner::start);
-
-		while (true) {
-			List<ControlledMessage> controlledMessages = this.messageQueue.lowestTimeMessages();
-			if (controlledMessages.isEmpty()) {
-				throw new IllegalStateException("No messages available (Lost Responsiveness)");
-			}
-			ControlledMessage controlledMessage = this.messageSelector.select(controlledMessages);
-			if (controlledMessage == null) {
-				// We are done
-				break;
-			}
-			this.messageQueue.remove(controlledMessage);
-			this.currentTime = Math.max(this.currentTime, controlledMessage.arrivalTime());
-			int receiver = controlledMessage.channelId().receiverIndex();
-			String bftNode = " " + this.nodeLookup.inverse().get(receiver);
-			ThreadContext.put("bftNode", bftNode);
-			try {
-				log.debug("Received message {} at {}", controlledMessage, this.currentTime);
-				consensusRunners.get(receiver).handleMessage(controlledMessage.message());
-			} finally {
-				ThreadContext.remove("bftNode");
-			}
+		List<ControlledMessage> controlledMessages = this.messageQueue.lowestTimeMessages();
+		if (controlledMessages.isEmpty()) {
+			throw new IllegalStateException("No messages available (Lost Responsiveness)");
 		}
+		ControlledMessage controlledMessage = this.messageSelector.select(controlledMessages);
+		if (controlledMessage == null) {
+			// We are done
+			return true;
+		}
+
+		this.messageQueue.remove(controlledMessage);
+		this.currentTime = Math.max(this.currentTime, controlledMessage.arrivalTime());
+		int receiver = controlledMessage.channelId().receiverIndex();
+		String bftNode = " " + this.nodeLookup.inverse().get(receiver);
+		ThreadContext.put("bftNode", bftNode);
+		try {
+			log.debug("Received message {} at {}", controlledMessage, this.currentTime);
+			consensusRunners.get(receiver).handleMessage(controlledMessage.message());
+		} finally {
+			ThreadContext.remove("bftNode");
+		}
+
+		return false;
 	}
 
 	public int numNodes() {
@@ -188,12 +190,10 @@ public final class DeterministicNetwork {
 		}
 	}
 
-	private Injector createBFTInstance(BFTNode self, int index, Collection<Module> syncExecutionModules, Module overrideModule) {
+	private Injector createBFTInstance(BFTNode self, int index, Collection<Module> modules, Module overrideModule) {
 		Module module = Modules.combine(
-			new ConsensusModule(),
-			new MockedCryptoModule(),
 			new DeterministicNetworkModule(self, createSender(self, index)),
-			Modules.combine(syncExecutionModules)
+			Modules.combine(modules)
 		);
 		if (overrideModule != null) {
 			module = Modules.override(module).with(overrideModule);
