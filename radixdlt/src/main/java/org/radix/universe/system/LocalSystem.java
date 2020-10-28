@@ -19,9 +19,7 @@ package org.radix.universe.system;
 
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.exception.CryptoException;
 import com.radixdlt.middleware2.InfoSupplier;
-import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
 
@@ -31,8 +29,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.keys.Keys;
 import com.radixdlt.network.transport.StaticTransportMetadata;
 import com.radixdlt.network.transport.TransportInfo;
 import com.radixdlt.network.transport.tcp.TCPConstants;
@@ -99,13 +95,5 @@ public final class LocalSystem extends RadixSystem {
 				)
 			)
 		);
-	}
-
-	private static ECKeyPair loadNodeKey(String nodeKeyPath) {
-		try {
-			return Keys.readKey(nodeKeyPath, "node", "RADIX_NODE_KEYSTORE_PASSWORD", "RADIX_NODE_KEY_PASSWORD");
-		} catch (IOException | CryptoException ex) {
-			throw new IllegalStateException("while loading node key", ex);
-		}
 	}
 }

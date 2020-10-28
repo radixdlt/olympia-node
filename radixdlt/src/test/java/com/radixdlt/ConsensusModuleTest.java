@@ -33,7 +33,6 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Module;
 import com.google.inject.Provides;
-import com.google.inject.name.Named;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Command;
@@ -42,6 +41,7 @@ import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
@@ -140,40 +140,19 @@ public class ConsensusModuleTest {
 				bind(PacemakerTimeoutSender.class).toInstance(mock(PacemakerTimeoutSender.class));
 				bind(BFTSyncTimeoutScheduler.class).toInstance(mock(BFTSyncTimeoutScheduler.class));
 				bind(BFTConfiguration.class).toInstance(bftConfiguration);
-				bind(Integer.class).annotatedWith(BFTSyncPatienceMillis.class).toInstance(200);
+				bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(200);
+				bindConstant().annotatedWith(PacemakerTimeout.class).to(1000L);
+				bindConstant().annotatedWith(PacemakerRate.class).to(2.0);
+				bindConstant().annotatedWith(PacemakerMaxExponent.class).to(6);
 
 				ECKeyPair ecKeyPair = ECKeyPair.generateNew();
 				bind(HashSigner.class).toInstance(ecKeyPair::sign);
 			}
 
 			@Provides
-			@PacemakerTimeout
-			long pacemakerTimeout() {
-				return 1000L;
-			}
-
-			@Provides
-			@PacemakerRate
-			double pacemakerRate() {
-				return 2.0;
-			}
-
-			@Provides
-			@PacemakerMaxExponent
-			int pacemakerMaxExponent() {
-				return 6;
-			}
-
-			@Provides
-			@Named("self")
+			@Self
 			private BFTNode bftNode() {
 				return BFTNode.create(ecKeyPair.getPublicKey());
-			}
-
-			@Provides
-			@Named("self")
-			private ECKeyPair keyPair() {
-				return ecKeyPair;
 			}
 		};
 	}

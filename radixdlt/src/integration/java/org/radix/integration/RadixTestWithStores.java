@@ -17,46 +17,33 @@
 
 package org.radix.integration;
 
-import com.radixdlt.network.addressbook.AddressBook;
-import com.radixdlt.network.messaging.MessageCentral;
+import com.google.inject.Inject;
 import com.radixdlt.store.LedgerEntryStore;
 import org.junit.After;
 import org.junit.Before;
 import org.radix.GlobalInjector;
 import org.radix.database.DatabaseEnvironment;
 
-import java.io.IOException;
 import java.util.Objects;
 
 public class RadixTestWithStores extends RadixTest {
+	@Inject
 	private DatabaseEnvironment dbEnv;
+	@Inject
 	private LedgerEntryStore store;
-	//private ChainedBFT bft;
-	private MessageCentral messageCentral;
-	private AddressBook addressBook;
 
 	@Before
 	public void beforeEachRadixTest() {
 		GlobalInjector injector = new GlobalInjector(getProperties());
-		this.messageCentral = injector.getInjector().getInstance(MessageCentral.class);
-		this.addressBook = injector.getInjector().getInstance(AddressBook.class);
-		this.dbEnv = injector.getInjector().getInstance(DatabaseEnvironment.class);
-
-		store = injector.getInjector().getInstance(LedgerEntryStore.class);
+		injector.getInjector().injectMembers(this);
 	}
 
 	@After
-	public void afterEachRadixTest() throws IOException {
+	public void afterEachRadixTest() {
 		// Null checks to better handle case where @Before throws
 		if (store != null) {
 			store.close();
 			store.reset();
-		}
-		if (messageCentral != null) {
-			messageCentral.close();
-		}
-		if (addressBook != null) {
-			addressBook.close();
 		}
 
 		if (this.dbEnv != null) {
@@ -65,8 +52,6 @@ public class RadixTestWithStores extends RadixTest {
 
 		dbEnv = null;
 		store = null;
-		messageCentral = null;
-		addressBook = null;
 	}
 
 	protected DatabaseEnvironment getDbEnv() {

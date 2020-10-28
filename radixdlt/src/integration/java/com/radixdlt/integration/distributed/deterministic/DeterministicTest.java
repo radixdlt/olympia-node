@@ -20,7 +20,6 @@ package com.radixdlt.integration.distributed.deterministic;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
-import com.google.inject.Provides;
 import com.radixdlt.EpochsConsensusModule;
 import com.radixdlt.LedgerCommandGeneratorModule;
 import com.radixdlt.EpochsLedgerUpdateModule;
@@ -166,25 +165,11 @@ public final class DeterministicTest {
 			modules.add(new AbstractModule() {
 				@Override
 				public void configure() {
-					bind(Integer.class).annotatedWith(BFTSyncPatienceMillis.class).toInstance(50);
-				}
-
-				@Provides
-				@PacemakerTimeout
-				long pacemakerTimeout() {
-					return pacemakerTimeout;
-				}
-
-				@Provides
-				@PacemakerRate
-				double pacemakerRate() {
-					return 2.0;
-				}
-
-				@Provides
-				@PacemakerMaxExponent
-				int pacemakerMaxExponent() {
-					return 0; // Use constant timeout for now
+					bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(50);
+					bindConstant().annotatedWith(PacemakerTimeout.class).to(pacemakerTimeout);
+					bindConstant().annotatedWith(PacemakerRate.class).to(2.0);
+					// Use constant timeout for now
+					bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0);
 				}
 			});
 			modules.add(new LedgerLocalMempoolModule(10));

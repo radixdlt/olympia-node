@@ -21,7 +21,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.Multibinder;
-import com.google.inject.name.Named;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.BFTFactory;
@@ -30,6 +29,7 @@ import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
@@ -123,7 +123,7 @@ public final class ConsensusModule extends AbstractModule {
 	@Provides
 	@Singleton
 	public BFTEventProcessor eventProcessor(
-		@Named("self") BFTNode self,
+		@Self BFTNode self,
 		BFTConfiguration config,
 		BFTFactory bftFactory,
 		Pacemaker pacemaker,
@@ -153,7 +153,7 @@ public final class ConsensusModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private Pacemaker pacemaker(
-		@Named("self") BFTNode self,
+		@Self BFTNode self,
 		SystemCounters counters,
 		BFTConfiguration configuration,
 		VertexStore vertexStore,

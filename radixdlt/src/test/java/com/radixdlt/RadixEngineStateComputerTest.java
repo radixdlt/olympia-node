@@ -27,9 +27,8 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Module;
-import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
-import com.google.inject.name.Named;
+import com.google.inject.name.Names;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atommodel.AtomAlreadySignedException;
 import com.radixdlt.atommodel.system.SystemParticle;
@@ -94,24 +93,9 @@ public class RadixEngineStateComputerTest {
 				bind(BFTValidatorSet.class).toInstance(validatorSet);
 				bind(Hasher.class).toInstance(Sha256Hasher.withDefaultSerialization());
 				bind(new TypeLiteral<EngineStore<LedgerAtom>>() { }).toInstance(engineStore);
-			}
-
-			@Provides
-			@Named("magic")
-			int magic() {
-				return 0;
-			}
-
-			@Provides
-			@MinValidators
-			int minValidators() {
-				return 1;
-			}
-
-			@Provides
-			@EpochCeilingView
-			View epochCeilingView() {
-				return View.of(10);
+				bindConstant().annotatedWith(Names.named("magic")).to(0);
+				bindConstant().annotatedWith(MinValidators.class).to(1);
+				bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(10));
 			}
 		};
 	}

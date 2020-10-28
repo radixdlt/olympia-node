@@ -20,13 +20,13 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
-import com.google.inject.name.Named;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.ProposerElectionFactory;
 import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
@@ -120,7 +120,7 @@ public class EpochsConsensusModule extends AbstractModule {
 
 	@Provides
 	private PacemakerFactory pacemakerFactory(
-		@Named("self") BFTNode self,
+		@Self BFTNode self,
 		SystemCounters counters,
 		NextCommandGenerator nextCommandGenerator,
 		TimeSupplier timeSupplier,

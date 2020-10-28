@@ -53,6 +53,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.middleware2.InfoSupplier;
@@ -91,7 +92,7 @@ public class GlobalInjector {
 			@Provides
 			@Singleton
 			LocalSystem localSystem(
-				@Named("self") BFTNode self,
+				@Self BFTNode self,
 				InfoSupplier infoSupplier,
 				Universe universe,
 				HostIp hostIp
