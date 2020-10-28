@@ -23,6 +23,7 @@ import static org.mockito.Mockito.mock;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.Hasher;
