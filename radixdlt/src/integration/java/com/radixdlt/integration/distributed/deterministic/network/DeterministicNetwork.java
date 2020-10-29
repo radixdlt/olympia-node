@@ -94,11 +94,11 @@ public final class DeterministicNetwork {
 
 	/**
 	 * Create the network sender for the specified node.
-	 * @param nodeIndex The node index/id that this sender is for
 	 * @return A newly created {@link DeterministicSender} for the specified node
 	 */
-	public DeterministicSender createSender(BFTNode self, int nodeIndex) {
-		return new ControlledSender(this, self, nodeIndex);
+	public DeterministicSender createSender(BFTNode node) {
+		int nodeIndex = this.lookup(node);
+		return new ControlledSender(this, node, nodeIndex);
 	}
 
 	public Timed<ControlledMessage> nextMessage() {

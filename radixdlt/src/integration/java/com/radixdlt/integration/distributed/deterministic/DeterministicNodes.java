@@ -57,16 +57,15 @@ public class DeterministicNodes {
 		).collect(ImmutableBiMap.toImmutableBiMap(Pair::getFirst, Pair::getSecond));
 		this.nodeInstances = Streams.mapWithIndex(
 			nodes.stream(),
-			(node, index) -> createBFTInstance(node, (int) index, baseModule, overrideModule)
+			(node, index) -> createBFTInstance(node, baseModule, overrideModule)
 		).collect(ImmutableList.toImmutableList());
 	}
 
-	private Injector createBFTInstance(BFTNode self, int index, Module baseModule, Module overrideModule) {
+	private Injector createBFTInstance(BFTNode self, Module baseModule, Module overrideModule) {
 		Module module = Modules.combine(
 			new AbstractModule() {
 				public void configure() {
 					bind(BFTNode.class).annotatedWith(Self.class).toInstance(self);
-					bindConstant().annotatedWith(Self.class).to(index);
 					bind(DeterministicNetwork.class).toInstance(deterministicNetwork);
 				}
 			},

@@ -17,8 +17,6 @@
 
 package com.radixdlt.integration.recovery;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -29,7 +27,6 @@ import com.radixdlt.ConsensusModule;
 import com.radixdlt.CryptoModule;
 import com.radixdlt.EpochsConsensusModule;
 import com.radixdlt.EpochsLedgerUpdateModule;
-import com.radixdlt.EpochsLedgerUpdateRxModule;
 import com.radixdlt.EpochsSyncModule;
 import com.radixdlt.LedgerCommandGeneratorModule;
 import com.radixdlt.LedgerModule;
@@ -102,7 +99,6 @@ public class SingleNodeRecoveryTest {
 				protected void configure() {
 					bind(HashSigner.class).toInstance(ecKeyPair::sign);
 					bind(BFTNode.class).annotatedWith(Self.class).toInstance(self);
-					bindConstant().annotatedWith(Self.class).to(0);
 					bindConstant().annotatedWith(Names.named("magic")).to(0);
 					bind(DeterministicNetwork.class).toInstance(network);
 
@@ -172,7 +168,6 @@ public class SingleNodeRecoveryTest {
 			new EpochsConsensusModule(),
 			// Epochs - Ledger
 			new EpochsLedgerUpdateModule(),
-			new EpochsLedgerUpdateRxModule(),
 			// Epochs - Sync
 			new EpochsSyncModule(),
 
@@ -202,7 +197,7 @@ public class SingleNodeRecoveryTest {
 			// reset network as well for now so that old messages don't stick around
 			this.network = new DeterministicNetwork(List.of(self), MessageSelector.firstSelector(), MessageMutator.nothing());
 
-			injectSelf();
+			this.injectSelf();
 
 			this.processForCount(1000);
 		}

@@ -79,7 +79,7 @@ public class DeterministicMessageSenderModule extends AbstractModule {
 	}
 
 	@Provides
-	DeterministicSender sender(@Self BFTNode self, @Self int index, DeterministicNetwork network) {
-		return network.createSender(self, index);
+	DeterministicSender sender(@Self BFTNode self, DeterministicNetwork network) {
+		return network.createSender(self);
 	}
 }
