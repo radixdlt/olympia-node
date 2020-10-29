@@ -13,7 +13,7 @@ import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
-import cucumber.api.java.After;
+import io.cucumber.java.After;
 import io.reactivex.disposables.Disposable;
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -40,9 +40,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
-import cucumber.api.java.en.Given;
-import cucumber.api.java.en.Then;
-import cucumber.api.java.en.When;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
 import io.reactivex.observers.TestObserver;
 
 /**

@@ -29,7 +29,6 @@ import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.actions.FetchAtomsObservationAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
-import com.radixdlt.crypto.ECPublicKey;
 import io.reactivex.Completable;
 import io.reactivex.Observable;
 import io.reactivex.disposables.CompositeDisposable;
@@ -46,8 +45,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import org.assertj.core.util.Sets;
-
 import com.radixdlt.utils.Pair;
 
 import static org.junit.Assume.assumeTrue;
@@ -55,7 +52,6 @@ import static org.junit.Assume.assumeTrue;
 public final class DoubleSpendTestRunner {
 	private final Function<RadixApplicationAPI, DoubleSpendTestConditions> testSupplier;
 	private final BiFunction<BootstrapConfig, RadixIdentity, RadixApplicationAPI> apiSupplier;
-	private final Set<ECPublicKey> requestedTokens = Sets.newHashSet();
 
 	DoubleSpendTestRunner(
 		Function<RadixApplicationAPI, DoubleSpendTestConditions> testSupplier,
