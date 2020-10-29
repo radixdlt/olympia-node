@@ -20,6 +20,7 @@ package com.radixdlt.integration.distributed.deterministic;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
+import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.EpochsConsensusModule;
 import com.radixdlt.LedgerCommandGeneratorModule;
@@ -48,11 +49,11 @@ import com.radixdlt.integration.distributed.MockedSyncServiceModule;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.EUID;
+import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.utils.UInt256;
 
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.io.PrintStream;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.Optional;
@@ -77,7 +78,7 @@ public final class DeterministicTest {
 		ImmutableList<BFTNode> nodes,
 		MessageSelector messageSelector,
 		MessageMutator messageMutator,
-		Collection<Module> modules,
+		Module baseModule,
 		Module overrideModule
 	) {
 		this.network = new DeterministicNetwork(
@@ -89,7 +90,7 @@ public final class DeterministicTest {
 		this.nodes = new DeterministicNodes(
 			nodes,
 			this.network,
-			modules,
+			baseModule,
 			overrideModule
 		);
 	}
@@ -185,6 +186,7 @@ public final class DeterministicTest {
 					bindConstant().annotatedWith(PacemakerRate.class).to(2.0);
 					// Use constant timeout for now
 					bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0);
+					bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
 				}
 			});
 			modules.add(new ConsensusModule());
@@ -226,7 +228,7 @@ public final class DeterministicTest {
 				this.nodes,
 				this.messageSelector,
 				this.messageMutator,
-				modules.build(),
+				Modules.combine(modules.build()),
 				overrideModule
 			);
 		}

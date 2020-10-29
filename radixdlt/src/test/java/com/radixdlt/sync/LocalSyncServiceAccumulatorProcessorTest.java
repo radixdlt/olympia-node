@@ -42,7 +42,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class LocalSyncServiceAccumulatorProcessorTest {
-	private StateSyncNetwork stateSyncNetwork;
+	private StateSyncNetworkSender stateSyncNetwork;
 	private LocalSyncServiceAccumulatorProcessor syncServiceProcessor;
 	private SyncTimeoutScheduler syncTimeoutScheduler;
 	private VerifiedLedgerHeaderAndProof currentHeader;
@@ -51,7 +51,7 @@ public class LocalSyncServiceAccumulatorProcessorTest {
 
 	@Before
 	public void setUp() {
-		this.stateSyncNetwork = mock(StateSyncNetwork.class);
+		this.stateSyncNetwork = mock(StateSyncNetworkSender.class);
 		this.syncTimeoutScheduler = mock(SyncTimeoutScheduler.class);
 		this.currentHeader = mock(VerifiedLedgerHeaderAndProof.class);
 		this.currentAccumulatorState = mock(AccumulatorState.class);

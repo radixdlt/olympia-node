@@ -51,7 +51,7 @@ public final class SyncServiceRunner<T extends LedgerUpdate> implements ModuleRu
 		Observable<SyncInProgress> timeouts();
 	}
 
-	private final StateSyncNetwork stateSyncNetwork;
+	private final StateSyncNetworkRx stateSyncNetworkRx;
 	private final Scheduler singleThreadScheduler;
 	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("SyncManager"));
 	private final LocalSyncServiceProcessor localSyncServiceProcessor;
@@ -69,7 +69,7 @@ public final class SyncServiceRunner<T extends LedgerUpdate> implements ModuleRu
 		LocalSyncRequestsRx localSyncRequestsRx,
 		SyncTimeoutsRx syncTimeoutsRx,
 		Observable<T> ledgerUpdates,
-		StateSyncNetwork stateSyncNetwork,
+		StateSyncNetworkRx stateSyncNetworkRx,
 		LocalSyncServiceProcessor localSyncServiceProcessor,
 		RemoteSyncServiceProcessor remoteSyncServiceProcessor,
 		RemoteSyncResponseProcessor remoteSyncResponseProcessor,
@@ -79,7 +79,7 @@ public final class SyncServiceRunner<T extends LedgerUpdate> implements ModuleRu
 		this.syncTimeoutsRx = Objects.requireNonNull(syncTimeoutsRx);
 		this.ledgerUpdates = Objects.requireNonNull(ledgerUpdates);
 		this.localSyncServiceProcessor = Objects.requireNonNull(localSyncServiceProcessor);
-		this.stateSyncNetwork = Objects.requireNonNull(stateSyncNetwork);
+		this.stateSyncNetworkRx = Objects.requireNonNull(stateSyncNetworkRx);
 		this.singleThreadScheduler = Schedulers.from(this.executorService);
 		this.remoteSyncServiceProcessor = Objects.requireNonNull(remoteSyncServiceProcessor);
 		this.remoteSyncResponseProcessor = Objects.requireNonNull(remoteSyncResponseProcessor);
@@ -96,11 +96,11 @@ public final class SyncServiceRunner<T extends LedgerUpdate> implements ModuleRu
 				return;
 			}
 
-			Disposable d0 = stateSyncNetwork.syncRequests()
+			Disposable d0 = stateSyncNetworkRx.syncRequests()
 				.observeOn(singleThreadScheduler)
 				.subscribe(remoteSyncServiceProcessor::processRemoteSyncRequest);
 
-			Disposable d1 = stateSyncNetwork.syncResponses()
+			Disposable d1 = stateSyncNetworkRx.syncResponses()
 				.observeOn(singleThreadScheduler)
 				.subscribe(remoteSyncResponseProcessor::processSyncResponse);
 

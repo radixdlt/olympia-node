@@ -34,7 +34,7 @@ import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
-import com.radixdlt.sync.StateSyncNetwork;
+import com.radixdlt.sync.StateSyncNetworkSender;
 import com.radixdlt.utils.TypedMocks;
 
 import java.util.Optional;
@@ -48,7 +48,7 @@ public class EpochsLocalSyncServiceProcessorTest {
 	private EpochChange initialEpoch;
 	private VerifiedLedgerHeaderAndProof initialHeader;
 	private Function<BFTConfiguration, LocalSyncServiceAccumulatorProcessor> localSyncFactory;
-	private StateSyncNetwork stateSyncNetwork;
+	private StateSyncNetworkSender stateSyncNetwork;
 	private SyncedEpochSender syncedEpochSender;
 
 	@Before
@@ -57,7 +57,7 @@ public class EpochsLocalSyncServiceProcessorTest {
 		this.initialEpoch = mock(EpochChange.class);
 		this.initialHeader = mock(VerifiedLedgerHeaderAndProof.class);
 		this.localSyncFactory = TypedMocks.rmock(Function.class);
-		this.stateSyncNetwork = mock(StateSyncNetwork.class);
+		this.stateSyncNetwork = mock(StateSyncNetworkSender.class);
 		this.syncedEpochSender = mock(SyncedEpochSender.class);
 		this.processor = new EpochsLocalSyncServiceProcessor(
 			this.initialProcessor,

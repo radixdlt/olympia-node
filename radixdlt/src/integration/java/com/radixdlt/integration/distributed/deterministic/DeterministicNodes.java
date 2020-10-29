@@ -30,10 +30,8 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.integration.distributed.deterministic.network.ControlledMessage;
 import com.radixdlt.integration.distributed.deterministic.network.DeterministicNetwork;
-import com.radixdlt.integration.distributed.deterministic.network.DeterministicNetwork.DeterministicSender;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.schedulers.Timed;
-import java.util.Collection;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -49,7 +47,7 @@ public class DeterministicNodes {
 	public DeterministicNodes(
 		List<BFTNode> nodes,
 		DeterministicNetwork deterministicNetwork,
-		Collection<Module> modules,
+		Module baseModule,
 		Module overrideModule
 	) {
 		this.deterministicNetwork = deterministicNetwork;
@@ -59,20 +57,21 @@ public class DeterministicNodes {
 		).collect(ImmutableBiMap.toImmutableBiMap(Pair::getFirst, Pair::getSecond));
 		this.nodeInstances = Streams.mapWithIndex(
 			nodes.stream(),
-			(node, index) -> createBFTInstance(node, (int) index, modules, overrideModule)
+			(node, index) -> createBFTInstance(node, (int) index, baseModule, overrideModule)
 		).collect(ImmutableList.toImmutableList());
 	}
 
-	private Injector createBFTInstance(BFTNode self, int index, Collection<Module> modules, Module overrideModule) {
+	private Injector createBFTInstance(BFTNode self, int index, Module baseModule, Module overrideModule) {
 		Module module = Modules.combine(
 			new AbstractModule() {
 				public void configure() {
 					bind(BFTNode.class).annotatedWith(Self.class).toInstance(self);
-					bind(DeterministicSender.class).toInstance(deterministicNetwork.createSender(self, index));
+					bindConstant().annotatedWith(Self.class).to(index);
+					bind(DeterministicNetwork.class).toInstance(deterministicNetwork);
 				}
 			},
-			new DeterministicNetworkModule(),
-			Modules.combine(modules)
+			new DeterministicMessageSenderModule(),
+			baseModule
 		);
 		if (overrideModule != null) {
 			module = Modules.override(module).with(overrideModule);

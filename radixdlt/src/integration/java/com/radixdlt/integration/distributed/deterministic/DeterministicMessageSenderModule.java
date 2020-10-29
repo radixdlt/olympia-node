@@ -18,9 +18,12 @@
 package com.radixdlt.integration.distributed.deterministic;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.Timeout;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.sync.BFTSync.BFTSyncTimeoutScheduler;
@@ -35,14 +38,14 @@ import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.epochs.EpochChangeManager.EpochsLedgerUpdateSender;
+import com.radixdlt.integration.distributed.deterministic.network.DeterministicNetwork;
 import com.radixdlt.integration.distributed.deterministic.network.DeterministicNetwork.DeterministicSender;
-import com.radixdlt.network.TimeSupplier;
 
 /**
  * Module that supplies network senders, as well as some other assorted
  * objects used to connect modules in the system.
  */
-public class DeterministicNetworkModule extends AbstractModule {
+public class DeterministicMessageSenderModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		EpochInfoSender emptyInfoSender = new EpochInfoSender() {
@@ -73,6 +76,10 @@ public class DeterministicNetworkModule extends AbstractModule {
 		bind(EpochInfoSender.class).toInstance(emptyInfoSender);
 
 		bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
-		bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
+	}
+
+	@Provides
+	DeterministicSender sender(@Self BFTNode self, @Self int index, DeterministicNetwork network) {
+		return network.createSender(self, index);
 	}
 }
