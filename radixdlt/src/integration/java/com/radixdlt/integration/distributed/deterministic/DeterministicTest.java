@@ -289,12 +289,11 @@ public final class DeterministicTest {
 	}
 
 	/**
-	 * Returns a selector that uses the supplied selector to select messages,
-	 * but stops processing messages after a specified number of epochs and
+	 * Returns a predicate that stops processing messages after a specified number of epochs and
 	 * views.
 	 *
 	 * @param maxEpochView the last epoch and view to process
-	 * @return a selector that uses the specified selector, and halts
+	 * @return a predicate that halts
 	 * 		processing after the specified number of epochs and views
 	 */
 	public static Predicate<Timed<ControlledMessage>> hasReachedEpochView(EpochView maxEpochView) {
@@ -311,12 +310,10 @@ public final class DeterministicTest {
 
 
 	/**
-	 * Returns a selector that uses the supplied selector to select messages,
-	 * but stops processing messages after a specified number of views.
+	 * Returns a predicate that stops processing messages after a specified number of views.
 	 *
 	 * @param view the last view to process
-	 * @return a selector that uses the specified selector, and halts
-	 * 		processing after the specified number of views
+	 * @return a predicate that return true after the specified number of views
 	 */
 	public static Predicate<Timed<ControlledMessage>> hasReachedView(View view) {
 		final long maxViewNumber = view.previous().number();
