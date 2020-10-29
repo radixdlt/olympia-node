@@ -36,7 +36,6 @@ import io.reactivex.rxjava3.schedulers.Timed;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.logging.log4j.LogManager;
@@ -102,21 +101,17 @@ public final class DeterministicNetwork {
 		return new ControlledSender(this, self, nodeIndex);
 	}
 
-	public Optional<Timed<ControlledMessage>> nextMessage() {
+	public Timed<ControlledMessage> nextMessage() {
 		List<ControlledMessage> controlledMessages = this.messageQueue.lowestTimeMessages();
 		if (controlledMessages.isEmpty()) {
 			throw new IllegalStateException("No messages available (Lost Responsiveness)");
 		}
 		ControlledMessage controlledMessage = this.messageSelector.select(controlledMessages);
-		if (controlledMessage == null) {
-			// We are done
-			return Optional.empty();
-		}
 
 		this.messageQueue.remove(controlledMessage);
 		this.currentTime = Math.max(this.currentTime, controlledMessage.arrivalTime());
 
-		return Optional.of(new Timed<>(controlledMessage, this.currentTime, TimeUnit.MILLISECONDS));
+		return new Timed<>(controlledMessage, this.currentTime, TimeUnit.MILLISECONDS);
 	}
 
 	public long currentTime() {

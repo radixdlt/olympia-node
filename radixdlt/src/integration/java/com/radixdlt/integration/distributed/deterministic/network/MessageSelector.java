@@ -19,11 +19,6 @@ package com.radixdlt.integration.distributed.deterministic.network;
 
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicLong;
-
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.epoch.EpochView;
 
 /**
  * Select a message from a list of possible messages.
@@ -59,69 +54,5 @@ public interface MessageSelector {
 	 */
 	static MessageSelector randomSelector(Random random) {
 		return messages -> messages.get(random.nextInt(messages.size()));
-	}
-
-	/**
-	 * Returns a selector that uses the supplied selector to select messages,
-	 * but stops processing messages after the specified count have been
-	 * processed.
-	 *
-	 * @param selector the selector to use
-	 * @param messageCount the number of messages to process before stopping
-	 * @return a selector that uses the specified selector, and halts
-	 * 		processing after the specified number of messages
-	 */
-	static MessageSelector selectAndStopAfter(MessageSelector selector, long messageCount) {
-		final AtomicLong counter = new AtomicLong(messageCount);
-		return messageList -> {
-			ControlledMessage message = selector.select(messageList);
-			if (counter.getAndDecrement() == 0) {
-				return null;
-			}
-			return message;
-		};
-	}
-
-	/**
-	 * Returns a selector that uses the supplied selector to select messages,
-	 * but stops processing messages after a specified number of views.
-	 *
-	 * @param selector the selector to use
-	 * @param view the last view to process
-	 * @return a selector that uses the specified selector, and halts
-	 * 		processing after the specified number of views
-	 */
-	static MessageSelector selectAndStopAt(MessageSelector selector, View view) {
-		final long maxViewNumber = view.previous().number();
-		return messageList -> {
-			ControlledMessage message = selector.select(messageList);
-			if (message == null || !(message.message() instanceof Proposal)) {
-				return message;
-			}
-			Proposal proposal = (Proposal) message.message();
-			return (proposal.getView().number() > maxViewNumber) ? null : message;
-		};
-	}
-
-	/**
-	 * Returns a selector that uses the supplied selector to select messages,
-	 * but stops processing messages after a specified number of epochs and
-	 * views.
-	 *
-	 * @param selector the selector to use
-	 * @param maxEpochView the last epoch and view to process
-	 * @return a selector that uses the specified selector, and halts
-	 * 		processing after the specified number of epochs and views
-	 */
-	static MessageSelector selectAndStopAt(MessageSelector selector, EpochView maxEpochView) {
-		return messageList -> {
-			ControlledMessage message = selector.select(messageList);
-			if (message == null || !(message.message() instanceof Proposal)) {
-				return message;
-			}
-			Proposal p = (Proposal) message.message();
-			EpochView nev = EpochView.of(p.getEpoch(), p.getVertex().getView());
-			return (nev.compareTo(maxEpochView) > 0) ? null : message;
-		};
 	}
 }

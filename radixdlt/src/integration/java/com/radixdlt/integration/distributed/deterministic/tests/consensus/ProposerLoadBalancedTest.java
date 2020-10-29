@@ -40,11 +40,11 @@ public class ProposerLoadBalancedTest {
 
 		DeterministicTest test = DeterministicTest.builder()
 			.numNodes(numNodes)
-			.messageSelector(MessageSelector.selectAndStopAt(MessageSelector.firstSelector(), View.of(numViews)))
+			.messageSelector(MessageSelector.firstSelector())
 			.messageMutator(mutator())
 			.epochNodeWeightMapping(mapping)
 			.build()
-			.run();
+			.runUntil(DeterministicTest.hasReachedView(View.of(numViews)));
 
 		return IntStream.range(0, numNodes)
 			.mapToObj(test::getSystemCounters)

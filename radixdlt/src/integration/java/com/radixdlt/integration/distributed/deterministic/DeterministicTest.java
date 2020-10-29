@@ -27,6 +27,7 @@ import com.radixdlt.LedgerCommandGeneratorModule;
 import com.radixdlt.EpochsLedgerUpdateModule;
 import com.radixdlt.LedgerLocalMempoolModule;
 import com.radixdlt.LedgerModule;
+import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -34,6 +35,7 @@ import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.integration.distributed.MockedCryptoModule;
 import com.radixdlt.integration.distributed.deterministic.configuration.EpochNodeWeightMapping;
@@ -56,9 +58,9 @@ import io.reactivex.rxjava3.schedulers.Timed;
 import java.io.PrintStream;
 import java.util.Comparator;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.LongFunction;
+import java.util.function.Predicate;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
@@ -102,7 +104,7 @@ public final class DeterministicTest {
 		}
 
 		private ImmutableList<BFTNode> nodes = ImmutableList.of(BFTNode.create(ECKeyPair.generateNew().getPublicKey()));
-		private MessageSelector messageSelector = MessageSelector.selectAndStopAfter(MessageSelector.firstSelector(), 30_000L);
+		private MessageSelector messageSelector = MessageSelector.firstSelector();
 		private MessageMutator messageMutator = MessageMutator.nothing();
 		private long pacemakerTimeout = 1000L;
 		private EpochNodeWeightMapping epochNodeWeightMapping = null;
@@ -260,21 +262,72 @@ public final class DeterministicTest {
 		return new Builder();
 	}
 
-	public DeterministicTest run() {
+	public DeterministicTest runForCount(int count) {
+		this.nodes.start();
+
+		for (int i = 0; i < count; i++) {
+			Timed<ControlledMessage> nextMsg = this.network.nextMessage();
+			this.nodes.handleMessage(nextMsg);
+		}
+
+		return this;
+	}
+
+	public DeterministicTest runUntil(Predicate<Timed<ControlledMessage>> stopPredicate) {
 		this.nodes.start();
 
 		while (true) {
-			Optional<Timed<ControlledMessage>> nextMsgMaybe = this.network.nextMessage();
-			if (nextMsgMaybe.isEmpty()) {
+			Timed<ControlledMessage> nextMsg = this.network.nextMessage();
+			if (stopPredicate.test(nextMsg)) {
 				break;
 			}
-
-			Timed<ControlledMessage> nextMsg = nextMsgMaybe.get();
 
 			this.nodes.handleMessage(nextMsg);
 		}
 
 		return this;
+	}
+
+	/**
+	 * Returns a selector that uses the supplied selector to select messages,
+	 * but stops processing messages after a specified number of epochs and
+	 * views.
+	 *
+	 * @param maxEpochView the last epoch and view to process
+	 * @return a selector that uses the specified selector, and halts
+	 * 		processing after the specified number of epochs and views
+	 */
+	public static Predicate<Timed<ControlledMessage>> hasReachedEpochView(EpochView maxEpochView) {
+		return timedMsg -> {
+			ControlledMessage message = timedMsg.value();
+			if (!(message.message() instanceof Proposal)) {
+				return false;
+			}
+			Proposal p = (Proposal) message.message();
+			EpochView nev = EpochView.of(p.getEpoch(), p.getVertex().getView());
+			return (nev.compareTo(maxEpochView) > 0);
+		};
+	}
+
+
+	/**
+	 * Returns a selector that uses the supplied selector to select messages,
+	 * but stops processing messages after a specified number of views.
+	 *
+	 * @param view the last view to process
+	 * @return a selector that uses the specified selector, and halts
+	 * 		processing after the specified number of views
+	 */
+	public static Predicate<Timed<ControlledMessage>> hasReachedView(View view) {
+		final long maxViewNumber = view.previous().number();
+		return timedMsg -> {
+			ControlledMessage message = timedMsg.value();
+			if (!(message.message() instanceof Proposal)) {
+				return false;
+			}
+			Proposal proposal = (Proposal) message.message();
+			return (proposal.getView().number() > maxViewNumber);
+		};
 	}
 
 	public SystemCounters getSystemCounters(int nodeIndex) {

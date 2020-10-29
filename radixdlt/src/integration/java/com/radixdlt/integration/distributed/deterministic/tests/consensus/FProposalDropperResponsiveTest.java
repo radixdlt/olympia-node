@@ -39,17 +39,15 @@ import org.assertj.core.util.Sets;
 import org.junit.Test;
 
 public class FProposalDropperResponsiveTest {
-	private static final long NUM_STEPS = 30000;
-
 	private final Random random = new Random(123456789);
 
 	private void runFProposalDropperResponsiveTest(int numNodes, Function<View, Set<Integer>> nodesToDropFunction) {
 		DeterministicTest.builder()
 			.numNodes(numNodes)
-			.messageSelector(MessageSelector.selectAndStopAfter(MessageSelector.randomSelector(random), NUM_STEPS))
+			.messageSelector(MessageSelector.randomSelector(random))
 			.messageMutator(MessageMutator.dropTimeouts().andThen(dropNodes(numNodes, nodesToDropFunction)))
 			.build()
-			.run();
+			.runForCount(30_000);
 	}
 
 	private static MessageMutator dropNodes(int numNodes, Function<View, Set<Integer>> nodesToDropFunction) {
