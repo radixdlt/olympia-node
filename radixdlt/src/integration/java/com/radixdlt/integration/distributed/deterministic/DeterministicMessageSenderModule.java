@@ -38,7 +38,7 @@ import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.epochs.EpochChangeManager.EpochsLedgerUpdateSender;
-import com.radixdlt.integration.distributed.deterministic.network.DeterministicNetwork;
+import com.radixdlt.integration.distributed.deterministic.DeterministicNodes.DeterministicSenderFactory;
 import com.radixdlt.integration.distributed.deterministic.network.DeterministicNetwork.DeterministicSender;
 
 /**
@@ -79,7 +79,7 @@ public class DeterministicMessageSenderModule extends AbstractModule {
 	}
 
 	@Provides
-	DeterministicSender sender(@Self BFTNode self, DeterministicNetwork network) {
-		return network.createSender(self);
+	DeterministicSender sender(@Self BFTNode self, DeterministicSenderFactory senderFactory) {
+		return senderFactory.create(self);
 	}
 }

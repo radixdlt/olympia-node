@@ -80,6 +80,13 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+/**
+ * A deterministic single node test which uses a real database.
+ * Consensus is executed for a few views/epochs until a new injector instance
+ * is created, somewhat similar to a process restart. Consensus should then
+ * be able to run correctly again from the new injector.
+ * This is repeated a certain number of times.
+ */
 public class SingleNodeRecoveryTest {
 
 	@Rule

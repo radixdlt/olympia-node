@@ -19,6 +19,9 @@ package com.radixdlt.sync;
 
 import io.reactivex.rxjava3.core.Observable;
 
+/**
+ * Messages received from the sync network
+ */
 public interface StateSyncNetworkRx {
 
 	/**

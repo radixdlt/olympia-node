@@ -29,7 +29,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.integration.distributed.deterministic.network.ControlledMessage;
-import com.radixdlt.integration.distributed.deterministic.network.DeterministicNetwork;
+import com.radixdlt.integration.distributed.deterministic.network.DeterministicNetwork.DeterministicSender;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.List;
@@ -37,28 +37,34 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
 
-public class DeterministicNodes {
+/**
+ * BFT Nodes treated as a single unit where one message is processed at a time.
+ */
+public final class DeterministicNodes {
 	private static final Logger log = LogManager.getLogger();
 
 	private final ImmutableList<Injector> nodeInstances;
-	private final DeterministicNetwork deterministicNetwork;
+	private final DeterministicSenderFactory senderFactory;
 	private final ImmutableBiMap<BFTNode, Integer> nodeLookup;
+
+	public interface DeterministicSenderFactory {
+		DeterministicSender create(BFTNode node);
+	}
 
 	public DeterministicNodes(
 		List<BFTNode> nodes,
-		DeterministicNetwork deterministicNetwork,
+		DeterministicSenderFactory senderFactory,
 		Module baseModule,
 		Module overrideModule
 	) {
-		this.deterministicNetwork = deterministicNetwork;
+		this.senderFactory = senderFactory;
 		this.nodeLookup = Streams.mapWithIndex(
 			nodes.stream(),
 			(node, index) -> Pair.of(node, (int) index)
 		).collect(ImmutableBiMap.toImmutableBiMap(Pair::getFirst, Pair::getSecond));
-		this.nodeInstances = Streams.mapWithIndex(
-			nodes.stream(),
-			(node, index) -> createBFTInstance(node, baseModule, overrideModule)
-		).collect(ImmutableList.toImmutableList());
+		this.nodeInstances = nodes.stream()
+			.map(node -> createBFTInstance(node, baseModule, overrideModule))
+			.collect(ImmutableList.toImmutableList());
 	}
 
 	private Injector createBFTInstance(BFTNode self, Module baseModule, Module overrideModule) {
@@ -66,7 +72,7 @@ public class DeterministicNodes {
 			new AbstractModule() {
 				public void configure() {
 					bind(BFTNode.class).annotatedWith(Self.class).toInstance(self);
-					bind(DeterministicNetwork.class).toInstance(deterministicNetwork);
+					bind(DeterministicSenderFactory.class).toInstance(senderFactory);
 				}
 			},
 			new DeterministicMessageSenderModule(),
