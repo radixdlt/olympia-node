@@ -30,6 +30,7 @@ import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.data.SendMessageAction;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
+import static com.radixdlt.client.application.translate.tokens.TokenUnitConversions.unitsToSubunits;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
@@ -176,6 +177,112 @@ public class TokenFees {
 			).toObservable()
 			.doOnNext(this::printSubmitAtomAction)
 			.subscribe(this.observer);
+	}
+
+	@When("^I submit an atom with a handcrafted fee group,$")
+	public void i_submit_an_atom_with_a_handcrafted_fee_group() {
+		final RadixAddress address = this.api.getAddress();
+		final Transaction t = this.api.createTransaction();
+		final RRI feeTokenRri = this.api.getNativeTokenRef();
+
+		t.stage(SendMessageAction.create(address, address, "Test message".getBytes(StandardCharsets.UTF_8), true));
+
+		final TransferrableTokensParticle inParticle = getUpTtpForFeeToken();
+		final ParticleGroup feeParticleGroup = new ParticleGroup(List.of(
+				SpunParticle.down(inParticle),
+				SpunParticle.up(new UnallocatedTokensParticle(
+						unitsToSubunits(BigDecimal.valueOf(80, 3)), UInt256.ONE, System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions())),
+				SpunParticle.up(new TransferrableTokensParticle(
+						unitsToSubunits(BigDecimal.valueOf(9920, 3)), UInt256.ONE, address, System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions()))
+		));
+
+		t.stage(feeParticleGroup);
+
+		t.commitAndPushWithoutFee()
+				.toObservable()
+				.doOnNext(this::printSubmitAtomAction)
+				.subscribe(this.observer);
+	}
+
+	@When("^I submit an atom with a fee group with two output TransferrableTokensParticles,$")
+	public void i_submit_an_atom_with_a_fee_group_with_two_output_ttps() {
+		final RadixAddress address = this.api.getAddress();
+		final Transaction t = this.api.createTransaction();
+		final RRI feeTokenRri = this.api.getNativeTokenRef();
+
+		t.stage(SendMessageAction.create(address, address, "Test message".getBytes(StandardCharsets.UTF_8), true));
+
+		final TransferrableTokensParticle inParticle = getUpTtpForFeeToken();
+
+		// 9920 millirads output amount is split in two particles: 9910 + 10
+		final ParticleGroup feeParticleGroup = new ParticleGroup(List.of(
+				SpunParticle.down(inParticle),
+				SpunParticle.up(new UnallocatedTokensParticle(
+						unitsToSubunits(BigDecimal.valueOf(80, 3)), UInt256.ONE, System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions())),
+				SpunParticle.up(new TransferrableTokensParticle(
+						unitsToSubunits(BigDecimal.valueOf(9910, 3)), UInt256.ONE, address, System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions())),
+				SpunParticle.up(new TransferrableTokensParticle(
+						unitsToSubunits(BigDecimal.valueOf(10, 3)), UInt256.ONE, address, System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions()))
+		));
+
+		t.stage(feeParticleGroup);
+
+		t.commitAndPushWithoutFee()
+				.toObservable()
+				.doOnNext(this::printSubmitAtomAction)
+				.subscribe(this.observer);
+	}
+
+	@When("^I submit an atom with a fee group that has an input TransferrableTokensParticle with a smaller value than the output TransferrableTokensParticle,$")
+	public void i_submit_an_atom_with_a_fee_group_that_has_an_input_ttp_with_a_smaller_value_than_the_output_ttp() {
+		final RadixAddress address = this.api.getAddress();
+		final Transaction t = this.api.createTransaction();
+		final RRI feeTokenRri = this.api.getNativeTokenRef();
+
+		t.stage(SendMessageAction.create(address, address, "Test message".getBytes(StandardCharsets.UTF_8), true));
+
+		final TransferrableTokensParticle inParticle = getUpTtpForFeeToken();
+
+		final TransferrableTokensParticle exchangedParticle1 = new TransferrableTokensParticle(
+				unitsToSubunits(BigDecimal.valueOf(40, 3)), UInt256.ONE, address, System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions());
+
+		final TransferrableTokensParticle exchangedParticle2 = new TransferrableTokensParticle(
+				unitsToSubunits(BigDecimal.valueOf(9960, 3)), UInt256.ONE, address, System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions());
+
+		// 10k millirads particle is exchanged for two particles (40 and 9960 millirads)
+		final ParticleGroup exchangeParticleGroup = new ParticleGroup(List.of(
+				SpunParticle.down(inParticle),
+				SpunParticle.up(exchangedParticle1),
+				SpunParticle.up(exchangedParticle2)
+		));
+		t.stage(exchangeParticleGroup);
+
+		// 40 millirad particle is superfluous. It would need to be removed and output changed to 9880 in order for fee group to be valid.
+		final ParticleGroup feeParticleGroup = new ParticleGroup(List.of(
+				SpunParticle.down(exchangedParticle1),
+				SpunParticle.down(exchangedParticle2),
+				SpunParticle.up(new UnallocatedTokensParticle(
+						unitsToSubunits(BigDecimal.valueOf(80, 3)), UInt256.ONE, System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions())),
+				SpunParticle.up(new TransferrableTokensParticle(
+						unitsToSubunits(BigDecimal.valueOf(9920, 3)), UInt256.ONE, address, System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions()))
+		));
+
+		t.stage(feeParticleGroup);
+
+		t.commitAndPushWithoutFee()
+				.toObservable()
+				.doOnNext(this::printSubmitAtomAction)
+				.subscribe(this.observer);
+	}
+
+	private TransferrableTokensParticle getUpTtpForFeeToken() {
+		return this.api.getAtomStore()
+				.getUpParticles(this.api.getAddress(), null)
+				.filter(TransferrableTokensParticle.class::isInstance)
+				.map(TransferrableTokensParticle.class::cast)
+				.filter(ttp -> ttp.getTokenDefinitionReference().equals(this.api.getNativeTokenRef()))
+				.findFirst()
+				.get();
 	}
 
 	private BigDecimal atomFee() {

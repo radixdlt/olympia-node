@@ -53,3 +53,18 @@ Scenario: 8. Atom creating fixed supply charged higher fee
   When I create an atom that creates a fixed supply token,
   And I submit that atom to the network with the computed minimum fee,
   Then I can see that the fee is at least 1 rad
+
+Scenario: 9.
+  Given I have a connection to a Radix network,
+  When I submit an atom with a handcrafted fee group,
+  Then I can see that atom being accepted by the network
+
+Scenario: 10.
+  Given I have a connection to a Radix network,
+  When I submit an atom with a fee group with two output TransferrableTokensParticles,
+  Then I can see that atom being rejected by the network
+
+Scenario: 11.
+  Given I have a connection to a Radix network,
+  When I submit an atom with a fee group that has an input TransferrableTokensParticle with a smaller value than the output TransferrableTokensParticle,
+  Then I can see that atom being rejected by the network
