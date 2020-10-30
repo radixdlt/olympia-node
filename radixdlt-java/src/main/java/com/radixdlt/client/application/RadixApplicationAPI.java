@@ -1389,8 +1389,17 @@ public class RadixApplicationAPI {
 			Atom feelessAtom = Atom.create(universe.getAtomStore().getStaged(this.uuid), this.metadata);
 			feeProcessor.process(this::actionProcessor, getAddress(), feelessAtom, Optional.ofNullable(fee));
 
-			List<ParticleGroup> particleGroups = universe.getAtomStore().getStagedAndClear(this.uuid);
-			ImmutableMap<String, String> metadataCopy = ImmutableMap.copyOf(this.metadata);
+			return createAtomFromStagedParticles();
+		}
+
+		/**
+		 * Creates an atom composed of all of the currently staged particles.
+		 *
+		 * @return an unsigned atom
+		 */
+		private Atom createAtomFromStagedParticles() {
+			final List<ParticleGroup> particleGroups = universe.getAtomStore().getStagedAndClear(this.uuid);
+			final ImmutableMap<String, String> metadataCopy = ImmutableMap.copyOf(this.metadata);
 			this.metadata.clear();
 
 			return Atom.create(particleGroups, metadataCopy);
@@ -1420,12 +1429,23 @@ public class RadixApplicationAPI {
 		}
 
 		/**
-		 * Commit the transaction onto the ledger
+		 * Commit the transaction onto the ledger. Fee particles will be added to the atom.
 		 *
 		 * @return the results of committing
 		 */
 		public Result commitAndPush() {
 			return commitAndPushWithFee(null);
+		}
+
+		/**
+		 * Commit the transaction onto the ledger. No fee particles will be added.
+		 *
+		 * @return the results of committing
+		 */
+		public Result commitAndPushWithoutFee() {
+			final Atom unsignedAtom = createAtomFromStagedParticles();
+			final Single<Atom> atom = identity.addSignature(unsignedAtom);
+			return createAtomSubmission(atom, false, null).connect();
 		}
 
 		/**
