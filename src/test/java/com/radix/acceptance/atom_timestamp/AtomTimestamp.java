@@ -3,7 +3,6 @@ package com.radix.acceptance.atom_timestamp;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.ledger.AtomObservation;
 import com.radixdlt.identifiers.RRI;
-import cucumber.api.java.After;
 import io.reactivex.disposables.Disposable;
 import java.math.BigDecimal;
 import java.util.List;
@@ -14,10 +13,11 @@ import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.identifiers.RadixAddress;
 
-import cucumber.api.java.en.And;
-import cucumber.api.java.en.Given;
-import cucumber.api.java.en.Then;
-import cucumber.api.java.en.When;
+import io.cucumber.java.After;
+import io.cucumber.java.en.And;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
 import io.reactivex.observers.TestObserver;
 import io.reactivex.observers.BaseTestConsumer.TestWaitStrategy;
 
