@@ -33,9 +33,6 @@ import org.radix.universe.system.RadixSystem;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.network.transport.StaticTransportMetadata;
-import com.radixdlt.network.transport.TransportInfo;
-
 import static org.junit.Assert.*;
 
 public class AddressBookPersistenceTest extends RadixTest {
@@ -109,11 +106,6 @@ public class AddressBookPersistenceTest extends RadixTest {
 		PeerWithSystem pws2 = makePeer();
 		assertTrue(this.abp.savePeer(pws2));
 		assertEquals(2, peerCount());
-
-		// Can't save peer without a nid
-		TransportInfo ti = TransportInfo.of("DUMMY", StaticTransportMetadata.empty());
-		PeerWithTransport pwt = new PeerWithTransport(ti);
-		assertFalse(this.abp.savePeer(pwt));
 	}
 
 	@Test

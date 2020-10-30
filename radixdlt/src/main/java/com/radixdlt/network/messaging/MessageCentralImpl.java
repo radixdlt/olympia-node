@@ -29,6 +29,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.network.messaging.Message;
 import org.radix.universe.system.LocalSystem;
+import org.radix.universe.system.SystemMessage;
 import org.radix.utils.SimpleThreadPool;
 import org.xerial.snappy.Snappy;
 
@@ -41,7 +42,9 @@ import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
+import com.radixdlt.network.addressbook.PeerWithTransport;
 import com.radixdlt.network.transport.Transport;
+import com.radixdlt.network.transport.TransportInfo;
 import com.radixdlt.serialization.Serialization;
 
 final class MessageCentralImpl implements MessageCentral {
@@ -74,12 +77,12 @@ final class MessageCentralImpl implements MessageCentral {
 	private final RateLimiter outboundLogRateLimiter = RateLimiter.create(1.0);
 
 	// Inbound message handling
-	private final SimpleBlockingQueue<MessageEvent> inboundQueue;
-	private final SimpleThreadPool<MessageEvent> inboundThreadPool;
+	private final SimpleBlockingQueue<InboundMessageEvent> inboundQueue;
+	private final SimpleThreadPool<InboundMessageEvent> inboundThreadPool;
 
 	// Outbound message handling
-	private final SimpleBlockingQueue<MessageEvent> outboundQueue;
-	private final SimpleThreadPool<MessageEvent> outboundThreadPool;
+	private final SimpleBlockingQueue<OutboundMessageEvent> outboundQueue;
+	private final SimpleThreadPool<OutboundMessageEvent> outboundThreadPool;
 
 
 	@Inject
@@ -89,15 +92,16 @@ final class MessageCentralImpl implements MessageCentral {
 		TransportManager transportManager,
 		AddressBook addressBook,
 		TimeSupplier timeSource,
-		EventQueueFactory<MessageEvent> eventQueueFactory,
+		EventQueueFactory<InboundMessageEvent> inboundEventQueueFactory,
+		EventQueueFactory<OutboundMessageEvent> outboundEventQueueFactory,
 		LocalSystem localSystem,
 		SystemCounters counters,
 		Hasher hasher,
 		HashSigner hashSigner
 	) {
 		this.counters = Objects.requireNonNull(counters);
-		this.inboundQueue = eventQueueFactory.createEventQueue(config.messagingInboundQueueMax(8192), MessageEvent.comparator());
-		this.outboundQueue = eventQueueFactory.createEventQueue(config.messagingOutboundQueueMax(16384), MessageEvent.comparator());
+		this.inboundQueue = inboundEventQueueFactory.createEventQueue(config.messagingInboundQueueMax(8192), InboundMessageEvent.comparator());
+		this.outboundQueue = outboundEventQueueFactory.createEventQueue(config.messagingOutboundQueueMax(16384), OutboundMessageEvent.comparator());
 
 		this.serialization = Objects.requireNonNull(serialization);
 		this.connectionManager = Objects.requireNonNull(transportManager);
@@ -151,21 +155,27 @@ final class MessageCentralImpl implements MessageCentral {
 	}
 
 	@Override
-	public void send(Peer peer, Message message) {
-		if (!outboundQueue.offer(new MessageEvent(peer, message, System.nanoTime() - timeBase))) {
-			if (outboundLogRateLimiter.tryAcquire()) {
-				log.error("Outbound message to {} dropped", peer);
-			}
+	public void sendSystemMessage(TransportInfo transportInfo, SystemMessage message) {
+		PeerWithTransport peer = new PeerWithTransport(transportInfo);
+		OutboundMessageEvent event = new OutboundMessageEvent(peer, message, System.nanoTime() - timeBase);
+		if (!outboundQueue.offer(event) && outboundLogRateLimiter.tryAcquire()) {
+			log.error("Outbound message to {} dropped", peer);
 		}
 	}
 
 	@Override
-	public void inject(Peer peer, Message message) {
-		MessageEvent event = new MessageEvent(peer, message, System.nanoTime() - timeBase);
-		if (!inboundQueue.offer(event)) {
-			if (inboundLogRateLimiter.tryAcquire()) {
-				log.error("Injected message from {} dropped", peer);
-			}
+	public void send(Peer peer, Message message) {
+		OutboundMessageEvent event = new OutboundMessageEvent(peer, message, System.nanoTime() - timeBase);
+		if (!outboundQueue.offer(event) && outboundLogRateLimiter.tryAcquire()) {
+			log.error("Outbound message to {} dropped", peer);
+		}
+	}
+
+	@Override
+	public void inject(TransportInfo source, Message message) {
+		InboundMessageEvent event = new InboundMessageEvent(source, message, System.nanoTime() - timeBase);
+		if (!inboundQueue.offer(event) && inboundLogRateLimiter.tryAcquire()) {
+			log.error("Injected message from {} dropped", source);
 		}
 	}
 
@@ -194,20 +204,17 @@ final class MessageCentralImpl implements MessageCentral {
 	private void inboundMessage(InboundMessage inboundMessage) {
 		byte[] messageBytes = inboundMessage.message();
 		this.counters.add(CounterType.NETWORKING_RECEIVED_BYTES, messageBytes.length);
-		Peer peer = addressBook.peer(inboundMessage.source());
-		if (peer != null) {
-			Message message = deserialize(messageBytes);
-			inject(peer, message);
-		}
+		Message message = deserialize(messageBytes);
+		inject(inboundMessage.source(), message);
 	}
 
-	private void inboundMessageProcessor(MessageEvent inbound) {
+	private void inboundMessageProcessor(InboundMessageEvent inbound) {
 		this.counters.set(CounterType.MESSAGES_INBOUND_PENDING, inboundQueue.size());
 		MessageListenerList ls = this.listeners.getOrDefault(inbound.message().getClass(), EMPTY_MESSAGE_LISTENER_LIST);
 		messageDispatcher.receive(ls, inbound);
 	}
 
-	private void outboundMessageProcessor(MessageEvent outbound) {
+	private void outboundMessageProcessor(OutboundMessageEvent outbound) {
 		this.counters.set(CounterType.MESSAGES_OUTBOUND_PENDING, outboundQueue.size());
 		messageDispatcher.send(connectionManager, outbound);
 	}
@@ -227,7 +234,7 @@ final class MessageCentralImpl implements MessageCentral {
 		try {
 			t.close();
 		} catch (IOException e) {
-			log.error("Error closing transport " + t, e);
+			log.error(String.format("Error closing transport %s", t), e);
 		}
 	}
 }

@@ -215,7 +215,7 @@ public class PersistedProperties {
 
 	@Override
 	public String toString() {
-		return Objects.toString(this.properties);
+		return this.properties.keySet().toString();
 	}
 
 	private boolean parseBoolean(String value) {

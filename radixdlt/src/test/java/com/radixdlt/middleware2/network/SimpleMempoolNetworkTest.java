@@ -28,6 +28,7 @@ import com.radixdlt.identifiers.EUID;
 import com.radixdlt.mempool.messages.MempoolAtomAddedMessage;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
+import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageListener;
 import com.radixdlt.universe.Universe;
@@ -41,10 +42,10 @@ public class SimpleMempoolNetworkTest {
 
 	@Test
 	public void testSendMempoolSubmission() {
-		Peer peer1 = mock(Peer.class);
+		PeerWithSystem peer1 = mock(PeerWithSystem.class);
 		when(peer1.hasSystem()).thenReturn(true);
 		when(peer1.getNID()).thenReturn(EUID.ONE);
-		Peer peer2 = mock(Peer.class);
+		PeerWithSystem peer2 = mock(PeerWithSystem.class);
 		when(peer2.hasSystem()).thenReturn(true);
 		when(peer2.getNID()).thenReturn(EUID.TWO);
 		LocalSystem system = mock(LocalSystem.class);

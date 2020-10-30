@@ -58,8 +58,8 @@ public class AddressBookImpl implements AddressBook {
 	private final long recencyThreshold;
 
 	private final Lock peersLock = new ReentrantLock();
-	private final Map<EUID, Peer>          peersByNid  = new HashMap<>();
-	private final Map<TransportInfo, Peer> peersByInfo = new HashMap<>();
+	private final Map<EUID, PeerWithSystem> peersByNid = new HashMap<>();
+	private final Map<TransportInfo, PeerWithSystem> peersByInfo = new HashMap<>();
 	private final Whitelist whitelist;
 	private final TimeSupplier timeSupplier;
 
@@ -82,43 +82,43 @@ public class AddressBookImpl implements AddressBook {
 
 		// Clean out any existing non-whitelisted peers from the store (whitelist may have changed since last execution)
 		// Take copy to avoid CoMoException
-		ImmutableList<Peer> allPeers = ImmutableList.copyOf(peersByNid.values());
-		for (Peer peer : allPeers) {
+		ImmutableList<PeerWithSystem> allPeers = ImmutableList.copyOf(peersByNid.values());
+		for (PeerWithSystem peer : allPeers) {
 			// Maybe consider making whitelist per transport at some point?
 			if (peer.supportedTransports().anyMatch(this::hostNotWhitelisted)) {
 				log.info("Deleting {}, as not whitelisted", peer);
-				removePeer(peer);
+				removePeer(peer.getNID());
 			}
 		}
 	}
 
 	private static final class PeerUpdates {
-		final Peer added;
-		final Peer removed;
-		final Peer updated;
-		final Peer exists;
+		final PeerWithSystem added;
+		final PeerWithSystem removed;
+		final PeerWithSystem updated;
+		final PeerWithSystem exists;
 
-		static PeerUpdates add(Peer peer) {
+		static PeerUpdates add(PeerWithSystem peer) {
 			return new PeerUpdates(peer, null, null, null);
 		}
 
-		static PeerUpdates remove(Peer peer) {
+		static PeerUpdates remove(PeerWithSystem peer) {
 			return new PeerUpdates(null, peer, null, null);
 		}
 
-		static PeerUpdates update(Peer peer) {
+		static PeerUpdates update(PeerWithSystem peer) {
 			return new PeerUpdates(null, null, peer, null);
 		}
 
-		static PeerUpdates addAndRemove(Peer added, Peer removed) {
+		static PeerUpdates addAndRemove(PeerWithSystem added, PeerWithSystem removed) {
 			return new PeerUpdates(added, removed, null, null);
 		}
 
-		static PeerUpdates existing(Peer existing) {
+		static PeerUpdates existing(PeerWithSystem existing) {
 			return new PeerUpdates(null, null, null, existing);
 		}
 
-		private PeerUpdates(Peer added, Peer removed, Peer updated, Peer exists) {
+		private PeerUpdates(PeerWithSystem added, PeerWithSystem removed, PeerWithSystem updated, PeerWithSystem exists) {
 			this.added = added;
 			this.removed = removed;
 			this.updated = updated;
@@ -127,67 +127,36 @@ public class AddressBookImpl implements AddressBook {
 	}
 
 	@Override
-	public boolean addPeer(Peer peer) {
-		return handleUpdatedPeers(Locking.withFunctionLock(this.peersLock, this::addUpdatePeerInternal, peer));
+	public boolean removePeer(EUID nid) {
+		return handleUpdatedPeers(Locking.withFunctionLock(this.peersLock, this::removePeerInternal, nid));
 	}
 
 	@Override
-	public boolean removePeer(Peer peer) {
-		return handleUpdatedPeers(Locking.withFunctionLock(this.peersLock, this::removePeerInternal, peer));
+	public PeerWithSystem addOrUpdatePeer(Optional<PeerWithSystem> peer, RadixSystem system, TransportInfo source) {
+		return peer.map(p -> updatePeer(p, system, source)).orElseGet(() -> newPeer(system, source));
 	}
 
 	@Override
-	public boolean updatePeer(Peer peer) {
-		return handleUpdatedPeers(Locking.withFunctionLock(this.peersLock, this::addUpdatePeerInternal, peer));
-	}
-
-	@Override
-	public Peer updatePeerSystem(Peer peer, RadixSystem system) {
-		final PeerUpdates updates;
-		if (peer == null) {
-			updates = Locking.withFunctionLock(this.peersLock, this::addUpdatePeerInternal, new PeerWithSystem(system));
-		} else {
-			updates = Locking.withBiFunctionLock(this.peersLock, this::updateSystemInternal, peer, system);
-		}
-		handleUpdatedPeers(updates);
-		if (updates != null) {
-			if (updates.exists != null) {
-				return updates.exists;
-			}
-			if (updates.updated != null) {
-				return updates.updated;
-			}
-			if (updates.added != null) {
-				return updates.added;
-			}
-		}
-		updateActiveTime(peer);
-		return peer;
-	}
-
-	@Override
-	public Optional<Peer> peer(EUID nid) {
-		Peer peer = Locking.withFunctionLock(this.peersLock, this.peersByNid::get, nid);
+	public Optional<PeerWithSystem> peer(EUID nid) {
+		PeerWithSystem peer = Locking.withFunctionLock(this.peersLock, this.peersByNid::get, nid);
 		updateActiveTime(peer);
 		return Optional.ofNullable(peer);
 	}
 
 	@Override
-	public Peer peer(TransportInfo transportInfo) {
-		final Peer peer = Locking.withFunctionLock(this.peersLock, this.peersByInfo::get, transportInfo);
-		if (peer != null) {
-			return peer;
-		}
-		return new PeerWithTransport(transportInfo);
+	public Optional<PeerWithSystem> peer(TransportInfo transportInfo) {
+		PeerWithSystem peer = Locking.withFunctionLock(this.peersLock, this.peersByInfo::get, transportInfo);
+		updateActiveTime(peer);
+		return Optional.ofNullable(peer);
 	}
 
 	@Override
-	public Stream<Peer> peers() {
+	public Stream<PeerWithSystem> peers() {
 		return Locking.withSupplierLock(this.peersLock, () -> ImmutableSet.copyOf(this.peersByInfo.values())).stream();
 	}
 
 	@Override
-	public Stream<Peer> recentPeers() {
+	public Stream<PeerWithSystem> recentPeers() {
 		return peers().filter(StandardFilters.recentlyActive(recencyThreshold));
 	}
 
@@ -235,21 +204,11 @@ public class AddressBookImpl implements AddressBook {
 	}
 
 	// Needs peersLock held
-	private PeerUpdates addUpdatePeerInternal(Peer peer) {
-		// Handle specially if it's a connection-only peer (no NID)
-		if (!peer.hasNID()) {
-			// We don't save connection-only peers to the database
-			// We don't overwrite if transport already exists
-			boolean changed = peer.supportedTransports()
-				.map(t -> peersByInfo.putIfAbsent(t, peer) == null)
-				.reduce(false, (a, b) -> a || b);
-			return changed ? PeerUpdates.add(peer) : null;
-		}
-
-		Peer oldPeer = peersByNid.get(peer.getNID());
+	private PeerUpdates addUpdatePeerInternal(PeerWithSystem peer, TransportInfo source) {
+		PeerWithSystem oldPeer = peersByNid.get(peer.getNID());
 		if (oldPeer == null || !Objects.equals(oldPeer.getSystem(), peer.getSystem())) {
 			// Add new peer or update old peer
-			if (updatePeerInternal(peer)) {
+			if (updatePeerInternal(peer, source)) {
 				return oldPeer == null ? PeerUpdates.add(peer) : PeerUpdates.update(peer);
 			}
 		}
@@ -258,13 +217,13 @@ public class AddressBookImpl implements AddressBook {
 	}
 
 	// Needs peersLock held
-	// Note that peer must have a nid to get here
-	private boolean updatePeerInternal(Peer peer) {
+	private boolean updatePeerInternal(PeerWithSystem peer, TransportInfo source) {
 		if (this.persistence.savePeer(peer)) {
 			peersByNid.put(peer.getNID(), peer);
 			// We overwrite transports here
 			peer.supportedTransports()
 				.forEachOrdered(t -> peersByInfo.put(t, peer));
+			peersByInfo.put(source, peer);
 			return true;
 		}
 		log.error("Failure saving {}", peer);
@@ -272,51 +231,70 @@ public class AddressBookImpl implements AddressBook {
 	}
 
 	// Needs peersLock held
-	private PeerUpdates removePeerInternal(Peer peer) {
-		if (!peer.hasNID()) {
-			// We didn't save connection-only peers to the database
-			// Only remove transport if it points to specified peer
-			boolean changed = peer.supportedTransports()
-				.map(t -> peersByInfo.remove(t, peer))
-				.reduce(false, (a, b) -> a || b);
-			return changed ? PeerUpdates.remove(peer) : null;
-		} else {
-			EUID nid = peer.getNID();
-			Peer oldPeer = peersByNid.remove(nid);
-			if (oldPeer != null) {
-				// Remove all transports
-				oldPeer.supportedTransports().forEachOrdered(peersByInfo::remove);
-				if (!this.persistence.deletePeer(nid)) {
-					log.error("Failure removing {}", oldPeer);
-				}
-				return PeerUpdates.remove(oldPeer);
+	private PeerUpdates removePeerInternal(EUID nid) {
+		PeerWithSystem oldPeer = peersByNid.remove(nid);
+		if (oldPeer != null) {
+			removeTransports(oldPeer);
+			if (!this.persistence.deletePeer(nid)) {
+				log.error("Persistence failure removing {}", oldPeer);
 			}
+			return PeerUpdates.remove(oldPeer);
 		}
 		return null;
 	}
 
 	// Needs peersLock held
-	private PeerUpdates updateSystemInternal(Peer peer, RadixSystem system) {
-		if (!peer.hasNID() || peer.getNID().equals(system.getNID())) {
+	private void removeTransports(PeerWithSystem peer) {
+		Set<TransportInfo> toRemove = this.peersByInfo.entrySet().stream()
+			.filter(e -> peer.equals(e.getValue()))
+			.map(Map.Entry::getKey)
+			.collect(ImmutableSet.toImmutableSet());
+		this.peersByInfo.keySet().removeAll(toRemove);
+	}
+
+	// Needs peersLock held
+	private PeerUpdates updateSystemInternal(PeerWithSystem peer, RadixSystem system, TransportInfo source) {
+		if (peer.getNID().equals(system.getNID())) {
 			if (!Objects.equals(peer.getSystem(), system)) {
-				// Here if:
-				// 1. Old peer has no NID at all, or does have a nid, and nids match
-				// 2. Old system does not match the updated system
+				// Here if old system does not match the updated system
 				// This is a simple update or add
-				// Only remove transports if it belongs to the specified peer
-				Peer newPeer = new PeerWithSystem(peer, system);
-				peer.supportedTransports().forEachOrdered(t -> this.peersByInfo.remove(t, peer));
-				return addUpdatePeerInternal(newPeer);
+				removeTransports(peer);
+				return addUpdatePeerInternal(new PeerWithSystem(peer, system), source);
 			}
 		} else {
 			// Peer has somehow changed NID?
-			Peer newPeer = new PeerWithSystem(peer, system);
-			removePeerInternal(peer);
-			addUpdatePeerInternal(newPeer);
+			PeerWithSystem newPeer = new PeerWithSystem(peer, system);
+			removePeerInternal(peer.getNID());
+			addUpdatePeerInternal(newPeer, source);
 			return PeerUpdates.addAndRemove(newPeer, peer);
 		}
 		// No change
 		return null;
+	}
+
+	// No locks required
+	private PeerWithSystem updatePeer(PeerWithSystem oldPeer, RadixSystem system, TransportInfo source) {
+		PeerUpdates updates = Locking.withSupplierLock(this.peersLock, () -> updateSystemInternal(oldPeer, system, source));
+		handleUpdatedPeers(updates);
+		if (updates != null) {
+			if (updates.exists != null) {
+				return updates.exists;
+			}
+			if (updates.updated != null) {
+				return updates.updated;
+			}
+			if (updates.added != null) {
+				return updates.added;
+			}
+		}
+		return oldPeer;
+	}
+
+	// No locks required
+	private PeerWithSystem newPeer(RadixSystem system, TransportInfo source) {
+		PeerWithSystem newPeer = new PeerWithSystem(system);
+		handleUpdatedPeers(Locking.withSupplierLock(this.peersLock, () -> addUpdatePeerInternal(newPeer, source)));
+		return newPeer;
 	}
 
 	private boolean hostNotWhitelisted(TransportInfo ti) {
@@ -339,8 +317,6 @@ public class AddressBookImpl implements AddressBook {
 	}
 
 	private void removeEmitter(ObservableEmitter<?> emitter) {
-		Locking.withLock(this.emittersLock, () -> {
-			this.emitters.remove(emitter);
-		});
+		Locking.withLock(this.emittersLock, () -> this.emitters.remove(emitter));
 	}
 }

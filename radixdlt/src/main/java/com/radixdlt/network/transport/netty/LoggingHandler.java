@@ -52,51 +52,51 @@ public class LoggingHandler extends ChannelDuplexHandler {
 
 	@Override
 	public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
-		if (this.logger.isDebugEnabled()) {
-			this.logger.debug(format(ctx, "REGISTERED"));
+		if (this.logger.isTraceEnabled()) {
+			this.logger.trace(format(ctx, "REGISTERED"));
 		}
 		ctx.fireChannelRegistered();
 	}
 
 	@Override
 	public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
-		if (this.logger.isDebugEnabled()) {
-			this.logger.debug(format(ctx, "UNREGISTERED"));
+		if (this.logger.isTraceEnabled()) {
+			this.logger.trace(format(ctx, "UNREGISTERED"));
 		}
 		ctx.fireChannelUnregistered();
 	}
 
 	@Override
 	public void channelActive(ChannelHandlerContext ctx) throws Exception {
-		if (this.logger.isDebugEnabled()) {
-			this.logger.debug(format(ctx, "ACTIVE"));
+		if (this.logger.isTraceEnabled()) {
+			this.logger.trace(format(ctx, "ACTIVE"));
 		}
 		ctx.fireChannelActive();
 	}
 
 	@Override
 	public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-		if (this.logger.isDebugEnabled()) {
-			this.logger.debug(format(ctx, "INACTIVE"));
+		if (this.logger.isTraceEnabled()) {
+			this.logger.trace(format(ctx, "INACTIVE"));
 		}
 		ctx.fireChannelInactive();
 	}
 
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-		if (this.logger.isDebugEnabled()) {
-			this.logger.debug(formatSimpleDetails(ctx, "EXCEPTION", cause), cause);
+		if (this.logger.isTraceEnabled()) {
+			this.logger.trace(formatSimpleDetails(ctx, "EXCEPTION", cause), cause);
 		}
 		ctx.fireExceptionCaught(cause);
 	}
 
 	@Override
 	public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
-		if (this.logger.isDebugEnabled()) {
+		if (this.logger.isTraceEnabled()) {
 			if (this.includeData) {
-				this.logger.debug(formatDetails(ctx, "USER_EVENT", evt));
+				this.logger.trace(formatDetails(ctx, "USER_EVENT", evt));
 			} else {
-				this.logger.debug(formatSummary(ctx, "USER_EVENT", evt));
+				this.logger.trace(formatSummary(ctx, "USER_EVENT", evt));
 			}
 		}
 		ctx.fireUserEventTriggered(evt);
@@ -104,40 +104,40 @@ public class LoggingHandler extends ChannelDuplexHandler {
 
 	@Override
 	public void bind(ChannelHandlerContext ctx, SocketAddress localAddress, ChannelPromise promise) throws Exception {
-		if (this.logger.isDebugEnabled()) {
-			this.logger.debug(formatSimpleDetails(ctx, "BIND", localAddress));
+		if (this.logger.isTraceEnabled()) {
+			this.logger.trace(formatSimpleDetails(ctx, "BIND", localAddress));
 		}
 		ctx.bind(localAddress, promise);
 	}
 
 	@Override
 	public void connect(ChannelHandlerContext ctx, SocketAddress remoteAddress, SocketAddress localAddress, ChannelPromise promise) throws Exception {
-		if (this.logger.isDebugEnabled()) {
-			this.logger.debug(format(ctx, "CONNECT", remoteAddress, localAddress));
+		if (this.logger.isTraceEnabled()) {
+			this.logger.trace(format(ctx, "CONNECT", remoteAddress, localAddress));
 		}
 		ctx.connect(remoteAddress, localAddress, promise);
 	}
 
 	@Override
 	public void disconnect(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
-		if (this.logger.isDebugEnabled()) {
-			this.logger.debug(format(ctx, "DISCONNECT"));
+		if (this.logger.isTraceEnabled()) {
+			this.logger.trace(format(ctx, "DISCONNECT"));
 		}
 		ctx.disconnect(promise);
 	}
 
 	@Override
 	public void close(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
-		if (this.logger.isDebugEnabled()) {
-			this.logger.debug(format(ctx, "CLOSE"));
+		if (this.logger.isTraceEnabled()) {
+			this.logger.trace(format(ctx, "CLOSE"));
 		}
 		ctx.close(promise);
 	}
 
 	@Override
 	public void deregister(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
-		if (this.logger.isDebugEnabled()) {
-			this.logger.debug(format(ctx, "DEREGISTER"));
+		if (this.logger.isTraceEnabled()) {
+			this.logger.trace(format(ctx, "DEREGISTER"));
 		}
 		ctx.deregister(promise);
 	}

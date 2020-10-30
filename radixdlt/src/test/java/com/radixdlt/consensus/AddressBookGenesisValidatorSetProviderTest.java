@@ -27,7 +27,7 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.network.addressbook.AddressBook;
-import com.radixdlt.network.addressbook.Peer;
+import com.radixdlt.network.addressbook.PeerWithSystem;
 
 import java.util.stream.Stream;
 import org.assertj.core.api.Condition;
@@ -46,7 +46,7 @@ public class AddressBookGenesisValidatorSetProviderTest {
 			addressBook,
 			1
 		);
-		Peer peer = mock(Peer.class);
+		PeerWithSystem peer = mock(PeerWithSystem.class);
 		RadixSystem system = mock(RadixSystem.class);
 		ECPublicKey peerKey = mock(ECPublicKey.class);
 		when(system.getKey()).thenReturn(peerKey);

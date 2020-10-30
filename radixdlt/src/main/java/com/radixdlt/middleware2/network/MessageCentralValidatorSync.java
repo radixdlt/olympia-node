@@ -39,6 +39,7 @@ import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
+import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageListener;
 import com.radixdlt.universe.Universe;
@@ -85,7 +86,7 @@ public class MessageCentralValidatorSync implements SyncVerticesRequestSender, S
 			throw new IllegalStateException("Should never need to retrieve a vertex from self.");
 		}
 
-		final Optional<Peer> peer = this.addressBook.peer(node.getKey().euid());
+		final Optional<PeerWithSystem> peer = this.addressBook.peer(node.getKey().euid());
 		if (!peer.isPresent()) {
 			log.warn("{}: Peer {} not in address book when sending GetVerticesRequest", this.self, node);
 			return;
@@ -103,7 +104,7 @@ public class MessageCentralValidatorSync implements SyncVerticesRequestSender, S
 			rawVertices
 		);
 
-		final Optional<Peer> peerMaybe = this.addressBook.peer(node.getKey().euid());
+		final Optional<PeerWithSystem> peerMaybe = this.addressBook.peer(node.getKey().euid());
 		peerMaybe.ifPresentOrElse(
 			p -> this.messageCentral.send(p, response),
 			() -> log.warn("{}: Peer {} not in address book when sending GetVerticesResponse", this.self, node)
@@ -113,7 +114,7 @@ public class MessageCentralValidatorSync implements SyncVerticesRequestSender, S
 	@Override
 	public void sendGetVerticesErrorResponse(BFTNode node, HighQC highQC) {
 		GetVerticesErrorResponseMessage response = new GetVerticesErrorResponseMessage(this.magic, highQC);
-		final Optional<Peer> peerMaybe = this.addressBook.peer(node.getKey().euid());
+		final Optional<PeerWithSystem> peerMaybe = this.addressBook.peer(node.getKey().euid());
 		peerMaybe.ifPresentOrElse(
 			p -> this.messageCentral.send(p, response),
 			() -> log.warn("{}: Peer {} not in address book when sending GetVerticesErrorResponse", this.self, node)
@@ -173,7 +174,7 @@ public class MessageCentralValidatorSync implements SyncVerticesRequestSender, S
 	@Override
 	public void sendGetEpochRequest(BFTNode node, long epoch) {
 		final GetEpochRequestMessage epochRequest = new GetEpochRequestMessage(this.self, this.magic, epoch);
-		final Optional<Peer> peerMaybe = this.addressBook.peer(node.getKey().euid());
+		final Optional<PeerWithSystem> peerMaybe = this.addressBook.peer(node.getKey().euid());
 		peerMaybe.ifPresentOrElse(
 			p -> this.messageCentral.send(p, epochRequest),
 			() -> log.warn("{}: Peer {} not in address book when sending GetEpochRequest", this.self, node)
@@ -183,7 +184,7 @@ public class MessageCentralValidatorSync implements SyncVerticesRequestSender, S
 	@Override
 	public void sendGetEpochResponse(BFTNode node, VerifiedLedgerHeaderAndProof ancestor) {
 		final GetEpochResponseMessage epochResponseMessage = new GetEpochResponseMessage(this.self, this.magic, ancestor);
-		final Optional<Peer> peerMaybe = this.addressBook.peer(node.getKey().euid());
+		final Optional<PeerWithSystem> peerMaybe = this.addressBook.peer(node.getKey().euid());
 		peerMaybe.ifPresentOrElse(
 			p -> this.messageCentral.send(p, epochResponseMessage),
 			() -> log.warn("{}: Peer {} not in address book when sending GetEpochResponse", this.self, node)

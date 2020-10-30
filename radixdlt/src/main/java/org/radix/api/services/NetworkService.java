@@ -44,13 +44,11 @@ public class NetworkService {
 	private final AddressBook addressBook;
 	private final PeerWithSystem localPeer;
 	private final HashCode localPeerHash;
-	private final Hasher hasher;
 
 	public NetworkService(Serialization serialization, LocalSystem localSystem, AddressBook addressBook, Hasher hasher) {
 		this.serialization = serialization;
 		this.localSystem = localSystem;
 		this.addressBook = addressBook;
-		this.hasher = hasher;
 
 		this.localPeer = new PeerWithSystem(this.localSystem);
 		this.localPeerHash = hasher.hash(localPeer);
@@ -120,7 +118,7 @@ public class NetworkService {
 		return new JSONObject();
 	}
 
-	private Stream<Peer> selfAndOthers(Stream<Peer> others) {
+	private Stream<PeerWithSystem> selfAndOthers(Stream<PeerWithSystem> others) {
 		return Stream.concat(Stream.of(this.localPeer), others).distinct();
 	}
 }

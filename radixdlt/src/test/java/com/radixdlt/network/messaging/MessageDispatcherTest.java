@@ -17,6 +17,7 @@
 
 package com.radixdlt.network.messaging;
 
+import com.google.common.collect.ImmutableMap;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hasher;
@@ -25,10 +26,11 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.network.addressbook.AddressBook;
-import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.network.transport.SendResult;
 import com.radixdlt.network.transport.Transport;
+import com.radixdlt.network.transport.TransportInfo;
+import com.radixdlt.network.transport.TransportMetadata;
 import com.radixdlt.network.transport.TransportOutboundConnection;
 import com.radixdlt.serialization.Serialization;
 import org.hamcrest.Matchers;
@@ -50,11 +52,13 @@ import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -116,8 +120,10 @@ public class MessageDispatcherTest extends RadixTest {
 	private MessageDispatcher messageDispatcher;
 	private TransportManager transportManager;
 	private AddressBook addressBook;
-	private Peer peer1;
-	private Peer peer2;
+	private PeerWithSystem peer1;
+	private PeerWithSystem peer2;
+	private TransportInfo transportInfo1;
+	private TransportInfo transportInfo2;
 	private SystemCounters counters;
 	private final Hasher hasher = Sha256Hasher.withDefaultSerialization();
 
@@ -127,12 +133,19 @@ public class MessageDispatcherTest extends RadixTest {
 		Serialization serialization = DefaultSerialization.getInstance();
 		MessageCentralConfiguration conf = new MessagingDummyConfigurations.DummyMessageCentralConfiguration();
 
-		peer1 = spy(new PeerWithSystem(getLocalSystem()));
-		peer2 = spy(new PeerWithSystem(getLocalSystem()));
+		RadixSystem system1 = makeSystem(EUID.ONE);
+		RadixSystem system2 = makeSystem(EUID.TWO);
+		peer1 = spy(new PeerWithSystem(system1));
+		peer2 = spy(new PeerWithSystem(system2));
+
+		transportInfo1 = peer1.supportedTransports().findFirst().get();
+		transportInfo2 = peer2.supportedTransports().findFirst().get();
 
 		addressBook = mock(AddressBook.class);
-		when(addressBook.updatePeerSystem(peer1, peer1.getSystem())).thenReturn(peer1);
-		when(addressBook.updatePeerSystem(peer2, peer2.getSystem())).thenReturn(peer2);
+		when(addressBook.addOrUpdatePeer(any(), eq(system1), any())).thenReturn(peer1);
+		when(addressBook.addOrUpdatePeer(any(), eq(system2), any())).thenReturn(peer2);
+		when(addressBook.peer(eq(transportInfo1))).thenReturn(Optional.of(peer1));
+		when(addressBook.peer(eq(transportInfo2))).thenReturn(Optional.of(peer2));
 
 		counters = mock(SystemCounters.class);
 		messageDispatcher = new MessageDispatcher(
@@ -153,7 +166,7 @@ public class MessageDispatcherTest extends RadixTest {
 		SystemMessage message = spy(new SystemMessage(getLocalSystem(), 0));
 		message.setSignature(getKeyPair().sign(hasher.hash(message)));
 
-		MessageEvent messageEvent = new MessageEvent(peer1, message, 10_000);
+		OutboundMessageEvent messageEvent = new OutboundMessageEvent(peer1, message, 10_000);
 
 		SendResult sendResult = messageDispatcher.send(transportManager, messageEvent).get();
 
@@ -164,7 +177,7 @@ public class MessageDispatcherTest extends RadixTest {
 	public void sendExpiredMessage() throws InterruptedException, ExecutionException {
 		Message message = spy(new TestMessage(0));
 		when(message.getTimestamp()).thenReturn(10_000L);
-		MessageEvent messageEvent = new MessageEvent(peer1, message, 10_000);
+		OutboundMessageEvent messageEvent = new OutboundMessageEvent(peer1, message, 10_000);
 
 		SendResult sendResult = messageDispatcher.send(transportManager, messageEvent).get();
 
@@ -181,7 +194,7 @@ public class MessageDispatcherTest extends RadixTest {
 		doReturn(radixSystem).when(testMessage).getSystem();
 		doReturn(EUID.ONE).when(radixSystem).getNID();
 
-		MessageEvent messageEvent = new MessageEvent(peer1, testMessage, 10_000);
+		InboundMessageEvent messageEvent = new InboundMessageEvent(transportInfo1, testMessage, 10_000);
 
 		Semaphore receivedFlag = new Semaphore(0);
 		List<Message> messages = new ArrayList<>();
@@ -190,6 +203,8 @@ public class MessageDispatcherTest extends RadixTest {
 			messages.add(message);
 			receivedFlag.release();
 		});
+
+		when(this.addressBook.addOrUpdatePeer(any(), any(), any())).thenReturn(peer1);
 
 		messageDispatcher.receive(messageListenerList, messageEvent);
 
@@ -203,7 +218,7 @@ public class MessageDispatcherTest extends RadixTest {
 		testMessage.setSignature(getKeyPair().sign(hasher.hash(testMessage)));
 
 		when(testMessage.getTimestamp()).thenReturn(10_000L);
-		MessageEvent messageEvent = new MessageEvent(peer1, testMessage, 10_000);
+		InboundMessageEvent messageEvent = new InboundMessageEvent(transportInfo1, testMessage, 10_000);
 
 		messageDispatcher.receive(null, messageEvent);
 
@@ -217,37 +232,44 @@ public class MessageDispatcherTest extends RadixTest {
 		// Banned for a long time
 		peer1.setBan("Test", System.currentTimeMillis() + 86_400_000L);
 		when(this.addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer1));
+		when(this.addressBook.peer(any(TransportInfo.class))).thenReturn(Optional.of(peer1));
 		RadixSystem system = mock(RadixSystem.class);
 		doReturn(EUID.TWO).when(system).getNID();
 		doReturn(Radix.AGENT_VERSION).when(system).getAgentVersion();
-		SystemMessage testMessage = spy(new SystemMessage(system, 0));
-		MessageEvent messageEvent = new MessageEvent(peer1, testMessage, 10_000);
+		Message testMessage = new DummyMessage();
+		InboundMessageEvent messageEvent = new InboundMessageEvent(transportInfo1, testMessage, 10_000);
 
 		messageDispatcher.receive(null, messageEvent);
 
-		// Received message not counted as discarded or processed
+		// Received message not counted as processed
 		verify(counters, times(1)).increment(CounterType.MESSAGES_INBOUND_RECEIVED);
-		verify(counters, never()).increment(CounterType.MESSAGES_INBOUND_DISCARDED);
+		verify(counters, times(1)).increment(CounterType.MESSAGES_INBOUND_DISCARDED);
 		verify(counters, never()).increment(CounterType.MESSAGES_INBOUND_PROCESSED);
 	}
 
 	@Test
 	public void receiveDisconnectNullZeroSystem() {
-		SystemMessage testMessage1 = spy(new SystemMessage(getLocalSystem(), 0));
+		RadixSystem localSystem = getLocalSystem();
+		SystemMessage testMessage1 = spy(new SystemMessage(localSystem, 0));
 		testMessage1.setSignature(getKeyPair().sign(hasher.hash(testMessage1)));
+
+		when(addressBook.addOrUpdatePeer(any(), eq(localSystem), any())).thenReturn(peer1);
 
 		RadixSystem radixSystem1 = spy(testMessage1.getSystem());
 		doReturn(radixSystem1).when(testMessage1).getSystem();
 		doReturn(EUID.ZERO).when(radixSystem1).getNID();
-		MessageEvent messageEvent1 = new MessageEvent(peer1, testMessage1, 10_000);
+		InboundMessageEvent messageEvent1 = new InboundMessageEvent(transportInfo1, testMessage1, 10_000);
 
-		SystemMessage testMessage2 = spy(new SystemMessage(getLocalSystem(), 0));
+		SystemMessage testMessage2 = spy(new SystemMessage(localSystem, 0));
 		testMessage2.setSignature(getKeyPair().sign(hasher.hash(testMessage2)));
 
 		RadixSystem radixSystem2 = spy(testMessage2.getSystem());
 		doReturn(radixSystem2).when(testMessage2).getSystem();
 		doReturn(null).when(radixSystem2).getNID();
-		MessageEvent messageEvent2 = new MessageEvent(peer2, testMessage2, 10_000);
+		InboundMessageEvent messageEvent2 = new InboundMessageEvent(transportInfo2, testMessage2, 10_000);
+
+		when(addressBook.addOrUpdatePeer(any(), eq(radixSystem1), any())).thenReturn(peer1);
+		when(addressBook.addOrUpdatePeer(any(), eq(radixSystem2), any())).thenReturn(peer2);
 
 		messageDispatcher.receive(null, messageEvent1);
 		messageDispatcher.receive(null, messageEvent2);
@@ -268,7 +290,9 @@ public class MessageDispatcherTest extends RadixTest {
 		doReturn(radixSystem).when(testMessage).getSystem();
 		doReturn(EUID.ONE).when(radixSystem).getNID();
 		doReturn(Radix.REFUSE_AGENT_VERSION).when(radixSystem).getAgentVersion();
-		MessageEvent messageEvent = new MessageEvent(peer1, testMessage, 10_000);
+		InboundMessageEvent messageEvent = new InboundMessageEvent(transportInfo1, testMessage, 10_000);
+
+		when(this.addressBook.addOrUpdatePeer(any(), any(), any())).thenReturn(peer1);
 
 		messageDispatcher.receive(null, messageEvent);
 
@@ -284,7 +308,7 @@ public class MessageDispatcherTest extends RadixTest {
 		RadixSystem radixSystem = spy(testMessage.getSystem());
 		doReturn(radixSystem).when(testMessage).getSystem();
 		doReturn(getLocalSystem().getNID()).when(radixSystem).getNID();
-		MessageEvent messageEvent = new MessageEvent(peer1, testMessage, 10_000);
+		InboundMessageEvent messageEvent = new InboundMessageEvent(transportInfo1, testMessage, 10_000);
 		MessageListenerList listeners = mock(MessageListenerList.class);
 
 		messageDispatcher.receive(listeners, messageEvent);
@@ -298,7 +322,7 @@ public class MessageDispatcherTest extends RadixTest {
 		RadixSystem radixSystem = spy(testMessage.getSystem());
 		doReturn(radixSystem).when(testMessage).getSystem();
 		doReturn(getLocalSystem().getNID()).when(radixSystem).getNID();
-		MessageEvent messageEvent = new MessageEvent(peer1, testMessage, 10_000);
+		InboundMessageEvent messageEvent = new InboundMessageEvent(transportInfo1, testMessage, 10_000);
 		MessageListenerList listeners = mock(MessageListenerList.class);
 
 		messageDispatcher.receive(listeners, messageEvent);
@@ -312,7 +336,7 @@ public class MessageDispatcherTest extends RadixTest {
 		SignedMessage testMessage = spy(new DummySignedMessage());
 		testMessage.setSignature(getKeyPair().sign(hasher.hash(testMessage)));
 
-		MessageEvent messageEvent = new MessageEvent(peer1, testMessage, 10_000);
+		InboundMessageEvent messageEvent = new InboundMessageEvent(transportInfo1, testMessage, 10_000);
 		MessageListenerList listeners = mock(MessageListenerList.class);
 
 		messageDispatcher.receive(listeners, messageEvent);
@@ -326,7 +350,7 @@ public class MessageDispatcherTest extends RadixTest {
 		ECKeyPair bogusKey = ECKeyPair.generateNew();
 		testMessage.setSignature(bogusKey.sign(hasher.hash(testMessage)));
 
-		MessageEvent messageEvent = new MessageEvent(peer1, testMessage, 10_000);
+		InboundMessageEvent messageEvent = new InboundMessageEvent(transportInfo1, testMessage, 10_000);
 		MessageListenerList listeners = mock(MessageListenerList.class);
 
 		messageDispatcher.receive(listeners, messageEvent);
@@ -337,12 +361,10 @@ public class MessageDispatcherTest extends RadixTest {
 
 	@Test
 	public void receiveSignedMessageNoPeer() {
-		Peer noSystemPeer = mock(Peer.class);
-		doReturn(false).when(noSystemPeer).hasSystem();
 		SignedMessage testMessage = new DummySignedMessage();
 		testMessage.setSignature(getKeyPair().sign(hasher.hash(testMessage)));
 
-		MessageEvent messageEvent = new MessageEvent(noSystemPeer, testMessage, 10_000);
+		InboundMessageEvent messageEvent = new InboundMessageEvent(mock(TransportInfo.class), testMessage, 10_000);
 		MessageListenerList listeners = mock(MessageListenerList.class);
 
 		messageDispatcher.receive(listeners, messageEvent);
@@ -353,11 +375,24 @@ public class MessageDispatcherTest extends RadixTest {
 	@Test
 	public void receiveUnsignedMessage() {
 		Message testMessage = spy(new DummyMessage());
-		MessageEvent messageEvent = new MessageEvent(peer1, testMessage, 10_000);
+		InboundMessageEvent messageEvent = new InboundMessageEvent(transportInfo1, testMessage, 10_000);
 		MessageListenerList listeners = mock(MessageListenerList.class);
 
 		messageDispatcher.receive(listeners, messageEvent);
 
 		verify(listeners, times(1)).messageReceived(any(), any());
+	}
+
+
+	private RadixSystem makeSystem(EUID nid) {
+		RadixSystem system = mock(RadixSystem.class);
+		TransportInfo ti = TransportInfo.of("TCP", TransportMetadata.create(
+			ImmutableMap.of("nid", nid.toString())));
+
+		when(system.getNID()).thenReturn(nid);
+		when(system.supportedTransports()).thenAnswer(inv -> Stream.of(ti));
+		when(system.getKey()).thenReturn(getLocalSystem().getKey());
+
+		return system;
 	}
 }

@@ -30,10 +30,16 @@ public interface SystemCounters {
 		BFT_INDIRECT_PARENT("bft.indirect_parent"),
 		BFT_PROCESSED("bft.processed"),
 		BFT_PROPOSALS_MADE("bft.proposals_made"),
+		/** Number of proposals rejected. */
 		BFT_REJECTED("bft.rejected"),
+		/** Number of times a view-timeout message was broadcast. */
 		BFT_TIMEOUT("bft.timeout"),
+		/** Number of view-timeout quorums formed. */
+		BFT_TIMEOUT_QUORUMS("bft.timeout_quorums"),
 		BFT_VERTEX_STORE_SIZE("bft.vertex_store_size"),
 		BFT_VERTEX_STORE_FORKS("bft.vertex_store_forks"),
+		/** Number of vote quorums formed. */
+		BFT_VOTE_QUORUMS("bft.vote_quorums"),
 		BFT_SYNC_REQUESTS_SENT("bft.sync.requests_sent"),
 
 		EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS("epoch_manager.queued_consensus_events"),

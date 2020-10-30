@@ -23,6 +23,7 @@ import com.google.inject.Inject;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.transport.TransportException;
+import com.radixdlt.network.transport.TransportInfo;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.ThreadFactories;
@@ -91,7 +92,7 @@ public class PeerManager {
 	private boolean started = false;
 
 	private class ProbeTask implements Runnable {
-		private LinkedList<Peer> peersToProbe = new LinkedList<>();
+		private LinkedList<PeerWithSystem> peersToProbe = new LinkedList<>();
 		private int numPeers = 0;
 
 		@Override
@@ -111,7 +112,7 @@ public class PeerManager {
 
 				numProbes = Math.min(numProbes, peersToProbe.size());
 				if (numProbes > 0) {
-					List<Peer> toProbe = peersToProbe.subList(0, numProbes);
+					List<PeerWithSystem> toProbe = peersToProbe.subList(0, numProbes);
 					toProbe.forEach(PeerManager.this::probe);
 					toProbe.clear();
 				}
@@ -230,55 +231,43 @@ public class PeerManager {
 	}
 
 	private void handleHeartbeatPeersMessage(Peer peer, SystemMessage heartBeatMessage) {
-		//TODO implement HeartBeat handler
+		log.trace("Received SystemMessage from {}", peer);
 	}
 
 	private void handlePeersMessage(Peer peer, PeersMessage peersMessage) {
 		log.trace("Received PeersMessage from {}", peer);
-		if (peer != null) {
-			List<Peer> peers = peersMessage.getPeers();
-			if (peers != null) {
-				EUID localNid = this.localSystem.getNID();
-				peers.stream()
-				.filter(Peer::hasSystem)
-				.filter(p -> !localNid.equals(p.getNID()))
-				.forEachOrdered(addressbook::updatePeer);
+		List<PeerWithSystem> peers = peersMessage.getPeers();
+		if (peers != null) {
+			List<PeerWithSystem> unknownPeers = peers.stream()
+				.filter(PeerWithSystem::hasTransports)
+				.filter(this::notOurNid)
+				.filter(this::notInAddressBook)
+				.collect(Collectors.toList());
+			if (!unknownPeers.isEmpty()) {
+				// Only nudge one peer to avoid amplification attacks
+				probe(unknownPeers.get(this.rand.nextInt(unknownPeers.size())));
 			}
 		}
 	}
 
 	private void handleGetPeersMessage(Peer peer, GetPeersMessage getPeersMessage) {
 		log.trace("Received GetPeersMessage from {}", peer);
-		if (peer != null) {
-			try {
-				// Deliver known Peers in its entirety, filtered on whitelist and activity
-				// Chunk the sending of Peers so that UDP can handle it
-				List<Peer> peersList = Lists.newArrayList();
-				List<Peer> peers = addressbook.peers()
-						.filter(Peer::hasNID)
-						.filter(StandardFilters.standardFilter(localSystem.getNID(), whitelist))
-						.filter(StandardFilters.recentlyActive(this.recencyThreshold))
-						.collect(Collectors.toList());
-
-				for (Peer p : peers) {
-					if (p.getNID().equals(peer.getNID())) {
-						// Know thyself
-						continue;
-					}
-
-					peersList.add(p);
-					if (peersList.size() == peerMessageBatchSize) {
-						messageCentral.send(peer, new PeersMessage(this.universeMagic, ImmutableList.copyOf(peersList)));
-						peersList.clear();
-					}
-				}
-
-				if (!peersList.isEmpty()) {
-					messageCentral.send(peer, new PeersMessage(this.universeMagic, ImmutableList.copyOf(peersList)));
-				}
-			} catch (Exception ex) {
-				log.error(String.format("peers.get %s", peer), ex);
+		try {
+			// Deliver known Peers in its entirety, filtered on whitelist and activity
+			// Chunk the sending of Peers so that UDP can handle it
+			EUID requestingNid = peer.hasNID() ? peer.getNID() : null;
+			List<PeerWithSystem> peers = addressbook.peers()
+				.filter(Peer::hasSystem)
+				.filter(p -> requestingNid == null || !requestingNid.equals(p.getNID())) // Exclude sender
+				.filter(StandardFilters.standardFilter(localSystem.getNID(), whitelist))
+				.filter(StandardFilters.recentlyActive(this.recencyThreshold))
+				.collect(Collectors.toList());
+			for (List<PeerWithSystem> batch : Lists.partition(peers, peerMessageBatchSize)) {
+				PeersMessage peersMessage = new PeersMessage(this.universeMagic, ImmutableList.copyOf(batch));
+				messageCentral.send(peer, peersMessage);
 			}
+		} catch (Exception ex) {
+			log.error(String.format("peers.get %s", peer), ex);
 		}
 	}
 
@@ -287,7 +276,7 @@ public class PeerManager {
 		try {
 			long nonce = message.getNonce();
 			long payload = message.getPayload();
-			log.debug("peer.ping from {}:{}", () -> peer, () -> formatNonce(nonce));
+			log.trace("peer.ping from {}:{}", () -> peer, () -> formatNonce(nonce));
 			messageCentral.send(peer, new PeerPongMessage(this.universeMagic, nonce, payload, localSystem));
 		} catch (Exception ex) {
 			log.error(String.format("peer.ping %s", peer), ex);
@@ -304,10 +293,12 @@ public class PeerManager {
 					long rtt = System.nanoTime() - message.getPayload();
 					if (ourNonce.longValue() == nonce) {
 						this.probes.remove(peer);
-						log.info("Got good peer.pong from {}:{}:{}ns", () -> peer, () -> formatNonce(nonce), () -> rtt);
+						log.trace("Got good peer.pong from {}:{}:{}ns", () -> peer, () -> formatNonce(nonce), () -> rtt);
 					} else {
-						log.debug("Got mismatched peer.pong from {} with nonce '{}', ours '{}' ({}ns)",
-							() -> peer, () -> formatNonce(nonce), () -> formatNonce(ourNonce), () -> rtt);
+						if (nonce != 0L) {
+							log.warn("Got mismatched peer.pong from {} with nonce '{}', ours '{}' ({}ns)",
+								() -> peer, () -> formatNonce(nonce), () -> formatNonce(ourNonce), () -> rtt);
+						}
 					}
 				}
 			}
@@ -334,29 +325,22 @@ public class PeerManager {
 		}
 	}
 
-	private boolean probe(Peer peer) {
+	private boolean probe(PeerWithSystem peer) {
 		try {
-			if (peer != null) {
-				if (Time.currentTimestamp() - peer.getTimestamp(Timestamps.PROBED) < peerProbeFrequencyMs) {
-					return false;
-				}
-				synchronized (this.probes) {
-					if (!this.probes.containsKey(peer)) {
-						long nonce = rng.nextLong();
-						PeerPingMessage ping = new PeerPingMessage(this.universeMagic, nonce, System.nanoTime(), localSystem);
+			if (Time.currentTimestamp() - peer.getTimestamp(Timestamps.PROBED) < peerProbeFrequencyMs) {
+				return false;
+			}
+			synchronized (this.probes) {
+				if (!this.probes.containsKey(peer)) {
+					long nonce = rng.nextLong();
+					final PeerPingMessage ping = new PeerPingMessage(this.universeMagic, nonce, System.nanoTime(), localSystem);
 
-						// Only wait for response if peer has a system, otherwise peer will be upgraded by pong message
-						if (peer.hasSystem()) {
-							this.probes.put(peer, nonce);
-							this.executor.schedule(() -> handleProbeTimeout(peer, nonce), peerProbeTimeoutMs, TimeUnit.MILLISECONDS);
-							log.debug("Probing {}:{}", () -> peer, () -> formatNonce(nonce));
-						} else {
-							log.debug("Nudging {}", peer);
-						}
-						messageCentral.send(peer, ping);
-						peer.setTimestamp(Timestamps.PROBED, Time.currentTimestamp());
-						return true;
-					}
+					this.probes.put(peer, nonce);
+					this.executor.schedule(() -> handleProbeTimeout(peer, nonce), peerProbeTimeoutMs, TimeUnit.MILLISECONDS);
+					log.trace("Probing {}:{}", () -> peer, () -> formatNonce(nonce));
+					messageCentral.send(peer, ping);
+					peer.setTimestamp(Timestamps.PROBED, Time.currentTimestamp());
+					return true;
 				}
 			}
 		} catch (Exception ex) {
@@ -365,30 +349,46 @@ public class PeerManager {
 		return false;
 	}
 
-	private void handleProbeTimeout(Peer peer, long nonce) {
+	private boolean nudge(TransportInfo transportInfo) {
+		try {
+			log.trace("Nudging {}", transportInfo);
+			final PeerPingMessage ping = new PeerPingMessage(this.universeMagic, 0L, System.nanoTime(), localSystem);
+			messageCentral.sendSystemMessage(transportInfo, ping);
+			return true;
+		} catch (Exception ex) {
+			log.error(String.format("Nudge for %s failed", transportInfo), ex);
+		}
+		return false;
+	}
+
+	private void handleProbeTimeout(PeerWithSystem peer, long nonce) {
 		synchronized (this.probes) {
 			Long value = this.probes.get(peer);
 			if (value != null && value.longValue() == nonce) {
 				log.info("Removing peer {}:{} because of probe timeout", () -> peer, () -> formatNonce(nonce));
 				this.probes.remove(peer);
-				this.addressbook.removePeer(peer);
+				this.addressbook.removePeer(peer.getNID());
 			}
 		}
 	}
 
 	private void discoverPeers() {
-		// Probe all the bootstrap hosts so that they know about us
-		GetPeersMessage msg = new GetPeersMessage(this.universeMagic);
-		bootstrapDiscovery.discover(this.addressbook, StandardFilters.standardFilter(localSystem.getNID(), whitelist)).stream()
-			.map(addressbook::peer)
-			.forEachOrdered(peer -> {
-				probe(peer);
-				messageCentral.send(peer, msg);
-			});
+		// Probe all the bootstrap hosts not in the address book so that they know about us
+		bootstrapDiscovery.discoveryHosts().stream()
+			.filter(ti -> this.addressbook.peer(ti).isEmpty())
+			.forEachOrdered(this::nudge);
 	}
 
 	private String formatNonce(long nonce) {
 		return Long.toHexString(nonce);
+	}
+
+	private boolean notOurNid(PeerWithSystem peer) {
+		return !this.localSystem.getNID().equals(peer.getNID());
+	}
+
+	private boolean notInAddressBook(PeerWithSystem peer) {
+		return this.addressbook.peer(peer.getNID()).isEmpty();
 	}
 }
 

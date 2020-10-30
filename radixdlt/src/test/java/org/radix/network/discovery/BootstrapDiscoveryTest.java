@@ -21,7 +21,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLConnection;
-import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Set;
@@ -30,13 +29,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.powermock.reflect.Whitebox;
-
 import com.google.common.collect.Iterables;
-import com.radixdlt.network.addressbook.AddressBook;
-import com.radixdlt.network.addressbook.PeerPredicate;
-import com.radixdlt.network.addressbook.PeerWithTransport;
 import com.radixdlt.network.transport.TransportInfo;
-import com.radixdlt.network.transport.tcp.TCPConstants;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.universe.Universe;
 
@@ -104,19 +98,19 @@ public class BootstrapDiscoveryTest {
 		String expected = "1.1.1.1";
 		doReturn(expected.length()).when(conn).getContentLength();
 		doReturn(new ByteArrayInputStream(expected.getBytes(StandardCharsets.US_ASCII))).when(conn).getInputStream();
-		assertEquals(expected, new BootstrapDiscovery(config, universe).getNextNode(url));
+		assertEquals(expected, new BootstrapDiscovery(config, universe).getNextNode(url, 1, 1, 1, 1));
 	}
 
 	@Test
 	public void testGetNextNode_RuntimeException() throws IOException {
-		doThrow(new RuntimeException()).when(conn).connect();
-		assertNull(new BootstrapDiscovery(config, universe).getNextNode(url));
+		doThrow(new RuntimeException("Test exception")).when(conn).connect();
+		assertNull(new BootstrapDiscovery(config, universe).getNextNode(url, 1, 1, 1, 1));
 	}
 
 	public void testGetNextNode_InterruptedException() throws InterruptedException {
 		doThrow(new InterruptedException()).when(Thread.class);
 		Thread.sleep(anyLong());
-		assertNull(new BootstrapDiscovery(config, universe).getNextNode(url));
+		assertNull(new BootstrapDiscovery(config, universe).getNextNode(url, 1, 1, 1, 1));
 	}
 
 	@Test
@@ -135,37 +129,16 @@ public class BootstrapDiscoveryTest {
 	}
 
 	@Test
-	public void testDiscoverNoFilter() throws UnknownHostException {
+	public void testDiscovery() {
 		doReturn("").when(config).get("network.discovery.urls", "");
 		doReturn("1.1.1.1").when(config).get("network.seeds", "");
 		BootstrapDiscovery discovery = new BootstrapDiscovery(config, universe);
 
-		TransportInfo ti = discovery.toDefaultTransportInfo("1.1.1.1");
-		PeerWithTransport pwt = new PeerWithTransport(ti);
-		AddressBook addressbook = mock(AddressBook.class);
-		doReturn(pwt).when(addressbook).peer(ti);
-		Collection<TransportInfo> results = discovery.discover(addressbook, null);
+		TransportInfo ti = discovery.toDefaultTransportInfo("1.1.1.1").get();
+
+		Collection<TransportInfo> results = discovery.discoveryHosts();
+		assertFalse(results.isEmpty());
 		assertEquals(ti, Iterables.getOnlyElement(results));
-	}
-
-	@Test
-	public void testDiscoverFilter() throws UnknownHostException {
-		doReturn("").when(config).get("network.discovery.urls", "");
-		doReturn("1.1.1.1,2.2.2.2,3.3.3.3").when(config).get("network.seeds", "");
-		BootstrapDiscovery discovery = new BootstrapDiscovery(config, universe);
-
-		TransportInfo ti1 = discovery.toDefaultTransportInfo("1.1.1.1");
-		PeerWithTransport pwt1 = new PeerWithTransport(ti1);
-		TransportInfo ti2 = discovery.toDefaultTransportInfo("2.2.2.2");
-		PeerWithTransport pwt2 = new PeerWithTransport(ti2);
-		TransportInfo ti3 = discovery.toDefaultTransportInfo("3.3.3.3");
-		AddressBook addressbook = mock(AddressBook.class);
-		doReturn(pwt1).when(addressbook).peer(ti1);
-		doReturn(pwt2).when(addressbook).peer(ti2);
-		doReturn(null).when(addressbook).peer(ti3);
-		PeerPredicate predicate = p -> p.connectionData("TCP").get(TCPConstants.METADATA_HOST).equals("1.1.1.1");
-		Collection<TransportInfo> results = discovery.discover(addressbook, predicate);
-		assertEquals(ti1, Iterables.getOnlyElement(results));
 	}
 
 	private static RuntimeProperties defaultProperties() {

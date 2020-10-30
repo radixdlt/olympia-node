@@ -26,17 +26,17 @@ import org.radix.network.messages.PeerPongMessage;
 import org.radix.network.messaging.Message;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.network.addressbook.Peer;
+import com.radixdlt.network.transport.TransportInfo;
 
 /**
- * Inbound and outbound message wrapper with priority, time and destination.
+ * Inbound message wrapper with priority, time and destination.
  * <p>
  * Note that priority is calculated from a fixed table of priorities for
  * specific message types, and cannot be specified by the user.
  * <p>
  * Time is number of nanoseconds since some arbitrary baseline.
  */
-public final class MessageEvent {
+public final class InboundMessageEvent {
 
 	private static final int DEFAULT_PRIORITY = 0;
 	// Lower (inc -ve) numbers are higher priority than larger numbers
@@ -45,21 +45,19 @@ public final class MessageEvent {
 		PeerPongMessage.class, Integer.MIN_VALUE
 	);
 
-	public static Comparator<MessageEvent> comparator() {
-		return Comparator.comparingInt(MessageEvent::priority).thenComparingLong(MessageEvent::nanoTimeDiff);
+	public static Comparator<InboundMessageEvent> comparator() {
+		return Comparator.comparingInt(InboundMessageEvent::priority).thenComparingLong(InboundMessageEvent::nanoTimeDiff);
 	}
 
 	private final int priority;
 	private final long nanoTimeDiff;
-	private final Peer peer;
+	private final TransportInfo source;
 	private final Message message;
 
-	MessageEvent(Peer peer, Message message, long nanoTimeDiff) {
-		super();
-
+	InboundMessageEvent(TransportInfo source, Message message, long nanoTimeDiff) {
 		this.priority = MESSAGE_PRIORITIES.getOrDefault(message.getClass(), DEFAULT_PRIORITY);
 		this.nanoTimeDiff = nanoTimeDiff;
-		this.peer = peer;
+		this.source = source;
 		this.message = message;
 	}
 
@@ -83,13 +81,12 @@ public final class MessageEvent {
 	}
 
 	/**
-	 * Returns the source (for inbound) or destination (for outbound)
-	 * of the message.
+	 * Returns the source of the message.
 	 *
 	 * @return the source or destination of the message.
 	 */
-	public Peer peer() {
-		return peer;
+	public TransportInfo source() {
+		return source;
 	}
 
 	/**
@@ -103,7 +100,7 @@ public final class MessageEvent {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.priority, this.nanoTimeDiff, this.peer, this.message);
+		return Objects.hash(this.priority, this.nanoTimeDiff, this.source, this.message);
 	}
 
 	@Override
@@ -111,11 +108,11 @@ public final class MessageEvent {
 		if (this == obj) {
 			return true;
 		}
-		if (obj instanceof MessageEvent) {
-			MessageEvent that = (MessageEvent) obj;
+		if (obj instanceof InboundMessageEvent) {
+			InboundMessageEvent that = (InboundMessageEvent) obj;
 			return this.priority == that.priority
 				&& this.nanoTimeDiff == that.nanoTimeDiff
-				&& Objects.equals(this.peer, that.peer)
+				&& Objects.equals(this.source, that.source)
 				&& Objects.equals(this.message, that.message);
 		}
 		return false;
@@ -124,6 +121,6 @@ public final class MessageEvent {
 	@Override
 	public String toString() {
 		return String.format("%s[priority=%s, nanoTime=%s, peer=%s, message=%s]",
-			getClass().getSimpleName(), priority, nanoTimeDiff, peer, message);
+			getClass().getSimpleName(), priority, nanoTimeDiff, source, message);
 	}
 }

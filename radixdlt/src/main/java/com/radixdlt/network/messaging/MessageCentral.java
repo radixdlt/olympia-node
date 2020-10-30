@@ -20,9 +20,11 @@ package com.radixdlt.network.messaging;
 import java.io.IOException;
 
 import org.radix.network.messaging.Message;
+import org.radix.universe.system.SystemMessage;
 
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.transport.TransportException;
+import com.radixdlt.network.transport.TransportInfo;
 
 /**
  * Central processing facility for inbound and outbound messages.
@@ -40,13 +42,23 @@ public interface MessageCentral {
 	void send(Peer peer, Message message) throws TransportException;
 
 	/**
+	 * Sends a {@link SystemMessage} to a specific transport.
+	 * This method can be used to allow a node to introduce itself to another
+	 * node, when only the transport information is known.
+	 *
+	 * @param transportInfo Information about the transport to use for sending
+	 * @param message The message to send
+	 */
+	void sendSystemMessage(TransportInfo transportInfo, SystemMessage message) throws TransportException;
+
+	/**
 	 * Injects a message into the processing pipeline as if it had been received from
 	 * the specified peer.
 	 *
-	 * @param peer the peer the message should appear to come from
+	 * @param source the source the message should appear to come from
 	 * @param message the message to inject
 	 */
-	void inject(Peer peer, Message message);
+	void inject(TransportInfo source, Message message);
 
 	/**
 	 * Registers a callback to be called when messages of a particular type are received.

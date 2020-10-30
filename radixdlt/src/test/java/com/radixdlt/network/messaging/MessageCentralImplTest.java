@@ -23,6 +23,7 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
+import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.network.messaging.MessagingDummyConfigurations.DummyTransport;
 import com.radixdlt.network.messaging.MessagingDummyConfigurations.DummyTransportOutboundConnection;
 import com.radixdlt.network.transport.StaticTransportMetadata;
@@ -42,7 +43,9 @@ import org.xerial.snappy.Snappy;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -60,16 +63,16 @@ import static org.mockito.Mockito.mock;
 
 public class MessageCentralImplTest {
 
-	static class TestBlockingQueue extends SimplePriorityBlockingQueue<MessageEvent> {
+	static class TestBlockingQueue<T> extends SimplePriorityBlockingQueue<T> {
 		private final AtomicLong offered = new AtomicLong(0);
 		private final AtomicBoolean full = new AtomicBoolean(false);
 
-		TestBlockingQueue() {
-			super(100, MessageEvent.comparator()); // Close enough for jazz
+		TestBlockingQueue(Comparator<T> comparator) {
+			super(100, comparator);
 		}
 
 		@Override
-		public boolean offer(MessageEvent e) {
+		public boolean offer(T e) {
 			this.offered.incrementAndGet();
 			if (this.full.get()) {
 				return false;
@@ -91,8 +94,8 @@ public class MessageCentralImplTest {
 	private DummyTransportOutboundConnection toc;
 	private DummyTransport dt;
 	private MessageCentralImpl mci;
-	private TestBlockingQueue inboundQueue;
-	private TestBlockingQueue outboundQueue;
+	private TestBlockingQueue<InboundMessageEvent> inboundQueue;
+	private TestBlockingQueue<OutboundMessageEvent> outboundQueue;
 
 	@Before
 	public void testSetup() {
@@ -105,8 +108,8 @@ public class MessageCentralImplTest {
 		RuntimeProperties runtimeProperties = mock(RuntimeProperties.class);
 		doReturn("").when(runtimeProperties).get(eq("network.whitelist"), any());
 		AddressBook addressBook = mock(AddressBook.class);
-		Peer peer = mock(Peer.class);
-		doReturn(peer).when(addressBook).peer(any(TransportInfo.class));
+		PeerWithSystem peer = mock(PeerWithSystem.class);
+		doReturn(Optional.of(peer)).when(addressBook).peer(any(TransportInfo.class));
 
 		// Other scaffolding
 		this.toc = new DummyTransportOutboundConnection();
@@ -116,11 +119,12 @@ public class MessageCentralImplTest {
 		@SuppressWarnings("resource")
 		TransportManager transportManager = new MessagingDummyConfigurations.DummyTransportManager(this.dt);
 
-		inboundQueue = new TestBlockingQueue();
-		outboundQueue = new TestBlockingQueue();
-		EventQueueFactory<MessageEvent> queueFactory = eventQueueFactoryMock();
-		doReturn(inboundQueue).when(queueFactory).createEventQueue(eq(conf.messagingInboundQueueMax(0)), any());
-		doReturn(outboundQueue).when(queueFactory).createEventQueue(eq(conf.messagingOutboundQueueMax(0)), any());
+		inboundQueue = new TestBlockingQueue<>(InboundMessageEvent.comparator());
+		outboundQueue = new TestBlockingQueue<>(OutboundMessageEvent.comparator());
+		EventQueueFactory<InboundMessageEvent> inboundQueueFactory = eventQueueFactoryMock();
+		EventQueueFactory<OutboundMessageEvent> outboundQueueFactory = eventQueueFactoryMock();
+		doReturn(inboundQueue).when(inboundQueueFactory).createEventQueue(eq(conf.messagingInboundQueueMax(0)), any());
+		doReturn(outboundQueue).when(outboundQueueFactory).createEventQueue(eq(conf.messagingOutboundQueueMax(0)), any());
 		LocalSystem localSystem = mock(LocalSystem.class);
 		SystemCounters counters = mock(SystemCounters.class);
 		ECKeyPair ecKeyPair = ECKeyPair.generateNew();
@@ -130,7 +134,8 @@ public class MessageCentralImplTest {
 			transportManager,
 			addressBook,
 			System::currentTimeMillis,
-			queueFactory,
+			inboundQueueFactory,
+			outboundQueueFactory,
 			localSystem,
 			counters,
 			Sha256Hasher.withDefaultSerialization(),
@@ -183,7 +188,7 @@ public class MessageCentralImplTest {
 	@Test
 	public void testInjectMessageDeliveredToListeners() throws InterruptedException {
 		Message msg = new TestMessage(1, System.currentTimeMillis());
-		Peer peer = mock(Peer.class);
+		TransportInfo transportInfo = mock(TransportInfo.class);
 
 		int numberOfRequests = 6;
 		CountDownLatch receivedFlag = new CountDownLatch(numberOfRequests);
@@ -194,7 +199,7 @@ public class MessageCentralImplTest {
 		});
 
 		for (int i = 0; i < numberOfRequests; i++) {
-			mci.inject(peer, msg);
+			mci.inject(transportInfo, msg);
 		}
 		assertTrue(receivedFlag.await(10, TimeUnit.SECONDS));
 		assertEquals(numberOfRequests, messages.size());

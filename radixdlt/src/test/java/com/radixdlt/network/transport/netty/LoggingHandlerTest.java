@@ -43,13 +43,11 @@ public class LoggingHandlerTest {
 	private LoggingHandler handler;
 	private ChannelHandlerContext ctx;
 	private Channel channel;
-	private boolean isDebugEnabled = true;
 	private boolean isTraceEnabled = true;
 
 	@Before
 	public void setUp() {
 		this.logger = mock(LogSink.class);
-		when(this.logger.isDebugEnabled()).thenReturn(this.isDebugEnabled);
 		when(this.logger.isTraceEnabled()).thenReturn(this.isTraceEnabled);
 		this.handler = new LoggingHandler(logger, true);
 
@@ -63,8 +61,8 @@ public class LoggingHandlerTest {
 	public void testChannelRegisteredChannelHandlerContext() throws Exception {
 		this.handler.channelRegistered(ctx);
 
-		verify(logger, times(1)).isDebugEnabled();
-		verify(logger, times(1)).debug(this.channel.toString() + " REGISTERED");
+		verify(logger, times(1)).isTraceEnabled();
+		verify(logger, times(1)).trace(this.channel.toString() + " REGISTERED");
 		verifyNoMoreInteractions(logger);
 	}
 
@@ -72,8 +70,8 @@ public class LoggingHandlerTest {
 	public void testChannelUnregisteredChannelHandlerContext() throws Exception {
 		this.handler.channelUnregistered(ctx);
 
-		verify(logger, times(1)).isDebugEnabled();
-		verify(logger, times(1)).debug(this.channel.toString() + " UNREGISTERED");
+		verify(logger, times(1)).isTraceEnabled();
+		verify(logger, times(1)).trace(this.channel.toString() + " UNREGISTERED");
 		verifyNoMoreInteractions(logger);
 	}
 
@@ -81,8 +79,8 @@ public class LoggingHandlerTest {
 	public void testChannelActiveChannelHandlerContext() throws Exception {
 		this.handler.channelActive(ctx);
 
-		verify(logger, times(1)).isDebugEnabled();
-		verify(logger, times(1)).debug(this.channel.toString() + " ACTIVE");
+		verify(logger, times(1)).isTraceEnabled();
+		verify(logger, times(1)).trace(this.channel.toString() + " ACTIVE");
 		verifyNoMoreInteractions(logger);
 	}
 
@@ -90,8 +88,8 @@ public class LoggingHandlerTest {
 	public void testChannelInactiveChannelHandlerContext() throws Exception {
 		this.handler.channelInactive(ctx);
 
-		verify(logger, times(1)).isDebugEnabled();
-		verify(logger, times(1)).debug(this.channel.toString() + " INACTIVE");
+		verify(logger, times(1)).isTraceEnabled();
+		verify(logger, times(1)).trace(this.channel.toString() + " INACTIVE");
 		verifyNoMoreInteractions(logger);
 	}
 
@@ -100,8 +98,8 @@ public class LoggingHandlerTest {
 		Exception ex = new Exception("test exception");
 		this.handler.exceptionCaught(ctx, ex);
 
-		verify(logger, times(1)).isDebugEnabled();
-		verify(logger, times(1)).debug(this.channel.toString() + " EXCEPTION: java.lang.Exception: test exception", ex);
+		verify(logger, times(1)).isTraceEnabled();
+		verify(logger, times(1)).trace(this.channel.toString() + " EXCEPTION: java.lang.Exception: test exception", ex);
 		verifyNoMoreInteractions(logger);
 	}
 
@@ -110,8 +108,8 @@ public class LoggingHandlerTest {
 		Object randomObject = new Object();
 		this.handler.userEventTriggered(ctx, randomObject);
 
-		verify(logger, times(1)).isDebugEnabled();
-		verify(logger, times(1)).debug(this.channel.toString() + " USER_EVENT: " + randomObject.toString());
+		verify(logger, times(1)).isTraceEnabled();
+		verify(logger, times(1)).trace(this.channel.toString() + " USER_EVENT: " + randomObject.toString());
 		verifyNoMoreInteractions(logger);
 	}
 
@@ -121,8 +119,8 @@ public class LoggingHandlerTest {
 		ChannelPromise promise = mock(ChannelPromise.class);
 		this.handler.bind(ctx, addr, promise);
 
-		verify(logger, times(1)).isDebugEnabled();
-		verify(logger, times(1)).debug(this.channel.toString() + " BIND: " + addr.toString());
+		verify(logger, times(1)).isTraceEnabled();
+		verify(logger, times(1)).trace(this.channel.toString() + " BIND: " + addr.toString());
 		verifyNoMoreInteractions(logger);
 	}
 
@@ -133,8 +131,8 @@ public class LoggingHandlerTest {
 		ChannelPromise promise = mock(ChannelPromise.class);
 		this.handler.connect(ctx, addr1, addr2, promise);
 
-		verify(logger, times(1)).isDebugEnabled();
-		verify(logger, times(1)).debug(this.channel.toString() + " CONNECT: " + addr1.toString() + ", " + addr2.toString());
+		verify(logger, times(1)).isTraceEnabled();
+		verify(logger, times(1)).trace(this.channel.toString() + " CONNECT: " + addr1.toString() + ", " + addr2.toString());
 		verifyNoMoreInteractions(logger);
 	}
 
@@ -143,8 +141,8 @@ public class LoggingHandlerTest {
 		ChannelPromise promise = mock(ChannelPromise.class);
 		this.handler.disconnect(ctx, promise);
 
-		verify(logger, times(1)).isDebugEnabled();
-		verify(logger, times(1)).debug(this.channel.toString() + " DISCONNECT");
+		verify(logger, times(1)).isTraceEnabled();
+		verify(logger, times(1)).trace(this.channel.toString() + " DISCONNECT");
 		verifyNoMoreInteractions(logger);
 	}
 
@@ -153,8 +151,8 @@ public class LoggingHandlerTest {
 		ChannelPromise promise = mock(ChannelPromise.class);
 		this.handler.close(ctx, promise);
 
-		verify(logger, times(1)).isDebugEnabled();
-		verify(logger, times(1)).debug(this.channel.toString() + " CLOSE");
+		verify(logger, times(1)).isTraceEnabled();
+		verify(logger, times(1)).trace(this.channel.toString() + " CLOSE");
 		verifyNoMoreInteractions(logger);
 	}
 
@@ -163,8 +161,8 @@ public class LoggingHandlerTest {
 		ChannelPromise promise = mock(ChannelPromise.class);
 		this.handler.deregister(ctx, promise);
 
-		verify(logger, times(1)).isDebugEnabled();
-		verify(logger, times(1)).debug(this.channel.toString() + " DEREGISTER");
+		verify(logger, times(1)).isTraceEnabled();
+		verify(logger, times(1)).trace(this.channel.toString() + " DEREGISTER");
 		verifyNoMoreInteractions(logger);
 	}
 
@@ -222,8 +220,8 @@ public class LoggingHandlerTest {
 		ChannelPromise promise = mock(ChannelPromise.class);
 		this.handler.connect(ctx, addr1, null, promise);
 
-		verify(logger, times(1)).isDebugEnabled();
-		verify(logger, times(1)).debug(this.channel.toString() + " CONNECT: " + addr1.toString());
+		verify(logger, times(1)).isTraceEnabled();
+		verify(logger, times(1)).trace(this.channel.toString() + " CONNECT: " + addr1.toString());
 		verifyNoMoreInteractions(logger);
 	}
 
@@ -232,8 +230,8 @@ public class LoggingHandlerTest {
 		ByteBuf byteBuf = Unpooled.EMPTY_BUFFER;
 		this.handler.userEventTriggered(ctx, byteBuf);
 
-		verify(logger, times(1)).isDebugEnabled();
-		verify(logger, times(1)).debug(this.channel.toString() + " USER_EVENT: 0B");
+		verify(logger, times(1)).isTraceEnabled();
+		verify(logger, times(1)).trace(this.channel.toString() + " USER_EVENT: 0B");
 		verifyNoMoreInteractions(logger);
 	}
 
@@ -253,8 +251,8 @@ public class LoggingHandlerTest {
 	    	.append(newline);
 	    ByteBufUtil.appendPrettyHexDump(sb, byteBuf);
 
-		verify(logger, times(1)).isDebugEnabled();
-		verify(logger, times(1)).debug(sb.toString());
+		verify(logger, times(1)).isTraceEnabled();
+		verify(logger, times(1)).trace(sb.toString());
 		verifyNoMoreInteractions(logger);
 	}
 
@@ -264,8 +262,8 @@ public class LoggingHandlerTest {
 		ByteBufHolder byteBufHolder = new DefaultByteBufHolder(byteBuf);
 		this.handler.userEventTriggered(ctx, byteBufHolder);
 
-		verify(logger, times(1)).isDebugEnabled();
-		verify(logger, times(1)).debug(this.channel.toString() + " USER_EVENT: " + byteBufHolder.toString() + ", 0B");
+		verify(logger, times(1)).isTraceEnabled();
+		verify(logger, times(1)).trace(this.channel.toString() + " USER_EVENT: " + byteBufHolder.toString() + ", 0B");
 		verifyNoMoreInteractions(logger);
 	}
 
@@ -288,8 +286,8 @@ public class LoggingHandlerTest {
 	    	.append(newline);
 	    ByteBufUtil.appendPrettyHexDump(sb, byteBuf);
 
-		verify(logger, times(1)).isDebugEnabled();
-		verify(logger, times(1)).debug(sb.toString());
+		verify(logger, times(1)).isTraceEnabled();
+		verify(logger, times(1)).trace(sb.toString());
 		verifyNoMoreInteractions(logger);
 	}
 
@@ -355,8 +353,8 @@ public class LoggingHandlerTest {
 		ByteBuf byteBuf = Unpooled.copiedBuffer(bytes);
 		nologHandler.userEventTriggered(ctx, byteBuf);
 
-		verify(logger, times(1)).isDebugEnabled();
-		verify(logger, times(1)).debug(this.channel.toString() + " USER_EVENT: " + bytes.length + "B");
+		verify(logger, times(1)).isTraceEnabled();
+		verify(logger, times(1)).trace(this.channel.toString() + " USER_EVENT: " + bytes.length + "B");
 		verifyNoMoreInteractions(logger);
 	}
 
@@ -370,8 +368,8 @@ public class LoggingHandlerTest {
 		ByteBufHolder byteBufHolder = new DefaultByteBufHolder(byteBuf);
 		nologHandler.userEventTriggered(ctx, byteBufHolder);
 
-		verify(logger, times(1)).isDebugEnabled();
-		verify(logger, times(1)).debug(this.channel.toString() + " USER_EVENT: " + byteBufHolder.toString() + ", " + bytes.length + "B");
+		verify(logger, times(1)).isTraceEnabled();
+		verify(logger, times(1)).trace(this.channel.toString() + " USER_EVENT: " + byteBufHolder.toString() + ", " + bytes.length + "B");
 		verifyNoMoreInteractions(logger);
 	}
 

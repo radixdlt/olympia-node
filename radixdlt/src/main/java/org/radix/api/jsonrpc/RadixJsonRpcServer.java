@@ -25,7 +25,6 @@ import com.radixdlt.store.StoreIndex;
 import com.radixdlt.store.LedgerSearchMode;
 import com.radixdlt.middleware2.store.EngineAtomIndices;
 import com.radixdlt.network.addressbook.AddressBook;
-import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -286,7 +285,7 @@ public final class RadixJsonRpcServer {
 		}
 	}
 
-	private Stream<Peer> selfAndOthers(Stream<Peer> others) {
+	private Stream<PeerWithSystem> selfAndOthers(Stream<PeerWithSystem> others) {
 		return Stream.concat(Stream.of(this.localPeer), others).distinct();
 	}
 }

@@ -248,9 +248,7 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 
 	private Thread createThread(Runnable r) {
 		String threadName = String.format("TCP handler %s - %s", localAddress(), threadCounter.incrementAndGet());
-		if (log.isDebugEnabled()) {
-			log.debug("New thread: {}", threadName);
-		}
+		log.trace("New thread: {}", threadName);
 		return new Thread(r, threadName);
 	}
 

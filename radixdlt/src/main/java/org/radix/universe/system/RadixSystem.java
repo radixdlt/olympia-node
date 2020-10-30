@@ -103,6 +103,10 @@ public class RadixSystem extends BasicContainer
 		return this.timestamp;
 	}
 
+	public boolean hasTransports() {
+		return !this.transports.isEmpty();
+	}
+
 	public Stream<TransportInfo> supportedTransports() {
 		return transports.stream();
 	}

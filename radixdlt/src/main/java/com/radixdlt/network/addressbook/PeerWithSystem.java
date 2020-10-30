@@ -106,6 +106,10 @@ public final class PeerWithSystem extends Peer {
 		return true;
 	}
 
+	public boolean hasTransports() {
+		return system.hasTransports();
+	}
+
 	@Override
 	public String toString() {
 		// Here we are going to assume that hosts order their transports by priority, so use the first one.
