@@ -55,8 +55,6 @@ public final class InboundMessageEvent {
 	private final Message message;
 
 	InboundMessageEvent(TransportInfo source, Message message, long nanoTimeDiff) {
-		super();
-
 		this.priority = MESSAGE_PRIORITIES.getOrDefault(message.getClass(), DEFAULT_PRIORITY);
 		this.nanoTimeDiff = nanoTimeDiff;
 		this.source = source;

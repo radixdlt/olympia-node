@@ -238,12 +238,10 @@ public class PeerManager {
 		log.trace("Received PeersMessage from {}", peer);
 		List<PeerWithSystem> peers = peersMessage.getPeers();
 		if (peers != null) {
-			EUID localNid = this.localSystem.getNID();
 			List<PeerWithSystem> unknownPeers = peers.stream()
-				.filter(Peer::hasSystem)
-				.filter(p -> !localNid.equals(p.getNID())) // Not us
-				.filter(p -> this.addressbook.peer(p.getNID()).isEmpty()) // Not already in address book
-				.filter(p -> p.supportedTransports().findAny().isPresent()) // Has some transports
+				.filter(PeerWithSystem::hasTransports)
+				.filter(this::notOurNid)
+				.filter(this::notInAddressBook)
 				.collect(Collectors.toList());
 			if (!unknownPeers.isEmpty()) {
 				// Only nudge one peer to avoid amplification attacks
@@ -383,6 +381,14 @@ public class PeerManager {
 
 	private String formatNonce(long nonce) {
 		return Long.toHexString(nonce);
+	}
+
+	private boolean notOurNid(PeerWithSystem peer) {
+		return !this.localSystem.getNID().equals(peer.getNID());
+	}
+
+	private boolean notInAddressBook(PeerWithSystem peer) {
+		return this.addressbook.peer(peer.getNID()).isEmpty();
 	}
 }
 

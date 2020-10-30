@@ -132,7 +132,7 @@ public class AddressBookImpl implements AddressBook {
 	}
 
 	@Override
-	public PeerWithSystem updatePeerSystem(Optional<PeerWithSystem> peer, RadixSystem system, TransportInfo source) {
+	public PeerWithSystem addOrUpdatePeer(Optional<PeerWithSystem> peer, RadixSystem system, TransportInfo source) {
 		return peer.map(p -> updatePeer(p, system, source)).orElseGet(() -> newPeer(system, source));
 	}
 

@@ -94,7 +94,7 @@ public class AddressBookImplTest {
 		when(system.supportedTransports()).thenAnswer(invocation -> Stream.of(transportInfo));
 
 		// Adding should return true, and also fire broadcast event, saved
-		PeerWithSystem peer = this.addressbook.updatePeerSystem(Optional.empty(), system, transportInfo);
+		PeerWithSystem peer = this.addressbook.addOrUpdatePeer(Optional.empty(), system, transportInfo);
 		assertNotNull(peer);
 		this.peersObserver.awaitCount(2)
 			.assertNoErrors()
@@ -104,7 +104,7 @@ public class AddressBookImplTest {
 		assertEquals(1, this.savedPeerCount.get());
 
 		// Adding again should not fire broadcast event, not saved again
-		assertNotNull(this.addressbook.updatePeerSystem(Optional.of(peer), system, transportInfo));
+		assertNotNull(this.addressbook.addOrUpdatePeer(Optional.of(peer), system, transportInfo));
 		this.peersObserver.awaitCount(2)
 			.assertNoErrors()
 			.assertNotComplete()
@@ -136,7 +136,7 @@ public class AddressBookImplTest {
 		when(system.supportedTransports()).thenAnswer(invocation -> Stream.of(transportInfo));
 		TransportInfo source = mock(TransportInfo.class);
 
-		assertNotNull(this.addressbook.updatePeerSystem(Optional.empty(), system, source));
+		assertNotNull(this.addressbook.addOrUpdatePeer(Optional.empty(), system, source));
 		this.peersObserver.awaitCount(2)
 			.assertNoErrors()
 			.assertNotComplete()
@@ -145,7 +145,7 @@ public class AddressBookImplTest {
 		assertEquals(1, this.savedPeerCount.get());
 		assertSetSize(1, Whitebox.getInternalState(this.addressbook, "emitters"));
 
-		PeerWithSystem peer2 = this.addressbook.updatePeerSystem(Optional.empty(), system, source);
+		PeerWithSystem peer2 = this.addressbook.addOrUpdatePeer(Optional.empty(), system, source);
 		assertNotNull(peer2);
 		assertEquals(1, this.savedPeerCount.get());
 		this.addressbook.close();
@@ -171,7 +171,7 @@ public class AddressBookImplTest {
 		when(system1.supportedTransports()).thenAnswer(invocation -> Stream.of(transportInfo));
 		TransportInfo source = mock(TransportInfo.class);
 
-		PeerWithSystem peer = this.addressbook.updatePeerSystem(Optional.empty(), system1, source);
+		PeerWithSystem peer = this.addressbook.addOrUpdatePeer(Optional.empty(), system1, source);
 		assertNotNull(peer);
 
 		this.peersObserver.awaitCount(2)
@@ -185,7 +185,7 @@ public class AddressBookImplTest {
 		RadixSystem system2 = mock(RadixSystem.class);
 		when(system2.getNID()).thenReturn(EUID.TWO);
 		when(system2.supportedTransports()).thenAnswer(invocation -> Stream.of(transportInfo));
-		PeerWithSystem peer2 = this.addressbook.updatePeerSystem(Optional.of(peer), system2, source);
+		PeerWithSystem peer2 = this.addressbook.addOrUpdatePeer(Optional.of(peer), system2, source);
 		assertNotNull(peer2);
 		assertNotSame(peer, peer2);
 		this.peersObserver.awaitCount(4)
@@ -198,7 +198,7 @@ public class AddressBookImplTest {
 		assertEquals(1, this.deletedPeerCount.get());
 
 		// Updating again should have no effect
-		Peer peer3 = this.addressbook.updatePeerSystem(Optional.of(peer2), system2, source);
+		Peer peer3 = this.addressbook.addOrUpdatePeer(Optional.of(peer2), system2, source);
 		assertSame(peer2, peer3);
 		this.peersObserver.awaitCount(4)
 			.assertNoErrors()
@@ -223,8 +223,8 @@ public class AddressBookImplTest {
 		when(system2.getNID()).thenReturn(EUID.TWO);
 		when(system2.supportedTransports()).thenAnswer(invocation -> Stream.of(transportInfo2));
 
-		PeerWithSystem peer1 = this.addressbook.updatePeerSystem(Optional.empty(), system1, transportInfo1);
-		PeerWithSystem peer2 = this.addressbook.updatePeerSystem(Optional.empty(), system2, transportInfo2);
+		PeerWithSystem peer1 = this.addressbook.addOrUpdatePeer(Optional.empty(), system1, transportInfo1);
+		PeerWithSystem peer2 = this.addressbook.addOrUpdatePeer(Optional.empty(), system2, transportInfo2);
 
 		peer1.setTimestamp(Timestamps.ACTIVE, Time.currentTimestamp()); // Now
 		peer2.setTimestamp(Timestamps.ACTIVE, 0L); // A long time ago
@@ -250,8 +250,8 @@ public class AddressBookImplTest {
 		when(system2.getNID()).thenReturn(EUID.TWO);
 		when(system2.supportedTransports()).thenAnswer(invocation -> Stream.of(transportInfo2));
 
-		PeerWithSystem peer1 = this.addressbook.updatePeerSystem(Optional.empty(), system1, transportInfo1);
-		PeerWithSystem peer2 = this.addressbook.updatePeerSystem(Optional.empty(), system2, transportInfo2);
+		PeerWithSystem peer1 = this.addressbook.addOrUpdatePeer(Optional.empty(), system1, transportInfo1);
+		PeerWithSystem peer2 = this.addressbook.addOrUpdatePeer(Optional.empty(), system2, transportInfo2);
 
 		peer1.setTimestamp(Timestamps.ACTIVE, Time.currentTimestamp()); // Now
 		peer2.setTimestamp(Timestamps.ACTIVE, 0L); // A long time ago
@@ -277,8 +277,8 @@ public class AddressBookImplTest {
 		when(system2.getNID()).thenReturn(EUID.TWO);
 		when(system2.supportedTransports()).thenAnswer(invocation -> Stream.of(transportInfo2));
 
-		assertNotNull(this.addressbook.updatePeerSystem(Optional.empty(), system1, transportInfo1));
-		assertNotNull(this.addressbook.updatePeerSystem(Optional.empty(), system2, transportInfo2));
+		assertNotNull(this.addressbook.addOrUpdatePeer(Optional.empty(), system1, transportInfo1));
+		assertNotNull(this.addressbook.addOrUpdatePeer(Optional.empty(), system2, transportInfo2));
 
 		ImmutableSet<EUID> nids = this.addressbook.nids().collect(ImmutableSet.toImmutableSet());
 		assertEquals(2, nids.size());

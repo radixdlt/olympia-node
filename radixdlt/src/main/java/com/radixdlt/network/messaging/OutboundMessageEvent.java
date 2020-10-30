@@ -55,8 +55,6 @@ public final class OutboundMessageEvent {
 	private final Message message;
 
 	OutboundMessageEvent(Peer peer, Message message, long nanoTimeDiff) {
-		super();
-
 		this.priority = MESSAGE_PRIORITIES.getOrDefault(message.getClass(), DEFAULT_PRIORITY);
 		this.nanoTimeDiff = nanoTimeDiff;
 		this.peer = peer;

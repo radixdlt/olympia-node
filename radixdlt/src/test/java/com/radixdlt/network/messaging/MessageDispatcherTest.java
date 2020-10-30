@@ -142,8 +142,8 @@ public class MessageDispatcherTest extends RadixTest {
 		transportInfo2 = peer2.supportedTransports().findFirst().get();
 
 		addressBook = mock(AddressBook.class);
-		when(addressBook.updatePeerSystem(any(), eq(system1), any())).thenReturn(peer1);
-		when(addressBook.updatePeerSystem(any(), eq(system2), any())).thenReturn(peer2);
+		when(addressBook.addOrUpdatePeer(any(), eq(system1), any())).thenReturn(peer1);
+		when(addressBook.addOrUpdatePeer(any(), eq(system2), any())).thenReturn(peer2);
 		when(addressBook.peer(eq(transportInfo1))).thenReturn(Optional.of(peer1));
 		when(addressBook.peer(eq(transportInfo2))).thenReturn(Optional.of(peer2));
 
@@ -204,7 +204,7 @@ public class MessageDispatcherTest extends RadixTest {
 			receivedFlag.release();
 		});
 
-		when(this.addressBook.updatePeerSystem(any(), any(), any())).thenReturn(peer1);
+		when(this.addressBook.addOrUpdatePeer(any(), any(), any())).thenReturn(peer1);
 
 		messageDispatcher.receive(messageListenerList, messageEvent);
 
@@ -253,7 +253,7 @@ public class MessageDispatcherTest extends RadixTest {
 		SystemMessage testMessage1 = spy(new SystemMessage(localSystem, 0));
 		testMessage1.setSignature(getKeyPair().sign(hasher.hash(testMessage1)));
 
-		when(addressBook.updatePeerSystem(any(), eq(localSystem), any())).thenReturn(peer1);
+		when(addressBook.addOrUpdatePeer(any(), eq(localSystem), any())).thenReturn(peer1);
 
 		RadixSystem radixSystem1 = spy(testMessage1.getSystem());
 		doReturn(radixSystem1).when(testMessage1).getSystem();
@@ -268,8 +268,8 @@ public class MessageDispatcherTest extends RadixTest {
 		doReturn(null).when(radixSystem2).getNID();
 		InboundMessageEvent messageEvent2 = new InboundMessageEvent(transportInfo2, testMessage2, 10_000);
 
-		when(addressBook.updatePeerSystem(any(), eq(radixSystem1), any())).thenReturn(peer1);
-		when(addressBook.updatePeerSystem(any(), eq(radixSystem2), any())).thenReturn(peer2);
+		when(addressBook.addOrUpdatePeer(any(), eq(radixSystem1), any())).thenReturn(peer1);
+		when(addressBook.addOrUpdatePeer(any(), eq(radixSystem2), any())).thenReturn(peer2);
 
 		messageDispatcher.receive(null, messageEvent1);
 		messageDispatcher.receive(null, messageEvent2);
@@ -292,7 +292,7 @@ public class MessageDispatcherTest extends RadixTest {
 		doReturn(Radix.REFUSE_AGENT_VERSION).when(radixSystem).getAgentVersion();
 		InboundMessageEvent messageEvent = new InboundMessageEvent(transportInfo1, testMessage, 10_000);
 
-		when(this.addressBook.updatePeerSystem(any(), any(), any())).thenReturn(peer1);
+		when(this.addressBook.addOrUpdatePeer(any(), any(), any())).thenReturn(peer1);
 
 		messageDispatcher.receive(null, messageEvent);
 

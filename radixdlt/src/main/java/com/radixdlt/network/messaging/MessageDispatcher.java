@@ -174,7 +174,7 @@ class MessageDispatcher {
 		String messageType = systemMessage.getClass().getSimpleName();
 		RadixSystem system = systemMessage.getSystem();
 		if (checkSignature(systemMessage, system)) {
-			PeerWithSystem peer = this.addressBook.updatePeerSystem(oldPeer, system, source);
+			PeerWithSystem peer = this.addressBook.addOrUpdatePeer(oldPeer, system, source);
 			log.trace("Good signature on {} from {}", messageType, peer);
 			if (system.getNID() == null || EUID.ZERO.equals(system.getNID())) {
 				peer.ban(String.format("%s:%s gave null NID", peer, messageType));

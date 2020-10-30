@@ -46,22 +46,22 @@ public interface AddressBook {
 	boolean removePeer(EUID nid);
 
 	/**
-	 * Updates a peer's {@link RadixSystem} in the address book.
+	 * Adds or updates a peer's details in the address book.
 	 * <p>
 	 * This method is thread-safe.
 	 *
-	 * @param oldPeer The peer to update the system for
-	 * @param system the system to update the peer to
+	 * @param oldPeer the peer to update, if it already exists
+	 * @param system the system information to update the peer with
 	 * @param source the source of the message causing the update
 	 * @return the updated peer
 	 */
-	PeerWithSystem updatePeerSystem(Optional<PeerWithSystem> oldPeer, RadixSystem system, TransportInfo source);
+	PeerWithSystem addOrUpdatePeer(Optional<PeerWithSystem> oldPeer, RadixSystem system, TransportInfo source);
 
 	/**
 	 * Retrieve the {@link PeerWithSystem} with the specified Node ID, if known.
 	 * <p>
 	 * This method is thread-safe, although the returned {@link PeerWithSystem},
-	 * if any, may change status at any time due to external events.
+	 * if any, may become stale at any time due to external events.
 	 *
 	 * @param nid The Node ID of the peer to retrieve
 	 * @return the optional {@link PeerWithSystem} with matching Node ID
@@ -73,7 +73,7 @@ public interface AddressBook {
 	 * transport, if any.
 	 * <p>
 	 * This method is thread-safe, although the returned {@link PeerWithSystem},
-	 * if any, may change status at any time due to external events.
+	 * if any, may become stale at any time due to external events.
 	 *
 	 * @param uri The transport of the peer to retrieve
 	 * @return the optional {@link PeerWithSystem} with the specified transport
@@ -85,7 +85,7 @@ public interface AddressBook {
 	 * where we have knowledge of a suitable communication method for the peer.
 	 * <p>
 	 * This method is thread-safe, although the returned {@link Peer} objects, if any,
-	 * may change status at any time due to external events.
+	 * may change become stale at any time due to external events.
 	 *
 	 * @return A {@link Stream} of {@link Peer} objects
 	 */
@@ -97,7 +97,7 @@ public interface AddressBook {
 	 * and have been heard from recently.  Typically used to find connected peers.
 	 * <p>
 	 * This method is thread-safe, although the returned {@link Peer} objects, if any,
-	 * may change status at any time due to external events.
+	 * may change become stale at any time due to external events.
 	 *
 	 * @return A {@link Stream} of {@link Peer} objects
 	 */
