@@ -21,7 +21,8 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.sync.RemoteSyncResponse;
-import com.radixdlt.sync.StateSyncNetwork;
+import com.radixdlt.sync.StateSyncNetworkRx;
+import com.radixdlt.sync.StateSyncNetworkSender;
 import com.radixdlt.sync.RemoteSyncRequest;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageListener;
@@ -34,7 +35,7 @@ import javax.inject.Inject;
 /**
  * Network interface for syncing committed state using the MessageCentral
  */
-public final class MessageCentralLedgerSync implements StateSyncNetwork {
+public final class MessageCentralLedgerSync implements StateSyncNetworkSender, StateSyncNetworkRx {
 	private final int magic;
 	private final MessageCentral messageCentral;
 	private final AddressBook addressBook;

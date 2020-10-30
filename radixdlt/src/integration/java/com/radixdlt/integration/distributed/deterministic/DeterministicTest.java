@@ -20,11 +20,14 @@ package com.radixdlt.integration.distributed.deterministic;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
+import com.google.inject.util.Modules;
+import com.radixdlt.ConsensusModule;
 import com.radixdlt.EpochsConsensusModule;
 import com.radixdlt.LedgerCommandGeneratorModule;
 import com.radixdlt.EpochsLedgerUpdateModule;
 import com.radixdlt.LedgerLocalMempoolModule;
 import com.radixdlt.LedgerModule;
+import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -32,9 +35,12 @@ import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
+import com.radixdlt.integration.distributed.MockedCryptoModule;
 import com.radixdlt.integration.distributed.deterministic.configuration.EpochNodeWeightMapping;
 import com.radixdlt.integration.distributed.deterministic.configuration.NodeIndexAndWeight;
+import com.radixdlt.integration.distributed.deterministic.network.ControlledMessage;
 import com.radixdlt.integration.distributed.deterministic.network.DeterministicNetwork;
 import com.radixdlt.integration.distributed.deterministic.network.MessageMutator;
 import com.radixdlt.integration.distributed.deterministic.network.MessageSelector;
@@ -45,36 +51,48 @@ import com.radixdlt.integration.distributed.MockedSyncServiceModule;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.EUID;
+import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.utils.UInt256;
 
+import io.reactivex.rxjava3.schedulers.Timed;
 import java.io.PrintStream;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.LongFunction;
+import java.util.function.Predicate;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A deterministic test where each event that occurs in the network
  * is emitted and processed synchronously by the caller.
  */
 public final class DeterministicTest {
+	private static final Logger log = LogManager.getLogger();
+
+	private final DeterministicNodes nodes;
 	private final DeterministicNetwork network;
 
 	private DeterministicTest(
 		ImmutableList<BFTNode> nodes,
 		MessageSelector messageSelector,
 		MessageMutator messageMutator,
-		Collection<Module> modules,
+		Module baseModule,
 		Module overrideModule
 	) {
 		this.network = new DeterministicNetwork(
 			nodes,
 			messageSelector,
-			messageMutator,
-			modules,
+			messageMutator
+		);
+
+		this.nodes = new DeterministicNodes(
+			nodes,
+			this.network::createSender,
+			baseModule,
 			overrideModule
 		);
 	}
@@ -86,7 +104,7 @@ public final class DeterministicTest {
 		}
 
 		private ImmutableList<BFTNode> nodes = ImmutableList.of(BFTNode.create(ECKeyPair.generateNew().getPublicKey()));
-		private MessageSelector messageSelector = MessageSelector.selectAndStopAfter(MessageSelector.firstSelector(), 30_000L);
+		private MessageSelector messageSelector = MessageSelector.firstSelector();
 		private MessageMutator messageMutator = MessageMutator.nothing();
 		private long pacemakerTimeout = 1000L;
 		private EpochNodeWeightMapping epochNodeWeightMapping = null;
@@ -170,8 +188,11 @@ public final class DeterministicTest {
 					bindConstant().annotatedWith(PacemakerRate.class).to(2.0);
 					// Use constant timeout for now
 					bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0);
+					bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
 				}
 			});
+			modules.add(new ConsensusModule());
+			modules.add(new MockedCryptoModule());
 			modules.add(new LedgerLocalMempoolModule(10));
 			modules.add(new DeterministicMempoolModule());
 
@@ -209,7 +230,7 @@ public final class DeterministicTest {
 				this.nodes,
 				this.messageSelector,
 				this.messageMutator,
-				modules.build(),
+				Modules.combine(modules.build()),
 				overrideModule
 			);
 		}
@@ -241,17 +262,77 @@ public final class DeterministicTest {
 		return new Builder();
 	}
 
-	public DeterministicTest run() {
-		this.network.run();
+	public DeterministicTest runForCount(int count) {
+		this.nodes.start();
+
+		for (int i = 0; i < count; i++) {
+			Timed<ControlledMessage> nextMsg = this.network.nextMessage();
+			this.nodes.handleMessage(nextMsg);
+		}
+
 		return this;
 	}
 
+	public DeterministicTest runUntil(Predicate<Timed<ControlledMessage>> stopPredicate) {
+		this.nodes.start();
+
+		while (true) {
+			Timed<ControlledMessage> nextMsg = this.network.nextMessage();
+			if (stopPredicate.test(nextMsg)) {
+				break;
+			}
+
+			this.nodes.handleMessage(nextMsg);
+		}
+
+		return this;
+	}
+
+	/**
+	 * Returns a predicate that stops processing messages after a specified number of epochs and
+	 * views.
+	 *
+	 * @param maxEpochView the last epoch and view to process
+	 * @return a predicate that halts
+	 * 		processing after the specified number of epochs and views
+	 */
+	public static Predicate<Timed<ControlledMessage>> hasReachedEpochView(EpochView maxEpochView) {
+		return timedMsg -> {
+			ControlledMessage message = timedMsg.value();
+			if (!(message.message() instanceof Proposal)) {
+				return false;
+			}
+			Proposal p = (Proposal) message.message();
+			EpochView nev = EpochView.of(p.getEpoch(), p.getVertex().getView());
+			return (nev.compareTo(maxEpochView) > 0);
+		};
+	}
+
+
+	/**
+	 * Returns a predicate that stops processing messages after a specified number of views.
+	 *
+	 * @param view the last view to process
+	 * @return a predicate that return true after the specified number of views
+	 */
+	public static Predicate<Timed<ControlledMessage>> hasReachedView(View view) {
+		final long maxViewNumber = view.previous().number();
+		return timedMsg -> {
+			ControlledMessage message = timedMsg.value();
+			if (!(message.message() instanceof Proposal)) {
+				return false;
+			}
+			Proposal proposal = (Proposal) message.message();
+			return (proposal.getView().number() > maxViewNumber);
+		};
+	}
+
 	public SystemCounters getSystemCounters(int nodeIndex) {
-		return this.network.getSystemCounters(nodeIndex);
+		return this.nodes.getSystemCounters(nodeIndex);
 	}
 
 	public int numNodes() {
-		return this.network.numNodes();
+		return this.nodes.numNodes();
 	}
 
 	// Debugging aid for messages

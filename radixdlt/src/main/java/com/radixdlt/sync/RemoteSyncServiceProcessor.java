@@ -36,14 +36,14 @@ public class RemoteSyncServiceProcessor {
 
 	private final CommittedReader committedReader;
 	private final InMemoryCommittedEpochProofsStore committedEpochProofsStore;
-	private final StateSyncNetwork stateSyncNetwork;
+	private final StateSyncNetworkSender stateSyncNetwork;
 
 	private final int batchSize;
 
 	public RemoteSyncServiceProcessor(
 		CommittedReader committedReader,
 		InMemoryCommittedEpochProofsStore committedEpochProofsStore,
-		StateSyncNetwork stateSyncNetwork,
+		StateSyncNetworkSender stateSyncNetwork,
 		int batchSize
 	) {
 		if (batchSize <= 0) {

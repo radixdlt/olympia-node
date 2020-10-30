@@ -42,10 +42,10 @@ public class RandomChannelOrderResponsiveTest {
 
 		DeterministicTest test = DeterministicTest.builder()
 			.numNodes(numNodes)
-			.messageSelector(MessageSelector.selectAndStopAt(MessageSelector.randomSelector(random), View.of(viewsToRun)))
+			.messageSelector(MessageSelector.randomSelector(random))
 			.messageMutator(MessageMutator.dropTimeouts())
 			.build()
-			.run();
+			.runUntil(DeterministicTest.hasReachedView(View.of(viewsToRun)));
 
 		List<Long> proposalsMade = IntStream.range(0, numNodes)
 			.mapToObj(test::getSystemCounters)

@@ -31,7 +31,8 @@ import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVertic
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.SimulatedNetworkImpl;
-import com.radixdlt.sync.StateSyncNetwork;
+import com.radixdlt.sync.StateSyncNetworkRx;
+import com.radixdlt.sync.StateSyncNetworkSender;
 
 public class NodeNetworkMessagesModule extends AbstractModule {
 	private final SimulationNetwork simulationNetwork;
@@ -45,9 +46,10 @@ public class NodeNetworkMessagesModule extends AbstractModule {
 		bind(BFTEventsRx.class).to(SimulatedNetworkImpl.class);
 		bind(SyncEpochsRPCRx.class).to(SimulatedNetworkImpl.class);
 		bind(SyncVerticesRPCRx.class).to(SimulatedNetworkImpl.class);
+		bind(StateSyncNetworkRx.class).to(SimulatedNetworkImpl.class);
 		bind(ProposalBroadcaster.class).to(SimulatedNetworkImpl.class);
 		bind(ProceedToViewSender.class).to(SimulatedNetworkImpl.class);
-		bind(StateSyncNetwork.class).to(SimulatedNetworkImpl.class);
+		bind(StateSyncNetworkSender.class).to(SimulatedNetworkImpl.class);
 		bind(SyncVerticesRequestSender.class).to(SimulatedNetworkImpl.class);
 		bind(SyncEpochsRPCSender.class).to(SimulatedNetworkImpl.class);
 		bind(SyncVerticesResponseSender.class).to(SimulatedNetworkImpl.class);

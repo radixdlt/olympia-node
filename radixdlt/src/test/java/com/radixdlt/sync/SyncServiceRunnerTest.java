@@ -42,7 +42,7 @@ public class SyncServiceRunnerTest {
 	private SyncServiceRunner<LedgerUpdate> syncServiceRunner;
 	private LocalSyncRequestsRx localSyncRequestsRx;
 	private SyncTimeoutsRx syncTimeoutsRx;
-	private StateSyncNetwork stateSyncNetwork;
+	private StateSyncNetworkRx stateSyncNetwork;
 	private LocalSyncServiceProcessor syncServiceProcessor;
 	private RemoteSyncResponseProcessor remoteSyncResponseProcessor;
 	private RemoteSyncServiceProcessor remoteSyncServiceProcessor;
@@ -59,7 +59,7 @@ public class SyncServiceRunnerTest {
 		this.syncTimeoutsRx = mock(SyncTimeoutsRx.class);
 		when(syncTimeoutsRx.timeouts()).thenReturn(Observable.never());
 
-		this.stateSyncNetwork = mock(StateSyncNetwork.class);
+		this.stateSyncNetwork = mock(StateSyncNetworkRx.class);
 		when(stateSyncNetwork.syncRequests()).thenReturn(Observable.never());
 
 		this.responsesSubject = PublishSubject.create();

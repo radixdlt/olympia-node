@@ -89,7 +89,7 @@ public class OneSlowNodeTest {
 			.messageSelector(sequenceSelector(processingSequence))
 			.messageMutator(delayMessagesForNode(0))
 			.build()
-			.run();
+			.runForCount(processingSequence.size());
 	}
 
 	private static MessageSelector sequenceSelector(LinkedList<Pair<ChannelId, Class<?>>> processingSequence) {

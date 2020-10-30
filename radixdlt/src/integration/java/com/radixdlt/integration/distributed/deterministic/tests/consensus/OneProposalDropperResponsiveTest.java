@@ -30,17 +30,15 @@ import java.util.function.Function;
 import org.junit.Test;
 
 public class OneProposalDropperResponsiveTest {
-	private static final int NUM_STEPS = 30000;
-
 	private final Random random = new Random(123456);
 
 	private void runOneProposalDropperResponsiveTest(int numNodes, Function<View, Integer> nodeToDropFunction) {
 		DeterministicTest.builder()
 			.numNodes(numNodes)
-			.messageSelector(MessageSelector.selectAndStopAfter(MessageSelector.randomSelector(random), NUM_STEPS))
+			.messageSelector(MessageSelector.randomSelector(random))
 			.messageMutator(MessageMutator.dropTimeouts().andThen(dropNode(numNodes, nodeToDropFunction)))
 			.build()
-			.run();
+			.runForCount(30_000);
 	}
 
 	private MessageMutator dropNode(int numNodes, Function<View, Integer> nodeToDropFunction) {

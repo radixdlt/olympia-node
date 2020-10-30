@@ -43,7 +43,8 @@ import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.sync.RemoteSyncResponse;
-import com.radixdlt.sync.StateSyncNetwork;
+import com.radixdlt.sync.StateSyncNetworkRx;
+import com.radixdlt.sync.StateSyncNetworkSender;
 import com.radixdlt.sync.RemoteSyncRequest;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import io.reactivex.rxjava3.core.Observable;
@@ -137,7 +138,7 @@ public class SimulationNetwork {
 
 	public class SimulatedNetworkImpl implements
 		ProposalBroadcaster, ProceedToViewSender, SyncVerticesRequestSender, SyncVerticesResponseSender, SyncEpochsRPCSender, BFTEventsRx,
-		SyncVerticesRPCRx, SyncEpochsRPCRx, StateSyncNetwork {
+		SyncVerticesRPCRx, SyncEpochsRPCRx, StateSyncNetworkSender, StateSyncNetworkRx {
 		private final Observable<Object> myMessages;
 		private final BFTNode thisNode;
 

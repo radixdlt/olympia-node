@@ -61,13 +61,13 @@ public final class LocalSyncServiceAccumulatorProcessor implements LocalSyncServ
 
 	private final SyncTimeoutScheduler syncTimeoutScheduler;
 	private final long patienceMilliseconds;
-	private final StateSyncNetwork stateSyncNetwork;
+	private final StateSyncNetworkSender stateSyncNetworkSender;
 	private final Comparator<AccumulatorState> accComparator;
 	private VerifiedLedgerHeaderAndProof targetHeader;
 	private VerifiedLedgerHeaderAndProof currentHeader;
 
 	public LocalSyncServiceAccumulatorProcessor(
-		StateSyncNetwork stateSyncNetwork,
+		StateSyncNetworkSender stateSyncNetworkSender,
 		SyncTimeoutScheduler syncTimeoutScheduler,
 		Comparator<AccumulatorState> accComparator,
 		VerifiedLedgerHeaderAndProof current,
@@ -77,7 +77,7 @@ public final class LocalSyncServiceAccumulatorProcessor implements LocalSyncServ
 			throw new IllegalArgumentException();
 		}
 
-		this.stateSyncNetwork = Objects.requireNonNull(stateSyncNetwork);
+		this.stateSyncNetworkSender = Objects.requireNonNull(stateSyncNetworkSender);
 		this.syncTimeoutScheduler = Objects.requireNonNull(syncTimeoutScheduler);
 		this.patienceMilliseconds = patienceMilliseconds;
 		this.accComparator = Objects.requireNonNull(accComparator);
@@ -120,7 +120,7 @@ public final class LocalSyncServiceAccumulatorProcessor implements LocalSyncServ
 
 		ImmutableList<BFTNode> targetNodes = syncInProgress.getTargetNodes();
 		BFTNode node = targetNodes.get(ThreadLocalRandom.current().nextInt(targetNodes.size()));
-		stateSyncNetwork.sendSyncRequest(node, this.currentHeader.toDto());
+		stateSyncNetworkSender.sendSyncRequest(node, this.currentHeader.toDto());
 		syncTimeoutScheduler.scheduleTimeout(syncInProgress, patienceMilliseconds);
 	}
 }

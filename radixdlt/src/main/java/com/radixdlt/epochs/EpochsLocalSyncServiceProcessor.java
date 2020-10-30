@@ -27,7 +27,7 @@ import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceProcessor;
-import com.radixdlt.sync.StateSyncNetwork;
+import com.radixdlt.sync.StateSyncNetworkSender;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -46,7 +46,7 @@ public class EpochsLocalSyncServiceProcessor implements LocalSyncServiceProcesso
 
 	private final Function<BFTConfiguration, LocalSyncServiceAccumulatorProcessor> localSyncFactory;
 	private final SyncedEpochSender syncedEpochSender;
-	private final StateSyncNetwork stateSyncNetwork;
+	private final StateSyncNetworkSender stateSyncNetwork;
 	private final TreeMap<Long, List<LocalSyncRequest>> outsideOfCurrentEpochRequests = new TreeMap<>();
 
 	private EpochChange currentEpoch;
@@ -59,7 +59,7 @@ public class EpochsLocalSyncServiceProcessor implements LocalSyncServiceProcesso
 		EpochChange initialEpoch,
 		VerifiedLedgerHeaderAndProof initialHeader,
 		Function<BFTConfiguration, LocalSyncServiceAccumulatorProcessor> localSyncFactory,
-		StateSyncNetwork stateSyncNetwork,
+		StateSyncNetworkSender stateSyncNetwork,
 		SyncedEpochSender syncedEpochSender
 	) {
 		this.currentEpoch = initialEpoch;

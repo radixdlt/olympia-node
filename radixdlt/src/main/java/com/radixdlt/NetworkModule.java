@@ -33,7 +33,8 @@ import com.radixdlt.middleware2.network.MessageCentralBFTNetwork;
 import com.radixdlt.middleware2.network.MessageCentralLedgerSync;
 import com.radixdlt.middleware2.network.MessageCentralValidatorSync;
 import com.radixdlt.middleware2.network.SimpleMempoolNetwork;
-import com.radixdlt.sync.StateSyncNetwork;
+import com.radixdlt.sync.StateSyncNetworkRx;
+import com.radixdlt.sync.StateSyncNetworkSender;
 
 /**
  * Network related module
@@ -63,6 +64,7 @@ public final class NetworkModule extends AbstractModule {
 		bind(BFTEventsRx.class).to(MessageCentralBFTNetwork.class);
 
 		// Ledger Sync messages
-		bind(StateSyncNetwork.class).to(MessageCentralLedgerSync.class).in(Scopes.SINGLETON);
+		bind(StateSyncNetworkSender.class).to(MessageCentralLedgerSync.class).in(Scopes.SINGLETON);
+		bind(StateSyncNetworkRx.class).to(MessageCentralLedgerSync.class).in(Scopes.SINGLETON);
 	}
 }

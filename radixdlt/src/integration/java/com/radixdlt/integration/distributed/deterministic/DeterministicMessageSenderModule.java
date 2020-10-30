@@ -18,6 +18,7 @@
 package com.radixdlt.integration.distributed.deterministic;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.Timeout;
@@ -37,22 +38,14 @@ import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.epochs.EpochChangeManager.EpochsLedgerUpdateSender;
+import com.radixdlt.integration.distributed.deterministic.DeterministicNodes.DeterministicSenderFactory;
 import com.radixdlt.integration.distributed.deterministic.network.DeterministicNetwork.DeterministicSender;
-import com.radixdlt.network.TimeSupplier;
 
 /**
  * Module that supplies network senders, as well as some other assorted
  * objects used to connect modules in the system.
  */
-public class DeterministicNetworkModule extends AbstractModule {
-	private final BFTNode node;
-	private final DeterministicSender sender;
-
-	public DeterministicNetworkModule(BFTNode node, DeterministicSender sender) {
-		this.node = node;
-		this.sender = sender;
-	}
-
+public class DeterministicMessageSenderModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		EpochInfoSender emptyInfoSender = new EpochInfoSender() {
@@ -66,8 +59,6 @@ public class DeterministicNetworkModule extends AbstractModule {
 				// Ignore
 			}
 		};
-
-		bind(DeterministicSender.class).toInstance(this.sender);
 
 		bind(ProposalBroadcaster.class).to(DeterministicSender.class);
 		bind(ProceedToViewSender.class).to(DeterministicSender.class);
@@ -85,8 +76,10 @@ public class DeterministicNetworkModule extends AbstractModule {
 		bind(EpochInfoSender.class).toInstance(emptyInfoSender);
 
 		bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
-		bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
+	}
 
-		bind(BFTNode.class).annotatedWith(Self.class).toInstance(this.node);
+	@Provides
+	DeterministicSender sender(@Self BFTNode self, DeterministicSenderFactory senderFactory) {
+		return senderFactory.create(self);
 	}
 }
