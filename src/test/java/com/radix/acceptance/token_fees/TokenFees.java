@@ -187,13 +187,18 @@ public class TokenFees {
 
 		t.stage(SendMessageAction.create(address, address, "Test message".getBytes(StandardCharsets.UTF_8), true));
 
+		// we find the ttp acquired from faucet
 		final TransferrableTokensParticle inParticle = getUpTtpForFeeToken();
+		// submitting with 80 millirads fee
+		final UInt256 feeAmount = unitsToSubunits(BigDecimal.valueOf(80, 3));
+		final UInt256 changeAmount = inParticle.getAmount().subtract(feeAmount);
+
 		final ParticleGroup feeParticleGroup = new ParticleGroup(List.of(
 				SpunParticle.down(inParticle),
 				SpunParticle.up(new UnallocatedTokensParticle(
-						unitsToSubunits(BigDecimal.valueOf(80, 3)), UInt256.ONE, System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions())),
+						feeAmount, UInt256.ONE, System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions())),
 				SpunParticle.up(new TransferrableTokensParticle(
-						unitsToSubunits(BigDecimal.valueOf(9920, 3)), UInt256.ONE, address, System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions()))
+						changeAmount, UInt256.ONE, address, System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions()))
 		));
 
 		t.stage(feeParticleGroup);
@@ -212,17 +217,24 @@ public class TokenFees {
 
 		t.stage(SendMessageAction.create(address, address, "Test message".getBytes(StandardCharsets.UTF_8), true));
 
+		// we find the ttp acquired from faucet
 		final TransferrableTokensParticle inParticle = getUpTtpForFeeToken();
+		// submitting with 80 millirads fee
+		final UInt256 feeAmount = unitsToSubunits(BigDecimal.valueOf(80, 3));
+		final UInt256 changeAmount = inParticle.getAmount().subtract(feeAmount);
 
-		// 9920 millirads output amount is split in two particles: 9910 + 10
+		// calculated change amount is split into two output particles, which is not allowed in a fee group
+		final UInt256 changeAmountFirstParticle = UInt256.ONE;
+		final UInt256 changeAmountSecondParticle = changeAmount.subtract(changeAmountFirstParticle);
+
 		final ParticleGroup feeParticleGroup = new ParticleGroup(List.of(
 				SpunParticle.down(inParticle),
 				SpunParticle.up(new UnallocatedTokensParticle(
-						unitsToSubunits(BigDecimal.valueOf(80, 3)), UInt256.ONE, System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions())),
+						feeAmount, UInt256.ONE, System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions())),
 				SpunParticle.up(new TransferrableTokensParticle(
-						unitsToSubunits(BigDecimal.valueOf(9910, 3)), UInt256.ONE, address, System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions())),
+						changeAmountFirstParticle, UInt256.ONE, address, System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions())),
 				SpunParticle.up(new TransferrableTokensParticle(
-						unitsToSubunits(BigDecimal.valueOf(10, 3)), UInt256.ONE, address, System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions()))
+						changeAmountSecondParticle, UInt256.ONE, address, System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions()))
 		));
 
 		t.stage(feeParticleGroup);
@@ -241,15 +253,18 @@ public class TokenFees {
 
 		t.stage(SendMessageAction.create(address, address, "Test message".getBytes(StandardCharsets.UTF_8), true));
 
+		// we find the ttp acquired from faucet
 		final TransferrableTokensParticle inParticle = getUpTtpForFeeToken();
 
+		// acquired ttp is first split into two ttps, one being just 40 millirads
 		final TransferrableTokensParticle exchangedParticle1 = new TransferrableTokensParticle(
 				unitsToSubunits(BigDecimal.valueOf(40, 3)), UInt256.ONE, address, System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions());
 
+		// 2nd exchanged particle gets the remaining amount
 		final TransferrableTokensParticle exchangedParticle2 = new TransferrableTokensParticle(
-				unitsToSubunits(BigDecimal.valueOf(9960, 3)), UInt256.ONE, address, System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions());
+				inParticle.getAmount().subtract(exchangedParticle1.getAmount()), UInt256.ONE, address,
+				System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions());
 
-		// 10k millirads particle is exchanged for two particles (40 and 9960 millirads)
 		final ParticleGroup exchangeParticleGroup = new ParticleGroup(List.of(
 				SpunParticle.down(inParticle),
 				SpunParticle.up(exchangedParticle1),
@@ -257,14 +272,23 @@ public class TokenFees {
 		));
 		t.stage(exchangeParticleGroup);
 
-		// 40 millirad particle is superfluous. It would need to be removed and output changed to 9880 in order for fee group to be valid.
+		// fee amount is 80 millirads
+		// 1st exchanged particle is not sufficient, 2nd one needs to be enough to cover the fee
+		final UInt256 feeAmount = unitsToSubunits(BigDecimal.valueOf(80, 3));
+
+		final UInt256 changeAmount = inParticle.getAmount().subtract(feeAmount);
+
+		// asserting that change is higher than the 1st particle
+		assertTrue(changeAmount.compareTo(exchangedParticle1.getAmount()) >= 0);
+
+		// 1st particle (40 millirads) is superfluous, which is not allowed in a fee group
 		final ParticleGroup feeParticleGroup = new ParticleGroup(List.of(
 				SpunParticle.down(exchangedParticle1),
 				SpunParticle.down(exchangedParticle2),
 				SpunParticle.up(new UnallocatedTokensParticle(
-						unitsToSubunits(BigDecimal.valueOf(80, 3)), UInt256.ONE, System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions())),
+						feeAmount, UInt256.ONE, System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions())),
 				SpunParticle.up(new TransferrableTokensParticle(
-						unitsToSubunits(BigDecimal.valueOf(9920, 3)), UInt256.ONE, address, System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions()))
+						changeAmount, UInt256.ONE, address, System.nanoTime(), feeTokenRri, inParticle.getTokenPermissions()))
 		));
 
 		t.stage(feeParticleGroup);

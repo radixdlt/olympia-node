@@ -54,17 +54,17 @@ Scenario: 8. Atom creating fixed supply charged higher fee
   And I submit that atom to the network with the computed minimum fee,
   Then I can see that the fee is at least 1 rad
 
-Scenario: 9.
+Scenario: 9. Atoms with handcrafted fee groups are accepted by the network
   Given I have a connection to a Radix network,
   When I submit an atom with a handcrafted fee group,
   Then I can see that atom being accepted by the network
 
-Scenario: 10.
+Scenario: 10. Atoms with fee groups with output ttps are rejected by the network
   Given I have a connection to a Radix network,
   When I submit an atom with a fee group with two output TransferrableTokensParticles,
   Then I can see that atom being rejected by the network
 
-Scenario: 11.
+Scenario: 11. Atoms with fee groups with input ttps smaller than output ttp are rejected by the network
   Given I have a connection to a Radix network,
   When I submit an atom with a fee group that has an input TransferrableTokensParticle with a smaller value than the output TransferrableTokensParticle,
   Then I can see that atom being rejected by the network
