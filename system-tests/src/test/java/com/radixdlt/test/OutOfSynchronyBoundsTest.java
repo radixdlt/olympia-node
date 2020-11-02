@@ -3,7 +3,6 @@ package com.radixdlt.test;
 import static com.radixdlt.test.AssertionChecks.*;
 import static java.util.stream.Collectors.toList;
 
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -13,6 +12,9 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import junitparams.JUnitParamsRunner;
+import junitparams.naming.TestCaseName;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.After;
@@ -33,10 +35,10 @@ import utils.Generic;
 @RunWith(Enclosed.class)
 public class OutOfSynchronyBoundsTest {
 
-
 	private static final Logger logger = LogManager.getLogger();
 
 	@Category(Docker.class)
+	@RunWith(JUnitParamsRunner.class)
 	public static class DockerTests {
 
 		@Rule
@@ -44,7 +46,6 @@ public class OutOfSynchronyBoundsTest {
 
 		@Test
 		public void given_4_correct_bfts_in_latent_docker_network__when_one_instance_is_down__then_all_instances_should_get_same_commits_and_progress_should_be_made() {
-
 			String name = Generic.extractTestName(this.name.getMethodName());
 			logger.info("Test name is " + name);
 			try (DockerNetwork network = DockerNetwork.builder().numNodes(4).testName(name).startConsensusOnBoot().build()) {
@@ -65,10 +66,34 @@ public class OutOfSynchronyBoundsTest {
 					.build();
 
 				testOutOfSynchronyBounds.runBlocking(CmdHelper.getTestDurationInSeconds(), TimeUnit.SECONDS);
-
 			}
-
 		}
+
+		@junitparams.Parameters({"3","4"})
+		@TestCaseName("given_{0}_correct_bfts_in_latent_docker_network__when_all_nodes_are_out_synchrony__then_all_instances_should_fail_their_liveness_checks")
+		@Test(expected = LivenessCheck.LivenessError.class)
+		public void given_X_correct_bfts_in_latent_docker_network__when_all_nodes_are_out_synchrony__then_all_instances_should_fail_their_liveness_checks(int numberOfNodes) throws Throwable {
+			String name = Generic.extractTestName(this.name.getMethodName());
+			logger.info("Test name is " + name);
+			try (DockerNetwork network = DockerNetwork.builder().numNodes(numberOfNodes).testName(name).startConsensusOnBoot().build()) {
+				network.startBlocking();
+
+				RemoteBFTTest test = slowNodeTestBuilder().network(RemoteBFTNetworkBridge.of(network)).waitUntilResponsive().build();
+				test.runBlocking(CmdHelper.getTestDurationInSeconds(), TimeUnit.SECONDS);
+
+				network.getNodeIds().forEach(nodeId -> CmdHelper.blockPort(nodeId, 30000)); // unfortunately a magic number, should be read from a config instead
+
+				RemoteBFTTest testOutOfSynchronyBounds = RemoteBFTTest.builder().assertLiveness(20)
+								.network(RemoteBFTNetworkBridge.of(network)).build();
+
+				try {
+					testOutOfSynchronyBounds.runBlocking(CmdHelper.getTestDurationInSeconds(), TimeUnit.SECONDS);
+				} catch (AssertionError e) {
+					throw e.getCause(); // this is a bit awkward, but I hope to refactor the type of exception that is thrown
+				}
+			}
+		}
+
 	}
 
 

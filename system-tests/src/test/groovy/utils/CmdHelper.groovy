@@ -24,7 +24,6 @@ import org.apache.logging.log4j.Logger
 import java.nio.file.Files
 import java.nio.file.Paths
 
-import static utils.Generic.extractTestName
 import static utils.Generic.listToDelimitedString
 
 class CmdHelper {
@@ -64,7 +63,6 @@ class CmdHelper {
         List error
         if (serr) {
             logger.error("-----------Error---------")
-
             serr.each { logger.error(it) }
             error = serr.toString().split("\n").collect({ it })
             if (failOnError) {
@@ -94,11 +92,20 @@ class CmdHelper {
                 "-e JAVA_OPTS " +
                 "-l com.radixdlt.roles='core' " +
                 "-p ${options.hostPort}:8080 " +
+                "--cap-add=NET_ADMIN " +
                 "--network ${options.network} " +
                 "radixdlt/radixdlt-core:develop"
         return [env as String[], dockerContainer]
     }
 
+    /**
+     * Blocks tcp communication over a specific port, via iptables
+     */
+    static String blockPort(String nodeId, int gossipPortNumber) {
+        def iptablesCommand = "iptables -A OUTPUT -p tcp --dport ${gossipPortNumber} -j DROP"
+        def (output, error) = runCommand("docker exec ${nodeId} bash -c".tokenize() << iptablesCommand, null, false, true)
+        return output;
+    }
 
     static Map getDockerOptions(int nodeCount, boolean startConsensusOnBoot) {
         List<String> nodeNames = (1..nodeCount).collect({ return "${getContainerNamePrefix()}${it}".toString() })
