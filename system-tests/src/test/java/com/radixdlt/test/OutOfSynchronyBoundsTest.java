@@ -134,7 +134,7 @@ public class OutOfSynchronyBoundsTest {
 
 			String CORE_TAG = Optional.ofNullable(System.getenv(EphemeralNetworkCreator.ENV_CORE_TAG)).orElse(":HEAD-043ccbdc");
 			String TESTNET_NAME = System.getenv(EphemeralNetworkCreator.ENV_TESTNET_NAME);
-			String LOG_LEVEL = Optional.ofNullable(System.getenv(EphemeralNetworkCreator.ENV_TESTNET_NAME)).orElse("debug");
+			String LOG_LEVEL = Optional.ofNullable(System.getenv(EphemeralNetworkCreator.ENV_LOG_LEVEL)).orElse("debug");
 			ephemeralNetworkCreator.setTotalNumberOfNodes(networkSize);
 			ephemeralNetworkCreator.pullImage();
 			ephemeralNetworkCreator.plan();
@@ -182,7 +182,7 @@ public class OutOfSynchronyBoundsTest {
 			String TESTNET_NAME = System.getenv(EphemeralNetworkCreator.ENV_TESTNET_NAME);
 			List<String> runningNodes = new ArrayList<>(network.getNodeIds())
 				.stream()
-				.filter(nodeUrl -> !crashedNodesURLs.contains(nodeUrl))
+				.filter(this::isNodeRunning)
 				.map(Generic::getDomainName)
 				.collect(Collectors.toList());
 			ephemeralNetworkCreator.captureLogs(
@@ -190,6 +190,13 @@ public class OutOfSynchronyBoundsTest {
 				Generic.extractTestName(this.name.getMethodName()));
 			ephemeralNetworkCreator.teardown();
 			ephemeralNetworkCreator.volumeCleanUp();
+		}
+
+		private boolean isNodeRunning(String nodeUrl) {
+			if (crashedNodesURLs == null) {
+				return true;
+			}
+			return !crashedNodesURLs.contains(nodeUrl);
 		}
 	}
 }
