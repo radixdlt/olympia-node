@@ -26,7 +26,7 @@ sourceSets {
 }
 
 dependencies {
-    implementation 'com.github.radixdlt:radixdlt-java:rc~1.0-beta.17-SNAPSHOT'
+    implementation 'com.github.radixdlt:radixdlt-java:feature~rpnv1-732-SNAPSHOT'
     testCompile group: 'io.cucumber', name: 'cucumber-groovy', version: '4.7.1'
     testCompile "org.codehaus.groovy:groovy-all:2.4.12"
     testCompile "io.cucumber:cucumber-core:2.1.0"
