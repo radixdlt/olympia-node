@@ -1420,12 +1420,21 @@ public class RadixApplicationAPI {
 		}
 
 		/**
-		 * Commit the transaction onto the ledger
+		 * Commit the transaction onto the ledger. Fee particles will be added to the atom.
 		 *
 		 * @return the results of committing
 		 */
 		public Result commitAndPush() {
 			return commitAndPushWithFee(null);
+		}
+
+		/**
+		 * Commit the transaction onto the ledger. No fee particles will be added.
+		 *
+		 * @return the results of committing
+		 */
+		public Result commitAndPushWithoutFee() {
+			return commitAndPushWithFee(BigDecimal.ZERO);
 		}
 
 		/**
