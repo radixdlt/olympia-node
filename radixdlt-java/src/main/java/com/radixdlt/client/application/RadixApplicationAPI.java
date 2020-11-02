@@ -1099,6 +1099,10 @@ public class RadixApplicationAPI {
 		return this.universe.getNetworkController().getActions();
 	}
 
+	public BigDecimal getMinimumRequiredFee(Atom atomWithoutFees) {
+		return TokenUnitConversions.subunitsToUnits(this.universe.feeTable().feeFor(atomWithoutFees));
+	}
+
 	public static class Result {
 		private final ConnectableObservable<SubmitAtomAction> updates;
 		private final Completable completable;
