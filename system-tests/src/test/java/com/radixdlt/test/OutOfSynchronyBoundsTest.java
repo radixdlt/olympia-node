@@ -182,7 +182,7 @@ public class OutOfSynchronyBoundsTest {
 			String TESTNET_NAME = System.getenv(EphemeralNetworkCreator.ENV_TESTNET_NAME);
 			List<String> runningNodes = new ArrayList<>(network.getNodeIds())
 				.stream()
-				.filter(this::isNodeNotCrashed)
+				.filter(this::isNodeRunning)
 				.map(Generic::getDomainName)
 				.collect(Collectors.toList());
 			ephemeralNetworkCreator.captureLogs(
@@ -192,7 +192,7 @@ public class OutOfSynchronyBoundsTest {
 			ephemeralNetworkCreator.volumeCleanUp();
 		}
 
-		private boolean isNodeNotCrashed(String nodeUrl) {
+		private boolean isNodeRunning(String nodeUrl) {
 			if (crashedNodesURLs != null) {
 				return !crashedNodesURLs.contains(nodeUrl);
 			} else {
