@@ -26,18 +26,12 @@ import java.math.BigDecimal;
 import java.util.Objects;
 import java.util.Optional;
 
-import com.google.common.collect.ImmutableSet;
 import com.radixdlt.client.application.translate.tokens.BurnTokensAction;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.atoms.particles.Spin;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
-import com.radixdlt.client.serialization.Serialize;
 import com.radixdlt.fees.FeeTable;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.serialization.DsonOutput.Output;
 
 
 /**
@@ -61,7 +55,7 @@ public final class TokenFeeProcessor implements FeeProcessor {
 
 	@Override
 	public void process(ActionProcessor actionProcessor, RadixAddress address, Atom atom, Optional<BigDecimal> optionalFee) {
-		BigDecimal feeToPay = optionalFee.orElseGet(() -> feeFor(atom));
+		BigDecimal feeToPay = optionalFee.orElseGet(() -> TokenUnitConversions.subunitsToUnits(this.feeTable.feeFor(atom)));
 		int signum = feeToPay.signum();
 		if (signum < 0) {
 			throw new IllegalArgumentException("Token fee must be greater than or equal to zero: " + feeToPay);
@@ -69,14 +63,5 @@ public final class TokenFeeProcessor implements FeeProcessor {
 		if (feeToPay.signum() != 0) {
 			actionProcessor.process(BurnTokensAction.create(this.tokenRri, address, feeToPay));
 		}
-	}
-
-	private BigDecimal feeFor(Atom atom) {
-		int feeSize = Serialize.getInstance().toDson(atom, Output.HASH).length;
-		ImmutableSet<Particle> outputs = atom.spunParticles()
-			.filter(sp -> Spin.UP.equals(sp.getSpin()))
-			.map(SpunParticle::getParticle)
-			.collect(ImmutableSet.toImmutableSet());
-		return TokenUnitConversions.subunitsToUnits(this.feeTable.feeFor(atom, outputs, feeSize));
 	}
 }
