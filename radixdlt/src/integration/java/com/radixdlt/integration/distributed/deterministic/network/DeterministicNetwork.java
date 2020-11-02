@@ -101,6 +101,7 @@ public final class DeterministicNetwork {
 		return new ControlledSender(this, node, nodeIndex);
 	}
 
+	// TODO: use better method than Timed to store time
 	public Timed<ControlledMessage> nextMessage() {
 		List<ControlledMessage> controlledMessages = this.messageQueue.lowestTimeMessages();
 		if (controlledMessages.isEmpty()) {
