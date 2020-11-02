@@ -23,7 +23,6 @@ apply plugin: 'com.adarshr.test-logger'
 
 repositories {
     mavenCentral()
-    mavenLocal()
     maven {
         url 'https://maven.pkg.github.com/radixdlt/maven-packages'
         credentials {
