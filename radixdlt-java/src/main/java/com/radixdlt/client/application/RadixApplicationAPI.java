@@ -1099,8 +1099,8 @@ public class RadixApplicationAPI {
 		return this.universe.getNetworkController().getActions();
 	}
 
-	public BigDecimal getMinimumRequiredFee(Atom atom) {
-		return TokenUnitConversions.subunitsToUnits(this.universe.feeTable().feeFor(atom));
+	public BigDecimal getMinimumRequiredFee(Atom atomWithoutFees) {
+		return TokenUnitConversions.subunitsToUnits(this.universe.feeTable().feeFor(atomWithoutFees));
 	}
 
 	public static class Result {
