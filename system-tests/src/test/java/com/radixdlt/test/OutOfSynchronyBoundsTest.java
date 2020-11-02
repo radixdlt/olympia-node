@@ -193,11 +193,10 @@ public class OutOfSynchronyBoundsTest {
 		}
 
 		private boolean isNodeRunning(String nodeUrl) {
-			if (crashedNodesURLs != null) {
-				return !crashedNodesURLs.contains(nodeUrl);
-			} else {
+			if (crashedNodesURLs == null) {
 				return true;
 			}
+			return !crashedNodesURLs.contains(nodeUrl);
 		}
 	}
 }
