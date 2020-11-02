@@ -24,6 +24,7 @@ class EphemeralNetworkCreator {
     public final static String ENV_GCP_CREDENTIAL = "GCP_CREDENTIAL"
     public final static String ENV_CORE_TAG = "CORE_TAG"
     public final static String ENV_TESTNET_NAME = "TESTNET_NAME"
+    public final static String ENV_LOG_LEVEL = "LOG_LEVEL"
 
 
     private EphemeralNetworkCreator(String terraformImage,
