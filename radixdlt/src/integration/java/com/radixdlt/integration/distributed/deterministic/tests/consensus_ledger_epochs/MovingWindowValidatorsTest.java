@@ -51,10 +51,10 @@ public class MovingWindowValidatorsTest {
 			.numNodes(numNodes)
 			.epochHighView(highView)
 			.messageMutator(mutator())
-			.messageSelector(selectAndStopAt(firstSelector(), EpochView.of(maxEpoch, highView)))
+			.messageSelector(firstSelector())
 			.epochNodeIndexesMapping(windowedEpochToNodesMapper(windowSize, numNodes))
 			.build()
-			.run();
+			.runUntil(DeterministicTest.hasReachedEpochView(EpochView.of(maxEpoch, highView)));
 
 		LinkedList<SystemCounters> testCounters = systemCounters(bftTest);
 		assertThat(testCounters).extracting(sc -> sc.get(CounterType.BFT_INDIRECT_PARENT)).containsOnly(0L);

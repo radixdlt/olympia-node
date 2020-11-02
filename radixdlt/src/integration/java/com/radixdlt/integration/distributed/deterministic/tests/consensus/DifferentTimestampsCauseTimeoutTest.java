@@ -73,7 +73,7 @@ public class DifferentTimestampsCauseTimeoutTest {
 			.messageSelector(sequenceSelector(processingSequence))
 			.messageMutator(mutateProposalsBy(0))
 			.build()
-			.run();
+			.runForCount(processingSequence.size());
 	}
 
 	@Test
@@ -104,7 +104,7 @@ public class DifferentTimestampsCauseTimeoutTest {
 			.messageSelector(sequenceSelector(processingSequence))
 			.messageMutator(mutateProposalsBy(1))
 			.build()
-			.run();
+			.runForCount(processingSequence.size());
 	}
 
 	private void addTwoViews(LinkedList<Pair<ChannelId, Class<?>>> processingSequence) {

@@ -18,13 +18,7 @@
 package com.radixdlt.integration.distributed.deterministic.network;
 
 import com.google.common.collect.ImmutableBiMap;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.Module;
-import com.google.inject.util.Modules;
-import com.radixdlt.ConsensusModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
@@ -35,22 +29,17 @@ import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.ProceedToViewSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
-import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.epochs.EpochChangeManager.EpochsLedgerUpdateSender;
-import com.radixdlt.integration.distributed.deterministic.DeterministicConsensusRunner;
-import com.radixdlt.integration.distributed.deterministic.DeterministicNetworkModule;
-import com.radixdlt.integration.distributed.MockedCryptoModule;
 import com.radixdlt.utils.Pair;
 
+import io.reactivex.rxjava3.schedulers.Timed;
 import java.io.PrintStream;
-import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.ThreadContext;
 
 /**
  * A BFT network supporting the EventCoordinatorNetworkSender interface which
@@ -79,7 +68,6 @@ public final class DeterministicNetwork {
 	private final MessageMutator messageMutator;
 
 	private final ImmutableBiMap<BFTNode, Integer> nodeLookup;
-	private final ImmutableList<Injector> nodeInstances;
 
 	private long currentTime = 0L;
 
@@ -88,14 +76,11 @@ public final class DeterministicNetwork {
 	 * @param nodes The nodes on the network
 	 * @param messageSelector A {@link MessageSelector} for choosing messages to process next
 	 * @param messageMutator A {@link MessageMutator} for mutating and queueing messages
-	 * @param syncExecutionModules Guice modules to use for specifying sync execution sub-system
 	 */
 	public DeterministicNetwork(
 		List<BFTNode> nodes,
 		MessageSelector messageSelector,
-		MessageMutator messageMutator,
-		Collection<Module> syncExecutionModules,
-		Module overrideModule
+		MessageMutator messageMutator
 	) {
 		this.messageSelector = Objects.requireNonNull(messageSelector);
 		this.messageMutator = Objects.requireNonNull(messageMutator);
@@ -103,62 +88,31 @@ public final class DeterministicNetwork {
 			nodes.stream(),
 			(node, index) -> Pair.of(node, (int) index)
 		).collect(ImmutableBiMap.toImmutableBiMap(Pair::getFirst, Pair::getSecond));
-		this.nodeInstances = Streams.mapWithIndex(
-			nodes.stream(),
-			(node, index) -> createBFTInstance(node, (int) index, syncExecutionModules, overrideModule)
-		).collect(ImmutableList.toImmutableList());
 
 		log.debug("Nodes {}", this.nodeLookup);
 	}
 
 	/**
 	 * Create the network sender for the specified node.
-	 * @param nodeIndex The node index/id that this sender is for
 	 * @return A newly created {@link DeterministicSender} for the specified node
 	 */
-	public DeterministicSender createSender(BFTNode self, int nodeIndex) {
-		return new ControlledSender(this, self, nodeIndex);
+	public DeterministicSender createSender(BFTNode node) {
+		int nodeIndex = this.lookup(node);
+		return new ControlledSender(this, node, nodeIndex);
 	}
 
-	public void run() {
-		this.currentTime = 0L;
-
-		List<DeterministicConsensusRunner> consensusRunners = this.nodeInstances.stream()
-			.map(i -> i.getInstance(DeterministicConsensusRunner.class))
-			.collect(Collectors.toList());
-
-		consensusRunners.forEach(DeterministicConsensusRunner::start);
-
-		while (true) {
-			List<ControlledMessage> controlledMessages = this.messageQueue.lowestTimeMessages();
-			if (controlledMessages.isEmpty()) {
-				throw new IllegalStateException("No messages available (Lost Responsiveness)");
-			}
-			ControlledMessage controlledMessage = this.messageSelector.select(controlledMessages);
-			if (controlledMessage == null) {
-				// We are done
-				break;
-			}
-			this.messageQueue.remove(controlledMessage);
-			this.currentTime = Math.max(this.currentTime, controlledMessage.arrivalTime());
-			int receiver = controlledMessage.channelId().receiverIndex();
-			String bftNode = " " + this.nodeLookup.inverse().get(receiver);
-			ThreadContext.put("bftNode", bftNode);
-			try {
-				log.debug("Received message {} at {}", controlledMessage, this.currentTime);
-				consensusRunners.get(receiver).handleMessage(controlledMessage.message());
-			} finally {
-				ThreadContext.remove("bftNode");
-			}
+	// TODO: use better method than Timed to store time
+	public Timed<ControlledMessage> nextMessage() {
+		List<ControlledMessage> controlledMessages = this.messageQueue.lowestTimeMessages();
+		if (controlledMessages.isEmpty()) {
+			throw new IllegalStateException("No messages available (Lost Responsiveness)");
 		}
-	}
+		ControlledMessage controlledMessage = this.messageSelector.select(controlledMessages);
 
-	public int numNodes() {
-		return this.nodeInstances.size();
-	}
+		this.messageQueue.remove(controlledMessage);
+		this.currentTime = Math.max(this.currentTime, controlledMessage.arrivalTime());
 
-	public SystemCounters getSystemCounters(int nodeIndex) {
-		return this.nodeInstances.get(nodeIndex).getInstance(SystemCounters.class);
+		return new Timed<>(controlledMessage, this.currentTime, TimeUnit.MILLISECONDS);
 	}
 
 	public long currentTime() {
@@ -186,18 +140,5 @@ public final class DeterministicNetwork {
 			// If nothing processes this message, we just add it to the queue
 			this.messageQueue.add(controlledMessage);
 		}
-	}
-
-	private Injector createBFTInstance(BFTNode self, int index, Collection<Module> syncExecutionModules, Module overrideModule) {
-		Module module = Modules.combine(
-			new ConsensusModule(),
-			new MockedCryptoModule(),
-			new DeterministicNetworkModule(self, createSender(self, index)),
-			Modules.combine(syncExecutionModules)
-		);
-		if (overrideModule != null) {
-			module = Modules.override(module).with(overrideModule);
-		}
-		return Guice.createInjector(module);
 	}
 }

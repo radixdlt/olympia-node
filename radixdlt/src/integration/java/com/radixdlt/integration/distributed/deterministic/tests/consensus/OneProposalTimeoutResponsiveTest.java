@@ -35,10 +35,10 @@ public class OneProposalTimeoutResponsiveTest {
 	private void run(int numNodes, long numViews, long dropPeriod) {
 		DeterministicTest test = DeterministicTest.builder()
 			.numNodes(numNodes)
-			.messageSelector(MessageSelector.selectAndStopAt(MessageSelector.randomSelector(random), View.of(numViews)))
+			.messageSelector(MessageSelector.randomSelector(random))
 			.messageMutator(dropSomeProposals(dropPeriod))
 			.build()
-			.run();
+			.runUntil(DeterministicTest.hasReachedView(View.of(numViews)));
 
 		long requiredIndirectParents = (numViews - 1) / dropPeriod; // Edge case if dropPeriod a factor of numViews
 		long requiredTimeouts = numViews / dropPeriod * 2;

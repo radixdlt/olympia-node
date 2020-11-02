@@ -52,13 +52,13 @@ public class RemoteSyncServiceProcessorTest {
 	private RemoteSyncServiceProcessor processor;
 	private CommittedReader reader;
 	private InMemoryCommittedEpochProofsStore proofsStore;
-	private StateSyncNetwork network;
+	private StateSyncNetworkSender network;
 
 	@Before
 	public void setUp() {
 		this.reader = mock(CommittedReader.class);
 		this.proofsStore = new InMemoryCommittedEpochProofsStore();
-		this.network =  mock(StateSyncNetwork.class);
+		this.network =  mock(StateSyncNetworkSender.class);
 		this.processor = new RemoteSyncServiceProcessor(reader, proofsStore, network, 1);
 	}
 

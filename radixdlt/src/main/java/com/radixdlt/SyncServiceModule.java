@@ -40,7 +40,7 @@ import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier;
 import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier.InvalidValidatorSetSender;
 import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier.VerifiedValidatorSetSender;
 import com.radixdlt.sync.RemoteSyncServiceProcessor;
-import com.radixdlt.sync.StateSyncNetwork;
+import com.radixdlt.sync.StateSyncNetworkSender;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncTimeoutScheduler;
 import com.radixdlt.sync.SyncPatienceMillis;
@@ -107,7 +107,7 @@ public class SyncServiceModule extends AbstractModule {
 	private RemoteSyncServiceProcessor remoteSyncServiceProcessor(
 		CommittedReader committedReader,
 		InMemoryCommittedEpochProofsStore epochProofsStore,
-		StateSyncNetwork stateSyncNetwork
+		StateSyncNetworkSender stateSyncNetwork
 	) {
 		return new RemoteSyncServiceProcessor(
 			committedReader,
@@ -134,7 +134,7 @@ public class SyncServiceModule extends AbstractModule {
 	@Singleton
 	private LocalSyncServiceAccumulatorProcessor localSyncServiceProcessor(
 		Comparator<AccumulatorState> accumulatorComparator,
-		StateSyncNetwork stateSyncNetwork,
+		StateSyncNetworkSender stateSyncNetwork,
 		SyncTimeoutScheduler syncTimeoutScheduler,
 		BFTConfiguration initialConfiguration,
 		@SyncPatienceMillis int syncPatienceMillis
