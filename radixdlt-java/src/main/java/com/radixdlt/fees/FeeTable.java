@@ -55,19 +55,19 @@ public final class FeeTable {
 		return this.feeEntries;
 	}
 
-	public UInt256 feeFor(Atom atom) {
-		final int feeSize = Serialize.getInstance().toDson(atom, DsonOutput.Output.HASH).length;
-		final ImmutableSet<Particle> outputs = atom.spunParticles()
+	public UInt256 feeFor(Atom atomWithoutFees) {
+		final int atomSize = Serialize.getInstance().toDson(atomWithoutFees, DsonOutput.Output.HASH).length;
+		final ImmutableSet<Particle> outputs = atomWithoutFees.spunParticles()
 				.filter(sp -> Spin.UP.equals(sp.getSpin()))
 				.map(SpunParticle::getParticle)
 				.collect(ImmutableSet.toImmutableSet());
-		return feeFor(atom, outputs, feeSize);
+		return feeFor(atomWithoutFees, outputs, atomSize);
 	}
 
-	public UInt256 feeFor(Atom atom, Set<Particle> outputs, int feeSize) {
+	public UInt256 feeFor(Atom atomWithoutFees, Set<Particle> outputs, int atomSize) {
 		UInt384 incrementalFees = UInt384.ZERO;
 		for (FeeEntry entry : this.feeEntries) {
-			incrementalFees = incrementalFees.add(entry.feeFor(atom, feeSize, outputs));
+			incrementalFees = incrementalFees.add(entry.feeFor(atomWithoutFees, atomSize, outputs));
 		}
 		if (!incrementalFees.getHigh().isZero()) {
 			throw new ArithmeticException("Fee overflow");
