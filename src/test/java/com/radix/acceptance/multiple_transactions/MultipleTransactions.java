@@ -17,9 +17,9 @@ import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
-import cucumber.api.java.en.Given;
-import cucumber.api.java.en.Then;
-import cucumber.api.java.en.When;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
 import io.reactivex.Single;
 import io.reactivex.observers.TestObserver;
 
