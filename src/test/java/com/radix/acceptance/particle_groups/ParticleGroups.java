@@ -49,6 +49,8 @@ import static org.junit.Assert.assertEquals;
 
 /**
  * See <a href="https://radixdlt.atlassian.net/browse/RLAU-326">RLAU-326</a>.
+ * <br>
+ * (now it's <a href="https://radixdlt.atlassian.net/browse/RPNV1-341">here</a>)
  */
 public class ParticleGroups {
 	private static final String NAME = "name";
