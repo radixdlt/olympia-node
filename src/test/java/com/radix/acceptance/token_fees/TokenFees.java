@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import com.radixdlt.client.application.translate.Action;
+import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
@@ -297,6 +299,109 @@ public class TokenFees {
 				.toObservable()
 				.doOnNext(this::printSubmitAtomAction)
 				.subscribe(this.observer);
+	}
+
+	@When("^I call a Radix API method to calculate the required fee for an atom that creates a fixed supply token,$")
+	public void i_call_a_radix_api_method_to_calculate_the_required_fee_for_an_atom_that_creates_a_fixed_supply_token() {
+		// Both calculation and submitting happens in next clause, so nothing to do here.
+	}
+
+	@And("^I submit this atom with a smaller fee than that returned by the service,$")
+	public void i_submit_this_atom_with_a_smaller_fee_than_that_returned_by_the_service() {
+		final Action createTokenAction = CreateTokenAction.create(
+				RRI.of(this.api.getAddress(), "TEST"),
+				"Test token name",
+				"Test token description",
+				null,
+				null,
+				BigDecimal.valueOf(100),
+				TokenUnitConversions.getMinimumGranularity(),
+				CreateTokenAction.TokenSupplyType.FIXED
+		);
+
+		final BigDecimal minimumRequiredFee = calculateRequiredFeeForActions(createTokenAction);
+		final BigDecimal tooSmallFee = minimumRequiredFee.subtract(BigDecimal.valueOf(1, 3));
+
+		final Transaction t = this.api.createTransaction();
+		t.stage(createTokenAction);
+		t.commitAndPushWithFee(tooSmallFee)
+				.toObservable()
+				.doOnNext(this::printSubmitAtomAction)
+				.subscribe(this.observer);
+	}
+
+	@And("^I submit this atom with a fee as returned by the service,$")
+	public void i_submit_this_atom_with_a_fee_as_returned_by_the_service() {
+		final Action createTokenAction = CreateTokenAction.create(
+				RRI.of(this.api.getAddress(), "TEST"),
+				"Test token name",
+				"Test token description",
+				null,
+				null,
+				BigDecimal.valueOf(100),
+				TokenUnitConversions.getMinimumGranularity(),
+				CreateTokenAction.TokenSupplyType.FIXED
+		);
+
+		final BigDecimal minimumRequiredFee =
+				calculateRequiredFeeForActions(createTokenAction);
+
+		final Transaction t = this.api.createTransaction();
+		t.stage(createTokenAction);
+		t.commitAndPushWithFee(minimumRequiredFee)
+				.toObservable()
+				.doOnNext(this::printSubmitAtomAction)
+				.subscribe(this.observer);
+	}
+
+	@And("^I add another particle that creates a fixed supply token to that atom and ask the service for required fee again,$")
+	public void i_add_another_particle_that_creates_a_fixed_supply_token_to_that_atom_and_ask_the_service_for_required_fee_again() {
+		final Action createTokenAction1 = CreateTokenAction.create(
+				RRI.of(this.api.getAddress(), "TEST"),
+				"Test token name",
+				"Test token description",
+				null,
+				null,
+				BigDecimal.valueOf(100),
+				TokenUnitConversions.getMinimumGranularity(),
+				CreateTokenAction.TokenSupplyType.FIXED
+		);
+
+		final Action createTokenAction2 = CreateTokenAction.create(
+				RRI.of(this.api.getAddress(), "TEST2"),
+				"Test token name2",
+				"Test token description2",
+				null,
+				null,
+				BigDecimal.valueOf(100),
+				TokenUnitConversions.getMinimumGranularity(),
+				CreateTokenAction.TokenSupplyType.FIXED
+		);
+
+		final BigDecimal minimumRequiredFee1 =
+				calculateRequiredFeeForActions(createTokenAction1);
+
+		final BigDecimal minimumRequiredFee2 =
+				calculateRequiredFeeForActions(createTokenAction1, createTokenAction2);
+
+		final BigDecimal feeDiff = minimumRequiredFee2.subtract(minimumRequiredFee1);
+
+		// fee for a particle that creates fixed supply token should be 1 rad
+		assertEquals(0, feeDiff.compareTo(BigDecimal.ONE));
+	}
+
+	@Then("^I can calculate the fee for that extra particle$")
+	public void i_can_calculate_the_fee_for_that_extra_particle() {
+		// Check already happens in the previous clause, so nothing to do here.
+	}
+
+	private BigDecimal calculateRequiredFeeForActions(Action... actions) {
+		final Transaction t = this.api.createTransaction();
+		for (Action action: actions) {
+			t.stage(action);
+		}
+		final Atom feelessAtom = t.buildAtomWithFee(BigDecimal.ZERO);
+		return this.api.getMinimumRequiredFee(feelessAtom);
 	}
 
 	private TransferrableTokensParticle getUpTtpForFeeToken() {
