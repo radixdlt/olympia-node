@@ -54,6 +54,7 @@ import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.integration.distributed.MockedMempoolModule;
 import com.radixdlt.integration.distributed.deterministic.DeterministicConsensusRunner;
 import com.radixdlt.integration.distributed.deterministic.DeterministicMessageSenderModule;
+import com.radixdlt.integration.distributed.deterministic.DeterministicNodes.DeterministicSenderFactory;
 import com.radixdlt.integration.distributed.deterministic.network.ControlledMessage;
 import com.radixdlt.integration.distributed.deterministic.network.DeterministicNetwork;
 import com.radixdlt.integration.distributed.deterministic.network.MessageMutator;
@@ -74,6 +75,7 @@ import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.List;
 import java.util.stream.Stream;
 import org.apache.commons.cli.ParseException;
+import org.checkerframework.dataflow.qual.Deterministic;
 import org.json.JSONObject;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -96,18 +98,15 @@ public class SingleNodeRecoveryTest {
 	private final BFTNode self = BFTNode.create(ecKeyPair.getPublicKey());
 	private DeterministicNetwork network;
 
-	@Inject
-	private DeterministicConsensusRunner runner;
-
-	private void injectSelf() {
-		Guice.createInjector(
+	private DeterministicConsensusRunner injectSelf() {
+		return Guice.createInjector(
 			new AbstractModule() {
 				@Override
 				protected void configure() {
 					bind(HashSigner.class).toInstance(ecKeyPair::sign);
 					bind(BFTNode.class).annotatedWith(Self.class).toInstance(self);
 					bindConstant().annotatedWith(Names.named("magic")).to(0);
-					bind(DeterministicNetwork.class).toInstance(network);
+					bind(DeterministicSenderFactory.class).toInstance(network::createSender);
 
 					bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(200);
 					bind(Integer.class).annotatedWith(BFTSyncPatienceMillis.class).toInstance(200);
@@ -186,10 +185,10 @@ public class SingleNodeRecoveryTest {
 			new NoFeeModule(),
 
 			new PersistenceModule()
-		).injectMembers(this);
+		).getInstance(DeterministicConsensusRunner.class);
 	}
 
-	private void processForCount(int messageCount) {
+	private void processForCount(DeterministicConsensusRunner runner, int messageCount) {
 		runner.start();
 		for (int i = 0; i < messageCount; i++) {
 			Timed<ControlledMessage> msg = network.nextMessage();
@@ -204,9 +203,9 @@ public class SingleNodeRecoveryTest {
 			// reset network as well for now so that old messages don't stick around
 			this.network = new DeterministicNetwork(List.of(self), MessageSelector.firstSelector(), MessageMutator.nothing());
 
-			this.injectSelf();
+			DeterministicConsensusRunner runner = this.injectSelf();
 
-			this.processForCount(1000);
+			this.processForCount(runner, 1000);
 		}
 	}
 }
