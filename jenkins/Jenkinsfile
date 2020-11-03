@@ -1,6 +1,6 @@
 #!/usr/bin/env groovy
 
-@Library('jenkins-lib@RPNV1-262-Jenkinsfile-setup') _
+@Library('jenkins-lib@task/RPNV1-262-Jenkinsfile-setup') _
 
 pipeline {
     tools {
@@ -44,6 +44,7 @@ pipeline {
                               git describe --abbrev=0 --tags
                             ''',returnStdout: true
                             ).trim()
+                    echo tag
                     docker.manualPushToDockerHub("radixdlt-core",tag)
                 }
             }
