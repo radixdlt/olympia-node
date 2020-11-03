@@ -30,6 +30,7 @@ import java.util.UUID;
 
 import static com.radixdlt.client.core.atoms.AtomStatus.EVICTED_FAILED_CM_VERIFICATION;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 /**
  * See <a href="https://radixdlt.atlassian.net/browse/RPNV1-356">RPNV1-356: Developer - Multiple atomic transfers</a>.
@@ -121,6 +122,7 @@ public class MultipleTransactions {
 	public void i_submit_atom_with_two_transfers_where_one_transfer_is_too_large() {
 		try {
 			submitTransfersWithAmount(2, 2, SMALL_AMOUNT, EXCEEDING_AMOUNT);
+			fail("Transfer with insufficient funds was unexpectedly accepted");
 		} catch (InsufficientFundsException e) {
 			deferErrorDelivery();
 		}
