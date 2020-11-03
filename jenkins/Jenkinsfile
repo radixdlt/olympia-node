@@ -1,0 +1,64 @@
+#!/usr/bin/env groovy
+
+#!groovy
+@Library('jenkins-lib@RPNV1-262-Jenkinsfile-setup') _
+
+pipeline {
+    tools {
+        jdk 'open-jdk-11'
+    }
+    options {
+      timeout(time: 20, unit: 'MINUTES')
+    }
+    agent {
+        label 'master'
+    }
+    stages {
+
+        stage('Checkout RadixCore') {
+           environment {
+               BRANCH_CORE = "release/1.0-beta*"
+           }
+           steps {
+
+                   dir('RadixCore'){
+                        deleteDir()
+                   }
+                   dir('RadixCore@tmp'){
+                        deleteDir()
+                   }
+
+
+                checkout([$class: 'GitSCM', branches: [[name: env.BRANCH_CORE],[name: 'refs/tags/1.0-beta.*']],
+                doGenerateSubmoduleConfigurations: false, extensions: [[$class: 'RelativeTargetDirectory', clean: true,
+                relativeTargetDir: 'RadixCore']], submoduleCfg: [],
+                userRemoteConfigs: [[credentialsId: '6271ba56-812d-4c72-a89f-89454ba64f1b', url: 'https://github.com/radixdlt/radixdlt-core.git']],
+                poll: false])
+            }
+        }
+
+        stage('Build and push core image') {
+            steps {
+                dir('RadixCore'){
+                    tag = sh(
+                            script:'''
+                              git describe --abbrev=0 --tags
+                            ''',returnStdout: true
+                            ).trim()
+//                    docker.manualPushToDockerHub("radixdlt-core",tag)
+                }
+            }
+        }
+
+    }
+    post {
+        always {
+            // sendNotifications currentBuild.result
+            dir('RadixCore'){
+                // deleteDir()
+            }
+
+       }
+
+    }
+}
