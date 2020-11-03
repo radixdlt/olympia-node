@@ -51,7 +51,7 @@ import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.integration.distributed.MockedMempoolModule;
-import com.radixdlt.integration.distributed.deterministic.DeterministicConsensusRunner;
+import com.radixdlt.integration.distributed.deterministic.DeterministicEpochsConsensusProcessor;
 import com.radixdlt.integration.distributed.deterministic.DeterministicMessageSenderModule;
 import com.radixdlt.integration.distributed.deterministic.DeterministicNodes.DeterministicSenderFactory;
 import com.radixdlt.integration.distributed.deterministic.network.ControlledMessage;
@@ -109,8 +109,8 @@ public class NodeRecoveryTest {
 	public TemporaryFolder folder = new TemporaryFolder();
 
 	private DeterministicNetwork network;
-	private List<Supplier<DeterministicConsensusRunner>> nodeCreators;
-	private List<DeterministicConsensusRunner> nodes = new ArrayList<>();
+	private List<Supplier<DeterministicEpochsConsensusProcessor>> nodeCreators;
+	private List<DeterministicEpochsConsensusProcessor> nodes = new ArrayList<>();
 	public NodeRecoveryTest(int numNodes) {
 		final List<ECKeyPair> nodeKeys = Stream.generate(ECKeyPair::generateNew).limit(numNodes).collect(Collectors.toList());
 
@@ -121,19 +121,19 @@ public class NodeRecoveryTest {
 		);
 
 		this.nodeCreators = nodeKeys.stream()
-			.<Supplier<DeterministicConsensusRunner>>map(k -> () -> createRunner(k))
+			.<Supplier<DeterministicEpochsConsensusProcessor>>map(k -> () -> createRunner(k))
 			.collect(Collectors.toList());
 	}
 
 	@Before
 	public void setup() {
-		for (Supplier<DeterministicConsensusRunner> nodeCreator : nodeCreators) {
+		for (Supplier<DeterministicEpochsConsensusProcessor> nodeCreator : nodeCreators) {
 			this.nodes.add(nodeCreator.get());
 		}
-		this.nodes.forEach(DeterministicConsensusRunner::start);
+		this.nodes.forEach(DeterministicEpochsConsensusProcessor::start);
 	}
 
-	private DeterministicConsensusRunner createRunner(ECKeyPair ecKeyPair) {
+	private DeterministicEpochsConsensusProcessor createRunner(ECKeyPair ecKeyPair) {
 		final BFTNode self = BFTNode.create(ecKeyPair.getPublicKey());
 
 		return Guice.createInjector(
@@ -222,12 +222,12 @@ public class NodeRecoveryTest {
 			new NoFeeModule(),
 
 			new PersistenceModule()
-		).getInstance(DeterministicConsensusRunner.class);
+		).getInstance(DeterministicEpochsConsensusProcessor.class);
 	}
 
 	private void restartNode(int index) {
 		this.network.dropMessages(m -> m.channelId().receiverIndex() == index && m.channelId().senderIndex() == index);
-		DeterministicConsensusRunner restartedRunner = nodeCreators.get(index).get();
+		DeterministicEpochsConsensusProcessor restartedRunner = nodeCreators.get(index).get();
 		this.nodes.set(index, restartedRunner);
 		restartedRunner.start();
 	}
@@ -235,7 +235,7 @@ public class NodeRecoveryTest {
 	private void processForCount(int messageCount) {
 		for (int i = 0; i < messageCount; i++) {
 			Timed<ControlledMessage> msg = this.network.nextMessage();
-			DeterministicConsensusRunner runner = this.nodes.get(msg.value().channelId().receiverIndex());
+			DeterministicEpochsConsensusProcessor runner = this.nodes.get(msg.value().channelId().receiverIndex());
 			runner.handleMessage(msg.value().message());
 		}
 	}

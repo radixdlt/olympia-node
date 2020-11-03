@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,13 +15,9 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.liveness;
+package com.radixdlt.integration.distributed.deterministic;
 
-import com.radixdlt.consensus.epoch.LocalTimeout;
-
-/**
- * Sender for local timeouts.
- */
-public interface LocalTimeoutSender {
-	void scheduleTimeout(LocalTimeout localTimeout, long timeoutMilliseconds);
+public interface DeterministicMessageProcessor {
+	void start();
+	void handleMessage(Object o);
 }

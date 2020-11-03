@@ -30,15 +30,11 @@ import com.radixdlt.epochs.EpochsLedgerUpdate;
 import java.util.Objects;
 import javax.inject.Inject;
 
-/**
- * Subscription Manager (Start/Stop) to the processing of Consensus events under
- * a single BFT Consensus node instance for deterministic tests.
- */
-public final class DeterministicConsensusRunner {
+public final class DeterministicEpochsConsensusProcessor implements DeterministicMessageProcessor {
 	private final EpochManager epochManager;
 
 	@Inject
-	public DeterministicConsensusRunner(EpochManager epochManager) {
+	public DeterministicEpochsConsensusProcessor(EpochManager epochManager) {
 		this.epochManager = Objects.requireNonNull(epochManager);
 	}
 
@@ -46,6 +42,7 @@ public final class DeterministicConsensusRunner {
 		epochManager.start();
 	}
 
+	@Override
 	public void handleMessage(Object message) {
 		if (message instanceof ConsensusEvent) {
 			this.epochManager.processConsensusEvent((ConsensusEvent) message);

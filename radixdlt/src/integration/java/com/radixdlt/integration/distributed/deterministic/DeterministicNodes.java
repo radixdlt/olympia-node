@@ -90,8 +90,8 @@ public final class DeterministicNodes {
 
 	public void start() {
 		this.nodeInstances.stream()
-			.map(i -> i.getInstance(DeterministicConsensusRunner.class))
-			.forEach(DeterministicConsensusRunner::start);
+			.map(i -> i.getInstance(DeterministicMessageProcessor.class))
+			.forEach(DeterministicMessageProcessor::start);
 	}
 
 	public void handleMessage(Timed<ControlledMessage> timedNextMsg) {
@@ -101,7 +101,7 @@ public final class DeterministicNodes {
 		ThreadContext.put("bftNode", bftNode);
 		try {
 			log.debug("Received message {} at {}", nextMsg, timedNextMsg.time());
-			nodeInstances.get(receiver).getInstance(DeterministicConsensusRunner.class)
+			nodeInstances.get(receiver).getInstance(DeterministicMessageProcessor.class)
 				.handleMessage(nextMsg.message());
 		} finally {
 			ThreadContext.remove("bftNode");

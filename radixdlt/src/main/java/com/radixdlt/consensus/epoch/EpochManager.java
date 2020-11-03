@@ -206,7 +206,6 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 			public void sendTimeoutProcessed(View view) {
 				BFTNode leader = proposerElection.getProposer(view);
 				log.warn("LOCAL_TIMEOUT: Processed View {} Leader: {}", view, leader);
-				counters.increment(CounterType.BFT_TIMEOUT);
 				Timeout timeout = new Timeout(EpochView.of(nextEpoch, view), leader);
 				epochInfoSender.sendTimeoutProcessed(timeout);
 			}
