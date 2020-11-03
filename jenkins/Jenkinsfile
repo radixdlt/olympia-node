@@ -39,13 +39,16 @@ pipeline {
         stage('Build and push core image') {
             steps {
                 dir('RadixCore'){
-                    tag = sh(
-                            script:'''
+                    script {
+                        tag = sh(
+                                script: '''
                               git describe --abbrev=0 --tags
-                            ''',returnStdout: true
-                            ).trim()
-                    echo tag
-                    docker.manualPushToDockerHub("radixdlt-core",tag)
+                            ''', returnStdout: true
+                        ).trim()
+                        echo tag
+
+                        docker.manualPushToDockerHub("radixdlt-core", tag)
+                    }
                 }
             }
         }
