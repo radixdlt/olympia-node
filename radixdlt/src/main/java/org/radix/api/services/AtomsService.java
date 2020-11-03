@@ -68,7 +68,7 @@ import org.radix.api.observable.ObservedAtomEvents;
 import com.radixdlt.identifiers.AID;
 
 public class AtomsService {
-	private static final int  NUMBER_OF_THREADS = 8;
+	private static final int NUMBER_OF_THREADS = 8;
 	/**
 	 * Some of these may block for a short while so keep a few.
 	 * TODO: remove the blocking
