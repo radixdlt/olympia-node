@@ -20,7 +20,6 @@ package com.radixdlt.integration.recovery;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
-import com.google.inject.Inject;
 import com.google.inject.Scopes;
 import com.google.inject.name.Names;
 import com.radixdlt.ConsensusModule;
@@ -70,35 +69,74 @@ import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncTimeoutScheduler;
 import com.radixdlt.sync.StateSyncNetworkSender;
 import com.radixdlt.sync.SyncPatienceMillis;
+import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.schedulers.Timed;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.cli.ParseException;
-import org.checkerframework.dataflow.qual.Deterministic;
 import org.json.JSONObject;
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 /**
- * A deterministic single node test which uses a real database.
+ * A deterministic node test which uses a real database.
  * Consensus is executed for a few views/epochs until a new injector instance
  * is created, somewhat similar to a process restart. Consensus should then
  * be able to run correctly again from the new injector.
  * This is repeated a certain number of times.
  */
-public class SingleNodeRecoveryTest {
+@RunWith(Parameterized.class)
+public class NodeRecoveryTest {
+
+	@Parameters
+	public static Collection<Object[]> numNodes() {
+		return List.of(new Object[][] {
+			{1}, {2}
+		});
+	}
 
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
 
-	private final ECKeyPair ecKeyPair = ECKeyPair.generateNew();
-	private final BFTNode self = BFTNode.create(ecKeyPair.getPublicKey());
 	private DeterministicNetwork network;
+	private List<Supplier<DeterministicConsensusRunner>> nodeCreators;
+	private List<DeterministicConsensusRunner> nodes = new ArrayList<>();
+	public NodeRecoveryTest(int numNodes) {
+		final List<ECKeyPair> nodeKeys = Stream.generate(ECKeyPair::generateNew).limit(numNodes).collect(Collectors.toList());
 
-	private DeterministicConsensusRunner injectSelf() {
+		this.network = new DeterministicNetwork(
+			nodeKeys.stream().map(k -> BFTNode.create(k.getPublicKey())).collect(Collectors.toList()),
+			MessageSelector.firstSelector(),
+			MessageMutator.nothing()
+		);
+
+		this.nodeCreators = nodeKeys.stream()
+			.<Supplier<DeterministicConsensusRunner>>map(k -> () -> createRunner(k))
+			.collect(Collectors.toList());
+	}
+
+	@Before
+	public void setup() {
+		for (Supplier<DeterministicConsensusRunner> nodeCreator : nodeCreators) {
+			this.nodes.add(nodeCreator.get());
+		}
+		this.nodes.forEach(DeterministicConsensusRunner::start);
+	}
+
+	private DeterministicConsensusRunner createRunner(ECKeyPair ecKeyPair) {
+		final BFTNode self = BFTNode.create(ecKeyPair.getPublicKey());
+
 		return Guice.createInjector(
 			new AbstractModule() {
 				@Override
@@ -148,7 +186,7 @@ public class SingleNodeRecoveryTest {
 					// TODO: this constructor/class/inheritance/dependency is horribly broken
 					try {
 						runtimeProperties = new RuntimeProperties(new JSONObject(), new String[0]);
-						runtimeProperties.set("db.location", folder.getRoot().getAbsolutePath() + "/RADIXDB_RECOVERY_TEST");
+						runtimeProperties.set("db.location", folder.getRoot().getAbsolutePath() + "/RADIXDB_RECOVERY_TEST_" + self);
 					} catch (ParseException e) {
 						throw new IllegalStateException();
 					}
@@ -188,24 +226,39 @@ public class SingleNodeRecoveryTest {
 		).getInstance(DeterministicConsensusRunner.class);
 	}
 
-	private void processForCount(DeterministicConsensusRunner runner, int messageCount) {
-		runner.start();
+	private void restartNode(int index) {
+		this.network.dropMessages(m -> m.channelId().receiverIndex() == index && m.channelId().senderIndex() == index);
+		DeterministicConsensusRunner restartedRunner = nodeCreators.get(index).get();
+		this.nodes.set(index, restartedRunner);
+		restartedRunner.start();
+	}
+
+	private void processForCount(int messageCount) {
 		for (int i = 0; i < messageCount; i++) {
-			Timed<ControlledMessage> msg = network.nextMessage();
+			Timed<ControlledMessage> msg = this.network.nextMessage();
+			DeterministicConsensusRunner runner = this.nodes.get(msg.value().channelId().receiverIndex());
 			runner.handleMessage(msg.value().message());
 		}
 	}
 
 	@Test
-	@Ignore("Remove once recovery is implemented")
-	public void test() {
-		for (int restarts = 0; restarts < 100; restarts++) {
-			// reset network as well for now so that old messages don't stick around
-			this.network = new DeterministicNetwork(List.of(self), MessageSelector.firstSelector(), MessageMutator.nothing());
+	@Ignore("Remove once all required state is persisted")
+	public void all_nodes_restart_should_be_able_to_reboot_correctly() {
+		for (int restart = 0; restart < 100; restart++) {
+			processForCount(1000);
+			for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
+				restartNode(nodeIndex);
+			}
+		}
+	}
 
-			DeterministicConsensusRunner runner = this.injectSelf();
-
-			this.processForCount(runner, 1000);
+	@Test
+	public void all_nodes_except_for_one_need_to_restart_should_be_able_to_reboot_correctly_via_sync() {
+		for (int restart = 0; restart < 100; restart++) {
+			processForCount(1000);
+			for (int nodeIndex = 1; nodeIndex < nodes.size(); nodeIndex++) {
+				restartNode(nodeIndex);
+			}
 		}
 	}
 }

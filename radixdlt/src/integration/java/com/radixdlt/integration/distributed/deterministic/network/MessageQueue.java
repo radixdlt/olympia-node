@@ -83,6 +83,11 @@ public final class MessageQueue {
 		return true;
 	}
 
+	void remove(Predicate<ControlledMessage> filter) {
+		messagesByTime.values().forEach(l -> l.removeIf(filter));
+		messagesByTime.values().removeIf(List::isEmpty);
+	}
+
 	void remove(ControlledMessage message) {
 		LinkedList<ControlledMessage> msgs = this.messagesByTime.get(this.minimumMessageTime);
 		if (msgs == null) {

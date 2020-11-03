@@ -46,6 +46,7 @@ import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * Wraps the Radix Engine and emits messages based on success or failure
@@ -221,14 +222,20 @@ public final class RadixEngineStateComputer implements StateComputer {
 	}
 
 	private void commitCommand(long version, Command command, VerifiedLedgerHeaderAndProof proof) {
+		final ClientAtom clientAtom;
 		try {
-			final ClientAtom clientAtom = this.mapCommand(command);
+			clientAtom = this.mapCommand(command);
+		} catch (DeserializeException e) {
+			throw new ByzantineQuorumException("Trying to commit bad atom", e);
+		}
+
+		try {
 			final CommittedAtom committedAtom = new CommittedAtom(clientAtom, version, proof);
 			// TODO: execute list of commands instead
 			// TODO: Include permission level in committed command
 			this.radixEngine.checkAndStore(committedAtom, PermissionLevel.SUPER_USER);
-		} catch (RadixEngineException | DeserializeException e) {
-			throw new ByzantineQuorumException("Trying to commit bad command", e);
+		} catch (RadixEngineException e) {
+			throw new ByzantineQuorumException(String.format("Trying to commit bad atom:\n%s", clientAtom.toInstructionsString()), e);
 		}
 	}
 
