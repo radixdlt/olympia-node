@@ -37,14 +37,12 @@ import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.bft.BFTSyncer.SyncResult;
 import com.radixdlt.consensus.bft.BFTUpdate;
-import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
@@ -83,20 +81,17 @@ public class EpochManagerTest {
 	private Pacemaker pacemaker;
 	private SystemCounters systemCounters;
 	private ProposerElection proposerElection;
-	private Ledger ledger;
 	private BFTNode self;
 	private BFTSyncRequestProcessorFactory requestProcessorFactory;
 	private VertexStoreFactory vertexStoreFactory;
-	private VertexStoreEventSender vertexStoreEventSender;
 
 	@Before
 	public void setup() {
-		this.vertexStoreEventSender = mock(VertexStoreEventSender.class);
 		this.syncEpochsRPCSender = mock(EpochManager.SyncEpochsRPCSender.class);
 
 		this.vertexStore = mock(VertexStore.class);
 		this.vertexStoreFactory = mock(VertexStoreFactory.class);
-		when(vertexStoreFactory.create(any(), any(), any(), any())).thenReturn(this.vertexStore);
+		when(vertexStoreFactory.create(any(), any())).thenReturn(this.vertexStore);
 
 		this.vertexStoreSync = mock(BFTSync.class);
 		BFTSyncFactory bftSyncFactory = mock(BFTSyncFactory.class);
@@ -107,7 +102,6 @@ public class EpochManagerTest {
 		this.bftFactory = mock(BFTFactory.class);
 
 		this.systemCounters = new SystemCountersImpl();
-		this.ledger = mock(Ledger.class);
 
 		this.proposerElection = mock(ProposerElection.class);
 		this.self = mock(BFTNode.class);
@@ -130,7 +124,6 @@ public class EpochManagerTest {
 		this.epochManager = new EpochManager(
 			this.self,
 			initial,
-			this.ledger,
 			this.syncEpochsRPCSender,
 			mock(LocalTimeoutSender.class),
 			syncRequestSender,
@@ -141,7 +134,6 @@ public class EpochManagerTest {
 			proposers -> proposerElection,
 			this.bftFactory,
 			this.systemCounters,
-			this.vertexStoreEventSender,
 			this.epochInfoSender
 		);
 		this.epochManager.start();

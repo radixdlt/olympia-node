@@ -22,14 +22,10 @@ import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.ConsensusEvent;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.sync.BFTSyncRequestTimeoutProcessor;
 import com.radixdlt.consensus.sync.EmptyBFTSyncResponseProcessor;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.ViewTimeout;
@@ -128,10 +124,8 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 	private final ProposerElectionFactory proposerElectionFactory;
 	private final SystemCounters counters;
 	private final LocalTimeoutSender localTimeoutSender;
-	private final Ledger ledger;
 	private final Map<Long, List<ConsensusEvent>> queuedEvents;
 	private final BFTFactory bftFactory;
-	private final VertexStoreEventSender vertexStoreEventSender;
 	private final EpochInfoSender epochInfoSender;
 	private final SyncLedgerRequestSender syncRequestSender;
 
@@ -149,7 +143,6 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 	public EpochManager(
 		@Self BFTNode self,
 		EpochChange initialEpoch,
-		Ledger ledger,
 		SyncEpochsRPCSender epochsRPCSender,
 		LocalTimeoutSender localTimeoutSender,
 		SyncLedgerRequestSender syncRequestSender,
@@ -160,12 +153,10 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 		ProposerElectionFactory proposerElectionFactory,
 		BFTFactory bftFactory,
 		SystemCounters counters,
-		VertexStoreEventSender vertexStoreEventSender,
 		EpochInfoSender epochInfoSender
 	) {
 		this.currentEpoch = Objects.requireNonNull(initialEpoch);
 		this.self = Objects.requireNonNull(self);
-		this.ledger = Objects.requireNonNull(ledger);
 		this.epochsRPCSender = Objects.requireNonNull(epochsRPCSender);
 		this.syncRequestSender = Objects.requireNonNull(syncRequestSender);
 		this.localTimeoutSender = Objects.requireNonNull(localTimeoutSender);
@@ -176,7 +167,6 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 		this.proposerElectionFactory = Objects.requireNonNull(proposerElectionFactory);
 		this.bftFactory = bftFactory;
 		this.counters = Objects.requireNonNull(counters);
-		this.vertexStoreEventSender = Objects.requireNonNull(vertexStoreEventSender);
 		this.epochInfoSender = Objects.requireNonNull(epochInfoSender);
 		this.queuedEvents = new HashMap<>();
 	}
@@ -200,26 +190,9 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 
 		// TODO: Recover VertexStore
 		BFTConfiguration bftConfiguration = this.currentEpoch.getBFTConfiguration();
-		VertexStoreEventSender epochsVertexStoreEventSender = new VertexStoreEventSender() {
-			@Override
-			public void sendCommitted(BFTCommittedUpdate committedUpdate) {
-				if (committedUpdate.getProof().isEndOfEpoch()) {
-					// If end of epoch, stop processing bft events
-					bftEventProcessor = EmptyBFTEventProcessor.INSTANCE;
-				}
-				vertexStoreEventSender.sendCommitted(committedUpdate);
-			}
-
-			@Override
-			public void highQC(QuorumCertificate qc) {
-				vertexStoreEventSender.highQC(qc);
-			}
-		};
 		VertexStore vertexStore = vertexStoreFactory.create(
 			bftConfiguration.getGenesisVertex(),
-			bftConfiguration.getGenesisQC(),
-			ledger,
-			epochsVertexStoreEventSender
+			bftConfiguration.getGenesisQC()
 		);
 		ProposerElection proposerElection = proposerElectionFactory.create(validatorSet);
 		PacemakerTimeoutSender timeoutSender = (view, ms) -> localTimeoutSender.scheduleTimeout(new LocalTimeout(nextEpoch, view), ms);
