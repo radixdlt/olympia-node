@@ -34,7 +34,7 @@ pipeline {
            steps {
                sendNotifications "STARTED"
                script {
-                   checkoutHelpers.checkout("RadixCore")
+                   checkoutHelpers.doCheckout("RadixCore")
                }
             }
         }
