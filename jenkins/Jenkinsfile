@@ -30,20 +30,27 @@ pipeline {
         label 'master'
     }
     stages {
+        stage('Checkout RadixCore') {
+           steps {
+//               sendNotifications "STARTED"
+               script {
+                   checkoutHelpers.doCheckout("RadixCore")
+               }
+            }
+        }
 
         stage('Build and push core image') {
             steps {
-                //               sendNotifications "STARTED"
-                script {
-                    tag = sh(
-                            script: '''
-                                    git checkout ${BRANCH_NAME}
+                dir('RadixCore'){
+                    script {
+                        tag = sh(
+                                script: '''
                                     git describe --abbrev=0 --tags
                                 ''', returnStdout: true
-                    ).trim()
-                    dockerHelpers.manualPushToDockerHub("radixdlt-core", tag)
+                        ).trim()
+                        dockerHelpers.manualPushToDockerHub("radixdlt-core", tag)
+                    }
                 }
-
             }
         }
         stage('Downstream jobs') {
@@ -55,8 +62,8 @@ pipeline {
         }
     }
 //    post {
-////        always {
-//////            sendNotifications currentBuild.result
-////        }
+//        always {
+////            sendNotifications currentBuild.result
+//        }
 //    }
 }
