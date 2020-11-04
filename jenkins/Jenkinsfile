@@ -44,7 +44,7 @@ pipeline {
                         deleteDir()
                    }
 
-
+               sh 'printenv'
                 checkout([
                         $class: 'GitSCM',
                         branches: ["${BRANCH}"],
