@@ -53,6 +53,11 @@ pipeline {
                 }
             }
         }
+        stage('Deploy image on testnet'){
+            build job: 'Release-Branch/deploy-release'
+//            build job: 'Release-Branch/deterministic-simulation-tests'
+            build job: 'Release-Branch/regression-acceptance-tests'
+        }
     }
     post {
         always {
