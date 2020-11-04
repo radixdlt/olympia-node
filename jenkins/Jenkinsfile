@@ -51,7 +51,7 @@ pipeline {
                         doGenerateSubmoduleConfigurations: false,
                         extensions: [
                                 [$class: 'RelativeTargetDirectory', clean: true, relativeTargetDir: 'RadixCore'],
-                                [$class: 'LocalBranch', localBranch: '$BRANCH']
+                                [$class: 'LocalBranch', localBranch: '**']
                         ],
                         submoduleCfg: [],
                         userRemoteConfigs: [
