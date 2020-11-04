@@ -18,6 +18,7 @@
 package com.radixdlt.consensus.safety;
 
 import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.HighQC;
@@ -49,7 +50,7 @@ public final class SafetyRules {
 	private SafetyState state;
 
 	public SafetyRules(
-		BFTNode self,
+		@Self BFTNode self,
 		SafetyState initialState,
 		Hasher hasher,
 		HashSigner signer

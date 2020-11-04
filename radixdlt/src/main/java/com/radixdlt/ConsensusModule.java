@@ -98,7 +98,11 @@ public final class ConsensusModule extends AbstractModule {
 	@Provides
 	private BFTFactory bftFactory(
 		Hasher hasher,
-		HashVerifier verifier
+		HashVerifier verifier,
+		TimeSupplier timeSupplier,
+		ProceedToViewSender proceedToViewSender,
+		SystemCounters counters,
+		SafetyRules safetyRules
 	) {
 		return (
 			self,
@@ -112,6 +116,10 @@ public final class ConsensusModule extends AbstractModule {
 				.self(self)
 				.hasher(hasher)
 				.verifier(verifier)
+				.timeSupplier(timeSupplier)
+				.proceedToViewSender(proceedToViewSender)
+				.counters(counters)
+				.safetyRules(safetyRules)
 				.pacemaker(pacemaker)
 				.vertexStore(vertexStore)
 				.bftSyncer(vertexStoreSync)
@@ -150,18 +158,29 @@ public final class ConsensusModule extends AbstractModule {
 		);
 	}
 
+
+	@Provides
+	@Singleton
+	SafetyRules safetyRules(
+		@Self BFTNode self,
+		Hasher hasher,
+		HashSigner signer
+	) {
+		// TODO: persist SafetyState
+		return new SafetyRules(self, SafetyState.initialState(), hasher, signer);
+	}
+
 	@Provides
 	@Singleton
 	private Pacemaker pacemaker(
 		@Self BFTNode self,
+		SafetyRules safetyRules,
 		SystemCounters counters,
 		BFTConfiguration configuration,
 		VertexStore vertexStore,
 		ProposerElection proposerElection,
 		NextCommandGenerator nextCommandGenerator,
-		TimeSupplier timeSupplier,
 		Hasher hasher,
-		HashSigner signer,
 		ProposalBroadcaster proposalBroadcaster,
 		ProceedToViewSender proceedToViewSender,
 		PacemakerTimeoutSender timeoutSender,
@@ -173,15 +192,12 @@ public final class ConsensusModule extends AbstractModule {
 		PendingVotes pendingVotes = new PendingVotes(hasher);
 		PendingViewTimeouts pendingViewTimeouts = new PendingViewTimeouts();
 		BFTValidatorSet validatorSet = configuration.getValidatorSet();
-		SafetyRules safetyRules = new SafetyRules(self, SafetyState.initialState(), hasher, signer);
 		return new ExponentialTimeoutPacemaker(
 			pacemakerTimeout,
 			pacemakerRate,
 			pacemakerMaxExponent,
-
 			self,
 			counters,
-
 			pendingVotes,
 			pendingViewTimeouts,
 			validatorSet,
@@ -189,9 +205,7 @@ public final class ConsensusModule extends AbstractModule {
 			proposerElection,
 			safetyRules,
 			nextCommandGenerator,
-			timeSupplier,
 			hasher,
-
 			proposalBroadcaster,
 			proceedToViewSender,
 			timeoutSender,

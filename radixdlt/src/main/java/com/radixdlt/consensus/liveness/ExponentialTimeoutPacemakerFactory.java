@@ -29,7 +29,6 @@ import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker.PacemakerInfo
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.network.TimeSupplier;
 
 /**
  * @author msandiford
@@ -43,7 +42,6 @@ public class ExponentialTimeoutPacemakerFactory implements PacemakerFactory {
 	private final BFTNode self;
 	private final SystemCounters counters;
 	private final NextCommandGenerator nextCommandGenerator;
-	private final TimeSupplier timeSupplier;
 	private final Hasher hasher;
 	private final HashSigner signer;
 	private final ProposalBroadcaster proposalBroadcaster;
@@ -56,7 +54,6 @@ public class ExponentialTimeoutPacemakerFactory implements PacemakerFactory {
 		BFTNode self,
 		SystemCounters counters,
 		NextCommandGenerator nextCommandGenerator,
-		TimeSupplier timeSupplier,
 		Hasher hasher,
 		HashSigner signer,
 		ProposalBroadcaster proposalBroadcaster,
@@ -68,7 +65,6 @@ public class ExponentialTimeoutPacemakerFactory implements PacemakerFactory {
 		this.self = Objects.requireNonNull(self);
 		this.counters = Objects.requireNonNull(counters);
 		this.nextCommandGenerator = Objects.requireNonNull(nextCommandGenerator);
-		this.timeSupplier = Objects.requireNonNull(timeSupplier);
 		this.hasher = Objects.requireNonNull(hasher);
 		this.signer = Objects.requireNonNull(signer);
 		this.proposalBroadcaster = Objects.requireNonNull(proposalBroadcaster);
@@ -100,7 +96,6 @@ public class ExponentialTimeoutPacemakerFactory implements PacemakerFactory {
 			proposerElection,
 			safetyRules,
 			nextCommandGenerator,
-			timeSupplier,
 			hasher,
 			proposalBroadcaster,
 			proceedToViewSender,

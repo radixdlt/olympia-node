@@ -19,9 +19,13 @@ package com.radixdlt.consensus.bft;
 
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.HashVerifier;
+import com.radixdlt.consensus.liveness.ProceedToViewSender;
+import com.radixdlt.consensus.safety.SafetyRules;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.network.TimeSupplier;
 
 /**
  * A helper class to help in constructing a BFT validator state machine
@@ -41,6 +45,12 @@ public final class BFTBuilder {
 	// Instance specific objects
 	private BFTNode self;
 
+
+	private TimeSupplier timeSupplier;
+	private ProceedToViewSender proceedToViewSender;
+	private SystemCounters counters;
+	private SafetyRules safetyRules;
+
 	private BFTBuilder() {
 		// Just making this inaccessible
 	}
@@ -51,6 +61,26 @@ public final class BFTBuilder {
 
 	public BFTBuilder self(BFTNode self) {
 		this.self = self;
+		return this;
+	}
+
+	public BFTBuilder timeSupplier(TimeSupplier timeSupplier) {
+		this.timeSupplier = timeSupplier;
+		return this;
+	}
+
+	public BFTBuilder proceedToViewSender(ProceedToViewSender proceedToViewSender) {
+		this.proceedToViewSender = proceedToViewSender;
+		return this;
+	}
+
+	public BFTBuilder counters(SystemCounters counters) {
+		this.counters = counters;
+		return this;
+	}
+
+	public BFTBuilder safetyRules(SafetyRules safetyRules) {
+		this.safetyRules = safetyRules;
 		return this;
 	}
 
@@ -84,7 +114,6 @@ public final class BFTBuilder {
 		return this;
 	}
 
-
 	public BFTBuilder proposerElection(ProposerElection proposerElection) {
 		this.proposerElection = proposerElection;
 		return this;
@@ -94,7 +123,13 @@ public final class BFTBuilder {
 		BFTEventReducer reducer = new BFTEventReducer(
 			pacemaker,
 			vertexStore,
-			bftSyncer
+			bftSyncer,
+			hasher,
+			timeSupplier,
+			proposerElection,
+			proceedToViewSender,
+			counters,
+			safetyRules
 		);
 
 		SyncQueues syncQueues = new SyncQueues();

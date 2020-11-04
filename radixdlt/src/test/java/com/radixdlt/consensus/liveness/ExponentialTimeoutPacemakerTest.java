@@ -33,9 +33,7 @@ import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.PendingVotes;
-import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.HighQC;
@@ -45,10 +43,8 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker.PacemakerInfoSender;
 import com.radixdlt.consensus.safety.SafetyRules;
-import com.radixdlt.consensus.safety.SafetyViolationException;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.network.TimeSupplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -56,14 +52,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.doThrow;
 
 public class ExponentialTimeoutPacemakerTest {
 	private static final double MAX_TIMEOUT = 30_000.0;
@@ -89,7 +83,6 @@ public class ExponentialTimeoutPacemakerTest {
 	private BFTNode self = mock(BFTNode.class);
 	private SystemCounters counters = mock(SystemCounters.class);
 	private NextCommandGenerator nextCommandGenerator = mock(NextCommandGenerator.class);
-	private TimeSupplier timeSupplier = mock(TimeSupplier.class);
 	private Hasher hasher = mock(Hasher.class);
 	private HashSigner signer = mock(HashSigner.class);
 	private ProposalBroadcaster proposalBroadcaster = mock(ProposalBroadcaster.class);
@@ -119,7 +112,6 @@ public class ExponentialTimeoutPacemakerTest {
 			this.proposerElection,
 			this.safetyRules,
 			this.nextCommandGenerator,
-			this.timeSupplier,
 			this.hasher,
 			this.proposalBroadcaster,
 			this.proceedToViewSender,
@@ -249,44 +241,6 @@ public class ExponentialTimeoutPacemakerTest {
 		assertThat(this.pacemaker.getCurrentView()).isEqualTo(View.of(1));
 		verify(this.pendingVotes, times(1)).insertVote(eq(vote), any());
 		verifyNoMoreInteractions(this.pendingVotes);
-	}
-
-	@Test
-	public void when_process_proposal_wrong_view__then_ignored() {
-		Proposal proposal = mock(Proposal.class);
-		when(proposal.getView()).thenReturn(View.of(1));
-
-		this.pacemaker.processProposal(proposal);
-		assertThat(this.pacemaker.getCurrentView()).isEqualTo(View.of(0));
-		verifyNoMoreInteractions(this.vertexStore); // Nothing inserted
-	}
-
-	@Test
-	public void when_process_proposal__then_vote_sent() {
-		Proposal proposal = mock(Proposal.class);
-		when(proposal.getView()).thenReturn(View.of(0));
-		when(proposal.getVertex()).thenReturn(mock(UnverifiedVertex.class));
-		when(this.hasher.hash(any())).thenReturn(mock(HashCode.class));
-		when(this.vertexStore.insertVertex(any())).thenReturn(Optional.of(mock(BFTHeader.class)));
-
-		this.pacemaker.processProposal(proposal);
-		assertThat(this.pacemaker.getCurrentView()).isEqualTo(View.of(0));
-		verify(this.vertexStore, times(1)).insertVertex(any());
-		verify(this.proceedToViewSender, times(1)).sendVote(any(), any());
-		verifyNoMoreInteractions(this.proceedToViewSender);
-	}
-
-	@Test
-	public void when_process_proposal_safety_failure__then_vote_not_sent() throws SafetyViolationException {
-		Proposal proposal = mock(Proposal.class);
-		when(proposal.getView()).thenReturn(View.of(0));
-		when(proposal.getVertex()).thenReturn(mock(UnverifiedVertex.class));
-		when(this.hasher.hash(any())).thenReturn(mock(HashCode.class));
-		doThrow(SafetyViolationException.class).when(this.safetyRules).voteFor(any(), any(), anyLong(), any());
-
-		this.pacemaker.processProposal(proposal);
-		assertThat(this.pacemaker.getCurrentView()).isEqualTo(View.of(0));
-		verifyNoMoreInteractions(this.proceedToViewSender);
 	}
 
 	@Test
@@ -473,7 +427,6 @@ public class ExponentialTimeoutPacemakerTest {
 			this.proposerElection,
 			this.safetyRules,
 			this.nextCommandGenerator,
-			this.timeSupplier,
 			this.hasher,
 			this.proposalBroadcaster,
 			this.proceedToViewSender,

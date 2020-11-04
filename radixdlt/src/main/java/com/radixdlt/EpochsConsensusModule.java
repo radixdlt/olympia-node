@@ -64,7 +64,6 @@ import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.network.TimeSupplier;
 
 import com.radixdlt.store.LastEpochProof;
 import java.util.Comparator;
@@ -126,7 +125,6 @@ public class EpochsConsensusModule extends AbstractModule {
 		@Self BFTNode self,
 		SystemCounters counters,
 		NextCommandGenerator nextCommandGenerator,
-		TimeSupplier timeSupplier,
 		Hasher hasher,
 		HashSigner signer,
 		ProposalBroadcaster proposalBroadcaster,
@@ -142,7 +140,6 @@ public class EpochsConsensusModule extends AbstractModule {
 			self,
 			counters,
 			nextCommandGenerator,
-			timeSupplier,
 			hasher,
 			signer,
 			proposalBroadcaster,

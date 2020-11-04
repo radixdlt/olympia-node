@@ -20,7 +20,6 @@ package com.radixdlt.consensus.liveness;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.hash.HashCode;
 import com.google.common.util.concurrent.RateLimiter;
-import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.Proposal;
@@ -33,20 +32,16 @@ import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.PreparedVertex;
-import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.safety.SafetyRules;
-import com.radixdlt.consensus.safety.SafetyViolationException;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.network.TimeSupplier;
 
 import java.util.Set;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.message.FormattedMessage;
 
 import java.util.List;
 import java.util.Objects;
@@ -94,7 +89,6 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 
 	private final SafetyRules safetyRules;
 	private final NextCommandGenerator nextCommandGenerator;
-	private final TimeSupplier timeSupplier;
 	private final Hasher hasher;
 
 	private final ProposalBroadcaster sender;
@@ -127,7 +121,6 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 
 		SafetyRules safetyRules,
 		NextCommandGenerator nextCommandGenerator,
-		TimeSupplier timeSupplier,
 		Hasher hasher,
 
 		ProposalBroadcaster sender,
@@ -163,7 +156,6 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 		this.proposerElection = Objects.requireNonNull(proposerElection);
 		this.safetyRules = Objects.requireNonNull(safetyRules);
 		this.nextCommandGenerator = Objects.requireNonNull(nextCommandGenerator);
-		this.timeSupplier = Objects.requireNonNull(timeSupplier);
 		this.hasher = Objects.requireNonNull(hasher);
 
 		this.sender = Objects.requireNonNull(sender);
@@ -197,33 +189,6 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 		});
 		return maybeQC;
 	}
-
-	// FIXME: To be moved out of pacemaker
-	@Override
-	public void processProposal(Proposal proposal) {
-		log.trace("Proposal: Processing {}", proposal);
-		final View proposedVertexView = proposal.getView();
-		if (!this.currentView.equals(proposedVertexView)) {
-			log.trace("Proposal: Ignoring view {}, current is: {}", proposedVertexView, this.currentView);
-			return;
-		}
-
-		final VerifiedVertex proposedVertex = new VerifiedVertex(proposal.getVertex(), this.hasher.hash(proposal.getVertex()));
-		final Optional<BFTHeader> maybeHeader = this.vertexStore.insertVertex(proposedVertex);
-		// The header may not be present if the ledger is ahead of consensus
-		maybeHeader.ifPresent(header -> {
-			final BFTNode nextLeader = this.proposerElection.getProposer(this.currentView.next());
-			try {
-				final Vote vote = this.safetyRules.voteFor(proposedVertex, header, this.timeSupplier.currentTime(), this.vertexStore.highQC());
-				log.trace("Proposal: Sending vote to {}: {}", nextLeader, vote);
-				this.proceedToViewSender.sendVote(vote, nextLeader);
-			} catch (SafetyViolationException e) {
-				this.counters.increment(CounterType.BFT_REJECTED);
-				log.error(() -> new FormattedMessage("Proposal: Rejected {}", proposedVertex), e);
-			}
-		});
-	}
-
 
 	@Override
 	public void processViewTimeout(ViewTimeout viewTimeout) {

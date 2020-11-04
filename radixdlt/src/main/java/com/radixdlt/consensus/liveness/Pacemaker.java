@@ -19,7 +19,6 @@ package com.radixdlt.consensus.liveness;
 
 import java.util.Optional;
 
-import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.Vote;
@@ -38,13 +37,6 @@ public interface Pacemaker extends PacemakerState {
 	 * 		quorum was formed with this vote
 	 */
 	Optional<QuorumCertificate> processVote(Vote vote);
-
-	/**
-	 * Signifies to the pacemaker that a proposal has been received.
-	 *
-	 * @param proposal the proposal received
-	 */
-	void processProposal(Proposal proposal);
 
 	// FIXME: To be removed when TCs implemented
 	void processViewTimeout(ViewTimeout viewTimeout);
