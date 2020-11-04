@@ -142,6 +142,9 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 	@Inject
 	public EpochManager(
 		@Self BFTNode self,
+		BFTEventProcessor initialBFTEventProcessor,
+		BFTSyncRequestProcessor initialSyncRequestProcessor,
+		BFTSync initialBFTSync,
 		EpochChange initialEpoch,
 		SyncEpochsRPCSender epochsRPCSender,
 		LocalTimeoutSender localTimeoutSender,
@@ -155,6 +158,22 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 		SystemCounters counters,
 		EpochInfoSender epochInfoSender
 	) {
+		if (!initialEpoch.getBFTConfiguration().getValidatorSet().containsNode(self)) {
+			this.bftEventProcessor =  EmptyBFTEventProcessor.INSTANCE;
+			this.syncBFTResponseProcessor = EmptyBFTSyncResponseProcessor.INSTANCE;
+			this.syncRequestProcessor = req -> { };
+			this.syncLedgerUpdateProcessor = update -> { };
+			this.syncBFTUpdateProcessor = update -> { };
+			this.syncRequestTimeoutProcessor = timeout -> { };
+		} else {
+			this.bftEventProcessor = Objects.requireNonNull(initialBFTEventProcessor);
+			this.syncBFTResponseProcessor = initialBFTSync;
+			this.syncBFTUpdateProcessor = initialBFTSync;
+			this.syncLedgerUpdateProcessor = initialBFTSync;
+			this.syncRequestTimeoutProcessor = initialBFTSync;
+			this.syncRequestProcessor = initialSyncRequestProcessor;
+		}
+
 		this.currentEpoch = Objects.requireNonNull(initialEpoch);
 		this.self = Objects.requireNonNull(self);
 		this.epochsRPCSender = Objects.requireNonNull(epochsRPCSender);
@@ -188,7 +207,6 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 		final long nextEpoch = this.currentEpoch.getEpoch();
 		logEpochChange(this.currentEpoch, "included in");
 
-		// TODO: Recover VertexStore
 		BFTConfiguration bftConfiguration = this.currentEpoch.getBFTConfiguration();
 		VertexStore vertexStore = vertexStoreFactory.create(
 			bftConfiguration.getGenesisVertex(),
@@ -231,7 +249,6 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 	}
 
 	public void start() {
-		this.updateEpochState();
 		this.bftEventProcessor.start();
 	}
 
@@ -381,6 +398,8 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 	}
 
 	public void processLocalTimeout(LocalTimeout localTimeout) {
+
+
 		if (localTimeout.getEpoch() != this.currentEpoch()) {
 			return;
 		}
