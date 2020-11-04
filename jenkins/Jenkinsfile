@@ -47,7 +47,7 @@ pipeline {
                         ).trim()
                         echo tag
 
-                        docker_helpers.manualPushToDockerHub("radixdlt-core", tag)
+                        dockerHelpers.manualPushToDockerHub("radixdlt-core", tag)
                     }
                 }
             }
