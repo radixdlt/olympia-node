@@ -47,7 +47,7 @@ pipeline {
                sh 'printenv'
                 checkout([
                         $class: 'GitSCM',
-                        branches: [env.BRANCH_NAME],
+                        branches: [[name: env.BRANCH_NAME]],
                         doGenerateSubmoduleConfigurations: false,
                         extensions: [
                                 [$class: 'RelativeTargetDirectory', clean: true, relativeTargetDir: 'RadixCore'],
