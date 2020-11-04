@@ -34,6 +34,9 @@ pipeline {
            steps {
 //               sendNotifications "STARTED"
                script {
+                   dir('RadixCore'){
+                       deleteDir()
+                   }
                    checkoutHelpers.doCheckout("RadixCore")
                }
             }
