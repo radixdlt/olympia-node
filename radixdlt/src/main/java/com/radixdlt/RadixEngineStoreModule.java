@@ -101,22 +101,29 @@ public class RadixEngineStoreModule extends AbstractModule {
 	}
 
 	@Provides
-	private BFTValidatorSet validatorSet(VerifiedCommandsAndProof genesisCheckpoint) {
+	private BFTValidatorSet validatorSet(
+		VerifiedCommandsAndProof genesisCheckpoint
+	) {
 		return genesisCheckpoint.getHeader().getNextValidatorSet().orElseThrow(() -> new IllegalStateException("Genesis has no validator set"));
 	}
 
 	@Provides
-	VerifiedLedgerHeaderAndProof proof(VerifiedCommandsAndProof commandsAndProof) {
-		return commandsAndProof.getHeader();
+	@Singleton
+	VerifiedLedgerHeaderAndProof latestProof(
+		CommittedAtomsStore store,
+		VerifiedCommandsAndProof genesisCheckpoint
+	) {
+		return store.getLastVerifiedHeader().orElse(genesisCheckpoint.getHeader());
 	}
 
 	@Provides
 	@Singleton
 	private BFTConfiguration initialConfig(
 		BFTValidatorSet validatorSet,
-		VerifiedLedgerHeaderAndProof proof,
+		VerifiedCommandsAndProof genesisCheckpoint,
 		Hasher hasher
 	) {
+		VerifiedLedgerHeaderAndProof proof = genesisCheckpoint.getHeader();
 		UnverifiedVertex genesisVertex = UnverifiedVertex.createGenesis(proof.getRaw());
 		VerifiedVertex verifiedGenesisVertex = new VerifiedVertex(genesisVertex, hasher.hash(genesisVertex));
 		LedgerHeader nextLedgerHeader = LedgerHeader.create(

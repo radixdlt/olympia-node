@@ -170,6 +170,12 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		return v;
 	}
 
+	public Optional<VerifiedLedgerHeaderAndProof> getLastVerifiedHeader() {
+		return store.getLastCommitted()
+			.flatMap(store::get)
+			.map(e -> commandToBinaryConverter.toCommand(e.getContent()).getStateAndProof());
+	}
+
 	public VerifiedCommandsAndProof getNextCommittedCommands(long stateVersion, int batchSize) throws NextCommittedLimitReachedException {
 		ImmutableList<StoredCommittedCommand> storedCommittedCommands = store.getNextCommittedLedgerEntries(stateVersion, batchSize).stream()
 			.map(e -> commandToBinaryConverter.toCommand(e.getContent()))

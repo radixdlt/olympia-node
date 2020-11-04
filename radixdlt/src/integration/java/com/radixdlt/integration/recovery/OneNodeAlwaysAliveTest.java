@@ -80,7 +80,6 @@ import java.util.stream.Stream;
 import org.apache.commons.cli.ParseException;
 import org.json.JSONObject;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -88,20 +87,13 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
-/**
- * A deterministic node test which uses a real database.
- * Consensus is executed for a few views/epochs until a new injector instance
- * is created, somewhat similar to a process restart. Consensus should then
- * be able to run correctly again from the new injector.
- * This is repeated a certain number of times.
- */
 @RunWith(Parameterized.class)
-public class NodeRecoveryTest {
+public class OneNodeAlwaysAliveTest {
 
 	@Parameters
 	public static Collection<Object[]> numNodes() {
 		return List.of(new Object[][] {
-			{1}, {2}
+			{2}, {10}
 		});
 	}
 
@@ -111,7 +103,7 @@ public class NodeRecoveryTest {
 	private DeterministicNetwork network;
 	private List<Supplier<DeterministicEpochsConsensusProcessor>> nodeCreators;
 	private List<DeterministicEpochsConsensusProcessor> nodes = new ArrayList<>();
-	public NodeRecoveryTest(int numNodes) {
+	public OneNodeAlwaysAliveTest(int numNodes) {
 		final List<ECKeyPair> nodeKeys = Stream.generate(ECKeyPair::generateNew).limit(numNodes).collect(Collectors.toList());
 
 		this.network = new DeterministicNetwork(
@@ -237,17 +229,6 @@ public class NodeRecoveryTest {
 			Timed<ControlledMessage> msg = this.network.nextMessage();
 			DeterministicEpochsConsensusProcessor runner = this.nodes.get(msg.value().channelId().receiverIndex());
 			runner.handleMessage(msg.value().message());
-		}
-	}
-
-	@Test
-	@Ignore("Remove once all required state is persisted")
-	public void all_nodes_restart_should_be_able_to_reboot_correctly() {
-		for (int restart = 0; restart < 100; restart++) {
-			processForCount(1000);
-			for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
-				restartNode(nodeIndex);
-			}
 		}
 	}
 

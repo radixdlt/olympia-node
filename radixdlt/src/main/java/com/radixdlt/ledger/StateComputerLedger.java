@@ -100,14 +100,14 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	private final LedgerAccumulator accumulator;
 	private final LedgerAccumulatorVerifier verifier;
 	private final Hasher hasher;
-
 	private final Object lock = new Object();
+
 	private VerifiedLedgerHeaderAndProof currentLedgerHeader;
 
 	@Inject
 	public StateComputerLedger(
-		Comparator<VerifiedLedgerHeaderAndProof> headerComparator,
 		VerifiedLedgerHeaderAndProof initialLedgerState,
+		Comparator<VerifiedLedgerHeaderAndProof> headerComparator,
 		Mempool mempool,
 		StateComputer stateComputer,
 		LedgerUpdateSender ledgerUpdateSender,

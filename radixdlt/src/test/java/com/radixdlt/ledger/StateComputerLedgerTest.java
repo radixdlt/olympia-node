@@ -118,8 +118,8 @@ public class StateComputerLedgerTest {
 			.map(Pair::getSecond).orElseThrow();
 
 		this.sut = new StateComputerLedger(
-			headerComparator,
 			currentLedgerHeader,
+			headerComparator,
 			mempool,
 			stateComputer,
 			ledgerUpdateSender,
@@ -145,8 +145,8 @@ public class StateComputerLedgerTest {
 			.map(Pair::getSecond).orElseThrow();
 
 		this.sut = new StateComputerLedger(
-			headerComparator,
 			currentLedgerHeader,
+			headerComparator,
 			mempool,
 			stateComputer,
 			ledgerUpdateSender,

@@ -55,6 +55,8 @@ public interface LedgerEntryStoreView {
 	 */
 	Optional<LedgerEntry> get(AID aid);
 
+	Optional<AID> getLastCommitted();
+
 	/**
 	 * Gets the unique indices associated with a certain aid
 	 * @param aid The aid
