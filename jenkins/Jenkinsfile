@@ -45,11 +45,19 @@ pipeline {
                    }
 
 
-                checkout([$class: 'GitSCM', branches: [[name: env.BRANCH_CORE],[name: 'refs/tags/1.0-beta.*']],
-                doGenerateSubmoduleConfigurations: false, extensions: [[$class: 'RelativeTargetDirectory', clean: true,
-                relativeTargetDir: 'RadixCore']], submoduleCfg: [],
-                userRemoteConfigs: [[credentialsId: '6271ba56-812d-4c72-a89f-89454ba64f1b', url: 'https://github.com/radixdlt/radixdlt-core.git']],
-                poll: false])
+                checkout([
+                        $class: 'GitSCM',
+                        branches: ["${BRANCH}"],
+                        doGenerateSubmoduleConfigurations: false,
+                        extensions: [
+                                [$class: 'RelativeTargetDirectory', clean: true, relativeTargetDir: 'RadixCore'],
+                                [$class: 'LocalBranch', localBranch: '$BRANCH']
+                        ],
+                        submoduleCfg: [],
+                        userRemoteConfigs: [
+                                [credentialsId: '6271ba56-812d-4c72-a89f-89454ba64f1b', url: 'https://github.com/radixdlt/radixdlt-core.git']
+                        ]
+                ])
             }
         }
 
