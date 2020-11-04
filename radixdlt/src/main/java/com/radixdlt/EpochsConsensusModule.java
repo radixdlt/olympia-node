@@ -66,6 +66,7 @@ import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.network.TimeSupplier;
 
+import com.radixdlt.store.LastEpochProof;
 import java.util.Comparator;
 import java.util.Random;
 
@@ -105,7 +106,7 @@ public class EpochsConsensusModule extends AbstractModule {
 	// TODO: Load from storage
 	@Provides
 	private EpochChange initialEpoch(
-		VerifiedLedgerHeaderAndProof proof,
+		@LastEpochProof VerifiedLedgerHeaderAndProof proof,
 		BFTConfiguration initialBFTConfig
 	) {
 		return new EpochChange(proof, initialBFTConfig);

@@ -38,6 +38,8 @@ import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.store.LastEpochProof;
+import com.radixdlt.store.LastProof;
 import java.util.function.Function;
 
 public class MockedStateComputerWithEpochsModule extends AbstractModule {
@@ -53,7 +55,11 @@ public class MockedStateComputerWithEpochsModule extends AbstractModule {
 	}
 
 	@Provides
-	private BFTConfiguration initialConfiguration(BFTValidatorSet validatorSet, VerifiedLedgerHeaderAndProof proof, Hasher hasher) {
+	private BFTConfiguration initialConfiguration(
+		BFTValidatorSet validatorSet,
+		@LastEpochProof VerifiedLedgerHeaderAndProof proof,
+		Hasher hasher
+	) {
 		UnverifiedVertex genesisVertex = UnverifiedVertex.createGenesis(proof.getRaw());
 		VerifiedVertex verifiedGenesisVertex = new VerifiedVertex(genesisVertex, hasher.hash(genesisVertex));
 		LedgerHeader nextLedgerHeader = LedgerHeader.create(
@@ -71,7 +77,15 @@ public class MockedStateComputerWithEpochsModule extends AbstractModule {
 	}
 
 	@Provides
-	private VerifiedLedgerHeaderAndProof genesisProof(BFTValidatorSet validatorSet) {
+	@LastEpochProof
+	private VerifiedLedgerHeaderAndProof lastEpochProof(BFTValidatorSet validatorSet) {
+		return VerifiedLedgerHeaderAndProof.genesis(HashUtils.zero256(), validatorSet);
+	}
+
+
+	@Provides
+	@LastProof
+	private VerifiedLedgerHeaderAndProof lastProof(BFTValidatorSet validatorSet) {
 		return VerifiedLedgerHeaderAndProof.genesis(HashUtils.zero256(), validatorSet);
 	}
 

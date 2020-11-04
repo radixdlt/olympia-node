@@ -48,6 +48,8 @@ import com.radixdlt.middleware2.store.CommandToBinaryConverter;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.store.EngineStore;
+import com.radixdlt.store.LastEpochProof;
+import com.radixdlt.store.LastProof;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
 import com.radixdlt.sync.CommittedReader;
@@ -102,14 +104,15 @@ public class RadixEngineStoreModule extends AbstractModule {
 
 	@Provides
 	private BFTValidatorSet validatorSet(
-		VerifiedCommandsAndProof genesisCheckpoint
+		@LastEpochProof VerifiedLedgerHeaderAndProof lastEpochProof
 	) {
-		return genesisCheckpoint.getHeader().getNextValidatorSet().orElseThrow(() -> new IllegalStateException("Genesis has no validator set"));
+		return lastEpochProof.getNextValidatorSet().orElseThrow(() -> new IllegalStateException("Genesis has no validator set"));
 	}
 
 	@Provides
 	@Singleton
-	VerifiedLedgerHeaderAndProof latestProof(
+	@LastProof
+	VerifiedLedgerHeaderAndProof lastProof(
 		CommittedAtomsStore store,
 		VerifiedCommandsAndProof genesisCheckpoint
 	) {
@@ -118,19 +121,28 @@ public class RadixEngineStoreModule extends AbstractModule {
 
 	@Provides
 	@Singleton
+	@LastEpochProof
+	VerifiedLedgerHeaderAndProof lastEpochProof(
+		VerifiedCommandsAndProof genesisCheckpoint
+	) {
+		// TODO: load from store latest epoch proof
+		return genesisCheckpoint.getHeader();
+	}
+
+	@Provides
+	@Singleton
 	private BFTConfiguration initialConfig(
+		@LastEpochProof VerifiedLedgerHeaderAndProof lastEpochProof,
 		BFTValidatorSet validatorSet,
-		VerifiedCommandsAndProof genesisCheckpoint,
 		Hasher hasher
 	) {
-		VerifiedLedgerHeaderAndProof proof = genesisCheckpoint.getHeader();
-		UnverifiedVertex genesisVertex = UnverifiedVertex.createGenesis(proof.getRaw());
+		UnverifiedVertex genesisVertex = UnverifiedVertex.createGenesis(lastEpochProof.getRaw());
 		VerifiedVertex verifiedGenesisVertex = new VerifiedVertex(genesisVertex, hasher.hash(genesisVertex));
 		LedgerHeader nextLedgerHeader = LedgerHeader.create(
-			proof.getEpoch() + 1,
+			lastEpochProof.getEpoch() + 1,
 			View.genesis(),
-			proof.getAccumulatorState(),
-			proof.timestamp()
+			lastEpochProof.getAccumulatorState(),
+			lastEpochProof.timestamp()
 		);
 		QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
 		return new BFTConfiguration(validatorSet, verifiedGenesisVertex, genesisQC);

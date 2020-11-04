@@ -79,6 +79,8 @@ import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.network.TimeSupplier;
+import com.radixdlt.store.LastEpochProof;
+import com.radixdlt.store.LastProof;
 import com.radixdlt.utils.UInt256;
 import java.util.stream.Stream;
 import org.junit.Before;
@@ -155,7 +157,14 @@ public class EpochManagerTest {
 			}
 
 			@Provides
+			@LastProof
 			VerifiedLedgerHeaderAndProof verifiedLedgerHeaderAndProof(BFTValidatorSet validatorSet) {
+				return VerifiedLedgerHeaderAndProof.genesis(HashUtils.zero256(), validatorSet);
+			}
+
+			@Provides
+			@LastEpochProof
+			VerifiedLedgerHeaderAndProof lastEpochProof(BFTValidatorSet validatorSet) {
 				return VerifiedLedgerHeaderAndProof.genesis(HashUtils.zero256(), validatorSet);
 			}
 

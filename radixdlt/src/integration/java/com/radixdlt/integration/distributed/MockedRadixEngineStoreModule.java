@@ -36,6 +36,8 @@ import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
+import com.radixdlt.store.LastEpochProof;
+import com.radixdlt.store.LastProof;
 
 public class MockedRadixEngineStoreModule extends AbstractModule {
 	@Override
@@ -47,7 +49,10 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 	}
 
 	@Provides
-	private BFTConfiguration configuration(VerifiedLedgerHeaderAndProof proof, BFTValidatorSet validatorSet) {
+	private BFTConfiguration configuration(
+		@LastEpochProof VerifiedLedgerHeaderAndProof proof,
+		BFTValidatorSet validatorSet
+	) {
 		LedgerHeader nextLedgerHeader = LedgerHeader.create(
 			proof.getEpoch() + 1,
 			View.genesis(),
@@ -61,7 +66,14 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 	}
 
 	@Provides
-	public VerifiedLedgerHeaderAndProof genesisVertexMetadata(BFTValidatorSet validatorSet) {
+	@LastEpochProof
+	public VerifiedLedgerHeaderAndProof lastEpochProof(BFTValidatorSet validatorSet) {
+		return VerifiedLedgerHeaderAndProof.genesis(HashUtils.zero256(), validatorSet);
+	}
+
+	@Provides
+	@LastProof
+	public VerifiedLedgerHeaderAndProof lastProof(BFTValidatorSet validatorSet) {
 		return VerifiedLedgerHeaderAndProof.genesis(HashUtils.zero256(), validatorSet);
 	}
 }
