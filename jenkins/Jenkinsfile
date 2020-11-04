@@ -37,6 +37,7 @@ pipeline {
                 script {
                     tag = sh(
                             script: '''
+                                    git checkout ${BRANCH_NAME}
                                     git describe --abbrev=0 --tags
                                 ''', returnStdout: true
                     ).trim()
