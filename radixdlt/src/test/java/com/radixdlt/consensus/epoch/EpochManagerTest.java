@@ -52,7 +52,7 @@ import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
-import com.radixdlt.consensus.liveness.ProceedToViewSender;
+import com.radixdlt.consensus.liveness.VoteSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.consensus.sync.BFTSync.BFTSyncTimeoutScheduler;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
@@ -103,7 +103,7 @@ public class EpochManagerTest {
 	private SyncEpochsRPCSender syncEpochsRPCSender = mock(SyncEpochsRPCSender.class);
 	private LocalTimeoutSender localTimeoutSender = mock(LocalTimeoutSender.class);
 	private NextCommandGenerator nextCommandGenerator = mock(NextCommandGenerator.class);
-	private ProceedToViewSender proceedToViewSender = mock(ProceedToViewSender.class);
+	private VoteSender voteSender = mock(VoteSender.class);
 	private ProposalBroadcaster proposalBroadcaster = mock(ProposalBroadcaster.class);
 	private BFTSyncTimeoutScheduler timeoutScheduler = mock(BFTSyncTimeoutScheduler.class);
 	private SyncVerticesRequestSender syncVerticesRequestSender = mock(SyncVerticesRequestSender.class);
@@ -134,7 +134,7 @@ public class EpochManagerTest {
 				bind(SyncEpochsRPCSender.class).toInstance(syncEpochsRPCSender);
 				bind(LocalTimeoutSender.class).toInstance(localTimeoutSender);
 				bind(NextCommandGenerator.class).toInstance(nextCommandGenerator);
-				bind(ProceedToViewSender.class).toInstance(proceedToViewSender);
+				bind(VoteSender.class).toInstance(voteSender);
 				bind(ProposalBroadcaster.class).toInstance(proposalBroadcaster);
 				bind(BFTSyncTimeoutScheduler.class).toInstance(timeoutScheduler);
 				bind(SystemCounters.class).toInstance(new SystemCountersImpl());
@@ -220,7 +220,7 @@ public class EpochManagerTest {
 
 		// Assert
 		verify(proposalBroadcaster, times(1)).broadcastProposal(any(), any());
-		verify(proceedToViewSender, never()).sendVote(any(), any());
+		verify(voteSender, never()).sendVote(any(), any());
 	}
 
 	@Test

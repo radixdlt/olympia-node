@@ -33,7 +33,7 @@ import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
-import com.radixdlt.consensus.liveness.ProceedToViewSender;
+import com.radixdlt.consensus.liveness.VoteSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
@@ -60,7 +60,7 @@ public class DeterministicMessageSenderModule extends AbstractModule {
 		};
 
 		bind(ProposalBroadcaster.class).to(DeterministicSender.class);
-		bind(ProceedToViewSender.class).to(DeterministicSender.class);
+		bind(VoteSender.class).to(DeterministicSender.class);
 		bind(SyncVerticesRequestSender.class).to(DeterministicSender.class);
 		bind(SyncVerticesResponseSender.class).to(DeterministicSender.class);
 		bind(BFTUpdateSender.class).to(DeterministicSender.class);

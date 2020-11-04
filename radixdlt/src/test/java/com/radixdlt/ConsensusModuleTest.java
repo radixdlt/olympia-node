@@ -69,7 +69,7 @@ import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
-import com.radixdlt.consensus.liveness.ProceedToViewSender;
+import com.radixdlt.consensus.liveness.VoteSender;
 import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECDSASignature;
@@ -129,7 +129,7 @@ public class ConsensusModuleTest {
 				bind(BFTUpdateSender.class).toInstance(mock(BFTUpdateSender.class));
 				bind(Ledger.class).toInstance(mock(Ledger.class));
 				bind(SyncLedgerRequestSender.class).toInstance(mock(SyncLedgerRequestSender.class));
-				bind(ProceedToViewSender.class).toInstance(mock(ProceedToViewSender.class));
+				bind(VoteSender.class).toInstance(mock(VoteSender.class));
 				bind(ProposalBroadcaster.class).toInstance(mock(ProposalBroadcaster.class));
 				bind(SyncVerticesRequestSender.class).toInstance(requestSender);
 				bind(SyncVerticesResponseSender.class).toInstance(mock(SyncVerticesResponseSender.class));

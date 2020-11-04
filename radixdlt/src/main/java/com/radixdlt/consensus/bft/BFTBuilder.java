@@ -19,7 +19,7 @@ package com.radixdlt.consensus.bft;
 
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.liveness.ProceedToViewSender;
+import com.radixdlt.consensus.liveness.VoteSender;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.Hasher;
@@ -47,7 +47,7 @@ public final class BFTBuilder {
 
 
 	private TimeSupplier timeSupplier;
-	private ProceedToViewSender proceedToViewSender;
+	private VoteSender voteSender;
 	private SystemCounters counters;
 	private SafetyRules safetyRules;
 
@@ -69,8 +69,8 @@ public final class BFTBuilder {
 		return this;
 	}
 
-	public BFTBuilder proceedToViewSender(ProceedToViewSender proceedToViewSender) {
-		this.proceedToViewSender = proceedToViewSender;
+	public BFTBuilder proceedToViewSender(VoteSender voteSender) {
+		this.voteSender = voteSender;
 		return this;
 	}
 
@@ -126,8 +126,7 @@ public final class BFTBuilder {
 			bftSyncer,
 			hasher,
 			timeSupplier,
-			proposerElection,
-			proceedToViewSender,
+			proposerElection, voteSender,
 			counters,
 			safetyRules
 		);

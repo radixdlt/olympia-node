@@ -25,7 +25,7 @@ import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.liveness.Pacemaker;
 
-import com.radixdlt.consensus.liveness.ProceedToViewSender;
+import com.radixdlt.consensus.liveness.VoteSender;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyViolationException;
@@ -54,7 +54,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private final Hasher hasher;
 	private final TimeSupplier timeSupplier;
 	private final ProposerElection proposerElection;
-	private final ProceedToViewSender proceedToViewSender;
+	private final VoteSender voteSender;
 	private final SystemCounters counters;
 	private final SafetyRules safetyRules;
 
@@ -65,7 +65,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		Hasher hasher,
 		TimeSupplier timeSupplier,
 		ProposerElection proposerElection,
-		ProceedToViewSender proceedToViewSender,
+		VoteSender voteSender,
 		SystemCounters counters,
 		SafetyRules safetyRules
 	) {
@@ -75,7 +75,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		this.hasher = Objects.requireNonNull(hasher);
 		this.timeSupplier = Objects.requireNonNull(timeSupplier);
 		this.proposerElection = Objects.requireNonNull(proposerElection);
-		this.proceedToViewSender = Objects.requireNonNull(proceedToViewSender);
+		this.voteSender = Objects.requireNonNull(voteSender);
 		this.counters = counters;
 		this.safetyRules = safetyRules;
 	}
@@ -105,6 +105,8 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	@Override
 	public void processProposal(Proposal proposal) {
 		log.trace("Proposal: Processing {}", proposal);
+
+		// TODO: Move into preprocessor
 		final View proposedVertexView = proposal.getView();
 		final View currentView = this.pacemaker.getCurrentView();
 		if (!currentView.equals(proposedVertexView)) {
@@ -112,7 +114,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			return;
 		}
 
-		// TODO: Move this into BFTSync
+		// TODO: Move insertion and maybe check into BFTSync
 		final VerifiedVertex proposedVertex = new VerifiedVertex(proposal.getVertex(), this.hasher.hash(proposal.getVertex()));
 		final Optional<BFTHeader> maybeHeader = this.vertexStore.insertVertex(proposedVertex);
 		// The header may not be present if the ledger is ahead of consensus
@@ -121,7 +123,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			try {
 				final Vote vote = this.safetyRules.voteFor(proposedVertex, header, this.timeSupplier.currentTime(), this.vertexStore.highQC());
 				log.trace("Proposal: Sending vote to {}: {}", nextLeader, vote);
-				this.proceedToViewSender.sendVote(vote, nextLeader);
+				this.voteSender.sendVote(vote, nextLeader);
 			} catch (SafetyViolationException e) {
 				this.counters.increment(CounterType.BFT_REJECTED);
 				log.error(() -> new FormattedMessage("Proposal: Rejected {}", proposedVertex), e);

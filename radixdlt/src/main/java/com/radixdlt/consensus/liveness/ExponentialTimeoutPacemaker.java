@@ -92,7 +92,7 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 	private final Hasher hasher;
 
 	private final ProposalBroadcaster sender;
-	private final ProceedToViewSender proceedToViewSender;
+	private final VoteSender voteSender;
 	private final PacemakerTimeoutSender timeoutSender;
 	private final PacemakerInfoSender pacemakerInfoSender;
 
@@ -124,7 +124,7 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 		Hasher hasher,
 
 		ProposalBroadcaster sender,
-		ProceedToViewSender proceedToViewSender,
+		VoteSender voteSender,
 		PacemakerTimeoutSender timeoutSender,
 		PacemakerInfoSender pacemakerInfoSender
 	) {
@@ -159,7 +159,7 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 		this.hasher = Objects.requireNonNull(hasher);
 
 		this.sender = Objects.requireNonNull(sender);
-		this.proceedToViewSender = Objects.requireNonNull(proceedToViewSender);
+		this.voteSender = Objects.requireNonNull(voteSender);
 		this.timeoutSender = Objects.requireNonNull(timeoutSender);
 		this.pacemakerInfoSender = Objects.requireNonNull(pacemakerInfoSender);
 		log.debug("{} for {} with max timeout {}*{}^{}ms",
@@ -219,7 +219,7 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 		counters.increment(CounterType.BFT_TIMEOUT);
 
 		ViewTimeout viewTimeout = this.safetyRules.viewTimeout(view, this.vertexStore.highQC());
-		this.proceedToViewSender.broadcastViewTimeout(viewTimeout, this.validatorSet.nodes());
+		this.voteSender.broadcastViewTimeout(viewTimeout, this.validatorSet.nodes());
 		this.pacemakerInfoSender.sendTimeoutProcessed(view);
 
 		Level logLevel = this.logLimiter.tryAcquire() ? Level.INFO : Level.TRACE;

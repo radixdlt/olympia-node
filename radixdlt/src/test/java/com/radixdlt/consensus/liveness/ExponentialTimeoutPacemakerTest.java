@@ -86,7 +86,7 @@ public class ExponentialTimeoutPacemakerTest {
 	private Hasher hasher = mock(Hasher.class);
 	private HashSigner signer = mock(HashSigner.class);
 	private ProposalBroadcaster proposalBroadcaster = mock(ProposalBroadcaster.class);
-	private ProceedToViewSender proceedToViewSender = mock(ProceedToViewSender.class);
+	private VoteSender voteSender = mock(VoteSender.class);
 
 	private PendingVotes pendingVotes = mock(PendingVotes.class);
 	private PendingViewTimeouts pendingViewTimeouts = mock(PendingViewTimeouts.class);
@@ -114,7 +114,7 @@ public class ExponentialTimeoutPacemakerTest {
 			this.nextCommandGenerator,
 			this.hasher,
 			this.proposalBroadcaster,
-			this.proceedToViewSender,
+			this.voteSender,
 			this.timeoutSender,
 			this.infoSender
 		);
@@ -429,7 +429,7 @@ public class ExponentialTimeoutPacemakerTest {
 			this.nextCommandGenerator,
 			this.hasher,
 			this.proposalBroadcaster,
-			this.proceedToViewSender,
+			this.voteSender,
 			timeoutSender,
 			this.infoSender
 		);

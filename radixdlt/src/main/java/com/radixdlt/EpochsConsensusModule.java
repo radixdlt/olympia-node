@@ -50,7 +50,7 @@ import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
-import com.radixdlt.consensus.liveness.ProceedToViewSender;
+import com.radixdlt.consensus.liveness.VoteSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
@@ -128,7 +128,7 @@ public class EpochsConsensusModule extends AbstractModule {
 		Hasher hasher,
 		HashSigner signer,
 		ProposalBroadcaster proposalBroadcaster,
-		ProceedToViewSender proceedToViewSender,
+		VoteSender voteSender,
 		@PacemakerTimeout long pacemakerTimeout,
 		@PacemakerRate double pacemakerRate,
 		@PacemakerMaxExponent int pacemakerMaxExponent
@@ -142,8 +142,7 @@ public class EpochsConsensusModule extends AbstractModule {
 			nextCommandGenerator,
 			hasher,
 			signer,
-			proposalBroadcaster,
-			proceedToViewSender
+			proposalBroadcaster, voteSender
 		);
 	}
 

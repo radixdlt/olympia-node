@@ -60,7 +60,7 @@ import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
 import com.radixdlt.consensus.liveness.PendingViewTimeouts;
-import com.radixdlt.consensus.liveness.ProceedToViewSender;
+import com.radixdlt.consensus.liveness.VoteSender;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
@@ -100,7 +100,7 @@ public final class ConsensusModule extends AbstractModule {
 		Hasher hasher,
 		HashVerifier verifier,
 		TimeSupplier timeSupplier,
-		ProceedToViewSender proceedToViewSender,
+		VoteSender voteSender,
 		SystemCounters counters,
 		SafetyRules safetyRules
 	) {
@@ -117,7 +117,7 @@ public final class ConsensusModule extends AbstractModule {
 				.hasher(hasher)
 				.verifier(verifier)
 				.timeSupplier(timeSupplier)
-				.proceedToViewSender(proceedToViewSender)
+				.proceedToViewSender(voteSender)
 				.counters(counters)
 				.safetyRules(safetyRules)
 				.pacemaker(pacemaker)
@@ -182,7 +182,7 @@ public final class ConsensusModule extends AbstractModule {
 		NextCommandGenerator nextCommandGenerator,
 		Hasher hasher,
 		ProposalBroadcaster proposalBroadcaster,
-		ProceedToViewSender proceedToViewSender,
+		VoteSender voteSender,
 		PacemakerTimeoutSender timeoutSender,
 		PacemakerInfoSender infoSender,
 		@PacemakerTimeout long pacemakerTimeout,
@@ -206,8 +206,7 @@ public final class ConsensusModule extends AbstractModule {
 			safetyRules,
 			nextCommandGenerator,
 			hasher,
-			proposalBroadcaster,
-			proceedToViewSender,
+			proposalBroadcaster, voteSender,
 			timeoutSender,
 			infoSender
 		);

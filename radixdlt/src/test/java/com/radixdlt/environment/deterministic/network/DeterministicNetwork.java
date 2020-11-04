@@ -27,7 +27,7 @@ import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
-import com.radixdlt.consensus.liveness.ProceedToViewSender;
+import com.radixdlt.consensus.liveness.VoteSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.epochs.EpochChangeManager.EpochsLedgerUpdateSender;
 import com.radixdlt.utils.Pair;
@@ -51,8 +51,7 @@ public final class DeterministicNetwork {
 	private static final long DEFAULT_LATENCY = 50L; // virtual milliseconds
 
 	public interface DeterministicSender extends
-		ProposalBroadcaster,
-		ProceedToViewSender,
+		ProposalBroadcaster, VoteSender,
 		VertexStoreEventSender,
 		SyncVerticesRequestSender,
 		SyncVerticesResponseSender,

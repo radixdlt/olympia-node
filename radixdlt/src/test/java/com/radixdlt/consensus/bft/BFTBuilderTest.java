@@ -26,7 +26,7 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.liveness.ProceedToViewSender;
+import com.radixdlt.consensus.liveness.VoteSender;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.liveness.Pacemaker;
@@ -77,7 +77,7 @@ public class BFTBuilderTest {
 			.bftSyncer(vertexStoreSync)
 			.self(self)
 			.timeSupplier(System::currentTimeMillis)
-			.proceedToViewSender(mock(ProceedToViewSender.class))
+			.proceedToViewSender(mock(VoteSender.class))
 			.build();
 
 		Proposal proposal = mock(Proposal.class);

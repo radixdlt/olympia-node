@@ -45,7 +45,7 @@ public class ExponentialTimeoutPacemakerFactory implements PacemakerFactory {
 	private final Hasher hasher;
 	private final HashSigner signer;
 	private final ProposalBroadcaster proposalBroadcaster;
-	private final ProceedToViewSender proceedToViewSender;
+	private final VoteSender voteSender;
 
 	public ExponentialTimeoutPacemakerFactory(
 		long timeoutMilliseconds,
@@ -57,7 +57,7 @@ public class ExponentialTimeoutPacemakerFactory implements PacemakerFactory {
 		Hasher hasher,
 		HashSigner signer,
 		ProposalBroadcaster proposalBroadcaster,
-		ProceedToViewSender proceedToViewSender
+		VoteSender voteSender
 	) {
 		this.timeoutMilliseconds = timeoutMilliseconds;
 		this.rate = rate;
@@ -68,7 +68,7 @@ public class ExponentialTimeoutPacemakerFactory implements PacemakerFactory {
 		this.hasher = Objects.requireNonNull(hasher);
 		this.signer = Objects.requireNonNull(signer);
 		this.proposalBroadcaster = Objects.requireNonNull(proposalBroadcaster);
-		this.proceedToViewSender = Objects.requireNonNull(proceedToViewSender);
+		this.voteSender = Objects.requireNonNull(voteSender);
 
 	}
 
@@ -97,8 +97,7 @@ public class ExponentialTimeoutPacemakerFactory implements PacemakerFactory {
 			safetyRules,
 			nextCommandGenerator,
 			hasher,
-			proposalBroadcaster,
-			proceedToViewSender,
+			proposalBroadcaster, voteSender,
 			timeoutSender,
 			infoSender
 		);

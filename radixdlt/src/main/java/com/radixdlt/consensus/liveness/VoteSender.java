@@ -24,9 +24,9 @@ import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 
 /**
- * Hotstuff's Event-Driven OnNextSyncView.
+ * Hotstuff's Event-Driven OnNextSyncView as well as vote sending
  */
-public interface ProceedToViewSender {
+public interface VoteSender {
 	/**
 	 * Send a vote message to the specified validator
 	 * @param vote the vote message
