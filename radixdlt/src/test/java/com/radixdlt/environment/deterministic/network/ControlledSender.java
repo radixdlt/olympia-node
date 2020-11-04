@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.deterministic.network;
+package com.radixdlt.environment.deterministic.network;
 
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTUpdate;
@@ -37,7 +37,7 @@ import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.consensus.epoch.LocalTimeout;
-import com.radixdlt.integration.distributed.deterministic.network.DeterministicNetwork.DeterministicSender;
+import com.radixdlt.environment.deterministic.network.DeterministicNetwork.DeterministicSender;
 
 /**
  * A sender within a deterministic network.

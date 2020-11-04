@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.recovery;
+package com.radixdlt.recovery;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -57,14 +57,15 @@ import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.integration.distributed.MockedMempoolModule;
-import com.radixdlt.integration.distributed.deterministic.DeterministicEpochsConsensusProcessor;
-import com.radixdlt.integration.distributed.deterministic.DeterministicMessageSenderModule;
-import com.radixdlt.integration.distributed.deterministic.DeterministicNodes.DeterministicSenderFactory;
-import com.radixdlt.integration.distributed.deterministic.network.ControlledMessage;
-import com.radixdlt.integration.distributed.deterministic.network.DeterministicNetwork;
-import com.radixdlt.integration.distributed.deterministic.network.MessageMutator;
-import com.radixdlt.integration.distributed.deterministic.network.MessageSelector;
+import com.radixdlt.mempool.EmptyMempool;
+import com.radixdlt.mempool.Mempool;
+import com.radixdlt.environment.deterministic.network.ControlledMessage;
+import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
+import com.radixdlt.environment.deterministic.DeterministicMessageSenderModule;
+import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
+import com.radixdlt.environment.deterministic.DeterministicSenderFactory;
+import com.radixdlt.environment.deterministic.network.MessageMutator;
+import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
@@ -79,59 +80,39 @@ import com.radixdlt.sync.StateSyncNetworkSender;
 import com.radixdlt.sync.SyncPatienceMillis;
 import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.schedulers.Timed;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.cli.ParseException;
 import org.json.JSONObject;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
 
-@RunWith(Parameterized.class)
+/**
+ * Verifies that on restarts (simulated via creation of new injectors) that the application
+ * state is the same as last seen.
+ */
 public class ApplicationStateRecoveryTest {
-
-	@Parameters
-	public static Collection<Object[]> numNodes() {
-		return List.of(new Object[][] {
-			{1}
-		});
-	}
-
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
 
 	private DeterministicNetwork network;
-	private List<Supplier<Injector>> nodeCreators;
-	private List<Injector> nodes = new ArrayList<>();
-	public ApplicationStateRecoveryTest(int numNodes) {
-		final List<ECKeyPair> nodeKeys = Stream.generate(ECKeyPair::generateNew).limit(numNodes).collect(Collectors.toList());
+	private Injector currentInjector;
+	private ECKeyPair ecKeyPair = ECKeyPair.generateNew();
 
+	public ApplicationStateRecoveryTest() {
 		this.network = new DeterministicNetwork(
-			nodeKeys.stream().map(k -> BFTNode.create(k.getPublicKey())).collect(Collectors.toList()),
+			List.of(BFTNode.create(ecKeyPair.getPublicKey())),
 			MessageSelector.firstSelector(),
 			MessageMutator.nothing()
 		);
-
-		this.nodeCreators = nodeKeys.stream()
-			.<Supplier<Injector>>map(k -> () -> createRunner(k))
-			.collect(Collectors.toList());
 	}
 
 	@Before
 	public void setup() {
-		for (Supplier<Injector> nodeCreator : nodeCreators) {
-			this.nodes.add(nodeCreator.get());
-		}
-		this.nodes.forEach(i -> i.getInstance(DeterministicEpochsConsensusProcessor.class).start());
+		this.currentInjector = createRunner(ecKeyPair);
+		this.currentInjector.getInstance(DeterministicEpochsConsensusProcessor.class).start();
 	}
 
 	private Injector createRunner(ECKeyPair ecKeyPair) {
@@ -155,6 +136,7 @@ public class ApplicationStateRecoveryTest {
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(100L));
 
 					// System
+					bind(Mempool.class).to(EmptyMempool.class);
 					bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
 					bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
 
@@ -203,7 +185,6 @@ public class ApplicationStateRecoveryTest {
 			// Ledger
 			new LedgerModule(),
 			new LedgerCommandGeneratorModule(),
-			new MockedMempoolModule(),
 
 			// Sync
 			new SyncServiceModule(),
@@ -226,23 +207,21 @@ public class ApplicationStateRecoveryTest {
 		);
 	}
 
-	private RadixEngine<LedgerAtom> getRadixEngine(int index) {
-		Injector injector = nodes.get(index);
-		return injector.getInstance(Key.get(new TypeLiteral<RadixEngine<LedgerAtom>>() { }));
+	private RadixEngine<LedgerAtom> getRadixEngine() {
+		return currentInjector.getInstance(Key.get(new TypeLiteral<RadixEngine<LedgerAtom>>() { }));
 	}
 
-	private void restartNode(int index) {
-		this.network.dropMessages(m -> m.channelId().receiverIndex() == index && m.channelId().senderIndex() == index);
-		Injector injector = nodeCreators.get(index).get();
-		this.nodes.set(index, injector);
-		DeterministicEpochsConsensusProcessor processor = injector.getInstance(DeterministicEpochsConsensusProcessor.class);
+	private void restartNode() {
+		this.network.dropMessages(m -> m.channelId().receiverIndex() == 0 && m.channelId().senderIndex() == 0);
+		this.currentInjector = createRunner(ecKeyPair);
+		DeterministicEpochsConsensusProcessor processor = currentInjector.getInstance(DeterministicEpochsConsensusProcessor.class);
 		processor.start();
 	}
 
 	private void processForCount(int messageCount) {
 		for (int i = 0; i < messageCount; i++) {
 			Timed<ControlledMessage> msg = this.network.nextMessage();
-			DeterministicEpochsConsensusProcessor runner = this.nodes.get(msg.value().channelId().receiverIndex())
+			DeterministicEpochsConsensusProcessor runner = currentInjector
 				.getInstance(DeterministicEpochsConsensusProcessor.class);
 			runner.handleMessage(msg.value().message());
 		}
@@ -252,14 +231,14 @@ public class ApplicationStateRecoveryTest {
 	public void on_reboot_should_load_same_computed_state() {
 		// Arrange
 		processForCount(100);
-		RadixEngine<LedgerAtom> radixEngine = getRadixEngine(0);
+		RadixEngine<LedgerAtom> radixEngine = getRadixEngine();
 		SystemParticle systemParticle = radixEngine.getComputedState(SystemParticle.class);
 
 		// Act
-		restartNode(0);
+		restartNode();
 
 		// Assert
-		RadixEngine<LedgerAtom> restartedRadixEngine = getRadixEngine(0);
+		RadixEngine<LedgerAtom> restartedRadixEngine = getRadixEngine();
 		SystemParticle restartedSystemParticle = restartedRadixEngine.getComputedState(SystemParticle.class);
 		assertThat(restartedSystemParticle).isEqualTo(systemParticle);
 	}

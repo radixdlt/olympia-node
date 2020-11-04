@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.deterministic;
+package com.radixdlt.environment.deterministic;
 
 import com.google.inject.Inject;
 import com.radixdlt.consensus.BFTEventProcessor;
@@ -33,6 +33,9 @@ import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.ledger.LedgerUpdate;
 import java.util.Objects;
 
+/**
+ * Consensus only (no epochs) deterministic consensus processor
+ */
 public class DeterministicConsensusProcessor implements DeterministicMessageProcessor {
 	private final BFTEventProcessor bftEventProcessor;
 	private final BFTSync vertexStoreSync;
@@ -49,6 +52,7 @@ public class DeterministicConsensusProcessor implements DeterministicMessageProc
 		this.requestProcessor = Objects.requireNonNull(requestProcessor);
 	}
 
+	@Override
 	public void start() {
 		this.bftEventProcessor.start();
 	}

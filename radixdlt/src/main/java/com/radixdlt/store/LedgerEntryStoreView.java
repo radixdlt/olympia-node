@@ -55,6 +55,10 @@ public interface LedgerEntryStoreView {
 	 */
 	Optional<LedgerEntry> get(AID aid);
 
+	/**
+	 * Gets the last committed atom aid
+	 * @return The last committed atom aid
+	 */
 	Optional<AID> getLastCommitted();
 
 	/**

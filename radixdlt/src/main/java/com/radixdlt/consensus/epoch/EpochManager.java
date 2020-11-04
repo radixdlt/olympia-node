@@ -398,8 +398,6 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 	}
 
 	public void processLocalTimeout(LocalTimeout localTimeout) {
-
-
 		if (localTimeout.getEpoch() != this.currentEpoch()) {
 			return;
 		}

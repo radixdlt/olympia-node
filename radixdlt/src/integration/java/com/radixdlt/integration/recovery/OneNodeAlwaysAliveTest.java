@@ -51,13 +51,13 @@ import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.integration.distributed.MockedMempoolModule;
-import com.radixdlt.integration.distributed.deterministic.DeterministicEpochsConsensusProcessor;
-import com.radixdlt.integration.distributed.deterministic.DeterministicMessageSenderModule;
-import com.radixdlt.integration.distributed.deterministic.DeterministicNodes.DeterministicSenderFactory;
-import com.radixdlt.integration.distributed.deterministic.network.ControlledMessage;
-import com.radixdlt.integration.distributed.deterministic.network.DeterministicNetwork;
-import com.radixdlt.integration.distributed.deterministic.network.MessageMutator;
-import com.radixdlt.integration.distributed.deterministic.network.MessageSelector;
+import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
+import com.radixdlt.environment.deterministic.DeterministicMessageSenderModule;
+import com.radixdlt.environment.deterministic.DeterministicSenderFactory;
+import com.radixdlt.environment.deterministic.network.ControlledMessage;
+import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
+import com.radixdlt.environment.deterministic.network.MessageMutator;
+import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
@@ -87,6 +87,11 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
+/**
+ * Given that one validator is always alive means that that validator will
+ * always have the latest committed vertex which the validator can sync
+ * others with.
+ */
 @RunWith(Parameterized.class)
 public class OneNodeAlwaysAliveTest {
 

@@ -15,9 +15,14 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.deterministic;
+package com.radixdlt.environment.deterministic;
 
-public interface DeterministicMessageProcessor {
-	void start();
-	void handleMessage(Object o);
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.environment.deterministic.network.DeterministicNetwork.DeterministicSender;
+
+/**
+ * Creates a sender to be used with a deterministic network
+ */
+public interface DeterministicSenderFactory {
+	DeterministicSender create(BFTNode node);
 }
