@@ -143,7 +143,8 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		final String idForClass = serialization.getIdForClass(particleClass);
 		final EUID numericClassId = SerializationUtils.stringToNumericID(idForClass);
 		final byte[] indexableBytes = EngineAtomIndices.toByteArray(IndexType.PARTICLE_CLASS, numericClassId);
-		SearchCursor cursor = store.search(LedgerIndexType.DUPLICATE, new StoreIndex(indexableBytes), LedgerSearchMode.EXACT);
+		final StoreIndex storeIndex = new StoreIndex(EngineAtomIndices.IndexType.PARTICLE_CLASS.getValue(), indexableBytes);
+		SearchCursor cursor = store.search(LedgerIndexType.DUPLICATE, storeIndex, LedgerSearchMode.EXACT);
 
 		V v = initial;
 		while (cursor != null) {
