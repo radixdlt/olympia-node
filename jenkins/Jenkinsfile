@@ -17,44 +17,36 @@
  * language governing permissions and limitations under the License.
  */
 
-@Library(value='jenkins-lib@test-build-radix-core', changelog=false) _
+@Library(value = 'jenkins-lib@test-build-radix-core', changelog = false) _
 
 pipeline {
     tools {
         jdk 'open-jdk-11'
     }
     options {
-      timeout(time: 20, unit: 'MINUTES')
+        timeout(time: 20, unit: 'MINUTES')
     }
     agent {
         label 'master'
     }
     stages {
-        stage('Checkout RadixCore') {
-           steps {
-               sendNotifications "STARTED"
-               script {
-                   checkoutHelpers.doCheckout("RadixCore")
-               }
-            }
-        }
 
         stage('Build and push core image') {
             steps {
-                dir('RadixCore'){
-                    script {
-                        tag = sh(
-                                script: '''
+                //               sendNotifications "STARTED"
+                script {
+                    tag = sh(
+                            script: '''
                                     git describe --abbrev=0 --tags
                                 ''', returnStdout: true
-                        ).trim()
-                        dockerHelpers.manualPushToDockerHub("radixdlt-core", tag)
-                    }
+                    ).trim()
+                    dockerHelpers.manualPushToDockerHub("radixdlt-core", tag)
                 }
+
             }
         }
-        stage('Downstream jobs'){
-            steps{
+        stage('Downstream jobs') {
+            steps {
                 build job: 'Release-Branch/deploy-release'
 //            build job: 'Release-Branch/deterministic-simulation-tests'
                 build job: 'Release-Branch/regression-acceptance-tests'
@@ -63,7 +55,7 @@ pipeline {
     }
     post {
         always {
-            sendNotifications currentBuild.result
-       }
+//            sendNotifications currentBuild.result
+        }
     }
 }
