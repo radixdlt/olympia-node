@@ -17,7 +17,7 @@
  * language governing permissions and limitations under the License.
  */
 
-@Library('jenkins-lib@RPNV1-262-Jenkinsfile-setup') _
+@Library('jenkins-lib@develop') _
 
 pipeline {
     tools {
@@ -33,20 +33,9 @@ pipeline {
         stage('Checkout RadixCore') {
            steps {
                sendNotifications "STARTED"
-               sh 'printenv'
-                checkout([
-                        $class: 'GitSCM',
-                        branches: [[name: env.BRANCH_NAME]],
-                        doGenerateSubmoduleConfigurations: false,
-                        extensions: [
-                                [$class: 'RelativeTargetDirectory', clean: true, relativeTargetDir: 'RadixCore'],
-                                [$class: 'LocalBranch', localBranch: '**']
-                        ],
-                        submoduleCfg: [],
-                        userRemoteConfigs: [
-                                [credentialsId: '6271ba56-812d-4c72-a89f-89454ba64f1b', url: 'https://github.com/radixdlt/radixdlt-core.git']
-                        ]
-                ])
+               script {
+                   checkoutHelpers.checkout("RadixCore")
+               }
             }
         }
 
@@ -56,11 +45,9 @@ pipeline {
                     script {
                         tag = sh(
                                 script: '''
-                              git describe --abbrev=0 --tags
-                            ''', returnStdout: true
+                                    git describe --abbrev=0 --tags
+                                ''', returnStdout: true
                         ).trim()
-                        echo tag
-
                         dockerHelpers.manualPushToDockerHub("radixdlt-core", tag)
                     }
                 }
@@ -71,6 +58,5 @@ pipeline {
         always {
             sendNotifications currentBuild.result
        }
-
     }
 }
