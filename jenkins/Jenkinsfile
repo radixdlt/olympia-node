@@ -51,7 +51,7 @@ pipeline {
                                     ''', returnStdout: true).trim()
                         branch_commit = sh(script: '''
                                         git show-ref $(git rev-parse --abbrev-ref HEAD | sed 's/heads\\///g') | grep 'refs/heads' | cut -d " " -f1
-                                        ''', returnStdout: true).trim
+                                        ''', returnStdout: true).trim()
 
                         echo "Branch commit = ${branch_commit}"
                         echo "Tag commit = ${tag_commit}"
