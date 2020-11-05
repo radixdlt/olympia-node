@@ -43,10 +43,11 @@ pipeline {
             }
         }
         stage('Check tag and branch have same commit') {
-            script {
-                dir('RadixCore') {
-                    env.check = sh(
-                            script: '''
+            steps{
+                script {
+                    dir('RadixCore') {
+                        env.check = sh(
+                                script: '''
                                     tag_commit=`git show-ref $(git describe --abbrev=0 --tags) | cut -d" " -f1`
                                     branch_commit=`git show-ref refs/remotes/origin/task/RPNV1-262-release-branch-job | cut -d" " -f1`
                                     if [ $tag_commit == $branch_commit ] 
@@ -55,9 +56,10 @@ pipeline {
                                     else 
                                         echo "failed"
                                 ''', returnStdout: true
-                    ).trim()
-                    echo env.check
+                        ).trim()
+                        echo env.check
 
+                    }
                 }
             }
         }
