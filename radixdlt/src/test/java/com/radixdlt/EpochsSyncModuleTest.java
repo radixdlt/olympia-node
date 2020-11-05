@@ -35,6 +35,8 @@ import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.epochs.SyncedEpochSender;
 import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.store.LastEpochProof;
+import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncTimeoutScheduler;
 import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier;
@@ -57,7 +59,10 @@ public class EpochsSyncModuleTest {
 		return new AbstractModule() {
 			@Override
 			protected void configure() {
-				bind(VerifiedLedgerHeaderAndProof.class).toInstance(mock(VerifiedLedgerHeaderAndProof.class));
+				bind(VerifiedLedgerHeaderAndProof.class).annotatedWith(LastProof.class)
+					.toInstance(mock(VerifiedLedgerHeaderAndProof.class));
+				bind(VerifiedLedgerHeaderAndProof.class).annotatedWith(LastEpochProof.class)
+					.toInstance(mock(VerifiedLedgerHeaderAndProof.class));
 				bind(EpochChange.class).toInstance(mock(EpochChange.class));
 				bind(LocalSyncServiceAccumulatorProcessor.class).toInstance(mock(LocalSyncServiceAccumulatorProcessor.class));
 				bind(RemoteSyncResponseValidatorSetVerifier.class).toInstance(mock(RemoteSyncResponseValidatorSetVerifier.class));

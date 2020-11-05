@@ -26,6 +26,7 @@ import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.LedgerUpdateProcessor;
+import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.RemoteSyncResponse;
 import com.radixdlt.sync.RemoteSyncResponseProcessor;
@@ -50,19 +51,19 @@ public final class EpochsRemoteSyncResponseProcessor implements RemoteSyncRespon
 
 	private RemoteSyncResponseValidatorSetVerifier currentVerifier;
 	private EpochChange currentEpoch;
-	private VerifiedLedgerHeaderAndProof currentHeader;
+	private VerifiedLedgerHeaderAndProof currentEpochProof;
 
 	@Inject
 	public EpochsRemoteSyncResponseProcessor(
 		SyncLedgerRequestSender localSyncRequestSender,
 		RemoteSyncResponseValidatorSetVerifier initialVerifier,
 		EpochChange initialEpoch,
-		VerifiedLedgerHeaderAndProof currentHeader,
+		@LastEpochProof VerifiedLedgerHeaderAndProof currentEpochProof,
 		Function<BFTConfiguration, RemoteSyncResponseValidatorSetVerifier> verifierFactory
 	) {
 		this.localSyncRequestSender = Objects.requireNonNull(localSyncRequestSender);
 		this.currentEpoch = Objects.requireNonNull(initialEpoch);
-		this.currentHeader = Objects.requireNonNull(currentHeader);
+		this.currentEpochProof = Objects.requireNonNull(currentEpochProof);
 		this.currentVerifier = Objects.requireNonNull(initialVerifier);
 		this.verifierFactory = Objects.requireNonNull(verifierFactory);
 	}
@@ -73,7 +74,7 @@ public final class EpochsRemoteSyncResponseProcessor implements RemoteSyncRespon
 		if (maybeEpochChange.isPresent()) {
 			final EpochChange epochChange = maybeEpochChange.get();
 			this.currentEpoch = epochChange;
-			this.currentHeader = ledgerUpdate.getTail();
+			this.currentEpochProof = ledgerUpdate.getTail();
 			this.currentVerifier = verifierFactory.apply(epochChange.getBFTConfiguration());
 		}
 	}
@@ -94,11 +95,11 @@ public final class EpochsRemoteSyncResponseProcessor implements RemoteSyncRespon
 				return;
 			}
 
-			if (Objects.equals(dto.getLedgerHeader().getAccumulatorState(), this.currentHeader.getAccumulatorState())) {
+			if (Objects.equals(dto.getLedgerHeader().getAccumulatorState(), this.currentEpochProof.getAccumulatorState())) {
 				// TODO: cleanup this mess
 				DtoCommandsAndProof mockedDtoCommandsAndProof = new DtoCommandsAndProof(
 					ImmutableList.of(),
-					this.currentHeader.toDto(),
+					this.currentEpochProof.toDto(),
 					dto
 				);
 				RemoteSyncResponse mockedResponse = new RemoteSyncResponse(
