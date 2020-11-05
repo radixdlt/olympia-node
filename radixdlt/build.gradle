@@ -36,6 +36,16 @@ node {
 // Example: ./gradlew run ... -P overrideMainClassName=org.radix.GenerateUniverses
 mainClassName = properties.get('overrideMainClassName', 'org.radix.Radix')
 
+startScripts {
+    classpath = files('src/resources') + classpath
+    // ^^ will prepend '$APP_HOME/lib/resources' to the classpath, which we'll use it as a pattern below
+    doLast {
+        def windowsScriptFile = file getWindowsScript()
+        def unixScriptFile = file getUnixScript()
+        windowsScriptFile.text = windowsScriptFile.text.replace('%APP_HOME%\\lib\\resources', '%RADIXDLT_HOME%')
+        unixScriptFile.text = unixScriptFile.text.replace('$APP_HOME/lib/resources', '$RADIXDLT_HOME')
+    }
+}
 sourceSets {
     integrationTest {
         java {
@@ -221,6 +231,15 @@ task createGenerateUniversesScripts(type: CreateStartScripts) {
 tasks.getByName("createGenerateUniversesScripts").outputDir = tasks.getByName("startScripts").outputDir
 tasks.getByName("createGenerateUniversesScripts").classpath = tasks.getByName("startScripts").classpath
 tasks.getByName("createGenerateUniversesScripts").optsEnvironmentVar = tasks.getByName("startScripts").optsEnvironmentVar
+tasks.getByName("createGenerateUniversesScripts") {
+    // Make sure all scripts have consistent classpath
+    doLast {
+        def windowsScriptFile = file getWindowsScript()
+        def unixScriptFile = file getUnixScript()
+        windowsScriptFile.text = windowsScriptFile.text.replace('%APP_HOME%\\lib\\resources', '%RADIXDLT_HOME%')
+        unixScriptFile.text = unixScriptFile.text.replace('$APP_HOME/lib/resources', '$RADIXDLT_HOME')
+    }
+}
 tasks.getByName("startScripts").dependsOn createGenerateUniversesScripts
 
 task createGenerateNodeKeyScripts(type: CreateStartScripts) {
@@ -230,8 +249,16 @@ task createGenerateNodeKeyScripts(type: CreateStartScripts) {
 tasks.getByName("createGenerateNodeKeyScripts").outputDir = tasks.getByName("startScripts").outputDir
 tasks.getByName("createGenerateNodeKeyScripts").classpath = tasks.getByName("startScripts").classpath
 tasks.getByName("createGenerateNodeKeyScripts").optsEnvironmentVar = tasks.getByName("startScripts").optsEnvironmentVar
+tasks.getByName("createGenerateNodeKeyScripts") {
+    // Make sure all scripts have consistent classpath
+    doLast {
+        def windowsScriptFile = file getWindowsScript()
+        def unixScriptFile = file getUnixScript()
+        windowsScriptFile.text = windowsScriptFile.text.replace('%APP_HOME%\\lib\\resources', '%RADIXDLT_HOME%')
+        unixScriptFile.text = unixScriptFile.text.replace('$APP_HOME/lib/resources', '$RADIXDLT_HOME')
+    }
+}
 tasks.getByName("startScripts").dependsOn createGenerateNodeKeyScripts
-
 
 ospackage {
     os = LINUX
