@@ -32,6 +32,7 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.UnverifiedVertex;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Vote;
@@ -42,6 +43,8 @@ import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.utils.Pair;
+import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -91,6 +94,9 @@ public class BFTEventPreprocessorTest {
 		when(qc.getProposed()).thenReturn(proposed);
 		when(proposed.getVertexId()).thenReturn(vertexId);
 		QuorumCertificate committedQC = mock(QuorumCertificate.class);
+		when(committedQC.getCommittedAndLedgerStateProof()).thenReturn(
+			Optional.of(Pair.of(mock(BFTHeader.class), mock(VerifiedLedgerHeaderAndProof.class)))
+		);
 		HighQC highQC = mock(HighQC.class);
 		when(highQC.highestQC()).thenReturn(qc);
 		when(highQC.highestCommittedQC()).thenReturn(committedQC);
@@ -112,6 +118,9 @@ public class BFTEventPreprocessorTest {
 		when(vertex.getQC()).thenReturn(qc);
 
 		QuorumCertificate committedQC = mock(QuorumCertificate.class);
+		when(committedQC.getCommittedAndLedgerStateProof()).thenReturn(
+			Optional.of(Pair.of(mock(BFTHeader.class), mock(VerifiedLedgerHeaderAndProof.class)))
+		);
 		HighQC highQC = mock(HighQC.class);
 		when(highQC.highestQC()).thenReturn(qc);
 		when(highQC.highestCommittedQC()).thenReturn(committedQC);
@@ -128,17 +137,6 @@ public class BFTEventPreprocessorTest {
 		when(proposerElection.getProposer(eq(View.of(2)))).thenReturn(mock(BFTNode.class));
 		preprocessor.processVote(vote);
 		verify(forwardTo, never()).processVote(vote);
-	}
-
-	@Test
-	public void when_process_vote_as_next_proposer__then_vote_gets_forwarded() {
-		Vote vote = mock(Vote.class);
-		when(vote.getView()).thenReturn(View.of(1));
-		when(proposerElection.getProposer(any())).thenReturn(mock(BFTNode.class));
-		when(proposerElection.getProposer(eq(View.of(2)))).thenReturn(self);
-		when(vertexStoreSync.syncToQC(any(), any())).thenReturn(SyncResult.SYNCED);
-		preprocessor.processVote(vote);
-		verify(forwardTo, times(1)).processVote(vote);
 	}
 
 	@Test

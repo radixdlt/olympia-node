@@ -21,8 +21,8 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.integration.distributed.deterministic.DeterministicTest;
-import com.radixdlt.integration.distributed.deterministic.network.MessageMutator;
-import com.radixdlt.integration.distributed.deterministic.network.MessageSelector;
+import com.radixdlt.environment.deterministic.network.MessageMutator;
+import com.radixdlt.environment.deterministic.network.MessageSelector;
 
 import java.util.List;
 import java.util.Random;

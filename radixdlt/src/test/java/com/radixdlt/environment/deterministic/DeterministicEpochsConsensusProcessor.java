@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.deterministic;
+package com.radixdlt.environment.deterministic;
 
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.bft.BFTUpdate;
@@ -28,17 +28,18 @@ import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import java.util.Objects;
+import javax.annotation.concurrent.NotThreadSafe;
 import javax.inject.Inject;
 
 /**
- * Subscription Manager (Start/Stop) to the processing of Consensus events under
- * a single BFT Consensus node instance for deterministic tests.
+ * Processor of consensus events which gets executed one at a time
  */
-public final class DeterministicConsensusRunner {
+@NotThreadSafe
+public final class DeterministicEpochsConsensusProcessor implements DeterministicMessageProcessor {
 	private final EpochManager epochManager;
 
 	@Inject
-	public DeterministicConsensusRunner(EpochManager epochManager) {
+	public DeterministicEpochsConsensusProcessor(EpochManager epochManager) {
 		this.epochManager = Objects.requireNonNull(epochManager);
 	}
 
@@ -46,6 +47,7 @@ public final class DeterministicConsensusRunner {
 		epochManager.start();
 	}
 
+	@Override
 	public void handleMessage(Object message) {
 		if (message instanceof ConsensusEvent) {
 			this.epochManager.processConsensusEvent((ConsensusEvent) message);

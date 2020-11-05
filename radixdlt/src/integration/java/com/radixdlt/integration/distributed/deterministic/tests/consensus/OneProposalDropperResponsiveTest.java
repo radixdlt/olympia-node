@@ -20,8 +20,8 @@ package com.radixdlt.integration.distributed.deterministic.tests.consensus;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.integration.distributed.deterministic.DeterministicTest;
-import com.radixdlt.integration.distributed.deterministic.network.MessageMutator;
-import com.radixdlt.integration.distributed.deterministic.network.MessageSelector;
+import com.radixdlt.environment.deterministic.network.MessageMutator;
+import com.radixdlt.environment.deterministic.network.MessageSelector;
 
 import java.util.HashMap;
 import java.util.Map;

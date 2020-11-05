@@ -15,25 +15,14 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.epoch;
+package com.radixdlt.environment.deterministic;
 
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.bft.VertexStore;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.environment.deterministic.network.DeterministicNetwork.DeterministicSender;
 
 /**
- * A Vertex Store factory
+ * Creates a sender to be used with a deterministic network
  */
-public interface VertexStoreFactory {
-
-	/**
-	 * Creates a new VertexStore given initial vertex and QC
-	 * @param genesisVertex the root vertex
-	 * @param genesisQC the root QC
-	 * @return a new VertexStore
-	 */
-	VertexStore create(
-		VerifiedVertex genesisVertex,
-		QuorumCertificate genesisQC
-	);
+public interface DeterministicSenderFactory {
+	DeterministicSender create(BFTNode node);
 }

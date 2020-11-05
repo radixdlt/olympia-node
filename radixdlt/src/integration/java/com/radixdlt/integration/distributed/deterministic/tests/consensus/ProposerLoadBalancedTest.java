@@ -27,8 +27,8 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.integration.distributed.deterministic.DeterministicTest;
 import com.radixdlt.integration.distributed.deterministic.configuration.EpochNodeWeightMapping;
-import com.radixdlt.integration.distributed.deterministic.network.MessageMutator;
-import com.radixdlt.integration.distributed.deterministic.network.MessageSelector;
+import com.radixdlt.environment.deterministic.network.MessageMutator;
+import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.utils.UInt256;
 

@@ -20,6 +20,7 @@ package com.radixdlt.integration.distributed.deterministic;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
+import com.google.inject.Provides;
 import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.EpochsConsensusModule;
@@ -28,6 +29,7 @@ import com.radixdlt.EpochsLedgerUpdateModule;
 import com.radixdlt.LedgerLocalMempoolModule;
 import com.radixdlt.LedgerModule;
 import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -35,15 +37,24 @@ import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.consensus.epoch.EpochView;
+import com.radixdlt.consensus.epoch.LocalTimeout;
+import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker.PacemakerInfoSender;
+import com.radixdlt.consensus.liveness.LocalTimeoutSender;
+import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
+import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.integration.distributed.MockedCryptoModule;
 import com.radixdlt.integration.distributed.deterministic.configuration.EpochNodeWeightMapping;
 import com.radixdlt.integration.distributed.deterministic.configuration.NodeIndexAndWeight;
-import com.radixdlt.integration.distributed.deterministic.network.ControlledMessage;
-import com.radixdlt.integration.distributed.deterministic.network.DeterministicNetwork;
-import com.radixdlt.integration.distributed.deterministic.network.MessageMutator;
-import com.radixdlt.integration.distributed.deterministic.network.MessageSelector;
+import com.radixdlt.environment.deterministic.network.ControlledMessage;
+import com.radixdlt.environment.deterministic.DeterministicConsensusProcessor;
+import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
+import com.radixdlt.environment.deterministic.DeterministicMessageProcessor;
+import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
+import com.radixdlt.environment.deterministic.network.MessageMutator;
+import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.integration.distributed.MockedLedgerModule;
 import com.radixdlt.integration.distributed.MockedStateComputerWithEpochsModule;
 import com.radixdlt.integration.distributed.MockedStateComputerModule;
@@ -202,14 +213,32 @@ public final class DeterministicTest {
 					@Override
 					protected void configure() {
 						bind(BFTValidatorSet.class).toInstance(validatorSet);
+						bind(DeterministicMessageProcessor.class).to(DeterministicConsensusProcessor.class);
+					}
+
+					@Provides
+					public PacemakerInfoSender pacemakerInfoSender(EpochInfoSender epochInfoSender, ProposerElection proposerElection) {
+						return new PacemakerInfoSender() {
+							@Override
+							public void sendCurrentView(View view) {
+								epochInfoSender.sendCurrentView(EpochView.of(1, view));
+							}
+
+							@Override
+							public void sendTimeoutProcessed(View view) {
+								BFTNode leader = proposerElection.getProposer(view);
+								epochInfoSender.sendTimeoutProcessed(new Timeout(EpochView.of(1, view), leader));
+							}
+						};
+					}
+
+					@Provides
+					private PacemakerTimeoutSender timeoutSender(LocalTimeoutSender localTimeoutSender) {
+						return (view, ms) -> localTimeoutSender.scheduleTimeout(new LocalTimeout(1, view), ms);
 					}
 				});
 				modules.add(new MockedStateComputerModule());
 				modules.add(new MockedLedgerModule());
-
-				// TODO: remove the following
-				modules.add(new EpochsConsensusModule());
-				modules.add(new EpochsLedgerUpdateModule());
 			} else {
 				// TODO: adapter from LongFunction<BFTValidatorSet> to Function<Long, BFTValidatorSet> shouldn't be needed
 				Function<Long, BFTValidatorSet> epochToValidatorSetMapping = validatorSetMapping::apply;
@@ -217,6 +246,7 @@ public final class DeterministicTest {
 					@Override
 					public void configure() {
 						bind(BFTValidatorSet.class).toInstance(epochToValidatorSetMapping.apply(1L));
+						bind(DeterministicMessageProcessor.class).to(DeterministicEpochsConsensusProcessor.class);
 					}
 				});
 				modules.add(new LedgerModule());

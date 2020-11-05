@@ -251,6 +251,8 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 			log.trace("LocalTimeout: Ignoring view {}, current is {}", view, this.currentView);
 			return;
 		}
+		counters.increment(CounterType.BFT_TIMEOUT);
+
 		ViewTimeout viewTimeout = this.safetyRules.viewTimeout(view, this.vertexStore.highQC());
 		this.proceedToViewSender.broadcastViewTimeout(viewTimeout, this.validatorSet.nodes());
 		this.pacemakerInfoSender.sendTimeoutProcessed(view);

@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.deterministic.network;
+package com.radixdlt.environment.deterministic.network;
 
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.Streams;
@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
+import java.util.function.Predicate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -113,6 +114,10 @@ public final class DeterministicNetwork {
 		this.currentTime = Math.max(this.currentTime, controlledMessage.arrivalTime());
 
 		return new Timed<>(controlledMessage, this.currentTime, TimeUnit.MILLISECONDS);
+	}
+
+	public void dropMessages(Predicate<ControlledMessage> controlledMessagePredicate) {
+		this.messageQueue.remove(controlledMessagePredicate);
 	}
 
 	public long currentTime() {

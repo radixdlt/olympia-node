@@ -34,6 +34,7 @@ import com.radixdlt.counters.SystemCounters.CounterType;
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.mempool.Mempool;
+import com.radixdlt.store.LastProof;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
@@ -100,14 +101,14 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	private final LedgerAccumulator accumulator;
 	private final LedgerAccumulatorVerifier verifier;
 	private final Hasher hasher;
-
 	private final Object lock = new Object();
+
 	private VerifiedLedgerHeaderAndProof currentLedgerHeader;
 
 	@Inject
 	public StateComputerLedger(
+		@LastProof VerifiedLedgerHeaderAndProof initialLedgerState,
 		Comparator<VerifiedLedgerHeaderAndProof> headerComparator,
-		VerifiedLedgerHeaderAndProof initialLedgerState,
 		Mempool mempool,
 		StateComputer stateComputer,
 		LedgerUpdateSender ledgerUpdateSender,

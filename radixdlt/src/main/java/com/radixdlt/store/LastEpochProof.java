@@ -15,25 +15,23 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.epoch;
+package com.radixdlt.store;
 
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.bft.VertexStore;
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import javax.inject.Qualifier;
+
 
 /**
- * A Vertex Store factory
+ * Identifies that the target is the last epoch proof
  */
-public interface VertexStoreFactory {
-
-	/**
-	 * Creates a new VertexStore given initial vertex and QC
-	 * @param genesisVertex the root vertex
-	 * @param genesisQC the root QC
-	 * @return a new VertexStore
-	 */
-	VertexStore create(
-		VerifiedVertex genesisVertex,
-		QuorumCertificate genesisQC
-	);
+@Qualifier
+@Target({ FIELD, PARAMETER, METHOD })
+@Retention(RUNTIME)
+public @interface LastEpochProof {
 }

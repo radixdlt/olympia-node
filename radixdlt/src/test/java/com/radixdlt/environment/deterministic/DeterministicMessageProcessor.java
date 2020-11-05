@@ -15,25 +15,12 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.epoch;
-
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.bft.VertexStore;
+package com.radixdlt.environment.deterministic;
 
 /**
- * A Vertex Store factory
+ * Processor of consensus messages one at a time
  */
-public interface VertexStoreFactory {
-
-	/**
-	 * Creates a new VertexStore given initial vertex and QC
-	 * @param genesisVertex the root vertex
-	 * @param genesisQC the root QC
-	 * @return a new VertexStore
-	 */
-	VertexStore create(
-		VerifiedVertex genesisVertex,
-		QuorumCertificate genesisQC
-	);
+public interface DeterministicMessageProcessor {
+	void start();
+	void handleMessage(Object o);
 }

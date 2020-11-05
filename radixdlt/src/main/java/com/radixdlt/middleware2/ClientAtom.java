@@ -50,6 +50,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.concurrent.Immutable;
 
@@ -318,5 +319,9 @@ public final class ClientAtom implements LedgerAtom {
 	@Override
 	public String toString() {
 		return String.format("%s {aid=%s}", this.getClass().getSimpleName(), this.aid);
+	}
+
+	public String toInstructionsString() {
+		return this.instructions.stream().map(i -> i.getMicroOp() + " " + i.getParticle() + "\n").collect(Collectors.joining());
 	}
 }

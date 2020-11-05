@@ -33,7 +33,7 @@ public final class EpochsLedgerUpdate implements LedgerUpdate {
 	private final LedgerUpdate base;
 	private final EpochChange epochChange;
 
-	EpochsLedgerUpdate(LedgerUpdate base, EpochChange epochChange) {
+	public EpochsLedgerUpdate(LedgerUpdate base, EpochChange epochChange) {
 		this.base = Objects.requireNonNull(base);
 		this.epochChange = epochChange;
 	}

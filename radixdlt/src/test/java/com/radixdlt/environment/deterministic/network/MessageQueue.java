@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.deterministic.network;
+package com.radixdlt.environment.deterministic.network;
 
 import java.io.PrintStream;
 import java.util.Collections;
@@ -81,6 +81,11 @@ public final class MessageQueue {
 			this.minimumMessageTime = messageTime;
 		}
 		return true;
+	}
+
+	void remove(Predicate<ControlledMessage> filter) {
+		messagesByTime.values().forEach(l -> l.removeIf(filter));
+		messagesByTime.values().removeIf(List::isEmpty);
 	}
 
 	void remove(ControlledMessage message) {

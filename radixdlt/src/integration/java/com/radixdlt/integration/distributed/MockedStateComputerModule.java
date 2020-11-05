@@ -37,10 +37,15 @@ import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.store.LastEpochProof;
+import com.radixdlt.store.LastProof;
 
 public class MockedStateComputerModule extends AbstractModule {
 	@Provides
-	private BFTConfiguration configuration(VerifiedLedgerHeaderAndProof proof, BFTValidatorSet validatorSet) {
+	private BFTConfiguration configuration(
+		@LastEpochProof VerifiedLedgerHeaderAndProof proof,
+		BFTValidatorSet validatorSet
+	) {
 		LedgerHeader nextLedgerHeader = LedgerHeader.create(
 			proof.getEpoch() + 1,
 			View.genesis(),
@@ -54,7 +59,14 @@ public class MockedStateComputerModule extends AbstractModule {
 	}
 
 	@Provides
-	private VerifiedLedgerHeaderAndProof genesisMetadata(BFTValidatorSet validatorSet) {
+	@LastEpochProof
+	private VerifiedLedgerHeaderAndProof lastEpochProof(BFTValidatorSet validatorSet) {
+		return VerifiedLedgerHeaderAndProof.genesis(HashUtils.zero256(), validatorSet);
+	}
+
+	@Provides
+	@LastProof
+	private VerifiedLedgerHeaderAndProof lastProof(BFTValidatorSet validatorSet) {
 		return VerifiedLedgerHeaderAndProof.genesis(HashUtils.zero256(), validatorSet);
 	}
 

@@ -28,8 +28,10 @@ import com.google.inject.util.Modules;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.integration.distributed.deterministic.network.ControlledMessage;
-import com.radixdlt.integration.distributed.deterministic.network.DeterministicNetwork.DeterministicSender;
+import com.radixdlt.environment.deterministic.network.ControlledMessage;
+import com.radixdlt.environment.deterministic.DeterministicMessageProcessor;
+import com.radixdlt.environment.deterministic.DeterministicMessageSenderModule;
+import com.radixdlt.environment.deterministic.DeterministicSenderFactory;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.List;
@@ -46,10 +48,6 @@ public final class DeterministicNodes {
 	private final ImmutableList<Injector> nodeInstances;
 	private final DeterministicSenderFactory senderFactory;
 	private final ImmutableBiMap<BFTNode, Integer> nodeLookup;
-
-	public interface DeterministicSenderFactory {
-		DeterministicSender create(BFTNode node);
-	}
 
 	public DeterministicNodes(
 		List<BFTNode> nodes,
@@ -90,8 +88,8 @@ public final class DeterministicNodes {
 
 	public void start() {
 		this.nodeInstances.stream()
-			.map(i -> i.getInstance(DeterministicConsensusRunner.class))
-			.forEach(DeterministicConsensusRunner::start);
+			.map(i -> i.getInstance(DeterministicMessageProcessor.class))
+			.forEach(DeterministicMessageProcessor::start);
 	}
 
 	public void handleMessage(Timed<ControlledMessage> timedNextMsg) {
@@ -101,7 +99,7 @@ public final class DeterministicNodes {
 		ThreadContext.put("bftNode", bftNode);
 		try {
 			log.debug("Received message {} at {}", nextMsg, timedNextMsg.time());
-			nodeInstances.get(receiver).getInstance(DeterministicConsensusRunner.class)
+			nodeInstances.get(receiver).getInstance(DeterministicMessageProcessor.class)
 				.handleMessage(nextMsg.message());
 		} finally {
 			ThreadContext.remove("bftNode");

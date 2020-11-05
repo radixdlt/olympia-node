@@ -203,14 +203,25 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		if (!onCurrentView("Proposal", proposal.getVertex().getView(), proposal)) {
 			return true;
 		}
+
 		return syncUp(proposal.highQC(), proposal.getAuthor(), () -> forwardTo.processProposal(proposal));
 	}
 
 	private boolean syncUp(HighQC highQC, BFTNode author, Runnable whenSynced) {
 		SyncResult syncResult = this.bftSyncer.syncToQC(highQC, author);
+
 		switch (syncResult) {
 			case SYNCED:
-				whenSynced.run();
+				// if already end of epoch then don't need to process
+				// TODO: need to do the same checks on pacemaker side
+				// TODO: move this to an epoch preprocessor
+				final boolean endOfEpoch = highQC.highestCommittedQC()
+					.getCommittedAndLedgerStateProof()
+					.orElseThrow(() -> new IllegalStateException("Invalid High QC")).getSecond().isEndOfEpoch();
+				if (!endOfEpoch) {
+					whenSynced.run();
+				}
+
 				return true;
 			case INVALID:
 				return true;

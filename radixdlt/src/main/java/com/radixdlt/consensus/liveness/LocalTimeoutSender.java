@@ -21,8 +21,6 @@ import com.radixdlt.consensus.epoch.LocalTimeout;
 
 /**
  * Sender for local timeouts.
- *
- * @see FixedTimeoutPacemaker.TimeoutSender
  */
 public interface LocalTimeoutSender {
 	void scheduleTimeout(LocalTimeout localTimeout, long timeoutMilliseconds);

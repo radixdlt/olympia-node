@@ -566,15 +566,16 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 		return pendingAids.build();
 	}
 
-	private long getLastPendingCursor() {
-		try (com.sleepycat.je.Cursor cursor = this.pending.openCursor(null, null)) {
+	public Optional<AID> getLastCommitted() {
+		try (com.sleepycat.je.Cursor cursor = this.atoms.openCursor(null, null)) {
 			DatabaseEntry pKey = new DatabaseEntry();
 			DatabaseEntry value = new DatabaseEntry();
 			OperationStatus status = cursor.getLast(pKey, value, LockMode.DEFAULT);
 			if (status == OperationStatus.SUCCESS) {
-				return Longs.fromByteArray(value.getData());
+				AID atomId = getAidFromPKey(pKey);
+				return Optional.of(atomId);
 			} else {
-				return 0L;
+				return Optional.empty();
 			}
 		}
 	}

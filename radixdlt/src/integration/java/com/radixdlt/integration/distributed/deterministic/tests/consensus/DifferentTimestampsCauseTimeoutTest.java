@@ -41,10 +41,10 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.integration.distributed.deterministic.DeterministicTest;
-import com.radixdlt.integration.distributed.deterministic.network.ChannelId;
-import com.radixdlt.integration.distributed.deterministic.network.ControlledMessage;
-import com.radixdlt.integration.distributed.deterministic.network.MessageMutator;
-import com.radixdlt.integration.distributed.deterministic.network.MessageSelector;
+import com.radixdlt.environment.deterministic.network.ChannelId;
+import com.radixdlt.environment.deterministic.network.ControlledMessage;
+import com.radixdlt.environment.deterministic.network.MessageMutator;
+import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 

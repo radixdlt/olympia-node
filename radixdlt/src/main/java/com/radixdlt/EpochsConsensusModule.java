@@ -22,11 +22,13 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.HashSigner;
+import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.epoch.ProposerElectionFactory;
 import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
@@ -64,6 +66,7 @@ import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.network.TimeSupplier;
 
+import com.radixdlt.store.LastEpochProof;
 import java.util.Comparator;
 import java.util.Random;
 
@@ -103,7 +106,7 @@ public class EpochsConsensusModule extends AbstractModule {
 	// TODO: Load from storage
 	@Provides
 	private EpochChange initialEpoch(
-		VerifiedLedgerHeaderAndProof proof,
+		@LastEpochProof VerifiedLedgerHeaderAndProof proof,
 		BFTConfiguration initialBFTConfig
 	) {
 		return new EpochChange(proof, initialBFTConfig);
@@ -183,9 +186,11 @@ public class EpochsConsensusModule extends AbstractModule {
 	@Provides
 	private VertexStoreFactory vertexStoreFactory(
 		BFTUpdateSender updateSender,
-		SystemCounters counters
+		SystemCounters counters,
+		Ledger ledger,
+		VertexStoreEventSender vertexStoreEventSender
 	) {
-		return (genesisVertex, genesisQC, ledger, vertexStoreEventSender) -> VertexStore.create(
+		return (genesisVertex, genesisQC) -> VertexStore.create(
 			genesisVertex,
 			genesisQC,
 			ledger,

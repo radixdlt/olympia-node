@@ -33,11 +33,11 @@ import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.radixdlt.integration.distributed.deterministic.network.ChannelId;
-import com.radixdlt.integration.distributed.deterministic.network.ControlledMessage;
-import com.radixdlt.integration.distributed.deterministic.network.MessageMutator;
+import com.radixdlt.environment.deterministic.network.ChannelId;
+import com.radixdlt.environment.deterministic.network.ControlledMessage;
+import com.radixdlt.environment.deterministic.network.MessageMutator;
 
-import static com.radixdlt.integration.distributed.deterministic.network.MessageSelector.*;
+import static com.radixdlt.environment.deterministic.network.MessageSelector.*;
 
 public class MovingWindowValidatorsTest {
 

@@ -143,7 +143,8 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		final String idForClass = serialization.getIdForClass(particleClass);
 		final EUID numericClassId = SerializationUtils.stringToNumericID(idForClass);
 		final byte[] indexableBytes = EngineAtomIndices.toByteArray(IndexType.PARTICLE_CLASS, numericClassId);
-		SearchCursor cursor = store.search(LedgerIndexType.DUPLICATE, new StoreIndex(indexableBytes), LedgerSearchMode.EXACT);
+		final StoreIndex storeIndex = new StoreIndex(EngineAtomIndices.IndexType.PARTICLE_CLASS.getValue(), indexableBytes);
+		SearchCursor cursor = store.search(LedgerIndexType.DUPLICATE, storeIndex, LedgerSearchMode.EXACT);
 
 		V v = initial;
 		while (cursor != null) {
@@ -167,6 +168,12 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 			cursor = cursor.next();
 		}
 		return v;
+	}
+
+	public Optional<VerifiedLedgerHeaderAndProof> getLastVerifiedHeader() {
+		return store.getLastCommitted()
+			.flatMap(store::get)
+			.map(e -> commandToBinaryConverter.toCommand(e.getContent()).getStateAndProof());
 	}
 
 	public VerifiedCommandsAndProof getNextCommittedCommands(long stateVersion, int batchSize) throws NextCommittedLimitReachedException {

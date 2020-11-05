@@ -42,6 +42,7 @@ import com.radixdlt.mempool.Mempool;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
+import com.radixdlt.store.LastProof;
 import org.junit.Test;
 
 public class LedgerModuleTest {
@@ -63,7 +64,7 @@ public class LedgerModuleTest {
 			bind(StateComputer.class).toInstance(mock(StateComputer.class));
 			bind(SystemCounters.class).toInstance(mock(SystemCounters.class));
 			VerifiedLedgerHeaderAndProof verifiedLedgerHeaderAndProof = mock(VerifiedLedgerHeaderAndProof.class);
-			bind(VerifiedLedgerHeaderAndProof.class).toInstance(verifiedLedgerHeaderAndProof);
+			bind(VerifiedLedgerHeaderAndProof.class).annotatedWith(LastProof.class).toInstance(verifiedLedgerHeaderAndProof);
 			bind(BFTValidatorSet.class).toInstance(mock(BFTValidatorSet.class));
 			bind(BFTConfiguration.class).toInstance(mock(BFTConfiguration.class));
 			bind(LedgerUpdateSender.class).toInstance(mock(LedgerUpdateSender.class));

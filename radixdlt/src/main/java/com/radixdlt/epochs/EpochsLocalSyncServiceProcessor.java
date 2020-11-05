@@ -23,6 +23,7 @@ import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.ledger.LedgerUpdateProcessor;
+import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
 import com.radixdlt.sync.LocalSyncRequest;
@@ -57,7 +58,7 @@ public class EpochsLocalSyncServiceProcessor implements LocalSyncServiceProcesso
 	public EpochsLocalSyncServiceProcessor(
 		LocalSyncServiceAccumulatorProcessor initialProcessor,
 		EpochChange initialEpoch,
-		VerifiedLedgerHeaderAndProof initialHeader,
+		@LastProof VerifiedLedgerHeaderAndProof initialHeader,
 		Function<BFTConfiguration, LocalSyncServiceAccumulatorProcessor> localSyncFactory,
 		StateSyncNetworkSender stateSyncNetwork,
 		SyncedEpochSender syncedEpochSender

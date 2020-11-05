@@ -152,7 +152,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		try {
 			branch.checkAndStore(systemUpdate, PermissionLevel.SUPER_USER);
 		} catch (RadixEngineException e) {
-			throw new IllegalStateException("Failed to execute system update.", e);
+			throw new IllegalStateException(String.format("Failed to execute system update:\n%s", systemUpdate.toInstructionsString()), e);
 		}
 		Command command = new Command(serialization.toDson(systemUpdate, Output.ALL));
 		RadixEngineCommand radixEngineCommand = new RadixEngineCommand(
@@ -221,14 +221,20 @@ public final class RadixEngineStateComputer implements StateComputer {
 	}
 
 	private void commitCommand(long version, Command command, VerifiedLedgerHeaderAndProof proof) {
+		final ClientAtom clientAtom;
 		try {
-			final ClientAtom clientAtom = this.mapCommand(command);
+			clientAtom = this.mapCommand(command);
+		} catch (DeserializeException e) {
+			throw new ByzantineQuorumException("Trying to commit bad atom", e);
+		}
+
+		try {
 			final CommittedAtom committedAtom = new CommittedAtom(clientAtom, version, proof);
 			// TODO: execute list of commands instead
 			// TODO: Include permission level in committed command
 			this.radixEngine.checkAndStore(committedAtom, PermissionLevel.SUPER_USER);
-		} catch (RadixEngineException | DeserializeException e) {
-			throw new ByzantineQuorumException("Trying to commit bad command", e);
+		} catch (RadixEngineException e) {
+			throw new ByzantineQuorumException(String.format("Trying to commit bad atom:\n%s", clientAtom.toInstructionsString()), e);
 		}
 	}
 
