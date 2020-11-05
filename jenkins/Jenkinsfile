@@ -46,12 +46,13 @@ pipeline {
             steps {
                 script {
                     dir('RadixCore') {
-                        tag_commit = sh('''
+                        tag_commit = sh(script: '''
                                       git show-ref $(git describe --abbrev=0 --tags) | grep 'refs/tags/' | cut -d" " -f1
                                     ''', returnStdout: true).trim()
-                        branch_commit = sh('''
+                        branch_commit = sh(script: '''
                                         git show-ref $(git rev-parse --abbrev-ref HEAD | sed 's/heads\\///g') | grep 'refs/heads' | cut -d " " -f1
-                                        ''', returnStdout: true)
+                                        ''', returnStdout: true).trim
+
                         echo "Branch commit = ${branch_commit}"
                         echo "Tag commit = ${tag_commit}"
 
