@@ -30,37 +30,65 @@ pipeline {
         label 'master'
     }
     stages {
+
         stage('Checkout RadixCore') {
-           steps {
+            steps {
 //               sendNotifications "STARTED"
-               script {
-                   dir('RadixCore'){
-                       deleteDir()
-                   }
-                   checkoutHelpers.doCheckout("RadixCore")
-               }
+                script {
+                    dir('RadixCore') {
+                        deleteDir()
+                    }
+                    checkoutHelpers.doCheckout("RadixCore")
+                }
+            }
+        }
+        stage('Check tag and branch have same commit') {
+            script {
+                dir('RadixCore') {
+                    env.check = sh(
+                            script: '''
+                                    tag_commit=`git show-ref $(git describe --abbrev=0 --tags) | cut -d" " -f1`
+                                    branch_commit=`git show-ref refs/remotes/origin/task/RPNV1-262-release-branch-job | cut -d" " -f1`
+                                    if [ $tag_commit == $branch_commit ] 
+                                    then 
+                                        echo "passed"
+                                    else 
+                                        echo "failed"
+                                ''', returnStdout: true
+                    ).trim()
+                    echo env.check
+
+                }
             }
         }
 
         stage('Build and push core image') {
-            steps {
-                dir('RadixCore'){
-                    script {
-                        tag = sh(
-                                script: '''
+            when {
+                expression {
+                    env.check == "passed"
+                }
+                steps {
+                    dir('RadixCore') {
+                        script {
+                            tag = sh(
+                                    script: '''
                                     git describe --abbrev=0 --tags
                                 ''', returnStdout: true
-                        ).trim()
-                        dockerHelpers.manualPushToDockerHub("radixdlt-core", tag)
+                            ).trim()
+                            dockerHelpers.manualPushToDockerHub("radixdlt-core", tag)
+                        }
                     }
                 }
             }
         }
         stage('Downstream jobs') {
             steps {
-                build job: 'Release-Branch/deploy-release'
-//            build job: 'Release-Branch/deterministic-simulation-tests'
-                build job: 'Release-Branch/regression-acceptance-tests'
+                parallel {
+                    build job: 'Release-Branch/deploy-release'
+                    build job: 'Release-Branch/docker-continuous-tests'
+                    build job: 'Release-Branch/regression-acceptance-tests'
+                    build job: 'Release-Branch/deterministic-simulation-tests'
+                }
             }
         }
     }
