@@ -85,11 +85,17 @@ pipeline {
 
         }
         stage('Downstream jobs') {
-            steps {
-                parallel {
+            parallel {
+                stage('deploy-release'){
                     build job: 'Release-Branch/deploy-release'
+                }
+                stage('docker-continuous-tests'){
                     build job: 'Release-Branch/docker-continuous-tests'
+                }
+                stage('regression-acceptance-tests'){
                     build job: 'Release-Branch/regression-acceptance-tests'
+                }
+                stage('deterministic-simulation-tests'){
                     build job: 'Release-Branch/deterministic-simulation-tests'
                 }
             }
