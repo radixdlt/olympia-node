@@ -43,7 +43,7 @@ pipeline {
             }
         }
         stage('Check tag and branch have same commit') {
-            steps{
+            steps {
                 script {
                     dir('RadixCore') {
                         env.check = sh(
@@ -69,19 +69,20 @@ pipeline {
                 expression {
                     env.check == "passed"
                 }
-                steps {
-                    dir('RadixCore') {
-                        script {
-                            tag = sh(
-                                    script: '''
+            }
+            steps {
+                dir('RadixCore') {
+                    script {
+                        tag = sh(
+                                script: '''
                                     git describe --abbrev=0 --tags
                                 ''', returnStdout: true
-                            ).trim()
-                            dockerHelpers.manualPushToDockerHub("radixdlt-core", tag)
-                        }
+                        ).trim()
+                        dockerHelpers.manualPushToDockerHub("radixdlt-core", tag)
                     }
                 }
             }
+
         }
         stage('Downstream jobs') {
             steps {
