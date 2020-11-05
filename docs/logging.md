@@ -75,10 +75,12 @@ In order to configure logging for specific part of the Radix Node it is necessar
 configuration file. Usually logger configuration looks like this:
 
 ```
+...
 loggers=my-logger
 logger.my-logger.name=<package name>
 logger.my-logger.level=<logging level>
 logger.my-logger.additivity=false
+...
 
 ```
 The first line contains names of the custom loggers. It should be present only once and contain the comma separated 
