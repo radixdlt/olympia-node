@@ -55,6 +55,7 @@ pipeline {
                                         echo "passed"
                                     else 
                                         echo "failed"
+                                    fi
                                 ''', returnStdout: true
                         ).trim()
                         echo env.check
