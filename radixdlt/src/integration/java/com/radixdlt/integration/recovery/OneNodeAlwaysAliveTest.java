@@ -98,7 +98,7 @@ public class OneNodeAlwaysAliveTest {
 	@Parameters
 	public static Collection<Object[]> numNodes() {
 		return List.of(new Object[][] {
-			{2}, {10}
+			{2}, {4}
 		});
 	}
 
