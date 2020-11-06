@@ -19,6 +19,7 @@ package com.radixdlt.sync;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -40,9 +41,9 @@ import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.middleware2.store.InMemoryCommittedEpochProofsStore;
 import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
 import com.radixdlt.utils.UInt256;
+import java.util.Optional;
 import java.util.stream.Stream;
 import org.junit.Before;
 import org.junit.Test;
@@ -51,15 +52,13 @@ public class RemoteSyncServiceProcessorTest {
 
 	private RemoteSyncServiceProcessor processor;
 	private CommittedReader reader;
-	private InMemoryCommittedEpochProofsStore proofsStore;
 	private StateSyncNetworkSender network;
 
 	@Before
 	public void setUp() {
 		this.reader = mock(CommittedReader.class);
-		this.proofsStore = new InMemoryCommittedEpochProofsStore();
 		this.network =  mock(StateSyncNetworkSender.class);
-		this.processor = new RemoteSyncServiceProcessor(reader, proofsStore, network, 1);
+		this.processor = new RemoteSyncServiceProcessor(reader, network, 1);
 	}
 
 	@Test
@@ -114,13 +113,13 @@ public class RemoteSyncServiceProcessorTest {
 
 	@Test
 	public void return_epoch_proof_on_request() {
-		// Assemble
+		// Arrange
 		VerifiedLedgerHeaderAndProof verifiedLedgerHeaderAndProof = mock(VerifiedLedgerHeaderAndProof.class);
 		when(verifiedLedgerHeaderAndProof.getEpoch()).thenReturn(2L);
 		DtoLedgerHeaderAndProof epoch2 = mock(DtoLedgerHeaderAndProof.class);
 		when(verifiedLedgerHeaderAndProof.toDto()).thenReturn(epoch2);
 		when(verifiedLedgerHeaderAndProof.isEndOfEpoch()).thenReturn(true);
-		proofsStore.commit(verifiedLedgerHeaderAndProof);
+		when(reader.getEpochVerifiedHeader(anyLong())).thenReturn(Optional.of(verifiedLedgerHeaderAndProof));
 
 		// Act
 		DtoLedgerHeaderAndProof ledgerHeaderAndProof = mock(DtoLedgerHeaderAndProof.class);

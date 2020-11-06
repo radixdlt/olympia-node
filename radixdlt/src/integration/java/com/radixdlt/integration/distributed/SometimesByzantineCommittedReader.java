@@ -32,6 +32,7 @@ import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.sync.CommittedReader;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Random;
 import java.util.function.UnaryOperator;
 
@@ -215,5 +216,10 @@ public final class SometimesByzantineCommittedReader implements LedgerUpdateSend
 		}
 
 		return null;
+	}
+
+	@Override
+	public Optional<VerifiedLedgerHeaderAndProof> getEpochVerifiedHeader(long epoch) {
+		return correctReader.getEpochVerifiedHeader(epoch);
 	}
 }

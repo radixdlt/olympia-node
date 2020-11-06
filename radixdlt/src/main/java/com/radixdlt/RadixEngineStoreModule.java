@@ -22,7 +22,6 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerHeader;
@@ -40,7 +39,6 @@ import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.middleware2.store.CommittedAtomsStore.AtomIndexer;
-import com.radixdlt.middleware2.store.InMemoryCommittedEpochProofsStore;
 import com.radixdlt.middleware2.store.EngineAtomIndices;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
@@ -62,7 +60,6 @@ public class RadixEngineStoreModule extends AbstractModule {
 	protected void configure() {
 		bind(new TypeLiteral<EngineStore<CommittedAtom>>() { }).to(CommittedAtomsStore.class).in(Scopes.SINGLETON);
 		bind(CommittedReader.class).to(CommittedAtomsStore.class);
-		bind(InMemoryCommittedEpochProofsStore.class).in(Scopes.SINGLETON);
 	}
 
 

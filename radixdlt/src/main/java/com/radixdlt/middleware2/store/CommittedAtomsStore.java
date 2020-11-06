@@ -177,6 +177,7 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 			.map(e -> commandToBinaryConverter.toCommand(e.getContent()).getStateAndProof());
 	}
 
+	@Override
 	public Optional<VerifiedLedgerHeaderAndProof> getEpochVerifiedHeader(long epoch) {
 		SearchCursor cursor = store.search(
 			StoreIndex.LedgerIndexType.UNIQUE,

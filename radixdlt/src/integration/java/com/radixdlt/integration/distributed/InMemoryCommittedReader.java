@@ -30,6 +30,7 @@ import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.sync.CommittedReader;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.TreeMap;
 
 /**
@@ -76,5 +77,10 @@ class InMemoryCommittedReader implements LedgerUpdateSender, CommittedReader {
 		}
 
 		return null;
+	}
+
+	@Override
+	public Optional<VerifiedLedgerHeaderAndProof> getEpochVerifiedHeader(long epoch) {
+		return Optional.ofNullable(epochProofs.get(epoch));
 	}
 }
