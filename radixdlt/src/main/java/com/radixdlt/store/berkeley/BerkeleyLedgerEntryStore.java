@@ -566,6 +566,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 		return pendingAids.build();
 	}
 
+	@Override
 	public Optional<AID> getLastCommitted() {
 		try (com.sleepycat.je.Cursor cursor = this.atoms.openCursor(null, null)) {
 			DatabaseEntry pKey = new DatabaseEntry();

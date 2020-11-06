@@ -18,6 +18,7 @@
 package com.radixdlt.middleware2.store;
 
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngineAtom;
 import com.radixdlt.identifiers.EUID;
@@ -37,7 +38,8 @@ public class EngineAtomIndices {
 		PARTICLE_DOWN((byte) 3),
 		PARTICLE_CLASS((byte) 4),
 		UID((byte) 5),
-		DESTINATION((byte) 6);
+		DESTINATION((byte) 6),
+		EPOCH_CHANGE((byte) 7);
 
 		byte value;
 
@@ -80,6 +82,15 @@ public class EngineAtomIndices {
 
 					final byte[] indexableBytes = toByteArray(indexType, Particle.euidOf(i.getParticle(), hasher));
 					uniqueIndices.add(new StoreIndex(indexableBytes));
+
+					if (i.getParticle() instanceof SystemParticle) {
+						SystemParticle systemParticle = (SystemParticle) i.getParticle();
+						if (systemParticle.getView() == 0) {
+							uniqueIndices.add(new StoreIndex(
+								IndexType.EPOCH_CHANGE.getValue(), Longs.toByteArray(systemParticle.getEpoch()))
+							);
+						}
+					}
 				});
 
 

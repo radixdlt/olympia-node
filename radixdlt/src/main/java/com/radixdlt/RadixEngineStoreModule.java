@@ -22,6 +22,7 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
+import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerHeader;
@@ -114,19 +115,25 @@ public class RadixEngineStoreModule extends AbstractModule {
 	@LastProof
 	VerifiedLedgerHeaderAndProof lastProof(
 		CommittedAtomsStore store,
-		VerifiedCommandsAndProof genesisCheckpoint
+		VerifiedCommandsAndProof genesisCheckpoint // TODO: remove once genesis creation resolved
 	) {
-		return store.getLastVerifiedHeader().orElse(genesisCheckpoint.getHeader());
+		return store.getLastVerifiedHeader()
+			.orElse(genesisCheckpoint.getHeader());
 	}
 
 	@Provides
 	@Singleton
 	@LastEpochProof
 	VerifiedLedgerHeaderAndProof lastEpochProof(
-		VerifiedCommandsAndProof genesisCheckpoint
+		@LastProof VerifiedLedgerHeaderAndProof lastProof,
+		CommittedAtomsStore store,
+		VerifiedCommandsAndProof genesisCheckpoint // TODO: remove once genesis creation resolved
 	) {
-		// TODO: load from store latest epoch proof
-		return genesisCheckpoint.getHeader();
+		if (lastProof.isEndOfEpoch()) {
+			return lastProof;
+		}
+		return store.getEpochVerifiedHeader(lastProof.getEpoch())
+			.orElse(genesisCheckpoint.getHeader());
 	}
 
 	@Provides
