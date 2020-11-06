@@ -17,7 +17,7 @@
  * language governing permissions and limitations under the License.
  */
 
-@Library(value = 'jenkins-lib@test-build-radix-core', changelog = false) _
+@Library(value = 'jenkins-lib@develop', changelog = false) _
 
 pipeline {
     tools {
