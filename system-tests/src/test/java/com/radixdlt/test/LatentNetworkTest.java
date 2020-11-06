@@ -55,8 +55,8 @@ public class LatentNetworkTest {
 
 	@Test
 	@Category(Cluster.class)
-	public void given_4_correct_bfts_in_latent_cluster_network__then_all_instances_should_get_same_commits_and_progress_should_be_made() {
-		final StaticClusterNetwork network = StaticClusterNetwork.clusterInfo(4);
+	public void given_10_correct_bfts_in_latent_cluster_network__then_all_instances_should_get_same_commits_and_progress_should_be_made() {
+		final StaticClusterNetwork network = StaticClusterNetwork.clusterInfo(10);
 		RemoteBFTTest test = AssertionChecks.latentTestBuilder()
 			.network(RemoteBFTNetworkBridge.of(network))
 			.waitUntilResponsive()

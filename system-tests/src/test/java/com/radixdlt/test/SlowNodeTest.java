@@ -71,7 +71,7 @@ public class SlowNodeTest {
 
 		@Before
 		public void setupSlowNode() {
-			network = StaticClusterNetwork.clusterInfo(4);
+			network = StaticClusterNetwork.clusterInfo(10);
 			String sshKeylocation = Optional.ofNullable(System.getenv("SSH_IDENTITY")).orElse(System.getenv("HOME") + "/.ssh/id_rsa");
 
 			//Creating named volume and copying over the file to volume works with or without docker in docker setup
@@ -87,7 +87,7 @@ public class SlowNodeTest {
 		}
 
 		@Test
-		public void given_4_correct_bfts_in_latent_docker_network_and_one_slow_node__then_all_instances_should_get_same_commits_and_progress_should_be_made() {
+		public void given_10_correct_bfts_in_latent_docker_network_and_one_slow_node__then_all_instances_should_get_same_commits_and_progress_should_be_made() {
 
 			RemoteBFTTest test = AssertionChecks.slowNodeTestBuilder()
 				.network(RemoteBFTNetworkBridge.of(network))
