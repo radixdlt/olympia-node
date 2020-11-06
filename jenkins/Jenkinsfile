@@ -33,7 +33,7 @@ pipeline {
 
         stage('Checkout RadixCore') {
             steps {
-//               sendNotifications "STARTED"
+               sendNotifications "STARTED"
                 script {
                     dir('RadixCore') {
                         deleteDir()
@@ -118,9 +118,9 @@ pipeline {
             }
         }
     }
-//    post {
-//        always {
-////            sendNotifications currentBuild.result
-//        }
-//    }
+    post {
+        always {
+            sendNotifications currentBuild.result
+        }
+    }
 }
