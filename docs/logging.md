@@ -15,7 +15,7 @@ updating configuration files by setting environment variable `RADIXDLT_LOG_LEVEL
 #### Logging with Dedicated Logging Infrastructure
 Complex deployments as well as deployments into cloud-based infrastructure usually rely on centralized 
 log collection and analysis tools like Splunk, AWS Centralized Logging or Loggly.
-For such use cases it's usually more convenient to have other format for logs that plain text. Most popular approach is
+For such use cases it's usually more convenient to have other format for logs than plain text. Most popular approach is
 to use JSON as the logging format. To enable JSON logging format it is necessary to provide logging configuration file.
 
 ##### Logging Configuration File Location amd Name 
