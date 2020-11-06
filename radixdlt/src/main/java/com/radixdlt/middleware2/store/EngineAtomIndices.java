@@ -83,7 +83,7 @@ public class EngineAtomIndices {
 					final byte[] indexableBytes = toByteArray(indexType, Particle.euidOf(i.getParticle(), hasher));
 					uniqueIndices.add(new StoreIndex(indexableBytes));
 
-					if (i.getParticle() instanceof SystemParticle) {
+					if (i.getParticle() instanceof SystemParticle && nextSpin == Spin.UP) {
 						SystemParticle systemParticle = (SystemParticle) i.getParticle();
 						if (systemParticle.getView() == 0) {
 							uniqueIndices.add(new StoreIndex(
