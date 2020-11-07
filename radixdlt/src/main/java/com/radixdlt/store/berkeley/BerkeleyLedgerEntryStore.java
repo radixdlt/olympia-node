@@ -253,16 +253,6 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 	}
 
 	@Override
-	public Set<StoreIndex> getUniqueIndices(AID aid) {
-		try {
-			return doGetIndices(null, aid, new DatabaseEntry()).getUniqueIndices();
-		} catch (DeserializeException e) {
-			fail("Get unique indices of '" + aid + "' failed");
-		}
-		throw new IllegalStateException("Should never reach here");
-	}
-
-	@Override
 	public void commit(AID aid) {
 		// delete from pending and move to committed
 		Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);

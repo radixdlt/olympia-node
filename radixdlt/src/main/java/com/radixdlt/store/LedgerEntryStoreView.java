@@ -62,13 +62,6 @@ public interface LedgerEntryStoreView {
 	Optional<AID> getLastCommitted();
 
 	/**
-	 * Gets the unique indices associated with a certain aid
-	 * @param aid The aid
-	 * @return The unique indices
-	 */
-	Set<StoreIndex> getUniqueIndices(AID aid);
-
-	/**
 	 * Searches for a certain index.
 	 *
 	 * @param type The type of index
