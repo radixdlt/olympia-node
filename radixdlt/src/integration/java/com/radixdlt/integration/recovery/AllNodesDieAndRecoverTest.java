@@ -17,9 +17,12 @@
 
 package com.radixdlt.integration.recovery;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
+import com.google.inject.Injector;
 import com.google.inject.Scopes;
 import com.google.inject.name.Names;
 import com.radixdlt.ConsensusModule;
@@ -44,12 +47,14 @@ import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.environment.deterministic.DeterministicEpochInfo;
 import com.radixdlt.integration.distributed.MockedMempoolModule;
 import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
 import com.radixdlt.environment.deterministic.DeterministicMessageSenderModule;
@@ -73,6 +78,7 @@ import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -101,16 +107,17 @@ public class AllNodesDieAndRecoverTest {
 	@Parameters
 	public static Collection<Object[]> numNodes() {
 		return List.of(new Object[][] {
-			{2}
+			{1}
 		});
 	}
 
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
 
-	private DeterministicNetwork network;
-	private List<Supplier<DeterministicEpochsConsensusProcessor>> nodeCreators;
-	private List<DeterministicEpochsConsensusProcessor> nodes = new ArrayList<>();
+	private final DeterministicNetwork network;
+	private List<Supplier<Injector>> nodeCreators;
+	private List<Injector> nodes = new ArrayList<>();
+
 	public AllNodesDieAndRecoverTest(int numNodes) {
 		final List<ECKeyPair> nodeKeys = Stream.generate(ECKeyPair::generateNew).limit(numNodes).collect(Collectors.toList());
 
@@ -121,19 +128,19 @@ public class AllNodesDieAndRecoverTest {
 		);
 
 		this.nodeCreators = nodeKeys.stream()
-			.<Supplier<DeterministicEpochsConsensusProcessor>>map(k -> () -> createRunner(k))
+			.<Supplier<Injector>>map(k -> () -> createRunner(k))
 			.collect(Collectors.toList());
 	}
 
 	@Before
 	public void setup() {
-		for (Supplier<DeterministicEpochsConsensusProcessor> nodeCreator : nodeCreators) {
+		for (Supplier<Injector> nodeCreator : nodeCreators) {
 			this.nodes.add(nodeCreator.get());
 		}
-		this.nodes.forEach(DeterministicEpochsConsensusProcessor::start);
+		this.nodes.forEach(i -> i.getInstance(DeterministicEpochsConsensusProcessor.class).start());
 	}
 
-	private DeterministicEpochsConsensusProcessor createRunner(ECKeyPair ecKeyPair) {
+	private Injector createRunner(ECKeyPair ecKeyPair) {
 		final BFTNode self = BFTNode.create(ecKeyPair.getPublicKey());
 
 		return Guice.createInjector(
@@ -222,29 +229,37 @@ public class AllNodesDieAndRecoverTest {
 			new NoFeeModule(),
 
 			new PersistenceModule()
-		).getInstance(DeterministicEpochsConsensusProcessor.class);
+		);
 	}
 
 	private void restartNode(int index) {
 		this.network.dropMessages(m -> m.channelId().receiverIndex() == index && m.channelId().senderIndex() == index);
-		DeterministicEpochsConsensusProcessor restartedRunner = nodeCreators.get(index).get();
-		this.nodes.set(index, restartedRunner);
-		restartedRunner.start();
+		Injector injector = nodeCreators.get(index).get();
+		this.nodes.set(index, injector);
+		injector.getInstance(DeterministicEpochsConsensusProcessor.class).start();
 	}
 
 	private void processForCount(int messageCount) {
 		for (int i = 0; i < messageCount; i++) {
 			Timed<ControlledMessage> msg = this.network.nextMessage();
-			DeterministicEpochsConsensusProcessor runner = this.nodes.get(msg.value().channelId().receiverIndex());
-			runner.handleMessage(msg.value().message());
+			Injector injector = this.nodes.get(msg.value().channelId().receiverIndex());
+			injector.getInstance(DeterministicEpochsConsensusProcessor.class).handleMessage(msg.value().message());
 		}
 	}
 
 	@Test
-	@Ignore("This currently breaks liveness")
-	public void all_nodes_restart_should_be_able_to_reboot_correctly() {
+	@Ignore("Liveness broken if all nodes restart")
+	public void all_nodes_restart_liveness_should_not_be_broken() {
+		EpochView epochView = this.nodes.get(0).getInstance(DeterministicEpochInfo.class).getCurrentEpochView();
+
 		for (int restart = 0; restart < 100; restart++) {
-			processForCount(1000);
+			processForCount(2000);
+
+			EpochView nextEpochView = this.nodes.stream().map(i -> i.getInstance(DeterministicEpochInfo.class).getCurrentEpochView())
+				.max(Comparator.naturalOrder()).orElse(new EpochView(0, View.genesis()));
+			assertThat(nextEpochView).isGreaterThan(epochView);
+			epochView = nextEpochView;
+
 			for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
 				restartNode(nodeIndex);
 			}

@@ -21,7 +21,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
@@ -29,7 +28,6 @@ import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.sync.BFTSync.BFTSyncTimeoutScheduler;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
-import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
@@ -47,18 +45,6 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork.Deter
 public class DeterministicMessageSenderModule extends AbstractModule {
 	@Override
 	protected void configure() {
-		EpochInfoSender emptyInfoSender = new EpochInfoSender() {
-			@Override
-			public void sendTimeoutProcessed(Timeout timeout) {
-				// Ignore
-			}
-
-			@Override
-			public void sendCurrentView(EpochView epochView) {
-				// Ignore
-			}
-		};
-
 		bind(ProposalBroadcaster.class).to(DeterministicSender.class);
 		bind(ProceedToViewSender.class).to(DeterministicSender.class);
 		bind(SyncVerticesRequestSender.class).to(DeterministicSender.class);
@@ -72,7 +58,8 @@ public class DeterministicMessageSenderModule extends AbstractModule {
 		Multibinder.newSetBinder(binder(), VertexStoreEventSender.class).addBinding().to(DeterministicSender.class);
 		Multibinder.newSetBinder(binder(), EpochsLedgerUpdateSender.class).addBinding().to(DeterministicSender.class);
 
-		bind(EpochInfoSender.class).toInstance(emptyInfoSender);
+		bind(EpochInfoSender.class).to(DeterministicEpochInfo.class).in(Scopes.SINGLETON);
+		bind(DeterministicEpochInfo.class).in(Scopes.SINGLETON);
 
 		bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
 	}

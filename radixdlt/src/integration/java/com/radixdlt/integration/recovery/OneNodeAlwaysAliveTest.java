@@ -17,9 +17,12 @@
 
 package com.radixdlt.integration.recovery;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
+import com.google.inject.Injector;
 import com.google.inject.Scopes;
 import com.google.inject.name.Names;
 import com.radixdlt.ConsensusModule;
@@ -44,12 +47,14 @@ import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.environment.deterministic.DeterministicEpochInfo;
 import com.radixdlt.integration.distributed.MockedMempoolModule;
 import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
 import com.radixdlt.environment.deterministic.DeterministicMessageSenderModule;
@@ -73,11 +78,14 @@ import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.cli.ParseException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Rule;
@@ -94,6 +102,7 @@ import org.junit.runners.Parameterized.Parameters;
  */
 @RunWith(Parameterized.class)
 public class OneNodeAlwaysAliveTest {
+	private static final Logger logger = LogManager.getLogger();
 
 	@Parameters
 	public static Collection<Object[]> numNodes() {
@@ -106,8 +115,8 @@ public class OneNodeAlwaysAliveTest {
 	public TemporaryFolder folder = new TemporaryFolder();
 
 	private DeterministicNetwork network;
-	private List<Supplier<DeterministicEpochsConsensusProcessor>> nodeCreators;
-	private List<DeterministicEpochsConsensusProcessor> nodes = new ArrayList<>();
+	private List<Supplier<Injector>> nodeCreators;
+	private List<Injector> nodes = new ArrayList<>();
 	public OneNodeAlwaysAliveTest(int numNodes) {
 		final List<ECKeyPair> nodeKeys = Stream.generate(ECKeyPair::generateNew).limit(numNodes).collect(Collectors.toList());
 
@@ -118,19 +127,19 @@ public class OneNodeAlwaysAliveTest {
 		);
 
 		this.nodeCreators = nodeKeys.stream()
-			.<Supplier<DeterministicEpochsConsensusProcessor>>map(k -> () -> createRunner(k))
+			.<Supplier<Injector>>map(k -> () -> createRunner(k))
 			.collect(Collectors.toList());
 	}
 
 	@Before
 	public void setup() {
-		for (Supplier<DeterministicEpochsConsensusProcessor> nodeCreator : nodeCreators) {
+		for (Supplier<Injector> nodeCreator : nodeCreators) {
 			this.nodes.add(nodeCreator.get());
 		}
-		this.nodes.forEach(DeterministicEpochsConsensusProcessor::start);
+		this.nodes.forEach(i -> i.getInstance(DeterministicEpochsConsensusProcessor.class).start());
 	}
 
-	private DeterministicEpochsConsensusProcessor createRunner(ECKeyPair ecKeyPair) {
+	private Injector createRunner(ECKeyPair ecKeyPair) {
 		final BFTNode self = BFTNode.create(ecKeyPair.getPublicKey());
 
 		return Guice.createInjector(
@@ -219,28 +228,37 @@ public class OneNodeAlwaysAliveTest {
 			new NoFeeModule(),
 
 			new PersistenceModule()
-		).getInstance(DeterministicEpochsConsensusProcessor.class);
+		);
 	}
 
 	private void restartNode(int index) {
 		this.network.dropMessages(m -> m.channelId().receiverIndex() == index && m.channelId().senderIndex() == index);
-		DeterministicEpochsConsensusProcessor restartedRunner = nodeCreators.get(index).get();
-		this.nodes.set(index, restartedRunner);
-		restartedRunner.start();
+		Injector injector = nodeCreators.get(index).get();
+		this.nodes.set(index, injector);
+		injector.getInstance(DeterministicEpochsConsensusProcessor.class).start();
 	}
 
 	private void processForCount(int messageCount) {
 		for (int i = 0; i < messageCount; i++) {
 			Timed<ControlledMessage> msg = this.network.nextMessage();
-			DeterministicEpochsConsensusProcessor runner = this.nodes.get(msg.value().channelId().receiverIndex());
-			runner.handleMessage(msg.value().message());
+			Injector injector = this.nodes.get(msg.value().channelId().receiverIndex());
+			injector.getInstance(DeterministicEpochsConsensusProcessor.class).handleMessage(msg.value().message());
 		}
 	}
 
 	@Test
-	public void all_nodes_except_for_one_need_to_restart_should_be_able_to_reboot_correctly_via_sync() {
-		for (int restart = 0; restart < 100; restart++) {
+	public void all_nodes_except_for_one_need_to_restart_should_be_able_to_reboot_correctly_and_liveness_not_broken() {
+		EpochView epochView = this.nodes.get(0).getInstance(DeterministicEpochInfo.class).getCurrentEpochView();
+
+		for (int restart = 0; restart < 10; restart++) {
 			processForCount(1000);
+
+			EpochView nextEpochView = this.nodes.stream().map(i -> i.getInstance(DeterministicEpochInfo.class).getCurrentEpochView())
+				.max(Comparator.naturalOrder()).orElse(new EpochView(0, View.genesis()));
+			assertThat(nextEpochView).isGreaterThan(epochView);
+			epochView = nextEpochView;
+
+			logger.info("Restarting " + restart);
 			for (int nodeIndex = 1; nodeIndex < nodes.size(); nodeIndex++) {
 				restartNode(nodeIndex);
 			}

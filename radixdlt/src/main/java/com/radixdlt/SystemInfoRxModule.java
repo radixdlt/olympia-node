@@ -89,5 +89,4 @@ public final class SystemInfoRxModule extends AbstractModule {
 		bind(InfoRx.class).toInstance(infoRx);
 		bind(new TypeLiteral<Observable<BFTCommittedUpdate>>() { }).toInstance(committed.rx());
 	}
-
 }
