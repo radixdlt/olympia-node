@@ -215,7 +215,7 @@ public class RecoveryTest {
 	}
 
 	private CommittedAtomsStore getAtomStore() {
-		return currentInjector.getInstance(Key.get(new TypeLiteral<CommittedAtomsStore>() { }));
+		return currentInjector.getInstance(CommittedAtomsStore.class);
 	}
 
 	private void restartNode() {
