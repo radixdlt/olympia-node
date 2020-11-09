@@ -61,9 +61,10 @@ class TestnetNodes {
             CmdHelper.runCommand("docker rm -f dummy")
 
             def output, error
+            def default_dockerOptions = "-v ${keyVolume}:/ansible/ssh"
             def runCommand = "bash -c".tokenize() << (
                     "docker run --rm  " +
-                            "${additionalDockerOptions ?: '-v ${keyVolume}:/ansible/ssh'} " +
+                            "${additionalDockerOptions ?: default_dockerOptions} " +
                             "--name node-ansible ${ansibleImage}  " +
                             "check.yml " +
                             "${additionalCommandOptions ?: ''} " +
