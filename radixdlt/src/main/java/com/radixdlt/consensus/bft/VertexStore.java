@@ -17,6 +17,8 @@
 
 package com.radixdlt.consensus.bft;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSet.Builder;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.Ledger;
@@ -68,9 +70,9 @@ public final class VertexStore {
 	private QuorumCertificate highestCommittedQC;
 
 	private VertexStore(
+		Ledger ledger,
 		VerifiedVertex rootVertex,
 		QuorumCertificate rootQC,
-		Ledger ledger,
 		BFTUpdateSender bftUpdateSender,
 		VertexStoreEventSender vertexStoreEventSender,
 		SystemCounters counters
@@ -105,9 +107,9 @@ public final class VertexStore {
 		}
 
 		return new VertexStore(
+			ledger,
 			rootVertex,
 			rootQC,
-			ledger,
 			bftUpdateSender,
 			vertexStoreEventSender,
 			counters
@@ -233,15 +235,23 @@ public final class VertexStore {
 			.map(executedVertex -> new BFTHeader(vertex.getView(), vertex.getId(), executedVertex.getLedgerHeader()));
 	}
 
-	private void removeVertexAndChildren(HashCode vertexId) {
+	private void removeVertexAndPruneInternal(HashCode vertexId, HashCode skip, Builder<HashCode> prunedVerticesBuilder) {
 		vertices.remove(vertexId);
-		if (vertexId.equals(rootVertex.getId())) {
+
+		if (this.rootVertex.getId().equals(vertexId)) {
 			return;
 		}
+
+		if (skip != null) {
+			prunedVerticesBuilder.add(vertexId);
+		}
+
 		Set<HashCode> children = vertexChildren.remove(vertexId);
 		if (children != null) {
 			for (HashCode child : children) {
-				removeVertexAndChildren(child);
+				if (!child.equals(skip)) {
+					removeVertexAndPruneInternal(child, null, prunedVerticesBuilder);
+				}
 			}
 		}
 	}
@@ -262,15 +272,21 @@ public final class VertexStore {
 			throw new IllegalStateException("Committing vertex not in store: " + header);
 		}
 
-		final ImmutableList<PreparedVertex> path = ImmutableList.copyOf(getPathFromRoot(tipVertex.getId()));
 		this.rootVertex = tipVertex;
-		path.forEach(v -> this.removeVertexAndChildren(v.getId()));
+		Builder<HashCode> prunedSetBuilder = ImmutableSet.builder();
+		final ImmutableList<PreparedVertex> path = ImmutableList.copyOf(getPathFromRoot(tipVertex.getId()));
+		HashCode prev = null;
+		for (int i = path.size() - 1; i >= 0; i--) {
+			this.removeVertexAndPruneInternal(path.get(i).getId(), prev, prunedSetBuilder);
+			prev = path.get(i).getId();
+		}
+		ImmutableSet<HashCode> prunedSet = prunedSetBuilder.build();
 
 		this.counters.add(CounterType.BFT_PROCESSED, path.size());
 		final BFTCommittedUpdate bftCommittedUpdate = new BFTCommittedUpdate(path, highQC);
 		this.vertexStoreEventSender.sendCommitted(bftCommittedUpdate);
 
-		this.ledger.commit(path, highQC);
+		this.ledger.commit(path, highQC, prunedSet);
 
 		updateVertexStoreSize();
 	}

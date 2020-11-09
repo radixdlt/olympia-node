@@ -22,7 +22,6 @@ import com.radixdlt.identifiers.AID;
 
 import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
 import java.util.Optional;
-import java.util.Set;
 
 /**
  * A read-only view of a specific LedgerEntryStore
@@ -34,19 +33,6 @@ public interface LedgerEntryStoreView {
 	 * @return Whether the given aid is contained in this view
 	 */
 	boolean contains(AID aid);
-
-	/**
-	 * Gets the status for a certain aid.
-	 * @param aid The aid
-	 * @return The status
-	 */
-	LedgerEntryStatus getStatus(AID aid);
-
-	/**
-	 * Gets the pending aids
-	 * @return The pending aids
-	 */
-	Set<AID> getPending();
 
 	/**
 	 * Gets the atom associated with a certain aid

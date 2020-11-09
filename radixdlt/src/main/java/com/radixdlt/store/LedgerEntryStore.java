@@ -46,7 +46,7 @@ public interface LedgerEntryStore extends LedgerEntryStoreView {
 	 * @param duplicateIndices The duplicate indices
 	 * @return Whether the {@link LedgerEntry} was stored
 	 */
-	LedgerEntryStoreResult store(LedgerEntry ledgerEntry, Set<StoreIndex> uniqueIndices, Set<StoreIndex> duplicateIndices);
+	//LedgerEntryStoreResult store(LedgerEntry ledgerEntry, Set<StoreIndex> uniqueIndices, Set<StoreIndex> duplicateIndices);
 
 	/**
 	 * Replaces a set of atoms with another atom in an atomic operation
@@ -58,7 +58,7 @@ public interface LedgerEntryStore extends LedgerEntryStoreView {
 	 * @param duplicateIndices The duplicate indices of that atom
 	 * @return Whether all {@link AID}s were successfully deleted
 	 */
-	LedgerEntryStoreResult replace(Set<AID> aids, LedgerEntry ledgerEntry, Set<StoreIndex> uniqueIndices, Set<StoreIndex> duplicateIndices);
+	//LedgerEntryStoreResult replace(Set<AID> aids, LedgerEntry ledgerEntry, Set<StoreIndex> uniqueIndices, Set<StoreIndex> duplicateIndices);
 
 	void reset();
 

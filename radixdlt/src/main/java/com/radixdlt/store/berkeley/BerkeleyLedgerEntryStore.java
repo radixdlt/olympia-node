@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.UnsignedBytes;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
@@ -34,7 +35,6 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryConflict;
 import com.radixdlt.store.LedgerEntryStoreResult;
-import com.radixdlt.store.LedgerEntryStatus;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.utils.Longs;
 import com.sleepycat.je.Cursor;
@@ -53,6 +53,7 @@ import com.sleepycat.je.Transaction;
 import com.sleepycat.je.TransactionConfig;
 import com.sleepycat.je.UniqueConstraintException;
 
+import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.database.DatabaseEnvironment;
@@ -91,7 +92,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 	private SecondaryDatabase uniqueIndices; // TempoAtoms by secondary unique indices (with prefixes)
 	private SecondaryDatabase duplicatedIndices; // TempoAtoms by secondary duplicate indices (with prefixes)
 	private Database atomIndices; // TempoAtomIndices by same primary keys
-	private Database pending; // AIDs marked as 'pending'
+	private Database pendingDatabase; // AIDs marked as 'pending'
 
 	@Inject
 	public BerkeleyLedgerEntryStore(
@@ -141,7 +142,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 			this.uniqueIndices = env.openSecondaryDatabase(null, UNIQUE_INDICES_DB_NAME, this.atoms, uniqueIndicesConfig);
 			this.duplicatedIndices = env.openSecondaryDatabase(null, DUPLICATE_INDICES_DB_NAME, this.atoms, duplicateIndicesConfig);
 			this.atomIndices = env.openDatabase(null, ATOM_INDICES_DB_NAME, primaryConfig);
-			this.pending = env.openDatabase(null, PENDING_DB_NAME, pendingConfig);
+			this.pendingDatabase = env.openDatabase(null, PENDING_DB_NAME, pendingConfig);
 		} catch (Exception e) {
 			throw new BerkeleyStoreException("Error while opening databases", e);
 		}
@@ -197,8 +198,8 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 		if (this.atomIndices != null) {
 			this.atomIndices.close();
 		}
-		if (this.pending != null) {
-			this.pending.close();
+		if (this.pendingDatabase != null) {
+			this.pendingDatabase.close();
 		}
 	}
 
@@ -216,24 +217,6 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 	public boolean contains(AID aid) {
 		DatabaseEntry key = new DatabaseEntry(StoreIndex.from(ENTRY_INDEX_PREFIX, aid.getBytes()));
 		return OperationStatus.SUCCESS == this.uniqueIndices.get(null, key, null, LockMode.DEFAULT);
-	}
-
-	@Override
-	public LedgerEntryStatus getStatus(AID aid) {
-		if (!contains(aid)) {
-			return LedgerEntryStatus.UNAVAILABLE;
-		}
-
-		if (isPending(aid)) {
-			return LedgerEntryStatus.PENDING;
-		} else {
-			return LedgerEntryStatus.COMMITTED;
-		}
-	}
-
-	private boolean isPending(AID aid) {
-			DatabaseEntry key = new DatabaseEntry(aid.getBytes());
-			return OperationStatus.SUCCESS == this.pending.get(null, key, null, LockMode.DEFAULT);
 	}
 
 	@Override
@@ -286,7 +269,6 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 			if (!doDelete(aid, transaction, pKey, indices)) {
 				fail("Delete of pending atom '" + aid + "' failed");
 			}
-			doRemovePending(aid, transaction);
 
 			long logicalClock = lcFromPKey(pKey.getData());
 			// transaction is aborted in doStore in case of conflict
@@ -300,6 +282,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 		}
 	}
 
+	/*
 	@Override
 	public LedgerEntryStoreResult store(LedgerEntry atom, Set<StoreIndex> uniqueIndices, Set<StoreIndex> duplicateIndices) {
 		Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);
@@ -339,17 +322,19 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 		}
 		throw new IllegalStateException("Should never reach here");
 	}
+	 */
 
-	private LedgerEntryStoreResult doStorePending(
-		LedgerEntry entry,
-		Set<StoreIndex> uniqueIndices,
-		Set<StoreIndex> duplicateIndices,
-		Transaction transaction
-	) throws DeserializeException {
-		byte[] atomData = serialization.toDson(entry, Output.PERSIST);
-		LedgerEntryIndices indices = LedgerEntryIndices.from(entry, uniqueIndices, duplicateIndices);
-		doAddPending(entry.getAID(), entry.getStateVersion(), transaction);
-		return doStore(PREFIX_PENDING, entry.getStateVersion(), entry.getAID(), atomData, indices, transaction);
+	public void storeVertices(List<VerifiedVertex> vertices) {
+		Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);
+
+		for (VerifiedVertex verifiedVertex : vertices) {
+			DatabaseEntry key = new DatabaseEntry(verifiedVertex.getId().asBytes());
+			// TODO anything more useful that could be used as value for pending markers?
+			DatabaseEntry value = new DatabaseEntry(serialization.toDson(verifiedVertex.toSerializable(), Output.ALL));
+			pendingDatabase.putNoOverwrite(transaction, key, value);
+		}
+
+		//return doStore(PREFIX_PENDING, entry.getStateVersion(), entry.getAID(), atomData, indices, transaction);
 	}
 
 	private LedgerEntryStoreResult doStore(
@@ -413,10 +398,6 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 	}
 
 	private boolean doDelete(AID aid, Transaction transaction) throws DeserializeException {
-		if (!isPending(aid)) {
-			fail("Attempted to delete committed atom '" + aid + "'");
-		}
-
 		DatabaseEntry pKey = new DatabaseEntry();
 		LedgerEntryIndices indices = doGetIndices(transaction, aid, pKey);
 		return doDelete(aid, transaction, pKey, indices);
@@ -452,19 +433,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 		return serialization.fromDson(value.getData(), LedgerEntryIndices.class);
 	}
 
-	private void doAddPending(AID aid, long pendingLC, Transaction transaction) {
-		DatabaseEntry key = new DatabaseEntry(aid.getBytes());
-		// TODO anything more useful that could be used as value for pending markers?
-		DatabaseEntry value = new DatabaseEntry(Longs.toByteArray(pendingLC));
-		pending.putNoOverwrite(transaction, key, value);
-	}
 
-	private void doRemovePending(AID aid, Transaction transaction) {
-		OperationStatus status = pending.delete(transaction, new DatabaseEntry(aid.getBytes()));
-		if (status != OperationStatus.SUCCESS) {
-			fail("Removing atom '" + aid + "' from pending failed with status " + status);
-		}
-	}
 
 	@Override
 	public ImmutableList<LedgerEntry> getNextCommittedLedgerEntries(long stateVersion, int limit) throws NextCommittedLimitReachedException {
@@ -557,21 +526,6 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 
 			return false;
 		}
-	}
-
-	@Override
-	public Set<AID> getPending() {
-		ImmutableSet.Builder<AID> pendingAids = ImmutableSet.builder();
-		try (com.sleepycat.je.Cursor cursor = this.pending.openCursor(null, null)) {
-			DatabaseEntry pKey = new DatabaseEntry();
-			OperationStatus status = cursor.getFirst(pKey, null, LockMode.DEFAULT);
-			while (status == OperationStatus.SUCCESS) {
-				AID aid = AID.from(pKey.getData());
-				pendingAids.add(aid);
-				status = cursor.getNext(pKey, null, LockMode.DEFAULT);
-			}
-		}
-		return pendingAids.build();
 	}
 
 	@Override

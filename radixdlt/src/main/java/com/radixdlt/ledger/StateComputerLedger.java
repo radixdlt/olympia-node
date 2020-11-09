@@ -19,6 +19,7 @@ package com.radixdlt.ledger;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.HighQC;
@@ -202,7 +203,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	}
 
 	@Override
-	public void commit(ImmutableList<PreparedVertex> vertices, HighQC highQC) {
+	public void commit(ImmutableList<PreparedVertex> vertices, HighQC highQC, ImmutableSet<HashCode> prunedVertices) {
 		final ImmutableList<Command> commands = vertices.stream()
 			.flatMap(PreparedVertex::successfulCommands)
 			.map(PreparedCommand::command)
