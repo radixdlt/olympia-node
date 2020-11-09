@@ -30,11 +30,13 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.utils.Pair;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import javax.annotation.concurrent.NotThreadSafe;
 
 /**
@@ -57,8 +59,9 @@ public final class VertexStore {
 	private final BFTUpdateSender bftUpdateSender;
 	private final Ledger ledger;
 	private final SystemCounters counters;
+
 	private final Map<HashCode, PreparedVertex> vertices = new HashMap<>();
-	private final Map<HashCode, Integer> vertexNumChildren = new HashMap<>();
+	private final Map<HashCode, Set<HashCode>> vertexChildren = new HashMap<>();
 
 	// These should never be null
 	private VerifiedVertex rootVertex;
@@ -131,7 +134,7 @@ public final class VertexStore {
 		}
 
 		this.vertices.clear();
-		this.vertexNumChildren.clear();
+		this.vertexChildren.clear();
 		this.rootVertex = rootVertex;
 		this.highestQC = rootQC;
 		this.vertexStoreEventSender.highQC(rootQC);
@@ -212,8 +215,9 @@ public final class VertexStore {
 			// TODO: (also see commitVertex->storeAtom)
 			if (!vertices.containsKey(preparedVertex.getId())) {
 				vertices.put(preparedVertex.getId(), preparedVertex);
-				int numChildren = vertexNumChildren.merge(preparedVertex.getParentId(), 1, Integer::sum);
-				if (numChildren > 1) {
+				Set<HashCode> siblings = vertexChildren.computeIfAbsent(preparedVertex.getParentId(), i -> new HashSet<>());
+				siblings.add(preparedVertex.getId());
+				if (siblings.size() > 1) {
 					this.counters.increment(CounterType.BFT_VERTEX_STORE_FORKS);
 				}
 				if (!vertex.hasDirectParent()) {
@@ -231,12 +235,23 @@ public final class VertexStore {
 			.map(executedVertex -> new BFTHeader(vertex.getView(), vertex.getId(), executedVertex.getLedgerHeader()));
 	}
 
+	private void removeVertexAndChildren(HashCode vertexId) {
+		vertices.remove(vertexId);
+		if (vertexId.equals(rootVertex.getId())) {
+			return;
+		}
+		Set<HashCode> children = vertexChildren.remove(vertexId);
+		if (children != null) {
+			for (HashCode child : children) {
+				removeVertexAndChildren(child);
+			}
+		}
+	}
+
 	/**
-	 * Commit a vertex. Executes the atom and prunes the tree. Returns
-	 * the Vertex if commit was successful. If the store is ahead of
-	 * what is to be committed, returns an empty optional
-	 *
-	 * @param header the proof of commit
+	 * Commit a vertex. Executes the atom and prunes the tree.
+	 * @param header the header to be committed
+	 * @param proof the proof of commit
 	 */
 	private void commit(BFTHeader header, VerifiedLedgerHeaderAndProof proof) {
 		if (header.getView().compareTo(this.rootVertex.getView()) <= 0) {
@@ -249,18 +264,14 @@ public final class VertexStore {
 			throw new IllegalStateException("Committing vertex not in store: " + header);
 		}
 
-		// TODO: Must prune all other children of root
 		final ImmutableList<PreparedVertex> path = ImmutableList.copyOf(getPathFromRoot(tipVertex.getId()));
-		path.forEach(v -> {
-			vertices.remove(v.getId());
-			vertexNumChildren.remove(v.getParentId());
-		});
+		this.rootVertex = tipVertex;
+		path.forEach(v -> this.removeVertexAndChildren(v.getId()));
+
 		this.counters.add(CounterType.BFT_PROCESSED, path.size());
 		final BFTCommittedUpdate bftCommittedUpdate = new BFTCommittedUpdate(path, proof);
 		this.vertexStoreEventSender.sendCommitted(bftCommittedUpdate);
 		this.ledger.commit(path, proof);
-
-		rootVertex = tipVertex;
 
 		updateVertexStoreSize();
 	}
