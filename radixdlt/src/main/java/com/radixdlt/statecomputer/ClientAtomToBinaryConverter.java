@@ -18,7 +18,6 @@
 package com.radixdlt.statecomputer;
 
 import com.google.inject.Inject;
-import com.radixdlt.crypto.Hasher;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput;
@@ -29,12 +28,10 @@ import com.radixdlt.serialization.Serialization;
  */
 public class ClientAtomToBinaryConverter {
 	private final Serialization serializer;
-	private final Hasher hasher;
 
 	@Inject
-	public ClientAtomToBinaryConverter(Serialization serializer, Hasher hasher) {
+	public ClientAtomToBinaryConverter(Serialization serializer) {
 		this.serializer = serializer;
-		this.hasher = hasher;
 	}
 
 	public byte[] toLedgerEntryContent(ClientAtom clientAtom) {

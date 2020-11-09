@@ -19,7 +19,6 @@ package org.radix.api.services;
 
 import java.util.Optional;
 
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.Sha256Hasher;
 import org.json.JSONObject;
 import org.junit.Before;
