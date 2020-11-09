@@ -22,9 +22,9 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.middleware2.store.InMemoryCommittedEpochProofsStore;
 import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
 import java.util.Objects;
+import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -35,14 +35,12 @@ public class RemoteSyncServiceProcessor {
 	private static final Logger log = LogManager.getLogger();
 
 	private final CommittedReader committedReader;
-	private final InMemoryCommittedEpochProofsStore committedEpochProofsStore;
 	private final StateSyncNetworkSender stateSyncNetwork;
 
 	private final int batchSize;
 
 	public RemoteSyncServiceProcessor(
 		CommittedReader committedReader,
-		InMemoryCommittedEpochProofsStore committedEpochProofsStore,
 		StateSyncNetworkSender stateSyncNetwork,
 		int batchSize
 	) {
@@ -50,7 +48,6 @@ public class RemoteSyncServiceProcessor {
 			throw new IllegalArgumentException();
 		}
 		this.committedReader = Objects.requireNonNull(committedReader);
-		this.committedEpochProofsStore = Objects.requireNonNull(committedEpochProofsStore);
 		this.batchSize = batchSize;
 		this.stateSyncNetwork = Objects.requireNonNull(stateSyncNetwork);
 	}
@@ -62,15 +59,15 @@ public class RemoteSyncServiceProcessor {
 			log.info("REMOTE_EPOCH_SYNC_REQUEST: {}", syncRequest);
 			long currentEpoch = currentHeader.getLedgerHeader().getEpoch() + 1;
 			long nextEpoch = currentEpoch + 1;
-			VerifiedLedgerHeaderAndProof nextEpochProof = committedEpochProofsStore.getEpochProof(nextEpoch);
-			if (nextEpochProof == null) {
+			Optional<VerifiedLedgerHeaderAndProof> nextEpochProof = committedReader.getEpochVerifiedHeader(nextEpoch);
+			if (nextEpochProof.isEmpty()) {
 				log.warn("REMOTE_EPOCH_SYNC_REQUEST: Unable to serve epoch sync request {}.", syncRequest);
 				return;
 			}
 
 			DtoCommandsAndProof dtoCommandsAndProof = new DtoCommandsAndProof(
 				ImmutableList.of(),
-				currentHeader, nextEpochProof.toDto()
+				currentHeader, nextEpochProof.get().toDto()
 			);
 			log.info("REMOTE_EPOCH_SYNC_REQUEST: Sending response {}", dtoCommandsAndProof);
 			stateSyncNetwork.sendSyncResponse(syncRequest.getNode(), dtoCommandsAndProof);
