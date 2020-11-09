@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -201,11 +202,12 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	}
 
 	@Override
-	public void commit(ImmutableList<PreparedVertex> vertices, VerifiedLedgerHeaderAndProof proof) {
+	public void commit(ImmutableList<PreparedVertex> vertices, HighQC highQC) {
 		final ImmutableList<Command> commands = vertices.stream()
 			.flatMap(PreparedVertex::successfulCommands)
 			.map(PreparedCommand::command)
 			.collect(ImmutableList.toImmutableList());
+		VerifiedLedgerHeaderAndProof proof = highQC.proof();
 		VerifiedCommandsAndProof verifiedCommandsAndProof = new VerifiedCommandsAndProof(commands, proof);
 		this.commit(verifiedCommandsAndProof);
 	}

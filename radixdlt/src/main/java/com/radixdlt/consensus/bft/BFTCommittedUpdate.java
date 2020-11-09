@@ -18,6 +18,7 @@
 package com.radixdlt.consensus.bft;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import java.util.Objects;
 
@@ -26,18 +27,18 @@ import java.util.Objects;
  */
 public final class BFTCommittedUpdate {
 	private final ImmutableList<PreparedVertex> committed;
-	private final VerifiedLedgerHeaderAndProof proof;
+	private final HighQC highQC;
 
-	BFTCommittedUpdate(ImmutableList<PreparedVertex> committed, VerifiedLedgerHeaderAndProof proof) {
+	BFTCommittedUpdate(ImmutableList<PreparedVertex> committed, HighQC highQC) {
 		this.committed = Objects.requireNonNull(committed);
-		this.proof = Objects.requireNonNull(proof);
+		this.highQC = Objects.requireNonNull(highQC);
 	}
 
 	public ImmutableList<PreparedVertex> getCommitted() {
 		return committed;
 	}
 
-	public VerifiedLedgerHeaderAndProof getProof() {
-		return proof;
+	public HighQC getProof() {
+		return highQC;
 	}
 }

@@ -186,8 +186,7 @@ public final class VertexStore {
 				this.highestCommittedQC = qc;
 			}
 
-			VerifiedLedgerHeaderAndProof proof = headerAndProof.getSecond();
-			this.commit(header, proof);
+			this.commit(header, highQC());
 		});
 
 		return true;
@@ -251,9 +250,9 @@ public final class VertexStore {
 	/**
 	 * Commit a vertex. Executes the atom and prunes the tree.
 	 * @param header the header to be committed
-	 * @param proof the proof of commit
+	 * @param highQC the proof of commit
 	 */
-	private void commit(BFTHeader header, VerifiedLedgerHeaderAndProof proof) {
+	private void commit(BFTHeader header, HighQC highQC) {
 		if (header.getView().compareTo(this.rootVertex.getView()) <= 0) {
 			return;
 		}
@@ -269,9 +268,10 @@ public final class VertexStore {
 		path.forEach(v -> this.removeVertexAndChildren(v.getId()));
 
 		this.counters.add(CounterType.BFT_PROCESSED, path.size());
-		final BFTCommittedUpdate bftCommittedUpdate = new BFTCommittedUpdate(path, proof);
+		final BFTCommittedUpdate bftCommittedUpdate = new BFTCommittedUpdate(path, highQC);
 		this.vertexStoreEventSender.sendCommitted(bftCommittedUpdate);
-		this.ledger.commit(path, proof);
+
+		this.ledger.commit(path, highQC);
 
 		updateVertexStoreSize();
 	}

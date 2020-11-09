@@ -43,7 +43,7 @@ public interface Ledger {
 	 * @param vertices vertices to commit
 	 * @param proof proof of commit
 	 */
-	void commit(ImmutableList<PreparedVertex> vertices, VerifiedLedgerHeaderAndProof proof);
+	void commit(ImmutableList<PreparedVertex> vertices, HighQC proof);
 
 	/**
 	 * Commit commands
