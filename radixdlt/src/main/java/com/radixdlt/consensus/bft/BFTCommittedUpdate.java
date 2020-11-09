@@ -19,7 +19,6 @@ package com.radixdlt.consensus.bft;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import java.util.Objects;
 
 /**

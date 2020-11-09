@@ -28,8 +28,12 @@ public interface LedgerEntryStore extends LedgerEntryStoreView {
 	/**
 	 * Irreversibly commits this store to an atom with at a certain logical clock.
 	 * Once committed, an atom may no longer be deleted or replaced.
-	 *  @param aid The aid
-	 *
+	 */
+	void commit(LedgerEntry atom, Set<StoreIndex> uniqueIndices, Set<StoreIndex> duplicateIndices);
+
+	/**
+	 * Irreversibly commits this store to an atom with at a certain logical clock.
+	 * Once committed, an atom may no longer be deleted or replaced.
 	 */
 	void commit(AID aid);
 

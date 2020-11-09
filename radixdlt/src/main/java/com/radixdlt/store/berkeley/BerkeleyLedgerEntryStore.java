@@ -253,6 +253,24 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 	}
 
 	@Override
+	public void commit(LedgerEntry atom, Set<StoreIndex> uniqueIndices, Set<StoreIndex> duplicateIndices) {
+		Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);
+
+		LedgerEntryIndices indices = LedgerEntryIndices.from(atom, uniqueIndices, duplicateIndices);
+		byte[] atomData = serialization.toDson(atom, Output.PERSIST);
+
+		try {
+			LedgerEntryStoreResult result = doStore(PREFIX_COMMITTED, atom.getStateVersion(), atom.getAID(), atomData, indices, transaction);
+			if (result.isSuccess()) {
+				transaction.commit();
+			}
+		} catch (Exception e) {
+			transaction.abort();
+			fail("Commit of atom failed", e);
+		}
+	}
+
+	@Override
 	public void commit(AID aid) {
 		// delete from pending and move to committed
 		Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);
