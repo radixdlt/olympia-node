@@ -94,11 +94,10 @@ pipeline {
                     env.check == "TAG_NOT_FOUND"
                 }
             }
-            stage('deploy-release') {
-                steps {
-                    build job: 'Release-Branch/run-all-tests'
-                }
+            steps {
+                build job: 'Release-Branch/run-all-tests'
             }
+
         }
     }
     post {
