@@ -19,10 +19,15 @@ package com.radixdlt.consensus.bft;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.utils.UInt256;
+
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -136,5 +141,34 @@ public class BFTValidatorSetTest {
 		assertTrue(vst1.addSignature(node1, 0L, k1.sign(message)));
 		assertTrue(vst1.complete());
 		assertEquals(1, vst1.signatures().count());
+	}
+
+	@Test
+	public void testRetainsOrder() {
+		for (var i = 0; i < 10; ++i) {
+			final var validators = IntStream.range(0, 100)
+				.mapToObj(n -> ECKeyPair.generateNew())
+				.map(ECKeyPair::getPublicKey)
+				.map(BFTNode::create)
+				.map(node -> BFTValidator.from(node, UInt256.ONE))
+				.collect(Collectors.toList());
+
+			final var validatorSet = BFTValidatorSet.from(validators);
+			final var setValidators = Lists.newArrayList(validatorSet.getValidators());
+			checkIterableOrder(validators, setValidators);
+		}
+	}
+
+	private <T> void checkIterableOrder(Iterable<T> iterable1, Iterable<T> iterable2) {
+		final var i1 = iterable1.iterator();
+		final var i2 = iterable2.iterator();
+
+		while (i1.hasNext() && i2.hasNext()) {
+			final var o1 = i1.next();
+			final var o2 = i2.next();
+			assertEquals("Objects not the same", o1, o2);
+		}
+		assertFalse("Iterable 1 larger than iterable 2", i1.hasNext());
+		assertFalse("Iterable 2 larger than iterable 1", i2.hasNext());
 	}
 }

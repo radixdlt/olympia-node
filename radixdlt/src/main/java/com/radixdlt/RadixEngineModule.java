@@ -17,6 +17,7 @@
 
 package com.radixdlt;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
@@ -44,11 +45,8 @@ import com.radixdlt.statecomputer.RadixEngineValidatorSetBuilder;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
-import java.util.stream.Collectors;
 
 /**
  * Module which manages execution of commands
@@ -138,9 +136,11 @@ public class RadixEngineModule extends AbstractModule {
 		//   .ofType(RegisteredValidatorParticle.class)
 		//   .toWindowedSet(initialValidatorSet, RegisteredValidatorParticle.class, p -> p.getAddress(), 2)
 		//   .build();
-		Set<ECPublicKey> initialValidatorKeys = validatorSet.getValidators().stream()
+
+		// Note this relies on predictable iterator ordering for ImmutableSet
+		ImmutableSet<ECPublicKey> initialValidatorKeys = validatorSet.getValidators().stream()
 			.map(v -> v.getNode().getKey())
-			.collect(Collectors.toCollection(HashSet::new));
+			.collect(ImmutableSet.toImmutableSet());
 		radixEngine.addStateComputer(
 			RegisteredValidatorParticle.class,
 			new RadixEngineValidatorSetBuilder(initialValidatorKeys, new AtLeastNValidators(minValidators)),
@@ -159,7 +159,7 @@ public class RadixEngineModule extends AbstractModule {
 		return radixEngine;
 	}
 
-	private static final class AtLeastNValidators implements Predicate<Set<ECPublicKey>> {
+	private static final class AtLeastNValidators implements Predicate<ImmutableSet<ECPublicKey>> {
 		private final int n;
 
 		private AtLeastNValidators(int n) {
@@ -170,7 +170,7 @@ public class RadixEngineModule extends AbstractModule {
 		}
 
 		@Override
-		public boolean test(Set<ECPublicKey> vset) {
+		public boolean test(ImmutableSet<ECPublicKey> vset) {
 			return vset.size() >= this.n;
 		}
 
