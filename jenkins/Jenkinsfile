@@ -33,7 +33,7 @@ pipeline {
 
         stage('Checkout RadixCore') {
             steps {
-               sendNotifications "STARTED"
+                sendNotifications "STARTED"
                 script {
                     dir('RadixCore') {
                         deleteDir()
@@ -56,9 +56,9 @@ pipeline {
                         echo "Branch commit = ${branch_commit}"
                         echo "Tag commit = ${tag_commit}"
 
-                        if(tag_commit == branch_commit){
+                        if (tag_commit == branch_commit) {
                             env.check = "TAG_CREATED"
-                        }else{
+                        } else {
                             env.check = "TAG_NOT_FOUND"
                         }
                         echo "Tag and Branch check resulted in ${env.check}"
@@ -94,26 +94,9 @@ pipeline {
                     env.check == "TAG_NOT_FOUND"
                 }
             }
-            parallel {
-                stage('deploy-release') {
-                    steps {
-                        build job: 'Release-Branch/deploy-release'
-                    }
-                }
-                stage('docker-continuous-tests') {
-                    steps {
-                        build job: 'Release-Branch/docker-continuous-tests'
-                    }
-                }
-                stage('regression-acceptance-tests') {
-                    steps {
-                        build job: 'Release-Branch/regression-acceptance-tests'
-                    }
-                }
-                stage('deterministic-simulation-tests') {
-                    steps {
-                        build job: 'Release-Branch/deterministic-simulation-tests'
-                    }
+            stage('deploy-release') {
+                steps {
+                    build job: 'Release-Branch/run-all-tests'
                 }
             }
         }
