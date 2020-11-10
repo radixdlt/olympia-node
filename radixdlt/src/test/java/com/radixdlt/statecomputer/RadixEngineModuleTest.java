@@ -68,6 +68,8 @@ public class RadixEngineModuleTest {
 		@Override
 		protected void configure() {
 			bind(Integer.class).annotatedWith(Names.named("magic")).toInstance(1);
+			bind(Integer.class).annotatedWith(MinValidators.class).toInstance(1);
+			bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(100));
 			bind(Hasher.class).toInstance(mock(Hasher.class));
 			bind(BFTValidatorSet.class).toInstance(this.validatorSet);
 			bind(Serialization.class).toInstance(mock(Serialization.class));
@@ -88,7 +90,7 @@ public class RadixEngineModuleTest {
 		final var validatorSet = mock(BFTValidatorSet.class);
 		when(validatorSet.getValidators()).thenReturn(validators);
 		final var injector = Guice.createInjector(
-			new RadixEngineModule(View.of(100)),
+			new RadixEngineModule(),
 			new ExternalRadixEngineModule(validatorSet)
 		);
 
@@ -107,7 +109,7 @@ public class RadixEngineModuleTest {
 			.collect(ImmutableList.toImmutableList());
 		final var validatorSet = BFTValidatorSet.from(validators);
 		final var injector = Guice.createInjector(
-			new RadixEngineModule(View.of(100)),
+			new RadixEngineModule(),
 			new ExternalRadixEngineModule(validatorSet)
 		);
 		final var radixEngine = injector.getInstance(Key.get(new TypeLiteral<RadixEngine<LedgerAtom>>() { }));
