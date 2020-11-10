@@ -87,7 +87,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	}
 
 	public interface StateComputer {
-		StateComputerResult prepare(ImmutableList<PreparedCommand> previous, Command next, View view, long timestamp);
+		StateComputerResult prepare(ImmutableList<PreparedCommand> previous, Command next, long epoch, View view, long timestamp);
 		void commit(VerifiedCommandsAndProof verifiedCommandsAndProof);
 	}
 
@@ -178,6 +178,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			final StateComputerResult result = stateComputer.prepare(
 				concatenatedCommands,
 				vertex.getCommand().orElse(null),
+				vertex.getParentHeader().getLedgerHeader().getEpoch(),
 				vertex.getView(),
 				timestamp
 			);

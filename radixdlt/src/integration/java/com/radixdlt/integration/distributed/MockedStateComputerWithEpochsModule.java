@@ -93,9 +93,9 @@ public class MockedStateComputerWithEpochsModule extends AbstractModule {
 	@Singleton
 	private StateComputer stateComputer(Hasher hasher) {
 		return new StateComputer() {
-			private long epoch = 1;
+
 			@Override
-			public StateComputerResult prepare(ImmutableList<PreparedCommand> previous, Command next, View view, long timstamp) {
+			public StateComputerResult prepare(ImmutableList<PreparedCommand> previous, Command next, long epoch, View view, long timstamp) {
 				if (view.compareTo(epochHighView) >= 0) {
 					return new StateComputerResult(
 						next == null ? ImmutableList.of() : ImmutableList.of(new MockPrepared(next, hasher.hash(next))),
@@ -112,9 +112,6 @@ public class MockedStateComputerWithEpochsModule extends AbstractModule {
 
 			@Override
 			public void commit(VerifiedCommandsAndProof command) {
-				if (command.getHeader().isEndOfEpoch()) {
-					epoch = command.getHeader().getEpoch() + 1;
-				}
 			}
 		};
 	}

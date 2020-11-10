@@ -45,7 +45,6 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker.PacemakerInfoSender;
 import com.radixdlt.consensus.safety.SafetyRules;
-import com.radixdlt.consensus.safety.SafetyViolationException;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.network.TimeSupplier;
@@ -63,7 +62,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.doThrow;
 
 public class ExponentialTimeoutPacemakerTest {
 	private static final double MAX_TIMEOUT = 30_000.0;
@@ -268,8 +266,10 @@ public class ExponentialTimeoutPacemakerTest {
 		when(proposal.getVertex()).thenReturn(mock(UnverifiedVertex.class));
 		when(this.hasher.hash(any())).thenReturn(mock(HashCode.class));
 		when(this.vertexStore.insertVertex(any())).thenReturn(Optional.of(mock(BFTHeader.class)));
+		when(this.safetyRules.voteFor(any(), any(), anyLong(), any())).thenReturn(Optional.of(mock(Vote.class)));
 
 		this.pacemaker.processProposal(proposal);
+
 		assertThat(this.pacemaker.getCurrentView()).isEqualTo(View.of(0));
 		verify(this.vertexStore, times(1)).insertVertex(any());
 		verify(this.proceedToViewSender, times(1)).sendVote(any(), any());
@@ -277,12 +277,12 @@ public class ExponentialTimeoutPacemakerTest {
 	}
 
 	@Test
-	public void when_process_proposal_safety_failure__then_vote_not_sent() throws SafetyViolationException {
+	public void when_process_proposal_safety_failure__then_vote_not_sent() {
 		Proposal proposal = mock(Proposal.class);
 		when(proposal.getView()).thenReturn(View.of(0));
 		when(proposal.getVertex()).thenReturn(mock(UnverifiedVertex.class));
 		when(this.hasher.hash(any())).thenReturn(mock(HashCode.class));
-		doThrow(SafetyViolationException.class).when(this.safetyRules).voteFor(any(), any(), anyLong(), any());
+		when(this.safetyRules.voteFor(any(), any(), anyLong(), any())).thenReturn(Optional.empty());
 
 		this.pacemaker.processProposal(proposal);
 		assertThat(this.pacemaker.getCurrentView()).isEqualTo(View.of(0));

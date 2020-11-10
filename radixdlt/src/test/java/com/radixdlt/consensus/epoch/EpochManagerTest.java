@@ -113,7 +113,7 @@ public class EpochManagerTest {
 	private Mempool mempool = mock(Mempool.class);
 	private StateComputer stateComputer = new StateComputer() {
 		@Override
-		public StateComputerResult prepare(ImmutableList<PreparedCommand> previous, Command next, View view, long timestamp) {
+		public StateComputerResult prepare(ImmutableList<PreparedCommand> previous, Command next, long epoch, View view, long timestamp) {
 			return new StateComputerResult(ImmutableList.of(), ImmutableMap.of());
 		}
 

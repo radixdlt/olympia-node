@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.Key;
 import com.google.inject.Scopes;
 import com.google.inject.name.Names;
 import com.radixdlt.ConsensusModule;
@@ -86,6 +87,7 @@ import java.util.stream.Stream;
 import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.ThreadContext;
 import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Rule;
@@ -107,7 +109,7 @@ public class OneNodeAlwaysAliveTest {
 	@Parameters
 	public static Collection<Object[]> numNodes() {
 		return List.of(new Object[][] {
-			{2}, {4}
+			{2}
 		});
 	}
 
@@ -128,7 +130,7 @@ public class OneNodeAlwaysAliveTest {
 
 
 		List<BFTNode> allNodes = nodeKeys.stream()
-			.map(k -> BFTNode.create(k.getPublicKey())).collect(Collectors.toList());;
+			.map(k -> BFTNode.create(k.getPublicKey())).collect(Collectors.toList());
 
 		this.nodeCreators = nodeKeys.stream()
 			.<Supplier<Injector>>map(k -> () -> createRunner(k, allNodes))
@@ -161,7 +163,7 @@ public class OneNodeAlwaysAliveTest {
 					bind(Long.class).annotatedWith(PacemakerTimeout.class).toInstance(1000L);
 					bind(Double.class).annotatedWith(PacemakerRate.class).toInstance(2.0);
 					bind(Integer.class).annotatedWith(PacemakerMaxExponent.class).toInstance(6);
-					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(100L));
+					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(88L));
 
 					// System
 					bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
@@ -239,14 +241,27 @@ public class OneNodeAlwaysAliveTest {
 		this.network.dropMessages(m -> m.channelId().receiverIndex() == index && m.channelId().senderIndex() == index);
 		Injector injector = nodeCreators.get(index).get();
 		this.nodes.set(index, injector);
-		injector.getInstance(DeterministicEpochsConsensusProcessor.class).start();
+
+		String bftNode = " " + injector.getInstance(Key.get(BFTNode.class, Self.class));
+		ThreadContext.put("bftNode", bftNode);
+		try {
+			injector.getInstance(DeterministicEpochsConsensusProcessor.class).start();
+		} finally {
+			ThreadContext.remove("bftNode");
+		}
 	}
 
 	private void processForCount(int messageCount) {
 		for (int i = 0; i < messageCount; i++) {
 			Timed<ControlledMessage> msg = this.network.nextMessage();
 			Injector injector = this.nodes.get(msg.value().channelId().receiverIndex());
-			injector.getInstance(DeterministicEpochsConsensusProcessor.class).handleMessage(msg.value().message());
+			String bftNode = " " + injector.getInstance(Key.get(BFTNode.class, Self.class));
+			ThreadContext.put("bftNode", bftNode);
+			try {
+				injector.getInstance(DeterministicEpochsConsensusProcessor.class).handleMessage(msg.value().message());
+			} finally {
+				ThreadContext.remove("bftNode");
+			}
 		}
 	}
 
