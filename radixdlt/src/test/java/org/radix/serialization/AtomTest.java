@@ -27,7 +27,6 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.consensus.Sha256Hasher;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;

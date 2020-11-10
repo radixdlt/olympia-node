@@ -24,8 +24,6 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
-import java.util.Objects;
-import java.util.Set;
 import java.util.function.Predicate;
 import javax.annotation.concurrent.NotThreadSafe;
 
@@ -36,9 +34,9 @@ import javax.annotation.concurrent.NotThreadSafe;
 public final class RadixEngineValidatorSetBuilder {
 	private final ImmutableSet<ECPublicKey> validators;
 	private final ImmutableSet<ECPublicKey> lastGoodSet;
-	private final Predicate<Set<ECPublicKey>> validatorSetCheck;
+	private final Predicate<ImmutableSet<ECPublicKey>> validatorSetCheck;
 
-	public RadixEngineValidatorSetBuilder(Set<ECPublicKey> initialSet, Predicate<Set<ECPublicKey>> validatorSetCheck) {
+	public RadixEngineValidatorSetBuilder(ImmutableSet<ECPublicKey> initialSet, Predicate<ImmutableSet<ECPublicKey>> validatorSetCheck) {
 		if (!validatorSetCheck.test(initialSet)) {
 			throw new IllegalArgumentException(
 				String.format("Initial validator set %s should pass check: %s", initialSet, validatorSetCheck)
@@ -46,13 +44,13 @@ public final class RadixEngineValidatorSetBuilder {
 		}
 		this.validators = ImmutableSet.copyOf(initialSet);
 		this.lastGoodSet = ImmutableSet.copyOf(initialSet);
-		this.validatorSetCheck = Objects.requireNonNull(validatorSetCheck);
+		this.validatorSetCheck = validatorSetCheck;
 	}
 
 	private RadixEngineValidatorSetBuilder(
 		ImmutableSet<ECPublicKey> validators,
 		ImmutableSet<ECPublicKey> lastGoodSet,
-		Predicate<Set<ECPublicKey>> validatorSetCheck
+		Predicate<ImmutableSet<ECPublicKey>> validatorSetCheck
 	) {
 		this.validators = validators;
 		this.lastGoodSet = lastGoodSet;
