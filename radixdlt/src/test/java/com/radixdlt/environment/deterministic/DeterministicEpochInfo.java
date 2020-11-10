@@ -19,19 +19,16 @@ package com.radixdlt.environment.deterministic;
 
 import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.consensus.epoch.EpochView;
 
-public class DeterministicEpochInfo implements EpochInfoSender {
+public class DeterministicEpochInfo {
 	private EpochView currentEpochView = new EpochView(0, View.genesis());
 
-	@Override
-	public void sendCurrentView(EpochView epochView) {
+	public void processEvent(EpochView epochView) {
 		this.currentEpochView = epochView;
 	}
 
-	@Override
-	public void sendTimeoutProcessed(Timeout timeout) {
+	public void processEvent(Timeout timeout) {
 	}
 
 	public EpochView getCurrentEpochView() {

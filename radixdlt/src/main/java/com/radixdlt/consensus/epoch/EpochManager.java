@@ -54,6 +54,7 @@ import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdateProcessor;
@@ -100,20 +101,6 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 		void sendGetEpochResponse(BFTNode node, VerifiedLedgerHeaderAndProof ancestor);
 	}
 
-	public interface EpochInfoSender {
-		/**
-		 * Signify that the bft node is starting a new view
-		 * @param epochView the epoch and view the bft node has changed to
-		 */
-		void sendCurrentView(EpochView epochView);
-
-		/**
-		 * Signify that a timeout was processed by this bft node
-		 * @param timeout the timeout
-		 */
-		void sendTimeoutProcessed(Timeout timeout);
-	}
-
 	private static final Logger log = LogManager.getLogger();
 	private final BFTNode self;
 	private final SyncEpochsRPCSender epochsRPCSender;
@@ -126,7 +113,8 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 	private final LocalTimeoutSender localTimeoutSender;
 	private final Map<Long, List<ConsensusEvent>> queuedEvents;
 	private final BFTFactory bftFactory;
-	private final EpochInfoSender epochInfoSender;
+	private final EventProcessor<EpochView> epochViewEventProcessor;
+	private final EventProcessor<Timeout> timeoutEventProcessor;
 	private final SyncLedgerRequestSender syncRequestSender;
 
 	private EpochChange currentEpoch;
@@ -138,6 +126,7 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 	private LedgerUpdateProcessor<LedgerUpdate> syncLedgerUpdateProcessor;
 	private BFTSyncRequestProcessor syncRequestProcessor;
 	private BFTEventProcessor bftEventProcessor;
+
 
 	@Inject
 	public EpochManager(
@@ -156,7 +145,8 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 		ProposerElectionFactory proposerElectionFactory,
 		BFTFactory bftFactory,
 		SystemCounters counters,
-		EpochInfoSender epochInfoSender
+		EventProcessor<EpochView> epochViewEventProcessor,
+		EventProcessor<Timeout> timeoutEventProcessor
 	) {
 		if (!initialEpoch.getBFTConfiguration().getValidatorSet().containsNode(self)) {
 			this.bftEventProcessor =  EmptyBFTEventProcessor.INSTANCE;
@@ -186,7 +176,8 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 		this.proposerElectionFactory = Objects.requireNonNull(proposerElectionFactory);
 		this.bftFactory = bftFactory;
 		this.counters = Objects.requireNonNull(counters);
-		this.epochInfoSender = Objects.requireNonNull(epochInfoSender);
+		this.epochViewEventProcessor = Objects.requireNonNull(epochViewEventProcessor);
+		this.timeoutEventProcessor = Objects.requireNonNull(timeoutEventProcessor);
 		this.queuedEvents = new HashMap<>();
 	}
 
@@ -217,7 +208,7 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 		PacemakerInfoSender infoSender = new PacemakerInfoSender() {
 			@Override
 			public void sendCurrentView(View view) {
-				epochInfoSender.sendCurrentView(EpochView.of(nextEpoch, view));
+				epochViewEventProcessor.processEvent(EpochView.of(nextEpoch, view));
 			}
 
 			@Override
@@ -225,7 +216,7 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 				BFTNode leader = proposerElection.getProposer(view);
 				log.warn("LOCAL_TIMEOUT: Processed Epoch {} View {} Leader: {}", nextEpoch, view, leader);
 				Timeout timeout = new Timeout(EpochView.of(nextEpoch, view), leader);
-				epochInfoSender.sendTimeoutProcessed(timeout);
+				timeoutEventProcessor.processEvent(timeout);
 			}
 		};
 		final Pacemaker pacemaker = pacemakerFactory.create(validatorSet, vertexStore, proposerElection, timeoutSender, infoSender);
