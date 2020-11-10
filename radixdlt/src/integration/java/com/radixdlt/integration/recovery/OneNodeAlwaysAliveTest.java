@@ -126,8 +126,12 @@ public class OneNodeAlwaysAliveTest {
 			MessageMutator.nothing()
 		);
 
+
+		List<BFTNode> allNodes = nodeKeys.stream()
+			.map(k -> BFTNode.create(k.getPublicKey())).collect(Collectors.toList());;
+
 		this.nodeCreators = nodeKeys.stream()
-			.<Supplier<Injector>>map(k -> () -> createRunner(k))
+			.<Supplier<Injector>>map(k -> () -> createRunner(k, allNodes))
 			.collect(Collectors.toList());
 	}
 
@@ -139,7 +143,7 @@ public class OneNodeAlwaysAliveTest {
 		this.nodes.forEach(i -> i.getInstance(DeterministicEpochsConsensusProcessor.class).start());
 	}
 
-	private Injector createRunner(ECKeyPair ecKeyPair) {
+	private Injector createRunner(ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
 		final BFTNode self = BFTNode.create(ecKeyPair.getPublicKey());
 
 		return Guice.createInjector(
@@ -180,7 +184,7 @@ public class OneNodeAlwaysAliveTest {
 					// Checkpoint
 					VerifiedLedgerHeaderAndProof genesisLedgerHeader = VerifiedLedgerHeaderAndProof.genesis(
 						HashUtils.zero256(),
-						BFTValidatorSet.from(Stream.of(BFTValidator.from(self, UInt256.ONE)))
+						BFTValidatorSet.from(allNodes.stream().map(node -> BFTValidator.from(node, UInt256.ONE)))
 					);
 					bind(VerifiedCommandsAndProof.class).toInstance(new VerifiedCommandsAndProof(
 						ImmutableList.of(),
