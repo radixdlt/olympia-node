@@ -26,15 +26,17 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.utils.TypedMocks;
 
-import java.util.Set;
+import java.util.function.Predicate;
+
 import org.junit.Test;
 
 public class RadixEngineValidatorSetBuilderTest {
 	@Test
 	public void testBadConstruction() {
-		assertThatThrownBy(() -> new RadixEngineValidatorSetBuilder(TypedMocks.rmock(Set.class), set -> false))
+		ImmutableSet<ECPublicKey> testSet = ImmutableSet.of();
+		Predicate<ImmutableSet<ECPublicKey>> testPredicate = set -> false;
+		assertThatThrownBy(() -> new RadixEngineValidatorSetBuilder(testSet, testPredicate))
 			.isInstanceOf(IllegalArgumentException.class);
 	}
 
