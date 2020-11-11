@@ -17,6 +17,7 @@
 
 package com.radixdlt.sync;
 
+import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdateProcessor;
 import com.radixdlt.sync.SyncServiceRunner.LocalSyncRequestsRx;
@@ -46,6 +47,7 @@ public class SyncServiceRunnerTest {
 	private LocalSyncServiceProcessor syncServiceProcessor;
 	private RemoteSyncResponseProcessor remoteSyncResponseProcessor;
 	private RemoteSyncServiceProcessor remoteSyncServiceProcessor;
+	private EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor;
 	private LedgerUpdateProcessor<LedgerUpdate> ledgerUpdateProcessor;
 	private Subject<LedgerUpdate> versionUpdatesSubject;
 	private Subject<RemoteSyncRequest> requestsSubject;
@@ -74,11 +76,14 @@ public class SyncServiceRunnerTest {
 		this.remoteSyncServiceProcessor = mock(RemoteSyncServiceProcessor.class);
 		this.ledgerUpdateProcessor = TypedMocks.rmock(LedgerUpdateProcessor.class);
 
+		this.localSyncRequestEventProcessor = TypedMocks.rmock(EventProcessor.class);
+
 		syncServiceRunner = new SyncServiceRunner<>(
 			localSyncRequestsRx,
 			syncTimeoutsRx,
 			versionUpdatesSubject,
 			stateSyncNetwork,
+			localSyncRequestEventProcessor,
 			syncServiceProcessor,
 			remoteSyncServiceProcessor,
 			remoteSyncResponseProcessor,

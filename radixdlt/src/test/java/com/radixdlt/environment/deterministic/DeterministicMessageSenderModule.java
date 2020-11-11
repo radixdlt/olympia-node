@@ -20,7 +20,10 @@ package com.radixdlt.environment.deterministic;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
+import com.google.inject.Singleton;
+import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
+import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
@@ -37,8 +40,13 @@ import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.Synchronous;
+import com.radixdlt.environment.deterministic.network.ControlledSender;
 import com.radixdlt.epochs.EpochChangeManager.EpochsLedgerUpdateSender;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork.DeterministicSender;
+import com.radixdlt.sync.LocalSyncRequest;
+import java.util.Set;
 
 /**
  * Module that supplies network senders, as well as some other assorted
@@ -47,6 +55,7 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork.Deter
 public class DeterministicMessageSenderModule extends AbstractModule {
 	@Override
 	protected void configure() {
+
 		bind(ProposalBroadcaster.class).to(DeterministicSender.class);
 		bind(ProceedToViewSender.class).to(DeterministicSender.class);
 		bind(SyncVerticesRequestSender.class).to(DeterministicSender.class);
@@ -57,27 +66,51 @@ public class DeterministicMessageSenderModule extends AbstractModule {
 		bind(SyncEpochsRPCSender.class).to(DeterministicSender.class);
 
 		// TODO: Remove multibind?
+		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<LocalSyncRequest>>() { }, Synchronous.class);
 		Multibinder.newSetBinder(binder(), VertexStoreEventSender.class).addBinding().to(DeterministicSender.class);
 		Multibinder.newSetBinder(binder(), EpochsLedgerUpdateSender.class).addBinding().to(DeterministicSender.class);
 
 		bind(DeterministicEpochInfo.class).in(Scopes.SINGLETON);
+		bind(DeterministicSender.class).to(ControlledSender.class);
 
 		bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
 	}
 
-	@Provides
-	EventDispatcher<Timeout> timeoutEventProcessor(DeterministicEpochInfo processor) {
-		return processor::processEvent;
+	@ProvidesIntoSet
+	@Synchronous
+	EventProcessor<Timeout> timeoutEventProcessor(DeterministicEpochInfo processor) {
+		return processor.timeoutEventProcessor();
+	}
+
+	@ProvidesIntoSet
+	@Synchronous
+	EventProcessor<EpochView> epochViewEventProcessor(DeterministicEpochInfo processor) {
+		return processor.epochViewEventProcessor();
 	}
 
 	@Provides
-	EventDispatcher<EpochView> epochViewEventProcessor(DeterministicEpochInfo processor) {
-		return processor::processEvent;
+	EventDispatcher<Timeout> timeoutEventDispatcher(
+		@Synchronous Set<EventProcessor<Timeout>> processors
+	) {
+		return timeout -> processors.forEach(e -> e.process(timeout));
 	}
 
+	@Provides
+	EventDispatcher<EpochView> epochViewEventDispatcher(
+		@Synchronous Set<EventProcessor<EpochView>> processors
+	) {
+		return epochView -> processors.forEach(e -> e.process(epochView));
+	}
+
+	@ProvidesIntoSet
+	@Synchronous
+	EventProcessor<LocalSyncRequest> controlledSender(ControlledSender controlledSender) {
+		return controlledSender::dispatch;
+	}
 
 	@Provides
-	DeterministicSender sender(@Self BFTNode self, DeterministicSenderFactory senderFactory) {
+	@Singleton
+	ControlledSender sender(@Self BFTNode self, ControlledSenderFactory senderFactory) {
 		return senderFactory.create(self);
 	}
 }

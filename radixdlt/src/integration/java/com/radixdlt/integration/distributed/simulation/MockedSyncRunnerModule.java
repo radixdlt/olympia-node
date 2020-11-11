@@ -19,12 +19,15 @@ package com.radixdlt.integration.distributed.simulation;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Key;
+import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.MapBinder;
 import com.radixdlt.ModuleRunner;
+import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdateProcessor;
+import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor;
 import com.radixdlt.sync.LocalSyncServiceProcessor;
 import com.radixdlt.sync.RemoteSyncResponseProcessor;
@@ -43,5 +46,12 @@ public class MockedSyncRunnerModule extends AbstractModule {
 		bind(LocalSyncServiceProcessor.class).to(LocalSyncServiceAccumulatorProcessor.class).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<LedgerUpdateProcessor<LedgerUpdate>>() { })
 			.to(LocalSyncServiceAccumulatorProcessor.class).in(Scopes.SINGLETON);
+	}
+
+	@Provides
+	public EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor(
+		LocalSyncServiceAccumulatorProcessor localSyncServiceAccumulatorProcessor
+	) {
+		return localSyncServiceAccumulatorProcessor.localSyncRequestEventProcessor();
 	}
 }

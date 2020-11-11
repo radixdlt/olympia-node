@@ -29,6 +29,7 @@ import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.ConsensusRunnerModule;
 import com.radixdlt.ConsensusRxModule;
+import com.radixdlt.DispatcherModule;
 import com.radixdlt.EpochsConsensusModule;
 import com.radixdlt.EpochsSyncModule;
 import com.radixdlt.LedgerCommandGeneratorModule;
@@ -413,6 +414,7 @@ public class SimulationTest {
 			modules.add(new ConsensusRxModule());
 			modules.add(new SystemInfoRxModule());
 			modules.add(new LedgerRxModule());
+			modules.add(new DispatcherModule());
 
 			if (ledgerType == LedgerType.MOCKED_LEDGER) {
 				modules.add(new MockedBFTConfigurationModule());

@@ -20,6 +20,7 @@ package com.radixdlt.sync;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.ModuleRunner;
+import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdateProcessor;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
@@ -54,6 +55,7 @@ public final class SyncServiceRunner<T extends LedgerUpdate> implements ModuleRu
 	private final StateSyncNetworkRx stateSyncNetworkRx;
 	private final Scheduler singleThreadScheduler;
 	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("SyncManager"));
+	private final EventProcessor<LocalSyncRequest> syncRequestEventProcessor;
 	private final LocalSyncServiceProcessor localSyncServiceProcessor;
 	private final RemoteSyncServiceProcessor remoteSyncServiceProcessor;
 	private final RemoteSyncResponseProcessor remoteSyncResponseProcessor;
@@ -70,6 +72,7 @@ public final class SyncServiceRunner<T extends LedgerUpdate> implements ModuleRu
 		SyncTimeoutsRx syncTimeoutsRx,
 		Observable<T> ledgerUpdates,
 		StateSyncNetworkRx stateSyncNetworkRx,
+		EventProcessor<LocalSyncRequest> syncRequestEventProcessor,
 		LocalSyncServiceProcessor localSyncServiceProcessor,
 		RemoteSyncServiceProcessor remoteSyncServiceProcessor,
 		RemoteSyncResponseProcessor remoteSyncResponseProcessor,
@@ -79,6 +82,7 @@ public final class SyncServiceRunner<T extends LedgerUpdate> implements ModuleRu
 		this.syncTimeoutsRx = Objects.requireNonNull(syncTimeoutsRx);
 		this.ledgerUpdates = Objects.requireNonNull(ledgerUpdates);
 		this.localSyncServiceProcessor = Objects.requireNonNull(localSyncServiceProcessor);
+		this.syncRequestEventProcessor = Objects.requireNonNull(syncRequestEventProcessor);
 		this.stateSyncNetworkRx = Objects.requireNonNull(stateSyncNetworkRx);
 		this.singleThreadScheduler = Schedulers.from(this.executorService);
 		this.remoteSyncServiceProcessor = Objects.requireNonNull(remoteSyncServiceProcessor);
@@ -106,7 +110,7 @@ public final class SyncServiceRunner<T extends LedgerUpdate> implements ModuleRu
 
 			Disposable d2 = localSyncRequestsRx.localSyncRequests()
 				.observeOn(singleThreadScheduler)
-				.subscribe(localSyncServiceProcessor::processLocalSyncRequest);
+				.subscribe(syncRequestEventProcessor::process);
 
 			Disposable d3 = syncTimeoutsRx.timeouts()
 				.observeOn(singleThreadScheduler)

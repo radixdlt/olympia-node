@@ -20,15 +20,24 @@ package com.radixdlt.environment.deterministic;
 import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
+import com.radixdlt.environment.EventProcessor;
 
 public class DeterministicEpochInfo {
 	private EpochView currentEpochView = new EpochView(0, View.genesis());
 
-	public void processEvent(EpochView epochView) {
+	private void processEvent(EpochView epochView) {
 		this.currentEpochView = epochView;
 	}
 
-	public void processEvent(Timeout timeout) {
+	private void processEvent(Timeout timeout) {
+	}
+
+	public EventProcessor<EpochView> epochViewEventProcessor() {
+		return this::processEvent;
+	}
+
+	public EventProcessor<Timeout> timeoutEventProcessor() {
+		return this::processEvent;
 	}
 
 	public EpochView getCurrentEpochView() {

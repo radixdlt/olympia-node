@@ -22,6 +22,7 @@ import com.google.inject.Inject;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.LedgerUpdateProcessor;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor;
@@ -95,8 +96,11 @@ public class EpochsLocalSyncServiceProcessor implements LocalSyncServiceProcesso
 		}
 	}
 
-	@Override
-	public void processLocalSyncRequest(LocalSyncRequest request) {
+	public EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor() {
+		return this::processLocalSyncRequest;
+	}
+
+	private void processLocalSyncRequest(LocalSyncRequest request) {
 		final long targetEpoch = request.getTarget().getEpoch();
 		if (targetEpoch > currentEpoch.getEpoch()) {
 			log.warn("Request {} is a different epoch from current {} sending epoch sync", request, currentEpoch.getEpoch());
@@ -118,7 +122,7 @@ public class EpochsLocalSyncServiceProcessor implements LocalSyncServiceProcesso
 			return;
 		}
 
-		localSyncServiceProcessor.processLocalSyncRequest(request);
+		localSyncServiceProcessor.localSyncRequestEventProcessor().process(request);
 	}
 
 	@Override

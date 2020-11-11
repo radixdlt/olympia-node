@@ -97,7 +97,7 @@ public final class DeterministicNetwork {
 	 * Create the network sender for the specified node.
 	 * @return A newly created {@link DeterministicSender} for the specified node
 	 */
-	public DeterministicSender createSender(BFTNode node) {
+	public ControlledSender createSender(BFTNode node) {
 		int nodeIndex = this.lookup(node);
 		return new ControlledSender(this, node, nodeIndex);
 	}

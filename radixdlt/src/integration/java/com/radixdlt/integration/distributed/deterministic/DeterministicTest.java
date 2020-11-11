@@ -23,6 +23,7 @@ import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusModule;
+import com.radixdlt.DispatcherModule;
 import com.radixdlt.EpochsConsensusModule;
 import com.radixdlt.LedgerCommandGeneratorModule;
 import com.radixdlt.EpochsLedgerUpdateModule;
@@ -206,6 +207,7 @@ public final class DeterministicTest {
 			modules.add(new MockedCryptoModule());
 			modules.add(new LedgerLocalMempoolModule(10));
 			modules.add(new DeterministicMempoolModule());
+			modules.add(new DispatcherModule());
 
 			if (ledgerType == LedgerType.MOCKED_LEDGER) {
 				BFTValidatorSet validatorSet = validatorSetMapping.apply(1L);

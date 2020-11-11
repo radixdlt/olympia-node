@@ -19,13 +19,13 @@ package com.radixdlt;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
-import com.google.inject.Key;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.Ledger;
+import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.epochs.EpochsLocalSyncServiceProcessor;
 import com.radixdlt.epochs.EpochsRemoteSyncResponseProcessor;
@@ -33,6 +33,7 @@ import com.radixdlt.epochs.SyncedEpochSender;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.ledger.LedgerUpdateProcessor;
+import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncTimeoutScheduler;
 import com.radixdlt.sync.RemoteSyncResponseProcessor;
@@ -52,8 +53,8 @@ import java.util.function.Function;
 public class EpochsSyncModule extends AbstractModule {
 	@Override
 	public void configure() {
-		bind(Key.get(new TypeLiteral<LocalSyncServiceProcessor>() { })).to(EpochsLocalSyncServiceProcessor.class);
-		bind(Key.get(new TypeLiteral<RemoteSyncResponseProcessor>() { })).to(EpochsRemoteSyncResponseProcessor.class);
+		bind(LocalSyncServiceProcessor.class).to(EpochsLocalSyncServiceProcessor.class);
+		bind(RemoteSyncResponseProcessor.class).to(EpochsRemoteSyncResponseProcessor.class);
 		Multibinder<LedgerUpdateProcessor<EpochsLedgerUpdate>> ledgerUpdateProcessors =
 			Multibinder.newSetBinder(binder(), new TypeLiteral<LedgerUpdateProcessor<EpochsLedgerUpdate>>() { });
 		ledgerUpdateProcessors.addBinding().to(EpochsRemoteSyncResponseProcessor.class);
@@ -61,6 +62,11 @@ public class EpochsSyncModule extends AbstractModule {
 
 		bind(EpochsRemoteSyncResponseProcessor.class).in(Scopes.SINGLETON);
 		bind(EpochsLocalSyncServiceProcessor.class).in(Scopes.SINGLETON);
+	}
+
+	@Provides
+	private EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor(EpochsLocalSyncServiceProcessor epochsLocalSyncServiceProcessor) {
+		return epochsLocalSyncServiceProcessor.localSyncRequestEventProcessor();
 	}
 
 	@Provides

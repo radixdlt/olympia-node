@@ -76,7 +76,7 @@ public class LocalSyncServiceAccumulatorProcessorTest {
 		when(accumulatorComparator.compare(target, currentAccumulatorState)).thenReturn(0);
 		LocalSyncRequest request = mock(LocalSyncRequest.class);
 		when(request.getTarget()).thenReturn(targetHeader);
-		syncServiceProcessor.processLocalSyncRequest(request);
+		syncServiceProcessor.localSyncRequestEventProcessor().process(request);
 		verify(stateSyncNetwork, never()).sendSyncRequest(any(), any());
 		verify(syncTimeoutScheduler, never()).scheduleTimeout(any(), anyLong());
 	}
@@ -91,7 +91,7 @@ public class LocalSyncServiceAccumulatorProcessorTest {
 		when(request.getTarget()).thenReturn(targetHeader);
 		when(request.getTargetNodes()).thenReturn(ImmutableList.of(mock(BFTNode.class)));
 
-		syncServiceProcessor.processLocalSyncRequest(request);
+		syncServiceProcessor.localSyncRequestEventProcessor().process(request);
 
 		verify(stateSyncNetwork, times(1)).sendSyncRequest(any(), any());
 		verify(syncTimeoutScheduler, times(1)).scheduleTimeout(any(), anyLong());
@@ -114,7 +114,7 @@ public class LocalSyncServiceAccumulatorProcessorTest {
 		LedgerUpdate ledgerUpdate = mock(LedgerUpdate.class);
 
 		when(ledgerUpdate.getTail()).thenReturn(targetHeader);
-		syncServiceProcessor.processLocalSyncRequest(request);
+		syncServiceProcessor.localSyncRequestEventProcessor().process(request);
 		syncServiceProcessor.processLedgerUpdate(ledgerUpdate);
 		syncServiceProcessor.processSyncTimeout(sync.get());
 

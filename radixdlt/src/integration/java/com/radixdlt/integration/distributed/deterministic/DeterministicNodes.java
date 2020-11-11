@@ -31,7 +31,7 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.DeterministicMessageProcessor;
 import com.radixdlt.environment.deterministic.DeterministicMessageSenderModule;
-import com.radixdlt.environment.deterministic.DeterministicSenderFactory;
+import com.radixdlt.environment.deterministic.ControlledSenderFactory;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.List;
@@ -46,12 +46,12 @@ public final class DeterministicNodes {
 	private static final Logger log = LogManager.getLogger();
 
 	private final ImmutableList<Injector> nodeInstances;
-	private final DeterministicSenderFactory senderFactory;
+	private final ControlledSenderFactory senderFactory;
 	private final ImmutableBiMap<BFTNode, Integer> nodeLookup;
 
 	public DeterministicNodes(
 		List<BFTNode> nodes,
-		DeterministicSenderFactory senderFactory,
+		ControlledSenderFactory senderFactory,
 		Module baseModule,
 		Module overrideModule
 	) {
@@ -70,7 +70,7 @@ public final class DeterministicNodes {
 			new AbstractModule() {
 				public void configure() {
 					bind(BFTNode.class).annotatedWith(Self.class).toInstance(self);
-					bind(DeterministicSenderFactory.class).toInstance(senderFactory);
+					bind(ControlledSenderFactory.class).toInstance(senderFactory);
 				}
 			},
 			new DeterministicMessageSenderModule(),

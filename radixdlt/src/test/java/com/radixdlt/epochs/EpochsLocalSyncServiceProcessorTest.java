@@ -30,6 +30,7 @@ import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor;
@@ -51,9 +52,13 @@ public class EpochsLocalSyncServiceProcessorTest {
 	private StateSyncNetworkSender stateSyncNetwork;
 	private SyncedEpochSender syncedEpochSender;
 
+	private EventProcessor<LocalSyncRequest> eventProcessor;
+
 	@Before
 	public void setup() {
 		this.initialProcessor = mock(LocalSyncServiceAccumulatorProcessor.class);
+		this.eventProcessor = TypedMocks.rmock(EventProcessor.class);
+		when(initialProcessor.localSyncRequestEventProcessor()).thenReturn(eventProcessor);
 		this.initialEpoch = mock(EpochChange.class);
 		this.initialHeader = mock(VerifiedLedgerHeaderAndProof.class);
 		this.localSyncFactory = TypedMocks.rmock(Function.class);
@@ -86,11 +91,11 @@ public class EpochsLocalSyncServiceProcessorTest {
 		when(header.getAccumulatorState()).thenReturn(mock(AccumulatorState.class));
 		when(header.getEpoch()).thenReturn(1L);
 		when(request.getTarget()).thenReturn(header);
-		processor.processLocalSyncRequest(request);
+		processor.localSyncRequestEventProcessor().process(request);
 
 		verify(stateSyncNetwork, never()).sendSyncRequest(any(), any());
 		verify(syncedEpochSender, never()).sendSyncedEpoch(any());
-		verify(initialProcessor, times(1)).processLocalSyncRequest(eq(request));
+		verify(eventProcessor, times(1)).process(eq(request));
 	}
 
 	@Test
@@ -103,11 +108,11 @@ public class EpochsLocalSyncServiceProcessorTest {
 		VerifiedLedgerHeaderAndProof header = mock(VerifiedLedgerHeaderAndProof.class);
 		when(header.getEpoch()).thenReturn(2L);
 		when(request.getTarget()).thenReturn(header);
-		processor.processLocalSyncRequest(request);
+		processor.localSyncRequestEventProcessor().process(request);
 
 		verify(stateSyncNetwork, times(1)).sendSyncRequest(any(), any());
 		verify(syncedEpochSender, never()).sendSyncedEpoch(any());
-		verify(initialProcessor, never()).processLocalSyncRequest(any());
+		verify(eventProcessor, never()).process(any());
 	}
 
 	@Test
@@ -116,6 +121,8 @@ public class EpochsLocalSyncServiceProcessorTest {
 		when(initialEpoch.getProof()).thenReturn(mock(VerifiedLedgerHeaderAndProof.class));
 		LocalSyncServiceAccumulatorProcessor localSyncProcessor = mock(LocalSyncServiceAccumulatorProcessor.class);
 		when(localSyncFactory.apply(any())).thenReturn(localSyncProcessor);
+		EventProcessor<LocalSyncRequest> localSyncEventProcessor = TypedMocks.rmock(EventProcessor.class);
+		when(localSyncProcessor.localSyncRequestEventProcessor()).thenReturn(localSyncEventProcessor);
 
 		AccumulatorState accumulatorState = mock(AccumulatorState.class);
 		EpochsLedgerUpdate ledgerUpdate = mock(EpochsLedgerUpdate.class);
@@ -135,12 +142,12 @@ public class EpochsLocalSyncServiceProcessorTest {
 		when(header.getEpoch()).thenReturn(2L);
 		when(header.isEndOfEpoch()).thenReturn(false);
 		when(request.getTarget()).thenReturn(header);
-		processor.processLocalSyncRequest(request);
+		processor.localSyncRequestEventProcessor().process(request);
 
 		verify(stateSyncNetwork, never()).sendSyncRequest(any(), any());
 		verify(syncedEpochSender, never()).sendSyncedEpoch(any());
-		verify(initialProcessor, never()).processLocalSyncRequest(any());
-		verify(localSyncProcessor, never()).processLocalSyncRequest(any());
+		verify(eventProcessor, never()).process(any());
+		verify(localSyncEventProcessor, never()).process(any());
 	}
 
 	@Test
@@ -149,6 +156,8 @@ public class EpochsLocalSyncServiceProcessorTest {
 		when(initialEpoch.getProof()).thenReturn(mock(VerifiedLedgerHeaderAndProof.class));
 		LocalSyncServiceAccumulatorProcessor localSyncProcessor = mock(LocalSyncServiceAccumulatorProcessor.class);
 		when(localSyncFactory.apply(any())).thenReturn(localSyncProcessor);
+		EventProcessor<LocalSyncRequest> localSyncEventProcessor = TypedMocks.rmock(EventProcessor.class);
+		when(localSyncProcessor.localSyncRequestEventProcessor()).thenReturn(localSyncEventProcessor);
 
 		AccumulatorState accumulatorState = mock(AccumulatorState.class);
 		EpochsLedgerUpdate ledgerUpdate = mock(EpochsLedgerUpdate.class);
@@ -163,11 +172,11 @@ public class EpochsLocalSyncServiceProcessorTest {
 		when(header.getAccumulatorState()).thenReturn(mock(AccumulatorState.class));
 		when(header.getEpoch()).thenReturn(1L);
 		when(request.getTarget()).thenReturn(header);
-		processor.processLocalSyncRequest(request);
+		processor.localSyncRequestEventProcessor().process(request);
 
 		verify(stateSyncNetwork, never()).sendSyncRequest(any(), any());
 		verify(syncedEpochSender, never()).sendSyncedEpoch(any());
-		verify(initialProcessor, times(1)).processLocalSyncRequest(any());
-		verify(localSyncProcessor, never()).processLocalSyncRequest(any());
+		verify(eventProcessor, times(1)).process(any());
+		verify(localSyncEventProcessor, never()).process(any());
 	}
 }

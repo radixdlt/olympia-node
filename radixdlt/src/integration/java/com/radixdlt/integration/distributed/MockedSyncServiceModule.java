@@ -19,13 +19,13 @@ package com.radixdlt.integration.distributed;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.Synchronous;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
 import com.radixdlt.sync.LocalSyncRequest;
@@ -58,12 +58,13 @@ public class MockedSyncServiceModule extends AbstractModule {
 		};
 	}
 
-	@Provides
+	@ProvidesIntoSet
 	@Singleton
-	EventDispatcher<LocalSyncRequest> syncRequestSender(
+	@Synchronous
+	EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor(
 		Ledger ledger
 	) {
-		return new EventDispatcher<>() {
+		return new EventProcessor<>() {
 			long currentVersion = 0;
 			long currentEpoch = 1;
 
@@ -81,7 +82,7 @@ public class MockedSyncServiceModule extends AbstractModule {
 			}
 
 			@Override
-			public void dispatch(LocalSyncRequest request) {
+			public void process(LocalSyncRequest request) {
 				while (currentEpoch != request.getTarget().getEpoch()) {
 					syncTo(sharedEpochProofs.get(currentEpoch + 1));
 				}

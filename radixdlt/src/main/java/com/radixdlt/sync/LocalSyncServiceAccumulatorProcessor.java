@@ -20,6 +20,7 @@ package com.radixdlt.sync;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdateProcessor;
@@ -93,8 +94,11 @@ public final class LocalSyncServiceAccumulatorProcessor implements LocalSyncServ
 		}
 	}
 
-	@Override
-	public void processLocalSyncRequest(LocalSyncRequest request) {
+	public EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor() {
+		return this::processLocalSyncRequest;
+	}
+
+	private void processLocalSyncRequest(LocalSyncRequest request) {
 		log.info("SYNC_LOCAL_REQUEST: {}", request);
 
 		final VerifiedLedgerHeaderAndProof nextTargetHeader = request.getTarget();
