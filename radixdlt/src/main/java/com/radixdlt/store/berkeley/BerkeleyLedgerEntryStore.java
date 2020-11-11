@@ -23,7 +23,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.UnsignedBytes;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
@@ -53,7 +52,6 @@ import com.sleepycat.je.Transaction;
 import com.sleepycat.je.TransactionConfig;
 import com.sleepycat.je.UniqueConstraintException;
 
-import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.database.DatabaseEnvironment;
@@ -280,61 +278,6 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 			transaction.abort();
 			fail("Commit of pending atom '" + aid + "' failed", e);
 		}
-	}
-
-	/*
-	@Override
-	public LedgerEntryStoreResult store(LedgerEntry atom, Set<StoreIndex> uniqueIndices, Set<StoreIndex> duplicateIndices) {
-		Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);
-		try {
-			// transaction is aborted in doStore in case of conflict
-			LedgerEntryStoreResult result = doStorePending(atom, uniqueIndices, duplicateIndices, transaction);
-			if (result.isSuccess()) {
-				transaction.commit();
-			}
-			return result;
-		} catch (Exception e) {
-			transaction.abort();
-			fail("Store of atom '" + atom.getAID() + "' failed", e);
-		}
-		throw new IllegalStateException("Should never reach here");
-	}
-
-	@Override
-	public LedgerEntryStoreResult replace(Set<AID> aids, LedgerEntry atom, Set<StoreIndex> uniqueIndices, Set<StoreIndex> duplicateIndices) {
-		Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);
-		try {
-			for (AID aid : aids) {
-				if (!doDelete(aid, transaction)) {
-					transaction.abort();
-					fail("Could not delete '" + aid + "'");
-				}
-			}
-			// transaction is aborted in doStore in case of conflict
-			LedgerEntryStoreResult result = doStorePending(atom, uniqueIndices, duplicateIndices, transaction);
-			if (result.isSuccess()) {
-				transaction.commit();
-			}
-			return result;
-		} catch (Exception e) {
-			transaction.abort();
-			fail("Replace of atoms '" + aids + "' with atom '" + atom.getAID() + "' failed", e);
-		}
-		throw new IllegalStateException("Should never reach here");
-	}
-	 */
-
-	public void storeVertices(List<VerifiedVertex> vertices) {
-		Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);
-
-		for (VerifiedVertex verifiedVertex : vertices) {
-			DatabaseEntry key = new DatabaseEntry(verifiedVertex.getId().asBytes());
-			// TODO anything more useful that could be used as value for pending markers?
-			DatabaseEntry value = new DatabaseEntry(serialization.toDson(verifiedVertex.toSerializable(), Output.ALL));
-			pendingDatabase.putNoOverwrite(transaction, key, value);
-		}
-
-		//return doStore(PREFIX_PENDING, entry.getStateVersion(), entry.getAID(), atomData, indices, transaction);
 	}
 
 	private LedgerEntryStoreResult doStore(
