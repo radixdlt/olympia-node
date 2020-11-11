@@ -18,6 +18,7 @@
 package com.radixdlt;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
@@ -27,6 +28,8 @@ import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVertic
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.ProceedToViewSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
+import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.mempool.MempoolNetworkRx;
 import com.radixdlt.mempool.MempoolNetworkTx;
 import com.radixdlt.middleware2.network.MessageCentralBFTNetwork;
@@ -66,5 +69,10 @@ public final class NetworkModule extends AbstractModule {
 		// Ledger Sync messages
 		bind(StateSyncNetworkSender.class).to(MessageCentralLedgerSync.class).in(Scopes.SINGLETON);
 		bind(StateSyncNetworkRx.class).to(MessageCentralLedgerSync.class).in(Scopes.SINGLETON);
+	}
+
+	@Provides
+	public RemoteEventDispatcher<DtoLedgerHeaderAndProof> requestDispatcher(MessageCentralLedgerSync messageCentralLedgerSync) {
+		return messageCentralLedgerSync.syncRequestDispatcher();
 	}
 }

@@ -41,6 +41,7 @@ import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
+import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.sync.RemoteSyncResponse;
 import com.radixdlt.sync.StateSyncNetworkRx;
@@ -246,8 +247,11 @@ public class SimulationNetwork {
 			return myMessages.ofType(RemoteSyncRequest.class);
 		}
 
-		@Override
-		public void sendSyncRequest(BFTNode node, DtoLedgerHeaderAndProof currentHeader) {
+		public RemoteEventDispatcher<DtoLedgerHeaderAndProof> syncRequestDispatcher() {
+			return this::sendSyncRequest;
+		}
+
+		private void sendSyncRequest(BFTNode node, DtoLedgerHeaderAndProof currentHeader) {
 			RemoteSyncRequest syncRequest = new RemoteSyncRequest(thisNode, currentHeader);
 			receivedMessages.onNext(MessageInTransit.newMessage(syncRequest, thisNode, node));
 		}

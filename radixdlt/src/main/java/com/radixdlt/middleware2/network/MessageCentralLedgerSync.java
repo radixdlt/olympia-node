@@ -18,6 +18,7 @@
 package com.radixdlt.middleware2.network;
 
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.sync.RemoteSyncResponse;
@@ -79,8 +80,11 @@ public final class MessageCentralLedgerSync implements StateSyncNetworkSender, S
 		});
 	}
 
-	@Override
-	public void sendSyncRequest(BFTNode node, DtoLedgerHeaderAndProof header) {
+	public RemoteEventDispatcher<DtoLedgerHeaderAndProof> syncRequestDispatcher() {
+		return this::sendSyncRequest;
+	}
+
+	private void sendSyncRequest(BFTNode node, DtoLedgerHeaderAndProof header) {
 		addressBook.peer(node.getKey().euid()).ifPresent(peer -> {
 			if (peer.hasSystem()) {
 				final SyncRequestMessage syncRequestMessage = new SyncRequestMessage(this.magic, header);

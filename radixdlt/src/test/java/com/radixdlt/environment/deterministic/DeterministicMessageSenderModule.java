@@ -41,10 +41,12 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.Synchronous;
 import com.radixdlt.environment.deterministic.network.ControlledSender;
 import com.radixdlt.epochs.EpochChangeManager.EpochsLedgerUpdateSender;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork.DeterministicSender;
+import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.sync.LocalSyncRequest;
 import java.util.Set;
 
@@ -105,6 +107,11 @@ public class DeterministicMessageSenderModule extends AbstractModule {
 	@ProvidesIntoSet
 	@Synchronous
 	EventProcessor<LocalSyncRequest> controlledSender(ControlledSender controlledSender) {
+		return controlledSender::dispatch;
+	}
+
+	@Provides
+	RemoteEventDispatcher<DtoLedgerHeaderAndProof> syncRequestDispatcher(ControlledSender controlledSender) {
 		return controlledSender::dispatch;
 	}
 

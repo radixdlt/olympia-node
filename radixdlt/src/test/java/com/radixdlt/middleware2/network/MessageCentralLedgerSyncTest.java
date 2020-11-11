@@ -69,7 +69,7 @@ public class MessageCentralLedgerSyncTest {
 		PeerWithSystem peer = mock(PeerWithSystem.class);
 		when(peer.hasSystem()).thenReturn(true);
 		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
-		messageCentralLedgerSync.sendSyncRequest(node, mock(DtoLedgerHeaderAndProof.class));
+		messageCentralLedgerSync.syncRequestDispatcher().dispatch(node, mock(DtoLedgerHeaderAndProof.class));
 		verify(messageCentral, times(1)).send(eq(peer), argThat(msg -> msg.getMagic() == 123));
 	}
 

@@ -21,7 +21,9 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdateProcessor;
 import java.util.Comparator;
@@ -62,13 +64,13 @@ public final class LocalSyncServiceAccumulatorProcessor implements LocalSyncServ
 
 	private final SyncTimeoutScheduler syncTimeoutScheduler;
 	private final long patienceMilliseconds;
-	private final StateSyncNetworkSender stateSyncNetworkSender;
+	private final RemoteEventDispatcher<DtoLedgerHeaderAndProof> requestDispatcher;
 	private final Comparator<AccumulatorState> accComparator;
 	private VerifiedLedgerHeaderAndProof targetHeader;
 	private VerifiedLedgerHeaderAndProof currentHeader;
 
 	public LocalSyncServiceAccumulatorProcessor(
-		StateSyncNetworkSender stateSyncNetworkSender,
+		RemoteEventDispatcher<DtoLedgerHeaderAndProof> requestDispatcher,
 		SyncTimeoutScheduler syncTimeoutScheduler,
 		Comparator<AccumulatorState> accComparator,
 		VerifiedLedgerHeaderAndProof current,
@@ -78,7 +80,7 @@ public final class LocalSyncServiceAccumulatorProcessor implements LocalSyncServ
 			throw new IllegalArgumentException();
 		}
 
-		this.stateSyncNetworkSender = Objects.requireNonNull(stateSyncNetworkSender);
+		this.requestDispatcher = Objects.requireNonNull(requestDispatcher);
 		this.syncTimeoutScheduler = Objects.requireNonNull(syncTimeoutScheduler);
 		this.patienceMilliseconds = patienceMilliseconds;
 		this.accComparator = Objects.requireNonNull(accComparator);
@@ -123,8 +125,9 @@ public final class LocalSyncServiceAccumulatorProcessor implements LocalSyncServ
 		}
 
 		ImmutableList<BFTNode> targetNodes = syncInProgress.getTargetNodes();
+		// TODO: remove thread local random
 		BFTNode node = targetNodes.get(ThreadLocalRandom.current().nextInt(targetNodes.size()));
-		stateSyncNetworkSender.sendSyncRequest(node, this.currentHeader.toDto());
+		requestDispatcher.dispatch(node, this.currentHeader.toDto());
 		syncTimeoutScheduler.scheduleTimeout(syncInProgress, patienceMilliseconds);
 	}
 }

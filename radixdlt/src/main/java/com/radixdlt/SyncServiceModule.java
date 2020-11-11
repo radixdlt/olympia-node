@@ -25,8 +25,10 @@ import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoCommandsAndProof;
+import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.sync.RemoteSyncResponseAccumulatorVerifier;
@@ -131,13 +133,13 @@ public class SyncServiceModule extends AbstractModule {
 	@Singleton
 	private LocalSyncServiceAccumulatorProcessor localSyncServiceProcessor(
 		Comparator<AccumulatorState> accumulatorComparator,
-		StateSyncNetworkSender stateSyncNetwork,
+		RemoteEventDispatcher<DtoLedgerHeaderAndProof> requestDispatcher,
 		SyncTimeoutScheduler syncTimeoutScheduler,
 		BFTConfiguration initialConfiguration,
 		@SyncPatienceMillis int syncPatienceMillis
 	) {
 		return new LocalSyncServiceAccumulatorProcessor(
-			stateSyncNetwork,
+			requestDispatcher,
 			syncTimeoutScheduler,
 			accumulatorComparator,
 			initialConfiguration.getGenesisHeader(),

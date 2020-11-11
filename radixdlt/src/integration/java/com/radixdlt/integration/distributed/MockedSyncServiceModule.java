@@ -20,6 +20,7 @@ package com.radixdlt.integration.distributed;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Singleton;
+import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.Ledger;
@@ -40,6 +41,11 @@ public class MockedSyncServiceModule extends AbstractModule {
 	public MockedSyncServiceModule() {
 		this.sharedCommittedCommands = new ConcurrentHashMap<>();
 		this.sharedEpochProofs = new ConcurrentHashMap<>();
+	}
+
+	@Override
+	public void configure() {
+		bind(new TypeLiteral<EventProcessor<LocalSyncRequest>>() { }).toInstance(req -> { });
 	}
 
 	@ProvidesIntoSet

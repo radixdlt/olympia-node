@@ -58,6 +58,7 @@ import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.deterministic.DeterministicEpochInfo;
 import com.radixdlt.mempool.EmptyMempool;
 import com.radixdlt.mempool.Mempool;
@@ -149,10 +150,6 @@ public class RecoveryTest {
 					bind(CommittedAtomSender.class).toInstance(atom -> { });
 					bind(SyncTimeoutScheduler.class).toInstance((syncInProgress, milliseconds) -> { });
 					bind(StateSyncNetworkSender.class).toInstance(new StateSyncNetworkSender() {
-						@Override
-						public void sendSyncRequest(BFTNode node, DtoLedgerHeaderAndProof currentHeader) {
-						}
-
 						@Override
 						public void sendSyncResponse(BFTNode node, DtoCommandsAndProof commandsAndProof) {
 						}

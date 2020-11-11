@@ -29,8 +29,10 @@ import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
+import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.SimulatedNetworkImpl;
+import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.sync.StateSyncNetworkRx;
 import com.radixdlt.sync.StateSyncNetworkSender;
 
@@ -58,5 +60,10 @@ public class NodeNetworkMessagesModule extends AbstractModule {
 	@Provides
 	private SimulatedNetworkImpl network(@Self BFTNode node) {
 		return simulationNetwork.getNetwork(node);
+	}
+
+	@Provides
+	private RemoteEventDispatcher<DtoLedgerHeaderAndProof> syncRequestDispatcher(SimulatedNetworkImpl network) {
+		return network.syncRequestDispatcher();
 	}
 }

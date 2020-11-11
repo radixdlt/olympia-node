@@ -31,7 +31,9 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
@@ -53,12 +55,14 @@ public class EpochsLocalSyncServiceProcessorTest {
 	private SyncedEpochSender syncedEpochSender;
 
 	private EventProcessor<LocalSyncRequest> eventProcessor;
+	private RemoteEventDispatcher<DtoLedgerHeaderAndProof> requestDispatcher;
 
 	@Before
 	public void setup() {
 		this.initialProcessor = mock(LocalSyncServiceAccumulatorProcessor.class);
 		this.eventProcessor = TypedMocks.rmock(EventProcessor.class);
 		when(initialProcessor.localSyncRequestEventProcessor()).thenReturn(eventProcessor);
+		this.requestDispatcher = TypedMocks.rmock(RemoteEventDispatcher.class);
 		this.initialEpoch = mock(EpochChange.class);
 		this.initialHeader = mock(VerifiedLedgerHeaderAndProof.class);
 		this.localSyncFactory = TypedMocks.rmock(Function.class);
@@ -69,7 +73,7 @@ public class EpochsLocalSyncServiceProcessorTest {
 			this.initialEpoch,
 			this.initialHeader,
 			this.localSyncFactory,
-			this.stateSyncNetwork,
+			this.requestDispatcher,
 			this.syncedEpochSender
 		);
 	}
@@ -93,7 +97,7 @@ public class EpochsLocalSyncServiceProcessorTest {
 		when(request.getTarget()).thenReturn(header);
 		processor.localSyncRequestEventProcessor().process(request);
 
-		verify(stateSyncNetwork, never()).sendSyncRequest(any(), any());
+		verify(requestDispatcher, never()).dispatch(any(), any());
 		verify(syncedEpochSender, never()).sendSyncedEpoch(any());
 		verify(eventProcessor, times(1)).process(eq(request));
 	}
@@ -110,7 +114,7 @@ public class EpochsLocalSyncServiceProcessorTest {
 		when(request.getTarget()).thenReturn(header);
 		processor.localSyncRequestEventProcessor().process(request);
 
-		verify(stateSyncNetwork, times(1)).sendSyncRequest(any(), any());
+		verify(requestDispatcher, times(1)).dispatch(any(), any());
 		verify(syncedEpochSender, never()).sendSyncedEpoch(any());
 		verify(eventProcessor, never()).process(any());
 	}
@@ -144,7 +148,7 @@ public class EpochsLocalSyncServiceProcessorTest {
 		when(request.getTarget()).thenReturn(header);
 		processor.localSyncRequestEventProcessor().process(request);
 
-		verify(stateSyncNetwork, never()).sendSyncRequest(any(), any());
+		verify(requestDispatcher, never()).dispatch(any(), any());
 		verify(syncedEpochSender, never()).sendSyncedEpoch(any());
 		verify(eventProcessor, never()).process(any());
 		verify(localSyncEventProcessor, never()).process(any());
@@ -174,7 +178,7 @@ public class EpochsLocalSyncServiceProcessorTest {
 		when(request.getTarget()).thenReturn(header);
 		processor.localSyncRequestEventProcessor().process(request);
 
-		verify(stateSyncNetwork, never()).sendSyncRequest(any(), any());
+		verify(requestDispatcher, never()).dispatch(any(), any());
 		verify(syncedEpochSender, never()).sendSyncedEpoch(any());
 		verify(eventProcessor, times(1)).process(any());
 		verify(localSyncEventProcessor, never()).process(any());

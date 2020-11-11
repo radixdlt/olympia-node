@@ -15,19 +15,10 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.sync;
+package com.radixdlt.environment;
 
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.ledger.DtoCommandsAndProof;
 
-/**
- * Network interface for state syncing
- */
-public interface StateSyncNetworkSender {
-	/**
-	 * Sends a sync response to a peer node
-	 * @param node node to send response to
-	 * @param commandsAndProof list of commands with proof
-	 */
-	void sendSyncResponse(BFTNode node, DtoCommandsAndProof commandsAndProof);
+public interface RemoteEventDispatcher<T> {
+	void dispatch(BFTNode receiver, T t);
 }

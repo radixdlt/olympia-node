@@ -26,11 +26,13 @@ import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.epochs.EpochsLocalSyncServiceProcessor;
 import com.radixdlt.epochs.EpochsRemoteSyncResponseProcessor;
 import com.radixdlt.epochs.SyncedEpochSender;
 import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.ledger.LedgerUpdateProcessor;
 import com.radixdlt.sync.LocalSyncRequest;
@@ -104,13 +106,13 @@ public class EpochsSyncModule extends AbstractModule {
 	@Provides
 	private Function<BFTConfiguration, LocalSyncServiceAccumulatorProcessor> localSyncFactory(
 		Comparator<AccumulatorState> accumulatorComparator,
-		StateSyncNetworkSender stateSyncNetworkSender,
+		RemoteEventDispatcher<DtoLedgerHeaderAndProof> requestDispatcher,
 		SyncTimeoutScheduler syncTimeoutScheduler,
 		@SyncPatienceMillis int syncPatienceMillis
 	) {
 		return config ->
 			new LocalSyncServiceAccumulatorProcessor(
-				stateSyncNetworkSender,
+				requestDispatcher,
 				syncTimeoutScheduler,
 				accumulatorComparator,
 				config.getGenesisHeader(),

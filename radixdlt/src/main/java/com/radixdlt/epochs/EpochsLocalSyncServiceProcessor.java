@@ -23,13 +23,14 @@ import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.LedgerUpdateProcessor;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceProcessor;
-import com.radixdlt.sync.StateSyncNetworkSender;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -48,7 +49,7 @@ public class EpochsLocalSyncServiceProcessor implements LocalSyncServiceProcesso
 
 	private final Function<BFTConfiguration, LocalSyncServiceAccumulatorProcessor> localSyncFactory;
 	private final SyncedEpochSender syncedEpochSender;
-	private final StateSyncNetworkSender stateSyncNetwork;
+	private final RemoteEventDispatcher<DtoLedgerHeaderAndProof> requestDispatcher;
 	private final TreeMap<Long, List<LocalSyncRequest>> outsideOfCurrentEpochRequests = new TreeMap<>();
 
 	private EpochChange currentEpoch;
@@ -61,7 +62,7 @@ public class EpochsLocalSyncServiceProcessor implements LocalSyncServiceProcesso
 		EpochChange initialEpoch,
 		@LastProof VerifiedLedgerHeaderAndProof initialHeader,
 		Function<BFTConfiguration, LocalSyncServiceAccumulatorProcessor> localSyncFactory,
-		StateSyncNetworkSender stateSyncNetwork,
+		RemoteEventDispatcher<DtoLedgerHeaderAndProof> requestDispatcher,
 		SyncedEpochSender syncedEpochSender
 	) {
 		this.currentEpoch = initialEpoch;
@@ -70,7 +71,7 @@ public class EpochsLocalSyncServiceProcessor implements LocalSyncServiceProcesso
 
 		this.localSyncFactory = localSyncFactory;
 		this.syncedEpochSender = syncedEpochSender;
-		this.stateSyncNetwork = stateSyncNetwork;
+		this.requestDispatcher = Objects.requireNonNull(requestDispatcher);
 	}
 
 	@Override
@@ -88,7 +89,7 @@ public class EpochsLocalSyncServiceProcessor implements LocalSyncServiceProcesso
 				.findFirst()
 				.ifPresent(request -> {
 					log.info("Epoch updated sending further sync requests to {}", request.getTargetNodes().get(0));
-					stateSyncNetwork.sendSyncRequest(request.getTargetNodes().get(0), currentEpoch.getProof().toDto());
+					requestDispatcher.dispatch(request.getTargetNodes().get(0), currentEpoch.getProof().toDto());
 				});
 		} else {
 			this.currentHeader = ledgerUpdate.getTail();
@@ -106,7 +107,7 @@ public class EpochsLocalSyncServiceProcessor implements LocalSyncServiceProcesso
 			log.warn("Request {} is a different epoch from current {} sending epoch sync", request, currentEpoch.getEpoch());
 
 			outsideOfCurrentEpochRequests.computeIfAbsent(targetEpoch, epoch -> Lists.newArrayList()).add(request);
-			stateSyncNetwork.sendSyncRequest(request.getTargetNodes().get(0), currentEpoch.getProof().toDto());
+			requestDispatcher.dispatch(request.getTargetNodes().get(0), currentEpoch.getProof().toDto());
 			return;
 		}
 
