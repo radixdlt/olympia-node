@@ -65,7 +65,6 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
@@ -84,6 +83,7 @@ import com.radixdlt.mempool.Mempool;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
+import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.utils.UInt256;
 import java.util.stream.Stream;
 import org.junit.Before;
@@ -109,7 +109,7 @@ public class EpochManagerTest {
 	private ProposalBroadcaster proposalBroadcaster = mock(ProposalBroadcaster.class);
 	private BFTSyncTimeoutScheduler timeoutScheduler = mock(BFTSyncTimeoutScheduler.class);
 	private SyncVerticesRequestSender syncVerticesRequestSender = mock(SyncVerticesRequestSender.class);
-	private SyncLedgerRequestSender syncLedgerRequestSender = mock(SyncLedgerRequestSender.class);
+	private EventProcessor<LocalSyncRequest> syncLedgerRequestSender = rmock(EventProcessor.class);
 	private SyncVerticesResponseSender syncVerticesResponseSender = mock(SyncVerticesResponseSender.class);
 	private LedgerUpdateSender ledgerUpdateSender = mock(LedgerUpdateSender.class);
 	private Mempool mempool = mock(Mempool.class);
@@ -135,6 +135,7 @@ public class EpochManagerTest {
 
 				bind(new TypeLiteral<EventProcessor<Timeout>>() { }).toInstance(rmock(EventProcessor.class));
 				bind(new TypeLiteral<EventProcessor<EpochView>>() { }).toInstance(rmock(EventProcessor.class));
+				bind(new TypeLiteral<EventProcessor<LocalSyncRequest>>() { }).toInstance(syncLedgerRequestSender);
 
 				bind(SyncEpochsRPCSender.class).toInstance(syncEpochsRPCSender);
 				bind(LocalTimeoutSender.class).toInstance(localTimeoutSender);
@@ -145,7 +146,6 @@ public class EpochManagerTest {
 				bind(SystemCounters.class).toInstance(new SystemCountersImpl());
 				bind(SyncVerticesRequestSender.class).toInstance(syncVerticesRequestSender);
 				bind(SyncVerticesResponseSender.class).toInstance(syncVerticesResponseSender);
-				bind(SyncLedgerRequestSender.class).toInstance(syncLedgerRequestSender);
 				bind(LedgerUpdateSender.class).toInstance(ledgerUpdateSender);
 				bind(Mempool.class).toInstance(mempool);
 				bind(StateComputer.class).toInstance(stateComputer);
@@ -251,7 +251,7 @@ public class EpochManagerTest {
 
 		// Assert
 		verify(syncLedgerRequestSender, times(1))
-			.sendLocalSyncRequest(argThat(req -> req.getTarget().equals(proof)));
+			.processEvent(argThat(req -> req.getTarget().equals(proof)));
 	}
 
 	@Test
@@ -263,6 +263,6 @@ public class EpochManagerTest {
 		epochManager.processGetEpochResponse(response);
 
 		// Assert
-		verify(syncLedgerRequestSender, never()).sendLocalSyncRequest(any());
+		verify(syncLedgerRequestSender, never()).processEvent(any());
 	}
 }

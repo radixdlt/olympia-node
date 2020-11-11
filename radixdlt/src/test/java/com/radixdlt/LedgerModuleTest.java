@@ -39,7 +39,6 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
-import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.mempool.Mempool;
@@ -47,6 +46,7 @@ import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.store.LastProof;
+import com.radixdlt.sync.LocalSyncRequest;
 import org.junit.Test;
 
 public class LedgerModuleTest {
@@ -64,7 +64,7 @@ public class LedgerModuleTest {
 			bind(BFTNode.class).annotatedWith(Self.class).toInstance(mock(BFTNode.class));
 			bind(SyncEpochsRPCSender.class).toInstance(mock(SyncEpochsRPCSender.class));
 			bind(LocalTimeoutSender.class).toInstance(mock(LocalTimeoutSender.class));
-			bind(SyncLedgerRequestSender.class).toInstance(mock(SyncLedgerRequestSender.class));
+			bind(new TypeLiteral<EventProcessor<LocalSyncRequest>>() { }).toInstance(rmock(EventProcessor.class));
 			bind(Hasher.class).toInstance(mock(Hasher.class));
 
 			bind(Mempool.class).toInstance(mock(Mempool.class));

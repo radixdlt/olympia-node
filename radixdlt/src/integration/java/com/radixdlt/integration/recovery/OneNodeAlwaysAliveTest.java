@@ -25,6 +25,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Scopes;
+import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.CryptoModule;
@@ -50,11 +51,11 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
-import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.deterministic.DeterministicEpochInfo;
 import com.radixdlt.integration.distributed.MockedMempoolModule;
 import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
@@ -72,6 +73,7 @@ import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
+import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncTimeoutScheduler;
 import com.radixdlt.sync.StateSyncNetworkSender;
 import com.radixdlt.sync.SyncPatienceMillis;
@@ -172,7 +174,7 @@ public class OneNodeAlwaysAliveTest {
 
 					// TODO: Move these into DeterministicSender
 					bind(CommittedAtomSender.class).toInstance(atom -> { });
-					bind(SyncLedgerRequestSender.class).toInstance(request -> { });
+					bind(new TypeLiteral<EventProcessor<LocalSyncRequest>>() { }).toInstance(req -> { });
 					bind(SyncTimeoutScheduler.class).toInstance((syncInProgress, milliseconds) -> { });
 					bind(StateSyncNetworkSender.class).toInstance(new StateSyncNetworkSender() {
 						@Override

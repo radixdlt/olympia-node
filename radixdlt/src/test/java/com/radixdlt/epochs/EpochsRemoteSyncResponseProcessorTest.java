@@ -17,6 +17,7 @@
 
 package com.radixdlt.epochs;
 
+import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -32,13 +33,13 @@ import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochChange;
-import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
+import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
+import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.RemoteSyncResponse;
 import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier;
-import com.radixdlt.utils.TypedMocks;
 
 import java.util.Optional;
 import java.util.function.Function;
@@ -47,7 +48,7 @@ import org.junit.Test;
 
 public class EpochsRemoteSyncResponseProcessorTest {
 	private EpochsRemoteSyncResponseProcessor responseProcessor;
-	private SyncLedgerRequestSender localSyncRequestSender;
+	private EventProcessor<LocalSyncRequest> localSyncRequestSender;
 	private RemoteSyncResponseValidatorSetVerifier initialVerifier;
 	private EpochChange initialEpoch;
 	private VerifiedLedgerHeaderAndProof currentHeader;
@@ -59,8 +60,8 @@ public class EpochsRemoteSyncResponseProcessorTest {
 		this.initialEpoch = mock(EpochChange.class);
 		this.currentHeader = mock(VerifiedLedgerHeaderAndProof.class);
 
-		this.localSyncRequestSender = mock(SyncLedgerRequestSender.class);
-		this.verifierFactory = TypedMocks.rmock(Function.class);
+		this.localSyncRequestSender = rmock(EventProcessor.class);
+		this.verifierFactory = rmock(Function.class);
 
 		this.responseProcessor = new EpochsRemoteSyncResponseProcessor(
 			localSyncRequestSender,
@@ -77,7 +78,7 @@ public class EpochsRemoteSyncResponseProcessorTest {
 		when(update.getEpochChange()).thenReturn(Optional.empty());
 		this.responseProcessor.processLedgerUpdate(update);
 
-		verify(localSyncRequestSender, never()).sendLocalSyncRequest(any());
+		verify(localSyncRequestSender, never()).processEvent(any());
 		verify(initialVerifier, never()).processSyncResponse(any());
 		verify(verifierFactory, never()).apply(any());
 	}
@@ -96,7 +97,7 @@ public class EpochsRemoteSyncResponseProcessorTest {
 		when(response.getCommandsAndProof()).thenReturn(dtoCommandsAndProof);
 		this.responseProcessor.processSyncResponse(response);
 
-		verify(localSyncRequestSender, never()).sendLocalSyncRequest(any());
+		verify(localSyncRequestSender, never()).processEvent(any());
 		verify(initialVerifier, never()).processSyncResponse(any());
 		verify(verifierFactory, never()).apply(any());
 	}
@@ -128,7 +129,7 @@ public class EpochsRemoteSyncResponseProcessorTest {
 		when(response.getCommandsAndProof()).thenReturn(dtoCommandsAndProof);
 		this.responseProcessor.processSyncResponse(response);
 
-		verify(localSyncRequestSender, never()).sendLocalSyncRequest(any());
+		verify(localSyncRequestSender, never()).processEvent(any());
 		verify(initialVerifier, never()).processSyncResponse(any());
 		verify(nextValidatorSetVerifier, times(1)).processSyncResponse(any());
 	}
@@ -163,7 +164,7 @@ public class EpochsRemoteSyncResponseProcessorTest {
 		when(response.getSender()).thenReturn(mock(BFTNode.class));
 		this.responseProcessor.processSyncResponse(response);
 
-		verify(localSyncRequestSender, times(1)).sendLocalSyncRequest(any());
+		verify(localSyncRequestSender, times(1)).processEvent(any());
 		verify(initialVerifier, never()).processSyncResponse(any());
 		verify(verifierFactory, never()).apply(any());
 	}

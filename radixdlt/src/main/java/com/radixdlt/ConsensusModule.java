@@ -57,14 +57,15 @@ import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
-import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
 import com.radixdlt.consensus.liveness.PendingViewTimeouts;
 import com.radixdlt.consensus.liveness.ProceedToViewSender;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.network.TimeSupplier;
+import com.radixdlt.sync.LocalSyncRequest;
 import java.util.Comparator;
 import java.util.Random;
 import java.util.Set;
@@ -213,7 +214,7 @@ public final class ConsensusModule extends AbstractModule {
 		VertexStore vertexStore,
 		Pacemaker pacemaker,
 		SyncVerticesRequestSender requestSender,
-		SyncLedgerRequestSender syncLedgerRequestSender,
+		EventProcessor<LocalSyncRequest> syncLedgerRequestSender,
 		BFTSyncTimeoutScheduler timeoutScheduler,
 		BFTConfiguration configuration,
 		SystemCounters counters,

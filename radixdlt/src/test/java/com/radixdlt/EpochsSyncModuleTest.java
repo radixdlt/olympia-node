@@ -17,6 +17,7 @@
 
 package com.radixdlt;
 
+import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -31,12 +32,13 @@ import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.epoch.EpochChange;
-import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.epochs.SyncedEpochSender;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
+import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncTimeoutScheduler;
 import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier;
@@ -66,7 +68,7 @@ public class EpochsSyncModuleTest {
 				bind(EpochChange.class).toInstance(mock(EpochChange.class));
 				bind(LocalSyncServiceAccumulatorProcessor.class).toInstance(mock(LocalSyncServiceAccumulatorProcessor.class));
 				bind(RemoteSyncResponseValidatorSetVerifier.class).toInstance(mock(RemoteSyncResponseValidatorSetVerifier.class));
-				bind(SyncLedgerRequestSender.class).toInstance(mock(SyncLedgerRequestSender.class));
+				bind(new TypeLiteral<EventProcessor<LocalSyncRequest>>() { }).toInstance(rmock(EventProcessor.class));
 				bind(SystemCounters.class).toInstance(mock(SystemCounters.class));
 				bind(Ledger.class).toInstance(ledger);
 				bind(VerifiedValidatorSetSender.class).toInstance(mock(VerifiedValidatorSetSender.class));

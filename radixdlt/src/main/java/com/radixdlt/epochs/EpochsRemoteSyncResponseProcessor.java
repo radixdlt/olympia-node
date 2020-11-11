@@ -22,7 +22,7 @@ import com.google.inject.Inject;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.epoch.EpochChange;
-import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
+import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.LedgerUpdateProcessor;
@@ -47,7 +47,7 @@ public final class EpochsRemoteSyncResponseProcessor implements RemoteSyncRespon
 	private static final Logger log = LogManager.getLogger();
 
 	private final Function<BFTConfiguration, RemoteSyncResponseValidatorSetVerifier> verifierFactory;
-	private final SyncLedgerRequestSender localSyncRequestSender;
+	private final EventProcessor<LocalSyncRequest> localSyncRequestProcessor;
 
 	private RemoteSyncResponseValidatorSetVerifier currentVerifier;
 	private EpochChange currentEpoch;
@@ -55,13 +55,13 @@ public final class EpochsRemoteSyncResponseProcessor implements RemoteSyncRespon
 
 	@Inject
 	public EpochsRemoteSyncResponseProcessor(
-		SyncLedgerRequestSender localSyncRequestSender,
+		EventProcessor<LocalSyncRequest> localSyncRequestProcessor,
 		RemoteSyncResponseValidatorSetVerifier initialVerifier,
 		EpochChange initialEpoch,
 		@LastEpochProof VerifiedLedgerHeaderAndProof currentEpochProof,
 		Function<BFTConfiguration, RemoteSyncResponseValidatorSetVerifier> verifierFactory
 	) {
-		this.localSyncRequestSender = Objects.requireNonNull(localSyncRequestSender);
+		this.localSyncRequestProcessor = Objects.requireNonNull(localSyncRequestProcessor);
 		this.currentEpoch = Objects.requireNonNull(initialEpoch);
 		this.currentEpochProof = Objects.requireNonNull(currentEpochProof);
 		this.currentVerifier = Objects.requireNonNull(initialVerifier);
@@ -119,7 +119,7 @@ public final class EpochsRemoteSyncResponseProcessor implements RemoteSyncRespon
 				dto.getSignatures()
 			);
 			LocalSyncRequest localSyncRequest = new LocalSyncRequest(verified, ImmutableList.of(syncResponse.getSender()));
-			localSyncRequestSender.sendLocalSyncRequest(localSyncRequest);
+			localSyncRequestProcessor.processEvent(localSyncRequest);
 			return;
 		}
 

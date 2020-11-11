@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus.sync;
 
+import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -42,9 +43,10 @@ import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.sync.BFTSync.BFTSyncTimeoutScheduler;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.utils.Pair;
-import com.radixdlt.utils.TypedMocks;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -59,7 +61,7 @@ public class BFTSyncTest {
 	private Pacemaker pacemaker;
 	private Comparator<LedgerHeader> ledgerHeaderComparator;
 	private SyncVerticesRequestSender syncVerticesRequestSender;
-	private SyncLedgerRequestSender syncLedgerRequestSender;
+	private EventProcessor<LocalSyncRequest> syncLedgerRequestSender;
 	private VerifiedLedgerHeaderAndProof verifiedLedgerHeaderAndProof;
 	private BFTSyncTimeoutScheduler bftSyncTimeoutScheduler;
 
@@ -67,9 +69,9 @@ public class BFTSyncTest {
 	public void setup() {
 		this.vertexStore = mock(VertexStore.class);
 		this.pacemaker = mock(Pacemaker.class);
-		this.ledgerHeaderComparator = TypedMocks.rmock(Comparator.class);
+		this.ledgerHeaderComparator = rmock(Comparator.class);
 		this.syncVerticesRequestSender = mock(SyncVerticesRequestSender.class);
-		this.syncLedgerRequestSender = mock(SyncLedgerRequestSender.class);
+		this.syncLedgerRequestSender = rmock(EventProcessor.class);
 		this.verifiedLedgerHeaderAndProof = mock(VerifiedLedgerHeaderAndProof.class);
 		this.bftSyncTimeoutScheduler = mock(BFTSyncTimeoutScheduler.class);
 
@@ -192,7 +194,7 @@ public class BFTSyncTest {
 
 		assertThat(syncResult).isEqualTo(SyncResult.IN_PROGRESS);
 		verify(syncVerticesRequestSender, times(1)).sendGetVerticesRequest(any(), any());
-		verify(syncLedgerRequestSender, never()).sendLocalSyncRequest(any());
+		verify(syncLedgerRequestSender, never()).processEvent(any());
 	}
 
 	@Test
@@ -221,7 +223,7 @@ public class BFTSyncTest {
 		bftSync.syncToQC(highQC, author);
 
 		verify(syncVerticesRequestSender, times(1)).sendGetVerticesRequest(any(), any());
-		verify(syncLedgerRequestSender, never()).sendLocalSyncRequest(any());
+		verify(syncLedgerRequestSender, never()).processEvent(any());
 	}
 
 	@Test
@@ -250,7 +252,7 @@ public class BFTSyncTest {
 		bftSync.syncToQC(highQC, author);
 
 		verify(syncVerticesRequestSender, times(1)).sendGetVerticesRequest(any(), any());
-		verify(syncLedgerRequestSender, never()).sendLocalSyncRequest(any());
+		verify(syncLedgerRequestSender, never()).processEvent(any());
 	}
 
 	@Test
@@ -282,7 +284,7 @@ public class BFTSyncTest {
 		bftSync.syncToQC(highQC, author);
 
 		verify(syncVerticesRequestSender, times(1)).sendGetVerticesRequest(any(), any());
-		verify(syncLedgerRequestSender, never()).sendLocalSyncRequest(any());
+		verify(syncLedgerRequestSender, never()).processEvent(any());
 	}
 
 
@@ -327,7 +329,7 @@ public class BFTSyncTest {
 		bftSync.processGetVerticesResponse(getVerticesResponse);
 
 		verify(syncVerticesRequestSender, times(1)).sendGetVerticesRequest(any(), any());
-		verify(syncLedgerRequestSender, times(1)).sendLocalSyncRequest(any());
+		verify(syncLedgerRequestSender, times(1)).processEvent(any());
 	}
 
 
@@ -404,7 +406,7 @@ public class BFTSyncTest {
 		bftSync.processGetVerticesErrorResponse(getVerticesErrorResponse);
 
 		verify(syncVerticesRequestSender, times(1)).sendGetVerticesRequest(any(), any());
-		verify(syncLedgerRequestSender, never()).sendLocalSyncRequest(any());
+		verify(syncLedgerRequestSender, never()).processEvent(any());
 	}
 
 	@Test

@@ -52,12 +52,12 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
-import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.deterministic.DeterministicEpochInfo;
 import com.radixdlt.mempool.EmptyMempool;
 import com.radixdlt.mempool.Mempool;
@@ -79,6 +79,7 @@ import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.store.LastEpochProof;
+import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncTimeoutScheduler;
 import com.radixdlt.sync.StateSyncNetworkSender;
 import com.radixdlt.sync.SyncPatienceMillis;
@@ -147,7 +148,7 @@ public class RecoveryTest {
 
 					// TODO: Move these into DeterministicSender
 					bind(CommittedAtomSender.class).toInstance(atom -> { });
-					bind(SyncLedgerRequestSender.class).toInstance(request -> { });
+					bind(new TypeLiteral<EventProcessor<LocalSyncRequest>>() { }).toInstance(req -> { });
 					bind(SyncTimeoutScheduler.class).toInstance((syncInProgress, milliseconds) -> { });
 					bind(StateSyncNetworkSender.class).toInstance(new StateSyncNetworkSender() {
 						@Override

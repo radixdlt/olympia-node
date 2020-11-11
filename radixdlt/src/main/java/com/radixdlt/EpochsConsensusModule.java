@@ -55,7 +55,6 @@ import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.sync.BFTSync.BFTSyncTimeoutScheduler;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
-import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.sync.BFTSync;
@@ -67,6 +66,7 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.network.TimeSupplier;
 
 import com.radixdlt.store.LastEpochProof;
+import com.radixdlt.sync.LocalSyncRequest;
 import java.util.Comparator;
 import java.util.Random;
 
@@ -165,7 +165,7 @@ public class EpochsConsensusModule extends AbstractModule {
 	@Provides
 	private BFTSyncFactory bftSyncFactory(
 		SyncVerticesRequestSender requestSender,
-		SyncLedgerRequestSender syncLedgerRequestSender,
+		EventProcessor<LocalSyncRequest> syncLedgerRequestSender,
 		BFTSyncTimeoutScheduler timeoutScheduler,
 		BFTConfiguration configuration,
 		SystemCounters counters,

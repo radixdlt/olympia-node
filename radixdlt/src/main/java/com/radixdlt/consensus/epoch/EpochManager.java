@@ -50,7 +50,6 @@ import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
-import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
@@ -115,7 +114,7 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 	private final BFTFactory bftFactory;
 	private final EventProcessor<EpochView> epochViewEventProcessor;
 	private final EventProcessor<Timeout> timeoutEventProcessor;
-	private final SyncLedgerRequestSender syncRequestSender;
+	private final EventProcessor<LocalSyncRequest> localSyncRequestProcessor;
 
 	private EpochChange currentEpoch;
 	private int numQueuedConsensusEvents = 0;
@@ -137,7 +136,6 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 		EpochChange initialEpoch,
 		SyncEpochsRPCSender epochsRPCSender,
 		LocalTimeoutSender localTimeoutSender,
-		SyncLedgerRequestSender syncRequestSender,
 		PacemakerFactory pacemakerFactory,
 		VertexStoreFactory vertexStoreFactory,
 		BFTSyncFactory bftSyncFactory,
@@ -146,7 +144,8 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 		BFTFactory bftFactory,
 		SystemCounters counters,
 		EventProcessor<EpochView> epochViewEventProcessor,
-		EventProcessor<Timeout> timeoutEventProcessor
+		EventProcessor<Timeout> timeoutEventProcessor,
+		EventProcessor<LocalSyncRequest> localSyncRequestProcessor
 	) {
 		if (!initialEpoch.getBFTConfiguration().getValidatorSet().containsNode(self)) {
 			this.bftEventProcessor =  EmptyBFTEventProcessor.INSTANCE;
@@ -167,7 +166,7 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 		this.currentEpoch = Objects.requireNonNull(initialEpoch);
 		this.self = Objects.requireNonNull(self);
 		this.epochsRPCSender = Objects.requireNonNull(epochsRPCSender);
-		this.syncRequestSender = Objects.requireNonNull(syncRequestSender);
+		this.localSyncRequestProcessor = Objects.requireNonNull(localSyncRequestProcessor);
 		this.localTimeoutSender = Objects.requireNonNull(localTimeoutSender);
 		this.pacemakerFactory = Objects.requireNonNull(pacemakerFactory);
 		this.vertexStoreFactory = Objects.requireNonNull(vertexStoreFactory);
@@ -342,7 +341,7 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 
 		final VerifiedLedgerHeaderAndProof ancestor = response.getEpochProof();
 		if (ancestor.getEpoch() >= this.currentEpoch()) {
-			syncRequestSender.sendLocalSyncRequest(new LocalSyncRequest(ancestor, ImmutableList.of(response.getAuthor())));
+			localSyncRequestProcessor.processEvent(new LocalSyncRequest(ancestor, ImmutableList.of(response.getAuthor())));
 		} else {
 			if (ancestor.getEpoch() + 1 < this.currentEpoch()) {
 				log.info("Ignoring old epoch {} current {}", response, this.currentEpoch);
