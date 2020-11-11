@@ -29,6 +29,7 @@ import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.ProceedToViewSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.mempool.MempoolNetworkRx;
 import com.radixdlt.mempool.MempoolNetworkTx;
@@ -38,6 +39,7 @@ import com.radixdlt.middleware2.network.MessageCentralValidatorSync;
 import com.radixdlt.middleware2.network.SimpleMempoolNetwork;
 import com.radixdlt.sync.StateSyncNetworkRx;
 import com.radixdlt.sync.StateSyncNetworkSender;
+import io.reactivex.rxjava3.core.Observable;
 
 /**
  * Network related module
@@ -72,7 +74,12 @@ public final class NetworkModule extends AbstractModule {
 	}
 
 	@Provides
-	public RemoteEventDispatcher<DtoLedgerHeaderAndProof> requestDispatcher(MessageCentralLedgerSync messageCentralLedgerSync) {
+	private RemoteEventDispatcher<DtoLedgerHeaderAndProof> syncRequestDispatcher(MessageCentralLedgerSync messageCentralLedgerSync) {
 		return messageCentralLedgerSync.syncRequestDispatcher();
+	}
+
+	@Provides
+	private Observable<RemoteEvent<DtoLedgerHeaderAndProof>> syncRequests(MessageCentralLedgerSync messageCentralLedgerSync) {
+		return messageCentralLedgerSync.syncRequests();
 	}
 }

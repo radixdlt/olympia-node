@@ -19,6 +19,8 @@ package com.radixdlt.sync;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
@@ -31,7 +33,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * Service which serves remote sync requests
  */
-public class RemoteSyncServiceProcessor {
+public class RemoteSyncServiceProcessor implements RemoteEventProcessor<DtoLedgerHeaderAndProof> {
 	private static final Logger log = LogManager.getLogger();
 
 	private final CommittedReader committedReader;
@@ -52,16 +54,15 @@ public class RemoteSyncServiceProcessor {
 		this.stateSyncNetwork = Objects.requireNonNull(stateSyncNetwork);
 	}
 
-	public void processRemoteSyncRequest(RemoteSyncRequest syncRequest) {
-		DtoLedgerHeaderAndProof currentHeader = syncRequest.getCurrentHeader();
-
+	@Override
+	public void process(BFTNode sender, DtoLedgerHeaderAndProof currentHeader) {
 		if (currentHeader.getLedgerHeader().isEndOfEpoch()) {
-			log.info("REMOTE_EPOCH_SYNC_REQUEST: {}", syncRequest);
+			log.info("REMOTE_EPOCH_SYNC_REQUEST: {} {}", sender, currentHeader);
 			long currentEpoch = currentHeader.getLedgerHeader().getEpoch() + 1;
 			long nextEpoch = currentEpoch + 1;
 			Optional<VerifiedLedgerHeaderAndProof> nextEpochProof = committedReader.getEpochVerifiedHeader(nextEpoch);
 			if (nextEpochProof.isEmpty()) {
-				log.warn("REMOTE_EPOCH_SYNC_REQUEST: Unable to serve epoch sync request {}.", syncRequest);
+				log.warn("REMOTE_EPOCH_SYNC_REQUEST: Unable to serve epoch sync request {} {}", sender, currentHeader);
 				return;
 			}
 
@@ -70,23 +71,20 @@ public class RemoteSyncServiceProcessor {
 				currentHeader, nextEpochProof.get().toDto()
 			);
 			log.info("REMOTE_EPOCH_SYNC_REQUEST: Sending response {}", dtoCommandsAndProof);
-			stateSyncNetwork.sendSyncResponse(syncRequest.getNode(), dtoCommandsAndProof);
+			stateSyncNetwork.sendSyncResponse(sender, dtoCommandsAndProof);
 			return;
 		}
-
-		log.info("REMOTE_SYNC_REQUEST: {}", syncRequest);
-
 
 		final VerifiedCommandsAndProof committedCommands;
 		try {
 			committedCommands = committedReader.getNextCommittedCommands(currentHeader, batchSize);
 		} catch (NextCommittedLimitReachedException e) {
-			log.warn("REMOTE_SYNC_REQUEST: Unable to serve sync request {}.", syncRequest);
+			log.warn("REMOTE_SYNC_REQUEST: Unable to serve sync request {}.", currentHeader);
 			return;
 		}
 
 		if (committedCommands == null) {
-			log.warn("REMOTE_SYNC_REQUEST: Unable to serve sync request {}.", syncRequest);
+			log.warn("REMOTE_SYNC_REQUEST: Unable to serve sync request {}.", currentHeader);
 			return;
 		}
 
@@ -98,6 +96,6 @@ public class RemoteSyncServiceProcessor {
 
 		log.info("REMOTE_SYNC_REQUEST: Sending response {}", verifiable);
 
-		stateSyncNetwork.sendSyncResponse(syncRequest.getNode(), verifiable);
+		stateSyncNetwork.sendSyncResponse(sender, verifiable);
 	}
 }

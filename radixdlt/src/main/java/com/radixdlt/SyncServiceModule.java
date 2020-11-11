@@ -20,12 +20,14 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
@@ -52,6 +54,10 @@ import java.util.Comparator;
  */
 public class SyncServiceModule extends AbstractModule {
 	private static final int BATCH_SIZE = 100;
+
+	public void configure() {
+		bind(new TypeLiteral<RemoteEventProcessor<DtoLedgerHeaderAndProof>>() { }).to(RemoteSyncServiceProcessor.class);
+	}
 
 	@Provides
 	private VerifiedValidatorSetSender verifiedValidatorSetSender(RemoteSyncResponseSignaturesVerifier signaturesVerifier) {

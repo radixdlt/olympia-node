@@ -78,7 +78,7 @@ public class RemoteSyncServiceProcessorTest {
 		when(verifiedHeader.toDto()).thenReturn(header);
 		when(verifiedCommandsAndProof.getHeader()).thenReturn(verifiedHeader);
 		when(reader.getNextCommittedCommands(any(), anyInt())).thenReturn(verifiedCommandsAndProof);
-		processor.processRemoteSyncRequest(request);
+		processor.process(node, header);
 		verify(network, times(1)).sendSyncResponse(eq(node), any());
 	}
 
@@ -92,21 +92,19 @@ public class RemoteSyncServiceProcessorTest {
 		when(header.getLedgerHeader()).thenReturn(mock(LedgerHeader.class));
 		when(header.getSignatures()).thenReturn(mock(TimestampedECDSASignatures.class));
 		when(request.getCurrentHeader()).thenReturn(header);
-		processor.processRemoteSyncRequest(request);
+		processor.process(BFTNode.random(), header);
 		verify(network, never()).sendSyncResponse(any(), any());
 	}
 
 	@Test
 	public void when_remote_sync_request_and_null_return__then_dont_do_anything() throws NextCommittedLimitReachedException {
-		RemoteSyncRequest request = mock(RemoteSyncRequest.class);
 		DtoLedgerHeaderAndProof header = mock(DtoLedgerHeaderAndProof.class);
 		when(header.getOpaque0()).thenReturn(mock(BFTHeader.class));
 		when(header.getOpaque1()).thenReturn(mock(BFTHeader.class));
 		when(header.getOpaque3()).thenReturn(mock(HashCode.class));
 		when(header.getLedgerHeader()).thenReturn(mock(LedgerHeader.class));
 		when(header.getSignatures()).thenReturn(mock(TimestampedECDSASignatures.class));
-		when(request.getCurrentHeader()).thenReturn(header);
-		processor.processRemoteSyncRequest(request);
+		processor.process(BFTNode.random(), header);
 		when(reader.getNextCommittedCommands(any(), anyInt())).thenReturn(null);
 		verify(network, never()).sendSyncResponse(any(), any());
 	}
@@ -131,8 +129,7 @@ public class RemoteSyncServiceProcessorTest {
 			BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)))
 		);
 		when(ledgerHeaderAndProof.getLedgerHeader()).thenReturn(ledgerHeader);
-		RemoteSyncRequest request = new RemoteSyncRequest(BFTNode.random(), ledgerHeaderAndProof);
-		processor.processRemoteSyncRequest(request);
+		processor.process(BFTNode.random(), ledgerHeaderAndProof);
 
 		// Assert
 		verify(network, times(1)).sendSyncResponse(any(), argThat(l -> l.getTail().equals(epoch2)));

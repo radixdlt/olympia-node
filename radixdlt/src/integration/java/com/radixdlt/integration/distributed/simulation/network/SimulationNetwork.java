@@ -42,6 +42,7 @@ import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.sync.RemoteSyncResponse;
 import com.radixdlt.sync.StateSyncNetworkRx;
@@ -242,9 +243,9 @@ public class SimulationNetwork {
 			return myMessages.ofType(RemoteSyncResponse.class);
 		}
 
-		@Override
-		public Observable<RemoteSyncRequest> syncRequests() {
-			return myMessages.ofType(RemoteSyncRequest.class);
+		public Observable<RemoteEvent<DtoLedgerHeaderAndProof>> syncRequests() {
+			return myMessages.ofType(RemoteEvent.class)
+				.flatMapMaybe(e -> RemoteEvent.ofEventType(e, DtoLedgerHeaderAndProof.class));
 		}
 
 		public RemoteEventDispatcher<DtoLedgerHeaderAndProof> syncRequestDispatcher() {

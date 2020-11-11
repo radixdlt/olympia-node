@@ -19,12 +19,12 @@ package com.radixdlt.middleware2.network;
 
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.sync.RemoteSyncResponse;
 import com.radixdlt.sync.StateSyncNetworkRx;
 import com.radixdlt.sync.StateSyncNetworkSender;
-import com.radixdlt.sync.RemoteSyncRequest;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageListener;
 import com.radixdlt.ledger.DtoCommandsAndProof;
@@ -66,13 +66,12 @@ public final class MessageCentralLedgerSync implements StateSyncNetworkSender, S
 		});
 	}
 
-	@Override
-	public Observable<RemoteSyncRequest> syncRequests() {
+	public Observable<RemoteEvent<DtoLedgerHeaderAndProof>> syncRequests() {
 		return Observable.create(emitter -> {
 			MessageListener<SyncRequestMessage> listener = (src, msg) -> {
 				if (src.hasSystem()) {
 					BFTNode node = BFTNode.create(src.getSystem().getKey());
-					emitter.onNext(new RemoteSyncRequest(node, msg.getCurrentHeader()));
+					emitter.onNext(RemoteEvent.create(node, msg.getCurrentHeader(), DtoLedgerHeaderAndProof.class));
 				}
 			};
 			this.messageCentral.addListener(SyncRequestMessage.class, listener);

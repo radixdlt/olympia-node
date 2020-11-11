@@ -18,11 +18,12 @@
 package com.radixdlt.sync;
 
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.rx.RemoteEvent;
+import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdateProcessor;
 import com.radixdlt.sync.SyncServiceRunner.LocalSyncRequestsRx;
 import com.radixdlt.sync.SyncServiceRunner.SyncTimeoutsRx;
-import com.radixdlt.utils.TypedMocks;
 
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
@@ -32,6 +33,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static com.radixdlt.utils.TypedMocks.rmock;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
@@ -50,8 +53,9 @@ public class SyncServiceRunnerTest {
 	private EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor;
 	private LedgerUpdateProcessor<LedgerUpdate> ledgerUpdateProcessor;
 	private Subject<LedgerUpdate> versionUpdatesSubject;
-	private Subject<RemoteSyncRequest> requestsSubject;
 	private Subject<RemoteSyncResponse> responsesSubject;
+	private Subject<RemoteEvent<DtoLedgerHeaderAndProof>> remoteSyncRequests;
+
 
 	@Before
 	public void setUp() {
@@ -62,26 +66,25 @@ public class SyncServiceRunnerTest {
 		when(syncTimeoutsRx.timeouts()).thenReturn(Observable.never());
 
 		this.stateSyncNetwork = mock(StateSyncNetworkRx.class);
-		when(stateSyncNetwork.syncRequests()).thenReturn(Observable.never());
 
 		this.responsesSubject = PublishSubject.create();
 		when(stateSyncNetwork.syncResponses()).thenReturn(responsesSubject);
 
-		this.requestsSubject = PublishSubject.create();
-		when(stateSyncNetwork.syncRequests()).thenReturn(requestsSubject);
+		this.remoteSyncRequests = PublishSubject.create();
 		this.versionUpdatesSubject = PublishSubject.create();
 
 		this.syncServiceProcessor = mock(LocalSyncServiceProcessor.class);
 		this.remoteSyncResponseProcessor = mock(RemoteSyncResponseProcessor.class);
 		this.remoteSyncServiceProcessor = mock(RemoteSyncServiceProcessor.class);
-		this.ledgerUpdateProcessor = TypedMocks.rmock(LedgerUpdateProcessor.class);
+		this.ledgerUpdateProcessor = rmock(LedgerUpdateProcessor.class);
 
-		this.localSyncRequestEventProcessor = TypedMocks.rmock(EventProcessor.class);
+		this.localSyncRequestEventProcessor = rmock(EventProcessor.class);
 
 		syncServiceRunner = new SyncServiceRunner<>(
 			localSyncRequestsRx,
 			syncTimeoutsRx,
 			versionUpdatesSubject,
+			remoteSyncRequests,
 			stateSyncNetwork,
 			localSyncRequestEventProcessor,
 			syncServiceProcessor,
@@ -101,10 +104,10 @@ public class SyncServiceRunnerTest {
 
 	@Test
 	public void when_sync_request__then_it_is_processed() {
-		RemoteSyncRequest syncRequest = mock(RemoteSyncRequest.class);
+		RemoteEvent<DtoLedgerHeaderAndProof> syncRequest = rmock(RemoteEvent.class);
 		syncServiceRunner.start();
-		requestsSubject.onNext(syncRequest);
-		verify(remoteSyncServiceProcessor, timeout(1000).times(1)).processRemoteSyncRequest(eq(syncRequest));
+		remoteSyncRequests.onNext(syncRequest);
+		verify(remoteSyncServiceProcessor, timeout(1000).times(1)).process(any(), any());
 	}
 
 	@Test

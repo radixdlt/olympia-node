@@ -30,11 +30,13 @@ import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.SimulatedNetworkImpl;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.sync.StateSyncNetworkRx;
 import com.radixdlt.sync.StateSyncNetworkSender;
+import io.reactivex.rxjava3.core.Observable;
 
 public class NodeNetworkMessagesModule extends AbstractModule {
 	private final SimulationNetwork simulationNetwork;
@@ -65,5 +67,10 @@ public class NodeNetworkMessagesModule extends AbstractModule {
 	@Provides
 	private RemoteEventDispatcher<DtoLedgerHeaderAndProof> syncRequestDispatcher(SimulatedNetworkImpl network) {
 		return network.syncRequestDispatcher();
+	}
+
+	@Provides
+	private Observable<RemoteEvent<DtoLedgerHeaderAndProof>> syncRequests(SimulatedNetworkImpl network) {
+		return network.syncRequests();
 	}
 }
