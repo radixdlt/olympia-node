@@ -75,7 +75,7 @@ import com.radixdlt.consensus.liveness.ProceedToViewSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.network.TimeSupplier;
@@ -131,7 +131,7 @@ public class ConsensusModuleTest {
 			protected void configure() {
 				bind(BFTUpdateSender.class).toInstance(mock(BFTUpdateSender.class));
 				bind(Ledger.class).toInstance(mock(Ledger.class));
-				bind(new TypeLiteral<EventProcessor<LocalSyncRequest>>() { }).toInstance(rmock(EventProcessor.class));
+				bind(new TypeLiteral<EventDispatcher<LocalSyncRequest>>() { }).toInstance(rmock(EventDispatcher.class));
 				bind(ProceedToViewSender.class).toInstance(mock(ProceedToViewSender.class));
 				bind(ProposalBroadcaster.class).toInstance(mock(ProposalBroadcaster.class));
 				bind(SyncVerticesRequestSender.class).toInstance(requestSender);

@@ -22,6 +22,6 @@ package com.radixdlt.environment;
  *
  * @param <T> the object event class
  */
-public interface EventProcessor<T> {
-	void processEvent(T t);
+public interface EventDispatcher<T> {
+	void dispatch(T t);
 }

@@ -55,7 +55,7 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.deterministic.DeterministicEpochInfo;
 import com.radixdlt.integration.distributed.MockedMempoolModule;
 import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
@@ -174,7 +174,7 @@ public class OneNodeAlwaysAliveTest {
 
 					// TODO: Move these into DeterministicSender
 					bind(CommittedAtomSender.class).toInstance(atom -> { });
-					bind(new TypeLiteral<EventProcessor<LocalSyncRequest>>() { }).toInstance(req -> { });
+					bind(new TypeLiteral<EventDispatcher<LocalSyncRequest>>() { }).toInstance(req -> { });
 					bind(SyncTimeoutScheduler.class).toInstance((syncInProgress, milliseconds) -> { });
 					bind(StateSyncNetworkSender.class).toInstance(new StateSyncNetworkSender() {
 						@Override

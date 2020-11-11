@@ -57,7 +57,7 @@ import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.deterministic.DeterministicEpochInfo;
 import com.radixdlt.mempool.EmptyMempool;
 import com.radixdlt.mempool.Mempool;
@@ -148,7 +148,7 @@ public class RecoveryTest {
 
 					// TODO: Move these into DeterministicSender
 					bind(CommittedAtomSender.class).toInstance(atom -> { });
-					bind(new TypeLiteral<EventProcessor<LocalSyncRequest>>() { }).toInstance(req -> { });
+					bind(new TypeLiteral<EventDispatcher<LocalSyncRequest>>() { }).toInstance(req -> { });
 					bind(SyncTimeoutScheduler.class).toInstance((syncInProgress, milliseconds) -> { });
 					bind(StateSyncNetworkSender.class).toInstance(new StateSyncNetworkSender() {
 						@Override

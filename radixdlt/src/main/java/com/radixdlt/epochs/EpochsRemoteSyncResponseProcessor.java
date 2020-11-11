@@ -22,7 +22,7 @@ import com.google.inject.Inject;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.epoch.EpochChange;
-import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.LedgerUpdateProcessor;
@@ -47,7 +47,7 @@ public final class EpochsRemoteSyncResponseProcessor implements RemoteSyncRespon
 	private static final Logger log = LogManager.getLogger();
 
 	private final Function<BFTConfiguration, RemoteSyncResponseValidatorSetVerifier> verifierFactory;
-	private final EventProcessor<LocalSyncRequest> localSyncRequestProcessor;
+	private final EventDispatcher<LocalSyncRequest> localSyncRequestProcessor;
 
 	private RemoteSyncResponseValidatorSetVerifier currentVerifier;
 	private EpochChange currentEpoch;
@@ -55,7 +55,7 @@ public final class EpochsRemoteSyncResponseProcessor implements RemoteSyncRespon
 
 	@Inject
 	public EpochsRemoteSyncResponseProcessor(
-		EventProcessor<LocalSyncRequest> localSyncRequestProcessor,
+		EventDispatcher<LocalSyncRequest> localSyncRequestProcessor,
 		RemoteSyncResponseValidatorSetVerifier initialVerifier,
 		EpochChange initialEpoch,
 		@LastEpochProof VerifiedLedgerHeaderAndProof currentEpochProof,
@@ -119,7 +119,7 @@ public final class EpochsRemoteSyncResponseProcessor implements RemoteSyncRespon
 				dto.getSignatures()
 			);
 			LocalSyncRequest localSyncRequest = new LocalSyncRequest(verified, ImmutableList.of(syncResponse.getSender()));
-			localSyncRequestProcessor.processEvent(localSyncRequest);
+			localSyncRequestProcessor.dispatch(localSyncRequest);
 			return;
 		}
 

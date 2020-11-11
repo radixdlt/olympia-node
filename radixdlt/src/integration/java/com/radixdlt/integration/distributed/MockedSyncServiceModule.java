@@ -25,7 +25,7 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
 import com.radixdlt.sync.LocalSyncRequest;
@@ -60,10 +60,10 @@ public class MockedSyncServiceModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	EventProcessor<LocalSyncRequest> syncRequestSender(
+	EventDispatcher<LocalSyncRequest> syncRequestSender(
 		Ledger ledger
 	) {
-		return new EventProcessor<>() {
+		return new EventDispatcher<>() {
 			long currentVersion = 0;
 			long currentEpoch = 1;
 
@@ -81,7 +81,7 @@ public class MockedSyncServiceModule extends AbstractModule {
 			}
 
 			@Override
-			public void processEvent(LocalSyncRequest request) {
+			public void dispatch(LocalSyncRequest request) {
 				while (currentEpoch != request.getTarget().getEpoch()) {
 					syncTo(sharedEpochProofs.get(currentEpoch + 1));
 				}

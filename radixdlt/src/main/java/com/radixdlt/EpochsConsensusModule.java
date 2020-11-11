@@ -62,7 +62,7 @@ import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.network.TimeSupplier;
 
 import com.radixdlt.store.LastEpochProof;
@@ -88,22 +88,22 @@ public class EpochsConsensusModule extends AbstractModule {
 
 	@Provides
 	public PacemakerInfoSender pacemakerInfoSender(
-		EventProcessor<Timeout> timeoutEventProcessor,
-		EventProcessor<EpochView> epochViewEventProcessor,
+		EventDispatcher<Timeout> timeoutEventDispatcher,
+		EventDispatcher<EpochView> epochViewEventDispatcher,
 		EpochChange initialEpoch,
 		ProposerElection proposerElection
 	) {
 		return new PacemakerInfoSender() {
 			@Override
 			public void sendCurrentView(View view) {
-				epochViewEventProcessor.processEvent(EpochView.of(initialEpoch.getEpoch(), view));
+				epochViewEventDispatcher.dispatch(EpochView.of(initialEpoch.getEpoch(), view));
 			}
 
 			@Override
 			public void sendTimeoutProcessed(View view) {
 				BFTNode leader = proposerElection.getProposer(view);
 				Timeout timeout = new Timeout(EpochView.of(initialEpoch.getEpoch(), view), leader);
-				timeoutEventProcessor.processEvent(timeout);
+				timeoutEventDispatcher.dispatch(timeout);
 			}
 		};
 	}
@@ -165,7 +165,7 @@ public class EpochsConsensusModule extends AbstractModule {
 	@Provides
 	private BFTSyncFactory bftSyncFactory(
 		SyncVerticesRequestSender requestSender,
-		EventProcessor<LocalSyncRequest> syncLedgerRequestSender,
+		EventDispatcher<LocalSyncRequest> syncLedgerRequestSender,
 		BFTSyncTimeoutScheduler timeoutScheduler,
 		BFTConfiguration configuration,
 		SystemCounters counters,

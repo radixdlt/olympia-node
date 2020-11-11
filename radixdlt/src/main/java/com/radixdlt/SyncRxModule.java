@@ -19,7 +19,7 @@ package com.radixdlt;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncTimeoutScheduler;
@@ -39,7 +39,7 @@ public class SyncRxModule extends AbstractModule {
 	protected void configure() {
 		SenderToRx<LocalSyncRequest, LocalSyncRequest> syncRequests = new SenderToRx<>(c -> c);
 		bind(LocalSyncRequestsRx.class).toInstance(syncRequests::rx);
-		bind(new TypeLiteral<EventProcessor<LocalSyncRequest>>() { }).toInstance(syncRequests::send);
+		bind(new TypeLiteral<EventDispatcher<LocalSyncRequest>>() { }).toInstance(syncRequests::send);
 
 		ScheduledExecutorService ses = Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("SyncTimeoutSender"));
 		ScheduledSenderToRx<SyncInProgress> syncsInProgress = new ScheduledSenderToRx<>(ses);

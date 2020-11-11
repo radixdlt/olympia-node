@@ -44,7 +44,7 @@ import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
-import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.integration.distributed.MockedCryptoModule;
 import com.radixdlt.integration.distributed.deterministic.configuration.EpochNodeWeightMapping;
 import com.radixdlt.integration.distributed.deterministic.configuration.NodeIndexAndWeight;
@@ -218,20 +218,20 @@ public final class DeterministicTest {
 
 					@Provides
 					public PacemakerInfoSender pacemakerInfoSender(
-						EventProcessor<Timeout> timeoutEventProcessor,
-						EventProcessor<EpochView> epochViewEventProcessor,
+						EventDispatcher<Timeout> timeoutEventDispatcher,
+						EventDispatcher<EpochView> epochViewEventDispatcher,
 						ProposerElection proposerElection
 					) {
 						return new PacemakerInfoSender() {
 							@Override
 							public void sendCurrentView(View view) {
-								epochViewEventProcessor.processEvent(EpochView.of(1, view));
+								epochViewEventDispatcher.dispatch(EpochView.of(1, view));
 							}
 
 							@Override
 							public void sendTimeoutProcessed(View view) {
 								BFTNode leader = proposerElection.getProposer(view);
-								timeoutEventProcessor.processEvent(new Timeout(EpochView.of(1, view), leader));
+								timeoutEventDispatcher.dispatch(new Timeout(EpochView.of(1, view), leader));
 							}
 						};
 					}

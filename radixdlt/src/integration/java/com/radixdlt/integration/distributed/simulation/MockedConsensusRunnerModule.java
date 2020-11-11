@@ -33,7 +33,7 @@ import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
-import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.integration.distributed.BFTRunner;
 
 public class MockedConsensusRunnerModule extends AbstractModule {
@@ -46,20 +46,20 @@ public class MockedConsensusRunnerModule extends AbstractModule {
 
 	@Provides
 	public PacemakerInfoSender pacemakerInfoSender(
-		EventProcessor<Timeout> timeoutEventProcessor,
-		EventProcessor<EpochView> epochViewEventProcessor,
+		EventDispatcher<Timeout> timeoutEventDispatcher,
+		EventDispatcher<EpochView> epochViewEventDispatcher,
 		ProposerElection proposerElection
 	) {
 		return new PacemakerInfoSender() {
 			@Override
 			public void sendCurrentView(View view) {
-				epochViewEventProcessor.processEvent(EpochView.of(1, view));
+				epochViewEventDispatcher.dispatch(EpochView.of(1, view));
 			}
 
 			@Override
 			public void sendTimeoutProcessed(View view) {
 				BFTNode leader = proposerElection.getProposer(view);
-				timeoutEventProcessor.processEvent(new Timeout(EpochView.of(1, view), leader));
+				timeoutEventDispatcher.dispatch(new Timeout(EpochView.of(1, view), leader));
 			}
 		};
 	}

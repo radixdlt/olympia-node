@@ -36,7 +36,7 @@ import com.radixdlt.consensus.liveness.ProceedToViewSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
-import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.epochs.EpochChangeManager.EpochsLedgerUpdateSender;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork.DeterministicSender;
 
@@ -66,12 +66,12 @@ public class DeterministicMessageSenderModule extends AbstractModule {
 	}
 
 	@Provides
-	EventProcessor<Timeout> timeoutEventProcessor(DeterministicEpochInfo processor) {
+	EventDispatcher<Timeout> timeoutEventProcessor(DeterministicEpochInfo processor) {
 		return processor::processEvent;
 	}
 
 	@Provides
-	EventProcessor<EpochView> epochViewEventProcessor(DeterministicEpochInfo processor) {
+	EventDispatcher<EpochView> epochViewEventProcessor(DeterministicEpochInfo processor) {
 		return processor::processEvent;
 	}
 

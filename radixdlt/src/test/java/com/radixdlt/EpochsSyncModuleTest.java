@@ -33,7 +33,7 @@ import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.epochs.SyncedEpochSender;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.store.LastEpochProof;
@@ -68,7 +68,7 @@ public class EpochsSyncModuleTest {
 				bind(EpochChange.class).toInstance(mock(EpochChange.class));
 				bind(LocalSyncServiceAccumulatorProcessor.class).toInstance(mock(LocalSyncServiceAccumulatorProcessor.class));
 				bind(RemoteSyncResponseValidatorSetVerifier.class).toInstance(mock(RemoteSyncResponseValidatorSetVerifier.class));
-				bind(new TypeLiteral<EventProcessor<LocalSyncRequest>>() { }).toInstance(rmock(EventProcessor.class));
+				bind(new TypeLiteral<EventDispatcher<LocalSyncRequest>>() { }).toInstance(rmock(EventDispatcher.class));
 				bind(SystemCounters.class).toInstance(mock(SystemCounters.class));
 				bind(Ledger.class).toInstance(ledger);
 				bind(VerifiedValidatorSetSender.class).toInstance(mock(VerifiedValidatorSetSender.class));

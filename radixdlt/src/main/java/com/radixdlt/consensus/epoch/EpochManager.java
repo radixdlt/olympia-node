@@ -53,7 +53,7 @@ import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdateProcessor;
@@ -112,9 +112,9 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 	private final LocalTimeoutSender localTimeoutSender;
 	private final Map<Long, List<ConsensusEvent>> queuedEvents;
 	private final BFTFactory bftFactory;
-	private final EventProcessor<EpochView> epochViewEventProcessor;
-	private final EventProcessor<Timeout> timeoutEventProcessor;
-	private final EventProcessor<LocalSyncRequest> localSyncRequestProcessor;
+	private final EventDispatcher<EpochView> epochViewEventDispatcher;
+	private final EventDispatcher<Timeout> timeoutEventDispatcher;
+	private final EventDispatcher<LocalSyncRequest> localSyncRequestProcessor;
 
 	private EpochChange currentEpoch;
 	private int numQueuedConsensusEvents = 0;
@@ -143,9 +143,9 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 		ProposerElectionFactory proposerElectionFactory,
 		BFTFactory bftFactory,
 		SystemCounters counters,
-		EventProcessor<EpochView> epochViewEventProcessor,
-		EventProcessor<Timeout> timeoutEventProcessor,
-		EventProcessor<LocalSyncRequest> localSyncRequestProcessor
+		EventDispatcher<EpochView> epochViewEventDispatcher,
+		EventDispatcher<Timeout> timeoutEventDispatcher,
+		EventDispatcher<LocalSyncRequest> localSyncRequestProcessor
 	) {
 		if (!initialEpoch.getBFTConfiguration().getValidatorSet().containsNode(self)) {
 			this.bftEventProcessor =  EmptyBFTEventProcessor.INSTANCE;
@@ -175,8 +175,8 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 		this.proposerElectionFactory = Objects.requireNonNull(proposerElectionFactory);
 		this.bftFactory = bftFactory;
 		this.counters = Objects.requireNonNull(counters);
-		this.epochViewEventProcessor = Objects.requireNonNull(epochViewEventProcessor);
-		this.timeoutEventProcessor = Objects.requireNonNull(timeoutEventProcessor);
+		this.epochViewEventDispatcher = Objects.requireNonNull(epochViewEventDispatcher);
+		this.timeoutEventDispatcher = Objects.requireNonNull(timeoutEventDispatcher);
 		this.queuedEvents = new HashMap<>();
 	}
 
@@ -207,7 +207,7 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 		PacemakerInfoSender infoSender = new PacemakerInfoSender() {
 			@Override
 			public void sendCurrentView(View view) {
-				epochViewEventProcessor.processEvent(EpochView.of(nextEpoch, view));
+				epochViewEventDispatcher.dispatch(EpochView.of(nextEpoch, view));
 			}
 
 			@Override
@@ -215,7 +215,7 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 				BFTNode leader = proposerElection.getProposer(view);
 				log.warn("LOCAL_TIMEOUT: Processed Epoch {} View {} Leader: {}", nextEpoch, view, leader);
 				Timeout timeout = new Timeout(EpochView.of(nextEpoch, view), leader);
-				timeoutEventProcessor.processEvent(timeout);
+				timeoutEventDispatcher.dispatch(timeout);
 			}
 		};
 		final Pacemaker pacemaker = pacemakerFactory.create(validatorSet, vertexStore, proposerElection, timeoutSender, infoSender);
@@ -341,7 +341,7 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 
 		final VerifiedLedgerHeaderAndProof ancestor = response.getEpochProof();
 		if (ancestor.getEpoch() >= this.currentEpoch()) {
-			localSyncRequestProcessor.processEvent(new LocalSyncRequest(ancestor, ImmutableList.of(response.getAuthor())));
+			localSyncRequestProcessor.dispatch(new LocalSyncRequest(ancestor, ImmutableList.of(response.getAuthor())));
 		} else {
 			if (ancestor.getEpoch() + 1 < this.currentEpoch()) {
 				log.info("Ignoring old epoch {} current {}", response, this.currentEpoch);

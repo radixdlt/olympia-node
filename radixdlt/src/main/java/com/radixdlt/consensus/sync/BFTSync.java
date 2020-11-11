@@ -32,7 +32,7 @@ import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.liveness.Pacemaker;
-import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdateProcessor;
 import com.radixdlt.sync.LocalSyncRequest;
@@ -137,7 +137,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 	private final TreeMap<LedgerHeader, List<HashCode>> ledgerSyncing;
 	private final Map<LocalGetVerticesRequest, SyncRequestState> bftSyncing = new HashMap<>();
 	private final SyncVerticesRequestSender requestSender;
-	private final EventProcessor<LocalSyncRequest> localSyncRequestProcessor;
+	private final EventDispatcher<LocalSyncRequest> localSyncRequestProcessor;
 	private final BFTSyncTimeoutScheduler timeoutScheduler;
 	private final Random random;
 	private final int bftSyncPatienceMillis;
@@ -148,7 +148,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 		Pacemaker pacemaker,
 		Comparator<LedgerHeader> ledgerHeaderComparator,
 		SyncVerticesRequestSender requestSender,
-		EventProcessor<LocalSyncRequest> localSyncRequestProcessor,
+		EventDispatcher<LocalSyncRequest> localSyncRequestProcessor,
 		BFTSyncTimeoutScheduler timeoutScheduler,
 		VerifiedLedgerHeaderAndProof currentLedgerHeader,
 		Random random,
@@ -322,7 +322,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 				syncState.committedProof,
 				signers
 			);
-			localSyncRequestProcessor.processEvent(localSyncRequest);
+			localSyncRequestProcessor.dispatch(localSyncRequest);
 		}
 	}
 
