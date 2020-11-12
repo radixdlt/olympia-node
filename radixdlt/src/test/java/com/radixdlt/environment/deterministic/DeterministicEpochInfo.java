@@ -29,6 +29,7 @@ public class DeterministicEpochInfo {
 	}
 
 	public void processEvent(Timeout timeout) {
+		// No-op
 	}
 
 	public EpochView getCurrentEpochView() {
