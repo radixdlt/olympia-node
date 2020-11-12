@@ -26,7 +26,6 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.LedgerUpdateProcessor;
 import com.radixdlt.store.LastProof;
 import java.util.Comparator;
 import java.util.Objects;

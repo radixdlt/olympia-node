@@ -19,7 +19,6 @@ package com.radixdlt.integration.recovery;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -40,7 +39,6 @@ import com.radixdlt.RadixEngineModule;
 import com.radixdlt.RadixEngineStoreModule;
 import com.radixdlt.SyncServiceModule;
 import com.radixdlt.consensus.HashSigner;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -54,7 +52,7 @@ import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.environment.MockedCheckpointModule;
 import com.radixdlt.environment.deterministic.DeterministicEpochInfo;
 import com.radixdlt.integration.distributed.MockedMempoolModule;
 import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
@@ -64,7 +62,6 @@ import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.statecomputer.EpochCeilingView;
@@ -106,7 +103,7 @@ public class OneNodeAlwaysAliveTest {
 	@Parameters
 	public static Collection<Object[]> numNodes() {
 		return List.of(new Object[][] {
-			{2}
+			/*{2}, */{4}
 		});
 	}
 
@@ -170,16 +167,6 @@ public class OneNodeAlwaysAliveTest {
 					bind(CommittedAtomSender.class).toInstance(atom -> { });
 					bind(SyncTimeoutScheduler.class).toInstance((syncInProgress, milliseconds) -> { });
 
-					// Checkpoint
-					VerifiedLedgerHeaderAndProof genesisLedgerHeader = VerifiedLedgerHeaderAndProof.genesis(
-						HashUtils.zero256(),
-						BFTValidatorSet.from(allNodes.stream().map(node -> BFTValidator.from(node, UInt256.ONE)))
-					);
-					bind(VerifiedCommandsAndProof.class).toInstance(new VerifiedCommandsAndProof(
-						ImmutableList.of(),
-						genesisLedgerHeader
-					));
-
 					final RuntimeProperties runtimeProperties;
 					// TODO: this constructor/class/inheritance/dependency is horribly broken
 					try {
@@ -191,6 +178,8 @@ public class OneNodeAlwaysAliveTest {
 					bind(RuntimeProperties.class).toInstance(runtimeProperties);
 				}
 			},
+
+			new MockedCheckpointModule(BFTValidatorSet.from(allNodes.stream().map(node -> BFTValidator.from(node, UInt256.ONE)))),
 
 			new DeterministicMessageSenderModule(),
 			new DispatcherModule(),
