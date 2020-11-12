@@ -125,11 +125,22 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 	private BFTValidatorSet executeSystemUpdate(
 		RadixEngineBranch<LedgerAtom> branch,
+		long epoch,
 		View view,
 		long timestamp,
 		ImmutableList.Builder<PreparedCommand> successBuilder
 	) {
 		final SystemParticle lastSystemParticle = branch.getComputedState(SystemParticle.class);
+		if (lastSystemParticle.getEpoch() != epoch) {
+			throw new IllegalStateException(
+				String.format(
+					"Consensus epoch(%s) and computer epoch(%s) out of synchrony",
+					epoch,
+					lastSystemParticle.getEpoch()
+				)
+			);
+		}
+
 		final BFTValidatorSet validatorSet;
 		final SystemParticle nextSystemParticle;
 		if (view.compareTo(epochCeilingView) >= 0) {
@@ -189,7 +200,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	}
 
 	@Override
-	public StateComputerResult prepare(ImmutableList<PreparedCommand> previous, Command next, View view, long timestamp) {
+	public StateComputerResult prepare(ImmutableList<PreparedCommand> previous, Command next, long epoch, View view, long timestamp) {
 		RadixEngineBranch<LedgerAtom> transientBranch = this.radixEngine.transientBranch();
 		for (PreparedCommand command : previous) {
 			// TODO: fix this cast with generics. Currently the fix would become a bit too messy
@@ -206,7 +217,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 		final ImmutableList.Builder<PreparedCommand> successBuilder = ImmutableList.builder();
 		final ImmutableMap.Builder<Command, Exception> exceptionBuilder = ImmutableMap.builder();
-		final BFTValidatorSet validatorSet = this.executeSystemUpdate(transientBranch, view, timestamp, successBuilder);
+		final BFTValidatorSet validatorSet = this.executeSystemUpdate(transientBranch, epoch, view, timestamp, successBuilder);
 		// Don't execute command if changing epochs
 		if (validatorSet == null) {
 			this.executeUserCommand(transientBranch, next, successBuilder, exceptionBuilder);

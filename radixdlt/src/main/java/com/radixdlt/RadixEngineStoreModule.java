@@ -123,14 +123,12 @@ public class RadixEngineStoreModule extends AbstractModule {
 	@LastEpochProof
 	VerifiedLedgerHeaderAndProof lastEpochProof(
 		@LastProof VerifiedLedgerHeaderAndProof lastProof,
-		CommittedAtomsStore store,
-		VerifiedCommandsAndProof genesisCheckpoint // TODO: remove once genesis creation resolved
+		CommittedAtomsStore store
 	) {
 		if (lastProof.isEndOfEpoch()) {
 			return lastProof;
 		}
-		return store.getEpochVerifiedHeader(lastProof.getEpoch())
-			.orElse(genesisCheckpoint.getHeader());
+		return store.getEpochVerifiedHeader(lastProof.getEpoch()).orElseThrow();
 	}
 
 	@Provides

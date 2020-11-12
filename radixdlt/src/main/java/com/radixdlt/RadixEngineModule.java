@@ -148,7 +148,7 @@ public class RadixEngineModule extends AbstractModule {
 		// TODO: should use different mechanism for constructing system atoms but this is good enough for now
 		radixEngine.addStateComputer(
 			SystemParticle.class,
-			new SystemParticle(0, 0, 0),
+			new SystemParticle(1, 0, 0),
 			(prev, p) -> p,
 			(prev, p) -> prev
 		);

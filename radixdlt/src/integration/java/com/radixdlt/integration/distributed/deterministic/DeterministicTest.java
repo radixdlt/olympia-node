@@ -37,7 +37,6 @@ import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker.PacemakerInfoSender;
@@ -45,6 +44,7 @@ import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
+import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.integration.distributed.MockedCryptoModule;
 import com.radixdlt.integration.distributed.deterministic.configuration.EpochNodeWeightMapping;
 import com.radixdlt.integration.distributed.deterministic.configuration.NodeIndexAndWeight;
@@ -217,17 +217,21 @@ public final class DeterministicTest {
 					}
 
 					@Provides
-					public PacemakerInfoSender pacemakerInfoSender(EpochInfoSender epochInfoSender, ProposerElection proposerElection) {
+					public PacemakerInfoSender pacemakerInfoSender(
+						EventProcessor<Timeout> timeoutEventProcessor,
+						EventProcessor<EpochView> epochViewEventProcessor,
+						ProposerElection proposerElection
+					) {
 						return new PacemakerInfoSender() {
 							@Override
 							public void sendCurrentView(View view) {
-								epochInfoSender.sendCurrentView(EpochView.of(1, view));
+								epochViewEventProcessor.processEvent(EpochView.of(1, view));
 							}
 
 							@Override
 							public void sendTimeoutProcessed(View view) {
 								BFTNode leader = proposerElection.getProposer(view);
-								epochInfoSender.sendTimeoutProcessed(new Timeout(EpochView.of(1, view), leader));
+								timeoutEventProcessor.processEvent(new Timeout(EpochView.of(1, view), leader));
 							}
 						};
 					}

@@ -123,8 +123,7 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 
 		// TODO: Replace Store + Commit with a single commit
 		// TODO: How it's done depends on how mempool and prepare phases are implemented
-        store.store(ledgerEntry, engineAtomIndices.getUniqueIndices(), engineAtomIndices.getDuplicateIndices());
-        store.commit(committedAtom.getAID());
+        store.commit(ledgerEntry, engineAtomIndices.getUniqueIndices(), engineAtomIndices.getDuplicateIndices());
 
 		final ImmutableSet<EUID> indicies = engineAtomIndices.getDuplicateIndices().stream()
 			.filter(e -> e.getPrefix() == EngineAtomIndices.IndexType.DESTINATION.getValue())

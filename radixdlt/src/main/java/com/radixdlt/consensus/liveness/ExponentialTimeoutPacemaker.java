@@ -36,7 +36,6 @@ import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.safety.SafetyRules;
-import com.radixdlt.consensus.safety.SafetyViolationException;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hasher;
@@ -213,14 +212,21 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 		// The header may not be present if the ledger is ahead of consensus
 		maybeHeader.ifPresent(header -> {
 			final BFTNode nextLeader = this.proposerElection.getProposer(this.currentView.next());
-			try {
-				final Vote vote = this.safetyRules.voteFor(proposedVertex, header, this.timeSupplier.currentTime(), this.vertexStore.highQC());
-				log.trace("Proposal: Sending vote to {}: {}", nextLeader, vote);
-				this.proceedToViewSender.sendVote(vote, nextLeader);
-			} catch (SafetyViolationException e) {
-				this.counters.increment(CounterType.BFT_REJECTED);
-				log.error(() -> new FormattedMessage("Proposal: Rejected {}", proposedVertex), e);
-			}
+			final Optional<Vote> maybeVote = this.safetyRules.voteFor(
+				proposedVertex,
+				header,
+				this.timeSupplier.currentTime(),
+				this.vertexStore.highQC()
+			);
+			maybeVote.ifPresentOrElse(
+				vote -> {
+					log.trace("Proposal: Sending vote to {}: {}", nextLeader, vote);
+					this.proceedToViewSender.sendVote(vote, nextLeader);
+				},
+				() -> {
+					this.counters.increment(CounterType.BFT_REJECTED);
+					log.warn(() -> new FormattedMessage("Proposal: Rejected {}", proposedVertex));
+				});
 		});
 	}
 

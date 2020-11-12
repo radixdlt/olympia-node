@@ -19,7 +19,9 @@ package com.radixdlt.integration.distributed;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.crypto.Hasher;
@@ -65,7 +67,7 @@ public class MockedLedgerModule extends AbstractModule {
 			}
 
 			@Override
-			public void commit(ImmutableList<PreparedVertex> vertices, VerifiedLedgerHeaderAndProof proof) {
+			public void commit(ImmutableList<PreparedVertex> vertices, HighQC highQC, ImmutableSet<HashCode> prunedVertices) {
 				// Nothing to do here
 			}
 

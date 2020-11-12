@@ -149,7 +149,7 @@ configurations.all {
 }
 
 dependencies {
-    compile 'com.radixdlt:radix-engine-library:bugfix~fix-application-state-load-compute-SNAPSHOT'
+    compile 'com.radixdlt:radix-engine-library:feature~fix-system-init-SNAPSHOT'
     compile 'io.reactivex.rxjava3:rxjava:3.0.0'
     compile 'com.sleepycat:je:18.3.12'
 

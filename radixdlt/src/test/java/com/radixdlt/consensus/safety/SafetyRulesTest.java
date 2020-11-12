@@ -28,12 +28,12 @@ import com.radixdlt.consensus.safety.SafetyState.Builder;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECDSASignature;
+import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -62,8 +62,8 @@ public class SafetyRulesTest {
 		VerifiedVertex vertex = mock(VerifiedVertex.class);
 		when(vertex.getView()).thenReturn(view);
 
-		assertThatThrownBy(() -> this.safetyRules.voteFor(vertex, mock(BFTHeader.class), 0L, mock(HighQC.class)))
-			.isInstanceOf(SafetyViolationException.class);
+		assertThat(this.safetyRules.voteFor(vertex, mock(BFTHeader.class), 0L, mock(HighQC.class)))
+			.isEmpty();
 	}
 
 	@Test
@@ -76,12 +76,12 @@ public class SafetyRulesTest {
 		when(parent.getView()).thenReturn(View.of(0));
 		when(vertex.getParentHeader()).thenReturn(parent);
 
-		assertThatThrownBy(() -> this.safetyRules.voteFor(vertex, mock(BFTHeader.class), 0L, mock(HighQC.class)))
-			.isInstanceOf(SafetyViolationException.class);
+		assertThat(this.safetyRules.voteFor(vertex, mock(BFTHeader.class), 0L, mock(HighQC.class)))
+			.isEmpty();
 	}
 
 	@Test
-	public void when_vote_on_proposal_after_genesis__then_returned_vote_has_no_commit() throws SafetyViolationException {
+	public void when_vote_on_proposal_after_genesis__then_returned_vote_has_no_commit() {
 		when(safetyState.getLastVotedView()).thenReturn(View.of(0));
 		when(safetyState.getLockedView()).thenReturn(View.of(0));
 		when(safetyState.toBuilder()).thenReturn(mock(Builder.class));
@@ -97,14 +97,16 @@ public class SafetyRulesTest {
 		when(grandParent.getView()).thenReturn(mock(View.class));
 		when(vertex.getGrandParentHeader()).thenReturn(grandParent);
 		BFTHeader header = mock(BFTHeader.class);
-		Vote vote = safetyRules.voteFor(vertex, header, 0L, mock(HighQC.class));
+		Optional<Vote> voteMaybe = safetyRules.voteFor(vertex, header, 0L, mock(HighQC.class));
+		assertThat(voteMaybe).isNotEmpty();
+		Vote vote = voteMaybe.get();
 		assertThat(vote.getVoteData().getProposed()).isEqualTo(header);
 		assertThat(vote.getVoteData().getParent()).isEqualTo(parent);
 		assertThat(vote.getVoteData().getCommitted()).isEmpty();
 	}
 
 	@Test
-	public void when_vote_on_proposal_two_after_genesis__then_returned_vote_has_no_commit() throws SafetyViolationException {
+	public void when_vote_on_proposal_two_after_genesis__then_returned_vote_has_no_commit() {
 		when(safetyState.getLastVotedView()).thenReturn(View.of(1));
 		when(safetyState.getLockedView()).thenReturn(View.of(0));
 		when(safetyState.toBuilder()).thenReturn(mock(Builder.class));
@@ -119,12 +121,14 @@ public class SafetyRulesTest {
 		BFTHeader grandParent = mock(BFTHeader.class);
 		when(grandParent.getView()).thenReturn(mock(View.class));
 		when(proposal.getGrandParentHeader()).thenReturn(grandParent);
-		Vote vote = safetyRules.voteFor(proposal, mock(BFTHeader.class), 0L, mock(HighQC.class));
+		Optional<Vote> voteMaybe = safetyRules.voteFor(proposal, mock(BFTHeader.class), 0L, mock(HighQC.class));
+		assertThat(voteMaybe).isNotEmpty();
+		Vote vote = voteMaybe.get();
 		assertThat(vote.getVoteData().getCommitted()).isEmpty();
 	}
 
 	@Test
-	public void when_vote_on_proposal_three_after_genesis__then_returned_vote_has_commit() throws SafetyViolationException {
+	public void when_vote_on_proposal_three_after_genesis__then_returned_vote_has_commit() {
 		when(safetyState.getLastVotedView()).thenReturn(View.of(1));
 		when(safetyState.getLockedView()).thenReturn(View.of(0));
 		when(safetyState.toBuilder()).thenReturn(mock(Builder.class));
@@ -141,12 +145,14 @@ public class SafetyRulesTest {
 		when(proposal.getParentHeader()).thenReturn(parent);
 		when(proposal.getView()).thenReturn(View.of(3));
 
-		Vote vote = safetyRules.voteFor(proposal, mock(BFTHeader.class), 0L, mock(HighQC.class));
+		Optional<Vote> voteMaybe = safetyRules.voteFor(proposal, mock(BFTHeader.class), 0L, mock(HighQC.class));
+		assertThat(voteMaybe).isNotEmpty();
+		Vote vote = voteMaybe.get();
 		assertThat(vote.getVoteData().getCommitted()).hasValue(grandparentHeader);
 	}
 
 	@Test
-	public void when_vote_on_proposal_three_after_genesis_with_skip__then_returned_vote_has_no_commit() throws SafetyViolationException {
+	public void when_vote_on_proposal_three_after_genesis_with_skip__then_returned_vote_has_no_commit() {
 		when(safetyState.getLastVotedView()).thenReturn(View.of(1));
 		when(safetyState.getLockedView()).thenReturn(View.of(0));
 		when(safetyState.toBuilder()).thenReturn(mock(Builder.class));
@@ -163,7 +169,9 @@ public class SafetyRulesTest {
 		when(grandParent.getView()).thenReturn(mock(View.class));
 		when(proposal.getGrandParentHeader()).thenReturn(grandParent);
 
-		Vote vote = safetyRules.voteFor(proposal, mock(BFTHeader.class), 0L, mock(HighQC.class));
+		Optional<Vote> voteMaybe = safetyRules.voteFor(proposal, mock(BFTHeader.class), 0L, mock(HighQC.class));
+		assertThat(voteMaybe).isNotEmpty();
+		Vote vote = voteMaybe.get();
 		assertThat(vote.getVoteData().getCommitted()).isEmpty();
 	}
 }

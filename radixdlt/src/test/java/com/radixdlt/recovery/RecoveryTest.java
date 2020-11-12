@@ -50,6 +50,7 @@ import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.counters.SystemCounters;
@@ -57,6 +58,7 @@ import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.environment.deterministic.DeterministicEpochInfo;
 import com.radixdlt.mempool.EmptyMempool;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
@@ -136,7 +138,7 @@ public class RecoveryTest {
 					bind(Long.class).annotatedWith(PacemakerTimeout.class).toInstance(1000L);
 					bind(Double.class).annotatedWith(PacemakerRate.class).toInstance(2.0);
 					bind(Integer.class).annotatedWith(PacemakerMaxExponent.class).toInstance(6);
-					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(100L));
+					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(10L));
 
 					// System
 					bind(Mempool.class).to(EmptyMempool.class);
@@ -218,6 +220,10 @@ public class RecoveryTest {
 		return currentInjector.getInstance(CommittedAtomsStore.class);
 	}
 
+	private DeterministicEpochInfo getEpochInfo() {
+		return currentInjector.getInstance(DeterministicEpochInfo.class);
+	}
+
 	private void restartNode() {
 		this.network.dropMessages(m -> m.channelId().receiverIndex() == 0 && m.channelId().senderIndex() == 0);
 		this.currentInjector = createRunner(ecKeyPair);
@@ -270,9 +276,8 @@ public class RecoveryTest {
 	public void on_reboot_should_load_same_last_epoch_header() {
 		// Arrange
 		processForCount(100);
-		VerifiedLedgerHeaderAndProof lastEpochProof = currentInjector.getInstance(
-			Key.get(VerifiedLedgerHeaderAndProof.class, LastEpochProof.class)
-		);
+		DeterministicEpochInfo epochInfo = getEpochInfo();
+		EpochView epochView = epochInfo.getCurrentEpochView();
 
 		// Act
 		restartNode();
@@ -281,6 +286,8 @@ public class RecoveryTest {
 		VerifiedLedgerHeaderAndProof restartedEpochProof = currentInjector.getInstance(
 			Key.get(VerifiedLedgerHeaderAndProof.class, LastEpochProof.class)
 		);
-		assertThat(restartedEpochProof).isEqualTo(lastEpochProof);
+		assertThat(restartedEpochProof.isEndOfEpoch()).isTrue();
+		assertThat(restartedEpochProof.getEpoch()).isGreaterThan(1);
+		assertThat(restartedEpochProof.getEpoch()).isEqualTo(epochView.getEpoch() - 1);
 	}
 }

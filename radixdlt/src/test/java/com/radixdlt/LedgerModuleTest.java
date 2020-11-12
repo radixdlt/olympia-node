@@ -17,27 +17,31 @@
 
 package com.radixdlt;
 
+import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mock;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTFactory;
+import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.epoch.ProposerElectionFactory;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.epoch.VertexStoreFactory;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
@@ -52,7 +56,10 @@ public class LedgerModuleTest {
 			bind(BFTFactory.class).toInstance(mock(BFTFactory.class));
 			bind(VertexStoreFactory.class).toInstance(mock(VertexStoreFactory.class));
 			bind(PacemakerFactory.class).toInstance(mock(PacemakerFactory.class));
-			bind(EpochInfoSender.class).toInstance(mock(EpochInfoSender.class));
+
+			bind(new TypeLiteral<EventProcessor<Timeout>>() { }).toInstance(rmock(EventProcessor.class));
+			bind(new TypeLiteral<EventProcessor<EpochView>>() { }).toInstance(rmock(EventProcessor.class));
+
 			bind(ProposerElectionFactory.class).toInstance(mock(ProposerElectionFactory.class));
 			bind(BFTNode.class).annotatedWith(Self.class).toInstance(mock(BFTNode.class));
 			bind(SyncEpochsRPCSender.class).toInstance(mock(SyncEpochsRPCSender.class));
