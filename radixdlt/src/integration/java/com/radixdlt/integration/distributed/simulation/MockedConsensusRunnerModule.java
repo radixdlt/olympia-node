@@ -33,7 +33,9 @@ import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
+import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.integration.distributed.BFTRunner;
 
 public class MockedConsensusRunnerModule extends AbstractModule {
@@ -42,6 +44,11 @@ public class MockedConsensusRunnerModule extends AbstractModule {
 		MapBinder<String, ModuleRunner> moduleRunners = MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class);
 		moduleRunners.addBinding("consensus").to(BFTRunner.class).in(Scopes.SINGLETON);
 		bind(BFTSyncResponseProcessor.class).to(BFTSync.class).in(Scopes.SINGLETON);
+	}
+
+	@Provides
+	public EventProcessor<LocalGetVerticesRequest> bftSyncTimeoutProcessor(BFTSync bftSync) {
+		return bftSync::processGetVerticesLocalTimeout;
 	}
 
 	@Provides

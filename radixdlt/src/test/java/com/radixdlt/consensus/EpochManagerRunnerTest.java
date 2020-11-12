@@ -71,6 +71,7 @@ public class EpochManagerRunnerTest {
 			ledgerUpdates,
 			bftUpdates,
 			syncTimeouts,
+			epochManager::processGetVerticesLocalTimeout,
 			networkRx,
 			pacemakerRx,
 			syncVerticesRPCRx,

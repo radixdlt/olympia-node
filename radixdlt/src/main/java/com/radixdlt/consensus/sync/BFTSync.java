@@ -58,8 +58,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * Manages keeping the VertexStore and pacemaker in sync for consensus
  */
-public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcessor, BFTSyncRequestTimeoutProcessor,
-	BFTSyncer, LedgerUpdateProcessor<LedgerUpdate> {
+public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcessor, BFTSyncer, LedgerUpdateProcessor<LedgerUpdate> {
 	private enum SyncStage {
 		PREPARING,
 		GET_COMMITTED_VERTICES,
@@ -243,7 +242,6 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 		this.sendBFTSyncRequest(committedQCId, 3, authors, syncState.localSyncId);
 	}
 
-	@Override
 	public void processGetVerticesLocalTimeout(LocalGetVerticesRequest request) {
 		SyncRequestState syncRequestState = bftSyncing.remove(request);
 		if (syncRequestState == null) {

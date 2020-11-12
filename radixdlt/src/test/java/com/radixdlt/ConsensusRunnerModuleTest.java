@@ -36,6 +36,7 @@ import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
+import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import io.reactivex.rxjava3.core.Observable;
@@ -71,6 +72,7 @@ public class ConsensusRunnerModuleTest {
 
 				bind(EpochManager.class).toInstance(mock(EpochManager.class));
 
+				bind(new TypeLiteral<EventProcessor<LocalGetVerticesRequest>>() { }).toInstance(rmock(EventProcessor.class));
 				bind(new TypeLiteral<ScheduledEventDispatcher<LocalGetVerticesRequest>>() { }).toInstance(rmock(ScheduledEventDispatcher.class));
 				bind(new TypeLiteral<Observable<LocalGetVerticesRequest>>() { }).toInstance(PublishSubject.create());
 			}

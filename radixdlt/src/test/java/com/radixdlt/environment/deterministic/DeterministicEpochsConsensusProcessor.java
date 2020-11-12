@@ -28,6 +28,7 @@ import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
+import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessWithSyncRunner;
 import com.radixdlt.environment.RemoteEventProcessor;
@@ -55,6 +56,7 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 		EpochManager epochManager,
 		@ProcessWithSyncRunner Set<EventProcessor<EpochsLedgerUpdate>> epochsLedgerUpdateProcessors,
 		EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor,
+		EventProcessor<LocalGetVerticesRequest> localGetVerticesRequestEventProcessor,
 		RemoteEventProcessor<DtoLedgerHeaderAndProof> syncRequestProcessor,
 		RemoteEventProcessor<DtoCommandsAndProof> syncResponseProcessor
 	) {
@@ -67,6 +69,7 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 			epochsLedgerUpdateProcessors.forEach(p -> p.process((EpochsLedgerUpdate) e));
 		});
 		processorsBuilder.put(LocalSyncRequest.class, e -> localSyncRequestEventProcessor.process((LocalSyncRequest) e));
+		processorsBuilder.put(LocalGetVerticesRequest.class, e -> localGetVerticesRequestEventProcessor.process((LocalGetVerticesRequest) e));
 		this.eventProcessors = processorsBuilder.build();
 
 		ImmutableMap.Builder<Class<?>, RemoteEventProcessor<Object>> remoteProcessorsBuilder = ImmutableMap.builder();

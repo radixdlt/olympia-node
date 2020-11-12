@@ -63,6 +63,7 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.network.TimeSupplier;
 
@@ -80,6 +81,11 @@ public class EpochsConsensusModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		bind(EpochManager.class).in(Scopes.SINGLETON);
+	}
+
+	@Provides
+	private EventProcessor<LocalGetVerticesRequest> bftSyncTimeoutProcessor(EpochManager epochManager) {
+		return epochManager::processGetVerticesLocalTimeout;
 	}
 
 	@Provides
