@@ -105,7 +105,7 @@ public final class DeterministicNetwork {
 	// TODO: use better method than Timed to store time
 	public Timed<ControlledMessage> nextMessage() {
 		List<ControlledMessage> controlledMessages = this.messageQueue.lowestTimeMessages();
-		if (controlledMessages.isEmpty()) {
+		if (controlledMessages == null || controlledMessages.isEmpty()) {
 			throw new IllegalStateException("No messages available (Lost Responsiveness)");
 		}
 		ControlledMessage controlledMessage = this.messageSelector.select(controlledMessages);

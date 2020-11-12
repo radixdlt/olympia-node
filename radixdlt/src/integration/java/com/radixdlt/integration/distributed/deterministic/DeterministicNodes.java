@@ -94,13 +94,15 @@ public final class DeterministicNodes {
 
 	public void handleMessage(Timed<ControlledMessage> timedNextMsg) {
 		ControlledMessage nextMsg = timedNextMsg.value();
-		int receiver = nextMsg.channelId().receiverIndex();
-		String bftNode = " " + this.nodeLookup.inverse().get(receiver);
+		int senderIndex = nextMsg.channelId().senderIndex();
+		int receiverIndex = nextMsg.channelId().receiverIndex();
+		BFTNode sender = this.nodeLookup.inverse().get(senderIndex);
+		String bftNode = " " + this.nodeLookup.inverse().get(receiverIndex);
 		ThreadContext.put("bftNode", bftNode);
 		try {
 			log.debug("Received message {} at {}", nextMsg, timedNextMsg.time());
-			nodeInstances.get(receiver).getInstance(DeterministicMessageProcessor.class)
-				.handleMessage(nextMsg.message());
+			nodeInstances.get(receiverIndex).getInstance(DeterministicMessageProcessor.class)
+				.handleMessage(sender, nextMsg.message());
 		} finally {
 			ThreadContext.remove("bftNode");
 		}

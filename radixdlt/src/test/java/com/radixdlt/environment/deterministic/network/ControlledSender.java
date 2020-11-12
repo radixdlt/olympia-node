@@ -62,26 +62,26 @@ public final class ControlledSender implements DeterministicSender {
 	public void sendGetVerticesRequest(BFTNode node, LocalGetVerticesRequest localRequest) {
 		GetVerticesRequest request = new GetVerticesRequest(self, localRequest.getVertexId(), localRequest.getCount());
 		ChannelId channelId = ChannelId.of(this.senderIndex, this.network.lookup(node));
-		handleMessage(new ControlledMessage(channelId, request, arrivalTime(channelId)));
+		handleMessage(new ControlledMessage(self, channelId, request, arrivalTime(channelId)));
 	}
 
 	@Override
 	public void sendGetVerticesResponse(BFTNode node, ImmutableList<VerifiedVertex> vertices) {
 		GetVerticesResponse response = new GetVerticesResponse(self, vertices);
 		ChannelId channelId = ChannelId.of(this.senderIndex, this.network.lookup(node));
-		handleMessage(new ControlledMessage(channelId, response, arrivalTime(channelId)));
+		handleMessage(new ControlledMessage(self, channelId, response, arrivalTime(channelId)));
 	}
 
 	@Override
 	public void sendGetVerticesErrorResponse(BFTNode node, HighQC highQC) {
 		GetVerticesErrorResponse response = new GetVerticesErrorResponse(this.self, highQC);
 		ChannelId channelId = ChannelId.of(this.senderIndex, this.network.lookup(node));
-		handleMessage(new ControlledMessage(channelId, response, arrivalTime(channelId)));
+		handleMessage(new ControlledMessage(self, channelId, response, arrivalTime(channelId)));
 	}
 
 	@Override
 	public void sendBFTUpdate(BFTUpdate update) {
-		handleMessage(new ControlledMessage(this.localChannel, update, arrivalTime(this.localChannel)));
+		handleMessage(new ControlledMessage(self, this.localChannel, update, arrivalTime(this.localChannel)));
 	}
 
 	@Override
@@ -89,7 +89,7 @@ public final class ControlledSender implements DeterministicSender {
 		for (BFTNode node : nodes) {
 			int receiverIndex = this.network.lookup(node);
 			ChannelId channelId = ChannelId.of(this.senderIndex, receiverIndex);
-			handleMessage(new ControlledMessage(channelId, proposal, arrivalTime(channelId)));
+			handleMessage(new ControlledMessage(self, channelId, proposal, arrivalTime(channelId)));
 		}
 	}
 
@@ -97,14 +97,14 @@ public final class ControlledSender implements DeterministicSender {
 	public void broadcastViewTimeout(ViewTimeout viewTimeout, Set<BFTNode> nodes) {
 		for (BFTNode node : nodes) {
 			ChannelId channelId = ChannelId.of(this.senderIndex, this.network.lookup(node));
-			handleMessage(new ControlledMessage(channelId, viewTimeout, arrivalTime(channelId)));
+			handleMessage(new ControlledMessage(self, channelId, viewTimeout, arrivalTime(channelId)));
 		}
 	}
 
 	@Override
 	public void sendVote(Vote vote, BFTNode nextLeader) {
 		ChannelId channelId = ChannelId.of(this.senderIndex, this.network.lookup(nextLeader));
-		handleMessage(new ControlledMessage(channelId, vote, arrivalTime(channelId)));
+		handleMessage(new ControlledMessage(self, channelId, vote, arrivalTime(channelId)));
 	}
 
 	@Override
@@ -119,7 +119,7 @@ public final class ControlledSender implements DeterministicSender {
 
 	@Override
 	public void scheduleTimeout(LocalTimeout localTimeout, long milliseconds) {
-		ControlledMessage msg = new ControlledMessage(this.localChannel, localTimeout, arrivalTime(this.localChannel) + milliseconds);
+		ControlledMessage msg = new ControlledMessage(self, this.localChannel, localTimeout, arrivalTime(this.localChannel) + milliseconds);
 		handleMessage(msg);
 	}
 
@@ -133,12 +133,12 @@ public final class ControlledSender implements DeterministicSender {
 	public void sendGetEpochResponse(BFTNode node, VerifiedLedgerHeaderAndProof ancestor) {
 		GetEpochResponse getEpochResponse = new GetEpochResponse(node, ancestor);
 		ChannelId channelId = ChannelId.of(this.senderIndex, this.network.lookup(node));
-		handleMessage(new ControlledMessage(channelId, getEpochResponse, arrivalTime(channelId)));
+		handleMessage(new ControlledMessage(self, channelId, getEpochResponse, arrivalTime(channelId)));
 	}
 
 	@Override
 	public void sendLedgerUpdate(EpochsLedgerUpdate epochsLedgerUpdate) {
-		handleMessage(new ControlledMessage(this.localChannel, epochsLedgerUpdate, arrivalTime(this.localChannel)));
+		handleMessage(new ControlledMessage(self, this.localChannel, epochsLedgerUpdate, arrivalTime(this.localChannel)));
 	}
 
 	@Override
@@ -147,13 +147,13 @@ public final class ControlledSender implements DeterministicSender {
 	}
 
 	public void dispatch(LocalSyncRequest localSyncRequest) {
-		handleMessage(new ControlledMessage(this.localChannel, localSyncRequest, arrivalTime(this.localChannel)));
+		handleMessage(new ControlledMessage(self, this.localChannel, localSyncRequest, arrivalTime(this.localChannel)));
 	}
 
 	public <T> RemoteEventDispatcher<T> remoteDispatcher(Class<T> eventClass) {
 		return (node, e) -> {
 			ChannelId channelId = ChannelId.of(this.senderIndex, this.network.lookup(node));
-			handleMessage(new ControlledMessage(channelId, e, arrivalTime(channelId)));
+			handleMessage(new ControlledMessage(self, channelId, e, arrivalTime(channelId)));
 		};
 	}
 

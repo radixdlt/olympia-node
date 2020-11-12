@@ -19,6 +19,7 @@ package com.radixdlt;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.BFTConfiguration;
@@ -28,7 +29,6 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
-import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
@@ -44,9 +44,6 @@ import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier.InvalidValidator
 import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier.VerifiedValidatorSetSender;
 import com.radixdlt.sync.RemoteSyncServiceProcessor;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor;
-import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncTimeoutScheduler;
-import com.radixdlt.sync.SyncPatienceMillis;
-import java.util.Comparator;
 
 /**
  * Module which manages synchronization of committed atoms across of nodes
@@ -56,6 +53,7 @@ public class SyncServiceModule extends AbstractModule {
 
 	public void configure() {
 		bind(new TypeLiteral<RemoteEventProcessor<DtoLedgerHeaderAndProof>>() { }).to(RemoteSyncServiceProcessor.class);
+		bind(LocalSyncServiceAccumulatorProcessor.class).in(Scopes.SINGLETON);
 	}
 
 	@Provides
@@ -131,24 +129,6 @@ public class SyncServiceModule extends AbstractModule {
 			verifiedValidatorSetSender,
 			invalidValidatorSetSender,
 			initialConfiguration.getValidatorSet()
-		);
-	}
-
-	@Provides
-	@Singleton
-	private LocalSyncServiceAccumulatorProcessor localSyncServiceProcessor(
-		Comparator<AccumulatorState> accumulatorComparator,
-		RemoteEventDispatcher<DtoLedgerHeaderAndProof> requestDispatcher,
-		SyncTimeoutScheduler syncTimeoutScheduler,
-		BFTConfiguration initialConfiguration,
-		@SyncPatienceMillis int syncPatienceMillis
-	) {
-		return new LocalSyncServiceAccumulatorProcessor(
-			requestDispatcher,
-			syncTimeoutScheduler,
-			accumulatorComparator,
-			initialConfiguration.getGenesisHeader(),
-			syncPatienceMillis
 		);
 	}
 }

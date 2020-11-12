@@ -28,6 +28,7 @@ import com.google.inject.Scopes;
 import com.google.inject.name.Names;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.CryptoModule;
+import com.radixdlt.DispatcherModule;
 import com.radixdlt.EpochsConsensusModule;
 import com.radixdlt.EpochsLedgerUpdateModule;
 import com.radixdlt.EpochsSyncModule;
@@ -156,7 +157,7 @@ public class OneNodeAlwaysAliveTest {
 					bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(200);
 					bind(Integer.class).annotatedWith(BFTSyncPatienceMillis.class).toInstance(200);
 					bind(Integer.class).annotatedWith(MinValidators.class).toInstance(1);
-					bind(Long.class).annotatedWith(PacemakerTimeout.class).toInstance(1000L);
+					bind(Long.class).annotatedWith(PacemakerTimeout.class).toInstance(1000000000L);
 					bind(Double.class).annotatedWith(PacemakerRate.class).toInstance(2.0);
 					bind(Integer.class).annotatedWith(PacemakerMaxExponent.class).toInstance(6);
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(88L));
@@ -192,6 +193,7 @@ public class OneNodeAlwaysAliveTest {
 			},
 
 			new DeterministicMessageSenderModule(),
+			new DispatcherModule(),
 
 			// Consensus
 			new CryptoModule(),
@@ -246,7 +248,7 @@ public class OneNodeAlwaysAliveTest {
 			String bftNode = " " + injector.getInstance(Key.get(BFTNode.class, Self.class));
 			ThreadContext.put("bftNode", bftNode);
 			try {
-				injector.getInstance(DeterministicEpochsConsensusProcessor.class).handleMessage(msg.value().message());
+				injector.getInstance(DeterministicEpochsConsensusProcessor.class).handleMessage(msg.value().origin(), msg.value().message());
 			} finally {
 				ThreadContext.remove("bftNode");
 			}

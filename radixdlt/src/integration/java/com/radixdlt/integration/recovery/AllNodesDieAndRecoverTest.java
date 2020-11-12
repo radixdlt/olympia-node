@@ -229,7 +229,7 @@ public class AllNodesDieAndRecoverTest {
 		for (int i = 0; i < messageCount; i++) {
 			Timed<ControlledMessage> msg = this.network.nextMessage();
 			Injector injector = this.nodes.get(msg.value().channelId().receiverIndex());
-			injector.getInstance(DeterministicEpochsConsensusProcessor.class).handleMessage(msg.value().message());
+			injector.getInstance(DeterministicEpochsConsensusProcessor.class).handleMessage(msg.value().origin(), msg.value().message());
 		}
 	}
 

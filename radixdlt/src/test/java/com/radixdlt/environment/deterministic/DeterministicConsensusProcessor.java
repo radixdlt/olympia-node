@@ -22,6 +22,7 @@ import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTSyncRequestProcessor;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.epoch.LocalTimeout;
@@ -58,7 +59,7 @@ public class DeterministicConsensusProcessor implements DeterministicMessageProc
 	}
 
 	@Override
-	public void handleMessage(Object message) {
+	public void handleMessage(BFTNode origin, Object message) {
 		if (message instanceof LocalTimeout) {
 			bftEventProcessor.processLocalTimeout(((LocalTimeout) message).getView());
 		} else if (message instanceof ViewTimeout) {

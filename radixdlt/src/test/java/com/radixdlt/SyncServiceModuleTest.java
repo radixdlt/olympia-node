@@ -36,6 +36,7 @@ import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.HashVerifier;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
@@ -46,6 +47,7 @@ import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
+import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncTimeoutScheduler;
 import com.radixdlt.sync.RemoteSyncResponse;
@@ -77,6 +79,7 @@ public class SyncServiceModuleTest {
 				bind(new TypeLiteral<RemoteEventDispatcher<DtoCommandsAndProof>>() { }).toInstance(rmock(RemoteEventDispatcher.class));
 				bind(Key.get(new TypeLiteral<Comparator<AccumulatorState>>() { })).toInstance(TypedMocks.rmock(Comparator.class));
 				bind(BFTConfiguration.class).toInstance(mock(BFTConfiguration.class));
+				bind(Key.get(VerifiedLedgerHeaderAndProof.class, LastProof.class)).toInstance(mock(VerifiedLedgerHeaderAndProof.class));
 				bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(200);
 			}
 		};

@@ -225,7 +225,7 @@ public class RecoveryTest {
 			Timed<ControlledMessage> msg = this.network.nextMessage();
 			DeterministicEpochsConsensusProcessor runner = currentInjector
 				.getInstance(DeterministicEpochsConsensusProcessor.class);
-			runner.handleMessage(msg.value().message());
+			runner.handleMessage(msg.value().origin(), msg.value().message());
 		}
 	}
 

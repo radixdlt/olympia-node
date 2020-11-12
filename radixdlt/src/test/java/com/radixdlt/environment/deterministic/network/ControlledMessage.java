@@ -17,28 +17,35 @@
 
 package com.radixdlt.environment.deterministic.network;
 
+import com.radixdlt.consensus.bft.BFTNode;
 import java.util.Objects;
 
 /**
  * A message sent over a channel.
  */
 public final class ControlledMessage {
+	private final BFTNode origin;
 	private final ChannelId channelId;
 	private final Object message;
 	private final long arrivalTime;
 
-	public ControlledMessage(ChannelId channelId, Object message, long arrivalTime) {
+	public ControlledMessage(BFTNode origin, ChannelId channelId, Object message, long arrivalTime) {
+		this.origin = origin;
 		this.channelId = channelId;
 		this.message = message;
 		this.arrivalTime = arrivalTime;
 	}
 
 	public ControlledMessage withAdditionalDelay(long additionalDelay) {
-		return new ControlledMessage(this.channelId, this.message, this.arrivalTime + additionalDelay);
+		return new ControlledMessage(this.origin, this.channelId, this.message, this.arrivalTime + additionalDelay);
 	}
 
 	public ControlledMessage withArrivalTime(long arrivalTime) {
-		return new ControlledMessage(this.channelId, this.message, arrivalTime);
+		return new ControlledMessage(this.origin, this.channelId, this.message, arrivalTime);
+	}
+
+	public BFTNode origin() {
+		return origin;
 	}
 
 	public ChannelId channelId() {
@@ -55,7 +62,7 @@ public final class ControlledMessage {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.channelId, this.message, this.arrivalTime);
+		return Objects.hash(this.origin, this.channelId, this.message, this.arrivalTime);
 	}
 
 	@Override
@@ -63,6 +70,7 @@ public final class ControlledMessage {
 		if (o instanceof ControlledMessage) {
 			ControlledMessage that = (ControlledMessage) o;
 			return this.arrivalTime == that.arrivalTime
+				&& Objects.equals(this.origin, that.origin)
 				&& Objects.equals(this.channelId, that.channelId)
 				&& Objects.equals(this.message, that.message);
 		}
