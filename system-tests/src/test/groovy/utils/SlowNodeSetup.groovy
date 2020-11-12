@@ -61,6 +61,21 @@ class SlowNodeSetup {
         return new Builder()
     }
 
+    /**
+     * Will use ansible to run a task blocking the given port number, across all nodes of this network
+     */
+    void togglePortViaAnsible(int portNumber, boolean shouldEnable) {
+        def extraVariables = (shouldEnable) ? "-e 'port_number=${portNumber}'" : ""
+        def tag = (shouldEnable) ? "-t block-port-container" : "-t restore-blocked-port-container"
+        def dockerCommand = "docker run " +
+                        "${dockerRunOptions ?: ''} " +
+                        "${this.image} " +
+                        "system-testing.yml " +
+                        "${addtionalDockerCmdOptions ?: ''} " +
+                        "--limit ${clusterName} ${tag} ${extraVariables}"
+        CmdHelper.runCommand(dockerCommand)
+    }
+
     static class Builder {
         String image, runOptions, cmdOptions, clusterName
         int numOfSlowNodes

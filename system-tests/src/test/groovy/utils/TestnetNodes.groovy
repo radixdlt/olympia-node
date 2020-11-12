@@ -19,7 +19,7 @@ class TestnetNodes {
     String keyVolume = "key-volume"
     private String sshDestinationLocDir = "/ansible/ssh"
     private String sshDestinationFileName = "testnet"
-    String ansibleImage = "eu.gcr.io/lunar-arc-236318/node-ansible:python3"
+    String ansibleImage = "eu.gcr.io/lunar-arc-236318/node-ansible"
 
 
     TestnetNodes usingCmdOptions(String cmdOptions) {

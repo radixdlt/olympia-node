@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.google.common.collect.Lists;
 import junitparams.JUnitParamsRunner;
 import junitparams.naming.TestCaseName;
 import org.apache.logging.log4j.LogManager;
@@ -31,6 +32,7 @@ import utils.Constants;
 import utils.CmdHelper;
 import utils.EphemeralNetworkCreator;
 import utils.Generic;
+import utils.SlowNodeSetup;
 
 @RunWith(Enclosed.class)
 public class OutOfSynchronyBoundsTest {
@@ -93,13 +95,62 @@ public class OutOfSynchronyBoundsTest {
 				}
 			}
 		}
-
 	}
 
+	@Category(Cluster.class)
+	public static class ClusterTests {
+
+		@Rule
+		public TestName name = new TestName();
+
+		private SlowNodeSetup taskRunner;
+
+		@Test(expected = LivenessCheck.LivenessError.class)
+		public void given_10_correct_bfts_in_latent_cluster_network__when_one_instance_is_down__then_all_instances_should_get_same_commits_and_progress_should_be_made() throws Throwable {
+			StaticClusterNetwork network = StaticClusterNetwork.clusterInfo(10);
+			String sshKeylocation = Optional.ofNullable(System.getenv("SSH_IDENTITY")).orElse(System.getenv("HOME") + "/.ssh/id_rsa");
+
+			// we need to make sure that the network is already live before beginning our test
+			// this check should be done for all cluster tests, so perhaps this could be moved to a @Before method
+			RemoteBFTTest test = AssertionChecks.slowNodeTestBuilder()
+					.network(RemoteBFTNetworkBridge.of(network))
+					.waitUntilResponsive()
+					.startConsensusOnRun()
+					.build();
+			test.runBlocking(30, TimeUnit.SECONDS);
+			logger.info("Cluster has liveness, proceeding with test...");
+
+			// The SlowNodeSetup object here is used only to run ansible playbook tasks via the togglePortViaAnsible() method
+			taskRunner = SlowNodeSetup.builder()
+							.withImage("eu.gcr.io/lunar-arc-236318/node-ansible")
+							.usingCluster(network.getClusterName())
+							.runOptions("--rm -v key-volume:/ansible/ssh --name node-ansible")
+							.build();
+			taskRunner.pullImage();
+			taskRunner.copyfileToNamedVolume(sshKeylocation,"key-volume");
+			taskRunner.togglePortViaAnsible(30000, true);
+
+			// the actual test:
+			RemoteBFTTest testOutOfSynchronyBounds = outOfSynchronyTestBuilder(Lists.newArrayList())
+							.network(RemoteBFTNetworkBridge.of(network))
+							.build();
+
+			try {
+				testOutOfSynchronyBounds.runBlocking(CmdHelper.getTestDurationInSeconds(), TimeUnit.SECONDS);
+			} catch (AssertionError e) {
+				throw e.getCause(); // this also will be refactored
+			}
+		}
+
+		@After
+		public void teardown() {
+			taskRunner.togglePortViaAnsible(30000, false);
+		}
+	}
 
 	@Category(EphemeralCluster.class)
 	@RunWith(Parameterized.class)
-	public static class ClusterTests {
+	public static class EphemeralClusterTests {
 
 		private EphemeralNetworkCreator ephemeralNetworkCreator;
 		private StaticClusterNetwork network;
@@ -110,7 +161,7 @@ public class OutOfSynchronyBoundsTest {
 		private int networkSize,nodesCrashed;
 		List<String> crashedNodesURLs;
 
-		public ClusterTests(int networkSize,int nodesCrashed) {
+		public EphemeralClusterTests(int networkSize,int nodesCrashed) {
 			this.networkSize = networkSize;
 			this.nodesCrashed = nodesCrashed;
 		}
