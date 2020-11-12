@@ -27,7 +27,10 @@ import java.lang.annotation.Target;
 import javax.inject.Qualifier;
 
 /**
- * Identifies that the target is the last proof
+ * Identifies that the target is the last proof. This includes
+ * the mocked genesis VerifiedLedgerHeaderAndProof. That is,
+ * the header associated with this annotation should never
+ * have isEndOfEpoch() == true.
  */
 @Qualifier
 @Target({ FIELD, PARAMETER, METHOD })

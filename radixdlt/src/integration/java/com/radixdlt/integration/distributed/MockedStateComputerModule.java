@@ -66,8 +66,8 @@ public class MockedStateComputerModule extends AbstractModule {
 
 	@Provides
 	@LastProof
-	private VerifiedLedgerHeaderAndProof lastProof(BFTValidatorSet validatorSet) {
-		return VerifiedLedgerHeaderAndProof.genesis(HashUtils.zero256(), validatorSet);
+	private VerifiedLedgerHeaderAndProof lastProof(BFTConfiguration bftConfiguration) {
+		return bftConfiguration.getGenesisHeader();
 	}
 
 	@Provides

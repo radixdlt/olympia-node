@@ -26,8 +26,11 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.Synchronous;
 import com.radixdlt.sync.LocalSyncRequest;
 import java.util.Set;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class DispatcherModule extends AbstractModule {
+	private static final Logger logger = LogManager.getLogger();
 	@Override
 	public void configure() {
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<LocalSyncRequest>>() { }, Synchronous.class);
@@ -37,6 +40,10 @@ public class DispatcherModule extends AbstractModule {
 	private EventDispatcher<LocalSyncRequest> localSyncRequestEventDispatcher(
 		@Synchronous Set<EventProcessor<LocalSyncRequest>> syncProcessors
 	) {
-		return req -> syncProcessors.forEach(e -> e.process(req));
+		return req -> {
+			Class<?> callingClass = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE).getCallerClass();
+			logger.info("LOCAL_SYNC_REQUEST dispatched by {}", callingClass);
+			syncProcessors.forEach(e -> e.process(req));
+		};
 	}
 }
