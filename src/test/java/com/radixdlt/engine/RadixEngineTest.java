@@ -108,6 +108,7 @@ public class RadixEngineTest {
 		when(engineStore.compute(any(), any(), any(), any())).thenReturn(state);
 		radixEngine.addStateComputer(
 			Particle.class,
+			Object.class,
 			mock(Object.class),
 			(o, p) -> o,
 			(o, p) -> o
@@ -130,6 +131,7 @@ public class RadixEngineTest {
 		when(engineStore.compute(any(), any(), any(), any())).thenReturn(initialState);
 		radixEngine.addStateComputer(
 			Particle.class,
+			Object.class,
 			mock(Object.class),
 			(o, p) -> state1,
 			(o, p) -> state2
