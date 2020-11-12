@@ -30,8 +30,8 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.epoch.EpochView;
-import com.radixdlt.consensus.sync.BFTSync.BFTSyncTimeoutScheduler;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
+import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
@@ -43,6 +43,7 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ProcessOnDispatch;
+import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.environment.deterministic.network.ControlledSender;
 import com.radixdlt.epochs.EpochChangeManager.EpochsLedgerUpdateSender;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork.DeterministicSender;
@@ -65,7 +66,6 @@ public class DeterministicMessageSenderModule extends AbstractModule {
 		bind(SyncVerticesResponseSender.class).to(DeterministicSender.class);
 		bind(BFTUpdateSender.class).to(DeterministicSender.class);
 		bind(LocalTimeoutSender.class).to(DeterministicSender.class);
-		bind(BFTSyncTimeoutScheduler.class).to(DeterministicSender.class);
 		bind(SyncEpochsRPCSender.class).to(DeterministicSender.class);
 
 		// TODO: Remove multibind?
@@ -109,6 +109,11 @@ public class DeterministicMessageSenderModule extends AbstractModule {
 	@ProcessOnDispatch
 	EventProcessor<LocalSyncRequest> controlledSender(ControlledSender controlledSender) {
 		return controlledSender::dispatch;
+	}
+
+	@Provides
+	ScheduledEventDispatcher<LocalGetVerticesRequest> timeoutDispatcher(ControlledSender controlledSender) {
+		return controlledSender.scheduledDispatcher(LocalGetVerticesRequest.class);
 	}
 
 	@Provides

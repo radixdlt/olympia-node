@@ -53,8 +53,8 @@ import com.radixdlt.consensus.liveness.ProceedToViewSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
-import com.radixdlt.consensus.sync.BFTSync.BFTSyncTimeoutScheduler;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
+import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.sync.BFTSync;
@@ -63,6 +63,7 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.network.TimeSupplier;
 
 import com.radixdlt.store.LastEpochProof;
@@ -166,7 +167,7 @@ public class EpochsConsensusModule extends AbstractModule {
 	private BFTSyncFactory bftSyncFactory(
 		SyncVerticesRequestSender requestSender,
 		EventDispatcher<LocalSyncRequest> syncLedgerRequestSender,
-		BFTSyncTimeoutScheduler timeoutScheduler,
+		ScheduledEventDispatcher<LocalGetVerticesRequest> timeoutDispatcher,
 		BFTConfiguration configuration,
 		SystemCounters counters,
 		Random random,
@@ -181,7 +182,7 @@ public class EpochsConsensusModule extends AbstractModule {
 				requestSender.sendGetVerticesRequest(node, request);
 			},
 			syncLedgerRequestSender,
-			timeoutScheduler,
+			timeoutDispatcher,
 			configuration.getGenesisHeader(),
 			random,
 			bftSyncPatienceMillis

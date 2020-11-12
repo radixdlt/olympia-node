@@ -31,6 +31,7 @@ import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
@@ -51,7 +52,6 @@ import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.sync.BFTSync;
-import com.radixdlt.consensus.sync.BFTSync.BFTSyncTimeoutScheduler;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
@@ -65,6 +65,7 @@ import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.LocalSyncRequest;
@@ -217,7 +218,7 @@ public final class ConsensusModule extends AbstractModule {
 		Pacemaker pacemaker,
 		SyncVerticesRequestSender requestSender,
 		EventDispatcher<LocalSyncRequest> syncLedgerRequestSender,
-		BFTSyncTimeoutScheduler timeoutScheduler,
+		ScheduledEventDispatcher<LocalGetVerticesRequest> timeoutDispatcher,
 		@LastProof VerifiedLedgerHeaderAndProof verifiedLedgerHeaderAndProof,
 		SystemCounters counters,
 		Random random,
@@ -232,7 +233,7 @@ public final class ConsensusModule extends AbstractModule {
 				requestSender.sendGetVerticesRequest(node, request);
 			},
 			syncLedgerRequestSender,
-			timeoutScheduler,
+			timeoutDispatcher,
 			verifiedLedgerHeaderAndProof,
 			random,
 			bftSyncPatienceMillis

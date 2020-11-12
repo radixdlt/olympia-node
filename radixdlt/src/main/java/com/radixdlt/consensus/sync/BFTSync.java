@@ -33,6 +33,7 @@ import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdateProcessor;
 import com.radixdlt.sync.LocalSyncRequest;
@@ -125,11 +126,6 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 		void sendGetVerticesRequest(BFTNode node, LocalGetVerticesRequest request);
 	}
 
-
-	public interface BFTSyncTimeoutScheduler {
-		void scheduleTimeout(LocalGetVerticesRequest request, long milliseconds);
-	}
-
 	private static final Logger log = LogManager.getLogger();
 	private final VertexStore vertexStore;
 	private final Pacemaker pacemaker;
@@ -138,7 +134,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 	private final Map<LocalGetVerticesRequest, SyncRequestState> bftSyncing = new HashMap<>();
 	private final SyncVerticesRequestSender requestSender;
 	private final EventDispatcher<LocalSyncRequest> localSyncRequestProcessor;
-	private final BFTSyncTimeoutScheduler timeoutScheduler;
+	private final ScheduledEventDispatcher<LocalGetVerticesRequest> timeoutDispatcher;
 	private final Random random;
 	private final int bftSyncPatienceMillis;
 	private VerifiedLedgerHeaderAndProof currentLedgerHeader;
@@ -149,7 +145,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 		Comparator<LedgerHeader> ledgerHeaderComparator,
 		SyncVerticesRequestSender requestSender,
 		EventDispatcher<LocalSyncRequest> localSyncRequestProcessor,
-		BFTSyncTimeoutScheduler timeoutScheduler,
+		ScheduledEventDispatcher<LocalGetVerticesRequest> timeoutDispatcher,
 		VerifiedLedgerHeaderAndProof currentLedgerHeader,
 		Random random,
 		int bftSyncPatienceMillis
@@ -159,7 +155,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 		this.ledgerSyncing = new TreeMap<>(ledgerHeaderComparator);
 		this.requestSender = requestSender;
 		this.localSyncRequestProcessor = Objects.requireNonNull(localSyncRequestProcessor);
-		this.timeoutScheduler = Objects.requireNonNull(timeoutScheduler);
+		this.timeoutDispatcher = Objects.requireNonNull(timeoutDispatcher);
 		this.currentLedgerHeader = Objects.requireNonNull(currentLedgerHeader);
 		this.random = random;
 		this.bftSyncPatienceMillis = bftSyncPatienceMillis;
@@ -270,7 +266,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 		LocalGetVerticesRequest request = new LocalGetVerticesRequest(vertexId, count);
 		SyncRequestState syncRequestState = bftSyncing.getOrDefault(request, new SyncRequestState(authors));
 		if (syncRequestState.syncIds.isEmpty()) {
-			this.timeoutScheduler.scheduleTimeout(request, bftSyncPatienceMillis);
+			this.timeoutDispatcher.dispatch(request, bftSyncPatienceMillis);
 			this.requestSender.sendGetVerticesRequest(authors.get(0), request);
 			this.bftSyncing.put(request, syncRequestState);
 		}
@@ -366,8 +362,10 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 
 		log.debug("SYNC_VERTICES: Received GetVerticesErrorResponse: {} highQC: {}", response, vertexStore.highQC());
 
-		// error response indicates that the node has moved on from last sync so try and sync to a new sync
-		this.syncToQC(response.highQC(), response.getSender());
+		if (response.highQC().highestQC().getView().compareTo(vertexStore.highQC().highestQC().getView()) > 0) {
+			// error response indicates that the node has moved on from last sync so try and sync to a new sync
+			this.syncToQC(response.highQC(), response.getSender());
+		}
 	}
 
 	@Override

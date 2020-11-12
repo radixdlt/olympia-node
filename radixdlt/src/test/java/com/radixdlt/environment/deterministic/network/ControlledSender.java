@@ -25,6 +25,7 @@ import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.sync.LocalSyncRequest;
 import java.util.Set;
@@ -140,9 +141,11 @@ public final class ControlledSender implements DeterministicSender {
 		handleMessage(new ControlledMessage(self, this.localChannel, epochsLedgerUpdate, arrivalTime(this.localChannel)));
 	}
 
-	@Override
-	public void scheduleTimeout(LocalGetVerticesRequest request, long milliseconds) {
-		// Ignore bft sync timeouts
+	public <T> ScheduledEventDispatcher<T> scheduledDispatcher(Class<T> eventClass) {
+		return (t, milliseconds) -> {
+			ControlledMessage msg = new ControlledMessage(self, this.localChannel, t, arrivalTime(this.localChannel) + milliseconds);
+			handleMessage(msg);
+		};
 	}
 
 	public void dispatch(LocalSyncRequest localSyncRequest) {
