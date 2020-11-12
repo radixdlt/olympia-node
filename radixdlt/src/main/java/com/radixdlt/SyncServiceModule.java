@@ -43,7 +43,6 @@ import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier;
 import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier.InvalidValidatorSetSender;
 import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier.VerifiedValidatorSetSender;
 import com.radixdlt.sync.RemoteSyncServiceProcessor;
-import com.radixdlt.sync.StateSyncNetworkSender;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncTimeoutScheduler;
 import com.radixdlt.sync.SyncPatienceMillis;
@@ -113,11 +112,11 @@ public class SyncServiceModule extends AbstractModule {
 	@Singleton
 	private RemoteSyncServiceProcessor remoteSyncServiceProcessor(
 		CommittedReader committedReader,
-		StateSyncNetworkSender stateSyncNetwork
+		RemoteEventDispatcher<DtoCommandsAndProof> syncResponseDispatcher
 	) {
 		return new RemoteSyncServiceProcessor(
 			committedReader,
-			stateSyncNetwork,
+			syncResponseDispatcher,
 			BATCH_SIZE
 		);
 	}

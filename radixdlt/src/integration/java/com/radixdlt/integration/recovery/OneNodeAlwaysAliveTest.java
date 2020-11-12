@@ -25,7 +25,6 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Scopes;
-import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.CryptoModule;
@@ -55,7 +54,6 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.deterministic.DeterministicEpochInfo;
 import com.radixdlt.integration.distributed.MockedMempoolModule;
 import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
@@ -65,8 +63,6 @@ import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.ledger.DtoCommandsAndProof;
-import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.properties.RuntimeProperties;
@@ -74,7 +70,6 @@ import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncTimeoutScheduler;
-import com.radixdlt.sync.StateSyncNetworkSender;
 import com.radixdlt.sync.SyncPatienceMillis;
 import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.schedulers.Timed;
@@ -173,12 +168,6 @@ public class OneNodeAlwaysAliveTest {
 					// TODO: Move these into DeterministicSender
 					bind(CommittedAtomSender.class).toInstance(atom -> { });
 					bind(SyncTimeoutScheduler.class).toInstance((syncInProgress, milliseconds) -> { });
-					bind(new TypeLiteral<RemoteEventDispatcher<DtoLedgerHeaderAndProof>>() { }).toInstance((node, req) -> { });
-					bind(StateSyncNetworkSender.class).toInstance(new StateSyncNetworkSender() {
-						@Override
-						public void sendSyncResponse(BFTNode node, DtoCommandsAndProof commandsAndProof) {
-						}
-					});
 
 					// Checkpoint
 					VerifiedLedgerHeaderAndProof genesisLedgerHeader = VerifiedLedgerHeaderAndProof.genesis(

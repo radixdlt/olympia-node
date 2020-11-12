@@ -20,6 +20,7 @@ package com.radixdlt.sync;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
@@ -37,13 +38,13 @@ public class RemoteSyncServiceProcessor implements RemoteEventProcessor<DtoLedge
 	private static final Logger log = LogManager.getLogger();
 
 	private final CommittedReader committedReader;
-	private final StateSyncNetworkSender stateSyncNetwork;
+	private final RemoteEventDispatcher<DtoCommandsAndProof> syncResponseDispatcher;
 
 	private final int batchSize;
 
 	public RemoteSyncServiceProcessor(
 		CommittedReader committedReader,
-		StateSyncNetworkSender stateSyncNetwork,
+		RemoteEventDispatcher<DtoCommandsAndProof> syncResponseDispatcher,
 		int batchSize
 	) {
 		if (batchSize <= 0) {
@@ -51,7 +52,7 @@ public class RemoteSyncServiceProcessor implements RemoteEventProcessor<DtoLedge
 		}
 		this.committedReader = Objects.requireNonNull(committedReader);
 		this.batchSize = batchSize;
-		this.stateSyncNetwork = Objects.requireNonNull(stateSyncNetwork);
+		this.syncResponseDispatcher = Objects.requireNonNull(syncResponseDispatcher);
 	}
 
 	@Override
@@ -71,7 +72,7 @@ public class RemoteSyncServiceProcessor implements RemoteEventProcessor<DtoLedge
 				currentHeader, nextEpochProof.get().toDto()
 			);
 			log.info("REMOTE_EPOCH_SYNC_REQUEST: Sending response {}", dtoCommandsAndProof);
-			stateSyncNetwork.sendSyncResponse(sender, dtoCommandsAndProof);
+			syncResponseDispatcher.dispatch(sender, dtoCommandsAndProof);
 			return;
 		}
 
@@ -96,6 +97,6 @@ public class RemoteSyncServiceProcessor implements RemoteEventProcessor<DtoLedge
 
 		log.info("REMOTE_SYNC_REQUEST: Sending response {}", verifiable);
 
-		stateSyncNetwork.sendSyncResponse(sender, verifiable);
+		syncResponseDispatcher.dispatch(sender, verifiable);
 	}
 }

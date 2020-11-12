@@ -17,6 +17,7 @@
 
 package com.radixdlt.sync;
 
+import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -38,7 +39,9 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
@@ -52,13 +55,13 @@ public class RemoteSyncServiceProcessorTest {
 
 	private RemoteSyncServiceProcessor processor;
 	private CommittedReader reader;
-	private StateSyncNetworkSender network;
+	private RemoteEventDispatcher<DtoCommandsAndProof> syncResponseDispatcher;
 
 	@Before
 	public void setUp() {
 		this.reader = mock(CommittedReader.class);
-		this.network =  mock(StateSyncNetworkSender.class);
-		this.processor = new RemoteSyncServiceProcessor(reader, network, 1);
+		this.syncResponseDispatcher =  rmock(RemoteEventDispatcher.class);
+		this.processor = new RemoteSyncServiceProcessor(reader, syncResponseDispatcher, 1);
 	}
 
 	@Test
@@ -79,7 +82,7 @@ public class RemoteSyncServiceProcessorTest {
 		when(verifiedCommandsAndProof.getHeader()).thenReturn(verifiedHeader);
 		when(reader.getNextCommittedCommands(any(), anyInt())).thenReturn(verifiedCommandsAndProof);
 		processor.process(node, header);
-		verify(network, times(1)).sendSyncResponse(eq(node), any());
+		verify(syncResponseDispatcher, times(1)).dispatch(eq(node), any());
 	}
 
 	@Test
@@ -93,7 +96,7 @@ public class RemoteSyncServiceProcessorTest {
 		when(header.getSignatures()).thenReturn(mock(TimestampedECDSASignatures.class));
 		when(request.getCurrentHeader()).thenReturn(header);
 		processor.process(BFTNode.random(), header);
-		verify(network, never()).sendSyncResponse(any(), any());
+		verify(syncResponseDispatcher, never()).dispatch(any(), any());
 	}
 
 	@Test
@@ -106,7 +109,7 @@ public class RemoteSyncServiceProcessorTest {
 		when(header.getSignatures()).thenReturn(mock(TimestampedECDSASignatures.class));
 		processor.process(BFTNode.random(), header);
 		when(reader.getNextCommittedCommands(any(), anyInt())).thenReturn(null);
-		verify(network, never()).sendSyncResponse(any(), any());
+		verify(syncResponseDispatcher, never()).dispatch(any(), any());
 	}
 
 	@Test
@@ -132,6 +135,6 @@ public class RemoteSyncServiceProcessorTest {
 		processor.process(BFTNode.random(), ledgerHeaderAndProof);
 
 		// Assert
-		verify(network, times(1)).sendSyncResponse(any(), argThat(l -> l.getTail().equals(epoch2)));
+		verify(syncResponseDispatcher, times(1)).dispatch(any(), argThat(l -> l.getTail().equals(epoch2)));
 	}
 }

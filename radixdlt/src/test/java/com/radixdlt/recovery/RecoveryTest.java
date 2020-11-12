@@ -68,7 +68,6 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.ControlledSenderFactory;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
@@ -79,7 +78,6 @@ import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncTimeoutScheduler;
-import com.radixdlt.sync.StateSyncNetworkSender;
 import com.radixdlt.sync.SyncPatienceMillis;
 import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.schedulers.Timed;
@@ -147,11 +145,6 @@ public class RecoveryTest {
 					// TODO: Move these into DeterministicSender
 					bind(CommittedAtomSender.class).toInstance(atom -> { });
 					bind(SyncTimeoutScheduler.class).toInstance((syncInProgress, milliseconds) -> { });
-					bind(StateSyncNetworkSender.class).toInstance(new StateSyncNetworkSender() {
-						@Override
-						public void sendSyncResponse(BFTNode node, DtoCommandsAndProof commandsAndProof) {
-						}
-					});
 
 					// Checkpoint
 					VerifiedLedgerHeaderAndProof genesisLedgerHeader = VerifiedLedgerHeaderAndProof.genesis(

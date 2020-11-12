@@ -33,9 +33,8 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.SimulatedNetworkImpl;
+import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
-import com.radixdlt.sync.StateSyncNetworkRx;
-import com.radixdlt.sync.StateSyncNetworkSender;
 import io.reactivex.rxjava3.core.Observable;
 
 public class NodeNetworkMessagesModule extends AbstractModule {
@@ -50,10 +49,8 @@ public class NodeNetworkMessagesModule extends AbstractModule {
 		bind(BFTEventsRx.class).to(SimulatedNetworkImpl.class);
 		bind(SyncEpochsRPCRx.class).to(SimulatedNetworkImpl.class);
 		bind(SyncVerticesRPCRx.class).to(SimulatedNetworkImpl.class);
-		bind(StateSyncNetworkRx.class).to(SimulatedNetworkImpl.class);
 		bind(ProposalBroadcaster.class).to(SimulatedNetworkImpl.class);
 		bind(ProceedToViewSender.class).to(SimulatedNetworkImpl.class);
-		bind(StateSyncNetworkSender.class).to(SimulatedNetworkImpl.class);
 		bind(SyncVerticesRequestSender.class).to(SimulatedNetworkImpl.class);
 		bind(SyncEpochsRPCSender.class).to(SimulatedNetworkImpl.class);
 		bind(SyncVerticesResponseSender.class).to(SimulatedNetworkImpl.class);
@@ -66,11 +63,21 @@ public class NodeNetworkMessagesModule extends AbstractModule {
 
 	@Provides
 	private RemoteEventDispatcher<DtoLedgerHeaderAndProof> syncRequestDispatcher(SimulatedNetworkImpl network) {
-		return network.syncRequestDispatcher();
+		return network.remoteEventDispatcher(DtoLedgerHeaderAndProof.class);
+	}
+
+	@Provides
+	private RemoteEventDispatcher<DtoCommandsAndProof> syncResponseDispatcher(SimulatedNetworkImpl network) {
+		return network.remoteEventDispatcher(DtoCommandsAndProof.class);
 	}
 
 	@Provides
 	private Observable<RemoteEvent<DtoLedgerHeaderAndProof>> syncRequests(SimulatedNetworkImpl network) {
-		return network.syncRequests();
+		return network.remoteEvents(DtoLedgerHeaderAndProof.class);
+	}
+
+	@Provides
+	private Observable<RemoteEvent<DtoCommandsAndProof>> syncResponses(SimulatedNetworkImpl network) {
+		return network.remoteEvents(DtoCommandsAndProof.class);
 	}
 }

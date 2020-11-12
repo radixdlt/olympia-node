@@ -38,7 +38,6 @@ import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.sync.LocalSyncRequest;
-import com.radixdlt.sync.RemoteSyncResponse;
 import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier;
 
 import java.util.Optional;
@@ -79,7 +78,7 @@ public class EpochsRemoteSyncResponseProcessorTest {
 		this.responseProcessor.processLedgerUpdate(update);
 
 		verify(localSyncRequestSender, never()).dispatch(any());
-		verify(initialVerifier, never()).processSyncResponse(any());
+		verify(initialVerifier, never()).process(any(), any());
 		verify(verifierFactory, never()).apply(any());
 	}
 
@@ -87,18 +86,16 @@ public class EpochsRemoteSyncResponseProcessorTest {
 	public void given_epoch_is_1__when_process_some_response_with_epoch_2__then_should_do_nothing() {
 		when(initialEpoch.getEpoch()).thenReturn(1L);
 
-		RemoteSyncResponse response = mock(RemoteSyncResponse.class);
 		DtoCommandsAndProof dtoCommandsAndProof = mock(DtoCommandsAndProof.class);
 		DtoLedgerHeaderAndProof headerAndProof = mock(DtoLedgerHeaderAndProof.class);
 		LedgerHeader ledgerHeader = mock(LedgerHeader.class);
 		when(ledgerHeader.getEpoch()).thenReturn(2L);
 		when(headerAndProof.getLedgerHeader()).thenReturn(ledgerHeader);
 		when(dtoCommandsAndProof.getTail()).thenReturn(headerAndProof);
-		when(response.getCommandsAndProof()).thenReturn(dtoCommandsAndProof);
-		this.responseProcessor.processSyncResponse(response);
+		this.responseProcessor.syncResponseProcessor().process(BFTNode.random(), dtoCommandsAndProof);
 
 		verify(localSyncRequestSender, never()).dispatch(any());
-		verify(initialVerifier, never()).processSyncResponse(any());
+		verify(initialVerifier, never()).process(any(), any());
 		verify(verifierFactory, never()).apply(any());
 	}
 
@@ -116,7 +113,6 @@ public class EpochsRemoteSyncResponseProcessorTest {
 		when(epochChange.getBFTConfiguration()).thenReturn(mock(BFTConfiguration.class));
 		when(update.getEpochChange()).thenReturn(Optional.of(epochChange));
 		this.responseProcessor.processLedgerUpdate(update);
-		RemoteSyncResponse response = mock(RemoteSyncResponse.class);
 		DtoCommandsAndProof dtoCommandsAndProof = mock(DtoCommandsAndProof.class);
 		DtoLedgerHeaderAndProof tail = mock(DtoLedgerHeaderAndProof.class);
 		LedgerHeader ledgerHeader = mock(LedgerHeader.class);
@@ -126,12 +122,12 @@ public class EpochsRemoteSyncResponseProcessorTest {
 		when(head.getLedgerHeader()).thenReturn(mock(LedgerHeader.class));
 		when(dtoCommandsAndProof.getHead()).thenReturn(head);
 		when(dtoCommandsAndProof.getTail()).thenReturn(tail);
-		when(response.getCommandsAndProof()).thenReturn(dtoCommandsAndProof);
-		this.responseProcessor.processSyncResponse(response);
+
+		this.responseProcessor.syncResponseProcessor().process(BFTNode.random(), dtoCommandsAndProof);
 
 		verify(localSyncRequestSender, never()).dispatch(any());
-		verify(initialVerifier, never()).processSyncResponse(any());
-		verify(nextValidatorSetVerifier, times(1)).processSyncResponse(any());
+		verify(initialVerifier, never()).process(any(), any());
+		verify(nextValidatorSetVerifier, times(1)).process(any(), any());
 	}
 
 	@Test
@@ -143,7 +139,6 @@ public class EpochsRemoteSyncResponseProcessorTest {
 		when(verifiedLedgerHeaderAndProof.getRaw()).thenReturn(headHeader);
 		when(initialEpoch.getProof()).thenReturn(verifiedLedgerHeaderAndProof);
 
-		RemoteSyncResponse response = mock(RemoteSyncResponse.class);
 		DtoCommandsAndProof dtoCommandsAndProof = mock(DtoCommandsAndProof.class);
 		DtoLedgerHeaderAndProof tail = mock(DtoLedgerHeaderAndProof.class);
 		LedgerHeader tailHeader = mock(LedgerHeader.class);
@@ -160,12 +155,10 @@ public class EpochsRemoteSyncResponseProcessorTest {
 		when(head.getLedgerHeader()).thenReturn(headHeader);
 		when(dtoCommandsAndProof.getHead()).thenReturn(head);
 		when(dtoCommandsAndProof.getTail()).thenReturn(tail);
-		when(response.getCommandsAndProof()).thenReturn(dtoCommandsAndProof);
-		when(response.getSender()).thenReturn(mock(BFTNode.class));
-		this.responseProcessor.processSyncResponse(response);
+		this.responseProcessor.syncResponseProcessor().process(BFTNode.random(), dtoCommandsAndProof);
 
 		verify(localSyncRequestSender, times(1)).dispatch(any());
-		verify(initialVerifier, never()).processSyncResponse(any());
+		verify(initialVerifier, never()).process(any(), any());
 		verify(verifierFactory, never()).apply(any());
 	}
 }

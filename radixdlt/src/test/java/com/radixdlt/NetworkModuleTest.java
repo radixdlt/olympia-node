@@ -35,7 +35,6 @@ import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.messaging.MessageCentral;
-import com.radixdlt.sync.StateSyncNetworkSender;
 import com.radixdlt.universe.Universe;
 import java.util.Arrays;
 import java.util.List;
@@ -61,7 +60,6 @@ public class NetworkModuleTest {
 		);
 
 		List<Class<?>> classesToCheckFor = Arrays.asList(
-			StateSyncNetworkSender.class,
 			SyncEpochsRPCSender.class,
 			SyncEpochsRPCRx.class,
 			SyncVerticesRequestSender.class,

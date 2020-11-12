@@ -24,8 +24,8 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
+import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
-import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.sync.LocalSyncRequest;
 import java.util.Set;
 
@@ -150,9 +150,11 @@ public final class ControlledSender implements DeterministicSender {
 		handleMessage(new ControlledMessage(this.localChannel, localSyncRequest, arrivalTime(this.localChannel)));
 	}
 
-	public void dispatch(BFTNode node, DtoLedgerHeaderAndProof syncRequest) {
-		ChannelId channelId = ChannelId.of(this.senderIndex, this.network.lookup(node));
-		handleMessage(new ControlledMessage(channelId, syncRequest, arrivalTime(channelId)));
+	public <T> RemoteEventDispatcher<T> remoteDispatcher(Class<T> eventClass) {
+		return (node, e) -> {
+			ChannelId channelId = ChannelId.of(this.senderIndex, this.network.lookup(node));
+			handleMessage(new ControlledMessage(channelId, e, arrivalTime(channelId)));
+		};
 	}
 
 	private void handleMessage(ControlledMessage controlledMessage) {

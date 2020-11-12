@@ -22,9 +22,6 @@ import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.network.addressbook.AddressBook;
-import com.radixdlt.sync.RemoteSyncResponse;
-import com.radixdlt.sync.StateSyncNetworkRx;
-import com.radixdlt.sync.StateSyncNetworkSender;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageListener;
 import com.radixdlt.ledger.DtoCommandsAndProof;
@@ -36,7 +33,7 @@ import javax.inject.Inject;
 /**
  * Network interface for syncing committed state using the MessageCentral
  */
-public final class MessageCentralLedgerSync implements StateSyncNetworkSender, StateSyncNetworkRx {
+public final class MessageCentralLedgerSync {
 	private final int magic;
 	private final MessageCentral messageCentral;
 	private final AddressBook addressBook;
@@ -52,13 +49,12 @@ public final class MessageCentralLedgerSync implements StateSyncNetworkSender, S
 		this.messageCentral = Objects.requireNonNull(messageCentral);
 	}
 
-	@Override
-	public Observable<RemoteSyncResponse> syncResponses() {
+	public Observable<RemoteEvent<DtoCommandsAndProof>> syncResponses() {
 		return Observable.create(emitter -> {
 			MessageListener<SyncResponseMessage> listener = (src, msg) -> {
 				if (src.hasSystem()) {
 					BFTNode node = BFTNode.create(src.getSystem().getKey());
-					emitter.onNext(new RemoteSyncResponse(node, msg.getCommands()));
+					emitter.onNext(RemoteEvent.create(node, msg.getCommands(), DtoCommandsAndProof.class));
 				}
 			};
 			this.messageCentral.addListener(SyncResponseMessage.class, listener);
@@ -79,6 +75,7 @@ public final class MessageCentralLedgerSync implements StateSyncNetworkSender, S
 		});
 	}
 
+
 	public RemoteEventDispatcher<DtoLedgerHeaderAndProof> syncRequestDispatcher() {
 		return this::sendSyncRequest;
 	}
@@ -92,8 +89,11 @@ public final class MessageCentralLedgerSync implements StateSyncNetworkSender, S
 		});
 	}
 
-	@Override
-	public void sendSyncResponse(BFTNode node, DtoCommandsAndProof commands) {
+	public RemoteEventDispatcher<DtoCommandsAndProof> syncResponseDispatcher() {
+		return this::sendSyncResponse;
+	}
+
+	private void sendSyncResponse(BFTNode node, DtoCommandsAndProof commands) {
 		addressBook.peer(node.getKey().euid()).ifPresent(peer -> {
 			if (peer.hasSystem()) {
 				final SyncResponseMessage syncResponseMessage = new SyncResponseMessage(this.magic, commands);

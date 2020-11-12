@@ -46,6 +46,7 @@ import com.radixdlt.environment.Synchronous;
 import com.radixdlt.environment.deterministic.network.ControlledSender;
 import com.radixdlt.epochs.EpochChangeManager.EpochsLedgerUpdateSender;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork.DeterministicSender;
+import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.sync.LocalSyncRequest;
 import java.util.Set;
@@ -112,7 +113,12 @@ public class DeterministicMessageSenderModule extends AbstractModule {
 
 	@Provides
 	RemoteEventDispatcher<DtoLedgerHeaderAndProof> syncRequestDispatcher(ControlledSender controlledSender) {
-		return controlledSender::dispatch;
+		return controlledSender.remoteDispatcher(DtoLedgerHeaderAndProof.class);
+	}
+
+	@Provides
+	RemoteEventDispatcher<DtoCommandsAndProof> syncResponseDispatcher(ControlledSender controlledSender) {
+		return controlledSender.remoteDispatcher(DtoCommandsAndProof.class);
 	}
 
 	@Provides

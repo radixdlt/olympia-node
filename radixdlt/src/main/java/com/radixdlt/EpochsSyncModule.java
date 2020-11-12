@@ -27,18 +27,19 @@ import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.epochs.EpochsLocalSyncServiceProcessor;
 import com.radixdlt.epochs.EpochsRemoteSyncResponseProcessor;
 import com.radixdlt.epochs.SyncedEpochSender;
 import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.ledger.LedgerUpdateProcessor;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncTimeoutScheduler;
-import com.radixdlt.sync.RemoteSyncResponseProcessor;
 import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier;
 import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier.InvalidValidatorSetSender;
 import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier.VerifiedValidatorSetSender;
@@ -55,7 +56,6 @@ public class EpochsSyncModule extends AbstractModule {
 	@Override
 	public void configure() {
 		bind(LocalSyncServiceProcessor.class).to(EpochsLocalSyncServiceProcessor.class);
-		bind(RemoteSyncResponseProcessor.class).to(EpochsRemoteSyncResponseProcessor.class);
 		Multibinder<LedgerUpdateProcessor<EpochsLedgerUpdate>> ledgerUpdateProcessors =
 			Multibinder.newSetBinder(binder(), new TypeLiteral<LedgerUpdateProcessor<EpochsLedgerUpdate>>() { });
 		ledgerUpdateProcessors.addBinding().to(EpochsRemoteSyncResponseProcessor.class);
@@ -68,6 +68,11 @@ public class EpochsSyncModule extends AbstractModule {
 	@Provides
 	private EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor(EpochsLocalSyncServiceProcessor epochsLocalSyncServiceProcessor) {
 		return epochsLocalSyncServiceProcessor.localSyncRequestEventProcessor();
+	}
+
+	@Provides
+	private RemoteEventProcessor<DtoCommandsAndProof> syncResponseProcessor(EpochsRemoteSyncResponseProcessor processor) {
+		return processor.syncResponseProcessor();
 	}
 
 	@Provides

@@ -23,6 +23,7 @@ import com.radixdlt.ModuleRunner;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.environment.rx.RemoteEvent;
+import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdateProcessor;
@@ -55,18 +56,20 @@ public final class SyncServiceRunner<T extends LedgerUpdate> implements ModuleRu
 		Observable<SyncInProgress> timeouts();
 	}
 
-	private final StateSyncNetworkRx stateSyncNetworkRx;
 	private final Scheduler singleThreadScheduler;
 	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("SyncManager"));
 	private final EventProcessor<LocalSyncRequest> syncRequestEventProcessor;
 	private final LocalSyncServiceProcessor localSyncServiceProcessor;
+
 	private final RemoteEventProcessor<DtoLedgerHeaderAndProof> remoteSyncServiceProcessor;
-	private final RemoteSyncResponseProcessor remoteSyncResponseProcessor;
+	private final RemoteEventProcessor<DtoCommandsAndProof> responseProcessor;
+
 	private final SyncTimeoutsRx syncTimeoutsRx;
 	private final LocalSyncRequestsRx localSyncRequestsRx;
 	private final Observable<T> ledgerUpdates;
 	private final LedgerUpdateProcessor<T> ledgerUpdateProcessor;
 
+	private final Observable<RemoteEvent<DtoCommandsAndProof>> remoteSyncResponses;
 	private final Observable<RemoteEvent<DtoLedgerHeaderAndProof>> remoteSyncRequests;
 	private final Object lock = new Object();
 	private CompositeDisposable compositeDisposable;
@@ -77,23 +80,24 @@ public final class SyncServiceRunner<T extends LedgerUpdate> implements ModuleRu
 		SyncTimeoutsRx syncTimeoutsRx,
 		Observable<T> ledgerUpdates,
 		Observable<RemoteEvent<DtoLedgerHeaderAndProof>> remoteSyncRequests,
-		StateSyncNetworkRx stateSyncNetworkRx,
+		Observable<RemoteEvent<DtoCommandsAndProof>> remoteSyncResponses,
 		EventProcessor<LocalSyncRequest> syncRequestEventProcessor,
 		LocalSyncServiceProcessor localSyncServiceProcessor,
 		RemoteEventProcessor<DtoLedgerHeaderAndProof> remoteSyncServiceProcessor,
-		RemoteSyncResponseProcessor remoteSyncResponseProcessor,
+		RemoteEventProcessor<DtoCommandsAndProof> responseProcessor,
 		LedgerUpdateProcessor<T> ledgerUpdateProcessor
 	) {
 		this.remoteSyncRequests = Objects.requireNonNull(remoteSyncRequests);
+		this.remoteSyncResponses = Objects.requireNonNull(remoteSyncResponses);
+
 		this.localSyncRequestsRx = Objects.requireNonNull(localSyncRequestsRx);
 		this.syncTimeoutsRx = Objects.requireNonNull(syncTimeoutsRx);
 		this.ledgerUpdates = Objects.requireNonNull(ledgerUpdates);
 		this.localSyncServiceProcessor = Objects.requireNonNull(localSyncServiceProcessor);
 		this.syncRequestEventProcessor = Objects.requireNonNull(syncRequestEventProcessor);
-		this.stateSyncNetworkRx = Objects.requireNonNull(stateSyncNetworkRx);
 		this.singleThreadScheduler = Schedulers.from(this.executorService);
 		this.remoteSyncServiceProcessor = Objects.requireNonNull(remoteSyncServiceProcessor);
-		this.remoteSyncResponseProcessor = Objects.requireNonNull(remoteSyncResponseProcessor);
+		this.responseProcessor = Objects.requireNonNull(responseProcessor);
 		this.ledgerUpdateProcessor = Objects.requireNonNull(ledgerUpdateProcessor);
 	}
 
@@ -111,9 +115,9 @@ public final class SyncServiceRunner<T extends LedgerUpdate> implements ModuleRu
 				.observeOn(singleThreadScheduler)
 				.subscribe(e -> remoteSyncServiceProcessor.process(e.getOrigin(), e.getEvent()));
 
-			Disposable d1 = stateSyncNetworkRx.syncResponses()
+			Disposable d1 = remoteSyncResponses
 				.observeOn(singleThreadScheduler)
-				.subscribe(remoteSyncResponseProcessor::processSyncResponse);
+				.subscribe(e -> responseProcessor.process(e.getOrigin(), e.getEvent()));
 
 			Disposable d2 = localSyncRequestsRx.localSyncRequests()
 				.observeOn(singleThreadScheduler)
