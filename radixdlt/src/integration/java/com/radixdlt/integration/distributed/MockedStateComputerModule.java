@@ -85,6 +85,7 @@ public class MockedStateComputerModule extends AbstractModule {
 
 			@Override
 			public void commit(VerifiedCommandsAndProof command) {
+				// No op
 			}
 		};
 	}

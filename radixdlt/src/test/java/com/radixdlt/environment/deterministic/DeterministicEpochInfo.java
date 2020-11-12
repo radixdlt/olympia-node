@@ -30,6 +30,7 @@ public class DeterministicEpochInfo {
 	}
 
 	private void processEvent(Timeout timeout) {
+		// No-op
 	}
 
 	public EventProcessor<EpochView> epochViewEventProcessor() {

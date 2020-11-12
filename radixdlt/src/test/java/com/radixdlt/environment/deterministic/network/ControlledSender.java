@@ -125,8 +125,7 @@ public final class ControlledSender implements DeterministicSender {
 
 	@Override
 	public void sendGetEpochRequest(BFTNode node, long epoch) {
-		// TODO: Implement
-		//throw new UnsupportedOperationException();
+		// Ignore get epoch requests for now
 	}
 
 	@Override

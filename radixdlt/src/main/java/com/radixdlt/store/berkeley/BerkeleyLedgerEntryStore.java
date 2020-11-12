@@ -78,8 +78,8 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 	private static final String PENDING_DB_NAME = "tempo2.pending";
 	private static final String ATOMS_DB_NAME = "tempo2.atoms";
 
+	// TODO: Remove
 	private static final byte PREFIX_COMMITTED = 0b0000_0000;
-	private static final byte PREFIX_PENDING = 0b0000_0001;
 
 	private final Serialization serialization;
 	private final DatabaseEnvironment dbEnv;
@@ -338,12 +338,6 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 		}
 
 		return conflictingAtoms.build();
-	}
-
-	private boolean doDelete(AID aid, Transaction transaction) throws DeserializeException {
-		DatabaseEntry pKey = new DatabaseEntry();
-		LedgerEntryIndices indices = doGetIndices(transaction, aid, pKey);
-		return doDelete(aid, transaction, pKey, indices);
 	}
 
 	private boolean doDelete(AID aid, Transaction transaction, DatabaseEntry pKey, LedgerEntryIndices indices) {

@@ -234,7 +234,7 @@ public class AllNodesDieAndRecoverTest {
 	}
 
 	@Test
-	@Ignore("Liveness broken if all nodes restart")
+	@Ignore("Liveness broken if all nodes restart: To be fixed in RPNV1-758")
 	public void all_nodes_restart_liveness_should_not_be_broken() {
 		EpochView epochView = this.nodes.get(0).getInstance(DeterministicEpochInfo.class).getCurrentEpochView();
 
