@@ -63,8 +63,8 @@ public class SystemTest {
 	@Test
 	public void executing_system_update_without_permissions_should_fail() {
 		// Arrange
-		SystemParticle systemParticle = new SystemParticle(0, 0, 0);
-		SystemParticle nextSystemParticle = new SystemParticle(0, 1, 1);
+		SystemParticle systemParticle = new SystemParticle(1, 0, 0);
+		SystemParticle nextSystemParticle = new SystemParticle(1, 1, 1);
 		ImmutableList<CMMicroInstruction> instructions = ImmutableList.of(
 			CMMicroInstruction.checkSpinAndPush(systemParticle, Spin.UP),
 			CMMicroInstruction.checkSpinAndPush(nextSystemParticle, Spin.NEUTRAL),
@@ -86,8 +86,8 @@ public class SystemTest {
 	@Test
 	public void executing_system_update_with_correct_permissions_should_succeed() throws RadixEngineException {
 		// Arrange
-		SystemParticle systemParticle = new SystemParticle(0, 0, 0);
-		SystemParticle nextSystemParticle = new SystemParticle(0, 1, 1);
+		SystemParticle systemParticle = new SystemParticle(1, 0, 0);
+		SystemParticle nextSystemParticle = new SystemParticle(1, 1, 1);
 		ImmutableList<CMMicroInstruction> instructions = ImmutableList.of(
 			CMMicroInstruction.checkSpinAndPush(systemParticle, Spin.UP),
 			CMMicroInstruction.checkSpinAndPush(nextSystemParticle, Spin.NEUTRAL),
@@ -108,8 +108,8 @@ public class SystemTest {
 	@Test
 	public void executing_system_update_with_view_ceiling_should_fail() {
 		// Arrange
-		SystemParticle systemParticle = new SystemParticle(0, 0, 0);
-		SystemParticle nextSystemParticle = new SystemParticle(0, 10, 1);
+		SystemParticle systemParticle = new SystemParticle(1, 0, 0);
+		SystemParticle nextSystemParticle = new SystemParticle(1, 10, 1);
 		ImmutableList<CMMicroInstruction> instructions = ImmutableList.of(
 			CMMicroInstruction.checkSpinAndPush(systemParticle, Spin.UP),
 			CMMicroInstruction.checkSpinAndPush(nextSystemParticle, Spin.NEUTRAL),
