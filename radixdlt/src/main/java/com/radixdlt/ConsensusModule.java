@@ -26,6 +26,7 @@ import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HashVerifier;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
@@ -65,6 +66,7 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.network.TimeSupplier;
+import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.LocalSyncRequest;
 import java.util.Comparator;
 import java.util.Random;
@@ -216,7 +218,7 @@ public final class ConsensusModule extends AbstractModule {
 		SyncVerticesRequestSender requestSender,
 		EventDispatcher<LocalSyncRequest> syncLedgerRequestSender,
 		BFTSyncTimeoutScheduler timeoutScheduler,
-		BFTConfiguration configuration,
+		@LastProof VerifiedLedgerHeaderAndProof verifiedLedgerHeaderAndProof,
 		SystemCounters counters,
 		Random random,
 		@BFTSyncPatienceMillis int bftSyncPatienceMillis
@@ -231,7 +233,7 @@ public final class ConsensusModule extends AbstractModule {
 			},
 			syncLedgerRequestSender,
 			timeoutScheduler,
-			configuration.getGenesisHeader(),
+			verifiedLedgerHeaderAndProof,
 			random,
 			bftSyncPatienceMillis
 		);

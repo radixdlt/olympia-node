@@ -301,7 +301,9 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 	}
 
 	private void processVerticesResponseForCommittedSync(SyncState syncState, GetVerticesResponse response) {
-		log.debug("SYNC_STATE: Processing vertices {} View {} From {}", syncState, response.getVertices().get(0).getView(), response.getSender());
+		log.debug("SYNC_STATE: Processing vertices {} View {} From {} CurrentLedgerHeader {}",
+			syncState, response.getVertices().get(0).getView(), response.getSender(), this.currentLedgerHeader
+		);
 
 		ImmutableList<BFTNode> signers = ImmutableList.of(syncState.author);
 		syncState.fetched.addAll(response.getVertices());
@@ -404,7 +406,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 	// TODO: Verify headers match
 	@Override
 	public void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
-		log.trace("SYNC_STATE: update {}", ledgerUpdate);
+		log.trace("SYNC_STATE: update {}", ledgerUpdate.getTail());
 
 		this.currentLedgerHeader = ledgerUpdate.getTail();
 

@@ -79,6 +79,7 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.network.TimeSupplier;
+import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
@@ -143,6 +144,7 @@ public class ConsensusModuleTest {
 				bind(PacemakerTimeoutSender.class).toInstance(mock(PacemakerTimeoutSender.class));
 				bind(BFTSyncTimeoutScheduler.class).toInstance(mock(BFTSyncTimeoutScheduler.class));
 				bind(BFTConfiguration.class).toInstance(bftConfiguration);
+				bind(VerifiedLedgerHeaderAndProof.class).annotatedWith(LastProof.class).toInstance(mock(VerifiedLedgerHeaderAndProof.class));
 				bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(200);
 				bindConstant().annotatedWith(PacemakerTimeout.class).to(1000L);
 				bindConstant().annotatedWith(PacemakerRate.class).to(2.0);
