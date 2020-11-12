@@ -157,7 +157,7 @@ public class OneNodeAlwaysAliveTest {
 					bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(200);
 					bind(Integer.class).annotatedWith(BFTSyncPatienceMillis.class).toInstance(200);
 					bind(Integer.class).annotatedWith(MinValidators.class).toInstance(1);
-					bind(Long.class).annotatedWith(PacemakerTimeout.class).toInstance(1000000000L);
+					bind(Long.class).annotatedWith(PacemakerTimeout.class).toInstance(5000L);
 					bind(Double.class).annotatedWith(PacemakerRate.class).toInstance(2.0);
 					bind(Integer.class).annotatedWith(PacemakerMaxExponent.class).toInstance(6);
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(88L));

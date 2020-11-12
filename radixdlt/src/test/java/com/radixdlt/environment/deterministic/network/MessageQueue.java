@@ -92,10 +92,12 @@ public final class MessageQueue {
 		LinkedList<ControlledMessage> msgs = this.messagesByTime.get(this.minimumMessageTime);
 		if (msgs == null) {
 			painfulRemove(message);
+			this.minimumMessageTime = minimumKey(this.messagesByTime.keySet());
 			return;
 		}
 		if (!msgs.remove(message)) {
 			painfulRemove(message);
+			this.minimumMessageTime = minimumKey(this.messagesByTime.keySet());
 			return;
 		}
 		if (msgs.isEmpty()) {

@@ -112,7 +112,7 @@ public class EpochsLocalSyncServiceProcessor implements LocalSyncServiceProcesso
 		}
 
 		if (targetEpoch < currentEpoch.getEpoch()) {
-			log.trace("Request epoch {} is lower from current {} ignoring: {}", targetEpoch, request, currentEpoch.getEpoch());
+			log.trace("Request epoch {} is lower from current {} ignoring: {}", targetEpoch, currentEpoch.getEpoch(), request);
 			return;
 		}
 
