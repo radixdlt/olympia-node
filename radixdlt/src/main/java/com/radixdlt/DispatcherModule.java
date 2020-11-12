@@ -23,7 +23,7 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.environment.Synchronous;
+import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.sync.LocalSyncRequest;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
@@ -33,12 +33,12 @@ public class DispatcherModule extends AbstractModule {
 	private static final Logger logger = LogManager.getLogger();
 	@Override
 	public void configure() {
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<LocalSyncRequest>>() { }, Synchronous.class);
+		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<LocalSyncRequest>>() { }, ProcessOnDispatch.class);
 	}
 
 	@Provides
 	private EventDispatcher<LocalSyncRequest> localSyncRequestEventDispatcher(
-		@Synchronous Set<EventProcessor<LocalSyncRequest>> syncProcessors
+		@ProcessOnDispatch Set<EventProcessor<LocalSyncRequest>> syncProcessors
 	) {
 		return req -> {
 			Class<?> callingClass = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE).getCallerClass();

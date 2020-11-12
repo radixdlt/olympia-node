@@ -23,9 +23,13 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.MapBinder;
+import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.ProcessWithSyncRunner;
 import com.radixdlt.environment.RemoteEventProcessor;
+import com.radixdlt.epochs.EpochsLedgerUpdate;
+import com.radixdlt.epochs.EpochsLocalSyncServiceProcessor;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdateProcessor;
@@ -45,8 +49,12 @@ public class MockedSyncRunnerModule extends AbstractModule {
 			.addBinding("sync").to(Key.get(new TypeLiteral<SyncServiceRunner<LedgerUpdate>>() { }));
 		bind(new TypeLiteral<RemoteEventProcessor<DtoCommandsAndProof>>() { }).to(RemoteSyncResponseValidatorSetVerifier.class).in(Scopes.SINGLETON);
 		bind(LocalSyncServiceProcessor.class).to(LocalSyncServiceAccumulatorProcessor.class).in(Scopes.SINGLETON);
-		bind(new TypeLiteral<LedgerUpdateProcessor<LedgerUpdate>>() { })
-			.to(LocalSyncServiceAccumulatorProcessor.class).in(Scopes.SINGLETON);
+	}
+
+	@ProvidesIntoSet
+	@ProcessWithSyncRunner
+	private EventProcessor<LedgerUpdate> epochsLedgerUpdateEventProcessor(LocalSyncServiceAccumulatorProcessor localSyncServiceAccumulatorProcessor) {
+		return localSyncServiceAccumulatorProcessor::processLedgerUpdate;
 	}
 
 	@Provides

@@ -17,13 +17,13 @@
 
 package com.radixdlt.sync;
 
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.LedgerUpdateProcessor;
 import com.radixdlt.sync.SyncServiceRunner.LocalSyncRequestsRx;
 import com.radixdlt.sync.SyncServiceRunner.SyncTimeoutsRx;
 
@@ -31,6 +31,7 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import io.reactivex.rxjava3.subjects.Subject;
 
+import java.util.Set;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -51,7 +52,7 @@ public class SyncServiceRunnerTest {
 	private RemoteEventProcessor<DtoLedgerHeaderAndProof> remoteSyncServiceProcessor;
 	private RemoteEventProcessor<DtoCommandsAndProof> responseProcessor;
 	private EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor;
-	private LedgerUpdateProcessor<LedgerUpdate> ledgerUpdateProcessor;
+	private Set<EventProcessor<LedgerUpdate>> ledgerUpdateProcessors;
 	private Subject<LedgerUpdate> versionUpdatesSubject;
 
 	private Subject<RemoteEvent<DtoLedgerHeaderAndProof>> remoteSyncRequests;
@@ -72,21 +73,21 @@ public class SyncServiceRunnerTest {
 		this.syncServiceProcessor = mock(LocalSyncServiceProcessor.class);
 		this.remoteSyncServiceProcessor = rmock(RemoteEventProcessor.class);
 		this.responseProcessor = rmock(RemoteEventProcessor.class);
-		this.ledgerUpdateProcessor = rmock(LedgerUpdateProcessor.class);
+		this.ledgerUpdateProcessors = ImmutableSet.of();
 
 		this.localSyncRequestEventProcessor = rmock(EventProcessor.class);
 
 		syncServiceRunner = new SyncServiceRunner<>(
 			localSyncRequestsRx,
-			syncTimeoutsRx,
-			versionUpdatesSubject,
-			remoteSyncRequests,
-			remoteSyncResponses,
 			localSyncRequestEventProcessor,
+			syncTimeoutsRx,
 			syncServiceProcessor,
+			versionUpdatesSubject,
+			ledgerUpdateProcessors,
+			remoteSyncRequests,
 			remoteSyncServiceProcessor,
-			responseProcessor,
-			ledgerUpdateProcessor
+			remoteSyncResponses,
+			responseProcessor
 		);
 
 		// Clear interrupted status

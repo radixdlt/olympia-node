@@ -21,7 +21,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.environment.Synchronous;
+import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncTimeoutScheduler;
@@ -41,7 +41,7 @@ public class SyncRxModule extends AbstractModule {
 	protected void configure() {
 		SenderToRx<LocalSyncRequest, LocalSyncRequest> syncRequests = new SenderToRx<>(c -> c);
 		bind(LocalSyncRequestsRx.class).toInstance(syncRequests::rx);
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<LocalSyncRequest>>() { }, Synchronous.class).addBinding()
+		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<LocalSyncRequest>>() { }, ProcessOnDispatch.class).addBinding()
 			.toInstance(syncRequests::send);
 
 		ScheduledExecutorService ses = Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("SyncTimeoutSender"));

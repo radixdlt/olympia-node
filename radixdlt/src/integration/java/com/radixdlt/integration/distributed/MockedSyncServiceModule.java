@@ -21,13 +21,16 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.ProcessWithSyncRunner;
 import com.radixdlt.environment.RemoteEventProcessor;
-import com.radixdlt.environment.Synchronous;
+import com.radixdlt.environment.ProcessOnDispatch;
+import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
@@ -48,6 +51,7 @@ public class MockedSyncServiceModule extends AbstractModule {
 
 	@Override
 	public void configure() {
+		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochsLedgerUpdate>>() { }, ProcessWithSyncRunner.class);
 		bind(new TypeLiteral<EventProcessor<LocalSyncRequest>>() { }).toInstance(req -> { });
 		bind(new TypeLiteral<RemoteEventProcessor<DtoLedgerHeaderAndProof>>() { }).toInstance((node, res) -> { });
 		bind(new TypeLiteral<RemoteEventProcessor<DtoCommandsAndProof>>() { }).toInstance((node, res) -> { });
@@ -71,7 +75,7 @@ public class MockedSyncServiceModule extends AbstractModule {
 
 	@ProvidesIntoSet
 	@Singleton
-	@Synchronous
+	@ProcessOnDispatch
 	EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor(
 		Ledger ledger
 	) {

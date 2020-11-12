@@ -29,14 +29,15 @@ import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.ProcessWithSyncRunner;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
-import com.radixdlt.epochs.EpochsLocalSyncServiceProcessor;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.sync.LocalSyncRequest;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import javax.annotation.concurrent.NotThreadSafe;
 import javax.inject.Inject;
 
@@ -46,25 +47,38 @@ import javax.inject.Inject;
 @NotThreadSafe
 public final class DeterministicEpochsConsensusProcessor implements DeterministicMessageProcessor {
 	private final EpochManager epochManager;
-	private final EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor;
-	private final EpochsLocalSyncServiceProcessor epochsLocalSyncServiceProcessor;
+	private final Map<Class<?>, EventProcessor<Object>>	eventProcessors;
 	private final Map<Class<?>, RemoteEventProcessor<Object>> remoteEventProcessors;
 
 	@Inject
 	public DeterministicEpochsConsensusProcessor(
 		EpochManager epochManager,
-		EpochsLocalSyncServiceProcessor epochsLocalSyncServiceProcessor,
+		@ProcessWithSyncRunner Set<EventProcessor<EpochsLedgerUpdate>> epochsLedgerUpdateProcessors,
 		EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor,
 		RemoteEventProcessor<DtoLedgerHeaderAndProof> syncRequestProcessor,
 		RemoteEventProcessor<DtoCommandsAndProof> syncResponseProcessor
 	) {
 		this.epochManager = Objects.requireNonNull(epochManager);
-		this.epochsLocalSyncServiceProcessor = Objects.requireNonNull(epochsLocalSyncServiceProcessor);
-		this.localSyncRequestEventProcessor = Objects.requireNonNull(localSyncRequestEventProcessor);
-		ImmutableMap.Builder<Class<?>, RemoteEventProcessor<Object>> processorsBuilder = ImmutableMap.builder();
-		processorsBuilder.put(DtoLedgerHeaderAndProof.class, (node, event) -> syncRequestProcessor.process(node, (DtoLedgerHeaderAndProof) event));
-		processorsBuilder.put(DtoCommandsAndProof.class, (node, event) -> syncResponseProcessor.process(node, (DtoCommandsAndProof) event));
-		remoteEventProcessors = processorsBuilder.build();
+
+		ImmutableMap.Builder<Class<?>, EventProcessor<Object>> processorsBuilder = ImmutableMap.builder();
+		// TODO: allow randomization in processing order for a given message
+		processorsBuilder.put(EpochsLedgerUpdate.class, e -> {
+			epochManager.processLedgerUpdate((EpochsLedgerUpdate) e);
+			epochsLedgerUpdateProcessors.forEach(p -> p.process((EpochsLedgerUpdate) e));
+		});
+		processorsBuilder.put(LocalSyncRequest.class, e -> localSyncRequestEventProcessor.process((LocalSyncRequest) e));
+		this.eventProcessors = processorsBuilder.build();
+
+		ImmutableMap.Builder<Class<?>, RemoteEventProcessor<Object>> remoteProcessorsBuilder = ImmutableMap.builder();
+		remoteProcessorsBuilder.put(
+			DtoLedgerHeaderAndProof.class,
+			(node, event) -> syncRequestProcessor.process(node, (DtoLedgerHeaderAndProof) event)
+		);
+		remoteProcessorsBuilder.put(
+			DtoCommandsAndProof.class,
+			(node, event) -> syncResponseProcessor.process(node, (DtoCommandsAndProof) event)
+		);
+		remoteEventProcessors = remoteProcessorsBuilder.build();
 	}
 
 	public void start() {
@@ -89,18 +103,21 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 			this.epochManager.processGetEpochRequest((GetEpochRequest) message);
 		} else if (message instanceof GetEpochResponse) {
 			this.epochManager.processGetEpochResponse((GetEpochResponse) message);
-		} else if (message instanceof EpochsLedgerUpdate) {
-			this.epochManager.processLedgerUpdate((EpochsLedgerUpdate) message);
-			this.epochsLocalSyncServiceProcessor.processLedgerUpdate((EpochsLedgerUpdate) message);
-		} else if (message instanceof LocalSyncRequest) {
-			this.localSyncRequestEventProcessor.process((LocalSyncRequest) message);
 		} else {
-			RemoteEventProcessor<Object> processor = remoteEventProcessors.get(message.getClass());
-			if (processor == null) {
-				throw new IllegalArgumentException("Unknown message type: " + message.getClass().getName());
+
+			EventProcessor<Object> processor = eventProcessors.get(message.getClass());
+			if (processor != null) {
+				processor.process(message);
+				return;
 			}
 
-			processor.process(origin, message);
+			RemoteEventProcessor<Object> remoteEventProcessor = remoteEventProcessors.get(message.getClass());
+			if (remoteEventProcessor != null) {
+				remoteEventProcessor.process(origin, message);
+				return;
+			}
+
+			throw new IllegalArgumentException("Unknown message type: " + message.getClass().getName());
 		}
 	}
 }

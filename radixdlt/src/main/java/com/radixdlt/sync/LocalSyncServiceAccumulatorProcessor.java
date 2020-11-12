@@ -40,7 +40,7 @@ import org.apache.logging.log4j.Logger;
  * Thread-safety must be handled by caller.
  */
 @NotThreadSafe
-public final class LocalSyncServiceAccumulatorProcessor implements LocalSyncServiceProcessor, LedgerUpdateProcessor<LedgerUpdate> {
+public final class LocalSyncServiceAccumulatorProcessor implements LocalSyncServiceProcessor {
 	public static final class SyncInProgress {
 		private final VerifiedLedgerHeaderAndProof targetHeader;
 		private final ImmutableList<BFTNode> targetNodes;
@@ -91,7 +91,6 @@ public final class LocalSyncServiceAccumulatorProcessor implements LocalSyncServ
 		this.targetHeader = current;
 	}
 
-	@Override
 	public void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
 		VerifiedLedgerHeaderAndProof updatedHeader = ledgerUpdate.getTail();
 		if (accComparator.compare(updatedHeader.getAccumulatorState(), this.currentHeader.getAccumulatorState()) > 0) {

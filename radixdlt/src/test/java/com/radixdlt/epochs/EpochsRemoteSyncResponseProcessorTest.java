@@ -75,7 +75,7 @@ public class EpochsRemoteSyncResponseProcessorTest {
 	public void when_process_ledger_update_with_no_epoch_change__then_should_do_nothing() {
 		EpochsLedgerUpdate update = mock(EpochsLedgerUpdate.class);
 		when(update.getEpochChange()).thenReturn(Optional.empty());
-		this.responseProcessor.processLedgerUpdate(update);
+		this.responseProcessor.epochsLedgerUpdateEventProcessor().process(update);
 
 		verify(localSyncRequestSender, never()).dispatch(any());
 		verify(initialVerifier, never()).process(any(), any());
@@ -112,7 +112,7 @@ public class EpochsRemoteSyncResponseProcessorTest {
 		when(epochChange.getProof()).thenReturn(mock(VerifiedLedgerHeaderAndProof.class));
 		when(epochChange.getBFTConfiguration()).thenReturn(mock(BFTConfiguration.class));
 		when(update.getEpochChange()).thenReturn(Optional.of(epochChange));
-		this.responseProcessor.processLedgerUpdate(update);
+		this.responseProcessor.epochsLedgerUpdateEventProcessor().process(update);
 		DtoCommandsAndProof dtoCommandsAndProof = mock(DtoCommandsAndProof.class);
 		DtoLedgerHeaderAndProof tail = mock(DtoLedgerHeaderAndProof.class);
 		LedgerHeader ledgerHeader = mock(LedgerHeader.class);

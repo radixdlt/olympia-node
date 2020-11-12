@@ -42,7 +42,7 @@ import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.environment.Synchronous;
+import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.deterministic.network.ControlledSender;
 import com.radixdlt.epochs.EpochChangeManager.EpochsLedgerUpdateSender;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork.DeterministicSender;
@@ -69,7 +69,7 @@ public class DeterministicMessageSenderModule extends AbstractModule {
 		bind(SyncEpochsRPCSender.class).to(DeterministicSender.class);
 
 		// TODO: Remove multibind?
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<LocalSyncRequest>>() { }, Synchronous.class);
+		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<LocalSyncRequest>>() { }, ProcessOnDispatch.class);
 		Multibinder.newSetBinder(binder(), VertexStoreEventSender.class).addBinding().to(DeterministicSender.class);
 		Multibinder.newSetBinder(binder(), EpochsLedgerUpdateSender.class).addBinding().to(DeterministicSender.class);
 
@@ -80,33 +80,33 @@ public class DeterministicMessageSenderModule extends AbstractModule {
 	}
 
 	@ProvidesIntoSet
-	@Synchronous
+	@ProcessOnDispatch
 	EventProcessor<Timeout> timeoutEventProcessor(DeterministicEpochInfo processor) {
 		return processor.timeoutEventProcessor();
 	}
 
 	@ProvidesIntoSet
-	@Synchronous
+	@ProcessOnDispatch
 	EventProcessor<EpochView> epochViewEventProcessor(DeterministicEpochInfo processor) {
 		return processor.epochViewEventProcessor();
 	}
 
 	@Provides
 	EventDispatcher<Timeout> timeoutEventDispatcher(
-		@Synchronous Set<EventProcessor<Timeout>> processors
+		@ProcessOnDispatch Set<EventProcessor<Timeout>> processors
 	) {
 		return timeout -> processors.forEach(e -> e.process(timeout));
 	}
 
 	@Provides
 	EventDispatcher<EpochView> epochViewEventDispatcher(
-		@Synchronous Set<EventProcessor<EpochView>> processors
+		@ProcessOnDispatch Set<EventProcessor<EpochView>> processors
 	) {
 		return epochView -> processors.forEach(e -> e.process(epochView));
 	}
 
 	@ProvidesIntoSet
-	@Synchronous
+	@ProcessOnDispatch
 	EventProcessor<LocalSyncRequest> controlledSender(ControlledSender controlledSender) {
 		return controlledSender::dispatch;
 	}

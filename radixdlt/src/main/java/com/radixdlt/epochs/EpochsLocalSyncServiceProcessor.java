@@ -25,7 +25,6 @@ import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
-import com.radixdlt.ledger.LedgerUpdateProcessor;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
@@ -44,7 +43,7 @@ import org.apache.logging.log4j.Logger;
  * Manages the syncing service across epochs
  */
 @NotThreadSafe
-public class EpochsLocalSyncServiceProcessor implements LocalSyncServiceProcessor, LedgerUpdateProcessor<EpochsLedgerUpdate> {
+public class EpochsLocalSyncServiceProcessor implements LocalSyncServiceProcessor {
 	private static final Logger log = LogManager.getLogger();
 
 	private final Function<BFTConfiguration, LocalSyncServiceAccumulatorProcessor> localSyncFactory;
@@ -74,8 +73,7 @@ public class EpochsLocalSyncServiceProcessor implements LocalSyncServiceProcesso
 		this.requestDispatcher = Objects.requireNonNull(requestDispatcher);
 	}
 
-	@Override
-	public void processLedgerUpdate(EpochsLedgerUpdate ledgerUpdate) {
+	private void processLedgerUpdate(EpochsLedgerUpdate ledgerUpdate) {
 		Optional<EpochChange> maybeEpochChange = ledgerUpdate.getEpochChange();
 		if (maybeEpochChange.isPresent()) {
 			final EpochChange epochChange = maybeEpochChange.get();
@@ -95,6 +93,10 @@ public class EpochsLocalSyncServiceProcessor implements LocalSyncServiceProcesso
 			this.currentHeader = ledgerUpdate.getTail();
 			this.localSyncServiceProcessor.processLedgerUpdate(ledgerUpdate);
 		}
+	}
+
+	public EventProcessor<EpochsLedgerUpdate> epochsLedgerUpdateEventProcessor() {
+		return this::processLedgerUpdate;
 	}
 
 	public EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor() {

@@ -136,7 +136,7 @@ public class EpochsLocalSyncServiceProcessorTest {
 		when(configuration.getGenesisHeader()).thenReturn(genesisHeader);
 		when(epochChange.getBFTConfiguration()).thenReturn(configuration);
 		when(ledgerUpdate.getEpochChange()).thenReturn(Optional.of(epochChange));
-		processor.processLedgerUpdate(ledgerUpdate);
+		processor.epochsLedgerUpdateEventProcessor().process(ledgerUpdate);
 		LocalSyncRequest request = mock(LocalSyncRequest.class);
 		VerifiedLedgerHeaderAndProof header = mock(VerifiedLedgerHeaderAndProof.class);
 		when(header.getAccumulatorState()).thenReturn(accumulatorState);
@@ -166,7 +166,7 @@ public class EpochsLocalSyncServiceProcessorTest {
 		when(tail.getAccumulatorState()).thenReturn(accumulatorState);
 		when(ledgerUpdate.getTail()).thenReturn(tail);
 		when(ledgerUpdate.getEpochChange()).thenReturn(Optional.empty());
-		processor.processLedgerUpdate(ledgerUpdate);
+		processor.epochsLedgerUpdateEventProcessor().process(ledgerUpdate);
 
 		LocalSyncRequest request = mock(LocalSyncRequest.class);
 		VerifiedLedgerHeaderAndProof header = mock(VerifiedLedgerHeaderAndProof.class);

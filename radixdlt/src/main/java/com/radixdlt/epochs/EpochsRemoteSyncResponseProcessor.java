@@ -24,10 +24,10 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
-import com.radixdlt.ledger.LedgerUpdateProcessor;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier;
@@ -43,7 +43,7 @@ import org.apache.logging.log4j.Logger;
  * in mind.
  */
 @NotThreadSafe
-public final class EpochsRemoteSyncResponseProcessor implements LedgerUpdateProcessor<EpochsLedgerUpdate> {
+public final class EpochsRemoteSyncResponseProcessor {
 	private static final Logger log = LogManager.getLogger();
 
 	private final Function<BFTConfiguration, RemoteSyncResponseValidatorSetVerifier> verifierFactory;
@@ -68,8 +68,7 @@ public final class EpochsRemoteSyncResponseProcessor implements LedgerUpdateProc
 		this.verifierFactory = Objects.requireNonNull(verifierFactory);
 	}
 
-	@Override
-	public void processLedgerUpdate(EpochsLedgerUpdate ledgerUpdate) {
+	private void processLedgerUpdate(EpochsLedgerUpdate ledgerUpdate) {
 		Optional<EpochChange> maybeEpochChange = ledgerUpdate.getEpochChange();
 		if (maybeEpochChange.isPresent()) {
 			final EpochChange epochChange = maybeEpochChange.get();
@@ -77,6 +76,10 @@ public final class EpochsRemoteSyncResponseProcessor implements LedgerUpdateProc
 			this.currentEpochProof = ledgerUpdate.getTail();
 			this.currentVerifier = verifierFactory.apply(epochChange.getBFTConfiguration());
 		}
+	}
+
+	public EventProcessor<EpochsLedgerUpdate> epochsLedgerUpdateEventProcessor() {
+		return this::processLedgerUpdate;
 	}
 
 	public RemoteEventProcessor<DtoCommandsAndProof> syncResponseProcessor() {
