@@ -72,7 +72,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 		os.registerParticle(SystemParticle.class, ParticleDefinition.<SystemParticle>builder()
 			.addressMapper(p -> ImmutableSet.of())
 			.staticValidation(this::staticCheck)
-			.virtualizeSpin(p -> p.getView() == 0 && p.getEpoch() == 1 && p.getTimestamp() == 0 ? Spin.UP : null)
+			.virtualizeSpin(p -> p.getView() == 0 && p.getEpoch() == 0 && p.getTimestamp() == 0 ? Spin.UP : null)
 			.build()
 		);
 
