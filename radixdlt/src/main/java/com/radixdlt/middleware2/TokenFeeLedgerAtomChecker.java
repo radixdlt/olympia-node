@@ -28,6 +28,7 @@ import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.engine.AtomChecker;
 import com.radixdlt.fees.FeeTable;
+import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.middleware.ParticleGroup;
@@ -46,7 +47,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.inject.Inject;
-import javax.inject.Named;
 
 /**
  * Checks that metadata in the ledger atom is well formed and follows what is
@@ -62,7 +62,7 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 	@Inject
 	public TokenFeeLedgerAtomChecker(
 		FeeTable feeTable,
-		@Named("feeToken") RRI feeTokenRri,
+		@NativeToken RRI feeTokenRri,
 		Serialization serialization
 	) {
 		this.feeTable = feeTable;

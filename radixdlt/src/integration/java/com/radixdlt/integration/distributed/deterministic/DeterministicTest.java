@@ -74,16 +74,12 @@ import java.util.function.LongFunction;
 import java.util.function.Predicate;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * A deterministic test where each event that occurs in the network
  * is emitted and processed synchronously by the caller.
  */
 public final class DeterministicTest {
-	private static final Logger log = LogManager.getLogger();
-
 	private final DeterministicNodes nodes;
 	private final DeterministicNetwork network;
 

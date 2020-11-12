@@ -17,8 +17,6 @@
 
 package com.radixdlt;
 
-import javax.inject.Named;
-
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
@@ -32,6 +30,7 @@ import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.engine.AtomChecker;
 import com.radixdlt.fees.FeeEntry;
 import com.radixdlt.fees.FeeTable;
+import com.radixdlt.fees.NativeToken;
 import com.radixdlt.fees.PerBytesFeeEntry;
 import com.radixdlt.fees.PerParticleFeeEntry;
 import com.radixdlt.identifiers.RRI;
@@ -52,7 +51,7 @@ public class TokenFeeModule extends AbstractModule {
 
 	@Provides
 	@Singleton // Don't want to recompute on each use
-	@Named("feeToken")
+	@NativeToken
 	private RRI feeTokenRri(Universe universe) {
 		final String tokenName = TokenDefinitionUtils.getNativeTokenShortCode();
 		ImmutableList<RRI> rris = universe.getGenesis().stream()

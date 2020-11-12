@@ -39,6 +39,7 @@ import com.radixdlt.PersistenceModule;
 import com.radixdlt.RadixEngineModule;
 import com.radixdlt.RadixEngineRxModule;
 import com.radixdlt.RadixEngineStoreModule;
+import com.radixdlt.RadixEngineValidatorComputersModule;
 import com.radixdlt.SyncRunnerModule;
 import com.radixdlt.SyncServiceModule;
 import com.radixdlt.SyncMempoolServiceModule;
@@ -58,7 +59,6 @@ import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.middleware2.InfoSupplier;
 import com.radixdlt.SystemInfoModule;
 import com.radixdlt.NetworkModule;
-import com.radixdlt.NoFeeModule;
 import com.radixdlt.network.addressbook.AddressBookModule;
 import com.radixdlt.network.hostip.HostIp;
 import com.radixdlt.network.hostip.HostIpModule;
@@ -67,6 +67,7 @@ import com.radixdlt.network.transport.tcp.TCPTransportModule;
 import com.radixdlt.network.transport.udp.UDPTransportModule;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.statecomputer.EpochCeilingView;
+import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.sync.SyncPatienceMillis;
 import com.radixdlt.universe.Universe;
@@ -86,6 +87,7 @@ public class GlobalInjector {
 				bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(200);
 				bind(Integer.class).annotatedWith(BFTSyncPatienceMillis.class).toInstance(200);
 				bind(Integer.class).annotatedWith(MinValidators.class).toInstance(1);
+				bind(Integer.class).annotatedWith(MaxValidators.class).toInstance(100);
 			}
 
 			@Provides
@@ -130,19 +132,6 @@ public class GlobalInjector {
 		final int fixedNodeCount = properties.get("consensus.fixed_node_count", 1);
 		final int mempoolMaxSize = properties.get("mempool.maxSize", 1000);
 
-		final Module feeModule;
-		final String feeModuleName = properties.get("debug.fee_module", "token");
-		switch (feeModuleName.toLowerCase()) {
-		case "token":
-			feeModule = new TokenFeeModule();
-			break;
-		case "none":
-			feeModule = new NoFeeModule();
-			break;
-		default:
-			throw new IllegalStateException("No such fee module: " + feeModuleName);
-		}
-
 		injector = Guice.createInjector(
 			// System (e.g. time, random)
 			new SystemModule(),
@@ -176,6 +165,7 @@ public class GlobalInjector {
 
 			// State Computer
 			new RadixEngineModule(),
+			new RadixEngineValidatorComputersModule(),
 			new RadixEngineRxModule(),
 			new RadixEngineStoreModule(),
 
@@ -183,7 +173,7 @@ public class GlobalInjector {
 			new CheckpointModule(fixedNodeCount),
 
 			// Fees
-			feeModule,
+			new TokenFeeModule(),
 
 			new PersistenceModule(),
 
