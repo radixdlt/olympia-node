@@ -31,6 +31,7 @@ import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
+import com.radixdlt.epochs.EpochsLocalSyncServiceProcessor;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.sync.LocalSyncRequest;
@@ -46,16 +47,19 @@ import javax.inject.Inject;
 public final class DeterministicEpochsConsensusProcessor implements DeterministicMessageProcessor {
 	private final EpochManager epochManager;
 	private final EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor;
+	private final EpochsLocalSyncServiceProcessor epochsLocalSyncServiceProcessor;
 	private final Map<Class<?>, RemoteEventProcessor<Object>> remoteEventProcessors;
 
 	@Inject
 	public DeterministicEpochsConsensusProcessor(
 		EpochManager epochManager,
+		EpochsLocalSyncServiceProcessor epochsLocalSyncServiceProcessor,
 		EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor,
 		RemoteEventProcessor<DtoLedgerHeaderAndProof> syncRequestProcessor,
 		RemoteEventProcessor<DtoCommandsAndProof> syncResponseProcessor
 	) {
 		this.epochManager = Objects.requireNonNull(epochManager);
+		this.epochsLocalSyncServiceProcessor = Objects.requireNonNull(epochsLocalSyncServiceProcessor);
 		this.localSyncRequestEventProcessor = Objects.requireNonNull(localSyncRequestEventProcessor);
 		ImmutableMap.Builder<Class<?>, RemoteEventProcessor<Object>> processorsBuilder = ImmutableMap.builder();
 		processorsBuilder.put(DtoLedgerHeaderAndProof.class, (node, event) -> syncRequestProcessor.process(node, (DtoLedgerHeaderAndProof) event));
@@ -87,6 +91,7 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 			this.epochManager.processGetEpochResponse((GetEpochResponse) message);
 		} else if (message instanceof EpochsLedgerUpdate) {
 			this.epochManager.processLedgerUpdate((EpochsLedgerUpdate) message);
+			this.epochsLocalSyncServiceProcessor.processLedgerUpdate((EpochsLedgerUpdate) message);
 		} else if (message instanceof LocalSyncRequest) {
 			this.localSyncRequestEventProcessor.process((LocalSyncRequest) message);
 		} else {
