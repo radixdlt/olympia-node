@@ -56,7 +56,7 @@ import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.deterministic.DeterministicEpochInfo;
 import com.radixdlt.integration.distributed.MockedMempoolModule;
 import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
-import com.radixdlt.environment.deterministic.DeterministicMessageSenderModule;
+import com.radixdlt.environment.deterministic.DeterministicEnvironmentModule;
 import com.radixdlt.environment.deterministic.ControlledSenderFactory;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
@@ -186,7 +186,7 @@ public class AllNodesDieAndRecoverTest {
 				}
 			},
 
-			new DeterministicMessageSenderModule(),
+			new DeterministicEnvironmentModule(),
 
 			// Consensus
 			new CryptoModule(),

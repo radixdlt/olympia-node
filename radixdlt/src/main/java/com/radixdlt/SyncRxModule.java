@@ -18,18 +18,15 @@
 package com.radixdlt;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.environment.ProcessOnDispatch;
+import com.google.inject.Provides;
+import com.radixdlt.environment.rx.RxEnvironment;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncTimeoutScheduler;
-import com.radixdlt.sync.SyncServiceRunner.LocalSyncRequestsRx;
 import com.radixdlt.sync.SyncServiceRunner.SyncTimeoutsRx;
 import com.radixdlt.utils.ScheduledSenderToRx;
-import com.radixdlt.utils.SenderToRx;
 import com.radixdlt.utils.ThreadFactories;
+import io.reactivex.rxjava3.core.Observable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -39,14 +36,14 @@ import java.util.concurrent.ScheduledExecutorService;
 public class SyncRxModule extends AbstractModule {
 	@Override
 	protected void configure() {
-		SenderToRx<LocalSyncRequest, LocalSyncRequest> syncRequests = new SenderToRx<>(c -> c);
-		bind(LocalSyncRequestsRx.class).toInstance(syncRequests::rx);
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<LocalSyncRequest>>() { }, ProcessOnDispatch.class).addBinding()
-			.toInstance(syncRequests::send);
-
 		ScheduledExecutorService ses = Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("SyncTimeoutSender"));
 		ScheduledSenderToRx<SyncInProgress> syncsInProgress = new ScheduledSenderToRx<>(ses);
 		bind(SyncTimeoutScheduler.class).toInstance(syncsInProgress::scheduleSend);
 		bind(SyncTimeoutsRx.class).toInstance(syncsInProgress::messages);
+	}
+
+	@Provides
+	Observable<LocalSyncRequest> syncRequests(RxEnvironment rxEnvironment) {
+		return rxEnvironment.getObservable(LocalSyncRequest.class);
 	}
 }

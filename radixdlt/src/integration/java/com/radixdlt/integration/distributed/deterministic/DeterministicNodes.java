@@ -30,7 +30,7 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.DeterministicMessageProcessor;
-import com.radixdlt.environment.deterministic.DeterministicMessageSenderModule;
+import com.radixdlt.environment.deterministic.DeterministicEnvironmentModule;
 import com.radixdlt.environment.deterministic.ControlledSenderFactory;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.schedulers.Timed;
@@ -73,7 +73,7 @@ public final class DeterministicNodes {
 					bind(ControlledSenderFactory.class).toInstance(senderFactory);
 				}
 			},
-			new DeterministicMessageSenderModule(),
+			new DeterministicEnvironmentModule(),
 			baseModule
 		);
 		if (overrideModule != null) {

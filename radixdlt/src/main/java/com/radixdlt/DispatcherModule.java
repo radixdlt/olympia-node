@@ -21,6 +21,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
+import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
@@ -29,6 +30,9 @@ import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Manages dispatching of internal events
+ */
 public class DispatcherModule extends AbstractModule {
 	private static final Logger logger = LogManager.getLogger();
 	@Override
@@ -38,12 +42,15 @@ public class DispatcherModule extends AbstractModule {
 
 	@Provides
 	private EventDispatcher<LocalSyncRequest> localSyncRequestEventDispatcher(
-		@ProcessOnDispatch Set<EventProcessor<LocalSyncRequest>> syncProcessors
+		@ProcessOnDispatch Set<EventProcessor<LocalSyncRequest>> syncProcessors,
+		Environment environment
 	) {
+		EventDispatcher<LocalSyncRequest> envDispatcher = environment.getDispatcher(LocalSyncRequest.class);
 		return req -> {
 			Class<?> callingClass = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE).getCallerClass();
 			logger.info("LOCAL_SYNC_REQUEST dispatched by {}", callingClass);
 			syncProcessors.forEach(e -> e.process(req));
+			envDispatcher.dispatch(req);
 		};
 	}
 }

@@ -49,10 +49,6 @@ import org.apache.logging.log4j.Logger;
 public final class SyncServiceRunner<T extends LedgerUpdate> implements ModuleRunner {
 	private static final Logger log = LogManager.getLogger();
 
-	public interface LocalSyncRequestsRx {
-		Observable<LocalSyncRequest> localSyncRequests();
-	}
-
 	public interface SyncTimeoutsRx {
 		Observable<SyncInProgress> timeouts();
 	}
@@ -66,7 +62,7 @@ public final class SyncServiceRunner<T extends LedgerUpdate> implements ModuleRu
 	private final RemoteEventProcessor<DtoCommandsAndProof> responseProcessor;
 
 	private final SyncTimeoutsRx syncTimeoutsRx;
-	private final LocalSyncRequestsRx localSyncRequestsRx;
+	private final Observable<LocalSyncRequest> localSyncRequests;
 	private final Observable<T> ledgerUpdates;
 	private final Set<EventProcessor<T>> ledgerUpdateProcessors;
 
@@ -77,7 +73,7 @@ public final class SyncServiceRunner<T extends LedgerUpdate> implements ModuleRu
 
 	@Inject
 	public SyncServiceRunner(
-		LocalSyncRequestsRx localSyncRequestsRx,
+		Observable<LocalSyncRequest> localSyncRequests,
 		EventProcessor<LocalSyncRequest> syncRequestEventProcessor,
 		SyncTimeoutsRx syncTimeoutsRx,
 		LocalSyncServiceProcessor localSyncServiceProcessor,
@@ -88,14 +84,15 @@ public final class SyncServiceRunner<T extends LedgerUpdate> implements ModuleRu
 		Observable<RemoteEvent<DtoCommandsAndProof>> remoteSyncResponses,
 		RemoteEventProcessor<DtoCommandsAndProof> responseProcessor
 	) {
+		this.localSyncRequests = Objects.requireNonNull(localSyncRequests);
+		this.syncRequestEventProcessor = Objects.requireNonNull(syncRequestEventProcessor);
+
 		this.remoteSyncRequests = Objects.requireNonNull(remoteSyncRequests);
 		this.remoteSyncResponses = Objects.requireNonNull(remoteSyncResponses);
 
-		this.localSyncRequestsRx = Objects.requireNonNull(localSyncRequestsRx);
 		this.syncTimeoutsRx = Objects.requireNonNull(syncTimeoutsRx);
 		this.ledgerUpdates = Objects.requireNonNull(ledgerUpdates);
 		this.localSyncServiceProcessor = Objects.requireNonNull(localSyncServiceProcessor);
-		this.syncRequestEventProcessor = Objects.requireNonNull(syncRequestEventProcessor);
 		this.singleThreadScheduler = Schedulers.from(this.executorService);
 		this.remoteSyncServiceProcessor = Objects.requireNonNull(remoteSyncServiceProcessor);
 		this.responseProcessor = Objects.requireNonNull(responseProcessor);
@@ -120,7 +117,7 @@ public final class SyncServiceRunner<T extends LedgerUpdate> implements ModuleRu
 				.observeOn(singleThreadScheduler)
 				.subscribe(e -> responseProcessor.process(e.getOrigin(), e.getEvent()));
 
-			Disposable d2 = localSyncRequestsRx.localSyncRequests()
+			Disposable d2 = localSyncRequests
 				.observeOn(singleThreadScheduler)
 				.subscribe(syncRequestEventProcessor::process);
 

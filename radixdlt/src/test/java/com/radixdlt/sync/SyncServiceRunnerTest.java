@@ -24,7 +24,6 @@ import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.sync.SyncServiceRunner.LocalSyncRequestsRx;
 import com.radixdlt.sync.SyncServiceRunner.SyncTimeoutsRx;
 
 import io.reactivex.rxjava3.core.Observable;
@@ -46,7 +45,7 @@ import static org.mockito.Mockito.when;
 public class SyncServiceRunnerTest {
 
 	private SyncServiceRunner<LedgerUpdate> syncServiceRunner;
-	private LocalSyncRequestsRx localSyncRequestsRx;
+	private Subject<LocalSyncRequest> localSyncRequests;
 	private SyncTimeoutsRx syncTimeoutsRx;
 	private LocalSyncServiceProcessor syncServiceProcessor;
 	private RemoteEventProcessor<DtoLedgerHeaderAndProof> remoteSyncServiceProcessor;
@@ -60,12 +59,10 @@ public class SyncServiceRunnerTest {
 
 	@Before
 	public void setUp() {
-		this.localSyncRequestsRx = mock(LocalSyncRequestsRx.class);
-		when(localSyncRequestsRx.localSyncRequests()).thenReturn(Observable.never());
-
 		this.syncTimeoutsRx = mock(SyncTimeoutsRx.class);
 		when(syncTimeoutsRx.timeouts()).thenReturn(Observable.never());
 
+		this.localSyncRequests = PublishSubject.create();
 		this.remoteSyncRequests = PublishSubject.create();
 		this.remoteSyncResponses = PublishSubject.create();
 		this.versionUpdatesSubject = PublishSubject.create();
@@ -78,7 +75,7 @@ public class SyncServiceRunnerTest {
 		this.localSyncRequestEventProcessor = rmock(EventProcessor.class);
 
 		syncServiceRunner = new SyncServiceRunner<>(
-			localSyncRequestsRx,
+			localSyncRequests,
 			localSyncRequestEventProcessor,
 			syncTimeoutsRx,
 			syncServiceProcessor,

@@ -40,6 +40,7 @@ import com.radixdlt.PersistenceModule;
 import com.radixdlt.RadixEngineModule;
 import com.radixdlt.RadixEngineRxModule;
 import com.radixdlt.RadixEngineStoreModule;
+import com.radixdlt.RxEnvironmentModule;
 import com.radixdlt.SyncRunnerModule;
 import com.radixdlt.SyncServiceModule;
 import com.radixdlt.SyncMempoolServiceModule;
@@ -147,6 +148,8 @@ public class GlobalInjector {
 		injector = Guice.createInjector(
 			// System (e.g. time, random)
 			new SystemModule(),
+
+			new RxEnvironmentModule(),
 
 			new DispatcherModule(),
 

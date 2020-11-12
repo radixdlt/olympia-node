@@ -41,6 +41,7 @@ import com.radixdlt.NoFeeModule;
 import com.radixdlt.LedgerLocalMempoolModule;
 import com.radixdlt.RadixEngineModule;
 import com.radixdlt.RadixEngineRxModule;
+import com.radixdlt.RxEnvironmentModule;
 import com.radixdlt.SyncServiceModule;
 import com.radixdlt.SyncRxModule;
 import com.radixdlt.SyncRunnerModule;
@@ -415,6 +416,7 @@ public class SimulationTest {
 			modules.add(new SystemInfoRxModule());
 			modules.add(new LedgerRxModule());
 			modules.add(new DispatcherModule());
+			modules.add(new RxEnvironmentModule());
 
 			if (ledgerType == LedgerType.MOCKED_LEDGER) {
 				modules.add(new MockedBFTConfigurationModule());

@@ -39,6 +39,7 @@ import com.radixdlt.consensus.liveness.ProceedToViewSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
+import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
@@ -56,7 +57,7 @@ import java.util.Set;
  * Module that supplies network senders, as well as some other assorted
  * objects used to connect modules in the system.
  */
-public class DeterministicMessageSenderModule extends AbstractModule {
+public class DeterministicEnvironmentModule extends AbstractModule {
 	@Override
 	protected void configure() {
 
@@ -105,10 +106,10 @@ public class DeterministicMessageSenderModule extends AbstractModule {
 		return epochView -> processors.forEach(e -> e.process(epochView));
 	}
 
-	@ProvidesIntoSet
-	@ProcessOnDispatch
-	EventProcessor<LocalSyncRequest> controlledSender(ControlledSender controlledSender) {
-		return controlledSender::dispatch;
+	@Provides
+	@Singleton
+	Environment controlledEnvironment(ControlledSender controlledSender) {
+		return controlledSender::dispatcher;
 	}
 
 	@Provides

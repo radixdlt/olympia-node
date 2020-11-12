@@ -62,7 +62,7 @@ import com.radixdlt.mempool.EmptyMempool;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
-import com.radixdlt.environment.deterministic.DeterministicMessageSenderModule;
+import com.radixdlt.environment.deterministic.DeterministicEnvironmentModule;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.ControlledSenderFactory;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
@@ -173,7 +173,7 @@ public class RecoveryTest {
 
 			new MockedCheckpointModule(BFTValidatorSet.from(Stream.of(BFTValidator.from(self, UInt256.ONE)))),
 
-			new DeterministicMessageSenderModule(),
+			new DeterministicEnvironmentModule(),
 
 			new DispatcherModule(),
 

@@ -24,10 +24,10 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
-import com.radixdlt.sync.LocalSyncRequest;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
@@ -148,8 +148,8 @@ public final class ControlledSender implements DeterministicSender {
 		};
 	}
 
-	public void dispatch(LocalSyncRequest localSyncRequest) {
-		handleMessage(new ControlledMessage(self, this.localChannel, localSyncRequest, arrivalTime(this.localChannel)));
+	public <T> EventDispatcher<T> dispatcher(Class<T> eventClass) {
+		return e -> handleMessage(new ControlledMessage(self, this.localChannel, e, arrivalTime(this.localChannel)));
 	}
 
 	public <T> RemoteEventDispatcher<T> remoteDispatcher(Class<T> eventClass) {
