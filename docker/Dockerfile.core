@@ -2,7 +2,7 @@ FROM ubuntu:20.04
 MAINTAINER radixdlt <devops@radixdlt.com>
 
 RUN apt-get -y update && \
-    apt-get -y --no-install-recommends install net-tools gettext-base curl tcpdump strace attr software-properties-common openjdk-11-jdk && \
+    apt-get -y --no-install-recommends install net-tools iptables gettext-base curl tcpdump strace attr software-properties-common openjdk-11-jdk && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /var/tmp/* /tmp/*
 

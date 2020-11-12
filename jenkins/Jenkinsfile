@@ -1,0 +1,108 @@
+#!/usr/bin/env groovy
+
+/*
+ * (C) Copyright 2020 Radix DLT Ltd
+ *
+ * Radix DLT Ltd licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License.  You may obtain a copy of the
+ * License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied.  See the License for the specific
+ * language governing permissions and limitations under the License.
+ */
+
+@Library(value = 'jenkins-lib@develop', changelog = false) _
+
+pipeline {
+    tools {
+        jdk 'open-jdk-11'
+    }
+    options {
+        timeout(time: 2, unit: 'HOURS')
+    }
+    agent {
+        label 'master'
+    }
+    stages {
+
+        stage('Checkout RadixCore') {
+            steps {
+                sendNotifications "STARTED"
+                script {
+                    dir('RadixCore') {
+                        deleteDir()
+                    }
+                    checkoutHelpers.doCheckout("RadixCore")
+                }
+            }
+        }
+        stage('Check tag and branch have same commit') {
+            steps {
+                script {
+                    dir('RadixCore') {
+                        tag_commit = sh(script: '''
+                                      git show-ref $(git describe --abbrev=0 --tags) | grep 'refs/tags/' | cut -d" " -f1
+                                    ''', returnStdout: true).trim()
+                        branch_commit = sh(script: '''
+                                        git show-ref $(git rev-parse --abbrev-ref HEAD | sed 's/heads\\///g') | grep 'refs/heads' | cut -d " " -f1
+                                        ''', returnStdout: true).trim()
+
+                        echo "Branch commit = ${branch_commit}"
+                        echo "Tag commit = ${tag_commit}"
+
+                        if (tag_commit == branch_commit) {
+                            env.check = "TAG_CREATED"
+                        } else {
+                            env.check = "TAG_NOT_FOUND"
+                        }
+                        echo "Tag and Branch check resulted in ${env.check}"
+
+                    }
+                }
+            }
+        }
+
+        stage('Build and push core image') {
+            when {
+                expression {
+                    env.check == "TAG_CREATED"
+                }
+            }
+            steps {
+                dir('RadixCore') {
+                    script {
+                        tag = sh(
+                                script: '''
+                                    git describe --abbrev=0 --tags
+                                ''', returnStdout: true
+                        ).trim()
+                        dockerHelpers.manualPushToDockerHub("radixdlt-core", tag)
+                    }
+                }
+            }
+
+        }
+        stage('Downstream jobs') {
+            when {
+                expression {
+                    env.check == "TAG_NOT_FOUND"
+                }
+            }
+            steps {
+                build job: 'Release-Branch/run-all-tests'
+            }
+
+        }
+    }
+    post {
+        always {
+            sendNotifications currentBuild.result
+        }
+    }
+}
