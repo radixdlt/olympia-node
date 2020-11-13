@@ -18,12 +18,9 @@
 package com.radixdlt.integration.distributed.deterministic.tests.consensus;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.bft.BFTUpdate;
-import com.radixdlt.consensus.epoch.EpochView;
-import com.radixdlt.environment.EventDispatcher;
 import java.util.LinkedList;
 import java.util.Map;
 
@@ -72,12 +69,6 @@ public class DifferentTimestampsCauseTimeoutTest {
 		processingSequence.add(Pair.of(ChannelId.of(2, 2), BFTUpdate.class));
 
 		DeterministicTest.builder()
-			.overrideWithIncorrectModule(new AbstractModule() {
-				// TODO: Clean up and Remove this
-				public void configure() {
-					bind(new TypeLiteral<EventDispatcher<EpochView>>() { }).toInstance(epochView -> { });
-				}
-			})
 			.numNodes(numNodes)
 			.messageSelector(sequenceSelector(processingSequence))
 			.messageMutator(mutateProposalsBy(0))
@@ -107,9 +98,6 @@ public class DifferentTimestampsCauseTimeoutTest {
 				protected void configure() {
 					bind(HashVerifier.class).toInstance((pubKey, hash, sig) -> true);
 					bind(HashSigner.class).toInstance(h -> new ECDSASignature());
-
-					// TODO: Clean up and Remove this
-					bind(new TypeLiteral<EventDispatcher<EpochView>>() { }).toInstance(epochView -> { });
 				}
 			})
 			.numNodes(numNodes)

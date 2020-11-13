@@ -19,10 +19,8 @@ package com.radixdlt.environment.deterministic;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.consensus.ConsensusEvent;
-import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTUpdate;
-import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.epoch.EpochManager;
@@ -59,8 +57,6 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 		@ProcessWithSyncRunner Set<EventProcessor<EpochsLedgerUpdate>> epochsLedgerUpdateProcessors,
 		EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor,
 		EventProcessor<LocalGetVerticesRequest> localGetVerticesRequestEventProcessor,
-		EventProcessor<EpochView> epochViewEventProcessor,
-		EventProcessor<Timeout> timeoutEventProcessor,
 		Set<EventProcessor<BFTUpdate>> bftUpdateProcessors,
 		RemoteEventProcessor<DtoLedgerHeaderAndProof> syncRequestProcessor,
 		RemoteEventProcessor<DtoCommandsAndProof> syncResponseProcessor
@@ -75,8 +71,6 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 		});
 		processorsBuilder.put(LocalSyncRequest.class, e -> localSyncRequestEventProcessor.process((LocalSyncRequest) e));
 		processorsBuilder.put(LocalGetVerticesRequest.class, e -> localGetVerticesRequestEventProcessor.process((LocalGetVerticesRequest) e));
-		processorsBuilder.put(EpochView.class, e -> epochViewEventProcessor.process((EpochView) e));
-		processorsBuilder.put(Timeout.class, e -> timeoutEventProcessor.process((Timeout) e));
 		processorsBuilder.put(BFTUpdate.class, e -> bftUpdateProcessors.forEach(p -> p.process((BFTUpdate) e)));
 		this.eventProcessors = processorsBuilder.build();
 

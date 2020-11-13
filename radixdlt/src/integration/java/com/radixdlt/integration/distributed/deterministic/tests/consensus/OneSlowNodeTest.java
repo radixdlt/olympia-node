@@ -18,13 +18,9 @@
 package com.radixdlt.integration.distributed.deterministic.tests.consensus;
 
 import com.google.common.collect.Lists;
-import com.google.inject.AbstractModule;
-import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTUpdate;
-import com.radixdlt.consensus.epoch.EpochView;
-import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.integration.distributed.deterministic.DeterministicTest;
 import com.radixdlt.environment.deterministic.network.ChannelId;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
@@ -89,12 +85,6 @@ public class OneSlowNodeTest {
 		processingSequence.add(Pair.of(ChannelId.of(0, 2), Vote.class));
 
 		DeterministicTest.builder()
-			.overrideWithIncorrectModule(new AbstractModule() {
-				// TODO: Clean up and Remove this
-				public void configure() {
-					bind(new TypeLiteral<EventDispatcher<EpochView>>() { }).toInstance(epochView -> { });
-				}
-			})
 			.numNodes(numNodes)
 			.messageSelector(sequenceSelector(processingSequence))
 			.messageMutator(delayMessagesForNode(0))

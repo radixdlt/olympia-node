@@ -194,7 +194,7 @@ public class GlobalInjector {
 			new PersistenceModule(),
 
 			// System Info
-			new SystemInfoModule(properties),
+			new SystemInfoModule(),
 			new SystemInfoRxModule(),
 
 			// Network

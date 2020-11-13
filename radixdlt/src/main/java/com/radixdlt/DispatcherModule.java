@@ -22,6 +22,7 @@ import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.Timeout;
+import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
@@ -44,8 +45,12 @@ public class DispatcherModule extends AbstractModule {
 	@Override
 	public void configure() {
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<LocalSyncRequest>>() { }, ProcessOnDispatch.class);
+		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<LocalSyncRequest>>() { });
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<Timeout>>() { }, ProcessOnDispatch.class);
+		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<Timeout>>() { });
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochView>>() { }, ProcessOnDispatch.class);
+		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochView>>() { });
+		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<BFTCommittedUpdate>>() { });
 	}
 
 	@Provides
@@ -77,25 +82,35 @@ public class DispatcherModule extends AbstractModule {
 	@Provides
 	private EventDispatcher<EpochView> viewEventDispatcher(
 		@ProcessOnDispatch Set<EventProcessor<EpochView>> processors,
+		Set<EventProcessor<EpochView>> asyncProcessors,
 		Environment environment
 	) {
-		EventDispatcher<EpochView> dispatcher = environment.getDispatcher(EpochView.class);
-		return epochView -> {
-			processors.forEach(e -> e.process(epochView));
-			dispatcher.dispatch(epochView);
-		};
+		if (asyncProcessors.isEmpty()) {
+			return epochView -> processors.forEach(e -> e.process(epochView));
+		} else {
+			EventDispatcher<EpochView> dispatcher = environment.getDispatcher(EpochView.class);
+			return epochView -> {
+				dispatcher.dispatch(epochView);
+				processors.forEach(e -> e.process(epochView));
+			};
+		}
 	}
 
 	@Provides
 	private EventDispatcher<Timeout> timeoutEventDispatcher(
 		@ProcessOnDispatch Set<EventProcessor<Timeout>> processors,
+		Set<EventProcessor<Timeout>> asyncProcessors,
 		Environment environment
 	) {
-		EventDispatcher<Timeout> dispatcher = environment.getDispatcher(Timeout.class);
-		return timeout -> {
-			logger.warn("LOCAL_TIMEOUT dispatched: {}", timeout);
-			processors.forEach(e -> e.process(timeout));
-			dispatcher.dispatch(timeout);
-		};
+		if (asyncProcessors.isEmpty()) {
+			return timeout -> processors.forEach(e -> e.process(timeout));
+		} else {
+			EventDispatcher<Timeout> dispatcher = environment.getDispatcher(Timeout.class);
+			return timeout -> {
+				logger.warn("LOCAL_TIMEOUT dispatched: {}", timeout);
+				processors.forEach(e -> e.process(timeout));
+				dispatcher.dispatch(timeout);
+			};
+		}
 	}
 }
