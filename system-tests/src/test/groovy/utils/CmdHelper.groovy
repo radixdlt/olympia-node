@@ -251,6 +251,7 @@ class CmdHelper {
     }
 
     static boolean testRunningOnDocker() {
-        return Optional.ofNullable(System.getenv("TEST_NETWORK")).isPresent()
+        def present = Optional.ofNullable(System.getenv("TEST_NETWORK")).isPresent()
+        return present
     }
 }

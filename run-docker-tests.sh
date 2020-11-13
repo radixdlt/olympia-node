@@ -21,7 +21,7 @@ docker create  --pid=host --privileged  \
       -e TEST_NETWORK=${test_executor} \
       --network ${test_executor} \
       --name=${test_executor} radix-system-test \
-      ./gradlew clean dockerSystemTests --refresh-dependencies  --tests "com.radixdlt.test.LatentNetworkTest"
+      ./gradlew clean dockerSystemTests --refresh-dependencies  --tests "com.radixdlt.test.SlowNodeTest"
 docker start -a "${test_executor}"
 docker cp $test_executor:src/system-tests .
 test_status=$(docker inspect $test_executor --format='{{.State.ExitCode}}')
