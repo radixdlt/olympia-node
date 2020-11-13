@@ -88,8 +88,7 @@ public class RadixEngineModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private CMAtomOS buildCMAtomOS(
-		@Named("magic") int magic,
-		@EpochCeilingView View epochCeilingView
+		@Named("magic") int magic
 	) {
 		final CMAtomOS os = new CMAtomOS(addr -> {
 			final int universeMagic = magic & 0xff;
@@ -102,7 +101,7 @@ public class RadixEngineModule extends AbstractModule {
 		os.load(new TokensConstraintScrypt());
 		os.load(new UniqueParticleConstraintScrypt());
 		os.load(new MessageParticleConstraintScrypt());
-		os.load(new SystemConstraintScrypt(epochCeilingView.number()));
+		os.load(new SystemConstraintScrypt());
 		return os;
 	}
 

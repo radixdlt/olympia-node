@@ -21,12 +21,13 @@ import java.util.Comparator;
 import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.engine.RadixEngineAtom;
+import com.radixdlt.engine.RadixEngine.RadixEngineBranch;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 
@@ -63,9 +64,30 @@ public final class ValidatorSetBuilder {
 	}
 
 	public BFTValidatorSet buildValidatorSet(
-		ImmutableSet<ECPublicKey> validators,
-		ImmutableMap<ECPublicKey, UInt256> stakedAmounts
+		RadixEngineBranch<? extends RadixEngineAtom> branch
 	) {
+		return buildValidatorSet(
+			branch.getComputedState(RadixEngineValidatorsComputer.class),
+			branch.getComputedState(RadixEngineStakeComputer.class)
+		);
+	}
+
+	public BFTValidatorSet buildValidatorSet(
+		RadixEngine<? extends RadixEngineAtom> engine
+	) {
+		return buildValidatorSet(
+			engine.getComputedState(RadixEngineValidatorsComputer.class),
+			engine.getComputedState(RadixEngineStakeComputer.class)
+		);
+	}
+
+	private BFTValidatorSet buildValidatorSet(
+		RadixEngineValidatorsComputer validatorsComputer,
+		RadixEngineStakeComputer stakeComputer
+	) {
+		final var validators = validatorsComputer.activeValidators();
+		final var stakedAmounts = stakeComputer.stakedAmounts(validators);
+
 		final var potentialValidators = validators.stream()
 			.filter(stakedAmounts::containsKey)
 			.map(k -> Pair.of(k, stakedAmounts.get(k)))

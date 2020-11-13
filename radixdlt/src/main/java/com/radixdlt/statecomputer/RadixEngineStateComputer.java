@@ -147,10 +147,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 		final BFTValidatorSet validatorSet;
 		if (view.compareTo(epochCeilingView) >= 0) {
-			final var validatorsComputer = branch.getComputedState(RadixEngineValidatorsComputer.class);
-			final var stakeComputer = branch.getComputedState(RadixEngineStakeComputer.class);
-			final var validators = validatorsComputer.activeValidators();
-			validatorSet = this.validatorSetBuilder.buildValidatorSet(validators, stakeComputer.stakedAmounts(validators));
+			validatorSet = this.validatorSetBuilder.buildValidatorSet(branch);
 		} else {
 			validatorSet = null;
 		}
@@ -281,10 +278,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		// Verify that output of radix engine and signed output match
 		// TODO: Always follow radix engine as its a deeper source of truth and just mark validator set as malicious
 		if (epochChange) {
-			final var validatorsComputer = radixEngine.getComputedState(RadixEngineValidatorsComputer.class);
-			final var stakeComputer = radixEngine.getComputedState(RadixEngineStakeComputer.class);
-			final var validators = validatorsComputer.activeValidators();
-			final var reNextValidatorSet = this.validatorSetBuilder.buildValidatorSet(validators, stakeComputer.stakedAmounts(validators));
+			final var reNextValidatorSet = this.validatorSetBuilder.buildValidatorSet(this.radixEngine);
 			final var signedValidatorSet = verifiedCommandsAndProof.getHeader().getNextValidatorSet()
 				.orElseThrow(() -> new ByzantineQuorumException("RE has changed epochs but proofs don't show."));
 			if (!signedValidatorSet.equals(reNextValidatorSet)) {
