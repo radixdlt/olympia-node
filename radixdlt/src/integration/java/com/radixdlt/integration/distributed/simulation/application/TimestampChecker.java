@@ -24,14 +24,18 @@ import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Observable;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * Checks that the first time a ledger update occurs on the network that it is close
  * to the real wall clock time.
  */
 public final class TimestampChecker implements TestInvariant {
+	public static final long ACCEPTABLE_TIME_RANGE = TimeUnit.SECONDS.toMillis(30);
+
 	private Maybe<TestInvariantError> checkCloseTimestamp(long timestamp) {
 		long now = System.currentTimeMillis();
-		if (timestamp <= now && timestamp > now - 15_000) {
+		if (timestamp <= now && timestamp > now - ACCEPTABLE_TIME_RANGE) {
 			return Maybe.empty();
 		} else {
 			return Maybe.just(new TestInvariantError("Expecting timestamp to be close to " + now
