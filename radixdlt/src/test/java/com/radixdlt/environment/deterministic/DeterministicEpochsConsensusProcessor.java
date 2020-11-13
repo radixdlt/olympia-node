@@ -61,6 +61,7 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 		EventProcessor<LocalGetVerticesRequest> localGetVerticesRequestEventProcessor,
 		EventProcessor<EpochView> epochViewEventProcessor,
 		EventProcessor<Timeout> timeoutEventProcessor,
+		Set<EventProcessor<BFTUpdate>> bftUpdateProcessors,
 		RemoteEventProcessor<DtoLedgerHeaderAndProof> syncRequestProcessor,
 		RemoteEventProcessor<DtoCommandsAndProof> syncResponseProcessor
 	) {
@@ -76,6 +77,7 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 		processorsBuilder.put(LocalGetVerticesRequest.class, e -> localGetVerticesRequestEventProcessor.process((LocalGetVerticesRequest) e));
 		processorsBuilder.put(EpochView.class, e -> epochViewEventProcessor.process((EpochView) e));
 		processorsBuilder.put(Timeout.class, e -> timeoutEventProcessor.process((Timeout) e));
+		processorsBuilder.put(BFTUpdate.class, e -> bftUpdateProcessors.forEach(p -> p.process((BFTUpdate) e)));
 		this.eventProcessors = processorsBuilder.build();
 
 		ImmutableMap.Builder<Class<?>, RemoteEventProcessor<Object>> remoteProcessorsBuilder = ImmutableMap.builder();
@@ -100,8 +102,6 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 			this.epochManager.processConsensusEvent((ConsensusEvent) message);
 		} else if (message instanceof LocalTimeout) {
 			this.epochManager.processLocalTimeout((LocalTimeout) message);
-		} else if (message instanceof BFTUpdate) {
-			this.epochManager.processBFTUpdate((BFTUpdate) message);
 		} else if (message instanceof GetVerticesRequest) {
 			this.epochManager.processGetVerticesRequest((GetVerticesRequest) message);
 		} else if (message instanceof GetVerticesResponse) {

@@ -24,6 +24,7 @@ import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
@@ -39,7 +40,6 @@ import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker.PacemakerInfo
 import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemakerFactory;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.epoch.EpochManager;
@@ -81,6 +81,11 @@ public class EpochsConsensusModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		bind(EpochManager.class).in(Scopes.SINGLETON);
+	}
+
+	@Provides
+	private EventProcessor<BFTUpdate> bftUpdateProcessor(EpochManager epochManager) {
+		return epochManager::processBFTUpdate;
 	}
 
 	@Provides
@@ -197,7 +202,7 @@ public class EpochsConsensusModule extends AbstractModule {
 
 	@Provides
 	private VertexStoreFactory vertexStoreFactory(
-		BFTUpdateSender updateSender,
+		EventDispatcher<BFTUpdate> updateSender,
 		SystemCounters counters,
 		Ledger ledger,
 		VertexStoreEventSender vertexStoreEventSender

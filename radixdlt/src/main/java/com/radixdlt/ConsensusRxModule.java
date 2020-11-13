@@ -18,16 +18,11 @@
 package com.radixdlt;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.TypeLiteral;
-import com.radixdlt.consensus.bft.BFTUpdate;
-import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
 import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 import com.radixdlt.utils.ScheduledSenderToRx;
-import com.radixdlt.utils.SenderToRx;
 import com.radixdlt.utils.ThreadFactories;
-import io.reactivex.rxjava3.core.Observable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -39,10 +34,5 @@ public class ConsensusRxModule extends AbstractModule {
 		// Timed local messages
 		bind(PacemakerRx.class).toInstance(localTimeouts::messages);
 		bind(LocalTimeoutSender.class).toInstance(localTimeouts::scheduleSend);
-
-		// Local messages
-		SenderToRx<BFTUpdate, BFTUpdate> bftUpdates = new SenderToRx<>(u -> u);
-		bind(new TypeLiteral<Observable<BFTUpdate>>() { }).toInstance(bftUpdates.rx());
-		bind(BFTUpdateSender.class).toInstance(bftUpdates::send);
 	}
 }

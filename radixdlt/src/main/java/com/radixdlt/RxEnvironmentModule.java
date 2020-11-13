@@ -22,6 +22,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.Timeout;
+import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.environment.Environment;
@@ -51,11 +52,17 @@ public class RxEnvironmentModule extends AbstractModule {
 			ImmutableSet.of(
 				LocalSyncRequest.class,
 				LocalGetVerticesRequest.class,
+				BFTUpdate.class,
 				EpochView.class,
 				Timeout.class
 			),
 			ses
 		);
+	}
+
+	@Provides
+	Observable<BFTUpdate> bftUpdates(RxEnvironment rxEnvironment) {
+		return rxEnvironment.getObservable(BFTUpdate.class);
 	}
 
 	@Provides

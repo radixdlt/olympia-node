@@ -22,6 +22,7 @@ import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.Timeout;
+import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.environment.Environment;
@@ -64,6 +65,13 @@ public class DispatcherModule extends AbstractModule {
 	@Provides
 	private ScheduledEventDispatcher<LocalGetVerticesRequest> localGetVerticesRequestRemoteEventDispatcher(Environment environment) {
 		return environment.getScheduledDispatcher(LocalGetVerticesRequest.class);
+	}
+
+	@Provides
+	private EventDispatcher<BFTUpdate> viewEventDispatcher(
+		Environment environment
+	) {
+		return environment.getDispatcher(BFTUpdate.class);
 	}
 
 	@Provides

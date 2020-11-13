@@ -27,10 +27,16 @@ import java.util.Objects;
 public final class BFTCommittedUpdate {
 	private final ImmutableList<PreparedVertex> committed;
 	private final HighQC highQC;
+	private final int vertexStoreSize;
 
-	BFTCommittedUpdate(ImmutableList<PreparedVertex> committed, HighQC highQC) {
+	BFTCommittedUpdate(ImmutableList<PreparedVertex> committed, HighQC highQC, int vertexStoreSize) {
 		this.committed = Objects.requireNonNull(committed);
 		this.highQC = Objects.requireNonNull(highQC);
+		this.vertexStoreSize = vertexStoreSize;
+	}
+
+	public int getVertexStoreSize() {
+		return vertexStoreSize;
 	}
 
 	public ImmutableList<PreparedVertex> getCommitted() {

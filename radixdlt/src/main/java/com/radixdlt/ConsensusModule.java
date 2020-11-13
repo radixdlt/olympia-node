@@ -21,12 +21,14 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.Multibinder;
+import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
@@ -45,7 +47,6 @@ import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTSyncRequestProcessor;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
@@ -65,6 +66,7 @@ import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.store.LastProof;
@@ -122,6 +124,16 @@ public final class ConsensusModule extends AbstractModule {
 				.proposerElection(proposerElection)
 				.validatorSet(validatorSet)
 				.build();
+	}
+
+	@ProvidesIntoSet
+	public EventProcessor<BFTUpdate> bftUpdateEventProcessor(BFTEventProcessor eventProcessor) {
+		return eventProcessor::processBFTUpdate;
+	}
+
+	@ProvidesIntoSet
+	public EventProcessor<BFTUpdate> bftSync(BFTSync bftSync) {
+		return bftSync::processBFTUpdate;
 	}
 
 	@Provides
@@ -244,7 +256,7 @@ public final class ConsensusModule extends AbstractModule {
 	@Singleton
 	private VertexStore vertexStore(
 		VertexStoreEventSender vertexStoreEventSender,
-		BFTUpdateSender updateSender,
+		EventDispatcher<BFTUpdate> updateSender,
 		BFTConfiguration bftConfiguration,
 		SystemCounters counters,
 		Ledger ledger

@@ -73,6 +73,7 @@ public class ConsensusRunnerModuleTest {
 				bind(EpochManager.class).toInstance(mock(EpochManager.class));
 
 				bind(new TypeLiteral<EventProcessor<LocalGetVerticesRequest>>() { }).toInstance(rmock(EventProcessor.class));
+				bind(new TypeLiteral<EventProcessor<BFTUpdate>>() { }).toInstance(rmock(EventProcessor.class));
 				bind(new TypeLiteral<ScheduledEventDispatcher<LocalGetVerticesRequest>>() { }).toInstance(rmock(ScheduledEventDispatcher.class));
 				bind(new TypeLiteral<Observable<LocalGetVerticesRequest>>() { }).toInstance(PublishSubject.create());
 			}

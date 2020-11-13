@@ -42,6 +42,7 @@ import io.reactivex.rxjava3.observables.ConnectableObservable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -68,6 +69,7 @@ public class BFTRunner implements ModuleRunner {
 	public BFTRunner(
 		Observable<LedgerUpdate> ledgerUpdates,
 		Observable<BFTUpdate> bftUpdates,
+		Set<EventProcessor<BFTUpdate>> bftUpdateProcessors,
 		Observable<LocalGetVerticesRequest> bftSyncTimeouts,
 		EventProcessor<LocalGetVerticesRequest> bftSyncTimeoutProcessor,
 		BFTEventsRx networkRx,
@@ -114,10 +116,7 @@ public class BFTRunner implements ModuleRunner {
 				.doOnNext(vertexStoreSync::processGetVerticesErrorResponse),
 			bftUpdates
 				.observeOn(singleThreadScheduler)
-				.doOnNext(update -> {
-					bftEventProcessor.processBFTUpdate(update);
-					vertexStoreSync.processBFTUpdate(update);
-				}),
+				.doOnNext(update -> bftUpdateProcessors.forEach(p -> p.process(update))),
 			ledgerUpdates
 				.observeOn(singleThreadScheduler)
 				.doOnNext(vertexStoreSync::processLedgerUpdate),

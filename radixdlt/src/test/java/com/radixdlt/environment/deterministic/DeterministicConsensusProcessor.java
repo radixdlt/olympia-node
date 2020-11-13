@@ -33,8 +33,10 @@ import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
+import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Consensus only (no epochs) deterministic consensus processor
@@ -43,16 +45,19 @@ public class DeterministicConsensusProcessor implements DeterministicMessageProc
 	private final BFTEventProcessor bftEventProcessor;
 	private final BFTSync vertexStoreSync;
 	private final BFTSyncRequestProcessor requestProcessor;
+	private final Set<EventProcessor<BFTUpdate>> bftUpdateProcessors;
 
 	@Inject
 	public DeterministicConsensusProcessor(
 		BFTEventProcessor bftEventProcessor,
 		BFTSync vertexStoreSync,
-		BFTSyncRequestProcessor requestProcessor
+		BFTSyncRequestProcessor requestProcessor,
+		Set<EventProcessor<BFTUpdate>> bftUpdateProcessors
 	) {
 		this.bftEventProcessor = Objects.requireNonNull(bftEventProcessor);
 		this.vertexStoreSync = Objects.requireNonNull(vertexStoreSync);
 		this.requestProcessor = Objects.requireNonNull(requestProcessor);
+		this.bftUpdateProcessors = Objects.requireNonNull(bftUpdateProcessors);
 	}
 
 	@Override
@@ -77,8 +82,7 @@ public class DeterministicConsensusProcessor implements DeterministicMessageProc
 		} else if (message instanceof GetVerticesErrorResponse) {
 			vertexStoreSync.processGetVerticesErrorResponse((GetVerticesErrorResponse) message);
 		} else if (message instanceof BFTUpdate) {
-			bftEventProcessor.processBFTUpdate((BFTUpdate) message);
-			vertexStoreSync.processBFTUpdate((BFTUpdate) message);
+			bftUpdateProcessors.forEach(p -> p.process((BFTUpdate) message));
 		} else if (message instanceof LedgerUpdate) {
 			vertexStoreSync.processLedgerUpdate((LedgerUpdate) message);
 		} else if (message instanceof LocalGetVerticesRequest) {

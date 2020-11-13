@@ -60,6 +60,7 @@ public final class EpochManagerRunner implements ModuleRunner {
 	public EpochManagerRunner(
 		Observable<EpochsLedgerUpdate> ledgerUpdates,
 		Observable<BFTUpdate> bftUpdates,
+		EventProcessor<BFTUpdate> bftUpdateProcessor,
 		Observable<LocalGetVerticesRequest> bftSyncTimeouts,
 		EventProcessor<LocalGetVerticesRequest> bftSyncTimeoutProcessor,
 		BFTEventsRx networkRx,
@@ -80,7 +81,7 @@ public final class EpochManagerRunner implements ModuleRunner {
 				.doOnNext(epochManager::processLedgerUpdate),
 			bftUpdates
 				.observeOn(singleThreadScheduler)
-				.doOnNext(epochManager::processBFTUpdate),
+				.doOnNext(bftUpdateProcessor::process),
 			bftSyncTimeouts
 				.observeOn(singleThreadScheduler)
 				.doOnNext(bftSyncTimeoutProcessor::process),
