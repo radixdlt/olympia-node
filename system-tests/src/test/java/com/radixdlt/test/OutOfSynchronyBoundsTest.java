@@ -47,10 +47,10 @@ public class OutOfSynchronyBoundsTest {
 		public TestName name = new TestName();
 
 		@Test
-		public void given_4_correct_bfts_in_latent_docker_network__when_one_instance_is_down__then_all_instances_should_get_same_commits_and_progress_should_be_made() {
+		public void given_5_correct_bfts_in_latent_docker_network__when_one_instance_is_down__then_all_instances_should_get_same_commits_and_progress_should_be_made() {
 			String name = Generic.extractTestName(this.name.getMethodName());
 			logger.info("Test name is " + name);
-			try (DockerNetwork network = DockerNetwork.builder().numNodes(4).testName(name).startConsensusOnBoot().build()) {
+			try (DockerNetwork network = DockerNetwork.builder().numNodes(5).testName(name).startConsensusOnBoot().build()) {
 				network.startBlocking();
 
 				RemoteBFTTest test = slowNodeTestBuilder().network(RemoteBFTNetworkBridge.of(network)).waitUntilResponsive().build();
@@ -71,7 +71,7 @@ public class OutOfSynchronyBoundsTest {
 			}
 		}
 
-		@junitparams.Parameters({"3","4"})
+		@junitparams.Parameters({"3","5"})
 		@TestCaseName("given_{0}_correct_bfts_in_latent_docker_network__when_all_nodes_are_out_synchrony__then_all_instances_should_fail_their_liveness_checks")
 		@Test(expected = LivenessCheck.LivenessError.class)
 		public void given_X_correct_bfts_in_latent_docker_network__when_all_nodes_are_out_synchrony__then_all_instances_should_fail_their_liveness_checks(int numberOfNodes) throws Throwable {
@@ -169,9 +169,9 @@ public class OutOfSynchronyBoundsTest {
 		@Parameters(name = "{index}: given_{0}_correct_bfts_in_cluster_network__when_{1}_node_is_down__then_all_other_instances_should_get_same_commits_and_progress_should_be_made")
 		public static Collection<Object[]> data() {
 			return Arrays.asList(new Object[][]{
-				{10,1},
-				{10,3},
-				{4,1}
+				{11,2},
+				{11,3},
+				{5,2}
 			});
 		}
 
