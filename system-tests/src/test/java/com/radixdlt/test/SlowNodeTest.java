@@ -41,7 +41,7 @@ public class SlowNodeTest {
 
 		@Parameters(name = "{index}: given_{0}_correct_bfts_in_latent_docker_network_and_one_slow_node__then_all_instances_should_get_same_commits_and_progress_should_be_made")
 		public static Collection<Object[]> data() {
-			return Arrays.asList(new Object[][]{{3}, {4}});
+			return Arrays.asList(new Object[][]{{3}, {5}});
 		}
 
 		@Test

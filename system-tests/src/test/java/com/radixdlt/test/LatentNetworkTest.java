@@ -42,7 +42,7 @@ public class LatentNetworkTest {
 		String name = Generic.extractTestName(this.name.getMethodName());
 		logger.info("Test name is " + name);
 
-		try (DockerNetwork network = DockerNetwork.builder().numNodes(4).testName(name).build()) {
+		try (DockerNetwork network = DockerNetwork.builder().numNodes(5).testName(name).build()) {
 			network.startBlocking();
 			RemoteBFTTest test = AssertionChecks.latentTestBuilder()
 				.network(RemoteBFTNetworkBridge.of(network))
