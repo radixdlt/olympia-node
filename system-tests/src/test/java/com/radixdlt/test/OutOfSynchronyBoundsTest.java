@@ -47,7 +47,7 @@ public class OutOfSynchronyBoundsTest {
 		public TestName name = new TestName();
 
 		@Test
-		public void given_4_correct_bfts_in_latent_docker_network__when_one_instance_is_down__then_all_instances_should_get_same_commits_and_progress_should_be_made() {
+		public void given_5_correct_bfts_in_latent_docker_network__when_one_instance_is_down__then_all_instances_should_get_same_commits_and_progress_should_be_made() {
 			String name = Generic.extractTestName(this.name.getMethodName());
 			logger.info("Test name is " + name);
 			try (DockerNetwork network = DockerNetwork.builder().numNodes(5).testName(name).startConsensusOnBoot().build()) {
@@ -169,9 +169,9 @@ public class OutOfSynchronyBoundsTest {
 		@Parameters(name = "{index}: given_{0}_correct_bfts_in_cluster_network__when_{1}_node_is_down__then_all_other_instances_should_get_same_commits_and_progress_should_be_made")
 		public static Collection<Object[]> data() {
 			return Arrays.asList(new Object[][]{
-				{11,1},
+				{11,2},
 				{11,3},
-				{5,1}
+				{5,2}
 			});
 		}
 
