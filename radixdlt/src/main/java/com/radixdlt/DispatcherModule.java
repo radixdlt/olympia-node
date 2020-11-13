@@ -35,7 +35,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Manages dispatching of internal events
+ * Manages dispatching of internal events to a given environment
+ * TODO: Move all other events into this module
  */
 public class DispatcherModule extends AbstractModule {
 	private static final Logger logger = LogManager.getLogger();

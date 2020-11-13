@@ -29,7 +29,11 @@ import java.util.Objects;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-public class RxEnvironment implements Environment {
+/**
+ * Environment which utilizes RXJava to distribute events from
+ * dispatchers to processors.
+ */
+public final class RxEnvironment implements Environment {
 	private final ImmutableMap<Class<?>, Subject<?>> subjects;
 	private final ScheduledExecutorService executorService;
 

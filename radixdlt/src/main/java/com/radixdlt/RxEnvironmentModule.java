@@ -32,6 +32,9 @@ import io.reactivex.rxjava3.core.Observable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
+/**
+ * Environment utilizing RxJava
+ */
 public class RxEnvironmentModule extends AbstractModule {
 
 	@Override

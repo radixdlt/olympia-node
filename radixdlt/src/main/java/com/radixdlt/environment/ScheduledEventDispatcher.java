@@ -17,6 +17,11 @@
 
 package com.radixdlt.environment;
 
+/**
+ * Dispatches an event after some given time.
+ *
+ * @param <T> the event class
+ */
 public interface ScheduledEventDispatcher<T> {
 	void dispatch(T t, long milliseconds);
 }

@@ -26,9 +26,13 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import javax.inject.Qualifier;
 
+/**
+ * To be used with EventProcessor, this annotation is used to
+ * indicate that the event should be processed synchronously to
+ * the original dispatch.
+ */
 @Qualifier
 @Target({ FIELD, PARAMETER, METHOD })
 @Retention(RUNTIME)
 public @interface ProcessOnDispatch {
-
 }

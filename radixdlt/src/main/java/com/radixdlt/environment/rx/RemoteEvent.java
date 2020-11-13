@@ -21,6 +21,12 @@ import com.radixdlt.consensus.bft.BFTNode;
 import io.reactivex.rxjava3.core.Maybe;
 import java.util.Objects;
 
+/**
+ * A helper class which contains remote event and the
+ * origin node.
+ *
+ * @param <T> the event class
+ */
 public final class RemoteEvent<T> {
 	private final Class<T> eventClass;
 	private final T event;

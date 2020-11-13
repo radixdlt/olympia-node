@@ -19,6 +19,11 @@ package com.radixdlt.environment;
 
 import com.radixdlt.consensus.bft.BFTNode;
 
+/**
+ * Processes events from a remote node
+ *
+ * @param <T> the event class
+ */
 public interface RemoteEventProcessor<T> {
 	void process(BFTNode sender, T t);
 }

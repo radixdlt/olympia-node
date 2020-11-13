@@ -26,9 +26,12 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import javax.inject.Qualifier;
 
+/**
+ * To be used with EventProcessor, this annotation indicates that
+ * the processor should be processed in the SyncRunner thread.
+ */
 @Qualifier
 @Target({ FIELD, PARAMETER, METHOD })
 @Retention(RUNTIME)
 public @interface ProcessWithSyncRunner {
-
 }

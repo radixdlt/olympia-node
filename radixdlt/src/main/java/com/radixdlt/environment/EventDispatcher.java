@@ -18,9 +18,9 @@
 package com.radixdlt.environment;
 
 /**
- * A processor of an event in the system
+ * A dispatcher of an event to an environment
  *
- * @param <T> the object event class
+ * @param <T> the event class
  */
 public interface EventDispatcher<T> {
 	void dispatch(T t);
