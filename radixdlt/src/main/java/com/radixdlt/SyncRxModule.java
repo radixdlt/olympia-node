@@ -18,15 +18,11 @@
 package com.radixdlt;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.radixdlt.environment.rx.RxEnvironment;
-import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncTimeoutScheduler;
 import com.radixdlt.sync.SyncServiceRunner.SyncTimeoutsRx;
 import com.radixdlt.utils.ScheduledSenderToRx;
 import com.radixdlt.utils.ThreadFactories;
-import io.reactivex.rxjava3.core.Observable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -40,10 +36,5 @@ public class SyncRxModule extends AbstractModule {
 		ScheduledSenderToRx<SyncInProgress> syncsInProgress = new ScheduledSenderToRx<>(ses);
 		bind(SyncTimeoutScheduler.class).toInstance(syncsInProgress::scheduleSend);
 		bind(SyncTimeoutsRx.class).toInstance(syncsInProgress::messages);
-	}
-
-	@Provides
-	Observable<LocalSyncRequest> syncRequests(RxEnvironment rxEnvironment) {
-		return rxEnvironment.getObservable(LocalSyncRequest.class);
 	}
 }

@@ -24,6 +24,7 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
+import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
@@ -45,7 +46,7 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork.Deter
 /**
  * A sender within a deterministic network.
  */
-public final class ControlledSender implements DeterministicSender {
+public final class ControlledSender implements DeterministicSender, Environment {
 	private final DeterministicNetwork network;
 	private final BFTNode self;
 	private final int senderIndex;
@@ -141,15 +142,18 @@ public final class ControlledSender implements DeterministicSender {
 		handleMessage(new ControlledMessage(self, this.localChannel, epochsLedgerUpdate, arrivalTime(this.localChannel)));
 	}
 
-	public <T> ScheduledEventDispatcher<T> scheduledDispatcher(Class<T> eventClass) {
+
+	@Override
+	public <T> EventDispatcher<T> getDispatcher(Class<T> eventClass) {
+		return e -> handleMessage(new ControlledMessage(self, this.localChannel, e, arrivalTime(this.localChannel)));
+	}
+
+	@Override
+	public <T> ScheduledEventDispatcher<T> getScheduledDispatcher(Class<T> eventClass) {
 		return (t, milliseconds) -> {
 			ControlledMessage msg = new ControlledMessage(self, this.localChannel, t, arrivalTime(this.localChannel) + milliseconds);
 			handleMessage(msg);
 		};
-	}
-
-	public <T> EventDispatcher<T> dispatcher(Class<T> eventClass) {
-		return e -> handleMessage(new ControlledMessage(self, this.localChannel, e, arrivalTime(this.localChannel)));
 	}
 
 	public <T> RemoteEventDispatcher<T> remoteDispatcher(Class<T> eventClass) {

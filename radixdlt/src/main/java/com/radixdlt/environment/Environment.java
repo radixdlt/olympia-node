@@ -19,4 +19,5 @@ package com.radixdlt.environment;
 
 public interface Environment {
 	<T> EventDispatcher<T> getDispatcher(Class<T> eventClass);
+	<T> ScheduledEventDispatcher<T> getScheduledDispatcher(Class<T> eventClass);
 }

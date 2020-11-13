@@ -18,19 +18,30 @@
 package com.radixdlt.environment.rx;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.environment.ScheduledEventDispatcher;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import java.util.Arrays;
+import java.util.Objects;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class RxEnvironment implements Environment {
 	private final ImmutableMap<Class<?>, Subject<?>> subjects;
+	private final ScheduledExecutorService executorService;
 
-	public RxEnvironment(Class<?>... eventClasses) {
-		this.subjects = Arrays.stream(eventClasses)
+	public RxEnvironment(
+		ImmutableSet<Class<?>> localEventClasses,
+		ScheduledExecutorService executorService
+	) {
+		this.subjects = localEventClasses.stream()
 			.collect(ImmutableMap.toImmutableMap(c -> c, c -> BehaviorSubject.create().toSerialized()));
+		this.executorService = Objects.requireNonNull(executorService);
 	}
 
 	private <T> Subject<T> getSubject(Class<T> eventClass) {
@@ -47,6 +58,11 @@ public class RxEnvironment implements Environment {
 	@Override
 	public <T> EventDispatcher<T> getDispatcher(Class<T> eventClass) {
 		return getSubject(eventClass)::onNext;
+	}
+
+	@Override
+	public <T> ScheduledEventDispatcher<T> getScheduledDispatcher(Class<T> eventClass) {
+		return (e, millis) -> executorService.schedule(() -> getSubject(eventClass).onNext(e), millis, TimeUnit.MILLISECONDS);
 	}
 
 	public <T> Observable<T> getObservable(Class<T> eventClass) {

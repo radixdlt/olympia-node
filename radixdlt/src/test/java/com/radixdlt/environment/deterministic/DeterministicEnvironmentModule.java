@@ -78,6 +78,7 @@ public class DeterministicEnvironmentModule extends AbstractModule {
 		bind(DeterministicSender.class).to(ControlledSender.class);
 
 		bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
+		bind(Environment.class).to(ControlledSender.class);
 	}
 
 	@ProvidesIntoSet
@@ -104,17 +105,6 @@ public class DeterministicEnvironmentModule extends AbstractModule {
 		@ProcessOnDispatch Set<EventProcessor<EpochView>> processors
 	) {
 		return epochView -> processors.forEach(e -> e.process(epochView));
-	}
-
-	@Provides
-	@Singleton
-	Environment controlledEnvironment(ControlledSender controlledSender) {
-		return controlledSender::dispatcher;
-	}
-
-	@Provides
-	ScheduledEventDispatcher<LocalGetVerticesRequest> timeoutDispatcher(ControlledSender controlledSender) {
-		return controlledSender.scheduledDispatcher(LocalGetVerticesRequest.class);
 	}
 
 	@Provides

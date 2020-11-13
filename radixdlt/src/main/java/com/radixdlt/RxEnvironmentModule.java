@@ -17,23 +17,47 @@
 
 package com.radixdlt;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.rx.RxEnvironment;
 import com.radixdlt.sync.LocalSyncRequest;
+import com.radixdlt.utils.ThreadFactories;
+import io.reactivex.rxjava3.core.Observable;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 public class RxEnvironmentModule extends AbstractModule {
 
 	@Override
 	public void configure() {
+		ScheduledExecutorService ses = Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("TimeoutSender"));
 		bind(Environment.class).to(RxEnvironment.class);
+		bind(ScheduledExecutorService.class).toInstance(ses);
 	}
 
 	@Provides
 	@Singleton
-	private RxEnvironment rxEnvironment() {
-		return new RxEnvironment(LocalSyncRequest.class);
+	private RxEnvironment rxEnvironment(ScheduledExecutorService ses) {
+		return new RxEnvironment(
+			ImmutableSet.of(
+				LocalSyncRequest.class,
+				LocalGetVerticesRequest.class
+			),
+			ses
+		);
+	}
+
+	@Provides
+	Observable<LocalGetVerticesRequest> localGetVerticesRequests(RxEnvironment rxEnvironment) {
+		return rxEnvironment.getObservable(LocalGetVerticesRequest.class);
+	}
+
+	@Provides
+	Observable<LocalSyncRequest> syncRequests(RxEnvironment rxEnvironment) {
+		return rxEnvironment.getObservable(LocalSyncRequest.class);
 	}
 }

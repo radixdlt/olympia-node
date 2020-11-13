@@ -21,10 +21,13 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
+import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
+import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.sync.LocalSyncRequest;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
@@ -52,5 +55,12 @@ public class DispatcherModule extends AbstractModule {
 			syncProcessors.forEach(e -> e.process(req));
 			envDispatcher.dispatch(req);
 		};
+	}
+
+	@Provides
+	private ScheduledEventDispatcher<LocalGetVerticesRequest> localGetVerticesRequestRemoteEventDispatcher(
+		Environment environment
+	) {
+		return environment.getScheduledDispatcher(LocalGetVerticesRequest.class);
 	}
 }
