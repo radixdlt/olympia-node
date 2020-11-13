@@ -21,12 +21,13 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
+import com.radixdlt.consensus.Timeout;
+import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
-import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.sync.LocalSyncRequest;
 import java.util.Set;
@@ -41,6 +42,8 @@ public class DispatcherModule extends AbstractModule {
 	@Override
 	public void configure() {
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<LocalSyncRequest>>() { }, ProcessOnDispatch.class);
+		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<Timeout>>() { }, ProcessOnDispatch.class);
+		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochView>>() { }, ProcessOnDispatch.class);
 	}
 
 	@Provides
@@ -58,9 +61,32 @@ public class DispatcherModule extends AbstractModule {
 	}
 
 	@Provides
-	private ScheduledEventDispatcher<LocalGetVerticesRequest> localGetVerticesRequestRemoteEventDispatcher(
+	private ScheduledEventDispatcher<LocalGetVerticesRequest> localGetVerticesRequestRemoteEventDispatcher(Environment environment) {
+		return environment.getScheduledDispatcher(LocalGetVerticesRequest.class);
+	}
+
+	@Provides
+	private EventDispatcher<EpochView> viewEventDispatcher(
+		@ProcessOnDispatch Set<EventProcessor<EpochView>> processors,
 		Environment environment
 	) {
-		return environment.getScheduledDispatcher(LocalGetVerticesRequest.class);
+		EventDispatcher<EpochView> dispatcher = environment.getDispatcher(EpochView.class);
+		return epochView -> {
+			processors.forEach(e -> e.process(epochView));
+			dispatcher.dispatch(epochView);
+		};
+	}
+
+	@Provides
+	private EventDispatcher<Timeout> timeoutEventDispatcher(
+		@ProcessOnDispatch Set<EventProcessor<Timeout>> processors,
+		Environment environment
+	) {
+		EventDispatcher<Timeout> dispatcher = environment.getDispatcher(Timeout.class);
+		return timeout -> {
+			logger.warn("LOCAL_TIMEOUT dispatched: {}", timeout);
+			processors.forEach(e -> e.process(timeout));
+			dispatcher.dispatch(timeout);
+		};
 	}
 }

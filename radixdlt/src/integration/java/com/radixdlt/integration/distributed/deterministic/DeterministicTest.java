@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.google.inject.Provides;
+import com.google.inject.TypeLiteral;
 import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.DispatcherModule;
@@ -46,6 +47,7 @@ import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.integration.distributed.MockedCryptoModule;
 import com.radixdlt.integration.distributed.deterministic.configuration.EpochNodeWeightMapping;
 import com.radixdlt.integration.distributed.deterministic.configuration.NodeIndexAndWeight;
@@ -253,6 +255,8 @@ public final class DeterministicTest {
 					public void configure() {
 						bind(BFTValidatorSet.class).toInstance(epochToValidatorSetMapping.apply(1L));
 						bind(DeterministicMessageProcessor.class).to(DeterministicEpochsConsensusProcessor.class);
+						bind(new TypeLiteral<EventProcessor<EpochView>>() { }).toInstance(epochView -> { });
+						bind(new TypeLiteral<EventProcessor<Timeout>>() { }).toInstance(t -> { });
 					}
 				});
 				modules.add(new LedgerModule());

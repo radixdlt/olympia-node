@@ -31,7 +31,6 @@ import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
-import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
@@ -40,18 +39,15 @@ import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.environment.Environment;
-import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ProcessOnDispatch;
-import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.environment.deterministic.network.ControlledSender;
 import com.radixdlt.epochs.EpochChangeManager.EpochsLedgerUpdateSender;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork.DeterministicSender;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.sync.LocalSyncRequest;
-import java.util.Set;
 
 /**
  * Module that supplies network senders, as well as some other assorted
@@ -91,20 +87,6 @@ public class DeterministicEnvironmentModule extends AbstractModule {
 	@ProcessOnDispatch
 	EventProcessor<EpochView> epochViewEventProcessor(DeterministicEpochInfo processor) {
 		return processor.epochViewEventProcessor();
-	}
-
-	@Provides
-	EventDispatcher<Timeout> timeoutEventDispatcher(
-		@ProcessOnDispatch Set<EventProcessor<Timeout>> processors
-	) {
-		return timeout -> processors.forEach(e -> e.process(timeout));
-	}
-
-	@Provides
-	EventDispatcher<EpochView> epochViewEventDispatcher(
-		@ProcessOnDispatch Set<EventProcessor<EpochView>> processors
-	) {
-		return epochView -> processors.forEach(e -> e.process(epochView));
 	}
 
 	@Provides

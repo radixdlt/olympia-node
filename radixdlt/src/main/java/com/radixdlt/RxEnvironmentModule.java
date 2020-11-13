@@ -21,6 +21,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.radixdlt.consensus.Timeout;
+import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.rx.RxEnvironment;
@@ -45,7 +47,9 @@ public class RxEnvironmentModule extends AbstractModule {
 		return new RxEnvironment(
 			ImmutableSet.of(
 				LocalSyncRequest.class,
-				LocalGetVerticesRequest.class
+				LocalGetVerticesRequest.class,
+				EpochView.class,
+				Timeout.class
 			),
 			ses
 		);
@@ -59,5 +63,15 @@ public class RxEnvironmentModule extends AbstractModule {
 	@Provides
 	Observable<LocalSyncRequest> syncRequests(RxEnvironment rxEnvironment) {
 		return rxEnvironment.getObservable(LocalSyncRequest.class);
+	}
+
+	@Provides
+	public Observable<EpochView> currentViews(RxEnvironment rxEnvironment) {
+		return rxEnvironment.getObservable(EpochView.class);
+	}
+
+	@Provides
+	public Observable<Timeout> timeouts(RxEnvironment rxEnvironment) {
+		return rxEnvironment.getObservable(Timeout.class);
 	}
 }

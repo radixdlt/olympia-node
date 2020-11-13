@@ -28,6 +28,8 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.util.Modules;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.BFTConfiguration;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.EpochChange;
@@ -37,7 +39,6 @@ import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.integration.distributed.simulation.NodeNetworkMessagesModule;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.Mempool;
-import com.radixdlt.systeminfo.InfoRx;
 import com.radixdlt.consensus.bft.BFTNode;
 
 import com.radixdlt.utils.Pair;
@@ -116,7 +117,9 @@ public class SimulationNodes {
 
 		Observable<Pair<BFTNode, LedgerUpdate>> ledgerUpdates();
 
-		InfoRx getInfo(BFTNode node);
+		Observable<Pair<BFTNode, QuorumCertificate>> highQCs();
+
+		Observable<Pair<BFTNode, Timeout>> timeouts();
 
 		Mempool getMempool(BFTNode node);
 
@@ -193,9 +196,29 @@ public class SimulationNodes {
 			}
 
 			@Override
-			public InfoRx getInfo(BFTNode node) {
-				int index = getNodes().indexOf(node);
-				return nodeInstances.get(index).getInstance(InfoRx.class);
+			public Observable<Pair<BFTNode, QuorumCertificate>> highQCs() {
+				Set<Observable<Pair<BFTNode, QuorumCertificate>>> highQCs = nodeInstances.stream()
+					.map(i -> {
+						BFTNode node = i.getInstance(Key.get(BFTNode.class, Self.class));
+						return i.getInstance(Key.get(new TypeLiteral<Observable<QuorumCertificate>>() { }))
+							.map(v -> Pair.of(node, v));
+					})
+					.collect(Collectors.toSet());
+
+				return Observable.merge(highQCs);
+			}
+
+			@Override
+			public Observable<Pair<BFTNode, Timeout>> timeouts() {
+				Set<Observable<Pair<BFTNode, Timeout>>> timeouts = nodeInstances.stream()
+					.map(i -> {
+						BFTNode node = i.getInstance(Key.get(BFTNode.class, Self.class));
+						return i.getInstance(Key.get(new TypeLiteral<Observable<Timeout>>() { }))
+							.map(v -> Pair.of(node, v));
+					})
+					.collect(Collectors.toSet());
+
+				return Observable.merge(timeouts);
 			}
 
 			@Override

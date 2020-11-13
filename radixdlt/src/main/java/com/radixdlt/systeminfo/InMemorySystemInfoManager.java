@@ -43,7 +43,9 @@ public final class InMemorySystemInfoManager {
 
 	private static final Logger logger = LogManager.getLogger();
 
-	private final InfoRx infoRx;
+	private final Observable<EpochView> currentViews;
+	private final Observable<Timeout> timeouts;
+	private final Observable<QuorumCertificate> highQCs;
 
 	private final Queue<VerifiedVertex> vertexRingBuffer;
 	private final AtomicReference<Timeout> lastTimeout = new AtomicReference<>();
@@ -54,12 +56,16 @@ public final class InMemorySystemInfoManager {
 	private final long vertexUpdateFrequency;
 
 	public InMemorySystemInfoManager(
-		InfoRx infoRx,
+		Observable<EpochView> currentViews,
+		Observable<Timeout> timeouts,
+		Observable<QuorumCertificate> highQCs,
 		Observable<BFTCommittedUpdate> bftCommittedUpdates,
 		int vertexBufferSize,
 		long vertexUpdateFrequency
 	) {
-		this.infoRx = Objects.requireNonNull(infoRx);
+		this.currentViews = Objects.requireNonNull(currentViews);
+		this.timeouts = Objects.requireNonNull(timeouts);
+		this.highQCs = Objects.requireNonNull(highQCs);
 		this.bftCommittedUpdates = Objects.requireNonNull(bftCommittedUpdates);
 		if (vertexBufferSize < 0) {
 			throw new IllegalArgumentException("vertexBufferSize must be >= 0 but was " + vertexBufferSize);
@@ -74,13 +80,15 @@ public final class InMemorySystemInfoManager {
 	}
 
 	public void start() {
-		this.infoRx.currentViews()
+		this.currentViews
 			.observeOn(Schedulers.io())
 			.subscribe(currentView::set);
-		this.infoRx.timeouts()
+
+		this.timeouts
 			.observeOn(Schedulers.io())
 			.subscribe(lastTimeout::set);
-		this.infoRx.highQCs()
+
+		this.highQCs
 			.observeOn(Schedulers.io())
 			.subscribe(highQC::set);
 

@@ -23,10 +23,6 @@ import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
-import com.radixdlt.consensus.epoch.EpochView;
-import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.systeminfo.InfoRx;
-import com.radixdlt.consensus.Timeout;
 import com.radixdlt.utils.SenderToRx;
 import io.reactivex.rxjava3.core.Observable;
 
@@ -39,12 +35,6 @@ public final class SystemInfoRxModule extends AbstractModule {
 	protected void configure() {
 		SenderToRx<BFTCommittedUpdate, BFTCommittedUpdate> committed = new SenderToRx<>(i -> i);
 		SenderToRx<QuorumCertificate, QuorumCertificate> highQCs = new SenderToRx<>(i -> i);
-		SenderToRx<Timeout, Timeout> timeouts = new SenderToRx<>(i -> i);
-		SenderToRx<EpochView, EpochView> currentViews = new SenderToRx<>(i -> i);
-
-		bind(new TypeLiteral<EventDispatcher<Timeout>>() { }).toInstance(timeouts::send);
-		bind(new TypeLiteral<EventDispatcher<EpochView>>() { }).toInstance(currentViews::send);
-
 		VertexStoreEventSender eventSender = new VertexStoreEventSender() {
 			@Override
 			public void sendCommitted(BFTCommittedUpdate committedUpdate) {
@@ -59,24 +49,7 @@ public final class SystemInfoRxModule extends AbstractModule {
 		Multibinder.newSetBinder(binder(), VertexStoreEventSender.class).addBinding()
 			.toInstance(eventSender);
 
-		InfoRx infoRx = new InfoRx() {
-			@Override
-			public Observable<EpochView> currentViews() {
-				return currentViews.rx();
-			}
-
-			@Override
-			public Observable<Timeout> timeouts() {
-				return timeouts.rx();
-			}
-
-			@Override
-			public Observable<QuorumCertificate> highQCs() {
-				return highQCs.rx();
-			}
-		};
-
-		bind(InfoRx.class).toInstance(infoRx);
+		bind(new TypeLiteral<Observable<QuorumCertificate>>() { }).toInstance(highQCs.rx());
 		bind(new TypeLiteral<Observable<BFTCommittedUpdate>>() { }).toInstance(committed.rx());
 	}
 }

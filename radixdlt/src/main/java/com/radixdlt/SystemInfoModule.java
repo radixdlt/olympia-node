@@ -25,7 +25,6 @@ import com.google.inject.Singleton;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.systeminfo.InMemorySystemInfoManager;
-import com.radixdlt.systeminfo.InfoRx;
 import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.epoch.EpochView;
@@ -58,10 +57,15 @@ public class SystemInfoModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private InMemorySystemInfoManager infoStateRunner(InfoRx infoRx, Observable<BFTCommittedUpdate> committedUpdates) {
+	private InMemorySystemInfoManager infoStateRunner(
+		Observable<EpochView> currentViews,
+		Observable<Timeout> timeouts,
+		Observable<QuorumCertificate> highQCs,
+		Observable<BFTCommittedUpdate> committedUpdates
+	) {
 		final int vertexBufferSize = runtimeProperties.get("api.debug.vertex_buffer_size", DEFAULT_VERTEX_BUFFER_SIZE);
 		final long vertexUpdateFrequency = runtimeProperties.get("api.debug.vertex_update_freq", DEFAULT_VERTEX_UPDATE_FREQ);
-		return new InMemorySystemInfoManager(infoRx, committedUpdates, vertexBufferSize, vertexUpdateFrequency);
+		return new InMemorySystemInfoManager(currentViews, timeouts, highQCs, committedUpdates, vertexBufferSize, vertexUpdateFrequency);
 	}
 
 	@Provides

@@ -35,7 +35,7 @@ public class NoTimeoutsInvariant implements TestInvariant {
 	@Override
 	public Observable<TestInvariantError> check(RunningNetwork network) {
 		List<Observable<Pair<BFTNode, Timeout>>> timeouts = network.getNodes().stream()
-			.map(n -> network.getInfo(n).timeouts().map(t -> Pair.of(n, t)))
+			.map(n -> network.timeouts())
 			.collect(Collectors.toList());
 
 		return Observable.merge(timeouts)

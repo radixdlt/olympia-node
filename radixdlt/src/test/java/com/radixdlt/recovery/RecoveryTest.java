@@ -41,6 +41,7 @@ import com.radixdlt.RadixEngineStoreModule;
 import com.radixdlt.SyncServiceModule;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.consensus.HashSigner;
+import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
@@ -56,6 +57,7 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.MockedCheckpointModule;
 import com.radixdlt.environment.deterministic.DeterministicEpochInfo;
 import com.radixdlt.mempool.EmptyMempool;
@@ -154,6 +156,9 @@ public class RecoveryTest {
 					bind(Mempool.class).to(EmptyMempool.class);
 					bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
 					bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
+
+					bind(new TypeLiteral<EventProcessor<EpochView>>() { }).toInstance(epochView -> { });
+					bind(new TypeLiteral<EventProcessor<Timeout>>() { }).toInstance(t -> { });
 
 					// TODO: Move these into DeterministicSender
 					bind(CommittedAtomSender.class).toInstance(atom -> { });

@@ -27,7 +27,6 @@ import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 
 /**
  * Check that the network is making progress by ensuring that new QCs and epochs
@@ -48,15 +47,12 @@ public class LivenessInvariant implements TestInvariant {
 			Pair.of(EpochView.of(0, View.genesis()), 0L)
 		);
 
-		Observable<EpochView> highest = Observable.merge(
-			network.getNodes().stream()
-				.map(network::getInfo)
-				.map(eventsRx -> eventsRx.highQCs()
-					.map(QuorumCertificate::getProposed)
-					.map(header -> EpochView.of(header.getLedgerHeader().getEpoch(), header.getView()))
-				)
-				.collect(Collectors.toList())
-		).scan(EpochView.of(0, View.genesis()), Ordering.natural()::max);
+		Observable<EpochView> highest =
+			network.highQCs()
+				.map(Pair::getSecond)
+				.map(QuorumCertificate::getProposed)
+				.map(header -> EpochView.of(header.getLedgerHeader().getEpoch(), header.getView()))
+				.scan(EpochView.of(0, View.genesis()), Ordering.natural()::max);
 
 		return Observable.combineLatest(
 			highest,

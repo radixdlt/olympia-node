@@ -20,11 +20,13 @@ package com.radixdlt.environment.deterministic;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTSyncRequestProcessor;
 import com.radixdlt.consensus.bft.BFTUpdate;
+import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
@@ -81,6 +83,10 @@ public class DeterministicConsensusProcessor implements DeterministicMessageProc
 			vertexStoreSync.processLedgerUpdate((LedgerUpdate) message);
 		} else if (message instanceof LocalGetVerticesRequest) {
 			vertexStoreSync.processGetVerticesLocalTimeout((LocalGetVerticesRequest) message);
+		} else if (message instanceof EpochView) {
+			// Don't do anything for now
+		} else if (message instanceof Timeout) {
+			// Don't do anything for now
 		} else {
 			throw new IllegalArgumentException("Unknown message type: " + message.getClass().getName());
 		}
