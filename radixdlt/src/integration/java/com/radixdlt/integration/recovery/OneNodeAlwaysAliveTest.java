@@ -24,7 +24,6 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Scopes;
-import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.CryptoModule;
@@ -40,7 +39,6 @@ import com.radixdlt.RadixEngineModule;
 import com.radixdlt.RadixEngineStoreModule;
 import com.radixdlt.SyncServiceModule;
 import com.radixdlt.consensus.HashSigner;
-import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -54,7 +52,6 @@ import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.MockedCheckpointModule;
 import com.radixdlt.environment.deterministic.DeterministicEpochInfo;
 import com.radixdlt.integration.distributed.MockedMempoolModule;
@@ -158,7 +155,7 @@ public class OneNodeAlwaysAliveTest {
 					bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(200);
 					bind(Integer.class).annotatedWith(BFTSyncPatienceMillis.class).toInstance(200);
 					bind(Integer.class).annotatedWith(MinValidators.class).toInstance(1);
-					bind(Long.class).annotatedWith(PacemakerTimeout.class).toInstance(5000L);
+					bind(Long.class).annotatedWith(PacemakerTimeout.class).toInstance(1000L);
 					bind(Double.class).annotatedWith(PacemakerRate.class).toInstance(2.0);
 					bind(Integer.class).annotatedWith(PacemakerMaxExponent.class).toInstance(6);
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(88L));
@@ -166,10 +163,6 @@ public class OneNodeAlwaysAliveTest {
 					// System
 					bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
 					bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
-
-					// TODO: Move to mocked module
-					bind(new TypeLiteral<EventProcessor<EpochView>>() { }).toInstance(epochView -> { });
-					bind(new TypeLiteral<EventProcessor<Timeout>>() { }).toInstance(epochView -> { });
 
 					// TODO: Move these into DeterministicSender
 					bind(CommittedAtomSender.class).toInstance(atom -> { });
