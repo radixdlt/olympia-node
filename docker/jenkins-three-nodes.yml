@@ -70,3 +70,5 @@ services:
         max-file: "30"
 networks:
   three_node_universe:
+    external:
+      name: radix_default
