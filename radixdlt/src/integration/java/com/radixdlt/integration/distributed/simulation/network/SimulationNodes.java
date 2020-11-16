@@ -29,7 +29,6 @@ import com.google.inject.util.Modules;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.EpochChange;
@@ -119,8 +118,6 @@ public class SimulationNodes {
 
 		Observable<Pair<BFTNode, QuorumCertificate>> highQCs();
 
-		Observable<Pair<BFTNode, Timeout>> timeouts();
-
 		Mempool getMempool(BFTNode node);
 
 		SimulationNetwork getUnderlyingNetwork();
@@ -206,19 +203,6 @@ public class SimulationNodes {
 					.collect(Collectors.toSet());
 
 				return Observable.merge(highQCs);
-			}
-
-			@Override
-			public Observable<Pair<BFTNode, Timeout>> timeouts() {
-				Set<Observable<Pair<BFTNode, Timeout>>> timeouts = nodeInstances.stream()
-					.map(i -> {
-						BFTNode node = i.getInstance(Key.get(BFTNode.class, Self.class));
-						return i.getInstance(Key.get(new TypeLiteral<Observable<Timeout>>() { }))
-							.map(v -> Pair.of(node, v));
-					})
-					.collect(Collectors.toSet());
-
-				return Observable.merge(timeouts);
 			}
 
 			@Override
