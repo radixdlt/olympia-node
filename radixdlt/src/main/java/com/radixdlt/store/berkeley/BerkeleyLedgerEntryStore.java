@@ -284,7 +284,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 			LedgerEntryIndices indices,
 			Transaction transaction) throws IOException {
 		byte[] ledgerEntryData = encode(ledgerEntry);
-		log.debug("Storing atom {} with size {}", ledgerEntry.getAID(), ledgerEntryData.length);
+		log.trace("Storing atom {} with size {}", ledgerEntry.getAID(), ledgerEntryData.length);
 
 		return doStore(prefix, ledgerEntry.getStateVersion(), ledgerEntry.getAID(), ledgerEntryData, indices, transaction);
 	}
