@@ -33,6 +33,7 @@ dependencies {
     testCompile 'io.cucumber:cucumber-java:5.5.0'
     testCompile 'io.cucumber:cucumber-junit:5.5.0'
     testCompile group: 'org.junit.vintage', name: 'junit-vintage-engine', version: '5.6.1'
+    testCompile group: 'org.awaitility', name: 'awaitility', version: '4.0.3'
     testCompile group: 'pl.pragmatists', name: 'JUnitParams', version: '1.1.1'
     testCompile group: 'me.alexpanov', name: 'free-port-finder', version: '1.1.1'
     api group: 'io.reactivex.rxjava2', name: 'rxjava', version: '2.1.14'

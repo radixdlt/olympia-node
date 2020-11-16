@@ -1,6 +1,7 @@
 package com.radixdlt.test;
 
-import static com.radixdlt.test.AssertionChecks.*;
+import static com.radixdlt.test.AssertionChecks.slowNodeTestBuilder;
+import static com.radixdlt.test.AssertionChecks.outOfSynchronyTestBuilder;
 import static java.util.stream.Collectors.toList;
 
 import java.util.ArrayList;
@@ -22,6 +23,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.Assert;
 import org.junit.experimental.categories.Category;
 import org.junit.experimental.runners.Enclosed;
 import org.junit.rules.TestName;
@@ -71,10 +73,10 @@ public class OutOfSynchronyBoundsTest {
 			}
 		}
 
-		@junitparams.Parameters({"3","5"})
-		@TestCaseName("given_{0}_correct_bfts_in_latent_docker_network__when_all_nodes_are_out_synchrony__then_all_instances_should_fail_their_liveness_checks")
+		@junitparams.Parameters({"4","5"})
+		@TestCaseName("given_{0}_correct_bfts_in_latent_docker_network__when_all_nodes_are_out_synchrony__then_a_liveness_check_should_fail")
 		@Test(expected = LivenessCheck.LivenessError.class)
-		public void given_X_correct_bfts_in_latent_docker_network__when_all_nodes_are_out_synchrony__then_all_instances_should_fail_their_liveness_checks(int numberOfNodes) throws Throwable {
+		public void given_X_correct_bfts_in_latent_docker_network__when_all_nodes_are_out_synchrony__then_a_liveness_check_should_fail(int numberOfNodes) {
 			String name = Generic.extractTestName(this.name.getMethodName());
 			logger.info("Test name is " + name);
 			try (DockerNetwork network = DockerNetwork.builder().numNodes(numberOfNodes).testName(name).startConsensusOnBoot().build()) {
@@ -88,11 +90,11 @@ public class OutOfSynchronyBoundsTest {
 				RemoteBFTTest testOutOfSynchronyBounds = RemoteBFTTest.builder().assertLiveness(20)
 								.network(RemoteBFTNetworkBridge.of(network)).build();
 
-				try {
-					testOutOfSynchronyBounds.runBlocking(CmdHelper.getTestDurationInSeconds(), TimeUnit.SECONDS);
-				} catch (AssertionError e) {
-					throw e.getCause(); // this is a bit awkward, but I hope to refactor the type of exception that is thrown
-				}
+				AssertionError error = Assert.assertThrows(AssertionError.class, () ->
+						testOutOfSynchronyBounds.runBlocking(CmdHelper.getTestDurationInSeconds(), TimeUnit.SECONDS)
+				);
+
+				assertAssertionErrorIsLivenessError(error);
 			}
 		}
 	}
@@ -104,47 +106,41 @@ public class OutOfSynchronyBoundsTest {
 		public TestName name = new TestName();
 
 		private SlowNodeSetup taskRunner;
+		private StaticClusterNetwork network;
 
 		@Test(expected = LivenessCheck.LivenessError.class)
-		public void given_10_correct_bfts_in_latent_cluster_network__when_one_instance_is_down__then_all_instances_should_get_same_commits_and_progress_should_be_made() throws Throwable {
-			StaticClusterNetwork network = StaticClusterNetwork.clusterInfo(10);
+		public void given_10_correct_bfts_in_latent_cluster_network__when_all_nodes_are_out_synchrony__then_a_liveness_check_should_fail() {
+			network = StaticClusterNetwork.clusterInfo(10);
 			String sshKeylocation = Optional.ofNullable(System.getenv("SSH_IDENTITY")).orElse(System.getenv("HOME") + "/.ssh/id_rsa");
 
-			// we need to make sure that the network is already live before beginning our test
-			// this check should be done for all cluster tests, so perhaps this could be moved to a @Before method
-			RemoteBFTTest test = AssertionChecks.slowNodeTestBuilder()
-					.network(RemoteBFTNetworkBridge.of(network))
-					.waitUntilResponsive()
-					.startConsensusOnRun()
-					.build();
-			test.runBlocking(30, TimeUnit.SECONDS);
-			logger.info("Cluster has liveness, proceeding with test...");
+			Conditions.waitUntilNetworkHasLiveness(network);
 
 			// The SlowNodeSetup object here is used only to run ansible playbook tasks via the togglePortViaAnsible() method
 			taskRunner = SlowNodeSetup.builder()
-							.withImage("eu.gcr.io/lunar-arc-236318/node-ansible")
-							.usingCluster(network.getClusterName())
-							.runOptions("--rm -v key-volume:/ansible/ssh --name node-ansible")
-							.build();
+					.withImage("eu.gcr.io/lunar-arc-236318/node-ansible")
+					.usingCluster(network.getClusterName())
+					.runOptions("--rm -v key-volume:/ansible/ssh --name node-ansible")
+					.build();
 			taskRunner.pullImage();
-			taskRunner.copyfileToNamedVolume(sshKeylocation,"key-volume");
+			taskRunner.copyfileToNamedVolume(sshKeylocation, "key-volume");
 			taskRunner.togglePortViaAnsible(30000, true);
 
-			// the actual test:
 			RemoteBFTTest testOutOfSynchronyBounds = outOfSynchronyTestBuilder(Lists.newArrayList())
-							.network(RemoteBFTNetworkBridge.of(network))
-							.build();
+					.network(RemoteBFTNetworkBridge.of(network))
+					.build();
 
-			try {
-				testOutOfSynchronyBounds.runBlocking(CmdHelper.getTestDurationInSeconds(), TimeUnit.SECONDS);
-			} catch (AssertionError e) {
-				throw e.getCause(); // this also will be refactored
-			}
+			AssertionError error = Assert.assertThrows(AssertionError.class, () ->
+					testOutOfSynchronyBounds.runBlocking(CmdHelper.getTestDurationInSeconds(), TimeUnit.SECONDS)
+			);
+
+			assertAssertionErrorIsLivenessError(error);
 		}
+
 
 		@After
 		public void teardown() {
 			taskRunner.togglePortViaAnsible(30000, false);
+			Conditions.waitUntilNetworkHasLiveness(network);
 		}
 	}
 
@@ -274,5 +270,12 @@ public class OutOfSynchronyBoundsTest {
 			}
 			return !crashedNodesURLs.contains(nodeUrl);
 		}
+	}
+
+	private static void assertAssertionErrorIsLivenessError(AssertionError error) {
+		Assert.assertNotNull("No error was thrown", error);
+		Class classOfExceptionCause = error.getCause().getClass();
+		Assert.assertEquals(String.format("Got %s instead of the expected LivenessError", classOfExceptionCause),
+				classOfExceptionCause, LivenessCheck.LivenessError.class);
 	}
 }
