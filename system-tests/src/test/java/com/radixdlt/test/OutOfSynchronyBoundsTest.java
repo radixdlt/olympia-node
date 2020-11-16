@@ -75,15 +75,15 @@ public class OutOfSynchronyBoundsTest {
 
 		@junitparams.Parameters({"4","5"})
 		@TestCaseName("given_{0}_correct_bfts_in_latent_docker_network__when_all_nodes_are_out_synchrony__then_a_liveness_check_should_fail")
-		@Test(expected = LivenessCheck.LivenessError.class)
+		@Test
 		public void given_X_correct_bfts_in_latent_docker_network__when_all_nodes_are_out_synchrony__then_a_liveness_check_should_fail(int numberOfNodes) {
+
 			String name = Generic.extractTestName(this.name.getMethodName());
 			logger.info("Test name is " + name);
 			try (DockerNetwork network = DockerNetwork.builder().numNodes(numberOfNodes).testName(name).startConsensusOnBoot().build()) {
 				network.startBlocking();
 
-				RemoteBFTTest test = slowNodeTestBuilder().network(RemoteBFTNetworkBridge.of(network)).waitUntilResponsive().build();
-				test.runBlocking(CmdHelper.getTestDurationInSeconds(), TimeUnit.SECONDS);
+				Conditions.waitUntilNetworkHasLiveness(network);
 
 				network.getNodeIds().forEach(nodeId -> CmdHelper.blockPort(nodeId, 30000)); // unfortunately a magic number, should be read from a config instead
 
@@ -108,7 +108,7 @@ public class OutOfSynchronyBoundsTest {
 		private SlowNodeSetup taskRunner;
 		private StaticClusterNetwork network;
 
-		@Test(expected = LivenessCheck.LivenessError.class)
+		@Test
 		public void given_10_correct_bfts_in_latent_cluster_network__when_all_nodes_are_out_synchrony__then_a_liveness_check_should_fail() {
 			network = StaticClusterNetwork.clusterInfo(10);
 			String sshKeylocation = Optional.ofNullable(System.getenv("SSH_IDENTITY")).orElse(System.getenv("HOME") + "/.ssh/id_rsa");

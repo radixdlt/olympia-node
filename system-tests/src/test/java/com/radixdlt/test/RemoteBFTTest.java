@@ -220,7 +220,7 @@ public final class RemoteBFTTest {
 		 * @return This builder
 		 */
 		public Builder waitUntilResponsive() {
-			return waitUntil(ResponsivenessCheck.with(1, TimeUnit.SECONDS));
+			return waitUntil(ResponsivenessCheck.with(5, TimeUnit.SECONDS));
 		}
 
 		/**
@@ -251,7 +251,7 @@ public final class RemoteBFTTest {
 		 * @return This builder
 		 */
 		public Builder assertResponsiveness() {
-			return addCheck(ResponsivenessCheck.with(1, TimeUnit.SECONDS));
+			return addCheck(ResponsivenessCheck.with(5, TimeUnit.SECONDS));
 		}
 
 
