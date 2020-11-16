@@ -18,6 +18,7 @@
 
 package utils
 
+import me.alexpanov.net.FreePortFinder
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 
@@ -82,6 +83,8 @@ class CmdHelper {
                         "RADIXDLT_UNIVERSE=${options.radixdltUniverse}",
 
         ]
+
+        String hostPortMapping = "-p ${options.hostPort}:8080 "
         String dockerContainer = "docker run -d " +
                 "-e RADIXDLT_NETWORK_SEEDS_REMOTE " +
                 "--name ${options.nodeName}  " +
@@ -91,7 +94,7 @@ class CmdHelper {
                 "-e RADIXDLT_UNIVERSE " +
                 "-e JAVA_OPTS " +
                 "-l com.radixdlt.roles='core' " +
-                "-p ${options.hostPort}:8080 " +
+                "${testRunningOnDocker() ? '' : hostPortMapping} " +
                 "--cap-add=NET_ADMIN " +
                 "--network ${options.network} " +
                 "radixdlt/radixdlt-core:develop"
@@ -114,9 +117,9 @@ class CmdHelper {
             options.nodeName = node
             options.quorumSize = nodeCount
             options.remoteSeeds = nodeNames.findAll({ it != node })
-            options.hostPort = 1080 + index
-            options.rmiPort = 9010 + index
-            options.socketAddressPort = 50505 + index
+            options.hostPort = FreePortFinder.findFreeLocalPort()
+            options.rmiPort = FreePortFinder.findFreeLocalPort();
+            options.socketAddressPort = FreePortFinder.findFreeLocalPort();
             options.startConsensusOnBoot = startConsensusOnBoot
             options.radixdltUniverse = System.getenv("RADIXDLT_UNIVERSE")
             return [(node): options]
@@ -245,5 +248,10 @@ class CmdHelper {
     static void captureLogs(String containerId,String testName) {
         Files.createDirectories(Paths.get("${System.getProperty('logs.dir')}/${testName}"));
         runCommand(['bash', '-c', "docker logs ${containerId} > ${System.getProperty('logs.dir')}/${testName}/test${containerId.substring(0,11)}.log"]);
+    }
+
+    static boolean testRunningOnDocker() {
+        def present = Optional.ofNullable(System.getenv("TEST_NETWORK")).isPresent()
+        return present
     }
 }
