@@ -21,9 +21,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
+import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Scopes;
+import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.Multibinder;
+import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.name.Names;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.CryptoModule;
@@ -39,6 +43,7 @@ import com.radixdlt.RadixEngineModule;
 import com.radixdlt.RadixEngineStoreModule;
 import com.radixdlt.SyncServiceModule;
 import com.radixdlt.consensus.HashSigner;
+import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -48,11 +53,16 @@ import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
+import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
+import com.radixdlt.consensus.sync.GetVerticesRequest;
+import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.MockedCheckpointModule;
+import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.deterministic.DeterministicEpochInfo;
 import com.radixdlt.integration.distributed.MockedMempoolModule;
 import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
@@ -62,6 +72,8 @@ import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
+import com.radixdlt.integration.distributed.deterministic.NodeEvents;
+import com.radixdlt.integration.distributed.deterministic.SafetyCheckerModule;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.statecomputer.EpochCeilingView;
@@ -97,14 +109,13 @@ import org.junit.runners.Parameterized.Parameters;
  * others with.
  */
 @RunWith(Parameterized.class)
-public class OneNodeAlwaysAliveTest {
+public class OneNodeAlwaysAliveLivenessTest {
 	private static final Logger logger = LogManager.getLogger();
 
 	@Parameters
 	public static Collection<Object[]> numNodes() {
 		return List.of(new Object[][] {
-			{2}, {3}
-			/*, {4} TODO: greater than 3 will cause safety breaks until safety persistence is implemented */
+			{2}, {3}, {4}
 		});
 	}
 
@@ -114,26 +125,40 @@ public class OneNodeAlwaysAliveTest {
 	private DeterministicNetwork network;
 	private List<Supplier<Injector>> nodeCreators;
 	private List<Injector> nodes = new ArrayList<>();
-	public OneNodeAlwaysAliveTest(int numNodes) {
-		final List<ECKeyPair> nodeKeys = Stream.generate(ECKeyPair::generateNew).limit(numNodes).collect(Collectors.toList());
+	private final List<ECKeyPair> nodeKeys;
 
+	@Inject
+	private NodeEvents nodeEvents;
+
+	public OneNodeAlwaysAliveLivenessTest(int numNodes) {
+		this.nodeKeys = Stream.generate(ECKeyPair::generateNew).limit(numNodes).collect(Collectors.toList());
+	}
+
+	@Before
+	public void setup() {
 		this.network = new DeterministicNetwork(
 			nodeKeys.stream().map(k -> BFTNode.create(k.getPublicKey())).collect(Collectors.toList()),
 			MessageSelector.firstSelector(),
 			MessageMutator.nothing()
 		);
 
-
 		List<BFTNode> allNodes = nodeKeys.stream()
 			.map(k -> BFTNode.create(k.getPublicKey())).collect(Collectors.toList());
+
+		Guice.createInjector(
+			new AbstractModule() {
+				@Override
+				protected void configure() {
+					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
+				}
+			},
+			new SafetyCheckerModule()
+		).injectMembers(this);
 
 		this.nodeCreators = nodeKeys.stream()
 			.<Supplier<Injector>>map(k -> () -> createRunner(k, allNodes))
 			.collect(Collectors.toList());
-	}
 
-	@Before
-	public void setup() {
 		for (Supplier<Injector> nodeCreator : nodeCreators) {
 			this.nodes.add(nodeCreator.get());
 		}
@@ -145,6 +170,13 @@ public class OneNodeAlwaysAliveTest {
 
 		return Guice.createInjector(
 			new AbstractModule() {
+
+				@ProvidesIntoSet
+				@ProcessOnDispatch
+				private EventProcessor<BFTCommittedUpdate> test(@Self BFTNode node) {
+					return nodeEvents.processor(node, BFTCommittedUpdate.class);
+				}
+
 				@Override
 				protected void configure() {
 					bind(HashSigner.class).toInstance(ecKeyPair::sign);
@@ -216,7 +248,7 @@ public class OneNodeAlwaysAliveTest {
 	}
 
 	private void restartNode(int index) {
-		this.network.dropMessages(m -> m.channelId().receiverIndex() == index && m.channelId().senderIndex() == index);
+		this.network.dropMessages(m -> m.channelId().receiverIndex() == index);
 		Injector injector = nodeCreators.get(index).get();
 		this.nodes.set(index, injector);
 
