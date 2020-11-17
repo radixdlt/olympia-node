@@ -53,7 +53,7 @@ public class ConsensusToLedgerCommittedInvariant implements TestInvariant {
 		).subscribe(committedCommands::onNext);
 
 		return Observable.<BFTCommittedUpdate>create(emitter ->
-			commits.addListener(update -> emitter.onNext(update.event()))
+			commits.addListener((node, event) -> emitter.onNext(event))
 		).serialize()
 			.concatMap(committedUpdate -> Observable.fromStream(committedUpdate.getCommitted().stream()
 				.flatMap(PreparedVertex::successfulCommands)))

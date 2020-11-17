@@ -40,7 +40,7 @@ public class EpochViewInvariant implements TestInvariant {
 	@Override
 	public Observable<TestInvariantError> check(RunningNetwork network) {
 		return Observable.<BFTCommittedUpdate>create(
-			emitter -> this.commits.addListener(commit -> emitter.onNext(commit.event()))
+			emitter -> this.commits.addListener((node, commit) -> emitter.onNext(commit))
 		).serialize()
 			.concatMap(committedUpdate -> Observable.fromStream(committedUpdate.getCommitted().stream()))
 			.flatMap(vertex -> {

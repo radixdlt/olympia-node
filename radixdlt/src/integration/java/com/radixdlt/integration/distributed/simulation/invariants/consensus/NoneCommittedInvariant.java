@@ -36,9 +36,9 @@ public class NoneCommittedInvariant implements TestInvariant {
 	public Observable<TestInvariantError> check(RunningNetwork network) {
 		return Observable.<TestInvariantError>create(
 			emitter ->
-				this.commits.addListener(nodeTimeout ->
+				this.commits.addListener((node, event) ->
 					emitter.onNext(
-						new TestInvariantError("Commit at node " + nodeTimeout.node() + " " + nodeTimeout.event())
+						new TestInvariantError("Commit at node " + node + " " + event)
 					)
 				)
 		).serialize();

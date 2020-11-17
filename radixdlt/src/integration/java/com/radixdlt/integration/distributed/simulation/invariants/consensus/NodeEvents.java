@@ -21,34 +21,16 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.EventProcessor;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 
 public final class NodeEvents<T> {
-	public static class NodeEvent<T> {
-		private final BFTNode node;
-		private final T t;
+	private final Set<BiConsumer<BFTNode, T>> consumers = new HashSet<>();
 
-		private NodeEvent(BFTNode node, T t) {
-			this.node = node;
-			this.t = t;
-		}
-
-		public BFTNode node() {
-			return node;
-		}
-
-		public T event() {
-			return t;
-		}
-	}
-
-	private final Set<Consumer<NodeEvent<T>>> consumers = new HashSet<>();
-
-	public void addListener(Consumer<NodeEvent<T>> nodeTimeoutConsumer) {
-		this.consumers.add(nodeTimeoutConsumer);
+	public void addListener(BiConsumer<BFTNode, T> eventConsumer) {
+		this.consumers.add(eventConsumer);
 	}
 
 	public EventProcessor<T> processor(BFTNode node) {
-		return t -> consumers.forEach(c -> c.accept(new NodeEvent<>(node, t)));
+		return t -> consumers.forEach(c -> c.accept(node, t));
 	}
 }

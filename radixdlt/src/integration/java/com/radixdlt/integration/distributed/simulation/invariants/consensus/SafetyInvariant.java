@@ -18,22 +18,12 @@
 package com.radixdlt.integration.distributed.simulation.invariants.consensus;
 
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
-import com.radixdlt.consensus.bft.PreparedVertex;
-import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.BFTHeader;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.integration.distributed.simulation.TestInvariant;
-import com.radixdlt.integration.distributed.simulation.invariants.consensus.NodeEvents.NodeEvent;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
+import com.radixdlt.integration.invariants.SafetyChecker;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.TreeMap;
 
 /**
  * Checks that validator nodes do not commit on conflicting vertices
@@ -48,9 +38,9 @@ public class SafetyInvariant implements TestInvariant {
 	@Override
 	public Observable<TestInvariantError> check(RunningNetwork network) {
 		final SafetyChecker safetyChecker = new SafetyChecker(network.getNodes());
-		return Observable.<NodeEvent<BFTCommittedUpdate>>create(emitter ->
-			commits.addListener(emitter::onNext)
+		return Observable.<Pair<BFTNode, BFTCommittedUpdate>>create(emitter ->
+			commits.addListener((node, update) -> emitter.onNext(Pair.of(node, update)))
 		).serialize()
-			.flatMap(e -> safetyChecker.process(e).map(Observable::just).orElse(Observable.empty()));
+			.flatMap(e -> safetyChecker.process(e.getFirst(), e.getSecond()).map(Observable::just).orElse(Observable.empty()));
 	}
 }

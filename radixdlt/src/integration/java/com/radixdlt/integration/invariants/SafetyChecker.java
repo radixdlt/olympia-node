@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.simulation.invariants.consensus;
+package com.radixdlt.integration.invariants;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.BFTHeader;
@@ -26,7 +26,6 @@ import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
-import com.radixdlt.integration.distributed.simulation.invariants.consensus.NodeEvents.NodeEvent;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,8 +33,10 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.TreeMap;
+import javax.annotation.concurrent.NotThreadSafe;
 
-public class SafetyChecker {
+@NotThreadSafe
+public final class SafetyChecker {
 	private final TreeMap<EpochView, VerifiedVertex> committedVertices = new TreeMap<>();
 	private final Map<BFTNode, EpochView> lastCommittedByNode = new HashMap<>();
 	private final List<BFTNode> nodes;
@@ -112,10 +113,10 @@ public class SafetyChecker {
 		return Optional.empty();
 	}
 
-	public Optional<TestInvariantError> process(NodeEvent<BFTCommittedUpdate> committedUpdate) {
-		ImmutableList<PreparedVertex> vertices = committedUpdate.event().getCommitted();
+	public Optional<TestInvariantError> process(BFTNode node, BFTCommittedUpdate committedUpdate) {
+		ImmutableList<PreparedVertex> vertices = committedUpdate.getCommitted();
 		for (PreparedVertex vertex : vertices) {
-			Optional<TestInvariantError> maybeError = process(committedUpdate.node(), vertex.getVertex());
+			Optional<TestInvariantError> maybeError = process(node, vertex.getVertex());
 			if (maybeError.isPresent()) {
 				return maybeError;
 			}

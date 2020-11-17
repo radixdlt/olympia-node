@@ -37,9 +37,9 @@ public class NoTimeoutsInvariant implements TestInvariant {
 	public Observable<TestInvariantError> check(RunningNetwork network) {
 		return Observable.<TestInvariantError>create(
 			emitter ->
-				this.nodeTimeouts.addListener(nodeTimeout ->
+				this.nodeTimeouts.addListener((node, event) ->
 					emitter.onNext(
-						new TestInvariantError("Timeout at node " + nodeTimeout.node() + " " + nodeTimeout.event())
+						new TestInvariantError("Timeout at node " + node + " " + event)
 					)
 				)
 		).serialize();
