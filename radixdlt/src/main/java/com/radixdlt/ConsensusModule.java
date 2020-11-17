@@ -29,6 +29,7 @@ import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTUpdate;
+import com.radixdlt.consensus.bft.FormedQC;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
@@ -99,7 +100,8 @@ public final class ConsensusModule extends AbstractModule {
 	@Provides
 	private BFTFactory bftFactory(
 		Hasher hasher,
-		HashVerifier verifier
+		HashVerifier verifier,
+		EventDispatcher<FormedQC> formedQCEventDispatcher
 	) {
 		return (
 			self,
@@ -115,6 +117,11 @@ public final class ConsensusModule extends AbstractModule {
 				.verifier(verifier)
 				.pacemaker(pacemaker)
 				.vertexStore(vertexStore)
+				.formedQCEventDispatcher(formedQC -> {
+					// FIXME: a hack for now until replacement of epochmanager factories
+					vertexStoreSync.formedQCEventProcessor().process(formedQC);
+					formedQCEventDispatcher.dispatch(formedQC);
+				})
 				.bftSyncer(vertexStoreSync)
 				.proposerElection(proposerElection)
 				.validatorSet(validatorSet)

@@ -189,11 +189,7 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 		}
 		Optional<QuorumCertificate> maybeQC = this.pendingVotes.insertVote(vote, this.validatorSet)
 			.filter(qc -> shouldProceedToNextView(view));
-		maybeQC.ifPresent(qc -> {
-			log.trace("Vote: Formed QC: {}", qc);
-			this.counters.increment(CounterType.BFT_VOTE_QUORUMS);
-			this.lastQuorumView = view;
-		});
+		maybeQC.ifPresent(qc -> this.lastQuorumView = view);
 		return maybeQC;
 	}
 

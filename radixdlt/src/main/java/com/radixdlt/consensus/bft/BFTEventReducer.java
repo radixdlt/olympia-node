@@ -20,10 +20,10 @@ package com.radixdlt.consensus.bft;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.ViewTimeout;
-import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.liveness.Pacemaker;
 
+import com.radixdlt.environment.EventDispatcher;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import java.util.Objects;
@@ -38,17 +38,17 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private static final Logger log = LogManager.getLogger();
 
 	private final VertexStore vertexStore;
-    private final BFTSyncer bftSyncer;
 	private final Pacemaker pacemaker;
+	private final EventDispatcher<FormedQC> formedQCEventDispatcher;
 
 	public BFTEventReducer(
 		Pacemaker pacemaker,
 		VertexStore vertexStore,
-		BFTSyncer bftSyncer
+		EventDispatcher<FormedQC> formedQCEventDispatcher
 	) {
 		this.pacemaker = Objects.requireNonNull(pacemaker);
 		this.vertexStore = Objects.requireNonNull(vertexStore);
-		this.bftSyncer = Objects.requireNonNull(bftSyncer);
+		this.formedQCEventDispatcher = Objects.requireNonNull(formedQCEventDispatcher);
 	}
 
 	@Override
@@ -60,11 +60,9 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	public void processVote(Vote vote) {
 		log.trace("Vote: Processing {}", vote);
 		// accumulate votes into QCs in store
-		this.pacemaker.processVote(vote).ifPresent(qc -> {
-			HighQC highQC = HighQC.from(qc, this.vertexStore.highQC().highestCommittedQC());
-			// If we are not yet synced, we rely on the syncer to process the QC once received
-			this.bftSyncer.syncToQC(highQC, vote.getAuthor());
-		});
+		this.pacemaker.processVote(vote).ifPresent(qc ->
+			formedQCEventDispatcher.dispatch(FormedQC.create(qc, vote.getAuthor()))
+		);
 	}
 
 	@Override

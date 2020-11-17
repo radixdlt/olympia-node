@@ -121,7 +121,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.core.config.Node;
 
 /**
  * High level BFT Simulation Test Runner

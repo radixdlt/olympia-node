@@ -36,7 +36,6 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.UInt256;
 import java.util.List;
-import java.util.Objects;
 
 public final class MockedCheckpointModule extends AbstractModule {
 	@Provides
