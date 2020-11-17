@@ -22,7 +22,14 @@ import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.ConsensusEvent;
+import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.liveness.PacemakerState;
+import com.radixdlt.consensus.liveness.PacemakerStateFactory;
+import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
+import com.radixdlt.consensus.liveness.VoteSender;
+import com.radixdlt.consensus.safety.SafetyRules;
+import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.consensus.sync.BFTSyncRequestTimeoutProcessor;
 import com.radixdlt.consensus.sync.EmptyBFTSyncResponseProcessor;
 import com.radixdlt.consensus.Proposal;
@@ -36,13 +43,12 @@ import com.radixdlt.consensus.bft.BFTUpdateProcessor;
 import com.radixdlt.consensus.bft.BFTSyncRequestProcessor;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker.PacemakerInfoSender;
+import com.radixdlt.consensus.liveness.PacemakerInfoSender;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.EmptyBFTEventProcessor;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
-import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
@@ -54,6 +60,7 @@ import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdate;
@@ -109,6 +116,10 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 	private final BFTSyncRequestProcessorFactory bftSyncRequestProcessorFactory;
 	private final BFTSyncFactory bftSyncFactory;
 	private final ProposerElectionFactory proposerElectionFactory;
+	private final Hasher hasher;
+	private final HashSigner signer;
+	private final PacemakerTimeoutCalculator timeoutCalculator;
+	private final VoteSender voteSender;
 	private final SystemCounters counters;
 	private final LocalTimeoutSender localTimeoutSender;
 	private final Map<Long, List<ConsensusEvent>> queuedEvents;
@@ -116,6 +127,8 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 	private final EventProcessor<EpochView> epochViewEventProcessor;
 	private final EventProcessor<Timeout> timeoutEventProcessor;
 	private final SyncLedgerRequestSender syncRequestSender;
+	private final LocalViewUpdateSender localViewUpdateSender;
+	private final PacemakerStateFactory pacemakerStateFactory;
 
 	private EpochChange currentEpoch;
 	private int numQueuedConsensusEvents = 0;
@@ -127,26 +140,31 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 	private BFTSyncRequestProcessor syncRequestProcessor;
 	private BFTEventProcessor bftEventProcessor;
 
-
 	@Inject
 	public EpochManager(
-		@Self BFTNode self,
-		BFTEventProcessor initialBFTEventProcessor,
-		BFTSyncRequestProcessor initialSyncRequestProcessor,
-		BFTSync initialBFTSync,
-		EpochChange initialEpoch,
-		SyncEpochsRPCSender epochsRPCSender,
-		LocalTimeoutSender localTimeoutSender,
-		SyncLedgerRequestSender syncRequestSender,
-		PacemakerFactory pacemakerFactory,
-		VertexStoreFactory vertexStoreFactory,
-		BFTSyncFactory bftSyncFactory,
-		BFTSyncRequestProcessorFactory bftSyncRequestProcessorFactory,
-		ProposerElectionFactory proposerElectionFactory,
-		BFTFactory bftFactory,
-		SystemCounters counters,
-		EventProcessor<EpochView> epochViewEventProcessor,
-		EventProcessor<Timeout> timeoutEventProcessor
+			@Self BFTNode self,
+			BFTEventProcessor initialBFTEventProcessor,
+			BFTSyncRequestProcessor initialSyncRequestProcessor,
+			BFTSync initialBFTSync,
+			EpochChange initialEpoch,
+			SyncEpochsRPCSender epochsRPCSender,
+			LocalTimeoutSender localTimeoutSender,
+			SyncLedgerRequestSender syncRequestSender,
+			PacemakerFactory pacemakerFactory,
+			VertexStoreFactory vertexStoreFactory,
+			BFTSyncFactory bftSyncFactory,
+			BFTSyncRequestProcessorFactory bftSyncRequestProcessorFactory,
+			ProposerElectionFactory proposerElectionFactory,
+			BFTFactory bftFactory,
+			SystemCounters counters,
+			EventProcessor<EpochView> epochViewEventProcessor,
+			EventProcessor<Timeout> timeoutEventProcessor,
+			Hasher hasher,
+			HashSigner signer,
+			PacemakerTimeoutCalculator timeoutCalculator,
+			VoteSender voteSender,
+			LocalViewUpdateSender localViewUpdateSender,
+			PacemakerStateFactory pacemakerStateFactory
 	) {
 		if (!initialEpoch.getBFTConfiguration().getValidatorSet().containsNode(self)) {
 			this.bftEventProcessor =  EmptyBFTEventProcessor.INSTANCE;
@@ -174,10 +192,16 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 		this.bftSyncFactory = Objects.requireNonNull(bftSyncFactory);
 		this.bftSyncRequestProcessorFactory = bftSyncRequestProcessorFactory;
 		this.proposerElectionFactory = Objects.requireNonNull(proposerElectionFactory);
+		this.hasher = Objects.requireNonNull(hasher);
+		this.signer = Objects.requireNonNull(signer);
+		this.timeoutCalculator = Objects.requireNonNull(timeoutCalculator);
+		this.voteSender = Objects.requireNonNull(voteSender);
 		this.bftFactory = bftFactory;
 		this.counters = Objects.requireNonNull(counters);
 		this.epochViewEventProcessor = Objects.requireNonNull(epochViewEventProcessor);
 		this.timeoutEventProcessor = Objects.requireNonNull(timeoutEventProcessor);
+		this.localViewUpdateSender = Objects.requireNonNull(localViewUpdateSender);
+		this.pacemakerStateFactory = Objects.requireNonNull(pacemakerStateFactory);
 		this.queuedEvents = new HashMap<>();
 	}
 
@@ -200,8 +224,8 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 
 		BFTConfiguration bftConfiguration = this.currentEpoch.getBFTConfiguration();
 		VertexStore vertexStore = vertexStoreFactory.create(
-			bftConfiguration.getGenesisVertex(),
-			bftConfiguration.getGenesisQC()
+				bftConfiguration.getGenesisVertex(),
+				bftConfiguration.getGenesisQC()
 		);
 		ProposerElection proposerElection = proposerElectionFactory.create(validatorSet);
 		PacemakerTimeoutSender timeoutSender = (view, ms) -> localTimeoutSender.scheduleTimeout(new LocalTimeout(nextEpoch, view), ms);
@@ -219,8 +243,16 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 				timeoutEventProcessor.processEvent(timeout);
 			}
 		};
-		final Pacemaker pacemaker = pacemakerFactory.create(validatorSet, vertexStore, proposerElection, timeoutSender, infoSender);
-		final BFTSync bftSync = bftSyncFactory.create(vertexStore, pacemaker);
+
+		final PacemakerState.ViewUpdateSender viewUpdateSender = (viewUpdate) ->
+				localViewUpdateSender.sendLocalViewUpdate(new LocalViewUpdate(nextEpoch, viewUpdate));
+
+		final SafetyRules safetyRules = new SafetyRules(self, SafetyState.initialState(), hasher, signer);
+
+		final PacemakerState pacemakerState = pacemakerStateFactory.create(viewUpdateSender);
+		final Pacemaker pacemaker = pacemakerFactory.create(
+				validatorSet, vertexStore, infoSender, pacemakerState, timeoutSender, timeoutCalculator, safetyRules);
+		final BFTSync bftSync = bftSyncFactory.create(vertexStore, pacemakerState);
 
 		this.syncBFTResponseProcessor = bftSync;
 		this.syncBFTUpdateProcessor = bftSync;
@@ -230,12 +262,15 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 		this.syncRequestProcessor = bftSyncRequestProcessorFactory.create(vertexStore);
 
 		this.bftEventProcessor = bftFactory.create(
-			self,
-			pacemaker,
-			vertexStore,
-			bftSync,
-			proposerElection,
-			validatorSet
+				self,
+				pacemaker,
+				vertexStore,
+				bftSync,
+				proposerElection,
+				validatorSet,
+				voteSender,
+				counters,
+				safetyRules
 		);
 	}
 
@@ -397,6 +432,13 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 		bftEventProcessor.processLocalTimeout(localTimeout.getView());
 	}
 
+	public void processLocalViewUpdate(LocalViewUpdate localViewUpdate) {
+		if (localViewUpdate.getEpoch() != this.currentEpoch()) {
+			return;
+		}
+
+		bftEventProcessor.processViewUpdate(localViewUpdate.getViewUpdate());
+	}
 
 	@Override
 	public void processBFTUpdate(BFTUpdate update) {
@@ -422,3 +464,4 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 		syncBFTResponseProcessor.processGetVerticesResponse(response);
 	}
 }
+

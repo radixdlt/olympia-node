@@ -19,6 +19,7 @@ package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.ViewUpdate;
 
 /**
  * Processor of BFT events.
@@ -31,6 +32,13 @@ public interface BFTEventProcessor {
 	 * the beginning of the BFT's lifetime.
 	 */
 	void start();
+
+	/**
+	 * Process a local view update message.
+	 *
+	 * @param viewUpdate the view update message
+	 */
+	void processViewUpdate(ViewUpdate viewUpdate);
 
 	/**
 	 * Process a consensus vote message.

@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -17,11 +17,17 @@
 
 package com.radixdlt.consensus.liveness;
 
-import com.radixdlt.consensus.epoch.LocalTimeout;
+import com.radixdlt.consensus.liveness.PacemakerState.ViewUpdateSender;
 
 /**
- * Sender for local timeouts.
+ * Pacemaker state factory
  */
-public interface LocalTimeoutSender {
-	void scheduleTimeout(LocalTimeout localTimeout, long timeoutMilliseconds);
+public interface PacemakerStateFactory {
+
+	/**
+	 * Creates a new clean pacemaker state.
+	 *
+	 * @return a new pacemaker state
+	 */
+	PacemakerState create(ViewUpdateSender viewUpdateSender);
 }

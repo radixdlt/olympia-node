@@ -27,6 +27,8 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.liveness.VoteSender;
+import com.radixdlt.consensus.safety.SafetyRules;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.liveness.Pacemaker;
@@ -47,6 +49,8 @@ public class BFTBuilderTest {
 	private VertexStore vertexStore;
 	private BFTSync vertexStoreSync;
 	private BFTNode self;
+	private SystemCounters counters;
+	private SafetyRules safetyRules;
 
 	@Before
 	public void setup() {
@@ -59,6 +63,8 @@ public class BFTBuilderTest {
 		vertexStoreSync = mock(BFTSync.class);
 		self = mock(BFTNode.class);
 		hasher = mock(Hasher.class);
+		counters = mock(SystemCounters.class);
+		safetyRules = mock(SafetyRules.class);
 	}
 
 	@Test
@@ -76,8 +82,10 @@ public class BFTBuilderTest {
 			.vertexStore(vertexStore)
 			.bftSyncer(vertexStoreSync)
 			.self(self)
+			.counters(counters)
 			.timeSupplier(System::currentTimeMillis)
-			.proceedToViewSender(mock(VoteSender.class))
+			.voteSender(mock(VoteSender.class))
+			.safetyRules(safetyRules)
 			.build();
 
 		Proposal proposal = mock(Proposal.class);

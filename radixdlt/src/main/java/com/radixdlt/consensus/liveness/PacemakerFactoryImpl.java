@@ -17,89 +17,74 @@
 
 package com.radixdlt.consensus.liveness;
 
-import com.radixdlt.crypto.Hasher;
 import java.util.Objects;
 
-import com.radixdlt.consensus.HashSigner;
-import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker.PacemakerInfoSender;
 import com.radixdlt.consensus.safety.SafetyRules;
-import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.crypto.Hasher;
 
 /**
  * @author msandiford
  *
  */
-public class ExponentialTimeoutPacemakerFactory implements PacemakerFactory {
+public class PacemakerFactoryImpl implements PacemakerFactory {
 
-	private final long timeoutMilliseconds;
-	private final double rate;
-	private final int maxExponent;
 	private final BFTNode self;
 	private final SystemCounters counters;
+	private final VoteSender voteSender;
+	private final ProposalBroadcaster proposalBroadcaster;
+	private final ProposerElection proposerElection;
 	private final NextCommandGenerator nextCommandGenerator;
 	private final Hasher hasher;
-	private final HashSigner signer;
-	private final ProposalBroadcaster proposalBroadcaster;
-	private final VoteSender voteSender;
 
-	public ExponentialTimeoutPacemakerFactory(
-		long timeoutMilliseconds,
-		double rate,
-		int maxExponent,
+	public PacemakerFactoryImpl(
 		BFTNode self,
 		SystemCounters counters,
-		NextCommandGenerator nextCommandGenerator,
-		Hasher hasher,
-		HashSigner signer,
+		VoteSender voteSender,
 		ProposalBroadcaster proposalBroadcaster,
-		VoteSender voteSender
+		ProposerElection proposerElection,
+		NextCommandGenerator nextCommandGenerator,
+		Hasher hasher
 	) {
-		this.timeoutMilliseconds = timeoutMilliseconds;
-		this.rate = rate;
-		this.maxExponent = maxExponent;
 		this.self = Objects.requireNonNull(self);
 		this.counters = Objects.requireNonNull(counters);
+		this.voteSender = Objects.requireNonNull(voteSender);
+		this.proposalBroadcaster = Objects.requireNonNull(proposalBroadcaster);
+		this.proposerElection = Objects.requireNonNull(proposerElection);
 		this.nextCommandGenerator = Objects.requireNonNull(nextCommandGenerator);
 		this.hasher = Objects.requireNonNull(hasher);
-		this.signer = Objects.requireNonNull(signer);
-		this.proposalBroadcaster = Objects.requireNonNull(proposalBroadcaster);
-		this.voteSender = Objects.requireNonNull(voteSender);
-
 	}
 
 	@Override
-	public ExponentialTimeoutPacemaker create(
+	public Pacemaker create(
 		BFTValidatorSet validatorSet,
 		VertexStore vertexStore,
-		ProposerElection proposerElection,
+		PacemakerInfoSender infoSender,
+		PacemakerState pacemakerState,
 		PacemakerTimeoutSender timeoutSender,
-		PacemakerInfoSender infoSender
+		PacemakerTimeoutCalculator timeoutCalculator,
+		SafetyRules safetyRules
 	) {
-		PendingVotes pendingVotes = new PendingVotes(hasher);
 		PendingViewTimeouts pendingViewTimeouts = new PendingViewTimeouts();
-		SafetyRules safetyRules = new SafetyRules(self, SafetyState.initialState(), hasher, signer);
-		return new ExponentialTimeoutPacemaker(
-			timeoutMilliseconds,
-			rate,
-			maxExponent,
+		return new Pacemaker(
 			self,
 			counters,
-			pendingVotes,
 			pendingViewTimeouts,
 			validatorSet,
 			vertexStore,
-			proposerElection,
 			safetyRules,
-			nextCommandGenerator,
-			hasher,
-			proposalBroadcaster, voteSender,
+			voteSender,
+			infoSender,
+			pacemakerState,
 			timeoutSender,
-			infoSender
+			timeoutCalculator,
+			nextCommandGenerator,
+			proposalBroadcaster,
+			proposerElection,
+			hasher
 		);
 	}
 }

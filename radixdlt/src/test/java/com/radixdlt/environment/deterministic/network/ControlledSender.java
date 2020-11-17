@@ -22,6 +22,7 @@ import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.ViewTimeout;
+import com.radixdlt.consensus.epoch.LocalViewUpdate;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
@@ -141,6 +142,11 @@ public final class ControlledSender implements DeterministicSender {
 	@Override
 	public void scheduleTimeout(LocalGetVerticesRequest request, long milliseconds) {
 		// Ignore bft sync timeouts
+	}
+
+	@Override
+	public void sendLocalViewUpdate(LocalViewUpdate viewUpdate) {
+		handleMessage(new ControlledMessage(this.localChannel, viewUpdate, arrivalTime(this.localChannel)));
 	}
 
 	private void handleMessage(ControlledMessage controlledMessage) {

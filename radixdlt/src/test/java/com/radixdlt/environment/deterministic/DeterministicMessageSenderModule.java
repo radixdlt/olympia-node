@@ -27,11 +27,17 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.epoch.EpochView;
+import com.radixdlt.consensus.epoch.LocalViewUpdate;
+import com.radixdlt.consensus.epoch.LocalViewUpdateSender;
+import com.radixdlt.consensus.epoch.LocalViewUpdateSenderWithTimeout;
+import com.radixdlt.consensus.liveness.PacemakerInfoSender;
+import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
+import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
 import com.radixdlt.consensus.sync.BFTSync.BFTSyncTimeoutScheduler;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
-import com.radixdlt.consensus.liveness.LocalTimeoutSender;
+import com.radixdlt.consensus.epoch.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.VoteSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.counters.SystemCounters;
@@ -39,6 +45,8 @@ import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.epochs.EpochChangeManager.EpochsLedgerUpdateSender;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork.DeterministicSender;
+
+import java.util.function.Consumer;
 
 /**
  * Module that supplies network senders, as well as some other assorted
@@ -63,6 +71,20 @@ public class DeterministicMessageSenderModule extends AbstractModule {
 		bind(DeterministicEpochInfo.class).in(Scopes.SINGLETON);
 
 		bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
+	}
+
+	@Provides
+	public Consumer<LocalViewUpdate> localViewUpdateConsumer(DeterministicSender deterministicSender) {
+		return deterministicSender::sendLocalViewUpdate;
+	}
+
+	@Provides
+	public LocalViewUpdateSender localViewUpdateSender(
+			PacemakerTimeoutSender timeoutSender,
+			PacemakerTimeoutCalculator timeoutCalculator,
+			PacemakerInfoSender pacemakerInfoSender,
+			Consumer<LocalViewUpdate> consumer) {
+		return new LocalViewUpdateSenderWithTimeout(timeoutSender, timeoutCalculator, pacemakerInfoSender, consumer);
 	}
 
 	@Provides

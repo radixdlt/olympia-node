@@ -63,6 +63,11 @@ public final class BFTEventVerifier implements BFTEventProcessor {
 	}
 
 	@Override
+	public void processViewUpdate(ViewUpdate viewUpdate) {
+		forwardTo.processViewUpdate(viewUpdate);
+	}
+
+	@Override
 	public void processVote(Vote vote) {
 		validAuthor(vote).ifPresent(node -> {
 			if (verify(node, vote.getTimestampedVoteData(), vote.getSignature(), vote)) {

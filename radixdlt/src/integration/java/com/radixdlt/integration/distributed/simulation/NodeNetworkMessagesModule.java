@@ -53,10 +53,12 @@ public class NodeNetworkMessagesModule extends AbstractModule {
 		bind(SyncVerticesRequestSender.class).to(SimulatedNetworkImpl.class);
 		bind(SyncEpochsRPCSender.class).to(SimulatedNetworkImpl.class);
 		bind(SyncVerticesResponseSender.class).to(SimulatedNetworkImpl.class);
+		bind(VoteSender.class).to(SimulatedNetworkImpl.class);
 	}
 
 	@Provides
 	private SimulatedNetworkImpl network(@Self BFTNode node) {
 		return simulationNetwork.getNetwork(node);
 	}
+
 }

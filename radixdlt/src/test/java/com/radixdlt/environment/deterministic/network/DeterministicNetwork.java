@@ -22,11 +22,12 @@ import com.google.common.collect.Streams;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
+import com.radixdlt.consensus.epoch.LocalViewUpdateSender;
 import com.radixdlt.consensus.sync.BFTSync.BFTSyncTimeoutScheduler;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
-import com.radixdlt.consensus.liveness.LocalTimeoutSender;
+import com.radixdlt.consensus.epoch.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.VoteSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.epochs.EpochChangeManager.EpochsLedgerUpdateSender;
@@ -59,7 +60,8 @@ public final class DeterministicNetwork {
 		EpochsLedgerUpdateSender,
 		LocalTimeoutSender,
 		BFTSyncTimeoutScheduler,
-		SyncEpochsRPCSender {
+		SyncEpochsRPCSender,
+		LocalViewUpdateSender {
 		// Aggregation, no additional stuff
 	}
 

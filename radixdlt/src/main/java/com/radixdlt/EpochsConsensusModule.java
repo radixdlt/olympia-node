@@ -21,22 +21,20 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.bft.PacemakerMaxExponent;
-import com.radixdlt.consensus.bft.PacemakerRate;
-import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
+import com.radixdlt.consensus.epoch.LocalTimeoutSender;
+import com.radixdlt.consensus.epoch.LocalViewUpdate;
+import com.radixdlt.consensus.epoch.LocalViewUpdateSender;
 import com.radixdlt.consensus.epoch.ProposerElectionFactory;
 import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.epoch.VertexStoreFactory;
 import com.radixdlt.consensus.epoch.BFTSyncFactory;
 import com.radixdlt.consensus.epoch.BFTSyncRequestProcessorFactory;
-import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker.PacemakerInfoSender;
-import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemakerFactory;
+import com.radixdlt.consensus.liveness.PacemakerInfoSender;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
@@ -45,20 +43,22 @@ import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.epoch.LocalTimeout;
-import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
+import com.radixdlt.consensus.liveness.PacemakerFactoryImpl;
+import com.radixdlt.consensus.liveness.PacemakerState;
+import com.radixdlt.consensus.liveness.PacemakerStateFactory;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
-import com.radixdlt.consensus.liveness.VoteSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.consensus.liveness.VoteSender;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
-import com.radixdlt.consensus.sync.BFTSync.BFTSyncTimeoutScheduler;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.sync.BFTSync;
+import com.radixdlt.consensus.sync.BFTSync.BFTSyncTimeoutScheduler;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
@@ -83,6 +83,11 @@ public class EpochsConsensusModule extends AbstractModule {
 	@Provides
 	private PacemakerTimeoutSender initialTimeoutSender(LocalTimeoutSender localTimeoutSender, EpochChange initialEpoch) {
 		return (view, ms) -> localTimeoutSender.scheduleTimeout(new LocalTimeout(initialEpoch.getEpoch(), view), ms);
+	}
+
+	@Provides
+	private PacemakerState.ViewUpdateSender initialViewUpdateSender(LocalViewUpdateSender localViewUpdateSender, EpochChange initialEpoch) {
+		return (viewUpdate) -> localViewUpdateSender.sendLocalViewUpdate(new LocalViewUpdate(initialEpoch.getEpoch(), viewUpdate));
 	}
 
 	@Provides
@@ -126,29 +131,28 @@ public class EpochsConsensusModule extends AbstractModule {
 	}
 
 	@Provides
+	private PacemakerStateFactory pacemakerStateFactory() {
+		return (viewUpdateSender) -> new PacemakerState(viewUpdateSender);
+	}
+
+	@Provides
 	private PacemakerFactory pacemakerFactory(
 		@Self BFTNode self,
 		SystemCounters counters,
-		NextCommandGenerator nextCommandGenerator,
-		Hasher hasher,
-		HashSigner signer,
-		ProposalBroadcaster proposalBroadcaster,
 		VoteSender voteSender,
-		@PacemakerTimeout long pacemakerTimeout,
-		@PacemakerRate double pacemakerRate,
-		@PacemakerMaxExponent int pacemakerMaxExponent
+		ProposalBroadcaster proposalBroadcaster,
+		ProposerElection proposerElection,
+		NextCommandGenerator nextCommandGenerator,
+		Hasher hasher
 	) {
-		return new ExponentialTimeoutPacemakerFactory(
-			pacemakerTimeout,
-			pacemakerRate,
-			pacemakerMaxExponent,
+		return new PacemakerFactoryImpl(
 			self,
 			counters,
+			voteSender,
+			proposalBroadcaster,
+			proposerElection,
 			nextCommandGenerator,
-			hasher,
-			signer,
-			proposalBroadcaster, voteSender
-		);
+			hasher);
 	}
 
 	@Provides
@@ -168,9 +172,9 @@ public class EpochsConsensusModule extends AbstractModule {
 		Random random,
 		@BFTSyncPatienceMillis int bftSyncPatienceMillis
 	) {
-		return (vertexStore, pacemaker) -> new BFTSync(
+		return (vertexStore, pacemakerState) -> new BFTSync(
 			vertexStore,
-			pacemaker,
+			pacemakerState,
 			Comparator.comparingLong((LedgerHeader h) -> h.getAccumulatorState().getStateVersion()),
 			(node, request)  -> {
 				counters.increment(CounterType.BFT_SYNC_REQUESTS_SENT);
@@ -201,4 +205,5 @@ public class EpochsConsensusModule extends AbstractModule {
 		);
 	}
 }
+
 

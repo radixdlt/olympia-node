@@ -61,6 +61,7 @@ public class MovingWindowValidatorsTest {
 		assertThat(testCounters).extracting(sc -> sc.get(CounterType.BFT_TIMEOUT)).containsOnly(0L);
 
 		long maxCount = maxProcessedFor(numNodes, windowSize, maxEpoch, highView.number());
+		System.out.println("max count is= " + maxCount);
 		assertThat(testCounters)
 			.extracting(sc -> sc.get(CounterType.BFT_PROCESSED))
 			.allMatch(between(maxCount - 3, maxCount));
@@ -95,17 +96,17 @@ public class MovingWindowValidatorsTest {
 
 	@Test
 	public void given_correct_3_node_bft_with_4_total_nodes_with_changing_epochs_per_100_views__then_should_pass_bft_and_postconditions() {
-		run(4, 3, 100L, View.of(100));
+		run(4, 3, 100L, View.of(100)); // TODO: failing
 	}
 
 	@Test
 	public void given_correct_25_node_bft_with_50_total_nodes_with_changing_epochs_per_100_views__then_should_pass_bft_and_postconditions() {
-		run(50, 25, 100L, View.of(100));
+		run(50, 25, 100L, View.of(100)); // TODO: failing
 	}
 
 	@Test
 	public void given_correct_25_node_bft_with_100_total_nodes_with_changing_epochs_per_1_view__then_should_pass_bft_and_postconditions() {
-		run(100, 25, 100L, View.of(100));
+		run(100, 25, 100L, View.of(100)); // TODO: failing
 	}
 
 	private static long maxProcessedFor(int numNodes, int numValidators, long epochs, long epochHighView) {

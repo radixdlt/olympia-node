@@ -32,7 +32,9 @@ import com.radixdlt.consensus.EpochManagerRunner;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.bft.BFTUpdate;
+import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochManager;
+import com.radixdlt.consensus.epoch.LocalViewUpdate;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 import com.radixdlt.consensus.sync.BFTSync.BFTSyncTimeoutScheduler;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
@@ -52,6 +54,7 @@ public class ConsensusRunnerModuleTest {
 
 				bind(Key.get(new TypeLiteral<Observable<EpochsLedgerUpdate>>() { })).toInstance(PublishSubject.create());
 				bind(Key.get(new TypeLiteral<Observable<BFTUpdate>>() { })).toInstance(PublishSubject.create());
+				bind(Key.get(new TypeLiteral<Observable<ViewUpdate>>() { })).toInstance(PublishSubject.create());
 
 				SyncEpochsRPCRx syncEpochsRPCRx = mock(SyncEpochsRPCRx.class);
 				when(syncEpochsRPCRx.epochResponses()).thenReturn(Observable.never());
@@ -72,6 +75,7 @@ public class ConsensusRunnerModuleTest {
 
 				bind(BFTSyncTimeoutScheduler.class).toInstance(mock(BFTSyncTimeoutScheduler.class));
 				bind(new TypeLiteral<Observable<LocalGetVerticesRequest>>() { }).toInstance(PublishSubject.create());
+				bind(new TypeLiteral<Observable<LocalViewUpdate>>() { }).toInstance(PublishSubject.create());
 			}
 		};
 	}

@@ -28,7 +28,6 @@ import com.radixdlt.LedgerCommandGeneratorModule;
 import com.radixdlt.EpochsLedgerUpdateModule;
 import com.radixdlt.LedgerLocalMempoolModule;
 import com.radixdlt.LedgerModule;
-import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
@@ -39,8 +38,11 @@ import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.epoch.LocalTimeout;
-import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker.PacemakerInfoSender;
-import com.radixdlt.consensus.liveness.LocalTimeoutSender;
+import com.radixdlt.consensus.epoch.LocalViewUpdate;
+import com.radixdlt.consensus.epoch.LocalViewUpdateSender;
+import com.radixdlt.consensus.liveness.PacemakerInfoSender;
+import com.radixdlt.consensus.epoch.LocalTimeoutSender;
+import com.radixdlt.consensus.liveness.PacemakerState.ViewUpdateSender;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
@@ -240,6 +242,11 @@ public final class DeterministicTest {
 					private PacemakerTimeoutSender timeoutSender(LocalTimeoutSender localTimeoutSender) {
 						return (view, ms) -> localTimeoutSender.scheduleTimeout(new LocalTimeout(1, view), ms);
 					}
+
+					@Provides
+					private ViewUpdateSender viewUpdateSender(LocalViewUpdateSender localViewUpdateSender) {
+						return (view) -> localViewUpdateSender.sendLocalViewUpdate(new LocalViewUpdate(1, view));
+					}
 				});
 				modules.add(new MockedStateComputerModule());
 				modules.add(new MockedLedgerModule());
@@ -333,11 +340,11 @@ public final class DeterministicTest {
 	public static Predicate<Timed<ControlledMessage>> hasReachedEpochView(EpochView maxEpochView) {
 		return timedMsg -> {
 			ControlledMessage message = timedMsg.value();
-			if (!(message.message() instanceof Proposal)) {
+			if (!(message.message() instanceof LocalViewUpdate)) {
 				return false;
 			}
-			Proposal p = (Proposal) message.message();
-			EpochView nev = EpochView.of(p.getEpoch(), p.getVertex().getView());
+			LocalViewUpdate lvu = (LocalViewUpdate) message.message();
+			EpochView nev = EpochView.of(lvu.getEpoch(), lvu.getViewUpdate().getCurrentView());
 			return (nev.compareTo(maxEpochView) > 0);
 		};
 	}
@@ -353,11 +360,11 @@ public final class DeterministicTest {
 		final long maxViewNumber = view.previous().number();
 		return timedMsg -> {
 			ControlledMessage message = timedMsg.value();
-			if (!(message.message() instanceof Proposal)) {
+			if (!(message.message() instanceof LocalViewUpdate)) {
 				return false;
 			}
-			Proposal proposal = (Proposal) message.message();
-			return (proposal.getView().number() > maxViewNumber);
+			LocalViewUpdate lvu = (LocalViewUpdate) message.message();
+			return (lvu.getViewUpdate().getCurrentView().number() > maxViewNumber);
 		};
 	}
 

@@ -17,13 +17,13 @@
 
 package com.radixdlt.consensus.epoch;
 
-import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.consensus.liveness.PacemakerState;
-import com.radixdlt.consensus.sync.BFTSync;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
 
-/**
- * Creates a new bft sync given a vertex store and pacemaker
- */
-public interface BFTSyncFactory {
-	BFTSync create(VertexStore vertexStore, PacemakerState pacemakerState);
+public class LocalViewUpdateTest {
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(LocalViewUpdate.class)
+			.verify();
+	}
 }

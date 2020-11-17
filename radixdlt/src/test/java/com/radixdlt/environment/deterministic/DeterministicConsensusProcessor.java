@@ -25,6 +25,7 @@ import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTSyncRequestProcessor;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.epoch.LocalTimeout;
+import com.radixdlt.consensus.epoch.LocalViewUpdate;
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
@@ -67,6 +68,8 @@ public class DeterministicConsensusProcessor implements DeterministicMessageProc
 			bftEventProcessor.processProposal((Proposal) message);
 		} else if (message instanceof Vote) {
 			bftEventProcessor.processVote((Vote) message);
+		} else if (message instanceof LocalViewUpdate) {
+			bftEventProcessor.processViewUpdate(((LocalViewUpdate) message).getViewUpdate());
 		} else if (message instanceof GetVerticesRequest) {
 			requestProcessor.processGetVerticesRequest((GetVerticesRequest) message);
 		} else if (message instanceof GetVerticesResponse) {

@@ -74,6 +74,7 @@ public class MovingWindowValidatorsTest {
 		assertThat(results.getCheckResults()).allSatisfy((name, err) -> assertThat(err).isEmpty());
 	}
 
+	// TODO: failing
 	@Test
 	public void given_correct_25_node_bft_with_50_total_nodes_with_changing_epochs_per_100_views__then_should_pass_bft_and_epoch_invariants() {
 		SimulationTest bftTest = bftTestBuilder
@@ -89,6 +90,7 @@ public class MovingWindowValidatorsTest {
 		assertThat(results.getCheckResults()).allSatisfy((name, err) -> assertThat(err).isEmpty());
 	}
 
+	// TODO: failing
 	@Test
 	public void given_correct_25_node_bft_with_50_total_nodes_with_changing_epochs_per_1_view__then_should_pass_bft_and_epoch_invariants() {
 		SimulationTest bftTest = bftTestBuilder

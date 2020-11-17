@@ -62,7 +62,6 @@ import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
@@ -104,6 +103,7 @@ public class EpochManagerTest {
 	private BFTUpdateSender bftUpdateSender = mock(BFTUpdateSender.class);
 	private SyncEpochsRPCSender syncEpochsRPCSender = mock(SyncEpochsRPCSender.class);
 	private LocalTimeoutSender localTimeoutSender = mock(LocalTimeoutSender.class);
+	private LocalViewUpdateSender localViewUpdateSender = mock(LocalViewUpdateSender.class);
 	private NextCommandGenerator nextCommandGenerator = mock(NextCommandGenerator.class);
 	private VoteSender voteSender = mock(VoteSender.class);
 	private ProposalBroadcaster proposalBroadcaster = mock(ProposalBroadcaster.class);
@@ -138,6 +138,7 @@ public class EpochManagerTest {
 
 				bind(SyncEpochsRPCSender.class).toInstance(syncEpochsRPCSender);
 				bind(LocalTimeoutSender.class).toInstance(localTimeoutSender);
+				bind(LocalViewUpdateSender.class).toInstance(localViewUpdateSender);
 				bind(NextCommandGenerator.class).toInstance(nextCommandGenerator);
 				bind(VoteSender.class).toInstance(voteSender);
 				bind(ProposalBroadcaster.class).toInstance(proposalBroadcaster);
@@ -224,7 +225,6 @@ public class EpochManagerTest {
 		epochManager.processLedgerUpdate(epochsLedgerUpdate);
 
 		// Assert
-		verify(proposalBroadcaster, times(1)).broadcastProposal(any(), any());
 		verify(voteSender, never()).sendVote(any(), any());
 	}
 

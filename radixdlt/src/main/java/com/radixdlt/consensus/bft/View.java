@@ -32,6 +32,22 @@ public final class View implements Comparable<View> {
 		this.view = view;
 	}
 
+	public boolean gte(View other) {
+		return this.view >= other.view;
+	}
+
+	public boolean gt(View other) {
+		return this.view > other.view;
+	}
+
+	public boolean lt(View other) {
+		return this.view < other.view;
+	}
+
+	public boolean lte(View other) {
+		return this.view <= other.view;
+	}
+
 	public View previous() {
 		if (this.view == 0) {
 			throw new IllegalStateException("View Underflow");

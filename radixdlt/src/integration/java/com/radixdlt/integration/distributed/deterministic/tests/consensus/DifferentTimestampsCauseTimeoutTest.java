@@ -21,6 +21,7 @@ import com.google.inject.AbstractModule;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.bft.BFTUpdate;
+import com.radixdlt.consensus.epoch.LocalViewUpdate;
 import java.util.LinkedList;
 import java.util.Map;
 
@@ -59,13 +60,17 @@ public class DifferentTimestampsCauseTimeoutTest {
 
 		addTwoViews(processingSequence);
 
+		processingSequence.add(Pair.of(ChannelId.of(3, 3), LocalViewUpdate.class));
 		processingSequence.add(Pair.of(ChannelId.of(3, 3), Proposal.class));
 		processingSequence.add(Pair.of(ChannelId.of(3, 3), BFTUpdate.class));
 		processingSequence.add(Pair.of(ChannelId.of(3, 0), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(0, 0), LocalViewUpdate.class));
 		processingSequence.add(Pair.of(ChannelId.of(0, 0), BFTUpdate.class));
 		processingSequence.add(Pair.of(ChannelId.of(3, 1), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 1), LocalViewUpdate.class));
 		processingSequence.add(Pair.of(ChannelId.of(1, 1), BFTUpdate.class));
 		processingSequence.add(Pair.of(ChannelId.of(3, 2), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 2), LocalViewUpdate.class));
 		processingSequence.add(Pair.of(ChannelId.of(2, 2), BFTUpdate.class));
 
 		DeterministicTest.builder()
@@ -109,8 +114,12 @@ public class DifferentTimestampsCauseTimeoutTest {
 
 	private void addTwoViews(LinkedList<Pair<ChannelId, Class<?>>> processingSequence) {
 		// Proposal here has genesis qc, which has no timestamps
-		processingSequence.add(Pair.of(ChannelId.of(1, 1), Proposal.class)); // Messages to self first
+		processingSequence.add(Pair.of(ChannelId.of(1, 1), LocalViewUpdate.class)); // Messages to self first
+		processingSequence.add(Pair.of(ChannelId.of(1, 1), Proposal.class));
 		processingSequence.add(Pair.of(ChannelId.of(1, 1), BFTUpdate.class));
+		processingSequence.add(Pair.of(ChannelId.of(0, 0), LocalViewUpdate.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 2), LocalViewUpdate.class));
+		processingSequence.add(Pair.of(ChannelId.of(3, 3), LocalViewUpdate.class));
 		processingSequence.add(Pair.of(ChannelId.of(1, 0), Proposal.class));
 		processingSequence.add(Pair.of(ChannelId.of(0, 0), BFTUpdate.class));
 		processingSequence.add(Pair.of(ChannelId.of(1, 2), Proposal.class));
@@ -125,13 +134,17 @@ public class DifferentTimestampsCauseTimeoutTest {
 
 		// Proposal here should have timestamps from previous view
 		// They are mutated as required by the test
+		processingSequence.add(Pair.of(ChannelId.of(2, 2), LocalViewUpdate.class));
 		processingSequence.add(Pair.of(ChannelId.of(2, 2), Proposal.class));
 		processingSequence.add(Pair.of(ChannelId.of(2, 2), BFTUpdate.class));
 		processingSequence.add(Pair.of(ChannelId.of(2, 0), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(0, 0), LocalViewUpdate.class));
 		processingSequence.add(Pair.of(ChannelId.of(0, 0), BFTUpdate.class));
 		processingSequence.add(Pair.of(ChannelId.of(2, 1), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 1), LocalViewUpdate.class));
 		processingSequence.add(Pair.of(ChannelId.of(1, 1), BFTUpdate.class));
 		processingSequence.add(Pair.of(ChannelId.of(2, 3), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(3, 3), LocalViewUpdate.class));
 		processingSequence.add(Pair.of(ChannelId.of(3, 3), BFTUpdate.class));
 
 		processingSequence.add(Pair.of(ChannelId.of(3, 3), Vote.class));

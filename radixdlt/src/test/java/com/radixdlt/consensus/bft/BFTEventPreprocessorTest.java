@@ -38,7 +38,6 @@ import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTSyncer.SyncResult;
 import com.radixdlt.consensus.bft.SyncQueues.SyncQueue;
-import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.crypto.ECDSASignature;
@@ -52,7 +51,6 @@ public class BFTEventPreprocessorTest {
 	private static final ECKeyPair SELF_KEY = ECKeyPair.generateNew();
 	private BFTEventPreprocessor preprocessor;
 	private ProposerElection proposerElection;
-	private Pacemaker pacemaker;
 	private BFTSync vertexStoreSync;
 	private BFTEventProcessor forwardTo;
 	private SyncQueues syncQueues;
@@ -60,7 +58,6 @@ public class BFTEventPreprocessorTest {
 
 	@Before
 	public void setUp() {
-		this.pacemaker = mock(Pacemaker.class);
 		this.vertexStoreSync = mock(BFTSync.class);
 		this.proposerElection = mock(ProposerElection.class);
 		this.forwardTo = mock(BFTEventProcessor.class);
@@ -70,17 +67,17 @@ public class BFTEventPreprocessorTest {
 		when(this.self.getKey()).thenReturn(SELF_KEY.getPublicKey());
 
 		when(proposerElection.getProposer(any())).thenReturn(self);
-		when(pacemaker.getCurrentView()).thenReturn(View.of(1));
 		when(syncQueues.isEmptyElseAdd(any())).thenReturn(true);
 
 		this.preprocessor = new BFTEventPreprocessor(
 			self,
 			forwardTo,
-			pacemaker,
 			vertexStoreSync,
 			proposerElection,
 			syncQueues
 		);
+
+		preprocessor.processViewUpdate(new ViewUpdate(View.genesis().next(), View.genesis(), View.genesis()));
 	}
 
 	private ViewTimeout createViewTimeout(View view, boolean synced) {
@@ -111,6 +108,7 @@ public class BFTEventPreprocessorTest {
 		UnverifiedVertex vertex = mock(UnverifiedVertex.class);
 		when(proposal.getVertex()).thenReturn(vertex);
 		when(vertex.getView()).thenReturn(goodView ? View.of(1) : View.of(0));
+		when(proposal.getView()).thenReturn(goodView ? View.of(1) : View.of(0));
 
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		BFTHeader proposed = mock(BFTHeader.class);
@@ -231,7 +229,11 @@ public class BFTEventPreprocessorTest {
 	@Test
 	public void when_local_timeout__then_pending_events_cleared() {
 		when(this.syncQueues.getQueues()).thenReturn(ImmutableList.of(mock(SyncQueue.class)));
-		when(this.pacemaker.getCurrentView()).thenReturn(View.of(0), View.of(1));
+
+		ViewUpdate viewUpdate = mock(ViewUpdate.class);
+		when(viewUpdate.getCurrentView()).thenReturn(View.of(0));
+		preprocessor.processViewUpdate(viewUpdate);
+
 		preprocessor.processLocalTimeout(View.of(0));
 		verify(syncQueues, times(1)).getQueues();
 	}

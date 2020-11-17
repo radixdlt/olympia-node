@@ -19,24 +19,27 @@ package com.radixdlt.consensus.bft;
 
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.BFTHeader;
+import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.liveness.Pacemaker;
 
-import com.radixdlt.consensus.liveness.VoteSender;
 import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.consensus.liveness.VoteSender;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.network.TimeSupplier;
-import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import java.util.Objects;
 import org.apache.logging.log4j.message.FormattedMessage;
+
+import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Processes and reduces BFT events to the BFT state based on core
@@ -48,7 +51,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private static final Logger log = LogManager.getLogger();
 
 	private final VertexStore vertexStore;
-    private final BFTSyncer bftSyncer;
+	private final BFTSyncer bftSyncer;
 	private final Pacemaker pacemaker;
 	private final Hasher hasher;
 	private final TimeSupplier timeSupplier;
@@ -56,6 +59,10 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private final VoteSender voteSender;
 	private final SystemCounters counters;
 	private final SafetyRules safetyRules;
+	private final BFTValidatorSet validatorSet;
+	private final PendingVotes pendingVotes;
+
+	private ViewUpdate latestViewUpdate = new ViewUpdate(View.genesis(), View.genesis(), View.genesis());
 
 	public BFTEventReducer(
 		Pacemaker pacemaker,
@@ -66,7 +73,9 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		ProposerElection proposerElection,
 		VoteSender voteSender,
 		SystemCounters counters,
-		SafetyRules safetyRules
+		SafetyRules safetyRules,
+		BFTValidatorSet validatorSet,
+		PendingVotes pendingVotes
 	) {
 		this.pacemaker = Objects.requireNonNull(pacemaker);
 		this.vertexStore = Objects.requireNonNull(vertexStore);
@@ -75,8 +84,10 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		this.timeSupplier = Objects.requireNonNull(timeSupplier);
 		this.proposerElection = Objects.requireNonNull(proposerElection);
 		this.voteSender = Objects.requireNonNull(voteSender);
-		this.counters = counters;
-		this.safetyRules = safetyRules;
+		this.counters = Objects.requireNonNull(counters);
+		this.safetyRules = Objects.requireNonNull(safetyRules);
+		this.validatorSet = Objects.requireNonNull(validatorSet);
+		this.pendingVotes = Objects.requireNonNull(pendingVotes);
 	}
 
 	@Override
@@ -85,14 +96,31 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	}
 
 	@Override
+	public void processViewUpdate(ViewUpdate viewUpdate) {
+		this.latestViewUpdate = viewUpdate;
+		this.pacemaker.processViewUpdate(viewUpdate);
+	}
+
+	@Override
 	public void processVote(Vote vote) {
 		log.trace("Vote: Processing {}", vote);
 		// accumulate votes into QCs in store
-		this.pacemaker.processVote(vote).ifPresent(qc -> {
-			HighQC highQC = HighQC.from(qc, this.vertexStore.highQC().highestCommittedQC());
-			// If we are not yet synced, we rely on the syncer to process the QC once received
-			this.bftSyncer.syncToQC(highQC, vote.getAuthor());
-		});
+		final View view = vote.getView();
+		if (view.lte(this.latestViewUpdate.getLastQuorumView())) {
+			log.trace("Vote: Ignoring vote from {} for view {}, last quorum at {}",
+					vote.getAuthor(), view, this.latestViewUpdate.getLastQuorumView());
+		} else {
+			final Optional<QuorumCertificate> maybeQc = this.pendingVotes.insertVote(vote, this.validatorSet)
+					.filter(qc -> view.gte(this.latestViewUpdate.getCurrentView()));
+
+			maybeQc.ifPresent(qc -> {
+				log.trace("Vote: Formed QC: {}", qc);
+				this.counters.increment(CounterType.BFT_VOTE_QUORUMS);
+				final HighQC highQC = HighQC.from(qc, this.vertexStore.highQC().highestCommittedQC());
+				// If we are not yet synced, we rely on the syncer to process the QC once received
+				this.bftSyncer.syncToQC(highQC, vote.getAuthor());
+			});
+		}
 	}
 
 	@Override
@@ -107,7 +135,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 		// TODO: Move into preprocessor
 		final View proposedVertexView = proposal.getView();
-		final View currentView = this.pacemaker.getCurrentView();
+		final View currentView = this.latestViewUpdate.getCurrentView();
 		if (!currentView.equals(proposedVertexView)) {
 			log.trace("Proposal: Ignoring view {}, current is: {}", proposedVertexView, currentView);
 			return;
@@ -133,7 +161,8 @@ public final class BFTEventReducer implements BFTEventProcessor {
 				() -> {
 					this.counters.increment(CounterType.BFT_REJECTED);
 					log.warn(() -> new FormattedMessage("Proposal: Rejected {}", proposedVertex));
-				});
+				}
+			);
 		});
 	}
 
@@ -148,3 +177,4 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		this.pacemaker.processQC(this.vertexStore.highQC());
 	}
 }
+

@@ -26,6 +26,7 @@ import static org.mockito.Mockito.when;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.epoch.LocalTimeout;
+import com.radixdlt.consensus.epoch.LocalViewUpdate;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
@@ -43,6 +44,7 @@ public class EpochManagerRunnerTest {
 		Subject<EpochsLedgerUpdate> ledgerUpdates = PublishSubject.create();
 		Subject<BFTUpdate> bftUpdates = PublishSubject.create();
 		Subject<LocalGetVerticesRequest> syncTimeouts = PublishSubject.create();
+		Subject<LocalViewUpdate> localViewUpdates = PublishSubject.create();
 
 		EpochManager epochManager = mock(EpochManager.class);
 
@@ -71,6 +73,7 @@ public class EpochManagerRunnerTest {
 			ledgerUpdates,
 			bftUpdates,
 			syncTimeouts,
+			localViewUpdates,
 			networkRx,
 			pacemakerRx,
 			syncVerticesRPCRx,
