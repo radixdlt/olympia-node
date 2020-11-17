@@ -29,7 +29,6 @@ import com.google.inject.util.Modules;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.counters.SystemCounters;
@@ -112,8 +111,6 @@ public class SimulationNodes {
 
 		Observable<EpochChange> latestEpochChanges();
 
-		Observable<Pair<BFTNode, BFTCommittedUpdate>> bftCommittedUpdates();
-
 		Observable<Pair<BFTNode, LedgerUpdate>> ledgerUpdates();
 
 		Observable<Pair<BFTNode, QuorumCertificate>> highQCs();
@@ -164,19 +161,6 @@ public class SimulationNodes {
 						.scan((cur, next) -> next.getProof().getEpoch() > cur.getProof().getEpoch() ? next : cur)
 						.distinctUntilChanged()
 				);
-			}
-
-			@Override
-			public Observable<Pair<BFTNode, BFTCommittedUpdate>> bftCommittedUpdates() {
-				Set<Observable<Pair<BFTNode, BFTCommittedUpdate>>> committedVertices = nodeInstances.stream()
-					.map(i -> {
-						BFTNode node = i.getInstance(Key.get(BFTNode.class, Self.class));
-						return i.getInstance(Key.get(new TypeLiteral<Observable<BFTCommittedUpdate>>() { }))
-							.map(v -> Pair.of(node, v));
-					})
-					.collect(Collectors.toSet());
-
-				return Observable.merge(committedVertices);
 			}
 
 			@Override

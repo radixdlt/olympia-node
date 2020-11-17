@@ -17,6 +17,7 @@
 
 package com.radixdlt.integration.distributed.simulation.invariants.consensus;
 
+import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.integration.distributed.simulation.TestInvariant;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
 import io.reactivex.rxjava3.core.Observable;
@@ -25,9 +26,21 @@ import io.reactivex.rxjava3.core.Observable;
  * Checks that the network never commits a new vertex
  */
 public class NoneCommittedInvariant implements TestInvariant {
+	private final NodeEvents<BFTCommittedUpdate> commits;
+
+	public NoneCommittedInvariant(NodeEvents<BFTCommittedUpdate> commits) {
+		this.commits = commits;
+	}
+
 	@Override
 	public Observable<TestInvariantError> check(RunningNetwork network) {
-		return network.bftCommittedUpdates()
-			.map(pair -> new TestInvariantError(pair.getFirst() + " node committed a vertex " + pair.getSecond()));
+		return Observable.<TestInvariantError>create(
+			emitter ->
+				this.commits.addListener(nodeTimeout ->
+					emitter.onNext(
+						new TestInvariantError("Commit at node " + nodeTimeout.node() + " " + nodeTimeout.event())
+					)
+				)
+		).serialize();
 	}
 }

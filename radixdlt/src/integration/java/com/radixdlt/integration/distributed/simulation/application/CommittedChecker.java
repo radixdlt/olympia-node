@@ -18,8 +18,10 @@
 package com.radixdlt.integration.distributed.simulation.application;
 
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.integration.distributed.simulation.TestInvariant;
+import com.radixdlt.integration.distributed.simulation.invariants.consensus.NodeEvents;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.Objects;
@@ -35,26 +37,29 @@ import org.apache.logging.log4j.Logger;
 public class CommittedChecker implements TestInvariant {
 	private static final Logger log = LogManager.getLogger();
 	private final Observable<Command> submittedCommands;
+	private final NodeEvents<BFTCommittedUpdate> commits;
 
-	public CommittedChecker(Observable<Command> submittedCommands) {
+	public CommittedChecker(Observable<Command> submittedCommands, NodeEvents<BFTCommittedUpdate> commits) {
 		this.submittedCommands = Objects.requireNonNull(submittedCommands);
+		this.commits = Objects.requireNonNull(commits);
 	}
 
 	@Override
 	public Observable<TestInvariantError> check(RunningNetwork network) {
 		return submittedCommands
 			.doOnNext(cmd -> log.debug("Submitted command: {}", cmd))
-			.flatMapMaybe(command -> network
-					.bftCommittedUpdates()
-						.filter(nodeAndCmd -> nodeAndCmd.getSecond().getCommitted().stream()
-							.flatMap(PreparedVertex::getCommands)
-							.anyMatch(command::equals))
-						.timeout(10, TimeUnit.SECONDS)
-						.firstOrError()
-						.ignoreElement()
-						.onErrorReturn(e -> new TestInvariantError(
-							"Submitted command has not been committed in 10 seconds: " + command
-						))
+			.flatMapMaybe(command ->
+				Observable.<BFTCommittedUpdate>create(emitter -> commits.addListener(e -> emitter.onNext(e.event())))
+					.serialize()
+					.filter(e -> e.getCommitted().stream()
+						.flatMap(PreparedVertex::getCommands)
+						.anyMatch(command::equals))
+					.timeout(10, TimeUnit.SECONDS)
+					.firstOrError()
+					.ignoreElement()
+					.onErrorReturn(e -> new TestInvariantError(
+						"Submitted command has not been committed in 10 seconds: " + command
+					))
 			);
 	}
 }

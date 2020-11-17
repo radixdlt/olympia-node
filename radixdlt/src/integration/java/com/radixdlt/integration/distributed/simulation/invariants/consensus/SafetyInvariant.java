@@ -17,6 +17,7 @@
 
 package com.radixdlt.integration.distributed.simulation.invariants.consensus;
 
+import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.BFTHeader;
@@ -24,6 +25,7 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.integration.distributed.simulation.TestInvariant;
+import com.radixdlt.integration.distributed.simulation.invariants.consensus.NodeEvents.NodeEvent;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
@@ -36,6 +38,11 @@ import java.util.TreeMap;
  * Checks that validator nodes do not commit on conflicting vertices
  */
 public class SafetyInvariant implements TestInvariant {
+	private final NodeEvents<BFTCommittedUpdate> commits;
+
+	public SafetyInvariant(NodeEvents<BFTCommittedUpdate> commits) {
+		this.commits = commits;
+	}
 
 	private static Observable<TestInvariantError> conflictingVerticesError(VerifiedVertex vertex, VerifiedVertex currentVertex) {
 		return Observable.just(
@@ -65,11 +72,12 @@ public class SafetyInvariant implements TestInvariant {
 		final TreeMap<EpochView, VerifiedVertex> committedVertices = new TreeMap<>();
 		final Map<BFTNode, EpochView> lastCommittedByNode = new HashMap<>();
 
-		return network.bftCommittedUpdates()
-			.concatMap(nodeAndVertices -> Observable.fromStream(nodeAndVertices.getSecond().getCommitted().stream()
-				.map(PreparedVertex::getVertex))
-				.map(v -> Pair.of(nodeAndVertices.getFirst(), v))
-			)
+		return Observable.<NodeEvent<BFTCommittedUpdate>>create(emitter ->
+			commits.addListener(emitter::onNext)
+		).serialize()
+			.concatMap(e -> Observable.fromStream(e.event().getCommitted().stream()
+			.map(PreparedVertex::getVertex))
+			.map(v -> Pair.of(e.node(), v)))
 			.flatMap(nodeAndVertex -> {
 				final BFTNode node = nodeAndVertex.getFirst();
 				final VerifiedVertex vertex = nodeAndVertex.getSecond();

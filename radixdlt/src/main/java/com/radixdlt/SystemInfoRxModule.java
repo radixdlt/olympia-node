@@ -21,7 +21,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.utils.SenderToRx;
 import io.reactivex.rxjava3.core.Observable;
@@ -33,14 +32,8 @@ public final class SystemInfoRxModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
-		SenderToRx<BFTCommittedUpdate, BFTCommittedUpdate> committed = new SenderToRx<>(i -> i);
 		SenderToRx<QuorumCertificate, QuorumCertificate> highQCs = new SenderToRx<>(i -> i);
 		VertexStoreEventSender eventSender = new VertexStoreEventSender() {
-			@Override
-			public void sendCommitted(BFTCommittedUpdate committedUpdate) {
-				committed.send(committedUpdate);
-			}
-
 			@Override
 			public void highQC(QuorumCertificate qc) {
 				highQCs.send(qc);
@@ -50,6 +43,5 @@ public final class SystemInfoRxModule extends AbstractModule {
 			.toInstance(eventSender);
 
 		bind(new TypeLiteral<Observable<QuorumCertificate>>() { }).toInstance(highQCs.rx());
-		bind(new TypeLiteral<Observable<BFTCommittedUpdate>>() { }).toInstance(committed.rx());
 	}
 }

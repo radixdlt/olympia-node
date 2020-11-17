@@ -17,39 +17,38 @@
 
 package com.radixdlt.integration.distributed.simulation.invariants.consensus;
 
-import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.EventProcessor;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
 
-public final class NodeTimeouts {
-	public static class NodeTimeout {
+public final class NodeEvents<T> {
+	public static class NodeEvent<T> {
 		private final BFTNode node;
-		private final Timeout timeout;
+		private final T t;
 
-		private NodeTimeout(BFTNode node, Timeout timeout) {
+		private NodeEvent(BFTNode node, T t) {
 			this.node = node;
-			this.timeout = timeout;
+			this.t = t;
 		}
 
 		public BFTNode node() {
 			return node;
 		}
 
-		public Timeout timeout() {
-			return timeout;
+		public T event() {
+			return t;
 		}
 	}
 
-	private final Set<Consumer<NodeTimeout>> consumers = new HashSet<>();
+	private final Set<Consumer<NodeEvent<T>>> consumers = new HashSet<>();
 
-	public void addListener(Consumer<NodeTimeout> nodeTimeoutConsumer) {
+	public void addListener(Consumer<NodeEvent<T>> nodeTimeoutConsumer) {
 		this.consumers.add(nodeTimeoutConsumer);
 	}
 
-	public EventProcessor<Timeout> processor(BFTNode node) {
-		return t -> consumers.forEach(c -> c.accept(new NodeTimeout(node, t)));
+	public EventProcessor<T> processor(BFTNode node) {
+		return t -> consumers.forEach(c -> c.accept(new NodeEvent<>(node, t)));
 	}
 }

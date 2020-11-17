@@ -90,11 +90,6 @@ public final class ConsensusModule extends AbstractModule {
 	private VertexStoreEventSender sender(Set<VertexStoreEventSender> senders) {
 		return new VertexStoreEventSender() {
 			@Override
-			public void sendCommitted(BFTCommittedUpdate committedUpdate) {
-				senders.forEach(s -> s.sendCommitted(committedUpdate));
-			}
-
-			@Override
 			public void highQC(QuorumCertificate qc) {
 				senders.forEach(s -> s.highQC(qc));
 			}
@@ -257,6 +252,7 @@ public final class ConsensusModule extends AbstractModule {
 	private VertexStore vertexStore(
 		VertexStoreEventSender vertexStoreEventSender,
 		EventDispatcher<BFTUpdate> updateSender,
+		EventDispatcher<BFTCommittedUpdate> committedSender,
 		BFTConfiguration bftConfiguration,
 		SystemCounters counters,
 		Ledger ledger
@@ -266,6 +262,7 @@ public final class ConsensusModule extends AbstractModule {
 			bftConfiguration.getGenesisQC(),
 			ledger,
 			updateSender,
+			committedSender,
 			vertexStoreEventSender,
 			counters
 		);

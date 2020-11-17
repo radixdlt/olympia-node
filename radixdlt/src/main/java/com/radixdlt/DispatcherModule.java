@@ -51,6 +51,7 @@ public class DispatcherModule extends AbstractModule {
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochView>>() { }, ProcessOnDispatch.class);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochView>>() { });
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<BFTCommittedUpdate>>() { });
+		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<BFTCommittedUpdate>>() { }, ProcessOnDispatch.class);
 	}
 
 	@Provides
@@ -110,6 +111,23 @@ public class DispatcherModule extends AbstractModule {
 				logger.warn("LOCAL_TIMEOUT dispatched: {}", timeout);
 				processors.forEach(e -> e.process(timeout));
 				dispatcher.dispatch(timeout);
+			};
+		}
+	}
+
+	@Provides
+	private EventDispatcher<BFTCommittedUpdate> committedUpdateEventDispatcher(
+		@ProcessOnDispatch Set<EventProcessor<BFTCommittedUpdate>> processors,
+		Set<EventProcessor<BFTCommittedUpdate>> asyncProcessors,
+		Environment environment
+	) {
+		if (asyncProcessors.isEmpty()) {
+			return commit -> processors.forEach(e -> e.process(commit));
+		} else {
+			EventDispatcher<BFTCommittedUpdate> dispatcher = environment.getDispatcher(BFTCommittedUpdate.class);
+			return commit -> {
+				processors.forEach(e -> e.process(commit));
+				dispatcher.dispatch(commit);
 			};
 		}
 	}

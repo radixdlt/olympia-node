@@ -17,6 +17,7 @@
 
 package com.radixdlt.integration.distributed.simulation.invariants.consensus;
 
+import com.radixdlt.consensus.Timeout;
 import com.radixdlt.integration.distributed.simulation.TestInvariant;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
 import io.reactivex.rxjava3.core.Observable;
@@ -26,21 +27,21 @@ import io.reactivex.rxjava3.core.Observable;
  * Only makes sense to check in networks where there are no failing nodes.
  */
 public class NoTimeoutsInvariant implements TestInvariant {
-	private final NodeTimeouts nodeTimeouts;
+	private final NodeEvents<Timeout> nodeTimeouts;
 
-	public NoTimeoutsInvariant(NodeTimeouts nodeTimeouts) {
+	public NoTimeoutsInvariant(NodeEvents<Timeout> nodeTimeouts) {
 		this.nodeTimeouts = nodeTimeouts;
 	}
 
 	@Override
 	public Observable<TestInvariantError> check(RunningNetwork network) {
-		return Observable.create(
+		return Observable.<TestInvariantError>create(
 			emitter ->
 				this.nodeTimeouts.addListener(nodeTimeout ->
 					emitter.onNext(
-						new TestInvariantError("Timeout at node " + nodeTimeout.node() + " " + nodeTimeout.timeout())
+						new TestInvariantError("Timeout at node " + nodeTimeout.node() + " " + nodeTimeout.event())
 					)
 				)
-		);
+		).serialize();
 	}
 }
