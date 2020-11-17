@@ -19,6 +19,7 @@ package com.radixdlt.recovery;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -139,25 +140,9 @@ public class RecoveryTest {
 				protected void configure() {
 					bind(HashSigner.class).toInstance(ecKeyPair::sign);
 					bind(BFTNode.class).annotatedWith(Self.class).toInstance(self);
-					bindConstant().annotatedWith(Names.named("magic")).to(0);
+					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(ImmutableList.of(self));
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
-
-					bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(200);
-					bind(Integer.class).annotatedWith(BFTSyncPatienceMillis.class).toInstance(200);
-					bind(Integer.class).annotatedWith(MinValidators.class).toInstance(1);
-					bind(Long.class).annotatedWith(PacemakerTimeout.class).toInstance(1000L);
-					bind(Double.class).annotatedWith(PacemakerRate.class).toInstance(2.0);
-					bind(Integer.class).annotatedWith(PacemakerMaxExponent.class).toInstance(6);
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(epochCeilingView));
-
-					// System
-					bind(Mempool.class).to(EmptyMempool.class);
-					bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
-					bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
-
-					// TODO: Move these into DeterministicSender
-					bind(CommittedAtomSender.class).toInstance(atom -> { });
-					bind(SyncTimeoutScheduler.class).toInstance((syncInProgress, milliseconds) -> { });
 
 					final RuntimeProperties runtimeProperties;
 					// TODO: this constructor/class/inheritance/dependency is horribly broken
@@ -170,39 +155,7 @@ public class RecoveryTest {
 					bind(RuntimeProperties.class).toInstance(runtimeProperties);
 				}
 			},
-
-			new MockedCheckpointModule(BFTValidatorSet.from(Stream.of(BFTValidator.from(self, UInt256.ONE)))),
-
-			new DeterministicEnvironmentModule(),
-
-			new DispatcherModule(),
-
-			// Consensus
-			new CryptoModule(),
-			new ConsensusModule(),
-
-			// Ledger
-			new LedgerModule(),
-			new LedgerCommandGeneratorModule(),
-
-			// Sync
-			new SyncServiceModule(),
-
-			// Epochs - Consensus
-			new EpochsConsensusModule(),
-			// Epochs - Ledger
-			new EpochsLedgerUpdateModule(),
-			// Epochs - Sync
-			new EpochsSyncModule(),
-
-			// State Computer
-			new RadixEngineModule(),
-			new RadixEngineStoreModule(),
-
-			// Fees
-			new NoFeeModule(),
-
-			new PersistenceModule()
+			ModuleForRecoveryTests.create()
 		);
 	}
 
