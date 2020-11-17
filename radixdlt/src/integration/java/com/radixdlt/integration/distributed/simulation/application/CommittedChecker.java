@@ -37,9 +37,9 @@ import org.apache.logging.log4j.Logger;
 public class CommittedChecker implements TestInvariant {
 	private static final Logger log = LogManager.getLogger();
 	private final Observable<Command> submittedCommands;
-	private final NodeEvents<BFTCommittedUpdate> commits;
+	private final NodeEvents commits;
 
-	public CommittedChecker(Observable<Command> submittedCommands, NodeEvents<BFTCommittedUpdate> commits) {
+	public CommittedChecker(Observable<Command> submittedCommands, NodeEvents commits) {
 		this.submittedCommands = Objects.requireNonNull(submittedCommands);
 		this.commits = Objects.requireNonNull(commits);
 	}
@@ -49,7 +49,8 @@ public class CommittedChecker implements TestInvariant {
 		return submittedCommands
 			.doOnNext(cmd -> log.debug("Submitted command: {}", cmd))
 			.flatMapMaybe(command ->
-				Observable.<BFTCommittedUpdate>create(emitter -> commits.addListener((n, e) -> emitter.onNext(e)))
+				Observable.<BFTCommittedUpdate>create(emitter -> commits.addListener((n, e) -> emitter.onNext(e), BFTCommittedUpdate.class))
+
 					.serialize()
 					.filter(e -> e.getCommitted().stream()
 						.flatMap(PreparedVertex::getCommands)

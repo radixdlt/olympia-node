@@ -26,9 +26,9 @@ import io.reactivex.rxjava3.core.Observable;
  * Checks that the network never commits a new vertex
  */
 public class NoneCommittedInvariant implements TestInvariant {
-	private final NodeEvents<BFTCommittedUpdate> commits;
+	private final NodeEvents commits;
 
-	public NoneCommittedInvariant(NodeEvents<BFTCommittedUpdate> commits) {
+	public NoneCommittedInvariant(NodeEvents commits) {
 		this.commits = commits;
 	}
 
@@ -39,7 +39,7 @@ public class NoneCommittedInvariant implements TestInvariant {
 				this.commits.addListener((node, event) ->
 					emitter.onNext(
 						new TestInvariantError("Commit at node " + node + " " + event)
-					)
+					), BFTCommittedUpdate.class
 				)
 		).serialize();
 	}

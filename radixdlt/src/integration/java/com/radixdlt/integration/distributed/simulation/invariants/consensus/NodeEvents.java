@@ -19,18 +19,22 @@ package com.radixdlt.integration.distributed.simulation.invariants.consensus;
 
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.EventProcessor;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
-public final class NodeEvents<T> {
-	private final Set<BiConsumer<BFTNode, T>> consumers = new HashSet<>();
+public final class NodeEvents {
+	private final Map<Class<?>, Set<BiConsumer<BFTNode, Object>>> consumers = new HashMap<>();
 
-	public void addListener(BiConsumer<BFTNode, T> eventConsumer) {
-		this.consumers.add(eventConsumer);
+	public <T> void addListener(BiConsumer<BFTNode, T> eventConsumer, Class<T> eventClass) {
+		this.consumers.computeIfAbsent(eventClass, k -> new HashSet<>()).add((node, e) ->
+			eventConsumer.accept(node, eventClass.cast(e))
+		);
 	}
 
-	public EventProcessor<T> processor(BFTNode node) {
-		return t -> consumers.forEach(c -> c.accept(node, t));
+	public <T> EventProcessor<T> processor(BFTNode node, Class<T> eventClass) {
+		return t -> consumers.get(eventClass).forEach(c -> c.accept(node, t));
 	}
 }

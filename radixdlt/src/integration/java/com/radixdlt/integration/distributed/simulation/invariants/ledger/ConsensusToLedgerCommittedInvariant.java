@@ -35,9 +35,9 @@ import java.util.concurrent.TimeUnit;
  * of atleast one node (TODO: test for every node)
  */
 public class ConsensusToLedgerCommittedInvariant implements TestInvariant {
-	private final NodeEvents<BFTCommittedUpdate> commits;
+	private final NodeEvents commits;
 
-	public ConsensusToLedgerCommittedInvariant(NodeEvents<BFTCommittedUpdate> commits) {
+	public ConsensusToLedgerCommittedInvariant(NodeEvents commits) {
 		this.commits = commits;
 	}
 
@@ -53,7 +53,7 @@ public class ConsensusToLedgerCommittedInvariant implements TestInvariant {
 		).subscribe(committedCommands::onNext);
 
 		return Observable.<BFTCommittedUpdate>create(emitter ->
-			commits.addListener((node, event) -> emitter.onNext(event))
+			commits.addListener((node, event) -> emitter.onNext(event), BFTCommittedUpdate.class)
 		).serialize()
 			.concatMap(committedUpdate -> Observable.fromStream(committedUpdate.getCommitted().stream()
 				.flatMap(PreparedVertex::successfulCommands)))

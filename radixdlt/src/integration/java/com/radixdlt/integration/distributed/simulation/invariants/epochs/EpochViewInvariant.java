@@ -29,10 +29,10 @@ import java.util.Objects;
  * Invariant which checks that a committed vertex never goes above some view
  */
 public class EpochViewInvariant implements TestInvariant {
-	private final NodeEvents<BFTCommittedUpdate> commits;
+	private final NodeEvents commits;
 	private final View epochHighView;
 
-	public EpochViewInvariant(View epochHighView, NodeEvents<BFTCommittedUpdate> commits) {
+	public EpochViewInvariant(View epochHighView, NodeEvents commits) {
 		this.commits = commits;
 		this.epochHighView = Objects.requireNonNull(epochHighView);
 	}
@@ -40,7 +40,7 @@ public class EpochViewInvariant implements TestInvariant {
 	@Override
 	public Observable<TestInvariantError> check(RunningNetwork network) {
 		return Observable.<BFTCommittedUpdate>create(
-			emitter -> this.commits.addListener((node, commit) -> emitter.onNext(commit))
+			emitter -> this.commits.addListener((node, commit) -> emitter.onNext(commit), BFTCommittedUpdate.class)
 		).serialize()
 			.concatMap(committedUpdate -> Observable.fromStream(committedUpdate.getCommitted().stream()))
 			.flatMap(vertex -> {

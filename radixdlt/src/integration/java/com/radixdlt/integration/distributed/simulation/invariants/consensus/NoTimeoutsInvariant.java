@@ -27,9 +27,9 @@ import io.reactivex.rxjava3.core.Observable;
  * Only makes sense to check in networks where there are no failing nodes.
  */
 public class NoTimeoutsInvariant implements TestInvariant {
-	private final NodeEvents<Timeout> nodeTimeouts;
+	private final NodeEvents nodeTimeouts;
 
-	public NoTimeoutsInvariant(NodeEvents<Timeout> nodeTimeouts) {
+	public NoTimeoutsInvariant(NodeEvents nodeTimeouts) {
 		this.nodeTimeouts = nodeTimeouts;
 	}
 
@@ -40,7 +40,8 @@ public class NoTimeoutsInvariant implements TestInvariant {
 				this.nodeTimeouts.addListener((node, event) ->
 					emitter.onNext(
 						new TestInvariantError("Timeout at node " + node + " " + event)
-					)
+					),
+					Timeout.class
 				)
 		).serialize();
 	}
