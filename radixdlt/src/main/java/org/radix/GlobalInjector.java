@@ -31,6 +31,7 @@ import com.radixdlt.ConsensusRxModule;
 import com.radixdlt.CryptoModule;
 import com.radixdlt.EpochsConsensusModule;
 import com.radixdlt.EpochsSyncModule;
+import com.radixdlt.GenesisValidatorSetFromUniverseModule;
 import com.radixdlt.LedgerCommandGeneratorModule;
 import com.radixdlt.EpochsLedgerUpdateModule;
 import com.radixdlt.EpochsLedgerUpdateRxModule;
@@ -129,7 +130,6 @@ public class GlobalInjector {
 			}
 		};
 
-		final int fixedNodeCount = properties.get("consensus.fixed_node_count", 1);
 		final int mempoolMaxSize = properties.get("mempool.maxSize", 1000);
 
 		injector = Guice.createInjector(
@@ -170,7 +170,10 @@ public class GlobalInjector {
 			new RadixEngineStoreModule(),
 
 			// Checkpoints
-			new CheckpointModule(fixedNodeCount),
+			new CheckpointModule(),
+
+			// Genesis validators
+			new GenesisValidatorSetFromUniverseModule(),
 
 			// Fees
 			new TokenFeeModule(),

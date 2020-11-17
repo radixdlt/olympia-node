@@ -40,17 +40,13 @@ public class GlobalInjectorTest {
 
 	@Test
 	public void testInjectorNotNullToken() {
-		setup();
-		assertNotNull(this.globalInjector.getInjector());
-	}
-
-	private void setup() {
 		RuntimeProperties properties = mock(RuntimeProperties.class);
 		doReturn("127.0.0.1").when(properties).get(eq("host.ip"), any());
-
 		Files.delete(new File("nonesuch.ks"));
 		when(properties.get(eq("node.key.path"), any(String.class))).thenReturn("nonesuch.ks");
 
 		this.globalInjector = new GlobalInjector(properties);
+
+		assertNotNull(this.globalInjector.getInjector());
 	}
 }

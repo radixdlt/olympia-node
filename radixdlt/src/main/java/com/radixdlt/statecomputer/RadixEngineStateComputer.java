@@ -147,7 +147,10 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 		final BFTValidatorSet validatorSet;
 		if (view.compareTo(epochCeilingView) >= 0) {
-			validatorSet = this.validatorSetBuilder.buildValidatorSet(branch);
+			validatorSet = this.validatorSetBuilder.buildValidatorSet(
+				branch.getComputedState(RadixEngineValidatorsComputer.class),
+				branch.getComputedState(RadixEngineStakeComputer.class)
+			);
 		} else {
 			validatorSet = null;
 		}
@@ -167,7 +170,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		try {
 			branch.checkAndStore(systemUpdate, PermissionLevel.SUPER_USER);
 		} catch (RadixEngineException e) {
-			throw new IllegalStateException(String.format("Failed to execute system update:\n%s", systemUpdate.toInstructionsString()), e);
+			throw new IllegalStateException(String.format("Failed to execute system update:%n%s", systemUpdate.toInstructionsString()), e);
 		}
 		Command command = new Command(serialization.toDson(systemUpdate, Output.ALL));
 		RadixEngineCommand radixEngineCommand = new RadixEngineCommand(
@@ -278,7 +281,10 @@ public final class RadixEngineStateComputer implements StateComputer {
 		// Verify that output of radix engine and signed output match
 		// TODO: Always follow radix engine as its a deeper source of truth and just mark validator set as malicious
 		if (epochChange) {
-			final var reNextValidatorSet = this.validatorSetBuilder.buildValidatorSet(this.radixEngine);
+			final var reNextValidatorSet = this.validatorSetBuilder.buildValidatorSet(
+				this.radixEngine.getComputedState(RadixEngineValidatorsComputer.class),
+				this.radixEngine.getComputedState(RadixEngineStakeComputer.class)
+			);
 			final var signedValidatorSet = verifiedCommandsAndProof.getHeader().getNextValidatorSet()
 				.orElseThrow(() -> new ByzantineQuorumException("RE has changed epochs but proofs don't show."));
 			if (!signedValidatorSet.equals(reNextValidatorSet)) {
