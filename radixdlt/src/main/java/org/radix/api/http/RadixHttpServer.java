@@ -24,7 +24,6 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
-import com.radixdlt.systeminfo.InMemorySystemInfoRunner;
 import com.google.common.io.CharStreams;
 import com.radixdlt.api.CommittedAtomsRx;
 import com.radixdlt.api.SubmissionErrorsRx;

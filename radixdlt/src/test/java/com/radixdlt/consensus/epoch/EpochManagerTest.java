@@ -97,9 +97,6 @@ public class EpochManagerTest {
 	@Inject
 	private Hasher hasher;
 
-	@Inject
-	private BFTValidatorSet validatorSet;
-
 	private ECKeyPair ecKeyPair = ECKeyPair.generateNew();
 
 	private SyncEpochsRPCSender syncEpochsRPCSender = mock(SyncEpochsRPCSender.class);
