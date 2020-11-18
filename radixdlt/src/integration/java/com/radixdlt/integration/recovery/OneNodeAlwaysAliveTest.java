@@ -182,9 +182,6 @@ public class OneNodeAlwaysAliveTest {
 						throw new IllegalStateException();
 					}
 					bind(RuntimeProperties.class).toInstance(runtimeProperties);
-
-					// Initial validators
-//					bind(BFTValidatorSet.class).toInstance(validatorSet);
 				}
 			},
 

@@ -38,8 +38,8 @@ public class RadixEngineValidatorComputersModule extends AbstractModule {
 
 	@Provides
 	private RadixEngineStakeComputer stakeComputer(
-		@NativeToken RRI feeToken // FIXME: ability to use a different token for fees and staking
+		@NativeToken RRI stakeToken // FIXME: ability to use a different token for fees and staking
 	) {
-		return RadixEngineStakeComputerImpl.create(feeToken);
+		return RadixEngineStakeComputerImpl.create(stakeToken);
 	}
 }

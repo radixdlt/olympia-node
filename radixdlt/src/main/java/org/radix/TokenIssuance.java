@@ -23,8 +23,7 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.UInt256;
 
 /**
- * Represents a delegation of stake from a staker to a delegate for
- * a specified amount.
+ * An initial issuance of tokens to the specified key.
  */
 public final class TokenIssuance {
 	private final ECPublicKey receiver;
