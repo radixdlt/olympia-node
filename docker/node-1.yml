@@ -1,0 +1,27 @@
+version: '3'
+services:
+  core0:
+    extends:
+      file: core.yml
+      service: core
+    environment:
+      RADIXDLT_HOST_IP_ADDRESS: core0
+      RADIXDLT_NETWORK_SEEDS_REMOTE: core0
+      RADIXDLT_NODE_KEY: ${RADIXDLT_VALIDATOR_0_PRIVKEY}
+    networks:
+      - single_node
+    ports:
+      - "8080:8080"
+      - "9011:9011"
+      - "50505:50505"
+      - "10000:10000/tcp"
+      - "20000:20000/tcp"
+      - "30000:30000/tcp"
+  faucet:
+    extends:
+      file: faucet.yml
+      service: faucet
+    networks:
+      - single_node
+networks:
+  single_node:

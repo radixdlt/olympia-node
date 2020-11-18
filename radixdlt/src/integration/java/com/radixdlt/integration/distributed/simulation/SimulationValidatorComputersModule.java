@@ -23,8 +23,7 @@ import java.util.function.Function;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.google.inject.Scopes;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
@@ -36,7 +35,7 @@ import com.radixdlt.utils.UInt256;
 /**
  * Module which manages computers used for validators and stake
  */
-public class SimulationValidatorsComputersModule extends AbstractModule {
+public class SimulationValidatorComputersModule extends AbstractModule {
 	private final class FixedStakeComputer implements RadixEngineStakeComputer {
 		private final UInt256 stake;
 
@@ -63,22 +62,7 @@ public class SimulationValidatorsComputersModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
-		// Nothing to do
-	}
-
-	@Provides
-	private RadixEngineValidatorsComputer validatorsComputer(
-		BFTValidatorSet initialValidatorSet
-	) {
-		ImmutableSet<ECPublicKey> initialValidatorKeys = initialValidatorSet.getValidators().stream()
-			.map(v -> v.getNode().getKey())
-			.collect(ImmutableSet.toImmutableSet());
-
-		return RadixEngineValidatorsComputerImpl.create(initialValidatorKeys);
-	}
-
-	@Provides
-	private RadixEngineStakeComputer stakeComputer() {
-		return new FixedStakeComputer(UInt256.ONE);
+		bind(RadixEngineValidatorsComputer.class).toProvider(RadixEngineValidatorsComputerImpl::create).in(Scopes.SINGLETON);
+		bind(RadixEngineStakeComputer.class).toInstance(new FixedStakeComputer(UInt256.ONE));
 	}
 }

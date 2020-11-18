@@ -17,20 +17,15 @@
 
 package com.radixdlt;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.crypto.ECPublicKey;
+import com.google.inject.Scopes;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.statecomputer.RadixEngineStakeComputer;
 import com.radixdlt.statecomputer.RadixEngineStakeComputerImpl;
 import com.radixdlt.statecomputer.RadixEngineValidatorsComputer;
 import com.radixdlt.statecomputer.RadixEngineValidatorsComputerImpl;
-import com.radixdlt.utils.UInt256;
 
 /**
  * Module which manages computers used for validators and stake
@@ -38,28 +33,13 @@ import com.radixdlt.utils.UInt256;
 public class RadixEngineValidatorComputersModule extends AbstractModule {
 	@Override
 	protected void configure() {
-		// Nothing to do
-	}
-
-	@Provides
-	private RadixEngineValidatorsComputer validatorsComputer(
-		BFTValidatorSet initialValidatorSet
-	) {
-		ImmutableSet<ECPublicKey> initialValidatorKeys = initialValidatorSet.getValidators().stream()
-			.map(v -> v.getNode().getKey())
-			.collect(ImmutableSet.toImmutableSet());
-
-		return RadixEngineValidatorsComputerImpl.create(initialValidatorKeys);
+		bind(RadixEngineValidatorsComputer.class).toProvider(RadixEngineValidatorsComputerImpl::create).in(Scopes.SINGLETON);
 	}
 
 	@Provides
 	private RadixEngineStakeComputer stakeComputer(
-		@NativeToken RRI feeToken, // FIXME: ability to use a different token for fees and staking
-		BFTValidatorSet initialValidatorSet
+		@NativeToken RRI feeToken // FIXME: ability to use a different token for fees and staking
 	) {
-		ImmutableMap<ECPublicKey, UInt256> initialAmounts = initialValidatorSet.getValidators().stream()
-				.collect(ImmutableMap.toImmutableMap(v -> v.getNode().getKey(), BFTValidator::getPower));
-
-		return RadixEngineStakeComputerImpl.create(feeToken, initialAmounts);
+		return RadixEngineStakeComputerImpl.create(feeToken);
 	}
 }

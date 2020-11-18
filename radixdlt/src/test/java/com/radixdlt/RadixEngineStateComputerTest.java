@@ -127,10 +127,6 @@ public class RadixEngineStateComputerTest {
 		return new AbstractModule() {
 			@Override
 			public void configure() {
-				ImmutableSet<ECPublicKey> validatorKeys = validatorSet.getValidators().stream()
-					.map(BFTValidator::getNode)
-					.map(BFTNode::getKey)
-					.collect(ImmutableSet.toImmutableSet());
 				bind(Serialization.class).toInstance(serialization);
 				bind(BFTValidatorSet.class).toInstance(validatorSet);
 				bind(Hasher.class).toInstance(Sha256Hasher.withDefaultSerialization());
@@ -140,7 +136,7 @@ public class RadixEngineStateComputerTest {
 				bindConstant().annotatedWith(MaxValidators.class).to(100);
 				bind(RRI.class).annotatedWith(NativeToken.class).toInstance(stakeToken);
 				bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(10));
-				bind(RadixEngineValidatorsComputer.class).toInstance(RadixEngineValidatorsComputerImpl.create(validatorKeys));
+				bind(RadixEngineValidatorsComputer.class).toInstance(RadixEngineValidatorsComputerImpl.create());
 				bind(RadixEngineStakeComputer.class).toInstance(new ConstantStakeComputer(UInt256.ONE));
 			}
 		};

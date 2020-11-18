@@ -30,14 +30,16 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.statecomputer.ValidatorSetBuilder;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.UInt256;
-import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Provides a validator set from the genesis atoms.
  */
 public class GenesisValidatorSetFromUniverse implements GenesisValidatorSetProvider {
+	private static final Logger log = LogManager.getLogger();
 	private final BFTValidatorSet validatorSet;
 
 	public GenesisValidatorSetFromUniverse(
@@ -47,6 +49,7 @@ public class GenesisValidatorSetFromUniverse implements GenesisValidatorSetProvi
 	) {
 		// No deregistering validators in the genesis atoms
 		allParticles(universe, RegisteredValidatorParticle.class, Spin.DOWN)
+			.filter(rvp -> rvp.getNonce() != 0)
 			.findAny()
 			.ifPresent(downRvp -> {
 				throw new IllegalStateException("Unexpected validator deregistration for " + downRvp.getAddress());
@@ -77,12 +80,12 @@ public class GenesisValidatorSetFromUniverse implements GenesisValidatorSetProvi
 		}
 
 		// Collect up validator keys and staked amounts
-		final Map<ECPublicKey, UInt256> stakedAmounts = allParticles(universe, StakedTokensParticle.class, Spin.UP)
+		final ImmutableMap<ECPublicKey, UInt256> stakedAmounts = allParticles(universe, StakedTokensParticle.class, Spin.UP)
 			.filter(stp -> registeredValidators.contains(stp.getDelegateAddress()))
-			.collect(Collectors.toMap(stp -> stp.getDelegateAddress().getPublicKey(), StakedTokensParticle::getAmount, UInt256::add));
+			.collect(ImmutableMap.toImmutableMap(stp -> stp.getDelegateAddress().getPublicKey(), StakedTokensParticle::getAmount, UInt256::add));
 
 		this.validatorSet = ValidatorSetBuilder.create(minValidators, maxValidators)
-			.buildValidatorSet(ImmutableMap.copyOf(stakedAmounts));
+			.buildValidatorSet(stakedAmounts);
 
 		if (this.validatorSet == null) {
 			throw new IllegalStateException(
@@ -92,6 +95,8 @@ public class GenesisValidatorSetFromUniverse implements GenesisValidatorSetProvi
 				)
 			);
 		}
+
+		log.info("Genesis validator set is {}", this.validatorSet);
 	}
 
 	@Override

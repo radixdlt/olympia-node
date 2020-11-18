@@ -493,7 +493,7 @@ public class SimulationTest {
 						}
 					});
 					modules.add(new RadixEngineModule());
-					modules.add(new SimulationValidatorsComputersModule());
+					modules.add(new SimulationValidatorComputersModule());
 					modules.add(new RadixEngineRxModule());
 					modules.add(new MockedSyncServiceModule());
 					modules.add(new MockedRadixEngineStoreModule());

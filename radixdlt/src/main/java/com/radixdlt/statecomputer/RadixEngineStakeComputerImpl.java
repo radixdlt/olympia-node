@@ -39,15 +39,14 @@ public final class RadixEngineStakeComputerImpl implements RadixEngineStakeCompu
 	private final RRI stakingToken;
 	private final ImmutableMap<ECPublicKey, UInt256> stakedAmounts;
 
-	public RadixEngineStakeComputerImpl(RRI stakingToken, ImmutableMap<ECPublicKey, UInt256> stakedAmounts) {
+	private RadixEngineStakeComputerImpl(RRI stakingToken, ImmutableMap<ECPublicKey, UInt256> stakedAmounts) {
 		this.stakingToken = stakingToken;
 		this.stakedAmounts = stakedAmounts;
 	}
 
-	public static RadixEngineStakeComputer create(RRI stakingToken, ImmutableMap<ECPublicKey, UInt256> initialAmounts) {
+	public static RadixEngineStakeComputer create(RRI stakingToken) {
 		Objects.requireNonNull(stakingToken);
-		Objects.requireNonNull(initialAmounts);
-		return new RadixEngineStakeComputerImpl(stakingToken, initialAmounts);
+		return new RadixEngineStakeComputerImpl(stakingToken, ImmutableMap.of());
 	}
 
 	private RadixEngineStakeComputerImpl next(ImmutableMap<ECPublicKey, UInt256> stakedAmounts) {
@@ -95,5 +94,10 @@ public final class RadixEngineStakeComputerImpl implements RadixEngineStakeCompu
 	@Override
 	public ImmutableMap<ECPublicKey, UInt256> stakedAmounts(ImmutableSet<ECPublicKey> validators) {
 		return ImmutableMap.copyOf(Maps.filterKeys(this.stakedAmounts, validators::contains));
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s[%s:%s]", getClass().getSimpleName(), this.stakingToken, this.stakedAmounts);
 	}
 }

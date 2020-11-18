@@ -20,7 +20,6 @@ package com.radixdlt.statecomputer;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.RadixAddress;
-import java.util.Objects;
 import javax.annotation.concurrent.NotThreadSafe;
 
 /**
@@ -34,8 +33,8 @@ public final class RadixEngineValidatorsComputerImpl implements RadixEngineValid
 		this.validators = validators;
 	}
 
-	public static RadixEngineValidatorsComputer create(ImmutableSet<ECPublicKey> initialSet) {
-		return new RadixEngineValidatorsComputerImpl(Objects.requireNonNull(initialSet));
+	public static RadixEngineValidatorsComputer create() {
+		return new RadixEngineValidatorsComputerImpl(ImmutableSet.of());
 	}
 
 	private RadixEngineValidatorsComputer next(ImmutableSet<ECPublicKey> validators) {
