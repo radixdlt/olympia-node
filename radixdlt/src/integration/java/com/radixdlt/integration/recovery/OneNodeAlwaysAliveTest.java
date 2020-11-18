@@ -250,7 +250,7 @@ public class OneNodeAlwaysAliveTest {
 		EpochView epochView = this.nodes.get(0).getInstance(DeterministicEpochInfo.class).getCurrentEpochView();
 
 		for (int restart = 0; restart < 10; restart++) {
-			processForCount(1000);
+			processForCount(2000);
 
 			EpochView nextEpochView = this.nodes.stream().map(i -> i.getInstance(DeterministicEpochInfo.class).getCurrentEpochView())
 				.max(Comparator.naturalOrder()).orElse(new EpochView(0, View.genesis()));
