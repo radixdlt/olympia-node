@@ -432,7 +432,6 @@ public class SimulationTest {
 			modules.add(new LedgerRxModule());
 			modules.add(new DispatcherModule());
 			modules.add(new RxEnvironmentModule());
-
 			if (ledgerType == LedgerType.MOCKED_LEDGER) {
 				modules.add(new MockedBFTConfigurationModule());
 				modules.add(new MockedLedgerModule());
@@ -524,7 +523,6 @@ public class SimulationTest {
 				modules.add(new EpochsConsensusModule()); // constant for now
 				modules.add(new ConsensusRunnerModule());
 			}
-
 			if (ledgerType.hasSync) {
 				modules.add(new AbstractModule() {
 					@Override
