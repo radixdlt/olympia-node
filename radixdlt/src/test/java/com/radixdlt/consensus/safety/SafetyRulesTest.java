@@ -52,7 +52,7 @@ public class SafetyRulesTest {
 		when(hasher.hash(any())).thenReturn(mock(HashCode.class));
 		HashSigner hashSigner = mock(HashSigner.class);
 		when(hashSigner.sign(Mockito.<HashCode>any())).thenReturn(new ECDSASignature());
-		this.safetyRules = new SafetyRules(mock(BFTNode.class), safetyState, hasher, hashSigner);
+		this.safetyRules = new SafetyRules(mock(BFTNode.class), safetyState, mock(PersistentSafetyState.class), hasher, hashSigner);
 	}
 
 	@Test

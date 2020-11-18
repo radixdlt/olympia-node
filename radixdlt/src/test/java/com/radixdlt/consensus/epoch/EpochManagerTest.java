@@ -59,6 +59,7 @@ import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.liveness.ProceedToViewSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
+import com.radixdlt.consensus.safety.PersistentSafetyState;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.consensus.bft.View;
@@ -138,6 +139,7 @@ public class EpochManagerTest {
 				bind(new TypeLiteral<EventDispatcher<FormedQC>>() { }).toInstance(rmock(EventDispatcher.class));
 				bind(new TypeLiteral<ScheduledEventDispatcher<LocalGetVerticesRequest>>() { }).toInstance(timeoutScheduler);
 
+				bind(PersistentSafetyState.class).toInstance(mock(PersistentSafetyState.class));
 				bind(SyncEpochsRPCSender.class).toInstance(syncEpochsRPCSender);
 				bind(LocalTimeoutSender.class).toInstance(localTimeoutSender);
 				bind(NextCommandGenerator.class).toInstance(nextCommandGenerator);

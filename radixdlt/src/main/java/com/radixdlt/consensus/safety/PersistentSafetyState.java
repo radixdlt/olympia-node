@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,18 +15,10 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.store;
+package com.radixdlt.consensus.safety;
 
-import com.radixdlt.identifiers.EUID;
+import com.radixdlt.consensus.Vote;
 
-import java.util.OptionalLong;
-
-public interface CursorStore {
-	void put(EUID nid, long cursor);
-
-	OptionalLong get(EUID nid);
-
-	void reset();
-
-	void close();
+public interface PersistentSafetyState {
+	void save(Vote vote, SafetyState safetyState);
 }

@@ -34,6 +34,7 @@ import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.safety.PersistentSafetyState;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.Ledger;
@@ -186,12 +187,13 @@ public final class ConsensusModule extends AbstractModule {
 		PacemakerInfoSender infoSender,
 		@PacemakerTimeout long pacemakerTimeout,
 		@PacemakerRate double pacemakerRate,
-		@PacemakerMaxExponent int pacemakerMaxExponent
+		@PacemakerMaxExponent int pacemakerMaxExponent,
+		PersistentSafetyState persistentSafetyState
 	) {
 		PendingVotes pendingVotes = new PendingVotes(hasher);
 		PendingViewTimeouts pendingViewTimeouts = new PendingViewTimeouts();
 		BFTValidatorSet validatorSet = configuration.getValidatorSet();
-		SafetyRules safetyRules = new SafetyRules(self, SafetyState.initialState(), hasher, signer);
+		SafetyRules safetyRules = new SafetyRules(self, SafetyState.initialState(), persistentSafetyState, hasher, signer);
 		return new ExponentialTimeoutPacemaker(
 			pacemakerTimeout,
 			pacemakerRate,

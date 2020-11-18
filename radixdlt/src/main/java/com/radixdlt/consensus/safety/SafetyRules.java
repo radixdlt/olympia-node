@@ -51,16 +51,19 @@ public final class SafetyRules {
 	private final Hasher hasher;
 	private final HashSigner signer;
 
+	private final PersistentSafetyState persistentSafetyState;
 	private SafetyState state;
 
 	public SafetyRules(
 		BFTNode self,
 		SafetyState initialState,
+		PersistentSafetyState persistentSafetyState,
 		Hasher hasher,
 		HashSigner signer
 	) {
 		this.self = self;
 		this.state = Objects.requireNonNull(initialState);
+		this.persistentSafetyState = Objects.requireNonNull(persistentSafetyState);
 		this.hasher = Objects.requireNonNull(hasher);
 		this.signer = Objects.requireNonNull(signer);
 	}
@@ -143,6 +146,9 @@ public final class SafetyRules {
 		// TODO make signing more robust by including author in signed hash
 		ECDSASignature signature = this.signer.sign(voteHash);
 		Vote vote = new Vote(this.self, timestampedVoteData, signature, highQC);
+
+		this.persistentSafetyState.save(vote, this.state);
+
 		return Optional.of(vote);
 	}
 }

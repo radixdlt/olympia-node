@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus.liveness;
 
+import com.radixdlt.consensus.safety.PersistentSafetyState;
 import com.radixdlt.crypto.Hasher;
 import java.util.Objects;
 
@@ -48,6 +49,7 @@ public class ExponentialTimeoutPacemakerFactory implements PacemakerFactory {
 	private final HashSigner signer;
 	private final ProposalBroadcaster proposalBroadcaster;
 	private final ProceedToViewSender proceedToViewSender;
+	private final PersistentSafetyState persistentSafetyState;
 
 	public ExponentialTimeoutPacemakerFactory(
 		long timeoutMilliseconds,
@@ -60,7 +62,8 @@ public class ExponentialTimeoutPacemakerFactory implements PacemakerFactory {
 		Hasher hasher,
 		HashSigner signer,
 		ProposalBroadcaster proposalBroadcaster,
-		ProceedToViewSender proceedToViewSender
+		ProceedToViewSender proceedToViewSender,
+		PersistentSafetyState persistentSafetyState
 	) {
 		this.timeoutMilliseconds = timeoutMilliseconds;
 		this.rate = rate;
@@ -73,7 +76,7 @@ public class ExponentialTimeoutPacemakerFactory implements PacemakerFactory {
 		this.signer = Objects.requireNonNull(signer);
 		this.proposalBroadcaster = Objects.requireNonNull(proposalBroadcaster);
 		this.proceedToViewSender = Objects.requireNonNull(proceedToViewSender);
-
+		this.persistentSafetyState = Objects.requireNonNull(persistentSafetyState);
 	}
 
 	@Override
@@ -86,7 +89,7 @@ public class ExponentialTimeoutPacemakerFactory implements PacemakerFactory {
 	) {
 		PendingVotes pendingVotes = new PendingVotes(hasher);
 		PendingViewTimeouts pendingViewTimeouts = new PendingViewTimeouts();
-		SafetyRules safetyRules = new SafetyRules(self, SafetyState.initialState(), hasher, signer);
+		SafetyRules safetyRules = new SafetyRules(self, SafetyState.initialState(), persistentSafetyState, hasher, signer);
 		return new ExponentialTimeoutPacemaker(
 			timeoutMilliseconds,
 			rate,

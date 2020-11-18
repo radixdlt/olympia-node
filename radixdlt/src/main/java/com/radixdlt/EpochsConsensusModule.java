@@ -54,6 +54,7 @@ import com.radixdlt.consensus.liveness.ProceedToViewSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.consensus.safety.PersistentSafetyState;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
@@ -151,7 +152,8 @@ public class EpochsConsensusModule extends AbstractModule {
 		ProceedToViewSender proceedToViewSender,
 		@PacemakerTimeout long pacemakerTimeout,
 		@PacemakerRate double pacemakerRate,
-		@PacemakerMaxExponent int pacemakerMaxExponent
+		@PacemakerMaxExponent int pacemakerMaxExponent,
+		PersistentSafetyState persistentSafetyState
 	) {
 		return new ExponentialTimeoutPacemakerFactory(
 			pacemakerTimeout,
@@ -164,7 +166,8 @@ public class EpochsConsensusModule extends AbstractModule {
 			hasher,
 			signer,
 			proposalBroadcaster,
-			proceedToViewSender
+			proceedToViewSender,
+			persistentSafetyState
 		);
 	}
 
