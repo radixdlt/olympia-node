@@ -25,6 +25,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
+/**
+ * Temporary class for simulation tests.
+ * TODO: Replace use of this class with the NodeEvents class in deterministic tests.
+ */
 public final class NodeEvents {
 	private final Map<Class<?>, Set<BiConsumer<BFTNode, Object>>> consumers = new HashMap<>();
 

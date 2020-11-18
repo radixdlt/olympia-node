@@ -20,7 +20,10 @@ package com.radixdlt.consensus.bft;
 import com.radixdlt.consensus.QuorumCertificate;
 import java.util.Objects;
 
-public class FormedQC {
+/**
+ * A quorum certificate which has been constructed by this node.
+ */
+public final class FormedQC {
 	private final QuorumCertificate qc;
 	private final BFTNode lastAuthor;
 

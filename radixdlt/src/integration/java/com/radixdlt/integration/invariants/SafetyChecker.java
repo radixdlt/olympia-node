@@ -36,6 +36,10 @@ import java.util.Optional;
 import java.util.TreeMap;
 import javax.annotation.concurrent.NotThreadSafe;
 
+/**
+ * Processes committed vertices and verifies that it forms a single
+ * chain without any forks.
+ */
 @NotThreadSafe
 public final class SafetyChecker {
 	private final TreeMap<EpochView, VerifiedVertex> committedVertices = new TreeMap<>();

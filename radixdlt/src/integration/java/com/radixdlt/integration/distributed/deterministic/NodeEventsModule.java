@@ -25,6 +25,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * Manages events for a node network
+ */
 public class NodeEventsModule extends AbstractModule {
 	@Override
 	public void configure() {

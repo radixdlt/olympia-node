@@ -51,6 +51,9 @@ import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncTimeoutScheduler;
 import com.radixdlt.sync.SyncPatienceMillis;
 
+/**
+ * Helper class for modules to be used for recovery tests.
+ */
 public final class ModuleForRecoveryTests {
 	private ModuleForRecoveryTests() {
 		throw new UnsupportedOperationException("Cannot instantiate.");

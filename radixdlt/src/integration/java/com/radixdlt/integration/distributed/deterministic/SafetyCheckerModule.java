@@ -28,6 +28,9 @@ import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvaria
 import com.radixdlt.integration.invariants.SafetyChecker;
 import java.util.Optional;
 
+/**
+ * Module which checks for consensus safety and throws exception on failure.
+ */
 public class SafetyCheckerModule extends AbstractModule {
 	@Override
 	public void configure() {

@@ -25,7 +25,10 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
-public class NodeEvents {
+/**
+ * Manages events from a network of nodes. Used for processing events for tests.
+ */
+public final class NodeEvents {
 	public static class NodeEventProcessor<T> {
 		private final Class<T> eventClass;
 		private final BiConsumer<BFTNode, T> processor;
