@@ -28,6 +28,7 @@ import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.FormedQC;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
@@ -69,6 +70,7 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.store.LastProof;
@@ -188,7 +190,8 @@ public final class ConsensusModule extends AbstractModule {
 		@PacemakerTimeout long pacemakerTimeout,
 		@PacemakerRate double pacemakerRate,
 		@PacemakerMaxExponent int pacemakerMaxExponent,
-		PersistentSafetyState persistentSafetyState
+		PersistentSafetyState persistentSafetyState,
+		RemoteEventDispatcher<Vote> voteDispatcher
 	) {
 		PendingVotes pendingVotes = new PendingVotes(hasher);
 		PendingViewTimeouts pendingViewTimeouts = new PendingViewTimeouts();
@@ -214,6 +217,7 @@ public final class ConsensusModule extends AbstractModule {
 
 			proposalBroadcaster,
 			proceedToViewSender,
+			voteDispatcher,
 			timeoutSender,
 			infoSender
 		);

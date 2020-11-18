@@ -38,7 +38,6 @@ import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
-import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.environment.RemoteEventDispatcher;
@@ -165,11 +164,6 @@ public class SimulationNetwork {
 			for (BFTNode reader : nodes) {
 				receivedMessages.onNext(MessageInTransit.newMessage(viewTimeout, thisNode, reader));
 			}
-		}
-
-		@Override
-		public void sendVote(Vote vote, BFTNode leader) {
-			receivedMessages.onNext(MessageInTransit.newMessage(vote, thisNode, leader));
 		}
 
 		@Override

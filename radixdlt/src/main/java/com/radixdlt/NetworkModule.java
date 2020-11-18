@@ -23,6 +23,7 @@ import com.google.inject.Scopes;
 import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
+import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
@@ -66,6 +67,11 @@ public final class NetworkModule extends AbstractModule {
 		bind(ProposalBroadcaster.class).to(MessageCentralBFTNetwork.class);
 		bind(ProceedToViewSender.class).to(MessageCentralBFTNetwork.class);
 		bind(BFTEventsRx.class).to(MessageCentralBFTNetwork.class);
+	}
+
+	@Provides
+	private RemoteEventDispatcher<Vote> syncRequestDispatcher(MessageCentralBFTNetwork bftNetwork) {
+		return bftNetwork.voteDispatcher();
 	}
 
 	@Provides

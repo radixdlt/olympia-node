@@ -19,6 +19,7 @@ package com.radixdlt.consensus.liveness;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.RemoteEventDispatcher;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.Optional;
@@ -49,6 +50,7 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.network.TimeSupplier;
 
+import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertEquals;
@@ -101,6 +103,7 @@ public class ExponentialTimeoutPacemakerTest {
 	private SafetyRules safetyRules = mock(SafetyRules.class);
 	private PacemakerTimeoutSender timeoutSender = mock(PacemakerTimeoutSender.class);
 	private PacemakerInfoSender infoSender = mock(PacemakerInfoSender.class);
+	private RemoteEventDispatcher<Vote> voteDispatcher = rmock(RemoteEventDispatcher.class);
 
 	private ExponentialTimeoutPacemaker pacemaker;
 
@@ -121,6 +124,7 @@ public class ExponentialTimeoutPacemakerTest {
 			this.hasher,
 			this.proposalBroadcaster,
 			this.proceedToViewSender,
+			this.voteDispatcher,
 			this.timeoutSender,
 			this.infoSender
 		);
@@ -272,7 +276,7 @@ public class ExponentialTimeoutPacemakerTest {
 
 		assertThat(this.pacemaker.getCurrentView()).isEqualTo(View.of(0));
 		verify(this.vertexStore, times(1)).insertVertex(any());
-		verify(this.proceedToViewSender, times(1)).sendVote(any(), any());
+		verify(this.voteDispatcher, times(1)).dispatch(any(), any());
 		verifyNoMoreInteractions(this.proceedToViewSender);
 	}
 
@@ -477,6 +481,7 @@ public class ExponentialTimeoutPacemakerTest {
 			this.hasher,
 			this.proposalBroadcaster,
 			this.proceedToViewSender,
+			this.voteDispatcher,
 			timeoutSender,
 			this.infoSender
 		);

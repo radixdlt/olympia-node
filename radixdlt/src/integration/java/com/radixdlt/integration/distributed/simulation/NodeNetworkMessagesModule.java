@@ -22,6 +22,7 @@ import com.google.inject.Provides;
 import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
+import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.liveness.ProceedToViewSender;
@@ -59,6 +60,11 @@ public class NodeNetworkMessagesModule extends AbstractModule {
 	@Provides
 	private SimulatedNetworkImpl network(@Self BFTNode node) {
 		return simulationNetwork.getNetwork(node);
+	}
+
+	@Provides
+	private RemoteEventDispatcher<Vote> voteDispatcher(SimulatedNetworkImpl network) {
+		return network.remoteEventDispatcher(Vote.class);
 	}
 
 	@Provides

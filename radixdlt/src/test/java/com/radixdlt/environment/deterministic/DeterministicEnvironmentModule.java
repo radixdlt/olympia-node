@@ -25,6 +25,7 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.Timeout;
+import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
@@ -85,6 +86,11 @@ public class DeterministicEnvironmentModule extends AbstractModule {
 	@ProcessOnDispatch
 	EventProcessor<EpochView> epochViewEventProcessor(DeterministicEpochInfo processor) {
 		return processor.epochViewEventProcessor();
+	}
+
+	@Provides
+	RemoteEventDispatcher<Vote> voteDispatcher(ControlledSender controlledSender) {
+		return controlledSender.remoteDispatcher(Vote.class);
 	}
 
 	@Provides

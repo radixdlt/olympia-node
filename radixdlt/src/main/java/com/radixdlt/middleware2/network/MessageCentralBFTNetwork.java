@@ -23,6 +23,7 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.liveness.ProceedToViewSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 
+import com.radixdlt.environment.RemoteEventDispatcher;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.util.Objects;
 
@@ -107,13 +108,16 @@ public final class MessageCentralBFTNetwork implements ProposalBroadcaster, Proc
 		}
 	}
 
-	@Override
-	public void sendVote(Vote vote, BFTNode nextLeader) {
-		if (this.self.equals(nextLeader)) {
+	public RemoteEventDispatcher<Vote> voteDispatcher() {
+		return this::sendVote;
+	}
+
+	private void sendVote(BFTNode receiver, Vote vote) {
+		if (this.self.equals(receiver)) {
 			this.localMessages.onNext(vote);
 		} else {
 			ConsensusEventMessage message = new ConsensusEventMessage(this.magic, vote);
-			send(message, nextLeader);
+			send(message, receiver);
 		}
 	}
 

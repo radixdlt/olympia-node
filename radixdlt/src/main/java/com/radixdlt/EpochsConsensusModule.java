@@ -24,6 +24,7 @@ import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
@@ -66,6 +67,7 @@ import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.network.TimeSupplier;
 
@@ -153,7 +155,8 @@ public class EpochsConsensusModule extends AbstractModule {
 		@PacemakerTimeout long pacemakerTimeout,
 		@PacemakerRate double pacemakerRate,
 		@PacemakerMaxExponent int pacemakerMaxExponent,
-		PersistentSafetyState persistentSafetyState
+		PersistentSafetyState persistentSafetyState,
+		RemoteEventDispatcher<Vote> voteDispatcher
 	) {
 		return new ExponentialTimeoutPacemakerFactory(
 			pacemakerTimeout,
@@ -167,7 +170,8 @@ public class EpochsConsensusModule extends AbstractModule {
 			signer,
 			proposalBroadcaster,
 			proceedToViewSender,
-			persistentSafetyState
+			persistentSafetyState,
+			voteDispatcher
 		);
 	}
 

@@ -39,6 +39,7 @@ import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.network.TimeSupplier;
 
 import java.util.Set;
@@ -99,6 +100,7 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 	private final ProposalBroadcaster sender;
 	private final ProceedToViewSender proceedToViewSender;
 	private final PacemakerTimeoutSender timeoutSender;
+	private final RemoteEventDispatcher<Vote> voteDispatcher;
 	private final PacemakerInfoSender pacemakerInfoSender;
 
 	private final RateLimiter logLimiter = RateLimiter.create(1.0);
@@ -131,6 +133,7 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 
 		ProposalBroadcaster sender,
 		ProceedToViewSender proceedToViewSender,
+		RemoteEventDispatcher<Vote> voteDispatcher,
 		PacemakerTimeoutSender timeoutSender,
 		PacemakerInfoSender pacemakerInfoSender
 	) {
@@ -167,6 +170,7 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 
 		this.sender = Objects.requireNonNull(sender);
 		this.proceedToViewSender = Objects.requireNonNull(proceedToViewSender);
+		this.voteDispatcher = Objects.requireNonNull(voteDispatcher);
 		this.timeoutSender = Objects.requireNonNull(timeoutSender);
 		this.pacemakerInfoSender = Objects.requireNonNull(pacemakerInfoSender);
 		log.debug("{} for {} with max timeout {}*{}^{}ms",
@@ -207,7 +211,6 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 		final Optional<BFTHeader> maybeHeader = this.vertexStore.insertVertex(proposedVertex);
 		// The header may not be present if the ledger is ahead of consensus
 		maybeHeader.ifPresent(header -> {
-			final BFTNode nextLeader = this.proposerElection.getProposer(this.currentView.next());
 			final Optional<Vote> maybeVote = this.safetyRules.voteFor(
 				proposedVertex,
 				header,
@@ -216,8 +219,9 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 			);
 			maybeVote.ifPresentOrElse(
 				vote -> {
+					final BFTNode nextLeader = this.proposerElection.getProposer(this.currentView.next());
 					log.trace("Proposal: Sending vote to {}: {}", nextLeader, vote);
-					this.proceedToViewSender.sendVote(vote, nextLeader);
+					this.voteDispatcher.dispatch(nextLeader, vote);
 				},
 				() -> {
 					this.counters.increment(CounterType.BFT_REJECTED);

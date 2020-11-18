@@ -17,8 +17,10 @@
 
 package com.radixdlt.consensus.liveness;
 
+import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.safety.PersistentSafetyState;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.RemoteEventDispatcher;
 import java.util.Objects;
 
 import com.radixdlt.consensus.HashSigner;
@@ -50,6 +52,7 @@ public class ExponentialTimeoutPacemakerFactory implements PacemakerFactory {
 	private final ProposalBroadcaster proposalBroadcaster;
 	private final ProceedToViewSender proceedToViewSender;
 	private final PersistentSafetyState persistentSafetyState;
+	private final RemoteEventDispatcher<Vote> voteDispatcher;
 
 	public ExponentialTimeoutPacemakerFactory(
 		long timeoutMilliseconds,
@@ -63,7 +66,8 @@ public class ExponentialTimeoutPacemakerFactory implements PacemakerFactory {
 		HashSigner signer,
 		ProposalBroadcaster proposalBroadcaster,
 		ProceedToViewSender proceedToViewSender,
-		PersistentSafetyState persistentSafetyState
+		PersistentSafetyState persistentSafetyState,
+		RemoteEventDispatcher<Vote> voteDispatcher
 	) {
 		this.timeoutMilliseconds = timeoutMilliseconds;
 		this.rate = rate;
@@ -77,6 +81,7 @@ public class ExponentialTimeoutPacemakerFactory implements PacemakerFactory {
 		this.proposalBroadcaster = Objects.requireNonNull(proposalBroadcaster);
 		this.proceedToViewSender = Objects.requireNonNull(proceedToViewSender);
 		this.persistentSafetyState = Objects.requireNonNull(persistentSafetyState);
+		this.voteDispatcher = Objects.requireNonNull(voteDispatcher);
 	}
 
 	@Override
@@ -107,6 +112,7 @@ public class ExponentialTimeoutPacemakerFactory implements PacemakerFactory {
 			hasher,
 			proposalBroadcaster,
 			proceedToViewSender,
+			voteDispatcher,
 			timeoutSender,
 			infoSender
 		);

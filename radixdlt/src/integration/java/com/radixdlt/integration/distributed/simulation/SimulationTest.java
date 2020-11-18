@@ -68,6 +68,7 @@ import com.radixdlt.integration.distributed.MockedCryptoModule;
 import com.radixdlt.integration.distributed.MockedLedgerModule;
 import com.radixdlt.integration.distributed.MockedLedgerUpdateSender;
 import com.radixdlt.integration.distributed.MockedMempoolModule;
+import com.radixdlt.integration.distributed.MockedPersistenceStoreModule;
 import com.radixdlt.integration.distributed.MockedRadixEngineStoreModule;
 import com.radixdlt.integration.distributed.MockedStateComputerModule;
 import com.radixdlt.integration.distributed.MockedStateComputerWithEpochsModule;
@@ -485,6 +486,7 @@ public class SimulationTest {
 			modules.add(new LedgerRxModule());
 			modules.add(new DispatcherModule());
 			modules.add(new RxEnvironmentModule());
+			modules.add(new MockedPersistenceStoreModule());
 
 			if (ledgerType == LedgerType.MOCKED_LEDGER) {
 				modules.add(new MockedBFTConfigurationModule());

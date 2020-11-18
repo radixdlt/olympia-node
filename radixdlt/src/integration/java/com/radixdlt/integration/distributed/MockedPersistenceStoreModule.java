@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,23 +15,17 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.liveness;
+package com.radixdlt.integration.distributed;
 
-import java.util.Set;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import com.radixdlt.consensus.safety.PersistentSafetyState;
 
-import com.radixdlt.consensus.ViewTimeout;
-import com.radixdlt.consensus.bft.BFTNode;
-
-/**
- * Hotstuff's Event-Driven OnNextSyncView.
- */
-public interface ProceedToViewSender {
-	/**
-	 * Send a view timeout message to the specified validator.
-	 *
-	 * @param viewTimeout the view timeout message
-	 * @param nodes the validators to broadcast the message to
-	 */
-	// FIXME: To be change when TCs implemented
-	void broadcastViewTimeout(ViewTimeout viewTimeout, Set<BFTNode> nodes);
+public class MockedPersistenceStoreModule extends AbstractModule {
+	@Provides
+	@Singleton
+	public PersistentSafetyState persistentSafetyState() {
+		return (vote, safetyState) -> { };
+	}
 }
