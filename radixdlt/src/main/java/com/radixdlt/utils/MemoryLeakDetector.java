@@ -46,7 +46,11 @@ public class MemoryLeakDetector {
 
     private final Map<String, NotificationListener> registeredListeners = new HashMap<>();
 
-    public MemoryLeakDetector() {
+    public static MemoryLeakDetector start() {
+    	return new MemoryLeakDetector();
+    }
+
+    private MemoryLeakDetector() {
         log.info("Starting memory leak detector...");
         ManagementFactory.getGarbageCollectorMXBeans()
                 .forEach(this::registerGCListener);

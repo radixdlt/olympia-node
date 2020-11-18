@@ -27,10 +27,10 @@ import java.lang.annotation.Target;
 import javax.inject.Qualifier;
 
 /**
- * DI annotation used to identify the minimum number of validators.
+ * DI annotation used to identify the maximum number of validators.
  */
 @Qualifier
 @Target({ FIELD, PARAMETER, METHOD })
 @Retention(RUNTIME)
-public @interface MinValidators {
+public @interface MaxValidators {
 }

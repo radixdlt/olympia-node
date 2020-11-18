@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *  http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,22 +15,20 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.statecomputer;
+package com.radixdlt.consensus;
 
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.ElementType.PARAMETER;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import javax.inject.Qualifier;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 
 /**
- * DI annotation used to identify the minimum number of validators.
+ * Provider of the initial validator set.
  */
-@Qualifier
-@Target({ FIELD, PARAMETER, METHOD })
-@Retention(RUNTIME)
-public @interface MinValidators {
+@FunctionalInterface
+public interface GenesisValidatorSetProvider {
+
+	/**
+	 * Return the genesis validator set.
+	 *
+	 * @return The genesis validator set.
+	 */
+	BFTValidatorSet genesisValidatorSet();
 }

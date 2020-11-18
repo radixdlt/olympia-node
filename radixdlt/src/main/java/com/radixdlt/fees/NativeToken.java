@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.statecomputer;
+package com.radixdlt.fees;
 
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.METHOD;
@@ -27,10 +27,11 @@ import java.lang.annotation.Target;
 import javax.inject.Qualifier;
 
 /**
- * DI annotation used to identify the minimum number of validators.
+ * DI annotation used to identify the RRI of the ledger native token.
  */
 @Qualifier
 @Target({ FIELD, PARAMETER, METHOD })
 @Retention(RUNTIME)
-public @interface MinValidators {
+public @interface NativeToken {
+	// Empty
 }

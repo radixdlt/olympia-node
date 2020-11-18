@@ -35,6 +35,7 @@ node {
 
 // Example: ./gradlew run ... -P overrideMainClassName=org.radix.GenerateUniverses
 mainClassName = properties.get('overrideMainClassName', 'org.radix.Radix')
+def validators = properties.get('validators', '2')
 
 startScripts {
     classpath = files('src/resources') + classpath
@@ -149,7 +150,7 @@ configurations.all {
 }
 
 dependencies {
-    compile 'com.radixdlt:radix-engine-library:feature~revert-system-init-SNAPSHOT'
+    compile 'com.radixdlt:radix-engine-library:integration~rpnv1-742-validator-selection-SNAPSHOT'
     compile 'io.reactivex.rxjava3:rxjava:3.0.0'
     compile 'com.sleepycat:je:18.3.12'
 
@@ -221,7 +222,8 @@ task generateDevUniverse(type: Exec) {
     dependsOn compileJava
     group = "Execution"
     description = "Generate development universe"
-    commandLine "java", "-classpath", sourceSets.main.runtimeClasspath.getAsPath(), "org.radix.GenerateUniverses", "-t", "development", "-p", "-j"
+    commandLine "java", "-classpath", sourceSets.main.runtimeClasspath.getAsPath(),
+	    "org.radix.GenerateUniverses", "-t", "development", "-p", "-v", validators, "-j"
 }
 
 task createGenerateUniversesScripts(type: CreateStartScripts) {

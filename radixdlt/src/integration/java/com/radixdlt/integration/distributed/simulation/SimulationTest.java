@@ -101,6 +101,7 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
 import com.radixdlt.statecomputer.EpochCeilingView;
+import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.sync.SyncPatienceMillis;
 import com.radixdlt.utils.DurationParser;
@@ -506,9 +507,11 @@ public class SimulationTest {
 							// TODO: Fix pacemaker so can Default 1 so can debug in IDE, possibly from properties at some point
 							// TODO: Specifically, simulation test with engine, epochs and mempool gets stuck on a single validator
 							bind(Integer.class).annotatedWith(MinValidators.class).toInstance(2);
+							bind(Integer.class).annotatedWith(MaxValidators.class).toInstance(Integer.MAX_VALUE);
 						}
 					});
 					modules.add(new RadixEngineModule());
+					modules.add(new SimulationValidatorComputersModule());
 					modules.add(new RadixEngineRxModule());
 					modules.add(new MockedSyncServiceModule());
 					modules.add(new MockedRadixEngineStoreModule());

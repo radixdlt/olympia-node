@@ -1,0 +1,19 @@
+version: '3'
+
+services:
+  core:
+    build:
+      context: .
+      dockerfile: Dockerfile.core
+    environment:
+      RADIXDLT_PACEMAKER_TIMEOUT_MILLIS: 1000
+      RADIXDLT_LOG_LEVEL: debug
+      RADIXDLT_UNIVERSE: ${RADIXDLT_UNIVERSE}
+      JAVA_OPTS: -server -Xmx512m -Xmx512m -XX:+HeapDumpOnOutOfMemoryError -XX:+AlwaysPreTouch -Djavax.net.ssl.trustStore=/etc/ssl/certs/java/cacerts -Djavax.net.ssl.trustStoreType=jks -Djava.security.egd=file:/dev/urandom -Dcom.sun.management.jmxremote.port=9011 -Dcom.sun.management.jmxremote.rmi.port=9011 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=localhost -agentlib:jdwp=transport=dt_socket,address=50505,suspend=n,server=y
+    image: radixdlt/radixdlt-core:develop
+    labels:
+      com.radixdlt.roles: "core"
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "30"

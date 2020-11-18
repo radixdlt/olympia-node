@@ -21,9 +21,13 @@ import com.radixdlt.crypto.exception.CryptoException;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.JSONObject;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.keys.Keys;
@@ -33,6 +37,8 @@ import com.radixdlt.universe.Universe;
 import com.radixdlt.universe.Universe.UniverseType;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Pair;
+import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt256s;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -42,32 +48,40 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.security.Security;
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.EnumSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public final class GenerateUniverses {
-	private static final String DEFAULT_UNIVERSES = Arrays.stream(UniverseType.values())
-		.map(UniverseType::toString)
-		.map(String::toLowerCase)
-		.collect(Collectors.joining(","));
+	private static final BigDecimal SUB_UNITS_BIG_DECIMAL
+		= new BigDecimal(UInt256s.toBigInteger(TokenDefinitionUtils.SUB_UNITS));
+	private static final String DEFAULT_UNIVERSE = UniverseType.DEVELOPMENT.toString().toLowerCase();
 	private static final String DEFAULT_TIMESTAMP = String.valueOf(Instant.parse("2020-01-01T00:00:00.00Z").toEpochMilli());
 	private static final String DEFAULT_KEYSTORE  = "universe.ks";
+	private static final String DEFAULT_STAKE = "5000000";
+	private static final String VALIDATOR_TEMPLATE = "validator%s.ks";
+	private static final String STAKER_TEMPLATE = "staker%s.ks";
 
 	public static void main(String[] args) {
 		Security.insertProviderAt(new BouncyCastleProvider(), 1);
 
 		Options options = new Options();
-		options.addOption("h", false, "Show usage information (this message)");
-		options.addOption("d", false, "Suppress DSON output");
-		options.addOption("j", false, "Suppress JSON output");
-		options.addOption("k", true,  "Specify universe keystore (default: " + DEFAULT_KEYSTORE + ")");
-		options.addOption("p", false, "Include universe private key in output");
-		options.addOption("t", true,  "Specify universe types (default: " + DEFAULT_UNIVERSES + ")");
-		options.addOption("T", true,  "Specify universe timestamp (default: " + DEFAULT_TIMESTAMP + ")");
+		options.addOption("h", "help",                   false, "Show usage information (this message)");
+		options.addOption("c", "no-cbor-output",         false, "Suppress DSON output");
+		options.addOption("j", "no-json-output",         false, "Suppress JSON output");
+		options.addOption("k", "keystore",               true,  "Specify universe keystore (default: " + DEFAULT_KEYSTORE + ")");
+		options.addOption("p", "include-private-keys",   false, "Include universe, validator and staking private keys in output");
+		options.addOption("S", "stake-amounts",          true,  "Amount of stake for each staked node (default: " + DEFAULT_STAKE + ")");
+		options.addOption("t", "universe-type",          true,  "Specify universe type (default: " + DEFAULT_UNIVERSE + ")");
+		options.addOption("T", "universe-timestamp",     true,  "Specify universe timestamp (default: " + DEFAULT_TIMESTAMP + ")");
+		options.addOption("v", "validators-count",       true,  "Specify number of validators to generate (required)");
 
 		CommandLineParser parser = new DefaultParser();
 		try {
@@ -83,12 +97,29 @@ public final class GenerateUniverses {
 				return;
 			}
 
-			final boolean suppressDsonOutput = cmd.hasOption('d');
+			final boolean suppressCborOutput = cmd.hasOption('c');
 			final boolean suppressJsonOutput = cmd.hasOption('j');
-			final String universeKeyFile = getDefaultOption(cmd, 'k', DEFAULT_KEYSTORE);
-			final boolean outputPrivateKey = cmd.hasOption('p');
-			final EnumSet<UniverseType> universeTypes = parseUniverseTypes(getDefaultOption(cmd, 't', DEFAULT_UNIVERSES));
-			final long universeTimestampSeconds = Long.parseLong(getDefaultOption(cmd, 'T', DEFAULT_TIMESTAMP));
+			final String universeKeyFile = getOption(cmd, 'k').orElse(DEFAULT_KEYSTORE);
+			final boolean outputPrivateKeys = cmd.hasOption('p');
+			final ImmutableList<UInt256> stakes = parseStake(getOption(cmd, 'S').orElse(DEFAULT_STAKE));
+			final UniverseType universeType = parseUniverseType(getOption(cmd, 't').orElse(DEFAULT_UNIVERSE));
+			final long universeTimestampSeconds = Long.parseLong(getOption(cmd, 'T').orElse(DEFAULT_TIMESTAMP));
+			final int validatorsCount = Integer.parseInt(
+				getOption(cmd, 'v').orElseThrow(() -> new IllegalArgumentException("Must specify number of validators"))
+			);
+
+			if (stakes.isEmpty()) {
+				throw new IllegalArgumentException("Must specify at least one staking amount");
+			}
+			if (validatorsCount <= 0) {
+				throw new IllegalArgumentException("There must be at least one validator");
+			}
+
+			final ImmutableList<ECKeyPair> validatorKeys = getValidatorKeys(validatorsCount);
+			final ImmutableList<StakeDelegation> stakeDelegations = getStakeDelegation(
+				Lists.transform(validatorKeys, ECKeyPair::getPublicKey), stakes
+			);
+			final ImmutableList<TokenIssuance> tokenIssuances = getTokenIssuances(stakeDelegations);
 
 			final long universeTimestamp = TimeUnit.SECONDS.toMillis(universeTimestampSeconds);
 			final ECKeyPair universeKey = Keys.readKey(
@@ -98,9 +129,19 @@ public final class GenerateUniverses {
 				"RADIX_UNIVERSE_KEY_PASSWORD"
 			);
 
-			universeTypes.stream()
-				.map(type -> Pair.of(type, RadixUniverseBuilder.forType(type).withKey(universeKey).withTimestamp(universeTimestamp).build()))
-				.forEach(p -> outputUniverse(suppressDsonOutput, suppressJsonOutput, outputPrivateKey, p.getFirst(), p.getSecond()));
+			final Pair<ECKeyPair, Universe> universe = RadixUniverseBuilder.forType(universeType)
+				.withKey(universeKey)
+				.withTimestamp(universeTimestamp)
+				.withTokenIssuance(tokenIssuances)
+				.withRegisteredValidators(validatorKeys)
+				.withStakeDelegations(stakeDelegations)
+				.build();
+			if (outputPrivateKeys) {
+				System.out.format("export RADIXDLT_UNIVERSE_PRIVKEY=%s%n", Bytes.toBase64String(universe.getFirst().getPrivateKey()));
+				outputNumberedKeys("VALIDATOR_%s", validatorKeys);
+				outputNumberedKeys("STAKER_%s", Lists.transform(stakeDelegations, StakeDelegation::staker));
+			}
+			outputUniverse(suppressCborOutput, suppressJsonOutput, universeType, universe);
 		} catch (ParseException e) {
 			System.err.println(e.getMessage());
 			usage(options);
@@ -110,10 +151,69 @@ public final class GenerateUniverses {
 		}
 	}
 
+	private static ImmutableList<ECKeyPair> getValidatorKeys(int validatorsCount) {
+		return IntStream.range(0, validatorsCount)
+			.mapToObj(n -> {
+				try {
+					return Keys.readKey(
+						String.format(VALIDATOR_TEMPLATE, n),
+						"node",
+						"RADIX_VALIDATOR_KEYSTORE_PASSWORD",
+						"RADIX_VALIDATOR_KEY_PASSWORD"
+					);
+				} catch (CryptoException | IOException e) {
+					throw new IllegalStateException("While reading validator keys", e);
+				}
+			})
+			.collect(ImmutableList.toImmutableList());
+	}
+
+	private static ImmutableList<StakeDelegation> getStakeDelegation(List<ECPublicKey> validators, List<UInt256> stakes) {
+		int n = 0;
+		final ImmutableList.Builder<StakeDelegation> stakeDelegations = ImmutableList.builder();
+		final Iterator<UInt256> stakesCycle = Iterators.cycle(stakes);
+		for (ECPublicKey validator : validators) {
+			try {
+				final ECKeyPair stakerKey = Keys.readKey(
+					String.format(STAKER_TEMPLATE, n++),
+					"wallet",
+					"RADIX_STAKER_KEYSTORE_PASSWORD",
+					"RADIX_STAKER_KEY_PASSWORD"
+				);
+				stakeDelegations.add(StakeDelegation.of(stakerKey, validator, stakesCycle.next()));
+			} catch (CryptoException | IOException e) {
+				throw new IllegalStateException("While reading staker keys", e);
+			}
+		}
+		return stakeDelegations.build();
+	}
+
+	// We just generate issuances in the amounts of the stake delegations here
+	private static ImmutableList<TokenIssuance> getTokenIssuances(ImmutableList<StakeDelegation> stakeDelegations) {
+		return stakeDelegations.stream()
+			.map(sd -> TokenIssuance.of(sd.staker().getPublicKey(), sd.amount()))
+			.collect(ImmutableList.toImmutableList());
+	}
+
+	private static ImmutableList<UInt256> parseStake(String stakes) {
+		return Stream.of(stakes.split(","))
+			.map(String::trim)
+			.map(BigDecimal::new)
+			.map(GenerateUniverses::unitsToSubunits)
+			.collect(ImmutableList.toImmutableList());
+	}
+
+	private static void outputNumberedKeys(String template, List<ECKeyPair> keys) {
+		int n = 0;
+		for (ECKeyPair k : keys) {
+			String keyname = String.format(template, n++);
+			System.out.format("export RADIXDLT_%s_PRIVKEY=%s%n", keyname, Bytes.toBase64String(k.getPrivateKey()));
+		}
+	}
+
 	private static void outputUniverse(
 		boolean suppressDson,
 		boolean suppressJson,
-		boolean outputPrivateKey,
 		UniverseType type,
 		Pair<ECKeyPair, Universe> p
 	) {
@@ -126,9 +226,6 @@ public final class GenerateUniverses {
 			RRI tokenRri = RRI.of(universeAddress, TokenDefinitionUtils.getNativeTokenShortCode());
 			System.out.format("export RADIXDLT_UNIVERSE_TYPE=%s%n", type);
 			System.out.format("export RADIXDLT_UNIVERSE_PUBKEY=%s%n", k.getPublicKey().toBase64());
-			if (outputPrivateKey) {
-				System.out.format("export RADIXDLT_UNIVERSE_PRIVKEY=%s%n", Bytes.toBase64String(k.getPrivateKey()));
-			}
 			System.out.format("export RADIXDLT_UNIVERSE_ADDRESS=%s%n", universeAddress);
 			System.out.format("export RADIXDLT_UNIVERSE_TOKEN=%s%n", tokenRri);
 			System.out.format("export RADIXDLT_UNIVERSE=%s%n", Bytes.toBase64String(universeBytes));
@@ -144,15 +241,16 @@ public final class GenerateUniverses {
 		formatter.printHelp(GenerateUniverses.class.getSimpleName(), options, true);
 	}
 
-	private static EnumSet<UniverseType> parseUniverseTypes(String types) {
-		return Arrays.stream(types.split(","))
-			.map(String::toUpperCase)
-			.map(UniverseType::valueOf)
-			.collect(Collectors.toCollection(() -> EnumSet.noneOf(UniverseType.class)));
+	private static UniverseType parseUniverseType(String type) {
+		return UniverseType.valueOf(type.toUpperCase());
 	}
 
-	private static String getDefaultOption(CommandLine cmd, char opt, String defaultValue) {
+	private static Optional<String> getOption(CommandLine cmd, char opt) {
 		String value = cmd.getOptionValue(opt);
-		return value == null ? defaultValue : value;
+		return Optional.ofNullable(value);
+	}
+
+	private static UInt256 unitsToSubunits(BigDecimal units) {
+		return UInt256s.fromBigDecimal(units.multiply(SUB_UNITS_BIG_DECIMAL));
 	}
 }
