@@ -17,11 +17,8 @@
 
 package com.radixdlt.statecomputer;
 
-import java.util.stream.IntStream;
-
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -102,29 +99,5 @@ public class RadixEngineModuleTest {
 		final var radixEngine = injector.getInstance(Key.get(new TypeLiteral<RadixEngine<LedgerAtom>>() { }));
 
 		assertThat(radixEngine).isNotNull();
-	}
-
-	@Test
-	public void when_engine_created__validator_set_maintained() {
-		final var validatorKeys = IntStream.range(0, 100)
-			.mapToObj(n -> ECKeyPair.generateNew())
-			.map(ECKeyPair::getPublicKey)
-			.collect(ImmutableList.toImmutableList());
-		final var validators = validatorKeys.stream()
-			.map(BFTNode::create)
-			.map(node -> BFTValidator.from(node, UInt256.ONE))
-			.collect(ImmutableList.toImmutableList());
-		final var validatorSet = BFTValidatorSet.from(validators);
-		final var injector = Guice.createInjector(
-			new RadixEngineModule(),
-			new RadixEngineValidatorComputersModule(),
-			new ExternalRadixEngineModule(validatorSet)
-		);
-		final var radixEngine = injector.getInstance(Key.get(new TypeLiteral<RadixEngine<LedgerAtom>>() { }));
-		assertThat(radixEngine).isNotNull(); // Precondition for the rest working correctly
-
-		final var newValidatorKeys = radixEngine.getComputedState(RadixEngineValidatorsComputer.class).activeValidators();
-
-		assertThat(newValidatorKeys).containsOnlyElementsOf(validatorKeys);
 	}
 }
