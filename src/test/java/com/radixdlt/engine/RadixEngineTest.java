@@ -81,7 +81,7 @@ public class RadixEngineTest {
 	public void empty_particle_group_should_throw_error() {
 		// Arrange
 		CMAtomOS cmAtomOS = new CMAtomOS();
-		cmAtomOS.load(new SystemConstraintScrypt(10));
+		cmAtomOS.load(new SystemConstraintScrypt());
 		ConstraintMachine cm = new ConstraintMachine.Builder()
 			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
 			.setParticleTransitionProcedures(cmAtomOS.buildTransitionProcedures())
@@ -108,6 +108,7 @@ public class RadixEngineTest {
 		when(engineStore.compute(any(), any(), any(), any())).thenReturn(state);
 		radixEngine.addStateComputer(
 			Particle.class,
+			Object.class,
 			mock(Object.class),
 			(o, p) -> o,
 			(o, p) -> o
@@ -130,6 +131,7 @@ public class RadixEngineTest {
 		when(engineStore.compute(any(), any(), any(), any())).thenReturn(initialState);
 		radixEngine.addStateComputer(
 			Particle.class,
+			Object.class,
 			mock(Object.class),
 			(o, p) -> state1,
 			(o, p) -> state2
