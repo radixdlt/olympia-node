@@ -24,7 +24,7 @@ RUN wget -q https://services.gradle.org/distributions/gradle-6.6.1-bin.zip \
 # Set Gradle in the environment variables
 ENV GRADLE_HOME=/opt/gradle-6.6.1
 ENV PATH=/opt/gradle-6.6.1/bin:$PATH
-
+ENV JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF8
 RUN docker --version
 
 COPY . /radixdlt-core
