@@ -38,11 +38,16 @@ import com.radixdlt.consensus.safety.SafetyState.Builder;
 import com.radixdlt.crypto.ECDSASignature;
 
 import java.util.Objects;
+import java.util.Optional;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Manages safety of the protocol.
  */
 public final class SafetyRules {
+	private static final Logger logger = LogManager.getLogger();
+
 	private final BFTNode self;
 	private final Hasher hasher;
 	private final HashSigner signer;
@@ -109,18 +114,17 @@ public final class SafetyRules {
 	 * @param timestamp timestamp to use for the vote in milliseconds since epoch
 	 * @param highQC our current sync state
 	 * @return A vote result containing the vote and any committed vertices
-	 * @throws SafetyViolationException In case the vertex would violate a safety invariant
 	 */
-	public Vote voteFor(VerifiedVertex proposedVertex, BFTHeader proposedHeader, long timestamp, HighQC highQC) throws SafetyViolationException {
+	public Optional<Vote> voteFor(VerifiedVertex proposedVertex, BFTHeader proposedHeader, long timestamp, HighQC highQC) {
 		// ensure vertex does not violate earlier votes
 		if (proposedVertex.getView().compareTo(this.state.getLastVotedView()) <= 0) {
-			throw new SafetyViolationException(proposedVertex, this.state, String.format(
-				"violates earlier vote at view %s", this.state.getLastVotedView()));
+			logger.warn("Violates earlier vote at view {}", this.state.getLastVotedView());
+			return Optional.empty();
 		}
 
 		if (proposedVertex.getParentHeader().getView().compareTo(this.state.getLockedView()) < 0) {
-			throw new SafetyViolationException(proposedVertex, this.state, String.format(
-				"does not respect locked view %s", this.state.getLockedView()));
+			logger.warn("Does not respect locked view {}", this.state.getLockedView());
+			return Optional.empty();
 		}
 
 		Builder safetyStateBuilder = this.state.toBuilder();
@@ -139,6 +143,7 @@ public final class SafetyRules {
 
 		// TODO make signing more robust by including author in signed hash
 		ECDSASignature signature = this.signer.sign(voteHash);
-		return new Vote(this.self, timestampedVoteData, signature, highQC);
+		Vote vote = new Vote(this.self, timestampedVoteData, signature, highQC);
+		return Optional.of(vote);
 	}
 }

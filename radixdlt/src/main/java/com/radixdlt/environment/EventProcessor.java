@@ -15,17 +15,13 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.epoch;
+package com.radixdlt.environment;
 
-import static org.mockito.Mockito.mock;
-
-import com.radixdlt.consensus.Timeout;
-import org.junit.Test;
-
-public class EmptyEpochInfoSenderTest {
-	@Test
-	public void when_send__then_no_exception_occurs() {
-		EmptyEpochInfoSender.INSTANCE.sendCurrentView(mock(EpochView.class));
-		EmptyEpochInfoSender.INSTANCE.sendTimeoutProcessed(mock(Timeout.class));
-	}
+/**
+ * A processor of an event in the system
+ *
+ * @param <T> the object event class
+ */
+public interface EventProcessor<T> {
+	void processEvent(T t);
 }

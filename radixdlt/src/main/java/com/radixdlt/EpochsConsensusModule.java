@@ -43,7 +43,6 @@ import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.epoch.EpochManager;
-import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
@@ -64,6 +63,7 @@ import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.EventProcessor;
 
 import com.radixdlt.store.LastEpochProof;
 import java.util.Comparator;
@@ -86,18 +86,23 @@ public class EpochsConsensusModule extends AbstractModule {
 	}
 
 	@Provides
-	private PacemakerInfoSender initialInfoSender(EpochInfoSender epochInfoSender, EpochChange initialEpoch, ProposerElection proposerElection) {
+	public PacemakerInfoSender pacemakerInfoSender(
+		EventProcessor<Timeout> timeoutEventProcessor,
+		EventProcessor<EpochView> epochViewEventProcessor,
+		EpochChange initialEpoch,
+		ProposerElection proposerElection
+	) {
 		return new PacemakerInfoSender() {
 			@Override
 			public void sendCurrentView(View view) {
-				epochInfoSender.sendCurrentView(EpochView.of(initialEpoch.getEpoch(), view));
+				epochViewEventProcessor.processEvent(EpochView.of(initialEpoch.getEpoch(), view));
 			}
 
 			@Override
 			public void sendTimeoutProcessed(View view) {
 				BFTNode leader = proposerElection.getProposer(view);
 				Timeout timeout = new Timeout(EpochView.of(initialEpoch.getEpoch(), view), leader);
-				epochInfoSender.sendTimeoutProcessed(timeout);
+				timeoutEventProcessor.processEvent(timeout);
 			}
 		};
 	}

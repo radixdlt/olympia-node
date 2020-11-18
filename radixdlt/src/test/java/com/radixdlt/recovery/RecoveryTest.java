@@ -50,6 +50,7 @@ import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.counters.SystemCounters;
@@ -57,6 +58,7 @@ import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.environment.deterministic.DeterministicEpochInfo;
 import com.radixdlt.mempool.EmptyMempool;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
@@ -70,17 +72,20 @@ import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
+import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncTimeoutScheduler;
 import com.radixdlt.sync.StateSyncNetworkSender;
 import com.radixdlt.sync.SyncPatienceMillis;
 import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 import org.apache.commons.cli.ParseException;
 import org.json.JSONObject;
@@ -93,7 +98,7 @@ import org.junit.rules.TemporaryFolder;
  * Verifies that on restarts (simulated via creation of new injectors) that the application
  * state is the same as last seen.
  */
-public class ApplicationStateRecoveryTest {
+public class RecoveryTest {
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
 
@@ -101,7 +106,7 @@ public class ApplicationStateRecoveryTest {
 	private Injector currentInjector;
 	private ECKeyPair ecKeyPair = ECKeyPair.generateNew();
 
-	public ApplicationStateRecoveryTest() {
+	public RecoveryTest() {
 		this.network = new DeterministicNetwork(
 			List.of(BFTNode.create(ecKeyPair.getPublicKey())),
 			MessageSelector.firstSelector(),
@@ -133,7 +138,7 @@ public class ApplicationStateRecoveryTest {
 					bind(Long.class).annotatedWith(PacemakerTimeout.class).toInstance(1000L);
 					bind(Double.class).annotatedWith(PacemakerRate.class).toInstance(2.0);
 					bind(Integer.class).annotatedWith(PacemakerMaxExponent.class).toInstance(6);
-					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(100L));
+					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(10L));
 
 					// System
 					bind(Mempool.class).to(EmptyMempool.class);
@@ -211,6 +216,14 @@ public class ApplicationStateRecoveryTest {
 		return currentInjector.getInstance(Key.get(new TypeLiteral<RadixEngine<LedgerAtom>>() { }));
 	}
 
+	private CommittedAtomsStore getAtomStore() {
+		return currentInjector.getInstance(CommittedAtomsStore.class);
+	}
+
+	private DeterministicEpochInfo getEpochInfo() {
+		return currentInjector.getInstance(DeterministicEpochInfo.class);
+	}
+
 	private void restartNode() {
 		this.network.dropMessages(m -> m.channelId().receiverIndex() == 0 && m.channelId().senderIndex() == 0);
 		this.currentInjector = createRunner(ecKeyPair);
@@ -241,5 +254,39 @@ public class ApplicationStateRecoveryTest {
 		RadixEngine<LedgerAtom> restartedRadixEngine = getRadixEngine();
 		SystemParticle restartedSystemParticle = restartedRadixEngine.getComputedState(SystemParticle.class);
 		assertThat(restartedSystemParticle).isEqualTo(systemParticle);
+	}
+
+	@Test
+	public void on_reboot_should_load_same_last_header() {
+		// Arrange
+		processForCount(100);
+		CommittedAtomsStore atomStore = getAtomStore();
+		Optional<VerifiedLedgerHeaderAndProof> proof = atomStore.getLastVerifiedHeader();
+
+		// Act
+		restartNode();
+
+		// Assert
+		CommittedAtomsStore restartedAtomStore = getAtomStore();
+		Optional<VerifiedLedgerHeaderAndProof> restartedProof = restartedAtomStore.getLastVerifiedHeader();
+		assertThat(restartedProof).isEqualTo(proof);
+	}
+
+	@Test
+	public void on_reboot_should_load_same_last_epoch_header() {
+		// Arrange
+		processForCount(100);
+		DeterministicEpochInfo epochInfo = getEpochInfo();
+		EpochView epochView = epochInfo.getCurrentEpochView();
+
+		// Act
+		restartNode();
+
+		// Assert
+		VerifiedLedgerHeaderAndProof restartedEpochProof = currentInjector.getInstance(
+			Key.get(VerifiedLedgerHeaderAndProof.class, LastEpochProof.class)
+		);
+		assertThat(restartedEpochProof.isEndOfEpoch()).isTrue();
+		assertThat(restartedEpochProof.getEpoch()).isEqualTo(epochView.getEpoch() - 1);
 	}
 }

@@ -170,7 +170,7 @@ public class VertexStoreTest {
 			vertices.get(2), vertices.get(1), vertices.get(0)
 		));
 		verify(ledger, times(1)).commit(
-			argThat(l -> l.size() == 1 && l.get(0).getVertex().equals(vertices.get(0))), any()
+			argThat(l -> l.size() == 1 && l.get(0).getVertex().equals(vertices.get(0))), any(), any()
 		);
 	}
 

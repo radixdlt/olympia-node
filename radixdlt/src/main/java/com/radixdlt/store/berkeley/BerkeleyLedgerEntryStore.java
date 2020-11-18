@@ -34,7 +34,6 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryConflict;
 import com.radixdlt.store.LedgerEntryStoreResult;
-import com.radixdlt.store.LedgerEntryStatus;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.utils.Longs;
 import com.sleepycat.je.Cursor;
@@ -79,8 +78,8 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 	private static final String PENDING_DB_NAME = "tempo2.pending";
 	private static final String ATOMS_DB_NAME = "tempo2.atoms";
 
+	// TODO: Remove
 	private static final byte PREFIX_COMMITTED = 0b0000_0000;
-	private static final byte PREFIX_PENDING = 0b0000_0001;
 
 	private final Serialization serialization;
 	private final DatabaseEnvironment dbEnv;
@@ -91,7 +90,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 	private SecondaryDatabase uniqueIndices; // TempoAtoms by secondary unique indices (with prefixes)
 	private SecondaryDatabase duplicatedIndices; // TempoAtoms by secondary duplicate indices (with prefixes)
 	private Database atomIndices; // TempoAtomIndices by same primary keys
-	private Database pending; // AIDs marked as 'pending'
+	private Database pendingDatabase; // AIDs marked as 'pending'
 
 	@Inject
 	public BerkeleyLedgerEntryStore(
@@ -141,7 +140,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 			this.uniqueIndices = env.openSecondaryDatabase(null, UNIQUE_INDICES_DB_NAME, this.atoms, uniqueIndicesConfig);
 			this.duplicatedIndices = env.openSecondaryDatabase(null, DUPLICATE_INDICES_DB_NAME, this.atoms, duplicateIndicesConfig);
 			this.atomIndices = env.openDatabase(null, ATOM_INDICES_DB_NAME, primaryConfig);
-			this.pending = env.openDatabase(null, PENDING_DB_NAME, pendingConfig);
+			this.pendingDatabase = env.openDatabase(null, PENDING_DB_NAME, pendingConfig);
 		} catch (Exception e) {
 			throw new BerkeleyStoreException("Error while opening databases", e);
 		}
@@ -197,8 +196,8 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 		if (this.atomIndices != null) {
 			this.atomIndices.close();
 		}
-		if (this.pending != null) {
-			this.pending.close();
+		if (this.pendingDatabase != null) {
+			this.pendingDatabase.close();
 		}
 	}
 
@@ -219,24 +218,6 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 	}
 
 	@Override
-	public LedgerEntryStatus getStatus(AID aid) {
-		if (!contains(aid)) {
-			return LedgerEntryStatus.UNAVAILABLE;
-		}
-
-		if (isPending(aid)) {
-			return LedgerEntryStatus.PENDING;
-		} else {
-			return LedgerEntryStatus.COMMITTED;
-		}
-	}
-
-	private boolean isPending(AID aid) {
-			DatabaseEntry key = new DatabaseEntry(aid.getBytes());
-			return OperationStatus.SUCCESS == this.pending.get(null, key, null, LockMode.DEFAULT);
-	}
-
-	@Override
 	public Optional<LedgerEntry> get(AID aid) {
 		try {
 			DatabaseEntry key = new DatabaseEntry(StoreIndex.from(ENTRY_INDEX_PREFIX, aid.getBytes()));
@@ -253,13 +234,21 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 	}
 
 	@Override
-	public Set<StoreIndex> getUniqueIndices(AID aid) {
+	public void commit(LedgerEntry atom, Set<StoreIndex> uniqueIndices, Set<StoreIndex> duplicateIndices) {
+		Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);
+
+		LedgerEntryIndices indices = LedgerEntryIndices.from(atom, uniqueIndices, duplicateIndices);
+		byte[] atomData = serialization.toDson(atom, Output.PERSIST);
+
 		try {
-			return doGetIndices(null, aid, new DatabaseEntry()).getUniqueIndices();
-		} catch (DeserializeException e) {
-			fail("Get unique indices of '" + aid + "' failed");
+			LedgerEntryStoreResult result = doStore(PREFIX_COMMITTED, atom.getStateVersion(), atom.getAID(), atomData, indices, transaction);
+			if (result.isSuccess()) {
+				transaction.commit();
+			}
+		} catch (Exception e) {
+			transaction.abort();
+			fail("Commit of atom failed", e);
 		}
-		throw new IllegalStateException("Should never reach here");
 	}
 
 	@Override
@@ -278,7 +267,6 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 			if (!doDelete(aid, transaction, pKey, indices)) {
 				fail("Delete of pending atom '" + aid + "' failed");
 			}
-			doRemovePending(aid, transaction);
 
 			long logicalClock = lcFromPKey(pKey.getData());
 			// transaction is aborted in doStore in case of conflict
@@ -290,58 +278,6 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 			transaction.abort();
 			fail("Commit of pending atom '" + aid + "' failed", e);
 		}
-	}
-
-	@Override
-	public LedgerEntryStoreResult store(LedgerEntry atom, Set<StoreIndex> uniqueIndices, Set<StoreIndex> duplicateIndices) {
-		Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);
-		try {
-			// transaction is aborted in doStore in case of conflict
-			LedgerEntryStoreResult result = doStorePending(atom, uniqueIndices, duplicateIndices, transaction);
-			if (result.isSuccess()) {
-				transaction.commit();
-			}
-			return result;
-		} catch (Exception e) {
-			transaction.abort();
-			fail("Store of atom '" + atom.getAID() + "' failed", e);
-		}
-		throw new IllegalStateException("Should never reach here");
-	}
-
-	@Override
-	public LedgerEntryStoreResult replace(Set<AID> aids, LedgerEntry atom, Set<StoreIndex> uniqueIndices, Set<StoreIndex> duplicateIndices) {
-		Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);
-		try {
-			for (AID aid : aids) {
-				if (!doDelete(aid, transaction)) {
-					transaction.abort();
-					fail("Could not delete '" + aid + "'");
-				}
-			}
-			// transaction is aborted in doStore in case of conflict
-			LedgerEntryStoreResult result = doStorePending(atom, uniqueIndices, duplicateIndices, transaction);
-			if (result.isSuccess()) {
-				transaction.commit();
-			}
-			return result;
-		} catch (Exception e) {
-			transaction.abort();
-			fail("Replace of atoms '" + aids + "' with atom '" + atom.getAID() + "' failed", e);
-		}
-		throw new IllegalStateException("Should never reach here");
-	}
-
-	private LedgerEntryStoreResult doStorePending(
-		LedgerEntry entry,
-		Set<StoreIndex> uniqueIndices,
-		Set<StoreIndex> duplicateIndices,
-		Transaction transaction
-	) throws DeserializeException {
-		byte[] atomData = serialization.toDson(entry, Output.PERSIST);
-		LedgerEntryIndices indices = LedgerEntryIndices.from(entry, uniqueIndices, duplicateIndices);
-		doAddPending(entry.getAID(), entry.getStateVersion(), transaction);
-		return doStore(PREFIX_PENDING, entry.getStateVersion(), entry.getAID(), atomData, indices, transaction);
 	}
 
 	private LedgerEntryStoreResult doStore(
@@ -404,16 +340,6 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 		return conflictingAtoms.build();
 	}
 
-	private boolean doDelete(AID aid, Transaction transaction) throws DeserializeException {
-		if (!isPending(aid)) {
-			fail("Attempted to delete committed atom '" + aid + "'");
-		}
-
-		DatabaseEntry pKey = new DatabaseEntry();
-		LedgerEntryIndices indices = doGetIndices(transaction, aid, pKey);
-		return doDelete(aid, transaction, pKey, indices);
-	}
-
 	private boolean doDelete(AID aid, Transaction transaction, DatabaseEntry pKey, LedgerEntryIndices indices) {
 		try {
 			OperationStatus status = atomIndices.delete(transaction, pKey);
@@ -444,19 +370,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 		return serialization.fromDson(value.getData(), LedgerEntryIndices.class);
 	}
 
-	private void doAddPending(AID aid, long pendingLC, Transaction transaction) {
-		DatabaseEntry key = new DatabaseEntry(aid.getBytes());
-		// TODO anything more useful that could be used as value for pending markers?
-		DatabaseEntry value = new DatabaseEntry(Longs.toByteArray(pendingLC));
-		pending.putNoOverwrite(transaction, key, value);
-	}
 
-	private void doRemovePending(AID aid, Transaction transaction) {
-		OperationStatus status = pending.delete(transaction, new DatabaseEntry(aid.getBytes()));
-		if (status != OperationStatus.SUCCESS) {
-			fail("Removing atom '" + aid + "' from pending failed with status " + status);
-		}
-	}
 
 	@Override
 	public ImmutableList<LedgerEntry> getNextCommittedLedgerEntries(long stateVersion, int limit) throws NextCommittedLimitReachedException {
@@ -552,20 +466,6 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 	}
 
 	@Override
-	public Set<AID> getPending() {
-		ImmutableSet.Builder<AID> pendingAids = ImmutableSet.builder();
-		try (com.sleepycat.je.Cursor cursor = this.pending.openCursor(null, null)) {
-			DatabaseEntry pKey = new DatabaseEntry();
-			OperationStatus status = cursor.getFirst(pKey, null, LockMode.DEFAULT);
-			while (status == OperationStatus.SUCCESS) {
-				AID aid = AID.from(pKey.getData());
-				pendingAids.add(aid);
-				status = cursor.getNext(pKey, null, LockMode.DEFAULT);
-			}
-		}
-		return pendingAids.build();
-	}
-
 	public Optional<AID> getLastCommitted() {
 		try (com.sleepycat.je.Cursor cursor = this.atoms.openCursor(null, null)) {
 			DatabaseEntry pKey = new DatabaseEntry();

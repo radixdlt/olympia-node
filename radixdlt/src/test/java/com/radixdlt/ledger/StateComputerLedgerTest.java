@@ -169,7 +169,8 @@ public class StateComputerLedgerTest {
 	public void should_not_change_accumulator_when_there_is_no_command() {
 		// Arrange
 		genesisIsEndOfEpoch(false);
-		when(stateComputer.prepare(any(), any(), any(), anyLong())).thenReturn(new StateComputerResult(ImmutableList.of(), ImmutableMap.of()));
+		when(stateComputer.prepare(any(), any(), anyLong(), any(), anyLong()))
+			.thenReturn(new StateComputerResult(ImmutableList.of(), ImmutableMap.of()));
 		final UnverifiedVertex unverifiedVertex = new UnverifiedVertex(genesisQC, View.of(1), null);
 		final VerifiedVertex proposedVertex = new VerifiedVertex(unverifiedVertex, hasher.hash(unverifiedVertex));
 
@@ -187,7 +188,7 @@ public class StateComputerLedgerTest {
 	public void should_not_change_header_when_past_end_of_epoch_even_with_command() {
 		// Arrange
 		genesisIsEndOfEpoch(true);
-		when(stateComputer.prepare(any(), any(), any(), anyLong()))
+		when(stateComputer.prepare(any(), any(), anyLong(), any(), anyLong()))
 			.thenReturn(new StateComputerResult(ImmutableList.of(successfulNextCommand), ImmutableMap.of()));
 		final UnverifiedVertex unverifiedVertex = new UnverifiedVertex(genesisQC, View.of(1), nextCommand);
 		final VerifiedVertex proposedVertex = new VerifiedVertex(unverifiedVertex, hasher.hash(unverifiedVertex));
@@ -206,7 +207,7 @@ public class StateComputerLedgerTest {
 	public void should_accumulate_when_next_command_valid() {
 		// Arrange
 		genesisIsEndOfEpoch(false);
-		when(stateComputer.prepare(any(), any(), any(), anyLong()))
+		when(stateComputer.prepare(any(), any(), anyLong(), any(), anyLong()))
 			.thenReturn(new StateComputerResult(ImmutableList.of(successfulNextCommand), ImmutableMap.of()));
 
 		// Act
@@ -230,7 +231,7 @@ public class StateComputerLedgerTest {
 	public void should_do_nothing_if_committing_lower_state_version() {
 		// Arrange
 		genesisIsEndOfEpoch(false);
-		when(stateComputer.prepare(any(), any(), any(), anyLong()))
+		when(stateComputer.prepare(any(), any(), anyLong(), any(), anyLong()))
 			.thenReturn(new StateComputerResult(ImmutableList.of(successfulNextCommand), ImmutableMap.of()));
 		final AccumulatorState accumulatorState = new AccumulatorState(genesisStateVersion - 1, HashUtils.zero256());
 		final LedgerHeader ledgerHeader = LedgerHeader.create(

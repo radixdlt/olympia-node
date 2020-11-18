@@ -115,7 +115,7 @@ public class RadixEngineStateComputerTest {
 	}
 
 	private static RadixEngineCommand systemUpdateCommand(long prevView, long nextView, long nextEpoch) {
-		SystemParticle lastSystemParticle = new SystemParticle(0, prevView, 0);
+		SystemParticle lastSystemParticle = new SystemParticle(1, prevView, 0);
 		SystemParticle nextSystemParticle = new SystemParticle(nextEpoch, nextView, 0);
 		ClientAtom clientAtom = ClientAtom.create(
 			ImmutableList.of(
@@ -158,7 +158,7 @@ public class RadixEngineStateComputerTest {
 	@Test
 	public void executing_non_epoch_high_view_should_return_no_validator_set() {
 		// Action
-		StateComputerResult result = sut.prepare(ImmutableList.of(), null, View.of(9), 1);
+		StateComputerResult result = sut.prepare(ImmutableList.of(), null, 1, View.of(9), 1);
 
 		// Assert
 		assertThat(result.getSuccessfulCommands()).hasSize(1);
@@ -169,7 +169,7 @@ public class RadixEngineStateComputerTest {
 	@Test
 	public void executing_epoch_high_view_should_return_next_validator_set() {
 		// Act
-		StateComputerResult result = sut.prepare(ImmutableList.of(), null, View.of(10), 1);
+		StateComputerResult result = sut.prepare(ImmutableList.of(), null, 1, View.of(10), 1);
 
 		// Assert
 		assertThat(result.getSuccessfulCommands()).hasSize(1);
@@ -185,7 +185,7 @@ public class RadixEngineStateComputerTest {
 		BFTNode node = BFTNode.create(keyPair.getPublicKey());
 
 		// Act
-		StateComputerResult result = sut.prepare(ImmutableList.of(), cmd.command(), View.of(10), 1);
+		StateComputerResult result = sut.prepare(ImmutableList.of(), cmd.command(), 1, View.of(10), 1);
 
 		// Assert
 		assertThat(result.getSuccessfulCommands()).hasSize(1); // since high view, command is not executed
@@ -203,7 +203,7 @@ public class RadixEngineStateComputerTest {
 		BFTNode node = BFTNode.create(keyPair.getPublicKey());
 
 		// Act
-		StateComputerResult result = sut.prepare(ImmutableList.of(cmd), null, View.of(10), 1);
+		StateComputerResult result = sut.prepare(ImmutableList.of(cmd), null, 1, View.of(10), 1);
 
 		// Assert
 		assertThat(result.getSuccessfulCommands()).hasSize(1);
@@ -217,10 +217,10 @@ public class RadixEngineStateComputerTest {
 	@Test
 	public void preparing_system_update_from_vertex_should_fail() {
 		// Arrange
-		RadixEngineCommand cmd = systemUpdateCommand(0, 1, 0);
+		RadixEngineCommand cmd = systemUpdateCommand(0, 1, 1);
 
 		// Act
-		StateComputerResult result = sut.prepare(ImmutableList.of(), cmd.command(), View.of(1), 1);
+		StateComputerResult result = sut.prepare(ImmutableList.of(), cmd.command(), 1, View.of(1), 1);
 
 		// Assert
 		assertThat(result.getSuccessfulCommands()).hasSize(1);
@@ -239,7 +239,7 @@ public class RadixEngineStateComputerTest {
 	@Test
 	public void committing_epoch_high_views_should_fail() {
 		// Arrange
-		RadixEngineCommand cmd0 = systemUpdateCommand(0, 10, 0);
+		RadixEngineCommand cmd0 = systemUpdateCommand(0, 10, 1);
 		VerifiedLedgerHeaderAndProof verifiedLedgerHeaderAndProof = new VerifiedLedgerHeaderAndProof(
 			mock(BFTHeader.class),
 			mock(BFTHeader.class),
@@ -265,7 +265,7 @@ public class RadixEngineStateComputerTest {
 	public void committing_epoch_change_with_additional_cmds_should_fail() {
 		// Arrange
 		ECKeyPair keyPair = ECKeyPair.generateNew();
-		RadixEngineCommand cmd0 = systemUpdateCommand(0, 0, 1);
+		RadixEngineCommand cmd0 = systemUpdateCommand(0, 0, 2);
 		RadixEngineCommand cmd1 = registerCommand(keyPair);
 		VerifiedLedgerHeaderAndProof verifiedLedgerHeaderAndProof = new VerifiedLedgerHeaderAndProof(
 			mock(BFTHeader.class),
@@ -291,7 +291,7 @@ public class RadixEngineStateComputerTest {
 	public void committing_epoch_change_with_different_validator_signed_should_fail() {
 		// Arrange
 		ECKeyPair keyPair = ECKeyPair.generateNew();
-		RadixEngineCommand cmd0 = systemUpdateCommand(0, 0, 1);
+		RadixEngineCommand cmd0 = systemUpdateCommand(0, 0, 2);
 		RadixEngineCommand cmd1 = registerCommand(keyPair);
 		VerifiedLedgerHeaderAndProof verifiedLedgerHeaderAndProof = new VerifiedLedgerHeaderAndProof(
 			mock(BFTHeader.class),

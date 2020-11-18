@@ -39,7 +39,6 @@ import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.middleware2.store.CommittedAtomsStore.AtomIndexer;
-import com.radixdlt.middleware2.store.InMemoryCommittedEpochProofsStore;
 import com.radixdlt.middleware2.store.EngineAtomIndices;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
@@ -61,7 +60,6 @@ public class RadixEngineStoreModule extends AbstractModule {
 	protected void configure() {
 		bind(new TypeLiteral<EngineStore<CommittedAtom>>() { }).to(CommittedAtomsStore.class).in(Scopes.SINGLETON);
 		bind(CommittedReader.class).to(CommittedAtomsStore.class);
-		bind(InMemoryCommittedEpochProofsStore.class).in(Scopes.SINGLETON);
 	}
 
 
@@ -114,19 +112,23 @@ public class RadixEngineStoreModule extends AbstractModule {
 	@LastProof
 	VerifiedLedgerHeaderAndProof lastProof(
 		CommittedAtomsStore store,
-		VerifiedCommandsAndProof genesisCheckpoint
+		VerifiedCommandsAndProof genesisCheckpoint // TODO: remove once genesis creation resolved
 	) {
-		return store.getLastVerifiedHeader().orElse(genesisCheckpoint.getHeader());
+		return store.getLastVerifiedHeader()
+			.orElse(genesisCheckpoint.getHeader());
 	}
 
 	@Provides
 	@Singleton
 	@LastEpochProof
 	VerifiedLedgerHeaderAndProof lastEpochProof(
-		VerifiedCommandsAndProof genesisCheckpoint
+		@LastProof VerifiedLedgerHeaderAndProof lastProof,
+		CommittedAtomsStore store
 	) {
-		// TODO: load from store latest epoch proof
-		return genesisCheckpoint.getHeader();
+		if (lastProof.isEndOfEpoch()) {
+			return lastProof;
+		}
+		return store.getEpochVerifiedHeader(lastProof.getEpoch()).orElseThrow();
 	}
 
 	@Provides

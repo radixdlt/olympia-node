@@ -15,24 +15,24 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.epoch;
+package com.radixdlt.environment.deterministic;
 
 import com.radixdlt.consensus.Timeout;
-import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
+import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.epoch.EpochView;
 
-/**
- * A mocked epoch info sender
- */
-public enum EmptyEpochInfoSender implements EpochInfoSender {
-	INSTANCE;
+public class DeterministicEpochInfo {
+	private EpochView currentEpochView = new EpochView(0, View.genesis());
 
-	@Override
-	public void sendCurrentView(EpochView epochView) {
+	public void processEvent(EpochView epochView) {
+		this.currentEpochView = epochView;
+	}
+
+	public void processEvent(Timeout timeout) {
 		// No-op
 	}
 
-	@Override
-	public void sendTimeoutProcessed(Timeout timeout) {
-		// No-op
+	public EpochView getCurrentEpochView() {
+		return currentEpochView;
 	}
 }

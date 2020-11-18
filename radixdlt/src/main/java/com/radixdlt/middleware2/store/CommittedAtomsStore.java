@@ -48,6 +48,7 @@ import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.StoreIndex.LedgerIndexType;
 import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
 import com.radixdlt.sync.CommittedReader;
+import com.radixdlt.utils.Longs;
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.Optional;
@@ -122,8 +123,7 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 
 		// TODO: Replace Store + Commit with a single commit
 		// TODO: How it's done depends on how mempool and prepare phases are implemented
-        store.store(ledgerEntry, engineAtomIndices.getUniqueIndices(), engineAtomIndices.getDuplicateIndices());
-        store.commit(committedAtom.getAID());
+        store.commit(ledgerEntry, engineAtomIndices.getUniqueIndices(), engineAtomIndices.getDuplicateIndices());
 
 		final ImmutableSet<EUID> indicies = engineAtomIndices.getDuplicateIndices().stream()
 			.filter(e -> e.getPrefix() == EngineAtomIndices.IndexType.DESTINATION.getValue())
@@ -174,6 +174,21 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		return store.getLastCommitted()
 			.flatMap(store::get)
 			.map(e -> commandToBinaryConverter.toCommand(e.getContent()).getStateAndProof());
+	}
+
+	@Override
+	public Optional<VerifiedLedgerHeaderAndProof> getEpochVerifiedHeader(long epoch) {
+		SearchCursor cursor = store.search(
+			StoreIndex.LedgerIndexType.UNIQUE,
+			new StoreIndex(IndexType.EPOCH_CHANGE.getValue(), Longs.toByteArray(epoch)),
+			LedgerSearchMode.EXACT
+		);
+		if (cursor != null) {
+			return store.get(cursor.get())
+				.map(e -> commandToBinaryConverter.toCommand(e.getContent()).getStateAndProof());
+		} else {
+			return Optional.empty();
+		}
 	}
 
 	public VerifiedCommandsAndProof getNextCommittedCommands(long stateVersion, int batchSize) throws NextCommittedLimitReachedException {

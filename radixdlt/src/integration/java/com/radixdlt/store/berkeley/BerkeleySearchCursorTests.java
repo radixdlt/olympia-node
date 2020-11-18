@@ -40,7 +40,7 @@ public class BerkeleySearchCursorTests extends RadixTestWithStores {
 
 		List<LedgerEntry> ledgerEntries = ledgerEntryGenerator.createLedgerEntries(identity, 1);
 		StoreIndex uniqueIndex = new StoreIndex(PREFIX, ledgerEntries.get(0).getAID().getBytes());
-		getStore().store(ledgerEntries.get(0), ImmutableSet.of(uniqueIndex), ImmutableSet.of());
+		getStore().commit(ledgerEntries.get(0), ImmutableSet.of(uniqueIndex), ImmutableSet.of());
 
 		SearchCursor cursor = getStore().search(
 			StoreIndex.LedgerIndexType.UNIQUE,
@@ -56,7 +56,7 @@ public class BerkeleySearchCursorTests extends RadixTestWithStores {
 	public void create_two_atoms__store_single_atom__search_by_non_existing_unique_aid__fail() throws Exception {
 		List<LedgerEntry> ledgerEntries = ledgerEntryGenerator.createLedgerEntries(2);
 		StoreIndex uniqueIndex = new StoreIndex(PREFIX, ledgerEntries.get(0).getAID().getBytes());
-		getStore().store(ledgerEntries.get(0), ImmutableSet.of(uniqueIndex), ImmutableSet.of());
+		getStore().commit(ledgerEntries.get(0), ImmutableSet.of(uniqueIndex), ImmutableSet.of());
 
 		SearchCursor cursor = getStore().search(
 			StoreIndex.LedgerIndexType.UNIQUE,
@@ -74,7 +74,7 @@ public class BerkeleySearchCursorTests extends RadixTestWithStores {
 		List<LedgerEntry> ledgerEntries = ledgerEntryGenerator.createLedgerEntries(identity, 2);
 		for (LedgerEntry ledgerEntry : ledgerEntries) {
 			StoreIndex uniqueIndex = new StoreIndex(PREFIX, ledgerEntry.getAID().getBytes());
-			getStore().store(ledgerEntry, ImmutableSet.of(uniqueIndex), ImmutableSet.of(index));
+			getStore().commit(ledgerEntry, ImmutableSet.of(uniqueIndex), ImmutableSet.of(index));
 		}
 
 		SearchCursor cursor = getStore().search(StoreIndex.LedgerIndexType.DUPLICATE, index, LedgerSearchMode.EXACT);
@@ -97,7 +97,7 @@ public class BerkeleySearchCursorTests extends RadixTestWithStores {
 		List<LedgerEntry> ledgerEntries = ledgerEntryGenerator.createLedgerEntries(identity, 2);
 		for (LedgerEntry ledgerEntry : ledgerEntries) {
 			StoreIndex uniqueIndex = new StoreIndex(PREFIX, ledgerEntry.getAID().getBytes());
-			getStore().store(ledgerEntry, ImmutableSet.of(uniqueIndex), ImmutableSet.of(index));
+			getStore().commit(ledgerEntry, ImmutableSet.of(uniqueIndex), ImmutableSet.of(index));
 		}
 
 		SearchCursor cursor = getStore().search(StoreIndex.LedgerIndexType.DUPLICATE, index, LedgerSearchMode.EXACT);
@@ -120,7 +120,7 @@ public class BerkeleySearchCursorTests extends RadixTestWithStores {
 		List<LedgerEntry> ledgerEntries = ledgerEntryGenerator.createLedgerEntries(identity, 2);
 		for (LedgerEntry ledgerEntry : ledgerEntries) {
 			StoreIndex uniqueIndex = new StoreIndex(PREFIX, ledgerEntry.getAID().getBytes());
-			getStore().store(ledgerEntry, ImmutableSet.of(uniqueIndex), ImmutableSet.of(index));
+			getStore().commit(ledgerEntry, ImmutableSet.of(uniqueIndex), ImmutableSet.of(index));
 			getStore().commit(ledgerEntry.getAID());
 		}
 
