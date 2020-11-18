@@ -19,7 +19,6 @@ package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.RadixAddress;
 import javax.annotation.concurrent.NotThreadSafe;
 
 /**
@@ -42,8 +41,7 @@ public final class RadixEngineValidatorsComputerImpl implements RadixEngineValid
 	}
 
 	@Override
-	public RadixEngineValidatorsComputer removeValidator(RadixAddress validatorAddress) {
-		final var validatorKey = validatorAddress.getPublicKey();
+	public RadixEngineValidatorsComputer removeValidator(ECPublicKey validatorKey) {
 		if (this.validators.contains(validatorKey)) {
 			final var nextValidators = this.validators.stream()
 				.filter(e -> !e.equals(validatorKey))
@@ -55,8 +53,7 @@ public final class RadixEngineValidatorsComputerImpl implements RadixEngineValid
 	}
 
 	@Override
-	public RadixEngineValidatorsComputer addValidator(RadixAddress validatorAddress) {
-		final var validatorKey = validatorAddress.getPublicKey();
+	public RadixEngineValidatorsComputer addValidator(ECPublicKey validatorKey) {
 		if (!this.validators.contains(validatorKey)) {
 			final var nextValidators = ImmutableSet.<ECPublicKey>builder()
 				.addAll(this.validators)

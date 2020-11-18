@@ -24,6 +24,7 @@ import static org.mockito.Mockito.mock;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Maps;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -80,7 +81,6 @@ import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.utils.UInt256;
 
-import java.util.function.Function;
 import java.util.stream.Stream;
 import org.assertj.core.api.Condition;
 import org.junit.Before;
@@ -97,19 +97,18 @@ public class RadixEngineStateComputerTest {
 		}
 
 		@Override
-		public RadixEngineStakeComputer addStake(RadixAddress delegatedAddress, RRI token, UInt256 amount) {
+		public RadixEngineStakeComputer addStake(ECPublicKey delegatedKey, RRI token, UInt256 amount) {
 			return this;
 		}
 
 		@Override
-		public RadixEngineStakeComputer removeStake(RadixAddress delegatedAddress, RRI token, UInt256 amount) {
+		public RadixEngineStakeComputer removeStake(ECPublicKey delegatedKey, RRI token, UInt256 amount) {
 			return this;
 		}
 
 		@Override
 		public ImmutableMap<ECPublicKey, UInt256> stakedAmounts(ImmutableSet<ECPublicKey> validators) {
-			return validators.stream()
-				.collect(ImmutableMap.toImmutableMap(Function.identity(), k -> this.stake));
+			return ImmutableMap.copyOf(Maps.asMap(validators, k -> this.stake));
 		}
 	}
 
@@ -118,6 +117,7 @@ public class RadixEngineStateComputerTest {
 
 	private Serialization serialization = DefaultSerialization.getInstance();
 	private BFTValidatorSet validatorSet;
+	private RadixEngineValidatorsComputer validatorsComputer;
 	private EngineStore<LedgerAtom> engineStore;
 	private RRI stakeToken = mock(RRI.class);
 
@@ -125,6 +125,7 @@ public class RadixEngineStateComputerTest {
 
 	private Module getExternalModule() {
 		return new AbstractModule() {
+
 			@Override
 			public void configure() {
 				bind(Serialization.class).toInstance(serialization);
@@ -136,7 +137,7 @@ public class RadixEngineStateComputerTest {
 				bindConstant().annotatedWith(MaxValidators.class).to(100);
 				bind(RRI.class).annotatedWith(NativeToken.class).toInstance(stakeToken);
 				bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(10));
-				bind(RadixEngineValidatorsComputer.class).toInstance(RadixEngineValidatorsComputerImpl.create());
+				bind(RadixEngineValidatorsComputer.class).toInstance(validatorsComputer);
 				bind(RadixEngineStakeComputer.class).toInstance(new ConstantStakeComputer(UInt256.ONE));
 			}
 		};
@@ -148,6 +149,7 @@ public class RadixEngineStateComputerTest {
 			BFTValidator.from(BFTNode.random(), UInt256.ONE),
 			BFTValidator.from(BFTNode.random(), UInt256.ONE)
 		));
+		this.validatorsComputer = validatorComputerWithValidatorsFrom(this.validatorSet);
 		this.engineStore = new InMemoryEngineStore<>();
 		Injector injector = Guice.createInjector(
 			new RadixEngineModule(),
@@ -155,6 +157,14 @@ public class RadixEngineStateComputerTest {
 			getExternalModule()
 		);
 		injector.injectMembers(this);
+	}
+
+	private static RadixEngineValidatorsComputer validatorComputerWithValidatorsFrom(BFTValidatorSet validatorSet) {
+		RadixEngineValidatorsComputer initialComputer = RadixEngineValidatorsComputerImpl.create();
+		for (BFTValidator validator : validatorSet.getValidators()) {
+			initialComputer = initialComputer.addValidator(validator.getNode().getKey());
+		}
+		return initialComputer;
 	}
 
 	private static RadixEngineCommand systemUpdateCommand(long prevView, long nextView, long nextEpoch) {

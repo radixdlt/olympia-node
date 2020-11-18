@@ -19,7 +19,6 @@ package com.radixdlt.statecomputer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.identifiers.RadixAddress;
 import org.junit.Test;
 
 public class RadixEngineValidatorsComputerImplTest {
@@ -28,9 +27,9 @@ public class RadixEngineValidatorsComputerImplTest {
 		final var key1 = ECKeyPair.generateNew().getPublicKey();
 		final var key2 = ECKeyPair.generateNew().getPublicKey();
 		final var computer = RadixEngineValidatorsComputerImpl.create()
-			.addValidator(new RadixAddress((byte) 0, key1));
+			.addValidator(key1);
 
-		final var nextComputer = computer.addValidator(new RadixAddress((byte) 0, key2));
+		final var nextComputer = computer.addValidator(key2);
 
 		assertThat(nextComputer.activeValidators())
 			.hasSize(2)
@@ -42,10 +41,10 @@ public class RadixEngineValidatorsComputerImplTest {
 		final var key1 = ECKeyPair.generateNew().getPublicKey();
 		final var key2 = ECKeyPair.generateNew().getPublicKey();
 		final var computer = RadixEngineValidatorsComputerImpl.create()
-			.addValidator(new RadixAddress((byte) 0, key1))
-			.addValidator(new RadixAddress((byte) 0, key2));
+			.addValidator(key1)
+			.addValidator(key2);
 
-		final var nextComputer = computer.addValidator(new RadixAddress((byte) 0, key2));
+		final var nextComputer = computer.addValidator(key2);
 
 		assertThat(nextComputer.activeValidators())
 			.hasSize(2)
@@ -57,10 +56,10 @@ public class RadixEngineValidatorsComputerImplTest {
 		final var key1 = ECKeyPair.generateNew().getPublicKey();
 		final var key2 = ECKeyPair.generateNew().getPublicKey();
 		final var computer = RadixEngineValidatorsComputerImpl.create()
-			.addValidator(new RadixAddress((byte) 0, key1))
-			.addValidator(new RadixAddress((byte) 0, key2));
+			.addValidator(key1)
+			.addValidator(key2);
 
-		final var nextComputer = computer.removeValidator(new RadixAddress((byte) 0, key2));
+		final var nextComputer = computer.removeValidator(key2);
 
 		assertThat(nextComputer.activeValidators())
 			.hasSize(1)
@@ -72,10 +71,10 @@ public class RadixEngineValidatorsComputerImplTest {
 		final var key1 = ECKeyPair.generateNew().getPublicKey();
 		final var key2 = ECKeyPair.generateNew().getPublicKey();
 		final var computer = RadixEngineValidatorsComputerImpl.create()
-			.addValidator(new RadixAddress((byte) 0, key1))
-			.addValidator(new RadixAddress((byte) 0, key2));
+			.addValidator(key1)
+			.addValidator(key2);
 
-		final var nextComputer = computer.removeValidator(new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey()));
+		final var nextComputer = computer.removeValidator(ECKeyPair.generateNew().getPublicKey());
 
 		assertThat(nextComputer.activeValidators())
 			.hasSize(2)

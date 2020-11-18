@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.RRI;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
@@ -54,9 +53,8 @@ public final class RadixEngineStakeComputerImpl implements RadixEngineStakeCompu
 	}
 
 	@Override
-	public RadixEngineStakeComputerImpl addStake(RadixAddress delegatedAddress, RRI token, UInt256 amount) {
+	public RadixEngineStakeComputerImpl addStake(ECPublicKey delegatedKey, RRI token, UInt256 amount) {
 		if (this.stakingToken.equals(token) && !amount.isZero()) {
-			final var delegatedKey = delegatedAddress.getPublicKey();
 			final var nextAmount = this.stakedAmounts.getOrDefault(delegatedKey, UInt256.ZERO).add(amount);
 			final var nextStakedAmounts = Stream.concat(
 				Stream.of(Maps.immutableEntry(delegatedKey, nextAmount)),
@@ -68,8 +66,7 @@ public final class RadixEngineStakeComputerImpl implements RadixEngineStakeCompu
 	}
 
 	@Override
-	public RadixEngineStakeComputerImpl removeStake(RadixAddress delegatedAddress, RRI token, UInt256 amount) {
-		final var delegatedKey = delegatedAddress.getPublicKey();
+	public RadixEngineStakeComputerImpl removeStake(ECPublicKey delegatedKey, RRI token, UInt256 amount) {
 		if (this.stakingToken.equals(token) && !amount.isZero() && this.stakedAmounts.containsKey(delegatedKey)) {
 			final var oldAmount = this.stakedAmounts.get(delegatedKey);
 			if (amount.compareTo(oldAmount) >= 0) {

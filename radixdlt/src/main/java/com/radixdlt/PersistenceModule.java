@@ -19,6 +19,7 @@ package com.radixdlt;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.store.CursorStore;
@@ -35,7 +36,7 @@ public class PersistenceModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		// TODO: should be singletons?
-		bind(LedgerEntryStore.class).to(BerkeleyLedgerEntryStore.class);
+		bind(LedgerEntryStore.class).to(BerkeleyLedgerEntryStore.class).in(Scopes.SINGLETON);
 		bind(LedgerEntryStoreView.class).to(BerkeleyLedgerEntryStore.class);
 		bind(CursorStore.class).to(BerkeleyCursorStore.class);
 	}

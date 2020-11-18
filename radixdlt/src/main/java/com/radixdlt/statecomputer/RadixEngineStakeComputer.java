@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.RRI;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
 
 /**
@@ -31,22 +30,22 @@ public interface RadixEngineStakeComputer {
 	/**
 	 * Add stake to specified delegate in the amount of the specified token.
 	 *
-	 * @param delegatedAddress The address the stake is being delegated to
+	 * @param delegatedKey The public key the stake is being delegated to
 	 * @param token The token of the staked amount
 	 * @param amount The amount of the stake
 	 * @return The next state of the stake computer
 	 */
-	RadixEngineStakeComputer addStake(RadixAddress delegatedAddress, RRI token, UInt256 amount);
+	RadixEngineStakeComputer addStake(ECPublicKey delegatedKey, RRI token, UInt256 amount);
 
 	/**
 	 * Remove stake from specified delegate in the amount of the specified token.
 	 *
-	 * @param delegatedAddress The address the delegated stake to remove
+	 * @param delegatedKey The public key the delegated stake to remove
 	 * @param token The token for the staked amount
 	 * @param amount The amount of the stake being removed
 	 * @return The next state of the stake computer
 	 */
-	RadixEngineStakeComputer removeStake(RadixAddress delegatedAddress, RRI token, UInt256 amount);
+	RadixEngineStakeComputer removeStake(ECPublicKey delegatedKey, RRI token, UInt256 amount);
 
 	/**
 	 * Returns the staked amounts for the specified validators.

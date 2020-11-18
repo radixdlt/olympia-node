@@ -147,15 +147,15 @@ public class RadixEngineModule extends AbstractModule {
 			RegisteredValidatorParticle.class,
 			RadixEngineValidatorsComputer.class,
 			validatorsComputer,
-			(computer, p) -> computer.addValidator(p.getAddress()),
-			(computer, p) -> computer.removeValidator(p.getAddress())
+			(computer, p) -> computer.addValidator(p.getAddress().getPublicKey()),
+			(computer, p) -> computer.removeValidator(p.getAddress().getPublicKey())
 		);
 		radixEngine.addStateComputer(
 			StakedTokensParticle.class,
 			RadixEngineStakeComputer.class,
 			stakeComputer,
-			(computer, p) -> computer.addStake(p.getDelegateAddress(), p.getTokDefRef(), p.getAmount()),
-			(computer, p) -> computer.removeStake(p.getDelegateAddress(), p.getTokDefRef(), p.getAmount())
+			(computer, p) -> computer.addStake(p.getDelegateAddress().getPublicKey(), p.getTokDefRef(), p.getAmount()),
+			(computer, p) -> computer.removeStake(p.getDelegateAddress().getPublicKey(), p.getTokDefRef(), p.getAmount())
 		);
 
 		// TODO: should use different mechanism for constructing system atoms but this is good enough for now

@@ -80,6 +80,7 @@ import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.store.LastEpochProof;
+import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncTimeoutScheduler;
 import com.radixdlt.sync.SyncPatienceMillis;
 import com.radixdlt.utils.UInt256;
@@ -90,6 +91,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 import org.apache.commons.cli.ParseException;
 import org.json.JSONObject;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -97,6 +99,7 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+import org.radix.database.DatabaseEnvironment;
 
 /**
  * Verifies that on restarts (simulated via creation of new injectors) that the application
@@ -133,6 +136,16 @@ public class RecoveryTest {
 	public void setup() {
 		this.currentInjector = createRunner(ecKeyPair);
 		this.currentInjector.getInstance(DeterministicEpochsConsensusProcessor.class).start();
+	}
+
+	@After
+	public void teardown() {
+		if (this.currentInjector != null) {
+			LedgerEntryStore store = this.currentInjector.getInstance(LedgerEntryStore.class);
+			store.close();
+			DatabaseEnvironment dbEnv = this.currentInjector.getInstance(DatabaseEnvironment.class);
+			dbEnv.stop();
+		}
 	}
 
 	private Injector createRunner(ECKeyPair ecKeyPair) {

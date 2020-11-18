@@ -19,7 +19,6 @@ package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.RadixAddress;
 
 /**
  * Radix engine state computer to keep track of registered validators.
@@ -29,18 +28,18 @@ public interface RadixEngineValidatorsComputer {
 	/**
 	 * Add a validator to the list of registered validators.
 	 *
-	 * @param validatorAddress The address of the validator to be registered
+	 * @param validatorKey The public key of the validator to be registered
 	 * @return The next state of the validator computer
 	 */
-	RadixEngineValidatorsComputer addValidator(RadixAddress validatorAddress);
+	RadixEngineValidatorsComputer addValidator(ECPublicKey validatorKey);
 
 	/**
 	 * Removes a validator to the list of registered validators.
 	 *
-	 * @param validatorAddress The address of the validator to be removed
+	 * @param validatorKey The public key of the validator to be removed
 	 * @return The next state of the validator computer
 	 */
-	RadixEngineValidatorsComputer removeValidator(RadixAddress validatorAddress);
+	RadixEngineValidatorsComputer removeValidator(ECPublicKey validatorKey);
 
 	/**
 	 * Returns a set of the currently active validators.

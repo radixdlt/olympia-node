@@ -55,6 +55,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.MockedCheckpointModule;
 import com.radixdlt.environment.deterministic.DeterministicEpochInfo;
 import com.radixdlt.integration.distributed.MockedMempoolModule;
+import com.radixdlt.integration.distributed.simulation.SimulationValidatorComputersModule;
 import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
 import com.radixdlt.environment.deterministic.DeterministicEnvironmentModule;
 import com.radixdlt.environment.deterministic.ControlledSenderFactory;
@@ -65,6 +66,7 @@ import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.statecomputer.EpochCeilingView;
+import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncTimeoutScheduler;
@@ -114,6 +116,7 @@ public class OneNodeAlwaysAliveTest {
 	private DeterministicNetwork network;
 	private List<Supplier<Injector>> nodeCreators;
 	private List<Injector> nodes = new ArrayList<>();
+
 	public OneNodeAlwaysAliveTest(int numNodes) {
 		final List<ECKeyPair> nodeKeys = Stream.generate(ECKeyPair::generateNew).limit(numNodes).collect(Collectors.toList());
 
@@ -122,7 +125,6 @@ public class OneNodeAlwaysAliveTest {
 			MessageSelector.firstSelector(),
 			MessageMutator.nothing()
 		);
-
 
 		List<BFTNode> allNodes = nodeKeys.stream()
 			.map(k -> BFTNode.create(k.getPublicKey())).collect(Collectors.toList());
@@ -142,6 +144,8 @@ public class OneNodeAlwaysAliveTest {
 
 	private Injector createRunner(ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
 		final BFTNode self = BFTNode.create(ecKeyPair.getPublicKey());
+		final BFTValidatorSet validatorSet = BFTValidatorSet.from(allNodes.stream().map(node -> BFTValidator.from(node, UInt256.ONE)));
+
 
 		return Guice.createInjector(
 			new AbstractModule() {
@@ -155,6 +159,7 @@ public class OneNodeAlwaysAliveTest {
 					bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(200);
 					bind(Integer.class).annotatedWith(BFTSyncPatienceMillis.class).toInstance(200);
 					bind(Integer.class).annotatedWith(MinValidators.class).toInstance(1);
+					bind(Integer.class).annotatedWith(MaxValidators.class).toInstance(Integer.MAX_VALUE);
 					bind(Long.class).annotatedWith(PacemakerTimeout.class).toInstance(1000L);
 					bind(Double.class).annotatedWith(PacemakerRate.class).toInstance(2.0);
 					bind(Integer.class).annotatedWith(PacemakerMaxExponent.class).toInstance(6);
@@ -177,10 +182,14 @@ public class OneNodeAlwaysAliveTest {
 						throw new IllegalStateException();
 					}
 					bind(RuntimeProperties.class).toInstance(runtimeProperties);
+
+					// Initial validators
+//					bind(BFTValidatorSet.class).toInstance(validatorSet);
 				}
 			},
 
-			new MockedCheckpointModule(BFTValidatorSet.from(allNodes.stream().map(node -> BFTValidator.from(node, UInt256.ONE)))),
+			new MockedCheckpointModule(validatorSet),
+			new SimulationValidatorComputersModule(),
 
 			new DeterministicEnvironmentModule(),
 			new DispatcherModule(),
