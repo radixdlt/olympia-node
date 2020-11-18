@@ -61,7 +61,6 @@ public class MovingWindowValidatorsTest {
 		assertThat(testCounters).extracting(sc -> sc.get(CounterType.BFT_TIMEOUT)).containsOnly(0L);
 
 		long maxCount = maxProcessedFor(numNodes, windowSize, maxEpoch, highView.number());
-		System.out.println("max count is= " + maxCount);
 		assertThat(testCounters)
 			.extracting(sc -> sc.get(CounterType.BFT_PROCESSED))
 			.allMatch(between(maxCount - 3, maxCount));
