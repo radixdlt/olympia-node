@@ -15,11 +15,14 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.environment;
 
 /**
- * A processor of BFT updates
+ * The environment where events get dispatched to. The implementing
+ * environment is then responsible for getting dispatched events to their
+ * processors.
  */
-public interface BFTUpdateProcessor {
-	void processBFTUpdate(BFTUpdate update);
+public interface Environment {
+	<T> EventDispatcher<T> getDispatcher(Class<T> eventClass);
+	<T> ScheduledEventDispatcher<T> getScheduledDispatcher(Class<T> eventClass);
 }

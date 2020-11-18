@@ -170,7 +170,7 @@ public class GenerateUniversesTest {
 		}
 		assertThat(err).isEmpty();
 		assertThat(out)
-			.hasLineCount(118)
+			.hasLineCount(148)
 			.containsSubsequence(
 				":rri:/", "/XRD", "radix.particles.mutable_supply_token_definition"
 			);

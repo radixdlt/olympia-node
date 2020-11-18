@@ -25,10 +25,12 @@ import com.google.inject.Guice;
 import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
+import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.ConsensusRunnerModule;
 import com.radixdlt.ConsensusRxModule;
+import com.radixdlt.DispatcherModule;
 import com.radixdlt.EpochsConsensusModule;
 import com.radixdlt.EpochsSyncModule;
 import com.radixdlt.LedgerCommandGeneratorModule;
@@ -40,20 +42,25 @@ import com.radixdlt.NoFeeModule;
 import com.radixdlt.LedgerLocalMempoolModule;
 import com.radixdlt.RadixEngineModule;
 import com.radixdlt.RadixEngineRxModule;
+import com.radixdlt.RxEnvironmentModule;
 import com.radixdlt.SyncServiceModule;
 import com.radixdlt.SyncRxModule;
 import com.radixdlt.SyncRunnerModule;
 import com.radixdlt.SystemInfoRxModule;
 import com.radixdlt.consensus.Sha256Hasher;
+import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.integration.distributed.MockedBFTConfigurationModule;
 import com.radixdlt.integration.distributed.MockedCommandGeneratorModule;
 import com.radixdlt.integration.distributed.MockedCryptoModule;
@@ -75,6 +82,7 @@ import com.radixdlt.integration.distributed.simulation.application.RadixEngineVa
 import com.radixdlt.integration.distributed.simulation.application.RadixEngineValidatorRegistratorAndUnregistrator;
 import com.radixdlt.integration.distributed.simulation.application.RegisteredValidatorChecker;
 import com.radixdlt.integration.distributed.simulation.application.TimestampChecker;
+import com.radixdlt.integration.distributed.simulation.invariants.consensus.NodeTimeouts;
 import com.radixdlt.integration.distributed.simulation.invariants.epochs.EpochViewInvariant;
 import com.radixdlt.integration.distributed.simulation.application.LocalMempoolPeriodicSubmittor;
 import com.radixdlt.integration.distributed.simulation.invariants.ledger.ConsensusToLedgerCommittedInvariant;
@@ -366,7 +374,15 @@ public class SimulationTest {
 		}
 
 		public Builder checkConsensusNoTimeouts(String invariantName) {
-			this.checksBuilder.put(invariantName, nodes -> new NoTimeoutsInvariant());
+			NodeTimeouts nodeTimeouts = new NodeTimeouts();
+			this.modules.add(new AbstractModule() {
+				@ProcessOnDispatch
+				@ProvidesIntoSet
+				private EventProcessor<Timeout> timeoutEventProcessor(@Self BFTNode node) {
+					return nodeTimeouts.processor(node);
+				}
+			});
+			this.checksBuilder.put(invariantName, nodes -> new NoTimeoutsInvariant(nodeTimeouts));
 			return this;
 		}
 
@@ -413,6 +429,8 @@ public class SimulationTest {
 			modules.add(new ConsensusRxModule());
 			modules.add(new SystemInfoRxModule());
 			modules.add(new LedgerRxModule());
+			modules.add(new DispatcherModule());
+			modules.add(new RxEnvironmentModule());
 
 			if (ledgerType == LedgerType.MOCKED_LEDGER) {
 				modules.add(new MockedBFTConfigurationModule());

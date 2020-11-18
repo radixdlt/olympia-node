@@ -22,19 +22,18 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
+import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.counters.SystemCountersImpl;
-import com.radixdlt.systeminfo.InMemorySystemInfoManager;
-import com.radixdlt.systeminfo.InfoRx;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.systeminfo.InMemorySystemInfo;
+import com.radixdlt.systeminfo.InMemorySystemInfoRunner;
 import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.middleware2.InfoSupplier;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.properties.RuntimeProperties;
-
-import io.reactivex.rxjava3.core.Observable;
-import java.util.Objects;
 
 import org.radix.Radix;
 
@@ -43,32 +42,45 @@ import org.radix.Radix;
  */
 public class SystemInfoModule extends AbstractModule {
 	private static final int DEFAULT_VERTEX_BUFFER_SIZE = 16;
-	private static final long DEFAULT_VERTEX_UPDATE_FREQ = 1_000L;
-	private final RuntimeProperties runtimeProperties;
-
-	public SystemInfoModule(RuntimeProperties runtimeProperties) {
-		this.runtimeProperties = Objects.requireNonNull(runtimeProperties);
-	}
-
 
 	@Override
 	protected void configure() {
 		bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
+		bind(InMemorySystemInfoRunner.class).in(Scopes.SINGLETON);
+	}
+
+	@ProvidesIntoSet
+	private EventProcessor<EpochView> epochViewEventProcessor(InMemorySystemInfo inMemorySystemInfo) {
+		return inMemorySystemInfo::processView;
+	}
+
+	@ProvidesIntoSet
+	private EventProcessor<Timeout> timeoutEventProcessor(InMemorySystemInfo inMemorySystemInfo) {
+		return inMemorySystemInfo::processTimeout;
+	}
+
+	@ProvidesIntoSet
+	private EventProcessor<BFTCommittedUpdate> committedUpdateEventProcessor(InMemorySystemInfo inMemorySystemInfo) {
+		return inMemorySystemInfo::processCommitted;
+	}
+
+	@ProvidesIntoSet
+	private EventProcessor<QuorumCertificate> highQCProcessor(InMemorySystemInfo inMemorySystemInfo) {
+		return inMemorySystemInfo::processHighQC;
 	}
 
 	@Provides
 	@Singleton
-	private InMemorySystemInfoManager infoStateRunner(InfoRx infoRx, Observable<BFTCommittedUpdate> committedUpdates) {
+	private InMemorySystemInfo inMemorySystemInfo(RuntimeProperties runtimeProperties) {
 		final int vertexBufferSize = runtimeProperties.get("api.debug.vertex_buffer_size", DEFAULT_VERTEX_BUFFER_SIZE);
-		final long vertexUpdateFrequency = runtimeProperties.get("api.debug.vertex_update_freq", DEFAULT_VERTEX_UPDATE_FREQ);
-		return new InMemorySystemInfoManager(infoRx, committedUpdates, vertexBufferSize, vertexUpdateFrequency);
+		return new InMemorySystemInfo(vertexBufferSize);
 	}
 
 	@Provides
 	@Singleton
 	private InfoSupplier infoSupplier(
 		SystemCounters counters,
-		InMemorySystemInfoManager infoStateManager
+		InMemorySystemInfo infoStateManager
 	) {
 		return () -> {
 			EpochView currentEpochView = infoStateManager.getCurrentView();

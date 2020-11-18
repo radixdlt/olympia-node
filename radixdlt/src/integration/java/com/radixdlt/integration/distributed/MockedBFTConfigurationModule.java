@@ -24,9 +24,11 @@ import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.UnverifiedVertex;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.store.LastProof;
 
 /**
  * An initial bft configuration
@@ -53,5 +55,11 @@ public class MockedBFTConfigurationModule extends AbstractModule {
 			hashedGenesis,
 			QuorumCertificate.ofGenesis(hashedGenesis, LedgerHeader.genesis(genesisHash, null))
 		);
+	}
+
+	@Provides
+	@LastProof
+	VerifiedLedgerHeaderAndProof lastProof(BFTConfiguration configuration) {
+		return configuration.getGenesisHeader();
 	}
 }

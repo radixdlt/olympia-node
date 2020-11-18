@@ -111,24 +111,35 @@ public class RadixEngineStoreModule extends AbstractModule {
 	@Singleton
 	@LastProof
 	VerifiedLedgerHeaderAndProof lastProof(
+		@LastEpochProof VerifiedLedgerHeaderAndProof lastEpochProof,
 		CommittedAtomsStore store,
-		VerifiedCommandsAndProof genesisCheckpoint // TODO: remove once genesis creation resolved
+		VerifiedCommandsAndProof genesisCheckpoint, // TODO: remove once genesis creation resolved
+		BFTConfiguration bftConfiguration
 	) {
-		return store.getLastVerifiedHeader()
+		VerifiedLedgerHeaderAndProof lastStoredProof = store.getLastVerifiedHeader()
 			.orElse(genesisCheckpoint.getHeader());
+
+		if (lastStoredProof.isEndOfEpoch()) {
+			return bftConfiguration.getGenesisHeader();
+		} else {
+			return lastStoredProof;
+		}
 	}
 
 	@Provides
 	@Singleton
 	@LastEpochProof
 	VerifiedLedgerHeaderAndProof lastEpochProof(
-		@LastProof VerifiedLedgerHeaderAndProof lastProof,
-		CommittedAtomsStore store
+		CommittedAtomsStore store,
+		VerifiedCommandsAndProof genesisCheckpoint // TODO: remove once genesis creation resolved
 	) {
-		if (lastProof.isEndOfEpoch()) {
-			return lastProof;
+		VerifiedLedgerHeaderAndProof lastStoredProof = store.getLastVerifiedHeader()
+			.orElse(genesisCheckpoint.getHeader());
+
+		if (lastStoredProof.isEndOfEpoch()) {
+			return lastStoredProof;
 		}
-		return store.getEpochVerifiedHeader(lastProof.getEpoch()).orElseThrow();
+		return store.getEpochVerifiedHeader(lastStoredProof.getEpoch()).orElseThrow();
 	}
 
 	@Provides

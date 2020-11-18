@@ -15,13 +15,13 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.sync;
-
-import com.radixdlt.sync.LocalSyncRequest;
+package com.radixdlt.environment;
 
 /**
- * Sends a sync request
+ * A dispatcher of an event to an environment
+ *
+ * @param <T> the event class
  */
-public interface SyncLedgerRequestSender {
-	void sendLocalSyncRequest(LocalSyncRequest request);
+public interface EventDispatcher<T> {
+	void dispatch(T t);
 }

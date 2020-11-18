@@ -148,6 +148,7 @@ public class DifferentTimestampsCauseTimeoutTest {
 				Proposal p = (Proposal) msg;
 				int receiverIndex = message.channelId().receiverIndex();
 				messageToUse = new ControlledMessage(
+					message.origin(),
 					message.channelId(),
 					mutateProposal(p, receiverIndex * factor),
 					message.arrivalTime()

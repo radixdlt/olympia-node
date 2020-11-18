@@ -15,24 +15,23 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.sync;
+package com.radixdlt.environment;
 
-import io.reactivex.rxjava3.core.Observable;
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import javax.inject.Qualifier;
 
 /**
- * Messages received from the sync network
+ * To be used with EventProcessor, this annotation indicates that
+ * the processor should be processed in the SyncRunner thread.
  */
-public interface StateSyncNetworkRx {
-
-	/**
-	 * Retrieve stream of sync responses
-	 * @return an unending Observable of sync responses
-	 */
-	Observable<RemoteSyncResponse> syncResponses();
-
-	/**
-	 * Retrieve stream of sync requests
-	 * @return an unending Observable of sync requests
-	 */
-	Observable<RemoteSyncRequest> syncRequests();
+@Qualifier
+@Target({ FIELD, PARAMETER, METHOD })
+@Retention(RUNTIME)
+public @interface ProcessWithSyncRunner {
 }

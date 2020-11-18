@@ -47,17 +47,16 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.UnverifiedVertex;
+import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.liveness.ProceedToViewSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
-import com.radixdlt.consensus.sync.BFTSync.BFTSyncTimeoutScheduler;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.consensus.bft.View;
@@ -65,14 +64,15 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
+import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
@@ -84,6 +84,7 @@ import com.radixdlt.mempool.Mempool;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
+import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.utils.UInt256;
 import java.util.stream.Stream;
 import org.junit.Before;
@@ -96,20 +97,16 @@ public class EpochManagerTest {
 	@Inject
 	private Hasher hasher;
 
-	@Inject
-	private BFTValidatorSet validatorSet;
-
 	private ECKeyPair ecKeyPair = ECKeyPair.generateNew();
 
-	private BFTUpdateSender bftUpdateSender = mock(BFTUpdateSender.class);
 	private SyncEpochsRPCSender syncEpochsRPCSender = mock(SyncEpochsRPCSender.class);
 	private LocalTimeoutSender localTimeoutSender = mock(LocalTimeoutSender.class);
 	private NextCommandGenerator nextCommandGenerator = mock(NextCommandGenerator.class);
 	private ProceedToViewSender proceedToViewSender = mock(ProceedToViewSender.class);
 	private ProposalBroadcaster proposalBroadcaster = mock(ProposalBroadcaster.class);
-	private BFTSyncTimeoutScheduler timeoutScheduler = mock(BFTSyncTimeoutScheduler.class);
+	private ScheduledEventDispatcher<LocalGetVerticesRequest> timeoutScheduler = rmock(ScheduledEventDispatcher.class);
 	private SyncVerticesRequestSender syncVerticesRequestSender = mock(SyncVerticesRequestSender.class);
-	private SyncLedgerRequestSender syncLedgerRequestSender = mock(SyncLedgerRequestSender.class);
+	private EventDispatcher<LocalSyncRequest> syncLedgerRequestSender = rmock(EventDispatcher.class);
 	private SyncVerticesResponseSender syncVerticesResponseSender = mock(SyncVerticesResponseSender.class);
 	private LedgerUpdateSender ledgerUpdateSender = mock(LedgerUpdateSender.class);
 	private Mempool mempool = mock(Mempool.class);
@@ -131,21 +128,20 @@ public class EpochManagerTest {
 			protected void configure() {
 				bind(HashSigner.class).toInstance(ecKeyPair::sign);
 				bind(BFTNode.class).annotatedWith(Self.class).toInstance(self);
-				bind(BFTUpdateSender.class).toInstance(bftUpdateSender);
-
-				bind(new TypeLiteral<EventProcessor<Timeout>>() { }).toInstance(rmock(EventProcessor.class));
-				bind(new TypeLiteral<EventProcessor<EpochView>>() { }).toInstance(rmock(EventProcessor.class));
+				bind(new TypeLiteral<EventDispatcher<BFTUpdate>>() { }).toInstance(rmock(EventDispatcher.class));
+				bind(new TypeLiteral<EventDispatcher<Timeout>>() { }).toInstance(rmock(EventDispatcher.class));
+				bind(new TypeLiteral<EventDispatcher<EpochView>>() { }).toInstance(rmock(EventDispatcher.class));
+				bind(new TypeLiteral<EventDispatcher<LocalSyncRequest>>() { }).toInstance(syncLedgerRequestSender);
+				bind(new TypeLiteral<ScheduledEventDispatcher<LocalGetVerticesRequest>>() { }).toInstance(timeoutScheduler);
 
 				bind(SyncEpochsRPCSender.class).toInstance(syncEpochsRPCSender);
 				bind(LocalTimeoutSender.class).toInstance(localTimeoutSender);
 				bind(NextCommandGenerator.class).toInstance(nextCommandGenerator);
 				bind(ProceedToViewSender.class).toInstance(proceedToViewSender);
 				bind(ProposalBroadcaster.class).toInstance(proposalBroadcaster);
-				bind(BFTSyncTimeoutScheduler.class).toInstance(timeoutScheduler);
 				bind(SystemCounters.class).toInstance(new SystemCountersImpl());
 				bind(SyncVerticesRequestSender.class).toInstance(syncVerticesRequestSender);
 				bind(SyncVerticesResponseSender.class).toInstance(syncVerticesResponseSender);
-				bind(SyncLedgerRequestSender.class).toInstance(syncLedgerRequestSender);
 				bind(LedgerUpdateSender.class).toInstance(ledgerUpdateSender);
 				bind(Mempool.class).toInstance(mempool);
 				bind(StateComputer.class).toInstance(stateComputer);
@@ -251,7 +247,7 @@ public class EpochManagerTest {
 
 		// Assert
 		verify(syncLedgerRequestSender, times(1))
-			.sendLocalSyncRequest(argThat(req -> req.getTarget().equals(proof)));
+			.dispatch(argThat(req -> req.getTarget().equals(proof)));
 	}
 
 	@Test
@@ -263,6 +259,6 @@ public class EpochManagerTest {
 		epochManager.processGetEpochResponse(response);
 
 		// Assert
-		verify(syncLedgerRequestSender, never()).sendLocalSyncRequest(any());
+		verify(syncLedgerRequestSender, never()).dispatch(any());
 	}
 }

@@ -17,6 +17,7 @@
 
 package com.radixdlt;
 
+import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -31,18 +32,20 @@ import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.epoch.EpochChange;
-import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.epochs.SyncedEpochSender;
 import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
+import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncTimeoutScheduler;
 import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier;
 import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier.InvalidValidatorSetSender;
 import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier.VerifiedValidatorSetSender;
-import com.radixdlt.sync.StateSyncNetworkSender;
 import com.radixdlt.sync.SyncPatienceMillis;
 import com.radixdlt.utils.TypedMocks;
 
@@ -66,12 +69,12 @@ public class EpochsSyncModuleTest {
 				bind(EpochChange.class).toInstance(mock(EpochChange.class));
 				bind(LocalSyncServiceAccumulatorProcessor.class).toInstance(mock(LocalSyncServiceAccumulatorProcessor.class));
 				bind(RemoteSyncResponseValidatorSetVerifier.class).toInstance(mock(RemoteSyncResponseValidatorSetVerifier.class));
-				bind(SyncLedgerRequestSender.class).toInstance(mock(SyncLedgerRequestSender.class));
+				bind(new TypeLiteral<EventDispatcher<LocalSyncRequest>>() { }).toInstance(rmock(EventDispatcher.class));
+				bind(new TypeLiteral<RemoteEventDispatcher<DtoLedgerHeaderAndProof>>() { }).toInstance(rmock(RemoteEventDispatcher.class));
 				bind(SystemCounters.class).toInstance(mock(SystemCounters.class));
 				bind(Ledger.class).toInstance(ledger);
 				bind(VerifiedValidatorSetSender.class).toInstance(mock(VerifiedValidatorSetSender.class));
 				bind(InvalidValidatorSetSender.class).toInstance(mock(InvalidValidatorSetSender.class));
-				bind(StateSyncNetworkSender.class).toInstance(mock(StateSyncNetworkSender.class));
 				bind(SyncTimeoutScheduler.class).toInstance(mock(SyncTimeoutScheduler.class));
 				bind(new TypeLiteral<Comparator<AccumulatorState>>() { }).toInstance(TypedMocks.rmock(Comparator.class));
 				bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(200);

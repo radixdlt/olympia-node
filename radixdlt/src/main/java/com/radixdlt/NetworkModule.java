@@ -18,6 +18,7 @@
 package com.radixdlt;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
@@ -27,14 +28,17 @@ import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVertic
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.ProceedToViewSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
+import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.environment.rx.RemoteEvent;
+import com.radixdlt.ledger.DtoCommandsAndProof;
+import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.mempool.MempoolNetworkRx;
 import com.radixdlt.mempool.MempoolNetworkTx;
 import com.radixdlt.middleware2.network.MessageCentralBFTNetwork;
 import com.radixdlt.middleware2.network.MessageCentralLedgerSync;
 import com.radixdlt.middleware2.network.MessageCentralValidatorSync;
 import com.radixdlt.middleware2.network.SimpleMempoolNetwork;
-import com.radixdlt.sync.StateSyncNetworkRx;
-import com.radixdlt.sync.StateSyncNetworkSender;
+import io.reactivex.rxjava3.core.Observable;
 
 /**
  * Network related module
@@ -62,9 +66,25 @@ public final class NetworkModule extends AbstractModule {
 		bind(ProposalBroadcaster.class).to(MessageCentralBFTNetwork.class);
 		bind(ProceedToViewSender.class).to(MessageCentralBFTNetwork.class);
 		bind(BFTEventsRx.class).to(MessageCentralBFTNetwork.class);
+	}
 
-		// Ledger Sync messages
-		bind(StateSyncNetworkSender.class).to(MessageCentralLedgerSync.class).in(Scopes.SINGLETON);
-		bind(StateSyncNetworkRx.class).to(MessageCentralLedgerSync.class).in(Scopes.SINGLETON);
+	@Provides
+	private RemoteEventDispatcher<DtoLedgerHeaderAndProof> syncRequestDispatcher(MessageCentralLedgerSync messageCentralLedgerSync) {
+		return messageCentralLedgerSync.syncRequestDispatcher();
+	}
+
+	@Provides
+	private RemoteEventDispatcher<DtoCommandsAndProof> syncResponseDispatcher(MessageCentralLedgerSync messageCentralLedgerSync) {
+		return messageCentralLedgerSync.syncResponseDispatcher();
+	}
+
+	@Provides
+	private Observable<RemoteEvent<DtoCommandsAndProof>> syncResponses(MessageCentralLedgerSync messageCentralLedgerSync) {
+		return messageCentralLedgerSync.syncResponses();
+	}
+
+	@Provides
+	private Observable<RemoteEvent<DtoLedgerHeaderAndProof>> syncRequests(MessageCentralLedgerSync messageCentralLedgerSync) {
+		return messageCentralLedgerSync.syncRequests();
 	}
 }

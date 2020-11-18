@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus.bft;
 
+import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -37,12 +38,12 @@ import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
 
 import java.util.List;
@@ -64,7 +65,7 @@ public class VertexStoreTest {
 	private VertexStore sut;
 	private Ledger ledger;
 	private VertexStoreEventSender vertexStoreEventSender;
-	private BFTUpdateSender bftUpdateSender;
+	private EventDispatcher<BFTUpdate> bftUpdateSender;
 	private SystemCounters counters;
 	private Hasher hasher = Sha256Hasher.withDefaultSerialization();
 
@@ -85,7 +86,7 @@ public class VertexStoreTest {
 
 		this.vertexStoreEventSender = mock(VertexStoreEventSender.class);
 		this.counters = new SystemCountersImpl();
-		this.bftUpdateSender = mock(BFTUpdateSender.class);
+		this.bftUpdateSender = rmock(EventDispatcher.class);
 
 		this.genesisHash = HashUtils.zero256();
 		this.genesisVertex = new VerifiedVertex(UnverifiedVertex.createGenesis(MOCKED_HEADER), genesisHash);
@@ -196,9 +197,9 @@ public class VertexStoreTest {
 		sut.rebuild(vertices.get(0), vertices.get(1).getQC(), vertices.get(3).getQC(), vertices.stream().skip(1).collect(Collectors.toList()));
 
 		// Assert
-		verify(bftUpdateSender, times(1)).sendBFTUpdate(argThat(u -> u.getInsertedVertex().equals(vertices.get(0))));
-		verify(bftUpdateSender, times(1)).sendBFTUpdate(argThat(u -> u.getInsertedVertex().equals(vertices.get(1))));
-		verify(bftUpdateSender, times(1)).sendBFTUpdate(argThat(u -> u.getInsertedVertex().equals(vertices.get(2))));
-		verify(bftUpdateSender, times(1)).sendBFTUpdate(argThat(u -> u.getInsertedVertex().equals(vertices.get(3))));
+		verify(bftUpdateSender, times(1)).dispatch(argThat(u -> u.getInsertedVertex().equals(vertices.get(0))));
+		verify(bftUpdateSender, times(1)).dispatch(argThat(u -> u.getInsertedVertex().equals(vertices.get(1))));
+		verify(bftUpdateSender, times(1)).dispatch(argThat(u -> u.getInsertedVertex().equals(vertices.get(2))));
+		verify(bftUpdateSender, times(1)).dispatch(argThat(u -> u.getInsertedVertex().equals(vertices.get(3))));
 	}
 }

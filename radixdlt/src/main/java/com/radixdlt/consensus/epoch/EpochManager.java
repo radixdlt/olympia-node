@@ -18,12 +18,12 @@
 package com.radixdlt.consensus.epoch;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.sync.BFTSyncRequestTimeoutProcessor;
 import com.radixdlt.consensus.sync.EmptyBFTSyncResponseProcessor;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Timeout;
@@ -32,7 +32,6 @@ import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.BFTSyncResponseProcessor;
 import com.radixdlt.consensus.bft.BFTUpdate;
-import com.radixdlt.consensus.bft.BFTUpdateProcessor;
 import com.radixdlt.consensus.bft.BFTSyncRequestProcessor;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.Vote;
@@ -50,10 +49,10 @@ import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
-import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdate;
@@ -66,6 +65,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import javax.annotation.concurrent.NotThreadSafe;
 import javax.inject.Inject;
 
@@ -76,7 +76,7 @@ import org.apache.logging.log4j.Logger;
  * Manages Epochs and the BFT instance (which is mostly epoch agnostic) associated with each epoch
  */
 @NotThreadSafe
-public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncRequestTimeoutProcessor, BFTUpdateProcessor {
+public final class EpochManager implements BFTSyncRequestProcessor {
 	/**
 	 * A sender of GetEpoch RPC requests/responses
 	 */
@@ -113,20 +113,19 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 	private final LocalTimeoutSender localTimeoutSender;
 	private final Map<Long, List<ConsensusEvent>> queuedEvents;
 	private final BFTFactory bftFactory;
-	private final EventProcessor<EpochView> epochViewEventProcessor;
-	private final EventProcessor<Timeout> timeoutEventProcessor;
-	private final SyncLedgerRequestSender syncRequestSender;
+	private final EventDispatcher<EpochView> epochViewEventDispatcher;
+	private final EventDispatcher<Timeout> timeoutEventDispatcher;
+	private final EventDispatcher<LocalSyncRequest> localSyncRequestProcessor;
 
 	private EpochChange currentEpoch;
 	private int numQueuedConsensusEvents = 0;
 
 	private BFTSyncResponseProcessor syncBFTResponseProcessor;
-	private BFTUpdateProcessor syncBFTUpdateProcessor;
-	private BFTSyncRequestTimeoutProcessor syncRequestTimeoutProcessor;
+	private EventProcessor<LocalGetVerticesRequest> syncTimeoutProcessor;
 	private LedgerUpdateProcessor<LedgerUpdate> syncLedgerUpdateProcessor;
 	private BFTSyncRequestProcessor syncRequestProcessor;
 	private BFTEventProcessor bftEventProcessor;
-
+	private Set<EventProcessor<BFTUpdate>> bftUpdateProcessors;
 
 	@Inject
 	public EpochManager(
@@ -134,10 +133,10 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 		BFTEventProcessor initialBFTEventProcessor,
 		BFTSyncRequestProcessor initialSyncRequestProcessor,
 		BFTSync initialBFTSync,
+		Set<EventProcessor<BFTUpdate>> initialBFTUpdateProcessors,
 		EpochChange initialEpoch,
 		SyncEpochsRPCSender epochsRPCSender,
 		LocalTimeoutSender localTimeoutSender,
-		SyncLedgerRequestSender syncRequestSender,
 		PacemakerFactory pacemakerFactory,
 		VertexStoreFactory vertexStoreFactory,
 		BFTSyncFactory bftSyncFactory,
@@ -145,29 +144,29 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 		ProposerElectionFactory proposerElectionFactory,
 		BFTFactory bftFactory,
 		SystemCounters counters,
-		EventProcessor<EpochView> epochViewEventProcessor,
-		EventProcessor<Timeout> timeoutEventProcessor
+		EventDispatcher<EpochView> epochViewEventDispatcher,
+		EventDispatcher<Timeout> timeoutEventDispatcher,
+		EventDispatcher<LocalSyncRequest> localSyncRequestProcessor
 	) {
 		if (!initialEpoch.getBFTConfiguration().getValidatorSet().containsNode(self)) {
 			this.bftEventProcessor =  EmptyBFTEventProcessor.INSTANCE;
 			this.syncBFTResponseProcessor = EmptyBFTSyncResponseProcessor.INSTANCE;
 			this.syncRequestProcessor = req -> { };
 			this.syncLedgerUpdateProcessor = update -> { };
-			this.syncBFTUpdateProcessor = update -> { };
-			this.syncRequestTimeoutProcessor = timeout -> { };
+			this.syncTimeoutProcessor = timeout -> { };
 		} else {
 			this.bftEventProcessor = Objects.requireNonNull(initialBFTEventProcessor);
 			this.syncBFTResponseProcessor = initialBFTSync;
-			this.syncBFTUpdateProcessor = initialBFTSync;
 			this.syncLedgerUpdateProcessor = initialBFTSync;
-			this.syncRequestTimeoutProcessor = initialBFTSync;
+			this.syncTimeoutProcessor = initialBFTSync::processGetVerticesLocalTimeout;
 			this.syncRequestProcessor = initialSyncRequestProcessor;
 		}
 
+		this.bftUpdateProcessors = initialBFTUpdateProcessors;
 		this.currentEpoch = Objects.requireNonNull(initialEpoch);
 		this.self = Objects.requireNonNull(self);
 		this.epochsRPCSender = Objects.requireNonNull(epochsRPCSender);
-		this.syncRequestSender = Objects.requireNonNull(syncRequestSender);
+		this.localSyncRequestProcessor = Objects.requireNonNull(localSyncRequestProcessor);
 		this.localTimeoutSender = Objects.requireNonNull(localTimeoutSender);
 		this.pacemakerFactory = Objects.requireNonNull(pacemakerFactory);
 		this.vertexStoreFactory = Objects.requireNonNull(vertexStoreFactory);
@@ -176,8 +175,8 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 		this.proposerElectionFactory = Objects.requireNonNull(proposerElectionFactory);
 		this.bftFactory = bftFactory;
 		this.counters = Objects.requireNonNull(counters);
-		this.epochViewEventProcessor = Objects.requireNonNull(epochViewEventProcessor);
-		this.timeoutEventProcessor = Objects.requireNonNull(timeoutEventProcessor);
+		this.epochViewEventDispatcher = Objects.requireNonNull(epochViewEventDispatcher);
+		this.timeoutEventDispatcher = Objects.requireNonNull(timeoutEventDispatcher);
 		this.queuedEvents = new HashMap<>();
 	}
 
@@ -190,8 +189,7 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 			this.syncBFTResponseProcessor = EmptyBFTSyncResponseProcessor.INSTANCE;
 			this.syncRequestProcessor = req -> { };
 			this.syncLedgerUpdateProcessor = update -> { };
-			this.syncBFTUpdateProcessor = update -> { };
-			this.syncRequestTimeoutProcessor = timeout -> { };
+			this.syncTimeoutProcessor = timeout -> { };
 			return;
 		}
 
@@ -208,24 +206,22 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 		PacemakerInfoSender infoSender = new PacemakerInfoSender() {
 			@Override
 			public void sendCurrentView(View view) {
-				epochViewEventProcessor.processEvent(EpochView.of(nextEpoch, view));
+				epochViewEventDispatcher.dispatch(EpochView.of(nextEpoch, view));
 			}
 
 			@Override
 			public void sendTimeoutProcessed(View view) {
 				BFTNode leader = proposerElection.getProposer(view);
-				log.warn("LOCAL_TIMEOUT: Processed Epoch {} View {} Leader: {}", nextEpoch, view, leader);
 				Timeout timeout = new Timeout(EpochView.of(nextEpoch, view), leader);
-				timeoutEventProcessor.processEvent(timeout);
+				timeoutEventDispatcher.dispatch(timeout);
 			}
 		};
 		final Pacemaker pacemaker = pacemakerFactory.create(validatorSet, vertexStore, proposerElection, timeoutSender, infoSender);
 		final BFTSync bftSync = bftSyncFactory.create(vertexStore, pacemaker);
 
 		this.syncBFTResponseProcessor = bftSync;
-		this.syncBFTUpdateProcessor = bftSync;
 		this.syncLedgerUpdateProcessor = bftSync;
-		this.syncRequestTimeoutProcessor = bftSync;
+		this.syncTimeoutProcessor = bftSync::processGetVerticesLocalTimeout;
 
 		this.syncRequestProcessor = bftSyncRequestProcessorFactory.create(vertexStore);
 
@@ -237,6 +233,8 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 			proposerElection,
 			validatorSet
 		);
+
+		this.bftUpdateProcessors = ImmutableSet.of(bftSync::processBFTUpdate, bftEventProcessor::processBFTUpdate);
 	}
 
 	public void start() {
@@ -342,7 +340,7 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 
 		final VerifiedLedgerHeaderAndProof ancestor = response.getEpochProof();
 		if (ancestor.getEpoch() >= this.currentEpoch()) {
-			syncRequestSender.sendLocalSyncRequest(new LocalSyncRequest(ancestor, ImmutableList.of(response.getAuthor())));
+			localSyncRequestProcessor.dispatch(new LocalSyncRequest(ancestor, ImmutableList.of(response.getAuthor())));
 		} else {
 			if (ancestor.getEpoch() + 1 < this.currentEpoch()) {
 				log.info("Ignoring old epoch {} current {}", response, this.currentEpoch);
@@ -397,11 +395,8 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 		bftEventProcessor.processLocalTimeout(localTimeout.getView());
 	}
 
-
-	@Override
 	public void processBFTUpdate(BFTUpdate update) {
-		bftEventProcessor.processBFTUpdate(update);
-		syncBFTUpdateProcessor.processBFTUpdate(update);
+		bftUpdateProcessors.forEach(p -> p.process(update));
 	}
 
 	@Override
@@ -409,9 +404,8 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 		syncRequestProcessor.processGetVerticesRequest(request);
 	}
 
-	@Override
 	public void processGetVerticesLocalTimeout(LocalGetVerticesRequest request) {
-		syncRequestTimeoutProcessor.processGetVerticesLocalTimeout(request);
+		syncTimeoutProcessor.process(request);
 	}
 
 	public void processGetVerticesErrorResponse(GetVerticesErrorResponse response) {

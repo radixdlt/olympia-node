@@ -24,6 +24,7 @@ import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
@@ -39,7 +40,6 @@ import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker.PacemakerInfo
 import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemakerFactory;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.epoch.EpochManager;
@@ -53,9 +53,8 @@ import com.radixdlt.consensus.liveness.ProceedToViewSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
-import com.radixdlt.consensus.sync.BFTSync.BFTSyncTimeoutScheduler;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
-import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
+import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.sync.BFTSync;
@@ -63,10 +62,13 @@ import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.network.TimeSupplier;
 
 import com.radixdlt.store.LastEpochProof;
+import com.radixdlt.sync.LocalSyncRequest;
 import java.util.Comparator;
 import java.util.Random;
 
@@ -82,28 +84,38 @@ public class EpochsConsensusModule extends AbstractModule {
 	}
 
 	@Provides
+	private EventProcessor<BFTUpdate> bftUpdateProcessor(EpochManager epochManager) {
+		return epochManager::processBFTUpdate;
+	}
+
+	@Provides
+	private EventProcessor<LocalGetVerticesRequest> bftSyncTimeoutProcessor(EpochManager epochManager) {
+		return epochManager::processGetVerticesLocalTimeout;
+	}
+
+	@Provides
 	private PacemakerTimeoutSender initialTimeoutSender(LocalTimeoutSender localTimeoutSender, EpochChange initialEpoch) {
 		return (view, ms) -> localTimeoutSender.scheduleTimeout(new LocalTimeout(initialEpoch.getEpoch(), view), ms);
 	}
 
 	@Provides
 	public PacemakerInfoSender pacemakerInfoSender(
-		EventProcessor<Timeout> timeoutEventProcessor,
-		EventProcessor<EpochView> epochViewEventProcessor,
+		EventDispatcher<Timeout> timeoutEventDispatcher,
+		EventDispatcher<EpochView> epochViewEventDispatcher,
 		EpochChange initialEpoch,
 		ProposerElection proposerElection
 	) {
 		return new PacemakerInfoSender() {
 			@Override
 			public void sendCurrentView(View view) {
-				epochViewEventProcessor.processEvent(EpochView.of(initialEpoch.getEpoch(), view));
+				epochViewEventDispatcher.dispatch(EpochView.of(initialEpoch.getEpoch(), view));
 			}
 
 			@Override
 			public void sendTimeoutProcessed(View view) {
 				BFTNode leader = proposerElection.getProposer(view);
 				Timeout timeout = new Timeout(EpochView.of(initialEpoch.getEpoch(), view), leader);
-				timeoutEventProcessor.processEvent(timeout);
+				timeoutEventDispatcher.dispatch(timeout);
 			}
 		};
 	}
@@ -165,8 +177,8 @@ public class EpochsConsensusModule extends AbstractModule {
 	@Provides
 	private BFTSyncFactory bftSyncFactory(
 		SyncVerticesRequestSender requestSender,
-		SyncLedgerRequestSender syncLedgerRequestSender,
-		BFTSyncTimeoutScheduler timeoutScheduler,
+		EventDispatcher<LocalSyncRequest> syncLedgerRequestSender,
+		ScheduledEventDispatcher<LocalGetVerticesRequest> timeoutDispatcher,
 		BFTConfiguration configuration,
 		SystemCounters counters,
 		Random random,
@@ -181,7 +193,7 @@ public class EpochsConsensusModule extends AbstractModule {
 				requestSender.sendGetVerticesRequest(node, request);
 			},
 			syncLedgerRequestSender,
-			timeoutScheduler,
+			timeoutDispatcher,
 			configuration.getGenesisHeader(),
 			random,
 			bftSyncPatienceMillis
@@ -190,7 +202,7 @@ public class EpochsConsensusModule extends AbstractModule {
 
 	@Provides
 	private VertexStoreFactory vertexStoreFactory(
-		BFTUpdateSender updateSender,
+		EventDispatcher<BFTUpdate> updateSender,
 		SystemCounters counters,
 		Ledger ledger,
 		VertexStoreEventSender vertexStoreEventSender

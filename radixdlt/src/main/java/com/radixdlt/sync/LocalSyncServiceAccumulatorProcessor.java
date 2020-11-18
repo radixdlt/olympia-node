@@ -18,11 +18,15 @@
 package com.radixdlt.sync;
 
 import com.google.common.collect.ImmutableList;
+import com.google.inject.Inject;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.LedgerUpdateProcessor;
+import com.radixdlt.store.LastProof;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
@@ -35,7 +39,7 @@ import org.apache.logging.log4j.Logger;
  * Thread-safety must be handled by caller.
  */
 @NotThreadSafe
-public final class LocalSyncServiceAccumulatorProcessor implements LocalSyncServiceProcessor, LedgerUpdateProcessor<LedgerUpdate> {
+public final class LocalSyncServiceAccumulatorProcessor implements LocalSyncServiceProcessor {
 	public static final class SyncInProgress {
 		private final VerifiedLedgerHeaderAndProof targetHeader;
 		private final ImmutableList<BFTNode> targetNodes;
@@ -61,23 +65,24 @@ public final class LocalSyncServiceAccumulatorProcessor implements LocalSyncServ
 
 	private final SyncTimeoutScheduler syncTimeoutScheduler;
 	private final long patienceMilliseconds;
-	private final StateSyncNetworkSender stateSyncNetworkSender;
+	private final RemoteEventDispatcher<DtoLedgerHeaderAndProof> requestDispatcher;
 	private final Comparator<AccumulatorState> accComparator;
 	private VerifiedLedgerHeaderAndProof targetHeader;
 	private VerifiedLedgerHeaderAndProof currentHeader;
 
+	@Inject
 	public LocalSyncServiceAccumulatorProcessor(
-		StateSyncNetworkSender stateSyncNetworkSender,
+		RemoteEventDispatcher<DtoLedgerHeaderAndProof> requestDispatcher,
 		SyncTimeoutScheduler syncTimeoutScheduler,
 		Comparator<AccumulatorState> accComparator,
-		VerifiedLedgerHeaderAndProof current,
-		long patienceMilliseconds
+		@LastProof VerifiedLedgerHeaderAndProof current,
+		@SyncPatienceMillis int patienceMilliseconds
 	) {
 		if (patienceMilliseconds <= 0) {
 			throw new IllegalArgumentException();
 		}
 
-		this.stateSyncNetworkSender = Objects.requireNonNull(stateSyncNetworkSender);
+		this.requestDispatcher = Objects.requireNonNull(requestDispatcher);
 		this.syncTimeoutScheduler = Objects.requireNonNull(syncTimeoutScheduler);
 		this.patienceMilliseconds = patienceMilliseconds;
 		this.accComparator = Objects.requireNonNull(accComparator);
@@ -85,7 +90,6 @@ public final class LocalSyncServiceAccumulatorProcessor implements LocalSyncServ
 		this.targetHeader = current;
 	}
 
-	@Override
 	public void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
 		VerifiedLedgerHeaderAndProof updatedHeader = ledgerUpdate.getTail();
 		if (accComparator.compare(updatedHeader.getAccumulatorState(), this.currentHeader.getAccumulatorState()) > 0) {
@@ -93,9 +97,12 @@ public final class LocalSyncServiceAccumulatorProcessor implements LocalSyncServ
 		}
 	}
 
-	@Override
-	public void processLocalSyncRequest(LocalSyncRequest request) {
-		log.info("SYNC_LOCAL_REQUEST: {}", request);
+	public EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor() {
+		return this::processLocalSyncRequest;
+	}
+
+	private void processLocalSyncRequest(LocalSyncRequest request) {
+		log.info("SYNC_LOCAL_REQUEST: {} current {}", request, this.currentHeader);
 
 		final VerifiedLedgerHeaderAndProof nextTargetHeader = request.getTarget();
 		if (accComparator.compare(nextTargetHeader.getAccumulatorState(), this.targetHeader.getAccumulatorState()) <= 0) {
@@ -119,8 +126,9 @@ public final class LocalSyncServiceAccumulatorProcessor implements LocalSyncServ
 		}
 
 		ImmutableList<BFTNode> targetNodes = syncInProgress.getTargetNodes();
+		// TODO: remove thread local random
 		BFTNode node = targetNodes.get(ThreadLocalRandom.current().nextInt(targetNodes.size()));
-		stateSyncNetworkSender.sendSyncRequest(node, this.currentHeader.toDto());
+		requestDispatcher.dispatch(node, this.currentHeader.toDto());
 		syncTimeoutScheduler.scheduleTimeout(syncInProgress, patienceMilliseconds);
 	}
 }

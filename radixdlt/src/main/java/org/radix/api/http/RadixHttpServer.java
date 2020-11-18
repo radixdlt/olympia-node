@@ -23,7 +23,7 @@ import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
-import com.radixdlt.systeminfo.InMemorySystemInfoManager;
+import com.radixdlt.systeminfo.InMemorySystemInfo;
 import com.google.common.io.CharStreams;
 import com.radixdlt.api.CommittedAtomsRx;
 import com.radixdlt.api.SubmissionErrorsRx;
@@ -95,13 +95,13 @@ public final class RadixHttpServer {
 	private final JSONObject apiSerializedUniverse;
 	private final LocalSystem localSystem;
 	private final Serialization serialization;
-	private final InMemorySystemInfoManager infoStateRunner;
+	private final InMemorySystemInfo inMemorySystemInfo;
 	private final int port;
 	private Undertow server;
 
 	@Inject
 	public RadixHttpServer(
-		InMemorySystemInfoManager infoStateRunner,
+		InMemorySystemInfo inMemorySystemInfo,
 		SubmissionErrorsRx submissionErrorsRx,
 		CommittedAtomsRx committedAtomsRx,
 		Observable<BFTCommittedUpdate> committedUpdates,
@@ -117,7 +117,7 @@ public final class RadixHttpServer {
 		AddressBook addressBook,
 		Hasher hasher
 	) {
-		this.infoStateRunner = Objects.requireNonNull(infoStateRunner);
+		this.inMemorySystemInfo = Objects.requireNonNull(inMemorySystemInfo);
 		this.consensusRunner = Objects.requireNonNull(moduleRunners.get("consensus"));
 		this.universe = Objects.requireNonNull(universe);
 		this.serialization = Objects.requireNonNull(serialization);
@@ -223,7 +223,7 @@ public final class RadixHttpServer {
 
 	private void addTestRoutesTo(RoutingHandler handler) {
 		addGetRoute("/api/vertices/committed", exchange -> {
-			List<VerifiedVertex> vertices = infoStateRunner.getCommittedVertices();
+			List<VerifiedVertex> vertices = inMemorySystemInfo.getCommittedVertices();
 			JSONArray array = new JSONArray();
 			vertices.stream()
 				.map(v -> new JSONObject().put("view", v.getView().number()).put("hash", v.getId().toString()))
@@ -232,7 +232,7 @@ public final class RadixHttpServer {
 		}, handler);
 
 		addGetRoute("/api/vertices/highestqc", exchange -> {
-			QuorumCertificate highestQC = infoStateRunner.getHighestQC();
+			QuorumCertificate highestQC = inMemorySystemInfo.getHighestQC();
 			if (highestQC == null) {
 				JSONObject errorJson = new JSONObject();
 				errorJson.put("error", "no qc");

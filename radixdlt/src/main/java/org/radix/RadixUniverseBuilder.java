@@ -20,6 +20,7 @@ package org.radix;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atommodel.AtomAlreadySignedException;
+import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.TokenPermission;
@@ -175,10 +176,12 @@ public final class RadixUniverseBuilder {
 			genesisAmount
 		);
 		MessageParticle helloUniverseMessage = createHelloMessage(universeAddress);
+		List<SpunParticle> epochParticles = createEpochUpdate();
 
 		Atom genesisAtom = new Atom();
 		genesisAtom.addParticleGroupWith(helloUniverseMessage, Spin.UP);
 		genesisAtom.addParticleGroup(ParticleGroup.of(xrdParticles));
+		genesisAtom.addParticleGroup(ParticleGroup.of(epochParticles));
 		try {
 			genesisAtom.sign(this.universeKey, hasher);
 			if (!genesisAtom.verify(this.universeKey.getPublicKey(), hasher)) {
@@ -238,6 +241,13 @@ public final class RadixUniverseBuilder {
 				XRD_TOKEN_PERMISSIONS
 			)));
 		}
+		return particles.build();
+	}
+
+	private ImmutableList<SpunParticle> createEpochUpdate() {
+		ImmutableList.Builder<SpunParticle> particles = ImmutableList.builder();
+		particles.add(SpunParticle.down(new SystemParticle(0, 0, 0)));
+		particles.add(SpunParticle.up(new SystemParticle(1, 0, 0)));
 		return particles.build();
 	}
 }

@@ -19,31 +19,32 @@ package com.radixdlt;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
-import com.google.inject.Key;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
-import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.Multibinder;
+import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.Ledger;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.ProcessWithSyncRunner;
+import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.epochs.EpochsLocalSyncServiceProcessor;
 import com.radixdlt.epochs.EpochsRemoteSyncResponseProcessor;
 import com.radixdlt.epochs.SyncedEpochSender;
 import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.ledger.DtoCommandsAndProof;
+import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.ledger.LedgerUpdateProcessor;
+import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncTimeoutScheduler;
-import com.radixdlt.sync.RemoteSyncResponseProcessor;
 import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier;
 import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier.InvalidValidatorSetSender;
 import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier.VerifiedValidatorSetSender;
 import com.radixdlt.sync.LocalSyncServiceProcessor;
-import com.radixdlt.sync.StateSyncNetworkSender;
 import com.radixdlt.sync.SyncPatienceMillis;
 import java.util.Comparator;
-import java.util.Set;
 import java.util.function.Function;
 
 /**
@@ -52,22 +53,32 @@ import java.util.function.Function;
 public class EpochsSyncModule extends AbstractModule {
 	@Override
 	public void configure() {
-		bind(Key.get(new TypeLiteral<LocalSyncServiceProcessor>() { })).to(EpochsLocalSyncServiceProcessor.class);
-		bind(Key.get(new TypeLiteral<RemoteSyncResponseProcessor>() { })).to(EpochsRemoteSyncResponseProcessor.class);
-		Multibinder<LedgerUpdateProcessor<EpochsLedgerUpdate>> ledgerUpdateProcessors =
-			Multibinder.newSetBinder(binder(), new TypeLiteral<LedgerUpdateProcessor<EpochsLedgerUpdate>>() { });
-		ledgerUpdateProcessors.addBinding().to(EpochsRemoteSyncResponseProcessor.class);
-		ledgerUpdateProcessors.addBinding().to(EpochsLocalSyncServiceProcessor.class);
-
+		bind(LocalSyncServiceProcessor.class).to(EpochsLocalSyncServiceProcessor.class);
 		bind(EpochsRemoteSyncResponseProcessor.class).in(Scopes.SINGLETON);
 		bind(EpochsLocalSyncServiceProcessor.class).in(Scopes.SINGLETON);
 	}
 
+	@ProvidesIntoSet
+	@ProcessWithSyncRunner
+	private EventProcessor<EpochsLedgerUpdate> epochsLedgerUpdateEventProcessor(EpochsLocalSyncServiceProcessor epochsLocalSyncServiceProcessor) {
+		return epochsLocalSyncServiceProcessor.epochsLedgerUpdateEventProcessor();
+	}
+
+	@ProvidesIntoSet
+	@ProcessWithSyncRunner
+	private EventProcessor<EpochsLedgerUpdate> epochsLedgerUpdateEventProcessor(EpochsRemoteSyncResponseProcessor epochsRemoteSyncResponseProcessor) {
+		return epochsRemoteSyncResponseProcessor.epochsLedgerUpdateEventProcessor();
+	}
+
+
 	@Provides
-	private LedgerUpdateProcessor<EpochsLedgerUpdate> epochsLedgerUpdateProcessor(
-		Set<LedgerUpdateProcessor<EpochsLedgerUpdate>> ledgerUpdateProcessors
-	) {
-		return ledgerUpdate -> ledgerUpdateProcessors.forEach(p -> p.processLedgerUpdate(ledgerUpdate));
+	private EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor(EpochsLocalSyncServiceProcessor epochsLocalSyncServiceProcessor) {
+		return epochsLocalSyncServiceProcessor.localSyncRequestEventProcessor();
+	}
+
+	@Provides
+	private RemoteEventProcessor<DtoCommandsAndProof> syncResponseProcessor(EpochsRemoteSyncResponseProcessor processor) {
+		return processor.syncResponseProcessor();
 	}
 
 	@Provides
@@ -98,13 +109,13 @@ public class EpochsSyncModule extends AbstractModule {
 	@Provides
 	private Function<BFTConfiguration, LocalSyncServiceAccumulatorProcessor> localSyncFactory(
 		Comparator<AccumulatorState> accumulatorComparator,
-		StateSyncNetworkSender stateSyncNetworkSender,
+		RemoteEventDispatcher<DtoLedgerHeaderAndProof> requestDispatcher,
 		SyncTimeoutScheduler syncTimeoutScheduler,
 		@SyncPatienceMillis int syncPatienceMillis
 	) {
 		return config ->
 			new LocalSyncServiceAccumulatorProcessor(
-				stateSyncNetworkSender,
+				requestDispatcher,
 				syncTimeoutScheduler,
 				accumulatorComparator,
 				config.getGenesisHeader(),

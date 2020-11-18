@@ -21,15 +21,15 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochChange;
-import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
-import com.radixdlt.ledger.LedgerUpdateProcessor;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.sync.LocalSyncRequest;
-import com.radixdlt.sync.RemoteSyncResponse;
-import com.radixdlt.sync.RemoteSyncResponseProcessor;
 import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier;
 import java.util.Objects;
 import java.util.Optional;
@@ -43,11 +43,11 @@ import org.apache.logging.log4j.Logger;
  * in mind.
  */
 @NotThreadSafe
-public final class EpochsRemoteSyncResponseProcessor implements RemoteSyncResponseProcessor, LedgerUpdateProcessor<EpochsLedgerUpdate> {
+public final class EpochsRemoteSyncResponseProcessor {
 	private static final Logger log = LogManager.getLogger();
 
 	private final Function<BFTConfiguration, RemoteSyncResponseValidatorSetVerifier> verifierFactory;
-	private final SyncLedgerRequestSender localSyncRequestSender;
+	private final EventDispatcher<LocalSyncRequest> localSyncRequestProcessor;
 
 	private RemoteSyncResponseValidatorSetVerifier currentVerifier;
 	private EpochChange currentEpoch;
@@ -55,21 +55,20 @@ public final class EpochsRemoteSyncResponseProcessor implements RemoteSyncRespon
 
 	@Inject
 	public EpochsRemoteSyncResponseProcessor(
-		SyncLedgerRequestSender localSyncRequestSender,
+		EventDispatcher<LocalSyncRequest> localSyncRequestProcessor,
 		RemoteSyncResponseValidatorSetVerifier initialVerifier,
 		EpochChange initialEpoch,
 		@LastEpochProof VerifiedLedgerHeaderAndProof currentEpochProof,
 		Function<BFTConfiguration, RemoteSyncResponseValidatorSetVerifier> verifierFactory
 	) {
-		this.localSyncRequestSender = Objects.requireNonNull(localSyncRequestSender);
+		this.localSyncRequestProcessor = Objects.requireNonNull(localSyncRequestProcessor);
 		this.currentEpoch = Objects.requireNonNull(initialEpoch);
 		this.currentEpochProof = Objects.requireNonNull(currentEpochProof);
 		this.currentVerifier = Objects.requireNonNull(initialVerifier);
 		this.verifierFactory = Objects.requireNonNull(verifierFactory);
 	}
 
-	@Override
-	public void processLedgerUpdate(EpochsLedgerUpdate ledgerUpdate) {
+	private void processLedgerUpdate(EpochsLedgerUpdate ledgerUpdate) {
 		Optional<EpochChange> maybeEpochChange = ledgerUpdate.getEpochChange();
 		if (maybeEpochChange.isPresent()) {
 			final EpochChange epochChange = maybeEpochChange.get();
@@ -79,11 +78,17 @@ public final class EpochsRemoteSyncResponseProcessor implements RemoteSyncRespon
 		}
 	}
 
-	@Override
-	public void processSyncResponse(RemoteSyncResponse syncResponse) {
-		DtoCommandsAndProof dtoCommandsAndProof = syncResponse.getCommandsAndProof();
+	public EventProcessor<EpochsLedgerUpdate> epochsLedgerUpdateEventProcessor() {
+		return this::processLedgerUpdate;
+	}
+
+	public RemoteEventProcessor<DtoCommandsAndProof> syncResponseProcessor() {
+		return this::processSyncResponse;
+	}
+
+	private void processSyncResponse(BFTNode sender, DtoCommandsAndProof dtoCommandsAndProof) {
 		if (dtoCommandsAndProof.getTail().getLedgerHeader().getEpoch() != currentEpoch.getEpoch()) {
-			log.warn("Response {} is a different epoch from current {}", syncResponse, currentEpoch.getEpoch());
+			log.warn("Response {} is a different epoch from current {}", dtoCommandsAndProof, currentEpoch.getEpoch());
 			return;
 		}
 
@@ -91,7 +96,7 @@ public final class EpochsRemoteSyncResponseProcessor implements RemoteSyncRespon
 			log.info("Received response to next epoch sync current {} next {}", this.currentEpoch, dtoCommandsAndProof);
 			DtoLedgerHeaderAndProof dto = dtoCommandsAndProof.getTail();
 			if (!dto.getLedgerHeader().isEndOfEpoch()) {
-				log.warn("Bad message as sync epoch responses must be end of epochs: {}", syncResponse);
+				log.warn("Bad message as sync epoch responses must be end of epochs: {}", dtoCommandsAndProof);
 				return;
 			}
 
@@ -102,10 +107,8 @@ public final class EpochsRemoteSyncResponseProcessor implements RemoteSyncRespon
 					this.currentEpochProof.toDto(),
 					dto
 				);
-				RemoteSyncResponse mockedResponse = new RemoteSyncResponse(
-					syncResponse.getSender(), mockedDtoCommandsAndProof
-				);
-				currentVerifier.processSyncResponse(mockedResponse);
+
+				currentVerifier.process(sender, mockedDtoCommandsAndProof);
 				return;
 			}
 
@@ -118,11 +121,11 @@ public final class EpochsRemoteSyncResponseProcessor implements RemoteSyncRespon
 				dto.getLedgerHeader(),
 				dto.getSignatures()
 			);
-			LocalSyncRequest localSyncRequest = new LocalSyncRequest(verified, ImmutableList.of(syncResponse.getSender()));
-			localSyncRequestSender.sendLocalSyncRequest(localSyncRequest);
+			LocalSyncRequest localSyncRequest = new LocalSyncRequest(verified, ImmutableList.of(sender));
+			localSyncRequestProcessor.dispatch(localSyncRequest);
 			return;
 		}
 
-		currentVerifier.processSyncResponse(syncResponse);
+		currentVerifier.process(sender, dtoCommandsAndProof);
 	}
 }

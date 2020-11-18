@@ -29,6 +29,7 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
@@ -42,7 +43,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class LocalSyncServiceAccumulatorProcessorTest {
-	private StateSyncNetworkSender stateSyncNetwork;
+	private RemoteEventDispatcher<DtoLedgerHeaderAndProof> requestDispatcher;
 	private LocalSyncServiceAccumulatorProcessor syncServiceProcessor;
 	private SyncTimeoutScheduler syncTimeoutScheduler;
 	private VerifiedLedgerHeaderAndProof currentHeader;
@@ -51,15 +52,15 @@ public class LocalSyncServiceAccumulatorProcessorTest {
 
 	@Before
 	public void setUp() {
-		this.stateSyncNetwork = mock(StateSyncNetworkSender.class);
 		this.syncTimeoutScheduler = mock(SyncTimeoutScheduler.class);
 		this.currentHeader = mock(VerifiedLedgerHeaderAndProof.class);
 		this.currentAccumulatorState = mock(AccumulatorState.class);
 		when(currentHeader.getAccumulatorState()).thenReturn(currentAccumulatorState);
 		when(this.currentHeader.toDto()).thenReturn(mock(DtoLedgerHeaderAndProof.class));
 		this.accumulatorComparator = TypedMocks.rmock(Comparator.class);
+		this.requestDispatcher = TypedMocks.rmock(RemoteEventDispatcher.class);
 		this.syncServiceProcessor = new LocalSyncServiceAccumulatorProcessor(
-			stateSyncNetwork,
+			requestDispatcher,
 			syncTimeoutScheduler,
 			accumulatorComparator,
 			currentHeader,
@@ -76,8 +77,8 @@ public class LocalSyncServiceAccumulatorProcessorTest {
 		when(accumulatorComparator.compare(target, currentAccumulatorState)).thenReturn(0);
 		LocalSyncRequest request = mock(LocalSyncRequest.class);
 		when(request.getTarget()).thenReturn(targetHeader);
-		syncServiceProcessor.processLocalSyncRequest(request);
-		verify(stateSyncNetwork, never()).sendSyncRequest(any(), any());
+		syncServiceProcessor.localSyncRequestEventProcessor().process(request);
+		verify(requestDispatcher, never()).dispatch(any(), any());
 		verify(syncTimeoutScheduler, never()).scheduleTimeout(any(), anyLong());
 	}
 
@@ -91,9 +92,9 @@ public class LocalSyncServiceAccumulatorProcessorTest {
 		when(request.getTarget()).thenReturn(targetHeader);
 		when(request.getTargetNodes()).thenReturn(ImmutableList.of(mock(BFTNode.class)));
 
-		syncServiceProcessor.processLocalSyncRequest(request);
+		syncServiceProcessor.localSyncRequestEventProcessor().process(request);
 
-		verify(stateSyncNetwork, times(1)).sendSyncRequest(any(), any());
+		verify(requestDispatcher, times(1)).dispatch(any(), any());
 		verify(syncTimeoutScheduler, times(1)).scheduleTimeout(any(), anyLong());
 	}
 
@@ -114,12 +115,12 @@ public class LocalSyncServiceAccumulatorProcessorTest {
 		LedgerUpdate ledgerUpdate = mock(LedgerUpdate.class);
 
 		when(ledgerUpdate.getTail()).thenReturn(targetHeader);
-		syncServiceProcessor.processLocalSyncRequest(request);
+		syncServiceProcessor.localSyncRequestEventProcessor().process(request);
 		syncServiceProcessor.processLedgerUpdate(ledgerUpdate);
 		syncServiceProcessor.processSyncTimeout(sync.get());
 
 		// Once only for initial setup
-		verify(stateSyncNetwork, times(1)).sendSyncRequest(any(), any());
+		verify(requestDispatcher, times(1)).dispatch(any(), any());
 		verify(syncTimeoutScheduler, times(1)).scheduleTimeout(any(), anyLong());
 	}
 }

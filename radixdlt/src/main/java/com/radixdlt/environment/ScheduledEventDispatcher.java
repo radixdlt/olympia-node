@@ -15,10 +15,13 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.sync;
+package com.radixdlt.environment;
 
-import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
-
-public interface LocalSyncServiceProcessor {
-	void processSyncTimeout(SyncInProgress timeout);
+/**
+ * Dispatches an event after some given time.
+ *
+ * @param <T> the event class
+ */
+public interface ScheduledEventDispatcher<T> {
+	void dispatch(T t, long milliseconds);
 }

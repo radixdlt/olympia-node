@@ -49,7 +49,6 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
-import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
@@ -57,14 +56,12 @@ import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.deterministic.DeterministicEpochInfo;
 import com.radixdlt.integration.distributed.MockedMempoolModule;
 import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
-import com.radixdlt.environment.deterministic.DeterministicMessageSenderModule;
-import com.radixdlt.environment.deterministic.DeterministicSenderFactory;
+import com.radixdlt.environment.deterministic.DeterministicEnvironmentModule;
+import com.radixdlt.environment.deterministic.ControlledSenderFactory;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.ledger.DtoCommandsAndProof;
-import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.properties.RuntimeProperties;
@@ -72,7 +69,6 @@ import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncTimeoutScheduler;
-import com.radixdlt.sync.StateSyncNetworkSender;
 import com.radixdlt.sync.SyncPatienceMillis;
 import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.schedulers.Timed;
@@ -150,7 +146,7 @@ public class AllNodesDieAndRecoverTest {
 					bind(HashSigner.class).toInstance(ecKeyPair::sign);
 					bind(BFTNode.class).annotatedWith(Self.class).toInstance(self);
 					bindConstant().annotatedWith(Names.named("magic")).to(0);
-					bind(DeterministicSenderFactory.class).toInstance(network::createSender);
+					bind(ControlledSenderFactory.class).toInstance(network::createSender);
 
 					bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(200);
 					bind(Integer.class).annotatedWith(BFTSyncPatienceMillis.class).toInstance(200);
@@ -166,17 +162,7 @@ public class AllNodesDieAndRecoverTest {
 
 					// TODO: Move these into DeterministicSender
 					bind(CommittedAtomSender.class).toInstance(atom -> { });
-					bind(SyncLedgerRequestSender.class).toInstance(request -> { });
 					bind(SyncTimeoutScheduler.class).toInstance((syncInProgress, milliseconds) -> { });
-					bind(StateSyncNetworkSender.class).toInstance(new StateSyncNetworkSender() {
-						@Override
-						public void sendSyncRequest(BFTNode node, DtoLedgerHeaderAndProof currentHeader) {
-						}
-
-						@Override
-						public void sendSyncResponse(BFTNode node, DtoCommandsAndProof commandsAndProof) {
-						}
-					});
 
 					// Checkpoint
 					VerifiedLedgerHeaderAndProof genesisLedgerHeader = VerifiedLedgerHeaderAndProof.genesis(
@@ -200,7 +186,7 @@ public class AllNodesDieAndRecoverTest {
 				}
 			},
 
-			new DeterministicMessageSenderModule(),
+			new DeterministicEnvironmentModule(),
 
 			// Consensus
 			new CryptoModule(),
@@ -243,7 +229,7 @@ public class AllNodesDieAndRecoverTest {
 		for (int i = 0; i < messageCount; i++) {
 			Timed<ControlledMessage> msg = this.network.nextMessage();
 			Injector injector = this.nodes.get(msg.value().channelId().receiverIndex());
-			injector.getInstance(DeterministicEpochsConsensusProcessor.class).handleMessage(msg.value().message());
+			injector.getInstance(DeterministicEpochsConsensusProcessor.class).handleMessage(msg.value().origin(), msg.value().message());
 		}
 	}
 

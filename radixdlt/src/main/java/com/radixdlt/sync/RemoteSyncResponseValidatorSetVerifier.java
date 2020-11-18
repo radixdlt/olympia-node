@@ -17,8 +17,10 @@
 
 package com.radixdlt.sync;
 
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.ValidationState;
+import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import java.util.Objects;
 
@@ -26,8 +28,7 @@ import java.util.Objects;
  * Verifies the signature set of sync remote responses and checks
  * whether the signatures form a quorum based on a validatorSet.
  */
-public final class RemoteSyncResponseValidatorSetVerifier implements RemoteSyncResponseProcessor {
-
+public final class RemoteSyncResponseValidatorSetVerifier implements RemoteEventProcessor<DtoCommandsAndProof> {
 	public interface VerifiedValidatorSetSender {
 		void sendVerified(RemoteSyncResponse remoteSyncResponse);
 	}
@@ -51,19 +52,18 @@ public final class RemoteSyncResponseValidatorSetVerifier implements RemoteSyncR
 	}
 
 	@Override
-	public void processSyncResponse(RemoteSyncResponse syncResponse) {
+	public void process(BFTNode sender, DtoCommandsAndProof dtoCommandsAndProof) {
 		ValidationState validationState = validatorSet.newValidationState();
-		DtoCommandsAndProof commandsAndProof = syncResponse.getCommandsAndProof();
 
-		commandsAndProof.getTail().getSignatures().getSignatures().forEach((node, signature) ->
+		dtoCommandsAndProof.getTail().getSignatures().getSignatures().forEach((node, signature) ->
 			validationState.addSignature(node, signature.timestamp(), signature.signature())
 		);
 
 		if (!validationState.complete()) {
-			invalidValidatorSetSender.sendInvalid(syncResponse);
+			invalidValidatorSetSender.sendInvalid(new RemoteSyncResponse(sender, dtoCommandsAndProof));
 			return;
 		}
 
-		verifiedValidatorSetSender.sendVerified(syncResponse);
+		verifiedValidatorSetSender.sendVerified(new RemoteSyncResponse(sender, dtoCommandsAndProof));
 	}
 }

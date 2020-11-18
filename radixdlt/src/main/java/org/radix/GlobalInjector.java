@@ -29,6 +29,7 @@ import com.radixdlt.ConsensusModule;
 import com.radixdlt.ConsensusRunnerModule;
 import com.radixdlt.ConsensusRxModule;
 import com.radixdlt.CryptoModule;
+import com.radixdlt.DispatcherModule;
 import com.radixdlt.EpochsConsensusModule;
 import com.radixdlt.EpochsSyncModule;
 import com.radixdlt.LedgerCommandGeneratorModule;
@@ -39,6 +40,7 @@ import com.radixdlt.PersistenceModule;
 import com.radixdlt.RadixEngineModule;
 import com.radixdlt.RadixEngineRxModule;
 import com.radixdlt.RadixEngineStoreModule;
+import com.radixdlt.RxEnvironmentModule;
 import com.radixdlt.SyncRunnerModule;
 import com.radixdlt.SyncServiceModule;
 import com.radixdlt.SyncMempoolServiceModule;
@@ -147,6 +149,10 @@ public class GlobalInjector {
 			// System (e.g. time, random)
 			new SystemModule(),
 
+			new RxEnvironmentModule(),
+
+			new DispatcherModule(),
+
 			// Consensus
 			new BFTKeyModule(),
 			new CryptoModule(),
@@ -188,7 +194,7 @@ public class GlobalInjector {
 			new PersistenceModule(),
 
 			// System Info
-			new SystemInfoModule(properties),
+			new SystemInfoModule(),
 			new SystemInfoRxModule(),
 
 			// Network

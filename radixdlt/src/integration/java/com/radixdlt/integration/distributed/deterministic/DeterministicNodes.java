@@ -30,8 +30,8 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.DeterministicMessageProcessor;
-import com.radixdlt.environment.deterministic.DeterministicMessageSenderModule;
-import com.radixdlt.environment.deterministic.DeterministicSenderFactory;
+import com.radixdlt.environment.deterministic.DeterministicEnvironmentModule;
+import com.radixdlt.environment.deterministic.ControlledSenderFactory;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.List;
@@ -46,12 +46,12 @@ public final class DeterministicNodes {
 	private static final Logger log = LogManager.getLogger();
 
 	private final ImmutableList<Injector> nodeInstances;
-	private final DeterministicSenderFactory senderFactory;
+	private final ControlledSenderFactory senderFactory;
 	private final ImmutableBiMap<BFTNode, Integer> nodeLookup;
 
 	public DeterministicNodes(
 		List<BFTNode> nodes,
-		DeterministicSenderFactory senderFactory,
+		ControlledSenderFactory senderFactory,
 		Module baseModule,
 		Module overrideModule
 	) {
@@ -70,10 +70,10 @@ public final class DeterministicNodes {
 			new AbstractModule() {
 				public void configure() {
 					bind(BFTNode.class).annotatedWith(Self.class).toInstance(self);
-					bind(DeterministicSenderFactory.class).toInstance(senderFactory);
+					bind(ControlledSenderFactory.class).toInstance(senderFactory);
 				}
 			},
-			new DeterministicMessageSenderModule(),
+			new DeterministicEnvironmentModule(),
 			baseModule
 		);
 		if (overrideModule != null) {
@@ -94,13 +94,15 @@ public final class DeterministicNodes {
 
 	public void handleMessage(Timed<ControlledMessage> timedNextMsg) {
 		ControlledMessage nextMsg = timedNextMsg.value();
-		int receiver = nextMsg.channelId().receiverIndex();
-		String bftNode = " " + this.nodeLookup.inverse().get(receiver);
+		int senderIndex = nextMsg.channelId().senderIndex();
+		int receiverIndex = nextMsg.channelId().receiverIndex();
+		BFTNode sender = this.nodeLookup.inverse().get(senderIndex);
+		String bftNode = " " + this.nodeLookup.inverse().get(receiverIndex);
 		ThreadContext.put("bftNode", bftNode);
 		try {
 			log.debug("Received message {} at {}", nextMsg, timedNextMsg.time());
-			nodeInstances.get(receiver).getInstance(DeterministicMessageProcessor.class)
-				.handleMessage(nextMsg.message());
+			nodeInstances.get(receiverIndex).getInstance(DeterministicMessageProcessor.class)
+				.handleMessage(sender, nextMsg.message());
 		} finally {
 			ThreadContext.remove("bftNode");
 		}

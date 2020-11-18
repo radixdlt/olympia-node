@@ -21,8 +21,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.google.inject.Provides;
+import com.google.inject.TypeLiteral;
 import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusModule;
+import com.radixdlt.DispatcherModule;
 import com.radixdlt.EpochsConsensusModule;
 import com.radixdlt.LedgerCommandGeneratorModule;
 import com.radixdlt.EpochsLedgerUpdateModule;
@@ -44,6 +46,7 @@ import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.integration.distributed.MockedCryptoModule;
 import com.radixdlt.integration.distributed.deterministic.configuration.EpochNodeWeightMapping;
@@ -74,16 +77,12 @@ import java.util.function.LongFunction;
 import java.util.function.Predicate;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * A deterministic test where each event that occurs in the network
  * is emitted and processed synchronously by the caller.
  */
 public final class DeterministicTest {
-	private static final Logger log = LogManager.getLogger();
-
 	private final DeterministicNodes nodes;
 	private final DeterministicNetwork network;
 
@@ -206,6 +205,7 @@ public final class DeterministicTest {
 			modules.add(new MockedCryptoModule());
 			modules.add(new LedgerLocalMempoolModule(10));
 			modules.add(new DeterministicMempoolModule());
+			modules.add(new DispatcherModule());
 
 			if (ledgerType == LedgerType.MOCKED_LEDGER) {
 				BFTValidatorSet validatorSet = validatorSetMapping.apply(1L);
@@ -218,20 +218,20 @@ public final class DeterministicTest {
 
 					@Provides
 					public PacemakerInfoSender pacemakerInfoSender(
-						EventProcessor<Timeout> timeoutEventProcessor,
-						EventProcessor<EpochView> epochViewEventProcessor,
+						EventDispatcher<Timeout> timeoutEventDispatcher,
+						EventDispatcher<EpochView> epochViewEventDispatcher,
 						ProposerElection proposerElection
 					) {
 						return new PacemakerInfoSender() {
 							@Override
 							public void sendCurrentView(View view) {
-								epochViewEventProcessor.processEvent(EpochView.of(1, view));
+								epochViewEventDispatcher.dispatch(EpochView.of(1, view));
 							}
 
 							@Override
 							public void sendTimeoutProcessed(View view) {
 								BFTNode leader = proposerElection.getProposer(view);
-								timeoutEventProcessor.processEvent(new Timeout(EpochView.of(1, view), leader));
+								timeoutEventDispatcher.dispatch(new Timeout(EpochView.of(1, view), leader));
 							}
 						};
 					}
@@ -251,6 +251,8 @@ public final class DeterministicTest {
 					public void configure() {
 						bind(BFTValidatorSet.class).toInstance(epochToValidatorSetMapping.apply(1L));
 						bind(DeterministicMessageProcessor.class).to(DeterministicEpochsConsensusProcessor.class);
+						bind(new TypeLiteral<EventProcessor<EpochView>>() { }).toInstance(epochView -> { });
+						bind(new TypeLiteral<EventProcessor<Timeout>>() { }).toInstance(t -> { });
 					}
 				});
 				modules.add(new LedgerModule());

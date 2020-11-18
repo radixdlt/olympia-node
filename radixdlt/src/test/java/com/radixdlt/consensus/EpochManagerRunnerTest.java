@@ -70,7 +70,9 @@ public class EpochManagerRunnerTest {
 		EpochManagerRunner consensusRunner = new EpochManagerRunner(
 			ledgerUpdates,
 			bftUpdates,
+			epochManager::processBFTUpdate,
 			syncTimeouts,
+			epochManager::processGetVerticesLocalTimeout,
 			networkRx,
 			pacemakerRx,
 			syncVerticesRPCRx,

@@ -15,11 +15,15 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.sync;
+package com.radixdlt.environment;
+
+import com.radixdlt.consensus.bft.BFTNode;
 
 /**
- * Processes timeouts on a given request
+ * Attempts to dispatch an event to a remote node.
+ *
+ * @param <T> the event class
  */
-public interface BFTSyncRequestTimeoutProcessor {
-	void processGetVerticesLocalTimeout(LocalGetVerticesRequest request);
+public interface RemoteEventDispatcher<T> {
+	void dispatch(BFTNode receiver, T t);
 }

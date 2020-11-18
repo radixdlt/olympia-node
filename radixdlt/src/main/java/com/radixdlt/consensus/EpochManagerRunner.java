@@ -23,6 +23,7 @@ import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
+import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.utils.ThreadFactories;
 
@@ -59,7 +60,9 @@ public final class EpochManagerRunner implements ModuleRunner {
 	public EpochManagerRunner(
 		Observable<EpochsLedgerUpdate> ledgerUpdates,
 		Observable<BFTUpdate> bftUpdates,
+		EventProcessor<BFTUpdate> bftUpdateProcessor,
 		Observable<LocalGetVerticesRequest> bftSyncTimeouts,
+		EventProcessor<LocalGetVerticesRequest> bftSyncTimeoutProcessor,
 		BFTEventsRx networkRx,
 		PacemakerRx pacemakerRx,
 		SyncVerticesRPCRx rpcRx,
@@ -78,10 +81,10 @@ public final class EpochManagerRunner implements ModuleRunner {
 				.doOnNext(epochManager::processLedgerUpdate),
 			bftUpdates
 				.observeOn(singleThreadScheduler)
-				.doOnNext(epochManager::processBFTUpdate),
+				.doOnNext(bftUpdateProcessor::process),
 			bftSyncTimeouts
 				.observeOn(singleThreadScheduler)
-				.doOnNext(epochManager::processGetVerticesLocalTimeout),
+				.doOnNext(bftSyncTimeoutProcessor::process),
 			pacemakerRx.localTimeouts()
 				.observeOn(singleThreadScheduler)
 				.doOnNext(epochManager::processLocalTimeout),

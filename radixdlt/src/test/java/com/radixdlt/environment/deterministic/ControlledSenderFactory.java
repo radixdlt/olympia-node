@@ -18,11 +18,11 @@
 package com.radixdlt.environment.deterministic;
 
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.environment.deterministic.network.DeterministicNetwork.DeterministicSender;
+import com.radixdlt.environment.deterministic.network.ControlledSender;
 
 /**
  * Creates a sender to be used with a deterministic network
  */
-public interface DeterministicSenderFactory {
-	DeterministicSender create(BFTNode node);
+public interface ControlledSenderFactory {
+	ControlledSender create(BFTNode node);
 }

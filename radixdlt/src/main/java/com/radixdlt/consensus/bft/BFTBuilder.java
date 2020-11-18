@@ -91,6 +91,10 @@ public final class BFTBuilder {
 	}
 
 	public BFTEventProcessor build() {
+		if (!validatorSet.containsNode(self)) {
+			return EmptyBFTEventProcessor.INSTANCE;
+		}
+
 		BFTEventReducer reducer = new BFTEventReducer(
 			pacemaker,
 			vertexStore,

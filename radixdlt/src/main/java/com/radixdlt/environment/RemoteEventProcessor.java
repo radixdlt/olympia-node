@@ -15,28 +15,15 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.sync;
+package com.radixdlt.environment;
 
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.ledger.DtoCommandsAndProof;
-import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 
 /**
- * Network interface for state syncing
+ * Processes events from a remote node
+ *
+ * @param <T> the event class
  */
-public interface StateSyncNetworkSender {
-	/**
-	 * Sends a sync request to a peer node
-	 *
-	 * @param node node to send request to
-	 * @param currentHeader this nodes current verified header
-	 */
-	void sendSyncRequest(BFTNode node, DtoLedgerHeaderAndProof currentHeader);
-
-	/**
-	 * Sends a sync response to a peer node
-	 * @param node node to send response to
-	 * @param commandsAndProof list of commands with proof
-	 */
-	void sendSyncResponse(BFTNode node, DtoCommandsAndProof commandsAndProof);
+public interface RemoteEventProcessor<T> {
+	void process(BFTNode sender, T t);
 }

@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus.bft;
 
+import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
@@ -28,11 +29,11 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.VoteData;
-import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
 import org.junit.Before;
 import org.junit.Test;
@@ -42,7 +43,7 @@ public class VertexStoreCreationTest {
 	private HashCode genesisHash;
 	private Ledger ledger;
 	private VertexStoreEventSender vertexStoreEventSender;
-	private BFTUpdateSender bftUpdateSender;
+	private EventDispatcher<BFTUpdate> bftUpdateSender;
 	private SystemCounters counters;
 	private static final LedgerHeader MOCKED_HEADER = LedgerHeader.create(
 		0, View.genesis(), new AccumulatorState(0, HashUtils.zero256()), 0
@@ -55,7 +56,7 @@ public class VertexStoreCreationTest {
 		this.ledger = mock(Ledger.class);
 		this.vertexStoreEventSender = mock(VertexStoreEventSender.class);
 		this.counters = new SystemCountersImpl();
-		this.bftUpdateSender = mock(BFTUpdateSender.class);
+		this.bftUpdateSender = rmock(EventDispatcher.class);
 	}
 
 	@Test

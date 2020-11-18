@@ -39,14 +39,14 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
-import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.store.LastProof;
+import com.radixdlt.sync.LocalSyncRequest;
 import org.junit.Test;
 
 public class LedgerModuleTest {
@@ -57,14 +57,14 @@ public class LedgerModuleTest {
 			bind(VertexStoreFactory.class).toInstance(mock(VertexStoreFactory.class));
 			bind(PacemakerFactory.class).toInstance(mock(PacemakerFactory.class));
 
-			bind(new TypeLiteral<EventProcessor<Timeout>>() { }).toInstance(rmock(EventProcessor.class));
-			bind(new TypeLiteral<EventProcessor<EpochView>>() { }).toInstance(rmock(EventProcessor.class));
+			bind(new TypeLiteral<EventDispatcher<Timeout>>() { }).toInstance(rmock(EventDispatcher.class));
+			bind(new TypeLiteral<EventDispatcher<EpochView>>() { }).toInstance(rmock(EventDispatcher.class));
 
 			bind(ProposerElectionFactory.class).toInstance(mock(ProposerElectionFactory.class));
 			bind(BFTNode.class).annotatedWith(Self.class).toInstance(mock(BFTNode.class));
 			bind(SyncEpochsRPCSender.class).toInstance(mock(SyncEpochsRPCSender.class));
 			bind(LocalTimeoutSender.class).toInstance(mock(LocalTimeoutSender.class));
-			bind(SyncLedgerRequestSender.class).toInstance(mock(SyncLedgerRequestSender.class));
+			bind(new TypeLiteral<EventDispatcher<LocalSyncRequest>>() { }).toInstance(rmock(EventDispatcher.class));
 			bind(Hasher.class).toInstance(mock(Hasher.class));
 
 			bind(Mempool.class).toInstance(mock(Mempool.class));

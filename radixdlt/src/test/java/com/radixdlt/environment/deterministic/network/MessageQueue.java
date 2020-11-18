@@ -86,6 +86,7 @@ public final class MessageQueue {
 	void remove(Predicate<ControlledMessage> filter) {
 		messagesByTime.values().forEach(l -> l.removeIf(filter));
 		messagesByTime.values().removeIf(List::isEmpty);
+		this.minimumMessageTime = minimumKey(this.messagesByTime.keySet());
 	}
 
 	void remove(ControlledMessage message) {
