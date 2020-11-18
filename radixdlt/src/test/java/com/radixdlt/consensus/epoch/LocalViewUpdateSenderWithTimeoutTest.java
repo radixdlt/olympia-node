@@ -62,6 +62,5 @@ public class LocalViewUpdateSenderWithTimeoutTest {
         verify(viewUpdateConsumer, times(1)).accept(viewUpdate);
         verify(pacemakerInfoSender, times(1)).sendCurrentView(View.of(2));
         verify(timeoutSender, times(1)).scheduleTimeout(View.of(2), timeout);
-
     }
 }

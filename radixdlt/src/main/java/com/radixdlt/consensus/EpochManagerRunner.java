@@ -79,11 +79,11 @@ public final class EpochManagerRunner implements ModuleRunner {
 				.observeOn(singleThreadScheduler)
 				.doOnNext(epochManager::processLedgerUpdate),
 			bftUpdates
-					.observeOn(singleThreadScheduler)
-					.doOnNext(epochManager::processBFTUpdate),
+				.observeOn(singleThreadScheduler)
+				.doOnNext(epochManager::processBFTUpdate),
 			bftSyncTimeouts
-					.observeOn(singleThreadScheduler)
-					.doOnNext(epochManager::processGetVerticesLocalTimeout),
+				.observeOn(singleThreadScheduler)
+				.doOnNext(epochManager::processGetVerticesLocalTimeout),
 			localViewUpdates
 				.observeOn(singleThreadScheduler)
 				.doOnNext(epochManager::processLocalViewUpdate),
@@ -176,4 +176,3 @@ public final class EpochManagerRunner implements ModuleRunner {
 		}
 	}
 }
-

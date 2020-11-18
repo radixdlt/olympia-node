@@ -423,4 +423,3 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 		}
 	}
 }
-

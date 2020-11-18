@@ -177,4 +177,3 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		this.pacemaker.processQC(this.vertexStore.highQC());
 	}
 }
-

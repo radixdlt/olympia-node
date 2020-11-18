@@ -309,4 +309,3 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		return true;
 	}
 }
-
