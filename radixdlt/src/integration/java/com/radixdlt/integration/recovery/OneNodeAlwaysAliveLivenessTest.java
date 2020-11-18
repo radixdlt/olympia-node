@@ -43,6 +43,7 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.integration.distributed.deterministic.NodeEvents;
+import com.radixdlt.integration.distributed.deterministic.NodeEventsModule;
 import com.radixdlt.integration.distributed.deterministic.SafetyCheckerModule;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.recovery.ModuleForRecoveryTests;
@@ -117,7 +118,8 @@ public class OneNodeAlwaysAliveLivenessTest {
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
 				}
 			},
-			new SafetyCheckerModule()
+			new SafetyCheckerModule(),
+			new NodeEventsModule()
 		).injectMembers(this);
 
 		this.nodeCreators = nodeKeys.stream()
