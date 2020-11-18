@@ -17,8 +17,6 @@
 
 package com.radixdlt.integration.recovery;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -27,31 +25,34 @@ import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.HashSigner;
+import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.FormedQC;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.epoch.EpochView;
+import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.deterministic.ControlledSenderFactory;
-import com.radixdlt.environment.deterministic.DeterministicEpochInfo;
 import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
-import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.integration.distributed.deterministic.NodeEvents;
 import com.radixdlt.integration.distributed.deterministic.SafetyCheckerModule;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.recovery.ModuleForRecoveryTests;
 import com.radixdlt.statecomputer.EpochCeilingView;
+import com.radixdlt.sync.LocalSyncRequest;
+import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -75,7 +76,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 	@Parameters
 	public static Collection<Object[]> numNodes() {
 		return List.of(new Object[][] {
-			{4}
+			{5}
 		});
 	}
 
@@ -90,26 +91,41 @@ public class OneNodeAlwaysAliveSafetyTest {
 	@Inject
 	private NodeEvents nodeEvents;
 
+	private int lastNodeToCommit;
+
 	public OneNodeAlwaysAliveSafetyTest(int numNodes) {
-		this.nodeKeys = Stream.generate(ECKeyPair::generateNew).limit(numNodes).collect(Collectors.toList());
+		this.nodeKeys = Stream.generate(ECKeyPair::generateNew).limit(numNodes)
+			.sorted(Comparator.comparing(n -> n.getPublicKey().euid())) // Sort this so that it matches order of proposers
+			.collect(Collectors.toList());
 	}
 
 	@Before
 	public void setup() {
-		this.network = new DeterministicNetwork(
-			nodeKeys.stream().map(k -> BFTNode.create(k.getPublicKey())).collect(Collectors.toList()),
-			MessageSelector.firstSelector(),
-			MessageMutator.nothing()
-		);
-
 		List<BFTNode> allNodes = nodeKeys.stream()
 			.map(k -> BFTNode.create(k.getPublicKey())).collect(Collectors.toList());
+
+		this.network = new DeterministicNetwork(allNodes,
+			MessageSelector.firstSelector(),
+			(message, queue) -> message.message() instanceof GetVerticesRequest
+				|| message.message() instanceof LocalSyncRequest
+		);
 
 		Guice.createInjector(
 			new AbstractModule() {
 				@Override
 				protected void configure() {
-					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
+					bind(new TypeLiteral<List<BFTNode>>() {
+					}).toInstance(allNodes);
+				}
+
+				@ProvidesIntoSet
+				public Pair<Class<?>, BiConsumer<BFTNode, Object>> updateChecker() {
+					return Pair.of(FormedQC.class, (node, update) -> {
+						FormedQC formedQC = (FormedQC) update;
+						if (formedQC.qc().getCommittedAndLedgerStateProof().isPresent()) {
+							lastNodeToCommit = network.lookup(node);
+						}
+					});
 				}
 			},
 			new SafetyCheckerModule()
@@ -122,7 +138,6 @@ public class OneNodeAlwaysAliveSafetyTest {
 		for (Supplier<Injector> nodeCreator : nodeCreators) {
 			this.nodes.add(nodeCreator.get());
 		}
-		this.nodes.forEach(i -> i.getInstance(DeterministicEpochsConsensusProcessor.class).start());
 	}
 
 	private Injector createRunner(ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
@@ -136,6 +151,12 @@ public class OneNodeAlwaysAliveSafetyTest {
 				@ProcessOnDispatch
 				private EventProcessor<BFTCommittedUpdate> test(@Self BFTNode node) {
 					return nodeEvents.processor(node, BFTCommittedUpdate.class);
+				}
+
+				@ProvidesIntoSet
+				@ProcessOnDispatch
+				private EventProcessor<FormedQC> formedQCEventProcessor(@Self BFTNode node) {
+					return nodeEvents.processor(node, FormedQC.class);
 				}
 
 				@Override
@@ -160,8 +181,11 @@ public class OneNodeAlwaysAliveSafetyTest {
 		);
 	}
 
-	private void restartNode(int index) {
+	private void beginNodeRestart(int index) {
 		this.network.dropMessages(m -> m.channelId().receiverIndex() == index);
+	}
+
+	private void restartNode(int index) {
 		Injector injector = nodeCreators.get(index).get();
 		this.nodes.set(index, injector);
 
@@ -174,12 +198,15 @@ public class OneNodeAlwaysAliveSafetyTest {
 		}
 	}
 
-	private void processForCount(int messageCount) {
-		for (int i = 0; i < messageCount; i++) {
+	private void processUntilNextCommittedUpdate() {
+		lastNodeToCommit = -1;
+
+		while (lastNodeToCommit == -1) {
 			Timed<ControlledMessage> msg = this.network.nextMessage();
 			logger.debug("Processing message {}", msg);
 
-			Injector injector = this.nodes.get(msg.value().channelId().receiverIndex());
+			int nodeIndex = msg.value().channelId().receiverIndex();
+			Injector injector = this.nodes.get(nodeIndex);
 			String bftNode = " " + injector.getInstance(Key.get(BFTNode.class, Self.class));
 			ThreadContext.put("bftNode", bftNode);
 			try {
@@ -190,23 +217,36 @@ public class OneNodeAlwaysAliveSafetyTest {
 		}
 	}
 
-	@Test
-	public void all_nodes_except_for_one_need_to_restart_should_be_able_to_reboot_correctly_and_safety_not_broken() {
-		EpochView epochView = this.nodes.get(0).getInstance(DeterministicEpochInfo.class).getCurrentEpochView();
+	private void restartAllNodesExceptTheLastToCommit() {
+		logger.info("Restarting...");
+		for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
+			if (nodeIndex != this.lastNodeToCommit) {
+				beginNodeRestart(nodeIndex);
+			}
+		}
 
-		for (int restart = 0; restart < 10; restart++) {
-			processForCount(2000);
-
-			EpochView nextEpochView = this.nodes.stream().map(i -> i.getInstance(DeterministicEpochInfo.class).getCurrentEpochView())
-				.max(Comparator.naturalOrder()).orElse(new EpochView(0, View.genesis()));
-			assertThat(nextEpochView).isGreaterThan(epochView);
-			epochView = nextEpochView;
-
-			logger.info("Restarting " + restart);
-			for (int nodeIndex = 1; nodeIndex < nodes.size(); nodeIndex++) {
+		for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
+			if (nodeIndex != this.lastNodeToCommit) {
 				restartNode(nodeIndex);
 			}
 		}
 	}
 
+	@Test
+	//@Ignore("Safety broken here.")
+	public void all_nodes_except_for_one_need_to_restart_should_be_able_to_reboot_correctly_and_safety_not_broken() {
+		this.nodes.forEach(i -> i.getInstance(DeterministicEpochsConsensusProcessor.class).start());
+
+		// Drop first proposal so view 2 will be committed
+		this.network.dropMessages(m -> m.message() instanceof Proposal);
+
+		// process until view 2 committed
+		this.processUntilNextCommittedUpdate();
+
+		this.restartAllNodesExceptTheLastToCommit();
+
+		// If nodes restart with correct safety precautions then view 1 should be skipped
+		// otherwise, this will cause failure
+		this.processUntilNextCommittedUpdate();
+	}
 }

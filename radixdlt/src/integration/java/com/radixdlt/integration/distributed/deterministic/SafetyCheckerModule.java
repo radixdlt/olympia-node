@@ -20,6 +20,7 @@ package com.radixdlt.integration.distributed.deterministic;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
@@ -28,7 +29,9 @@ import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
 import com.radixdlt.integration.invariants.SafetyChecker;
+import com.radixdlt.utils.Pair;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -42,21 +45,23 @@ public class SafetyCheckerModule extends AbstractModule {
 	}
 
 	@ProvidesIntoSet
-	public BiConsumer<BFTNode, BFTCommittedUpdate> safetyCheckProcessor(SafetyChecker safetyChecker) {
-		return (node, update) -> {
-			Optional<TestInvariantError> maybeError = safetyChecker.process(node, update);
-			assertThat(maybeError).isEmpty();
-		};
+	public Pair<Class<?>, BiConsumer<BFTNode, Object>> safetyCheckProcessor(SafetyChecker safetyChecker) {
+		return Pair.of(
+			BFTCommittedUpdate.class,
+			(node, o) -> {
+				BFTCommittedUpdate update = (BFTCommittedUpdate) o;
+				Optional<TestInvariantError> maybeError = safetyChecker.process(node, update);
+				assertThat(maybeError).isEmpty();
+			});
 	}
 
 	@Provides
-	public Map<Class<?>, Set<BiConsumer<BFTNode, Object>>> safetyCheckProcessor(Set<BiConsumer<BFTNode, BFTCommittedUpdate>> processors) {
-		return ImmutableMap.of(
-			BFTCommittedUpdate.class, processors.stream().<BiConsumer<BFTNode, Object>>map(c -> (node, o) -> {
-				BFTCommittedUpdate update = (BFTCommittedUpdate) o;
-				c.accept(node, update);
-			})
-				.collect(Collectors.toSet())
-		);
+	public Map<Class<?>, Set<BiConsumer<BFTNode, Object>>> safetyCheckProcessor(Set<Pair<Class<?>, BiConsumer<BFTNode, Object>>> processors) {
+		return processors.stream()
+			.collect(Collectors.groupingBy(Pair::getFirst, Collectors.toSet()))
+			.entrySet()
+			.stream()
+			.collect(ImmutableMap.toImmutableMap(Entry::getKey, e -> e.getValue().stream().map(Pair::getSecond).collect(
+				ImmutableSet.toImmutableSet())));
 	}
 }

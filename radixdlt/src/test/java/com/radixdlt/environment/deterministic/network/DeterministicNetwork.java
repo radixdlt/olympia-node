@@ -124,7 +124,7 @@ public final class DeterministicNetwork {
 		this.messageQueue.dump(out);
 	}
 
-	int lookup(BFTNode node) {
+	public int lookup(BFTNode node) {
 		return this.nodeLookup.get(node);
 	}
 
