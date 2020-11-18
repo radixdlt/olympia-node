@@ -18,3 +18,8 @@ package: build
 .PHONY: publish
 publish: package
 	docker push $(REPO):$(TAG)
+
+
+.PHONY: package-test
+package-test:
+	docker build -t radixcore-test:$(TAG) -f docker/Dockerfile.test .
