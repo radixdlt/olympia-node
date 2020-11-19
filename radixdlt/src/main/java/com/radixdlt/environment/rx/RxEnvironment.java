@@ -21,11 +21,13 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -36,14 +38,17 @@ import java.util.concurrent.TimeUnit;
 public final class RxEnvironment implements Environment {
 	private final ImmutableMap<Class<?>, Subject<?>> subjects;
 	private final ScheduledExecutorService executorService;
+	private final ImmutableMap<Class<?>, RxRemoteDispatcher<?>> remoteDispatchers;
 
 	public RxEnvironment(
 		ImmutableSet<Class<?>> localEventClasses,
-		ScheduledExecutorService executorService
+		ScheduledExecutorService executorService,
+		Set<RxRemoteDispatcher<?>> remoteDispatchers
 	) {
 		this.subjects = localEventClasses.stream()
 			.collect(ImmutableMap.toImmutableMap(c -> c, c -> BehaviorSubject.create().toSerialized()));
 		this.executorService = Objects.requireNonNull(executorService);
+		this.remoteDispatchers = remoteDispatchers.stream().collect(ImmutableMap.toImmutableMap(RxRemoteDispatcher::eventClass, d -> d));
 	}
 
 	private <T> Subject<T> getSubject(Class<T> eventClass) {
@@ -65,6 +70,13 @@ public final class RxEnvironment implements Environment {
 	@Override
 	public <T> ScheduledEventDispatcher<T> getScheduledDispatcher(Class<T> eventClass) {
 		return (e, millis) -> executorService.schedule(() -> getSubject(eventClass).onNext(e), millis, TimeUnit.MILLISECONDS);
+	}
+
+	@Override
+	public <T> RemoteEventDispatcher<T> getRemoteDispatcher(Class<T> eventClass) {
+		@SuppressWarnings("unchecked")
+		final RemoteEventDispatcher<T> dispatcher = (RemoteEventDispatcher<T>) remoteDispatchers.get(eventClass).dispatcher();
+		return dispatcher;
 	}
 
 	public <T> Observable<T> getObservable(Class<T> eventClass) {

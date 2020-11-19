@@ -123,7 +123,6 @@ public final class ControlledSender implements DeterministicSender, Environment 
 		handleMessage(new ControlledMessage(self, this.localChannel, epochsLedgerUpdate, arrivalTime(this.localChannel)));
 	}
 
-
 	@Override
 	public <T> EventDispatcher<T> getDispatcher(Class<T> eventClass) {
 		return e -> handleMessage(new ControlledMessage(self, this.localChannel, e, arrivalTime(this.localChannel)));
@@ -137,7 +136,8 @@ public final class ControlledSender implements DeterministicSender, Environment 
 		};
 	}
 
-	public <T> RemoteEventDispatcher<T> remoteDispatcher(Class<T> eventClass) {
+	@Override
+	public <T> RemoteEventDispatcher<T> getRemoteDispatcher(Class<T> eventClass) {
 		return (node, e) -> {
 			ChannelId channelId = ChannelId.of(this.senderIndex, this.network.lookup(node));
 			handleMessage(new ControlledMessage(self, channelId, e, arrivalTime(channelId)));

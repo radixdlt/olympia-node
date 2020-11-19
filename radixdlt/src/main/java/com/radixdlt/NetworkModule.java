@@ -20,6 +20,7 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
+import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
@@ -31,6 +32,7 @@ import com.radixdlt.consensus.liveness.ProceedToViewSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
+import com.radixdlt.environment.rx.RxRemoteDispatcher;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.mempool.MempoolNetworkRx;
@@ -69,9 +71,9 @@ public final class NetworkModule extends AbstractModule {
 		bind(BFTEventsRx.class).to(MessageCentralBFTNetwork.class);
 	}
 
-	@Provides
-	private RemoteEventDispatcher<Vote> syncRequestDispatcher(MessageCentralBFTNetwork bftNetwork) {
-		return bftNetwork.voteDispatcher();
+	@ProvidesIntoSet
+	private RxRemoteDispatcher<?> syncRequestDispatcher(MessageCentralBFTNetwork bftNetwork) {
+		return RxRemoteDispatcher.create(Vote.class, bftNetwork.voteDispatcher());
 	}
 
 	@Provides

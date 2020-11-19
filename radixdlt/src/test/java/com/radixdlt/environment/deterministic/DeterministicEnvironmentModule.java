@@ -25,7 +25,6 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.Timeout;
-import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
@@ -89,18 +88,13 @@ public class DeterministicEnvironmentModule extends AbstractModule {
 	}
 
 	@Provides
-	RemoteEventDispatcher<Vote> voteDispatcher(ControlledSender controlledSender) {
-		return controlledSender.remoteDispatcher(Vote.class);
-	}
-
-	@Provides
 	RemoteEventDispatcher<DtoLedgerHeaderAndProof> syncRequestDispatcher(ControlledSender controlledSender) {
-		return controlledSender.remoteDispatcher(DtoLedgerHeaderAndProof.class);
+		return controlledSender.getRemoteDispatcher(DtoLedgerHeaderAndProof.class);
 	}
 
 	@Provides
 	RemoteEventDispatcher<DtoCommandsAndProof> syncResponseDispatcher(ControlledSender controlledSender) {
-		return controlledSender.remoteDispatcher(DtoCommandsAndProof.class);
+		return controlledSender.getRemoteDispatcher(DtoCommandsAndProof.class);
 	}
 
 	@Provides

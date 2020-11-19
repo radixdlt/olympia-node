@@ -32,6 +32,7 @@ import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVertic
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
+import com.radixdlt.environment.rx.RxRemoteDispatcher;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.SimulatedNetworkImpl;
 import com.radixdlt.ledger.DtoCommandsAndProof;
@@ -63,8 +64,8 @@ public class NodeNetworkMessagesModule extends AbstractModule {
 	}
 
 	@Provides
-	private RemoteEventDispatcher<Vote> voteDispatcher(SimulatedNetworkImpl network) {
-		return network.remoteEventDispatcher(Vote.class);
+	private RxRemoteDispatcher<Vote> voteDispatcher(SimulatedNetworkImpl network) {
+		return RxRemoteDispatcher.create(Vote.class, network.remoteEventDispatcher(Vote.class));
 	}
 
 	@Provides

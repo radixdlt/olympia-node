@@ -220,7 +220,6 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 			maybeVote.ifPresentOrElse(
 				vote -> {
 					final BFTNode nextLeader = this.proposerElection.getProposer(this.currentView.next());
-					log.trace("Proposal: Sending vote to {}: {}", nextLeader, vote);
 					this.voteDispatcher.dispatch(nextLeader, vote);
 				},
 				() -> {

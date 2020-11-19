@@ -570,14 +570,12 @@ public class SimulationTest {
 					modules.add(new MockedRadixEngineStoreModule());
 				}
 			}
-
 			if (ledgerType.hasEpochs) {
 				modules.add(new EpochsLedgerUpdateModule());
 				modules.add(new EpochsLedgerUpdateRxModule());
 				modules.add(new EpochsConsensusModule()); // constant for now
 				modules.add(new ConsensusRunnerModule());
 			}
-
 			if (ledgerType.hasSync) {
 				modules.add(new AbstractModule() {
 					@Override

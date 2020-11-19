@@ -23,6 +23,7 @@ import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.Timeout;
+import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.FormedQC;
@@ -34,6 +35,7 @@ import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
+import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.sync.LocalSyncRequest;
 import java.util.Set;
@@ -85,7 +87,7 @@ public class DispatcherModule extends AbstractModule {
 		SystemCounters systemCounters
 	) {
 		return formedQC -> {
-			logger.trace("Vote: Formed QC: {}", formedQC.qc());
+			logger.trace("Formed QC: {}", formedQC.qc());
 			systemCounters.increment(CounterType.BFT_VOTE_QUORUMS);
 			processors.forEach(p -> p.process(formedQC));
 		};
@@ -148,5 +150,16 @@ public class DispatcherModule extends AbstractModule {
 				dispatcher.dispatch(commit);
 			};
 		}
+	}
+
+	@Provides
+	private RemoteEventDispatcher<Vote> voteDispatcher(
+		Environment environment
+	) {
+		RemoteEventDispatcher<Vote> dispatcher = environment.getRemoteDispatcher(Vote.class);
+		return (node, vote) -> {
+			logger.trace("Vote sending to {}: {}", node, vote);
+			dispatcher.dispatch(node, vote);
+		};
 	}
 }
