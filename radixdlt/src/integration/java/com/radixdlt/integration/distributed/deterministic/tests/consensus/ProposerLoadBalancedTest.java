@@ -20,6 +20,8 @@ package com.radixdlt.integration.distributed.deterministic.tests.consensus;
 import java.util.List;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
+
+import org.assertj.core.api.Condition;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -73,7 +75,7 @@ public class ProposerLoadBalancedTest {
 			proposalChunk + 1,
 			EpochNodeWeightMapping.repeatingSequence(numNodes, 1, proposalChunk)
 		);
-		assertThat(proposals).containsExactly(1L, proposalChunk);
+		assertThat(proposals).containsExactly(1L, proposalChunk - 1);
 	}
 
 	@Test
@@ -87,7 +89,9 @@ public class ProposerLoadBalancedTest {
 		);
 		assertThat(proposals)
 			.hasSize(numNodes)
-			.allMatch(l -> l == proposalsPerNode);
+			.areAtLeast(numNodes - 1, new Condition<>(l -> l == proposalsPerNode, "has as many proposals as views"))
+			// the last view in the epoch doesn't have a proposal
+			.areAtMost(1, new Condition<>(l -> l == proposalsPerNode - 1, "has one less proposal"));
 	}
 
 	@Test
@@ -101,7 +105,9 @@ public class ProposerLoadBalancedTest {
 		);
 		assertThat(proposals)
 			.hasSize(numNodes)
-			.allMatch(l -> l == proposalsPerNode);
+			.areAtLeast(numNodes - 1, new Condition<>(l -> l == proposalsPerNode, "has as many proposals as views"))
+			// the last view in the epoch doesn't have a proposal
+			.areAtMost(1, new Condition<>(l -> l == proposalsPerNode - 1, "has one less proposal"));
 	}
 
 	@Test
@@ -112,7 +118,7 @@ public class ProposerLoadBalancedTest {
 			1 * 2 * 3 * proposalChunk,
 			EpochNodeWeightMapping.repeatingSequence(3, 1, 2, 3)
 		);
-		assertThat(proposals).containsExactly(proposalChunk, 2 * proposalChunk, 3 * proposalChunk);
+		assertThat(proposals).containsExactly(proposalChunk - 1, 2 * proposalChunk, 3 * proposalChunk);
 	}
 
 	@Test
@@ -125,7 +131,12 @@ public class ProposerLoadBalancedTest {
 			150 * proposalChunk,
 			EpochNodeWeightMapping.computed(numNodes, index -> UInt256.from(index / 50 + 1)) // Weights 1, 1, ..., 2, 2
 		);
-		assertThat(proposals.subList(0, 50)).allMatch(Long.valueOf(proposalChunk)::equals);
+
+		assertThat(proposals.subList(0, 50))
+			.areAtLeast(49, new Condition<>(l -> l == proposalChunk, "has as many proposals as views"))
+			// the last view in the epoch doesn't have a proposal
+			.areAtMost(1, new Condition<>(l -> l == proposalChunk - 1, "has one less proposal"));
+
 		assertThat(proposals.subList(50, 100)).allMatch(Long.valueOf(2 * proposalChunk)::equals);
 	}
 
@@ -151,7 +162,7 @@ public class ProposerLoadBalancedTest {
 			EpochNodeWeightMapping.computed(numNodes, weights::get)
 		);
 		// Correct number of total proposals
-		assertThat(proposals.stream().mapToLong(Long::longValue).sum()).isEqualTo(numProposals);
+		assertThat(proposals.stream().mapToLong(Long::longValue).sum()).isEqualTo(numProposals - 1);
 		// Same as calculated value, +/- 1 (rounding and ordering)
 		for (int i = 0; i < values.length; ++i) {
 			assertThat(proposals.get(i).longValue()).isBetween(values[i] - 1, values[i] + 1);
@@ -177,7 +188,7 @@ public class ProposerLoadBalancedTest {
 			EpochNodeWeightMapping.computed(numNodes, weights::get)
 		);
 		// Correct number of total proposals
-		assertThat(proposals.stream().mapToLong(Long::longValue).sum()).isEqualTo(numProposals);
+		assertThat(proposals.stream().mapToLong(Long::longValue).sum()).isEqualTo(numProposals - 1);
 		// Same as calculated value, +/- 1 (rounding and ordering)
 		for (int i = 0; i < values.length; ++i) {
 			assertThat(proposals.get(i).longValue()).isBetween(values[i] - 1, values[i] + 1);

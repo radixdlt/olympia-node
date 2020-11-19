@@ -68,16 +68,16 @@ public class OneProposalTimeoutResponsiveTest {
 
 	@Test
 	public void when_run_3_correct_nodes_with_1_timeout__then_bft_should_be_responsive() {
-		this.run(3, 50_000, 100);
+		this.run(3, 50_000, 100); // TODO: failing
 	}
 
 	@Test
 	public void when_run_4_correct_nodes_with_1_timeout__then_bft_should_be_responsive() {
-		this.run(4, 50_000, 100);
+		this.run(4, 50_000, 100); // TODO: failing
 	}
 
 	@Test
 	public void when_run_100_correct_nodes_with_1_timeout__then_bft_should_be_responsive() {
-		this.run(4, 10, 3); // TODO: failing (and changed params)
+		this.run(100, 1_000, 100); // TODO: failing
 	}
 }
