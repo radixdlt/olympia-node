@@ -59,6 +59,7 @@ public class DispatcherModule extends AbstractModule {
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<BFTCommittedUpdate>>() { });
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<BFTCommittedUpdate>>() { }, ProcessOnDispatch.class);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<FormedQC>>() { }, ProcessOnDispatch.class);
+		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<Vote>>() { }, ProcessOnDispatch.class);
 	}
 
 	@Provides
@@ -154,11 +155,13 @@ public class DispatcherModule extends AbstractModule {
 
 	@Provides
 	private RemoteEventDispatcher<Vote> voteDispatcher(
+		@ProcessOnDispatch Set<EventProcessor<Vote>> processors,
 		Environment environment
 	) {
 		RemoteEventDispatcher<Vote> dispatcher = environment.getRemoteDispatcher(Vote.class);
 		return (node, vote) -> {
 			logger.trace("Vote sending to {}: {}", node, vote);
+			processors.forEach(e -> e.process(vote));
 			dispatcher.dispatch(node, vote);
 		};
 	}
