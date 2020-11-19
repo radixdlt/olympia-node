@@ -17,16 +17,19 @@
 
 package com.radixdlt.consensus;
 
+import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.statecomputer.ValidatorSetBuilder;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.UInt256;
@@ -45,24 +48,26 @@ public class GenesisValidatorSetFromUniverse implements GenesisValidatorSetProvi
 	public GenesisValidatorSetFromUniverse(
 		int minValidators,
 		int maxValidators,
-		Universe universe
+		Universe universe,
+		RRI nativeToken
 	) {
 		// No deregistering validators in the genesis atoms
 		allParticles(universe, RegisteredValidatorParticle.class, Spin.DOWN)
 			.filter(rvp -> rvp.getNonce() != 0)
 			.findAny()
 			.ifPresent(downRvp -> {
-				throw new IllegalStateException("Unexpected validator deregistration for " + downRvp.getAddress());
+				throw new IllegalStateException("Unexpected deregistration for " + downRvp.getAddress().getPublicKey());
 			});
 
 		// No unstaking in the genesis atoms
 		allParticles(universe, StakedTokensParticle.class, Spin.DOWN)
+			.filter(stp -> nativeToken.equals(stp.getTokDefRef()))
 			.findAny()
 			.ifPresent(stp -> {
 				throw new IllegalStateException(
 					String.format(
 						"Unexpected unstaking by %s for %s of %s",
-						stp.getAddress(), stp.getDelegateAddress(), stp.getAmount()
+						stp.getAddress().getPublicKey(), stp.getDelegateAddress().getPublicKey(), stp.getAmount()
 					)
 				);
 			});
@@ -72,15 +77,18 @@ public class GenesisValidatorSetFromUniverse implements GenesisValidatorSetProvi
 			.collect(ImmutableList.toImmutableList());
 
 		// Check that we have no duplicate registrations (which should not be possible)
-		final var uniqueRegisteredValidators = ImmutableSet.copyOf(registeredValidators);
+		final var uniqueRegisteredValidators = Sets.newHashSet(registeredValidators);
 		if (uniqueRegisteredValidators.size() != registeredValidators.size()) {
 			final var duplicates = Lists.newArrayList(registeredValidators);
-			duplicates.removeAll(uniqueRegisteredValidators);
-			throw new IllegalStateException("Duplicate registrations for nodes: " + duplicates);
+			duplicates.removeIf(uniqueRegisteredValidators::remove);
+			throw new IllegalStateException(
+				"Duplicate registrations for: " + Collections2.transform(duplicates, RadixAddress::getPublicKey)
+			);
 		}
 
 		// Collect up validator keys and staked amounts
 		final ImmutableMap<ECPublicKey, UInt256> stakedAmounts = allParticles(universe, StakedTokensParticle.class, Spin.UP)
+			.filter(stp -> nativeToken.equals(stp.getTokDefRef()))
 			.filter(stp -> registeredValidators.contains(stp.getDelegateAddress()))
 			.collect(ImmutableMap.toImmutableMap(stp -> stp.getDelegateAddress().getPublicKey(), StakedTokensParticle::getAmount, UInt256::add));
 

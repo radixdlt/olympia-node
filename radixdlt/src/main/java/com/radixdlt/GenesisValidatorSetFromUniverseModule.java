@@ -22,6 +22,8 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.GenesisValidatorSetFromUniverse;
 import com.radixdlt.consensus.GenesisValidatorSetProvider;
+import com.radixdlt.fees.NativeToken;
+import com.radixdlt.identifiers.RRI;
 import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.universe.Universe;
@@ -36,8 +38,9 @@ public class GenesisValidatorSetFromUniverseModule extends AbstractModule {
 	private GenesisValidatorSetProvider genesisValidatorSetProvider(
 		@MinValidators int minValidators,
 		@MaxValidators int maxValidators,
-		Universe universe
+		Universe universe,
+		@NativeToken RRI nativeToken
 	) {
-		return new GenesisValidatorSetFromUniverse(minValidators, maxValidators, universe);
+		return new GenesisValidatorSetFromUniverse(minValidators, maxValidators, universe, nativeToken);
 	}
 }
