@@ -40,7 +40,7 @@ import org.junit.Test;
  * Tests to make sure that epoch changes are still smooth even with an epoch dropper.
  */
 public class OneNodeNeverSendEpochResponseTest {
-	private static final int numNodes = 10;
+	private static final int numNodes = 3;
 
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.networkModules(
@@ -48,12 +48,11 @@ public class OneNodeNeverSendEpochResponseTest {
 			NetworkLatencies.fixed(),
 			NetworkDroppers.oneNodePerEpochResponseDropped()
 		)
-		.pacemakerTimeout(5000)
+		.pacemakerTimeout(200)
 		.numNodes(numNodes, 2)
 		.ledgerAndEpochs(View.of(4), goodRandomEpochToNodesMapper())
 		.checkConsensusSafety("safety")
-		.checkConsensusLiveness("liveness", 5000, TimeUnit.MILLISECONDS)
-		.checkConsensusNoTimeouts("noTimeouts")
+		.checkConsensusLiveness("liveness", 10000, TimeUnit.MILLISECONDS)
 		.checkConsensusAllProposalsHaveDirectParents("directParents")
 		.checkLedgerInOrder("ledgerInOrder")
 		.checkLedgerProcessesConsensusCommitted("consensusToLedger")

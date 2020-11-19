@@ -28,6 +28,7 @@ import com.radixdlt.LedgerCommandGeneratorModule;
 import com.radixdlt.EpochsLedgerUpdateModule;
 import com.radixdlt.LedgerLocalMempoolModule;
 import com.radixdlt.LedgerModule;
+import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
@@ -340,11 +341,11 @@ public final class DeterministicTest {
 	public static Predicate<Timed<ControlledMessage>> hasReachedEpochView(EpochView maxEpochView) {
 		return timedMsg -> {
 			ControlledMessage message = timedMsg.value();
-			if (!(message.message() instanceof LocalViewUpdate)) {
+			if (!(message.message() instanceof Proposal)) {
 				return false;
 			}
-			LocalViewUpdate lvu = (LocalViewUpdate) message.message();
-			EpochView nev = EpochView.of(lvu.getEpoch(), lvu.getViewUpdate().getCurrentView());
+			Proposal p = (Proposal) message.message();
+			EpochView nev = EpochView.of(p.getEpoch(), p.getView());
 			return (nev.compareTo(maxEpochView) > 0);
 		};
 	}
@@ -360,11 +361,11 @@ public final class DeterministicTest {
 		final long maxViewNumber = view.previous().number();
 		return timedMsg -> {
 			ControlledMessage message = timedMsg.value();
-			if (!(message.message() instanceof LocalViewUpdate)) {
+			if (!(message.message() instanceof Proposal)) {
 				return false;
 			}
-			LocalViewUpdate lvu = (LocalViewUpdate) message.message();
-			return (lvu.getViewUpdate().getCurrentView().number() > maxViewNumber);
+			Proposal p = (Proposal) message.message();
+			return (p.getView().number() > maxViewNumber);
 		};
 	}
 

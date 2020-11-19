@@ -75,7 +75,7 @@ public class ProposerLoadBalancedTest {
 			proposalChunk + 1,
 			EpochNodeWeightMapping.repeatingSequence(numNodes, 1, proposalChunk)
 		);
-		assertThat(proposals).containsExactly(1L, proposalChunk - 1);
+		assertThat(proposals).containsExactly(1L, proposalChunk);
 	}
 
 	@Test
@@ -118,7 +118,7 @@ public class ProposerLoadBalancedTest {
 			1 * 2 * 3 * proposalChunk,
 			EpochNodeWeightMapping.repeatingSequence(3, 1, 2, 3)
 		);
-		assertThat(proposals).containsExactly(proposalChunk - 1, 2 * proposalChunk, 3 * proposalChunk);
+		assertThat(proposals).containsExactly(proposalChunk, 2 * proposalChunk, 3 * proposalChunk);
 	}
 
 	@Test
@@ -162,7 +162,7 @@ public class ProposerLoadBalancedTest {
 			EpochNodeWeightMapping.computed(numNodes, weights::get)
 		);
 		// Correct number of total proposals
-		assertThat(proposals.stream().mapToLong(Long::longValue).sum()).isEqualTo(numProposals - 1);
+		assertThat(proposals.stream().mapToLong(Long::longValue).sum()).isEqualTo(numProposals);
 		// Same as calculated value, +/- 1 (rounding and ordering)
 		for (int i = 0; i < values.length; ++i) {
 			assertThat(proposals.get(i).longValue()).isBetween(values[i] - 1, values[i] + 1);
@@ -188,7 +188,7 @@ public class ProposerLoadBalancedTest {
 			EpochNodeWeightMapping.computed(numNodes, weights::get)
 		);
 		// Correct number of total proposals
-		assertThat(proposals.stream().mapToLong(Long::longValue).sum()).isEqualTo(numProposals - 1);
+		assertThat(proposals.stream().mapToLong(Long::longValue).sum()).isEqualTo(numProposals);
 		// Same as calculated value, +/- 1 (rounding and ordering)
 		for (int i = 0; i < values.length; ++i) {
 			assertThat(proposals.get(i).longValue()).isBetween(values[i] - 1, values[i] + 1);
