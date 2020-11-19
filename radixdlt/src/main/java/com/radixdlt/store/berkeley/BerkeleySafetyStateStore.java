@@ -32,7 +32,6 @@ import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.Transaction;
 
-import java.nio.ByteBuffer;
 import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -46,7 +45,7 @@ import java.util.Objects;
  *
  * TODO: Prune saved safety state.
  */
-public final class BerkeleySafetyStoreStore implements PersistentSafetyStateStore {
+public final class BerkeleySafetyStateStore implements PersistentSafetyStateStore {
 	private static final String SAFETY_STORE_NAME = "safety_store";
 	private static final Logger logger = LogManager.getLogger();
 
@@ -54,7 +53,7 @@ public final class BerkeleySafetyStoreStore implements PersistentSafetyStateStor
 	private Database safetyStore;
 
 	@Inject
-	public BerkeleySafetyStoreStore(DatabaseEnvironment dbEnv) {
+	public BerkeleySafetyStateStore(DatabaseEnvironment dbEnv) {
 		this.dbEnv = Objects.requireNonNull(dbEnv, "dbEnv is required");
 
 		this.open();
@@ -97,8 +96,8 @@ public final class BerkeleySafetyStoreStore implements PersistentSafetyStateStor
 			OperationStatus status = cursor.getLast(pKey, value, LockMode.DEFAULT);
 			if (status == OperationStatus.SUCCESS) {
 				long lockedView = Longs.fromByteArray(value.getData());
-				long epochFound = ByteBuffer.wrap(pKey.getData()).getLong();
-				long view = ByteBuffer.wrap(pKey.getData()).getLong(Long.BYTES);
+				long epochFound = Longs.fromByteArray(pKey.getData(), 0);
+				long view = Longs.fromByteArray(pKey.getData(), Long.BYTES);
 
 				return Optional.of(Pair.of(epochFound, new SafetyState(View.of(view), View.of(lockedView))));
 			} else {
@@ -115,11 +114,10 @@ public final class BerkeleySafetyStoreStore implements PersistentSafetyStateStor
 		long epoch = vote.getVoteData().getProposed().getLedgerHeader().getEpoch();
 		long view = vote.getView().number();
 		long lockedView = safetyState.getLockedView().number();
-		ByteBuffer keyByteBuffer = ByteBuffer.allocate(Long.BYTES * 2);
-		keyByteBuffer.putLong(0, epoch);
-		keyByteBuffer.putLong(Long.BYTES, view);
-		byte[] keyBytes = keyByteBuffer.array();
 
+		byte[] keyBytes = new byte[Long.BYTES * 2];
+		Longs.copyTo(epoch, keyBytes, 0);
+		Longs.copyTo(view, keyBytes, Long.BYTES);
 		Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);
 		try {
 			DatabaseEntry key = new DatabaseEntry(keyBytes);

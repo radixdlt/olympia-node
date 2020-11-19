@@ -21,12 +21,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
-import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 
@@ -36,7 +34,6 @@ import com.google.inject.Singleton;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.sync.LocalSyncRequest;
 import java.util.LinkedList;
 import java.util.Optional;
 

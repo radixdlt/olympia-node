@@ -25,7 +25,7 @@ import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.LedgerEntryStoreView;
-import com.radixdlt.store.berkeley.BerkeleySafetyStoreStore;
+import com.radixdlt.store.berkeley.BerkeleySafetyStateStore;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import org.radix.database.DatabaseEnvironment;
 
@@ -38,8 +38,8 @@ public class PersistenceModule extends AbstractModule {
 		// TODO: should be singletons?
 		bind(LedgerEntryStore.class).to(BerkeleyLedgerEntryStore.class);
 		bind(LedgerEntryStoreView.class).to(BerkeleyLedgerEntryStore.class);
-		bind(PersistentSafetyStateStore.class).to(BerkeleySafetyStoreStore.class);
-		bind(BerkeleySafetyStoreStore.class).in(Scopes.SINGLETON);
+		bind(PersistentSafetyStateStore.class).to(BerkeleySafetyStateStore.class);
+		bind(BerkeleySafetyStateStore.class).in(Scopes.SINGLETON);
 	}
 
 	@Provides
