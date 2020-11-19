@@ -46,7 +46,6 @@ import java.util.Set;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.message.FormattedMessage;
 
 import java.util.List;
 import java.util.Objects;
@@ -222,10 +221,8 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 					final BFTNode nextLeader = this.proposerElection.getProposer(this.currentView.next());
 					this.voteDispatcher.dispatch(nextLeader, vote);
 				},
-				() -> {
-					this.counters.increment(CounterType.BFT_REJECTED);
-					log.warn(() -> new FormattedMessage("Proposal: Rejected {}", proposedVertex));
-				});
+				() -> this.counters.increment(CounterType.BFT_REJECTED)
+			);
 		});
 	}
 

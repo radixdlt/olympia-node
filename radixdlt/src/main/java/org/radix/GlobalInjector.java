@@ -40,6 +40,7 @@ import com.radixdlt.PersistenceModule;
 import com.radixdlt.RadixEngineModule;
 import com.radixdlt.RadixEngineRxModule;
 import com.radixdlt.RadixEngineStoreModule;
+import com.radixdlt.RecoveryModule;
 import com.radixdlt.RxEnvironmentModule;
 import com.radixdlt.SyncRunnerModule;
 import com.radixdlt.SyncServiceModule;
@@ -192,6 +193,8 @@ public class GlobalInjector {
 			feeModule,
 
 			new PersistenceModule(),
+
+			new RecoveryModule(),
 
 			// System Info
 			new SystemInfoModule(),

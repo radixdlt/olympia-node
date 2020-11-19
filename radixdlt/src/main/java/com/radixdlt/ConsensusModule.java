@@ -19,6 +19,7 @@ package com.radixdlt;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
@@ -87,6 +88,7 @@ public final class ConsensusModule extends AbstractModule {
 
 	@Override
 	public void configure() {
+		bind(SafetyRules.class).in(Scopes.SINGLETON);
 		Multibinder.newSetBinder(binder(), VertexStoreEventSender.class);
 	}
 
@@ -182,7 +184,6 @@ public final class ConsensusModule extends AbstractModule {
 		NextCommandGenerator nextCommandGenerator,
 		TimeSupplier timeSupplier,
 		Hasher hasher,
-		HashSigner signer,
 		ProposalBroadcaster proposalBroadcaster,
 		ProceedToViewSender proceedToViewSender,
 		PacemakerTimeoutSender timeoutSender,
@@ -190,13 +191,12 @@ public final class ConsensusModule extends AbstractModule {
 		@PacemakerTimeout long pacemakerTimeout,
 		@PacemakerRate double pacemakerRate,
 		@PacemakerMaxExponent int pacemakerMaxExponent,
-		PersistentSafetyState persistentSafetyState,
-		RemoteEventDispatcher<Vote> voteDispatcher
+		RemoteEventDispatcher<Vote> voteDispatcher,
+		SafetyRules safetyRules
 	) {
 		PendingVotes pendingVotes = new PendingVotes(hasher);
 		PendingViewTimeouts pendingViewTimeouts = new PendingViewTimeouts();
 		BFTValidatorSet validatorSet = configuration.getValidatorSet();
-		SafetyRules safetyRules = new SafetyRules(self, SafetyState.initialState(), persistentSafetyState, hasher, signer);
 		return new ExponentialTimeoutPacemaker(
 			pacemakerTimeout,
 			pacemakerRate,

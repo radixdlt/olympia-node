@@ -101,6 +101,11 @@ public final class VerifiedVertex {
 
 	@Override
 	public String toString() {
-		return String.format("%s{view=%s id=%s}", this.getClass().getSimpleName(), this.vertex.getView(), this.id);
+		return String.format("%s{view=%s parentView=%s id=%s}",
+			this.getClass().getSimpleName(),
+			this.vertex.getView(),
+			this.vertex.getQC().getProposed().getView(),
+			this.id
+		);
 	}
 }

@@ -30,11 +30,11 @@ public final class SafetyState {
 	private final View lockedView; // the highest 2-chain head
 
 	@Inject
-	protected SafetyState() {
+	public SafetyState() {
 		this(View.genesis(), View.genesis());
 	}
 
-	SafetyState(View lastVotedView, View lockedView) {
+	public SafetyState(View lastVotedView, View lockedView) {
 		this.lastVotedView = Objects.requireNonNull(lastVotedView);
 		this.lockedView = Objects.requireNonNull(lockedView);
 	}

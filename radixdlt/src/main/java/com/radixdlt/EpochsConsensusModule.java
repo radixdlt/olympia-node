@@ -124,7 +124,6 @@ public class EpochsConsensusModule extends AbstractModule {
 		};
 	}
 
-	// TODO: Load from storage
 	@Provides
 	private EpochChange initialEpoch(
 		@LastEpochProof VerifiedLedgerHeaderAndProof proof,

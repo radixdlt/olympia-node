@@ -20,30 +20,40 @@ package com.radixdlt.store.berkeley;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.safety.PersistentSafetyState;
 import com.radixdlt.consensus.safety.SafetyState;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.utils.Longs;
+import com.radixdlt.utils.Pair;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.Environment;
+import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.Transaction;
 
 import java.nio.ByteBuffer;
+import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.database.DatabaseEnvironment;
 
 import java.util.Objects;
 
-@Singleton
+/**
+ * Store which persists state required to preserve the networks safety in case of a
+ * node restart.
+ *
+ * TODO: Prune saved safety state.
+ */
 public final class BerkeleySafetyStore implements PersistentSafetyState {
 	private static final String SAFETY_STORE_NAME = "safety_store";
 	private static final Logger logger = LogManager.getLogger();
 
 	private final DatabaseEnvironment dbEnv;
-	private Database cursors;
+	private Database safetyStore;
 
 	@Inject
 	public BerkeleySafetyStore(DatabaseEnvironment dbEnv) {
@@ -72,13 +82,30 @@ public final class BerkeleySafetyStore implements PersistentSafetyState {
 			// resource is not changed here, the resource is just accessed.
 			@SuppressWarnings("resource")
 			Environment env = this.dbEnv.getEnvironment();
-			this.cursors = env.openDatabase(null, SAFETY_STORE_NAME, primaryConfig);
+			this.safetyStore = env.openDatabase(null, SAFETY_STORE_NAME, primaryConfig);
 		} catch (Exception e) {
 			throw new BerkeleyStoreException("Error while opening database", e);
 		}
 
 		if (System.getProperty("db.check_integrity", "1").equals("1")) {
 			// TODO implement intergrity check
+		}
+	}
+
+	public Optional<Pair<Long, SafetyState>> get() {
+		try (com.sleepycat.je.Cursor cursor = this.safetyStore.openCursor(null, null)) {
+			DatabaseEntry pKey = new DatabaseEntry();
+			DatabaseEntry value = new DatabaseEntry();
+			OperationStatus status = cursor.getLast(pKey, value, LockMode.DEFAULT);
+			if (status == OperationStatus.SUCCESS) {
+				long lockedView = Longs.fromByteArray(value.getData());
+				long epochFound = ByteBuffer.wrap(pKey.getData()).getLong();
+				long view = ByteBuffer.wrap(pKey.getData()).getLong(Long.BYTES);
+
+				return Optional.of(Pair.of(epochFound, new SafetyState(View.of(view), View.of(lockedView))));
+			} else {
+				return Optional.empty();
+			}
 		}
 	}
 
@@ -89,7 +116,7 @@ public final class BerkeleySafetyStore implements PersistentSafetyState {
 		}
 		long epoch = vote.getVoteData().getProposed().getLedgerHeader().getEpoch();
 		long view = vote.getView().number();
-		long lockedView = vote.getVoteData().getProposed().getView().number();
+		long lockedView = safetyState.getLockedView().number();
 		ByteBuffer keyByteBuffer = ByteBuffer.allocate(Long.BYTES * 2);
 		keyByteBuffer.putLong(0, epoch);
 		keyByteBuffer.putLong(Long.BYTES, view);
@@ -100,7 +127,7 @@ public final class BerkeleySafetyStore implements PersistentSafetyState {
 			DatabaseEntry key = new DatabaseEntry(keyBytes);
 			DatabaseEntry data = new DatabaseEntry(Longs.toByteArray(lockedView));
 
-			OperationStatus status = this.cursors.put(transaction, key, data);
+			OperationStatus status = this.safetyStore.put(transaction, key, data);
 			if (status != OperationStatus.SUCCESS) {
 				fail("Database returned status " + status + " for put operation");
 			}

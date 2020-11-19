@@ -25,6 +25,7 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.HighQC;
+import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
@@ -198,7 +199,10 @@ public class SimulationNetwork {
 
 		@Override
 		public Observable<ConsensusEvent> bftEvents() {
-			return myMessages.ofType(ConsensusEvent.class);
+			return Observable.merge(
+				myMessages.ofType(ConsensusEvent.class),
+				remoteEvents(Vote.class).map(RemoteEvent::getEvent)
+			);
 		}
 
 		@Override

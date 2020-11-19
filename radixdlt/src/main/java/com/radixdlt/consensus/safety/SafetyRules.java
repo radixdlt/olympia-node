@@ -18,6 +18,8 @@
 package com.radixdlt.consensus.safety;
 
 import com.google.common.hash.HashCode;
+import com.google.inject.Inject;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.HighQC;
@@ -54,8 +56,9 @@ public final class SafetyRules {
 	private final PersistentSafetyState persistentSafetyState;
 	private SafetyState state;
 
+	@Inject
 	public SafetyRules(
-		BFTNode self,
+		@Self BFTNode self,
 		SafetyState initialState,
 		PersistentSafetyState persistentSafetyState,
 		Hasher hasher,
@@ -120,12 +123,18 @@ public final class SafetyRules {
 	public Optional<Vote> voteFor(VerifiedVertex proposedVertex, BFTHeader proposedHeader, long timestamp, HighQC highQC) {
 		// ensure vertex does not violate earlier votes
 		if (proposedVertex.getView().compareTo(this.state.getLastVotedView()) <= 0) {
-			logger.warn("Violates earlier vote at view {}", this.state.getLastVotedView());
+			logger.warn("Safety warning: Vertex {} violates earlier vote at view {}",
+				proposedVertex,
+				this.state.getLastVotedView()
+			);
 			return Optional.empty();
 		}
 
 		if (proposedVertex.getParentHeader().getView().compareTo(this.state.getLockedView()) < 0) {
-			logger.warn("Does not respect locked view {}", this.state.getLockedView());
+			logger.warn("Safety warning: Vertex {} does not respect locked view {}",
+				proposedVertex,
+				this.state.getLockedView()
+			);
 			return Optional.empty();
 		}
 
