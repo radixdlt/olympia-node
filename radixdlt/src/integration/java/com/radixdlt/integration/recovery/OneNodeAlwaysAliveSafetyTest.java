@@ -222,7 +222,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 	}
 
 	@Test
-	@Ignore("Safety broken here.")
+	@Ignore("Safety broken here: RPNV1-772")
 	public void all_nodes_except_for_one_need_to_restart_should_be_able_to_reboot_correctly_and_safety_not_broken() {
 		// Start
 		for (int i = 0; i < nodes.size(); i++) {
