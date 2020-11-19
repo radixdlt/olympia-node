@@ -27,11 +27,13 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTSyncer;
 import com.radixdlt.consensus.bft.BFTUpdate;
+import com.radixdlt.consensus.bft.FormedQC;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdateProcessor;
@@ -157,6 +159,13 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 		this.currentLedgerHeader = Objects.requireNonNull(currentLedgerHeader);
 		this.random = random;
 		this.bftSyncPatienceMillis = bftSyncPatienceMillis;
+	}
+
+	public EventProcessor<FormedQC> formedQCEventProcessor() {
+		return formedQC -> {
+			HighQC highQC = HighQC.from(formedQC.qc(), this.vertexStore.highQC().highestCommittedQC());
+			syncToQC(highQC, formedQC.lastAuthor());
+		};
 	}
 
 	@Override

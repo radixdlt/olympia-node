@@ -17,39 +17,28 @@
 
 package com.radixdlt.integration.distributed.simulation.invariants.consensus;
 
-import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.EventProcessor;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 
-public final class NodeTimeouts {
-	public static class NodeTimeout {
-		private final BFTNode node;
-		private final Timeout timeout;
+/**
+ * Temporary class for simulation tests.
+ * TODO: Replace use of this class with the NodeEvents class in deterministic tests.
+ */
+public final class NodeEvents {
+	private final Map<Class<?>, Set<BiConsumer<BFTNode, Object>>> consumers = new HashMap<>();
 
-		private NodeTimeout(BFTNode node, Timeout timeout) {
-			this.node = node;
-			this.timeout = timeout;
-		}
-
-		public BFTNode node() {
-			return node;
-		}
-
-		public Timeout timeout() {
-			return timeout;
-		}
+	public <T> void addListener(BiConsumer<BFTNode, T> eventConsumer, Class<T> eventClass) {
+		this.consumers.computeIfAbsent(eventClass, k -> new HashSet<>()).add((node, e) ->
+			eventConsumer.accept(node, eventClass.cast(e))
+		);
 	}
 
-	private final Set<Consumer<NodeTimeout>> consumers = new HashSet<>();
-
-	public void addListener(Consumer<NodeTimeout> nodeTimeoutConsumer) {
-		this.consumers.add(nodeTimeoutConsumer);
-	}
-
-	public EventProcessor<Timeout> processor(BFTNode node) {
-		return t -> consumers.forEach(c -> c.accept(new NodeTimeout(node, t)));
+	public <T> EventProcessor<T> processor(BFTNode node, Class<T> eventClass) {
+		return t -> consumers.get(eventClass).forEach(c -> c.accept(node, t));
 	}
 }

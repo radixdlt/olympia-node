@@ -25,14 +25,14 @@ import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
-import com.radixdlt.consensus.bft.BFTSyncer.SyncResult;
 import com.radixdlt.consensus.liveness.Pacemaker;
-import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.environment.EventDispatcher;
 import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
 
+import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -45,17 +45,17 @@ public class BFTEventReducerTest {
 	private BFTEventReducer reducer;
 	private Pacemaker pacemaker;
 	private VertexStore vertexStore;
-	private BFTSync vertexStoreSync;
+	private EventDispatcher<FormedQC> formedQCEventDispatcher;
 
 	@Before
 	public void setUp() {
 		this.pacemaker = mock(Pacemaker.class);
 		this.vertexStore = mock(VertexStore.class);
-		this.vertexStoreSync = mock(BFTSync.class);
+		this.formedQCEventDispatcher = rmock(EventDispatcher.class);
 		this.reducer = new BFTEventReducer(
 			pacemaker,
 			vertexStore,
-			vertexStoreSync
+			formedQCEventDispatcher
 		);
 	}
 
@@ -92,18 +92,15 @@ public class BFTEventReducerTest {
 		BFTHeader parent = new BFTHeader(View.of(1), HashUtils.random256(), mock(LedgerHeader.class));
 		VoteData voteData = new VoteData(proposal, parent, null);
 		when(voteMessage.getVoteData()).thenReturn(voteData);
+		when(voteMessage.getAuthor()).thenReturn(BFTNode.random());
 
-		HighQC highQC = mock(HighQC.class);
-		when(highQC.highestCommittedQC()).thenReturn(mock(QuorumCertificate.class));
 
 		when(pacemaker.processVote(any())).thenReturn(Optional.of(mock(QuorumCertificate.class)));
-		when(vertexStore.highQC()).thenReturn(highQC);
-		when(vertexStoreSync.syncToQC(any(), any())).thenReturn(SyncResult.SYNCED);
 
 		reducer.processVote(voteMessage);
 
 		verify(pacemaker, times(1)).processVote(eq(voteMessage));
-		verify(vertexStoreSync, times(1)).syncToQC(any(),  any());
+		verify(formedQCEventDispatcher, times(1)).dispatch(any());
 		verifyNoMoreInteractions(pacemaker);
 	}
 
@@ -114,13 +111,9 @@ public class BFTEventReducerTest {
 		BFTHeader parent = new BFTHeader(View.of(1), HashUtils.random256(), mock(LedgerHeader.class));
 		VoteData voteData = new VoteData(proposal, parent, null);
 		when(voteMessage.getVoteData()).thenReturn(voteData);
-
-		HighQC highQC = mock(HighQC.class);
-		when(highQC.highestCommittedQC()).thenReturn(mock(QuorumCertificate.class));
+		when(voteMessage.getAuthor()).thenReturn(BFTNode.random());
 
 		when(pacemaker.processVote(eq(voteMessage))).thenReturn(Optional.of(mock(QuorumCertificate.class)));
-		when(vertexStore.highQC()).thenReturn(highQC);
-		when(vertexStoreSync.syncToQC(any(), any())).thenReturn(SyncResult.IN_PROGRESS);
 
 		reducer.processVote(voteMessage);
 

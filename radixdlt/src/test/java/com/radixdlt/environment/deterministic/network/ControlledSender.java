@@ -17,7 +17,6 @@
 
 package com.radixdlt.environment.deterministic.network;
 
-import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.ViewTimeout;
@@ -101,11 +100,6 @@ public final class ControlledSender implements DeterministicSender, Environment 
 	public void sendVote(Vote vote, BFTNode nextLeader) {
 		ChannelId channelId = ChannelId.of(this.senderIndex, this.network.lookup(nextLeader));
 		handleMessage(new ControlledMessage(self, channelId, vote, arrivalTime(channelId)));
-	}
-
-	@Override
-	public void sendCommitted(BFTCommittedUpdate update) {
-		// Ignore committed vertex signal
 	}
 
 	@Override

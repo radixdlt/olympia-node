@@ -19,13 +19,17 @@ package com.radixdlt;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTUpdate;
+import com.radixdlt.consensus.bft.FormedQC;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
@@ -51,6 +55,8 @@ public class DispatcherModule extends AbstractModule {
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochView>>() { }, ProcessOnDispatch.class);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochView>>() { });
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<BFTCommittedUpdate>>() { });
+		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<BFTCommittedUpdate>>() { }, ProcessOnDispatch.class);
+		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<FormedQC>>() { }, ProcessOnDispatch.class);
 	}
 
 	@Provides
@@ -70,6 +76,19 @@ public class DispatcherModule extends AbstractModule {
 	@Provides
 	private ScheduledEventDispatcher<LocalGetVerticesRequest> localGetVerticesRequestRemoteEventDispatcher(Environment environment) {
 		return environment.getScheduledDispatcher(LocalGetVerticesRequest.class);
+	}
+
+	@Provides
+	@Singleton
+	private EventDispatcher<FormedQC> formedQCEventDispatcher(
+		@ProcessOnDispatch Set<EventProcessor<FormedQC>> processors,
+		SystemCounters systemCounters
+	) {
+		return formedQC -> {
+			logger.trace("Vote: Formed QC: {}", formedQC.qc());
+			systemCounters.increment(CounterType.BFT_VOTE_QUORUMS);
+			processors.forEach(p -> p.process(formedQC));
+		};
 	}
 
 	@Provides
@@ -110,6 +129,23 @@ public class DispatcherModule extends AbstractModule {
 				logger.warn("LOCAL_TIMEOUT dispatched: {}", timeout);
 				processors.forEach(e -> e.process(timeout));
 				dispatcher.dispatch(timeout);
+			};
+		}
+	}
+
+	@Provides
+	private EventDispatcher<BFTCommittedUpdate> committedUpdateEventDispatcher(
+		@ProcessOnDispatch Set<EventProcessor<BFTCommittedUpdate>> processors,
+		Set<EventProcessor<BFTCommittedUpdate>> asyncProcessors,
+		Environment environment
+	) {
+		if (asyncProcessors.isEmpty()) {
+			return commit -> processors.forEach(e -> e.process(commit));
+		} else {
+			EventDispatcher<BFTCommittedUpdate> dispatcher = environment.getDispatcher(BFTCommittedUpdate.class);
+			return commit -> {
+				processors.forEach(e -> e.process(commit));
+				dispatcher.dispatch(commit);
 			};
 		}
 	}

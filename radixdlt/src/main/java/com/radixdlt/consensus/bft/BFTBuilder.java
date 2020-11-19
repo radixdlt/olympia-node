@@ -22,6 +22,7 @@ import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.environment.EventDispatcher;
 
 /**
  * A helper class to help in constructing a BFT validator state machine
@@ -37,6 +38,7 @@ public final class BFTBuilder {
 	private Pacemaker pacemaker;
 	private VertexStore vertexStore;
 	private BFTSyncer bftSyncer;
+	private EventDispatcher<FormedQC> formedQCEventDispatcher;
 
 	// Instance specific objects
 	private BFTNode self;
@@ -84,6 +86,10 @@ public final class BFTBuilder {
 		return this;
 	}
 
+	public BFTBuilder formedQCEventDispatcher(EventDispatcher<FormedQC> formedQCEventDispatcher) {
+		this.formedQCEventDispatcher = formedQCEventDispatcher;
+		return this;
+	}
 
 	public BFTBuilder proposerElection(ProposerElection proposerElection) {
 		this.proposerElection = proposerElection;
@@ -98,7 +104,7 @@ public final class BFTBuilder {
 		BFTEventReducer reducer = new BFTEventReducer(
 			pacemaker,
 			vertexStore,
-			bftSyncer
+			formedQCEventDispatcher
 		);
 
 		SyncQueues syncQueues = new SyncQueues();
