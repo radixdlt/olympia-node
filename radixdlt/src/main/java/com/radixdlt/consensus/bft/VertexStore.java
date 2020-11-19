@@ -50,12 +50,12 @@ public final class VertexStore {
 
 	// TODO: combine all of the following senders as an update sender
 	public interface VertexStoreEventSender {
-		void sendCommitted(BFTCommittedUpdate committedUpdate);
 		void highQC(QuorumCertificate qc);
 	}
 
 	private final VertexStoreEventSender vertexStoreEventSender;
 	private final EventDispatcher<BFTUpdate> bftUpdateDispatcher;
+	private final EventDispatcher<BFTCommittedUpdate> bftCommittedDispatcher;
 	private final Ledger ledger;
 	private final SystemCounters counters;
 
@@ -72,12 +72,14 @@ public final class VertexStore {
 		VerifiedVertex rootVertex,
 		QuorumCertificate rootQC,
 		EventDispatcher<BFTUpdate> bftUpdateDispatcher,
+		EventDispatcher<BFTCommittedUpdate> bftCommittedDispatcher,
 		VertexStoreEventSender vertexStoreEventSender,
 		SystemCounters counters
 	) {
 		this.ledger = Objects.requireNonNull(ledger);
 		this.vertexStoreEventSender = Objects.requireNonNull(vertexStoreEventSender);
 		this.bftUpdateDispatcher = Objects.requireNonNull(bftUpdateDispatcher);
+		this.bftCommittedDispatcher = Objects.requireNonNull(bftCommittedDispatcher);
 		this.counters = Objects.requireNonNull(counters);
 		this.rootVertex = Objects.requireNonNull(rootVertex);
 		this.highestQC = Objects.requireNonNull(rootQC);
@@ -89,6 +91,7 @@ public final class VertexStore {
 		QuorumCertificate rootQC,
 		Ledger ledger,
 		EventDispatcher<BFTUpdate> bftUpdateDispatcher,
+		EventDispatcher<BFTCommittedUpdate> bftCommittedDispatcher,
 		VertexStoreEventSender vertexStoreEventSender,
 		SystemCounters counters
 	) {
@@ -109,6 +112,7 @@ public final class VertexStore {
 			rootVertex,
 			rootQC,
 			bftUpdateDispatcher,
+			bftCommittedDispatcher,
 			vertexStoreEventSender,
 			counters
 		);
@@ -283,7 +287,7 @@ public final class VertexStore {
 
 		this.counters.add(CounterType.BFT_PROCESSED, path.size());
 		final BFTCommittedUpdate bftCommittedUpdate = new BFTCommittedUpdate(path, highQC, this.vertices.size());
-		this.vertexStoreEventSender.sendCommitted(bftCommittedUpdate);
+		this.bftCommittedDispatcher.dispatch(bftCommittedUpdate);
 
 		this.ledger.commit(path, highQC, prunedSet);
 

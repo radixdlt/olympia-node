@@ -21,57 +21,33 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
+import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Key;
-import com.google.inject.Scopes;
-import com.google.inject.name.Names;
-import com.radixdlt.ConsensusModule;
-import com.radixdlt.CryptoModule;
-import com.radixdlt.DispatcherModule;
-import com.radixdlt.EpochsConsensusModule;
-import com.radixdlt.EpochsLedgerUpdateModule;
-import com.radixdlt.EpochsSyncModule;
-import com.radixdlt.LedgerCommandGeneratorModule;
-import com.radixdlt.LedgerModule;
-import com.radixdlt.NoFeeModule;
-import com.radixdlt.PersistenceModule;
-import com.radixdlt.RadixEngineModule;
-import com.radixdlt.RadixEngineStoreModule;
-import com.radixdlt.SyncServiceModule;
+import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.HashSigner;
+import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.PacemakerMaxExponent;
-import com.radixdlt.consensus.bft.PacemakerRate;
-import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
-import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.environment.MockedCheckpointModule;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.deterministic.DeterministicEpochInfo;
-import com.radixdlt.integration.distributed.MockedMempoolModule;
-import com.radixdlt.integration.distributed.simulation.SimulationValidatorComputersModule;
 import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
-import com.radixdlt.environment.deterministic.DeterministicEnvironmentModule;
 import com.radixdlt.environment.deterministic.ControlledSenderFactory;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
-import com.radixdlt.network.TimeSupplier;
+import com.radixdlt.integration.distributed.deterministic.NodeEvents;
+import com.radixdlt.integration.distributed.deterministic.NodeEventsModule;
+import com.radixdlt.integration.distributed.deterministic.SafetyCheckerModule;
 import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.recovery.ModuleForRecoveryTests;
 import com.radixdlt.statecomputer.EpochCeilingView;
-import com.radixdlt.statecomputer.MaxValidators;
-import com.radixdlt.statecomputer.MinValidators;
-import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
-import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncTimeoutScheduler;
-import com.radixdlt.sync.SyncPatienceMillis;
-import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -99,14 +75,13 @@ import org.junit.runners.Parameterized.Parameters;
  * others with.
  */
 @RunWith(Parameterized.class)
-public class OneNodeAlwaysAliveTest {
+public class OneNodeAlwaysAliveLivenessTest {
 	private static final Logger logger = LogManager.getLogger();
 
 	@Parameters
 	public static Collection<Object[]> numNodes() {
 		return List.of(new Object[][] {
-			{2}, {3}
-			/*, {4} TODO: greater than 3 will cause safety breaks until safety persistence is implemented */
+			{2}, {3}, {4}
 		});
 	}
 
@@ -116,10 +91,17 @@ public class OneNodeAlwaysAliveTest {
 	private DeterministicNetwork network;
 	private List<Supplier<Injector>> nodeCreators;
 	private List<Injector> nodes = new ArrayList<>();
+	private final List<ECKeyPair> nodeKeys;
 
-	public OneNodeAlwaysAliveTest(int numNodes) {
-		final List<ECKeyPair> nodeKeys = Stream.generate(ECKeyPair::generateNew).limit(numNodes).collect(Collectors.toList());
+	@Inject
+	private NodeEvents nodeEvents;
 
+	public OneNodeAlwaysAliveLivenessTest(int numNodes) {
+		this.nodeKeys = Stream.generate(ECKeyPair::generateNew).limit(numNodes).collect(Collectors.toList());
+	}
+
+	@Before
+	public void setup() {
 		this.network = new DeterministicNetwork(
 			nodeKeys.stream().map(k -> BFTNode.create(k.getPublicKey())).collect(Collectors.toList()),
 			MessageSelector.firstSelector(),
@@ -129,13 +111,21 @@ public class OneNodeAlwaysAliveTest {
 		List<BFTNode> allNodes = nodeKeys.stream()
 			.map(k -> BFTNode.create(k.getPublicKey())).collect(Collectors.toList());
 
+		Guice.createInjector(
+			new AbstractModule() {
+				@Override
+				protected void configure() {
+					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
+				}
+			},
+			new SafetyCheckerModule(),
+			new NodeEventsModule()
+		).injectMembers(this);
+
 		this.nodeCreators = nodeKeys.stream()
 			.<Supplier<Injector>>map(k -> () -> createRunner(k, allNodes))
 			.collect(Collectors.toList());
-	}
 
-	@Before
-	public void setup() {
 		for (Supplier<Injector> nodeCreator : nodeCreators) {
 			this.nodes.add(nodeCreator.get());
 		}
@@ -144,34 +134,24 @@ public class OneNodeAlwaysAliveTest {
 
 	private Injector createRunner(ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
 		final BFTNode self = BFTNode.create(ecKeyPair.getPublicKey());
-		final BFTValidatorSet validatorSet = BFTValidatorSet.from(allNodes.stream().map(node -> BFTValidator.from(node, UInt256.ONE)));
-
 
 		return Guice.createInjector(
+			ModuleForRecoveryTests.create(),
 			new AbstractModule() {
+
+				@ProvidesIntoSet
+				@ProcessOnDispatch
+				private EventProcessor<BFTCommittedUpdate> test(@Self BFTNode node) {
+					return nodeEvents.processor(node, BFTCommittedUpdate.class);
+				}
+
 				@Override
 				protected void configure() {
 					bind(HashSigner.class).toInstance(ecKeyPair::sign);
 					bind(BFTNode.class).annotatedWith(Self.class).toInstance(self);
-					bindConstant().annotatedWith(Names.named("magic")).to(0);
+					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
-
-					bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(200);
-					bind(Integer.class).annotatedWith(BFTSyncPatienceMillis.class).toInstance(200);
-					bind(Integer.class).annotatedWith(MinValidators.class).toInstance(1);
-					bind(Integer.class).annotatedWith(MaxValidators.class).toInstance(Integer.MAX_VALUE);
-					bind(Long.class).annotatedWith(PacemakerTimeout.class).toInstance(1000L);
-					bind(Double.class).annotatedWith(PacemakerRate.class).toInstance(2.0);
-					bind(Integer.class).annotatedWith(PacemakerMaxExponent.class).toInstance(6);
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(88L));
-
-					// System
-					bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
-					bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
-
-					// TODO: Move these into DeterministicSender
-					bind(CommittedAtomSender.class).toInstance(atom -> { });
-					bind(SyncTimeoutScheduler.class).toInstance((syncInProgress, milliseconds) -> { });
 
 					final RuntimeProperties runtimeProperties;
 					// TODO: this constructor/class/inheritance/dependency is horribly broken
@@ -183,46 +163,12 @@ public class OneNodeAlwaysAliveTest {
 					}
 					bind(RuntimeProperties.class).toInstance(runtimeProperties);
 				}
-			},
-
-			new MockedCheckpointModule(validatorSet),
-			new SimulationValidatorComputersModule(),
-
-			new DeterministicEnvironmentModule(),
-			new DispatcherModule(),
-
-			// Consensus
-			new CryptoModule(),
-			new ConsensusModule(),
-
-			// Ledger
-			new LedgerModule(),
-			new LedgerCommandGeneratorModule(),
-			new MockedMempoolModule(),
-
-			// Sync
-			new SyncServiceModule(),
-
-			// Epochs - Consensus
-			new EpochsConsensusModule(),
-			// Epochs - Ledger
-			new EpochsLedgerUpdateModule(),
-			// Epochs - Sync
-			new EpochsSyncModule(),
-
-			// State Computer
-			new RadixEngineModule(),
-			new RadixEngineStoreModule(),
-
-			// Fees
-			new NoFeeModule(),
-
-			new PersistenceModule()
+			}
 		);
 	}
 
 	private void restartNode(int index) {
-		this.network.dropMessages(m -> m.channelId().receiverIndex() == index && m.channelId().senderIndex() == index);
+		this.network.dropMessages(m -> m.channelId().receiverIndex() == index);
 		Injector injector = nodeCreators.get(index).get();
 		this.nodes.set(index, injector);
 

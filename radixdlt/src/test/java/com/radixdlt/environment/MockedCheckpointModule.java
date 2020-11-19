@@ -23,6 +23,8 @@ import com.google.inject.Provides;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Spin;
@@ -32,17 +34,14 @@ import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
-import java.util.Objects;
+import com.radixdlt.utils.UInt256;
+import java.util.List;
 
 public final class MockedCheckpointModule extends AbstractModule {
-	private final BFTValidatorSet initialValidatorSet;
-
-	public MockedCheckpointModule(BFTValidatorSet initialValidatorSet) {
-		this.initialValidatorSet = Objects.requireNonNull(initialValidatorSet);
-	}
-
 	@Provides
-	VerifiedCommandsAndProof genesis(Serialization serialization, Hasher hasher) {
+	VerifiedCommandsAndProof genesis(List<BFTNode> initialValidators, Serialization serialization, Hasher hasher) {
+		BFTValidatorSet validatorSet = BFTValidatorSet.from(initialValidators.stream().map(node -> BFTValidator.from(node, UInt256.ONE)));
+
 		final ClientAtom genesisAtom = ClientAtom.create(
 			ImmutableList.of(
 				CMMicroInstruction.checkSpinAndPush(new SystemParticle(0, 0, 0), Spin.UP),
@@ -55,7 +54,7 @@ public final class MockedCheckpointModule extends AbstractModule {
 		// Checkpoint
 		VerifiedLedgerHeaderAndProof genesisLedgerHeader = VerifiedLedgerHeaderAndProof.genesis(
 			HashUtils.zero256(),
-			initialValidatorSet
+			validatorSet
 		);
 		return new VerifiedCommandsAndProof(
 			ImmutableList.of(command),

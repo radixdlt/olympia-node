@@ -66,6 +66,7 @@ public class VertexStoreTest {
 	private Ledger ledger;
 	private VertexStoreEventSender vertexStoreEventSender;
 	private EventDispatcher<BFTUpdate> bftUpdateSender;
+	private EventDispatcher<BFTCommittedUpdate> committedSender;
 	private SystemCounters counters;
 	private Hasher hasher = Sha256Hasher.withDefaultSerialization();
 
@@ -87,6 +88,7 @@ public class VertexStoreTest {
 		this.vertexStoreEventSender = mock(VertexStoreEventSender.class);
 		this.counters = new SystemCountersImpl();
 		this.bftUpdateSender = rmock(EventDispatcher.class);
+		this.committedSender = rmock(EventDispatcher.class);
 
 		this.genesisHash = HashUtils.zero256();
 		this.genesisVertex = new VerifiedVertex(UnverifiedVertex.createGenesis(MOCKED_HEADER), genesisHash);
@@ -96,6 +98,7 @@ public class VertexStoreTest {
 			rootQC,
 			ledger,
 			bftUpdateSender,
+			committedSender,
 			vertexStoreEventSender,
 			counters
 		);

@@ -24,6 +24,7 @@ import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
@@ -203,6 +204,7 @@ public class EpochsConsensusModule extends AbstractModule {
 	@Provides
 	private VertexStoreFactory vertexStoreFactory(
 		EventDispatcher<BFTUpdate> updateSender,
+		EventDispatcher<BFTCommittedUpdate> committedDispatcher,
 		SystemCounters counters,
 		Ledger ledger,
 		VertexStoreEventSender vertexStoreEventSender
@@ -212,6 +214,7 @@ public class EpochsConsensusModule extends AbstractModule {
 			genesisQC,
 			ledger,
 			updateSender,
+			committedDispatcher,
 			vertexStoreEventSender,
 			counters
 		);

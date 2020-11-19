@@ -49,6 +49,7 @@ import com.radixdlt.SyncRunnerModule;
 import com.radixdlt.SystemInfoRxModule;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.Timeout;
+import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
@@ -82,7 +83,7 @@ import com.radixdlt.integration.distributed.simulation.application.RadixEngineVa
 import com.radixdlt.integration.distributed.simulation.application.RadixEngineValidatorRegistratorAndUnregistrator;
 import com.radixdlt.integration.distributed.simulation.application.RegisteredValidatorChecker;
 import com.radixdlt.integration.distributed.simulation.application.TimestampChecker;
-import com.radixdlt.integration.distributed.simulation.invariants.consensus.NodeTimeouts;
+import com.radixdlt.integration.distributed.simulation.invariants.consensus.NodeEvents;
 import com.radixdlt.integration.distributed.simulation.invariants.epochs.EpochViewInvariant;
 import com.radixdlt.integration.distributed.simulation.application.LocalMempoolPeriodicSubmittor;
 import com.radixdlt.integration.distributed.simulation.invariants.ledger.ConsensusToLedgerCommittedInvariant;
@@ -188,6 +189,8 @@ public class SimulationTest {
 		private Function<Long, IntStream> epochToNodeIndexMapper;
 		private LedgerType ledgerType = LedgerType.MOCKED_LEDGER;
 
+
+		private NodeEvents nodeEvents = new NodeEvents();
 		private Module initialNodesModule;
 		private ImmutableList.Builder<Module> modules = ImmutableList.builder();
 		private Module networkModule;
@@ -300,13 +303,21 @@ public class SimulationTest {
 		}
 
 		public Builder addMempoolSubmissionsSteadyState(String invariantName) {
+			this.modules.add(new AbstractModule() {
+				@ProvidesIntoSet
+				@ProcessOnDispatch
+				private EventProcessor<BFTCommittedUpdate> committedProcessor(@Self BFTNode node) {
+					return nodeEvents.processor(node, BFTCommittedUpdate.class);
+				}
+			});
+
 			IncrementalBytes incrementalBytes = new IncrementalBytes();
 			NodeSelector nodeSelector = this.ledgerType.hasEpochs ? new EpochsNodeSelector() : new BFTValidatorSetNodeSelector();
 			LocalMempoolPeriodicSubmittor mempoolSubmission = new LocalMempoolPeriodicSubmittor(
 				incrementalBytes,
 				nodeSelector
 			);
-			CommittedChecker committedChecker = new CommittedChecker(mempoolSubmission.issuedCommands().map(Pair::getFirst));
+			CommittedChecker committedChecker = new CommittedChecker(mempoolSubmission.issuedCommands().map(Pair::getFirst), nodeEvents);
 			this.runnableBuilder.add(nodes -> mempoolSubmission::run);
 			this.checksBuilder.put(invariantName, nodes -> committedChecker);
 
@@ -325,6 +336,14 @@ public class SimulationTest {
 		}
 
 		public Builder addRadixEngineValidatorRegisterUnregisterMempoolSubmissions(String submittedInvariantName) {
+			this.modules.add(new AbstractModule() {
+				@ProvidesIntoSet
+				@ProcessOnDispatch
+				private EventProcessor<BFTCommittedUpdate> committedProcessor(@Self BFTNode node) {
+					return nodeEvents.processor(node, BFTCommittedUpdate.class);
+				}
+			});
+
 			this.runnableBuilder.add(nodes -> {
 				RadixEngineValidatorRegistratorAndUnregistrator randomValidatorSubmittor
 					= new RadixEngineValidatorRegistratorAndUnregistrator(nodes, hasher);
@@ -333,7 +352,7 @@ public class SimulationTest {
 				// TODO: Fix hack, hack required due to lack of Guice
 				this.checksBuilder.put(
 					submittedInvariantName,
-					nodes2 -> new CommittedChecker(submittor.issuedCommands().map(Pair::getFirst))
+					nodes2 -> new CommittedChecker(submittor.issuedCommands().map(Pair::getFirst), nodeEvents)
 				);
 				return submittor::run;
 			});
@@ -341,6 +360,14 @@ public class SimulationTest {
 		}
 
 		public Builder addRadixEngineValidatorRegisterMempoolSubmissions(String submittedInvariantName, String registeredInvariantName) {
+			this.modules.add(new AbstractModule() {
+				@ProvidesIntoSet
+				@ProcessOnDispatch
+				private EventProcessor<BFTCommittedUpdate> committedProcessor(@Self BFTNode node) {
+					return nodeEvents.processor(node, BFTCommittedUpdate.class);
+				}
+			});
+
 			this.runnableBuilder.add(nodes -> {
 				RadixEngineValidatorRegistrator validatorRegistrator = new RadixEngineValidatorRegistrator(nodes);
 				NodeSelector nodeSelector = this.ledgerType.hasEpochs ? new EpochsNodeSelector() : new BFTValidatorSetNodeSelector();
@@ -348,7 +375,7 @@ public class SimulationTest {
 				// TODO: Fix hack, hack required due to lack of Guice
 				this.checksBuilder.put(
 					submittedInvariantName,
-					nodes2 -> new CommittedChecker(submittor.issuedCommands().map(Pair::getFirst))
+					nodes2 -> new CommittedChecker(submittor.issuedCommands().map(Pair::getFirst), nodeEvents)
 				);
 				this.checksBuilder.put(
 					registeredInvariantName,
@@ -370,20 +397,26 @@ public class SimulationTest {
 		}
 
 		public Builder checkConsensusSafety(String invariantName) {
-			this.checksBuilder.put(invariantName, nodes -> new SafetyInvariant());
+			this.modules.add(new AbstractModule() {
+				@ProvidesIntoSet
+				@ProcessOnDispatch
+				private EventProcessor<BFTCommittedUpdate> committedProcessor(@Self BFTNode node) {
+					return nodeEvents.processor(node, BFTCommittedUpdate.class);
+				}
+			});
+			this.checksBuilder.put(invariantName, nodes -> new SafetyInvariant(nodeEvents));
 			return this;
 		}
 
 		public Builder checkConsensusNoTimeouts(String invariantName) {
-			NodeTimeouts nodeTimeouts = new NodeTimeouts();
 			this.modules.add(new AbstractModule() {
 				@ProcessOnDispatch
 				@ProvidesIntoSet
 				private EventProcessor<Timeout> timeoutEventProcessor(@Self BFTNode node) {
-					return nodeTimeouts.processor(node);
+					return nodeEvents.processor(node, Timeout.class);
 				}
 			});
-			this.checksBuilder.put(invariantName, nodes -> new NoTimeoutsInvariant(nodeTimeouts));
+			this.checksBuilder.put(invariantName, nodes -> new NoTimeoutsInvariant(nodeEvents));
 			return this;
 		}
 
@@ -393,12 +426,26 @@ public class SimulationTest {
 		}
 
 		public Builder checkConsensusNoneCommitted(String invariantName) {
-			this.checksBuilder.put(invariantName, nodes -> new NoneCommittedInvariant());
+			this.modules.add(new AbstractModule() {
+				@ProvidesIntoSet
+				@ProcessOnDispatch
+				private EventProcessor<BFTCommittedUpdate> committedProcessor(@Self BFTNode node) {
+					return nodeEvents.processor(node, BFTCommittedUpdate.class);
+				}
+			});
+			this.checksBuilder.put(invariantName, nodes -> new NoneCommittedInvariant(nodeEvents));
 			return this;
 		}
 
 		public Builder checkLedgerProcessesConsensusCommitted(String invariantName) {
-			this.checksBuilder.put(invariantName, nodes -> new ConsensusToLedgerCommittedInvariant());
+			this.modules.add(new AbstractModule() {
+				@ProvidesIntoSet
+				@ProcessOnDispatch
+				private EventProcessor<BFTCommittedUpdate> committedProcessor(@Self BFTNode node) {
+					return nodeEvents.processor(node, BFTCommittedUpdate.class);
+				}
+			});
+			this.checksBuilder.put(invariantName, nodes -> new ConsensusToLedgerCommittedInvariant(nodeEvents));
 			return this;
 		}
 
@@ -408,7 +455,14 @@ public class SimulationTest {
 		}
 
 		public Builder checkEpochsHighViewCorrect(String invariantName, View epochHighView) {
-			this.checksBuilder.put(invariantName, nodes -> new EpochViewInvariant(epochHighView));
+			this.modules.add(new AbstractModule() {
+				@ProvidesIntoSet
+				@ProcessOnDispatch
+				private EventProcessor<BFTCommittedUpdate> committedProcessor(@Self BFTNode node) {
+					return nodeEvents.processor(node, BFTCommittedUpdate.class);
+				}
+			});
+			this.checksBuilder.put(invariantName, nodes -> new EpochViewInvariant(epochHighView, nodeEvents));
 			return this;
 		}
 

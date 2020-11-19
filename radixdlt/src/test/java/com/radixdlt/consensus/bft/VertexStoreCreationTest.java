@@ -44,6 +44,7 @@ public class VertexStoreCreationTest {
 	private Ledger ledger;
 	private VertexStoreEventSender vertexStoreEventSender;
 	private EventDispatcher<BFTUpdate> bftUpdateSender;
+	private EventDispatcher<BFTCommittedUpdate> committedSender;
 	private SystemCounters counters;
 	private static final LedgerHeader MOCKED_HEADER = LedgerHeader.create(
 		0, View.genesis(), new AccumulatorState(0, HashUtils.zero256()), 0
@@ -57,6 +58,7 @@ public class VertexStoreCreationTest {
 		this.vertexStoreEventSender = mock(VertexStoreEventSender.class);
 		this.counters = new SystemCountersImpl();
 		this.bftUpdateSender = rmock(EventDispatcher.class);
+		this.committedSender = rmock(EventDispatcher.class);
 	}
 
 	@Test
@@ -70,6 +72,7 @@ public class VertexStoreCreationTest {
 				badRootQC,
 				ledger,
 				bftUpdateSender,
+				committedSender,
 				vertexStoreEventSender,
 				counters
 			)
@@ -88,6 +91,7 @@ public class VertexStoreCreationTest {
 				badRootQC,
 				ledger,
 				bftUpdateSender,
+				committedSender,
 				vertexStoreEventSender,
 				counters
 			)
@@ -105,6 +109,7 @@ public class VertexStoreCreationTest {
 				badRootQC,
 				ledger,
 				bftUpdateSender,
+				committedSender,
 				vertexStoreEventSender,
 				counters
 			)
