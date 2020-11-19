@@ -23,7 +23,6 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
-import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
@@ -68,24 +67,19 @@ public class DeterministicEnvironmentModule extends AbstractModule {
 		Multibinder.newSetBinder(binder(), VertexStoreEventSender.class).addBinding().to(DeterministicSender.class);
 		Multibinder.newSetBinder(binder(), EpochsLedgerUpdateSender.class).addBinding().to(DeterministicSender.class);
 
-		bind(DeterministicEpochInfo.class).in(Scopes.SINGLETON);
 		bind(DeterministicSender.class).to(ControlledSender.class);
 
 		bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
 		bind(Environment.class).to(ControlledSender.class);
+
+		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<Timeout>>() { }, ProcessOnDispatch.class)
+			.addBinding().to(new TypeLiteral<DeterministicSavedLastEvent<Timeout>>() { });
+		bind(new TypeLiteral<DeterministicSavedLastEvent<Timeout>>() { }).in(Scopes.SINGLETON);
+		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochView>>() { }, ProcessOnDispatch.class)
+			.addBinding().to(new TypeLiteral<DeterministicSavedLastEvent<EpochView>>() { });
+		bind(new TypeLiteral<DeterministicSavedLastEvent<EpochView>>() { }).in(Scopes.SINGLETON);
 	}
 
-	@ProvidesIntoSet
-	@ProcessOnDispatch
-	EventProcessor<Timeout> timeoutEventProcessor(DeterministicEpochInfo processor) {
-		return processor.timeoutEventProcessor();
-	}
-
-	@ProvidesIntoSet
-	@ProcessOnDispatch
-	EventProcessor<EpochView> epochViewEventProcessor(DeterministicEpochInfo processor) {
-		return processor.epochViewEventProcessor();
-	}
 
 	@Provides
 	RemoteEventDispatcher<DtoLedgerHeaderAndProof> syncRequestDispatcher(ControlledSender controlledSender) {

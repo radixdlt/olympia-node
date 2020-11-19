@@ -34,7 +34,7 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.environment.deterministic.DeterministicEpochInfo;
+import com.radixdlt.environment.deterministic.DeterministicSavedLastEvent;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
@@ -133,8 +133,8 @@ public class RecoveryTest {
 		return currentInjector.getInstance(CommittedAtomsStore.class);
 	}
 
-	private DeterministicEpochInfo getEpochInfo() {
-		return currentInjector.getInstance(DeterministicEpochInfo.class);
+	private EpochView getLastEpochView() {
+		return currentInjector.getInstance(Key.get(new TypeLiteral<DeterministicSavedLastEvent<EpochView>>() { })).getLastEvent();
 	}
 
 	private void restartNode() {
@@ -189,8 +189,7 @@ public class RecoveryTest {
 	public void on_reboot_should_load_same_last_epoch_header() {
 		// Arrange
 		processForCount(100);
-		DeterministicEpochInfo epochInfo = getEpochInfo();
-		EpochView epochView = epochInfo.getCurrentEpochView();
+		EpochView epochView = getLastEpochView();
 
 		// Act
 		restartNode();

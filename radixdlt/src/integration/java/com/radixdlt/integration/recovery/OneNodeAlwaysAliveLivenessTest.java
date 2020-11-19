@@ -35,9 +35,9 @@ import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
-import com.radixdlt.environment.deterministic.DeterministicEpochInfo;
 import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
 import com.radixdlt.environment.deterministic.ControlledSenderFactory;
+import com.radixdlt.environment.deterministic.DeterministicSavedLastEvent;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
@@ -199,12 +199,13 @@ public class OneNodeAlwaysAliveLivenessTest {
 
 	@Test
 	public void all_nodes_except_for_one_need_to_restart_should_be_able_to_reboot_correctly_and_liveness_not_broken() {
-		EpochView epochView = this.nodes.get(0).getInstance(DeterministicEpochInfo.class).getCurrentEpochView();
+		EpochView epochView = this.nodes.get(0).getInstance(Key.get(new TypeLiteral<DeterministicSavedLastEvent<EpochView>>() { })).getLastEvent();
 
 		for (int restart = 0; restart < 10; restart++) {
 			processForCount(2000);
 
-			EpochView nextEpochView = this.nodes.stream().map(i -> i.getInstance(DeterministicEpochInfo.class).getCurrentEpochView())
+			EpochView nextEpochView = this.nodes.stream()
+				.map(i -> i.getInstance(Key.get(new TypeLiteral<DeterministicSavedLastEvent<EpochView>>() { })).getLastEvent())
 				.max(Comparator.naturalOrder()).orElse(new EpochView(0, View.genesis()));
 			assertThat(nextEpochView).isGreaterThan(epochView);
 			epochView = nextEpochView;
