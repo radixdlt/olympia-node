@@ -68,15 +68,26 @@ public class SafetyRulesTest {
 
 	@Test
 	public void when_vote_with_qc_on_different_locked_view__then_exception_is_thrown() {
-		when(safetyState.getLastVotedView()).thenReturn(View.of(2));
-		when(safetyState.getLockedView()).thenReturn(View.of(1));
+		Hasher hasher = mock(Hasher.class);
+		when(hasher.hash(any())).thenReturn(mock(HashCode.class));
+		HashSigner hashSigner = mock(HashSigner.class);
+		when(hashSigner.sign(Mockito.<HashCode>any())).thenReturn(new ECDSASignature());
+
+		SafetyRules safetyRules = new SafetyRules(
+			BFTNode.random(),
+			new SafetyState(View.of(2), View.of(1)),
+			mock(PersistentSafetyState.class),
+			hasher,
+			hashSigner
+		);
+
 		VerifiedVertex vertex = mock(VerifiedVertex.class);
 		when(vertex.getView()).thenReturn(View.of(3));
 		BFTHeader parent = mock(BFTHeader.class);
 		when(parent.getView()).thenReturn(View.of(0));
 		when(vertex.getParentHeader()).thenReturn(parent);
 
-		assertThat(this.safetyRules.voteFor(vertex, mock(BFTHeader.class), 0L, mock(HighQC.class)))
+		assertThat(safetyRules.voteFor(vertex, mock(BFTHeader.class), 0L, mock(HighQC.class)))
 			.isEmpty();
 	}
 

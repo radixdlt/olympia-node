@@ -25,8 +25,10 @@ import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.FormedQC;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.counters.SystemCounters;
@@ -64,6 +66,7 @@ public class DispatcherModule extends AbstractModule {
 
 	@Provides
 	private EventDispatcher<LocalSyncRequest> localSyncRequestEventDispatcher(
+		@Self BFTNode self,
 		@ProcessOnDispatch Set<EventProcessor<LocalSyncRequest>> syncProcessors,
 		Environment environment
 	) {
@@ -71,6 +74,11 @@ public class DispatcherModule extends AbstractModule {
 		return req -> {
 			Class<?> callingClass = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE).getCallerClass();
 			logger.info("LOCAL_SYNC_REQUEST dispatched by {}", callingClass);
+
+			if (req.getTargetNodes().contains(self)) {
+				throw new IllegalStateException("Should not be targeting self.");
+			}
+
 			syncProcessors.forEach(e -> e.process(req));
 			envDispatcher.dispatch(req);
 		};

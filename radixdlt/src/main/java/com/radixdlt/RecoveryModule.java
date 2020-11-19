@@ -23,7 +23,6 @@ import com.google.inject.Singleton;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.store.berkeley.BerkeleySafetyStore;
-import com.radixdlt.utils.Pair;
 import java.util.Optional;
 
 public class RecoveryModule extends AbstractModule {

@@ -18,12 +18,10 @@
 package com.radixdlt.store.berkeley;
 
 import com.google.inject.Inject;
-import com.google.inject.Singleton;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.safety.PersistentSafetyState;
 import com.radixdlt.consensus.safety.SafetyState;
-import com.radixdlt.identifiers.AID;
 import com.radixdlt.utils.Longs;
 import com.radixdlt.utils.Pair;
 import com.sleepycat.je.Database;

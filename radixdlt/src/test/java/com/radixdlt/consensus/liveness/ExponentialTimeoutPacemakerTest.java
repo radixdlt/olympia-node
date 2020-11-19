@@ -18,6 +18,7 @@
 package com.radixdlt.consensus.liveness;
 
 import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import java.util.Comparator;
@@ -109,6 +110,8 @@ public class ExponentialTimeoutPacemakerTest {
 
 	@Before
 	public void setUp() {
+		when(hasher.hash(any())).thenReturn(HashUtils.random256());
+
 		this.pacemaker = new ExponentialTimeoutPacemaker(
 			this.timeout, this.rate, this.maxExponent,
 			this.self,
@@ -167,6 +170,7 @@ public class ExponentialTimeoutPacemakerTest {
 		when(this.vertexStore.highQC()).thenReturn(hqc);
 		when(this.signer.sign(Mockito.<HashCode>any())).thenReturn(new ECDSASignature());
 		when(this.proposerElection.getProposer(eq(View.of(2)))).thenReturn(this.self);
+		when(this.safetyRules.signProposal(any(), any())).thenReturn(Optional.of(mock(Proposal.class)));
 
 		this.pacemaker.processViewTimeout(viewTimeout);
 
@@ -193,6 +197,7 @@ public class ExponentialTimeoutPacemakerTest {
 		when(this.vertexStore.highQC()).thenReturn(hqc);
 		when(this.signer.sign(Mockito.<HashCode>any())).thenReturn(new ECDSASignature());
 		when(this.proposerElection.getProposer(eq(View.of(2)))).thenReturn(this.self);
+		when(this.safetyRules.signProposal(any(), any())).thenReturn(Optional.of(mock(Proposal.class)));
 
 		this.pacemaker.processViewTimeout(viewTimeout);
 
