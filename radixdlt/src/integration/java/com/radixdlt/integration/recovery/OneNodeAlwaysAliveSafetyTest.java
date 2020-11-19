@@ -231,7 +231,7 @@ public class OneNodeAlwaysAliveSafetyTest {
 	}
 
 	@Test
-	public void all_nodes_except_for_one_need_to_restart_should_be_able_to_reboot_correctly_and_safety_not_broken() {
+	public void dropper_and_crasher_adversares_should_not_cause_safety_failures() {
 		// Start
 		for (int i = 0; i < nodes.size(); i++) {
 			this.startNode(i);
