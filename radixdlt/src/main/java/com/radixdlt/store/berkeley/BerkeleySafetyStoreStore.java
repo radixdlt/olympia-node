@@ -20,7 +20,7 @@ package com.radixdlt.store.berkeley;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.safety.PersistentSafetyState;
+import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.utils.Longs;
 import com.radixdlt.utils.Pair;
@@ -46,7 +46,7 @@ import java.util.Objects;
  *
  * TODO: Prune saved safety state.
  */
-public final class BerkeleySafetyStore implements PersistentSafetyState {
+public final class BerkeleySafetyStoreStore implements PersistentSafetyStateStore {
 	private static final String SAFETY_STORE_NAME = "safety_store";
 	private static final Logger logger = LogManager.getLogger();
 
@@ -54,7 +54,7 @@ public final class BerkeleySafetyStore implements PersistentSafetyState {
 	private Database safetyStore;
 
 	@Inject
-	public BerkeleySafetyStore(DatabaseEnvironment dbEnv) {
+	public BerkeleySafetyStoreStore(DatabaseEnvironment dbEnv) {
 		this.dbEnv = Objects.requireNonNull(dbEnv, "dbEnv is required");
 
 		this.open();
@@ -108,7 +108,7 @@ public final class BerkeleySafetyStore implements PersistentSafetyState {
 	}
 
 	@Override
-	public void save(Vote vote, SafetyState safetyState) {
+	public void commitState(Vote vote, SafetyState safetyState) {
 		if (!safetyState.getLastVotedView().equals(vote.getView())) {
 			throw new IllegalStateException("SafetyState and vote views don't match.");
 		}

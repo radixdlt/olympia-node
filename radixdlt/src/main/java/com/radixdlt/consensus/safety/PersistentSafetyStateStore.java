@@ -19,6 +19,9 @@ package com.radixdlt.consensus.safety;
 
 import com.radixdlt.consensus.Vote;
 
-public interface PersistentSafetyState {
-	void save(Vote vote, SafetyState safetyState);
+/**
+ * Responsible for synchronously persisting safety state
+ */
+public interface PersistentSafetyStateStore {
+	void commitState(Vote vote, SafetyState safetyState);
 }

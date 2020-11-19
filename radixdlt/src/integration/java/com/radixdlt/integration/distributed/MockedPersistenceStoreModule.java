@@ -20,12 +20,12 @@ package com.radixdlt.integration.distributed;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.radixdlt.consensus.safety.PersistentSafetyState;
+import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 
 public class MockedPersistenceStoreModule extends AbstractModule {
 	@Provides
 	@Singleton
-	public PersistentSafetyState persistentSafetyState() {
+	public PersistentSafetyStateStore persistentSafetyState() {
 		return (vote, safetyState) -> { };
 	}
 }

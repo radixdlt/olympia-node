@@ -48,7 +48,7 @@ import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.safety.PersistentSafetyState;
+import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
@@ -144,7 +144,7 @@ public class ConsensusModuleTest {
 				bind(new TypeLiteral<EventDispatcher<FormedQC>>() { }).toInstance(rmock(EventDispatcher.class));
 				bind(new TypeLiteral<RemoteEventDispatcher<Vote>>() { }).toInstance(rmock(RemoteEventDispatcher.class));
 
-				bind(PersistentSafetyState.class).toInstance(mock(PersistentSafetyState.class));
+				bind(PersistentSafetyStateStore.class).toInstance(mock(PersistentSafetyStateStore.class));
 				bind(ProceedToViewSender.class).toInstance(mock(ProceedToViewSender.class));
 				bind(ProposalBroadcaster.class).toInstance(mock(ProposalBroadcaster.class));
 				bind(SyncVerticesRequestSender.class).toInstance(requestSender);

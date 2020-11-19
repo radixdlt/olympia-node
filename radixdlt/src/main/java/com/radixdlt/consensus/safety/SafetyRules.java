@@ -52,20 +52,20 @@ public final class SafetyRules {
 	private final Hasher hasher;
 	private final HashSigner signer;
 
-	private final PersistentSafetyState persistentSafetyState;
+	private final PersistentSafetyStateStore persistentSafetyStateStore;
 	private SafetyState state;
 
 	@Inject
 	public SafetyRules(
 		@Self BFTNode self,
 		SafetyState initialState,
-		PersistentSafetyState persistentSafetyState,
+		PersistentSafetyStateStore persistentSafetyStateStore,
 		Hasher hasher,
 		HashSigner signer
 	) {
 		this.self = self;
 		this.state = Objects.requireNonNull(initialState);
-		this.persistentSafetyState = Objects.requireNonNull(persistentSafetyState);
+		this.persistentSafetyStateStore = Objects.requireNonNull(persistentSafetyStateStore);
 		this.hasher = Objects.requireNonNull(hasher);
 		this.signer = Objects.requireNonNull(signer);
 	}
@@ -178,7 +178,7 @@ public final class SafetyRules {
 		ECDSASignature signature = this.signer.sign(voteHash);
 		Vote vote = new Vote(this.self, timestampedVoteData, signature, highQC);
 
-		this.persistentSafetyState.save(vote, this.state);
+		this.persistentSafetyStateStore.commitState(vote, this.state);
 
 		return Optional.of(vote);
 	}

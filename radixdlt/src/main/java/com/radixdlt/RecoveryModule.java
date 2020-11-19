@@ -22,13 +22,16 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.safety.SafetyState;
-import com.radixdlt.store.berkeley.BerkeleySafetyStore;
+import com.radixdlt.store.berkeley.BerkeleySafetyStoreStore;
 import java.util.Optional;
 
+/**
+ * Manages consensus recovery on restarts
+ */
 public class RecoveryModule extends AbstractModule {
 	@Provides
 	@Singleton
-	private SafetyState safetyState(EpochChange initialEpoch, BerkeleySafetyStore berkeleySafetyStore) {
+	private SafetyState safetyState(EpochChange initialEpoch, BerkeleySafetyStoreStore berkeleySafetyStore) {
 		return berkeleySafetyStore.get().flatMap(p -> {
 			if (p.getFirst() > initialEpoch.getEpoch()) {
 				throw new IllegalStateException("Last vote is in a future epoch.");

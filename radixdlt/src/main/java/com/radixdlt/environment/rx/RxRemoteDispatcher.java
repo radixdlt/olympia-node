@@ -20,6 +20,10 @@ package com.radixdlt.environment.rx;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import java.util.Objects;
 
+/**
+ * Remote event dispatcher for rx environment
+ * @param <T> the event class
+ */
 public final class RxRemoteDispatcher<T> {
 	private final Class<T> eventClass;
 	private final RemoteEventDispatcher<T> dispatcher;
