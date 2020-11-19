@@ -23,7 +23,7 @@ import com.google.inject.Scopes;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.statecomputer.RadixEngineStakeComputer;
-import com.radixdlt.statecomputer.RadixEngineStakeComputerImpl;
+import com.radixdlt.statecomputer.TokenStakeComputer;
 import com.radixdlt.statecomputer.RadixEngineValidatorsComputer;
 import com.radixdlt.statecomputer.RadixEngineValidatorsComputerImpl;
 
@@ -40,6 +40,6 @@ public class RadixEngineValidatorComputersModule extends AbstractModule {
 	private RadixEngineStakeComputer stakeComputer(
 		@NativeToken RRI stakeToken // FIXME: ability to use a different token for fees and staking
 	) {
-		return RadixEngineStakeComputerImpl.create(stakeToken);
+		return TokenStakeComputer.create(stakeToken);
 	}
 }

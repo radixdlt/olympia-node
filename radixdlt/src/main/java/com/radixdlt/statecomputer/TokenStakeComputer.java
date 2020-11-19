@@ -34,26 +34,26 @@ import javax.annotation.concurrent.NotThreadSafe;
  * Helper class to maintain staked amounts from the radix engine state.
  */
 @NotThreadSafe
-public final class RadixEngineStakeComputerImpl implements RadixEngineStakeComputer {
+public final class TokenStakeComputer implements RadixEngineStakeComputer {
 	private final RRI stakingToken;
 	private final ImmutableMap<ECPublicKey, UInt256> stakedAmounts;
 
-	private RadixEngineStakeComputerImpl(RRI stakingToken, ImmutableMap<ECPublicKey, UInt256> stakedAmounts) {
+	private TokenStakeComputer(RRI stakingToken, ImmutableMap<ECPublicKey, UInt256> stakedAmounts) {
 		this.stakingToken = stakingToken;
 		this.stakedAmounts = stakedAmounts;
 	}
 
 	public static RadixEngineStakeComputer create(RRI stakingToken) {
 		Objects.requireNonNull(stakingToken);
-		return new RadixEngineStakeComputerImpl(stakingToken, ImmutableMap.of());
+		return new TokenStakeComputer(stakingToken, ImmutableMap.of());
 	}
 
-	private RadixEngineStakeComputerImpl next(ImmutableMap<ECPublicKey, UInt256> stakedAmounts) {
-		return new RadixEngineStakeComputerImpl(this.stakingToken, stakedAmounts);
+	private TokenStakeComputer next(ImmutableMap<ECPublicKey, UInt256> stakedAmounts) {
+		return new TokenStakeComputer(this.stakingToken, stakedAmounts);
 	}
 
 	@Override
-	public RadixEngineStakeComputerImpl addStake(ECPublicKey delegatedKey, RRI token, UInt256 amount) {
+	public TokenStakeComputer addStake(ECPublicKey delegatedKey, RRI token, UInt256 amount) {
 		if (this.stakingToken.equals(token) && !amount.isZero()) {
 			final var nextAmount = this.stakedAmounts.getOrDefault(delegatedKey, UInt256.ZERO).add(amount);
 			final var nextStakedAmounts = Stream.concat(
@@ -66,7 +66,7 @@ public final class RadixEngineStakeComputerImpl implements RadixEngineStakeCompu
 	}
 
 	@Override
-	public RadixEngineStakeComputerImpl removeStake(ECPublicKey delegatedKey, RRI token, UInt256 amount) {
+	public TokenStakeComputer removeStake(ECPublicKey delegatedKey, RRI token, UInt256 amount) {
 		if (this.stakingToken.equals(token) && !amount.isZero() && this.stakedAmounts.containsKey(delegatedKey)) {
 			final var oldAmount = this.stakedAmounts.get(delegatedKey);
 			if (amount.compareTo(oldAmount) >= 0) {

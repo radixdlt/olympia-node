@@ -28,20 +28,20 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 /**
- * Tests for {@link RadixEngineStakeComputerImpl}.
+ * Tests for {@link TokenStakeComputer}.
  */
-public class RadixEngineStakeComputerImplTest {
+public class TokenStakeComputerTest {
 
 	@Test
 	public void when_created_with_null_token_rri__exception_is_thrown() {
-		assertThatThrownBy(() -> RadixEngineStakeComputerImpl.create(null))
+		assertThatThrownBy(() -> TokenStakeComputer.create(null))
 			.isInstanceOf(NullPointerException.class);
 	}
 
 	@Test
 	public void when_stake_added_for_staking_token_to_empty_computer__stake_is_present() {
 		final var stakingToken = mock(RRI.class);
-		final var computer = RadixEngineStakeComputerImpl.create(stakingToken);
+		final var computer = TokenStakeComputer.create(stakingToken);
 		final var delegatedKey = ECKeyPair.generateNew().getPublicKey();
 		final var amount = UInt256.TEN;
 
@@ -55,7 +55,7 @@ public class RadixEngineStakeComputerImplTest {
 	@Test
 	public void when_stakes_added_for_two_delegates_to_empty_computer__both_are_present() {
 		final var stakingToken = mock(RRI.class);
-		final var computer = RadixEngineStakeComputerImpl.create(stakingToken);
+		final var computer = TokenStakeComputer.create(stakingToken);
 		final var delegatedKey1 = ECKeyPair.generateNew().getPublicKey();
 		final var delegatedKey2 = ECKeyPair.generateNew().getPublicKey();
 		final var amount = UInt256.TEN;
@@ -75,7 +75,7 @@ public class RadixEngineStakeComputerImplTest {
 		final var stakingToken = mock(RRI.class);
 		final var delegatedKey = ECKeyPair.generateNew().getPublicKey();
 		final var amount = UInt256.TEN;
-		final var computer = RadixEngineStakeComputerImpl.create(stakingToken)
+		final var computer = TokenStakeComputer.create(stakingToken)
 			.addStake(delegatedKey, stakingToken, amount);
 
 		final var nextComputer = computer.addStake(delegatedKey, stakingToken, amount);
@@ -91,7 +91,7 @@ public class RadixEngineStakeComputerImplTest {
 		final var stakingToken = mock(RRI.class);
 		final var delegatedKey = ECKeyPair.generateNew().getPublicKey();
 		final var amount = UInt256.TEN;
-		final var computer = RadixEngineStakeComputerImpl.create(stakingToken);
+		final var computer = TokenStakeComputer.create(stakingToken);
 
 		final var nextComputer = computer.addStake(delegatedKey, mock(RRI.class), amount);
 
@@ -104,7 +104,7 @@ public class RadixEngineStakeComputerImplTest {
 		final var stakingToken = mock(RRI.class);
 		final var delegatedKey = ECKeyPair.generateNew().getPublicKey();
 		final var amount = UInt256.ZERO;
-		final var computer = RadixEngineStakeComputerImpl.create(stakingToken);
+		final var computer = TokenStakeComputer.create(stakingToken);
 
 		final var nextComputer = computer.addStake(delegatedKey, stakingToken, amount);
 
@@ -117,7 +117,7 @@ public class RadixEngineStakeComputerImplTest {
 		final var stakingToken = mock(RRI.class);
 		final var delegatedKey = ECKeyPair.generateNew().getPublicKey();
 		final var amount = UInt256.TEN;
-		final var computer = RadixEngineStakeComputerImpl.create(stakingToken)
+		final var computer = TokenStakeComputer.create(stakingToken)
 			.addStake(delegatedKey, stakingToken, amount);
 
 		final var nextComputer = computer.removeStake(delegatedKey, stakingToken, amount);
@@ -132,7 +132,7 @@ public class RadixEngineStakeComputerImplTest {
 		final var delegatedKey1 = ECKeyPair.generateNew().getPublicKey();
 		final var delegatedKey2 = ECKeyPair.generateNew().getPublicKey();
 		final var amount = UInt256.TEN;
-		final var computer = RadixEngineStakeComputerImpl.create(stakingToken)
+		final var computer = TokenStakeComputer.create(stakingToken)
 			.addStake(delegatedKey1, stakingToken, amount)
 			.addStake(delegatedKey2, stakingToken, amount);
 
@@ -149,7 +149,7 @@ public class RadixEngineStakeComputerImplTest {
 		final var delegatedKey1 = ECKeyPair.generateNew().getPublicKey();
 		final var delegatedKey2 = ECKeyPair.generateNew().getPublicKey();
 		final var amount = UInt256.TEN;
-		final var computer = RadixEngineStakeComputerImpl.create(stakingToken)
+		final var computer = TokenStakeComputer.create(stakingToken)
 			.addStake(delegatedKey1, stakingToken, amount)
 			.addStake(delegatedKey2, stakingToken, amount);
 
@@ -167,7 +167,7 @@ public class RadixEngineStakeComputerImplTest {
 		final var stakingToken = mock(RRI.class);
 		final var delegatedKey = ECKeyPair.generateNew().getPublicKey();
 		final var amount = UInt256.TEN;
-		final var computer = RadixEngineStakeComputerImpl.create(stakingToken)
+		final var computer = TokenStakeComputer.create(stakingToken)
 			.addStake(delegatedKey, stakingToken, amount);
 
 		final var nextComputer = computer.removeStake(delegatedKey, mock(RRI.class), amount);
@@ -182,13 +182,13 @@ public class RadixEngineStakeComputerImplTest {
 		final var stakingToken = mock(RRI.class);
 		final var delegatedKey = ECKeyPair.generateNew().getPublicKey();
 		final var amount = UInt256.from(1234567890L);
-		final var computer = RadixEngineStakeComputerImpl.create(stakingToken)
+		final var computer = TokenStakeComputer.create(stakingToken)
 			.addStake(delegatedKey, stakingToken, amount);
 
 		final var string = computer.toString();
 
 		assertThat(string)
-			.contains(RadixEngineStakeComputerImpl.class.getSimpleName())
+			.contains(TokenStakeComputer.class.getSimpleName())
 			.contains(stakingToken.toString())
 			.contains(delegatedKey.toString())
 			.contains(amount.toString());

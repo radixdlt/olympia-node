@@ -65,10 +65,10 @@ public class SimulationValidatorComputersModule extends AbstractModule {
 		}
 	}
 
-	private final class SimulationValidatorsComputer implements RadixEngineValidatorsComputer {
+	private final class SimulationValidatorComputer implements RadixEngineValidatorsComputer {
 		private final RadixEngineValidatorsComputer delegate;
 
-		private SimulationValidatorsComputer(Collection<ECPublicKey> initialValidators) {
+		private SimulationValidatorComputer(Collection<ECPublicKey> initialValidators) {
 			var initialComputer = RadixEngineValidatorsComputerImpl.create();
 			for (final var key : initialValidators) {
 				initialComputer = initialComputer.addValidator(key);
@@ -105,6 +105,6 @@ public class SimulationValidatorComputersModule extends AbstractModule {
 			.map(BFTValidator::getNode)
 			.map(BFTNode::getKey)
 			.collect(ImmutableList.toImmutableList());
-		return new SimulationValidatorsComputer(validatorKeys);
+		return new SimulationValidatorComputer(validatorKeys);
 	}
 }
