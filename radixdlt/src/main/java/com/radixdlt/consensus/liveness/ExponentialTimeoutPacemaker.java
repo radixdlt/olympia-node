@@ -297,14 +297,16 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 		this.timeoutSender.scheduleTimeout(this.currentView, timeout);
 		this.pacemakerInfoSender.sendCurrentView(this.currentView);
 		if (this.self.equals(this.proposerElection.getProposer(nextView))) {
-			Proposal proposal = generateProposal(this.currentView);
-			log.trace("Broadcasting proposal: {}", proposal);
-			this.sender.broadcastProposal(proposal, this.validatorSet.nodes());
-			this.counters.increment(CounterType.BFT_PROPOSALS_MADE);
+			Optional<Proposal> proposalMaybe = generateProposal(this.currentView);
+			proposalMaybe.ifPresent(proposal -> {
+				log.trace("Broadcasting proposal: {}", proposal);
+				this.sender.broadcastProposal(proposal, this.validatorSet.nodes());
+				this.counters.increment(CounterType.BFT_PROPOSALS_MADE);
+			});
 		}
 	}
 
-	private Proposal generateProposal(View view) {
+	private Optional<Proposal> generateProposal(View view) {
 		// Hotstuff's Event-Driven OnBeat
 		final HighQC highQC = this.vertexStore.highQC();
 		final QuorumCertificate highestQC = highQC.highestQC();
@@ -328,7 +330,8 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 		}
 
 		final UnverifiedVertex proposedVertex = UnverifiedVertex.createVertex(highestQC, view, nextCommand);
-		return safetyRules.signProposal(proposedVertex, highestCommitted);
+		final VerifiedVertex verifiedVertex = new VerifiedVertex(proposedVertex, hasher.hash(proposedVertex));
+		return safetyRules.signProposal(verifiedVertex, highestCommitted);
 	}
 
 	private long uncommittedViews(View v) {

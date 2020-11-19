@@ -60,6 +60,7 @@ public class LocalSyncServiceAccumulatorProcessorTest {
 		this.accumulatorComparator = TypedMocks.rmock(Comparator.class);
 		this.requestDispatcher = TypedMocks.rmock(RemoteEventDispatcher.class);
 		this.syncServiceProcessor = new LocalSyncServiceAccumulatorProcessor(
+			BFTNode.random(),
 			requestDispatcher,
 			syncTimeoutScheduler,
 			accumulatorComparator,

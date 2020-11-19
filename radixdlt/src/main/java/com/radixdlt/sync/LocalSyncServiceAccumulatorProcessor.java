@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
@@ -69,9 +70,11 @@ public final class LocalSyncServiceAccumulatorProcessor implements LocalSyncServ
 	private final Comparator<AccumulatorState> accComparator;
 	private VerifiedLedgerHeaderAndProof targetHeader;
 	private VerifiedLedgerHeaderAndProof currentHeader;
+	private final BFTNode self;
 
 	@Inject
 	public LocalSyncServiceAccumulatorProcessor(
+		@Self BFTNode self,
 		RemoteEventDispatcher<DtoLedgerHeaderAndProof> requestDispatcher,
 		SyncTimeoutScheduler syncTimeoutScheduler,
 		Comparator<AccumulatorState> accComparator,
@@ -82,6 +85,7 @@ public final class LocalSyncServiceAccumulatorProcessor implements LocalSyncServ
 			throw new IllegalArgumentException();
 		}
 
+		this.self = Objects.requireNonNull(self);
 		this.requestDispatcher = Objects.requireNonNull(requestDispatcher);
 		this.syncTimeoutScheduler = Objects.requireNonNull(syncTimeoutScheduler);
 		this.patienceMilliseconds = patienceMilliseconds;
@@ -103,6 +107,10 @@ public final class LocalSyncServiceAccumulatorProcessor implements LocalSyncServ
 
 	private void processLocalSyncRequest(LocalSyncRequest request) {
 		log.info("SYNC_LOCAL_REQUEST: {} current {}", request, this.currentHeader);
+
+		if (request.getTargetNodes().contains(self)) {
+			throw new IllegalStateException("Should not be targeting self.");
+		}
 
 		final VerifiedLedgerHeaderAndProof nextTargetHeader = request.getTarget();
 		if (accComparator.compare(nextTargetHeader.getAccumulatorState(), this.targetHeader.getAccumulatorState()) <= 0) {

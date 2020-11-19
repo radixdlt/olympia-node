@@ -24,6 +24,8 @@ import com.google.inject.Scopes;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.Ledger;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessWithSyncRunner;
 import com.radixdlt.environment.RemoteEventDispatcher;
@@ -108,6 +110,7 @@ public class EpochsSyncModule extends AbstractModule {
 
 	@Provides
 	private Function<BFTConfiguration, LocalSyncServiceAccumulatorProcessor> localSyncFactory(
+		@Self BFTNode self,
 		Comparator<AccumulatorState> accumulatorComparator,
 		RemoteEventDispatcher<DtoLedgerHeaderAndProof> requestDispatcher,
 		SyncTimeoutScheduler syncTimeoutScheduler,
@@ -115,6 +118,7 @@ public class EpochsSyncModule extends AbstractModule {
 	) {
 		return config ->
 			new LocalSyncServiceAccumulatorProcessor(
+				self,
 				requestDispatcher,
 				syncTimeoutScheduler,
 				accumulatorComparator,
