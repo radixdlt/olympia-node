@@ -36,7 +36,6 @@ public class PacemakerFactoryImpl implements PacemakerFactory {
 	private final SystemCounters counters;
 	private final VoteSender voteSender;
 	private final ProposalBroadcaster proposalBroadcaster;
-	private final ProposerElection proposerElection;
 	private final NextCommandGenerator nextCommandGenerator;
 	private final Hasher hasher;
 
@@ -45,7 +44,6 @@ public class PacemakerFactoryImpl implements PacemakerFactory {
 		SystemCounters counters,
 		VoteSender voteSender,
 		ProposalBroadcaster proposalBroadcaster,
-		ProposerElection proposerElection,
 		NextCommandGenerator nextCommandGenerator,
 		Hasher hasher
 	) {
@@ -53,7 +51,6 @@ public class PacemakerFactoryImpl implements PacemakerFactory {
 		this.counters = Objects.requireNonNull(counters);
 		this.voteSender = Objects.requireNonNull(voteSender);
 		this.proposalBroadcaster = Objects.requireNonNull(proposalBroadcaster);
-		this.proposerElection = Objects.requireNonNull(proposerElection);
 		this.nextCommandGenerator = Objects.requireNonNull(nextCommandGenerator);
 		this.hasher = Objects.requireNonNull(hasher);
 	}
@@ -66,7 +63,8 @@ public class PacemakerFactoryImpl implements PacemakerFactory {
 		PacemakerState pacemakerState,
 		PacemakerTimeoutSender timeoutSender,
 		PacemakerTimeoutCalculator timeoutCalculator,
-		SafetyRules safetyRules
+		SafetyRules safetyRules,
+		ProposerElection proposerElection
 	) {
 		PendingViewTimeouts pendingViewTimeouts = new PendingViewTimeouts();
 		return new Pacemaker(

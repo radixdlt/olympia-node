@@ -18,6 +18,7 @@
 package com.radixdlt.consensus.epoch;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.BFTFactory;
@@ -252,7 +253,15 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 
 		final PacemakerState pacemakerState = pacemakerStateFactory.create(viewUpdateSender);
 		final Pacemaker pacemaker = pacemakerFactory.create(
-				validatorSet, vertexStore, infoSender, pacemakerState, timeoutSender, timeoutCalculator, safetyRules);
+			validatorSet,
+			vertexStore,
+			infoSender,
+			pacemakerState,
+			timeoutSender,
+			timeoutCalculator,
+			safetyRules,
+			proposerElection
+		);
 		final BFTSync bftSync = bftSyncFactory.create(vertexStore, pacemakerState);
 
 		this.syncBFTResponseProcessor = bftSync;
@@ -299,8 +308,13 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 
 		if (this.currentEpoch.getBFTConfiguration().getValidatorSet().containsNode(this.self)) {
 			log.info("EPOCH_CHANGE: broadcasting next epoch");
-			BFTValidatorSet validatorSet = epochChange.getBFTConfiguration().getValidatorSet();
-			for (BFTValidator validator : validatorSet.getValidators()) {
+			final ImmutableSet<BFTValidator> currentAndNextValidators =
+					ImmutableSet.<BFTValidator>builder()
+							.addAll(epochChange.getBFTConfiguration().getValidatorSet().getValidators())
+							.addAll(this.currentEpoch.getBFTConfiguration().getValidatorSet().getValidators())
+							.build();
+
+			for (BFTValidator validator : currentAndNextValidators) {
 				if (!validator.getNode().equals(self)) {
 					epochsRPCSender.sendGetEpochResponse(validator.getNode(), epochChange.getProof());
 				}

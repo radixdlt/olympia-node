@@ -141,7 +141,6 @@ public class EpochsConsensusModule extends AbstractModule {
 		SystemCounters counters,
 		VoteSender voteSender,
 		ProposalBroadcaster proposalBroadcaster,
-		ProposerElection proposerElection,
 		NextCommandGenerator nextCommandGenerator,
 		Hasher hasher
 	) {
@@ -150,7 +149,6 @@ public class EpochsConsensusModule extends AbstractModule {
 			counters,
 			voteSender,
 			proposalBroadcaster,
-			proposerElection,
 			nextCommandGenerator,
 			hasher);
 	}

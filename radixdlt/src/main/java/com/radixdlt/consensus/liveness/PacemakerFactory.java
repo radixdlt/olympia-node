@@ -38,6 +38,7 @@ public interface PacemakerFactory {
 		PacemakerState pacemakerState,
 		PacemakerTimeoutSender timeoutSender,
 		PacemakerTimeoutCalculator timeoutCalculator,
-		SafetyRules safetyRules
+		SafetyRules safetyRules,
+		ProposerElection proposerElection
 	);
 }

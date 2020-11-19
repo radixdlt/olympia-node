@@ -287,6 +287,7 @@ public class RecoveryTest {
 			Key.get(VerifiedLedgerHeaderAndProof.class, LastEpochProof.class)
 		);
 		assertThat(restartedEpochProof.isEndOfEpoch()).isTrue();
+		assertThat(restartedEpochProof.getEpoch()).isGreaterThan(1);
 		assertThat(restartedEpochProof.getEpoch()).isEqualTo(epochView.getEpoch() - 1);
 	}
 }
