@@ -17,9 +17,7 @@ git:
 jobs:
   include:
     - stage: check
-      script: ./gradlew check --info --refresh-dependencies
-    - stage: sonar
-      script: ./gradlew jacocoTestReport sonarqube --info --refresh-dependencies
+      script: ./gradlew check jacocoTestReport sonarqube --info --refresh-dependencies
     - stage: integration
       script: ./gradlew integrationTest --refresh-dependencies
 
