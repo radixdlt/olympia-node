@@ -78,7 +78,6 @@ public class RandomValidatorsTest {
 	}
 
 	@Test
-	// TODO: failing
 	public void given_deterministic_randomized_validator_sets__then_should_pass_bft_and_epoch_invariants() {
 		SimulationTest bftTest = bftTestBuilder
 			.ledgerAndEpochs(View.of(100), goodRandomEpochToNodesMapper())

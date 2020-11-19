@@ -73,7 +73,6 @@ public class OneNodeNeverSendEpochResponseTest {
 		return randomEpochToNodesMapper(Random::new);
 	}
 
-	// TODO: failing
 	@Test
 	public void given_deterministic_randomized_validator_sets__then_should_pass_bft_and_epoch_invariants() {
 		SimulationTest bftTest = bftTestBuilder

@@ -68,7 +68,7 @@ public class FNodesNeverReceiveProposalDropperTest {
 	}
 
 	@Test
-	public void sanity_tests_should_pass() { // TODO: failing
+	public void sanity_tests_should_pass() {
 		SimulationTest simulationTest = bftTestBuilder
 			.build();
 		TestResults results = simulationTest.run();

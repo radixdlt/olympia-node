@@ -35,7 +35,7 @@ public class OneProposalTimeoutResponsiveTest {
 	private void run(int numNodes, long numViews, long dropPeriod) {
 		DeterministicTest test = DeterministicTest.builder()
 			.numNodes(numNodes)
-			.messageSelector(MessageSelector.randomSelector(random))
+			.messageSelector(MessageSelector.firstSelector())
 			.messageMutator(dropSomeProposals(dropPeriod))
 			.build()
 			.runUntil(DeterministicTest.hasReachedView(View.of(numViews)));
@@ -43,6 +43,7 @@ public class OneProposalTimeoutResponsiveTest {
 		long requiredIndirectParents = (numViews - 1) / dropPeriod; // Edge case if dropPeriod a factor of numViews
 
 		long requiredTimeouts = (numViews / dropPeriod * 2);
+		System.out.println("required=" + requiredTimeouts);
 		for (int nodeIndex = 0; nodeIndex < numNodes; ++nodeIndex) {
 			SystemCounters counters = test.getSystemCounters(nodeIndex);
 			long numberOfIndirectParents = counters.get(SystemCounters.CounterType.BFT_INDIRECT_PARENT);
@@ -79,6 +80,6 @@ public class OneProposalTimeoutResponsiveTest {
 
 	@Test
 	public void when_run_100_correct_nodes_with_1_timeout__then_bft_should_be_responsive() {
-		this.run(100, 1_000, 100); // TODO: failing
+		this.run(100, 1_000, 100);
 	}
 }

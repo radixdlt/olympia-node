@@ -129,8 +129,8 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 	private final EventProcessor<EpochView> epochViewEventProcessor;
 	private final EventProcessor<Timeout> timeoutEventProcessor;
 	private final SyncLedgerRequestSender syncRequestSender;
-	private final LocalViewUpdateSender localViewUpdateSender;
 	private final PacemakerStateFactory pacemakerStateFactory;
+	private final LocalViewUpdateSenderFactory localViewUpdateSenderFactory;
 
 	private EpochChange currentEpoch;
 	private int numQueuedConsensusEvents = 0;
@@ -141,6 +141,7 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 	private LedgerUpdateProcessor<LedgerUpdate> syncLedgerUpdateProcessor;
 	private BFTSyncRequestProcessor syncRequestProcessor;
 	private BFTEventProcessor bftEventProcessor;
+	private LocalViewUpdateSender localViewUpdateSender;
 
 	@Inject
 	public EpochManager(
@@ -165,8 +166,9 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 		HashSigner signer,
 		PacemakerTimeoutCalculator timeoutCalculator,
 		VoteSender voteSender,
-		LocalViewUpdateSender localViewUpdateSender,
-		PacemakerStateFactory pacemakerStateFactory
+		LocalViewUpdateSender initialLocalViewUpdateSender,
+		PacemakerStateFactory pacemakerStateFactory,
+		LocalViewUpdateSenderFactory localViewUpdateSenderFactory
 	) {
 		if (!initialEpoch.getBFTConfiguration().getValidatorSet().containsNode(self)) {
 			this.bftEventProcessor =  EmptyBFTEventProcessor.INSTANCE;
@@ -202,8 +204,9 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 		this.counters = Objects.requireNonNull(counters);
 		this.epochViewEventProcessor = Objects.requireNonNull(epochViewEventProcessor);
 		this.timeoutEventProcessor = Objects.requireNonNull(timeoutEventProcessor);
-		this.localViewUpdateSender = Objects.requireNonNull(localViewUpdateSender);
+		this.localViewUpdateSender = Objects.requireNonNull(initialLocalViewUpdateSender);
 		this.pacemakerStateFactory = Objects.requireNonNull(pacemakerStateFactory);
+		this.localViewUpdateSenderFactory = Objects.requireNonNull(localViewUpdateSenderFactory);
 		this.queuedEvents = new HashMap<>();
 	}
 
@@ -245,6 +248,8 @@ public final class EpochManager implements BFTSyncRequestProcessor, BFTSyncReque
 				timeoutEventProcessor.processEvent(timeout);
 			}
 		};
+
+		localViewUpdateSender = localViewUpdateSenderFactory.create(infoSender, timeoutSender);
 
 		final ViewUpdateSender viewUpdateSender = (viewUpdate) ->
 				localViewUpdateSender.sendLocalViewUpdate(new LocalViewUpdate(nextEpoch, viewUpdate));

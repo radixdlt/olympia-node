@@ -275,7 +275,7 @@ public class RecoveryTest {
 	@Test
 	public void on_reboot_should_load_same_last_epoch_header() {
 		// Arrange
-		processForCount(100);
+		processForCount(120);
 		DeterministicEpochInfo epochInfo = getEpochInfo();
 		EpochView epochView = epochInfo.getCurrentEpochView();
 
@@ -286,6 +286,7 @@ public class RecoveryTest {
 		VerifiedLedgerHeaderAndProof restartedEpochProof = currentInjector.getInstance(
 			Key.get(VerifiedLedgerHeaderAndProof.class, LastEpochProof.class)
 		);
+
 		assertThat(restartedEpochProof.isEndOfEpoch()).isTrue();
 		assertThat(restartedEpochProof.getEpoch()).isGreaterThan(1);
 		assertThat(restartedEpochProof.getEpoch()).isEqualTo(epochView.getEpoch() - 1);

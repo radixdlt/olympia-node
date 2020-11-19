@@ -97,9 +97,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		if (viewUpdate.getCurrentView().gt(previousView)) {
 			viewQueues.getOrDefault(viewUpdate.getCurrentView(), new LinkedList<>())
 					.forEach(this::processViewCachedEvent);
-			viewQueues.remove(viewUpdate.getCurrentView());
-			// TODO: make sure to clear queues for previous views,
-			//       if it's possible to advance more than one view in a single message
+			viewQueues.keySet().removeIf(v -> v.lte(viewUpdate.getCurrentView()));
 		}
 	}
 
@@ -163,7 +161,6 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	public void processLocalTimeout(View view) {
 		forwardTo.processLocalTimeout(view);
 
-		// TODO: check for any previous view
 		if (!view.equals(this.latestViewUpdate.getCurrentView())) {
 			return;
 		}

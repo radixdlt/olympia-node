@@ -84,6 +84,8 @@ import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.utils.UInt256;
+
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.junit.Before;
 import org.junit.Test;
@@ -155,6 +157,8 @@ public class EpochManagerTest {
 				bindConstant().annotatedWith(PacemakerRate.class).to(2.0);
 				bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0);
 				bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
+
+				bind(new TypeLiteral<Consumer<LocalViewUpdate>>() { }).toInstance(rmock(Consumer.class));
 			}
 
 			@Provides

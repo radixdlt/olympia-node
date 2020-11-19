@@ -28,6 +28,8 @@ import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.epoch.LocalTimeoutSender;
 import com.radixdlt.consensus.epoch.LocalViewUpdate;
 import com.radixdlt.consensus.epoch.LocalViewUpdateSender;
+import com.radixdlt.consensus.epoch.LocalViewUpdateSenderFactory;
+import com.radixdlt.consensus.epoch.LocalViewUpdateSenderWithTimeout;
 import com.radixdlt.consensus.epoch.ProposerElectionFactory;
 import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
@@ -48,6 +50,7 @@ import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.consensus.liveness.PacemakerFactoryImpl;
 import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.liveness.PacemakerStateFactory;
+import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.consensus.liveness.ProposerElection;
@@ -68,6 +71,7 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.store.LastEpochProof;
 import java.util.Comparator;
 import java.util.Random;
+import java.util.function.Consumer;
 
 /**
  * Module which allows for consensus to have multiple epochs
@@ -151,6 +155,15 @@ public class EpochsConsensusModule extends AbstractModule {
 			proposalBroadcaster,
 			nextCommandGenerator,
 			hasher);
+	}
+
+	@Provides
+	private LocalViewUpdateSenderFactory localViewUpdateSenderFactory(
+		PacemakerTimeoutCalculator timeoutCalculator,
+		Consumer<LocalViewUpdate> consumer
+	) {
+		return (infoSender, timeoutSender) ->
+			new LocalViewUpdateSenderWithTimeout(timeoutSender, timeoutCalculator, infoSender, consumer);
 	}
 
 	@Provides
