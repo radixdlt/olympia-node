@@ -19,6 +19,7 @@ package com.radixdlt.integration.distributed.simulation;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
@@ -63,8 +64,8 @@ public class NodeNetworkMessagesModule extends AbstractModule {
 		return simulationNetwork.getNetwork(node);
 	}
 
-	@Provides
-	private RxRemoteDispatcher<Vote> voteDispatcher(SimulatedNetworkImpl network) {
+	@ProvidesIntoSet
+	private RxRemoteDispatcher<?> voteDispatcher(SimulatedNetworkImpl network) {
 		return RxRemoteDispatcher.create(Vote.class, network.remoteEventDispatcher(Vote.class));
 	}
 

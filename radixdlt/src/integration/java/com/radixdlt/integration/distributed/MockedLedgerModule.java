@@ -44,7 +44,6 @@ public class MockedLedgerModule extends AbstractModule {
 	@Override
 	public void configure() {
 		bind(NextCommandGenerator.class).toInstance((view, aids) -> null);
-		bind(new TypeLiteral<EventProcessor<LocalSyncRequest>>() { }).toInstance(req -> { });
 	}
 
 	@Provides

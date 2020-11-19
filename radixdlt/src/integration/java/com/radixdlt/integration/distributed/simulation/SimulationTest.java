@@ -185,23 +185,25 @@ public class SimulationTest {
 
 			Module getSyncModule() {
 				List<Module> modules = new ArrayList<>();
-				if (!hasSync) {
-					modules.add(new MockedSyncServiceModule());
-				} else {
-					modules.add(new AbstractModule() {
-						@Override
-						public void configure() {
-							bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(50);
-						}
-					});
-					modules.add(new SyncServiceModule());
-					modules.add(new SyncRxModule());
-					if (!hasEpochs) {
-						modules.add(new MockedSyncRunnerModule());
-						modules.add(new MockedCommittedReaderModule());
+				if (hasLedger) {
+					if (!hasSync) {
+						modules.add(new MockedSyncServiceModule());
 					} else {
-						modules.add(new EpochsSyncModule());
-						modules.add(new SyncRunnerModule());
+						modules.add(new AbstractModule() {
+							@Override
+							public void configure() {
+								bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(50);
+							}
+						});
+						modules.add(new SyncServiceModule());
+						modules.add(new SyncRxModule());
+						modules.add(new MockedCommittedReaderModule());
+						if (!hasEpochs) {
+							modules.add(new MockedSyncRunnerModule());
+						} else {
+							modules.add(new EpochsSyncModule());
+							modules.add(new SyncRunnerModule());
+						}
 					}
 				}
 				return Modules.combine(modules);
@@ -523,14 +525,13 @@ public class SimulationTest {
 			}
 
 			// Ledger
-			modules.add(new LedgerRxModule());
 			if (!ledgerType.hasLedger) {
 				modules.add(new MockedBFTConfigurationModule());
 				modules.add(new MockedLedgerModule());
-				modules.add(new MockedConsensusRunnerModule());
 				modules.add(new MockedLedgerUpdateRxModule());
 			} else {
 				modules.add(new LedgerModule());
+				modules.add(new LedgerRxModule());
 				if (!ledgerType.hasEpochs) {
 					modules.add(new MockedLedgerUpdateRxModule());
 					modules.add(new MockedLedgerUpdateSender());
