@@ -113,7 +113,7 @@ public final class ControlledSender implements DeterministicSender, Environment 
 
 	@Override
 	public void sendGetEpochResponse(BFTNode node, VerifiedLedgerHeaderAndProof ancestor) {
-		GetEpochResponse getEpochResponse = new GetEpochResponse(node, ancestor);
+		GetEpochResponse getEpochResponse = new GetEpochResponse(self, ancestor);
 		ChannelId channelId = ChannelId.of(this.senderIndex, this.network.lookup(node));
 		handleMessage(new ControlledMessage(self, channelId, getEpochResponse, arrivalTime(channelId)));
 	}
