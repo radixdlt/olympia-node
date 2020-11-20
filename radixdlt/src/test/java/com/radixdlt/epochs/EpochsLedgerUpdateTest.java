@@ -24,7 +24,6 @@ import com.radixdlt.utils.UInt256;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Set;
 
@@ -41,8 +40,8 @@ public class EpochsLedgerUpdateTest {
 
 	@Test
 	public void testEqualsForEpochsLedgerUpdateHierarchy() {
-		Class<?> cls = EpochsLedgerUpdate.class;
-		Set<Class<?>> classesToIgnore = Sets.newLinkedHashSet(
+		final var cls = EpochsLedgerUpdate.class;
+		final Set<Class<?>> classesToIgnore = Sets.newLinkedHashSet(
 			SerializerDummy.class, // No equals or hashCode
 			UInt256.class // Assumes and ensures non-null fields in hashCode()
 		);
@@ -53,9 +52,8 @@ public class EpochsLedgerUpdateTest {
 		EqualsVerifier.forClass(cls)
 			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 			.verify();
-		Field[] fields = cls.getDeclaredFields();
-		for (Field field : fields) {
-			Class<?> fcls = field.getType();
+		for (final var field : cls.getDeclaredFields()) {
+			final var fcls = field.getType();
 			if (!fcls.isPrimitive() && !fcls.isArray() && !Modifier.isAbstract(fcls.getModifiers()) && classesToIgnore.add(fcls)) {
 				checkEquals(fcls, classesToIgnore);
 			}
