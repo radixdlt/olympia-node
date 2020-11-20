@@ -344,8 +344,8 @@ public final class DeterministicTest {
 			if (!(message.message() instanceof Proposal)) {
 				return false;
 			}
-			Proposal p = (Proposal) message.message();
-			EpochView nev = EpochView.of(p.getEpoch(), p.getView());
+			Proposal proposal = (Proposal) message.message();
+			EpochView nev = EpochView.of(proposal.getEpoch(), proposal.getView());
 			return (nev.compareTo(maxEpochView) > 0);
 		};
 	}

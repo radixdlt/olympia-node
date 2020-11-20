@@ -22,7 +22,7 @@ import com.radixdlt.consensus.bft.ViewUpdate;
 import java.util.Objects;
 
 /**
- * A wrapper for a ViewUpdate message that also holds the current epoch.
+ * A wrapper for a ViewUpdate message that also holds epoch.
  */
 public final class LocalViewUpdate {
 

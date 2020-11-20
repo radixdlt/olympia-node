@@ -288,4 +288,3 @@ public final class ConsensusModule extends AbstractModule {
 		);
 	}
 }
-

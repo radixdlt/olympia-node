@@ -42,7 +42,7 @@ public class OneProposalTimeoutResponsiveTest {
 
 		long requiredIndirectParents = (numViews - 1) / dropPeriod; // Edge case if dropPeriod a factor of numViews
 
-		long requiredTimeouts = (numViews / dropPeriod * 2);
+		long requiredTimeouts = numViews / dropPeriod * 2;
 		for (int nodeIndex = 0; nodeIndex < numNodes; ++nodeIndex) {
 			SystemCounters counters = test.getSystemCounters(nodeIndex);
 			long numberOfIndirectParents = counters.get(SystemCounters.CounterType.BFT_INDIRECT_PARENT);
@@ -68,7 +68,7 @@ public class OneProposalTimeoutResponsiveTest {
 
 	@Test
 	public void when_run_3_correct_nodes_with_1_timeout__then_bft_should_be_responsive() {
-		this.run(6, 50_000, 100);
+		this.run(3, 50_000, 100);
 	}
 
 	@Test

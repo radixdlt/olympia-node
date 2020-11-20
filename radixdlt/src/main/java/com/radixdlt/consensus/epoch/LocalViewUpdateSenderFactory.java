@@ -21,7 +21,7 @@ import com.radixdlt.consensus.liveness.PacemakerInfoSender;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
 
 /**
- * LocalViewUpdateSender factory
+ * A factory for LocalViewUpdateSenders.
  */
 public interface LocalViewUpdateSenderFactory {
 

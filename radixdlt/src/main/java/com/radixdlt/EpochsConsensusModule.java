@@ -216,5 +216,3 @@ public class EpochsConsensusModule extends AbstractModule {
 		);
 	}
 }
-
-
