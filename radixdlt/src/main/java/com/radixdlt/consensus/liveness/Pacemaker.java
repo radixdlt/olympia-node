@@ -41,6 +41,7 @@ import org.apache.logging.log4j.Level;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -70,6 +71,7 @@ public final class Pacemaker {
 	private final Hasher hasher;
 
 	private ViewUpdate latestViewUpdate = new ViewUpdate(View.genesis(), View.genesis(), View.genesis());
+	private Optional<View> lastTimedOutView = Optional.empty();
 
 	public Pacemaker(
 		BFTNode self,
@@ -182,7 +184,12 @@ public final class Pacemaker {
 			log.trace("LocalTimeout: Ignoring view {}, current is {}", view, this.latestViewUpdate.getCurrentView());
 			return;
 		}
-		counters.increment(CounterType.BFT_TIMEOUT);
+
+		if (lastTimedOutView.isEmpty() || !lastTimedOutView.get().equals(view)) {
+			counters.increment(CounterType.BFT_TIMED_OUT_VIEWS);
+		}
+		lastTimedOutView = Optional.of(view);
+		counters.increment(CounterType.BFT_TOTAL_VIEW_TIMEOUTS);
 
 		final ViewTimeout viewTimeout = this.safetyRules.viewTimeout(view, this.vertexStore.highQC());
 		this.voteSender.broadcastViewTimeout(viewTimeout, this.validatorSet.nodes());

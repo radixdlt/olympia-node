@@ -58,7 +58,7 @@ public class MovingWindowValidatorsTest {
 
 		LinkedList<SystemCounters> testCounters = systemCounters(bftTest);
 		assertThat(testCounters).extracting(sc -> sc.get(CounterType.BFT_INDIRECT_PARENT)).containsOnly(0L);
-		assertThat(testCounters).extracting(sc -> sc.get(CounterType.BFT_TIMEOUT)).containsOnly(0L);
+		assertThat(testCounters).extracting(sc -> sc.get(CounterType.BFT_TOTAL_VIEW_TIMEOUTS)).containsOnly(0L);
 
 		long maxCount = maxProcessedFor(numNodes, windowSize, maxEpoch, highView.number());
 
