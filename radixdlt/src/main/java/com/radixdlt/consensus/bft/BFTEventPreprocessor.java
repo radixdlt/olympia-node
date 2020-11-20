@@ -108,6 +108,9 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		} else if (event instanceof Vote) {
 			log.trace("Processing cached vote {}", event);
 			processVote((Vote) event);
+		} else if (event instanceof ViewTimeout) {
+			log.trace("Processing cached view timeout {}", event);
+			processViewTimeout((ViewTimeout) event);
 		} else {
 			log.error("Ignoring cached ConsensusEvent {}", event);
 		}
@@ -214,7 +217,11 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		if (!onCurrentView("ViewTimeout", viewTimeout.getView(), viewTimeout)) {
 			return true;
 		}
-		return syncUp(viewTimeout.highQC(), viewTimeout.getAuthor(), () -> this.forwardTo.processViewTimeout(viewTimeout));
+		return syncUp(
+			viewTimeout.highQC(),
+			viewTimeout.getAuthor(),
+			() -> processOnCurrentViewOrCache(viewTimeout, forwardTo::processViewTimeout)
+		);
 	}
 
 	private boolean processVoteInternal(Vote vote) {
@@ -224,9 +231,11 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		if (!checkForCurrentViewAndIAmNextLeader("Vote", vote.getView(), vote)) {
 			return true;
 		}
-		return syncUp(vote.highQC(), vote.getAuthor(), () -> {
-			processOnCurrentViewOrCache(vote, forwardTo::processVote);
-		});
+		return syncUp(
+			vote.highQC(),
+			vote.getAuthor(),
+			() -> processOnCurrentViewOrCache(vote, forwardTo::processVote)
+		);
 	}
 
 	private boolean processProposalInternal(Proposal proposal) {
@@ -237,9 +246,11 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 			return true;
 		}
 
-		return syncUp(proposal.highQC(), proposal.getAuthor(), () -> {
-			processOnCurrentViewOrCache(proposal, forwardTo::processProposal);
-		});
+		return syncUp(
+			proposal.highQC(),
+			proposal.getAuthor(),
+			() -> processOnCurrentViewOrCache(proposal, forwardTo::processProposal)
+		);
 	}
 
 	private <T extends ConsensusEvent> void processOnCurrentViewOrCache(T event, Consumer<T> processFn) {

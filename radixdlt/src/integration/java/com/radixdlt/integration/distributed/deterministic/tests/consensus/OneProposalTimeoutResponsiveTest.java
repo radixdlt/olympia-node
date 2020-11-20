@@ -47,11 +47,8 @@ public class OneProposalTimeoutResponsiveTest {
 			SystemCounters counters = test.getSystemCounters(nodeIndex);
 			long numberOfIndirectParents = counters.get(SystemCounters.CounterType.BFT_INDIRECT_PARENT);
 			long totalNumberOfTimeouts = counters.get(SystemCounters.CounterType.BFT_TOTAL_VIEW_TIMEOUTS);
-			long timedOutViewsNum = counters.get(SystemCounters.CounterType.BFT_TIMED_OUT_VIEWS);
 			assertThat(numberOfIndirectParents).isEqualTo(requiredIndirectParents);
-			System.out.println("total timeouts = " + totalNumberOfTimeouts);
-			System.out.println("timed out views = " + timedOutViewsNum);
-			//assertThat(numberOfTimeouts).isEqualTo(requiredTimeouts);
+			assertThat(totalNumberOfTimeouts).isEqualTo(requiredTimeouts);
 		}
 	}
 

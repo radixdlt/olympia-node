@@ -71,6 +71,9 @@ public class PacemakerState {
     }
 
     public void updateView(View nextView) {
+        if (nextView.lte(this.currentView)) {
+            return;
+        }
         this.currentView = nextView;
         viewUpdateSender.sendViewUpdate(new ViewUpdate(
                 this.currentView,

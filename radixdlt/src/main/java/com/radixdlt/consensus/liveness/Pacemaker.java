@@ -185,6 +185,7 @@ public final class Pacemaker {
 			return;
 		}
 
+		// TODO: consider moving to a Timeout message on a dispatcher side
 		if (lastTimedOutView.isEmpty() || !lastTimedOutView.get().equals(view)) {
 			counters.increment(CounterType.BFT_TIMED_OUT_VIEWS);
 		}
