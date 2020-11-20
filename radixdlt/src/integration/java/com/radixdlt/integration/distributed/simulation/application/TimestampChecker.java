@@ -57,7 +57,7 @@ public final class TimestampChecker implements TestInvariant {
 	public Observable<TestInvariantError> check(RunningNetwork network) {
 		return network.ledgerUpdates()
 			.map(Pair::getSecond)
-			.distinct()
+			.distinct() // Test on only the first ledger update in the network
 			.filter(l -> !(l.getTail().getEpoch() == 1 && l.getTail().getView().equals(View.of(1))))
 			.flatMapMaybe(update -> this.checkCloseTimestamp(update));
 	}
