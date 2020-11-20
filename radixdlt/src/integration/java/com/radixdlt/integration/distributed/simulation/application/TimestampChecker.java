@@ -25,19 +25,21 @@ import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Observable;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * Checks that the first time a ledger update occurs on the network that it is close
  * to the real wall clock time.
  */
 public final class TimestampChecker implements TestInvariant {
-	private static final long TIMESTAMP_DELAY_LIMIT = 500L;
+	private static final long ACCEPTABLE_TIME_RANGE = TimeUnit.SECONDS.toMillis(1);
 
 	private Maybe<TestInvariantError> checkCloseTimestamp(LedgerUpdate update) {
 		final var now = System.currentTimeMillis();
 		final var proof = update.getTail();
 		final var timestamp = proof.timestamp();
 		final var diff = now - timestamp;
-		if (0 <= diff && diff < TIMESTAMP_DELAY_LIMIT) {
+		if (0 <= diff && diff < ACCEPTABLE_TIME_RANGE) {
 			return Maybe.empty();
 		} else {
 			return Maybe.just(
