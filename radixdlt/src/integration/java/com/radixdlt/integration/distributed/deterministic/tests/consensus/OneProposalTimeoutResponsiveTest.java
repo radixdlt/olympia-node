@@ -35,7 +35,7 @@ public class OneProposalTimeoutResponsiveTest {
 	private void run(int numNodes, long numViews, long dropPeriod) {
 		DeterministicTest test = DeterministicTest.builder()
 			.numNodes(numNodes)
-			.messageSelector(MessageSelector.firstSelector())
+			.messageSelector(MessageSelector.randomSelector(random).viewUpdatesFirst())
 			.messageMutator(dropSomeProposals(dropPeriod))
 			.build()
 			.runUntil(DeterministicTest.hasReachedView(View.of(numViews)));
@@ -43,14 +43,12 @@ public class OneProposalTimeoutResponsiveTest {
 		long requiredIndirectParents = (numViews - 1) / dropPeriod; // Edge case if dropPeriod a factor of numViews
 
 		long requiredTimeouts = (numViews / dropPeriod * 2);
-		System.out.println("required=" + requiredTimeouts);
 		for (int nodeIndex = 0; nodeIndex < numNodes; ++nodeIndex) {
 			SystemCounters counters = test.getSystemCounters(nodeIndex);
 			long numberOfIndirectParents = counters.get(SystemCounters.CounterType.BFT_INDIRECT_PARENT);
 			long numberOfTimeouts = counters.get(SystemCounters.CounterType.BFT_TIMEOUT);
 			assertThat(numberOfIndirectParents).isEqualTo(requiredIndirectParents);
-			// assertThat(numberOfTimeouts).isEqualTo(requiredTimeouts);
-			System.out.println("number of timeouts for node " + nodeIndex + " is " + numberOfTimeouts);
+			assertThat(numberOfTimeouts).isEqualTo(requiredTimeouts);
 		}
 	}
 

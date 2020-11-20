@@ -17,6 +17,8 @@
 
 package com.radixdlt.environment.deterministic.network;
 
+import com.radixdlt.consensus.epoch.LocalViewUpdate;
+
 import java.util.List;
 import java.util.Random;
 
@@ -34,6 +36,22 @@ public interface MessageSelector {
 	 * @return The selected message, or {@code null} if processing should stop
 	 */
 	ControlledMessage select(List<ControlledMessage> messages);
+
+	/**
+	 * Returns a new MessageSelector which ensures that LocalViewUpdates get
+	 * processed before any other messages.
+	 * Doesn't change the selection rules for other message types.
+	 */
+	default MessageSelector viewUpdatesFirst() {
+		return messages -> {
+			for (ControlledMessage message: messages) {
+				if (message.message() instanceof LocalViewUpdate) {
+					return message;
+				}
+			}
+			return this.select(messages);
+		};
+	}
 
 	/**
 	 * Returns a selector that always returns the first message from the
