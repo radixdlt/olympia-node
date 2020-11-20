@@ -130,47 +130,78 @@ public class SafetyCheck implements RemoteBFTCheck {
 	 * @param vertices The vertices
 	 * @return The dissenting vertices, grouped by hash, grouped by view
 	 */
-	private static Map<Long, Map<String, List<Vertex>>> getDissentingVertices(Collection<Vertex> vertices) {
-		ImmutableMap.Builder<Long, Map<String, List<Vertex>>> dissentingVertices = ImmutableMap.builder();
-		Map<Long, List<Vertex>> verticesByView = vertices.stream()
-			.collect(Collectors.groupingBy(Vertex::getView));
+	private static Map<EpochView, Map<String, List<Vertex>>> getDissentingVertices(Collection<Vertex> vertices) {
+		ImmutableMap.Builder<EpochView, Map<String, List<Vertex>>> dissentingVertices = ImmutableMap.builder();
+		Map<EpochView, List<Vertex>> verticesByView = vertices.stream()
+			.collect(Collectors.groupingBy(Vertex::getEpochView));
 		for (List<Vertex> verticesAtView : verticesByView.values()) {
 			Map<String, List<Vertex>> verticesByHash = verticesAtView.stream()
 				.collect(Collectors.groupingBy(Vertex::getHash));
 			if (verticesByHash.size() > 1) {
-				dissentingVertices.put(verticesAtView.get(0).getView(), verticesByHash);
+				dissentingVertices.put(verticesAtView.get(0).getEpochView(), verticesByHash);
 			}
 		}
 		return dissentingVertices.build();
+	}
+
+	private static class EpochView {
+		private final long epoch;
+		private final long view;
+
+		private EpochView(long epoch, long view) {
+			this.epoch= epoch;
+			this.view = view;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (!(o instanceof EpochView)) {
+				return false;
+			}
+			EpochView epochView = (EpochView) o;
+			return epochView.epoch == this.epoch
+				&& epochView.view == this.view;
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(epoch, view);
+		}
+
+		@Override
+		public String toString() {
+			return String.format("{epoch=%s view=%s}", epoch, view);
+		}
 	}
 
 	/**
 	 * A simplified representation of a Cerberus vertex.
 	 */
 	private static final class Vertex {
-		private final long view;
+		private final EpochView epochView;
 		private final String hash; // TODO reconsider String for "hash"
 		private final String node;
 
-		private Vertex(long view, String hash, String node) {
+		private Vertex(long epoch, long view, String hash, String node) {
 			if (view < 0) {
 				throw new IllegalArgumentException(String.format("view must be > 0, got %d", view));
 			}
-			this.view = view;
+			this.epochView = new EpochView(epoch, view);
 			this.hash = Objects.requireNonNull(hash);
 			this.node = Objects.requireNonNull(node);
 		}
 
 		private static Vertex from(JSONObject vertexJson, String node) {
 			return new Vertex(
+				vertexJson.getLong("epoch"),
 				vertexJson.getLong("view"),
 				vertexJson.getString("hash"),
 				node
 			);
 		}
 
-		private long getView() {
-			return view;
+		private EpochView getEpochView() {
+			return epochView;
 		}
 
 		private String getHash() {
@@ -186,18 +217,18 @@ public class SafetyCheck implements RemoteBFTCheck {
 	 * An error that is thrown if a safety violation occurs
 	 */
 	public static class SafetyViolationError extends AssertionError {
-		private final Map<Long, Map<String, List<Vertex>>> dissentingVertices;
+		private final Map<EpochView, Map<String, List<Vertex>>> dissentingVertices;
 
-		private SafetyViolationError(Map<Long, Map<String, List<Vertex>>> dissentingVertices) {
+		private SafetyViolationError(Map<EpochView, Map<String, List<Vertex>>> dissentingVertices) {
 			super(dissentingVertices.entrySet().stream()
-					.map(verticesAtView -> String.format("%d={%s}",
+					.map(verticesAtView -> String.format("%s={%s}",
 						verticesAtView.getKey(),
 						String.join(", ", verticesAtView.getValue().keySet())))
 					.collect(Collectors.joining("; ")));
 			this.dissentingVertices = dissentingVertices;
 		}
 
-		public Map<Long, Map<String, List<Vertex>>> getDissentingVertices() {
+		public Map<EpochView, Map<String, List<Vertex>>> getDissentingVertices() {
 			return dissentingVertices;
 		}
 	}
