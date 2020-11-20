@@ -68,6 +68,7 @@ public final class DeterministicNodes {
 	private Injector createBFTInstance(BFTNode self, Module baseModule, Module overrideModule) {
 		Module module = Modules.combine(
 			new AbstractModule() {
+				@Override
 				public void configure() {
 					bind(BFTNode.class).annotatedWith(Self.class).toInstance(self);
 					bind(DeterministicSenderFactory.class).toInstance(senderFactory);

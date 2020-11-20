@@ -43,6 +43,7 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 		this.epochManager = Objects.requireNonNull(epochManager);
 	}
 
+	@Override
 	public void start() {
 		epochManager.start();
 	}

@@ -46,6 +46,21 @@ public final class EpochChange {
 	}
 
 	@Override
+	public int hashCode() {
+		return Objects.hash(this.proof, this.bftConfiguration);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (o instanceof EpochChange) {
+			final var that = (EpochChange) o;
+			return Objects.equals(this.proof, that.proof)
+				&& Objects.equals(this.bftConfiguration, that.bftConfiguration);
+		}
+		return false;
+	}
+
+	@Override
 	public String toString() {
 		return String.format(
 			"%s{proof=%s config=%s}", this.getClass().getSimpleName(), proof, bftConfiguration
