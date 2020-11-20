@@ -24,6 +24,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
+import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
@@ -53,10 +54,14 @@ public class GenesisValidatorSetFromUniverse implements GenesisValidatorSetProvi
 	) {
 		// No deregistering validators in the genesis atoms
 		allParticles(universe, RegisteredValidatorParticle.class, Spin.DOWN)
-			.filter(rvp -> rvp.getNonce() != 0)
 			.findAny()
 			.ifPresent(downRvp -> {
 				throw new IllegalStateException("Unexpected deregistration for " + downRvp.getAddress().getPublicKey());
+			});
+		allParticles(universe, UnregisteredValidatorParticle.class, Spin.UP)
+			.findAny()
+			.ifPresent(upUvp -> {
+				throw new IllegalStateException("Unexpected unregistration for " + upUvp.getAddress().getPublicKey());
 			});
 
 		// No unstaking in the genesis atoms

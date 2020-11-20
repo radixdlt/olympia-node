@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
+import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.constraintmachine.Spin;
@@ -44,7 +45,7 @@ import static org.mockito.Mockito.*;
 public class GenesisValidatorSetFromUniverseTest {
 
 	@Test
-	public void when_genesis_has_validator_deregistration__then_fails() {
+	public void when_genesis_has_validator_registration_down__then_fails() {
 		final var nativeToken = mock(RRI.class);
 		final var validatorKey = ECKeyPair.generateNew().getPublicKey();
 		final var genesis = new Atom();
@@ -55,6 +56,20 @@ public class GenesisValidatorSetFromUniverseTest {
 		assertThatThrownBy(() -> new GenesisValidatorSetFromUniverse(1, 1, universe, nativeToken))
 			.isInstanceOf(IllegalStateException.class)
 			.hasMessageContaining("Unexpected deregistration");
+	}
+
+	@Test
+	public void when_genesis_has_validator_unregistration_up__then_fails() {
+		final var nativeToken = mock(RRI.class);
+		final var validatorKey = ECKeyPair.generateNew().getPublicKey();
+		final var genesis = new Atom();
+		genesis.addParticleGroupWith(validatorUnregistration(validatorKey, 1), Spin.UP);
+		final var universe = mock(Universe.class);
+		when(universe.getGenesis()).thenReturn(ImmutableList.of(genesis));
+
+		assertThatThrownBy(() -> new GenesisValidatorSetFromUniverse(1, 1, universe, nativeToken))
+			.isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("Unexpected unregistration");
 	}
 
 	@Test
@@ -160,5 +175,10 @@ public class GenesisValidatorSetFromUniverseTest {
 	private RegisteredValidatorParticle validatorRegistration(ECPublicKey validatorKey, long nonce) {
 		final var address = new RadixAddress((byte) 0, validatorKey);
 		return new RegisteredValidatorParticle(address, ImmutableSet.of(), nonce);
+	}
+
+	private UnregisteredValidatorParticle validatorUnregistration(ECPublicKey validatorKey, long nonce) {
+		final var address = new RadixAddress((byte) 0, validatorKey);
+		return new UnregisteredValidatorParticle(address, nonce);
 	}
 }

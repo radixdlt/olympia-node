@@ -38,6 +38,7 @@ import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
+import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.identifiers.RRI;
 
 import com.radixdlt.constraintmachine.Spin;
@@ -366,7 +367,7 @@ public final class RadixUniverseBuilder {
 		final List<SpunParticle> validatorParticles = Lists.newArrayList();
 		validatorKeys.forEach(key -> {
 			RadixAddress validatorAddress = new RadixAddress(magic, key.getPublicKey());
-			RegisteredValidatorParticle validatorDown = new RegisteredValidatorParticle(validatorAddress, ImmutableSet.of(), 0L);
+			UnregisteredValidatorParticle validatorDown = new UnregisteredValidatorParticle(validatorAddress, 0L);
 			RegisteredValidatorParticle validatorUp = new RegisteredValidatorParticle(validatorAddress, ImmutableSet.of(), 1L);
 			validatorParticles.add(SpunParticle.down(validatorDown));
 			validatorParticles.add(SpunParticle.up(validatorUp));
