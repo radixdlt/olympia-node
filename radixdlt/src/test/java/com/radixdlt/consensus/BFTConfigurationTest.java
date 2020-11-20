@@ -21,13 +21,25 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import nl.jqno.equalsverifier.EqualsVerifier;
+
+import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertex;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.utils.Pair;
 import java.util.Optional;
 import org.junit.Test;
 
 public class BFTConfigurationTest {
+
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(BFTConfiguration.class)
+			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+			.verify();
+	}
+
 	@Test
 	public void testGetters() {
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);

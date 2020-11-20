@@ -20,6 +20,7 @@ package com.radixdlt.integration.distributed.simulation.application;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.integration.distributed.simulation.TestInvariant;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Observable;
@@ -31,15 +32,24 @@ import java.util.concurrent.TimeUnit;
  * to the real wall clock time.
  */
 public final class TimestampChecker implements TestInvariant {
-	public static final long ACCEPTABLE_TIME_RANGE = TimeUnit.SECONDS.toMillis(30);
+	private static final long ACCEPTABLE_TIME_RANGE = TimeUnit.SECONDS.toMillis(1);
 
-	private Maybe<TestInvariantError> checkCloseTimestamp(long timestamp) {
-		long now = System.currentTimeMillis();
-		if (timestamp <= now && timestamp > now - ACCEPTABLE_TIME_RANGE) {
+	private Maybe<TestInvariantError> checkCloseTimestamp(LedgerUpdate update) {
+		final var now = System.currentTimeMillis();
+		final var proof = update.getTail();
+		final var timestamp = proof.timestamp();
+		final var diff = now - timestamp;
+		if (0 <= diff && diff < ACCEPTABLE_TIME_RANGE) {
 			return Maybe.empty();
 		} else {
-			return Maybe.just(new TestInvariantError("Expecting timestamp to be close to " + now
-				+ " but was " + timestamp));
+			return Maybe.just(
+				new TestInvariantError(
+					String.format(
+						"Expecting timestamp to be close to %s but was %s%+d at %s:%s with %s",
+						now, now, diff, proof.getEpoch(), proof.getView(), update
+					)
+				)
+			);
 		}
 	}
 
@@ -49,6 +59,6 @@ public final class TimestampChecker implements TestInvariant {
 			.map(Pair::getSecond)
 			.distinct() // Test on only the first ledger update in the network
 			.filter(l -> !(l.getTail().getEpoch() == 1 && l.getTail().getView().equals(View.of(1))))
-			.flatMapMaybe(update -> this.checkCloseTimestamp(update.getTail().timestamp()));
+			.flatMapMaybe(update -> this.checkCloseTimestamp(update));
 	}
 }
