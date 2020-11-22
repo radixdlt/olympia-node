@@ -62,7 +62,6 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
 import org.json.JSONObject;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -202,28 +201,37 @@ public class OneNodeAlwaysAliveSafetyTest {
 		}
 	}
 
+	private void processNext() {
+		Timed<ControlledMessage> msg = this.network.nextMessage();
+		logger.debug("Processing message {}", msg);
+
+		int nodeIndex = msg.value().channelId().receiverIndex();
+		Injector injector = this.nodes.get(nodeIndex);
+		String bftNode = " " + injector.getInstance(Key.get(BFTNode.class, Self.class));
+		ThreadContext.put("bftNode", bftNode);
+		try {
+			injector.getInstance(DeterministicEpochsConsensusProcessor.class).handleMessage(msg.value().origin(), msg.value().message());
+		} finally {
+			ThreadContext.remove("bftNode");
+		}
+	}
+
 	private void processUntilNextCommittedUpdate() {
 		lastNodeToCommit = -1;
 
 		while (lastNodeToCommit == -1) {
-			Timed<ControlledMessage> msg = this.network.nextMessage();
-			logger.debug("Processing message {}", msg);
+			processNext();
+		}
+	}
 
-			int nodeIndex = msg.value().channelId().receiverIndex();
-			Injector injector = this.nodes.get(nodeIndex);
-			String bftNode = " " + injector.getInstance(Key.get(BFTNode.class, Self.class));
-			ThreadContext.put("bftNode", bftNode);
-			try {
-				injector.getInstance(DeterministicEpochsConsensusProcessor.class).handleMessage(msg.value().origin(), msg.value().message());
-			} finally {
-				ThreadContext.remove("bftNode");
-			}
+	private void processForCount(int messageCount) {
+		for (int i = 0; i < messageCount; i++) {
+			processNext();
 		}
 	}
 
 	@Test
-	@Ignore("Safety broken here: RPNV1-772")
-	public void all_nodes_except_for_one_need_to_restart_should_be_able_to_reboot_correctly_and_safety_not_broken() {
+	public void dropper_and_crasher_adversares_should_not_cause_safety_failures() {
 		// Start
 		for (int i = 0; i < nodes.size(); i++) {
 			this.startNode(i);
@@ -250,6 +258,6 @@ public class OneNodeAlwaysAliveSafetyTest {
 
 		// If nodes restart with correct safety precautions then view 1 should be skipped
 		// otherwise, this will cause failure
-		this.processUntilNextCommittedUpdate();
+		this.processForCount(5000);
 	}
 }

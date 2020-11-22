@@ -24,6 +24,7 @@ import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
@@ -54,6 +55,7 @@ import com.radixdlt.consensus.liveness.ProceedToViewSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
@@ -65,6 +67,7 @@ import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.network.TimeSupplier;
 
@@ -121,7 +124,6 @@ public class EpochsConsensusModule extends AbstractModule {
 		};
 	}
 
-	// TODO: Load from storage
 	@Provides
 	private EpochChange initialEpoch(
 		@LastEpochProof VerifiedLedgerHeaderAndProof proof,
@@ -151,7 +153,9 @@ public class EpochsConsensusModule extends AbstractModule {
 		ProceedToViewSender proceedToViewSender,
 		@PacemakerTimeout long pacemakerTimeout,
 		@PacemakerRate double pacemakerRate,
-		@PacemakerMaxExponent int pacemakerMaxExponent
+		@PacemakerMaxExponent int pacemakerMaxExponent,
+		PersistentSafetyStateStore persistentSafetyStateStore,
+		RemoteEventDispatcher<Vote> voteDispatcher
 	) {
 		return new ExponentialTimeoutPacemakerFactory(
 			pacemakerTimeout,
@@ -164,7 +168,8 @@ public class EpochsConsensusModule extends AbstractModule {
 			hasher,
 			signer,
 			proposalBroadcaster,
-			proceedToViewSender
+			proceedToViewSender, persistentSafetyStateStore,
+			voteDispatcher
 		);
 	}
 

@@ -15,15 +15,13 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.environment;
+package com.radixdlt.consensus.safety;
+
+import com.radixdlt.consensus.Vote;
 
 /**
- * The environment where events get dispatched to. The implementing
- * environment is then responsible for getting dispatched events to their
- * processors.
+ * Responsible for synchronously persisting safety state
  */
-public interface Environment {
-	<T> EventDispatcher<T> getDispatcher(Class<T> eventClass);
-	<T> ScheduledEventDispatcher<T> getScheduledDispatcher(Class<T> eventClass);
-	<T> RemoteEventDispatcher<T> getRemoteDispatcher(Class<T> eventClass);
+public interface PersistentSafetyStateStore {
+	void commitState(Vote vote, SafetyState safetyState);
 }

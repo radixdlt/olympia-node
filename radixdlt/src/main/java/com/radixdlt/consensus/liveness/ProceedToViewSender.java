@@ -20,20 +20,12 @@ package com.radixdlt.consensus.liveness;
 import java.util.Set;
 
 import com.radixdlt.consensus.ViewTimeout;
-import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 
 /**
  * Hotstuff's Event-Driven OnNextSyncView.
  */
 public interface ProceedToViewSender {
-	/**
-	 * Send a vote message to the specified validator
-	 * @param vote the vote message
-	 * @param nextLeader the validator the message gets sent to
-	 */
-	void sendVote(Vote vote, BFTNode nextLeader);
-
 	/**
 	 * Send a view timeout message to the specified validator.
 	 *

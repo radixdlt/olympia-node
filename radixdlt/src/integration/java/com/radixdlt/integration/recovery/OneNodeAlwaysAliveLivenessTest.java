@@ -35,9 +35,9 @@ import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
-import com.radixdlt.environment.deterministic.DeterministicEpochInfo;
 import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
 import com.radixdlt.environment.deterministic.ControlledSenderFactory;
+import com.radixdlt.environment.deterministic.DeterministicSavedLastEvent;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
@@ -81,7 +81,8 @@ public class OneNodeAlwaysAliveLivenessTest {
 	@Parameters
 	public static Collection<Object[]> numNodes() {
 		return List.of(new Object[][] {
-			{2}, {3}, {4}
+			{2, 88L}, {3, 88L}, {4, 88L},
+			{2, 1L}
 		});
 	}
 
@@ -92,12 +93,14 @@ public class OneNodeAlwaysAliveLivenessTest {
 	private List<Supplier<Injector>> nodeCreators;
 	private List<Injector> nodes = new ArrayList<>();
 	private final List<ECKeyPair> nodeKeys;
+	private final long epochCeilingView;
 
 	@Inject
 	private NodeEvents nodeEvents;
 
-	public OneNodeAlwaysAliveLivenessTest(int numNodes) {
+	public OneNodeAlwaysAliveLivenessTest(int numNodes, long epochCeilingView) {
 		this.nodeKeys = Stream.generate(ECKeyPair::generateNew).limit(numNodes).collect(Collectors.toList());
+		this.epochCeilingView = epochCeilingView;
 	}
 
 	@Before
@@ -151,7 +154,7 @@ public class OneNodeAlwaysAliveLivenessTest {
 					bind(BFTNode.class).annotatedWith(Self.class).toInstance(self);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(allNodes);
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
-					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(88L));
+					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(epochCeilingView));
 
 					final RuntimeProperties runtimeProperties;
 					// TODO: this constructor/class/inheritance/dependency is horribly broken
@@ -199,12 +202,13 @@ public class OneNodeAlwaysAliveLivenessTest {
 
 	@Test
 	public void all_nodes_except_for_one_need_to_restart_should_be_able_to_reboot_correctly_and_liveness_not_broken() {
-		EpochView epochView = this.nodes.get(0).getInstance(DeterministicEpochInfo.class).getCurrentEpochView();
+		EpochView epochView = this.nodes.get(0).getInstance(Key.get(new TypeLiteral<DeterministicSavedLastEvent<EpochView>>() { })).getLastEvent();
 
 		for (int restart = 0; restart < 10; restart++) {
-			processForCount(2000);
+			processForCount(5000);
 
-			EpochView nextEpochView = this.nodes.stream().map(i -> i.getInstance(DeterministicEpochInfo.class).getCurrentEpochView())
+			EpochView nextEpochView = this.nodes.stream()
+				.map(i -> i.getInstance(Key.get(new TypeLiteral<DeterministicSavedLastEvent<EpochView>>() { })).getLastEvent())
 				.max(Comparator.naturalOrder()).orElse(new EpochView(0, View.genesis()));
 			assertThat(nextEpochView).isGreaterThan(epochView);
 			epochView = nextEpochView;

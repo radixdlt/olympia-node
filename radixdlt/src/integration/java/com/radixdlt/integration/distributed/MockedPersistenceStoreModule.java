@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,18 +15,17 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.store;
+package com.radixdlt.integration.distributed;
 
-import com.radixdlt.identifiers.EUID;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 
-import java.util.OptionalLong;
-
-public interface CursorStore {
-	void put(EUID nid, long cursor);
-
-	OptionalLong get(EUID nid);
-
-	void reset();
-
-	void close();
+public class MockedPersistenceStoreModule extends AbstractModule {
+	@Provides
+	@Singleton
+	public PersistentSafetyStateStore persistentSafetyState() {
+		return (vote, safetyState) -> { };
+	}
 }

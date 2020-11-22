@@ -23,7 +23,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.Key;
 import com.google.inject.Scopes;
+import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.CryptoModule;
@@ -53,7 +55,7 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.environment.deterministic.DeterministicEpochInfo;
+import com.radixdlt.environment.deterministic.DeterministicSavedLastEvent;
 import com.radixdlt.integration.distributed.MockedMempoolModule;
 import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
 import com.radixdlt.environment.deterministic.DeterministicEnvironmentModule;
@@ -236,12 +238,13 @@ public class AllNodesDieAndRecoverTest {
 	@Test
 	@Ignore("Liveness broken if all nodes restart: To be fixed in RPNV1-758")
 	public void all_nodes_restart_liveness_should_not_be_broken() {
-		EpochView epochView = this.nodes.get(0).getInstance(DeterministicEpochInfo.class).getCurrentEpochView();
+		EpochView epochView = this.nodes.get(0).getInstance(Key.get(new TypeLiteral<DeterministicSavedLastEvent<EpochView>>() { })).getLastEvent();
 
 		for (int restart = 0; restart < 100; restart++) {
 			processForCount(2000);
 
-			EpochView nextEpochView = this.nodes.stream().map(i -> i.getInstance(DeterministicEpochInfo.class).getCurrentEpochView())
+			EpochView nextEpochView = this.nodes.stream()
+				.map(i -> i.getInstance(Key.get(new TypeLiteral<DeterministicSavedLastEvent<EpochView>>() { })).getLastEvent())
 				.max(Comparator.naturalOrder()).orElse(new EpochView(0, View.genesis()));
 			assertThat(nextEpochView).isGreaterThan(epochView);
 			epochView = nextEpochView;

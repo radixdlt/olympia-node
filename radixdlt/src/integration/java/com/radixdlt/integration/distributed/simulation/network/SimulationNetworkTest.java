@@ -88,7 +88,7 @@ public class SimulationNetworkTest {
 		network.getNetwork(node1).bftEvents()
 			.subscribe(testObserver);
 		Vote vote = mock(Vote.class);
-		network.getNetwork(node1).sendVote(vote, node1);
+		network.getNetwork(node1).remoteEventDispatcher(Vote.class).dispatch(node1, vote);
 		testObserver.awaitCount(1);
 		testObserver.assertValue(vote);
 	}
