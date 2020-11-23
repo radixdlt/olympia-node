@@ -35,6 +35,7 @@ import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.consensus.liveness.ExponentialPacemakerTimeoutCalculator;
 import com.radixdlt.consensus.liveness.PacemakerInfoSender;
@@ -209,7 +210,7 @@ public final class ConsensusModule extends AbstractModule {
 		BFTConfiguration configuration,
 		VertexStore vertexStore,
 		VoteSender voteSender,
-		PacemakerInfoSender infoSender,
+		EventDispatcher<View> timeoutDispatcher,
 		PacemakerState pacemakerState,
 		PacemakerTimeoutSender timeoutSender,
 		PacemakerTimeoutCalculator timeoutCalculator,
@@ -228,7 +229,7 @@ public final class ConsensusModule extends AbstractModule {
 			vertexStore,
 			safetyRules,
 			voteSender,
-			infoSender,
+			timeoutDispatcher,
 			pacemakerState,
 			timeoutSender,
 			timeoutCalculator,

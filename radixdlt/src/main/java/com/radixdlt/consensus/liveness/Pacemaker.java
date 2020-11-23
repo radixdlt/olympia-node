@@ -36,6 +36,7 @@ import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.EventDispatcher;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Level;
@@ -62,7 +63,6 @@ public final class Pacemaker {
 	private final VertexStore vertexStore;
 	private final SafetyRules safetyRules;
 	private final VoteSender voteSender;
-	private final PacemakerInfoSender pacemakerInfoSender;
 	private final PacemakerState pacemakerState;
 	private final PacemakerTimeoutSender timeoutSender;
 	private final PacemakerTimeoutCalculator timeoutCalculator;
@@ -70,6 +70,7 @@ public final class Pacemaker {
 	private final ProposerElection proposerElection;
 	private final NextCommandGenerator nextCommandGenerator;
 	private final Hasher hasher;
+	private final EventDispatcher<View> timeoutDispatcher;
 
 	private ViewUpdate latestViewUpdate = new ViewUpdate(View.genesis(), View.genesis(), View.genesis());
 	private Optional<View> lastTimedOutView = Optional.empty();
@@ -82,7 +83,7 @@ public final class Pacemaker {
 		VertexStore vertexStore,
 		SafetyRules safetyRules,
 		VoteSender voteSender,
-		PacemakerInfoSender pacemakerInfoSender,
+		EventDispatcher<View> timeoutDispatcher,
 		PacemakerState pacemakerState,
 		PacemakerTimeoutSender timeoutSender,
 		PacemakerTimeoutCalculator timeoutCalculator,
@@ -98,7 +99,7 @@ public final class Pacemaker {
 		this.vertexStore = Objects.requireNonNull(vertexStore);
 		this.safetyRules = Objects.requireNonNull(safetyRules);
 		this.voteSender = Objects.requireNonNull(voteSender);
-		this.pacemakerInfoSender = Objects.requireNonNull(pacemakerInfoSender);
+		this.timeoutDispatcher = Objects.requireNonNull(timeoutDispatcher);
 		this.pacemakerState = Objects.requireNonNull(pacemakerState);
 		this.timeoutSender = Objects.requireNonNull(timeoutSender);
 		this.timeoutCalculator = Objects.requireNonNull(timeoutCalculator);
@@ -200,7 +201,7 @@ public final class Pacemaker {
 
 		final ViewTimeout viewTimeout = this.safetyRules.viewTimeout(view, this.vertexStore.highQC());
 		this.voteSender.broadcastViewTimeout(viewTimeout, this.validatorSet.nodes());
-		this.pacemakerInfoSender.sendTimeoutProcessed(view);
+		this.timeoutDispatcher.dispatch(view);
 
 		final long timeout = timeoutCalculator.timeout(latestViewUpdate.uncommittedViewsCount());
 

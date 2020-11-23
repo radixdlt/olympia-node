@@ -138,6 +138,7 @@ public class ConsensusModuleTest {
 			protected void configure() {
 				bind(Ledger.class).toInstance(mock(Ledger.class));
 
+				bind(new TypeLiteral<EventDispatcher<View>>() { }).toInstance(rmock(EventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<BFTUpdate>>() { }).toInstance(rmock(EventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<BFTCommittedUpdate>>() { }).toInstance(rmock(EventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<LocalSyncRequest>>() { }).toInstance(rmock(EventDispatcher.class));

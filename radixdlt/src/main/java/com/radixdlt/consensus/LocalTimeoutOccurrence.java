@@ -24,11 +24,11 @@ import java.util.Objects;
 /**
  * A timeout which has occurred in the bft node
  */
-public final class Timeout {
+public final class LocalTimeoutOccurrence {
 	private final EpochView epochView;
 	private final BFTNode leader;
 
-	public Timeout(EpochView epochView, BFTNode leader) {
+	public LocalTimeoutOccurrence(EpochView epochView, BFTNode leader) {
 		this.epochView = Objects.requireNonNull(epochView);
 		this.leader = Objects.requireNonNull(leader);
 	}

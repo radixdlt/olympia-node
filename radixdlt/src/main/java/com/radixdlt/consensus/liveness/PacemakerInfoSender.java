@@ -29,10 +29,4 @@ public interface PacemakerInfoSender {
      * @param view the view the bft node has changed to
      */
     void sendCurrentView(View view);
-
-    /**
-     * Signify that a timeout was processed by this bft node
-     * @param view the view of the timeout
-     */
-    void sendTimeoutProcessed(View view);
 }

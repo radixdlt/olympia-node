@@ -18,6 +18,7 @@
 package com.radixdlt.consensus.liveness;
 
 import com.google.common.hash.HashCode;
+import com.radixdlt.environment.EventDispatcher;
 import java.util.Optional;
 
 import com.radixdlt.consensus.Sha256Hasher;
@@ -40,6 +41,7 @@ import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECDSASignature;
 
+import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -63,7 +65,8 @@ public class PacemakerTest {
 	private ProposerElection proposerElection = mock(ProposerElection.class);
 	private SafetyRules safetyRules = mock(SafetyRules.class);
 	private PacemakerTimeoutSender timeoutSender = mock(PacemakerTimeoutSender.class);
-	private PacemakerInfoSender infoSender = mock(PacemakerInfoSender.class);
+	private EventDispatcher<View> timeoutDispatcher = rmock(EventDispatcher.class);
+
 	private PacemakerState pacemakerState = mock(PacemakerState.class);
 	private PacemakerTimeoutCalculator timeoutCalculator = mock(PacemakerTimeoutCalculator.class);
 	private NextCommandGenerator nextCommandGenerator = mock(NextCommandGenerator.class);
@@ -81,7 +84,7 @@ public class PacemakerTest {
 			this.vertexStore,
 			this.safetyRules,
 			this.voteSender,
-			this.infoSender,
+			this.timeoutDispatcher,
 			this.pacemakerState,
 			this.timeoutSender,
 			this.timeoutCalculator,

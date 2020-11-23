@@ -34,11 +34,11 @@ public interface PacemakerFactory {
 	Pacemaker create(
 		BFTValidatorSet validatorSet,
 		VertexStore vertexStore,
-		PacemakerInfoSender infoSender,
 		PacemakerState pacemakerState,
 		PacemakerTimeoutSender timeoutSender,
 		PacemakerTimeoutCalculator timeoutCalculator,
 		SafetyRules safetyRules,
-		ProposerElection proposerElection
+		ProposerElection proposerElection,
+		long nextEpoch
 	);
 }

@@ -47,7 +47,7 @@ import com.radixdlt.SyncServiceModule;
 import com.radixdlt.SyncRunnerModule;
 import com.radixdlt.SystemInfoRxModule;
 import com.radixdlt.consensus.Sha256Hasher;
-import com.radixdlt.consensus.Timeout;
+import com.radixdlt.consensus.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
@@ -439,8 +439,8 @@ public class SimulationTest {
 			this.modules.add(new AbstractModule() {
 				@ProcessOnDispatch
 				@ProvidesIntoSet
-				private EventProcessor<Timeout> timeoutEventProcessor(@Self BFTNode node) {
-					return nodeEvents.processor(node, Timeout.class);
+				private EventProcessor<LocalTimeoutOccurrence> timeoutEventProcessor(@Self BFTNode node) {
+					return nodeEvents.processor(node, LocalTimeoutOccurrence.class);
 				}
 			});
 			this.checksBuilder.put(invariantName, nodes -> new NoTimeoutsInvariant(nodeEvents));

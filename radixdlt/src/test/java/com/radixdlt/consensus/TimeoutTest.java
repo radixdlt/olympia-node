@@ -28,14 +28,14 @@ import org.junit.Test;
 public class TimeoutTest {
 	private EpochView epochView;
 	private BFTNode leader;
-	private Timeout timeout;
+	private LocalTimeoutOccurrence timeout;
 
 	@Before
 	public void setup() {
 		this.epochView = mock(EpochView.class);
 		this.leader = mock(BFTNode.class);
 
-		this.timeout = new Timeout(this.epochView, this.leader);
+		this.timeout = new LocalTimeoutOccurrence(this.epochView, this.leader);
 	}
 
 	@Test

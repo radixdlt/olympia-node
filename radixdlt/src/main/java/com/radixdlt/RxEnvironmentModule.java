@@ -21,7 +21,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.radixdlt.consensus.Timeout;
+import com.radixdlt.consensus.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.epoch.EpochView;
@@ -59,7 +59,7 @@ public class RxEnvironmentModule extends AbstractModule {
 				BFTUpdate.class,
 				BFTCommittedUpdate.class,
 				EpochView.class,
-				Timeout.class,
+				LocalTimeoutOccurrence.class,
 				SyncInProgress.class
 			),
 			ses,
@@ -98,7 +98,7 @@ public class RxEnvironmentModule extends AbstractModule {
 	}
 
 	@Provides
-	public Observable<Timeout> timeouts(RxEnvironment rxEnvironment) {
-		return rxEnvironment.getObservable(Timeout.class);
+	public Observable<LocalTimeoutOccurrence> timeouts(RxEnvironment rxEnvironment) {
+		return rxEnvironment.getObservable(LocalTimeoutOccurrence.class);
 	}
 }

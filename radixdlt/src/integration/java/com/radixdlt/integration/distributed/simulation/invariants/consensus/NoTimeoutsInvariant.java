@@ -17,7 +17,7 @@
 
 package com.radixdlt.integration.distributed.simulation.invariants.consensus;
 
-import com.radixdlt.consensus.Timeout;
+import com.radixdlt.consensus.LocalTimeoutOccurrence;
 import com.radixdlt.integration.distributed.simulation.TestInvariant;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
 import io.reactivex.rxjava3.core.Observable;
@@ -41,7 +41,7 @@ public class NoTimeoutsInvariant implements TestInvariant {
 					emitter.onNext(
 						new TestInvariantError("Timeout at node " + node + " " + event)
 					),
-					Timeout.class
+					LocalTimeoutOccurrence.class
 				)
 		).serialize();
 	}

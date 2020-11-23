@@ -27,7 +27,7 @@ import com.google.inject.Injector;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTFactory;
-import com.radixdlt.consensus.Timeout;
+import com.radixdlt.consensus.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.crypto.Hasher;
@@ -57,7 +57,7 @@ public class LedgerModuleTest {
 			bind(VertexStoreFactory.class).toInstance(mock(VertexStoreFactory.class));
 			bind(PacemakerFactory.class).toInstance(mock(PacemakerFactory.class));
 
-			bind(new TypeLiteral<EventDispatcher<Timeout>>() { }).toInstance(rmock(EventDispatcher.class));
+			bind(new TypeLiteral<EventDispatcher<LocalTimeoutOccurrence>>() { }).toInstance(rmock(EventDispatcher.class));
 			bind(new TypeLiteral<EventDispatcher<EpochView>>() { }).toInstance(rmock(EventDispatcher.class));
 
 			bind(ProposerElectionFactory.class).toInstance(mock(ProposerElectionFactory.class));
