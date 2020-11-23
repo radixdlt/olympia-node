@@ -20,7 +20,7 @@ package com.radixdlt.middleware2.network;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.liveness.ProceedToViewSender;
+import com.radixdlt.consensus.liveness.VoteSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 
 import com.radixdlt.environment.RemoteEventDispatcher;
@@ -52,7 +52,7 @@ import io.reactivex.rxjava3.subjects.PublishSubject;
  * BFT Network sending and receiving layer used on top of the MessageCentral
  * layer.
  */
-public final class MessageCentralBFTNetwork implements ProposalBroadcaster, ProceedToViewSender, BFTEventsRx {
+public final class MessageCentralBFTNetwork implements ProposalBroadcaster, VoteSender, BFTEventsRx {
 	private static final Logger log = LogManager.getLogger();
 
 	private final BFTNode self;

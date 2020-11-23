@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *  http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -17,13 +17,9 @@
 
 package com.radixdlt.consensus.epoch;
 
-import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.consensus.liveness.PacemakerState;
-import com.radixdlt.consensus.sync.BFTSync;
-
 /**
- * Creates a new bft sync given a vertex store and pacemaker
+ * Sender for local timeouts.
  */
-public interface BFTSyncFactory {
-	BFTSync create(VertexStore vertexStore, PacemakerState pacemakerState);
+public interface LocalTimeoutSender {
+	void scheduleTimeout(LocalTimeout localTimeout, long timeoutMilliseconds);
 }

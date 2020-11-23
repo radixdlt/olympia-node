@@ -58,12 +58,13 @@ public class MovingWindowValidatorsTest {
 
 		LinkedList<SystemCounters> testCounters = systemCounters(bftTest);
 		assertThat(testCounters).extracting(sc -> sc.get(CounterType.BFT_INDIRECT_PARENT)).containsOnly(0L);
-		assertThat(testCounters).extracting(sc -> sc.get(CounterType.BFT_TIMEOUT)).containsOnly(0L);
+		assertThat(testCounters).extracting(sc -> sc.get(CounterType.BFT_TOTAL_VIEW_TIMEOUTS)).containsOnly(0L);
 
 		long maxCount = maxProcessedFor(numNodes, windowSize, maxEpoch, highView.number());
+
 		assertThat(testCounters)
 			.extracting(sc -> sc.get(CounterType.BFT_PROCESSED))
-			.allMatch(between(maxCount - 3, maxCount));
+			.allMatch(between(maxCount - maxEpoch, maxCount));
 	}
 
 	private MessageMutator mutator() {
@@ -95,7 +96,7 @@ public class MovingWindowValidatorsTest {
 
 	@Test
 	public void given_correct_3_node_bft_with_4_total_nodes_with_changing_epochs_per_100_views__then_should_pass_bft_and_postconditions() {
-		run(4, 3, 100L, View.of(100));
+		run(4, 3, 120L, View.of(100));
 	}
 
 	@Test

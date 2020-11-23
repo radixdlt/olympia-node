@@ -37,7 +37,7 @@ import com.radixdlt.consensus.epoch.VertexStoreFactory;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
-import com.radixdlt.consensus.liveness.LocalTimeoutSender;
+import com.radixdlt.consensus.epoch.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.environment.EventDispatcher;

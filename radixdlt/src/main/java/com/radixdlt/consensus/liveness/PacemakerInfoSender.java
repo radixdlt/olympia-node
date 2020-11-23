@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *  http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,15 +15,24 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.epoch;
+package com.radixdlt.consensus.liveness;
 
-import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.consensus.liveness.PacemakerState;
-import com.radixdlt.consensus.sync.BFTSync;
+import com.radixdlt.consensus.bft.View;
 
 /**
- * Creates a new bft sync given a vertex store and pacemaker
+ * Sender of information regarding the BFT
  */
-public interface BFTSyncFactory {
-	BFTSync create(VertexStore vertexStore, PacemakerState pacemakerState);
+public interface PacemakerInfoSender {
+
+    /**
+     * Signify that the bft node is starting a new view
+     * @param view the view the bft node has changed to
+     */
+    void sendCurrentView(View view);
+
+    /**
+     * Signify that a timeout was processed by this bft node
+     * @param view the view of the timeout
+     */
+    void sendTimeoutProcessed(View view);
 }

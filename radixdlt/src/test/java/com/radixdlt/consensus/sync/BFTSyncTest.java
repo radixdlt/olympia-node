@@ -39,7 +39,7 @@ import com.radixdlt.consensus.bft.BFTSyncer.SyncResult;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.liveness.Pacemaker;
+import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.EventDispatcher;
@@ -47,6 +47,7 @@ import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.utils.Pair;
+import com.radixdlt.utils.TypedMocks;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -58,7 +59,7 @@ import org.junit.Test;
 public class BFTSyncTest {
 	private BFTSync bftSync;
 	private VertexStore vertexStore;
-	private Pacemaker pacemaker;
+	private PacemakerState pacemakerState;
 	private Comparator<LedgerHeader> ledgerHeaderComparator;
 	private SyncVerticesRequestSender syncVerticesRequestSender;
 	private EventDispatcher<LocalSyncRequest> syncLedgerRequestSender;
@@ -68,8 +69,9 @@ public class BFTSyncTest {
 	@Before
 	public void setup() {
 		this.vertexStore = mock(VertexStore.class);
-		this.pacemaker = mock(Pacemaker.class);
 		this.ledgerHeaderComparator = rmock(Comparator.class);
+		this.pacemakerState = mock(PacemakerState.class);
+		this.ledgerHeaderComparator = TypedMocks.rmock(Comparator.class);
 		this.syncVerticesRequestSender = mock(SyncVerticesRequestSender.class);
 		this.syncLedgerRequestSender = rmock(EventDispatcher.class);
 		this.verifiedLedgerHeaderAndProof = mock(VerifiedLedgerHeaderAndProof.class);
@@ -77,7 +79,7 @@ public class BFTSyncTest {
 
 		bftSync = new BFTSync(
 			vertexStore,
-			pacemaker,
+			pacemakerState,
 			ledgerHeaderComparator,
 			syncVerticesRequestSender,
 			syncLedgerRequestSender,

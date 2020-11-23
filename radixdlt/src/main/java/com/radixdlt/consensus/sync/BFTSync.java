@@ -31,10 +31,10 @@ import com.radixdlt.consensus.bft.FormedQC;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdateProcessor;
 import com.radixdlt.sync.LocalSyncRequest;
@@ -128,7 +128,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 
 	private static final Logger log = LogManager.getLogger();
 	private final VertexStore vertexStore;
-	private final Pacemaker pacemaker;
+	private final PacemakerState pacemakerState;
 	private final Map<HashCode, SyncState> syncing = new HashMap<>();
 	private final TreeMap<LedgerHeader, List<HashCode>> ledgerSyncing;
 	private final Map<LocalGetVerticesRequest, SyncRequestState> bftSyncing = new HashMap<>();
@@ -141,7 +141,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 
 	public BFTSync(
 		VertexStore vertexStore,
-		Pacemaker pacemaker,
+		PacemakerState pacemakerState,
 		Comparator<LedgerHeader> ledgerHeaderComparator,
 		SyncVerticesRequestSender requestSender,
 		EventDispatcher<LocalSyncRequest> localSyncRequestProcessor,
@@ -151,7 +151,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 		int bftSyncPatienceMillis
 	) {
 		this.vertexStore = vertexStore;
-		this.pacemaker = pacemaker;
+		this.pacemakerState = pacemakerState;
 		this.ledgerSyncing = new TreeMap<>(ledgerHeaderComparator);
 		this.requestSender = requestSender;
 		this.localSyncRequestProcessor = Objects.requireNonNull(localSyncRequestProcessor);
@@ -179,7 +179,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 
 		if (vertexStore.addQC(qc)) {
 			// TODO: check if already sent highest
-			this.pacemaker.processQC(vertexStore.highQC());
+			this.pacemakerState.processQC(vertexStore.highQC());
 			return SyncResult.SYNCED;
 		}
 

@@ -17,11 +17,13 @@
 
 package com.radixdlt.consensus.liveness;
 
-import com.radixdlt.consensus.epoch.LocalTimeout;
+public interface PacemakerTimeoutCalculator {
 
-/**
- * Sender for local timeouts.
- */
-public interface LocalTimeoutSender {
-	void scheduleTimeout(LocalTimeout localTimeout, long timeoutMilliseconds);
+    /**
+     * Calculates the pacemaker view timeout.
+     *
+     * @param uncommittedViews the number of uncommitted views
+     * @return pacemaker view timeout in milliseconds
+     */
+    long timeout(long uncommittedViews);
 }

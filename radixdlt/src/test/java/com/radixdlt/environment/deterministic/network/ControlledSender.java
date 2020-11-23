@@ -20,6 +20,7 @@ package com.radixdlt.environment.deterministic.network;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.ViewTimeout;
+import com.radixdlt.consensus.epoch.LocalViewUpdate;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.environment.Environment;
@@ -121,6 +122,11 @@ public final class ControlledSender implements DeterministicSender, Environment 
 	@Override
 	public void sendLedgerUpdate(EpochsLedgerUpdate epochsLedgerUpdate) {
 		handleMessage(new ControlledMessage(self, this.localChannel, epochsLedgerUpdate, arrivalTime(this.localChannel)));
+	}
+
+	@Override
+	public void sendLocalViewUpdate(LocalViewUpdate viewUpdate) {
+		handleMessage(new ControlledMessage(self, this.localChannel, viewUpdate, arrivalTime(this.localChannel)));
 	}
 
 	@Override

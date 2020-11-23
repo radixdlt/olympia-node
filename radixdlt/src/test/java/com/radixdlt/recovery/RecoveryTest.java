@@ -212,6 +212,7 @@ public class RecoveryTest {
 		VerifiedLedgerHeaderAndProof restartedEpochProof = currentInjector.getInstance(
 			Key.get(VerifiedLedgerHeaderAndProof.class, LastEpochProof.class)
 		);
+
 		assertThat(restartedEpochProof.isEndOfEpoch()).isTrue();
 		assertThat(restartedEpochProof.getEpoch()).isEqualTo(epochView.getEpoch() - 1);
 	}

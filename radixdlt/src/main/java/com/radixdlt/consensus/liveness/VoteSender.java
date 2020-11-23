@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *  http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,15 +15,23 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.epoch;
+package com.radixdlt.consensus.liveness;
 
-import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.consensus.liveness.PacemakerState;
-import com.radixdlt.consensus.sync.BFTSync;
+import java.util.Set;
+
+import com.radixdlt.consensus.ViewTimeout;
+import com.radixdlt.consensus.bft.BFTNode;
 
 /**
- * Creates a new bft sync given a vertex store and pacemaker
+ * Hotstuff's Event-Driven OnNextSyncView as well as vote sending
  */
-public interface BFTSyncFactory {
-	BFTSync create(VertexStore vertexStore, PacemakerState pacemakerState);
+public interface VoteSender {
+	/**
+	 * Send a view timeout message to the specified validator.
+	 *
+	 * @param viewTimeout the view timeout message
+	 * @param nodes the validators to broadcast the message to
+	 */
+	// FIXME: To be change when TCs implemented
+	void broadcastViewTimeout(ViewTimeout viewTimeout, Set<BFTNode> nodes);
 }
