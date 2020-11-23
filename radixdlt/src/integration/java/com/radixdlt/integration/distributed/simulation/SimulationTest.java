@@ -655,6 +655,7 @@ public class SimulationTest {
 				modules.add(new RadixEngineModule());
 				modules.add(new RadixEngineRxModule());
 				modules.add(new MockedRadixEngineStoreModule());
+				modules.add(new SimulationValidatorComputersModule());
 			}
 
 			ImmutableSet<SimulationNetworkActor> runners = this.runnableBuilder.build().stream()
