@@ -22,7 +22,9 @@ import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.sync.BFTSync;
+import com.radixdlt.counters.SystemCounters;
 
 /**
  * Creates a new bft processor
@@ -39,6 +41,8 @@ public interface BFTFactory {
 		VertexStore vertexStore,
 		BFTSync vertexStoreSync,
 		ProposerElection proposerElection,
-		BFTValidatorSet validatorSet
+		BFTValidatorSet validatorSet,
+		SystemCounters counters,
+		SafetyRules safetyRules
 	);
 }

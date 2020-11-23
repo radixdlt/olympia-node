@@ -26,9 +26,15 @@ import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTSyncer.SyncResult;
 import com.radixdlt.consensus.bft.SyncQueues.SyncQueue;
-import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.liveness.ProposerElection;
+
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.function.Consumer;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -50,23 +56,23 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	private final BFTNode self;
 	private final BFTEventProcessor forwardTo;
 	private final BFTSyncer bftSyncer;
-	private final PacemakerState pacemakerState;
 	private final ProposerElection proposerElection;
-	private final SyncQueues queues;
+	private final SyncQueues syncQueues;
+
+	private final Map<View, List<ConsensusEvent>> viewQueues = new HashMap<>();
+	private ViewUpdate latestViewUpdate = new ViewUpdate(View.genesis(), View.genesis(), View.genesis());
 
 	public BFTEventPreprocessor(
 		BFTNode self,
 		BFTEventProcessor forwardTo,
-		PacemakerState pacemakerState,
 		BFTSyncer bftSyncer,
 		ProposerElection proposerElection,
-		SyncQueues queues
+		SyncQueues syncQueues
 	) {
 		this.self = Objects.requireNonNull(self);
-		this.pacemakerState = Objects.requireNonNull(pacemakerState);
 		this.bftSyncer = Objects.requireNonNull(bftSyncer);
 		this.proposerElection = Objects.requireNonNull(proposerElection);
-		this.queues = queues;
+		this.syncQueues = syncQueues;
 		this.forwardTo = forwardTo;
 	}
 
@@ -83,11 +89,41 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	}
 
 	@Override
+	public void processViewUpdate(ViewUpdate viewUpdate) {
+		final View previousView = this.latestViewUpdate.getCurrentView();
+		log.trace("Processing viewUpdate {} cur {}", viewUpdate, previousView);
+
+		// FIXME: Check is required for now since Deterministic tests can randomize local messages
+		if (viewUpdate.getCurrentView().gt(previousView)) {
+			this.latestViewUpdate = viewUpdate;
+			forwardTo.processViewUpdate(viewUpdate);
+			viewQueues.getOrDefault(viewUpdate.getCurrentView(), new LinkedList<>())
+					.forEach(this::processViewCachedEvent);
+			viewQueues.keySet().removeIf(v -> v.lte(viewUpdate.getCurrentView()));
+		}
+	}
+
+	private void processViewCachedEvent(ConsensusEvent event) {
+		if (event instanceof Proposal) {
+			log.trace("Processing cached proposal {}", event);
+			processProposal((Proposal) event);
+		} else if (event instanceof Vote) {
+			log.trace("Processing cached vote {}", event);
+			processVote((Vote) event);
+		} else if (event instanceof ViewTimeout) {
+			log.trace("Processing cached view timeout {}", event);
+			processViewTimeout((ViewTimeout) event);
+		} else {
+			log.error("Ignoring cached ConsensusEvent {}", event);
+		}
+	}
+
+	@Override
 	public void processBFTUpdate(BFTUpdate update) {
 		HashCode vertexId = update.getInsertedVertex().getId();
 
 		log.trace("LOCAL_SYNC: {}", update.getInsertedVertex());
-		for (SyncQueue queue : queues.getQueues()) {
+		for (SyncQueue queue : syncQueues.getQueues()) {
 			if (peekAndExecute(queue, vertexId)) {
 				queue.pop();
 				while (peekAndExecute(queue, null)) {
@@ -102,43 +138,45 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	@Override
 	public void processVote(Vote vote) {
 		log.trace("Vote: PreProcessing {}", vote);
-		if (queues.isEmptyElseAdd(vote) && !processVoteInternal(vote)) {
+		if (syncQueues.isEmptyElseAdd(vote) && !processVoteInternal(vote)) {
 			log.debug("Vote: Queuing {}, waiting for Sync", vote);
-			queues.add(vote);
+			syncQueues.add(vote);
 		}
 	}
 
 	@Override
 	public void processViewTimeout(ViewTimeout viewTimeout) {
 		log.trace("ViewTimeout: PreProcessing {}", viewTimeout);
-		if (queues.isEmptyElseAdd(viewTimeout) && !processViewTimeoutInternal(viewTimeout)) {
+		if (syncQueues.isEmptyElseAdd(viewTimeout) && !processViewTimeoutInternal(viewTimeout)) {
 			log.debug("ViewTimeout: Queuing {}, waiting for Sync", viewTimeout);
-			queues.add(viewTimeout);
+			syncQueues.add(viewTimeout);
 		}
 	}
 
 	@Override
 	public void processProposal(Proposal proposal) {
 		log.trace("Proposal: PreProcessing {}", proposal);
-		if (queues.isEmptyElseAdd(proposal) && !processProposalInternal(proposal)) {
+		if (syncQueues.isEmptyElseAdd(proposal) && !processProposalInternal(proposal)) {
 			log.debug("Proposal: Queuing {}, waiting for Sync", proposal);
-			queues.add(proposal);
+			syncQueues.add(proposal);
 		}
 	}
 
 	@Override
 	public void processLocalTimeout(View view) {
-		final View curView = this.pacemakerState.getCurrentView();
 		forwardTo.processLocalTimeout(view);
-		final View nextView = this.pacemakerState.getCurrentView();
-		if (!curView.equals(nextView)) {
-			log.debug("LocalTimeout: Clearing Queues: {}", queues);
-			for (SyncQueue queue : queues.getQueues()) {
-				if (clearAndExecute(queue, nextView.previous())) {
+
+		if (!view.equals(this.latestViewUpdate.getCurrentView())) {
+			return;
+		}
+
+		// TODO: check if this is correct; move to processViewUpdate?
+		log.debug("LocalTimeout: Clearing Queues: {}", syncQueues);
+		for (SyncQueue queue : syncQueues.getQueues()) {
+			if (clearAndExecute(queue, view)) {
+				queue.pop();
+				while (peekAndExecute(queue, null)) {
 					queue.pop();
-					while (peekAndExecute(queue, null)) {
-						queue.pop();
-					}
 				}
 			}
 		}
@@ -148,7 +186,6 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	public void start() {
 		forwardTo.start();
 	}
-
 
 	private boolean processQueuedConsensusEvent(ConsensusEvent event) {
 		if (event == null) {
@@ -167,7 +204,6 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 			return processVoteInternal(vote);
 		}
 
-
 		if (event instanceof ViewTimeout) {
 			final ViewTimeout viewTimeout = (ViewTimeout) event;
 			return processViewTimeoutInternal(viewTimeout);
@@ -183,7 +219,11 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		if (!onCurrentView("ViewTimeout", viewTimeout.getView(), viewTimeout)) {
 			return true;
 		}
-		return syncUp(viewTimeout.highQC(), viewTimeout.getAuthor(), () -> this.forwardTo.processViewTimeout(viewTimeout));
+		return syncUp(
+			viewTimeout.highQC(),
+			viewTimeout.getAuthor(),
+			() -> processOnCurrentViewOrCache(viewTimeout, forwardTo::processViewTimeout)
+		);
 	}
 
 	private boolean processVoteInternal(Vote vote) {
@@ -193,7 +233,11 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		if (!checkForCurrentViewAndIAmNextLeader("Vote", vote.getView(), vote)) {
 			return true;
 		}
-		return syncUp(vote.highQC(), vote.getAuthor(), () -> this.forwardTo.processVote(vote));
+		return syncUp(
+			vote.highQC(),
+			vote.getAuthor(),
+			() -> processOnCurrentViewOrCache(vote, forwardTo::processVote)
+		);
 	}
 
 	private boolean processProposalInternal(Proposal proposal) {
@@ -204,7 +248,23 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 			return true;
 		}
 
-		return syncUp(proposal.highQC(), proposal.getAuthor(), () -> forwardTo.processProposal(proposal));
+		return syncUp(
+			proposal.highQC(),
+			proposal.getAuthor(),
+			() -> processOnCurrentViewOrCache(proposal, forwardTo::processProposal)
+		);
+	}
+
+	private <T extends ConsensusEvent> void processOnCurrentViewOrCache(T event, Consumer<T> processFn) {
+		if (latestViewUpdate.getCurrentView().equals(event.getView())) {
+			processFn.accept(event);
+		} else if (latestViewUpdate.getCurrentView().lt(event.getView())) {
+			log.trace("Caching {}, current view is {}", event, latestViewUpdate.getCurrentView());
+			viewQueues.putIfAbsent(event.getView(), new LinkedList<>());
+			viewQueues.get(event.getView()).add(event);
+		} else {
+			log.debug("Ignoring {} for past view", event);
+		}
 	}
 
 	private boolean syncUp(HighQC highQC, BFTNode author, Runnable whenSynced) {
@@ -237,7 +297,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	}
 
 	private boolean onCurrentView(String what, View view, Object thing) {
-		final View currentView = this.pacemakerState.getCurrentView();
+		final View currentView = this.latestViewUpdate.getCurrentView();
 		if (view.compareTo(currentView) < 0) {
 			log.trace("{}: Ignoring view {}, current is {}: {}", what, view, currentView, thing);
 			return false;

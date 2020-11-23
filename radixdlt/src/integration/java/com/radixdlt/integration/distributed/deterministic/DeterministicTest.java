@@ -41,8 +41,12 @@ import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.epoch.LocalTimeout;
-import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker.PacemakerInfoSender;
-import com.radixdlt.consensus.liveness.LocalTimeoutSender;
+import com.radixdlt.consensus.epoch.LocalViewUpdate;
+import com.radixdlt.consensus.epoch.LocalViewUpdateSender;
+import com.radixdlt.consensus.liveness.PacemakerInfoSender;
+import com.radixdlt.consensus.epoch.LocalTimeoutSender;
+import com.radixdlt.consensus.liveness.PacemakerState.ViewUpdateSender;
+import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
@@ -73,6 +77,7 @@ import io.reactivex.rxjava3.schedulers.Timed;
 import java.io.PrintStream;
 import java.util.Comparator;
 import java.util.Objects;
+import java.util.Random;
 import java.util.function.Function;
 import java.util.function.LongFunction;
 import java.util.function.Predicate;
@@ -200,6 +205,7 @@ public final class DeterministicTest {
 					// Use constant timeout for now
 					bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0);
 					bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
+					bind(Random.class).toInstance(new Random(123456));
 				}
 			});
 			modules.add(new ConsensusModule());
@@ -241,6 +247,19 @@ public final class DeterministicTest {
 					@Provides
 					private PacemakerTimeoutSender timeoutSender(LocalTimeoutSender localTimeoutSender) {
 						return (view, ms) -> localTimeoutSender.scheduleTimeout(new LocalTimeout(1, view), ms);
+					}
+
+					@Provides
+					private ViewUpdateSender viewUpdateSender(
+						PacemakerTimeoutCalculator pacemakerTimeoutCalculator,
+						PacemakerTimeoutSender pacemakerTimeoutSender,
+						LocalViewUpdateSender localViewUpdateSender
+					) {
+						return (view) -> {
+							long timeout = pacemakerTimeoutCalculator.timeout(view.uncommittedViewsCount());
+							pacemakerTimeoutSender.scheduleTimeout(view.getCurrentView(), timeout);
+							localViewUpdateSender.sendLocalViewUpdate(new LocalViewUpdate(1, view));
+						};
 					}
 				});
 				modules.add(new MockedStateComputerModule());
@@ -340,8 +359,8 @@ public final class DeterministicTest {
 			if (!(message.message() instanceof Proposal)) {
 				return false;
 			}
-			Proposal p = (Proposal) message.message();
-			EpochView nev = EpochView.of(p.getEpoch(), p.getVertex().getView());
+			Proposal proposal = (Proposal) message.message();
+			EpochView nev = EpochView.of(proposal.getEpoch(), proposal.getView());
 			return (nev.compareTo(maxEpochView) > 0);
 		};
 	}
@@ -360,8 +379,8 @@ public final class DeterministicTest {
 			if (!(message.message() instanceof Proposal)) {
 				return false;
 			}
-			Proposal proposal = (Proposal) message.message();
-			return (proposal.getView().number() > maxViewNumber);
+			Proposal p = (Proposal) message.message();
+			return (p.getView().number() > maxViewNumber);
 		};
 	}
 

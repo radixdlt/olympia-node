@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -17,21 +17,17 @@
 
 package com.radixdlt.consensus.liveness;
 
-import java.util.Set;
-
-import com.radixdlt.consensus.ViewTimeout;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.liveness.PacemakerState.ViewUpdateSender;
 
 /**
- * Hotstuff's Event-Driven OnNextSyncView.
+ * Pacemaker state factory
  */
-public interface ProceedToViewSender {
+public interface PacemakerStateFactory {
+
 	/**
-	 * Send a view timeout message to the specified validator.
+	 * Creates a new clean pacemaker state.
 	 *
-	 * @param viewTimeout the view timeout message
-	 * @param nodes the validators to broadcast the message to
+	 * @return a new pacemaker state
 	 */
-	// FIXME: To be change when TCs implemented
-	void broadcastViewTimeout(ViewTimeout viewTimeout, Set<BFTNode> nodes);
+	PacemakerState create(ViewUpdateSender viewUpdateSender);
 }

@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.stream.IntStream;
 
+import org.assertj.core.api.Condition;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.*;
@@ -52,9 +53,13 @@ public class RandomChannelOrderResponsiveTest {
 			.map(counters -> counters.get(CounterType.BFT_PROPOSALS_MADE))
 			.collect(ImmutableList.toImmutableList());
 
+		final long numViews = viewsToRun / numNodes;
+
 		assertThat(proposalsMade)
 			.hasSize(numNodes)
-			.allMatch(l -> l == viewsToRun / numNodes);
+			.areAtLeast(numNodes - 1, new Condition<>(l -> l == numViews, "has as many proposals as views"))
+			// the last view in the epoch doesn't have a proposal
+			.areAtMost(1, new Condition<>(l -> l == numViews - 1, "has one less proposal"));
 	}
 
 	@Test

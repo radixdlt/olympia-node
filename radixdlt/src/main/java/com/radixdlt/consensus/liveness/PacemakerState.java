@@ -17,15 +17,68 @@
 
 package com.radixdlt.consensus.liveness;
 
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.ViewUpdate;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.util.Objects;
 
 /**
- * State of a pacemaker
+ * This class is responsible for keeping track of current consensus view state.
+ * It sends an internal ViewUpdate message on a transition to next view.
  */
-public interface PacemakerState {
-	/**
-	 * Retrieves the local current view the pacemaker is at
-	 * @return view of the pacemaker
-	 */
-	View getCurrentView();
+public class PacemakerState {
+
+    public interface ViewUpdateSender {
+        void sendViewUpdate(ViewUpdate viewUpdate);
+    }
+
+    private static final Logger log = LogManager.getLogger();
+
+    private final ViewUpdateSender viewUpdateSender;
+
+    private View currentView = View.genesis();
+    // Highest view in which a commit happened
+    private View highestCommitView = View.genesis();
+    // Last view that we had any kind of quorum for
+    private View lastQuorumView = View.genesis();
+
+    public PacemakerState(ViewUpdateSender viewUpdateSender) {
+        this.viewUpdateSender = Objects.requireNonNull(viewUpdateSender);
+    }
+
+    /**
+     * Signifies to the pacemaker that a quorum has agreed that a view has
+     * been completed.
+     *
+     * @param highQC the sync info for the view
+     * @return {@code true} if proceeded to a new view
+     */
+    public boolean processQC(HighQC highQC) {
+        log.trace("QuorumCertificate: {}", highQC);
+
+        final View view = highQC.highestQC().getView();
+        if (view.gte(this.currentView)) {
+            this.lastQuorumView = view;
+            this.highestCommitView = highQC.highestCommittedQC().getView();
+            this.updateView(view.next());
+            return true;
+        }
+        log.trace("Ignoring QC for view {}: current view is {}", view, this.currentView);
+        return false;
+    }
+
+    public void updateView(View nextView) {
+        if (nextView.lte(this.currentView)) {
+            return;
+        }
+        this.currentView = nextView;
+        viewUpdateSender.sendViewUpdate(new ViewUpdate(
+                this.currentView,
+                this.lastQuorumView,
+                this.highestCommitView
+        ));
+    }
 }

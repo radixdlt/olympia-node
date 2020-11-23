@@ -31,7 +31,7 @@ import io.reactivex.rxjava3.core.Observable;
 public final class TimestampChecker implements TestInvariant {
 	private Maybe<TestInvariantError> checkCloseTimestamp(long timestamp) {
 		long now = System.currentTimeMillis();
-		if (timestamp <= now && timestamp > now - 15_000) {
+		if (timestamp <= now && timestamp > now - 30_000) {
 			return Maybe.empty();
 		} else {
 			return Maybe.just(new TestInvariantError("Expecting timestamp to be close to " + now
