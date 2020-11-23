@@ -33,7 +33,6 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
@@ -97,12 +96,6 @@ public final class ControlledSender implements DeterministicSender, Environment 
 	}
 
 	@Override
-	public void sendVote(Vote vote, BFTNode nextLeader) {
-		ChannelId channelId = ChannelId.of(this.senderIndex, this.network.lookup(nextLeader));
-		handleMessage(new ControlledMessage(self, channelId, vote, arrivalTime(channelId)));
-	}
-
-	@Override
 	public void highQC(QuorumCertificate qc) {
 		// Ignore high QC signal
 	}
@@ -120,7 +113,7 @@ public final class ControlledSender implements DeterministicSender, Environment 
 
 	@Override
 	public void sendGetEpochResponse(BFTNode node, VerifiedLedgerHeaderAndProof ancestor) {
-		GetEpochResponse getEpochResponse = new GetEpochResponse(node, ancestor);
+		GetEpochResponse getEpochResponse = new GetEpochResponse(self, ancestor);
 		ChannelId channelId = ChannelId.of(this.senderIndex, this.network.lookup(node));
 		handleMessage(new ControlledMessage(self, channelId, getEpochResponse, arrivalTime(channelId)));
 	}
@@ -129,7 +122,6 @@ public final class ControlledSender implements DeterministicSender, Environment 
 	public void sendLedgerUpdate(EpochsLedgerUpdate epochsLedgerUpdate) {
 		handleMessage(new ControlledMessage(self, this.localChannel, epochsLedgerUpdate, arrivalTime(this.localChannel)));
 	}
-
 
 	@Override
 	public <T> EventDispatcher<T> getDispatcher(Class<T> eventClass) {
@@ -144,7 +136,8 @@ public final class ControlledSender implements DeterministicSender, Environment 
 		};
 	}
 
-	public <T> RemoteEventDispatcher<T> remoteDispatcher(Class<T> eventClass) {
+	@Override
+	public <T> RemoteEventDispatcher<T> getRemoteDispatcher(Class<T> eventClass) {
 		return (node, e) -> {
 			ChannelId channelId = ChannelId.of(this.senderIndex, this.network.lookup(node));
 			handleMessage(new ControlledMessage(self, channelId, e, arrivalTime(channelId)));

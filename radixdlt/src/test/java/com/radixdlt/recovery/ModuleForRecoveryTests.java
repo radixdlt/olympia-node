@@ -35,6 +35,7 @@ import com.radixdlt.PersistenceModule;
 import com.radixdlt.RadixEngineModule;
 import com.radixdlt.RadixEngineStoreModule;
 import com.radixdlt.RadixEngineValidatorComputersModule;
+import com.radixdlt.RecoveryModule;
 import com.radixdlt.SyncServiceModule;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
@@ -126,7 +127,9 @@ public final class ModuleForRecoveryTests {
 			// Fees
 			new NoFeeModule(),
 
-			new PersistenceModule()
+			new PersistenceModule(),
+
+			new RecoveryModule()
 		);
 	}
 }

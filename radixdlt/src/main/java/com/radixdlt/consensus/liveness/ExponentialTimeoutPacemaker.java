@@ -39,13 +39,13 @@ import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.network.TimeSupplier;
 
 import java.util.Set;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.message.FormattedMessage;
 
 import java.util.List;
 import java.util.Objects;
@@ -99,6 +99,7 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 	private final ProposalBroadcaster sender;
 	private final ProceedToViewSender proceedToViewSender;
 	private final PacemakerTimeoutSender timeoutSender;
+	private final RemoteEventDispatcher<Vote> voteDispatcher;
 	private final PacemakerInfoSender pacemakerInfoSender;
 
 	private final RateLimiter logLimiter = RateLimiter.create(1.0);
@@ -131,6 +132,7 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 
 		ProposalBroadcaster sender,
 		ProceedToViewSender proceedToViewSender,
+		RemoteEventDispatcher<Vote> voteDispatcher,
 		PacemakerTimeoutSender timeoutSender,
 		PacemakerInfoSender pacemakerInfoSender
 	) {
@@ -167,6 +169,7 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 
 		this.sender = Objects.requireNonNull(sender);
 		this.proceedToViewSender = Objects.requireNonNull(proceedToViewSender);
+		this.voteDispatcher = Objects.requireNonNull(voteDispatcher);
 		this.timeoutSender = Objects.requireNonNull(timeoutSender);
 		this.pacemakerInfoSender = Objects.requireNonNull(pacemakerInfoSender);
 		log.debug("{} for {} with max timeout {}*{}^{}ms",
@@ -207,7 +210,6 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 		final Optional<BFTHeader> maybeHeader = this.vertexStore.insertVertex(proposedVertex);
 		// The header may not be present if the ledger is ahead of consensus
 		maybeHeader.ifPresent(header -> {
-			final BFTNode nextLeader = this.proposerElection.getProposer(this.currentView.next());
 			final Optional<Vote> maybeVote = this.safetyRules.voteFor(
 				proposedVertex,
 				header,
@@ -216,13 +218,11 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 			);
 			maybeVote.ifPresentOrElse(
 				vote -> {
-					log.trace("Proposal: Sending vote to {}: {}", nextLeader, vote);
-					this.proceedToViewSender.sendVote(vote, nextLeader);
+					final BFTNode nextLeader = this.proposerElection.getProposer(this.currentView.next());
+					this.voteDispatcher.dispatch(nextLeader, vote);
 				},
-				() -> {
-					this.counters.increment(CounterType.BFT_REJECTED);
-					log.warn(() -> new FormattedMessage("Proposal: Rejected {}", proposedVertex));
-				});
+				() -> this.counters.increment(CounterType.BFT_REJECTED)
+			);
 		});
 	}
 
@@ -297,14 +297,16 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 		this.timeoutSender.scheduleTimeout(this.currentView, timeout);
 		this.pacemakerInfoSender.sendCurrentView(this.currentView);
 		if (this.self.equals(this.proposerElection.getProposer(nextView))) {
-			Proposal proposal = generateProposal(this.currentView);
-			log.trace("Broadcasting proposal: {}", proposal);
-			this.sender.broadcastProposal(proposal, this.validatorSet.nodes());
-			this.counters.increment(CounterType.BFT_PROPOSALS_MADE);
+			Optional<Proposal> proposalMaybe = generateProposal(this.currentView);
+			proposalMaybe.ifPresent(proposal -> {
+				log.trace("Broadcasting proposal: {}", proposal);
+				this.sender.broadcastProposal(proposal, this.validatorSet.nodes());
+				this.counters.increment(CounterType.BFT_PROPOSALS_MADE);
+			});
 		}
 	}
 
-	private Proposal generateProposal(View view) {
+	private Optional<Proposal> generateProposal(View view) {
 		// Hotstuff's Event-Driven OnBeat
 		final HighQC highQC = this.vertexStore.highQC();
 		final QuorumCertificate highestQC = highQC.highestQC();
@@ -328,7 +330,8 @@ public final class ExponentialTimeoutPacemaker implements Pacemaker {
 		}
 
 		final UnverifiedVertex proposedVertex = UnverifiedVertex.createVertex(highestQC, view, nextCommand);
-		return safetyRules.signProposal(proposedVertex, highestCommitted);
+		final VerifiedVertex verifiedVertex = new VerifiedVertex(proposedVertex, hasher.hash(proposedVertex));
+		return safetyRules.signProposal(verifiedVertex, highestCommitted);
 	}
 
 	private long uncommittedViews(View v) {

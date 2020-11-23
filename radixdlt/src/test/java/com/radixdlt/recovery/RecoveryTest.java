@@ -24,17 +24,24 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
+import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
+import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
+import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.environment.deterministic.DeterministicEpochInfo;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.ProcessOnDispatch;
+import com.radixdlt.environment.deterministic.DeterministicSavedLastEvent;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
@@ -103,8 +110,10 @@ public class RecoveryTest {
 	@After
 	public void teardown() {
 		if (this.currentInjector != null) {
-			LedgerEntryStore store = this.currentInjector.getInstance(LedgerEntryStore.class);
-			store.close();
+			LedgerEntryStore ledgerStore = this.currentInjector.getInstance(LedgerEntryStore.class);
+			ledgerStore.close();
+			PersistentSafetyStateStore safetyStore = this.currentInjector.getInstance(PersistentSafetyStateStore.class);
+			safetyStore.close();
 			DatabaseEnvironment dbEnv = this.currentInjector.getInstance(DatabaseEnvironment.class);
 			dbEnv.stop();
 		}
@@ -132,6 +141,10 @@ public class RecoveryTest {
 						throw new IllegalStateException();
 					}
 					bind(RuntimeProperties.class).toInstance(runtimeProperties);
+
+					Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<Vote>>() { }, ProcessOnDispatch.class)
+						.addBinding().to(new TypeLiteral<DeterministicSavedLastEvent<Vote>>() { });
+					bind(new TypeLiteral<DeterministicSavedLastEvent<Vote>>() { }).in(Scopes.SINGLETON);
 				}
 			},
 			ModuleForRecoveryTests.create()
@@ -146,8 +159,12 @@ public class RecoveryTest {
 		return currentInjector.getInstance(CommittedAtomsStore.class);
 	}
 
-	private DeterministicEpochInfo getEpochInfo() {
-		return currentInjector.getInstance(DeterministicEpochInfo.class);
+	private EpochView getLastEpochView() {
+		return currentInjector.getInstance(Key.get(new TypeLiteral<DeterministicSavedLastEvent<EpochView>>() { })).getLastEvent();
+	}
+
+	private Vote getLastVote() {
+		return currentInjector.getInstance(Key.get(new TypeLiteral<DeterministicSavedLastEvent<Vote>>() { })).getLastEvent();
 	}
 
 	private void restartNode() {
@@ -202,8 +219,7 @@ public class RecoveryTest {
 	public void on_reboot_should_load_same_last_epoch_header() {
 		// Arrange
 		processForCount(100);
-		DeterministicEpochInfo epochInfo = getEpochInfo();
-		EpochView epochView = epochInfo.getCurrentEpochView();
+		EpochView epochView = getLastEpochView();
 
 		// Act
 		restartNode();
@@ -214,5 +230,19 @@ public class RecoveryTest {
 		);
 		assertThat(restartedEpochProof.isEndOfEpoch()).isTrue();
 		assertThat(restartedEpochProof.getEpoch()).isEqualTo(epochView.getEpoch() - 1);
+	}
+
+	@Test
+	public void on_reboot_should_load_same_last_vote() {
+		// Arrange
+		processForCount(100);
+		Vote vote = getLastVote();
+
+		// Act
+		restartNode();
+
+		// Assert
+		SafetyState safetyState = currentInjector.getInstance(SafetyState.class);
+		assertThat(safetyState.getLastVotedView()).isEqualTo(vote.getView());
 	}
 }

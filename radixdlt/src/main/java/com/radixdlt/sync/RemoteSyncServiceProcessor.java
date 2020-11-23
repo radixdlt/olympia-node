@@ -85,7 +85,7 @@ public class RemoteSyncServiceProcessor implements RemoteEventProcessor<DtoLedge
 		}
 
 		if (committedCommands == null) {
-			log.warn("REMOTE_SYNC_REQUEST: Unable to serve sync request {}.", currentHeader);
+			log.warn("REMOTE_SYNC_REQUEST: Unable to serve sync request {} from sender {}.", currentHeader, sender);
 			return;
 		}
 

@@ -28,9 +28,11 @@ import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.rx.RxEnvironment;
+import com.radixdlt.environment.rx.RxRemoteDispatcher;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.utils.ThreadFactories;
 import io.reactivex.rxjava3.core.Observable;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -48,7 +50,7 @@ public class RxEnvironmentModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private RxEnvironment rxEnvironment(ScheduledExecutorService ses) {
+	private RxEnvironment rxEnvironment(ScheduledExecutorService ses, Set<RxRemoteDispatcher<?>> dispatchers) {
 		return new RxEnvironment(
 			ImmutableSet.of(
 				LocalSyncRequest.class,
@@ -58,7 +60,8 @@ public class RxEnvironmentModule extends AbstractModule {
 				EpochView.class,
 				Timeout.class
 			),
-			ses
+			ses,
+			dispatchers
 		);
 	}
 

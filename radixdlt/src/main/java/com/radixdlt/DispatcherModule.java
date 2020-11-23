@@ -23,9 +23,12 @@ import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.Timeout;
+import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.FormedQC;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.counters.SystemCounters;
@@ -34,6 +37,7 @@ import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
+import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.sync.LocalSyncRequest;
 import java.util.Set;
@@ -57,10 +61,12 @@ public class DispatcherModule extends AbstractModule {
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<BFTCommittedUpdate>>() { });
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<BFTCommittedUpdate>>() { }, ProcessOnDispatch.class);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<FormedQC>>() { }, ProcessOnDispatch.class);
+		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<Vote>>() { }, ProcessOnDispatch.class);
 	}
 
 	@Provides
 	private EventDispatcher<LocalSyncRequest> localSyncRequestEventDispatcher(
+		@Self BFTNode self,
 		@ProcessOnDispatch Set<EventProcessor<LocalSyncRequest>> syncProcessors,
 		Environment environment
 	) {
@@ -68,6 +74,11 @@ public class DispatcherModule extends AbstractModule {
 		return req -> {
 			Class<?> callingClass = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE).getCallerClass();
 			logger.info("LOCAL_SYNC_REQUEST dispatched by {}", callingClass);
+
+			if (req.getTargetNodes().contains(self)) {
+				throw new IllegalStateException("Should not be targeting self.");
+			}
+
 			syncProcessors.forEach(e -> e.process(req));
 			envDispatcher.dispatch(req);
 		};
@@ -85,7 +96,7 @@ public class DispatcherModule extends AbstractModule {
 		SystemCounters systemCounters
 	) {
 		return formedQC -> {
-			logger.trace("Vote: Formed QC: {}", formedQC.qc());
+			logger.trace("Formed QC: {}", formedQC.qc());
 			systemCounters.increment(CounterType.BFT_VOTE_QUORUMS);
 			processors.forEach(p -> p.process(formedQC));
 		};
@@ -148,5 +159,18 @@ public class DispatcherModule extends AbstractModule {
 				dispatcher.dispatch(commit);
 			};
 		}
+	}
+
+	@Provides
+	private RemoteEventDispatcher<Vote> voteDispatcher(
+		@ProcessOnDispatch Set<EventProcessor<Vote>> processors,
+		Environment environment
+	) {
+		RemoteEventDispatcher<Vote> dispatcher = environment.getRemoteDispatcher(Vote.class);
+		return (node, vote) -> {
+			logger.trace("Vote sending to {}: {}", node, vote);
+			processors.forEach(e -> e.process(vote));
+			dispatcher.dispatch(node, vote);
+		};
 	}
 }

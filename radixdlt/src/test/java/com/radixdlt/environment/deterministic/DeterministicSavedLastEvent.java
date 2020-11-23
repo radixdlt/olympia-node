@@ -17,31 +17,17 @@
 
 package com.radixdlt.environment.deterministic;
 
-import com.radixdlt.consensus.Timeout;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.environment.EventProcessor;
 
-public class DeterministicEpochInfo {
-	private EpochView currentEpochView = new EpochView(0, View.genesis());
+public class DeterministicSavedLastEvent<T> implements EventProcessor<T> {
+	private T t;
 
-	private void processEvent(EpochView epochView) {
-		this.currentEpochView = epochView;
+	@Override
+	public void process(T t) {
+		this.t = t;
 	}
 
-	private void processEvent(Timeout timeout) {
-		// No-op
-	}
-
-	public EventProcessor<EpochView> epochViewEventProcessor() {
-		return this::processEvent;
-	}
-
-	public EventProcessor<Timeout> timeoutEventProcessor() {
-		return this::processEvent;
-	}
-
-	public EpochView getCurrentEpochView() {
-		return currentEpochView;
+	public T getLastEvent() {
+		return t;
 	}
 }

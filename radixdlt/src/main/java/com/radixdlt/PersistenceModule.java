@@ -21,11 +21,11 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
+import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.properties.RuntimeProperties;
-import com.radixdlt.store.CursorStore;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.LedgerEntryStoreView;
-import com.radixdlt.store.berkeley.BerkeleyCursorStore;
+import com.radixdlt.store.berkeley.BerkeleySafetyStateStore;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import org.radix.database.DatabaseEnvironment;
 
@@ -38,7 +38,8 @@ public class PersistenceModule extends AbstractModule {
 		// TODO: should be singletons?
 		bind(LedgerEntryStore.class).to(BerkeleyLedgerEntryStore.class).in(Scopes.SINGLETON);
 		bind(LedgerEntryStoreView.class).to(BerkeleyLedgerEntryStore.class);
-		bind(CursorStore.class).to(BerkeleyCursorStore.class);
+		bind(PersistentSafetyStateStore.class).to(BerkeleySafetyStateStore.class);
+		bind(BerkeleySafetyStateStore.class).in(Scopes.SINGLETON);
 	}
 
 	@Provides

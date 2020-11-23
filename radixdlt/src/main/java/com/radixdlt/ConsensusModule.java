@@ -19,15 +19,16 @@ package com.radixdlt;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.BFTFactory;
-import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.FormedQC;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
@@ -44,7 +45,6 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker.PacemakerInfoSender;
 import com.radixdlt.consensus.safety.SafetyRules;
-import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTSyncRequestProcessor;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -68,6 +68,7 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.store.LastProof;
@@ -84,6 +85,7 @@ public final class ConsensusModule extends AbstractModule {
 
 	@Override
 	public void configure() {
+		bind(SafetyRules.class).in(Scopes.SINGLETON);
 		Multibinder.newSetBinder(binder(), VertexStoreEventSender.class);
 	}
 
@@ -179,19 +181,19 @@ public final class ConsensusModule extends AbstractModule {
 		NextCommandGenerator nextCommandGenerator,
 		TimeSupplier timeSupplier,
 		Hasher hasher,
-		HashSigner signer,
 		ProposalBroadcaster proposalBroadcaster,
 		ProceedToViewSender proceedToViewSender,
 		PacemakerTimeoutSender timeoutSender,
 		PacemakerInfoSender infoSender,
 		@PacemakerTimeout long pacemakerTimeout,
 		@PacemakerRate double pacemakerRate,
-		@PacemakerMaxExponent int pacemakerMaxExponent
+		@PacemakerMaxExponent int pacemakerMaxExponent,
+		RemoteEventDispatcher<Vote> voteDispatcher,
+		SafetyRules safetyRules
 	) {
 		PendingVotes pendingVotes = new PendingVotes(hasher);
 		PendingViewTimeouts pendingViewTimeouts = new PendingViewTimeouts();
 		BFTValidatorSet validatorSet = configuration.getValidatorSet();
-		SafetyRules safetyRules = new SafetyRules(self, SafetyState.initialState(), hasher, signer);
 		return new ExponentialTimeoutPacemaker(
 			pacemakerTimeout,
 			pacemakerRate,
@@ -212,6 +214,7 @@ public final class ConsensusModule extends AbstractModule {
 
 			proposalBroadcaster,
 			proceedToViewSender,
+			voteDispatcher,
 			timeoutSender,
 			infoSender
 		);
