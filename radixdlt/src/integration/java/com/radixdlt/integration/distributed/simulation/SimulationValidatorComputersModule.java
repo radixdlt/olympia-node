@@ -18,8 +18,6 @@
 package com.radixdlt.integration.distributed.simulation;
 
 import java.util.Collection;
-import java.util.function.Function;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -29,10 +27,12 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.statecomputer.RadixEngineStakeComputer;
 import com.radixdlt.statecomputer.RadixEngineValidatorsComputer;
 import com.radixdlt.statecomputer.RadixEngineValidatorsComputerImpl;
+import com.radixdlt.statecomputer.TokenStakeComputer;
 import com.radixdlt.utils.UInt256;
 
 /**
@@ -40,28 +40,29 @@ import com.radixdlt.utils.UInt256;
  */
 public class SimulationValidatorComputersModule extends AbstractModule {
 	private final class SimulationStakeComputer implements RadixEngineStakeComputer {
-		private final ImmutableMap<ECPublicKey, UInt256> stakes;
-		private final UInt256 defaultStake;
+		private final RadixEngineStakeComputer delegate;
 
-		private SimulationStakeComputer(ImmutableMap<ECPublicKey, UInt256> stakes, UInt256 defaultStake) {
-			this.stakes = stakes;
-			this.defaultStake = defaultStake;
-		}
-
-		@Override
-		public ImmutableMap<ECPublicKey, UInt256> stakedAmounts(ImmutableSet<ECPublicKey> validators) {
-			return validators.stream()
-				.collect(ImmutableMap.toImmutableMap(Function.identity(), k -> this.stakes.getOrDefault(k, this.defaultStake)));
+		private SimulationStakeComputer(RRI stakingToken, ImmutableMap<ECPublicKey, UInt256> stakes) {
+			var initial = TokenStakeComputer.create(stakingToken);
+			for (final var stake : stakes.entrySet()) {
+				initial = initial.addStake(stake.getKey(), stakingToken, stake.getValue());
+			}
+			this.delegate = initial;
 		}
 
 		@Override
 		public RadixEngineStakeComputer removeStake(ECPublicKey delegatedKey, RRI token, UInt256 amount) {
-			return this;
+			return this.delegate.removeStake(delegatedKey, token, amount);
 		}
 
 		@Override
 		public RadixEngineStakeComputer addStake(ECPublicKey delegatedKey, RRI token, UInt256 amount) {
-			return this;
+			return this.delegate.addStake(delegatedKey, token, amount);
+		}
+
+		@Override
+		public ImmutableMap<ECPublicKey, UInt256> stakedAmounts(ImmutableSet<ECPublicKey> validators) {
+			return this.delegate.stakedAmounts(validators);
 		}
 	}
 
@@ -93,15 +94,16 @@ public class SimulationValidatorComputersModule extends AbstractModule {
 	}
 
 	@Provides
-	private RadixEngineStakeComputer stakeComputer(BFTValidatorSet initialValidators) {
-		ImmutableMap<ECPublicKey, UInt256> stakes = initialValidators.getValidators().stream()
+	private RadixEngineStakeComputer stakeComputer(@NativeToken RRI nativeToken, ImmutableList<BFTValidator> allValidators) {
+		ImmutableMap<ECPublicKey, UInt256> stakes = allValidators.stream()
+			.filter(validator -> !validator.getPower().isZero())
 			.collect(ImmutableMap.toImmutableMap(v -> v.getNode().getKey(), v -> v.getPower()));
-		return new SimulationStakeComputer(stakes, UInt256.ONE);
+		return new SimulationStakeComputer(nativeToken, stakes);
 	}
 
 	@Provides
-	private RadixEngineValidatorsComputer validatorComputer(BFTValidatorSet initialValidators) {
-		ImmutableList<ECPublicKey> validatorKeys = initialValidators.getValidators().stream()
+	private RadixEngineValidatorsComputer validatorComputer(BFTValidatorSet initialValidatorSet) {
+		ImmutableList<ECPublicKey> validatorKeys = initialValidatorSet.getValidators().stream()
 			.map(BFTValidator::getNode)
 			.map(BFTNode::getKey)
 			.collect(ImmutableList.toImmutableList());

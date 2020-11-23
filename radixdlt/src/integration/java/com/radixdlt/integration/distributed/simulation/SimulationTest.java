@@ -23,8 +23,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Module;
-import com.google.inject.Provides;
 import com.google.inject.Scopes;
+import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusModule;
@@ -47,6 +47,7 @@ import com.radixdlt.SyncServiceModule;
 import com.radixdlt.SyncRxModule;
 import com.radixdlt.SyncRunnerModule;
 import com.radixdlt.SystemInfoRxModule;
+import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
@@ -62,6 +63,9 @@ import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
+import com.radixdlt.fees.NativeToken;
+import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.integration.distributed.MockedBFTConfigurationModule;
 import com.radixdlt.integration.distributed.MockedCommandGeneratorModule;
 import com.radixdlt.integration.distributed.MockedCryptoModule;
@@ -104,6 +108,7 @@ import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;
+import com.radixdlt.statecomputer.ValidatorSetBuilder;
 import com.radixdlt.sync.SyncPatienceMillis;
 import com.radixdlt.utils.DurationParser;
 import com.radixdlt.utils.Pair;
@@ -113,6 +118,7 @@ import io.reactivex.rxjava3.core.Single;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -127,6 +133,9 @@ import java.util.stream.Stream;
  * High level BFT Simulation Test Runner
  */
 public class SimulationTest {
+	private static final ECKeyPair UNIVERSE_KEY = ECKeyPair.generateNew();
+	private static final RadixAddress UNIVERSE_ADDRESS = new RadixAddress((byte) 0, UNIVERSE_KEY.getPublicKey());
+	private static final RRI NATIVE_TOKEN = RRI.of(UNIVERSE_ADDRESS, TokenDefinitionUtils.getNativeTokenShortCode());
 	private static final String ENVIRONMENT_VAR_NAME = "TEST_DURATION"; // Same as used by regression test suite
 	private static final Duration DEFAULT_TEST_DURATION = Duration.ofSeconds(30);
 
@@ -196,6 +205,10 @@ public class SimulationTest {
 		private Module networkModule;
 		private Module overrideModule = null;
 		private Function<ImmutableList<ECKeyPair>, ImmutableMap<ECKeyPair, Module>> byzantineModuleCreator = i -> ImmutableMap.of();
+		// TODO: Fix pacemaker so can Default 1 so can debug in IDE, possibly from properties at some point
+		// TODO: Specifically, simulation test with engine, epochs and mempool gets stuck on a single validator
+		private final int minValidators = 2;
+		private int maxValidators = Integer.MAX_VALUE;
 
 		private Builder() {
 		}
@@ -231,34 +244,73 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder numNodes(int numNodes, int numInitialValidators) {
+		public Builder numNodes(int numNodes, int numInitialValidators, int maxValidators, Iterable<UInt256> initialStakes) {
+			this.maxValidators = maxValidators;
 			this.nodes = Stream.generate(ECKeyPair::generateNew)
 				.limit(numNodes)
 				.collect(ImmutableList.toImmutableList());
 
-			final ImmutableList<BFTNode> bftNodes =
-				nodes.stream().map(node -> BFTNode.create(node.getPublicKey())).collect(ImmutableList.toImmutableList());
+			final var stakesIterator = repeatLast(initialStakes);
+			final var initialStakesMap = nodes.stream()
+				.collect(ImmutableMap.toImmutableMap(ECKeyPair::getPublicKey, k -> stakesIterator.next()));
+
+			final var vsetBuilder = ValidatorSetBuilder.create(this.minValidators, numInitialValidators);
+			final var initialVset = vsetBuilder.buildValidatorSet(initialStakesMap);
+			if (initialVset == null) {
+				throw new IllegalStateException(
+					String.format(
+						"Can't build a validator set between %s and %s validators from %s",
+						this.minValidators, numInitialValidators, initialStakesMap
+					)
+				);
+			}
+
+			final var bftNodes = initialStakesMap.keySet().stream()
+					.map(BFTNode::create)
+					.collect(ImmutableList.toImmutableList());
+			final var validators = initialStakesMap.entrySet().stream()
+					.map(e -> BFTValidator.from(BFTNode.create(e.getKey()), e.getValue()))
+					.collect(ImmutableList.toImmutableList());
 
 			this.initialNodesModule = new AbstractModule() {
-				@Provides
-				ImmutableList<BFTNode> nodes() {
-					return bftNodes;
+				@Override
+				protected void configure() {
+					bind(new TypeLiteral<ImmutableList<BFTNode>>() { }).toInstance(bftNodes);
+					bind(new TypeLiteral<ImmutableList<BFTValidator>>() { }).toInstance(validators);
 				}
 			};
 
 			modules.add(new AbstractModule() {
-				@Provides
-				BFTValidatorSet initialValidatorSet() {
-					return BFTValidatorSet.from(bftNodes.stream().limit(numInitialValidators)
-						.map(node -> BFTValidator.from(node, UInt256.ONE)));
+				@Override
+				protected void configure() {
+					bind(new TypeLiteral<ImmutableList<BFTNode>>() { }).toInstance(bftNodes);
+					bind(new TypeLiteral<ImmutableList<BFTValidator>>() { }).toInstance(validators);
+					bind(BFTValidatorSet.class).toInstance(initialVset);
 				}
 			});
 
 			return this;
 		}
 
+		public Builder numNodes(int numNodes, int numInitialValidators, Iterable<UInt256> initialStakes) {
+			return numNodes(numNodes, numInitialValidators, numInitialValidators, initialStakes);
+		}
+
+		public Builder numNodes(int numNodes, int numInitialValidators, int maxValidators) {
+			return numNodes(numNodes, numInitialValidators, maxValidators, ImmutableList.of(UInt256.ONE));
+		}
+
+		public Builder numNodes(int numNodes, int numInitialValidators) {
+			return numNodes(numNodes, numInitialValidators, ImmutableList.of(UInt256.ONE));
+		}
+
 		public Builder numNodes(int numNodes) {
-			return this.numNodes(numNodes, numNodes);
+			return numNodes(numNodes, numNodes);
+		}
+
+		public Builder maxValidators(int maxValidators) {
+			this.maxValidators = maxValidators;
+			return this;
 		}
 
 		public Builder ledgerAndEpochs(View epochHighView, Function<Long, IntStream> epochToNodeIndexMapper) {
@@ -512,6 +564,7 @@ public class SimulationTest {
 					modules.add(new MockedCommittedReaderModule());
 					modules.add(new MockedSyncRunnerModule());
 				} else if (ledgerType == LedgerType.LEDGER_AND_LOCALMEMPOOL) {
+					final var mempool = new LocalMempool(10, hasher);
 					modules.add(new MockedLedgerUpdateRxModule());
 					modules.add(new MockedLedgerUpdateSender());
 					modules.add(new MockedConsensusRunnerModule());
@@ -520,7 +573,7 @@ public class SimulationTest {
 					modules.add(new AbstractModule() {
 						@Override
 						protected void configure() {
-							bind(Mempool.class).to(LocalMempool.class);
+							bind(Mempool.class).toInstance(mempool);
 						}
 					});
 					modules.add(new MockedSyncServiceModule());
@@ -557,10 +610,9 @@ public class SimulationTest {
 						protected void configure() {
 							bind(Mempool.class).to(LocalMempool.class);
 							bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(epochHighView);
-							// TODO: Fix pacemaker so can Default 1 so can debug in IDE, possibly from properties at some point
-							// TODO: Specifically, simulation test with engine, epochs and mempool gets stuck on a single validator
-							bind(Integer.class).annotatedWith(MinValidators.class).toInstance(2);
-							bind(Integer.class).annotatedWith(MaxValidators.class).toInstance(Integer.MAX_VALUE);
+							bind(Integer.class).annotatedWith(MinValidators.class).toInstance(minValidators);
+							bind(Integer.class).annotatedWith(MaxValidators.class).toInstance(maxValidators);
+							bind(RRI.class).annotatedWith(NativeToken.class).toInstance(NATIVE_TOKEN);
 						}
 					});
 					modules.add(new RadixEngineModule());
@@ -718,5 +770,28 @@ public class SimulationTest {
 			.blockingStream()
 			.collect(Collectors.toMap(Pair::getFirst, Pair::getSecond));
 		return new TestResults(checkResults, runningNetwork);
+	}
+
+	private static <T> Iterator<T> repeatLast(Iterable<T> iterable) {
+		final var iterator = iterable.iterator();
+		if (!iterator.hasNext()) {
+			throw new IllegalArgumentException("Can't repeat an empty iterable");
+		}
+		return new Iterator<>() {
+			T lastValue = null;
+
+			@Override
+			public boolean hasNext() {
+				return true;
+			}
+
+			@Override
+			public T next() {
+				if (iterator.hasNext()) {
+					this.lastValue = iterator.next();
+				}
+				return this.lastValue;
+			}
+		};
 	}
 }
