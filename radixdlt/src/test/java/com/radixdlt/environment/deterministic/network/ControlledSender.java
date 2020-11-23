@@ -20,6 +20,7 @@ package com.radixdlt.environment.deterministic.network;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.ViewTimeout;
+import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.LocalViewUpdate;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
@@ -109,7 +110,9 @@ public final class ControlledSender implements DeterministicSender, Environment 
 
 	@Override
 	public void sendGetEpochRequest(BFTNode node, long epoch) {
-		// Ignore get epoch requests for now
+		GetEpochRequest getEpochRequest = new GetEpochRequest(self, epoch);
+		ChannelId channelId = ChannelId.of(this.senderIndex, this.network.lookup(node));
+		handleMessage(new ControlledMessage(self, channelId, getEpochRequest, arrivalTime(channelId)));
 	}
 
 	@Override

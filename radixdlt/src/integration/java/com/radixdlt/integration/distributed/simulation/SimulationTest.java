@@ -44,7 +44,6 @@ import com.radixdlt.RadixEngineModule;
 import com.radixdlt.RadixEngineRxModule;
 import com.radixdlt.RxEnvironmentModule;
 import com.radixdlt.SyncServiceModule;
-import com.radixdlt.SyncRxModule;
 import com.radixdlt.SyncRunnerModule;
 import com.radixdlt.SystemInfoRxModule;
 import com.radixdlt.consensus.Sha256Hasher;
@@ -196,7 +195,6 @@ public class SimulationTest {
 							}
 						});
 						modules.add(new SyncServiceModule());
-						modules.add(new SyncRxModule());
 						modules.add(new MockedCommittedReaderModule());
 						if (!hasEpochs) {
 							modules.add(new MockedSyncRunnerModule());

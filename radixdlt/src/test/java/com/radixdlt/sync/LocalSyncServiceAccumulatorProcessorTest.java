@@ -17,6 +17,7 @@
 
 package com.radixdlt.sync;
 
+import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
@@ -30,12 +31,11 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
-import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncTimeoutScheduler;
-import com.radixdlt.utils.TypedMocks;
 
 import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicReference;
@@ -45,20 +45,20 @@ import org.junit.Test;
 public class LocalSyncServiceAccumulatorProcessorTest {
 	private RemoteEventDispatcher<DtoLedgerHeaderAndProof> requestDispatcher;
 	private LocalSyncServiceAccumulatorProcessor syncServiceProcessor;
-	private SyncTimeoutScheduler syncTimeoutScheduler;
+	private ScheduledEventDispatcher<SyncInProgress> syncTimeoutScheduler;
 	private VerifiedLedgerHeaderAndProof currentHeader;
 	private Comparator<AccumulatorState> accumulatorComparator;
 	private AccumulatorState currentAccumulatorState;
 
 	@Before
 	public void setUp() {
-		this.syncTimeoutScheduler = mock(SyncTimeoutScheduler.class);
+		this.syncTimeoutScheduler = rmock(ScheduledEventDispatcher.class);
 		this.currentHeader = mock(VerifiedLedgerHeaderAndProof.class);
 		this.currentAccumulatorState = mock(AccumulatorState.class);
 		when(currentHeader.getAccumulatorState()).thenReturn(currentAccumulatorState);
 		when(this.currentHeader.toDto()).thenReturn(mock(DtoLedgerHeaderAndProof.class));
-		this.accumulatorComparator = TypedMocks.rmock(Comparator.class);
-		this.requestDispatcher = TypedMocks.rmock(RemoteEventDispatcher.class);
+		this.accumulatorComparator = rmock(Comparator.class);
+		this.requestDispatcher = rmock(RemoteEventDispatcher.class);
 		this.syncServiceProcessor = new LocalSyncServiceAccumulatorProcessor(
 			requestDispatcher,
 			syncTimeoutScheduler,
@@ -79,7 +79,7 @@ public class LocalSyncServiceAccumulatorProcessorTest {
 		when(request.getTarget()).thenReturn(targetHeader);
 		syncServiceProcessor.localSyncRequestEventProcessor().process(request);
 		verify(requestDispatcher, never()).dispatch(any(), any());
-		verify(syncTimeoutScheduler, never()).scheduleTimeout(any(), anyLong());
+		verify(syncTimeoutScheduler, never()).dispatch(any(), anyLong());
 	}
 
 	@Test
@@ -95,7 +95,7 @@ public class LocalSyncServiceAccumulatorProcessorTest {
 		syncServiceProcessor.localSyncRequestEventProcessor().process(request);
 
 		verify(requestDispatcher, times(1)).dispatch(any(), any());
-		verify(syncTimeoutScheduler, times(1)).scheduleTimeout(any(), anyLong());
+		verify(syncTimeoutScheduler, times(1)).dispatch(any(), anyLong());
 	}
 
 	@Test
@@ -104,7 +104,7 @@ public class LocalSyncServiceAccumulatorProcessorTest {
 		doAnswer(invocation -> {
 			sync.set(invocation.getArgument(0));
 			return null;
-		}).when(syncTimeoutScheduler).scheduleTimeout(any(), anyLong());
+		}).when(syncTimeoutScheduler).dispatch(any(), anyLong());
 		VerifiedLedgerHeaderAndProof targetHeader = mock(VerifiedLedgerHeaderAndProof.class);
 		AccumulatorState target = mock(AccumulatorState.class);
 		when(targetHeader.getAccumulatorState()).thenReturn(target);
@@ -117,10 +117,10 @@ public class LocalSyncServiceAccumulatorProcessorTest {
 		when(ledgerUpdate.getTail()).thenReturn(targetHeader);
 		syncServiceProcessor.localSyncRequestEventProcessor().process(request);
 		syncServiceProcessor.processLedgerUpdate(ledgerUpdate);
-		syncServiceProcessor.processSyncTimeout(sync.get());
+		syncServiceProcessor.syncTimeoutProcessor().process(sync.get());
 
 		// Once only for initial setup
 		verify(requestDispatcher, times(1)).dispatch(any(), any());
-		verify(syncTimeoutScheduler, times(1)).scheduleTimeout(any(), anyLong());
+		verify(syncTimeoutScheduler, times(1)).dispatch(any(), anyLong());
 	}
 }

@@ -40,6 +40,7 @@ import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.sync.LocalSyncRequest;
+import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -88,6 +89,12 @@ public class DispatcherModule extends AbstractModule {
 	private ScheduledEventDispatcher<LocalGetVerticesRequest> localGetVerticesRequestRemoteEventDispatcher(Environment environment) {
 		return environment.getScheduledDispatcher(LocalGetVerticesRequest.class);
 	}
+
+	@Provides
+	private ScheduledEventDispatcher<SyncInProgress> timeoutSync(Environment environment) {
+		return environment.getScheduledDispatcher(SyncInProgress.class);
+	}
+
 
 	@Provides
 	@Singleton

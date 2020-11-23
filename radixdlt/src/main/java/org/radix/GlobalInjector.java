@@ -47,7 +47,6 @@ import com.radixdlt.SyncServiceModule;
 import com.radixdlt.SyncMempoolServiceModule;
 import com.radixdlt.LedgerRxModule;
 import com.radixdlt.LedgerModule;
-import com.radixdlt.SyncRxModule;
 import com.radixdlt.SystemInfoRxModule;
 import com.radixdlt.SystemModule;
 import com.radixdlt.TokenFeeModule;
@@ -169,7 +168,6 @@ public class GlobalInjector {
 
 			// Sync
 			new SyncRunnerModule(),
-			new SyncRxModule(),
 			new SyncServiceModule(),
 			new SyncMempoolServiceModule(),
 

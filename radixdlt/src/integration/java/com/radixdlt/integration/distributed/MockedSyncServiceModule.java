@@ -36,6 +36,7 @@ import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
 import com.radixdlt.sync.LocalSyncRequest;
+import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.LongStream;
@@ -52,6 +53,7 @@ public class MockedSyncServiceModule extends AbstractModule {
 	@Override
 	public void configure() {
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochsLedgerUpdate>>() { }, ProcessWithSyncRunner.class);
+		bind(new TypeLiteral<EventProcessor<SyncInProgress>>() { }).toInstance(req -> { });
 		bind(new TypeLiteral<EventProcessor<LocalSyncRequest>>() { }).toInstance(req -> { });
 		bind(new TypeLiteral<RemoteEventProcessor<DtoLedgerHeaderAndProof>>() { }).toInstance((node, res) -> { });
 		bind(new TypeLiteral<RemoteEventProcessor<DtoCommandsAndProof>>() { }).toInstance((node, res) -> { });

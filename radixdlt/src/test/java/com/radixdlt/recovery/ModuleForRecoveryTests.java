@@ -49,7 +49,6 @@ import com.radixdlt.mempool.Mempool;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
-import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncTimeoutScheduler;
 import com.radixdlt.sync.SyncPatienceMillis;
 
 /**
@@ -81,8 +80,6 @@ public final class ModuleForRecoveryTests {
 
 					// TODO: Move these into DeterministicSender
 					bind(CommittedAtomSender.class).toInstance(atom -> {
-					});
-					bind(SyncTimeoutScheduler.class).toInstance((syncInProgress, milliseconds) -> {
 					});
 				}
 			},

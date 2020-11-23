@@ -187,12 +187,12 @@ public class OneNodeAlwaysAliveLivenessTest {
 	private void processForCount(int messageCount) {
 		for (int i = 0; i < messageCount; i++) {
 			Timed<ControlledMessage> msg = this.network.nextMessage();
-			logger.debug("Processing message {}", msg);
 
 			Injector injector = this.nodes.get(msg.value().channelId().receiverIndex());
 			String bftNode = " " + injector.getInstance(Key.get(BFTNode.class, Self.class));
 			ThreadContext.put("bftNode", bftNode);
 			try {
+				logger.debug("Processing message {}", msg);
 				injector.getInstance(DeterministicEpochsConsensusProcessor.class).handleMessage(msg.value().origin(), msg.value().message());
 			} finally {
 				ThreadContext.remove("bftNode");
@@ -204,7 +204,7 @@ public class OneNodeAlwaysAliveLivenessTest {
 	public void all_nodes_except_for_one_need_to_restart_should_be_able_to_reboot_correctly_and_liveness_not_broken() {
 		EpochView epochView = this.nodes.get(0).getInstance(Key.get(new TypeLiteral<DeterministicSavedLastEvent<EpochView>>() { })).getLastEvent();
 
-		for (int restart = 0; restart < 10; restart++) {
+		for (int restart = 0; restart < 5; restart++) {
 			processForCount(5000);
 
 			EpochView nextEpochView = this.nodes.stream()

@@ -36,7 +36,6 @@ import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor;
-import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
 import com.radixdlt.utils.TypedMocks;
 
 import java.util.Optional;
@@ -73,14 +72,6 @@ public class EpochsLocalSyncServiceProcessorTest {
 			this.requestDispatcher,
 			this.syncedEpochSender
 		);
-	}
-
-	@Test
-	public void given_no_updates__when_process_timeout__then_should_forward_to_initial_processor() {
-		SyncInProgress syncInProgress = mock(SyncInProgress.class);
-		this.processor.processSyncTimeout(syncInProgress);
-
-		verify(this.initialProcessor, times(1)).processSyncTimeout(eq(syncInProgress));
 	}
 
 	@Test

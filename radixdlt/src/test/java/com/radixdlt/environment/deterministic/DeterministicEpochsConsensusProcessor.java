@@ -37,6 +37,7 @@ import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.sync.LocalSyncRequest;
+import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -58,6 +59,7 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 		@ProcessWithSyncRunner Set<EventProcessor<EpochsLedgerUpdate>> epochsLedgerUpdateProcessors,
 		EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor,
 		EventProcessor<LocalGetVerticesRequest> localGetVerticesRequestEventProcessor,
+		EventProcessor<SyncInProgress> syncTimeoutProcessor,
 		Set<EventProcessor<BFTUpdate>> bftUpdateProcessors,
 		RemoteEventProcessor<DtoLedgerHeaderAndProof> syncRequestProcessor,
 		RemoteEventProcessor<DtoCommandsAndProof> syncResponseProcessor
@@ -72,6 +74,7 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 		});
 		processorsBuilder.put(LocalSyncRequest.class, e -> localSyncRequestEventProcessor.process((LocalSyncRequest) e));
 		processorsBuilder.put(LocalGetVerticesRequest.class, e -> localGetVerticesRequestEventProcessor.process((LocalGetVerticesRequest) e));
+		processorsBuilder.put(SyncInProgress.class, e -> syncTimeoutProcessor.process((SyncInProgress) e));
 		processorsBuilder.put(BFTUpdate.class, e -> bftUpdateProcessors.forEach(p -> p.process((BFTUpdate) e)));
 		this.eventProcessors = processorsBuilder.build();
 

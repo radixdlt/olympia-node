@@ -30,6 +30,7 @@ import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.rx.RxEnvironment;
 import com.radixdlt.environment.rx.RxRemoteDispatcher;
 import com.radixdlt.sync.LocalSyncRequest;
+import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
 import com.radixdlt.utils.ThreadFactories;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.Set;
@@ -58,11 +59,17 @@ public class RxEnvironmentModule extends AbstractModule {
 				BFTUpdate.class,
 				BFTCommittedUpdate.class,
 				EpochView.class,
-				Timeout.class
+				Timeout.class,
+				SyncInProgress.class
 			),
 			ses,
 			dispatchers
 		);
+	}
+
+	@Provides
+	Observable<SyncInProgress> syncTimeouts(RxEnvironment rxEnvironment) {
+		return rxEnvironment.getObservable(SyncInProgress.class);
 	}
 
 	@Provides
