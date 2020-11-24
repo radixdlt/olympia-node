@@ -91,7 +91,7 @@ public class DockerNetwork implements Closeable, RemoteBFTNetwork {
 		Map<String, Map<String, Object>> dockerOptionsPerNode = CmdHelper.getDockerOptions(numNodes, startConsensusOnBoot);
 		CmdHelper.removeAllDockerContainers(); // TODO do we need  if yes, document it
 		String[] universeValidatorEnvVariables = CmdHelper.generateUniverseValidators(numNodes);
-		if(!networkName.contains(DID_NETWORK)){
+		if(!CmdHelper.testRunningOnDocker() && !networkName.contains(DID_NETWORK) ){
 			System.out.println(" Network is " + networkName);
 			CmdHelper.runCommand("docker network rm " + networkName);
 			CmdHelper.runCommand("docker network create " + networkName, null, true);
@@ -138,7 +138,7 @@ public class DockerNetwork implements Closeable, RemoteBFTNetwork {
 	private static String getNodeEndpoint(Map<String, Object> nodeOptions, final String endpoint) {
 		int nodePort = (Integer) nodeOptions.get(OPTIONS_KEY_PORT);
 		String network = (String) nodeOptions.get(NETWORK);
-		return network.contains(DID_NETWORK)?
+		return network.contains(DID_NETWORK) || CmdHelper.testRunningOnDocker() ?
 			String.format("http://%s:8080/%s", nodeOptions.get("nodeName"), endpoint):
 			String.format("http://localhost:%d/%s", nodePort, endpoint);
 	}

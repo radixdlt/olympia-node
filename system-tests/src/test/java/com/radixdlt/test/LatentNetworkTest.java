@@ -38,11 +38,11 @@ public class LatentNetworkTest {
 
 	@Test
 	@Category(Docker.class)
-	public void given_4_correct_bfts_in_latent_docker_network__then_all_instances_should_get_same_commits_and_progress_should_be_made() {
+	public void given_5_correct_bfts_in_latent_docker_network__then_all_instances_should_get_same_commits_and_progress_should_be_made() {
 		String name = Generic.extractTestName(this.name.getMethodName());
 		logger.info("Test name is " + name);
 
-		try (DockerNetwork network = DockerNetwork.builder().numNodes(4).testName(name).build()) {
+		try (DockerNetwork network = DockerNetwork.builder().numNodes(5).testName(name).build()) {
 			network.startBlocking();
 			RemoteBFTTest test = AssertionChecks.latentTestBuilder()
 				.network(RemoteBFTNetworkBridge.of(network))
