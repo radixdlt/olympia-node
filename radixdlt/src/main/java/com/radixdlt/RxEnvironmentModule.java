@@ -22,11 +22,12 @@ import com.google.common.collect.ImmutableSet.Builder;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.radixdlt.consensus.LocalTimeoutOccurrence;
+import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
+import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.rx.RxEnvironment;
@@ -64,6 +65,7 @@ public class RxEnvironmentModule extends AbstractModule {
 			BFTUpdate.class,
 			BFTCommittedUpdate.class,
 			LocalTimeoutOccurrence.class,
+			EpochLocalTimeoutOccurrence.class,
 			SyncInProgress.class,
 			ViewUpdate.class,
 			EpochViewUpdate.class
@@ -104,6 +106,11 @@ public class RxEnvironmentModule extends AbstractModule {
 	@Provides
 	public Observable<LocalTimeoutOccurrence> timeouts(RxEnvironment rxEnvironment) {
 		return rxEnvironment.getObservable(LocalTimeoutOccurrence.class);
+	}
+
+	@Provides
+	public Observable<EpochLocalTimeoutOccurrence> epochTimeouts(RxEnvironment rxEnvironment) {
+		return rxEnvironment.getObservable(EpochLocalTimeoutOccurrence.class);
 	}
 
 	@Provides

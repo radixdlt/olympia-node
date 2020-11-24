@@ -17,13 +17,23 @@
 
 package com.radixdlt.consensus.liveness;
 
+import com.google.inject.Inject;
+import com.radixdlt.consensus.bft.PacemakerMaxExponent;
+import com.radixdlt.consensus.bft.PacemakerRate;
+import com.radixdlt.consensus.bft.PacemakerTimeout;
+
 public class ExponentialPacemakerTimeoutCalculator implements PacemakerTimeoutCalculator {
 
     private final long timeoutMilliseconds;
     private final double rate;
     private final int maxExponent;
 
-    public ExponentialPacemakerTimeoutCalculator(long timeoutMilliseconds, double rate, int maxExponent) {
+    @Inject
+    public ExponentialPacemakerTimeoutCalculator(
+        @PacemakerTimeout long timeoutMilliseconds,
+        @PacemakerRate double rate,
+        @PacemakerMaxExponent int maxExponent
+    ) {
         if (timeoutMilliseconds <= 0) {
             throw new IllegalArgumentException("timeoutMilliseconds must be > 0 but was " + timeoutMilliseconds);
         }

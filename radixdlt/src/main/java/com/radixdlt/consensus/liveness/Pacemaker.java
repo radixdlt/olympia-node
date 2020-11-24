@@ -63,14 +63,14 @@ public final class Pacemaker {
 	private final VertexStore vertexStore;
 	private final SafetyRules safetyRules;
 	private final VoteSender voteSender;
-	private final PacemakerState pacemakerState;
+	private final PacemakerUpdater pacemakerUpdater;
 	private final PacemakerTimeoutSender timeoutSender;
 	private final PacemakerTimeoutCalculator timeoutCalculator;
 	private final ProposalBroadcaster proposalBroadcaster;
 	private final ProposerElection proposerElection;
 	private final NextCommandGenerator nextCommandGenerator;
 	private final Hasher hasher;
-	private final EventDispatcher<View> timeoutDispatcher;
+	private final EventDispatcher<LocalTimeoutOccurrence> timeoutDispatcher;
 
 	private ViewUpdate latestViewUpdate = new ViewUpdate(View.genesis(), View.genesis(), View.genesis());
 	private Optional<View> lastTimedOutView = Optional.empty();
@@ -83,8 +83,8 @@ public final class Pacemaker {
 		VertexStore vertexStore,
 		SafetyRules safetyRules,
 		VoteSender voteSender,
-		EventDispatcher<View> timeoutDispatcher,
-		PacemakerState pacemakerState,
+		EventDispatcher<LocalTimeoutOccurrence> timeoutDispatcher,
+		PacemakerUpdater pacemakerUpdater,
 		PacemakerTimeoutSender timeoutSender,
 		PacemakerTimeoutCalculator timeoutCalculator,
 		NextCommandGenerator nextCommandGenerator,
@@ -100,7 +100,7 @@ public final class Pacemaker {
 		this.safetyRules = Objects.requireNonNull(safetyRules);
 		this.voteSender = Objects.requireNonNull(voteSender);
 		this.timeoutDispatcher = Objects.requireNonNull(timeoutDispatcher);
-		this.pacemakerState = Objects.requireNonNull(pacemakerState);
+		this.pacemakerUpdater = Objects.requireNonNull(pacemakerUpdater);
 		this.timeoutSender = Objects.requireNonNull(timeoutSender);
 		this.timeoutCalculator = Objects.requireNonNull(timeoutCalculator);
 		this.nextCommandGenerator = Objects.requireNonNull(nextCommandGenerator);
@@ -171,7 +171,7 @@ public final class Pacemaker {
 			.ifPresent(vt -> {
 				log.trace("ViewTimeout: Formed quorum at view {}", view);
 				this.counters.increment(CounterType.BFT_TIMEOUT_QUORUMS);
-				this.pacemakerState.updateView(view.next());
+				this.pacemakerUpdater.updateView(view.next());
 			});
 	}
 
@@ -201,7 +201,10 @@ public final class Pacemaker {
 
 		final ViewTimeout viewTimeout = this.safetyRules.viewTimeout(view, this.vertexStore.highQC());
 		this.voteSender.broadcastViewTimeout(viewTimeout, this.validatorSet.nodes());
-		this.timeoutDispatcher.dispatch(view);
+
+		BFTNode leader = proposerElection.getProposer(view);
+		LocalTimeoutOccurrence localTimeoutOccurrence = new LocalTimeoutOccurrence(view, leader);
+		this.timeoutDispatcher.dispatch(localTimeoutOccurrence);
 
 		final long timeout = timeoutCalculator.timeout(latestViewUpdate.uncommittedViewsCount());
 
@@ -219,6 +222,6 @@ public final class Pacemaker {
 	 * @return {@code true} if proceeded to a new view
 	 */
 	public boolean processQC(HighQC highQC) {
-		return this.pacemakerState.processQC(highQC);
+		return this.pacemakerUpdater.processQC(highQC);
 	}
 }

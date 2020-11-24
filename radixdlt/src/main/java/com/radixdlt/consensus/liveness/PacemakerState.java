@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus.liveness;
 
+import com.google.inject.Inject;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewUpdate;
@@ -30,7 +31,7 @@ import java.util.Objects;
  * This class is responsible for keeping track of current consensus view state.
  * It sends an internal ViewUpdate message on a transition to next view.
  */
-public class PacemakerState {
+public class PacemakerState implements PacemakerUpdater {
     private static final Logger log = LogManager.getLogger();
 
     private final EventDispatcher<ViewUpdate> viewUpdateSender;
@@ -41,6 +42,7 @@ public class PacemakerState {
     // Last view that we had any kind of quorum for
     private View lastQuorumView = View.genesis();
 
+    @Inject
     public PacemakerState(EventDispatcher<ViewUpdate> viewUpdateSender) {
         this.viewUpdateSender = Objects.requireNonNull(viewUpdateSender);
     }
@@ -52,6 +54,7 @@ public class PacemakerState {
      * @param highQC the sync info for the view
      * @return {@code true} if proceeded to a new view
      */
+    @Override
     public boolean processQC(HighQC highQC) {
         log.trace("QuorumCertificate: {}", highQC);
 
@@ -66,6 +69,7 @@ public class PacemakerState {
         return false;
     }
 
+    @Override
     public void updateView(View nextView) {
         if (nextView.lte(this.currentView)) {
             return;

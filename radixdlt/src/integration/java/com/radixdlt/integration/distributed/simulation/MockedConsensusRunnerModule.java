@@ -24,20 +24,14 @@ import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.BFTEventProcessor;
-import com.radixdlt.consensus.LocalTimeoutOccurrence;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
-import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.sync.BFTSyncResponseProcessor;
 import com.radixdlt.consensus.sync.BFTSync;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.epoch.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
-import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.integration.distributed.BFTRunner;
@@ -53,19 +47,6 @@ public class MockedConsensusRunnerModule extends AbstractModule {
 	@Provides
 	public EventProcessor<LocalGetVerticesRequest> bftSyncTimeoutProcessor(BFTSync bftSync) {
 		return bftSync::processGetVerticesLocalTimeout;
-	}
-
-	@ProvidesIntoSet
-	@ProcessOnDispatch
-	EventProcessor<View> initialEventProcessor(
-		ProposerElection initialProposerElection,
-		EventDispatcher<LocalTimeoutOccurrence> timeoutDispatcher
-	) {
-		return view -> {
-			EpochView epochView = new EpochView(1, view);
-			BFTNode leader = initialProposerElection.getProposer(view);
-			timeoutDispatcher.dispatch(new LocalTimeoutOccurrence(epochView, leader));
-		};
 	}
 
 	@Provides

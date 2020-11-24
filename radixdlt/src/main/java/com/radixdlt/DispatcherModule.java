@@ -23,16 +23,16 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.consensus.LocalTimeoutOccurrence;
+import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.FormedQC;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
+import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
@@ -59,14 +59,17 @@ public class DispatcherModule extends AbstractModule {
 	public void configure() {
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<LocalSyncRequest>>() { }, ProcessOnDispatch.class);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<LocalSyncRequest>>() { });
+
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<LocalTimeoutOccurrence>>() { }, ProcessOnDispatch.class);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<LocalTimeoutOccurrence>>() { });
+		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochLocalTimeoutOccurrence>>() { }, ProcessOnDispatch.class);
+		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochLocalTimeoutOccurrence>>() { });
+
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<ViewUpdate>>() { }, ProcessOnDispatch.class);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<ViewUpdate>>() { });
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<View>>() { }, ProcessOnDispatch.class);
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<View>>() { });
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochViewUpdate>>() { }, ProcessOnDispatch.class);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochViewUpdate>>() { });
+
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<BFTCommittedUpdate>>() { });
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<BFTCommittedUpdate>>() { }, ProcessOnDispatch.class);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<FormedQC>>() { }, ProcessOnDispatch.class);
@@ -126,15 +129,15 @@ public class DispatcherModule extends AbstractModule {
 
 
 	@Provides
-	private EventDispatcher<LocalTimeoutOccurrence> timeoutEventDispatcher(
-		@ProcessOnDispatch Set<EventProcessor<LocalTimeoutOccurrence>> processors,
-		Set<EventProcessor<LocalTimeoutOccurrence>> asyncProcessors,
+	private EventDispatcher<EpochLocalTimeoutOccurrence> timeoutEventDispatcher(
+		@ProcessOnDispatch Set<EventProcessor<EpochLocalTimeoutOccurrence>> processors,
+		Set<EventProcessor<EpochLocalTimeoutOccurrence>> asyncProcessors,
 		Environment environment
 	) {
 		if (asyncProcessors.isEmpty()) {
 			return timeout -> processors.forEach(e -> e.process(timeout));
 		} else {
-			EventDispatcher<LocalTimeoutOccurrence> dispatcher = environment.getDispatcher(LocalTimeoutOccurrence.class);
+			EventDispatcher<EpochLocalTimeoutOccurrence> dispatcher = environment.getDispatcher(EpochLocalTimeoutOccurrence.class);
 			return timeout -> {
 				logger.warn("LOCAL_TIMEOUT dispatched: {}", timeout);
 				processors.forEach(e -> e.process(timeout));
@@ -211,18 +214,18 @@ public class DispatcherModule extends AbstractModule {
 	}
 
 	@Provides
-	private EventDispatcher<View> localConsensusTimeoutDispatcher(
-		@ProcessOnDispatch Set<EventProcessor<View>> syncProcessors,
-		Set<EventProcessor<View>> asyncProcessors,
+	private EventDispatcher<LocalTimeoutOccurrence> localConsensusTimeoutDispatcher(
+		@ProcessOnDispatch Set<EventProcessor<LocalTimeoutOccurrence>> syncProcessors,
+		Set<EventProcessor<LocalTimeoutOccurrence>> asyncProcessors,
 		Environment environment
 	) {
 		if (asyncProcessors.isEmpty()) {
 			return viewTimeout -> syncProcessors.forEach(e -> e.process(viewTimeout));
 		} else {
-			EventDispatcher<View> dispatcher = environment.getDispatcher(View.class);
-			return commit -> {
-				syncProcessors.forEach(e -> e.process(commit));
-				dispatcher.dispatch(commit);
+			EventDispatcher<LocalTimeoutOccurrence> dispatcher = environment.getDispatcher(LocalTimeoutOccurrence.class);
+			return timeout -> {
+				syncProcessors.forEach(e -> e.process(timeout));
+				dispatcher.dispatch(timeout);
 			};
 		}
 	}

@@ -65,7 +65,7 @@ public class PacemakerTest {
 	private ProposerElection proposerElection = mock(ProposerElection.class);
 	private SafetyRules safetyRules = mock(SafetyRules.class);
 	private PacemakerTimeoutSender timeoutSender = mock(PacemakerTimeoutSender.class);
-	private EventDispatcher<View> timeoutDispatcher = rmock(EventDispatcher.class);
+	private EventDispatcher<LocalTimeoutOccurrence> timeoutDispatcher = rmock(EventDispatcher.class);
 
 	private PacemakerState pacemakerState = mock(PacemakerState.class);
 	private PacemakerTimeoutCalculator timeoutCalculator = mock(PacemakerTimeoutCalculator.class);

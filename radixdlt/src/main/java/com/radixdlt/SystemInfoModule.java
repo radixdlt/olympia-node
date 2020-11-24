@@ -29,7 +29,7 @@ import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 import com.radixdlt.systeminfo.InMemorySystemInfoRunner;
-import com.radixdlt.consensus.LocalTimeoutOccurrence;
+import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.middleware2.InfoSupplier;
@@ -56,7 +56,7 @@ public class SystemInfoModule extends AbstractModule {
 	}
 
 	@ProvidesIntoSet
-	private EventProcessor<LocalTimeoutOccurrence> timeoutEventProcessor(InMemorySystemInfo inMemorySystemInfo) {
+	private EventProcessor<EpochLocalTimeoutOccurrence> timeoutEventProcessor(InMemorySystemInfo inMemorySystemInfo) {
 		return inMemorySystemInfo::processTimeout;
 	}
 
@@ -85,7 +85,7 @@ public class SystemInfoModule extends AbstractModule {
 	) {
 		return () -> {
 			EpochView currentEpochView = infoStateManager.getCurrentView();
-			LocalTimeoutOccurrence timeout = infoStateManager.getLastTimeout();
+			EpochLocalTimeoutOccurrence timeout = infoStateManager.getLastTimeout();
 			QuorumCertificate highQC = infoStateManager.getHighestQC();
 
 			return ImmutableMap.of(

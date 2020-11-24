@@ -22,20 +22,21 @@ import static org.mockito.Mockito.mock;
 
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochView;
+import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import org.junit.Before;
 import org.junit.Test;
 
 public class TimeoutTest {
 	private EpochView epochView;
 	private BFTNode leader;
-	private LocalTimeoutOccurrence timeout;
+	private EpochLocalTimeoutOccurrence timeout;
 
 	@Before
 	public void setup() {
 		this.epochView = mock(EpochView.class);
 		this.leader = mock(BFTNode.class);
 
-		this.timeout = new LocalTimeoutOccurrence(this.epochView, this.leader);
+		this.timeout = new EpochLocalTimeoutOccurrence(this.epochView, this.leader);
 	}
 
 	@Test

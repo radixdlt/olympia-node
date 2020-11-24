@@ -35,8 +35,9 @@ import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewUpdate;
+import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
+import com.radixdlt.consensus.liveness.PacemakerUpdater;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.consensus.liveness.ExponentialPacemakerTimeoutCalculator;
 import com.radixdlt.consensus.liveness.PacemakerState;
@@ -88,6 +89,10 @@ public final class ConsensusModule extends AbstractModule {
 	@Override
 	public void configure() {
 		bind(SafetyRules.class).in(Scopes.SINGLETON);
+		bind(PacemakerState.class).in(Scopes.SINGLETON);
+		bind(PacemakerUpdater.class).to(PacemakerState.class);
+		bind(ExponentialPacemakerTimeoutCalculator.class).in(Scopes.SINGLETON);
+		bind(PacemakerTimeoutCalculator.class).to(ExponentialPacemakerTimeoutCalculator.class);
 		Multibinder.newSetBinder(binder(), VertexStoreEventSender.class);
 	}
 
@@ -184,22 +189,6 @@ public final class ConsensusModule extends AbstractModule {
 		);
 	}
 
-  	@Provides
-	@Singleton
-	private PacemakerTimeoutCalculator pacemakerTimeoutCalculator(
-		@PacemakerTimeout long pacemakerTimeout,
-		@PacemakerRate double pacemakerRate,
-		@PacemakerMaxExponent int pacemakerMaxExponent
-	) {
-		return new ExponentialPacemakerTimeoutCalculator(pacemakerTimeout, pacemakerRate, pacemakerMaxExponent);
-	}
-
-	@Provides
-	@Singleton
-	private PacemakerState pacemakerState(EventDispatcher<ViewUpdate> viewUpdateSender) {
-		return new PacemakerState(viewUpdateSender);
-	}
-
 	@Provides
 	@Singleton
 	private Pacemaker pacemaker(
@@ -209,8 +198,8 @@ public final class ConsensusModule extends AbstractModule {
 		BFTConfiguration configuration,
 		VertexStore vertexStore,
 		VoteSender voteSender,
-		EventDispatcher<View> timeoutDispatcher,
-		PacemakerState pacemakerState,
+		EventDispatcher<LocalTimeoutOccurrence> timeoutDispatcher,
+		PacemakerUpdater pacemakerUpdater,
 		PacemakerTimeoutSender timeoutSender,
 		PacemakerTimeoutCalculator timeoutCalculator,
 		NextCommandGenerator nextCommandGenerator,
@@ -229,7 +218,7 @@ public final class ConsensusModule extends AbstractModule {
 			safetyRules,
 			voteSender,
 			timeoutDispatcher,
-			pacemakerState,
+			pacemakerUpdater,
 			timeoutSender,
 			timeoutCalculator,
 			nextCommandGenerator,

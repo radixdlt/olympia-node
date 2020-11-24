@@ -33,7 +33,7 @@ import com.radixdlt.LedgerLocalMempoolModule;
 import com.radixdlt.LedgerModule;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.LocalTimeoutOccurrence;
+import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -47,9 +47,7 @@ import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.epoch.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
-import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
-import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.integration.distributed.MockedCryptoModule;
@@ -224,19 +222,6 @@ public final class DeterministicTest {
 						bind(DeterministicMessageProcessor.class).to(DeterministicConsensusProcessor.class);
 					}
 
-					@ProvidesIntoSet
-					@ProcessOnDispatch
-					EventProcessor<View> initialEventProcessor(
-						ProposerElection initialProposerElection,
-						EventDispatcher<LocalTimeoutOccurrence> timeoutDispatcher
-					) {
-						return view -> {
-							EpochView epochView = new EpochView(1, view);
-							BFTNode leader = initialProposerElection.getProposer(view);
-							timeoutDispatcher.dispatch(new LocalTimeoutOccurrence(epochView, leader));
-						};
-					}
-
 					@Provides
 					private PacemakerTimeoutSender timeoutSender(LocalTimeoutSender localTimeoutSender) {
 						return (view, ms) -> localTimeoutSender.scheduleTimeout(new LocalTimeout(1, view), ms);
@@ -270,7 +255,7 @@ public final class DeterministicTest {
 						bind(BFTValidatorSet.class).toInstance(epochToValidatorSetMapping.apply(1L));
 						bind(DeterministicMessageProcessor.class).to(DeterministicEpochsConsensusProcessor.class);
 						bind(new TypeLiteral<EventProcessor<EpochView>>() { }).toInstance(epochView -> { });
-						bind(new TypeLiteral<EventProcessor<LocalTimeoutOccurrence>>() { }).toInstance(t -> { });
+						bind(new TypeLiteral<EventProcessor<EpochLocalTimeoutOccurrence>>() { }).toInstance(t -> { });
 					}
 				});
 				modules.add(new LedgerModule());

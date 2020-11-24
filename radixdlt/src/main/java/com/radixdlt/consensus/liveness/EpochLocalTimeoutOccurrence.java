@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.liveness;
 
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochView;
@@ -24,11 +24,11 @@ import java.util.Objects;
 /**
  * A timeout which has occurred in the bft node
  */
-public final class LocalTimeoutOccurrence {
+public final class EpochLocalTimeoutOccurrence {
 	private final EpochView epochView;
 	private final BFTNode leader;
 
-	public LocalTimeoutOccurrence(EpochView epochView, BFTNode leader) {
+	public EpochLocalTimeoutOccurrence(EpochView epochView, BFTNode leader) {
 		this.epochView = Objects.requireNonNull(epochView);
 		this.leader = Objects.requireNonNull(leader);
 	}

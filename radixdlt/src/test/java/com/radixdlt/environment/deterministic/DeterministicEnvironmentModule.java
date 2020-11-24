@@ -23,7 +23,7 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.consensus.LocalTimeoutOccurrence;
+import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
@@ -72,9 +72,9 @@ public class DeterministicEnvironmentModule extends AbstractModule {
 		bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
 		bind(Environment.class).to(ControlledSender.class);
 
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<LocalTimeoutOccurrence>>() { }, ProcessOnDispatch.class)
-			.addBinding().to(new TypeLiteral<DeterministicSavedLastEvent<LocalTimeoutOccurrence>>() { });
-		bind(new TypeLiteral<DeterministicSavedLastEvent<LocalTimeoutOccurrence>>() { }).in(Scopes.SINGLETON);
+		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochLocalTimeoutOccurrence>>() { }, ProcessOnDispatch.class)
+			.addBinding().to(new TypeLiteral<DeterministicSavedLastEvent<EpochLocalTimeoutOccurrence>>() { });
+		bind(new TypeLiteral<DeterministicSavedLastEvent<EpochLocalTimeoutOccurrence>>() { }).in(Scopes.SINGLETON);
 
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochViewUpdate>>() { }, ProcessOnDispatch.class)
 			.addBinding().to(new TypeLiteral<DeterministicSavedLastEvent<EpochViewUpdate>>() { });

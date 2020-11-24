@@ -21,7 +21,7 @@ import com.google.common.collect.EvictingQueue;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.LocalTimeoutOccurrence;
+import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public final class InMemorySystemInfo {
 	private final Queue<VerifiedVertex> vertexRingBuffer;
-	private final AtomicReference<LocalTimeoutOccurrence> lastTimeout = new AtomicReference<>();
+	private final AtomicReference<EpochLocalTimeoutOccurrence> lastTimeout = new AtomicReference<>();
 	private final AtomicReference<EpochView> currentView = new AtomicReference<>(EpochView.of(0L, View.genesis()));
 	private final AtomicReference<QuorumCertificate> highQC = new AtomicReference<>();
 
@@ -47,7 +47,7 @@ public final class InMemorySystemInfo {
 		this.vertexRingBuffer = Queues.synchronizedQueue(EvictingQueue.create(vertexBufferSize));
 	}
 
-	public void processTimeout(LocalTimeoutOccurrence timeout) {
+	public void processTimeout(EpochLocalTimeoutOccurrence timeout) {
 		lastTimeout.set(timeout);
 	}
 
@@ -68,7 +68,7 @@ public final class InMemorySystemInfo {
 		return this.currentView.get();
 	}
 
-	public LocalTimeoutOccurrence getLastTimeout() {
+	public EpochLocalTimeoutOccurrence getLastTimeout() {
 		return this.lastTimeout.get();
 	}
 
