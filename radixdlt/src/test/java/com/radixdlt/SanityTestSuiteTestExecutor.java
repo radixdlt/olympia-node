@@ -1,15 +1,11 @@
 package com.radixdlt;
 
-import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
 import com.google.common.io.Files;
 import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import com.google.gson.stream.JsonReader;
 import com.radixdlt.consensus.Sha256Hasher;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.JSONFormatter;
@@ -19,17 +15,19 @@ import org.json.JSONObject;
 import org.junit.Assert;
 import org.junit.Test;
 
+import javax.annotation.Nullable;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.io.IOException;
-import java.util.Arrays;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import static com.google.common.collect.Streams.zip;
 import static org.junit.Assert.assertEquals;
 
 interface TestVectorInput {}
@@ -85,8 +83,12 @@ public class SanityTestSuiteTestExecutor {
 				static final class SanityTestScenarioTests {
 
 					private String source;
-					private String originalSource;
+					private @Nullable String originalSource;
 					private List<UnknownTestVector> vectors;
+
+					Optional<String> getOriginalSource() {
+						return Optional.ofNullable(this.originalSource);
+					}
 				}
 
 				private SanityTestScenarioDescription description;
@@ -113,7 +115,7 @@ public class SanityTestSuiteTestExecutor {
 			File file = new File(classLoader.getResource(sanityTestJSONFileName).getFile());
 
 			// Compare saved hash in file with calculated hash of test.
-			String jsonFileContent = Files.asCharSource(file, Charsets.UTF_8).read();
+			String jsonFileContent = Files.asCharSource(file, StandardCharsets.UTF_8).read();
 			JSONObject sanityTestSuiteRootAsJsonObject = new JSONObject(jsonFileContent);
 			String sanityTestSuiteSavedHash = sanityTestSuiteRootAsJsonObject.getString("hashOfSuite");
 			JSONObject sanityTestSuiteAsJsonObject = sanityTestSuiteRootAsJsonObject.getJSONObject("suite");
@@ -162,6 +164,9 @@ public class SanityTestSuiteTestExecutor {
 
 	static final class HashingVectorInput implements TestVectorInput {
 		private String stringToHash;
+		byte[] bytesToHash() {
+			return this.stringToHash.getBytes(StandardCharsets.UTF_8);
+		}
 	}
 	static final class HashingVectorExpected implements TestVectorExpected {
 		private String hash;
@@ -171,6 +176,7 @@ public class SanityTestSuiteTestExecutor {
 			return cast(this.input, HashingVectorInput.class);
 		}
 
+
 		@Override HashingVectorExpected getExpected() {
 			return cast(this.expected, HashingVectorExpected.class);
 		}
@@ -178,14 +184,27 @@ public class SanityTestSuiteTestExecutor {
 
 	private void testScenarioHashing(SanityTestSuiteRoot.SanityTestSuite.SanityTestScenario scenario) {
 		assertEquals(TEST_SCENARIO_HASHING, scenario.identifier);
+
+		BiConsumer<HashingTestVector, Integer> testVectorRunner = (vector, vectorIndex) -> {
+			HashingVectorInput input = vector.getInput();
+			HashingVectorExpected expected = vector.getExpected();
+
+			MessageDigest hasher = null;
+			try {
+				hasher = MessageDigest.getInstance("SHA-256");
+			} catch (NoSuchAlgorithmException e) {
+				throw new AssertionError("Failed to run test, found no hasher", e);
+			}
+			hasher.update(input.bytesToHash());
+			String hashHex = Bytes.toHexString(hasher.digest());
+
+			assertEquals(String.format("Test vector at index %d failed.", vectorIndex), expected.hash, hashHex);
+		};
+
 		for (int testVectorIndex = 0; testVectorIndex < scenario.tests.vectors.size(); ++testVectorIndex) {
 			UnknownTestVector untypedVector = scenario.tests.vectors.get(testVectorIndex);
 			HashingTestVector testVector = castTestVector(untypedVector, HashingTestVector.class);
-
-			HashingVectorInput input = testVector.getInput();
-			HashingVectorExpected expected = testVector.getExpected();
-			String hashHex = Bytes.toHexString(HashUtils.sha256(Bytes.fromHexString(input.stringToHash)).asBytes());
-			assertEquals(String.format("Test vector at index %d failed.", testVectorIndex), expected.hash, hashHex);
+			testVectorRunner.accept(testVector, testVectorIndex);
 		}
 	}
 
@@ -242,6 +261,7 @@ public class SanityTestSuiteTestExecutor {
 								"Troubleshooting: '%s'\n" +
 								"Implementation info: '%s'\n" +
 								"Test vectors found at: '%s'\n" +
+										"%s" +
 								"Failure reason: '%s'\n⚠️⚠️⚠️\n",
 						scenario.name,
 						scenario.identifier,
@@ -249,6 +269,7 @@ public class SanityTestSuiteTestExecutor {
 						scenario.description.troubleshooting,
 						scenario.description.implementationInfo,
 						scenario.tests.source,
+						scenario.tests.getOriginalSource().map(original -> String.format("Original source: '%s'\n", original)).orElse(""),
 						testAssertionError.getLocalizedMessage()
 				);
 
