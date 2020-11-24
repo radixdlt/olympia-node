@@ -14,6 +14,7 @@ docker build -f system-tests/docker/Dockerfile -t radix-system-test .
 docker ps -a
 
 docker rm -f "${test_executor}" || true
+# Currently there is volume mount consisting of core code, may need to use docker named volumes
 docker create  --pid=host --privileged  \
       -v /var/run/docker.sock:/var/run/docker.sock \
       -v ${CORE_DIR}:/core \
