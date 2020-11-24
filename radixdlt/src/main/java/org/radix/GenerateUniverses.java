@@ -18,6 +18,9 @@
 package org.radix;
 
 import com.radixdlt.crypto.exception.CryptoException;
+import com.radixdlt.crypto.exception.PrivateKeyException;
+import com.radixdlt.crypto.exception.PublicKeyException;
+
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.JSONObject;
 
@@ -36,6 +39,7 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.universe.Universe.UniverseType;
 import com.radixdlt.utils.Bytes;
+import com.radixdlt.utils.Ints;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt256s;
@@ -69,19 +73,22 @@ public final class GenerateUniverses {
 	private static final String VALIDATOR_TEMPLATE = "validator%s.ks";
 	private static final String STAKER_TEMPLATE = "staker%s.ks";
 
+	private static final BigDecimal DEFAULT_ISSUANCE = BigDecimal.valueOf(100_000_000);
+
 	public static void main(String[] args) {
 		Security.insertProviderAt(new BouncyCastleProvider(), 1);
 
 		Options options = new Options();
 		options.addOption("h", "help",                   false, "Show usage information (this message)");
 		options.addOption("c", "no-cbor-output",         false, "Suppress DSON output");
+		options.addOption("i", "issue-default-tokens",   false, "Issue tokens to default keys 1, 2, 3, 4 and 5 (dev universe only)");
 		options.addOption("j", "no-json-output",         false, "Suppress JSON output");
 		options.addOption("k", "keystore",               true,  "Specify universe keystore (default: " + DEFAULT_KEYSTORE + ")");
 		options.addOption("p", "include-private-keys",   false, "Include universe, validator and staking private keys in output");
 		options.addOption("S", "stake-amounts",          true,  "Amount of stake for each staked node (default: " + DEFAULT_STAKE + ")");
 		options.addOption("t", "universe-type",          true,  "Specify universe type (default: " + DEFAULT_UNIVERSE + ")");
 		options.addOption("T", "universe-timestamp",     true,  "Specify universe timestamp (default: " + DEFAULT_TIMESTAMP + ")");
-		options.addOption("v", "validators-count",       true,  "Specify number of validators to generate (required)");
+		options.addOption("v", "validator-count",        true,  "Specify number of validators to generate (required)");
 
 		CommandLineParser parser = new DefaultParser();
 		try {
@@ -119,7 +126,20 @@ public final class GenerateUniverses {
 			final ImmutableList<StakeDelegation> stakeDelegations = getStakeDelegation(
 				Lists.transform(validatorKeys, ECKeyPair::getPublicKey), stakes
 			);
-			final ImmutableList<TokenIssuance> tokenIssuances = getTokenIssuances(stakeDelegations);
+
+			final ImmutableList.Builder<TokenIssuance> tokenIssuancesBuilder = ImmutableList.builder();
+			if (universeType == UniverseType.DEVELOPMENT && cmd.hasOption("i")) {
+				tokenIssuancesBuilder.add(
+					TokenIssuance.of(pubkeyOf(1), unitsToSubunits(DEFAULT_ISSUANCE)),
+					TokenIssuance.of(pubkeyOf(2), unitsToSubunits(DEFAULT_ISSUANCE)),
+					TokenIssuance.of(pubkeyOf(3), unitsToSubunits(DEFAULT_ISSUANCE)),
+					TokenIssuance.of(pubkeyOf(4), unitsToSubunits(DEFAULT_ISSUANCE)),
+					TokenIssuance.of(pubkeyOf(5), unitsToSubunits(DEFAULT_ISSUANCE))
+				);
+			}
+			final ImmutableList<TokenIssuance> tokenIssuances = tokenIssuancesBuilder
+				.addAll(getTokenIssuances(stakeDelegations))
+				.build();
 
 			final long universeTimestamp = TimeUnit.SECONDS.toMillis(universeTimestampSeconds);
 			final ECKeyPair universeKey = Keys.readKey(
@@ -193,6 +213,18 @@ public final class GenerateUniverses {
 		return stakeDelegations.stream()
 			.map(sd -> TokenIssuance.of(sd.staker().getPublicKey(), sd.amount()))
 			.collect(ImmutableList.toImmutableList());
+	}
+
+	private static ECPublicKey pubkeyOf(int pk) {
+		final byte[] privateKey = new byte[ECKeyPair.BYTES];
+		Ints.copyTo(pk, privateKey, ECKeyPair.BYTES - Integer.BYTES);
+		ECKeyPair kp;
+		try {
+			kp = ECKeyPair.fromPrivateKey(privateKey);
+		} catch (PrivateKeyException | PublicKeyException e) {
+			throw new IllegalArgumentException("Error while generating public key", e);
+		}
+		return kp.getPublicKey();
 	}
 
 	private static ImmutableList<UInt256> parseStake(String stakes) {

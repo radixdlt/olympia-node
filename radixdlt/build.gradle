@@ -223,7 +223,12 @@ task generateDevUniverse(type: Exec) {
     group = "Execution"
     description = "Generate development universe"
     commandLine "java", "-classpath", sourceSets.main.runtimeClasspath.getAsPath(),
-	    "org.radix.GenerateUniverses", "-t", "development", "-p", "-v", validators, "-j"
+        "org.radix.GenerateUniverses",
+        "--universe-type=development",
+        "--validator-count=${validators}",
+        "--include-private-keys",
+        "--no-json-output",
+        "--issue-default-tokens"
 }
 
 task createGenerateUniversesScripts(type: CreateStartScripts) {
