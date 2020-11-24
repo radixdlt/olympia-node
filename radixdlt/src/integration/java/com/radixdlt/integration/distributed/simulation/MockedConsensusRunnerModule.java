@@ -27,7 +27,6 @@ import com.radixdlt.consensus.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
-import com.radixdlt.consensus.epoch.EpochViewUpdateSender;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.sync.BFTSyncResponseProcessor;
@@ -95,12 +94,12 @@ public class MockedConsensusRunnerModule extends AbstractModule {
 	private EventProcessor<ViewUpdate> viewUpdateEventProcessor(
 		PacemakerTimeoutCalculator pacemakerTimeoutCalculator,
 		PacemakerTimeoutSender pacemakerTimeoutSender,
-		EpochViewUpdateSender epochViewUpdateSender
+		EventDispatcher<EpochViewUpdate> epochViewUpdateSender
 	) {
 		return (view) -> {
 			long timeout = pacemakerTimeoutCalculator.timeout(view.uncommittedViewsCount());
 			pacemakerTimeoutSender.scheduleTimeout(view.getCurrentView(), timeout);
-			epochViewUpdateSender.sendLocalViewUpdate(new EpochViewUpdate(1, view));
+			epochViewUpdateSender.dispatch(new EpochViewUpdate(1, view));
 		};
 	}
 }

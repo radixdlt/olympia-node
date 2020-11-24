@@ -17,6 +17,7 @@
 
 package com.radixdlt;
 
+import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
@@ -45,6 +46,7 @@ import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
 import java.util.Set;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -201,8 +203,15 @@ public class DispatcherModule extends AbstractModule {
 	}
 
 	@Provides
+	@Singleton
 	private EventDispatcher<EpochViewUpdate> epochViewUpdateEventDispatcher(Environment environment) {
-		return environment.getDispatcher(EpochViewUpdate.class);
+		final EventDispatcher<EpochViewUpdate> dispatcher = environment.getDispatcher(EpochViewUpdate.class);
+		final RateLimiter logLimiter = RateLimiter.create(1.0);
+		return epochViewUpdate -> {
+			Level logLevel = logLimiter.tryAcquire() ? Level.INFO : Level.TRACE;
+			logger.log(logLevel, "Epoch view update: {}", epochViewUpdate);
+			dispatcher.dispatch(epochViewUpdate);
+		};
 	}
 
 	@Provides

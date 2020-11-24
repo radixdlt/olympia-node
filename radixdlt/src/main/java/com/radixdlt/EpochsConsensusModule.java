@@ -31,8 +31,6 @@ import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.LocalTimeoutSender;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
-import com.radixdlt.consensus.epoch.EpochViewUpdateSender;
-import com.radixdlt.consensus.epoch.EpochViewUpdateSenderWithTimeout;
 import com.radixdlt.consensus.epoch.ProposerElectionFactory;
 import com.radixdlt.consensus.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
@@ -138,16 +136,15 @@ public class EpochsConsensusModule extends AbstractModule {
 	@ProcessOnDispatch
 	private EventProcessor<ViewUpdate> initialViewUpdateSender(
 		EventDispatcher<EpochView> epochViewEventDispatcher,
+		EventDispatcher<EpochViewUpdate> epochViewUpdateEventDispatcher,
 		PacemakerTimeoutSender timeoutSender,
-		EpochViewUpdateSender epochViewUpdateSender,
 		PacemakerTimeoutCalculator timeoutCalculator,
 		EpochChange initialEpoch
 	) {
-		return (viewUpdate) -> {
+		return viewUpdate -> {
 			epochViewEventDispatcher.dispatch(EpochView.of(initialEpoch.getEpoch(), viewUpdate.getCurrentView()));
-			epochViewUpdateSender.sendLocalViewUpdate(new EpochViewUpdate(initialEpoch.getEpoch(), viewUpdate));
+			epochViewUpdateEventDispatcher.dispatch(new EpochViewUpdate(initialEpoch.getEpoch(), viewUpdate));
 			long timeout = timeoutCalculator.timeout(viewUpdate.uncommittedViewsCount());
-
 			timeoutSender.scheduleTimeout(viewUpdate.getCurrentView(), timeout);
 		};
 	}
@@ -156,21 +153,16 @@ public class EpochsConsensusModule extends AbstractModule {
 	private PacemakerStateFactory pacemakerStateFactory(
 		LocalTimeoutSender localTimeoutSender,
 		PacemakerTimeoutCalculator timeoutCalculator,
-		EventDispatcher<EpochViewUpdate> viewUpdateDispatcher,
-		EventDispatcher<EpochView> epochViewEventDispatcher
+		EventDispatcher<EpochView> epochViewEventDispatcher,
+		EventDispatcher<EpochViewUpdate> epochViewUpdateEventDispatcher
 	) {
-		return epoch -> {
-			final EpochViewUpdateSender epochViewUpdateSender = new EpochViewUpdateSenderWithTimeout(
-				(view, ms) -> localTimeoutSender.scheduleTimeout(new LocalTimeout(epoch, view), ms),
-				timeoutCalculator,
-				view -> epochViewEventDispatcher.dispatch(new EpochView(epoch, view)),
-				viewUpdateDispatcher
-			);
-			final EventDispatcher<ViewUpdate> viewUpdateSender
-				= (viewUpdate) -> epochViewUpdateSender.sendLocalViewUpdate(new EpochViewUpdate(epoch, viewUpdate));
-
-			return new PacemakerState(viewUpdateSender);
-		};
+		return epoch ->
+			new PacemakerState(viewUpdate -> {
+				epochViewEventDispatcher.dispatch(new EpochView(epoch, viewUpdate.getCurrentView()));
+				epochViewUpdateEventDispatcher.dispatch(new EpochViewUpdate(epoch, viewUpdate));
+				long timeout = timeoutCalculator.timeout(viewUpdate.uncommittedViewsCount());
+				localTimeoutSender.scheduleTimeout(new LocalTimeout(epoch, viewUpdate.getCurrentView()), timeout);
+			});
 	}
 
 	@ProvidesIntoSet

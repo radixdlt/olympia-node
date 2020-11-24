@@ -29,8 +29,6 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.epoch.LocalTimeoutSender;
-import com.radixdlt.consensus.epoch.EpochViewUpdate;
-import com.radixdlt.consensus.epoch.EpochViewUpdateSender;
 import com.radixdlt.consensus.liveness.VoteSender;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
@@ -48,7 +46,6 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork.Deter
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.sync.LocalSyncRequest;
-import java.util.function.Consumer;
 
 /**
  * Module that supplies network senders, as well as some other assorted
@@ -63,7 +60,6 @@ public class DeterministicEnvironmentModule extends AbstractModule {
 		bind(SyncVerticesResponseSender.class).to(DeterministicSender.class);
 		bind(SyncEpochsRPCSender.class).to(DeterministicSender.class);
 		bind(LocalTimeoutSender.class).to(DeterministicSender.class);
-		bind(EpochViewUpdateSender.class).to(DeterministicSender.class);
 		bind(VoteSender.class).to(DeterministicSender.class);
 
 		// TODO: Remove multibind?
@@ -82,11 +78,6 @@ public class DeterministicEnvironmentModule extends AbstractModule {
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochView>>() { }, ProcessOnDispatch.class)
 			.addBinding().to(new TypeLiteral<DeterministicSavedLastEvent<EpochView>>() { });
 		bind(new TypeLiteral<DeterministicSavedLastEvent<EpochView>>() { }).in(Scopes.SINGLETON);
-	}
-
-	@Provides
-	public Consumer<EpochViewUpdate> localViewUpdateConsumer(DeterministicSender deterministicSender) {
-		return deterministicSender::sendLocalViewUpdate;
 	}
 
 	@Provides

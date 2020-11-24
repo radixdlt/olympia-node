@@ -44,7 +44,6 @@ import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
-import com.radixdlt.consensus.epoch.EpochViewUpdateSender;
 import com.radixdlt.consensus.liveness.PacemakerInfoSender;
 import com.radixdlt.consensus.epoch.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
@@ -261,12 +260,12 @@ public final class DeterministicTest {
 					private EventProcessor<ViewUpdate> viewUpdateEventProcessor(
 						PacemakerTimeoutCalculator pacemakerTimeoutCalculator,
 						PacemakerTimeoutSender pacemakerTimeoutSender,
-						EpochViewUpdateSender epochViewUpdateSender
+						EventDispatcher<EpochViewUpdate> epochViewUpdateSender
 					) {
 						return (view) -> {
 							long timeout = pacemakerTimeoutCalculator.timeout(view.uncommittedViewsCount());
 							pacemakerTimeoutSender.scheduleTimeout(view.getCurrentView(), timeout);
-							epochViewUpdateSender.sendLocalViewUpdate(new EpochViewUpdate(1, view));
+							epochViewUpdateSender.dispatch(new EpochViewUpdate(1, view));
 						};
 					}
 				});

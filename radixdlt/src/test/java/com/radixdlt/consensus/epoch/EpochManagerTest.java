@@ -108,7 +108,6 @@ public class EpochManagerTest {
 
 	private SyncEpochsRPCSender syncEpochsRPCSender = mock(SyncEpochsRPCSender.class);
 	private LocalTimeoutSender localTimeoutSender = mock(LocalTimeoutSender.class);
-	private EpochViewUpdateSender epochViewUpdateSender = mock(EpochViewUpdateSender.class);
 	private NextCommandGenerator nextCommandGenerator = mock(NextCommandGenerator.class);
 	private VoteSender voteSender = mock(VoteSender.class);
 	private ProposalBroadcaster proposalBroadcaster = mock(ProposalBroadcaster.class);
@@ -152,7 +151,6 @@ public class EpochManagerTest {
 				bind(PersistentSafetyStateStore.class).toInstance(mock(PersistentSafetyStateStore.class));
 				bind(SyncEpochsRPCSender.class).toInstance(syncEpochsRPCSender);
 				bind(LocalTimeoutSender.class).toInstance(localTimeoutSender);
-				bind(EpochViewUpdateSender.class).toInstance(epochViewUpdateSender);
 				bind(NextCommandGenerator.class).toInstance(nextCommandGenerator);
 				bind(VoteSender.class).toInstance(voteSender);
 				bind(ProposalBroadcaster.class).toInstance(proposalBroadcaster);

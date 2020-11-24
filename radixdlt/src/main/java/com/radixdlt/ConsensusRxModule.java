@@ -18,18 +18,9 @@
 package com.radixdlt;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
 import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.epoch.LocalTimeoutSender;
-import com.radixdlt.consensus.epoch.EpochViewUpdate;
-import com.radixdlt.consensus.epoch.EpochViewUpdateSender;
-import com.radixdlt.consensus.epoch.EpochViewUpdateSenderWithTimeout;
-import com.radixdlt.consensus.liveness.PacemakerInfoSender;
 import com.radixdlt.consensus.liveness.PacemakerRx;
-import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
-import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
-import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.utils.ScheduledSenderToRx;
 import com.radixdlt.utils.ThreadFactories;
 
@@ -45,21 +36,5 @@ public class ConsensusRxModule extends AbstractModule {
 		// Timed local messages
 		bind(PacemakerRx.class).toInstance(localTimeouts::messages);
 		bind(LocalTimeoutSender.class).toInstance(localTimeouts::scheduleSend);
-	}
-
-	@Provides
-	@Singleton
-	private EpochViewUpdateSender localViewUpdateSender(
-		PacemakerTimeoutSender timeoutSender,
-		PacemakerTimeoutCalculator timeoutCalculator,
-		PacemakerInfoSender pacemakerInfoSender,
-		EventDispatcher<EpochViewUpdate> localViewUpdateEventDispatcher
-	) {
-		return new EpochViewUpdateSenderWithTimeout(
-			timeoutSender,
-			timeoutCalculator,
-			pacemakerInfoSender,
-			localViewUpdateEventDispatcher
-		);
 	}
 }
