@@ -21,17 +21,18 @@ import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewUpdate;
-import com.radixdlt.consensus.liveness.PacemakerState.ViewUpdateSender;
+import com.radixdlt.environment.EventDispatcher;
 import org.junit.Before;
 import org.junit.Test;
 
+import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.times;
 
 public class PacemakerStateTest {
 
-    private ViewUpdateSender viewUpdateSender = mock(ViewUpdateSender.class);
+    private EventDispatcher<ViewUpdate> viewUpdateSender = rmock(EventDispatcher.class);
 
     private PacemakerState pacemakerState;
 
@@ -53,9 +54,9 @@ public class PacemakerStateTest {
         this.pacemakerState.processQC(highQCFor(View.of(1)));
         this.pacemakerState.processQC(highQCFor(View.of(2)));
 
-        verify(viewUpdateSender, times(1)).sendViewUpdate(new ViewUpdate(View.of(1), View.of(0), View.of(0)));
-        verify(viewUpdateSender, times(1)).sendViewUpdate(new ViewUpdate(View.of(2), View.of(1), View.of(0)));
-        verify(viewUpdateSender, times(1)).sendViewUpdate(new ViewUpdate(View.of(3), View.of(2), View.of(0)));
+        verify(viewUpdateSender, times(1)).dispatch(new ViewUpdate(View.of(1), View.of(0), View.of(0)));
+        verify(viewUpdateSender, times(1)).dispatch(new ViewUpdate(View.of(2), View.of(1), View.of(0)));
+        verify(viewUpdateSender, times(1)).dispatch(new ViewUpdate(View.of(3), View.of(2), View.of(0)));
 
         assertThat(this.pacemakerState.processQC(highQC)).isFalse();
         verifyNoMoreInteractions(viewUpdateSender);
@@ -70,11 +71,11 @@ public class PacemakerStateTest {
         when(highQC.highestCommittedQC()).thenReturn(qc);
 
         assertThat(this.pacemakerState.processQC(highQC)).isTrue();
-        verify(viewUpdateSender, times(1)).sendViewUpdate(new ViewUpdate(View.of(1), View.of(0), View.of(0)));
+        verify(viewUpdateSender, times(1)).dispatch(new ViewUpdate(View.of(1), View.of(0), View.of(0)));
 
         when(qc.getView()).thenReturn(View.of(1));
         assertThat(this.pacemakerState.processQC(highQC)).isTrue();
-        verify(viewUpdateSender, times(1)).sendViewUpdate(new ViewUpdate(View.of(2), View.of(1), View.of(1)));
+        verify(viewUpdateSender, times(1)).dispatch(new ViewUpdate(View.of(2), View.of(1), View.of(1)));
     }
 
     private HighQC highQCFor(View view) {

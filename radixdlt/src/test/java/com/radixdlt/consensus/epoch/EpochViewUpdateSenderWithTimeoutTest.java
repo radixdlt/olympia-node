@@ -31,7 +31,7 @@ import java.util.Random;
 import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.mockito.Mockito.*;
 
-public class LocalViewUpdateSenderWithTimeoutTest {
+public class EpochViewUpdateSenderWithTimeoutTest {
 
     private static final Random random = new Random();
 
@@ -39,13 +39,13 @@ public class LocalViewUpdateSenderWithTimeoutTest {
     private PacemakerTimeoutCalculator timeoutCalculator = mock(PacemakerTimeoutCalculator.class);
     private PacemakerInfoSender pacemakerInfoSender = mock(PacemakerInfoSender.class);
     @SuppressWarnings("unchecked")
-    private EventDispatcher<LocalViewUpdate> viewUpdateConsumer = rmock(EventDispatcher.class);
+    private EventDispatcher<EpochViewUpdate> viewUpdateConsumer = rmock(EventDispatcher.class);
 
-    private LocalViewUpdateSenderWithTimeout localViewUpdateSenderWithTimeout;
+    private EpochViewUpdateSenderWithTimeout localViewUpdateSenderWithTimeout;
 
     @Before
     public void setup() {
-        localViewUpdateSenderWithTimeout = new LocalViewUpdateSenderWithTimeout(
+        localViewUpdateSenderWithTimeout = new EpochViewUpdateSenderWithTimeout(
             timeoutSender,
             timeoutCalculator,
             pacemakerInfoSender,
@@ -55,7 +55,7 @@ public class LocalViewUpdateSenderWithTimeoutTest {
 
     @Test
     public void when_view_update_is_sent__then_timeout_is_scheduled() {
-        final LocalViewUpdate viewUpdate = new LocalViewUpdate(1, new ViewUpdate(View.of(2), View.of(0), View.of(0)));
+        final EpochViewUpdate viewUpdate = new EpochViewUpdate(1, new ViewUpdate(View.of(2), View.of(0), View.of(0)));
         final long timeout = random.nextLong();
         when(timeoutCalculator.timeout(1)).thenReturn(timeout);
 

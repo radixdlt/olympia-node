@@ -29,8 +29,8 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.epoch.LocalTimeoutSender;
-import com.radixdlt.consensus.epoch.LocalViewUpdate;
-import com.radixdlt.consensus.epoch.LocalViewUpdateSender;
+import com.radixdlt.consensus.epoch.EpochViewUpdate;
+import com.radixdlt.consensus.epoch.EpochViewUpdateSender;
 import com.radixdlt.consensus.liveness.VoteSender;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
@@ -63,7 +63,7 @@ public class DeterministicEnvironmentModule extends AbstractModule {
 		bind(SyncVerticesResponseSender.class).to(DeterministicSender.class);
 		bind(SyncEpochsRPCSender.class).to(DeterministicSender.class);
 		bind(LocalTimeoutSender.class).to(DeterministicSender.class);
-		bind(LocalViewUpdateSender.class).to(DeterministicSender.class);
+		bind(EpochViewUpdateSender.class).to(DeterministicSender.class);
 		bind(VoteSender.class).to(DeterministicSender.class);
 
 		// TODO: Remove multibind?
@@ -85,7 +85,7 @@ public class DeterministicEnvironmentModule extends AbstractModule {
 	}
 
 	@Provides
-	public Consumer<LocalViewUpdate> localViewUpdateConsumer(DeterministicSender deterministicSender) {
+	public Consumer<EpochViewUpdate> localViewUpdateConsumer(DeterministicSender deterministicSender) {
 		return deterministicSender::sendLocalViewUpdate;
 	}
 

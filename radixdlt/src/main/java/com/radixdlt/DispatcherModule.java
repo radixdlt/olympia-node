@@ -30,8 +30,9 @@ import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.FormedQC;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochView;
-import com.radixdlt.consensus.epoch.LocalViewUpdate;
+import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
@@ -59,6 +60,7 @@ public class DispatcherModule extends AbstractModule {
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<LocalSyncRequest>>() { });
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<LocalTimeoutOccurrence>>() { }, ProcessOnDispatch.class);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<LocalTimeoutOccurrence>>() { });
+		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<ViewUpdate>>() { }, ProcessOnDispatch.class);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<View>>() { }, ProcessOnDispatch.class);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<View>>() { });
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochView>>() { }, ProcessOnDispatch.class);
@@ -187,8 +189,20 @@ public class DispatcherModule extends AbstractModule {
 	}
 
 	@Provides
-	private EventDispatcher<LocalViewUpdate> localViewUpdateEventDispatcher(Environment environment) {
-		return environment.getDispatcher(LocalViewUpdate.class);
+	private EventDispatcher<ViewUpdate> viewUpdateEventDispatcher(
+		@ProcessOnDispatch Set<EventProcessor<ViewUpdate>> processors,
+		Environment environment
+	) {
+		//EventDispatcher<ViewUpdate> dispatcher = environment.getDispatcher(ViewUpdate.class);
+		return viewUpdate -> {
+			processors.forEach(e -> e.process(viewUpdate));
+			//dispatcher.dispatch(viewUpdate);
+		};
+	}
+
+	@Provides
+	private EventDispatcher<EpochViewUpdate> epochViewUpdateEventDispatcher(Environment environment) {
+		return environment.getDispatcher(EpochViewUpdate.class);
 	}
 
 	@Provides

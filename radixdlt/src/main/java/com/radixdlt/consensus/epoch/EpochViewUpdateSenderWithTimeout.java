@@ -32,7 +32,7 @@ import java.util.Objects;
 /**
  * A view update sender implementation that also schedules a timeout message.
  */
-public class LocalViewUpdateSenderWithTimeout implements LocalViewUpdateSender {
+public class EpochViewUpdateSenderWithTimeout implements EpochViewUpdateSender {
 
     private static final Logger log = LogManager.getLogger();
 
@@ -41,13 +41,13 @@ public class LocalViewUpdateSenderWithTimeout implements LocalViewUpdateSender {
     private final PacemakerTimeoutSender timeoutSender;
     private final PacemakerTimeoutCalculator timeoutCalculator;
     private final PacemakerInfoSender pacemakerInfoSender;
-    private final EventDispatcher<LocalViewUpdate> viewUpdateDispatcher;
+    private final EventDispatcher<EpochViewUpdate> viewUpdateDispatcher;
 
-    public LocalViewUpdateSenderWithTimeout(
+    public EpochViewUpdateSenderWithTimeout(
         PacemakerTimeoutSender timeoutSender,
         PacemakerTimeoutCalculator timeoutCalculator,
         PacemakerInfoSender pacemakerInfoSender,
-        EventDispatcher<LocalViewUpdate> viewUpdateDispatcher
+        EventDispatcher<EpochViewUpdate> viewUpdateDispatcher
     ) {
         this.timeoutSender = Objects.requireNonNull(timeoutSender);
         this.timeoutCalculator = Objects.requireNonNull(timeoutCalculator);
@@ -56,14 +56,14 @@ public class LocalViewUpdateSenderWithTimeout implements LocalViewUpdateSender {
     }
 
     @Override
-    public void sendLocalViewUpdate(LocalViewUpdate localViewUpdate) {
-        final ViewUpdate viewUpdate = localViewUpdate.getViewUpdate();
+    public void sendLocalViewUpdate(EpochViewUpdate epochViewUpdate) {
+        final ViewUpdate viewUpdate = epochViewUpdate.getViewUpdate();
         long timeout = timeoutCalculator.timeout(viewUpdate.uncommittedViewsCount());
 
         Level logLevel = this.logLimiter.tryAcquire() ? Level.INFO : Level.TRACE;
         log.log(logLevel, "Sending view update: {} with timeout {}ms", viewUpdate, timeout);
 
-        this.viewUpdateDispatcher.dispatch(localViewUpdate);
+        this.viewUpdateDispatcher.dispatch(epochViewUpdate);
 
         this.pacemakerInfoSender.sendCurrentView(viewUpdate.getCurrentView());
         this.timeoutSender.scheduleTimeout(viewUpdate.getCurrentView(), timeout);

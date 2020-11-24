@@ -24,12 +24,12 @@ import java.util.Objects;
 /**
  * A wrapper for a ViewUpdate message that also holds epoch.
  */
-public final class LocalViewUpdate {
+public final class EpochViewUpdate {
 
     private final long epoch;
     private final ViewUpdate viewUpdate;
 
-    public LocalViewUpdate(long epoch, ViewUpdate viewUpdate) {
+    public EpochViewUpdate(long epoch, ViewUpdate viewUpdate) {
         this.epoch = epoch;
         this.viewUpdate = Objects.requireNonNull(viewUpdate);
     }
@@ -50,7 +50,7 @@ public final class LocalViewUpdate {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        LocalViewUpdate that = (LocalViewUpdate) o;
+        EpochViewUpdate that = (EpochViewUpdate) o;
         return epoch == that.epoch
                 && Objects.equals(viewUpdate, that.viewUpdate);
     }

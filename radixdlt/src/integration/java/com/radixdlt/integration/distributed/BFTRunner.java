@@ -29,7 +29,7 @@ import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.BFTSyncRequestProcessor;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.LocalTimeout;
-import com.radixdlt.consensus.epoch.LocalViewUpdate;
+import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
@@ -73,7 +73,7 @@ public class BFTRunner implements ModuleRunner {
 		Set<EventProcessor<BFTUpdate>> bftUpdateProcessors,
 		Observable<LocalGetVerticesRequest> bftSyncTimeouts,
 		EventProcessor<LocalGetVerticesRequest> bftSyncTimeoutProcessor,
-		Observable<LocalViewUpdate> localViewUpdates,
+		Observable<EpochViewUpdate> localViewUpdates,
 		BFTEventsRx networkRx,
 		PacemakerRx pacemakerRx,
 		SyncVerticesRPCRx rpcRx,
@@ -96,7 +96,7 @@ public class BFTRunner implements ModuleRunner {
 				.doOnNext(bftEventProcessor::processLocalTimeout),
 			localViewUpdates
 				.observeOn(singleThreadScheduler)
-				.map(LocalViewUpdate::getViewUpdate)
+				.map(EpochViewUpdate::getViewUpdate)
 				.doOnNext(bftEventProcessor::processViewUpdate),
 			networkRx.bftEvents()
 				.observeOn(singleThreadScheduler)

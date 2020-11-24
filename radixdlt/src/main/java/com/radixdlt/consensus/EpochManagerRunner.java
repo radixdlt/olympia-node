@@ -20,7 +20,7 @@ package com.radixdlt.consensus;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.epoch.EpochManager;
-import com.radixdlt.consensus.epoch.LocalViewUpdate;
+import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
@@ -64,7 +64,7 @@ public final class EpochManagerRunner implements ModuleRunner {
 		EventProcessor<BFTUpdate> bftUpdateProcessor,
 		Observable<LocalGetVerticesRequest> bftSyncTimeouts,
 		EventProcessor<LocalGetVerticesRequest> bftSyncTimeoutProcessor,
-		Observable<LocalViewUpdate> localViewUpdates,
+		Observable<EpochViewUpdate> localViewUpdates,
 		BFTEventsRx networkRx,
 		PacemakerRx pacemakerRx,
 		SyncVerticesRPCRx rpcRx,

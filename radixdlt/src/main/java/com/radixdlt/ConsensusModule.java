@@ -36,6 +36,7 @@ import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.consensus.liveness.ExponentialPacemakerTimeoutCalculator;
 import com.radixdlt.consensus.liveness.PacemakerState;
@@ -54,7 +55,6 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
-import com.radixdlt.consensus.liveness.PacemakerState.ViewUpdateSender;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
@@ -196,7 +196,7 @@ public final class ConsensusModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private PacemakerState pacemakerState(ViewUpdateSender viewUpdateSender) {
+	private PacemakerState pacemakerState(EventDispatcher<ViewUpdate> viewUpdateSender) {
 		return new PacemakerState(viewUpdateSender);
 	}
 

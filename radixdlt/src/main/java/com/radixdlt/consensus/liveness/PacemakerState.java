@@ -20,6 +20,7 @@ package com.radixdlt.consensus.liveness;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewUpdate;
+import com.radixdlt.environment.EventDispatcher;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -30,14 +31,9 @@ import java.util.Objects;
  * It sends an internal ViewUpdate message on a transition to next view.
  */
 public class PacemakerState {
-
-    public interface ViewUpdateSender {
-        void sendViewUpdate(ViewUpdate viewUpdate);
-    }
-
     private static final Logger log = LogManager.getLogger();
 
-    private final ViewUpdateSender viewUpdateSender;
+    private final EventDispatcher<ViewUpdate> viewUpdateSender;
 
     private View currentView = View.genesis();
     // Highest view in which a commit happened
@@ -45,7 +41,7 @@ public class PacemakerState {
     // Last view that we had any kind of quorum for
     private View lastQuorumView = View.genesis();
 
-    public PacemakerState(ViewUpdateSender viewUpdateSender) {
+    public PacemakerState(EventDispatcher<ViewUpdate> viewUpdateSender) {
         this.viewUpdateSender = Objects.requireNonNull(viewUpdateSender);
     }
 
@@ -75,7 +71,7 @@ public class PacemakerState {
             return;
         }
         this.currentView = nextView;
-        viewUpdateSender.sendViewUpdate(new ViewUpdate(
+        viewUpdateSender.dispatch(new ViewUpdate(
                 this.currentView,
                 this.lastQuorumView,
                 this.highestCommitView

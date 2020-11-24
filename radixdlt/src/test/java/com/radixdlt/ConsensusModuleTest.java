@@ -48,8 +48,8 @@ import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
-import com.radixdlt.consensus.liveness.PacemakerState.ViewUpdateSender;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
@@ -139,6 +139,7 @@ public class ConsensusModuleTest {
 				bind(Ledger.class).toInstance(mock(Ledger.class));
 
 				bind(new TypeLiteral<EventDispatcher<View>>() { }).toInstance(rmock(EventDispatcher.class));
+				bind(new TypeLiteral<EventDispatcher<ViewUpdate>>() { }).toInstance(rmock(EventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<BFTUpdate>>() { }).toInstance(rmock(EventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<BFTCommittedUpdate>>() { }).toInstance(rmock(EventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<LocalSyncRequest>>() { }).toInstance(rmock(EventDispatcher.class));
@@ -151,7 +152,6 @@ public class ConsensusModuleTest {
 				bind(ProposalBroadcaster.class).toInstance(mock(ProposalBroadcaster.class));
 				bind(SyncVerticesRequestSender.class).toInstance(requestSender);
 				bind(SyncVerticesResponseSender.class).toInstance(mock(SyncVerticesResponseSender.class));
-				bind(ViewUpdateSender.class).toInstance(mock(ViewUpdateSender.class));
 				bind(NextCommandGenerator.class).toInstance(mock(NextCommandGenerator.class));
 				bind(SystemCounters.class).toInstance(mock(SystemCounters.class));
 				bind(TimeSupplier.class).toInstance(mock(TimeSupplier.class));

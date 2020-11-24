@@ -25,9 +25,10 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.epoch.LocalViewUpdate;
-import com.radixdlt.consensus.epoch.LocalViewUpdateSender;
-import com.radixdlt.consensus.liveness.PacemakerState.ViewUpdateSender;
+import com.radixdlt.consensus.bft.ViewUpdate;
+import com.radixdlt.consensus.epoch.EpochViewUpdate;
+import com.radixdlt.consensus.epoch.EpochViewUpdateSender;
+import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.sync.BFTSyncResponseProcessor;
 import com.radixdlt.consensus.liveness.PacemakerInfoSender;
@@ -88,8 +89,18 @@ public class MockedConsensusRunnerModule extends AbstractModule {
 		 return (view, ms) -> localTimeoutSender.scheduleTimeout(new LocalTimeout(1, view), ms);
 	}
 
-	@Provides
-	private ViewUpdateSender initialViewUpdateSender(LocalViewUpdateSender localViewUpdateSender) {
-		return (view) -> localViewUpdateSender.sendLocalViewUpdate(new LocalViewUpdate(1, view));
+
+	@ProvidesIntoSet
+	@ProcessOnDispatch
+	private EventProcessor<ViewUpdate> viewUpdateEventProcessor(
+		PacemakerTimeoutCalculator pacemakerTimeoutCalculator,
+		PacemakerTimeoutSender pacemakerTimeoutSender,
+		EpochViewUpdateSender epochViewUpdateSender
+	) {
+		return (view) -> {
+			long timeout = pacemakerTimeoutCalculator.timeout(view.uncommittedViewsCount());
+			pacemakerTimeoutSender.scheduleTimeout(view.getCurrentView(), timeout);
+			epochViewUpdateSender.sendLocalViewUpdate(new EpochViewUpdate(1, view));
+		};
 	}
 }

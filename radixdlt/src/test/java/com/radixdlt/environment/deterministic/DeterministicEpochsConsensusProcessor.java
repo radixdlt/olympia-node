@@ -21,7 +21,7 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTUpdate;
-import com.radixdlt.consensus.epoch.LocalViewUpdate;
+import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.epoch.EpochManager;
@@ -100,8 +100,8 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 			this.epochManager.processConsensusEvent((ConsensusEvent) message);
 		} else if (message instanceof LocalTimeout) {
 			this.epochManager.processLocalTimeout((LocalTimeout) message);
-		} else if (message instanceof LocalViewUpdate) {
-			this.epochManager.processLocalViewUpdate((LocalViewUpdate) message);
+		} else if (message instanceof EpochViewUpdate) {
+			this.epochManager.processLocalViewUpdate((EpochViewUpdate) message);
 		} else if (message instanceof GetVerticesRequest) {
 			this.epochManager.processGetVerticesRequest((GetVerticesRequest) message);
 		} else if (message instanceof GetVerticesResponse) {

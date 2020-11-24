@@ -22,9 +22,9 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.epoch.LocalTimeoutSender;
-import com.radixdlt.consensus.epoch.LocalViewUpdate;
-import com.radixdlt.consensus.epoch.LocalViewUpdateSender;
-import com.radixdlt.consensus.epoch.LocalViewUpdateSenderWithTimeout;
+import com.radixdlt.consensus.epoch.EpochViewUpdate;
+import com.radixdlt.consensus.epoch.EpochViewUpdateSender;
+import com.radixdlt.consensus.epoch.EpochViewUpdateSenderWithTimeout;
 import com.radixdlt.consensus.liveness.PacemakerInfoSender;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
@@ -49,13 +49,13 @@ public class ConsensusRxModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private LocalViewUpdateSender localViewUpdateSender(
+	private EpochViewUpdateSender localViewUpdateSender(
 		PacemakerTimeoutSender timeoutSender,
 		PacemakerTimeoutCalculator timeoutCalculator,
 		PacemakerInfoSender pacemakerInfoSender,
-		EventDispatcher<LocalViewUpdate> localViewUpdateEventDispatcher
+		EventDispatcher<EpochViewUpdate> localViewUpdateEventDispatcher
 	) {
-		return new LocalViewUpdateSenderWithTimeout(
+		return new EpochViewUpdateSenderWithTimeout(
 			timeoutSender,
 			timeoutCalculator,
 			pacemakerInfoSender,

@@ -21,7 +21,7 @@ import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.Streams;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
-import com.radixdlt.consensus.epoch.LocalViewUpdateSender;
+import com.radixdlt.consensus.epoch.EpochViewUpdateSender;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
@@ -57,8 +57,7 @@ public final class DeterministicNetwork {
 		SyncVerticesResponseSender,
 		EpochsLedgerUpdateSender,
 		LocalTimeoutSender,
-		SyncEpochsRPCSender,
-		LocalViewUpdateSender {
+		SyncEpochsRPCSender, EpochViewUpdateSender {
 		// Aggregation, no additional stuff
 	}
 

@@ -40,13 +40,13 @@ import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.epoch.LocalTimeout;
-import com.radixdlt.consensus.epoch.LocalViewUpdate;
-import com.radixdlt.consensus.epoch.LocalViewUpdateSender;
+import com.radixdlt.consensus.epoch.EpochViewUpdate;
+import com.radixdlt.consensus.epoch.EpochViewUpdateSender;
 import com.radixdlt.consensus.liveness.PacemakerInfoSender;
 import com.radixdlt.consensus.epoch.LocalTimeoutSender;
-import com.radixdlt.consensus.liveness.PacemakerState.ViewUpdateSender;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
 import com.radixdlt.consensus.liveness.ProposerElection;
@@ -256,16 +256,17 @@ public final class DeterministicTest {
 						return (view, ms) -> localTimeoutSender.scheduleTimeout(new LocalTimeout(1, view), ms);
 					}
 
-					@Provides
-					private ViewUpdateSender viewUpdateSender(
+					@ProvidesIntoSet
+					@ProcessOnDispatch
+					private EventProcessor<ViewUpdate> viewUpdateEventProcessor(
 						PacemakerTimeoutCalculator pacemakerTimeoutCalculator,
 						PacemakerTimeoutSender pacemakerTimeoutSender,
-						LocalViewUpdateSender localViewUpdateSender
+						EpochViewUpdateSender epochViewUpdateSender
 					) {
 						return (view) -> {
 							long timeout = pacemakerTimeoutCalculator.timeout(view.uncommittedViewsCount());
 							pacemakerTimeoutSender.scheduleTimeout(view.getCurrentView(), timeout);
-							localViewUpdateSender.sendLocalViewUpdate(new LocalViewUpdate(1, view));
+							epochViewUpdateSender.sendLocalViewUpdate(new EpochViewUpdate(1, view));
 						};
 					}
 				});
