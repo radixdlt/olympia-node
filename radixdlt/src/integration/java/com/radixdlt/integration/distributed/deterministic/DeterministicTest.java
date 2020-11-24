@@ -31,6 +31,7 @@ import com.radixdlt.LedgerCommandGeneratorModule;
 import com.radixdlt.EpochsLedgerUpdateModule;
 import com.radixdlt.LedgerLocalMempoolModule;
 import com.radixdlt.LedgerModule;
+import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -43,7 +44,6 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.epoch.LocalTimeout;
-import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.liveness.PacemakerInfoSender;
 import com.radixdlt.consensus.epoch.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
@@ -256,16 +256,19 @@ public final class DeterministicTest {
 					}
 
 					@ProvidesIntoSet
+					private EventProcessor<ViewUpdate> viewUpdateProcessor(BFTEventProcessor processor) {
+						return processor::processViewUpdate;
+					}
+
+					@ProvidesIntoSet
 					@ProcessOnDispatch
 					private EventProcessor<ViewUpdate> viewUpdateEventProcessor(
 						PacemakerTimeoutCalculator pacemakerTimeoutCalculator,
-						PacemakerTimeoutSender pacemakerTimeoutSender,
-						EventDispatcher<EpochViewUpdate> epochViewUpdateSender
+						PacemakerTimeoutSender pacemakerTimeoutSender
 					) {
 						return (view) -> {
 							long timeout = pacemakerTimeoutCalculator.timeout(view.uncommittedViewsCount());
 							pacemakerTimeoutSender.scheduleTimeout(view.getCurrentView(), timeout);
-							epochViewUpdateSender.dispatch(new EpochViewUpdate(1, view));
 						};
 					}
 				});

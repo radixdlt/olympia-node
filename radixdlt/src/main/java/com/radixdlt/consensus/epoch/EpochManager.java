@@ -209,14 +209,14 @@ public final class EpochManager implements BFTSyncRequestProcessor {
 		final BFTConfiguration bftConfiguration = this.currentEpoch.getBFTConfiguration();
 		final ProposerElection proposerElection = proposerElectionFactory.create(validatorSet);
 
-		// Mutable State
+		// Mutable Consensus State
 		final VertexStore vertexStore = vertexStoreFactory.create(
 			bftConfiguration.getGenesisVertex(),
 			bftConfiguration.getGenesisQC()
 		);
 		final PacemakerState pacemakerState = pacemakerStateFactory.create(nextEpoch);
 
-		// Drivers
+		// Consensus Drivers
 		final SafetyRules safetyRules = new SafetyRules(self, SafetyState.initialState(), persistentSafetyStateStore, hasher, signer);
 		final Pacemaker pacemaker = pacemakerFactory.create(
 			validatorSet,

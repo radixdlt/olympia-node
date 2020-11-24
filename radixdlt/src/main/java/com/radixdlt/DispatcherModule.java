@@ -63,6 +63,7 @@ public class DispatcherModule extends AbstractModule {
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<LocalTimeoutOccurrence>>() { }, ProcessOnDispatch.class);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<LocalTimeoutOccurrence>>() { });
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<ViewUpdate>>() { }, ProcessOnDispatch.class);
+		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<ViewUpdate>>() { });
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<View>>() { }, ProcessOnDispatch.class);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<View>>() { });
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochView>>() { }, ProcessOnDispatch.class);
@@ -191,15 +192,24 @@ public class DispatcherModule extends AbstractModule {
 	}
 
 	@Provides
+	@Singleton
 	private EventDispatcher<ViewUpdate> viewUpdateEventDispatcher(
 		@ProcessOnDispatch Set<EventProcessor<ViewUpdate>> processors,
+		Set<EventProcessor<ViewUpdate>> asyncProcessors,
 		Environment environment
 	) {
-		//EventDispatcher<ViewUpdate> dispatcher = environment.getDispatcher(ViewUpdate.class);
-		return viewUpdate -> {
-			processors.forEach(e -> e.process(viewUpdate));
-			//dispatcher.dispatch(viewUpdate);
-		};
+		if (asyncProcessors.isEmpty()) {
+			return viewUpdate -> processors.forEach(e -> e.process(viewUpdate));
+		} else {
+			EventDispatcher<ViewUpdate> dispatcher = environment.getDispatcher(ViewUpdate.class);
+			final RateLimiter logLimiter = RateLimiter.create(1.0);
+			return viewUpdate -> {
+				Level logLevel = logLimiter.tryAcquire() ? Level.INFO : Level.TRACE;
+				logger.log(logLevel, "NextSyncView: {}", viewUpdate);
+				processors.forEach(e -> e.process(viewUpdate));
+				dispatcher.dispatch(viewUpdate);
+			};
+		}
 	}
 
 	@Provides
@@ -209,7 +219,7 @@ public class DispatcherModule extends AbstractModule {
 		final RateLimiter logLimiter = RateLimiter.create(1.0);
 		return epochViewUpdate -> {
 			Level logLevel = logLimiter.tryAcquire() ? Level.INFO : Level.TRACE;
-			logger.log(logLevel, "Epoch view update: {}", epochViewUpdate);
+			logger.log(logLevel, "NextSyncView: {}", epochViewUpdate);
 			dispatcher.dispatch(epochViewUpdate);
 		};
 	}

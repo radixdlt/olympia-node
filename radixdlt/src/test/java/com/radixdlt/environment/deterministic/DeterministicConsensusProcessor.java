@@ -25,6 +25,7 @@ import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTSyncRequestProcessor;
 import com.radixdlt.consensus.bft.BFTUpdate;
+import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.sync.BFTSync;
@@ -45,18 +46,21 @@ public class DeterministicConsensusProcessor implements DeterministicMessageProc
 	private final BFTSync vertexStoreSync;
 	private final BFTSyncRequestProcessor requestProcessor;
 	private final Set<EventProcessor<BFTUpdate>> bftUpdateProcessors;
+	private final Set<EventProcessor<ViewUpdate>> viewUpdateProcessors;
 
 	@Inject
 	public DeterministicConsensusProcessor(
 		BFTEventProcessor bftEventProcessor,
 		BFTSync vertexStoreSync,
 		BFTSyncRequestProcessor requestProcessor,
+		Set<EventProcessor<ViewUpdate>> viewUpdateProcessors,
 		Set<EventProcessor<BFTUpdate>> bftUpdateProcessors
 	) {
 		this.bftEventProcessor = Objects.requireNonNull(bftEventProcessor);
 		this.vertexStoreSync = Objects.requireNonNull(vertexStoreSync);
 		this.requestProcessor = Objects.requireNonNull(requestProcessor);
 		this.bftUpdateProcessors = Objects.requireNonNull(bftUpdateProcessors);
+		this.viewUpdateProcessors = Objects.requireNonNull(viewUpdateProcessors);
 	}
 
 	@Override
@@ -74,8 +78,8 @@ public class DeterministicConsensusProcessor implements DeterministicMessageProc
 			bftEventProcessor.processProposal((Proposal) message);
 		} else if (message instanceof Vote) {
 			bftEventProcessor.processVote((Vote) message);
-		} else if (message instanceof EpochViewUpdate) {
-			bftEventProcessor.processViewUpdate(((EpochViewUpdate) message).getViewUpdate());
+		} else if (message instanceof ViewUpdate) {
+			viewUpdateProcessors.forEach(p -> p.process((ViewUpdate) message));
 		} else if (message instanceof GetVerticesRequest) {
 			requestProcessor.processGetVerticesRequest((GetVerticesRequest) message);
 		} else if (message instanceof GetVerticesResponse) {

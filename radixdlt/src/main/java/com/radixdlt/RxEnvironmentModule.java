@@ -18,16 +18,19 @@
 package com.radixdlt;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSet.Builder;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTUpdate;
+import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.environment.Environment;
+import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.rx.RxEnvironment;
 import com.radixdlt.environment.rx.RxRemoteDispatcher;
 import com.radixdlt.sync.LocalSyncRequest;
@@ -52,18 +55,25 @@ public class RxEnvironmentModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private RxEnvironment rxEnvironment(ScheduledExecutorService ses, Set<RxRemoteDispatcher<?>> dispatchers) {
+	private RxEnvironment rxEnvironment(
+		ScheduledExecutorService ses,
+		Set<RxRemoteDispatcher<?>> dispatchers
+	) {
+		Builder<Class<?>> eventClasses = ImmutableSet.builder();
+		eventClasses.add(
+			LocalSyncRequest.class,
+			LocalGetVerticesRequest.class,
+			BFTUpdate.class,
+			BFTCommittedUpdate.class,
+			EpochView.class,
+			EpochViewUpdate.class,
+			LocalTimeoutOccurrence.class,
+			SyncInProgress.class,
+			ViewUpdate.class
+		);
+
 		return new RxEnvironment(
-			ImmutableSet.of(
-				LocalSyncRequest.class,
-				LocalGetVerticesRequest.class,
-				BFTUpdate.class,
-				BFTCommittedUpdate.class,
-				EpochView.class,
-				EpochViewUpdate.class,
-				LocalTimeoutOccurrence.class,
-				SyncInProgress.class
-			),
+			eventClasses.build(),
 			ses,
 			dispatchers
 		);
@@ -105,7 +115,12 @@ public class RxEnvironmentModule extends AbstractModule {
 	}
 
 	@Provides
-	public Observable<EpochViewUpdate> viewUpdates(RxEnvironment rxEnvironment) {
+	public Observable<EpochViewUpdate> epochViewUpdates(RxEnvironment rxEnvironment) {
 		return rxEnvironment.getObservable(EpochViewUpdate.class);
+	}
+
+	@Provides
+	public Observable<ViewUpdate> viewUpdates(RxEnvironment rxEnvironment) {
+		return rxEnvironment.getObservable(ViewUpdate.class);
 	}
 }
