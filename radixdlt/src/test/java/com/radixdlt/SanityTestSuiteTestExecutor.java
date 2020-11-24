@@ -19,6 +19,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -59,7 +60,9 @@ public class SanityTestSuiteTestExecutor {
 			 */
 			static final class SanityTestScenario {
 				static final class SanityTestScenarioDescription {
-
+					private String implementationInfo;
+					private String purpose;
+					private String troubleshooting;
 				}
 
 				static final class SanityTestScenarioTests {
@@ -170,9 +173,32 @@ public class SanityTestSuiteTestExecutor {
 		for (SanityTestSuiteRoot.SanityTestSuite.SanityTestScenario scenario : sanityTestSuiteRoot.suite.scenarios) {
 			Consumer<SanityTestSuiteRoot.SanityTestSuite.SanityTestScenario> scenarioRunner = scenarioRunnerMap.get(scenario.identifier);
 			// Run test scenario
-			log.error(String.format("🔮 Running scenario: %s", scenario.name));
+			log.debug(String.format("🔮 Running scenario: %s", scenario.name));
 
-			scenarioRunner.accept(scenario);
+			try {
+				scenarioRunner.accept(scenario);
+				log.info(String.format("✅ Test of scenario '%s' passed", scenario.name));
+			} catch (AssertionError testAssertionError) {
+
+				String failDebugInfo = String.format(
+								"\n⚠️⚠️⚠️\nFailed test scenario: '%s'\n" +
+								"Identifier: '%s'\n" +
+								"Purpose of scenario: '%s'\n" +
+								"Troubleshooting: '%s'\n" +
+								"Implementation info: '%s'\n" +
+								"Failure reason: '%s'\n⚠️⚠️⚠️\n",
+						scenario.name,
+						scenario.identifier,
+						scenario.description.purpose,
+						scenario.description.troubleshooting,
+						scenario.description.implementationInfo,
+						testAssertionError.getLocalizedMessage()
+				);
+
+				log.error(failDebugInfo);
+
+				Assert.fail(failDebugInfo);
+			}
 		}
 	}
 }
