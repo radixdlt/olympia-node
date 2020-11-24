@@ -5,9 +5,13 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
 import com.google.common.io.Files;
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.stream.JsonReader;
 import com.radixdlt.consensus.Sha256Hasher;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.JSONFormatter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -28,9 +32,22 @@ import java.util.stream.Collectors;
 import static com.google.common.collect.Streams.zip;
 import static org.junit.Assert.assertEquals;
 
+interface TestVectorInput {}
+interface TestVectorExpected {}
+class UnknownTestVector {
+	Object input;
+	Object expected;
+}
+abstract class TestVector<Input extends TestVectorInput, Expected extends TestVectorExpected> extends UnknownTestVector {
+	abstract Input getInput();
+	abstract Expected getExpected();
+}
+
 public class SanityTestSuiteTestExecutor {
 
 	private static final Logger log = LogManager.getLogger();
+
+
 
 	static final class SanityTestSuiteRoot {
 
@@ -66,13 +83,10 @@ public class SanityTestSuiteTestExecutor {
 				}
 
 				static final class SanityTestScenarioTests {
-					static final class SanityTestScenarioTestVector {
-						private JSONObject input;
-						private JSONObject expected;
-					}
 
 					private String source;
-					private List<SanityTestScenarioTestVector> vectors;
+					private String originalSource;
+					private List<UnknownTestVector> vectors;
 				}
 
 				private SanityTestScenarioDescription description;
@@ -130,8 +144,49 @@ public class SanityTestSuiteTestExecutor {
 	private static final String TEST_SCENARIO_KEYVERIFY = "ecdsa_verification";
 	private static final String TEST_SCENARIO_JSON_ROUNDTRIP_RADIX_PARTICLES = "json_radix_particles";
 
+
+	private static <T> T cast(Object object, Class<T> toType) {
+		Gson gson = new Gson();
+		String jsonFromObj = gson.toJson(object);
+		return gson.fromJson(jsonFromObj, toType);
+	}
+
+	private static <
+			Input extends TestVectorInput,
+			Expected extends TestVectorExpected,
+			Vector extends TestVector<Input, Expected>
+			>
+	Vector castTestVector(UnknownTestVector unknownTestVector, Class<Vector> toType) {
+		return cast(unknownTestVector, toType);
+	}
+
+	static final class HashingVectorInput implements TestVectorInput {
+		private String stringToHash;
+	}
+	static final class HashingVectorExpected implements TestVectorExpected {
+		private String hash;
+	}
+	static final class HashingTestVector extends TestVector<HashingVectorInput, HashingVectorExpected> {
+		@Override HashingVectorInput getInput() {
+			return cast(this.input, HashingVectorInput.class);
+		}
+
+		@Override HashingVectorExpected getExpected() {
+			return cast(this.expected, HashingVectorExpected.class);
+		}
+	}
+
 	private void testScenarioHashing(SanityTestSuiteRoot.SanityTestSuite.SanityTestScenario scenario) {
 		assertEquals(TEST_SCENARIO_HASHING, scenario.identifier);
+		for (int testVectorIndex = 0; testVectorIndex < scenario.tests.vectors.size(); ++testVectorIndex) {
+			UnknownTestVector untypedVector = scenario.tests.vectors.get(testVectorIndex);
+			HashingTestVector testVector = castTestVector(untypedVector, HashingTestVector.class);
+
+			HashingVectorInput input = testVector.getInput();
+			HashingVectorExpected expected = testVector.getExpected();
+			String hashHex = Bytes.toHexString(HashUtils.sha256(Bytes.fromHexString(input.stringToHash)).asBytes());
+			assertEquals(String.format("Test vector at index %d failed.", testVectorIndex), expected.hash, hashHex);
+		}
 	}
 
 	private void testScenarioKeyGen(SanityTestSuiteRoot.SanityTestSuite.SanityTestScenario scenario) {
@@ -186,12 +241,14 @@ public class SanityTestSuiteTestExecutor {
 								"Purpose of scenario: '%s'\n" +
 								"Troubleshooting: '%s'\n" +
 								"Implementation info: '%s'\n" +
+								"Test vectors found at: '%s'\n" +
 								"Failure reason: '%s'\n⚠️⚠️⚠️\n",
 						scenario.name,
 						scenario.identifier,
 						scenario.description.purpose,
 						scenario.description.troubleshooting,
 						scenario.description.implementationInfo,
+						scenario.tests.source,
 						testAssertionError.getLocalizedMessage()
 				);
 

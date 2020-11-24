@@ -1,5 +1,5 @@
 {
-	"hashOfSuite": "5a04508fb4ff7a6367c7d18174abde2a020a43bfbcac8149e3bc9a49c1c3dbe2",
+	"hashOfSuite": "65244e754c462247e7f68e1771d3d0d2ba06394c173d2c05064e8b28667bd081",
 	"suite": {
 		"scenarios": [
 			{
@@ -11,22 +11,31 @@
 				"identifier": "hashing",
 				"name": "SHA2-256 bit hashing",
 				"tests": {
-					"source": "https://sha-test-vectors.safe",
+					"originalSource": "http://csrc.nist.gov/publications/fips/fips180-2/fips180-2.pdf",
+					"source": "https://github.com/python/cpython/blob/e9684fac5a158be9806304a676e619857520a4dc/Lib/test/test_hashlib.py#L527-L543",
 					"vectors": [
-						{
-							"input": {
-								"stringToHash": "aaaaaa"
-							},
-							"expected": {
-								"hash": "deadbeefdeadbeefdeadbeefdeadbeef"
-							}
-						},
 						{
 							"input": {
 								"stringToHash": ""
 							},
 							"expected": {
-								"hash": "deadbeefdeadbeefdeadbeefdeadbeef"
+								"hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+							}
+						},
+						{
+							"input": {
+								"stringToHash": "abc"
+							},
+							"expected": {
+								"hash": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+							}
+						},
+						{
+							"input": {
+								"stringToHash": "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"
+							},
+							"expected": {
+								"hash": "248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1"
 							}
 						}
 					]
