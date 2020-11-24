@@ -30,7 +30,6 @@ import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.sync.BFTSyncResponseProcessor;
-import com.radixdlt.consensus.liveness.PacemakerInfoSender;
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
@@ -54,20 +53,6 @@ public class MockedConsensusRunnerModule extends AbstractModule {
 	@Provides
 	public EventProcessor<LocalGetVerticesRequest> bftSyncTimeoutProcessor(BFTSync bftSync) {
 		return bftSync::processGetVerticesLocalTimeout;
-	}
-
-	@Provides
-	public PacemakerInfoSender pacemakerInfoSender(
-		EventDispatcher<LocalTimeoutOccurrence> timeoutEventDispatcher,
-		EventDispatcher<EpochView> epochViewEventDispatcher,
-		ProposerElection proposerElection
-	) {
-		return new PacemakerInfoSender() {
-			@Override
-			public void sendCurrentView(View view) {
-				epochViewEventDispatcher.dispatch(EpochView.of(1, view));
-			}
-		};
 	}
 
 	@ProvidesIntoSet

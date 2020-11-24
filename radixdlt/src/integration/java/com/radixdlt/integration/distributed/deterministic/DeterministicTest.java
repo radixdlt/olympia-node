@@ -44,7 +44,6 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.epoch.LocalTimeout;
-import com.radixdlt.consensus.liveness.PacemakerInfoSender;
 import com.radixdlt.consensus.epoch.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
@@ -235,18 +234,6 @@ public final class DeterministicTest {
 							EpochView epochView = new EpochView(1, view);
 							BFTNode leader = initialProposerElection.getProposer(view);
 							timeoutDispatcher.dispatch(new LocalTimeoutOccurrence(epochView, leader));
-						};
-					}
-
-					@Provides
-					public PacemakerInfoSender pacemakerInfoSender(
-						EventDispatcher<EpochView> epochViewEventDispatcher
-					) {
-						return new PacemakerInfoSender() {
-							@Override
-							public void sendCurrentView(View view) {
-								epochViewEventDispatcher.dispatch(EpochView.of(1, view));
-							}
 						};
 					}
 

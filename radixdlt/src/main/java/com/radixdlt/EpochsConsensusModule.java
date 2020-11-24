@@ -38,7 +38,6 @@ import com.radixdlt.consensus.epoch.VertexStoreFactory;
 import com.radixdlt.consensus.epoch.BFTSyncFactory;
 import com.radixdlt.consensus.epoch.BFTSyncRequestProcessorFactory;
 import com.radixdlt.consensus.liveness.Pacemaker;
-import com.radixdlt.consensus.liveness.PacemakerInfoSender;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.View;
@@ -100,19 +99,6 @@ public class EpochsConsensusModule extends AbstractModule {
 	@Provides
 	private PacemakerTimeoutSender initialTimeoutSender(LocalTimeoutSender localTimeoutSender, EpochChange initialEpoch) {
 		return (view, ms) -> localTimeoutSender.scheduleTimeout(new LocalTimeout(initialEpoch.getEpoch(), view), ms);
-	}
-
-	@Provides
-	public PacemakerInfoSender pacemakerInfoSender(
-		EventDispatcher<EpochView> epochViewEventDispatcher,
-		EpochChange initialEpoch
-	) {
-		return new PacemakerInfoSender() {
-			@Override
-			public void sendCurrentView(View view) {
-				epochViewEventDispatcher.dispatch(EpochView.of(initialEpoch.getEpoch(), view));
-			}
-		};
 	}
 
 	@Provides

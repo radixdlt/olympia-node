@@ -62,7 +62,6 @@ import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
-import com.radixdlt.consensus.liveness.PacemakerInfoSender;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -155,7 +154,6 @@ public class ConsensusModuleTest {
 				bind(NextCommandGenerator.class).toInstance(mock(NextCommandGenerator.class));
 				bind(SystemCounters.class).toInstance(mock(SystemCounters.class));
 				bind(TimeSupplier.class).toInstance(mock(TimeSupplier.class));
-				bind(PacemakerInfoSender.class).toInstance(mock(PacemakerInfoSender.class));
 				bind(PacemakerTimeoutSender.class).toInstance(mock(PacemakerTimeoutSender.class));
 				bind(BFTConfiguration.class).toInstance(bftConfiguration);
 				bind(VerifiedLedgerHeaderAndProof.class).annotatedWith(LastProof.class).toInstance(mock(VerifiedLedgerHeaderAndProof.class));
