@@ -5,8 +5,8 @@
 			{
 				"description": {
 					"implementationInfo": "Expected hash is a hexadecimal string you should compare with the outputted hex string of the hasher",
-					"purpose": "Verify that system correcly computes SHA-2-256 hashes which are required for signatures and encryption.",
-					"troubleshooting": "Make sure to separte between hashing bytes and hashing strings which probably require encoding, typically UTF-8. Read more in links pointing to source of vectors for more info."
+					"purpose": "Verify that system correctly computes SHA-2-256 hashes which are required for signatures and encryption.",
+					"troubleshooting": "Make sure to separate between hashing bytes and hashing strings which probably require encoding, typically UTF-8. Read more in links pointing to source of vectors for more info."
 				},
 				"identifier": "hashing",
 				"name": "SHA2-256 bit hashing",
@@ -15,7 +15,7 @@
 					"vectors": [
 						{
 							"input": {
-								"stringToHash": "aaaaaa",
+								"stringToHash": "aaaaaa"
 							},
 							"expected": {
 								"hash": "deadbeefdeadbeefdeadbeefdeadbeef"
@@ -30,14 +30,13 @@
 							}
 						}
 					]
-				},
+				}
 			},
-
 			{
 				"description": {
 					"implementationInfo": "All numbers are hexedecimal and all public keys are compressed (65 char hex)",
 					"purpose": "Asserting that system can perform key generation of cryptographic keys compatible with the Elliptic Curve named 'secp256k1' which is used for cryptographic signatures by the Radix system.",
-					"troubleshooting": "First discover which ECDSA library is used for the system you are working on. E.g. for Java it is most likely BouncyCastle and for JavaScript/TypeScript it might be induntny/elliptic.js, take a look at their github issue board. Many things can go wrong if ECDSA is not properly implemented and used. So start with basics. Assert that you are using the correct private key, using the correct format and that the system produces the correct public key. Understand the difference between compressed public key and uncompressed. For more information please read this intro to ECDSA... link here.",
+					"troubleshooting": "First discover which ECDSA library is used for the system you are working on. E.g. for Java it is most likely BouncyCastle and for JavaScript/TypeScript it might be induntny/elliptic.js, take a look at their github issue board. Many things can go wrong if ECDSA is not properly implemented and used. So start with basics. Assert that you are using the correct private key, using the correct format and that the system produces the correct public key. Understand the difference between compressed public key and uncompressed. For more information please read this intro to ECDSA... link here."
 				},
 				"identifier": "secp256k1",
 				"name": "Elliptic Curve secp256k1 key generation",
@@ -46,16 +45,15 @@
 					"vectors": [
 						{
 							"input": {
-								"privateKey": "0000000000000000000000000000000000000000000000000000000000000001",
+								"privateKey": "0000000000000000000000000000000000000000000000000000000000000001"
 							},
 							"expected": {
 								"publicKey": "3abdabddeadbeefabd098765fddf4dfa321234567890987654321234567abd23a"
-							},
+							}
 						}
 					]
 				}
-			}, 
-
+			},
 			{
 				"description": {
 					"implementationInfo": "Message is not hashed, it should be UTF-8 encoded and then hashed before signing. Signatures are on R|S format, not DER format. Signatures MUST be determinsitic otherwise this test wont succceed and must also be on canonical form ('low S', according to BIP62).",
@@ -76,15 +74,13 @@
 								"publicKey": "deadbeef",
 								"signature": {
 									"r": "deadbeef",
-									"s": "0eadbeef",
-								},
+									"s": "0eadbeef"
+								}
 							}
 						}
 					]
 				}
 			},
-
-
 			{
 				"description": {
 					"implementationInfo": "Message is not hashed, it should be UTF-8 encoded and then hashed before signing. Signatures are on R|S format, not DER format. Public Keys are on compressed format",
@@ -126,7 +122,6 @@
 					]
 				}
 			},
-
 			{
 				"description": {
 					"implementationInfo": "Each test vector contains plain JSON for some particle and a key-value indicating which object class to deserialize the JSON into inside some metadata.",
@@ -154,29 +149,9 @@
 								}
 							},
 							"expected": {
-								"hashOfJSON": "deadbeefdeadbeefdeadbeefdeadbeef",
+								"hashOfJSON": "deadbeefdeadbeefdeadbeefdeadbeef"
 							}
 						}
-					]
-				}
-			},
-
-
-			{
-				"description": {
-					"implementationInfo": "",
-					"purpose": "",
-					"troubleshooting": ""
-				},
-				"identifier": "",
-				"name": "",
-				"tests": {
-					"source": "https://",
-					"vectors": [
-						{
-							"input": {},
-							"expected": {}
-						},
 					]
 				}
 			}
