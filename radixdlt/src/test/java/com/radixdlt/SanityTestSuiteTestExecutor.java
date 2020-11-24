@@ -6,6 +6,7 @@ import com.google.common.io.Files;
 import com.google.gson.Gson;
 import com.google.gson.stream.JsonReader;
 import com.radixdlt.consensus.Sha256Hasher;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.JSONFormatter;
@@ -21,6 +22,7 @@ import java.io.FileReader;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -141,6 +143,7 @@ public class SanityTestSuiteTestExecutor {
 	}
 
 	private static final String TEST_SCENARIO_HASHING = "hashing";
+	private static final String TEST_SCENARIO_RADIXHASHING = "radix_hashing";
 	private static final String TEST_SCENARIO_KEYGEN = "secp256k1";
 	private static final String TEST_SCENARIO_KEYSIGN = "ecdsa_signing";
 	private static final String TEST_SCENARIO_KEYVERIFY = "ecdsa_verification";
@@ -175,8 +178,6 @@ public class SanityTestSuiteTestExecutor {
 		@Override HashingVectorInput getInput() {
 			return cast(this.input, HashingVectorInput.class);
 		}
-
-
 		@Override HashingVectorExpected getExpected() {
 			return cast(this.expected, HashingVectorExpected.class);
 		}
@@ -208,6 +209,40 @@ public class SanityTestSuiteTestExecutor {
 		}
 	}
 
+	static final class RadixHashingVectorInput implements TestVectorInput {
+		private String stringToHash;
+		byte[] bytesToHash() {
+			return this.stringToHash.getBytes(StandardCharsets.UTF_8);
+		}
+	}
+	static final class RadixHashingVectorExpected implements TestVectorExpected {
+		private String hashOfHash;
+	}
+	static final class RadixHashingTestVector extends TestVector<RadixHashingVectorInput, RadixHashingVectorExpected> {
+		@Override RadixHashingVectorInput getInput() {
+			return cast(this.input, RadixHashingVectorInput.class);
+		}
+		@Override RadixHashingVectorExpected getExpected() {
+			return cast(this.expected, RadixHashingVectorExpected.class);
+		}
+	}
+	private void testScenarioRadixHashing(SanityTestSuiteRoot.SanityTestSuite.SanityTestScenario scenario) {
+		assertEquals(TEST_SCENARIO_RADIXHASHING, scenario.identifier);
+
+		BiConsumer<RadixHashingTestVector, Integer> testVectorRunner = (vector, vectorIndex) -> {
+			RadixHashingVectorInput input = vector.getInput();
+			RadixHashingVectorExpected expected = vector.getExpected();
+			String hashHex = Bytes.toHexString(HashUtils.sha256(input.bytesToHash()).asBytes());
+			assertEquals(String.format("Test vector at index %d failed.", vectorIndex), expected.hashOfHash, hashHex);
+		};
+
+		for (int testVectorIndex = 0; testVectorIndex < scenario.tests.vectors.size(); ++testVectorIndex) {
+			UnknownTestVector untypedVector = scenario.tests.vectors.get(testVectorIndex);
+			RadixHashingTestVector testVector = castTestVector(untypedVector, RadixHashingTestVector.class);
+			testVectorRunner.accept(testVector, testVectorIndex);
+		}
+	}
+
 	private void testScenarioKeyGen(SanityTestSuiteRoot.SanityTestSuite.SanityTestScenario scenario) {
 		assertEquals(TEST_SCENARIO_KEYGEN, scenario.identifier);
 	}
@@ -226,13 +261,16 @@ public class SanityTestSuiteTestExecutor {
 
 
 	private Map<String, Consumer<SanityTestSuiteRoot.SanityTestSuite.SanityTestScenario>> makeScenarioRunnerMap() {
-		return ImmutableMap.of(
-				TEST_SCENARIO_HASHING, this::testScenarioHashing,
-				TEST_SCENARIO_KEYGEN, this::testScenarioKeyGen,
-				TEST_SCENARIO_KEYSIGN, this::testScenarioKeySign,
-				TEST_SCENARIO_KEYVERIFY, this::testScenarioKeyVerify,
-				TEST_SCENARIO_JSON_ROUNDTRIP_RADIX_PARTICLES, this::testScenarioJsonRoundTripRadixParticles
-		);
+		HashMap<String, Consumer<SanityTestSuiteRoot.SanityTestSuite.SanityTestScenario>> map = new HashMap<>();
+
+		map.put(TEST_SCENARIO_HASHING, this::testScenarioHashing);
+		map.put(TEST_SCENARIO_RADIXHASHING, this::testScenarioRadixHashing);
+		map.put(TEST_SCENARIO_KEYGEN, this::testScenarioKeyGen);
+		map.put(TEST_SCENARIO_KEYSIGN, this::testScenarioKeySign);
+		map.put(TEST_SCENARIO_KEYVERIFY, this::testScenarioKeyVerify);
+		map.put(TEST_SCENARIO_JSON_ROUNDTRIP_RADIX_PARTICLES, this::testScenarioJsonRoundTripRadixParticles);
+
+		return ImmutableMap.copyOf(map);
 	}
 
 	@Test

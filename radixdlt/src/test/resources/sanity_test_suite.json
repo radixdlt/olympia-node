@@ -1,5 +1,5 @@
 {
-	"hashOfSuite": "65244e754c462247e7f68e1771d3d0d2ba06394c173d2c05064e8b28667bd081",
+	"hashOfSuite": "20ed6300159e083820aaca8ae80b2d17e275c1e1211f8f1cc3875f7539c1fff1",
 	"suite": {
 		"scenarios": [
 			{
@@ -36,6 +36,28 @@
 							},
 							"expected": {
 								"hash": "248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1"
+							}
+						}
+					]
+				}
+			},
+			{
+				"description": {
+					"implementationInfo": "Expected hash is a hexadecimal string you should compare with the outputted hex string of the hasher",
+					"purpose": "Verify that system correctly computes SHA-2-256 hashes of SHA-2-256 hashes which are required for signatures and encryption.",
+					"troubleshooting": "Make sure to separate between hashing bytes and hashing strings which probably require encoding, typically UTF-8. Make sure you are hashing the digest of the first hasher."
+				},
+				"identifier": "radix_hashing",
+				"name": "Radix hashing",
+				"tests": {
+					"source": "https://en.bitcoin.it/wiki/Protocol_documentation#Hashes",
+					"vectors": [
+						{
+							"input": {
+								"stringToHash": "hello"
+							},
+							"expected": {
+								"hashOfHash": "9595c9df90075148eb06860365df33584b75bff782a510c6cd4883a419833d50"
 							}
 						}
 					]
