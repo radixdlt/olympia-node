@@ -31,6 +31,7 @@ import com.radixdlt.consensus.bft.FormedQC;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
+import com.radixdlt.consensus.epoch.LocalViewUpdate;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
@@ -185,6 +186,10 @@ public class DispatcherModule extends AbstractModule {
 		};
 	}
 
+	@Provides
+	private EventDispatcher<LocalViewUpdate> localViewUpdateEventDispatcher(Environment environment) {
+		return environment.getDispatcher(LocalViewUpdate.class);
+	}
 
 	@Provides
 	private EventDispatcher<View> localConsensusTimeoutDispatcher(

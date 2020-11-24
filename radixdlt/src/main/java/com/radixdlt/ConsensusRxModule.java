@@ -30,6 +30,7 @@ import com.radixdlt.consensus.liveness.PacemakerInfoSender;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.utils.ScheduledSenderToRx;
 import com.radixdlt.utils.SenderToRx;
 import com.radixdlt.utils.ThreadFactories;
@@ -48,10 +49,6 @@ public class ConsensusRxModule extends AbstractModule {
 		// Timed local messages
 		bind(PacemakerRx.class).toInstance(localTimeouts::messages);
 		bind(LocalTimeoutSender.class).toInstance(localTimeouts::scheduleSend);
-
-		SenderToRx<LocalViewUpdate, LocalViewUpdate> localViewUpdates = new SenderToRx<>(u -> u);
-		bind(new TypeLiteral<Observable<LocalViewUpdate>>() { }).toInstance(localViewUpdates.rx());
-		bind(new TypeLiteral<Consumer<LocalViewUpdate>>() { }).toInstance(localViewUpdates::send);
 	}
 
 	@Provides
@@ -60,12 +57,13 @@ public class ConsensusRxModule extends AbstractModule {
 		PacemakerTimeoutSender timeoutSender,
 		PacemakerTimeoutCalculator timeoutCalculator,
 		PacemakerInfoSender pacemakerInfoSender,
-		Consumer<LocalViewUpdate> consumer
+		EventDispatcher<LocalViewUpdate> localViewUpdateEventDispatcher
 	) {
 		return new LocalViewUpdateSenderWithTimeout(
 			timeoutSender,
 			timeoutCalculator,
 			pacemakerInfoSender,
-			consumer);
+			localViewUpdateEventDispatcher
+		);
 	}
 }

@@ -219,10 +219,10 @@ public class EpochsConsensusModule extends AbstractModule {
 	@Provides
 	private LocalViewUpdateSenderFactory localViewUpdateSenderFactory(
 		PacemakerTimeoutCalculator timeoutCalculator,
-		Consumer<LocalViewUpdate> consumer
+		EventDispatcher<LocalViewUpdate> localViewUpdateEventDispatcher
 	) {
 		return (infoSender, timeoutSender) ->
-			new LocalViewUpdateSenderWithTimeout(timeoutSender, timeoutCalculator, infoSender, consumer);
+			new LocalViewUpdateSenderWithTimeout(timeoutSender, timeoutCalculator, infoSender, localViewUpdateEventDispatcher);
 	}
 
 	@Provides

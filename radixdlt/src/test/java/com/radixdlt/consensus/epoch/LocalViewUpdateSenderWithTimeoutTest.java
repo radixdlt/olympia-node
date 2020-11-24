@@ -22,12 +22,14 @@ import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.PacemakerInfoSender;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
+import com.radixdlt.environment.EventDispatcher;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Random;
 import java.util.function.Consumer;
 
+import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.mockito.Mockito.*;
 
 public class LocalViewUpdateSenderWithTimeoutTest {
@@ -38,7 +40,7 @@ public class LocalViewUpdateSenderWithTimeoutTest {
     private PacemakerTimeoutCalculator timeoutCalculator = mock(PacemakerTimeoutCalculator.class);
     private PacemakerInfoSender pacemakerInfoSender = mock(PacemakerInfoSender.class);
     @SuppressWarnings("unchecked")
-    private Consumer<LocalViewUpdate> viewUpdateConsumer = mock(Consumer.class);
+    private EventDispatcher<LocalViewUpdate> viewUpdateConsumer = rmock(EventDispatcher.class);
 
     private LocalViewUpdateSenderWithTimeout localViewUpdateSenderWithTimeout;
 
@@ -59,7 +61,7 @@ public class LocalViewUpdateSenderWithTimeoutTest {
         when(timeoutCalculator.timeout(1)).thenReturn(timeout);
 
         localViewUpdateSenderWithTimeout.sendLocalViewUpdate(viewUpdate);
-        verify(viewUpdateConsumer, times(1)).accept(viewUpdate);
+        verify(viewUpdateConsumer, times(1)).dispatch(eq(viewUpdate));
         verify(pacemakerInfoSender, times(1)).sendCurrentView(View.of(2));
         verify(timeoutSender, times(1)).scheduleTimeout(View.of(2), timeout);
     }

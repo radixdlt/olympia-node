@@ -22,6 +22,7 @@ import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.PacemakerInfoSender;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
+import com.radixdlt.environment.EventDispatcher;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -41,30 +42,30 @@ public class LocalViewUpdateSenderWithTimeout implements LocalViewUpdateSender {
     private final PacemakerTimeoutSender timeoutSender;
     private final PacemakerTimeoutCalculator timeoutCalculator;
     private final PacemakerInfoSender pacemakerInfoSender;
-    private final Consumer<LocalViewUpdate> sendFn;
+    private final EventDispatcher<LocalViewUpdate> viewUpdateDispatcher;
 
     public LocalViewUpdateSenderWithTimeout(
         PacemakerTimeoutSender timeoutSender,
         PacemakerTimeoutCalculator timeoutCalculator,
         PacemakerInfoSender pacemakerInfoSender,
-        Consumer<LocalViewUpdate> sendFn
+        EventDispatcher<LocalViewUpdate> viewUpdateDispatcher
     ) {
         this.timeoutSender = Objects.requireNonNull(timeoutSender);
         this.timeoutCalculator = Objects.requireNonNull(timeoutCalculator);
         this.pacemakerInfoSender = Objects.requireNonNull(pacemakerInfoSender);
-        this.sendFn = sendFn;
+        this.viewUpdateDispatcher = Objects.requireNonNull(viewUpdateDispatcher);
     }
 
     @Override
     public void sendLocalViewUpdate(LocalViewUpdate localViewUpdate) {
         final ViewUpdate viewUpdate = localViewUpdate.getViewUpdate();
-
         long timeout = timeoutCalculator.timeout(viewUpdate.uncommittedViewsCount());
 
         Level logLevel = this.logLimiter.tryAcquire() ? Level.INFO : Level.TRACE;
         log.log(logLevel, "Sending view update: {} with timeout {}ms", viewUpdate, timeout);
 
-        this.sendFn.accept(localViewUpdate);
+        this.viewUpdateDispatcher.dispatch(localViewUpdate);
+
         this.pacemakerInfoSender.sendCurrentView(viewUpdate.getCurrentView());
         this.timeoutSender.scheduleTimeout(viewUpdate.getCurrentView(), timeout);
     }
