@@ -28,7 +28,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Objects;
-import java.util.function.Consumer;
 
 /**
  * A view update sender implementation that also schedules a timeout message.

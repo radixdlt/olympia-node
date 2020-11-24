@@ -20,7 +20,6 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.epoch.LocalTimeoutSender;
 import com.radixdlt.consensus.epoch.LocalViewUpdate;
@@ -32,13 +31,10 @@ import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.utils.ScheduledSenderToRx;
-import com.radixdlt.utils.SenderToRx;
 import com.radixdlt.utils.ThreadFactories;
-import io.reactivex.rxjava3.core.Observable;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.function.Consumer;
 
 public class ConsensusRxModule extends AbstractModule {
 

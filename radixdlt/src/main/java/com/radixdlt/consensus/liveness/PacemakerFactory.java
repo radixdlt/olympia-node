@@ -35,7 +35,6 @@ public interface PacemakerFactory {
 		BFTValidatorSet validatorSet,
 		VertexStore vertexStore,
 		PacemakerState pacemakerState,
-		PacemakerTimeoutSender timeoutSender,
 		PacemakerTimeoutCalculator timeoutCalculator,
 		SafetyRules safetyRules,
 		ProposerElection proposerElection,
