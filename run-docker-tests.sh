@@ -16,8 +16,9 @@ docker ps -a
 docker rm -f "${test_executor}" || true
 docker create  --pid=host --privileged  \
       -v /var/run/docker.sock:/var/run/docker.sock \
+      -v ${CORE_DIR}:/core \
       --network=host --cap-add=NET_ADMIN  \
-      -e CONTAINER_NAME -e TEST_DURATION -e CORE_DIR=${CORE_DIR} \
+      -e CONTAINER_NAME -e TEST_DURATION -e CORE_DIR=/core \
       --name=${test_executor} radix-system-test \
       ./gradlew clean dockerSystemTests --refresh-dependencies --info
 docker start -a "${test_executor}"
