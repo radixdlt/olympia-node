@@ -65,6 +65,7 @@ public final class EpochManagerRunner implements ModuleRunner {
 		Observable<LocalGetVerticesRequest> bftSyncTimeouts,
 		EventProcessor<LocalGetVerticesRequest> bftSyncTimeoutProcessor,
 		Observable<EpochViewUpdate> localViewUpdates,
+		EventProcessor<EpochViewUpdate> epochViewUpdateEventProcessor,
 		BFTEventsRx networkRx,
 		PacemakerRx pacemakerRx,
 		SyncVerticesRPCRx rpcRx,
@@ -89,7 +90,7 @@ public final class EpochManagerRunner implements ModuleRunner {
 				.doOnNext(bftSyncTimeoutProcessor::process),
 			localViewUpdates
 				.observeOn(singleThreadScheduler)
-				.doOnNext(epochManager::processLocalViewUpdate),
+				.doOnNext(epochViewUpdateEventProcessor::process),
 			pacemakerRx.localTimeouts()
 				.observeOn(singleThreadScheduler)
 				.doOnNext(epochManager::processLocalTimeout),

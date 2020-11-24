@@ -24,6 +24,7 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
+import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
@@ -50,8 +51,8 @@ public class SystemInfoModule extends AbstractModule {
 	}
 
 	@ProvidesIntoSet
-	private EventProcessor<EpochView> epochViewEventProcessor(InMemorySystemInfo inMemorySystemInfo) {
-		return inMemorySystemInfo::processView;
+	private EventProcessor<EpochViewUpdate> epochViewEventProcessor(InMemorySystemInfo inMemorySystemInfo) {
+		return v -> inMemorySystemInfo.processView(v.getEpochView());
 	}
 
 	@ProvidesIntoSet

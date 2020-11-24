@@ -34,6 +34,10 @@ public final class EpochViewUpdate {
         this.viewUpdate = Objects.requireNonNull(viewUpdate);
     }
 
+    public EpochView getEpochView() {
+        return new EpochView(epoch, viewUpdate.getCurrentView());
+    }
+
     public long getEpoch() {
         return epoch;
     }

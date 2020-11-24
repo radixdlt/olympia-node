@@ -21,7 +21,7 @@ import com.google.inject.Inject;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.LocalTimeoutOccurrence;
-import com.radixdlt.consensus.epoch.EpochView;
+import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.environment.EventProcessor;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
@@ -33,19 +33,20 @@ import java.util.Set;
  */
 public final class InMemorySystemInfoRunner {
 
-	private final Observable<EpochView> currentViews;
+	private final Observable<EpochViewUpdate> currentViews;
+	private final Set<EventProcessor<EpochViewUpdate>> viewEventProcessors;
+
 	private final Observable<LocalTimeoutOccurrence> timeouts;
 	private final Observable<QuorumCertificate> highQCs;
 	private final Observable<BFTCommittedUpdate> bftCommittedUpdates;
-	private final Set<EventProcessor<EpochView>> viewEventProcessors;
 	private final Set<EventProcessor<LocalTimeoutOccurrence>> timeoutEventProcessors;
 	private final Set<EventProcessor<QuorumCertificate>> highQCProcessors;
 	private final Set<EventProcessor<BFTCommittedUpdate>> committedProcessors;
 
 	@Inject
 	public InMemorySystemInfoRunner(
-		Observable<EpochView> currentViews,
-		Set<EventProcessor<EpochView>> viewEventProcessors,
+		Observable<EpochViewUpdate> currentViews,
+		Set<EventProcessor<EpochViewUpdate>> viewEventProcessors,
 		Observable<LocalTimeoutOccurrence> timeouts,
 		Set<EventProcessor<LocalTimeoutOccurrence>> timeoutEventProcessors,
 		Observable<QuorumCertificate> highQCs,

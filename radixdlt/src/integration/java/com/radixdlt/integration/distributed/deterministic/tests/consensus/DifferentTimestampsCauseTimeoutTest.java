@@ -22,7 +22,6 @@ import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.ViewUpdate;
-import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import java.util.LinkedList;
 import java.util.Map;
 

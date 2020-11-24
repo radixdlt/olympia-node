@@ -27,7 +27,6 @@ import com.radixdlt.consensus.bft.BFTSyncRequestProcessor;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.LocalTimeout;
-import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;

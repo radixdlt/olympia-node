@@ -32,7 +32,6 @@ import com.radixdlt.consensus.bft.FormedQC;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewUpdate;
-import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.counters.SystemCounters;
@@ -66,14 +65,13 @@ public class DispatcherModule extends AbstractModule {
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<ViewUpdate>>() { });
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<View>>() { }, ProcessOnDispatch.class);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<View>>() { });
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochView>>() { }, ProcessOnDispatch.class);
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochView>>() { });
+		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochViewUpdate>>() { }, ProcessOnDispatch.class);
+		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochViewUpdate>>() { });
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<BFTCommittedUpdate>>() { });
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<BFTCommittedUpdate>>() { }, ProcessOnDispatch.class);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<FormedQC>>() { }, ProcessOnDispatch.class);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<Vote>>() { }, ProcessOnDispatch.class);
 	}
-
 
 	@Provides
 	private EventDispatcher<LocalSyncRequest> localSyncRequestEventDispatcher(
@@ -126,22 +124,6 @@ public class DispatcherModule extends AbstractModule {
 		return environment.getDispatcher(BFTUpdate.class);
 	}
 
-	@Provides
-	private EventDispatcher<EpochView> viewEventDispatcher(
-		@ProcessOnDispatch Set<EventProcessor<EpochView>> processors,
-		Set<EventProcessor<EpochView>> asyncProcessors,
-		Environment environment
-	) {
-		if (asyncProcessors.isEmpty()) {
-			return epochView -> processors.forEach(e -> e.process(epochView));
-		} else {
-			EventDispatcher<EpochView> dispatcher = environment.getDispatcher(EpochView.class);
-			return epochView -> {
-				dispatcher.dispatch(epochView);
-				processors.forEach(e -> e.process(epochView));
-			};
-		}
-	}
 
 	@Provides
 	private EventDispatcher<LocalTimeoutOccurrence> timeoutEventDispatcher(
@@ -214,13 +196,17 @@ public class DispatcherModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private EventDispatcher<EpochViewUpdate> epochViewUpdateEventDispatcher(Environment environment) {
-		final EventDispatcher<EpochViewUpdate> dispatcher = environment.getDispatcher(EpochViewUpdate.class);
+	private EventDispatcher<EpochViewUpdate> epochViewUpdateEventDispatcher(
+		@ProcessOnDispatch Set<EventProcessor<EpochViewUpdate>> processors,
+		Environment environment
+	) {
 		final RateLimiter logLimiter = RateLimiter.create(1.0);
+		EventDispatcher<EpochViewUpdate> dispatcher = environment.getDispatcher(EpochViewUpdate.class);
 		return epochViewUpdate -> {
 			Level logLevel = logLimiter.tryAcquire() ? Level.INFO : Level.TRACE;
 			logger.log(logLevel, "NextSyncView: {}", epochViewUpdate);
 			dispatcher.dispatch(epochViewUpdate);
+			processors.forEach(e -> e.process(epochViewUpdate));
 		};
 	}
 

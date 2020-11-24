@@ -27,7 +27,7 @@ import com.radixdlt.consensus.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
-import com.radixdlt.consensus.epoch.EpochView;
+import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.epoch.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.VoteSender;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
@@ -75,9 +75,10 @@ public class DeterministicEnvironmentModule extends AbstractModule {
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<LocalTimeoutOccurrence>>() { }, ProcessOnDispatch.class)
 			.addBinding().to(new TypeLiteral<DeterministicSavedLastEvent<LocalTimeoutOccurrence>>() { });
 		bind(new TypeLiteral<DeterministicSavedLastEvent<LocalTimeoutOccurrence>>() { }).in(Scopes.SINGLETON);
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochView>>() { }, ProcessOnDispatch.class)
-			.addBinding().to(new TypeLiteral<DeterministicSavedLastEvent<EpochView>>() { });
-		bind(new TypeLiteral<DeterministicSavedLastEvent<EpochView>>() { }).in(Scopes.SINGLETON);
+
+		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochViewUpdate>>() { }, ProcessOnDispatch.class)
+			.addBinding().to(new TypeLiteral<DeterministicSavedLastEvent<EpochViewUpdate>>() { });
+		bind(new TypeLiteral<DeterministicSavedLastEvent<EpochViewUpdate>>() { }).in(Scopes.SINGLETON);
 	}
 
 	@Provides

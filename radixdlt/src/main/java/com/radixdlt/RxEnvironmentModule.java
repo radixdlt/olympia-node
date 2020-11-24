@@ -26,11 +26,9 @@ import com.radixdlt.consensus.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.ViewUpdate;
-import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.environment.Environment;
-import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.rx.RxEnvironment;
 import com.radixdlt.environment.rx.RxRemoteDispatcher;
 import com.radixdlt.sync.LocalSyncRequest;
@@ -65,11 +63,10 @@ public class RxEnvironmentModule extends AbstractModule {
 			LocalGetVerticesRequest.class,
 			BFTUpdate.class,
 			BFTCommittedUpdate.class,
-			EpochView.class,
-			EpochViewUpdate.class,
 			LocalTimeoutOccurrence.class,
 			SyncInProgress.class,
-			ViewUpdate.class
+			ViewUpdate.class,
+			EpochViewUpdate.class
 		);
 
 		return new RxEnvironment(
@@ -102,11 +99,6 @@ public class RxEnvironmentModule extends AbstractModule {
 	@Provides
 	Observable<LocalSyncRequest> syncRequests(RxEnvironment rxEnvironment) {
 		return rxEnvironment.getObservable(LocalSyncRequest.class);
-	}
-
-	@Provides
-	public Observable<EpochView> currentViews(RxEnvironment rxEnvironment) {
-		return rxEnvironment.getObservable(EpochView.class);
 	}
 
 	@Provides

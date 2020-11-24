@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus;
 
+import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
@@ -30,6 +31,7 @@ import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
+import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
@@ -76,6 +78,7 @@ public class EpochManagerRunnerTest {
 			syncTimeouts,
 			epochManager::processGetVerticesLocalTimeout,
 			localViewUpdates,
+			rmock(EventProcessor.class),
 			networkRx,
 			pacemakerRx,
 			syncVerticesRPCRx,

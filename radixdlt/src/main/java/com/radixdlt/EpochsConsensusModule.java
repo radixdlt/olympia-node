@@ -118,17 +118,20 @@ public class EpochsConsensusModule extends AbstractModule {
 		);
 	}
 
+	@Provides
+	private EventProcessor<EpochViewUpdate> epochViewUpdateEventProcessor(EpochManager epochManager) {
+		return epochManager.epochViewUpdateEventProcessor();
+	}
+
 	@ProvidesIntoSet
 	@ProcessOnDispatch
 	private EventProcessor<ViewUpdate> initialViewUpdateSender(
-		EventDispatcher<EpochView> epochViewEventDispatcher,
 		EventDispatcher<EpochViewUpdate> epochViewUpdateEventDispatcher,
 		PacemakerTimeoutSender timeoutSender,
 		PacemakerTimeoutCalculator timeoutCalculator,
 		EpochChange initialEpoch
 	) {
 		return viewUpdate -> {
-			epochViewEventDispatcher.dispatch(EpochView.of(initialEpoch.getEpoch(), viewUpdate.getCurrentView()));
 			epochViewUpdateEventDispatcher.dispatch(new EpochViewUpdate(initialEpoch.getEpoch(), viewUpdate));
 			long timeout = timeoutCalculator.timeout(viewUpdate.uncommittedViewsCount());
 			timeoutSender.scheduleTimeout(viewUpdate.getCurrentView(), timeout);
@@ -139,12 +142,10 @@ public class EpochsConsensusModule extends AbstractModule {
 	private PacemakerStateFactory pacemakerStateFactory(
 		LocalTimeoutSender localTimeoutSender,
 		PacemakerTimeoutCalculator timeoutCalculator,
-		EventDispatcher<EpochView> epochViewEventDispatcher,
 		EventDispatcher<EpochViewUpdate> epochViewUpdateEventDispatcher
 	) {
 		return epoch ->
 			new PacemakerState(viewUpdate -> {
-				epochViewEventDispatcher.dispatch(new EpochView(epoch, viewUpdate.getCurrentView()));
 				epochViewUpdateEventDispatcher.dispatch(new EpochViewUpdate(epoch, viewUpdate));
 				long timeout = timeoutCalculator.timeout(viewUpdate.uncommittedViewsCount());
 				localTimeoutSender.scheduleTimeout(new LocalTimeout(epoch, viewUpdate.getCurrentView()), timeout);

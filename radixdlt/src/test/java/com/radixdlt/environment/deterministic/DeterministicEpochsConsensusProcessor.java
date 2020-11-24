@@ -60,6 +60,7 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 		EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor,
 		EventProcessor<LocalGetVerticesRequest> localGetVerticesRequestEventProcessor,
 		EventProcessor<SyncInProgress> syncTimeoutProcessor,
+		EventProcessor<EpochViewUpdate> epochViewUpdateProcessor,
 		Set<EventProcessor<BFTUpdate>> bftUpdateProcessors,
 		RemoteEventProcessor<DtoLedgerHeaderAndProof> syncRequestProcessor,
 		RemoteEventProcessor<DtoCommandsAndProof> syncResponseProcessor
@@ -72,6 +73,7 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 			epochManager.processLedgerUpdate((EpochsLedgerUpdate) e);
 			epochsLedgerUpdateProcessors.forEach(p -> p.process((EpochsLedgerUpdate) e));
 		});
+		processorsBuilder.put(EpochViewUpdate.class, e -> epochViewUpdateProcessor.process((EpochViewUpdate) e));
 		processorsBuilder.put(LocalSyncRequest.class, e -> localSyncRequestEventProcessor.process((LocalSyncRequest) e));
 		processorsBuilder.put(LocalGetVerticesRequest.class, e -> localGetVerticesRequestEventProcessor.process((LocalGetVerticesRequest) e));
 		processorsBuilder.put(SyncInProgress.class, e -> syncTimeoutProcessor.process((SyncInProgress) e));
@@ -100,8 +102,6 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 			this.epochManager.processConsensusEvent((ConsensusEvent) message);
 		} else if (message instanceof LocalTimeout) {
 			this.epochManager.processLocalTimeout((LocalTimeout) message);
-		} else if (message instanceof EpochViewUpdate) {
-			this.epochManager.processLocalViewUpdate((EpochViewUpdate) message);
 		} else if (message instanceof GetVerticesRequest) {
 			this.epochManager.processGetVerticesRequest((GetVerticesRequest) message);
 		} else if (message instanceof GetVerticesResponse) {
