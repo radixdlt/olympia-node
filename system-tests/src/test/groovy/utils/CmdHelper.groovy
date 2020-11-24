@@ -253,6 +253,7 @@ class CmdHelper {
 
     static String[] generateUniverseValidators(int numNodes){
         String[] exportVars,error
+        runCommand("ls -l /core");
         (exportVars, error) =  runCommand("./gradlew -P validators=${numNodes} clean generateDevUniverse",null,true,true,System.getenv("CORE_DIR"));
         return exportVars
                 .findAll({ it.contains("export") })
