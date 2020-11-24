@@ -119,6 +119,7 @@ public class DockerNetwork implements Closeable, RemoteBFTNetwork {
 			CmdHelper.captureLogs(containerId,testName);
 		});
 		CmdHelper.removeAllDockerContainers();
+		CmdHelper.cleanCoreGradleOutput();
 		CmdHelper.runCommand("docker network rm " + this.name);
 		this.networkState = NetworkState.SHUTDOWN;
 	}
