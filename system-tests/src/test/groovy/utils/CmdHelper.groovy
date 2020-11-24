@@ -29,19 +29,19 @@ import static utils.Generic.listToDelimitedString
 class CmdHelper {
     private static final Logger logger = LogManager.getLogger()
 
-    static List<String[]> runCommand(cmd, String[] env = null, failOnError = false, logOutput = true) {
+    static List<String[]> runCommand(cmd, String[] env = null, failOnError = false, logOutput = true, String workdir = null) {
 
         Thread.sleep(1000)
         def sout = new StringBuffer()
         def serr = new StringBuffer()
         def process
         logger.info("------Executing command ${cmd}-----")
-        if (env) {
-            logger.info("------Environment variables ${env}-----")
-            process = cmd.execute(env as String[], null)
-        } else {
-            process = cmd.execute()
-        }
+        env?logger.info("------Environment variables ${env}-----"):""
+        workdir?logger.info("------Working dir ${workdir}-----"):""
+        process = cmd.execute(
+                env ?: null,
+                workdir? new File(workdir):null
+        )
 
         process.consumeProcessOutput(sout, serr)
 
@@ -73,23 +73,24 @@ class CmdHelper {
     }
 
 
-    static List node(options) {
+    static List node(options, universe,validatorKey) {
         String[] env = ["JAVA_OPTS=-server -Xms2g -Xmx2g -Djava.security.egd=file:/dev/urandom -Dcom.sun.management.jmxremote.port=${options.rmiPort} -Dcom.sun.management.jmxremote.rmi.port=${options.rmiPort} -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=localhost -agentlib:jdwp=transport=dt_socket,address=${options.socketAddressPort},suspend=n,server=y",
                         "RADIXDLT_NETWORK_SEEDS_REMOTE=${listToDelimitedString(options.remoteSeeds)}",
-                        "RADIXDLT_CONSENSUS_FIXED_NODE_COUNT=${options.quorumSize}",
                         "RADIXDLT_HOST_IP_ADDRESS=${options.nodeName}",
                         "RADIXDLT_CONSENSUS_START_ON_BOOT=${options.startConsensusOnBoot}",
-                        "RADIXDLT_UNIVERSE=${options.radixdltUniverse}",
+                        "RADIXDLT_UNIVERSE=${universe}",
+                        "RADIXDLT_NODE_KEY=${validatorKey}",
+                        "RADIXDLT_LOG_LEVEL=debug"
 
         ]
         String dockerContainer = "docker run -d " +
                 "-e RADIXDLT_NETWORK_SEEDS_REMOTE " +
                 "--name ${options.nodeName}  " +
-                "-e RADIXDLT_CONSENSUS_FIXED_NODE_COUNT " +
                 "-e RADIXDLT_HOST_IP_ADDRESS " +
                 "-e RADIXDLT_CONSENSUS_START_ON_BOOT " +
                 "-e RADIXDLT_UNIVERSE " +
                 "-e JAVA_OPTS " +
+                "-e RADIXDLT_NODE_KEY " +
                 "-l com.radixdlt.roles='core' " +
                 "-p ${options.hostPort}:8080 " +
                 "--cap-add=NET_ADMIN " +
@@ -118,7 +119,7 @@ class CmdHelper {
             options.rmiPort = 9010 + index
             options.socketAddressPort = 50505 + index
             options.startConsensusOnBoot = startConsensusOnBoot
-            options.radixdltUniverse = System.getenv("RADIXDLT_UNIVERSE")
+            options.nodeIndex = index
             return [(node): options]
         }
 
@@ -172,7 +173,7 @@ class CmdHelper {
     }
 
     static String runContainer(String dockerCommand, String[] dockerEnv) {
-        def results = CmdHelper.runCommand(dockerCommand, dockerEnv, true);
+        def results = CmdHelper.runCommand("bash -c".tokenize() << dockerCommand, dockerEnv, true);
         return results[0][0]
     }
 
@@ -244,6 +245,23 @@ class CmdHelper {
 
     static void captureLogs(String containerId,String testName) {
         Files.createDirectories(Paths.get("${System.getProperty('logs.dir')}/${testName}"));
-        runCommand(['bash', '-c', "docker logs ${containerId} > ${System.getProperty('logs.dir')}/${testName}/test${containerId.substring(0,11)}.log"]);
+        runCommand(['bash', '-c', "docker logs ${containerId} &> ${System.getProperty('logs.dir')}/${testName}/test${containerId.substring(0,11)}.log"]);
+    }
+
+    static String[] generateUniverseValidators(int numNodes){
+        String[] exportVars,error
+        (exportVars, error) =  runCommand("./gradlew -P validators=${numNodes} clean generateDevUniverse",null,true,true,System.getenv("CORE_DIR"));
+        return exportVars
+                .findAll({ it.contains("export") })
+                .collect({it.replaceAll("export","")})
+    }
+
+    static String getNodeValidator(String[] allEnvVariables,options){
+
+        return allEnvVariables.find { it.contains("RADIXDLT_VALIDATOR_${options["nodeIndex"]}_PRIVKEY")}.split("KEY=")[1]
+    }
+
+    static  String getUniverse(String[] allEnvVariables){
+        return allEnvVariables.find { it.contains("RADIXDLT_UNIVERSE=")}.split("UNIVERSE=")[1]
     }
 }
