@@ -1,0 +1,185 @@
+{
+	"hashOfSuite": "deadbeef",
+	"suite": {
+		"scenarios": [
+			{
+				"description": {
+					"implementationInfo": "Expected hash is a hexadecimal string you should compare with the outputted hex string of the hasher",
+					"purpose": "Verify that system correcly computes SHA-2-256 hashes which are required for signatures and encryption.",
+					"troubleshooting": "Make sure to separte between hashing bytes and hashing strings which probably require encoding, typically UTF-8. Read more in links pointing to source of vectors for more info."
+				},
+				"identifier": "hashing",
+				"name": "SHA2-256 bit hashing",
+				"tests": {
+					"source": "https://sha-test-vectors.safe",
+					"vectors": [
+						{
+							"input": {
+								"stringToHash": "aaaaaa",
+							},
+							"expected": {
+								"hash": "deadbeefdeadbeefdeadbeefdeadbeef"
+							}
+						},
+						{
+							"input": {
+								"stringToHash": ""
+							},
+							"expected": {
+								"hash": "deadbeefdeadbeefdeadbeefdeadbeef"
+							}
+						}
+					]
+				},
+			},
+
+			{
+				"description": {
+					"implementationInfo": "All numbers are hexedecimal and all public keys are compressed (65 char hex)",
+					"purpose": "Asserting that system can perform key generation of cryptographic keys compatible with the Elliptic Curve named 'secp256k1' which is used for cryptographic signatures by the Radix system.",
+					"troubleshooting": "First discover which ECDSA library is used for the system you are working on. E.g. for Java it is most likely BouncyCastle and for JavaScript/TypeScript it might be induntny/elliptic.js, take a look at their github issue board. Many things can go wrong if ECDSA is not properly implemented and used. So start with basics. Assert that you are using the correct private key, using the correct format and that the system produces the correct public key. Understand the difference between compressed public key and uncompressed. For more information please read this intro to ECDSA... link here.",
+				},
+				"identifier": "secp256k1",
+				"name": "Elliptic Curve secp256k1 key generation",
+				"tests": {
+					"source": "https://secp256k1.org",
+					"vectors": [
+						{
+							"input": {
+								"privateKey": "0000000000000000000000000000000000000000000000000000000000000001",
+							},
+							"expected": {
+								"publicKey": "3abdabddeadbeefabd098765fddf4dfa321234567890987654321234567abd23a"
+							},
+						}
+					]
+				}
+			}, 
+
+			{
+				"description": {
+					"implementationInfo": "Message is not hashed, it should be UTF-8 encoded and then hashed before signing. Signatures are on R|S format, not DER format. Signatures MUST be determinsitic otherwise this test wont succceed and must also be on canonical form ('low S', according to BIP62).",
+					"purpose": "Verify that ECDSA signatures works as expected together with the ECC curve 'secp256k1'. We want to verify that input is determinsitically signed according to RFC6979 and that signatures are in canonical form.",
+					"troubleshooting": "Assert you are signing only hashed content, and that the content might have the correct UTF-8 encoding first. Ensure that you are not double hashing. Assert that you have the correct private key, maybe by asserting that when calculating the public key from it it matches the expected public key."
+				},
+				"identifier": "ecdsa_signing",
+				"name": "ECDSA signing",
+				"tests": {
+					"source": "https://wycheproof.com",
+					"vectors": [
+						{
+							"input": {
+								"message": "hey you",
+								"privateKey": "deadbeef"
+							},
+							"expected": {
+								"publicKey": "deadbeef",
+								"signature": {
+									"r": "deadbeef",
+									"s": "0eadbeef",
+								},
+							}
+						}
+					]
+				}
+			},
+
+
+			{
+				"description": {
+					"implementationInfo": "Message is not hashed, it should be UTF-8 encoded and then hashed before signing. Signatures are on R|S format, not DER format. Public Keys are on compressed format",
+					"purpose": "Assert correct verification of ECDSA signatures.",
+					"troubleshooting": "Assert that you are not trying to import the signature on DER format. But rather using R|S format. Ensure that you are reading the whole signature. Ensure that you're not using an incorrect constructor for the public key, should be trying to parse a compressed public key. You might want to ensure that you are not double hashing the message and that it is on the correct format, i.e. single hashed of utf8 encoding of a plain text."
+				},
+				"identifier": "ecdsa_verification",
+				"name": "ECDSA Verification",
+				"tests": {
+					"source": "https://wycheproof.com",
+					"vectors": [
+						{
+							"input": {
+								"message": "hey you!",
+								"publicKey": "deadbeef",
+								"signature": {
+									"r": "deadbeef",
+									"s": "deadbeef"
+								}
+							},
+							"expected": {
+								"outcome": "validates"
+							}
+						},
+						{
+							"input": {
+								"message": "hey you!",
+								"publicKey": "0101010",
+								"signature": {
+									"r": "deadbeef",
+									"s": "deadbeef"
+								}
+							},
+							"expected": {
+								"outcome": "error",
+								"reason": "public key and signature mismatch."
+							}
+						}
+					]
+				}
+			},
+
+			{
+				"description": {
+					"implementationInfo": "Each test vector contains plain JSON for some particle and a key-value indicating which object class to deserialize the JSON into inside some metadata.",
+					"purpose": "Verify that all Radix particles instantiated from JSON and serialized back into JSON and that it exactly matches the original JSON",
+					"troubleshooting": "Please bear in mind the Radix JSON value prefixes e.g. ':byt:' prefix prepended to a byte string or ':adr:' prepended to a Radix address."
+			
+				},
+				"identifier": "json_radix_particles",
+				"name": "JSON roundtrip of Radix Particles",
+				"tests": {
+					"source": "Radix employee named 'Alexander cyon' made the first implementation of this.",
+					"vectors": [
+						{
+							"input": {
+								"json": {
+									"destinations": [":uid:dfd7c486570a7ad40eb948c80cb89376"],
+									"rri": ":rri:/JFLKeSQmBZ73YkzWiesdEr2fRT14qCB1DQUvj8KxYQC6m8UTCcF/XRD",
+									"serializer": "radix.particles.rri",
+									"version": 100,
+									"nonce": 0
+								},
+								"metaData": {
+									"objectTypeSerializer": "radix.particles.rri",
+									"serializerFormat": "HASH"
+								}
+							},
+							"expected": {
+								"hashOfJSON": "deadbeefdeadbeefdeadbeefdeadbeef",
+							}
+						}
+					]
+				}
+			},
+
+
+			{
+				"description": {
+					"implementationInfo": "",
+					"purpose": "",
+					"troubleshooting": ""
+				},
+				"identifier": "",
+				"name": "",
+				"tests": {
+					"source": "https://",
+					"vectors": [
+						{
+							"input": {},
+							"expected": {}
+						},
+					]
+				}
+			}
+		]
+	}
+}
