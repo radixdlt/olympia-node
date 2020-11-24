@@ -4,6 +4,8 @@ package com.radix.regression;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.gson.JsonObject;
+import com.radix.test.utils.TokenUtilities;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
@@ -22,12 +24,15 @@ import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import com.radixdlt.identifiers.RadixAddress;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import io.reactivex.observers.BaseTestConsumer.TestWaitStrategy;
 import io.reactivex.observers.TestObserver;
 import org.assertj.core.api.Assertions;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -54,6 +59,8 @@ public class ValidatorRegistrationTest {
 			.map(state -> state.getNodes().iterator().next())
 			.blockingFirst();
 
+		TokenUtilities.requestTokensFor(api);
+
 		this.webSocketClient = new WebSocketClient(listener ->
 			HttpClients.getSslAllTrustingClient().newWebSocket(node.getWebSocketEndpoint(), listener)
 		);
@@ -70,13 +77,13 @@ public class ValidatorRegistrationTest {
 	}
 
 	@Test
-	@Ignore("This test currently breaks consensus RPNV1-677")
 	public void when_registering_unregistering_and_reregistering_validator__then_validator_is_registererd() {
 		// create a new public key identity
 		final RadixIdentity radixIdentity = RadixIdentities.createNew();
 
 		// initialize api layer
 		RadixApplicationAPI api1 = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), radixIdentity);
+		TokenUtilities.requestTokensFor(api1);
 
 		// register for the first time
 		ImmutableSet<RadixAddress> allowedDelegators = ImmutableSet.of(api1.getAddress());
@@ -110,7 +117,9 @@ public class ValidatorRegistrationTest {
 		);
 
 		observer.awaitCount(1, TestWaitStrategy.SLEEP_10MS, 10000);
-		observer.assertValue(n -> n.getAtomStatus() == AtomStatus.EVICTED_FAILED_CM_VERIFICATION);
+		observer
+			.assertValue(n -> n.getAtomStatus() == AtomStatus.EVICTED_FAILED_CM_VERIFICATION)
+			.assertValue(n -> checkStatus(n.getData(), "CM_ERROR", "Particle spin clashes"));
 		observer.dispose();
 	}
 
@@ -122,8 +131,18 @@ public class ValidatorRegistrationTest {
 		);
 
 		observer.awaitCount(1, TestWaitStrategy.SLEEP_10MS, 10000);
-		observer.assertValue(n -> n.getAtomStatus() == AtomStatus.EVICTED_FAILED_CM_VERIFICATION);
+		observer
+			.assertValue(n -> n.getAtomStatus() == AtomStatus.EVICTED_FAILED_CM_VERIFICATION)
+			.assertValue(n -> checkStatus(n.getData(), "CM_ERROR", "Particle spin clashes"));
 		observer.dispose();
+	}
+
+	private boolean checkStatus(JsonObject data, String errorCode, String message) {
+		assertTrue(data.has("errorCode"));
+		assertEquals(errorCode, data.get("errorCode").getAsString());
+		assertTrue(data.has("message"));
+		assertTrue(data.get("message").getAsString().startsWith(message));
+		return true;
 	}
 
 	private TestObserver<AtomStatusEvent> submitAtom(SpunParticle... spunParticles) {
