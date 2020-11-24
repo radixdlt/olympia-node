@@ -90,6 +90,7 @@ public class DockerNetwork implements Closeable, RemoteBFTNetwork {
 	                                                              boolean startConsensusOnBoot) {
 		Map<String, Map<String, Object>> dockerOptionsPerNode = CmdHelper.getDockerOptions(numNodes, startConsensusOnBoot);
 		CmdHelper.removeAllDockerContainers(); // TODO do we need  if yes, document it
+		String[] universeValidatorEnvVariables = CmdHelper.generateUniverseValidators(numNodes);
 		if(!CmdHelper.testRunningOnDocker() && !networkName.contains(DID_NETWORK) ){
 			System.out.println(" Network is " + networkName);
 			CmdHelper.runCommand("docker network rm " + networkName);
@@ -97,7 +98,9 @@ public class DockerNetwork implements Closeable, RemoteBFTNetwork {
 		}
 		dockerOptionsPerNode.forEach((nodeId, options) -> {
 			options.put("network", networkName);
-			List<Object> dockerSetup = CmdHelper.node(options);
+			String nodeValidatorKey = CmdHelper.getNodeValidator(universeValidatorEnvVariables,options);
+			String universe = CmdHelper.getUniverse(universeValidatorEnvVariables);
+			List<Object> dockerSetup = CmdHelper.node(options,universe,nodeValidatorKey);
 			String[] dockerEnv = (String[]) dockerSetup.get(0);
 			String dockerCommand = (String) dockerSetup.get(1);
 			String containerId = CmdHelper.runContainer(dockerCommand, dockerEnv);
@@ -116,6 +119,7 @@ public class DockerNetwork implements Closeable, RemoteBFTNetwork {
 			CmdHelper.captureLogs(containerId,testName);
 		});
 		CmdHelper.removeAllDockerContainers();
+		CmdHelper.cleanCoreGradleOutput();
 		CmdHelper.runCommand("docker network rm " + this.name);
 		this.networkState = NetworkState.SHUTDOWN;
 	}
