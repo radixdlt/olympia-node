@@ -88,10 +88,17 @@ public class GlobalInjector {
 			@Override
 			protected void configure() {
 				bind(RuntimeProperties.class).toInstance(properties);
-				bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(200);
-				bind(Integer.class).annotatedWith(BFTSyncPatienceMillis.class).toInstance(200);
-				bind(Integer.class).annotatedWith(MinValidators.class).toInstance(1);
-				bind(Integer.class).annotatedWith(MaxValidators.class).toInstance(100);
+				bindConstant().annotatedWith(SyncPatienceMillis.class).to(200);
+				bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(200);
+				bindConstant().annotatedWith(MinValidators.class).to(properties.get("consensus.min_validators", 1));
+				bindConstant().annotatedWith(MaxValidators.class).to(properties.get("consensus.max_validators", 100));
+				bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(properties.get("epochs.views_per_epoch", 100L)));
+
+				// Default values mean that pacemakers will sync if they are within 5 views of each other.
+				// 5 consecutive failing views will take 1*(2^6)-1 seconds = 63 seconds.
+				bindConstant().annotatedWith(PacemakerTimeout.class).to(properties.get("consensus.pacemaker_timeout_millis", 1000L));
+				bindConstant().annotatedWith(PacemakerRate.class).to(properties.get("consensus.pacemaker_rate", 2.0));
+				bindConstant().annotatedWith(PacemakerMaxExponent.class).to(properties.get("consensus.pacemaker_max_exponent", 6));
 			}
 
 			@Provides
@@ -104,32 +111,6 @@ public class GlobalInjector {
 			) {
 				String host = hostIp.hostIp().orElseThrow(() -> new IllegalStateException("Unable to determine host IP"));
 				return LocalSystem.create(self, infoSupplier, universe, host);
-			}
-
-			// Default values mean that pacemakers will sync if they are within 5 views of each other.
-			// 5 consecutive failing views will take 1*(2^6)-1 seconds = 63 seconds.
-			@Provides
-			@PacemakerTimeout
-			long pacemakerTimeout() {
-				return properties.get("consensus.pacemaker_timeout_millis", 1000L);
-			}
-
-			@Provides
-			@PacemakerRate
-			double pacemakerRate() {
-				return properties.get("consensus.pacemaker_rate", 2.0);
-			}
-
-			@Provides
-			@PacemakerMaxExponent
-			int pacemakerMaxExponent() {
-				return properties.get("consensus.pacemaker_max_exponent", 6);
-			}
-
-			@Provides
-			@EpochCeilingView
-			View epochCeilingView() {
-				return View.of(properties.get("epochs.views_per_epoch", 100L));
 			}
 		};
 
