@@ -35,6 +35,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
+import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
@@ -52,12 +53,14 @@ import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.store.LastEpochProof;
+import com.radixdlt.store.LedgerEntryStore;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.apache.commons.cli.ParseException;
 import org.json.JSONObject;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -65,6 +68,7 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+import org.radix.database.DatabaseEnvironment;
 
 /**
  * Verifies that on restarts (simulated via creation of new injectors) that the application
@@ -101,6 +105,18 @@ public class RecoveryTest {
 	public void setup() {
 		this.currentInjector = createRunner(ecKeyPair);
 		this.currentInjector.getInstance(DeterministicEpochsConsensusProcessor.class).start();
+	}
+
+	@After
+	public void teardown() {
+		if (this.currentInjector != null) {
+			LedgerEntryStore ledgerStore = this.currentInjector.getInstance(LedgerEntryStore.class);
+			ledgerStore.close();
+			PersistentSafetyStateStore safetyStore = this.currentInjector.getInstance(PersistentSafetyStateStore.class);
+			safetyStore.close();
+			DatabaseEnvironment dbEnv = this.currentInjector.getInstance(DatabaseEnvironment.class);
+			dbEnv.stop();
+		}
 	}
 
 	private Injector createRunner(ECKeyPair ecKeyPair) {

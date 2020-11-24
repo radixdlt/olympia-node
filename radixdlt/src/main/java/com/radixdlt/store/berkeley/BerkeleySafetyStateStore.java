@@ -50,13 +50,17 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
 	private static final Logger logger = LogManager.getLogger();
 
 	private final DatabaseEnvironment dbEnv;
-	private Database safetyStore;
+	private final Database safetyStore;
 
 	@Inject
 	public BerkeleySafetyStateStore(DatabaseEnvironment dbEnv) {
 		this.dbEnv = Objects.requireNonNull(dbEnv, "dbEnv is required");
 
-		this.open();
+		this.safetyStore = this.open();
+
+		if (Boolean.valueOf(System.getProperty("db.check_integrity", "true"))) {
+			// TODO implement integrity check
+		}
 	}
 
 	private void fail(String message) {
@@ -69,7 +73,7 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
 		throw new BerkeleyStoreException(message, cause);
 	}
 
-	private void open() {
+	private Database open() {
 		DatabaseConfig primaryConfig = new DatabaseConfig();
 		primaryConfig.setAllowCreate(true);
 		primaryConfig.setTransactional(true);
@@ -79,13 +83,16 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
 			// resource is not changed here, the resource is just accessed.
 			@SuppressWarnings("resource")
 			Environment env = this.dbEnv.getEnvironment();
-			this.safetyStore = env.openDatabase(null, SAFETY_STORE_NAME, primaryConfig);
+			return env.openDatabase(null, SAFETY_STORE_NAME, primaryConfig);
 		} catch (Exception e) {
 			throw new BerkeleyStoreException("Error while opening database", e);
 		}
+	}
 
-		if (System.getProperty("db.check_integrity", "1").equals("1")) {
-			// TODO implement intergrity check
+	@Override
+	public void close() {
+		if (this.safetyStore != null) {
+			this.safetyStore.close();
 		}
 	}
 

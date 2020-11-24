@@ -34,6 +34,7 @@ import com.radixdlt.NoFeeModule;
 import com.radixdlt.PersistenceModule;
 import com.radixdlt.RadixEngineModule;
 import com.radixdlt.RadixEngineStoreModule;
+import com.radixdlt.RadixEngineValidatorComputersModule;
 import com.radixdlt.RecoveryModule;
 import com.radixdlt.SyncServiceModule;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
@@ -42,11 +43,16 @@ import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.MockedCheckpointModule;
 import com.radixdlt.environment.deterministic.DeterministicEnvironmentModule;
+import com.radixdlt.fees.NativeToken;
+import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.EmptyMempool;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.network.TimeSupplier;
+import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncTimeoutScheduler;
@@ -61,6 +67,8 @@ public final class ModuleForRecoveryTests {
 	}
 
 	public static Module create() {
+		final RadixAddress nativeTokenAddress = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
+		final RRI nativeToken = RRI.of(nativeTokenAddress, "NOSUCHTOKEN");
 		return Modules.combine(
 			new AbstractModule() {
 				@Override
@@ -69,9 +77,11 @@ public final class ModuleForRecoveryTests {
 					bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(200);
 					bind(Integer.class).annotatedWith(BFTSyncPatienceMillis.class).toInstance(200);
 					bind(Integer.class).annotatedWith(MinValidators.class).toInstance(1);
+					bind(Integer.class).annotatedWith(MaxValidators.class).toInstance(Integer.MAX_VALUE);
 					bind(Long.class).annotatedWith(PacemakerTimeout.class).toInstance(1000L);
 					bind(Double.class).annotatedWith(PacemakerRate.class).toInstance(2.0);
 					bind(Integer.class).annotatedWith(PacemakerMaxExponent.class).toInstance(6);
+					bind(RRI.class).annotatedWith(NativeToken.class).toInstance(nativeToken);
 
 					bind(Mempool.class).to(EmptyMempool.class);
 
@@ -112,6 +122,7 @@ public final class ModuleForRecoveryTests {
 			// State Computer
 			new RadixEngineModule(),
 			new RadixEngineStoreModule(),
+			new RadixEngineValidatorComputersModule(),
 
 			// Fees
 			new NoFeeModule(),

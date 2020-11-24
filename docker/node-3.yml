@@ -9,7 +9,14 @@ services:
       RADIXDLT_NETWORK_SEEDS_REMOTE: core1,core2
       RADIXDLT_NODE_KEY: ${RADIXDLT_VALIDATOR_0_PRIVKEY}
     networks:
-      - three_node_universe
+      - three_nodes
+    ports:
+      - "8080:8080"
+      - "9011:9011"
+      - "50505:50505"
+      - "10000:10000/tcp"
+      - "20000:20000/tcp"
+      - "30000:30000/tcp"
   core1:
     extends:
       file: core.yml
@@ -19,7 +26,11 @@ services:
       RADIXDLT_NETWORK_SEEDS_REMOTE: core0,core2
       RADIXDLT_NODE_KEY: ${RADIXDLT_VALIDATOR_1_PRIVKEY}
     networks:
-      - three_node_universe
+      - three_nodes
+    ports:
+      - "8081:8080"
+      - "9012:9011"
+      - "50506:50505"
   core2:
     extends:
       file: core.yml
@@ -29,14 +40,16 @@ services:
       RADIXDLT_NETWORK_SEEDS_REMOTE: core0,core1
       RADIXDLT_NODE_KEY: ${RADIXDLT_VALIDATOR_2_PRIVKEY}
     networks:
-      - three_node_universe
+      - three_nodes
+    ports:
+      - "8082:8080"
+      - "9013:9011"
+      - "50507:50505"
   faucet:
     extends:
       file: faucet.yml
       service: faucet
     networks:
-      - three_node_universe
+      - three_nodes
 networks:
-  three_node_universe:
-    external:
-      name: radix_default
+  three_nodes:

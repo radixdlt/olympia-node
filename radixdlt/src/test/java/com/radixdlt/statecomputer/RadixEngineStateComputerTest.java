@@ -49,6 +49,7 @@ public class RadixEngineStateComputerTest {
 	private RadixEngineStateComputer stateComputer;
 	private RadixEngine<LedgerAtom> radixEngine;
 	private View epochHighView;
+	private ValidatorSetBuilder validatorSetBuilder;
 	private Hasher hasher;
 
 	@Before
@@ -56,11 +57,13 @@ public class RadixEngineStateComputerTest {
 		this.serialization = mock(Serialization.class);
 		this.radixEngine = TypedMocks.rmock(RadixEngine.class);
 		this.epochHighView = View.of(100);
+		this.validatorSetBuilder = mock(ValidatorSetBuilder.class);
 		this.hasher = Sha256Hasher.withDefaultSerialization();
 		this.stateComputer = RadixEngineStateComputer.create(
 			serialization,
 			radixEngine,
 			epochHighView,
+			validatorSetBuilder,
 			hasher
 		);
 	}

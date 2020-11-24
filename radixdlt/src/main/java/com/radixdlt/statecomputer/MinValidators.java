@@ -27,7 +27,7 @@ import java.lang.annotation.Target;
 import javax.inject.Qualifier;
 
 /**
- * The minimum number of validators
+ * DI annotation used to identify the minimum number of validators.
  */
 @Qualifier
 @Target({ FIELD, PARAMETER, METHOD })

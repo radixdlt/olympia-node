@@ -15,14 +15,22 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.safety;
+package com.radixdlt.statecomputer;
 
-import com.radixdlt.consensus.Vote;
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import javax.inject.Qualifier;
 
 /**
- * Responsible for synchronously persisting safety state
+ * DI annotation used to identify the maximum number of validators.
  */
-public interface PersistentSafetyStateStore {
-	void commitState(Vote vote, SafetyState safetyState);
-	void close();
+@Qualifier
+@Target({ FIELD, PARAMETER, METHOD })
+@Retention(RUNTIME)
+public @interface MaxValidators {
 }
