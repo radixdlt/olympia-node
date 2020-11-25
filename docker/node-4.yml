@@ -7,7 +7,7 @@ services:
     environment:
       RADIXDLT_HOST_IP_ADDRESS: core0
       RADIXDLT_NETWORK_SEEDS_REMOTE: core1,core2,core3
-      RADIXDLT_NODE_KEY: ${RADIXDLT_VALIDATOR_0_PRIVKEY}
+      RADIXDLT_NODE_KEY: ${RADIXDLT_VALIDATOR_0_PRIVKEY:?err}
     networks:
       - four_nodes
     ports:
@@ -24,7 +24,7 @@ services:
     environment:
       RADIXDLT_HOST_IP_ADDRESS: core1
       RADIXDLT_NETWORK_SEEDS_REMOTE: core0,core2,core3
-      RADIXDLT_NODE_KEY: ${RADIXDLT_VALIDATOR_1_PRIVKEY}
+      RADIXDLT_NODE_KEY: ${RADIXDLT_VALIDATOR_1_PRIVKEY:?err}
     networks:
       - four_nodes
     ports:
@@ -38,7 +38,7 @@ services:
     environment:
       RADIXDLT_HOST_IP_ADDRESS: core2
       RADIXDLT_NETWORK_SEEDS_REMOTE: core0,core1,core3
-      RADIXDLT_NODE_KEY: ${RADIXDLT_VALIDATOR_2_PRIVKEY}
+      RADIXDLT_NODE_KEY: ${RADIXDLT_VALIDATOR_2_PRIVKEY:?err}
     networks:
       - four_nodes
     ports:
@@ -52,7 +52,7 @@ services:
     environment:
       RADIXDLT_HOST_IP_ADDRESS: core3
       RADIXDLT_NETWORK_SEEDS_REMOTE: core0,core1,core2
-      RADIXDLT_NODE_KEY: ${RADIXDLT_VALIDATOR_3_PRIVKEY}
+      RADIXDLT_NODE_KEY: ${RADIXDLT_VALIDATOR_3_PRIVKEY:?err}
     networks:
       - four_nodes
     ports:
