@@ -44,11 +44,6 @@ public final class LocalTimeoutOccurrence {
 	}
 
 	@Override
-	public String toString() {
-		return String.format("%s{%s timeout=%s}", this.getClass().getSimpleName(), scheduledLocalTimeout);
-	}
-
-	@Override
 	public int hashCode() {
 		return Objects.hash(scheduledLocalTimeout);
 	}
@@ -61,5 +56,10 @@ public final class LocalTimeoutOccurrence {
 
 		LocalTimeoutOccurrence other = (LocalTimeoutOccurrence) o;
 		return Objects.equals(scheduledLocalTimeout, other.scheduledLocalTimeout);
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{timeout=%s}", this.getClass().getSimpleName(), scheduledLocalTimeout);
 	}
 }

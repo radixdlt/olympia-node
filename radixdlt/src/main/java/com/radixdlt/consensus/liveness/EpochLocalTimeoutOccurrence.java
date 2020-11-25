@@ -46,6 +46,6 @@ public final class EpochLocalTimeoutOccurrence {
 
 	@Override
 	public String toString() {
-		return String.format("%s{epoch=%s base=%s}", this.getClass().getSimpleName(), epoch, localTimeoutOccurrence);
+		return String.format("%s{epoch=%s event=%s}", this.getClass().getSimpleName(), epoch, localTimeoutOccurrence);
 	}
 }

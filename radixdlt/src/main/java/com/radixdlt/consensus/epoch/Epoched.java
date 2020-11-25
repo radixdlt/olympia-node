@@ -19,7 +19,12 @@ package com.radixdlt.consensus.epoch;
 
 import java.util.Objects;
 
-public class Epoched<T> {
+/**
+ * Epoch wrapper for events
+ * @param <T> event which is wrapped
+ * TODO: Move other epoch events into this kind of object
+ */
+public final class Epoched<T> {
 	private final long epoch;
 	private final T event;
 
