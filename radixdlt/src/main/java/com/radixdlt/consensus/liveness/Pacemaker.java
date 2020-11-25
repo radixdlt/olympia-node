@@ -117,7 +117,15 @@ public final class Pacemaker {
 		final BFTNode currentViewProposer = viewUpdate.getLeader();
 		log.trace("View Update: {} nextLeader: {}", viewUpdate, currentViewProposer);
 
-		if (viewUpdate.getCurrentView().gt(previousView) && this.self.equals(currentViewProposer)) {
+		if (viewUpdate.getCurrentView().lte(previousView)) {
+			return;
+		}
+
+		long timeout = timeoutCalculator.timeout(viewUpdate.uncommittedViewsCount());
+		ScheduledLocalTimeout scheduledLocalTimeout = new ScheduledLocalTimeout(viewUpdate, timeout);
+		this.timeoutSender.dispatch(scheduledLocalTimeout, timeout);
+
+		if (this.self.equals(currentViewProposer)) {
 			Optional<Proposal> proposalMaybe = generateProposal(viewUpdate.getCurrentView());
 			proposalMaybe.ifPresent(proposal -> {
 				log.trace("Broadcasting proposal: {}", proposal);

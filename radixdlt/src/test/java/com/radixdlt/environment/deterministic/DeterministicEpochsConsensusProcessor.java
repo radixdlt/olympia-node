@@ -23,6 +23,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.epoch.EpochManager;
@@ -99,7 +100,7 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 
 	@Override
 	public void handleMessage(BFTNode origin, Object message) {
-		if (message instanceof ViewUpdate) {
+		if (message instanceof ViewUpdate || message instanceof ScheduledLocalTimeout) {
 			// FIXME: Should remove this message type but required due to guice dependency graph
 			// FIXME: Should be fixable once an Epoch Environment is implemented
 			return;

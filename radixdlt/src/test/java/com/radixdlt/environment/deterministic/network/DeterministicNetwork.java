@@ -34,6 +34,7 @@ import io.reactivex.rxjava3.schedulers.Timed;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import java.util.function.Predicate;
@@ -110,6 +111,10 @@ public final class DeterministicNetwork {
 		this.currentTime = Math.max(this.currentTime, controlledMessage.arrivalTime());
 
 		return new Timed<>(controlledMessage, this.currentTime, TimeUnit.MILLISECONDS);
+	}
+
+	public Set<ControlledMessage> allMessages() {
+		return this.messageQueue.allMessages();
 	}
 
 	public void dropMessages(Predicate<ControlledMessage> controlledMessagePredicate) {
