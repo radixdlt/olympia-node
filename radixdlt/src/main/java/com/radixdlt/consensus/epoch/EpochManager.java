@@ -29,6 +29,7 @@ import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.liveness.PacemakerStateFactory;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyState;
@@ -407,12 +408,12 @@ public final class EpochManager implements BFTSyncRequestProcessor {
 		this.processConsensusEventInternal(consensusEvent);
 	}
 
-	public void processLocalTimeout(EpochScheduledLocalTimeout localTimeout) {
-		if (localTimeout.getEpoch() != this.currentEpoch()) {
+	public void processLocalTimeout(Epoched<ScheduledLocalTimeout> localTimeout) {
+		if (localTimeout.epoch() != this.currentEpoch()) {
 			return;
 		}
 
-		bftEventProcessor.processLocalTimeout(localTimeout.getLocalTimeout());
+		bftEventProcessor.processLocalTimeout(localTimeout.event());
 	}
 
 	public EventProcessor<EpochViewUpdate> epochViewUpdateEventProcessor() {

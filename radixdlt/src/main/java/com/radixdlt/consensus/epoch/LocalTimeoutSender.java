@@ -17,9 +17,11 @@
 
 package com.radixdlt.consensus.epoch;
 
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
+
 /**
  * Sender for local timeouts.
  */
 public interface LocalTimeoutSender {
-	void scheduleTimeout(EpochScheduledLocalTimeout localTimeout, long timeoutMilliseconds);
+	void scheduleTimeout(Epoched<ScheduledLocalTimeout> localTimeout, long timeoutMilliseconds);
 }

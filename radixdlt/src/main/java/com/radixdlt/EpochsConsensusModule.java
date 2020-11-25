@@ -29,6 +29,7 @@ import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.bft.ViewUpdate;
+import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.epoch.LocalTimeoutSender;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.epoch.ProposerElectionFactory;
@@ -43,7 +44,6 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.epoch.EpochManager;
-import com.radixdlt.consensus.epoch.EpochScheduledLocalTimeout;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.consensus.liveness.PacemakerState;
@@ -122,7 +122,7 @@ public class EpochsConsensusModule extends AbstractModule {
 		EpochChange initialEpoch
 	) {
 		return localTimeout -> {
-			EpochScheduledLocalTimeout epochTimeout = new EpochScheduledLocalTimeout(initialEpoch.getEpoch(), localTimeout);
+			Epoched<ScheduledLocalTimeout> epochTimeout = Epoched.create(initialEpoch.getEpoch(), localTimeout);
 			localTimeoutSender.scheduleTimeout(epochTimeout, localTimeout.millisecondsWaitTime());
 		};
 	}
@@ -193,7 +193,7 @@ public class EpochsConsensusModule extends AbstractModule {
 				voteSender,
 				timeout -> timeoutEventDispatcher.dispatch(new EpochLocalTimeoutOccurrence(epoch, timeout)),
 				pacemakerState,
-				(scheduledTimeout, ms) -> localTimeoutSender.scheduleTimeout(new EpochScheduledLocalTimeout(epoch, scheduledTimeout), ms),
+				(scheduledTimeout, ms) -> localTimeoutSender.scheduleTimeout(Epoched.create(epoch, scheduledTimeout), ms),
 				timeoutCalculator,
 				nextCommandGenerator,
 				proposalBroadcaster,

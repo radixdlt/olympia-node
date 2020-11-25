@@ -26,9 +26,10 @@ import static org.mockito.Mockito.when;
 
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.epoch.EpochManager;
-import com.radixdlt.consensus.epoch.EpochScheduledLocalTimeout;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
+import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.liveness.PacemakerRx;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.environment.EventProcessor;
@@ -50,7 +51,7 @@ public class EpochManagerRunnerTest {
 
 		EpochManager epochManager = mock(EpochManager.class);
 
-		EpochScheduledLocalTimeout timeout = mock(EpochScheduledLocalTimeout.class);
+		Epoched<ScheduledLocalTimeout> timeout = rmock(Epoched.class);
 		PacemakerRx pacemakerRx = mock(PacemakerRx.class);
 		when(pacemakerRx.localTimeouts()).thenReturn(Observable.just(timeout).concatWith(Observable.never()));
 

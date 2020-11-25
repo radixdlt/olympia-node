@@ -25,8 +25,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import com.radixdlt.consensus.epoch.EpochScheduledLocalTimeout;
-
 import io.reactivex.rxjava3.observers.TestObserver;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -62,18 +60,6 @@ public class ScheduledSenderToRxTest {
 			this.executorService.shutdown();
 			this.executorService.awaitTermination(10L, TimeUnit.SECONDS);
 		}
-	}
-
-	@Test
-	public void when_subscribed_to_local_timeouts_and_schedule_timeout__then_a_timeout_event_with_view_is_emitted() {
-		TestObserver<Object> testObserver = scheduledSenderToRx.messages().test();
-		EpochScheduledLocalTimeout localTimeout = mock(EpochScheduledLocalTimeout.class);
-		long timeout = 10;
-		scheduledSenderToRx.scheduleSend(localTimeout, timeout);
-		testObserver.awaitCount(1);
-		testObserver.assertNotComplete();
-		testObserver.assertValues(localTimeout);
-		verify(executorServiceMock, times(1)).schedule(any(Runnable.class), eq(timeout), eq(TimeUnit.MILLISECONDS));
 	}
 
 	@Test

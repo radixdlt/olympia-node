@@ -23,13 +23,13 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
+import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
-import com.radixdlt.consensus.epoch.EpochScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.environment.EventProcessor;
@@ -106,8 +106,16 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 			return;
 		} else if (message instanceof ConsensusEvent) {
 			this.epochManager.processConsensusEvent((ConsensusEvent) message);
-		} else if (message instanceof EpochScheduledLocalTimeout) {
-			this.epochManager.processLocalTimeout((EpochScheduledLocalTimeout) message);
+		} else if (message instanceof Epoched) {
+			Epoched<?> epoched = (Epoched<?>) message;
+			Object epochedMessage = epoched.event();
+			if (epochedMessage instanceof ScheduledLocalTimeout) {
+				@SuppressWarnings("unchecked")
+				Epoched<ScheduledLocalTimeout> epochTimeout = (Epoched<ScheduledLocalTimeout>) message;
+				this.epochManager.processLocalTimeout(epochTimeout);
+			} else {
+				throw new IllegalArgumentException("Unknown epoch message type: " + epochedMessage.getClass().getName());
+			}
 		} else if (message instanceof GetVerticesRequest) {
 			this.epochManager.processGetVerticesRequest((GetVerticesRequest) message);
 		} else if (message instanceof GetVerticesResponse) {
