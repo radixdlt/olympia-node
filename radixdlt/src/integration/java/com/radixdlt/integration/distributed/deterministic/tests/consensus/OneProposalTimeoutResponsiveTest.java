@@ -17,6 +17,7 @@
 
 package com.radixdlt.integration.distributed.deterministic.tests.consensus;
 
+import com.radixdlt.counters.SystemCounters.CounterType;
 import java.util.Random;
 import org.junit.Test;
 
@@ -46,7 +47,7 @@ public class OneProposalTimeoutResponsiveTest {
 		for (int nodeIndex = 0; nodeIndex < numNodes; ++nodeIndex) {
 			SystemCounters counters = test.getSystemCounters(nodeIndex);
 			long numberOfIndirectParents = counters.get(SystemCounters.CounterType.BFT_INDIRECT_PARENT);
-			long totalNumberOfTimeouts = counters.get(SystemCounters.CounterType.BFT_TOTAL_VIEW_TIMEOUTS);
+			long totalNumberOfTimeouts = counters.get(CounterType.BFT_TIMEOUT);
 			assertThat(numberOfIndirectParents).isEqualTo(requiredIndirectParents);
 			assertThat(totalNumberOfTimeouts).isEqualTo(requiredTimeouts);
 		}

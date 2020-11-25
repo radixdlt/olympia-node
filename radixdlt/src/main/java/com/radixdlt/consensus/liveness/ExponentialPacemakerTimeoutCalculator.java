@@ -22,7 +22,10 @@ import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
 
-public class ExponentialPacemakerTimeoutCalculator implements PacemakerTimeoutCalculator {
+/**
+ * Timeout calculator which exponentially increases based on number of uncommitted views.
+ */
+public final class ExponentialPacemakerTimeoutCalculator implements PacemakerTimeoutCalculator {
 
     private final long timeoutMilliseconds;
     private final double rate;

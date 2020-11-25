@@ -34,7 +34,7 @@ import com.radixdlt.consensus.bft.FormedQC;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
-import com.radixdlt.consensus.liveness.PacemakerUpdater;
+import com.radixdlt.consensus.liveness.PacemakerReducer;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.consensus.liveness.ExponentialPacemakerTimeoutCalculator;
@@ -87,7 +87,7 @@ public final class ConsensusModule extends AbstractModule {
 	public void configure() {
 		bind(SafetyRules.class).in(Scopes.SINGLETON);
 		bind(PacemakerState.class).in(Scopes.SINGLETON);
-		bind(PacemakerUpdater.class).to(PacemakerState.class);
+		bind(PacemakerReducer.class).to(PacemakerState.class);
 		bind(ExponentialPacemakerTimeoutCalculator.class).in(Scopes.SINGLETON);
 		bind(PacemakerTimeoutCalculator.class).to(ExponentialPacemakerTimeoutCalculator.class);
 		Multibinder.newSetBinder(binder(), VertexStoreEventSender.class);
@@ -194,7 +194,7 @@ public final class ConsensusModule extends AbstractModule {
 		VertexStore vertexStore,
 		VoteSender voteSender,
 		EventDispatcher<LocalTimeoutOccurrence> timeoutDispatcher,
-		PacemakerUpdater pacemakerUpdater,
+		PacemakerReducer pacemakerReducer,
 		ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutSender,
 		PacemakerTimeoutCalculator timeoutCalculator,
 		NextCommandGenerator nextCommandGenerator,
@@ -212,8 +212,7 @@ public final class ConsensusModule extends AbstractModule {
 			vertexStore,
 			safetyRules,
 			voteSender,
-			timeoutDispatcher,
-			pacemakerUpdater,
+			timeoutDispatcher, pacemakerReducer,
 			timeoutSender,
 			timeoutCalculator,
 			nextCommandGenerator,
@@ -235,7 +234,7 @@ public final class ConsensusModule extends AbstractModule {
 	@Singleton
 	private BFTSync bftSync(
 		VertexStore vertexStore,
-		PacemakerUpdater pacemakerUpdater,
+		PacemakerReducer pacemakerReducer,
 		SyncVerticesRequestSender requestSender,
 		EventDispatcher<LocalSyncRequest> syncLedgerRequestSender,
 		ScheduledEventDispatcher<LocalGetVerticesRequest> timeoutDispatcher,
@@ -245,8 +244,7 @@ public final class ConsensusModule extends AbstractModule {
 		@BFTSyncPatienceMillis int bftSyncPatienceMillis
 	) {
 		return new BFTSync(
-			vertexStore,
-			pacemakerUpdater,
+			vertexStore, pacemakerReducer,
 			Comparator.comparingLong((LedgerHeader h) -> h.getAccumulatorState().getStateVersion()),
 			(node, request)  -> {
 				counters.increment(CounterType.BFT_SYNC_REQUESTS_SENT);

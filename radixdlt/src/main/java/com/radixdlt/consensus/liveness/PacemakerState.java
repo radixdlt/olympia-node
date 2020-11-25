@@ -32,7 +32,7 @@ import java.util.Objects;
  * This class is responsible for keeping track of current consensus view state.
  * It sends an internal ViewUpdate message on a transition to next view.
  */
-public class PacemakerState implements PacemakerUpdater {
+public class PacemakerState implements PacemakerReducer {
     private static final Logger log = LogManager.getLogger();
 
     private final EventDispatcher<ViewUpdate> viewUpdateSender;
@@ -53,15 +53,9 @@ public class PacemakerState implements PacemakerUpdater {
         this.viewUpdateSender = Objects.requireNonNull(viewUpdateSender);
     }
 
-    /**
-     * Signifies to the pacemaker that a quorum has agreed that a view has
-     * been completed.
-     *
-     * @param highQC the sync info for the view
-     * @return {@code true} if proceeded to a new view
-     */
+
     @Override
-    public boolean processQC(HighQC highQC) {
+    public void processQC(HighQC highQC) {
         log.trace("QuorumCertificate: {}", highQC);
 
         final View view = highQC.highestQC().getView();
@@ -69,10 +63,9 @@ public class PacemakerState implements PacemakerUpdater {
             this.lastQuorumView = view;
             this.highestCommitView = highQC.highestCommittedQC().getView();
             this.updateView(view.next());
-            return true;
+        } else {
+            log.trace("Ignoring QC for view {}: current view is {}", view, this.currentView);
         }
-        log.trace("Ignoring QC for view {}: current view is {}", view, this.currentView);
-        return false;
     }
 
     @Override

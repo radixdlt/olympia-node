@@ -19,17 +19,40 @@ package com.radixdlt.consensus.liveness;
 
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewUpdate;
+import java.util.Objects;
 
-public class ScheduledLocalTimeout {
+/**
+ * A potential timeout that is scheduled
+ */
+public final class ScheduledLocalTimeout {
 	private final ViewUpdate viewUpdate;
 	private final long millisecondsWaitTime;
+	private final int count;
 
-	public ScheduledLocalTimeout(
+	private ScheduledLocalTimeout(
 		ViewUpdate viewUpdate,
-		long millisecondsWaitTime
+		long millisecondsWaitTime,
+		int count
 	) {
 		this.viewUpdate = viewUpdate;
 		this.millisecondsWaitTime = millisecondsWaitTime;
+		this.count = count;
+	}
+
+	public static ScheduledLocalTimeout create(ViewUpdate viewUpdate, long millisecondsWaitTime) {
+		return new ScheduledLocalTimeout(viewUpdate, millisecondsWaitTime, 0);
+	}
+
+	public ScheduledLocalTimeout nextRetry(long millisecondsWaitTime) {
+		return new ScheduledLocalTimeout(
+			viewUpdate,
+			millisecondsWaitTime,
+			this.count + 1
+		);
+	}
+
+	public int count() {
+		return count;
 	}
 
 	public ViewUpdate viewUpdate() {
@@ -42,5 +65,22 @@ public class ScheduledLocalTimeout {
 
 	public long millisecondsWaitTime() {
 		return millisecondsWaitTime;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(viewUpdate, millisecondsWaitTime, count);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (!(o instanceof ScheduledLocalTimeout)) {
+			return false;
+		}
+
+		ScheduledLocalTimeout other = (ScheduledLocalTimeout) o;
+		return Objects.equals(other.viewUpdate, this.viewUpdate)
+			&& other.millisecondsWaitTime == this.millisecondsWaitTime
+			&& other.count == this.count;
 	}
 }

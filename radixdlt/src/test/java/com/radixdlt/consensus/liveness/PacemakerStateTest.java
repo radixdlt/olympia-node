@@ -27,7 +27,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static com.radixdlt.utils.TypedMocks.rmock;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.times;
 
@@ -64,7 +63,7 @@ public class PacemakerStateTest {
         verify(viewUpdateSender, times(1))
             .dispatch(argThat(v -> v.getCurrentView().equals(View.of(3))));
 
-        assertThat(this.pacemakerState.processQC(highQC)).isFalse();
+        this.pacemakerState.processQC(highQC);
         verifyNoMoreInteractions(viewUpdateSender);
     }
 
@@ -76,12 +75,12 @@ public class PacemakerStateTest {
         when(highQC.highestQC()).thenReturn(qc);
         when(highQC.highestCommittedQC()).thenReturn(qc);
 
-        assertThat(this.pacemakerState.processQC(highQC)).isTrue();
+        this.pacemakerState.processQC(highQC);
         verify(viewUpdateSender, times(1))
             .dispatch(argThat(v -> v.getCurrentView().equals(View.of(1))));
 
         when(qc.getView()).thenReturn(View.of(1));
-        assertThat(this.pacemakerState.processQC(highQC)).isTrue();
+        this.pacemakerState.processQC(highQC);
         verify(viewUpdateSender, times(1))
             .dispatch(argThat(v -> v.getCurrentView().equals(View.of(2))));
     }
