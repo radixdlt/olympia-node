@@ -30,6 +30,8 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
+import com.radixdlt.consensus.epoch.Epoched;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.deterministic.ControlledSenderFactory;
 import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
@@ -121,5 +123,49 @@ public class PacemakerTest {
 			.findAny()
 			.orElseThrow();
 		assertThat(viewUpdateEvent.getCurrentView()).isGreaterThan(initialViewUpdate.getCurrentView());
+	}
+
+	@Test
+	public void on_timeout_pacemaker_should_send_view_timeout() {
+		// Arrange
+		createRunner(ecKeyPair).injectMembers(this);
+		processor.start();
+		ControlledMessage viewUpdate = network.nextMessage(e -> e.message() instanceof EpochViewUpdate).value();
+		processor.handleMessage(viewUpdate.origin(), viewUpdate.message());
+
+		// Act
+		ControlledMessage timeoutMsg = network.nextMessage(e -> Epoched.isInstance(e.message(), ScheduledLocalTimeout.class)).value();
+		processor.handleMessage(timeoutMsg.origin(), timeoutMsg.message());
+
+		// Assert
+		assertThat(network.allMessages())
+			.haveExactly(1, new Condition<>(msg -> msg.message() instanceof ViewTimeout, "A remote view timeout has been emitted"));
+	}
+
+	@Test
+	public void on_view_timeout_quorum_pacemaker_should_move_to_next_view() {
+		// Arrange
+		createRunner(ecKeyPair).injectMembers(this);
+		processor.start();
+		ControlledMessage viewUpdate = network.nextMessage(e -> e.message() instanceof EpochViewUpdate).value();
+		EpochViewUpdate firstUpdate = (EpochViewUpdate) viewUpdate.message();
+		processor.handleMessage(viewUpdate.origin(), firstUpdate);
+		ControlledMessage timeoutMsg = network.nextMessage(e -> Epoched.isInstance(e.message(), ScheduledLocalTimeout.class)).value();
+		processor.handleMessage(timeoutMsg.origin(), timeoutMsg.message());
+
+		// Act
+		ControlledMessage viewTimeout = network.nextMessage(e -> e.message() instanceof ViewTimeout).value();
+		processor.handleMessage(viewTimeout.origin(), viewTimeout.message());
+
+		// Assert
+		assertThat(network.allMessages())
+			.haveExactly(1, new Condition<>(msg -> msg.message() instanceof EpochViewUpdate, "A remote view timeout has been emitted"));
+		EpochViewUpdate nextEpochViewUpdate = network.allMessages().stream()
+			.filter(msg -> msg.message() instanceof EpochViewUpdate)
+			.map(ControlledMessage::message)
+			.map(EpochViewUpdate.class::cast)
+			.findAny()
+			.orElseThrow();
+		assertThat(nextEpochViewUpdate.getViewUpdate().getCurrentView()).isEqualTo(firstUpdate.getViewUpdate().getCurrentView().next());
 	}
 }

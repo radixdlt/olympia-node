@@ -113,6 +113,17 @@ public final class DeterministicNetwork {
 		return new Timed<>(controlledMessage, this.currentTime, TimeUnit.MILLISECONDS);
 	}
 
+	public Timed<ControlledMessage> nextMessage(Predicate<ControlledMessage> predicate) {
+		Set<ControlledMessage> allMessages = this.messageQueue.allMessages();
+		ControlledMessage controlledMessage = allMessages.stream().filter(predicate).findAny().orElseThrow(
+			() -> new IllegalStateException(String.format("Could not find message. Messages present: %s", allMessages))
+		);
+		this.messageQueue.remove(controlledMessage);
+		this.currentTime = Math.max(this.currentTime, controlledMessage.arrivalTime());
+
+		return new Timed<>(controlledMessage, this.currentTime, TimeUnit.MILLISECONDS);
+	}
+
 	public Set<ControlledMessage> allMessages() {
 		return this.messageQueue.allMessages();
 	}
