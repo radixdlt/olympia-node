@@ -18,7 +18,7 @@
 package com.radixdlt;
 
 import com.google.inject.AbstractModule;
-import com.radixdlt.consensus.epoch.LocalTimeout;
+import com.radixdlt.consensus.epoch.EpochScheduledLocalTimeout;
 import com.radixdlt.consensus.epoch.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 import com.radixdlt.utils.ScheduledSenderToRx;
@@ -32,7 +32,7 @@ public class ConsensusRxModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		ScheduledExecutorService ses = Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("TimeoutSender"));
-		ScheduledSenderToRx<LocalTimeout> localTimeouts = new ScheduledSenderToRx<>(ses);
+		ScheduledSenderToRx<EpochScheduledLocalTimeout> localTimeouts = new ScheduledSenderToRx<>(ses);
 		// Timed local messages
 		bind(PacemakerRx.class).toInstance(localTimeouts::messages);
 		bind(LocalTimeoutSender.class).toInstance(localTimeouts::scheduleSend);

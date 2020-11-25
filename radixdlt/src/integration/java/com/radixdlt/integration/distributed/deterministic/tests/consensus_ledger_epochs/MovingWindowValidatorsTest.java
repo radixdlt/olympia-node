@@ -19,7 +19,7 @@ package com.radixdlt.integration.distributed.deterministic.tests.consensus_ledge
 
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
-import com.radixdlt.consensus.epoch.LocalTimeout;
+import com.radixdlt.consensus.epoch.EpochScheduledLocalTimeout;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.integration.distributed.deterministic.DeterministicTest;
@@ -69,7 +69,7 @@ public class MovingWindowValidatorsTest {
 
 	private MessageMutator mutator() {
 		return (message, queue) -> {
-			if (message.message() instanceof LocalTimeout) {
+			if (message.message() instanceof EpochScheduledLocalTimeout) {
 				// Discard
 				return true;
 			}

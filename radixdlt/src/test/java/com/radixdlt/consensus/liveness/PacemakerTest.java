@@ -125,12 +125,4 @@ public class PacemakerTest {
 
 		verify(this.pacemakerState, times(1)).updateView(View.of(2));
 	}
-
-	@Test
-	public void when_local_timeout_for_non_current_view__then_ignored() {
-		this.pacemaker.processLocalTimeout(View.of(1));
-		verifyNoMoreInteractions(this.proposerElection);
-		verifyNoMoreInteractions(this.safetyRules);
-		verifyNoMoreInteractions(this.pacemakerState);
-	}
 }

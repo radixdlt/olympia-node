@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -17,15 +17,17 @@
 
 package com.radixdlt.consensus.liveness;
 
-/**
- * Callback to the issuer of timeout events
- */
-public interface PacemakerTimeoutSender {
+import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.ViewUpdate;
 
-	/**
-	 * Schedules a timeout event for a particular view.
-	 *
-	 * @param milliseconds the milliseconds to wait before timeout occurs
-	 */
-	void scheduleTimeout(ScheduledLocalTimeout scheduledTimeout, long milliseconds);
+public class ScheduledLocalTimeout {
+	private final ViewUpdate viewUpdate;
+
+	public ScheduledLocalTimeout(ViewUpdate viewUpdate) {
+		this.viewUpdate = viewUpdate;
+	}
+
+	public View view() {
+		return viewUpdate.getCurrentView();
+	}
 }

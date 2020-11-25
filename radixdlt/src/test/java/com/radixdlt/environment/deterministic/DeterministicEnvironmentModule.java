@@ -81,6 +81,7 @@ public class DeterministicEnvironmentModule extends AbstractModule {
 		bind(new TypeLiteral<DeterministicSavedLastEvent<EpochViewUpdate>>() { }).in(Scopes.SINGLETON);
 	}
 
+
 	@Provides
 	RemoteEventDispatcher<DtoLedgerHeaderAndProof> syncRequestDispatcher(ControlledSender controlledSender) {
 		return controlledSender.getRemoteDispatcher(DtoLedgerHeaderAndProof.class);

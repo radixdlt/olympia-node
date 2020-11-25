@@ -28,6 +28,7 @@ import com.radixdlt.consensus.bft.BFTSyncer.SyncResult;
 import com.radixdlt.consensus.bft.SyncQueues.SyncQueue;
 import com.radixdlt.consensus.liveness.ProposerElection;
 
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -163,8 +164,10 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	}
 
 	@Override
-	public void processLocalTimeout(View view) {
-		forwardTo.processLocalTimeout(view);
+	public void processLocalTimeout(ScheduledLocalTimeout scheduledLocalTimeout) {
+		forwardTo.processLocalTimeout(scheduledLocalTimeout);
+
+		View view = scheduledLocalTimeout.view();
 
 		if (!view.equals(this.latestViewUpdate.getCurrentView())) {
 			return;

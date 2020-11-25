@@ -26,7 +26,7 @@ import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.epoch.LocalTimeout;
+import com.radixdlt.consensus.epoch.EpochScheduledLocalTimeout;
 import com.radixdlt.integration.distributed.deterministic.DeterministicTest;
 import com.radixdlt.integration.distributed.deterministic.configuration.EpochNodeWeightMapping;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
@@ -56,7 +56,7 @@ public class ProposerLoadBalancedTest {
 
 	private MessageMutator mutator() {
 		return (message, queue) -> {
-			if (message.message() instanceof LocalTimeout) {
+			if (message.message() instanceof EpochScheduledLocalTimeout) {
 				// Discard timeouts
 				return true;
 			}

@@ -43,13 +43,13 @@ import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochView;
-import com.radixdlt.consensus.epoch.LocalTimeout;
-import com.radixdlt.consensus.epoch.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
+import com.radixdlt.environment.deterministic.network.ControlledSender;
 import com.radixdlt.integration.distributed.MockedCryptoModule;
 import com.radixdlt.integration.distributed.MockedPersistenceStoreModule;
 import com.radixdlt.integration.distributed.deterministic.configuration.EpochNodeWeightMapping;
@@ -222,14 +222,14 @@ public final class DeterministicTest {
 						bind(DeterministicMessageProcessor.class).to(DeterministicConsensusProcessor.class);
 					}
 
-					@Provides
-					private PacemakerTimeoutSender timeoutSender(LocalTimeoutSender localTimeoutSender) {
-						return (view, ms) -> localTimeoutSender.scheduleTimeout(new LocalTimeout(1, view), ms);
-					}
-
 					@ProvidesIntoSet
 					private EventProcessor<ViewUpdate> viewUpdateProcessor(BFTEventProcessor processor) {
 						return processor::processViewUpdate;
+					}
+
+					@Provides
+					PacemakerTimeoutSender pacemakerTimeoutSender(ControlledSender controlledSender) {
+						return controlledSender.getScheduledDispatcher(ScheduledLocalTimeout.class)::dispatch;
 					}
 
 					@ProvidesIntoSet
@@ -238,9 +238,10 @@ public final class DeterministicTest {
 						PacemakerTimeoutCalculator pacemakerTimeoutCalculator,
 						PacemakerTimeoutSender pacemakerTimeoutSender
 					) {
-						return (view) -> {
-							long timeout = pacemakerTimeoutCalculator.timeout(view.uncommittedViewsCount());
-							pacemakerTimeoutSender.scheduleTimeout(view.getCurrentView(), timeout);
+						return viewUpdate -> {
+							ScheduledLocalTimeout localTimeout = new ScheduledLocalTimeout(viewUpdate);
+							long timeout = pacemakerTimeoutCalculator.timeout(viewUpdate.uncommittedViewsCount());
+							pacemakerTimeoutSender.scheduleTimeout(localTimeout, timeout);
 						};
 					}
 				});

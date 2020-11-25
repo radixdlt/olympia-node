@@ -18,45 +18,50 @@
 package com.radixdlt.consensus.epoch;
 
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import java.util.Objects;
 
 /**
  * A timeout for a given epoch and view
  */
-public final class LocalTimeout {
+public final class EpochScheduledLocalTimeout {
 	private final long epoch;
-	private final View view;
+	private final ScheduledLocalTimeout scheduledLocalTimeout;
 
-	public LocalTimeout(long epoch, View view) {
+	public EpochScheduledLocalTimeout(long epoch, ScheduledLocalTimeout scheduledLocalTimeout) {
 		this.epoch = epoch;
-		this.view = Objects.requireNonNull(view);
+		this.scheduledLocalTimeout = Objects.requireNonNull(scheduledLocalTimeout);
 	}
 
 	public long getEpoch() {
 		return epoch;
 	}
 
+	public ScheduledLocalTimeout getLocalTimeout() {
+		return scheduledLocalTimeout;
+	}
+
 	public View getView() {
-		return view;
+		return scheduledLocalTimeout.view();
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(epoch, view);
+		return Objects.hash(epoch, scheduledLocalTimeout);
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof LocalTimeout)) {
+		if (!(o instanceof EpochScheduledLocalTimeout)) {
 			return false;
 		}
-		LocalTimeout other = (LocalTimeout) o;
+		EpochScheduledLocalTimeout other = (EpochScheduledLocalTimeout) o;
 		return other.epoch == this.epoch
-			&& Objects.equals(other.view, this.view);
+			&& Objects.equals(other.scheduledLocalTimeout, this.scheduledLocalTimeout);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{epoch=%s view=%s}", this.getClass().getSimpleName(), epoch, view);
+		return String.format("%s{epoch=%s view=%s}", this.getClass().getSimpleName(), epoch, scheduledLocalTimeout);
 	}
 }

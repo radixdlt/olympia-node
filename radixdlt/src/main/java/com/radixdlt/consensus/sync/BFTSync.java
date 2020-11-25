@@ -31,6 +31,7 @@ import com.radixdlt.consensus.bft.FormedQC;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.liveness.PacemakerUpdater;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
@@ -128,7 +129,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 
 	private static final Logger log = LogManager.getLogger();
 	private final VertexStore vertexStore;
-	private final PacemakerState pacemakerState;
+	private final PacemakerUpdater pacemakerUpdater;
 	private final Map<HashCode, SyncState> syncing = new HashMap<>();
 	private final TreeMap<LedgerHeader, List<HashCode>> ledgerSyncing;
 	private final Map<LocalGetVerticesRequest, SyncRequestState> bftSyncing = new HashMap<>();
@@ -141,7 +142,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 
 	public BFTSync(
 		VertexStore vertexStore,
-		PacemakerState pacemakerState,
+		PacemakerUpdater pacemakerUpdater,
 		Comparator<LedgerHeader> ledgerHeaderComparator,
 		SyncVerticesRequestSender requestSender,
 		EventDispatcher<LocalSyncRequest> localSyncRequestProcessor,
@@ -151,7 +152,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 		int bftSyncPatienceMillis
 	) {
 		this.vertexStore = vertexStore;
-		this.pacemakerState = pacemakerState;
+		this.pacemakerUpdater = pacemakerUpdater;
 		this.ledgerSyncing = new TreeMap<>(ledgerHeaderComparator);
 		this.requestSender = requestSender;
 		this.localSyncRequestProcessor = Objects.requireNonNull(localSyncRequestProcessor);
@@ -179,7 +180,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 
 		if (vertexStore.addQC(qc)) {
 			// TODO: check if already sent highest
-			this.pacemakerState.processQC(vertexStore.highQC());
+			this.pacemakerUpdater.processQC(vertexStore.highQC());
 			return SyncResult.SYNCED;
 		}
 

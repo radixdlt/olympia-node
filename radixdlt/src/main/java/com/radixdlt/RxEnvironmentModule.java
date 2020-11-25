@@ -28,6 +28,7 @@ import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.rx.RxEnvironment;
@@ -60,6 +61,7 @@ public class RxEnvironmentModule extends AbstractModule {
 	) {
 		Builder<Class<?>> eventClasses = ImmutableSet.builder();
 		eventClasses.add(
+			ScheduledLocalTimeout.class,
 			LocalSyncRequest.class,
 			LocalGetVerticesRequest.class,
 			BFTUpdate.class,
@@ -76,6 +78,11 @@ public class RxEnvironmentModule extends AbstractModule {
 			ses,
 			dispatchers
 		);
+	}
+
+	@Provides
+	Observable<ScheduledLocalTimeout> localTimeouts(RxEnvironment rxEnvironment) {
+		return rxEnvironment.getObservable(ScheduledLocalTimeout.class);
 	}
 
 	@Provides

@@ -27,7 +27,7 @@ import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
-import com.radixdlt.consensus.epoch.LocalTimeout;
+import com.radixdlt.consensus.epoch.EpochScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.environment.EventProcessor;
@@ -100,8 +100,8 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 	public void handleMessage(BFTNode origin, Object message) {
 		if (message instanceof ConsensusEvent) {
 			this.epochManager.processConsensusEvent((ConsensusEvent) message);
-		} else if (message instanceof LocalTimeout) {
-			this.epochManager.processLocalTimeout((LocalTimeout) message);
+		} else if (message instanceof EpochScheduledLocalTimeout) {
+			this.epochManager.processLocalTimeout((EpochScheduledLocalTimeout) message);
 		} else if (message instanceof GetVerticesRequest) {
 			this.epochManager.processGetVerticesRequest((GetVerticesRequest) message);
 		} else if (message instanceof GetVerticesResponse) {

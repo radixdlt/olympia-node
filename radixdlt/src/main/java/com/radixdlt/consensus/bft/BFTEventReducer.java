@@ -26,6 +26,7 @@ import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.liveness.Pacemaker;
 
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
@@ -163,9 +164,9 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	}
 
 	@Override
-	public void processLocalTimeout(View view) {
-		log.trace("LocalTimeout: Processing {}", view);
-		this.pacemaker.processLocalTimeout(view);
+	public void processLocalTimeout(ScheduledLocalTimeout scheduledLocalTimeout) {
+		log.trace("LocalTimeout: Processing {}", scheduledLocalTimeout);
+		this.pacemaker.processLocalTimeout(scheduledLocalTimeout);
 	}
 
 	@Override

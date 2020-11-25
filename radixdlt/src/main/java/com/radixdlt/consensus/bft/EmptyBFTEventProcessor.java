@@ -21,6 +21,7 @@ import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 
 /**
  * An empty BFT event processor
@@ -44,7 +45,7 @@ public enum EmptyBFTEventProcessor implements BFTEventProcessor {
 	}
 
 	@Override
-	public void processLocalTimeout(View view) {
+	public void processLocalTimeout(ScheduledLocalTimeout timeout) {
 		// No-op
 	}
 

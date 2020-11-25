@@ -184,13 +184,15 @@ public final class Pacemaker {
 	 * @param view the view the local timeout is for
 	 */
 	// FIXME: Note functionality and Javadoc to change once TCs implemented
-	public void processLocalTimeout(View view) {
+	public void processLocalTimeout(ScheduledLocalTimeout scheduledTimeout) {
 		// FIXME: (Re)send timed-out vote once TCs are implemented
-		log.trace("LocalTimeout: view {}", view);
-		if (!view.equals(this.latestViewUpdate.getCurrentView())) {
-			log.trace("LocalTimeout: Ignoring view {}, current is {}", view, this.latestViewUpdate.getCurrentView());
+		log.trace("LocalTimeout: {}", scheduledTimeout);
+		if (!scheduledTimeout.view().equals(this.latestViewUpdate.getCurrentView())) {
+			log.trace("LocalTimeout: Ignoring timeout {}, current is {}", scheduledTimeout, this.latestViewUpdate.getCurrentView());
 			return;
 		}
+
+		final View view = scheduledTimeout.view();
 
 		// TODO: consider moving to a Timeout message on a dispatcher side
 		if (lastTimedOutView.isEmpty() || !lastTimedOutView.get().equals(view)) {
@@ -209,9 +211,9 @@ public final class Pacemaker {
 		final long timeout = timeoutCalculator.timeout(latestViewUpdate.uncommittedViewsCount());
 
 		Level logLevel = this.logLimiter.tryAcquire() ? Level.INFO : Level.TRACE;
-		log.log(logLevel, "LocalTimeout: Restarting view {} timeout for {}ms", view, timeout);
+		log.log(logLevel, "LocalTimeout: Restarting timeout {} for {}ms", scheduledTimeout, timeout);
 
-		this.timeoutSender.scheduleTimeout(latestViewUpdate.getCurrentView(), timeout);
+		this.timeoutSender.scheduleTimeout(scheduledTimeout, timeout);
 	}
 
 	/**

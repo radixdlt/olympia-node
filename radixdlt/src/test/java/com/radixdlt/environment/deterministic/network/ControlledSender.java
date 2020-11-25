@@ -38,7 +38,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
-import com.radixdlt.consensus.epoch.LocalTimeout;
+import com.radixdlt.consensus.epoch.EpochScheduledLocalTimeout;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork.DeterministicSender;
 
 /**
@@ -102,7 +102,7 @@ public final class ControlledSender implements DeterministicSender, Environment 
 	}
 
 	@Override
-	public void scheduleTimeout(LocalTimeout localTimeout, long milliseconds) {
+	public void scheduleTimeout(EpochScheduledLocalTimeout localTimeout, long milliseconds) {
 		ControlledMessage msg = new ControlledMessage(self, this.localChannel, localTimeout, arrivalTime(this.localChannel) + milliseconds);
 		handleMessage(msg);
 	}

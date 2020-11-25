@@ -21,5 +21,5 @@ package com.radixdlt.consensus.epoch;
  * Sender for local timeouts.
  */
 public interface LocalTimeoutSender {
-	void scheduleTimeout(LocalTimeout localTimeout, long timeoutMilliseconds);
+	void scheduleTimeout(EpochScheduledLocalTimeout localTimeout, long timeoutMilliseconds);
 }

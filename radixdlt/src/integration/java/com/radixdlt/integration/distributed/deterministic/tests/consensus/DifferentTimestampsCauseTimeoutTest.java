@@ -22,6 +22,7 @@ import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.ViewUpdate;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import java.util.LinkedList;
 import java.util.Map;
 
@@ -39,7 +40,7 @@ import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.epoch.LocalTimeout;
+import com.radixdlt.consensus.epoch.EpochScheduledLocalTimeout;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.integration.distributed.deterministic.DeterministicTest;
 import com.radixdlt.environment.deterministic.network.ChannelId;
@@ -90,10 +91,10 @@ public class DifferentTimestampsCauseTimeoutTest {
 		addTwoViews(processingSequence);
 
 		// Timeouts from nodes
-		processingSequence.add(Pair.of(ChannelId.of(0, 0), LocalTimeout.class));
-		processingSequence.add(Pair.of(ChannelId.of(1, 1), LocalTimeout.class));
-		processingSequence.add(Pair.of(ChannelId.of(2, 2), LocalTimeout.class));
-		processingSequence.add(Pair.of(ChannelId.of(3, 3), LocalTimeout.class));
+		processingSequence.add(Pair.of(ChannelId.of(0, 0), ScheduledLocalTimeout.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 1), ScheduledLocalTimeout.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 2), ScheduledLocalTimeout.class));
+		processingSequence.add(Pair.of(ChannelId.of(3, 3), ScheduledLocalTimeout.class));
 
 		// TODO: this test isn't exactly right and should be updated so that
 		// TODO: byzantine node sends different sets of valid QCs to each node

@@ -26,14 +26,14 @@ import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.BFTSyncResponseProcessor;
 import com.radixdlt.consensus.sync.BFTSync;
-import com.radixdlt.consensus.epoch.LocalTimeout;
-import com.radixdlt.consensus.epoch.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
+import com.radixdlt.environment.rx.RxEnvironment;
 import com.radixdlt.integration.distributed.BFTRunner;
 
 public class MockedConsensusRunnerModule extends AbstractModule {
@@ -50,8 +50,8 @@ public class MockedConsensusRunnerModule extends AbstractModule {
 	}
 
 	@Provides
-	private PacemakerTimeoutSender initialTimeoutSender(LocalTimeoutSender localTimeoutSender) {
-		 return (view, ms) -> localTimeoutSender.scheduleTimeout(new LocalTimeout(1, view), ms);
+	private PacemakerTimeoutSender initialTimeoutSender(RxEnvironment rxEnvironment) {
+		return rxEnvironment.getScheduledDispatcher(ScheduledLocalTimeout.class)::dispatch;
 	}
 
 	@ProvidesIntoSet
@@ -65,9 +65,10 @@ public class MockedConsensusRunnerModule extends AbstractModule {
 		PacemakerTimeoutCalculator pacemakerTimeoutCalculator,
 		PacemakerTimeoutSender pacemakerTimeoutSender
 	) {
-		return (view) -> {
-			long timeout = pacemakerTimeoutCalculator.timeout(view.uncommittedViewsCount());
-			pacemakerTimeoutSender.scheduleTimeout(view.getCurrentView(), timeout);
+		return viewUpdate -> {
+			ScheduledLocalTimeout localTimeout = new ScheduledLocalTimeout(viewUpdate);
+			long timeout = pacemakerTimeoutCalculator.timeout(viewUpdate.uncommittedViewsCount());
+			pacemakerTimeoutSender.scheduleTimeout(localTimeout, timeout);
 		};
 	}
 }

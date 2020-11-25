@@ -31,11 +31,7 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.FormedQC;
-import com.radixdlt.consensus.bft.PacemakerMaxExponent;
-import com.radixdlt.consensus.bft.PacemakerRate;
-import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.liveness.PacemakerUpdater;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
@@ -240,7 +236,7 @@ public final class ConsensusModule extends AbstractModule {
 	@Singleton
 	private BFTSync bftSync(
 		VertexStore vertexStore,
-		PacemakerState pacemakerState,
+		PacemakerUpdater pacemakerUpdater,
 		SyncVerticesRequestSender requestSender,
 		EventDispatcher<LocalSyncRequest> syncLedgerRequestSender,
 		ScheduledEventDispatcher<LocalGetVerticesRequest> timeoutDispatcher,
@@ -251,7 +247,7 @@ public final class ConsensusModule extends AbstractModule {
 	) {
 		return new BFTSync(
 			vertexStore,
-			pacemakerState,
+			pacemakerUpdater,
 			Comparator.comparingLong((LedgerHeader h) -> h.getAccumulatorState().getStateVersion()),
 			(node, request)  -> {
 				counters.increment(CounterType.BFT_SYNC_REQUESTS_SENT);

@@ -404,12 +404,12 @@ public final class EpochManager implements BFTSyncRequestProcessor {
 		this.processConsensusEventInternal(consensusEvent);
 	}
 
-	public void processLocalTimeout(LocalTimeout localTimeout) {
+	public void processLocalTimeout(EpochScheduledLocalTimeout localTimeout) {
 		if (localTimeout.getEpoch() != this.currentEpoch()) {
 			return;
 		}
 
-		bftEventProcessor.processLocalTimeout(localTimeout.getView());
+		bftEventProcessor.processLocalTimeout(localTimeout.getLocalTimeout());
 	}
 
 	public EventProcessor<EpochViewUpdate> epochViewUpdateEventProcessor() {

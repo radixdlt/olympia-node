@@ -17,35 +17,13 @@
 
 package com.radixdlt.consensus.epoch;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.mock;
-
-import com.radixdlt.consensus.bft.View;
 import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.Before;
 import org.junit.Test;
 
-public class LocalTimeoutTest {
-	private LocalTimeout localTimeout;
-	private long epoch;
-	private View view;
-
-	@Before
-	public void setup() {
-		epoch = 12345;
-		view = mock(View.class);
-		localTimeout = new LocalTimeout(epoch, view);
-	}
-
+public class EpochScheduledLocalTimeoutTest {
 	@Test
 	public void equalsContract() {
-		EqualsVerifier.forClass(LocalTimeout.class)
+		EqualsVerifier.forClass(EpochScheduledLocalTimeout.class)
 			.verify();
-	}
-
-	@Test
-	public void testGetters() {
-		assertEquals(this.view, this.localTimeout.getView());
-		assertEquals(this.epoch, this.localTimeout.getEpoch());
 	}
 }

@@ -17,7 +17,7 @@
 
 package com.radixdlt.environment.deterministic.network;
 
-import com.radixdlt.consensus.epoch.LocalTimeout;
+import com.radixdlt.consensus.epoch.EpochScheduledLocalTimeout;
 
 /**
  * A mutator called on new messages that can mutate the message rank,
@@ -62,11 +62,11 @@ public interface MessageMutator {
 	}
 
 	/**
-	 * Returns a mutator that drops {@link LocalTimeout} messages.
+	 * Returns a mutator that drops {@link EpochScheduledLocalTimeout} messages.
 	 * @return A {@code MessageMutator} that drops {@code LocalTimeout} messages.
 	 */
 	static MessageMutator dropTimeouts() {
-		return (message, queue) -> message.message() instanceof LocalTimeout;
+		return (message, queue) -> message.message() instanceof EpochScheduledLocalTimeout;
 	}
 
 }
