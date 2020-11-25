@@ -41,7 +41,7 @@ public class AddressBookGenesisValidatorSetProviderTest {
 		when(self.euid()).thenReturn(EUID.ONE);
 		AddressBook addressBook = mock(AddressBook.class);
 		when(addressBook.peerUpdates()).thenReturn(Observable.just(() -> ImmutableList.of()));
-		AddressBookGenesisValidatorSetProvider validatorSetProvider = new AddressBookGenesisValidatorSetProvider(
+		GenesisValidatorSetProvider validatorSetProvider = new GenesisValidatorSetFromAddressBook(
 			self,
 			addressBook,
 			1
@@ -52,7 +52,7 @@ public class AddressBookGenesisValidatorSetProviderTest {
 		when(system.getKey()).thenReturn(peerKey);
 		when(peer.getSystem()).thenReturn(system);
 		when(addressBook.peers()).thenAnswer(inv -> Stream.of(peer));
-		assertThat(validatorSetProvider.getGenesisValidatorSet().getValidators())
+		assertThat(validatorSetProvider.genesisValidatorSet().getValidators())
 			.haveExactly(1, new Condition<>(v -> v.getNode().getKey().equals(self), "validator with self key %s", self));
 	}
 }

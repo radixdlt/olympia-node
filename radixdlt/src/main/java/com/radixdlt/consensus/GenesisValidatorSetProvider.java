@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *  http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,14 +15,20 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.safety;
+package com.radixdlt.consensus;
 
-import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 
 /**
- * Responsible for synchronously persisting safety state
+ * Provider of the initial validator set.
  */
-public interface PersistentSafetyStateStore {
-	void commitState(Vote vote, SafetyState safetyState);
-	void close();
+@FunctionalInterface
+public interface GenesisValidatorSetProvider {
+
+	/**
+	 * Return the genesis validator set.
+	 *
+	 * @return The genesis validator set.
+	 */
+	BFTValidatorSet genesisValidatorSet();
 }

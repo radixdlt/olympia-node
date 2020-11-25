@@ -32,6 +32,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
+import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
@@ -48,6 +49,8 @@ import com.radixdlt.integration.distributed.deterministic.SafetyCheckerModule;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.recovery.ModuleForRecoveryTests;
 import com.radixdlt.statecomputer.EpochCeilingView;
+import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
+
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -61,6 +64,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
 import org.json.JSONObject;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -68,6 +72,7 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+import org.radix.database.DatabaseEnvironment;
 
 /**
  * Given that one validator is always alive means that that validator will
@@ -135,6 +140,11 @@ public class OneNodeAlwaysAliveLivenessTest {
 		this.nodes.forEach(i -> i.getInstance(DeterministicEpochsConsensusProcessor.class).start());
 	}
 
+	@After
+	public void teardown() {
+		this.nodes.forEach(this::stopDatabase);
+	}
+
 	private Injector createRunner(ECKeyPair ecKeyPair, List<BFTNode> allNodes) {
 		final BFTNode self = BFTNode.create(ecKeyPair.getPublicKey());
 
@@ -173,7 +183,7 @@ public class OneNodeAlwaysAliveLivenessTest {
 	private void restartNode(int index) {
 		this.network.dropMessages(m -> m.channelId().receiverIndex() == index);
 		Injector injector = nodeCreators.get(index).get();
-		this.nodes.set(index, injector);
+		stopDatabase(this.nodes.set(index, injector));
 
 		String bftNode = " " + injector.getInstance(Key.get(BFTNode.class, Self.class));
 		ThreadContext.put("bftNode", bftNode);
@@ -198,6 +208,12 @@ public class OneNodeAlwaysAliveLivenessTest {
 				ThreadContext.remove("bftNode");
 			}
 		}
+	}
+
+	private void stopDatabase(Injector injector) {
+		injector.getInstance(BerkeleyLedgerEntryStore.class).close();
+		injector.getInstance(PersistentSafetyStateStore.class).close();
+		injector.getInstance(DatabaseEnvironment.class).stop();
 	}
 
 	@Test

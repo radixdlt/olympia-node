@@ -37,7 +37,7 @@ public class GenerateUniversesTest {
 		// from static initialisation is not included in other tests.
 		try (Capture stdOut = Capture.forOut();
 			 Capture stdErr = Capture.forErr()) {
-			GenerateUniverses.main(strings("-d", "-j"));
+			GenerateUniverses.main(strings("-c", "-j", "-v", "1"));
 			stdOut.toString();
 			stdErr.toString();
 		}
@@ -91,7 +91,7 @@ public class GenerateUniversesTest {
 		final String err;
 		try (Capture stdOut = Capture.forOut();
 			 Capture stdErr = Capture.forErr()) {
-			GenerateUniverses.main(strings("-k", "/dev/null"));
+			GenerateUniverses.main(strings("-k", "/dev/null", "-v", "1"));
 			out = stdOut.toString();
 			err = stdErr.toString();
 		}
@@ -105,7 +105,7 @@ public class GenerateUniversesTest {
 		final String err;
 		try (Capture stdOut = Capture.forOut();
 			 Capture stdErr = Capture.forErr()) {
-			GenerateUniverses.main(strings("-d", "-j"));
+			GenerateUniverses.main(strings("-c", "-j", "-v", "1"));
 			out = stdOut.toString();
 			err = stdErr.toString();
 		}
@@ -119,17 +119,19 @@ public class GenerateUniversesTest {
 		final String err;
 		try (Capture stdOut = Capture.forOut();
 			 Capture stdErr = Capture.forErr()) {
-			GenerateUniverses.main(strings("-j", "-p", "-t", "test"));
+			GenerateUniverses.main(strings("-j", "-p", "-t", "test", "-v", "1"));
 			out = stdOut.toString();
 			err = stdErr.toString();
 		}
 		assertThat(err).isEmpty();
 		assertThat(out)
-			.hasLineCount(6)
+			.hasLineCount(8)
 			.containsSubsequence(
+				"RADIXDLT_UNIVERSE_PRIVKEY=", "\n",
+				"RADIXDLT_VALIDATOR_0_PRIVKEY=", "\n",
+				"RADIXDLT_STAKER_0_PRIVKEY=", "\n",
 				"RADIXDLT_UNIVERSE_TYPE=TEST", "\n",
 				"RADIXDLT_UNIVERSE_PUBKEY=", "\n",
-				"RADIXDLT_UNIVERSE_PRIVKEY=", "\n",
 				"RADIXDLT_UNIVERSE_ADDRESS=", "\n",
 				"RADIXDLT_UNIVERSE_TOKEN=", "\n",
 				"RADIXDLT_UNIVERSE=", "\n"
@@ -142,7 +144,7 @@ public class GenerateUniversesTest {
 		final String err;
 		try (Capture stdOut = Capture.forOut();
 			 Capture stdErr = Capture.forErr()) {
-			GenerateUniverses.main(strings("-j", "-t", "test"));
+			GenerateUniverses.main(strings("-j", "-t", "test", "-v", "1"));
 			out = stdOut.toString();
 			err = stdErr.toString();
 		}
@@ -164,15 +166,18 @@ public class GenerateUniversesTest {
 		final String err;
 		try (Capture stdOut = Capture.forOut();
 			 Capture stdErr = Capture.forErr()) {
-			GenerateUniverses.main(strings("-d", "-t", "test"));
+			GenerateUniverses.main(strings("-c", "-t", "test", "-v", "1"));
 			out = stdOut.toString();
 			err = stdErr.toString();
 		}
 		assertThat(err).isEmpty();
 		assertThat(out)
-			.hasLineCount(148)
+			.hasLineCount(278)
 			.containsSubsequence(
-				":rri:/", "/XRD", "radix.particles.mutable_supply_token_definition"
+				":rri:/", "/XRD",
+				"radix.particles.mutable_supply_token_definition",
+				"radix.particles.registered_validator",
+				"radix.particles.staked_tokens"
 			);
 	}
 

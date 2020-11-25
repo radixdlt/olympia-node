@@ -51,6 +51,7 @@ import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor;
 public class SyncServiceModule extends AbstractModule {
 	private static final int BATCH_SIZE = 100;
 
+	@Override
 	public void configure() {
 		bind(new TypeLiteral<RemoteEventProcessor<DtoLedgerHeaderAndProof>>() { }).to(RemoteSyncServiceProcessor.class);
 		bind(LocalSyncServiceAccumulatorProcessor.class).in(Scopes.SINGLETON);
