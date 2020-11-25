@@ -19,30 +19,33 @@ package com.radixdlt.consensus.liveness;
 
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochView;
-import java.util.Objects;
 
 /**
  * A timeout which has occurred in the bft node
  */
 public final class EpochLocalTimeoutOccurrence {
-	private final EpochView epochView;
-	private final BFTNode leader;
+	private final long epoch;
+	private final LocalTimeoutOccurrence localTimeoutOccurrence;
 
-	public EpochLocalTimeoutOccurrence(EpochView epochView, BFTNode leader) {
-		this.epochView = Objects.requireNonNull(epochView);
-		this.leader = Objects.requireNonNull(leader);
+	public EpochLocalTimeoutOccurrence(long epoch, LocalTimeoutOccurrence localTimeoutOccurrence) {
+		this.epoch = epoch;
+		this.localTimeoutOccurrence = localTimeoutOccurrence;
 	}
 
 	public EpochView getEpochView() {
-		return epochView;
+		return new EpochView(epoch, localTimeoutOccurrence.getView());
+	}
+
+	public LocalTimeoutOccurrence getBase() {
+		return localTimeoutOccurrence;
 	}
 
 	public BFTNode getLeader() {
-		return leader;
+		return localTimeoutOccurrence.getLeader();
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{%s leader=%s}", this.getClass().getSimpleName(), epochView, leader);
+		return String.format("%s{epoch=%s event=%s}", this.getClass().getSimpleName(), epoch, localTimeoutOccurrence);
 	}
 }

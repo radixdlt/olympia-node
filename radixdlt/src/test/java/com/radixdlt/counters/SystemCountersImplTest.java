@@ -32,50 +32,50 @@ public class SystemCountersImplTest {
 	@Test
 	public void when_get_count__then_count_should_be_0() {
 		SystemCounters counters = new SystemCountersImpl();
-		assertThat(counters.get(CounterType.BFT_TOTAL_VIEW_TIMEOUTS)).isEqualTo(0L);
+		assertThat(counters.get(CounterType.BFT_TIMEOUT)).isEqualTo(0L);
 	}
 
 	@Test
 	public void when_increment__then_count_should_be_1() {
 		SystemCounters counters = new SystemCountersImpl();
-		counters.increment(CounterType.BFT_TOTAL_VIEW_TIMEOUTS);
-		assertThat(counters.get(CounterType.BFT_TOTAL_VIEW_TIMEOUTS)).isEqualTo(1L);
-		counters.increment(CounterType.BFT_TOTAL_VIEW_TIMEOUTS);
-		assertThat(counters.get(CounterType.BFT_TOTAL_VIEW_TIMEOUTS)).isEqualTo(2L);
+		counters.increment(CounterType.BFT_TIMEOUT);
+		assertThat(counters.get(CounterType.BFT_TIMEOUT)).isEqualTo(1L);
+		counters.increment(CounterType.BFT_TIMEOUT);
+		assertThat(counters.get(CounterType.BFT_TIMEOUT)).isEqualTo(2L);
 	}
 
 	@Test
 	public void when_add__then_count_should_be_added_value() {
 		SystemCounters counters = new SystemCountersImpl();
-		counters.add(CounterType.BFT_TOTAL_VIEW_TIMEOUTS, 1234);
-		assertThat(counters.get(CounterType.BFT_TOTAL_VIEW_TIMEOUTS)).isEqualTo(1234L);
-		counters.add(CounterType.BFT_TOTAL_VIEW_TIMEOUTS, 4321);
-		assertThat(counters.get(CounterType.BFT_TOTAL_VIEW_TIMEOUTS)).isEqualTo(1234L + 4321L);
+		counters.add(CounterType.BFT_TIMEOUT, 1234);
+		assertThat(counters.get(CounterType.BFT_TIMEOUT)).isEqualTo(1234L);
+		counters.add(CounterType.BFT_TIMEOUT, 4321);
+		assertThat(counters.get(CounterType.BFT_TIMEOUT)).isEqualTo(1234L + 4321L);
 	}
 
 	@Test
 	public void when_set__then_count_should_be_1() {
 		SystemCounters counters = new SystemCountersImpl();
-		counters.set(CounterType.BFT_TOTAL_VIEW_TIMEOUTS, 1234);
-		assertThat(counters.get(CounterType.BFT_TOTAL_VIEW_TIMEOUTS)).isEqualTo(1234L);
-		counters.set(CounterType.BFT_TOTAL_VIEW_TIMEOUTS, 4321);
-		assertThat(counters.get(CounterType.BFT_TOTAL_VIEW_TIMEOUTS)).isEqualTo(4321L);
+		counters.set(CounterType.BFT_TIMEOUT, 1234);
+		assertThat(counters.get(CounterType.BFT_TIMEOUT)).isEqualTo(1234L);
+		counters.set(CounterType.BFT_TIMEOUT, 4321);
+		assertThat(counters.get(CounterType.BFT_TIMEOUT)).isEqualTo(4321L);
 	}
 
 	@Test
 	public void when_set_all__then_count_should_be_correct() {
 		SystemCounters counters = new SystemCountersImpl();
 		counters.setAll(ImmutableMap.of(
-			CounterType.BFT_TOTAL_VIEW_TIMEOUTS, 1234L,
+			CounterType.BFT_TIMEOUT, 1234L,
 			CounterType.BFT_PROPOSALS_MADE, 4567L
 		));
-		assertThat(counters.get(CounterType.BFT_TOTAL_VIEW_TIMEOUTS)).isEqualTo(1234L);
+		assertThat(counters.get(CounterType.BFT_TIMEOUT)).isEqualTo(1234L);
 		assertThat(counters.get(CounterType.BFT_PROPOSALS_MADE)).isEqualTo(4567L);
 		counters.setAll(ImmutableMap.of(
-			CounterType.BFT_TOTAL_VIEW_TIMEOUTS, 2345L,
+			CounterType.BFT_TIMEOUT, 2345L,
 			CounterType.BFT_PROPOSALS_MADE, 5678L
 		));
-		assertThat(counters.get(CounterType.BFT_TOTAL_VIEW_TIMEOUTS)).isEqualTo(2345L);
+		assertThat(counters.get(CounterType.BFT_TIMEOUT)).isEqualTo(2345L);
 		assertThat(counters.get(CounterType.BFT_PROPOSALS_MADE)).isEqualTo(5678L);
 	}
 
@@ -94,7 +94,7 @@ public class SystemCountersImplTest {
 	@Test
 	public void sensible_tostring() {
 		SystemCounters counters = new SystemCountersImpl();
-		counters.set(CounterType.BFT_TOTAL_VIEW_TIMEOUTS, 1234);
+		counters.set(CounterType.BFT_TIMEOUT, 1234);
 		String s = counters.toString();
 		assertThat(s).contains(SystemCountersImpl.class.getSimpleName());
 		assertThat(s).contains("1234");

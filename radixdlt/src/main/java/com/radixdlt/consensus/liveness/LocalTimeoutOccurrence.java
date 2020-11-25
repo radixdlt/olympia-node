@@ -21,26 +21,45 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.View;
 import java.util.Objects;
 
-public class LocalTimeoutOccurrence {
-	private final View view;
-	private final BFTNode leader;
+/**
+ * An actual occurrence (as opposed to a potential) of a local timeout
+ */
+public final class LocalTimeoutOccurrence {
+	private final ScheduledLocalTimeout scheduledLocalTimeout;
 
-	public LocalTimeoutOccurrence(View view, BFTNode leader) {
-		this.view = Objects.requireNonNull(view);
-		this.leader = Objects.requireNonNull(leader);
+	public LocalTimeoutOccurrence(ScheduledLocalTimeout scheduledLocalTimeout) {
+		this.scheduledLocalTimeout = Objects.requireNonNull(scheduledLocalTimeout);
+	}
+
+	public ScheduledLocalTimeout timeout() {
+		return scheduledLocalTimeout;
 	}
 
 	public View getView() {
-		return view;
+		return scheduledLocalTimeout.view();
 	}
 
 	public BFTNode getLeader() {
-		return leader;
+		return scheduledLocalTimeout.viewUpdate().getLeader();
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(scheduledLocalTimeout);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (!(o instanceof LocalTimeoutOccurrence)) {
+			return false;
+		}
+
+		LocalTimeoutOccurrence other = (LocalTimeoutOccurrence) o;
+		return Objects.equals(scheduledLocalTimeout, other.scheduledLocalTimeout);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{%s leader=%s}", this.getClass().getSimpleName(), view, leader);
+		return String.format("%s{timeout=%s}", this.getClass().getSimpleName(), scheduledLocalTimeout);
 	}
-
 }

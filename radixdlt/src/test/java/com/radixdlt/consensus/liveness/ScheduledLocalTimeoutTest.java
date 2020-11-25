@@ -17,11 +17,16 @@
 
 package com.radixdlt.consensus.liveness;
 
-import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.bft.View;
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
 
-// Hack
-public interface PacemakerUpdater {
-	boolean processQC(HighQC highQC);
-	void updateView(View nextView);
+public class ScheduledLocalTimeoutTest {
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(ScheduledLocalTimeout.class)
+			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+			.verify();
+	}
 }

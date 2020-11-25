@@ -49,7 +49,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Manages the pacemaker state machine.
+ * Manages the pacemaker driver.
  */
 public final class Pacemaker {
 
@@ -64,7 +64,7 @@ public final class Pacemaker {
 	private final VertexStore vertexStore;
 	private final SafetyRules safetyRules;
 	private final VoteSender voteSender;
-	private final PacemakerUpdater pacemakerUpdater;
+	private final PacemakerReducer pacemakerReducer;
 	private final ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutSender;
 	private final PacemakerTimeoutCalculator timeoutCalculator;
 	private final ProposalBroadcaster proposalBroadcaster;
@@ -73,7 +73,6 @@ public final class Pacemaker {
 	private final EventDispatcher<LocalTimeoutOccurrence> timeoutDispatcher;
 
 	private ViewUpdate latestViewUpdate;
-	private Optional<View> lastTimedOutView = Optional.empty();
 
 	public Pacemaker(
 		BFTNode self,
@@ -84,7 +83,7 @@ public final class Pacemaker {
 		SafetyRules safetyRules,
 		VoteSender voteSender,
 		EventDispatcher<LocalTimeoutOccurrence> timeoutDispatcher,
-		PacemakerUpdater pacemakerUpdater,
+		PacemakerReducer pacemakerReducer,
 		ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutSender,
 		PacemakerTimeoutCalculator timeoutCalculator,
 		NextCommandGenerator nextCommandGenerator,
@@ -100,7 +99,7 @@ public final class Pacemaker {
 		this.safetyRules = Objects.requireNonNull(safetyRules);
 		this.voteSender = Objects.requireNonNull(voteSender);
 		this.timeoutDispatcher = Objects.requireNonNull(timeoutDispatcher);
-		this.pacemakerUpdater = Objects.requireNonNull(pacemakerUpdater);
+		this.pacemakerReducer = Objects.requireNonNull(pacemakerReducer);
 		this.timeoutSender = Objects.requireNonNull(timeoutSender);
 		this.timeoutCalculator = Objects.requireNonNull(timeoutCalculator);
 		this.nextCommandGenerator = Objects.requireNonNull(nextCommandGenerator);
@@ -122,7 +121,7 @@ public final class Pacemaker {
 		}
 
 		long timeout = timeoutCalculator.timeout(viewUpdate.uncommittedViewsCount());
-		ScheduledLocalTimeout scheduledLocalTimeout = new ScheduledLocalTimeout(viewUpdate, timeout);
+		ScheduledLocalTimeout scheduledLocalTimeout = ScheduledLocalTimeout.create(viewUpdate, timeout);
 		this.timeoutSender.dispatch(scheduledLocalTimeout, timeout);
 
 		if (this.self.equals(currentViewProposer)) {
@@ -178,7 +177,7 @@ public final class Pacemaker {
 			.ifPresent(vt -> {
 				log.trace("ViewTimeout: Formed quorum at view {}", view);
 				this.counters.increment(CounterType.BFT_TIMEOUT_QUORUMS);
-				this.pacemakerUpdater.updateView(view.next());
+				this.pacemakerReducer.updateView(view.next());
 			});
 	}
 
@@ -192,27 +191,25 @@ public final class Pacemaker {
 	 */
 	// FIXME: Note functionality and Javadoc to change once TCs implemented
 	public void processLocalTimeout(ScheduledLocalTimeout scheduledTimeout) {
+		final View view = scheduledTimeout.view();
+
 		// FIXME: (Re)send timed-out vote once TCs are implemented
 		log.trace("LocalTimeout: {}", scheduledTimeout);
-		if (!scheduledTimeout.view().equals(this.latestViewUpdate.getCurrentView())) {
+		if (!view.equals(this.latestViewUpdate.getCurrentView())) {
 			log.trace("LocalTimeout: Ignoring timeout {}, current is {}", scheduledTimeout, this.latestViewUpdate.getCurrentView());
 			return;
 		}
 
-		final View view = scheduledTimeout.view();
-
-		// TODO: consider moving to a Timeout message on a dispatcher side
-		if (lastTimedOutView.isEmpty() || !lastTimedOutView.get().equals(view)) {
+		// TODO: move counters to dispatcher side
+		if (scheduledTimeout.count() == 0) {
 			counters.increment(CounterType.BFT_TIMED_OUT_VIEWS);
 		}
-		lastTimedOutView = Optional.of(view);
-		counters.increment(CounterType.BFT_TOTAL_VIEW_TIMEOUTS);
+		counters.increment(CounterType.BFT_TIMEOUT);
 
 		final ViewTimeout viewTimeout = this.safetyRules.viewTimeout(view, this.vertexStore.highQC());
 		this.voteSender.broadcastViewTimeout(viewTimeout, this.validatorSet.nodes());
 
-		BFTNode leader = scheduledTimeout.viewUpdate().getLeader();
-		LocalTimeoutOccurrence localTimeoutOccurrence = new LocalTimeoutOccurrence(view, leader);
+		LocalTimeoutOccurrence localTimeoutOccurrence = new LocalTimeoutOccurrence(scheduledTimeout);
 		this.timeoutDispatcher.dispatch(localTimeoutOccurrence);
 
 		final long timeout = timeoutCalculator.timeout(latestViewUpdate.uncommittedViewsCount());
@@ -220,7 +217,7 @@ public final class Pacemaker {
 		Level logLevel = this.logLimiter.tryAcquire() ? Level.INFO : Level.TRACE;
 		log.log(logLevel, "LocalTimeout: Restarting timeout {} for {}ms", scheduledTimeout, timeout);
 
-		ScheduledLocalTimeout nextTimeout = new ScheduledLocalTimeout(scheduledTimeout.viewUpdate(), timeout);
+		ScheduledLocalTimeout nextTimeout = scheduledTimeout.nextRetry(timeout);
 		this.timeoutSender.dispatch(nextTimeout, timeout);
 	}
 
@@ -231,7 +228,7 @@ public final class Pacemaker {
 	 * @param highQC the sync info for the view
 	 * @return {@code true} if proceeded to a new view
 	 */
-	public boolean processQC(HighQC highQC) {
-		return this.pacemakerUpdater.processQC(highQC);
+	public void processQC(HighQC highQC) {
+		this.pacemakerReducer.processQC(highQC);
 	}
 }

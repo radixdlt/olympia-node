@@ -143,6 +143,22 @@ public class DispatcherModule extends AbstractModule {
 		return environment.getDispatcher(BFTUpdate.class);
 	}
 
+	@Provides
+	private EventDispatcher<LocalTimeoutOccurrence> localConsensusTimeoutDispatcher(
+		@ProcessOnDispatch Set<EventProcessor<LocalTimeoutOccurrence>> syncProcessors,
+		Set<EventProcessor<LocalTimeoutOccurrence>> asyncProcessors,
+		Environment environment
+	) {
+		if (asyncProcessors.isEmpty()) {
+			return viewTimeout -> syncProcessors.forEach(e -> e.process(viewTimeout));
+		} else {
+			EventDispatcher<LocalTimeoutOccurrence> dispatcher = environment.getDispatcher(LocalTimeoutOccurrence.class);
+			return timeout -> {
+				syncProcessors.forEach(e -> e.process(timeout));
+				dispatcher.dispatch(timeout);
+			};
+		}
+	}
 
 	@Provides
 	private EventDispatcher<EpochLocalTimeoutOccurrence> timeoutEventDispatcher(
@@ -151,13 +167,16 @@ public class DispatcherModule extends AbstractModule {
 		Environment environment
 	) {
 		if (asyncProcessors.isEmpty()) {
-			return timeout -> processors.forEach(e -> e.process(timeout));
+			return timeout -> {
+				logger.warn("LOCAL_TIMEOUT_OCCURRENCE: {}", timeout);
+				processors.forEach(e -> e.process(timeout));
+			};
 		} else {
 			EventDispatcher<EpochLocalTimeoutOccurrence> dispatcher = environment.getDispatcher(EpochLocalTimeoutOccurrence.class);
 			return timeout -> {
 				logger.warn("LOCAL_TIMEOUT_OCCURRENCE: {}", timeout);
-				processors.forEach(e -> e.process(timeout));
 				dispatcher.dispatch(timeout);
+				processors.forEach(e -> e.process(timeout));
 			};
 		}
 	}
@@ -224,20 +243,5 @@ public class DispatcherModule extends AbstractModule {
 		};
 	}
 
-	@Provides
-	private EventDispatcher<LocalTimeoutOccurrence> localConsensusTimeoutDispatcher(
-		@ProcessOnDispatch Set<EventProcessor<LocalTimeoutOccurrence>> syncProcessors,
-		Set<EventProcessor<LocalTimeoutOccurrence>> asyncProcessors,
-		Environment environment
-	) {
-		if (asyncProcessors.isEmpty()) {
-			return viewTimeout -> syncProcessors.forEach(e -> e.process(viewTimeout));
-		} else {
-			EventDispatcher<LocalTimeoutOccurrence> dispatcher = environment.getDispatcher(LocalTimeoutOccurrence.class);
-			return timeout -> {
-				syncProcessors.forEach(e -> e.process(timeout));
-				dispatcher.dispatch(timeout);
-			};
-		}
-	}
+
 }
