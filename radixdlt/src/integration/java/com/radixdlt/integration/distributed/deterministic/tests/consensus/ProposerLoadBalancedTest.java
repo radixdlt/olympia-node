@@ -58,13 +58,8 @@ public class ProposerLoadBalancedTest {
 	private MessageMutator mutator() {
 		return (message, queue) -> {
 			Object msg = message.message();
-			if (msg instanceof ScheduledLocalTimeout) {
+			if (msg instanceof ScheduledLocalTimeout || Epoched.isInstance(msg, ScheduledLocalTimeout.class)) {
 				return true;
-			} else if (msg instanceof Epoched) {
-				Epoched<?> epoched = (Epoched<?>) msg;
-				if (epoched.event() instanceof ScheduledLocalTimeout) {
-					return true;
-				}
 			}
 
 			// Process others in submission order
