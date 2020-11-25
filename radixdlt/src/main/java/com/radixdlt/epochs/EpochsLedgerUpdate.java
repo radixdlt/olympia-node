@@ -59,7 +59,16 @@ public final class EpochsLedgerUpdate implements LedgerUpdate {
 
 	@Override
 	public String toString() {
-		return String.format("%s{numCmds=%s}", this.getClass().getSimpleName(), base.getNewCommands().size());
+		if (this.epochChange == null) {
+			return String.format(
+				"%s{base=%s}", getClass().getSimpleName(), this.base
+			);
+		} else {
+			return String.format(
+				"%s{epoch=%s,view=%s,base=%s}",
+				getClass().getSimpleName(), this.epochChange.getProof().getEpoch(), this.epochChange.getProof().getView(), base
+			);
+		}
 	}
 
 	@Override

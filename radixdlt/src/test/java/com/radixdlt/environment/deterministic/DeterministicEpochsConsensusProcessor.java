@@ -93,6 +93,7 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 		remoteEventProcessors = remoteProcessorsBuilder.build();
 	}
 
+	@Override
 	public void start() {
 		epochManager.start();
 	}
