@@ -23,6 +23,7 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
@@ -33,6 +34,7 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
@@ -57,6 +59,9 @@ public class DispatcherModule extends AbstractModule {
 	private static final Logger logger = LogManager.getLogger();
 	@Override
 	public void configure() {
+		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<ScheduledLocalTimeout>>() { }, ProcessOnDispatch.class);
+		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<ScheduledLocalTimeout>>() { });
+
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<LocalSyncRequest>>() { }, ProcessOnDispatch.class);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<LocalSyncRequest>>() { });
 
@@ -94,6 +99,23 @@ public class DispatcherModule extends AbstractModule {
 			syncProcessors.forEach(e -> e.process(req));
 			envDispatcher.dispatch(req);
 		};
+	}
+
+	@Provides
+	private ScheduledEventDispatcher<ScheduledLocalTimeout> scheduledTimeoutDispatcher(
+		@ProcessOnDispatch Set<EventProcessor<ScheduledLocalTimeout>> processors,
+		Set<EventProcessor<ScheduledLocalTimeout>> asyncProcessors,
+		Environment environment
+	) {
+		if (asyncProcessors.isEmpty()) {
+			return (timeout, ms) -> processors.forEach(e -> e.process(timeout));
+		} else {
+			ScheduledEventDispatcher<ScheduledLocalTimeout> dispatcher = environment.getScheduledDispatcher(ScheduledLocalTimeout.class);
+			return (timeout, ms) -> {
+				dispatcher.dispatch(timeout, ms);
+				processors.forEach(e -> e.process(timeout));
+			};
+		}
 	}
 
 	@Provides
@@ -139,7 +161,7 @@ public class DispatcherModule extends AbstractModule {
 		} else {
 			EventDispatcher<EpochLocalTimeoutOccurrence> dispatcher = environment.getDispatcher(EpochLocalTimeoutOccurrence.class);
 			return timeout -> {
-				logger.warn("LOCAL_TIMEOUT dispatched: {}", timeout);
+				logger.warn("LOCAL_TIMEOUT_OCCURRENCE: {}", timeout);
 				processors.forEach(e -> e.process(timeout));
 				dispatcher.dispatch(timeout);
 			};

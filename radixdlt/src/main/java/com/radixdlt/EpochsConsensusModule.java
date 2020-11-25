@@ -50,7 +50,6 @@ import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.liveness.PacemakerStateFactory;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
-import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
 import com.radixdlt.consensus.liveness.PendingViewTimeouts;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
@@ -97,14 +96,6 @@ public class EpochsConsensusModule extends AbstractModule {
 	}
 
 	@Provides
-	private PacemakerTimeoutSender initialTimeoutSender(LocalTimeoutSender localTimeoutSender, EpochChange initialEpoch) {
-		return (scheduledLocalTimeout, ms) -> {
-			EpochScheduledLocalTimeout epochTimeout = new EpochScheduledLocalTimeout(initialEpoch.getEpoch(), scheduledLocalTimeout);
-			localTimeoutSender.scheduleTimeout(epochTimeout, ms);
-		};
-	}
-
-	@Provides
 	private EpochChange initialEpoch(
 		@LastEpochProof VerifiedLedgerHeaderAndProof proof,
 		BFTConfiguration initialBFTConfig
@@ -128,19 +119,32 @@ public class EpochsConsensusModule extends AbstractModule {
 
 	@ProvidesIntoSet
 	@ProcessOnDispatch
+	private EventProcessor<ScheduledLocalTimeout> initialEpochsTimeoutSender(
+		LocalTimeoutSender localTimeoutSender,
+		EpochChange initialEpoch
+	) {
+		return localTimeout -> localTimeoutSender.scheduleTimeout(
+			new EpochScheduledLocalTimeout(initialEpoch.getEpoch(), localTimeout), localTimeout.millisecondsWaitTime()
+		);
+	}
+
+
+	@ProvidesIntoSet
+	@ProcessOnDispatch
 	private EventProcessor<ViewUpdate> initialViewUpdateSender(
 		EventDispatcher<EpochViewUpdate> epochViewUpdateEventDispatcher,
-		LocalTimeoutSender timeoutSender,
+		LocalTimeoutSender localTimeoutSender,
 		PacemakerTimeoutCalculator timeoutCalculator,
 		EpochChange initialEpoch
 	) {
 		return viewUpdate -> {
+			long timeout = timeoutCalculator.timeout(viewUpdate.uncommittedViewsCount());
+
 			epochViewUpdateEventDispatcher.dispatch(new EpochViewUpdate(initialEpoch.getEpoch(), viewUpdate));
-			ScheduledLocalTimeout scheduledLocalTimeout = new ScheduledLocalTimeout(viewUpdate);
+			ScheduledLocalTimeout scheduledLocalTimeout = new ScheduledLocalTimeout(viewUpdate, timeout);
 			EpochScheduledLocalTimeout localTimeout = new EpochScheduledLocalTimeout(initialEpoch.getEpoch(), scheduledLocalTimeout);
 
-			long timeout = timeoutCalculator.timeout(viewUpdate.uncommittedViewsCount());
-			timeoutSender.scheduleTimeout(localTimeout, timeout);
+			localTimeoutSender.scheduleTimeout(localTimeout, timeout);
 		};
 	}
 
@@ -152,11 +156,12 @@ public class EpochsConsensusModule extends AbstractModule {
 	) {
 		return epoch ->
 			new PacemakerState(viewUpdate -> {
+				long timeout = timeoutCalculator.timeout(viewUpdate.uncommittedViewsCount());
+
 				epochViewUpdateEventDispatcher.dispatch(new EpochViewUpdate(epoch, viewUpdate));
-				ScheduledLocalTimeout scheduledLocalTimeout = new ScheduledLocalTimeout(viewUpdate);
+				ScheduledLocalTimeout scheduledLocalTimeout = new ScheduledLocalTimeout(viewUpdate, timeout);
 				EpochScheduledLocalTimeout localTimeout = new EpochScheduledLocalTimeout(epoch, scheduledLocalTimeout);
 
-				long timeout = timeoutCalculator.timeout(viewUpdate.uncommittedViewsCount());
 				localTimeoutSender.scheduleTimeout(localTimeout, timeout);
 			});
 	}

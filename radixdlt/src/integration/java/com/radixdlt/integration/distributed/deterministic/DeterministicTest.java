@@ -20,7 +20,6 @@ package com.radixdlt.integration.distributed.deterministic;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
-import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.util.Modules;
@@ -44,12 +43,11 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
-import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
-import com.radixdlt.environment.deterministic.network.ControlledSender;
+import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.integration.distributed.MockedCryptoModule;
 import com.radixdlt.integration.distributed.MockedPersistenceStoreModule;
 import com.radixdlt.integration.distributed.deterministic.configuration.EpochNodeWeightMapping;
@@ -223,25 +221,25 @@ public final class DeterministicTest {
 					}
 
 					@ProvidesIntoSet
-					private EventProcessor<ViewUpdate> viewUpdateProcessor(BFTEventProcessor processor) {
-						return processor::processViewUpdate;
+					private EventProcessor<ScheduledLocalTimeout> timeoutProcessor(BFTEventProcessor processor) {
+						return processor::processLocalTimeout;
 					}
 
-					@Provides
-					PacemakerTimeoutSender pacemakerTimeoutSender(ControlledSender controlledSender) {
-						return controlledSender.getScheduledDispatcher(ScheduledLocalTimeout.class)::dispatch;
+					@ProvidesIntoSet
+					private EventProcessor<ViewUpdate> viewUpdateProcessor(BFTEventProcessor processor) {
+						return processor::processViewUpdate;
 					}
 
 					@ProvidesIntoSet
 					@ProcessOnDispatch
 					private EventProcessor<ViewUpdate> viewUpdateEventProcessor(
 						PacemakerTimeoutCalculator pacemakerTimeoutCalculator,
-						PacemakerTimeoutSender pacemakerTimeoutSender
+						ScheduledEventDispatcher<ScheduledLocalTimeout> pacemakerTimeoutSender
 					) {
 						return viewUpdate -> {
-							ScheduledLocalTimeout localTimeout = new ScheduledLocalTimeout(viewUpdate);
 							long timeout = pacemakerTimeoutCalculator.timeout(viewUpdate.uncommittedViewsCount());
-							pacemakerTimeoutSender.scheduleTimeout(localTimeout, timeout);
+							ScheduledLocalTimeout localTimeout = new ScheduledLocalTimeout(viewUpdate, timeout);
+							pacemakerTimeoutSender.dispatch(localTimeout, timeout);
 						};
 					}
 				});

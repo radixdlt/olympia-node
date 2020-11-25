@@ -75,6 +75,7 @@ public class BFTRunner implements ModuleRunner {
 		Observable<ViewUpdate> viewUpdates,
 		Set<EventProcessor<ViewUpdate>> viewUpdateProcessors,
 		Observable<ScheduledLocalTimeout> timeouts,
+		Set<EventProcessor<ScheduledLocalTimeout>> timeoutProcessors,
 		BFTEventsRx networkRx,
 		SyncVerticesRPCRx rpcRx,
 		BFTEventProcessor bftEventProcessor,
@@ -92,7 +93,7 @@ public class BFTRunner implements ModuleRunner {
 		final Observable<Object> eventCoordinatorEvents = Observable.merge(Arrays.asList(
 			timeouts
 				.observeOn(singleThreadScheduler)
-				.doOnNext(bftEventProcessor::processLocalTimeout),
+				.doOnNext(t -> timeoutProcessors.forEach(p -> p.process(t))),
 			viewUpdates
 				.observeOn(singleThreadScheduler)
 				.doOnNext(v -> viewUpdateProcessors.forEach(p -> p.process(v))),

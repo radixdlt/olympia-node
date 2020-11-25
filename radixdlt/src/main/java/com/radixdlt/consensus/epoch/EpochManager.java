@@ -240,6 +240,7 @@ public final class EpochManager implements BFTSyncRequestProcessor {
 			pacemaker,
 			vertexStore,
 			bftSync,
+			bftSync.formedQCEventProcessor(),
 			proposerElection,
 			validatorSet,
 			counters,

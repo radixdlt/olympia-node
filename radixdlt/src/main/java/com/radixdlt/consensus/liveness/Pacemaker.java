@@ -37,6 +37,7 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.ScheduledEventDispatcher;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Level;
@@ -64,7 +65,7 @@ public final class Pacemaker {
 	private final SafetyRules safetyRules;
 	private final VoteSender voteSender;
 	private final PacemakerUpdater pacemakerUpdater;
-	private final PacemakerTimeoutSender timeoutSender;
+	private final ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutSender;
 	private final PacemakerTimeoutCalculator timeoutCalculator;
 	private final ProposalBroadcaster proposalBroadcaster;
 	private final ProposerElection proposerElection;
@@ -85,7 +86,7 @@ public final class Pacemaker {
 		VoteSender voteSender,
 		EventDispatcher<LocalTimeoutOccurrence> timeoutDispatcher,
 		PacemakerUpdater pacemakerUpdater,
-		PacemakerTimeoutSender timeoutSender,
+		ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutSender,
 		PacemakerTimeoutCalculator timeoutCalculator,
 		NextCommandGenerator nextCommandGenerator,
 		ProposalBroadcaster proposalBroadcaster,
@@ -213,7 +214,8 @@ public final class Pacemaker {
 		Level logLevel = this.logLimiter.tryAcquire() ? Level.INFO : Level.TRACE;
 		log.log(logLevel, "LocalTimeout: Restarting timeout {} for {}ms", scheduledTimeout, timeout);
 
-		this.timeoutSender.scheduleTimeout(scheduledTimeout, timeout);
+		ScheduledLocalTimeout nextTimeout = new ScheduledLocalTimeout(scheduledTimeout.viewUpdate(), timeout);
+		this.timeoutSender.dispatch(nextTimeout, timeout);
 	}
 
 	/**

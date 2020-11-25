@@ -29,11 +29,10 @@ import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.BFTSyncResponseProcessor;
 import com.radixdlt.consensus.sync.BFTSync;
-import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
-import com.radixdlt.environment.rx.RxEnvironment;
+import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.integration.distributed.BFTRunner;
 
 public class MockedConsensusRunnerModule extends AbstractModule {
@@ -44,14 +43,14 @@ public class MockedConsensusRunnerModule extends AbstractModule {
 		bind(BFTSyncResponseProcessor.class).to(BFTSync.class).in(Scopes.SINGLETON);
 	}
 
-	@Provides
-	public EventProcessor<LocalGetVerticesRequest> bftSyncTimeoutProcessor(BFTSync bftSync) {
-		return bftSync::processGetVerticesLocalTimeout;
+	@ProvidesIntoSet
+	private EventProcessor<ScheduledLocalTimeout> timeoutProcessor(BFTEventProcessor processor) {
+		return processor::processLocalTimeout;
 	}
 
 	@Provides
-	private PacemakerTimeoutSender initialTimeoutSender(RxEnvironment rxEnvironment) {
-		return rxEnvironment.getScheduledDispatcher(ScheduledLocalTimeout.class)::dispatch;
+	public EventProcessor<LocalGetVerticesRequest> bftSyncTimeoutProcessor(BFTSync bftSync) {
+		return bftSync::processGetVerticesLocalTimeout;
 	}
 
 	@ProvidesIntoSet
@@ -63,12 +62,12 @@ public class MockedConsensusRunnerModule extends AbstractModule {
 	@ProcessOnDispatch
 	private EventProcessor<ViewUpdate> viewUpdateEventProcessor(
 		PacemakerTimeoutCalculator pacemakerTimeoutCalculator,
-		PacemakerTimeoutSender pacemakerTimeoutSender
+		ScheduledEventDispatcher<ScheduledLocalTimeout> pacemakerTimeoutSender
 	) {
 		return viewUpdate -> {
-			ScheduledLocalTimeout localTimeout = new ScheduledLocalTimeout(viewUpdate);
 			long timeout = pacemakerTimeoutCalculator.timeout(viewUpdate.uncommittedViewsCount());
-			pacemakerTimeoutSender.scheduleTimeout(localTimeout, timeout);
+			ScheduledLocalTimeout localTimeout = new ScheduledLocalTimeout(viewUpdate, timeout);
+			pacemakerTimeoutSender.dispatch(localTimeout, timeout);
 		};
 	}
 }

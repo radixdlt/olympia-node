@@ -32,8 +32,10 @@ import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.FormedQC;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.liveness.PacemakerUpdater;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.consensus.liveness.ExponentialPacemakerTimeoutCalculator;
 import com.radixdlt.consensus.liveness.PacemakerState;
@@ -60,7 +62,6 @@ import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
-import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
 import com.radixdlt.consensus.liveness.PendingViewTimeouts;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.counters.SystemCounters;
@@ -114,7 +115,8 @@ public final class ConsensusModule extends AbstractModule {
 			self,
 			pacemaker,
 			vertexStore,
-			vertexStoreSync,
+			bftSyncer,
+			formedQCEventProcessor,
 			proposerElection,
 			validatorSet,
 			counters,
@@ -132,10 +134,10 @@ public final class ConsensusModule extends AbstractModule {
 				.vertexStore(vertexStore)
 				.formedQCEventDispatcher(formedQC -> {
 					// FIXME: a hack for now until replacement of epochmanager factories
-					vertexStoreSync.formedQCEventProcessor().process(formedQC);
+					formedQCEventProcessor.process(formedQC);
 					formedQCEventDispatcher.dispatch(formedQC);
 				})
-				.bftSyncer(vertexStoreSync)
+				.bftSyncer(bftSyncer)
 				.proposerElection(proposerElection)
 				.validatorSet(validatorSet)
 				.build();
@@ -159,7 +161,7 @@ public final class ConsensusModule extends AbstractModule {
 		BFTFactory bftFactory,
 		Pacemaker pacemaker,
 		VertexStore vertexStore,
-		BFTSync vertexStoreSync,
+		BFTSync bftSync,
 		ProposerElection proposerElection,
 		SystemCounters counters,
 		SafetyRules safetyRules
@@ -168,7 +170,8 @@ public final class ConsensusModule extends AbstractModule {
 			self,
 			pacemaker,
 			vertexStore,
-			vertexStoreSync,
+			bftSync,
+			bftSync.formedQCEventProcessor(),
 			proposerElection,
 			config.getValidatorSet(),
 			counters,
@@ -196,7 +199,7 @@ public final class ConsensusModule extends AbstractModule {
 		VoteSender voteSender,
 		EventDispatcher<LocalTimeoutOccurrence> timeoutDispatcher,
 		PacemakerUpdater pacemakerUpdater,
-		PacemakerTimeoutSender timeoutSender,
+		ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutSender,
 		PacemakerTimeoutCalculator timeoutCalculator,
 		NextCommandGenerator nextCommandGenerator,
 		ProposalBroadcaster proposalBroadcaster,

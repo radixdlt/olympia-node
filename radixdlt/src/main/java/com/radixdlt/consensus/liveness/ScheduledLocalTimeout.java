@@ -22,12 +22,25 @@ import com.radixdlt.consensus.bft.ViewUpdate;
 
 public class ScheduledLocalTimeout {
 	private final ViewUpdate viewUpdate;
+	private final long millisecondsWaitTime;
 
-	public ScheduledLocalTimeout(ViewUpdate viewUpdate) {
+	public ScheduledLocalTimeout(
+		ViewUpdate viewUpdate,
+		long millisecondsWaitTime
+	) {
 		this.viewUpdate = viewUpdate;
+		this.millisecondsWaitTime = millisecondsWaitTime;
+	}
+
+	public ViewUpdate viewUpdate() {
+		return viewUpdate;
 	}
 
 	public View view() {
 		return viewUpdate.getCurrentView();
+	}
+
+	public long millisecondsWaitTime() {
+		return millisecondsWaitTime;
 	}
 }

@@ -46,6 +46,7 @@ public class DeterministicConsensusProcessor implements DeterministicMessageProc
 	private final BFTSyncRequestProcessor requestProcessor;
 	private final Set<EventProcessor<BFTUpdate>> bftUpdateProcessors;
 	private final Set<EventProcessor<ViewUpdate>> viewUpdateProcessors;
+	private final Set<EventProcessor<ScheduledLocalTimeout>> timeoutProcessors;
 
 	@Inject
 	public DeterministicConsensusProcessor(
@@ -53,13 +54,15 @@ public class DeterministicConsensusProcessor implements DeterministicMessageProc
 		BFTSync vertexStoreSync,
 		BFTSyncRequestProcessor requestProcessor,
 		Set<EventProcessor<ViewUpdate>> viewUpdateProcessors,
-		Set<EventProcessor<BFTUpdate>> bftUpdateProcessors
+		Set<EventProcessor<BFTUpdate>> bftUpdateProcessors,
+		Set<EventProcessor<ScheduledLocalTimeout>> timeoutProcessors
 	) {
 		this.bftEventProcessor = Objects.requireNonNull(bftEventProcessor);
 		this.vertexStoreSync = Objects.requireNonNull(vertexStoreSync);
 		this.requestProcessor = Objects.requireNonNull(requestProcessor);
 		this.bftUpdateProcessors = Objects.requireNonNull(bftUpdateProcessors);
 		this.viewUpdateProcessors = Objects.requireNonNull(viewUpdateProcessors);
+		this.timeoutProcessors = Objects.requireNonNull(timeoutProcessors);
 	}
 
 	@Override
@@ -70,7 +73,7 @@ public class DeterministicConsensusProcessor implements DeterministicMessageProc
 	@Override
 	public void handleMessage(BFTNode origin, Object message) {
 		if (message instanceof ScheduledLocalTimeout) {
-			bftEventProcessor.processLocalTimeout((ScheduledLocalTimeout) message);
+			timeoutProcessors.forEach(p -> p.process((ScheduledLocalTimeout) message));
 		} else if (message instanceof ViewTimeout) {
 			bftEventProcessor.processViewTimeout((ViewTimeout) message);
 		} else if (message instanceof Proposal) {
