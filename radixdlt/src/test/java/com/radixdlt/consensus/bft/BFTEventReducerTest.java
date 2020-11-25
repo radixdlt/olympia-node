@@ -56,18 +56,21 @@ public class BFTEventReducerTest {
 
     @Before
     public void setUp() {
+        when(proposerElection.getProposer(any())).thenReturn(BFTNode.random());
+
         this.bftEventReducer = new BFTEventReducer(
-                this.pacemaker,
-                this.vertexStore,
-                this.qcEventDispatcher,
-                this.voteSender,
-                this.hasher,
-                this.timeSupplier,
-                this.proposerElection,
-                this.counters,
-                this.safetyRules,
-                this.validatorSet,
-                this.pendingVotes
+            this.pacemaker,
+            this.vertexStore,
+            this.qcEventDispatcher,
+            this.voteSender,
+            this.hasher,
+            this.timeSupplier,
+            this.proposerElection,
+            this.counters,
+            this.safetyRules,
+            this.validatorSet,
+            this.pendingVotes,
+            ViewUpdate.genesis()
         );
     }
 
@@ -75,6 +78,7 @@ public class BFTEventReducerTest {
     public void when_process_vote_equal_last_quorum__then_ignored() {
         Vote vote = mock(Vote.class);
         when(vote.getView()).thenReturn(View.of(0));
+        when(this.proposerElection.getProposer(any())).thenReturn(BFTNode.random());
         this.bftEventReducer.processVote(vote);
         verifyNoMoreInteractions(this.pendingVotes);
     }
@@ -83,7 +87,8 @@ public class BFTEventReducerTest {
     public void when_process_vote_with_quorum_wrong_view__then_ignored() {
         Vote vote = mock(Vote.class);
         when(vote.getView()).thenReturn(View.of(1));
-        this.bftEventReducer.processViewUpdate(new ViewUpdate(View.of(3), View.of(2), View.of(2)));
+        when(this.proposerElection.getProposer(any())).thenReturn(BFTNode.random());
+        this.bftEventReducer.processViewUpdate(ViewUpdate.create(View.of(3), View.of(2), View.of(2), BFTNode.random()));
         this.bftEventReducer.processVote(vote);
         verifyNoMoreInteractions(this.pendingVotes);
     }
@@ -99,11 +104,12 @@ public class BFTEventReducerTest {
         QuorumCertificate highestCommittedQc = mock(QuorumCertificate.class);
         when(highQc.highestCommittedQC()).thenReturn(highestCommittedQc);
         when(vote.getView()).thenReturn(View.of(1));
+        when(this.proposerElection.getProposer(any())).thenReturn(BFTNode.random());
         when(this.pendingVotes.insertVote(any(), any())).thenReturn(Optional.of(qc));
         when(this.vertexStore.highQC()).thenReturn(highQc);
 
         // Move to view 1
-        this.bftEventReducer.processViewUpdate(new ViewUpdate(View.of(1), View.of(0), View.of(0)));
+        this.bftEventReducer.processViewUpdate(ViewUpdate.create(View.of(1), View.of(0), View.of(0), BFTNode.random()));
 
         this.bftEventReducer.processVote(vote);
 

@@ -68,12 +68,11 @@ public final class Pacemaker {
 	private final ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutSender;
 	private final PacemakerTimeoutCalculator timeoutCalculator;
 	private final ProposalBroadcaster proposalBroadcaster;
-	private final ProposerElection proposerElection;
 	private final NextCommandGenerator nextCommandGenerator;
 	private final Hasher hasher;
 	private final EventDispatcher<LocalTimeoutOccurrence> timeoutDispatcher;
 
-	private ViewUpdate latestViewUpdate = new ViewUpdate(View.genesis(), View.genesis(), View.genesis());
+	private ViewUpdate latestViewUpdate;
 	private Optional<View> lastTimedOutView = Optional.empty();
 
 	public Pacemaker(
@@ -90,8 +89,8 @@ public final class Pacemaker {
 		PacemakerTimeoutCalculator timeoutCalculator,
 		NextCommandGenerator nextCommandGenerator,
 		ProposalBroadcaster proposalBroadcaster,
-		ProposerElection proposerElection,
-		Hasher hasher
+		Hasher hasher,
+		ViewUpdate initialViewUpdate
 	) {
 		this.self = Objects.requireNonNull(self);
 		this.counters = Objects.requireNonNull(counters);
@@ -106,8 +105,8 @@ public final class Pacemaker {
 		this.timeoutCalculator = Objects.requireNonNull(timeoutCalculator);
 		this.nextCommandGenerator = Objects.requireNonNull(nextCommandGenerator);
 		this.proposalBroadcaster = Objects.requireNonNull(proposalBroadcaster);
-		this.proposerElection = Objects.requireNonNull(proposerElection);
 		this.hasher = Objects.requireNonNull(hasher);
+		this.latestViewUpdate = Objects.requireNonNull(initialViewUpdate);
 	}
 
 	/** Processes a local view update message **/
@@ -115,8 +114,7 @@ public final class Pacemaker {
 		final View previousView = this.latestViewUpdate.getCurrentView();
 		this.latestViewUpdate = viewUpdate;
 
-		final BFTNode currentViewProposer = this.proposerElection.getProposer(viewUpdate.getCurrentView());
-
+		final BFTNode currentViewProposer = viewUpdate.getLeader();
 		log.trace("View Update: {} nextLeader: {}", viewUpdate, currentViewProposer);
 
 		if (viewUpdate.getCurrentView().gt(previousView) && this.self.equals(currentViewProposer)) {
@@ -205,7 +203,7 @@ public final class Pacemaker {
 		final ViewTimeout viewTimeout = this.safetyRules.viewTimeout(view, this.vertexStore.highQC());
 		this.voteSender.broadcastViewTimeout(viewTimeout, this.validatorSet.nodes());
 
-		BFTNode leader = proposerElection.getProposer(view);
+		BFTNode leader = scheduledTimeout.viewUpdate().getLeader();
 		LocalTimeoutOccurrence localTimeoutOccurrence = new LocalTimeoutOccurrence(view, leader);
 		this.timeoutDispatcher.dispatch(localTimeoutOccurrence);
 

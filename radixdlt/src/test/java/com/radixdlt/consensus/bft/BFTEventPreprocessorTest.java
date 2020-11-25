@@ -74,10 +74,9 @@ public class BFTEventPreprocessorTest {
 			forwardTo,
 			vertexStoreSync,
 			proposerElection,
-			syncQueues
+			syncQueues,
+			ViewUpdate.create(View.genesis().next(), View.genesis(), View.genesis(), self)
 		);
-
-		preprocessor.processViewUpdate(new ViewUpdate(View.genesis().next(), View.genesis(), View.genesis()));
 	}
 
 	private ViewTimeout createViewTimeout(View view, boolean synced) {

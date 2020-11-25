@@ -132,6 +132,8 @@ public final class BFTBuilder {
 			return EmptyBFTEventProcessor.INSTANCE;
 		}
 		final PendingVotes pendingVotes = new PendingVotes(hasher);
+		final ViewUpdate initialViewUpdate = ViewUpdate.genesis();
+
 		BFTEventReducer reducer = new BFTEventReducer(
 			pacemaker,
 			vertexStore,
@@ -143,7 +145,8 @@ public final class BFTBuilder {
 			counters,
 			safetyRules,
 			validatorSet,
-			pendingVotes
+			pendingVotes,
+			initialViewUpdate
 		);
 
 		SyncQueues syncQueues = new SyncQueues();
@@ -153,7 +156,8 @@ public final class BFTBuilder {
 			reducer,
 			bftSyncer,
 			proposerElection,
-			syncQueues
+			syncQueues,
+			initialViewUpdate
 		);
 
 		return new BFTEventVerifier(

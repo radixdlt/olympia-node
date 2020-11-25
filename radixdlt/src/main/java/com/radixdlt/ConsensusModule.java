@@ -32,7 +32,7 @@ import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.FormedQC;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.liveness.PacemakerUpdater;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
@@ -204,7 +204,7 @@ public final class ConsensusModule extends AbstractModule {
 		NextCommandGenerator nextCommandGenerator,
 		ProposalBroadcaster proposalBroadcaster,
 		Hasher hasher,
-		ProposerElection proposerElection
+		ViewUpdate initialViewUpdate
 	) {
 		PendingViewTimeouts pendingViewTimeouts = new PendingViewTimeouts();
 		BFTValidatorSet validatorSet = configuration.getValidatorSet();
@@ -222,8 +222,8 @@ public final class ConsensusModule extends AbstractModule {
 			timeoutCalculator,
 			nextCommandGenerator,
 			proposalBroadcaster,
-			proposerElection,
-			hasher
+			hasher,
+			initialViewUpdate
 		);
 	}
 
@@ -262,6 +262,11 @@ public final class ConsensusModule extends AbstractModule {
 			random,
 			bftSyncPatienceMillis
 		);
+	}
+
+	@Provides
+	private ViewUpdate initialView(BFTConfiguration bftConfiguration, ProposerElection proposerElection) {
+		return ViewUpdate.genesis();
 	}
 
 	@Provides

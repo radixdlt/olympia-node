@@ -30,10 +30,30 @@ public final class ViewUpdate {
 	// Highest view in which a commit happened
 	private final View highestCommitView;
 
-	public ViewUpdate(View currentView, View lastQuorumView, View highestCommitView) {
-		this.currentView = Objects.requireNonNull(currentView);
-		this.lastQuorumView = Objects.requireNonNull(lastQuorumView);
-		this.highestCommitView = Objects.requireNonNull(highestCommitView);
+	private final BFTNode leader;
+
+	private ViewUpdate(View currentView, View lastQuorumView, View highestCommitView, BFTNode leader) {
+		this.currentView = currentView;
+		this.lastQuorumView = lastQuorumView;
+		this.highestCommitView = highestCommitView;
+		this.leader = leader;
+	}
+
+	public static ViewUpdate create(View currentView, View lastQuorumView, View highestCommitView, BFTNode leader) {
+		Objects.requireNonNull(currentView);
+		Objects.requireNonNull(lastQuorumView);
+		Objects.requireNonNull(highestCommitView);
+		Objects.requireNonNull(leader);
+
+		return new ViewUpdate(currentView, lastQuorumView, highestCommitView, leader);
+	}
+
+	public static ViewUpdate genesis() {
+		return new ViewUpdate(View.genesis(), View.genesis(), View.genesis(), null);
+	}
+
+	public BFTNode getLeader() {
+		return leader;
 	}
 
 	public View getCurrentView() {
@@ -54,11 +74,12 @@ public final class ViewUpdate {
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s,%s,%s]",
+		return String.format("%s[%s,%s,%s leader=%s]",
 			getClass().getSimpleName(),
 			this.currentView,
 			this.lastQuorumView,
-			this.highestCommitView);
+			this.highestCommitView,
+			this.leader);
 	}
 
 	@Override
@@ -72,11 +93,12 @@ public final class ViewUpdate {
 		final ViewUpdate that = (ViewUpdate) o;
 		return Objects.equals(currentView, that.currentView)
 				&& Objects.equals(lastQuorumView, that.lastQuorumView)
-				&& Objects.equals(highestCommitView, that.highestCommitView);
+				&& Objects.equals(highestCommitView, that.highestCommitView)
+				&& Objects.equals(leader, that.leader);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(currentView, lastQuorumView, highestCommitView);
+		return Objects.hash(currentView, lastQuorumView, highestCommitView, leader);
 	}
 }

@@ -63,7 +63,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private final BFTValidatorSet validatorSet;
 	private final PendingVotes pendingVotes;
 
-	private ViewUpdate latestViewUpdate = new ViewUpdate(View.genesis(), View.genesis(), View.genesis());
+	private ViewUpdate latestViewUpdate;
 
 	public BFTEventReducer(
 		Pacemaker pacemaker,
@@ -76,7 +76,8 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		SystemCounters counters,
 		SafetyRules safetyRules,
 		BFTValidatorSet validatorSet,
-		PendingVotes pendingVotes
+		PendingVotes pendingVotes,
+		ViewUpdate initialViewUpdate
 	) {
 		this.pacemaker = Objects.requireNonNull(pacemaker);
 		this.vertexStore = Objects.requireNonNull(vertexStore);
@@ -89,6 +90,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		this.safetyRules = Objects.requireNonNull(safetyRules);
 		this.validatorSet = Objects.requireNonNull(validatorSet);
 		this.pendingVotes = Objects.requireNonNull(pendingVotes);
+		this.latestViewUpdate = Objects.requireNonNull(initialViewUpdate);
 	}
 
 	@Override

@@ -19,6 +19,7 @@ package com.radixdlt.consensus.liveness;
 
 import com.google.inject.Inject;
 import com.radixdlt.consensus.HighQC;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.environment.EventDispatcher;
@@ -35,6 +36,7 @@ public class PacemakerState implements PacemakerUpdater {
     private static final Logger log = LogManager.getLogger();
 
     private final EventDispatcher<ViewUpdate> viewUpdateSender;
+    private final ProposerElection proposerElection;
 
     private View currentView = View.genesis();
     // Highest view in which a commit happened
@@ -43,7 +45,11 @@ public class PacemakerState implements PacemakerUpdater {
     private View lastQuorumView = View.genesis();
 
     @Inject
-    public PacemakerState(EventDispatcher<ViewUpdate> viewUpdateSender) {
+    public PacemakerState(
+        ProposerElection proposerElection,
+        EventDispatcher<ViewUpdate> viewUpdateSender
+    ) {
+        this.proposerElection = Objects.requireNonNull(proposerElection);
         this.viewUpdateSender = Objects.requireNonNull(viewUpdateSender);
     }
 
@@ -74,11 +80,16 @@ public class PacemakerState implements PacemakerUpdater {
         if (nextView.lte(this.currentView)) {
             return;
         }
+
+        final BFTNode leader = this.proposerElection.getProposer(nextView);
         this.currentView = nextView;
-        viewUpdateSender.dispatch(new ViewUpdate(
+        viewUpdateSender.dispatch(
+            ViewUpdate.create(
                 this.currentView,
                 this.lastQuorumView,
-                this.highestCommitView
-        ));
+                this.highestCommitView,
+                leader
+            )
+        );
     }
 }

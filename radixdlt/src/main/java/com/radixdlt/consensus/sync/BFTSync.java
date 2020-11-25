@@ -35,7 +35,6 @@ import com.radixdlt.consensus.liveness.PacemakerUpdater;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
-import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdateProcessor;
 import com.radixdlt.sync.LocalSyncRequest;

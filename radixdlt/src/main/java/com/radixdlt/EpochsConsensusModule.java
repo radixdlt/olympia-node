@@ -154,8 +154,8 @@ public class EpochsConsensusModule extends AbstractModule {
 		PacemakerTimeoutCalculator timeoutCalculator,
 		EventDispatcher<EpochViewUpdate> epochViewUpdateEventDispatcher
 	) {
-		return epoch ->
-			new PacemakerState(viewUpdate -> {
+		return (epoch, proposerElection) ->
+			new PacemakerState(proposerElection, viewUpdate -> {
 				long timeout = timeoutCalculator.timeout(viewUpdate.uncommittedViewsCount());
 
 				epochViewUpdateEventDispatcher.dispatch(new EpochViewUpdate(epoch, viewUpdate));
@@ -195,10 +195,11 @@ public class EpochsConsensusModule extends AbstractModule {
 			pacemakerState,
 			timeoutCalculator,
 			safetyRules,
-			proposerElection,
+			initialViewUpdate,
 			epoch
 		) -> {
 			PendingViewTimeouts pendingViewTimeouts = new PendingViewTimeouts();
+
 			return new Pacemaker(
 				self,
 				counters,
@@ -216,8 +217,8 @@ public class EpochsConsensusModule extends AbstractModule {
 				timeoutCalculator,
 				nextCommandGenerator,
 				proposalBroadcaster,
-				proposerElection,
-				hasher
+				hasher,
+				initialViewUpdate
 			);
 		};
 	}

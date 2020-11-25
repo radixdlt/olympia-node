@@ -61,20 +61,22 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	private final SyncQueues syncQueues;
 
 	private final Map<View, List<ConsensusEvent>> viewQueues = new HashMap<>();
-	private ViewUpdate latestViewUpdate = new ViewUpdate(View.genesis(), View.genesis(), View.genesis());
+	private ViewUpdate latestViewUpdate;
 
 	public BFTEventPreprocessor(
 		BFTNode self,
 		BFTEventProcessor forwardTo,
 		BFTSyncer bftSyncer,
 		ProposerElection proposerElection,
-		SyncQueues syncQueues
+		SyncQueues syncQueues,
+		ViewUpdate initialViewUpdate
 	) {
 		this.self = Objects.requireNonNull(self);
 		this.bftSyncer = Objects.requireNonNull(bftSyncer);
 		this.proposerElection = Objects.requireNonNull(proposerElection);
 		this.syncQueues = syncQueues;
 		this.forwardTo = forwardTo;
+		this.latestViewUpdate = Objects.requireNonNull(initialViewUpdate);
 	}
 
 	// TODO: Cleanup

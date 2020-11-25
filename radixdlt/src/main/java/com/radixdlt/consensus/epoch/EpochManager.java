@@ -25,6 +25,8 @@ import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.liveness.PacemakerStateFactory;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
@@ -206,15 +208,17 @@ public final class EpochManager implements BFTSyncRequestProcessor {
 		final long nextEpoch = this.currentEpoch.getEpoch();
 		logEpochChange(this.currentEpoch, "included in");
 
+		// Config
 		final BFTConfiguration bftConfiguration = this.currentEpoch.getBFTConfiguration();
 		final ProposerElection proposerElection = proposerElectionFactory.create(validatorSet);
+		final ViewUpdate initialViewUpdate = ViewUpdate.genesis();
 
 		// Mutable Consensus State
 		final VertexStore vertexStore = vertexStoreFactory.create(
 			bftConfiguration.getGenesisVertex(),
 			bftConfiguration.getGenesisQC()
 		);
-		final PacemakerState pacemakerState = pacemakerStateFactory.create(nextEpoch);
+		final PacemakerState pacemakerState = pacemakerStateFactory.create(nextEpoch, proposerElection);
 
 		// Consensus Drivers
 		final SafetyRules safetyRules = new SafetyRules(self, SafetyState.initialState(), persistentSafetyStateStore, hasher, signer);
@@ -224,7 +228,7 @@ public final class EpochManager implements BFTSyncRequestProcessor {
 			pacemakerState,
 			timeoutCalculator,
 			safetyRules,
-			proposerElection,
+			initialViewUpdate,
 			nextEpoch
 		);
 		final BFTSync bftSync = bftSyncFactory.create(vertexStore, pacemakerState);

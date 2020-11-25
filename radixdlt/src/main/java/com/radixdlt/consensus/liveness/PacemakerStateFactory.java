@@ -27,5 +27,5 @@ public interface PacemakerStateFactory {
 	 *
 	 * @return a new pacemaker state
 	 */
-	PacemakerState create(long epoch);
+	PacemakerState create(long epoch, ProposerElection proposerElection);
 }
