@@ -42,12 +42,9 @@ import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochView;
-import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.environment.ProcessOnDispatch;
-import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.integration.distributed.MockedCryptoModule;
 import com.radixdlt.integration.distributed.MockedPersistenceStoreModule;
 import com.radixdlt.integration.distributed.deterministic.configuration.EpochNodeWeightMapping;
@@ -228,19 +225,6 @@ public final class DeterministicTest {
 					@ProvidesIntoSet
 					private EventProcessor<ViewUpdate> viewUpdateProcessor(BFTEventProcessor processor) {
 						return processor::processViewUpdate;
-					}
-
-					@ProvidesIntoSet
-					@ProcessOnDispatch
-					private EventProcessor<ViewUpdate> viewUpdateEventProcessor(
-						PacemakerTimeoutCalculator pacemakerTimeoutCalculator,
-						ScheduledEventDispatcher<ScheduledLocalTimeout> pacemakerTimeoutSender
-					) {
-						return viewUpdate -> {
-							long timeout = pacemakerTimeoutCalculator.timeout(viewUpdate.uncommittedViewsCount());
-							ScheduledLocalTimeout localTimeout = new ScheduledLocalTimeout(viewUpdate, timeout);
-							pacemakerTimeoutSender.dispatch(localTimeout, timeout);
-						};
 					}
 				});
 				modules.add(new MockedStateComputerModule());

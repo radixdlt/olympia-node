@@ -25,14 +25,11 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.bft.ViewUpdate;
-import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.BFTSyncResponseProcessor;
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.environment.ProcessOnDispatch;
-import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.integration.distributed.BFTRunner;
 
 public class MockedConsensusRunnerModule extends AbstractModule {
@@ -56,18 +53,5 @@ public class MockedConsensusRunnerModule extends AbstractModule {
 	@ProvidesIntoSet
 	private EventProcessor<ViewUpdate> viewUpdateProcessor(BFTEventProcessor processor) {
 		return processor::processViewUpdate;
-	}
-
-	@ProvidesIntoSet
-	@ProcessOnDispatch
-	private EventProcessor<ViewUpdate> viewUpdateEventProcessor(
-		PacemakerTimeoutCalculator pacemakerTimeoutCalculator,
-		ScheduledEventDispatcher<ScheduledLocalTimeout> pacemakerTimeoutSender
-	) {
-		return viewUpdate -> {
-			long timeout = pacemakerTimeoutCalculator.timeout(viewUpdate.uncommittedViewsCount());
-			ScheduledLocalTimeout localTimeout = new ScheduledLocalTimeout(viewUpdate, timeout);
-			pacemakerTimeoutSender.dispatch(localTimeout, timeout);
-		};
 	}
 }
