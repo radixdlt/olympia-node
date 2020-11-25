@@ -57,6 +57,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -196,19 +197,51 @@ public class OneNodeAlwaysAliveLivenessTest {
 		}
 	}
 
+	private Timed<ControlledMessage> processNext() {
+		Timed<ControlledMessage> msg = this.network.nextMessage();
+		logger.debug("Processing message {}", msg);
+
+		int nodeIndex = msg.value().channelId().receiverIndex();
+		Injector injector = this.nodes.get(nodeIndex);
+		String bftNode = " " + injector.getInstance(Key.get(BFTNode.class, Self.class));
+		ThreadContext.put("bftNode", bftNode);
+		try {
+			injector.getInstance(DeterministicEpochsConsensusProcessor.class).handleMessage(msg.value().origin(), msg.value().message());
+		} finally {
+			ThreadContext.remove("bftNode");
+		}
+
+		return msg;
+	}
+
+	private Optional<EpochView> lastCommitViewEmitted() {
+		return network.allMessages().stream()
+			.filter(msg -> msg.message() instanceof EpochViewUpdate)
+			.map(msg -> (EpochViewUpdate) msg.message())
+			.map(e -> new EpochView(e.getEpoch(), e.getViewUpdate().getHighestCommitView()))
+			.max(Comparator.naturalOrder());
+	}
+
+	private int processUntilNextCommittedEmitted(int maxSteps) {
+		EpochView lastCommitted = this.lastCommitViewEmitted().orElse(new EpochView(0, View.genesis()));
+		int count = 0;
+		int senderIndex;
+		do {
+			if (count > maxSteps) {
+				throw new IllegalStateException("Already lost liveness");
+			}
+
+			Timed<ControlledMessage> msg = processNext();
+			senderIndex = msg.value().channelId().senderIndex();
+			count++;
+		} while (this.lastCommitViewEmitted().stream().noneMatch(v -> v.compareTo(lastCommitted) > 0));
+
+		return senderIndex;
+	}
+
 	private void processForCount(int messageCount) {
 		for (int i = 0; i < messageCount; i++) {
-			Timed<ControlledMessage> msg = this.network.nextMessage();
-
-			Injector injector = this.nodes.get(msg.value().channelId().receiverIndex());
-			String bftNode = " " + injector.getInstance(Key.get(BFTNode.class, Self.class));
-			ThreadContext.put("bftNode", bftNode);
-			try {
-				logger.debug("Processing message {}", msg);
-				injector.getInstance(DeterministicEpochsConsensusProcessor.class).handleMessage(msg.value().origin(), msg.value().message());
-			} finally {
-				ThreadContext.remove("bftNode");
-			}
+			processNext();
 		}
 	}
 
@@ -237,6 +270,32 @@ public class OneNodeAlwaysAliveLivenessTest {
 			logger.info("Restarting " + restart);
 			for (int nodeIndex = 1; nodeIndex < nodes.size(); nodeIndex++) {
 				restartNode(nodeIndex);
+			}
+		}
+	}
+
+	@Test
+	public void liveness_check_when_restart_node_on_view_update_with_commit() {
+		EpochView epochView = this.nodes.get(0).getInstance(Key.get(new TypeLiteral<DeterministicSavedLastEvent<EpochViewUpdate>>() { }))
+			.getLastEvent().getEpochView();
+
+		for (int restart = 0; restart < 5; restart++) {
+			processForCount(5000);
+
+			EpochView nextEpochView = this.nodes.stream()
+				.map(i -> i.getInstance(Key.get(new TypeLiteral<DeterministicSavedLastEvent<EpochViewUpdate>>() { })).getLastEvent())
+				.map(EpochViewUpdate::getEpochView)
+				.max(Comparator.naturalOrder()).orElse(new EpochView(0, View.genesis()));
+			assertThat(nextEpochView).isGreaterThan(epochView);
+			epochView = nextEpochView;
+
+			int nodeToRestart = processUntilNextCommittedEmitted(5000);
+
+			logger.info("Restarting " + restart);
+			for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
+				if (nodeIndex != (nodeToRestart + 1) % nodes.size()) {
+					restartNode(nodeIndex);
+				}
 			}
 		}
 	}
