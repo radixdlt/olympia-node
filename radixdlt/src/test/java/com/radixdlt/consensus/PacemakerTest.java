@@ -33,6 +33,7 @@ import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.deterministic.ControlledSenderFactory;
 import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
+import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
@@ -59,6 +60,9 @@ public class PacemakerTest {
 
 	@Inject
 	private DeterministicEpochsConsensusProcessor processor;
+
+	@Inject
+	private ViewUpdate initialViewUpdate;
 
 	public PacemakerTest() {
 		this.network = new DeterministicNetwork(
@@ -109,5 +113,13 @@ public class PacemakerTest {
 			.hasSize(2)
 			.haveExactly(1, new Condition<>(msg -> msg.message() instanceof EpochViewUpdate, "A single view update has been emitted"))
 			.haveExactly(1, new Condition<>(msg -> msg.message() instanceof ViewUpdate, "A single view update has been emitted"));
+
+		ViewUpdate viewUpdateEvent = network.allMessages().stream()
+			.map(ControlledMessage::message)
+			.filter(ViewUpdate.class::isInstance)
+			.map(ViewUpdate.class::cast)
+			.findAny()
+			.orElseThrow();
+		assertThat(viewUpdateEvent.getCurrentView()).isGreaterThan(initialViewUpdate.getCurrentView());
 	}
 }
