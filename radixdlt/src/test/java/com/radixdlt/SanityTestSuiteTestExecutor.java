@@ -6,8 +6,12 @@ import com.google.common.io.Files;
 import com.google.gson.Gson;
 import com.google.gson.stream.JsonReader;
 import com.radixdlt.consensus.Sha256Hasher;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.crypto.exception.PrivateKeyException;
+import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.JSONFormatter;
 import org.apache.logging.log4j.LogManager;
@@ -31,6 +35,8 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 interface TestVectorInput {}
 interface TestVectorExpected {}
@@ -243,8 +249,46 @@ public class SanityTestSuiteTestExecutor {
 		}
 	}
 
+	static final class KeyGenVectorInput implements TestVectorInput {
+		private String privateKey;
+	}
+	static final class KeyGenVectorExpected implements TestVectorExpected {
+		private String uncompressedPublicKey;
+	}
+	static final class KeyGenTestVector extends TestVector<KeyGenVectorInput, KeyGenVectorExpected> {
+		@Override KeyGenVectorInput getInput() {
+			return cast(this.input, KeyGenVectorInput.class);
+		}
+		@Override KeyGenVectorExpected getExpected() {
+			return cast(this.expected, KeyGenVectorExpected.class);
+		}
+	}
 	private void testScenarioKeyGen(SanityTestSuiteRoot.SanityTestSuite.SanityTestScenario scenario) {
 		assertEquals(TEST_SCENARIO_KEYGEN, scenario.identifier);
+
+		BiConsumer<KeyGenTestVector, Integer> testVectorRunner = (vector, vectorIndex) -> {
+			KeyGenVectorInput input = vector.getInput();
+			KeyGenVectorExpected expected = vector.getExpected();
+
+			ECPublicKey publicKey = null;
+			ECPublicKey expectedPublicKey = null;
+
+			try {
+				publicKey = ECKeyPair.fromPrivateKey(Bytes.fromHexString(input.privateKey)).getPublicKey();
+				expectedPublicKey = ECPublicKey.fromBytes(Bytes.fromHexString(expected.uncompressedPublicKey));
+			} catch (Exception e) {
+				Assert.fail(String.format("Test vector at index %d failed. Failed to get public key: " + e, vectorIndex));
+			}
+
+			assertNotNull(publicKey);
+			assertTrue(publicKey.equals(expectedPublicKey));
+		};
+
+		for (int testVectorIndex = 0; testVectorIndex < scenario.tests.vectors.size(); ++testVectorIndex) {
+			UnknownTestVector untypedVector = scenario.tests.vectors.get(testVectorIndex);
+			KeyGenTestVector testVector = castTestVector(untypedVector, KeyGenTestVector.class);
+			testVectorRunner.accept(testVector, testVectorIndex);
+		}
 	}
 
 	private void testScenarioKeySign(SanityTestSuiteRoot.SanityTestSuite.SanityTestScenario scenario) {

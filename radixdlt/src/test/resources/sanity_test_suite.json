@@ -1,5 +1,5 @@
 {
-	"hashOfSuite": "20ed6300159e083820aaca8ae80b2d17e275c1e1211f8f1cc3875f7539c1fff1",
+	"hashOfSuite": "e08b9e6d07aec6aa51310bd79154fa16f6e80a998543fa8c1ad4cb4389a2ec60",
 	"suite": {
 		"scenarios": [
 			{
@@ -53,11 +53,11 @@
 					"source": "https://en.bitcoin.it/wiki/Protocol_documentation#Hashes",
 					"vectors": [
 						{
-							"input": {
-								"stringToHash": "hello"
-							},
 							"expected": {
 								"hashOfHash": "9595c9df90075148eb06860365df33584b75bff782a510c6cd4883a419833d50"
+							},
+							"input": {
+								"stringToHash": "hello"
 							}
 						}
 					]
@@ -72,14 +72,38 @@
 				"identifier": "secp256k1",
 				"name": "Elliptic Curve secp256k1 key generation",
 				"tests": {
-					"source": "https://secp256k1.org",
+					"source": "https://github.com/bitcoin/bips/blob/master/bip-0340/test-vectors.csv",
 					"vectors": [
 						{
-							"input": {
-								"privateKey": "0000000000000000000000000000000000000000000000000000000000000001"
-							},
 							"expected": {
-								"publicKey": "3abdabddeadbeefabd098765fddf4dfa321234567890987654321234567abd23a"
+								"uncompressedPublicKey": "02F9308A019258C31049344F85F89D5229B531C845836F99B08601F113BCE036F9"
+							},
+							"input": {
+								"privateKey": "0000000000000000000000000000000000000000000000000000000000000003"
+							}
+						},
+						{
+							"expected": {
+								"uncompressedPublicKey": "02DFF1D77F2A671C5F36183726DB2341BE58FEAE1DA2DECED843240F7B502BA659"
+							},
+							"input": {
+								"privateKey": "B7E151628AED2A6ABF7158809CF4F3C762E7160F38B4DA56A784D9045190CFEF"
+							}
+						},
+						{
+							"expected": {
+								"uncompressedPublicKey": "02DD308AFEC5777E13121FA72B9CC1B7CC0139715309B086C960E18FD969774EB8"
+							},
+							"input": {
+								"privateKey": "C90FDAA22168C234C4C6628B80DC1CD129024E088A67CC74020BBEA63B14E5C9"
+							}
+						},
+						{
+							"expected": {
+								"uncompressedPublicKey": "0325D1DFF95105F5253C4022F628A996AD3A0D95FBF21D468A1B33F8C160D8F517"
+							},
+							"input": {
+								"privateKey": "0B432B2677937381AEF05BB02A66ECD012773062CF3FA2549E44F58ED2401710"
 							}
 						}
 					]
@@ -97,16 +121,16 @@
 					"source": "https://wycheproof.com",
 					"vectors": [
 						{
-							"input": {
-								"message": "hey you",
-								"privateKey": "deadbeef"
-							},
 							"expected": {
 								"publicKey": "deadbeef",
 								"signature": {
 									"r": "deadbeef",
 									"s": "0eadbeef"
 								}
+							},
+							"input": {
+								"message": "hey you",
+								"privateKey": "deadbeef"
 							}
 						}
 					]
@@ -124,6 +148,9 @@
 					"source": "https://wycheproof.com",
 					"vectors": [
 						{
+							"expected": {
+								"outcome": "validates"
+							},
 							"input": {
 								"message": "hey you!",
 								"publicKey": "deadbeef",
@@ -131,12 +158,13 @@
 									"r": "deadbeef",
 									"s": "deadbeef"
 								}
-							},
-							"expected": {
-								"outcome": "validates"
 							}
 						},
 						{
+							"expected": {
+								"outcome": "error",
+								"reason": "public key and signature mismatch."
+							},
 							"input": {
 								"message": "hey you!",
 								"publicKey": "0101010",
@@ -144,10 +172,6 @@
 									"r": "deadbeef",
 									"s": "deadbeef"
 								}
-							},
-							"expected": {
-								"outcome": "error",
-								"reason": "public key and signature mismatch."
 							}
 						}
 					]
@@ -166,6 +190,9 @@
 					"source": "Radix employee named 'Alexander cyon' made the first implementation of this.",
 					"vectors": [
 						{
+							"expected": {
+								"hashOfJSON": "deadbeefdeadbeefdeadbeefdeadbeef"
+							},
 							"input": {
 								"json": {
 									"destinations": [":uid:dfd7c486570a7ad40eb948c80cb89376"],
@@ -178,9 +205,6 @@
 									"objectTypeSerializer": "radix.particles.rri",
 									"serializerFormat": "HASH"
 								}
-							},
-							"expected": {
-								"hashOfJSON": "deadbeefdeadbeefdeadbeefdeadbeef"
 							}
 						}
 					]
