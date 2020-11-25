@@ -103,18 +103,13 @@ public class DispatcherModule extends AbstractModule {
 	@Provides
 	private ScheduledEventDispatcher<ScheduledLocalTimeout> scheduledTimeoutDispatcher(
 		@ProcessOnDispatch Set<EventProcessor<ScheduledLocalTimeout>> processors,
-		Set<EventProcessor<ScheduledLocalTimeout>> asyncProcessors,
 		Environment environment
 	) {
-		if (asyncProcessors.isEmpty()) {
-			return (timeout, ms) -> processors.forEach(e -> e.process(timeout));
-		} else {
-			ScheduledEventDispatcher<ScheduledLocalTimeout> dispatcher = environment.getScheduledDispatcher(ScheduledLocalTimeout.class);
-			return (timeout, ms) -> {
-				dispatcher.dispatch(timeout, ms);
-				processors.forEach(e -> e.process(timeout));
-			};
-		}
+		ScheduledEventDispatcher<ScheduledLocalTimeout> dispatcher = environment.getScheduledDispatcher(ScheduledLocalTimeout.class);
+		return (timeout, ms) -> {
+			dispatcher.dispatch(timeout, ms);
+			processors.forEach(e -> e.process(timeout));
+		};
 	}
 
 	@Provides
@@ -201,21 +196,16 @@ public class DispatcherModule extends AbstractModule {
 	@Singleton
 	private EventDispatcher<ViewUpdate> viewUpdateEventDispatcher(
 		@ProcessOnDispatch Set<EventProcessor<ViewUpdate>> processors,
-		Set<EventProcessor<ViewUpdate>> asyncProcessors,
 		Environment environment
 	) {
-		if (asyncProcessors.isEmpty()) {
-			return viewUpdate -> processors.forEach(e -> e.process(viewUpdate));
-		} else {
-			EventDispatcher<ViewUpdate> dispatcher = environment.getDispatcher(ViewUpdate.class);
-			final RateLimiter logLimiter = RateLimiter.create(1.0);
-			return viewUpdate -> {
-				Level logLevel = logLimiter.tryAcquire() ? Level.INFO : Level.TRACE;
-				logger.log(logLevel, "NextSyncView: {}", viewUpdate);
-				processors.forEach(e -> e.process(viewUpdate));
-				dispatcher.dispatch(viewUpdate);
-			};
-		}
+		EventDispatcher<ViewUpdate> dispatcher = environment.getDispatcher(ViewUpdate.class);
+		final RateLimiter logLimiter = RateLimiter.create(1.0);
+		return viewUpdate -> {
+			Level logLevel = logLimiter.tryAcquire() ? Level.INFO : Level.TRACE;
+			logger.log(logLevel, "NextSyncView: {}", viewUpdate);
+			processors.forEach(e -> e.process(viewUpdate));
+			dispatcher.dispatch(viewUpdate);
+		};
 	}
 
 	@Provides

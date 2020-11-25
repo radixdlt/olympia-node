@@ -25,7 +25,6 @@ import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.liveness.PacemakerStateFactory;
@@ -245,7 +244,6 @@ public final class EpochManager implements BFTSyncRequestProcessor {
 			vertexStore,
 			bftSync,
 			bftSync.formedQCEventProcessor(),
-			proposerElection,
 			validatorSet,
 			counters,
 			safetyRules

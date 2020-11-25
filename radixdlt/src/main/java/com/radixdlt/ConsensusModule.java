@@ -117,7 +117,6 @@ public final class ConsensusModule extends AbstractModule {
 			vertexStore,
 			bftSyncer,
 			formedQCEventProcessor,
-			proposerElection,
 			validatorSet,
 			counters,
 			safetyRules
@@ -138,7 +137,6 @@ public final class ConsensusModule extends AbstractModule {
 					formedQCEventDispatcher.dispatch(formedQC);
 				})
 				.bftSyncer(bftSyncer)
-				.proposerElection(proposerElection)
 				.validatorSet(validatorSet)
 				.build();
 	}
@@ -162,7 +160,6 @@ public final class ConsensusModule extends AbstractModule {
 		Pacemaker pacemaker,
 		VertexStore vertexStore,
 		BFTSync bftSync,
-		ProposerElection proposerElection,
 		SystemCounters counters,
 		SafetyRules safetyRules
 	) {
@@ -172,7 +169,6 @@ public final class ConsensusModule extends AbstractModule {
 			vertexStore,
 			bftSync,
 			bftSync.formedQCEventProcessor(),
-			proposerElection,
 			config.getValidatorSet(),
 			counters,
 			safetyRules

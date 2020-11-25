@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTUpdate;
+import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
@@ -98,7 +99,11 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 
 	@Override
 	public void handleMessage(BFTNode origin, Object message) {
-		if (message instanceof ConsensusEvent) {
+		if (message instanceof ViewUpdate) {
+			// FIXME: Should remove this message type but required due to guice dependency graph
+			// FIXME: Should be fixable once an Epoch Environment is implemented
+			return;
+		} else if (message instanceof ConsensusEvent) {
 			this.epochManager.processConsensusEvent((ConsensusEvent) message);
 		} else if (message instanceof EpochScheduledLocalTimeout) {
 			this.epochManager.processLocalTimeout((EpochScheduledLocalTimeout) message);

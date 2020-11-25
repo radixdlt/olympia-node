@@ -38,7 +38,6 @@ import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTSyncer.SyncResult;
 import com.radixdlt.consensus.bft.SyncQueues.SyncQueue;
-import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
@@ -50,7 +49,6 @@ import org.junit.Test;
 public class BFTEventPreprocessorTest {
 	private static final ECKeyPair SELF_KEY = ECKeyPair.generateNew();
 	private BFTEventPreprocessor preprocessor;
-	private ProposerElection proposerElection;
 	private BFTSync vertexStoreSync;
 	private BFTEventProcessor forwardTo;
 	private SyncQueues syncQueues;
@@ -59,23 +57,20 @@ public class BFTEventPreprocessorTest {
 	@Before
 	public void setUp() {
 		this.vertexStoreSync = mock(BFTSync.class);
-		this.proposerElection = mock(ProposerElection.class);
 		this.forwardTo = mock(BFTEventProcessor.class);
 		this.syncQueues = mock(SyncQueues.class);
 		this.self = mock(BFTNode.class);
 
 		when(this.self.getKey()).thenReturn(SELF_KEY.getPublicKey());
 
-		when(proposerElection.getProposer(any())).thenReturn(self);
 		when(syncQueues.isEmptyElseAdd(any())).thenReturn(true);
 
 		this.preprocessor = new BFTEventPreprocessor(
 			self,
 			forwardTo,
 			vertexStoreSync,
-			proposerElection,
 			syncQueues,
-			ViewUpdate.create(View.genesis().next(), View.genesis(), View.genesis(), self)
+			ViewUpdate.create(View.genesis().next(), View.genesis(), View.genesis(), self, BFTNode.random())
 		);
 	}
 
@@ -128,15 +123,6 @@ public class BFTEventPreprocessorTest {
 	}
 
 	@Test
-	public void when_process_vote_as_not_proposer__then_vote_gets_thrown_away() {
-		Vote vote = mock(Vote.class);
-		when(vote.getView()).thenReturn(View.of(1));
-		when(proposerElection.getProposer(eq(View.of(2)))).thenReturn(mock(BFTNode.class));
-		preprocessor.processVote(vote);
-		verify(forwardTo, never()).processVote(vote);
-	}
-
-	@Test
 	public void when_process_vote_unsynced__event_not_forwarded() {
 		Vote vote = mock(Vote.class);
 		when(vote.getView()).thenReturn(View.of(1));
@@ -169,7 +155,6 @@ public class BFTEventPreprocessorTest {
 	public void when_processing_view_timeout_as_not_proposer__then_view_timeout_get_thrown_away() {
 		ViewTimeout viewTimeout = createViewTimeout(View.of(0), true);
 		when(syncQueues.isEmptyElseAdd(eq(viewTimeout))).thenReturn(true);
-		when(proposerElection.getProposer(View.of(2))).thenReturn(mock(BFTNode.class));
 		when(viewTimeout.getAuthor()).thenReturn(self);
 		preprocessor.processViewTimeout(viewTimeout);
 		verify(forwardTo, never()).processViewTimeout(any());

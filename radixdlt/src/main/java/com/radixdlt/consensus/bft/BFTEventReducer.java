@@ -28,7 +28,6 @@ import com.radixdlt.consensus.liveness.Pacemaker;
 
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
@@ -57,7 +56,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private final RemoteEventDispatcher<Vote> voteDispatcher;
 	private final Hasher hasher;
 	private final TimeSupplier timeSupplier;
-	private final ProposerElection proposerElection;
 	private final SystemCounters counters;
 	private final SafetyRules safetyRules;
 	private final BFTValidatorSet validatorSet;
@@ -72,7 +70,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		RemoteEventDispatcher<Vote> voteDispatcher,
 		Hasher hasher,
 		TimeSupplier timeSupplier,
-		ProposerElection proposerElection,
 		SystemCounters counters,
 		SafetyRules safetyRules,
 		BFTValidatorSet validatorSet,
@@ -85,7 +82,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		this.voteDispatcher = Objects.requireNonNull(voteDispatcher);
 		this.hasher = Objects.requireNonNull(hasher);
 		this.timeSupplier = Objects.requireNonNull(timeSupplier);
-		this.proposerElection = Objects.requireNonNull(proposerElection);
 		this.counters = Objects.requireNonNull(counters);
 		this.safetyRules = Objects.requireNonNull(safetyRules);
 		this.validatorSet = Objects.requireNonNull(validatorSet);
@@ -145,7 +141,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		final Optional<BFTHeader> maybeHeader = this.vertexStore.insertVertex(proposedVertex);
 		// The header may not be present if the ledger is ahead of consensus
 		maybeHeader.ifPresent(header -> {
-			final BFTNode nextLeader = this.proposerElection.getProposer(currentView.next());
+			final BFTNode nextLeader = this.latestViewUpdate.getNextLeader();
 			final Optional<Vote> maybeVote = this.safetyRules.voteFor(
 				proposedVertex,
 				header,

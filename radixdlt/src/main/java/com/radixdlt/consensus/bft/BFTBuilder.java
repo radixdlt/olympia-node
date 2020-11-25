@@ -25,7 +25,6 @@ import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.liveness.Pacemaker;
-import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.network.TimeSupplier;
@@ -36,7 +35,6 @@ import com.radixdlt.network.TimeSupplier;
 public final class BFTBuilder {
 	// BFT Configuration objects
 	private BFTValidatorSet validatorSet;
-	private ProposerElection proposerElection;
 	private Hasher hasher;
 	private HashVerifier verifier;
 
@@ -122,11 +120,6 @@ public final class BFTBuilder {
 		return this;
 	}
 
-	public BFTBuilder proposerElection(ProposerElection proposerElection) {
-		this.proposerElection = proposerElection;
-		return this;
-	}
-
 	public BFTEventProcessor build() {
 		if (!validatorSet.containsNode(self)) {
 			return EmptyBFTEventProcessor.INSTANCE;
@@ -141,7 +134,6 @@ public final class BFTBuilder {
 			voteDispatcher,
 			hasher,
 			timeSupplier,
-			proposerElection,
 			counters,
 			safetyRules,
 			validatorSet,
@@ -155,7 +147,6 @@ public final class BFTBuilder {
 			self,
 			reducer,
 			bftSyncer,
-			proposerElection,
 			syncQueues,
 			initialViewUpdate
 		);

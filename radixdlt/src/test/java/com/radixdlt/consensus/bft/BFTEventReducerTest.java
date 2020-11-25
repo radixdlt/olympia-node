@@ -65,7 +65,6 @@ public class BFTEventReducerTest {
             this.voteSender,
             this.hasher,
             this.timeSupplier,
-            this.proposerElection,
             this.counters,
             this.safetyRules,
             this.validatorSet,
@@ -88,7 +87,7 @@ public class BFTEventReducerTest {
         Vote vote = mock(Vote.class);
         when(vote.getView()).thenReturn(View.of(1));
         when(this.proposerElection.getProposer(any())).thenReturn(BFTNode.random());
-        this.bftEventReducer.processViewUpdate(ViewUpdate.create(View.of(3), View.of(2), View.of(2), BFTNode.random()));
+        this.bftEventReducer.processViewUpdate(ViewUpdate.create(View.of(3), View.of(2), View.of(2), BFTNode.random(), BFTNode.random()));
         this.bftEventReducer.processVote(vote);
         verifyNoMoreInteractions(this.pendingVotes);
     }
@@ -109,7 +108,7 @@ public class BFTEventReducerTest {
         when(this.vertexStore.highQC()).thenReturn(highQc);
 
         // Move to view 1
-        this.bftEventReducer.processViewUpdate(ViewUpdate.create(View.of(1), View.of(0), View.of(0), BFTNode.random()));
+        this.bftEventReducer.processViewUpdate(ViewUpdate.create(View.of(1), View.of(0), View.of(0), BFTNode.random(), BFTNode.random()));
 
         this.bftEventReducer.processVote(vote);
 

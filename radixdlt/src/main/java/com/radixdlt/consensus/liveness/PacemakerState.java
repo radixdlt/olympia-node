@@ -82,13 +82,15 @@ public class PacemakerState implements PacemakerUpdater {
         }
 
         final BFTNode leader = this.proposerElection.getProposer(nextView);
+        final BFTNode nextLeader = this.proposerElection.getProposer(nextView.next());
         this.currentView = nextView;
         viewUpdateSender.dispatch(
             ViewUpdate.create(
                 this.currentView,
                 this.lastQuorumView,
                 this.highestCommitView,
-                leader
+                leader,
+                nextLeader
             )
         );
     }

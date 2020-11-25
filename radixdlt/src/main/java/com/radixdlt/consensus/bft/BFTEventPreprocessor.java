@@ -26,7 +26,6 @@ import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTSyncer.SyncResult;
 import com.radixdlt.consensus.bft.SyncQueues.SyncQueue;
-import com.radixdlt.consensus.liveness.ProposerElection;
 
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import java.util.HashMap;
@@ -57,7 +56,6 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	private final BFTNode self;
 	private final BFTEventProcessor forwardTo;
 	private final BFTSyncer bftSyncer;
-	private final ProposerElection proposerElection;
 	private final SyncQueues syncQueues;
 
 	private final Map<View, List<ConsensusEvent>> viewQueues = new HashMap<>();
@@ -67,13 +65,11 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		BFTNode self,
 		BFTEventProcessor forwardTo,
 		BFTSyncer bftSyncer,
-		ProposerElection proposerElection,
 		SyncQueues syncQueues,
 		ViewUpdate initialViewUpdate
 	) {
 		this.self = Objects.requireNonNull(self);
 		this.bftSyncer = Objects.requireNonNull(bftSyncer);
-		this.proposerElection = Objects.requireNonNull(proposerElection);
 		this.syncQueues = syncQueues;
 		this.forwardTo = forwardTo;
 		this.latestViewUpdate = Objects.requireNonNull(initialViewUpdate);
@@ -220,10 +216,11 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	private boolean processViewTimeoutInternal(ViewTimeout viewTimeout) {
 		log.trace("ViewTimeout: PreProcessing {}", viewTimeout);
 
-		// Only do something if it's a view on or after our current
+		// Only sync and execute if it's a view on or after our current
 		if (!onCurrentView("ViewTimeout", viewTimeout.getView(), viewTimeout)) {
 			return true;
 		}
+
 		return syncUp(
 			viewTimeout.highQC(),
 			viewTimeout.getAuthor(),
@@ -235,13 +232,17 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		log.trace("Vote: PreProcessing {}", vote);
 
 		// Only do something if it's a view on or after our current, and we are the leader for the next view
-		if (!checkForCurrentViewAndIAmNextLeader("Vote", vote.getView(), vote)) {
+		if (!onCurrentView("Vote", vote.getView(), vote)) {
 			return true;
 		}
 		return syncUp(
 			vote.highQC(),
 			vote.getAuthor(),
-			() -> processOnCurrentViewOrCache(vote, forwardTo::processVote)
+			() -> processOnCurrentViewOrCache(vote, v -> {
+				if (iAmNextLeader(v)) {
+					forwardTo.processVote(v);
+				}
+			})
 		);
 	}
 
@@ -297,10 +298,6 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		}
 	}
 
-	private boolean checkForCurrentViewAndIAmNextLeader(String what, View view, Object thing) {
-		return onCurrentView(what, view, thing) && iAmNextLeader(what, view, thing);
-	}
-
 	private boolean onCurrentView(String what, View view, Object thing) {
 		final View currentView = this.latestViewUpdate.getCurrentView();
 		if (view.compareTo(currentView) < 0) {
@@ -310,15 +307,20 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		return true;
 	}
 
-	private boolean iAmNextLeader(String what, View view, Object thing) {
+	private boolean iAmNextLeader(Object thing) {
 		// TODO: currently we don't check view of vote relative to our pacemakerState. This opens
 		// TODO: up to dos attacks on calculation of next proposer if ProposerElection is
 		// TODO: an expensive operation. Need to figure out a way of mitigating this problem
 		// TODO: perhaps through filter views too out of bounds
-		BFTNode nextLeader = proposerElection.getProposer(view.next());
+		BFTNode nextLeader = this.latestViewUpdate.getNextLeader();
 		boolean iAmTheNextLeader = Objects.equals(nextLeader, this.self);
 		if (!iAmTheNextLeader) {
-			log.warn("{}: Confused message for view {} (should be sent to {}, I am {}): {}", what, view, nextLeader, this.self, thing);
+			log.warn("Confused message for view {} (should be sent to {}, I am {}): {}",
+				this.latestViewUpdate.getCurrentView(),
+				nextLeader,
+				this.self,
+				thing
+			);
 			return false;
 		}
 		return true;

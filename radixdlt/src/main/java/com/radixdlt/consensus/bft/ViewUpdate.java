@@ -31,29 +31,36 @@ public final class ViewUpdate {
 	private final View highestCommitView;
 
 	private final BFTNode leader;
+	private final BFTNode nextLeader;
 
-	private ViewUpdate(View currentView, View lastQuorumView, View highestCommitView, BFTNode leader) {
+	private ViewUpdate(View currentView, View lastQuorumView, View highestCommitView, BFTNode leader, BFTNode nextLeader) {
 		this.currentView = currentView;
 		this.lastQuorumView = lastQuorumView;
 		this.highestCommitView = highestCommitView;
 		this.leader = leader;
+		this.nextLeader = nextLeader;
 	}
 
-	public static ViewUpdate create(View currentView, View lastQuorumView, View highestCommitView, BFTNode leader) {
+	public static ViewUpdate create(View currentView, View lastQuorumView, View highestCommitView, BFTNode leader, BFTNode nextLeader) {
 		Objects.requireNonNull(currentView);
 		Objects.requireNonNull(lastQuorumView);
 		Objects.requireNonNull(highestCommitView);
 		Objects.requireNonNull(leader);
+		Objects.requireNonNull(nextLeader);
 
-		return new ViewUpdate(currentView, lastQuorumView, highestCommitView, leader);
+		return new ViewUpdate(currentView, lastQuorumView, highestCommitView, leader, nextLeader);
 	}
 
 	public static ViewUpdate genesis() {
-		return new ViewUpdate(View.genesis(), View.genesis(), View.genesis(), null);
+		return new ViewUpdate(View.genesis(), View.genesis(), View.genesis(), null, null);
 	}
 
 	public BFTNode getLeader() {
 		return leader;
+	}
+
+	public BFTNode getNextLeader() {
+		return nextLeader;
 	}
 
 	public View getCurrentView() {
@@ -74,12 +81,13 @@ public final class ViewUpdate {
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s,%s,%s leader=%s]",
+		return String.format("%s[%s,%s,%s leader=%s nextLeader=%s]",
 			getClass().getSimpleName(),
 			this.currentView,
 			this.lastQuorumView,
 			this.highestCommitView,
-			this.leader);
+			this.leader,
+			this.nextLeader);
 	}
 
 	@Override
@@ -92,13 +100,14 @@ public final class ViewUpdate {
 		}
 		final ViewUpdate that = (ViewUpdate) o;
 		return Objects.equals(currentView, that.currentView)
-				&& Objects.equals(lastQuorumView, that.lastQuorumView)
-				&& Objects.equals(highestCommitView, that.highestCommitView)
-				&& Objects.equals(leader, that.leader);
+			&& Objects.equals(lastQuorumView, that.lastQuorumView)
+			&& Objects.equals(highestCommitView, that.highestCommitView)
+			&& Objects.equals(leader, that.leader)
+			&& Objects.equals(nextLeader, that.nextLeader);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(currentView, lastQuorumView, highestCommitView, leader);
+		return Objects.hash(currentView, lastQuorumView, highestCommitView, leader, nextLeader);
 	}
 }
