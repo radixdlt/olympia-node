@@ -1,5 +1,5 @@
 {
-	"hashOfSuite": "5f568b4041b6b103997419c44abb48595b490638a9d777f71416a9f71b6a71d8",
+	"hashOfSuite": "50c6bca8835e538814e8f8c598da5ca8aec3770ef33a160744e396b4c8ada19c",
 	"suite": {
 		"scenarios": [
 			{
@@ -11,8 +11,10 @@
 				"identifier": "hashing",
 				"name": "SHA2-256 bit hashing",
 				"tests": {
-					"originalSource": "http://csrc.nist.gov/publications/fips/fips180-2/fips180-2.pdf",
-					"source": "https://github.com/python/cpython/blob/e9684fac5a158be9806304a676e619857520a4dc/Lib/test/test_hashlib.py#L527-L543",
+					"source": {
+						"link": "https://github.com/python/cpython/blob/e9684fac5a158be9806304a676e619857520a4dc/Lib/test/test_hashlib.py#L527-L543",
+						"originalSourceLink": "http://csrc.nist.gov/publications/fips/fips180-2/fips180-2.pdf"
+					},
 					"vectors": [
 						{
 							"input": {
@@ -50,7 +52,9 @@
 				"identifier": "radix_hashing",
 				"name": "Radix hashing",
 				"tests": {
-					"source": "https://en.bitcoin.it/wiki/Protocol_documentation#Hashes",
+					"source": {
+						"link": "https://en.bitcoin.it/wiki/Protocol_documentation#Hashes"
+					},
 					"vectors": [
 						{
 							"expected": {
@@ -72,7 +76,9 @@
 				"identifier": "secp256k1",
 				"name": "Elliptic Curve secp256k1 key generation",
 				"tests": {
-					"source": "https://github.com/bitcoin/bips/blob/master/bip-0340/test-vectors.csv",
+					"source": {
+						"link": "https://github.com/bitcoin/bips/blob/master/bip-0340/test-vectors.csv"
+					},
 					"vectors": [
 						{
 							"expected": {
@@ -118,7 +124,9 @@
 				"identifier": "ecdsa_signing",
 				"name": "ECDSA signing (deterministic)",
 				"tests": {
-					"source": "https://github.com/trezor/trezor-crypto/blob/957b8129bded180c8ac3106e61ff79a1a3df8893/tests/test_check.c#L1959-L1965",
+					"source": {
+						"link": "https://github.com/trezor/trezor-crypto/blob/957b8129bded180c8ac3106e61ff79a1a3df8893/tests/test_check.c#L1959-L1965"
+					},
 					"vectors": [
 						{
 							"expected": {
@@ -216,33 +224,136 @@
 				"identifier": "ecdsa_verification",
 				"name": "ECDSA Verification",
 				"tests": {
-					"source": "https://wycheproof.com",
+					"source": {
+						"link": "https://github.com/google/wycheproof/blob/4672ff74d68766e7785c2cac4c597effccef2c5c/testvectors/ecdsa_secp256k1_sha256_test.json",
+						"modifiedByTool": {
+							"tool": {
+								"name": "JSONata",
+								"link": "https://try.jsonata.org/",
+								"version": "1.8.4"
+							},
+							"expression": "(\n$vectors := testGroups@$G.{\n'tests': $G.tests@$T[$T.result='valid'].{\n'expected': {\n'isValid': $T.result='valid'\n},\n'input': {\n'comment': $T.comment,\n'wycheProofVectorId': $T.tcId,\n'msg': $T.msg,\n'publicKeyUncompressed': $G.key.uncompressed,\n'signatureDerEncoded': $T.sig\n}\n}\n}.tests;\n\n$distinctBasedOnComment := function($acc, $el) {\n($el.input.comment in ($map($acc, function($accEl) { $accEl.input.comment }))) ? $acc : $append($acc,$el)\n};\n\n$distinctVectors := $reduce($vectors, $distinctBasedOnComment);\n\n$takeFirstN := function($toTake, $acc, $el) {\n$count($acc) = $toTake ? $acc : $append($acc,$el)\n};\n\n$takeFirstTen := function($acc, $el) {\n$takeFirstN(10, $acc, $el)\n};\n\n$reduce($distinctVectors, $takeFirstTen);\n)"
+						}
+					},
 					"vectors": [
 						{
 							"expected": {
-								"outcome": "validates"
+								"isValid": true
 							},
 							"input": {
-								"message": "hey you!",
-								"publicKey": "deadbeef",
-								"signature": {
-									"r": "deadbeef",
-									"s": "deadbeef"
-								}
+								"comment": "signature malleability",
+								"wycheProofVectorId": 1,
+								"msg": "313233343030",
+								"publicKeyUncompressed": "04b838ff44e5bc177bf21189d0766082fc9d843226887fc9760371100b7ee20a6ff0c9d75bfba7b31a6bca1974496eeb56de357071955d83c4b1badaa0b21832e9",
+								"signatureDerEncoded": "3046022100813ef79ccefa9a56f7ba805f0e478584fe5f0dd5f567bc09b5123ccbc9832365022100900e75ad233fcc908509dbff5922647db37c21f4afd3203ae8dc4ae7794b0f87"
 							}
 						},
 						{
 							"expected": {
-								"outcome": "error",
-								"reason": "public key and signature mismatch."
+								"isValid": true
 							},
 							"input": {
-								"message": "hey you!",
-								"publicKey": "0101010",
-								"signature": {
-									"r": "deadbeef",
-									"s": "deadbeef"
-								}
+								"comment": "valid",
+								"wycheProofVectorId": 3,
+								"msg": "313233343030",
+								"publicKeyUncompressed": "04b838ff44e5bc177bf21189d0766082fc9d843226887fc9760371100b7ee20a6ff0c9d75bfba7b31a6bca1974496eeb56de357071955d83c4b1badaa0b21832e9",
+								"signatureDerEncoded": "3045022100813ef79ccefa9a56f7ba805f0e478584fe5f0dd5f567bc09b5123ccbc983236502206ff18a52dcc0336f7af62400a6dd9b810732baf1ff758000d6f613a556eb31ba"
+							}
+						},
+						{
+							"expected": {
+								"isValid": true
+							},
+							"input": {
+								"comment": "Edge case for Shamir multiplication",
+								"wycheProofVectorId": 230,
+								"msg": "3235353835",
+								"publicKeyUncompressed": "04b838ff44e5bc177bf21189d0766082fc9d843226887fc9760371100b7ee20a6ff0c9d75bfba7b31a6bca1974496eeb56de357071955d83c4b1badaa0b21832e9",
+								"signatureDerEncoded": "3045022100dd1b7d09a7bd8218961034a39a87fecf5314f00c4d25eb58a07ac85e85eab516022035138c401ef8d3493d65c9002fe62b43aee568731b744548358996d9cc427e06"
+							}
+						},
+						{
+							"expected": {
+								"isValid": true
+							},
+							"input": {
+								"comment": "special case hash",
+								"wycheProofVectorId": 231,
+								"msg": "343236343739373234",
+								"publicKeyUncompressed": "04b838ff44e5bc177bf21189d0766082fc9d843226887fc9760371100b7ee20a6ff0c9d75bfba7b31a6bca1974496eeb56de357071955d83c4b1badaa0b21832e9",
+								"signatureDerEncoded": "304502210095c29267d972a043d955224546222bba343fc1d4db0fec262a33ac61305696ae02206edfe96713aed56f8a28a6653f57e0b829712e5eddc67f34682b24f0676b2640"
+							}
+						},
+						{
+							"expected": {
+								"isValid": true
+							},
+							"input": {
+								"comment": "k*G has a large x-coordinate",
+								"wycheProofVectorId": 285,
+								"msg": "313233343030",
+								"publicKeyUncompressed": "0407310f90a9eae149a08402f54194a0f7b4ac427bf8d9bd6c7681071dc47dc36226a6d37ac46d61fd600c0bf1bff87689ed117dda6b0e59318ae010a197a26ca0",
+								"signatureDerEncoded": "30360211014551231950b75fc4402da1722fc9baeb022100fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd036413e"
+							}
+						},
+						{
+							"expected": {
+								"isValid": true
+							},
+							"input": {
+								"comment": "r,s are large",
+								"wycheProofVectorId": 287,
+								"msg": "313233343030",
+								"publicKeyUncompressed": "04bc97e7585eecad48e16683bc4091708e1a930c683fc47001d4b383594f2c4e22705989cf69daeadd4e4e4b8151ed888dfec20fb01728d89d56b3f38f2ae9c8c5",
+								"signatureDerEncoded": "3046022100fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd036413f022100fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd036413e"
+							}
+						},
+						{
+							"expected": {
+								"isValid": true
+							},
+							"input": {
+								"comment": "r and s^-1 have a large Hamming weight",
+								"wycheProofVectorId": 288,
+								"msg": "313233343030",
+								"publicKeyUncompressed": "0444ad339afbc21e9abf7b602a5ca535ea378135b6d10d81310bdd8293d1df3252b63ff7d0774770f8fe1d1722fa83acd02f434e4fc110a0cc8f6dddd37d56c463",
+								"signatureDerEncoded": "304402207ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc02203e9a7582886089c62fb840cf3b83061cd1cff3ae4341808bb5bdee6191174177"
+							}
+						},
+						{
+							"expected": {
+								"isValid": true
+							},
+							"input": {
+								"comment": "small r and s",
+								"wycheProofVectorId": 290,
+								"msg": "313233343030",
+								"publicKeyUncompressed": "041877045be25d34a1d0600f9d5c00d0645a2a54379b6ceefad2e6bf5c2a3352ce821a532cc1751ee1d36d41c3d6ab4e9b143e44ec46d73478ea6a79a5c0e54159",
+								"signatureDerEncoded": "3006020101020101"
+							}
+						},
+						{
+							"expected": {
+								"isValid": true
+							},
+							"input": {
+								"comment": "small r and s^-1",
+								"wycheProofVectorId": 295,
+								"msg": "313233343030",
+								"publicKeyUncompressed": "0402ef4d6d6cfd5a94f1d7784226e3e2a6c0a436c55839619f38fb4472b5f9ee777eb4acd4eebda5cd72875ffd2a2f26229c2dc6b46500919a432c86739f3ae866",
+								"signatureDerEncoded": "302702020101022100c58b162c58b162c58b162c58b162c58a1b242973853e16db75c8a1a71da4d39d"
+							}
+						},
+						{
+							"expected": {
+								"isValid": true
+							},
+							"input": {
+								"comment": "smallish r and s^-1",
+								"wycheProofVectorId": 296,
+								"msg": "313233343030",
+								"publicKeyUncompressed": "04464f4ff715729cae5072ca3bd801d3195b67aec65e9b01aad20a2943dcbcb584b1afd29d31a39a11d570aa1597439b3b2d1971bf2f1abf15432d0207b10d1d08",
+								"signatureDerEncoded": "302c02072d9b4d347952cc022100fcbc5103d0da267477d1791461cf2aa44bf9d43198f79507bd8779d69a13108e"
 							}
 						}
 					]
@@ -258,7 +369,9 @@
 				"identifier": "json_radix_particles",
 				"name": "JSON roundtrip of Radix Particles",
 				"tests": {
-					"source": "Radix employee named 'Alexander cyon' made the first implementation of this.",
+					"source": {
+						"comment": "Radix employee named 'Alexander cyon' made the first implementation of this."
+					},
 					"vectors": [
 						{
 							"expected": {

@@ -61,28 +61,6 @@ public class SanityTestSuiteTestExecutor {
 
 		static final class SanityTestSuite {
 
-			/**
-			 * Test scenario on structure:
-			 *
-			 *            {
-			 * 				"description": {
-			 * 					"implementationInfo": "",
-			 * 					"purpose": "",
-			 * 					"troubleshooting": ""
-			 *                },
-			 * 				"identifier": "",
-			 * 				"name": "",
-			 * 				"tests": {
-			 * 					"source": "https://",
-			 * 					"vectors": [
-			 *                        {
-			 * 							"input": {},
-			 * 							"expected": {}
-			 *                        }
-			 * 					]
-			 *                }
-			 *            }
-			 */
 			static final class SanityTestScenario {
 				static final class SanityTestScenarioDescription {
 					private String implementationInfo;
@@ -92,13 +70,29 @@ public class SanityTestSuiteTestExecutor {
 
 				static final class SanityTestScenarioTests {
 
-					private String source;
-					private @Nullable String originalSource;
+					static final class TestSource {
+
+						static final class ModifiedByTool {
+
+							static final class ToolInfo {
+								private String name;
+								private String link;
+								private String version;
+							}
+
+							private String expression;
+							private ToolInfo tool;
+						}
+
+						private @Nullable String link;
+						private @Nullable String comment;
+						private @Nullable String originalSourceLink;
+						private @Nullable ModifiedByTool modifiedByTool;
+					}
+
+					private TestSource source;
 					private List<UnknownTestVector> vectors;
 
-					Optional<String> getOriginalSource() {
-						return Optional.ofNullable(this.originalSource);
-					}
 				}
 
 				private SanityTestScenarioDescription description;
@@ -144,6 +138,13 @@ public class SanityTestSuiteTestExecutor {
 
 		return sanityTestSuiteRoot;
 
+	}
+
+	private static final String prettyJsonStringFromObject(Object object) {
+		Gson gson = new Gson();
+		String jsonStringPretty = JSONFormatter.sortPrettyPrintJSONString(gson.toJson(object));
+
+		return jsonStringPretty;
 	}
 
 	private SanityTestSuiteRoot sanityTestSuiteRootFromFile() {
@@ -307,7 +308,6 @@ public class SanityTestSuiteTestExecutor {
 			private byte[] hashedMessageToSign() {
 				byte[] unhashedEncodedMessage = messageToSign.getBytes(StandardCharsets.UTF_8);
 				return sha256Hash(unhashedEncodedMessage);
-
 			}
 		}
 		static final class Expected {
@@ -326,9 +326,7 @@ public class SanityTestSuiteTestExecutor {
 	private void testScenarioKeySign(SanityTestSuiteRoot.SanityTestSuite.SanityTestScenario scenario) {
 		assertEquals(TEST_SCENARIO_KEYSIGN, scenario.identifier);
 
-		for (int testVectorIndex = 0; testVectorIndex < scenario.tests.vectors.size(); ++testVectorIndex) {
-			UnknownTestVector untypedVector = scenario.tests.vectors.get(testVectorIndex);
-			KeySignTestVector testVector = cast(untypedVector, KeySignTestVector.class);
+		BiConsumer<KeySignTestVector, Integer> testVectorRunner = (testVector, testVectorIndex) -> {
 
 			ECKeyPair keyPair = null;
 			try {
@@ -347,11 +345,65 @@ public class SanityTestSuiteTestExecutor {
 					testVector.expected.signature.s,
 					signature.getS().toString(16)
 			);
+		};
+
+		for (int testVectorIndex = 0; testVectorIndex < scenario.tests.vectors.size(); ++testVectorIndex) {
+			UnknownTestVector untypedVector = scenario.tests.vectors.get(testVectorIndex);
+			testVectorRunner.accept(
+					cast(untypedVector, KeySignTestVector.class),
+					testVectorIndex
+			);
 		}
 	}
 
+	static final class KeyVerifyTestVector {
+		static final class Input {
+			private String comment;
+			private int wycheProofVectorId;
+			private String msg;
+			private String publicKeyUncompressed;
+			private String signatureDerEncoded;
+
+			private byte[] hashedMessageToVerify() {
+				return sha256Hash(Bytes.fromHexString(this.msg));
+			}
+		}
+		static final class Expected {
+			private boolean isValid;
+		}
+		private Expected expected;
+		private Input input;
+	}
 	private void testScenarioKeyVerify(SanityTestSuiteRoot.SanityTestSuite.SanityTestScenario scenario) {
 		assertEquals(TEST_SCENARIO_KEYVERIFY, scenario.identifier);
+
+		BiConsumer<KeyVerifyTestVector, Integer> testVectorRunner = (testVector, testVectorIndex) -> {
+
+			ECPublicKey publicKey = null;
+			try {
+				publicKey = ECPublicKey.fromBytes(Bytes.fromHexString(testVector.input.publicKeyUncompressed));
+			} catch (Exception e) {
+				Assert.fail(String.format("Test vector at index %d failed. Failed to construct public key from hex: " + e, testVectorIndex));
+			}
+			ECDSASignature signature = ECDSASignature.decodeFromDER(Bytes.fromHexString(testVector.input.signatureDerEncoded));
+
+			byte[] msg = testVector.input.hashedMessageToVerify();
+
+			assertEquals(
+					String.format("Test vector at index %d failed. Vector: %s", testVectorIndex, prettyJsonStringFromObject(testVector)),
+					testVector.expected.isValid,
+					publicKey.verify(msg, signature)
+			);
+
+		};
+
+		for (int testVectorIndex = 4; testVectorIndex < scenario.tests.vectors.size(); ++testVectorIndex) {
+			UnknownTestVector untypedVector = scenario.tests.vectors.get(testVectorIndex);
+			testVectorRunner.accept(
+					cast(untypedVector, KeyVerifyTestVector.class),
+					testVectorIndex
+			);
+		}
 	}
 
 	private void testScenarioJsonRoundTripRadixParticles(SanityTestSuiteRoot.SanityTestSuite.SanityTestScenario scenario) {
@@ -398,15 +450,15 @@ public class SanityTestSuiteTestExecutor {
 								"Troubleshooting: '%s'\n" +
 								"Implementation info: '%s'\n" +
 								"Test vectors found at: '%s'\n" +
-										"%s" +
+								"Test vectors modified?: '%s'\n" +
 								"Failure reason: '%s'\n⚠️⚠️⚠️\n",
 						scenario.name,
 						scenario.identifier,
 						scenario.description.purpose,
 						scenario.description.troubleshooting,
 						scenario.description.implementationInfo,
-						scenario.tests.source,
-						scenario.tests.getOriginalSource().map(original -> String.format("Original source: '%s'\n", original)).orElse(""),
+						scenario.tests.source.link,
+						scenario.tests.source.modifiedByTool == null ? "NO" : "YES, modified with tool (see 'expression' for how): " + scenario.tests.source.modifiedByTool.tool.link,
 						testAssertionError.getLocalizedMessage()
 				);
 
