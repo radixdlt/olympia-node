@@ -43,6 +43,7 @@ import com.radixdlt.environment.deterministic.DeterministicSavedLastEvent;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
+import com.radixdlt.environment.deterministic.network.MessageQueue;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.integration.distributed.deterministic.NodeEvents;
 import com.radixdlt.integration.distributed.deterministic.NodeEventsModule;
@@ -87,7 +88,7 @@ public class RecoveryLivenessTest {
 	public static Collection<Object[]> numNodes() {
 		return List.of(new Object[][] {
 			{1, 88L}, {2, 88L}, {3, 88L}, {4, 88L},
-			{2, 1L}
+			{2, 1L}, {10, 100L}
 		});
 	}
 
@@ -99,6 +100,7 @@ public class RecoveryLivenessTest {
 	private List<Injector> nodes = new ArrayList<>();
 	private final List<ECKeyPair> nodeKeys;
 	private final long epochCeilingView;
+	private MessageMutator messageMutator;
 
 	@Inject
 	private NodeEvents nodeEvents;
@@ -110,10 +112,11 @@ public class RecoveryLivenessTest {
 
 	@Before
 	public void setup() {
+		this.messageMutator = MessageMutator.nothing();
 		this.network = new DeterministicNetwork(
 			nodeKeys.stream().map(k -> BFTNode.create(k.getPublicKey())).collect(Collectors.toList()),
 			MessageSelector.firstSelector(),
-			MessageMutator.nothing()
+			this::mutate
 		);
 
 		List<BFTNode> allNodes = nodeKeys.stream()
@@ -138,6 +141,16 @@ public class RecoveryLivenessTest {
 			this.nodes.add(nodeCreator.get());
 		}
 		this.nodes.forEach(i -> i.getInstance(DeterministicEpochsConsensusProcessor.class).start());
+	}
+
+	boolean mutate(ControlledMessage message, MessageQueue queue) {
+		return messageMutator.mutate(message, queue);
+	}
+
+	private void stopDatabase(Injector injector) {
+		injector.getInstance(BerkeleyLedgerEntryStore.class).close();
+		injector.getInstance(PersistentSafetyStateStore.class).close();
+		injector.getInstance(DatabaseEnvironment.class).stop();
 	}
 
 	@After
@@ -219,6 +232,13 @@ public class RecoveryLivenessTest {
 			.max(Comparator.naturalOrder());
 	}
 
+	private EpochView latestEpochView() {
+		return this.nodes.stream()
+			.map(i -> i.getInstance(Key.get(new TypeLiteral<DeterministicSavedLastEvent<EpochViewUpdate>>() { })).getLastEvent())
+			.map(EpochViewUpdate::getEpochView)
+			.max(Comparator.naturalOrder()).orElse(new EpochView(0, View.genesis()));
+	}
+
 	private int processUntilNextCommittedEmitted(int maxSteps) {
 		EpochView lastCommitted = this.lastCommitViewEmitted().orElse(new EpochView(0, View.genesis()));
 		int count = 0;
@@ -240,19 +260,6 @@ public class RecoveryLivenessTest {
 		for (int i = 0; i < messageCount; i++) {
 			processNext();
 		}
-	}
-
-	private void stopDatabase(Injector injector) {
-		injector.getInstance(BerkeleyLedgerEntryStore.class).close();
-		injector.getInstance(PersistentSafetyStateStore.class).close();
-		injector.getInstance(DatabaseEnvironment.class).stop();
-	}
-
-	private EpochView latestEpochView() {
-		return this.nodes.stream()
-			.map(i -> i.getInstance(Key.get(new TypeLiteral<DeterministicSavedLastEvent<EpochViewUpdate>>() { })).getLastEvent())
-			.map(EpochViewUpdate::getEpochView)
-			.max(Comparator.naturalOrder()).orElse(new EpochView(0, View.genesis()));
 	}
 
 	/**
@@ -302,6 +309,32 @@ public class RecoveryLivenessTest {
 
 	@Test
 	public void liveness_check_when_restart_all_nodes() {
+		EpochView epochView = this.latestEpochView();
+
+		for (int restart = 0; restart < 5; restart++) {
+			processForCount(5000);
+
+			EpochView nextEpochView = latestEpochView();
+			assertThat(nextEpochView).isGreaterThan(epochView);
+			epochView = nextEpochView;
+
+			logger.info("Restarting " + restart);
+			for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
+				restartNode(nodeIndex);
+			}
+		}
+	}
+
+	@Test
+	public void liveness_check_when_restart_all_nodes_and_f_nodes_down() {
+		int f = (nodes.size()  - 1) / 3;
+		if (f <= 0) {
+			// if f <= 0, this is equivalent to liveness_check_when_restart_all_nodes();
+			return;
+		}
+
+		this.messageMutator = (message, queue) -> message.channelId().receiverIndex() < f || message.channelId().senderIndex() < f;
+
 		EpochView epochView = this.latestEpochView();
 
 		for (int restart = 0; restart < 5; restart++) {

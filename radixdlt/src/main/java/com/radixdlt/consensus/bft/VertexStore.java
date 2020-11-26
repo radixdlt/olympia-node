@@ -150,7 +150,7 @@ public final class VertexStore {
 		}
 
 		if (!vertexStore.addQC(rootCommitQC)) {
-			throw new IllegalStateException();
+			throw new IllegalStateException("Root Commit QC missing vertex");
 		}
 
 		return vertexStore;
