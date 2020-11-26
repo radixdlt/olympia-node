@@ -70,6 +70,8 @@ public interface SystemCounters {
 		NETWORKING_SENT_BYTES("networking.sent_bytes"),
 		NETWORKING_RECEIVED_BYTES("networking.received_bytes"),
 
+		NETWORKING_DROPPED_ERROR_RESPONSES("networking.dropped_error_responses"),
+
 		SIGNATURES_SIGNED("signatures.signed"),
 		SIGNATURES_VERIFIED("signatures.verified");
 
