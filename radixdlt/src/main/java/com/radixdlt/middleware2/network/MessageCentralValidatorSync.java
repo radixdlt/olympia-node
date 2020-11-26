@@ -178,7 +178,7 @@ public class MessageCentralValidatorSync implements SyncVerticesRequestSender, S
 					BFTNode node = BFTNode.create(src.getSystem().getKey());
 					return new GetVerticesErrorResponse(node, msg.highQC());
 				} else {
-					var counter = counters.add(CounterType.NETWORKING_DROPPED_ERROR_RESPONSES, 1);
+					var counter = counters.increment(CounterType.NETWORKING_DROPPED_ERROR_RESPONSES);
 
 					if (counter == 1 || counter % 1000 == 0) {
 						log.warn("Exceeded error response rate, total {} messages dropped", counter);
