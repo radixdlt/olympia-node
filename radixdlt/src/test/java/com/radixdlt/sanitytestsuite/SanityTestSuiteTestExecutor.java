@@ -1,4 +1,4 @@
-package com.radixdlt;
+package com.radixdlt.sanitytestsuite;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
@@ -11,13 +11,10 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.crypto.exception.PrivateKeyException;
-import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.JSONFormatter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.bouncycastle.jcajce.provider.asymmetric.ec.KeyFactorySpi;
 import org.json.JSONObject;
 import org.junit.Assert;
 import org.junit.Test;
@@ -31,7 +28,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
