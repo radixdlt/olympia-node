@@ -180,7 +180,7 @@ public class MessageCentralValidatorSync implements SyncVerticesRequestSender, S
 				} else {
 					var counter = counters.add(CounterType.NETWORKING_DROPPED_ERROR_RESPONSES, 1);
 
-					if (counter % 1000 == 0) {
+					if (counter == 1 || counter % 1000 == 0) {
 						log.warn("Exceeded error response rate, total {} messages dropped", counter);
 					}
 					return null;
