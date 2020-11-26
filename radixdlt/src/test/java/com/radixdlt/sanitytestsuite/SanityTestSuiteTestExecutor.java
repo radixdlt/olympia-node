@@ -36,68 +36,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-class UnknownTestVector {
-	Object input;
-	Object expected;
-}
+
 
 public class SanityTestSuiteTestExecutor {
 
 	private static final Logger log = LogManager.getLogger();
-
-	static final class SanityTestSuiteRoot {
-
-		static final class SanityTestSuite {
-
-			static final class SanityTestScenario {
-				static final class SanityTestScenarioDescription {
-					private String implementationInfo;
-					private String purpose;
-					private String troubleshooting;
-				}
-
-				static final class SanityTestScenarioTests {
-
-					static final class TestSource {
-
-						static final class ModifiedByTool {
-
-							static final class ToolInfo {
-								private String name;
-								private String link;
-								private String version;
-							}
-
-							private String expression;
-							private ToolInfo tool;
-						}
-
-						private @Nullable String link;
-						private @Nullable String comment;
-						private @Nullable String originalSourceLink;
-						private @Nullable ModifiedByTool modifiedByTool;
-					}
-
-					private TestSource source;
-					private List<UnknownTestVector> vectors;
-
-				}
-
-				private SanityTestScenarioDescription description;
-				private String identifier;
-				private String name;
-				private SanityTestScenarioTests tests;
-
-			}
-
-			private List<SanityTestScenario> scenarios;
-
-		}
-
-		private String hashOfSuite;
-		private SanityTestSuite suite;
-
-	}
 
 	private SanityTestSuiteRoot sanityTestSuiteRootFromFileNamed(String sanityTestJSONFileName) {
 		Gson gson = new Gson();
