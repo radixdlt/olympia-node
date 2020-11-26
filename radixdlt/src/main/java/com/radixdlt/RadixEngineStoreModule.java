@@ -26,6 +26,7 @@ import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.UnverifiedVertex;
@@ -165,7 +166,7 @@ public class RadixEngineStoreModule extends AbstractModule {
 					.collect(ImmutableList.toImmutableList());
 
 				VerifiedVertexStoreState vertexStoreState = VerifiedVertexStoreState.create(
-					serializedVertexStoreState.getCommitQC(),
+					serializedVertexStoreState.getHighQC(),
 					verifiedRoot,
 					vertices
 				);
@@ -182,7 +183,7 @@ public class RadixEngineStoreModule extends AbstractModule {
 					lastEpochProof.timestamp()
 				);
 				QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
-				return new BFTConfiguration(validatorSet, VerifiedVertexStoreState.create(genesisQC, verifiedGenesisVertex));
+				return new BFTConfiguration(validatorSet, VerifiedVertexStoreState.create(HighQC.from(genesisQC), verifiedGenesisVertex));
 			});
 	}
 

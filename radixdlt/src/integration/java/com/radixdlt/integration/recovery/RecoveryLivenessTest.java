@@ -325,6 +325,10 @@ public class RecoveryLivenessTest {
 		}
 	}
 
+	/**
+	 * This test tests for recovery when there is a vertex chain > 3 due to timeouts.
+	 * Probably won't be an issue once timeout certificates implemented.
+	 */
 	@Test
 	public void liveness_check_when_restart_all_nodes_and_f_nodes_down() {
 		int f = (nodes.size()  - 1) / 3;

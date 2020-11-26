@@ -22,6 +22,7 @@ import static org.mockito.Mockito.mock;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.BFTHeader;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
@@ -52,7 +53,7 @@ public class VerifiedVertexStoreStateCreationTest {
 		QuorumCertificate badRootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 		assertThatThrownBy(() ->
 			VerifiedVertexStoreState.create(
-				badRootQC,
+				HighQC.from(badRootQC),
 				genesisVertex
 			)
 		).isInstanceOf(IllegalStateException.class);
@@ -66,7 +67,7 @@ public class VerifiedVertexStoreStateCreationTest {
 		QuorumCertificate badRootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 		assertThatThrownBy(() ->
 			VerifiedVertexStoreState.create(
-				badRootQC,
+				HighQC.from(badRootQC),
 				genesisVertex
 			)
 		).isInstanceOf(IllegalStateException.class);
@@ -79,7 +80,7 @@ public class VerifiedVertexStoreStateCreationTest {
 		QuorumCertificate badRootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 		assertThatThrownBy(() ->
 			VerifiedVertexStoreState.create(
-				badRootQC,
+				HighQC.from(badRootQC),
 				genesisVertex
 			)
 		).isInstanceOf(IllegalStateException.class);

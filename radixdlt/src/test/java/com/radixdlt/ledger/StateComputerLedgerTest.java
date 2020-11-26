@@ -40,7 +40,6 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
@@ -122,7 +121,6 @@ public class StateComputerLedgerTest {
 			currentLedgerHeader,
 			headerComparator,
 			mempool,
-			mock(PersistentVertexStore.class),
 			stateComputer,
 			ledgerUpdateSender,
 			accumulator,
@@ -150,7 +148,6 @@ public class StateComputerLedgerTest {
 			currentLedgerHeader,
 			headerComparator,
 			mempool,
-			mock(PersistentVertexStore.class),
 			stateComputer,
 			ledgerUpdateSender,
 			accumulator,

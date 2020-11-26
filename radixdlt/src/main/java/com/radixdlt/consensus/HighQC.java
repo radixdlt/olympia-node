@@ -66,6 +66,10 @@ public final class HighQC {
 		}
 	}
 
+	public static HighQC from(QuorumCertificate genesisQC) {
+		return new HighQC(Objects.requireNonNull(genesisQC), genesisQC);
+	}
+
 	/**
 	 * Creates a {@link HighQC} from the specified QCs.
 	 * <p>

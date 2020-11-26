@@ -29,6 +29,7 @@ import static org.mockito.Mockito.verify;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -94,7 +95,8 @@ public class VertexStoreTest {
 		this.genesisVertex = new VerifiedVertex(UnverifiedVertex.createGenesis(MOCKED_HEADER), genesisHash);
 		this.rootQC = QuorumCertificate.ofGenesis(genesisVertex, MOCKED_HEADER);
 		this.sut = VertexStore.create(
-			VerifiedVertexStoreState.create(rootQC, genesisVertex),
+			mock(PersistentVertexStore.class),
+			VerifiedVertexStoreState.create(HighQC.from(rootQC), genesisVertex),
 			ledger,
 			bftUpdateSender,
 			committedSender,
@@ -175,8 +177,6 @@ public class VertexStoreTest {
 		verify(ledger, times(1)).commit(
 			any(),
 			argThat(l -> l.size() == 1 && l.get(0).getVertex().equals(vertices.get(0))),
-			any(),
-			any(),
 			any()
 		);
 	}
@@ -198,9 +198,14 @@ public class VertexStoreTest {
 	public void rebuilding_should_emit_updates() {
 		// Arrange
 		final List<VerifiedVertex> vertices = Stream.generate(this.nextVertex).limit(4).collect(Collectors.toList());
+		VerifiedVertexStoreState vertexStoreState = VerifiedVertexStoreState.create(
+			HighQC.from(vertices.get(3).getQC()),
+			vertices.get(0),
+			vertices.stream().skip(1).collect(ImmutableList.toImmutableList())
+		);
 
 		// Act
-		sut.rebuild(vertices.get(0), vertices.get(1).getQC(), vertices.get(3).getQC(), vertices.stream().skip(1).collect(Collectors.toList()));
+		sut.rebuild(vertexStoreState);
 
 		// Assert
 		verify(bftUpdateSender, times(1)).dispatch(argThat(u -> u.getInsertedVertex().equals(vertices.get(0))));

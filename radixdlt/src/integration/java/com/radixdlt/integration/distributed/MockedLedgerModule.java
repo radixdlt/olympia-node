@@ -21,9 +21,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
+import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
@@ -65,9 +65,9 @@ public class MockedLedgerModule extends AbstractModule {
 			}
 
 			@Override
-			public void commit(ImmutableSet<HashCode> prunedVertices, ImmutableList<PreparedVertex> vertices, VerifiedVertex child,
-				VerifiedVertex grandChild, QuorumCertificate commitQC) {
-				// Nothing to do here
+			public void commit(ImmutableSet<HashCode> prunedVertices, ImmutableList<PreparedVertex> vertices,
+				VerifiedVertexStoreState vertexStoreState) {
+
 			}
 
 			@Override

@@ -42,6 +42,7 @@ import com.radixdlt.LedgerModule;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.HashSigner;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
@@ -202,7 +203,7 @@ public class EpochManagerTest {
 				QuorumCertificate qc = QuorumCertificate.ofGenesis(verifiedVertex, LedgerHeader.genesis(HashUtils.zero256(), validatorSet));
 				return new BFTConfiguration(
 					validatorSet,
-					VerifiedVertexStoreState.create(qc, verifiedVertex)
+					VerifiedVertexStoreState.create(HighQC.from(qc), verifiedVertex)
 				);
 			}
 		};
@@ -236,7 +237,7 @@ public class EpochManagerTest {
 		QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
 		BFTConfiguration bftConfiguration = new BFTConfiguration(
 			nextValidatorSet,
-			VerifiedVertexStoreState.create(genesisQC, verifiedGenesisVertex)
+			VerifiedVertexStoreState.create(HighQC.from(genesisQC), verifiedGenesisVertex)
 		);
 		VerifiedLedgerHeaderAndProof proof = mock(VerifiedLedgerHeaderAndProof.class);
 		when(proof.getEpoch()).thenReturn(header.getEpoch() + 1);

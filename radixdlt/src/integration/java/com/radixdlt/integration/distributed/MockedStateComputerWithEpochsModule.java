@@ -23,6 +23,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.BFTConfiguration;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.LedgerHeader;
@@ -70,7 +71,7 @@ public class MockedStateComputerWithEpochsModule extends AbstractModule {
 			proof.timestamp()
 		);
 		QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
-		return new BFTConfiguration(validatorSet, VerifiedVertexStoreState.create(genesisQC, verifiedGenesisVertex));
+		return new BFTConfiguration(validatorSet, VerifiedVertexStoreState.create(HighQC.from(genesisQC), verifiedGenesisVertex));
 	}
 
 	@Provides
@@ -78,7 +79,6 @@ public class MockedStateComputerWithEpochsModule extends AbstractModule {
 	private VerifiedLedgerHeaderAndProof lastEpochProof(BFTValidatorSet validatorSet) {
 		return VerifiedLedgerHeaderAndProof.genesis(HashUtils.zero256(), validatorSet);
 	}
-
 
 	@Provides
 	@LastProof

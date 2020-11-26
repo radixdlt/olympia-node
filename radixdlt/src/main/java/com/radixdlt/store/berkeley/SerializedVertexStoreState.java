@@ -20,7 +20,7 @@ package com.radixdlt.store.berkeley;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -44,19 +44,19 @@ public class SerializedVertexStoreState {
 	@DsonOutput(Output.ALL)
 	private final ImmutableList<UnverifiedVertex> vertices;
 
-	@JsonProperty("commit_qc")
+	@JsonProperty("high_qc")
 	@DsonOutput(Output.ALL)
-	private final QuorumCertificate commitQC;
+	private final HighQC highQC;
 
 	@JsonCreator
 	public SerializedVertexStoreState(
-		@JsonProperty("commit_qc") QuorumCertificate commitQC,
+		@JsonProperty("high_qc") HighQC highQC,
 		@JsonProperty("root") UnverifiedVertex root,
 		@JsonProperty("vertices") ImmutableList<UnverifiedVertex> vertices
 	) {
 		this.root = Objects.requireNonNull(root);
 		this.vertices = Objects.requireNonNull(vertices);
-		this.commitQC = Objects.requireNonNull(commitQC);
+		this.highQC = Objects.requireNonNull(highQC);
 	}
 
 	public UnverifiedVertex getRoot() {
@@ -67,7 +67,7 @@ public class SerializedVertexStoreState {
 		return vertices;
 	}
 
-	public QuorumCertificate getCommitQC() {
-		return commitQC;
+	public HighQC getHighQC() {
+		return highQC;
 	}
 }

@@ -83,4 +83,9 @@ public final class ScheduledLocalTimeout {
 			&& other.millisecondsWaitTime == this.millisecondsWaitTime
 			&& other.count == this.count;
 	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{view=%s count=%s}", this.getClass().getSimpleName(), viewUpdate, count);
+	}
 }

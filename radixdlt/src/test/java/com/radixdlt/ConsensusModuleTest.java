@@ -45,6 +45,7 @@ import com.radixdlt.consensus.bft.FormedQC;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
+import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.ViewUpdate;
@@ -113,7 +114,7 @@ public class ConsensusModuleTest {
 		VerifiedVertex hashedGenesis = new VerifiedVertex(genesis, HashUtils.zero256());
 		QuorumCertificate qc = QuorumCertificate.ofGenesis(hashedGenesis, LedgerHeader.genesis(HashUtils.zero256(), null));
 		BFTValidatorSet validatorSet = BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)));
-		VerifiedVertexStoreState vertexStoreState = VerifiedVertexStoreState.create(qc, hashedGenesis);
+		VerifiedVertexStoreState vertexStoreState = VerifiedVertexStoreState.create(HighQC.from(qc), hashedGenesis);
 		this.bftConfiguration = new BFTConfiguration(validatorSet, vertexStoreState);
 		this.ecKeyPair = ECKeyPair.generateNew();
 		this.requestSender = mock(SyncVerticesRequestSender.class);
@@ -142,6 +143,7 @@ public class ConsensusModuleTest {
 				bind(new TypeLiteral<RemoteEventDispatcher<Vote>>() { }).toInstance(rmock(RemoteEventDispatcher.class));
 				bind(new TypeLiteral<ScheduledEventDispatcher<View>>() { }).toInstance(rmock(ScheduledEventDispatcher.class));
 
+				bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
 				bind(PersistentSafetyStateStore.class).toInstance(mock(PersistentSafetyStateStore.class));
 				bind(VoteSender.class).toInstance(mock(VoteSender.class));
 				bind(ProposalBroadcaster.class).toInstance(mock(ProposalBroadcaster.class));

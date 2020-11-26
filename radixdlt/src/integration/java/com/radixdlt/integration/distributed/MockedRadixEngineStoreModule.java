@@ -25,6 +25,7 @@ import com.google.inject.name.Names;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.consensus.BFTConfiguration;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.UnverifiedVertex;
@@ -81,7 +82,7 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 		UnverifiedVertex genesis = UnverifiedVertex.createGenesis(nextLedgerHeader);
 		VerifiedVertex verifiedGenesis = new VerifiedVertex(genesis, HashUtils.zero256());
 		QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesis, nextLedgerHeader);
-		return new BFTConfiguration(validatorSet, VerifiedVertexStoreState.create(genesisQC, verifiedGenesis));
+		return new BFTConfiguration(validatorSet, VerifiedVertexStoreState.create(HighQC.from(genesisQC), verifiedGenesis));
 	}
 
 	@Provides

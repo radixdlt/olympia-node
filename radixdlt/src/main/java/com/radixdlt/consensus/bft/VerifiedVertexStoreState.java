@@ -20,64 +20,51 @@ package com.radixdlt.consensus.bft;
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.BFTHeader;
-import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.store.berkeley.SerializedVertexStoreState;
 import com.radixdlt.utils.Pair;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Stream;
 
 public final class VerifiedVertexStoreState {
 	private final VerifiedVertex root;
 	private final VerifiedLedgerHeaderAndProof rootHeader;
-	private final QuorumCertificate rootCommitQC;
+	private final HighQC highQC;
 	private final ImmutableList<VerifiedVertex> vertices;
 
 	private VerifiedVertexStoreState(
-		QuorumCertificate rootCommitQC,
+		HighQC highQC,
 		VerifiedLedgerHeaderAndProof rootHeader,
 		VerifiedVertex root,
 		ImmutableList<VerifiedVertex> vertices
 	) {
-		this.rootCommitQC = rootCommitQC;
+		this.highQC = highQC;
 		this.rootHeader = rootHeader;
 		this.root = root;
 		this.vertices = vertices;
 	}
 
 	public static VerifiedVertexStoreState create(
-		QuorumCertificate rootCommitQC,
+		HighQC highQC,
 		VerifiedVertex root
 	) {
-		return create(rootCommitQC, root, ImmutableList.of());
+		return create(highQC, root, ImmutableList.of());
 	}
 
 	public static VerifiedVertexStoreState create(
-		QuorumCertificate rootCommitQC,
+		HighQC highQC,
 		VerifiedVertex root,
 		ImmutableList<VerifiedVertex> vertices
 	) {
-		final Pair<BFTHeader, VerifiedLedgerHeaderAndProof> headers = rootCommitQC.getCommittedAndLedgerStateProof().orElseThrow(
-			() -> new IllegalStateException(String.format("rootCommit=%s does not have commit", rootCommitQC))
-		);
+		final Pair<BFTHeader, VerifiedLedgerHeaderAndProof> headers = highQC.highestCommittedQC()
+			.getCommittedAndLedgerStateProof()
+			.orElseThrow(() -> new IllegalStateException(String.format("highQC=%s does not have commit", highQC)));
 		VerifiedLedgerHeaderAndProof rootHeader = headers.getSecond();
 		BFTHeader bftHeader = headers.getFirst();
 		if (!bftHeader.getVertexId().equals(root.getId())) {
-			throw new IllegalStateException(String.format("rootCommitQC=%s does not match rootVertex=%s", rootCommitQC, root));
-		}
-
-		if (Stream.concat(Stream.of(root), vertices.stream())
-			.map(VerifiedVertex::getId)
-			.noneMatch(rootCommitQC.getProposed().getVertexId()::equals)) {
-			throw new IllegalStateException(String.format("rootCommitQC=%s proposed does not have a corresponding vertex", rootCommitQC));
-		}
-
-		if (Stream.concat(Stream.of(root), vertices.stream())
-			.map(VerifiedVertex::getId)
-			.noneMatch(rootCommitQC.getParent().getVertexId()::equals)) {
-			throw new IllegalStateException(String.format("rootCommitQC=%s parent does not have a corresponding vertex", rootCommitQC));
+			throw new IllegalStateException(String.format("committedHeader=%s does not match rootVertex=%s", bftHeader, root));
 		}
 
 		Set<HashCode> seen = new HashSet<>();
@@ -89,19 +76,35 @@ public final class VerifiedVertexStoreState {
 			seen.add(v.getId());
 		}
 
-		return new VerifiedVertexStoreState(rootCommitQC, rootHeader, root, vertices);
+		if (seen.stream().noneMatch(highQC.highestCommittedQC().getProposed().getVertexId()::equals)) {
+			throw new IllegalStateException(String.format("highQC=%s highCommitted proposed missing {root=%s vertices=%s}", highQC, root, vertices));
+		}
+
+		if (seen.stream().noneMatch(highQC.highestCommittedQC().getParent().getVertexId()::equals)) {
+			throw new IllegalStateException(String.format("highQC=%s highCommitted parent does not have a corresponding vertex", highQC));
+		}
+
+		if (seen.stream().noneMatch(highQC.highestQC().getParent().getVertexId()::equals)) {
+			throw new IllegalStateException(String.format("highQC=%s highQC parent does not have a corresponding vertex", highQC));
+		}
+
+		if (seen.stream().noneMatch(highQC.highestQC().getProposed().getVertexId()::equals)) {
+			throw new IllegalStateException(String.format("highQC=%s highQC proposed does not have a corresponding vertex", highQC));
+		}
+
+		return new VerifiedVertexStoreState(highQC, rootHeader, root, vertices);
 	}
 
 	public SerializedVertexStoreState toSerialized() {
 		return new SerializedVertexStoreState(
-			rootCommitQC,
+			highQC,
 			root.toSerializable(),
 			vertices.stream().map(VerifiedVertex::toSerializable).collect(ImmutableList.toImmutableList())
 		);
 	}
 
-	public QuorumCertificate getRootCommitQC() {
-		return rootCommitQC;
+	public HighQC getHighQC() {
+		return highQC;
 	}
 
 	public VerifiedVertex getRoot() {
@@ -118,7 +121,7 @@ public final class VerifiedVertexStoreState {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(root, rootHeader, rootCommitQC, vertices);
+		return Objects.hash(root, rootHeader, highQC, vertices);
 	}
 
 	@Override
@@ -130,7 +133,7 @@ public final class VerifiedVertexStoreState {
 		VerifiedVertexStoreState other = (VerifiedVertexStoreState) o;
 		return Objects.equals(this.root, other.root)
 			&& Objects.equals(this.rootHeader, other.rootHeader)
-			&& Objects.equals(this.rootCommitQC, other.rootCommitQC)
+			&& Objects.equals(this.highQC, other.highQC)
 			&& Objects.equals(this.vertices, other.vertices);
 	}
 }

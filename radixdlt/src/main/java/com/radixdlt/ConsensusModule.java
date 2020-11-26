@@ -31,6 +31,7 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.FormedQC;
+import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
@@ -266,6 +267,7 @@ public final class ConsensusModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private VertexStore vertexStore(
+		PersistentVertexStore persistentVertexStore,
 		VertexStoreEventSender vertexStoreEventSender,
 		EventDispatcher<BFTUpdate> updateSender,
 		EventDispatcher<BFTCommittedUpdate> committedSender,
@@ -274,6 +276,7 @@ public final class ConsensusModule extends AbstractModule {
 		Ledger ledger
 	) {
 		return VertexStore.create(
+			persistentVertexStore,
 			bftConfiguration.getVertexStoreState(),
 			ledger,
 			updateSender,

@@ -29,6 +29,7 @@ import com.radixdlt.consensus.bft.BFTSyncer;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.FormedQC;
 import com.radixdlt.consensus.bft.VerifiedVertex;
+import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.liveness.PacemakerReducer;
@@ -285,13 +286,15 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 		// TODO: check if there are any vertices which haven't been local sync processed yet
 		if (requiresLedgerSync(syncState)) {
 			syncState.fetched.sort(Comparator.comparing(VerifiedVertex::getView));
-			List<VerifiedVertex> nonRootVertices = syncState.fetched.stream().skip(1).collect(Collectors.toList());
-			vertexStore.rebuild(
+			ImmutableList<VerifiedVertex> nonRootVertices = syncState.fetched.stream()
+				.skip(1)
+				.collect(ImmutableList.toImmutableList());
+			VerifiedVertexStoreState vertexStoreState = VerifiedVertexStoreState.create(
+				HighQC.from(syncState.highQC().highestCommittedQC()),
 				syncState.fetched.get(0),
-				syncState.fetched.get(1).getQC(),
-				syncState.highQC().highestCommittedQC(),
 				nonRootVertices
 			);
+			vertexStore.rebuild(vertexStoreState);
 		} else {
 			log.debug("SYNC_STATE: skipping rebuild");
 		}
@@ -307,13 +310,13 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 			syncState, response.getVertices().get(0).getView(), response.getSender(), this.currentLedgerHeader
 		);
 
-		ImmutableList<BFTNode> signers = ImmutableList.of(syncState.author);
 		syncState.fetched.addAll(response.getVertices());
 
 		// TODO: verify actually extends rather than just state version comparison
 		if (syncState.committedProof.getStateVersion() <= this.currentLedgerHeader.getStateVersion()) {
 			rebuildAndSyncQC(syncState);
 		} else {
+			ImmutableList<BFTNode> signers = ImmutableList.of(syncState.author);
 			syncState.setSyncStage(SyncStage.SYNC_TO_COMMIT);
 			ledgerSyncing.compute(syncState.committedProof.getRaw(), (header, syncing) -> {
 				if (syncing == null) {

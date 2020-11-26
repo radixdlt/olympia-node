@@ -26,6 +26,7 @@ import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTUpdate;
+import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.bft.ViewUpdate;
@@ -237,6 +238,7 @@ public class EpochsConsensusModule extends AbstractModule {
 
 	@Provides
 	private VertexStoreFactory vertexStoreFactory(
+		PersistentVertexStore persistentVertexStore,
 		EventDispatcher<BFTUpdate> updateSender,
 		EventDispatcher<BFTCommittedUpdate> committedDispatcher,
 		SystemCounters counters,
@@ -244,6 +246,7 @@ public class EpochsConsensusModule extends AbstractModule {
 		VertexStoreEventSender vertexStoreEventSender
 	) {
 		return vertexStoreState -> VertexStore.create(
+			persistentVertexStore,
 			vertexStoreState,
 			ledger,
 			updateSender,

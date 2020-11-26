@@ -21,6 +21,7 @@ import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.radixdlt.consensus.BFTConfiguration;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.UnverifiedVertex;
@@ -53,7 +54,7 @@ public class MockedBFTConfigurationModule extends AbstractModule {
 		QuorumCertificate rootQC = QuorumCertificate.ofGenesis(hashedGenesis, LedgerHeader.genesis(genesisHash, null));
 		return new BFTConfiguration(
 			validatorSet,
-			VerifiedVertexStoreState.create(rootQC, hashedGenesis)
+			VerifiedVertexStoreState.create(HighQC.from(rootQC), hashedGenesis)
 		);
 	}
 
