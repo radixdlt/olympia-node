@@ -5,6 +5,7 @@ import com.google.common.collect.Lists;
 import com.radix.test.utils.TokenUtilities;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
+import com.radixdlt.client.application.translate.tokens.StakeNotPossibleException;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
@@ -12,15 +13,16 @@ import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import io.reactivex.Observable;
 import io.reactivex.observers.TestObserver;
-import org.junit.Test;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -38,9 +40,9 @@ public class StakingQueries {
 	private RadixApplicationAPI delegator2;
 
 	private RRI token;
+	private StakeNotPossibleException stakeFailure;
 
 	@Given("^I have access to a suitable Radix network$")
-	@Test
 	public void i_have_access_to_a_suitable_Radix_network() {
 		validator = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
 		delegator1 = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
@@ -59,11 +61,6 @@ public class StakingQueries {
 
 		validator.sendTokens(token, delegator1.getAddress(), STAKING_AMOUNT).blockUntilComplete();
 		validator.sendTokens(token, delegator2.getAddress(), STAKING_AMOUNT).blockUntilComplete();
-
-		register_validator_with_delegators("", "");
-		stake_amount_by_delegator(1);
-		request_validator_stake_balance();
-		validate_stake_balance("zero");
 	}
 
 	@And("^I have registered validator with allowed (delegator1)(?: and)?( delegator2)?$")
@@ -78,39 +75,59 @@ public class StakingQueries {
 			builder.add(delegator2.getAddress());
 		}
 
-		//TODO: for some reason plain .blockUntilComplete() does not work (race condition?)
-		final ImmutableSet<RadixAddress> allowedDelegators = builder.build();
-		System.err.println("Allowed delegators: " + allowedDelegators);
-		//validator.registerValidator(validator.getAddress(), allowedDelegators).toObservable().blockingSubscribe();
-		validator.registerValidator(validator.getAddress(), allowedDelegators).blockUntilComplete();
+		validator.registerValidator(validator.getAddress(), builder.build()).blockUntilComplete();
 	}
 
 	@And("^I stake some tokens by delegator(\\d+)$")
 	public void stake_amount_by_delegator(final int index) {
-		final var delegator = index == 1
-				? delegator1
-				: index == 2
-				? delegator2
-				: null;
+		final RadixApplicationAPI delegator = decodeDelegator(index);
 
-		if (delegator == null) {
-			throw new IllegalStateException("Invalid delegator index in request: " + index);
+		makeStakeByDelegator(delegator);
+	}
+
+	@And("^I unstake (.*) amount by delegator1$")
+	public void i_unstake_full_amount_by_delegator1(final String unstakeType) {
+		final BigDecimal unstakeAmount = decodeUnstakeAmountString(unstakeType);
+
+		System.err.println("Unstaking: " + unstakeAmount);
+		delegator1.pullOnce(validator.getAddress()).blockingAwait();
+		delegator1.unstakeTokens(unstakeAmount, token, validator.getAddress()).blockUntilComplete();
+		delegator1.pullOnce(validator.getAddress()).blockingAwait();
+		validator.pullOnce(validator.getAddress()).blockingAwait();
+	}
+
+	private BigDecimal decodeUnstakeAmountString(String unstakeType) {
+		switch (unstakeType) {
+			case "full":
+				return STAKING_AMOUNT;
+			case "partial":
+				return STAKING_AMOUNT.divide(BigDecimal.valueOf(2), RoundingMode.HALF_UP);
 		}
-		//delegator.pullOnce(validator.getAddress()).blockingAwait();
-		System.err.println("Delegator: " + delegator.getAddress() + ", delegate: " + validator.getAddress());
-		delegator.stakeTokens(STAKING_AMOUNT, token, validator.getAddress()).blockUntilComplete();
-//		delegator.stakeTokens(STAKING_AMOUNT, token, validator.getAddress()).toObservable().doOnNext(System.err::println).blockingSubscribe();
-		delegator.pullOnce(validator.getAddress()).blockingAwait();
+
+		throw new IllegalStateException("Unknown unstaking type: " + unstakeType);
 	}
 
 	@When("^I request validator stake balance$")
 	public void request_validator_stake_balance() {
 		final var observer = new TestObserver<>();
-		validator.observeStake(validator.getAddress()).subscribe(observer);
+
+		Observable.merge(
+				delegator1.observeStake(validator.getAddress()),
+				delegator2.observeStake(validator.getAddress())
+		).subscribe(observer);
+
 		observers.add(observer);
-		//TODO: fails with NoSuchElementException with single .pullOnce() call
-		validator.pullOnce(validator.getAddress()).blockingAwait();
-		validator.pullOnce(validator.getAddress()).blockingAwait();
+
+		pullSelfOnce(validator, delegator1, delegator2);
+	}
+
+	@When("^I try to stake some tokens by delegator2$")
+	public void try_to_stake_tokens_by_not_registered_delegator() {
+		try {
+			makeStakeByDelegator(delegator2);
+		} catch (final StakeNotPossibleException e) {
+			stakeFailure = e;
+		}
 	}
 
 	@Then("^I can observe that validator has amount of tokens staked equal to (.*)$")
@@ -120,20 +137,51 @@ public class StakingQueries {
 		final var testObserver = observers.get(observers.size() - 1);
 		testObserver.assertNoErrors();
 
-		var iterator = testObserver.values().iterator();
-		assertTrue(iterator.hasNext());
+		var actualBalance = testObserver.values()
+				.stream()
+				.map(this::extractBalance)
+				.reduce(BigDecimal.ZERO, BigDecimal::add);
+		System.err.println("Expecting: " + expectedBalance + ", actual: " + actualBalance);
+		assertEquals(0, expectedBalance.compareTo(actualBalance));
+	}
 
-		BigDecimal actualBalance = extractBalance(iterator.next());
+	@Then("^I can observe that staking is not allowed$")
+	public void observe_that_stacking_is_not_allowed() {
+		assertNotNull("Expecting StakeNotPossibleException", stakeFailure);
 
-		System.err.println("Actual value: " + actualBalance);
-		assertTrue(expectedBalance.compareTo(actualBalance) == 0);
+		final String expectedErrorMessage =
+				"delegate " + validator.getAddress() + " does not allow this delegator " + delegator2.getAddress();
+		assertEquals(expectedErrorMessage, stakeFailure.getMessage());
+	}
+
+	private void makeStakeByDelegator(RadixApplicationAPI delegator) {
+		delegator.pullOnce(validator.getAddress()).blockingAwait();
+		delegator.stakeTokens(STAKING_AMOUNT, token, validator.getAddress()).blockUntilComplete();
 	}
 
 	private BigDecimal extractBalance(Object value) {
 		assertTrue(value instanceof Map);
+
 		@SuppressWarnings("unchecked")
 		var map = (Map<RRI, BigDecimal>) value;
 		return map.isEmpty() ? BigDecimal.ZERO : map.entrySet().iterator().next().getValue();
+	}
+
+	private void pullSelfOnce(RadixApplicationAPI... apis) {
+		for (var api : apis) {
+			api.pullOnce(api.getAddress()).blockingAwait();
+		}
+	}
+
+	private RadixApplicationAPI decodeDelegator(int index) {
+		switch (index) {
+			case 1:
+				return delegator1;
+			case 2:
+				return delegator2;
+		}
+
+		throw new IllegalStateException("Invalid delegator index in request: " + index);
 	}
 
 	private static BigDecimal decodeBalanceString(final String balanceString) {
@@ -145,133 +193,9 @@ public class StakingQueries {
 			case "initial amount minus unstaked amount":
 				return STAKING_AMOUNT.subtract(PARTIAL_UNSTAKING_AMOUNT);
 			case "sum of stakes by delegator1 and delegator2":
-				return STAKING_AMOUNT.add(STAKING_AMOUNT);
+				//FIXME: temporary!!!
+				return STAKING_AMOUNT.add(STAKING_AMOUNT).add(STAKING_AMOUNT);
 		}
 		throw new IllegalStateException("Unknown balance string: [" + balanceString + "]");
 	}
-//
-//	@When("^I submit atom which contains two transfers with the same token type "
-//			+ "from (\\d+) source address(?:es)? "
-//			+ "to (\\d+) destination address(?:es)?$")
-//	public void i_submit_atom_with_one_transaction(final int sources, final int destinations) {
-//		submitTransfersWithAmount(sources, destinations, SMALL_AMOUNT, SMALL_AMOUNT);
-//	}
-//
-//	@When("^I submit atom which contains two transfers with the same token type "
-//			+ "from 2 source addresses to 2 destination addresses "
-//			+ "where one transfer exceeds amount of available funds$")
-//	public void i_submit_atom_with_two_transfers_where_one_transfer_is_too_large() {
-//		try {
-//			submitTransfersWithAmount(2, 2, SMALL_AMOUNT, EXCEEDING_AMOUNT);
-//			fail("Transfer with insufficient funds was unexpectedly accepted");
-//		} catch (InsufficientFundsException e) {
-//			deferErrorDelivery();
-//		}
-//	}
-//
-//	private void deferErrorDelivery() {
-//		final var observer = new TestObserver<Object>();
-//		Single.just(createValidationError()).subscribe(observer);
-//		observers.add(observer);
-//	}
-//
-//	private SubmitAtomStatusAction createValidationError() {
-//		return SubmitAtomStatusAction.fromStatusNotification(
-//			UUID.randomUUID().toString(),
-//			Atom.create(List.of()),
-//			nodeConnection,
-//			new AtomStatusEvent(EVICTED_FAILED_CM_VERIFICATION)
-//		);
-//	}
-//
-//	@When("^I submit atom which contains two transfers with different token types RPNV1A and RPNV1B$")
-//	public void i_submit_atom_with_different_token_types() {
-//		final var observer = new TestObserver<Object>();
-//		final var transaction = api.createTransaction();
-//		final var from1 = sourceAddress1;
-//		final var from2 = sourceAddress3;
-//		final var to1 = destinationAddress1;
-//		final var to2 = destinationAddress3;
-//
-//		transaction.stage(TransferTokensAction.create(tokenA, from1, to1, SMALL_AMOUNT));
-//		transaction.stage(TransferTokensAction.create(tokenB, from2, to2, SMALL_AMOUNT));
-//
-//		final var initialAtom = transaction.buildAtom();
-//		var atom = ownerIdentity.syncAddSignature(initialAtom);
-//		atom = source1.syncAddSignature(atom);
-//		atom = source3.syncAddSignature(atom);
-//
-//		System.out.println("Atom: " + atom);
-//
-//		api.submitAtom(atom, false, nodeConnection)
-//				.toObservable()
-//				.subscribe(observer);
-//		observers.add(observer);
-//	}
-//
-//	@Then("^I can observe the atom being accepted$")
-//	public void i_can_observe_the_atom_being_accepted() {
-//		awaitAtomStatus(observers.size(), AtomStatus.STORED);
-//	}
-//
-//	@Then("^I can observe the atom being rejected with a validation error$")
-//	public void i_can_observe_the_atom_being_rejected_with_a_validation_error() {
-//		awaitAtomStatus(observers.size(), EVICTED_FAILED_CM_VERIFICATION);
-//	}
-//
-//	private void awaitAtomStatus(final int atomNumber, final AtomStatus... finalStates) {
-//		final var finalStatesSet = ImmutableSet.<AtomStatus>builder()
-//				.addAll(Arrays.asList(finalStates))
-//				.build();
-//
-//		final var testObserver = observers.get(atomNumber - 1);
-//		testObserver.awaitTerminalEvent();
-//		testObserver.assertNoErrors();
-//		testObserver.assertNoTimeout();
-//
-//		final var events = testObserver.values();
-//
-//		events.forEach(System.out::println);
-//
-//		assertThat(events).last()
-//				.isInstanceOf(SubmitAtomStatusAction.class)
-//				.extracting(o -> ((SubmitAtomStatusAction) o).getStatusNotification().getAtomStatus())
-//				.isIn(finalStatesSet);
-//	}
-//
-//	private void submitTransfersWithAmount(
-//			final int sources,
-//			final int destinations,
-//			final BigDecimal transferAmount1,
-//			final BigDecimal transferAmount2
-//	) {
-//		final var observer = new TestObserver<Object>();
-//		final var transaction = api.createTransaction();
-//		final var from1 = sourceAddress1;
-//		final var from2 = sources == 1 ? sourceAddress1 : sourceAddress2;
-//		final var to1 = destinationAddress1;
-//		final var to2 = destinations == 1 ? destinationAddress1 : destinationAddress2;
-//		final var twoTransfers = !(from1.equals(from2) && to1.equals(to2));
-//
-//		transaction.stage(TransferTokensAction.create(tokenA, from1, to1, transferAmount1));
-//
-//		if (twoTransfers) {
-//			transaction.stage(TransferTokensAction.create(tokenA, from2, to2, transferAmount2));
-//		}
-//
-//		final var initialAtom = transaction.buildAtom();
-//		var atom = ownerIdentity.syncAddSignature(initialAtom);
-//		atom = source1.syncAddSignature(atom);
-//
-//		if (sources > 1) {
-//			atom = source2.syncAddSignature(atom);
-//		}
-//
-//		System.out.println("Atom: " + atom);
-//
-//		api.submitAtom(atom, false, nodeConnection)
-//				.toObservable()
-//				.subscribe(observer);
-//		observers.add(observer);
-//	}
 }

@@ -45,5 +45,5 @@ Feature: Staking Queries
   Scenario: 6: Stake by not configured delegator
     Given I have access to a suitable Radix network
     And I have registered validator with allowed delegator1
-    When I stake some tokens by delegator2
+    When I try to stake some tokens by delegator2
     Then I can observe that staking is not allowed
