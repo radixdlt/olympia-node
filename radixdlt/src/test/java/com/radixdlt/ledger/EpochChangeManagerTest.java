@@ -70,7 +70,7 @@ public class EpochChangeManagerTest {
 						&& epochChange.get().getProof().equals(tailHeader)
 							&& epochChange.get().getBFTConfiguration().getValidatorSet().equals(validatorSet)
 							&& epochChange.get().getEpoch() == 124L
-							&& epochChange.get().getBFTConfiguration().getGenesisVertex().getView().isGenesis();
+							&& epochChange.get().getBFTConfiguration().getRootVertex().getView().isGenesis();
 				})
 			);
 	}

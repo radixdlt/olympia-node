@@ -54,6 +54,7 @@ import com.radixdlt.consensus.bft.FormedQC;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
+import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.ViewUpdate;
@@ -163,6 +164,7 @@ public class EpochManagerTest {
 				bind(LedgerUpdateSender.class).toInstance(ledgerUpdateSender);
 				bind(Mempool.class).toInstance(mempool);
 				bind(StateComputer.class).toInstance(stateComputer);
+				bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
 				bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(50);
 				bindConstant().annotatedWith(PacemakerTimeout.class).to(10L);
 				bindConstant().annotatedWith(PacemakerRate.class).to(2.0);
@@ -195,10 +197,13 @@ public class EpochManagerTest {
 					LedgerHeader.genesis(HashUtils.zero256(), validatorSet)
 				);
 				VerifiedVertex verifiedVertex = new VerifiedVertex(unverifiedVertex, hasher.hash(unverifiedVertex));
+
+				QuorumCertificate qc = QuorumCertificate.ofGenesis(verifiedVertex, LedgerHeader.genesis(HashUtils.zero256(), validatorSet));
 				return new BFTConfiguration(
 					validatorSet,
 					verifiedVertex,
-					QuorumCertificate.ofGenesis(verifiedVertex, LedgerHeader.genesis(HashUtils.zero256(), validatorSet))
+					ImmutableList.of(),
+					qc
 				);
 			}
 		};
@@ -230,7 +235,7 @@ public class EpochManagerTest {
 			header.timestamp()
 		);
 		QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
-		BFTConfiguration bftConfiguration = new BFTConfiguration(nextValidatorSet, verifiedGenesisVertex, genesisQC);
+		BFTConfiguration bftConfiguration = new BFTConfiguration(nextValidatorSet, verifiedGenesisVertex, ImmutableList.of(), genesisQC);
 		VerifiedLedgerHeaderAndProof proof = mock(VerifiedLedgerHeaderAndProof.class);
 		when(proof.getEpoch()).thenReturn(header.getEpoch() + 1);
 		EpochChange epochChange = new EpochChange(proof, bftConfiguration);

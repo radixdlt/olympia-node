@@ -86,7 +86,7 @@ public class MockedStateComputerWithEpochsModule extends AbstractModule {
 	@Provides
 	@LastProof
 	private VerifiedLedgerHeaderAndProof lastProof(BFTConfiguration bftConfiguration) {
-		return bftConfiguration.getGenesisHeader();
+		return bftConfiguration.getRootHeader();
 	}
 
 	@Provides

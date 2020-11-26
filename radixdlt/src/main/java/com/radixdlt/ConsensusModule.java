@@ -238,7 +238,7 @@ public final class ConsensusModule extends AbstractModule {
 		SyncVerticesRequestSender requestSender,
 		EventDispatcher<LocalSyncRequest> syncLedgerRequestSender,
 		ScheduledEventDispatcher<LocalGetVerticesRequest> timeoutDispatcher,
-		@LastProof VerifiedLedgerHeaderAndProof verifiedLedgerHeaderAndProof,
+		@LastProof VerifiedLedgerHeaderAndProof ledgerLastProof, // Use this instead of configuration.getRoot()
 		SystemCounters counters,
 		Random random,
 		@BFTSyncPatienceMillis int bftSyncPatienceMillis
@@ -252,7 +252,7 @@ public final class ConsensusModule extends AbstractModule {
 			},
 			syncLedgerRequestSender,
 			timeoutDispatcher,
-			verifiedLedgerHeaderAndProof,
+			ledgerLastProof,
 			random,
 			bftSyncPatienceMillis
 		);
@@ -274,8 +274,9 @@ public final class ConsensusModule extends AbstractModule {
 		Ledger ledger
 	) {
 		return VertexStore.create(
-			bftConfiguration.getGenesisVertex(),
-			bftConfiguration.getGenesisQC(),
+			bftConfiguration.getRootVertex(),
+			bftConfiguration.getVertices(),
+			bftConfiguration.getQC(),
 			ledger,
 			updateSender,
 			committedSender,

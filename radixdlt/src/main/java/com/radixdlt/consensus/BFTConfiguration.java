@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.utils.Pair;
@@ -27,15 +28,30 @@ import java.util.Objects;
  */
 public final class BFTConfiguration {
 	private final BFTValidatorSet validatorSet;
-	private final VerifiedVertex genesisVertex;
-	private final QuorumCertificate genesisQC;
-	private final VerifiedLedgerHeaderAndProof genesisHeader;
+	private final QuorumCertificate qc;
+	private final VerifiedLedgerHeaderAndProof rootHeader;
+	private final VerifiedVertex rootVertex;
+	private final ImmutableList<VerifiedVertex> vertices;
 
-	public BFTConfiguration(BFTValidatorSet validatorSet, VerifiedVertex genesisVertex, QuorumCertificate genesisQC) {
+	public BFTConfiguration(
+		BFTValidatorSet validatorSet,
+		VerifiedVertex rootVertex,
+		QuorumCertificate qc
+	) {
+		this(validatorSet, rootVertex, ImmutableList.of(), qc);
+	}
+
+	public BFTConfiguration(
+		BFTValidatorSet validatorSet,
+		VerifiedVertex rootVertex,
+		ImmutableList<VerifiedVertex> vertices,
+		QuorumCertificate qc
+	) {
 		this.validatorSet = Objects.requireNonNull(validatorSet);
-		this.genesisVertex = Objects.requireNonNull(genesisVertex);
-		this.genesisQC = Objects.requireNonNull(genesisQC);
-		this.genesisHeader = this.genesisQC.getCommittedAndLedgerStateProof().map(Pair::getSecond)
+		this.rootVertex = Objects.requireNonNull(rootVertex);
+		this.vertices = Objects.requireNonNull(vertices);
+		this.qc = Objects.requireNonNull(qc);
+		this.rootHeader = qc.getCommittedAndLedgerStateProof().map(Pair::getSecond)
 			.orElseThrow(() -> new IllegalArgumentException("genesisQC must be committed."));
 	}
 
@@ -43,25 +59,30 @@ public final class BFTConfiguration {
 		return validatorSet;
 	}
 
-	public VerifiedVertex getGenesisVertex() {
-		return genesisVertex;
+	public VerifiedVertex getRootVertex() {
+		return rootVertex;
 	}
 
-	public VerifiedLedgerHeaderAndProof getGenesisHeader() {
-		return this.genesisHeader;
+	public ImmutableList<VerifiedVertex> getVertices() {
+		return vertices;
 	}
 
-	public QuorumCertificate getGenesisQC() {
-		return genesisQC;
+	public VerifiedLedgerHeaderAndProof getRootHeader() {
+		return this.rootHeader;
+	}
+
+	public QuorumCertificate getQC() {
+		return qc;
 	}
 
 	@Override
 	public int hashCode() {
 		return Objects.hash(
 			this.validatorSet,
-			this.genesisVertex,
-			this.genesisQC,
-			this.genesisHeader
+			this.qc,
+			this.rootHeader,
+			this.rootVertex,
+			this.vertices
 		);
 	}
 
@@ -70,16 +91,17 @@ public final class BFTConfiguration {
 		if (obj instanceof BFTConfiguration) {
 			BFTConfiguration that = (BFTConfiguration) obj;
 			return Objects.equals(this.validatorSet, that.validatorSet)
-				&& Objects.equals(this.genesisVertex, that.genesisVertex)
-				&& Objects.equals(this.genesisQC, that.genesisQC)
-				&& Objects.equals(this.genesisHeader, that.genesisHeader);
+				&& Objects.equals(this.qc, that.qc)
+				&& Objects.equals(this.rootHeader, that.rootHeader)
+				&& Objects.equals(this.rootVertex, that.rootVertex)
+				&& Objects.equals(this.vertices, that.vertices);
 		}
 		return false;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s[validatorSet=%s, genesisVertex=%s, genesisQC=%s, genesisHeader=%s]",
-			getClass().getSimpleName(), this.validatorSet, this.genesisVertex, this.genesisQC, this.genesisHeader);
+		return String.format("%s[validatorSet=%s, rootVertex=%s, qc=%s, header=%s]",
+			getClass().getSimpleName(), this.validatorSet, this.rootVertex, this.qc, this.rootHeader);
 	}
 }

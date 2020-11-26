@@ -15,20 +15,13 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.epoch;
+package com.radixdlt.consensus.bft;
 
-import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.consensus.liveness.PacemakerState;
-import com.radixdlt.consensus.sync.BFTSync;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.store.berkeley.SerializedRootVertexWithQC;
+import java.util.Optional;
 
-/**
- * Creates a new bft sync given a vertex store and pacemaker
- */
-public interface BFTSyncFactory {
-	BFTSync create(
-		VertexStore vertexStore,
-		PacemakerState pacemakerState,
-		BFTConfiguration configuration
-	);
+public interface PersistentVertexStore {
+	void storeRootVertex(VerifiedVertex root, VerifiedVertex child, VerifiedVertex grandChild, QuorumCertificate committedQC);
+	Optional<SerializedRootVertexWithQC> lastRootVertex();
 }

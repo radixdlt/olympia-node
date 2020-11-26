@@ -124,7 +124,7 @@ public class EpochsLocalSyncServiceProcessorTest {
 		VerifiedLedgerHeaderAndProof genesisHeader = mock(VerifiedLedgerHeaderAndProof.class);
 		when(genesisHeader.getAccumulatorState()).thenReturn(accumulatorState);
 		when(genesisHeader.isEndOfEpoch()).thenReturn(false);
-		when(configuration.getGenesisHeader()).thenReturn(genesisHeader);
+		when(configuration.getRootHeader()).thenReturn(genesisHeader);
 		when(epochChange.getBFTConfiguration()).thenReturn(configuration);
 		when(ledgerUpdate.getEpochChange()).thenReturn(Optional.of(epochChange));
 		processor.epochsLedgerUpdateEventProcessor().process(ledgerUpdate);

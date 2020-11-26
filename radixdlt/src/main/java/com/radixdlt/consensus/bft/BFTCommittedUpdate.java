@@ -18,7 +18,7 @@
 package com.radixdlt.consensus.bft;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.HighQC;
+import com.radixdlt.consensus.QuorumCertificate;
 import java.util.Objects;
 
 /**
@@ -26,12 +26,12 @@ import java.util.Objects;
  */
 public final class BFTCommittedUpdate {
 	private final ImmutableList<PreparedVertex> committed;
-	private final HighQC highQC;
+	private final QuorumCertificate qc;
 	private final int vertexStoreSize;
 
-	BFTCommittedUpdate(ImmutableList<PreparedVertex> committed, HighQC highQC, int vertexStoreSize) {
+	BFTCommittedUpdate(ImmutableList<PreparedVertex> committed, QuorumCertificate qc, int vertexStoreSize) {
 		this.committed = Objects.requireNonNull(committed);
-		this.highQC = Objects.requireNonNull(highQC);
+		this.qc = Objects.requireNonNull(qc);
 		this.vertexStoreSize = vertexStoreSize;
 	}
 
@@ -43,7 +43,7 @@ public final class BFTCommittedUpdate {
 		return committed;
 	}
 
-	public HighQC getProof() {
-		return highQC;
+	public QuorumCertificate getProof() {
+		return qc;
 	}
 }

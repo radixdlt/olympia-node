@@ -22,11 +22,12 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.Ledger;
+import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
@@ -97,6 +98,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 
 	private final Comparator<VerifiedLedgerHeaderAndProof> headerComparator;
 	private final Mempool mempool;
+	private final PersistentVertexStore persistentVertexStore;
 	private final StateComputer stateComputer;
 	private final LedgerUpdateSender ledgerUpdateSender;
 	private final SystemCounters counters;
@@ -112,6 +114,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		@LastProof VerifiedLedgerHeaderAndProof initialLedgerState,
 		Comparator<VerifiedLedgerHeaderAndProof> headerComparator,
 		Mempool mempool,
+		PersistentVertexStore persistentVertexStore,
 		StateComputer stateComputer,
 		LedgerUpdateSender ledgerUpdateSender,
 		LedgerAccumulator accumulator,
@@ -122,6 +125,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		this.headerComparator = Objects.requireNonNull(headerComparator);
 		this.currentLedgerHeader = initialLedgerState;
 		this.mempool = Objects.requireNonNull(mempool);
+		this.persistentVertexStore = Objects.requireNonNull(persistentVertexStore);
 		this.stateComputer = Objects.requireNonNull(stateComputer);
 		this.ledgerUpdateSender = Objects.requireNonNull(ledgerUpdateSender);
 		this.counters = Objects.requireNonNull(counters);
@@ -204,12 +208,21 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	}
 
 	@Override
-	public void commit(ImmutableList<PreparedVertex> vertices, HighQC highQC, ImmutableSet<HashCode> prunedVertices) {
+	public void commit(
+		ImmutableSet<HashCode> prunedVertices,
+		ImmutableList<PreparedVertex> vertices,
+		VerifiedVertex child,
+		VerifiedVertex grandChild,
+		QuorumCertificate commitQC
+	) {
+		VerifiedVertex newRootVertex = vertices.get(vertices.size() - 1).getVertex();
+		persistentVertexStore.storeRootVertex(newRootVertex, child, grandChild, commitQC);
+
 		final ImmutableList<Command> commands = vertices.stream()
 			.flatMap(PreparedVertex::successfulCommands)
 			.map(PreparedCommand::command)
 			.collect(ImmutableList.toImmutableList());
-		VerifiedLedgerHeaderAndProof proof = highQC.proof();
+		VerifiedLedgerHeaderAndProof proof = commitQC.getCommittedAndLedgerStateProof().orElseThrow().getSecond();
 		VerifiedCommandsAndProof verifiedCommandsAndProof = new VerifiedCommandsAndProof(commands, proof);
 		this.commit(verifiedCommandsAndProof);
 	}

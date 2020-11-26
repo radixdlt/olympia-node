@@ -17,6 +17,8 @@
 
 package com.radixdlt;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
@@ -29,6 +31,7 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.Particle;
@@ -120,7 +123,7 @@ public class RadixEngineStoreModule extends AbstractModule {
 			.orElse(genesisCheckpoint.getHeader());
 
 		if (lastStoredProof.isEndOfEpoch()) {
-			return bftConfiguration.getGenesisHeader();
+			return bftConfiguration.getRootHeader();
 		} else {
 			return lastStoredProof;
 		}
@@ -147,18 +150,42 @@ public class RadixEngineStoreModule extends AbstractModule {
 	private BFTConfiguration initialConfig(
 		@LastEpochProof VerifiedLedgerHeaderAndProof lastEpochProof,
 		BFTValidatorSet validatorSet,
+		PersistentVertexStore persistentVertexStore,
 		Hasher hasher
 	) {
-		UnverifiedVertex genesisVertex = UnverifiedVertex.createGenesis(lastEpochProof.getRaw());
-		VerifiedVertex verifiedGenesisVertex = new VerifiedVertex(genesisVertex, hasher.hash(genesisVertex));
-		LedgerHeader nextLedgerHeader = LedgerHeader.create(
-			lastEpochProof.getEpoch() + 1,
-			View.genesis(),
-			lastEpochProof.getAccumulatorState(),
-			lastEpochProof.timestamp()
-		);
-		QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
-		return new BFTConfiguration(validatorSet, verifiedGenesisVertex, genesisQC);
+		return persistentVertexStore.lastRootVertex()
+			.map(serializedVertexWithQC -> {
+				UnverifiedVertex root = serializedVertexWithQC.getRoot();
+				HashCode rootVertexId = hasher.hash(root);
+				VerifiedVertex verifiedRoot = new VerifiedVertex(root, rootVertexId);
+
+				UnverifiedVertex child = serializedVertexWithQC.getChild();
+				HashCode childVertexId = hasher.hash(child);
+				VerifiedVertex verifiedChild = new VerifiedVertex(child, childVertexId);
+
+				UnverifiedVertex grandChild = serializedVertexWithQC.getGrandChild();
+				HashCode grandChildVertexId = hasher.hash(grandChild);
+				VerifiedVertex verifiedGrandChild = new VerifiedVertex(grandChild, grandChildVertexId);
+
+				return new BFTConfiguration(
+					validatorSet,
+					verifiedRoot,
+					ImmutableList.of(verifiedChild, verifiedGrandChild),
+					serializedVertexWithQC.getCommitQC()
+				);
+			})
+			.orElseGet(() -> {
+				UnverifiedVertex genesisVertex = UnverifiedVertex.createGenesis(lastEpochProof.getRaw());
+				VerifiedVertex verifiedGenesisVertex = new VerifiedVertex(genesisVertex, hasher.hash(genesisVertex));
+				LedgerHeader nextLedgerHeader = LedgerHeader.create(
+					lastEpochProof.getEpoch() + 1,
+					View.genesis(),
+					lastEpochProof.getAccumulatorState(),
+					lastEpochProof.timestamp()
+				);
+				QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
+				return new BFTConfiguration(validatorSet, verifiedGenesisVertex, ImmutableList.of(), genesisQC);
+			});
 	}
 
 	@Provides

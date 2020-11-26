@@ -28,6 +28,7 @@ import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
+import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.crypto.Hasher;
@@ -75,6 +76,7 @@ public class LedgerModuleTest {
 			bind(BFTValidatorSet.class).toInstance(mock(BFTValidatorSet.class));
 			bind(BFTConfiguration.class).toInstance(mock(BFTConfiguration.class));
 			bind(LedgerUpdateSender.class).toInstance(mock(LedgerUpdateSender.class));
+			bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
 		}
 	}
 

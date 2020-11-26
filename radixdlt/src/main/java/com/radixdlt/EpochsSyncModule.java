@@ -122,7 +122,7 @@ public class EpochsSyncModule extends AbstractModule {
 				requestDispatcher,
 				syncTimeoutScheduler,
 				accumulatorComparator,
-				config.getGenesisHeader(),
+				config.getRootHeader(),
 				syncPatienceMillis
 			);
 	}

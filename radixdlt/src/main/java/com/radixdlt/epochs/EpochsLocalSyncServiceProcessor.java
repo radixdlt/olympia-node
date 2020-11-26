@@ -77,7 +77,7 @@ public class EpochsLocalSyncServiceProcessor {
 		if (maybeEpochChange.isPresent()) {
 			final EpochChange epochChange = maybeEpochChange.get();
 			this.currentEpoch = epochChange;
-			this.currentHeader = epochChange.getBFTConfiguration().getGenesisHeader();
+			this.currentHeader = epochChange.getBFTConfiguration().getRootHeader();
 			this.localSyncServiceProcessor = localSyncFactory.apply(epochChange.getBFTConfiguration());
 
 			// TODO: Cleanup further requests

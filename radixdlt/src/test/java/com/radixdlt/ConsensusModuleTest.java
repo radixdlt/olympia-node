@@ -113,9 +113,10 @@ public class ConsensusModuleTest {
 		UnverifiedVertex genesis = UnverifiedVertex.createGenesis(LedgerHeader.genesis(HashUtils.zero256(), null));
 		VerifiedVertex hashedGenesis = new VerifiedVertex(genesis, HashUtils.zero256());
 		QuorumCertificate qc = QuorumCertificate.ofGenesis(hashedGenesis, LedgerHeader.genesis(HashUtils.zero256(), null));
-		when(bftConfiguration.getGenesisVertex()).thenReturn(hashedGenesis);
-		when(bftConfiguration.getGenesisQC()).thenReturn(qc);
-		when(bftConfiguration.getGenesisHeader()).thenReturn(mock(VerifiedLedgerHeaderAndProof.class));
+		when(bftConfiguration.getRootVertex()).thenReturn(hashedGenesis);
+		when(bftConfiguration.getQC()).thenReturn(qc);
+		when(bftConfiguration.getRootHeader()).thenReturn(mock(VerifiedLedgerHeaderAndProof.class));
+		when(bftConfiguration.getVertices()).thenReturn(ImmutableList.of());
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		BFTValidator validator = mock(BFTValidator.class);
 		when(validator.getPower()).thenReturn(UInt256.ONE);

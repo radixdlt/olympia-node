@@ -68,7 +68,6 @@ import org.apache.logging.log4j.ThreadContext;
 import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -78,18 +77,16 @@ import org.junit.runners.Parameterized.Parameters;
 import org.radix.database.DatabaseEnvironment;
 
 /**
- * Given that one validator is always alive means that that validator will
- * always have the latest committed vertex which the validator can sync
- * others with.
+ * Various liveness+recovery tests
  */
 @RunWith(Parameterized.class)
-public class OneNodeAlwaysAliveLivenessTest {
+public class RecoveryLivenessTest {
 	private static final Logger logger = LogManager.getLogger();
 
 	@Parameters
 	public static Collection<Object[]> numNodes() {
 		return List.of(new Object[][] {
-			{2, 88L}, {3, 88L}, {4, 88L},
+			{1, 88L}, {2, 88L}, {3, 88L}, {4, 88L},
 			{2, 1L}
 		});
 	}
@@ -106,7 +103,7 @@ public class OneNodeAlwaysAliveLivenessTest {
 	@Inject
 	private NodeEvents nodeEvents;
 
-	public OneNodeAlwaysAliveLivenessTest(int numNodes, long epochCeilingView) {
+	public RecoveryLivenessTest(int numNodes, long epochCeilingView) {
 		this.nodeKeys = Stream.generate(ECKeyPair::generateNew).limit(numNodes).collect(Collectors.toList());
 		this.epochCeilingView = epochCeilingView;
 	}
@@ -251,19 +248,26 @@ public class OneNodeAlwaysAliveLivenessTest {
 		injector.getInstance(DatabaseEnvironment.class).stop();
 	}
 
+	private EpochView latestEpochView() {
+		return this.nodes.stream()
+			.map(i -> i.getInstance(Key.get(new TypeLiteral<DeterministicSavedLastEvent<EpochViewUpdate>>() { })).getLastEvent())
+			.map(EpochViewUpdate::getEpochView)
+			.max(Comparator.naturalOrder()).orElse(new EpochView(0, View.genesis()));
+	}
+
+	/**
+	 * Given that one validator is always alive means that that validator will
+	 * always have the latest committed vertex which the validator can sync
+	 * others with.
+	 */
 	@Test
-	@Ignore("This fails occasionally (determinism broken: RPNV1-822) due to liveness recovery not being totally implemented: RPNV1-771")
-	public void all_nodes_except_for_one_need_to_restart_should_be_able_to_reboot_correctly_and_liveness_not_broken() {
-		EpochView epochView = this.nodes.get(0).getInstance(Key.get(new TypeLiteral<DeterministicSavedLastEvent<EpochViewUpdate>>() { }))
-			.getLastEvent().getEpochView();
+	public void liveness_check_when_restart_all_but_one_node() {
+		EpochView epochView = this.latestEpochView();
 
 		for (int restart = 0; restart < 5; restart++) {
 			processForCount(5000);
 
-			EpochView nextEpochView = this.nodes.stream()
-				.map(i -> i.getInstance(Key.get(new TypeLiteral<DeterministicSavedLastEvent<EpochViewUpdate>>() { })).getLastEvent())
-				.map(EpochViewUpdate::getEpochView)
-				.max(Comparator.naturalOrder()).orElse(new EpochView(0, View.genesis()));
+			EpochView nextEpochView = latestEpochView();
 			assertThat(nextEpochView).isGreaterThan(epochView);
 			epochView = nextEpochView;
 
@@ -276,16 +280,12 @@ public class OneNodeAlwaysAliveLivenessTest {
 
 	@Test
 	public void liveness_check_when_restart_node_on_view_update_with_commit() {
-		EpochView epochView = this.nodes.get(0).getInstance(Key.get(new TypeLiteral<DeterministicSavedLastEvent<EpochViewUpdate>>() { }))
-			.getLastEvent().getEpochView();
+		EpochView epochView = this.latestEpochView();
 
 		for (int restart = 0; restart < 5; restart++) {
 			processForCount(5000);
 
-			EpochView nextEpochView = this.nodes.stream()
-				.map(i -> i.getInstance(Key.get(new TypeLiteral<DeterministicSavedLastEvent<EpochViewUpdate>>() { })).getLastEvent())
-				.map(EpochViewUpdate::getEpochView)
-				.max(Comparator.naturalOrder()).orElse(new EpochView(0, View.genesis()));
+			EpochView nextEpochView = latestEpochView();
 			assertThat(nextEpochView).isGreaterThan(epochView);
 			epochView = nextEpochView;
 
@@ -296,6 +296,24 @@ public class OneNodeAlwaysAliveLivenessTest {
 				if (nodeIndex != (nodeToRestart + 1) % nodes.size()) {
 					restartNode(nodeIndex);
 				}
+			}
+		}
+	}
+
+	@Test
+	public void liveness_check_when_restart_all_nodes() {
+		EpochView epochView = this.latestEpochView();
+
+		for (int restart = 0; restart < 5; restart++) {
+			processForCount(5000);
+
+			EpochView nextEpochView = latestEpochView();
+			assertThat(nextEpochView).isGreaterThan(epochView);
+			epochView = nextEpochView;
+
+			logger.info("Restarting " + restart);
+			for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
+				restartNode(nodeIndex);
 			}
 		}
 	}

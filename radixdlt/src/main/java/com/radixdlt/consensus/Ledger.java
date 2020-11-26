@@ -42,11 +42,16 @@ public interface Ledger {
 
 	/**
 	 * Commit prepared vertices from bft consensus
-	 * @param vertices vertices to commit
-	 * @param proof proof of commit
 	 * @param prunedVertices vertices which no longer can be committed
+	 * @param vertices vertices to commit
 	 */
-	void commit(ImmutableList<PreparedVertex> vertices, HighQC proof, ImmutableSet<HashCode> prunedVertices);
+	void commit(
+		ImmutableSet<HashCode> prunedVertices,
+		ImmutableList<PreparedVertex> vertices,
+		VerifiedVertex child,
+		VerifiedVertex grandChild,
+		QuorumCertificate commitQC
+	);
 
 	/**
 	 * Commit commands

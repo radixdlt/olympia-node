@@ -23,6 +23,9 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.UnsignedBytes;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.bft.PersistentVertexStore;
+import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
@@ -69,7 +72,7 @@ import java.util.stream.Collectors;
 import static com.radixdlt.store.berkeley.LedgerEntryIndices.ENTRY_INDEX_PREFIX;
 
 @Singleton
-public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
+public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVertexStore {
 	private static final Logger log = LogManager.getLogger();
 
 	private static final String ATOM_INDICES_DB_NAME = "tempo2.atom_indices";
@@ -277,6 +280,55 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 		} catch (Exception e) {
 			transaction.abort();
 			fail("Commit of pending atom '" + aid + "' failed", e);
+		}
+	}
+
+	public Optional<SerializedRootVertexWithQC> lastRootVertex() {
+		try (Cursor cursor = this.pendingDatabase.openCursor(null, null)) {
+			DatabaseEntry pKey = new DatabaseEntry();
+			DatabaseEntry value = new DatabaseEntry();
+			OperationStatus status = cursor.getLast(pKey, value, LockMode.DEFAULT);
+			if (status == OperationStatus.SUCCESS) {
+				try {
+					SerializedRootVertexWithQC serializedVertexWithQC = serialization.fromDson(value.getData(), SerializedRootVertexWithQC.class);
+					return Optional.of(serializedVertexWithQC);
+				} catch (DeserializeException e) {
+					throw new IllegalStateException(e);
+				}
+			} else {
+				return Optional.empty();
+			}
+		}
+	}
+
+	@Override
+	public void storeRootVertex(VerifiedVertex root, VerifiedVertex child, VerifiedVertex grandChild, QuorumCertificate committedQC) {
+		Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);
+		try (Cursor cursor = this.pendingDatabase.openCursor(transaction, null)) {
+			DatabaseEntry pKey = new DatabaseEntry();
+			DatabaseEntry value = new DatabaseEntry();
+			OperationStatus status = cursor.getLast(pKey, value, LockMode.DEFAULT);
+			if (status == OperationStatus.SUCCESS) {
+				this.pendingDatabase.delete(transaction, pKey);
+			}
+		} catch (Exception e) {
+			transaction.abort();
+			fail("Commit of atom failed", e);
+		}
+
+		DatabaseEntry vertexKey = new DatabaseEntry(root.getId().asBytes());
+		SerializedRootVertexWithQC serializedVertexWithQC = new SerializedRootVertexWithQC(
+			root.toSerializable(),
+			child.toSerializable(),
+			grandChild.toSerializable(),
+			committedQC
+		);
+		DatabaseEntry vertexEntry = new DatabaseEntry(serialization.toDson(serializedVertexWithQC, Output.ALL));
+		OperationStatus putStatus = this.pendingDatabase.put(transaction, vertexKey, vertexEntry);
+		if (putStatus == OperationStatus.SUCCESS) {
+			transaction.commit();
+		} else {
+			fail("Store of root vertex failed");
 		}
 	}
 

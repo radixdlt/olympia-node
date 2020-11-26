@@ -24,6 +24,7 @@ import static org.mockito.Mockito.when;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 import com.google.common.hash.HashCode;
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.crypto.HashUtils;
@@ -48,9 +49,9 @@ public class BFTConfigurationTest {
 		when(qc.getCommittedAndLedgerStateProof())
 			.thenReturn(Optional.of(Pair.of(mock(BFTHeader.class), mock(VerifiedLedgerHeaderAndProof.class))));
 
-		BFTConfiguration bftConfiguration = new BFTConfiguration(validatorSet, vertex, qc);
+		BFTConfiguration bftConfiguration = new BFTConfiguration(validatorSet, vertex, ImmutableList.of(), qc);
 		assertThat(bftConfiguration.getValidatorSet()).isEqualTo(validatorSet);
-		assertThat(bftConfiguration.getGenesisVertex()).isEqualTo(vertex);
-		assertThat(bftConfiguration.getGenesisQC()).isEqualTo(qc);
+		assertThat(bftConfiguration.getRootVertex()).isEqualTo(vertex);
+		assertThat(bftConfiguration.getQC()).isEqualTo(qc);
 	}
 }

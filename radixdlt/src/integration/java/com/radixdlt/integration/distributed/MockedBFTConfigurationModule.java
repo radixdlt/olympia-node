@@ -60,6 +60,6 @@ public class MockedBFTConfigurationModule extends AbstractModule {
 	@Provides
 	@LastProof
 	VerifiedLedgerHeaderAndProof lastProof(BFTConfiguration configuration) {
-		return configuration.getGenesisHeader();
+		return configuration.getRootHeader();
 	}
 }

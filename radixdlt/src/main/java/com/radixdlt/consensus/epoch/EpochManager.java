@@ -215,8 +215,8 @@ public final class EpochManager implements BFTSyncRequestProcessor {
 
 		// Mutable Consensus State
 		final VertexStore vertexStore = vertexStoreFactory.create(
-			bftConfiguration.getGenesisVertex(),
-			bftConfiguration.getGenesisQC()
+			bftConfiguration.getRootVertex(),
+			bftConfiguration.getQC()
 		);
 		final PacemakerState pacemakerState = pacemakerStateFactory.create(nextEpoch, proposerElection);
 
@@ -231,7 +231,11 @@ public final class EpochManager implements BFTSyncRequestProcessor {
 			initialViewUpdate,
 			nextEpoch
 		);
-		final BFTSync bftSync = bftSyncFactory.create(vertexStore, pacemakerState);
+		final BFTSync bftSync = bftSyncFactory.create(
+			vertexStore,
+			pacemakerState,
+			bftConfiguration
+		);
 
 		this.syncBFTResponseProcessor = bftSync;
 		this.syncLedgerUpdateProcessor = bftSync;
