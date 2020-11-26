@@ -35,6 +35,7 @@ import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -47,7 +48,7 @@ public class SystemTest {
 	@Before
 	public void setup() {
 		CMAtomOS cmAtomOS = new CMAtomOS();
-		cmAtomOS.load(new SystemConstraintScrypt(10));
+		cmAtomOS.load(new SystemConstraintScrypt());
 		ConstraintMachine cm = new ConstraintMachine.Builder()
 			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
 			.setParticleTransitionProcedures(cmAtomOS.buildTransitionProcedures())
@@ -63,8 +64,8 @@ public class SystemTest {
 	@Test
 	public void executing_system_update_without_permissions_should_fail() {
 		// Arrange
-		SystemParticle systemParticle = new SystemParticle(1, 0, 0);
-		SystemParticle nextSystemParticle = new SystemParticle(1, 1, 1);
+		SystemParticle systemParticle = new SystemParticle(0, 0, 0);
+		SystemParticle nextSystemParticle = new SystemParticle(0, 1, 1);
 		ImmutableList<CMMicroInstruction> instructions = ImmutableList.of(
 			CMMicroInstruction.checkSpinAndPush(systemParticle, Spin.UP),
 			CMMicroInstruction.checkSpinAndPush(nextSystemParticle, Spin.NEUTRAL),
@@ -86,8 +87,8 @@ public class SystemTest {
 	@Test
 	public void executing_system_update_with_correct_permissions_should_succeed() throws RadixEngineException {
 		// Arrange
-		SystemParticle systemParticle = new SystemParticle(1, 0, 0);
-		SystemParticle nextSystemParticle = new SystemParticle(1, 1, 1);
+		SystemParticle systemParticle = new SystemParticle(0, 0, 0);
+		SystemParticle nextSystemParticle = new SystemParticle(0, 1, 1);
 		ImmutableList<CMMicroInstruction> instructions = ImmutableList.of(
 			CMMicroInstruction.checkSpinAndPush(systemParticle, Spin.UP),
 			CMMicroInstruction.checkSpinAndPush(nextSystemParticle, Spin.NEUTRAL),
@@ -106,10 +107,86 @@ public class SystemTest {
 	}
 
 	@Test
+	public void executing_system_update_with_bad_epoch_should_fail() {
+		SystemParticle systemParticle = new SystemParticle(1, 0, 0);
+		SystemParticle nextSystemParticle = new SystemParticle(-1, 1, 1);
+		ImmutableList<CMMicroInstruction> instructions = ImmutableList.of(
+			CMMicroInstruction.checkSpinAndPush(systemParticle, Spin.UP),
+			CMMicroInstruction.checkSpinAndPush(nextSystemParticle, Spin.NEUTRAL),
+			CMMicroInstruction.particleGroup()
+		);
+		CMInstruction instruction = new CMInstruction(
+			instructions,
+			ImmutableMap.of()
+		);
+
+		assertThatThrownBy(() -> this.engine.checkAndStore(new BaseAtom(instruction, HashUtils.zero256()), PermissionLevel.SUPER_USER))
+			.isInstanceOf(RadixEngineException.class)
+			.extracting(e -> ((RadixEngineException) e).getCmError().getErrorCode())
+			.isEqualTo(CMErrorCode.INVALID_PARTICLE);
+	}
+
+	@Test
+	public void executing_system_update_with_bad_view_should_fail() {
+		SystemParticle systemParticle = new SystemParticle(1, 0, 0);
+		SystemParticle nextSystemParticle = new SystemParticle(1, -1, 1);
+		ImmutableList<CMMicroInstruction> instructions = ImmutableList.of(
+			CMMicroInstruction.checkSpinAndPush(systemParticle, Spin.UP),
+			CMMicroInstruction.checkSpinAndPush(nextSystemParticle, Spin.NEUTRAL),
+			CMMicroInstruction.particleGroup()
+		);
+		CMInstruction instruction = new CMInstruction(
+			instructions,
+			ImmutableMap.of()
+		);
+
+		assertThatThrownBy(() -> this.engine.checkAndStore(new BaseAtom(instruction, HashUtils.zero256()), PermissionLevel.SUPER_USER))
+			.isInstanceOf(RadixEngineException.class)
+			.extracting(e -> ((RadixEngineException) e).getCmError().getErrorCode())
+			.isEqualTo(CMErrorCode.INVALID_PARTICLE);
+	}
+
+	@Test
+	public void executing_system_update_with_bad_timestamp_should_fail() {
+		SystemParticle systemParticle = new SystemParticle(1, 0, 0);
+		SystemParticle nextSystemParticle = new SystemParticle(1, 1, -1);
+		ImmutableList<CMMicroInstruction> instructions = ImmutableList.of(
+			CMMicroInstruction.checkSpinAndPush(systemParticle, Spin.UP),
+			CMMicroInstruction.checkSpinAndPush(nextSystemParticle, Spin.NEUTRAL),
+			CMMicroInstruction.particleGroup()
+		);
+		CMInstruction instruction = new CMInstruction(
+			instructions,
+			ImmutableMap.of()
+		);
+
+		assertThatThrownBy(() -> this.engine.checkAndStore(new BaseAtom(instruction, HashUtils.zero256()), PermissionLevel.SUPER_USER))
+			.isInstanceOf(RadixEngineException.class)
+			.extracting(e -> ((RadixEngineException) e).getCmError().getErrorCode())
+			.isEqualTo(CMErrorCode.INVALID_PARTICLE);
+	}
+
+	@Test
+	public void executing_system_update_with_non_increasing_view_should_fail() {
+		preconditionFailure(1, 0);
+	}
+
+	@Test
+	public void executing_system_update_with_overly_increasing_epoch_should_fail() {
+		preconditionFailure(3, 0);
+	}
+
+	@Test
+	public void executing_system_update_with_epoch_starting_at_view_1_should_fail() {
+		preconditionFailure(2, 1);
+	}
+
+	@Test
+	@Ignore("FIXME: Possibly reinstate view ceiling at some point")
 	public void executing_system_update_with_view_ceiling_should_fail() {
 		// Arrange
-		SystemParticle systemParticle = new SystemParticle(1, 0, 0);
-		SystemParticle nextSystemParticle = new SystemParticle(1, 10, 1);
+		SystemParticle systemParticle = new SystemParticle(0, 0, 0);
+		SystemParticle nextSystemParticle = new SystemParticle(0, 10, 1);
 		ImmutableList<CMMicroInstruction> instructions = ImmutableList.of(
 			CMMicroInstruction.checkSpinAndPush(systemParticle, Spin.UP),
 			CMMicroInstruction.checkSpinAndPush(nextSystemParticle, Spin.NEUTRAL),
@@ -126,5 +203,24 @@ public class SystemTest {
 			.isInstanceOf(RadixEngineException.class)
 			.extracting(e -> ((RadixEngineException) e).getCmError().getErrorCode())
 			.isEqualTo(CMErrorCode.INVALID_PARTICLE);
+	}
+
+	private void preconditionFailure(long epoch, long view) {
+		SystemParticle systemParticle = new SystemParticle(1, 0, 0);
+		SystemParticle nextSystemParticle = new SystemParticle(epoch, view, 1);
+		ImmutableList<CMMicroInstruction> instructions = ImmutableList.of(
+			CMMicroInstruction.checkSpinAndPush(systemParticle, Spin.UP),
+			CMMicroInstruction.checkSpinAndPush(nextSystemParticle, Spin.NEUTRAL),
+			CMMicroInstruction.particleGroup()
+		);
+		CMInstruction instruction = new CMInstruction(
+			instructions,
+			ImmutableMap.of()
+		);
+
+		assertThatThrownBy(() -> this.engine.checkAndStore(new BaseAtom(instruction, HashUtils.zero256()), PermissionLevel.SUPER_USER))
+			.isInstanceOf(RadixEngineException.class)
+			.extracting(e -> ((RadixEngineException) e).getCmError().getErrorCode())
+			.isEqualTo(CMErrorCode.TRANSITION_PRECONDITION_FAILURE);
 	}
 }
