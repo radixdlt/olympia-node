@@ -87,57 +87,26 @@ public final class VertexStore {
 	}
 
 	public static VertexStore create(
-		VerifiedVertex rootVertex,
-		QuorumCertificate qc,
+		VerifiedVertexStoreState vertexStoreState,
 		Ledger ledger,
 		EventDispatcher<BFTUpdate> bftUpdateDispatcher,
 		EventDispatcher<BFTCommittedUpdate> bftCommittedDispatcher,
 		VertexStoreEventSender vertexStoreEventSender,
 		SystemCounters counters
 	) {
-		return VertexStore.create(
-			rootVertex,
-			ImmutableList.of(),
-			qc,
-			ledger,
-			bftUpdateDispatcher,
-			bftCommittedDispatcher,
-			vertexStoreEventSender,
-			counters
-		);
-	}
-
-	public static VertexStore create(
-		VerifiedVertex rootVertex,
-		ImmutableList<VerifiedVertex> vertices, // TODO: change this to PreparedVertex
-		QuorumCertificate rootCommitQC,
-		Ledger ledger,
-		EventDispatcher<BFTUpdate> bftUpdateDispatcher,
-		EventDispatcher<BFTCommittedUpdate> bftCommittedDispatcher,
-		VertexStoreEventSender vertexStoreEventSender,
-		SystemCounters counters
-	) {
-		final Optional<BFTHeader> maybeHeader = rootCommitQC.getCommittedAndLedgerStateProof().map(Pair::getFirst);
-		final BFTHeader committedHeader = maybeHeader.orElseThrow(
-			() -> new IllegalStateException(String.format("rootCommit=%s does not have commit", rootCommitQC))
-		);
-		if (!committedHeader.getVertexId().equals(rootVertex.getId())) {
-			throw new IllegalStateException(String.format("rootCommitQC=%s does not match rootVertex=%s", rootCommitQC, rootVertex));
-		}
-
 		VertexStore vertexStore = new VertexStore(
 			ledger,
-			rootVertex,
-			rootCommitQC,
+			vertexStoreState.getRoot(),
+			vertexStoreState.getRootCommitQC(),
 			bftUpdateDispatcher,
 			bftCommittedDispatcher,
 			vertexStoreEventSender,
 			counters
 		);
 
-		for (VerifiedVertex vertex : vertices) {
+		for (VerifiedVertex vertex : vertexStoreState.getVertices()) {
 			if (!vertexStore.addQC(vertex.getQC())) {
-				throw new IllegalStateException(String.format("Missing qc=%s vertices=%s", vertex.getQC(), vertices));
+				throw new IllegalStateException("Should never get here, should have been verified by VerifiedVertexStoreState");
 			}
 
 			// An insertion may have failed due to the ledger being ahead of vertex store
@@ -147,10 +116,6 @@ public final class VertexStore {
 			if (maybeInserted.isEmpty()) {
 				break;
 			}
-		}
-
-		if (!vertexStore.addQC(rootCommitQC)) {
-			throw new IllegalStateException("Root Commit QC missing vertex");
 		}
 
 		return vertexStore;

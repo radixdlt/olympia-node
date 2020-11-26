@@ -17,11 +17,11 @@
 
 package com.radixdlt.consensus.bft;
 
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.store.berkeley.SerializedRootVertexWithQC;
+import com.radixdlt.store.berkeley.SerializedVertexStoreState;
 import java.util.Optional;
 
 public interface PersistentVertexStore {
-	void storeRootVertex(VerifiedVertex root, VerifiedVertex child, VerifiedVertex grandChild, QuorumCertificate committedQC);
-	Optional<SerializedRootVertexWithQC> lastRootVertex();
+	void save(VerifiedVertexStoreState vertexStoreState);
+
+	Optional<SerializedVertexStoreState> lastRootVertex();
 }

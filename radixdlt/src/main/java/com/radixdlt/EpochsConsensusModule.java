@@ -17,7 +17,6 @@
 
 package com.radixdlt;
 
-import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
@@ -230,7 +229,7 @@ public class EpochsConsensusModule extends AbstractModule {
 			},
 			syncLedgerRequestSender,
 			timeoutDispatcher,
-			configuration.getRootHeader(),
+			configuration.getVertexStoreState().getRootHeader(),
 			random,
 			bftSyncPatienceMillis
 		);
@@ -244,10 +243,8 @@ public class EpochsConsensusModule extends AbstractModule {
 		Ledger ledger,
 		VertexStoreEventSender vertexStoreEventSender
 	) {
-		return (genesisVertex, genesisQC) -> VertexStore.create(
-			genesisVertex,
-			ImmutableList.of(),
-			genesisQC,
+		return vertexStoreState -> VertexStore.create(
+			vertexStoreState,
 			ledger,
 			updateSender,
 			committedDispatcher,

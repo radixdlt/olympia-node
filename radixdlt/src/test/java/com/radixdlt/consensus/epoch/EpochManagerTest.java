@@ -44,6 +44,7 @@ import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.UnverifiedVertex;
@@ -201,9 +202,7 @@ public class EpochManagerTest {
 				QuorumCertificate qc = QuorumCertificate.ofGenesis(verifiedVertex, LedgerHeader.genesis(HashUtils.zero256(), validatorSet));
 				return new BFTConfiguration(
 					validatorSet,
-					verifiedVertex,
-					ImmutableList.of(),
-					qc
+					VerifiedVertexStoreState.create(qc, verifiedVertex)
 				);
 			}
 		};
@@ -235,7 +234,10 @@ public class EpochManagerTest {
 			header.timestamp()
 		);
 		QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
-		BFTConfiguration bftConfiguration = new BFTConfiguration(nextValidatorSet, verifiedGenesisVertex, ImmutableList.of(), genesisQC);
+		BFTConfiguration bftConfiguration = new BFTConfiguration(
+			nextValidatorSet,
+			VerifiedVertexStoreState.create(genesisQC, verifiedGenesisVertex)
+		);
 		VerifiedLedgerHeaderAndProof proof = mock(VerifiedLedgerHeaderAndProof.class);
 		when(proof.getEpoch()).thenReturn(header.getEpoch() + 1);
 		EpochChange epochChange = new EpochChange(proof, bftConfiguration);

@@ -30,6 +30,7 @@ import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
+import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.counters.SystemCounters;
@@ -216,7 +217,8 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		QuorumCertificate commitQC
 	) {
 		VerifiedVertex newRootVertex = vertices.get(vertices.size() - 1).getVertex();
-		persistentVertexStore.storeRootVertex(newRootVertex, child, grandChild, commitQC);
+		VerifiedVertexStoreState vertexStoreState = VerifiedVertexStoreState.create(commitQC, newRootVertex, ImmutableList.of(child, grandChild));
+		persistentVertexStore.save(vertexStoreState);
 
 		final ImmutableList<Command> commands = vertices.stream()
 			.flatMap(PreparedVertex::successfulCommands)

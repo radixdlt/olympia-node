@@ -33,6 +33,7 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.VerifiedVertex;
+import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
@@ -123,7 +124,7 @@ public class RadixEngineStoreModule extends AbstractModule {
 			.orElse(genesisCheckpoint.getHeader());
 
 		if (lastStoredProof.isEndOfEpoch()) {
-			return bftConfiguration.getRootHeader();
+			return bftConfiguration.getVertexStoreState().getRootHeader();
 		} else {
 			return lastStoredProof;
 		}
@@ -154,25 +155,22 @@ public class RadixEngineStoreModule extends AbstractModule {
 		Hasher hasher
 	) {
 		return persistentVertexStore.lastRootVertex()
-			.map(serializedVertexWithQC -> {
-				UnverifiedVertex root = serializedVertexWithQC.getRoot();
+			.map(serializedVertexStoreState -> {
+				UnverifiedVertex root = serializedVertexStoreState.getRoot();
 				HashCode rootVertexId = hasher.hash(root);
 				VerifiedVertex verifiedRoot = new VerifiedVertex(root, rootVertexId);
 
-				UnverifiedVertex child = serializedVertexWithQC.getChild();
-				HashCode childVertexId = hasher.hash(child);
-				VerifiedVertex verifiedChild = new VerifiedVertex(child, childVertexId);
+				ImmutableList<VerifiedVertex> vertices = serializedVertexStoreState.getVertices().stream()
+					.map(v -> new VerifiedVertex(v, hasher.hash(v)))
+					.collect(ImmutableList.toImmutableList());
 
-				UnverifiedVertex grandChild = serializedVertexWithQC.getGrandChild();
-				HashCode grandChildVertexId = hasher.hash(grandChild);
-				VerifiedVertex verifiedGrandChild = new VerifiedVertex(grandChild, grandChildVertexId);
-
-				return new BFTConfiguration(
-					validatorSet,
+				VerifiedVertexStoreState vertexStoreState = VerifiedVertexStoreState.create(
+					serializedVertexStoreState.getCommitQC(),
 					verifiedRoot,
-					ImmutableList.of(verifiedChild, verifiedGrandChild),
-					serializedVertexWithQC.getCommitQC()
+					vertices
 				);
+
+				return new BFTConfiguration(validatorSet, vertexStoreState);
 			})
 			.orElseGet(() -> {
 				UnverifiedVertex genesisVertex = UnverifiedVertex.createGenesis(lastEpochProof.getRaw());
@@ -184,7 +182,7 @@ public class RadixEngineStoreModule extends AbstractModule {
 					lastEpochProof.timestamp()
 				);
 				QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
-				return new BFTConfiguration(validatorSet, verifiedGenesisVertex, ImmutableList.of(), genesisQC);
+				return new BFTConfiguration(validatorSet, VerifiedVertexStoreState.create(genesisQC, verifiedGenesisVertex));
 			});
 	}
 

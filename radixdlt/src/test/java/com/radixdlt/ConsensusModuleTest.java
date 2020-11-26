@@ -23,11 +23,9 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -48,6 +46,7 @@ import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
@@ -89,6 +88,7 @@ import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
+import java.util.stream.Stream;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -109,20 +109,12 @@ public class ConsensusModuleTest {
 
 	@Before
 	public void setup() {
-		this.bftConfiguration = mock(BFTConfiguration.class);
 		UnverifiedVertex genesis = UnverifiedVertex.createGenesis(LedgerHeader.genesis(HashUtils.zero256(), null));
 		VerifiedVertex hashedGenesis = new VerifiedVertex(genesis, HashUtils.zero256());
 		QuorumCertificate qc = QuorumCertificate.ofGenesis(hashedGenesis, LedgerHeader.genesis(HashUtils.zero256(), null));
-		when(bftConfiguration.getRootVertex()).thenReturn(hashedGenesis);
-		when(bftConfiguration.getQC()).thenReturn(qc);
-		when(bftConfiguration.getRootHeader()).thenReturn(mock(VerifiedLedgerHeaderAndProof.class));
-		when(bftConfiguration.getVertices()).thenReturn(ImmutableList.of());
-		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
-		BFTValidator validator = mock(BFTValidator.class);
-		when(validator.getPower()).thenReturn(UInt256.ONE);
-		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of(validator));
-		when(validatorSet.nodes()).thenReturn(ImmutableSet.of(mock(BFTNode.class)));
-		when(bftConfiguration.getValidatorSet()).thenReturn(validatorSet);
+		BFTValidatorSet validatorSet = BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)));
+		VerifiedVertexStoreState vertexStoreState = VerifiedVertexStoreState.create(qc, hashedGenesis);
+		this.bftConfiguration = new BFTConfiguration(validatorSet, vertexStoreState);
 		this.ecKeyPair = ECKeyPair.generateNew();
 		this.requestSender = mock(SyncVerticesRequestSender.class);
 

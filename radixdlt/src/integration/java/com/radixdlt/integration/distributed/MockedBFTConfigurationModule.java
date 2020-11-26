@@ -27,6 +27,7 @@ import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertex;
+import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.store.LastProof;
 
@@ -49,17 +50,16 @@ public class MockedBFTConfigurationModule extends AbstractModule {
 	BFTConfiguration config(BFTValidatorSet validatorSet) {
 		UnverifiedVertex genesis = UnverifiedVertex.createGenesis(LedgerHeader.genesis(genesisHash, validatorSet));
 		VerifiedVertex hashedGenesis = new VerifiedVertex(genesis, genesisHash);
-
+		QuorumCertificate rootQC = QuorumCertificate.ofGenesis(hashedGenesis, LedgerHeader.genesis(genesisHash, null));
 		return new BFTConfiguration(
 			validatorSet,
-			hashedGenesis,
-			QuorumCertificate.ofGenesis(hashedGenesis, LedgerHeader.genesis(genesisHash, null))
+			VerifiedVertexStoreState.create(rootQC, hashedGenesis)
 		);
 	}
 
 	@Provides
 	@LastProof
 	VerifiedLedgerHeaderAndProof lastProof(BFTConfiguration configuration) {
-		return configuration.getRootHeader();
+		return configuration.getVertexStoreState().getRootHeader();
 	}
 }

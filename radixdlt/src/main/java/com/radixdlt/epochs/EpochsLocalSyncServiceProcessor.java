@@ -19,7 +19,6 @@ package com.radixdlt.epochs;
 
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
-import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.environment.EventProcessor;
@@ -45,7 +44,7 @@ import org.apache.logging.log4j.Logger;
 public class EpochsLocalSyncServiceProcessor {
 	private static final Logger log = LogManager.getLogger();
 
-	private final Function<BFTConfiguration, LocalSyncServiceAccumulatorProcessor> localSyncFactory;
+	private final Function<EpochChange, LocalSyncServiceAccumulatorProcessor> localSyncFactory;
 	private final SyncedEpochSender syncedEpochSender;
 	private final RemoteEventDispatcher<DtoLedgerHeaderAndProof> requestDispatcher;
 	private final TreeMap<Long, List<LocalSyncRequest>> outsideOfCurrentEpochRequests = new TreeMap<>();
@@ -59,7 +58,7 @@ public class EpochsLocalSyncServiceProcessor {
 		LocalSyncServiceAccumulatorProcessor initialProcessor,
 		EpochChange initialEpoch,
 		@LastProof VerifiedLedgerHeaderAndProof initialHeader,
-		Function<BFTConfiguration, LocalSyncServiceAccumulatorProcessor> localSyncFactory,
+		Function<EpochChange, LocalSyncServiceAccumulatorProcessor> localSyncFactory,
 		RemoteEventDispatcher<DtoLedgerHeaderAndProof> requestDispatcher,
 		SyncedEpochSender syncedEpochSender
 	) {
@@ -77,8 +76,8 @@ public class EpochsLocalSyncServiceProcessor {
 		if (maybeEpochChange.isPresent()) {
 			final EpochChange epochChange = maybeEpochChange.get();
 			this.currentEpoch = epochChange;
-			this.currentHeader = epochChange.getBFTConfiguration().getRootHeader();
-			this.localSyncServiceProcessor = localSyncFactory.apply(epochChange.getBFTConfiguration());
+			this.currentHeader = epochChange.getGenesisHeader();
+			this.localSyncServiceProcessor = localSyncFactory.apply(epochChange);
 
 			// TODO: Cleanup further requests
 			this.outsideOfCurrentEpochRequests.headMap(epochChange.getEpoch()).clear();

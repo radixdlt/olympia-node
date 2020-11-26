@@ -19,6 +19,7 @@ package com.radixdlt.store.berkeley;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.serialization.DsonOutput;
@@ -28,8 +29,8 @@ import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
 
-@SerializerId2("store.proposal")
-public class SerializedRootVertexWithQC {
+@SerializerId2("store.vertices")
+public class SerializedVertexStoreState {
 
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(Output.ALL)
@@ -39,28 +40,22 @@ public class SerializedRootVertexWithQC {
 	@DsonOutput(Output.ALL)
 	private final UnverifiedVertex root;
 
-	@JsonProperty("child")
+	@JsonProperty("vertices")
 	@DsonOutput(Output.ALL)
-	private final UnverifiedVertex child;
-
-	@JsonProperty("grand_child")
-	@DsonOutput(Output.ALL)
-	private final UnverifiedVertex grandChild;
+	private final ImmutableList<UnverifiedVertex> vertices;
 
 	@JsonProperty("commit_qc")
 	@DsonOutput(Output.ALL)
 	private final QuorumCertificate commitQC;
 
 	@JsonCreator
-	public SerializedRootVertexWithQC(
+	public SerializedVertexStoreState(
+		@JsonProperty("commit_qc") QuorumCertificate commitQC,
 		@JsonProperty("root") UnverifiedVertex root,
-		@JsonProperty("child") UnverifiedVertex child,
-		@JsonProperty("grand_child") UnverifiedVertex grandChild,
-		@JsonProperty("commit_qc") QuorumCertificate commitQC
+		@JsonProperty("vertices") ImmutableList<UnverifiedVertex> vertices
 	) {
 		this.root = Objects.requireNonNull(root);
-		this.child = Objects.requireNonNull(child);
-		this.grandChild = Objects.requireNonNull(grandChild);
+		this.vertices = Objects.requireNonNull(vertices);
 		this.commitQC = Objects.requireNonNull(commitQC);
 	}
 
@@ -68,12 +63,8 @@ public class SerializedRootVertexWithQC {
 		return root;
 	}
 
-	public UnverifiedVertex getChild() {
-		return child;
-	}
-
-	public UnverifiedVertex getGrandChild() {
-		return grandChild;
+	public ImmutableList<UnverifiedVertex> getVertices() {
+		return vertices;
 	}
 
 	public QuorumCertificate getCommitQC() {

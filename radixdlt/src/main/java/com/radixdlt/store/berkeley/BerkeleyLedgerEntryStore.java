@@ -23,9 +23,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.UnsignedBytes;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
-import com.radixdlt.consensus.bft.VerifiedVertex;
+import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
@@ -283,14 +282,14 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 		}
 	}
 
-	public Optional<SerializedRootVertexWithQC> lastRootVertex() {
+	public Optional<SerializedVertexStoreState> lastRootVertex() {
 		try (Cursor cursor = this.pendingDatabase.openCursor(null, null)) {
 			DatabaseEntry pKey = new DatabaseEntry();
 			DatabaseEntry value = new DatabaseEntry();
 			OperationStatus status = cursor.getLast(pKey, value, LockMode.DEFAULT);
 			if (status == OperationStatus.SUCCESS) {
 				try {
-					SerializedRootVertexWithQC serializedVertexWithQC = serialization.fromDson(value.getData(), SerializedRootVertexWithQC.class);
+					SerializedVertexStoreState serializedVertexWithQC = serialization.fromDson(value.getData(), SerializedVertexStoreState.class);
 					return Optional.of(serializedVertexWithQC);
 				} catch (DeserializeException e) {
 					throw new IllegalStateException(e);
@@ -302,7 +301,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 	}
 
 	@Override
-	public void storeRootVertex(VerifiedVertex root, VerifiedVertex child, VerifiedVertex grandChild, QuorumCertificate committedQC) {
+	public void save(VerifiedVertexStoreState vertexStoreState) {
 		Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);
 		try (Cursor cursor = this.pendingDatabase.openCursor(transaction, null)) {
 			DatabaseEntry pKey = new DatabaseEntry();
@@ -316,13 +315,9 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 			fail("Commit of atom failed", e);
 		}
 
-		DatabaseEntry vertexKey = new DatabaseEntry(root.getId().asBytes());
-		SerializedRootVertexWithQC serializedVertexWithQC = new SerializedRootVertexWithQC(
-			root.toSerializable(),
-			child.toSerializable(),
-			grandChild.toSerializable(),
-			committedQC
-		);
+		DatabaseEntry vertexKey = new DatabaseEntry(vertexStoreState.getRoot().getId().asBytes());
+
+		SerializedVertexStoreState serializedVertexWithQC = vertexStoreState.toSerialized();
 		DatabaseEntry vertexEntry = new DatabaseEntry(serialization.toDson(serializedVertexWithQC, Output.ALL));
 		OperationStatus putStatus = this.pendingDatabase.put(transaction, vertexKey, vertexEntry);
 		if (putStatus == OperationStatus.SUCCESS) {

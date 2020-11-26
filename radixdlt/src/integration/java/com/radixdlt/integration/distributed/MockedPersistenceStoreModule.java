@@ -18,15 +18,12 @@
 package com.radixdlt.integration.distributed;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
-import com.radixdlt.consensus.bft.VerifiedVertex;
+import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.safety.SafetyState;
-import com.radixdlt.store.berkeley.SerializedRootVertexWithQC;
+import com.radixdlt.store.berkeley.SerializedVertexStoreState;
 import java.util.Optional;
 
 public class MockedPersistenceStoreModule extends AbstractModule {
@@ -52,12 +49,12 @@ public class MockedPersistenceStoreModule extends AbstractModule {
 
 	private static class MockedPersistentVertexStore implements PersistentVertexStore {
 		@Override
-		public void storeRootVertex(VerifiedVertex root, VerifiedVertex child, VerifiedVertex grandChild, QuorumCertificate committedQC) {
+		public void save(VerifiedVertexStoreState vertexStoreState) {
 			// Nothing to do here
 		}
 
 		@Override
-		public Optional<SerializedRootVertexWithQC> lastRootVertex() {
+		public Optional<SerializedVertexStoreState> lastRootVertex() {
 			return Optional.empty();
 		}
 	}

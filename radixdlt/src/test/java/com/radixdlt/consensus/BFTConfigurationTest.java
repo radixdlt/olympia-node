@@ -17,19 +17,10 @@
 
 package com.radixdlt.consensus;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 import com.google.common.hash.HashCode;
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.utils.Pair;
-import java.util.Optional;
 import org.junit.Test;
 
 public class BFTConfigurationTest {
@@ -39,19 +30,5 @@ public class BFTConfigurationTest {
 		EqualsVerifier.forClass(BFTConfiguration.class)
 			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 			.verify();
-	}
-
-	@Test
-	public void testGetters() {
-		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
-		VerifiedVertex vertex = mock(VerifiedVertex.class);
-		QuorumCertificate qc = mock(QuorumCertificate.class);
-		when(qc.getCommittedAndLedgerStateProof())
-			.thenReturn(Optional.of(Pair.of(mock(BFTHeader.class), mock(VerifiedLedgerHeaderAndProof.class))));
-
-		BFTConfiguration bftConfiguration = new BFTConfiguration(validatorSet, vertex, ImmutableList.of(), qc);
-		assertThat(bftConfiguration.getValidatorSet()).isEqualTo(validatorSet);
-		assertThat(bftConfiguration.getRootVertex()).isEqualTo(vertex);
-		assertThat(bftConfiguration.getQC()).isEqualTo(qc);
 	}
 }

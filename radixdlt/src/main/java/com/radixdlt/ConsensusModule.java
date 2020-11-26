@@ -274,9 +274,7 @@ public final class ConsensusModule extends AbstractModule {
 		Ledger ledger
 	) {
 		return VertexStore.create(
-			bftConfiguration.getRootVertex(),
-			bftConfiguration.getVertices(),
-			bftConfiguration.getQC(),
+			bftConfiguration.getVertexStoreState(),
 			ledger,
 			updateSender,
 			committedSender,

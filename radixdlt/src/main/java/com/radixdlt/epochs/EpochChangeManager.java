@@ -17,8 +17,8 @@
 
 package com.radixdlt.epochs;
 
-import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.BFTConfiguration;
+import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -61,7 +61,8 @@ public final class EpochChangeManager implements LedgerUpdateSender {
 				header.timestamp()
 			);
 			QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
-			BFTConfiguration bftConfiguration = new BFTConfiguration(validatorSet, verifiedGenesisVertex, ImmutableList.of(), genesisQC);
+			VerifiedVertexStoreState initialState = VerifiedVertexStoreState.create(genesisQC, verifiedGenesisVertex);
+			BFTConfiguration bftConfiguration = new BFTConfiguration(validatorSet, initialState);
 			return new EpochChange(header, bftConfiguration);
 		});
 

@@ -37,6 +37,10 @@ public final class EpochChange {
 		return bftConfiguration;
 	}
 
+	public VerifiedLedgerHeaderAndProof getGenesisHeader() {
+		return bftConfiguration.getVertexStoreState().getRootHeader();
+	}
+
 	public long getEpoch() {
 		return proof.getEpoch() + 1;
 	}
