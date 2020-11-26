@@ -174,7 +174,7 @@ public class MessageCentralValidatorSync implements SyncVerticesRequestSender, S
 					return null;
 				}
 
-				if(errorResponseRateLimiter.tryAcquire()) {
+				if (errorResponseRateLimiter.tryAcquire()) {
 					BFTNode node = BFTNode.create(src.getSystem().getKey());
 					return new GetVerticesErrorResponse(node, msg.highQC());
 				} else {
