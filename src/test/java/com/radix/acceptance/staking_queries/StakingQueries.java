@@ -81,8 +81,8 @@ public class StakingQueries {
 		//TODO: for some reason plain .blockUntilComplete() does not work (race condition?)
 		final ImmutableSet<RadixAddress> allowedDelegators = builder.build();
 		System.err.println("Allowed delegators: " + allowedDelegators);
-		validator.registerValidator(validator.getAddress(), allowedDelegators).toObservable().blockingSubscribe();
-//		validator.registerValidator(validator.getAddress(), Set.of()).toObservable().blockingSubscribe();
+		//validator.registerValidator(validator.getAddress(), allowedDelegators).toObservable().blockingSubscribe();
+		validator.registerValidator(validator.getAddress(), allowedDelegators).blockUntilComplete();
 	}
 
 	@And("^I stake some tokens by delegator(\\d+)$")
@@ -100,6 +100,7 @@ public class StakingQueries {
 		System.err.println("Delegator: " + delegator.getAddress() + ", delegate: " + validator.getAddress());
 		delegator.stakeTokens(STAKING_AMOUNT, token, validator.getAddress()).blockUntilComplete();
 //		delegator.stakeTokens(STAKING_AMOUNT, token, validator.getAddress()).toObservable().doOnNext(System.err::println).blockingSubscribe();
+		delegator.pullOnce(validator.getAddress()).blockingAwait();
 	}
 
 	@When("^I request validator stake balance$")
@@ -107,13 +108,14 @@ public class StakingQueries {
 		final var observer = new TestObserver<>();
 		validator.observeStake(validator.getAddress()).subscribe(observer);
 		observers.add(observer);
+		//TODO: fails with NoSuchElementException with single .pullOnce() call
+		validator.pullOnce(validator.getAddress()).blockingAwait();
+		validator.pullOnce(validator.getAddress()).blockingAwait();
 	}
 
 	@Then("^I can observe that validator has amount of tokens staked equal to (.*)$")
 	public void validate_stake_balance(final String expectedBalanceString) {
 		final BigDecimal expectedBalance = decodeBalanceString(expectedBalanceString);
-		validator.pullOnce(validator.getAddress()).blockingAwait();
-		validator.pullOnce(validator.getAddress()).blockingAwait();
 
 		final var testObserver = observers.get(observers.size() - 1);
 		testObserver.assertNoErrors();
