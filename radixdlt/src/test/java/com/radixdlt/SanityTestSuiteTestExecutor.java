@@ -40,22 +40,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-interface TestVectorInput {}
-interface TestVectorExpected {}
 class UnknownTestVector {
 	Object input;
 	Object expected;
-}
-abstract class TestVector<Input extends TestVectorInput, Expected extends TestVectorExpected> extends UnknownTestVector {
-	abstract Input getInput();
-	abstract Expected getExpected();
 }
 
 public class SanityTestSuiteTestExecutor {
 
 	private static final Logger log = LogManager.getLogger();
-
-
 
 	static final class SanityTestSuiteRoot {
 
@@ -165,33 +157,6 @@ public class SanityTestSuiteTestExecutor {
 		return gson.fromJson(jsonFromObj, toType);
 	}
 
-	private static <
-			Input extends TestVectorInput,
-			Expected extends TestVectorExpected,
-			Vector extends TestVector<Input, Expected>
-			>
-	Vector castTestVector(UnknownTestVector unknownTestVector, Class<Vector> toType) {
-		return cast(unknownTestVector, toType);
-	}
-
-	static final class HashingVectorInput implements TestVectorInput {
-		private String stringToHash;
-		byte[] bytesToHash() {
-			return this.stringToHash.getBytes(StandardCharsets.UTF_8);
-		}
-	}
-	static final class HashingVectorExpected implements TestVectorExpected {
-		private String hash;
-	}
-	static final class HashingTestVector extends TestVector<HashingVectorInput, HashingVectorExpected> {
-		@Override HashingVectorInput getInput() {
-			return cast(this.input, HashingVectorInput.class);
-		}
-		@Override HashingVectorExpected getExpected() {
-			return cast(this.expected, HashingVectorExpected.class);
-		}
-	}
-
 	private static byte[] sha256Hash(byte[] bytes) {
 		MessageDigest hasher = null;
 		try {
@@ -203,86 +168,94 @@ public class SanityTestSuiteTestExecutor {
 		return hasher.digest();
 	}
 
+
+
+	static final class HashingTestVector {
+
+		static final class Expected {
+			private String hash;
+		}
+
+		static final class Input {
+			private String stringToHash;
+			byte[] bytesToHash() {
+				return this.stringToHash.getBytes(StandardCharsets.UTF_8);
+			}
+		}
+
+		private Expected expected;
+		private Input input;
+	}
+
 	private void testScenarioHashing(SanityTestSuiteRoot.SanityTestSuite.SanityTestScenario scenario) {
 		assertEquals(TEST_SCENARIO_HASHING, scenario.identifier);
 
 		BiConsumer<HashingTestVector, Integer> testVectorRunner = (vector, vectorIndex) -> {
-			HashingVectorInput input = vector.getInput();
-			HashingVectorExpected expected = vector.getExpected();
+			String hashHex = Bytes.toHexString(sha256Hash(vector.input.bytesToHash()));
 
-			String hashHex = Bytes.toHexString(sha256Hash(input.bytesToHash()));
-
-			assertEquals(String.format("Test vector at index %d failed.", vectorIndex), expected.hash, hashHex);
+			assertEquals(String.format("Test vector at index %d failed.", vectorIndex), vector.expected.hash, hashHex);
 		};
 
 		for (int testVectorIndex = 0; testVectorIndex < scenario.tests.vectors.size(); ++testVectorIndex) {
 			UnknownTestVector untypedVector = scenario.tests.vectors.get(testVectorIndex);
-			HashingTestVector testVector = castTestVector(untypedVector, HashingTestVector.class);
-			testVectorRunner.accept(testVector, testVectorIndex);
+			testVectorRunner.accept(cast(untypedVector, HashingTestVector.class), testVectorIndex);
 		}
 	}
 
-	static final class RadixHashingVectorInput implements TestVectorInput {
-		private String stringToHash;
-		byte[] bytesToHash() {
-			return this.stringToHash.getBytes(StandardCharsets.UTF_8);
+
+	static final class RadixHashingTestVector {
+		static final class Expected {
+			private String hashOfHash;
 		}
-	}
-	static final class RadixHashingVectorExpected implements TestVectorExpected {
-		private String hashOfHash;
-	}
-	static final class RadixHashingTestVector extends TestVector<RadixHashingVectorInput, RadixHashingVectorExpected> {
-		@Override RadixHashingVectorInput getInput() {
-			return cast(this.input, RadixHashingVectorInput.class);
+
+		static final class Input {
+			private String stringToHash;
+			byte[] bytesToHash() {
+				return this.stringToHash.getBytes(StandardCharsets.UTF_8);
+			}
 		}
-		@Override RadixHashingVectorExpected getExpected() {
-			return cast(this.expected, RadixHashingVectorExpected.class);
-		}
+
+		private Expected expected;
+		private Input input;
 	}
 	private void testScenarioRadixHashing(SanityTestSuiteRoot.SanityTestSuite.SanityTestScenario scenario) {
 		assertEquals(TEST_SCENARIO_RADIXHASHING, scenario.identifier);
 
 		BiConsumer<RadixHashingTestVector, Integer> testVectorRunner = (vector, vectorIndex) -> {
-			RadixHashingVectorInput input = vector.getInput();
-			RadixHashingVectorExpected expected = vector.getExpected();
-			String hashHex = Bytes.toHexString(HashUtils.sha256(input.bytesToHash()).asBytes());
-			assertEquals(String.format("Test vector at index %d failed.", vectorIndex), expected.hashOfHash, hashHex);
+			String hashHex = Bytes.toHexString(HashUtils.sha256(vector.input.bytesToHash()).asBytes());
+			assertEquals(String.format("Test vector at index %d failed.", vectorIndex), vector.expected.hashOfHash, hashHex);
 		};
 
 		for (int testVectorIndex = 0; testVectorIndex < scenario.tests.vectors.size(); ++testVectorIndex) {
 			UnknownTestVector untypedVector = scenario.tests.vectors.get(testVectorIndex);
-			RadixHashingTestVector testVector = castTestVector(untypedVector, RadixHashingTestVector.class);
-			testVectorRunner.accept(testVector, testVectorIndex);
+			testVectorRunner.accept(cast(untypedVector, RadixHashingTestVector.class), testVectorIndex);
 		}
 	}
 
-	static final class KeyGenVectorInput implements TestVectorInput {
-		private String privateKey;
-	}
-	static final class KeyGenVectorExpected implements TestVectorExpected {
-		private String uncompressedPublicKey;
-	}
-	static final class KeyGenTestVector extends TestVector<KeyGenVectorInput, KeyGenVectorExpected> {
-		@Override KeyGenVectorInput getInput() {
-			return cast(this.input, KeyGenVectorInput.class);
+
+	static final class KeyGenTestVector {
+		static final class Expected {
+			private String uncompressedPublicKey;
 		}
-		@Override KeyGenVectorExpected getExpected() {
-			return cast(this.expected, KeyGenVectorExpected.class);
+
+		static final class Input  {
+			private String privateKey;
 		}
+
+		private Expected expected;
+		private Input input;
 	}
 	private void testScenarioKeyGen(SanityTestSuiteRoot.SanityTestSuite.SanityTestScenario scenario) {
 		assertEquals(TEST_SCENARIO_KEYGEN, scenario.identifier);
 
 		BiConsumer<KeyGenTestVector, Integer> testVectorRunner = (vector, vectorIndex) -> {
-			KeyGenVectorInput input = vector.getInput();
-			KeyGenVectorExpected expected = vector.getExpected();
 
 			ECPublicKey publicKey = null;
 			ECPublicKey expectedPublicKey = null;
 
 			try {
-				publicKey = ECKeyPair.fromPrivateKey(Bytes.fromHexString(input.privateKey)).getPublicKey();
-				expectedPublicKey = ECPublicKey.fromBytes(Bytes.fromHexString(expected.uncompressedPublicKey));
+				publicKey = ECKeyPair.fromPrivateKey(Bytes.fromHexString(vector.input.privateKey)).getPublicKey();
+				expectedPublicKey = ECPublicKey.fromBytes(Bytes.fromHexString(vector.expected.uncompressedPublicKey));
 			} catch (Exception e) {
 				Assert.fail(String.format("Test vector at index %d failed. Failed to get public key: " + e, vectorIndex));
 			}
@@ -293,8 +266,7 @@ public class SanityTestSuiteTestExecutor {
 
 		for (int testVectorIndex = 0; testVectorIndex < scenario.tests.vectors.size(); ++testVectorIndex) {
 			UnknownTestVector untypedVector = scenario.tests.vectors.get(testVectorIndex);
-			KeyGenTestVector testVector = castTestVector(untypedVector, KeyGenTestVector.class);
-			testVectorRunner.accept(testVector, testVectorIndex);
+			testVectorRunner.accept(cast(untypedVector, KeyGenTestVector.class), testVectorIndex);
 		}
 	}
 

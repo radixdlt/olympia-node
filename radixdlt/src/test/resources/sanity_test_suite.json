@@ -1,5 +1,5 @@
 {
-	"hashOfSuite": "50c6bca8835e538814e8f8c598da5ca8aec3770ef33a160744e396b4c8ada19c",
+	"hashOfSuite": "c92f622cf93a4b94f29633b645c6035b3920b9465127799b4b559a7bceab73b0",
 	"suite": {
 		"scenarios": [
 			{
@@ -370,7 +370,7 @@
 				"name": "JSON roundtrip of Radix Particles",
 				"tests": {
 					"source": {
-						"comment": "Radix employee named 'Alexander cyon' made the first implementation of this."
+						"comment": "Radix employee named 'Alexander Cyon' made the first implementation of this."
 					},
 					"vectors": [
 						{
