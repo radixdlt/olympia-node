@@ -25,6 +25,8 @@ package com.radixdlt.client.application.translate.tokens;
 import com.radixdlt.client.atommodel.tokens.StakedTokensParticle;
 import com.google.common.hash.HashCode;
 import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 import org.junit.Test;
 
@@ -45,10 +47,12 @@ public class StakedTokenBalanceReducerTest {
 		when(minted.getHash()).thenReturn(hash);
 		RRI token = mock(RRI.class);
 		when(minted.getTokenDefinitionReference()).thenReturn(token);
+		RadixAddress address = mock(RadixAddress.class);
+		when(minted.getDelegateAddress()).thenReturn(address);
 
 		StakedTokenBalanceReducer reducer = new StakedTokenBalanceReducer();
 		StakedTokenBalanceState tokenBalance = reducer.reduce(new StakedTokenBalanceState(), minted);
 		BigDecimal tenSubunits = TokenUnitConversions.subunitsToUnits(UInt256.TEN);
-		assertThat(tokenBalance.getBalance().get(token).compareTo(tenSubunits)).isEqualTo(0);
+		assertThat(tokenBalance.getBalance().get(Pair.of(address, token))).isEqualByComparingTo(tenSubunits);
 	}
 }

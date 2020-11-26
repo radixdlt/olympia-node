@@ -24,53 +24,48 @@ package com.radixdlt.client.application.translate.tokens;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.application.translate.ApplicationState;
-import com.radixdlt.client.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.identifiers.RRI;
-import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.utils.Pair;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * The tokens staked to an address at a given point in time.
+ * The tokens delegated to an address at a given point in time.
  */
-public class StakedTokenBalanceState implements ApplicationState {
-	private final ImmutableMap<Pair<RadixAddress, RRI>, BigDecimal> balance;
+public class DelegatedTokenBalanceState implements ApplicationState {
+	private final ImmutableMap<RRI, BigDecimal> balance;
 
-	public StakedTokenBalanceState() {
+	public DelegatedTokenBalanceState() {
 		this.balance = ImmutableMap.of();
 	}
 
-	private StakedTokenBalanceState(Map<Pair<RadixAddress, RRI>, BigDecimal> balance) {
+	private DelegatedTokenBalanceState(Map<RRI, BigDecimal> balance) {
 		this.balance = ImmutableMap.copyOf(balance);
 	}
 
-	public Map<Pair<RadixAddress, RRI>, BigDecimal> getBalance() {
-		return this.balance;
+	public Map<RRI, BigDecimal> getBalance() {
+		return balance;
 	}
 
-	public static StakedTokenBalanceState empty() {
-		return new StakedTokenBalanceState();
+	public static DelegatedTokenBalanceState empty() {
+		return new DelegatedTokenBalanceState();
 	}
 
-	public static StakedTokenBalanceState combine(StakedTokenBalanceState state0, StakedTokenBalanceState state1) {
+	public static DelegatedTokenBalanceState combine(DelegatedTokenBalanceState state0, DelegatedTokenBalanceState state1) {
 		if (state0 == state1) {
 			return state0;
 		}
 
-		final var balance = new HashMap<>(state0.balance);
-		state1.balance.forEach((key, bal) -> balance.merge(key, bal, BigDecimal::add));
-		return new StakedTokenBalanceState(balance);
+		HashMap<RRI, BigDecimal> balance = new HashMap<>(state0.balance);
+		state1.balance.forEach((rri, bal) -> balance.merge(rri, bal, BigDecimal::add));
+		return new DelegatedTokenBalanceState(balance);
 	}
 
-	public static StakedTokenBalanceState merge(StakedTokenBalanceState state, StakedTokensParticle particle) {
-		final var balance = new HashMap<>(state.balance);
-		final var key = Pair.of(particle.getDelegateAddress(), particle.getTokenDefinitionReference());
-		final var amount = TokenUnitConversions.subunitsToUnits(particle.getAmount());
-		balance.merge(key, amount, BigDecimal::add);
-		return new StakedTokenBalanceState(balance);
+	public static DelegatedTokenBalanceState merge(DelegatedTokenBalanceState state, RRI tokenRri, BigDecimal amount) {
+		HashMap<RRI, BigDecimal> balance = new HashMap<>(state.balance);
+		balance.merge(tokenRri, amount, BigDecimal::add);
+		return new DelegatedTokenBalanceState(balance);
 	}
 
 	@Override
@@ -80,11 +75,11 @@ public class StakedTokenBalanceState implements ApplicationState {
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof StakedTokenBalanceState)) {
+		if (!(o instanceof DelegatedTokenBalanceState)) {
 			return false;
 		}
 
-		StakedTokenBalanceState s = (StakedTokenBalanceState) o;
+		DelegatedTokenBalanceState s = (DelegatedTokenBalanceState) o;
 
 		return s.balance.equals(balance);
 	}
