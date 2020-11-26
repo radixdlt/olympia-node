@@ -6,6 +6,7 @@ import com.google.common.io.Files;
 import com.google.gson.Gson;
 import com.google.gson.stream.JsonReader;
 import com.radixdlt.consensus.Sha256Hasher;
+import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.HashUtils;
@@ -16,6 +17,7 @@ import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.JSONFormatter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.bouncycastle.jcajce.provider.asymmetric.ec.KeyFactorySpi;
 import org.json.JSONObject;
 import org.junit.Assert;
 import org.junit.Test;
@@ -189,6 +191,17 @@ public class SanityTestSuiteTestExecutor {
 		}
 	}
 
+	private static byte[] sha256Hash(byte[] bytes) {
+		MessageDigest hasher = null;
+		try {
+			hasher = MessageDigest.getInstance("SHA-256");
+		} catch (NoSuchAlgorithmException e) {
+			throw new AssertionError("Failed to run test, found no hasher", e);
+		}
+		hasher.update(bytes);
+		return hasher.digest();
+	}
+
 	private void testScenarioHashing(SanityTestSuiteRoot.SanityTestSuite.SanityTestScenario scenario) {
 		assertEquals(TEST_SCENARIO_HASHING, scenario.identifier);
 
@@ -196,14 +209,7 @@ public class SanityTestSuiteTestExecutor {
 			HashingVectorInput input = vector.getInput();
 			HashingVectorExpected expected = vector.getExpected();
 
-			MessageDigest hasher = null;
-			try {
-				hasher = MessageDigest.getInstance("SHA-256");
-			} catch (NoSuchAlgorithmException e) {
-				throw new AssertionError("Failed to run test, found no hasher", e);
-			}
-			hasher.update(input.bytesToHash());
-			String hashHex = Bytes.toHexString(hasher.digest());
+			String hashHex = Bytes.toHexString(sha256Hash(input.bytesToHash()));
 
 			assertEquals(String.format("Test vector at index %d failed.", vectorIndex), expected.hash, hashHex);
 		};
@@ -291,8 +297,57 @@ public class SanityTestSuiteTestExecutor {
 		}
 	}
 
+	static final class KeySignTestVector {
+		static final class Input {
+			private String privateKey;
+			private String messageToSign;
+			private byte[] privateKeyBytes() {
+				return Bytes.fromHexString(this.privateKey);
+			}
+			private byte[] hashedMessageToSign() {
+				byte[] unhashedEncodedMessage = messageToSign.getBytes(StandardCharsets.UTF_8);
+				return sha256Hash(unhashedEncodedMessage);
+
+			}
+		}
+		static final class Expected {
+			static final class Signature {
+				private String r;
+				private String s;
+				private String der;
+			}
+			private String k;
+			private Signature signature;
+		}
+
+		private Expected expected;
+		private Input input;
+	}
 	private void testScenarioKeySign(SanityTestSuiteRoot.SanityTestSuite.SanityTestScenario scenario) {
 		assertEquals(TEST_SCENARIO_KEYSIGN, scenario.identifier);
+
+		for (int testVectorIndex = 0; testVectorIndex < scenario.tests.vectors.size(); ++testVectorIndex) {
+			UnknownTestVector untypedVector = scenario.tests.vectors.get(testVectorIndex);
+			KeySignTestVector testVector = cast(untypedVector, KeySignTestVector.class);
+
+			ECKeyPair keyPair = null;
+			try {
+				keyPair = ECKeyPair.fromPrivateKey(testVector.input.privateKeyBytes());
+			} catch (Exception e) {
+				Assert.fail(String.format("Test vector at index %d failed. Failed to construct private key from hex: " + e, testVectorIndex));
+			}
+			ECDSASignature signature = keyPair.sign(testVector.input.hashedMessageToSign(), true, true);
+			assertEquals(
+					String.format("Test vector at index %d failed. Signature.R mismatch", testVectorIndex),
+					testVector.expected.signature.r,
+					signature.getR().toString(16)
+			);
+			assertEquals(
+					String.format("Test vector at index %d failed. Signature.S mismatch", testVectorIndex),
+					testVector.expected.signature.s,
+					signature.getS().toString(16)
+			);
+		}
 	}
 
 	private void testScenarioKeyVerify(SanityTestSuiteRoot.SanityTestSuite.SanityTestScenario scenario) {
