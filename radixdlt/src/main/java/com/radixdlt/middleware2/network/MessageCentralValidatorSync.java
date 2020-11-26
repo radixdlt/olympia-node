@@ -78,7 +78,7 @@ public class MessageCentralValidatorSync implements SyncVerticesRequestSender, S
 		MessageCentral messageCentral,
 		Hasher hasher,
 		SystemCounters counters,
-		@ErrorRateLimit RateLimiter errorResponseRateLimiter
+		@GetVerticesErrorRateLimit RateLimiter errorResponseRateLimiter
 	) {
 		this.magic = universe.getMagic();
 		this.self = Objects.requireNonNull(self);

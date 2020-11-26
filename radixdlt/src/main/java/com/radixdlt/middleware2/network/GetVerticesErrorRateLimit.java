@@ -27,10 +27,10 @@ import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
- * Identifies that the target represents a rate limit for incoming error messages.
+ * Identifies that the target represents a rate limit for incoming vertices error messages.
  */
 @Qualifier
 @Target({ FIELD, PARAMETER, METHOD })
 @Retention(RUNTIME)
-public @interface ErrorRateLimit {
+public @interface GetVerticesErrorRateLimit {
 }

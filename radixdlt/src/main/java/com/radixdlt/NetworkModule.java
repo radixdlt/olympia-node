@@ -30,7 +30,7 @@ import com.radixdlt.consensus.liveness.ProceedToViewSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.mempool.MempoolNetworkRx;
 import com.radixdlt.mempool.MempoolNetworkTx;
-import com.radixdlt.middleware2.network.ErrorRateLimit;
+import com.radixdlt.middleware2.network.GetVerticesErrorRateLimit;
 import com.radixdlt.middleware2.network.MessageCentralBFTNetwork;
 import com.radixdlt.middleware2.network.MessageCentralLedgerSync;
 import com.radixdlt.middleware2.network.MessageCentralValidatorSync;
@@ -53,7 +53,7 @@ public final class NetworkModule extends AbstractModule {
 
 		// Network BFT/Epoch Sync messages
 		//TODO: make rate limit it configurable
-		bind(RateLimiter.class).annotatedWith(ErrorRateLimit.class).toInstance(RateLimiter.create(10.0));
+		bind(RateLimiter.class).annotatedWith(GetVerticesErrorRateLimit.class).toInstance(RateLimiter.create(10.0));
 		bind(MessageCentralValidatorSync.class).in(Scopes.SINGLETON);
 		bind(SyncVerticesResponseSender.class).to(MessageCentralValidatorSync.class);
 		bind(SyncEpochsRPCSender.class).to(MessageCentralValidatorSync.class);
