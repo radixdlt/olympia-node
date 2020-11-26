@@ -99,7 +99,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		os.registerParticle(
 			StakedTokensParticle.class,
 			ParticleDefinition.<StakedTokensParticle>builder()
-				.singleAddressMapper(StakedTokensParticle::getAddress)
+				.addressMapper(StakedTokensParticle::getAddresses)
 				.staticValidation(TokenDefinitionUtils::staticCheck)
 				.rriMapper(StakedTokensParticle::getTokDefRef)
 				.build()
