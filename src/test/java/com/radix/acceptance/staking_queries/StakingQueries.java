@@ -5,32 +5,23 @@ import com.google.common.collect.Lists;
 import com.radix.test.utils.TokenUtilities;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
-import com.radixdlt.client.application.translate.tokens.InsufficientFundsException;
-import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.core.RadixEnv;
-import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.AtomStatus;
-import com.radixdlt.client.core.atoms.AtomStatusEvent;
-import com.radixdlt.client.core.network.RadixNetworkState;
-import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import io.reactivex.Single;
 import io.reactivex.observers.TestObserver;
+import org.junit.Test;
 
 import java.math.BigDecimal;
-import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
+import java.util.Map;
+import java.util.Set;
 
-import static com.radixdlt.client.core.atoms.AtomStatus.EVICTED_FAILED_CM_VERIFICATION;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowable;
-import static org.assertj.core.api.Assertions.fail;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * See <a href="https://radixdlt.atlassian.net/browse/RPNV1-379">RPNV1-379: Developer - Staking queries</a>.
@@ -49,6 +40,7 @@ public class StakingQueries {
 	private RRI token;
 
 	@Given("^I have access to a suitable Radix network$")
+	@Test
 	public void i_have_access_to_a_suitable_Radix_network() {
 		validator = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
 		delegator1 = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
@@ -67,6 +59,11 @@ public class StakingQueries {
 
 		validator.sendTokens(token, delegator1.getAddress(), STAKING_AMOUNT).blockUntilComplete();
 		validator.sendTokens(token, delegator2.getAddress(), STAKING_AMOUNT).blockUntilComplete();
+
+		register_validator_with_delegators("", "");
+		stake_amount_by_delegator(1);
+		request_validator_stake_balance();
+		validate_stake_balance("zero");
 	}
 
 	@And("^I have registered validator with allowed (delegator1)(?: and)?( delegator2)?$")
@@ -81,7 +78,11 @@ public class StakingQueries {
 			builder.add(delegator2.getAddress());
 		}
 
-		validator.registerValidator(validator.getAddress(), builder.build()).blockUntilComplete();
+		//TODO: for some reason plain .blockUntilComplete() does not work (race condition?)
+		final ImmutableSet<RadixAddress> allowedDelegators = builder.build();
+		System.err.println("Allowed delegators: " + allowedDelegators);
+		validator.registerValidator(validator.getAddress(), allowedDelegators).toObservable().blockingSubscribe();
+//		validator.registerValidator(validator.getAddress(), Set.of()).toObservable().blockingSubscribe();
 	}
 
 	@And("^I stake some tokens by delegator(\\d+)$")
@@ -95,14 +96,15 @@ public class StakingQueries {
 		if (delegator == null) {
 			throw new IllegalStateException("Invalid delegator index in request: " + index);
 		}
-		delegator.pullOnce(validator.getAddress()).blockingAwait();
+		//delegator.pullOnce(validator.getAddress()).blockingAwait();
+		System.err.println("Delegator: " + delegator.getAddress() + ", delegate: " + validator.getAddress());
 		delegator.stakeTokens(STAKING_AMOUNT, token, validator.getAddress()).blockUntilComplete();
+//		delegator.stakeTokens(STAKING_AMOUNT, token, validator.getAddress()).toObservable().doOnNext(System.err::println).blockingSubscribe();
 	}
 
 	@When("^I request validator stake balance$")
 	public void request_validator_stake_balance() {
-		final var observer = new TestObserver<Object>();
-
+		final var observer = new TestObserver<>();
 		validator.observeStake(validator.getAddress()).subscribe(observer);
 		observers.add(observer);
 	}
@@ -110,17 +112,26 @@ public class StakingQueries {
 	@Then("^I can observe that validator has amount of tokens staked equal to (.*)$")
 	public void validate_stake_balance(final String expectedBalanceString) {
 		final BigDecimal expectedBalance = decodeBalanceString(expectedBalanceString);
-
+		validator.pullOnce(validator.getAddress()).blockingAwait();
 		validator.pullOnce(validator.getAddress()).blockingAwait();
 
 		final var testObserver = observers.get(observers.size() - 1);
-		testObserver.awaitTerminalEvent();
 		testObserver.assertNoErrors();
-		testObserver.assertNoTimeout();
 
-		testObserver.values().forEach(System.out::println);
+		var iterator = testObserver.values().iterator();
+		assertTrue(iterator.hasNext());
 
-		//TODO: finish balance validation
+		BigDecimal actualBalance = extractBalance(iterator.next());
+
+		System.err.println("Actual value: " + actualBalance);
+		assertTrue(expectedBalance.compareTo(actualBalance) == 0);
+	}
+
+	private BigDecimal extractBalance(Object value) {
+		assertTrue(value instanceof Map);
+		@SuppressWarnings("unchecked")
+		var map = (Map<RRI, BigDecimal>) value;
+		return map.isEmpty() ? BigDecimal.ZERO : map.entrySet().iterator().next().getValue();
 	}
 
 	private static BigDecimal decodeBalanceString(final String balanceString) {
