@@ -492,6 +492,23 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			),
 			(in, meta) -> checkSignedBy(meta, in.getAddress())
 		));
+
+		// Stake movement
+		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
+			StakedTokensParticle.class,
+			StakedTokensParticle.class,
+			StakedTokensParticle::getAmount,
+			StakedTokensParticle::getAmount,
+			checkEquals(
+				StakedTokensParticle::getGranularity,
+				StakedTokensParticle::getGranularity,
+				"Granularities not equal.",
+				StakedTokensParticle::getTokenPermissions,
+				StakedTokensParticle::getTokenPermissions,
+				"Permissions not equal."
+			),
+			(in, meta) -> checkSignedBy(meta, in.getAddress())
+		));
 	}
 
 	@VisibleForTesting
