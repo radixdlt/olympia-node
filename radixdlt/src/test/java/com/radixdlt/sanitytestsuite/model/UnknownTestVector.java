@@ -1,4 +1,4 @@
-package com.radixdlt.sanitytestsuite;
+package com.radixdlt.sanitytestsuite.model;
 
 public class UnknownTestVector {
 	public Object input;
