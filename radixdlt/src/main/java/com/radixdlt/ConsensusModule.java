@@ -30,17 +30,16 @@ import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTUpdate;
-import com.radixdlt.consensus.bft.FormedQC;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.bft.ViewQuorumReached;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.consensus.liveness.ExponentialPacemakerTimeoutCalculator;
 import com.radixdlt.consensus.liveness.PacemakerInfoSender;
 import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
-import com.radixdlt.consensus.liveness.VoteSender;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
@@ -64,7 +63,6 @@ import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVertic
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
-import com.radixdlt.consensus.liveness.PendingViewTimeouts;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
@@ -76,6 +74,7 @@ import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.LocalSyncRequest;
 import java.util.Comparator;
+import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 
@@ -105,7 +104,7 @@ public final class ConsensusModule extends AbstractModule {
 	private BFTFactory bftFactory(
 		Hasher hasher,
 		HashVerifier verifier,
-		EventDispatcher<FormedQC> formedQCEventDispatcher,
+		EventDispatcher<ViewQuorumReached> viewQuorumReachedEventDispatcher,
 		RemoteEventDispatcher<Vote> voteDispatcher,
 		TimeSupplier timeSupplier
 	) {
@@ -129,10 +128,10 @@ public final class ConsensusModule extends AbstractModule {
 				.safetyRules(safetyRules)
 				.pacemaker(pacemaker)
 				.vertexStore(vertexStore)
-				.formedQCEventDispatcher(formedQC -> {
+				.viewQuorumReachedEventDispatcher(viewQuorumReached -> {
 					// FIXME: a hack for now until replacement of epochmanager factories
-					vertexStoreSync.formedQCEventProcessor().process(formedQC);
-					formedQCEventDispatcher.dispatch(formedQC);
+					vertexStoreSync.viewQuorumReachedEventProcessor().process(viewQuorumReached);
+					viewQuorumReachedEventDispatcher.dispatch(viewQuorumReached);
 				})
 				.bftSyncer(vertexStoreSync)
 				.proposerElection(proposerElection)
@@ -208,7 +207,6 @@ public final class ConsensusModule extends AbstractModule {
 		SystemCounters counters,
 		BFTConfiguration configuration,
 		VertexStore vertexStore,
-		VoteSender voteSender,
 		PacemakerInfoSender infoSender,
 		PacemakerState pacemakerState,
 		PacemakerTimeoutSender timeoutSender,
@@ -216,18 +214,17 @@ public final class ConsensusModule extends AbstractModule {
 		NextCommandGenerator nextCommandGenerator,
 		ProposalBroadcaster proposalBroadcaster,
 		Hasher hasher,
-		ProposerElection proposerElection
+		ProposerElection proposerElection,
+		RemoteEventDispatcher<Vote> voteDispatcher,
+		TimeSupplier timeSupplier
 	) {
-		PendingViewTimeouts pendingViewTimeouts = new PendingViewTimeouts();
 		BFTValidatorSet validatorSet = configuration.getValidatorSet();
 		return new Pacemaker(
 			self,
 			counters,
-			pendingViewTimeouts,
 			validatorSet,
 			vertexStore,
 			safetyRules,
-			voteSender,
 			infoSender,
 			pacemakerState,
 			timeoutSender,
@@ -235,7 +232,9 @@ public final class ConsensusModule extends AbstractModule {
 			nextCommandGenerator,
 			proposalBroadcaster,
 			proposerElection,
-			hasher
+			hasher,
+			voteDispatcher,
+			timeSupplier
 		);
 	}
 
@@ -293,7 +292,8 @@ public final class ConsensusModule extends AbstractModule {
 			updateSender,
 			committedSender,
 			vertexStoreEventSender,
-			counters
+			counters,
+			Optional.empty()
 		);
 	}
 }

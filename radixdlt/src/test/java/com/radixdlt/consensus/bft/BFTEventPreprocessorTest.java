@@ -33,7 +33,6 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTSyncer.SyncResult;
@@ -77,29 +76,7 @@ public class BFTEventPreprocessorTest {
 			syncQueues
 		);
 
-		preprocessor.processViewUpdate(new ViewUpdate(View.genesis().next(), View.genesis(), View.genesis()));
-	}
-
-	private ViewTimeout createViewTimeout(View view, boolean synced) {
-		ViewTimeout viewTimeout = mock(ViewTimeout.class);
-		when(viewTimeout.signature()).thenReturn(mock(ECDSASignature.class));
-		when(viewTimeout.getAuthor()).thenReturn(self);
-		when(viewTimeout.getView()).thenReturn(view);
-		QuorumCertificate qc = mock(QuorumCertificate.class);
-		HashCode vertexId = mock(HashCode.class);
-		BFTHeader proposed = mock(BFTHeader.class);
-		when(qc.getProposed()).thenReturn(proposed);
-		when(proposed.getVertexId()).thenReturn(vertexId);
-		QuorumCertificate committedQC = mock(QuorumCertificate.class);
-		when(committedQC.getCommittedAndLedgerStateProof()).thenReturn(
-			Optional.of(Pair.of(mock(BFTHeader.class), mock(VerifiedLedgerHeaderAndProof.class)))
-		);
-		HighQC highQC = mock(HighQC.class);
-		when(highQC.highestQC()).thenReturn(qc);
-		when(highQC.highestCommittedQC()).thenReturn(committedQC);
-		when(viewTimeout.highQC()).thenReturn(highQC);
-		when(vertexStoreSync.syncToQC(any(), any())).thenReturn(synced ? SyncResult.SYNCED : SyncResult.IN_PROGRESS);
-		return viewTimeout;
+		preprocessor.processViewUpdate(new ViewUpdate(View.genesis().next(), View.genesis()));
 	}
 
 	private Proposal createProposal(boolean goodView, boolean synced) {
@@ -129,15 +106,6 @@ public class BFTEventPreprocessorTest {
 	}
 
 	@Test
-	public void when_process_vote_as_not_proposer__then_vote_gets_thrown_away() {
-		Vote vote = mock(Vote.class);
-		when(vote.getView()).thenReturn(View.of(1));
-		when(proposerElection.getProposer(eq(View.of(2)))).thenReturn(mock(BFTNode.class));
-		preprocessor.processVote(vote);
-		verify(forwardTo, never()).processVote(vote);
-	}
-
-	@Test
 	public void when_process_vote_unsynced__event_not_forwarded() {
 		Vote vote = mock(Vote.class);
 		when(vote.getView()).thenReturn(View.of(1));
@@ -146,15 +114,6 @@ public class BFTEventPreprocessorTest {
 		when(vertexStoreSync.syncToQC(any(), any())).thenReturn(SyncResult.IN_PROGRESS);
 		preprocessor.processVote(vote);
 		verify(forwardTo, never()).processVote(vote);
-	}
-
-	@Test
-	public void when_process_irrelevant_view_timeout__event_gets_thrown_away() {
-		ViewTimeout viewTimeout = createViewTimeout(View.of(0), true);
-		when(syncQueues.isEmptyElseAdd(any())).thenReturn(true);
-		preprocessor.processViewTimeout(viewTimeout);
-		verify(syncQueues, never()).add(any());
-		verify(forwardTo, never()).processViewTimeout(any());
 	}
 
 	@Test
@@ -167,42 +126,12 @@ public class BFTEventPreprocessorTest {
 	}
 
 	@Test
-	public void when_processing_view_timeout_as_not_proposer__then_view_timeout_get_thrown_away() {
-		ViewTimeout viewTimeout = createViewTimeout(View.of(0), true);
-		when(syncQueues.isEmptyElseAdd(eq(viewTimeout))).thenReturn(true);
-		when(proposerElection.getProposer(View.of(2))).thenReturn(mock(BFTNode.class));
-		when(viewTimeout.getAuthor()).thenReturn(self);
-		preprocessor.processViewTimeout(viewTimeout);
-		verify(forwardTo, never()).processViewTimeout(any());
-	}
-
-	@Test
-	public void when_process_view_timeout_not_synced__then_view_timeout_is_queued() {
-		ViewTimeout viewTimeout = createViewTimeout(View.of(1), false);
-		when(syncQueues.isEmptyElseAdd(eq(viewTimeout))).thenReturn(true);
-		when(vertexStoreSync.syncToQC(any(), any())).thenReturn(SyncResult.IN_PROGRESS);
-		preprocessor.processViewTimeout(viewTimeout);
-		verify(syncQueues, times(1)).add(eq(viewTimeout));
-		verify(forwardTo, never()).processViewTimeout(any());
-	}
-
-	@Test
 	public void when_process_proposal_not_synced__then_proposal_is_queued() {
 		Proposal proposal = createProposal(true, false);
 		when(syncQueues.isEmptyElseAdd(eq(proposal))).thenReturn(true);
 		preprocessor.processProposal(proposal);
 		verify(syncQueues, times(1)).add(eq(proposal));
 		verify(forwardTo, never()).processProposal(any());
-	}
-
-	@Test
-	public void when_process_view_timeout_synced__then_view_timeout_is_forwarded() {
-		ViewTimeout viewTimeout = createViewTimeout(View.of(1), true);
-		when(syncQueues.isEmptyElseAdd(eq(viewTimeout))).thenReturn(true);
-		when(vertexStoreSync.syncToQC(any(), any())).thenReturn(SyncResult.SYNCED);
-		preprocessor.processViewTimeout(viewTimeout);
-		verify(syncQueues, never()).add(any());
-		verify(forwardTo, times(1)).processViewTimeout(eq(viewTimeout));
 	}
 
 	@Test

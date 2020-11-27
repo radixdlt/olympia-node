@@ -27,10 +27,12 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTSyncer;
 import com.radixdlt.consensus.bft.BFTUpdate;
-import com.radixdlt.consensus.bft.FormedQC;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.ViewQuorumReached;
+import com.radixdlt.consensus.bft.ViewVotingResult.FormedQC;
+import com.radixdlt.consensus.bft.ViewVotingResult.FormedTC;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
@@ -48,6 +50,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Random;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
@@ -161,10 +164,24 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 		this.bftSyncPatienceMillis = bftSyncPatienceMillis;
 	}
 
-	public EventProcessor<FormedQC> formedQCEventProcessor() {
-		return formedQC -> {
-			HighQC highQC = HighQC.from(formedQC.qc(), this.vertexStore.highQC().highestCommittedQC());
-			syncToQC(highQC, formedQC.lastAuthor());
+	public EventProcessor<ViewQuorumReached> viewQuorumReachedEventProcessor() {
+		return viewQuorumReached -> {
+			final HighQC highQC;
+			if (viewQuorumReached.votingResult() instanceof FormedQC) {
+				highQC = HighQC.from(
+						((FormedQC) viewQuorumReached.votingResult()).getQC(),
+						this.vertexStore.highQC().highestCommittedQC(),
+						this.vertexStore.getHighestTimeoutCertificate());
+			} else if (viewQuorumReached.votingResult() instanceof FormedTC) {
+				highQC = HighQC.from(
+						this.vertexStore.highQC().highestQC(),
+						this.vertexStore.highQC().highestCommittedQC(),
+						Optional.of(((FormedTC) viewQuorumReached.votingResult()).getTC()));
+			} else {
+				throw new IllegalArgumentException("Unknown voting result: " + viewQuorumReached.votingResult());
+			}
+
+			syncToQC(highQC, viewQuorumReached.lastAuthor());
 		};
 	}
 
@@ -177,8 +194,9 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 			return SyncResult.INVALID;
 		}
 
+		highQC.highestTC().ifPresent(vertexStore::insertTimeoutCertificate);
+
 		if (vertexStore.addQC(qc)) {
-			// TODO: check if already sent highest
 			this.pacemakerState.processQC(vertexStore.highQC());
 			return SyncResult.SYNCED;
 		}

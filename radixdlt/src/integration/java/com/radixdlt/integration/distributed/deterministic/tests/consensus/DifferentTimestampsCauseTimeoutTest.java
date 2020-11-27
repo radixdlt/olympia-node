@@ -24,6 +24,7 @@ import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.epoch.LocalViewUpdate;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Optional;
 
 import org.junit.Test;
 
@@ -178,7 +179,7 @@ public class DifferentTimestampsCauseTimeoutTest {
 		UnverifiedVertex vertex = p.getVertex();
 		ECDSASignature signature = p.getSignature();
 
-		return new Proposal(mutateVertex(vertex, destination), committedQC, author, signature);
+		return new Proposal(mutateVertex(vertex, destination), committedQC, author, signature, Optional.empty());
 	}
 
 	private UnverifiedVertex mutateVertex(UnverifiedVertex v, int destination) {

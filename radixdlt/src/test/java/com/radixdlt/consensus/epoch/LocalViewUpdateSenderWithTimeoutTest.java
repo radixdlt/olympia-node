@@ -54,7 +54,7 @@ public class LocalViewUpdateSenderWithTimeoutTest {
 
     @Test
     public void when_view_update_is_sent__then_timeout_is_scheduled() {
-        final LocalViewUpdate viewUpdate = new LocalViewUpdate(1, new ViewUpdate(View.of(2), View.of(0), View.of(0)));
+        final LocalViewUpdate viewUpdate = new LocalViewUpdate(1, new ViewUpdate(View.of(2), View.of(0)));
         final long timeout = random.nextLong();
         when(timeoutCalculator.timeout(1)).thenReturn(timeout);
 

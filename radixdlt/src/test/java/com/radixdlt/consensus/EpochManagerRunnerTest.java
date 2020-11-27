@@ -52,12 +52,11 @@ public class EpochManagerRunnerTest {
 		PacemakerRx pacemakerRx = mock(PacemakerRx.class);
 		when(pacemakerRx.localTimeouts()).thenReturn(Observable.just(timeout).concatWith(Observable.never()));
 
-		ViewTimeout viewTimeout = mock(ViewTimeout.class);
 		Proposal proposal = mock(Proposal.class);
 		Vote vote = mock(Vote.class);
 
 		when(networkRx.bftEvents())
-			.thenReturn(Observable.just(viewTimeout, proposal, vote).concatWith(Observable.never()));
+			.thenReturn(Observable.just(proposal, vote).concatWith(Observable.never()));
 
 		SyncVerticesRPCRx syncVerticesRPCRx = mock(SyncVerticesRPCRx.class);
 		GetVerticesRequest request = mock(GetVerticesRequest.class);
@@ -93,7 +92,6 @@ public class EpochManagerRunnerTest {
 		verify(epochManager, timeout(1000).times(1)).processLedgerUpdate(eq(epochsLedgerUpdate));
 		verify(epochManager, timeout(1000).times(1)).processConsensusEvent(eq(vote));
 		verify(epochManager, timeout(1000).times(1)).processConsensusEvent(eq(proposal));
-		verify(epochManager, timeout(1000).times(1)).processConsensusEvent(eq(viewTimeout));
 		verify(epochManager, timeout(1000).times(1)).processLocalTimeout(eq(timeout));
 		verify(epochManager, timeout(1000).times(1)).processBFTUpdate(eq(bftUpdate));
 		verify(epochManager, timeout(1000).times(1)).processGetVerticesRequest(eq(request));

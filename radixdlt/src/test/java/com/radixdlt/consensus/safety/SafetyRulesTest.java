@@ -40,7 +40,7 @@ import static org.mockito.Mockito.when;
 
 /**
  * This tests that the {@link SafetyRules} implementation obeys HotStuff's safety and commit rules.
- */
+*/
 public class SafetyRulesTest {
 	private SafetyState safetyState;
 	private SafetyRules safetyRules;
@@ -58,6 +58,7 @@ public class SafetyRulesTest {
 	@Test
 	public void when_vote_on_same_view__then_exception_is_thrown() {
 		View view = mock(View.class);
+		when(view.lte(view)).thenReturn(true);
 		when(safetyState.getLastVotedView()).thenReturn(view);
 		VerifiedVertex vertex = mock(VerifiedVertex.class);
 		when(vertex.getView()).thenReturn(view);
@@ -73,9 +74,12 @@ public class SafetyRulesTest {
 		HashSigner hashSigner = mock(HashSigner.class);
 		when(hashSigner.sign(Mockito.<HashCode>any())).thenReturn(new ECDSASignature());
 
+		Vote lastVote = mock(Vote.class);
+		when(lastVote.getView()).thenReturn(View.of(1));
+
 		SafetyRules safetyRules = new SafetyRules(
 			BFTNode.random(),
-			new SafetyState(View.of(2), View.of(1)),
+			new SafetyState(View.of(2), Optional.of(lastVote)),
 			mock(PersistentSafetyStateStore.class),
 			hasher,
 			hashSigner

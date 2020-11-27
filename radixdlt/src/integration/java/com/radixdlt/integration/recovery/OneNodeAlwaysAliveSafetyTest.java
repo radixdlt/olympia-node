@@ -28,9 +28,10 @@ import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.FormedQC;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.ViewQuorumReached;
+import com.radixdlt.consensus.bft.ViewVotingResult.FormedQC;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventProcessor;
@@ -121,9 +122,11 @@ public class OneNodeAlwaysAliveSafetyTest {
 				@ProvidesIntoSet
 				public NodeEventProcessor<?> updateChecker() {
 					return new NodeEventProcessor<>(
-						FormedQC.class,
-						(node, formedQC) -> {
-							if (formedQC.qc().getCommittedAndLedgerStateProof().isPresent()) {
+						ViewQuorumReached.class,
+						(node, viewQuorumReached) -> {
+							if (viewQuorumReached.votingResult() instanceof FormedQC
+									&& ((FormedQC) viewQuorumReached.votingResult())
+										.getQC().getCommittedAndLedgerStateProof().isPresent()) {
 								lastNodeToCommit = network.lookup(node);
 							}
 						}
@@ -158,8 +161,8 @@ public class OneNodeAlwaysAliveSafetyTest {
 
 				@ProvidesIntoSet
 				@ProcessOnDispatch
-				private EventProcessor<FormedQC> formedQCEventProcessor(@Self BFTNode node) {
-					return nodeEvents.processor(node, FormedQC.class);
+				private EventProcessor<ViewQuorumReached> viewQuorumReachedEventProcessor(@Self BFTNode node) {
+					return nodeEvents.processor(node, ViewQuorumReached.class);
 				}
 
 				@Override

@@ -30,6 +30,8 @@ import static org.mockito.Mockito.*;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 
+import java.util.Optional;
+
 public class ProposalTest {
 	private Proposal proposal;
 	private UnverifiedVertex vertex;
@@ -48,13 +50,13 @@ public class ProposalTest {
 
 		when(this.vertex.getQC()).thenReturn(qc);
 
-		this.proposal = new Proposal(vertex, commitQc, node, signature);
+		this.proposal = new Proposal(vertex, commitQc, node, signature, Optional.empty());
 	}
 
 	@Test
 	public void testGetters() {
 		assertThat(this.proposal.getVertex()).isEqualTo(vertex);
-		assertThat(this.proposal.highQC()).isEqualTo(HighQC.from(this.qc, this.commitQc));
+		assertThat(this.proposal.highQC()).isEqualTo(HighQC.from(this.qc, this.commitQc, Optional.empty()));
 	}
 
 	@Test

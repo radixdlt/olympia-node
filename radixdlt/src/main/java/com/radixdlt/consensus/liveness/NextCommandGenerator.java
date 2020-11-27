@@ -34,5 +34,5 @@ public interface NextCommandGenerator {
 	 * @param prepared the ids of atoms which are currently in the prepared stage
 	 * @return new vertex to extend with
 	 */
-	Command generateNextCommand(View view,  Set<HashCode> prepared);
+	Command generateNextCommand(View view, Set<HashCode> prepared);
 }

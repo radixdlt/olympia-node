@@ -31,6 +31,7 @@ import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Represents a vote on a vertex
@@ -56,21 +57,33 @@ public final class Vote implements ConsensusEvent {
 	@DsonOutput(Output.ALL)
 	private final ECDSASignature signature;
 
+	@JsonProperty("timeout_signature")
+	@DsonOutput(Output.ALL)
+	private final Optional<ECDSASignature> timeoutSignature;
+
 	@JsonCreator
 	Vote(
 		@JsonProperty("author") byte[] author,
 		@JsonProperty("vote_data") TimestampedVoteData voteData,
 		@JsonProperty("signature") ECDSASignature signature,
-		@JsonProperty("high_qc") HighQC highQC
+		@JsonProperty("high_qc") HighQC highQC,
+		@JsonProperty("timeout_signature") Optional<ECDSASignature> timeoutSignature
 	) throws PublicKeyException {
-		this(BFTNode.fromPublicKeyBytes(author), voteData, signature, highQC);
+		this(BFTNode.fromPublicKeyBytes(author), voteData, signature, highQC, timeoutSignature);
 	}
 
-	public Vote(BFTNode author, TimestampedVoteData voteData, ECDSASignature signature, HighQC highQC) {
+	public Vote(
+			BFTNode author,
+			TimestampedVoteData voteData,
+			ECDSASignature signature,
+			HighQC highQC,
+			Optional<ECDSASignature> timeoutSignature
+	) {
 		this.author = Objects.requireNonNull(author);
 		this.voteData = Objects.requireNonNull(voteData);
 		this.signature = Objects.requireNonNull(signature);
 		this.highQC = Objects.requireNonNull(highQC);
+		this.timeoutSignature = Objects.requireNonNull(timeoutSignature);
 	}
 
 	@Override
@@ -105,6 +118,24 @@ public final class Vote implements ConsensusEvent {
 		return this.signature;
 	}
 
+	public Optional<ECDSASignature> getTimeoutSignature() {
+		return timeoutSignature;
+	}
+
+	public Vote withTimeoutSignature(ECDSASignature timeoutSignature) {
+		return new Vote(
+				this.author,
+				this.voteData,
+				this.signature,
+				this.highQC,
+				Optional.of(timeoutSignature)
+		);
+	}
+
+	public boolean isTimeout() {
+		return timeoutSignature.isPresent();
+	}
+
 	@JsonProperty("author")
 	@DsonOutput(Output.ALL)
 	private byte[] getSerializerAuthor() {
@@ -113,13 +144,13 @@ public final class Vote implements ConsensusEvent {
 
 	@Override
 	public String toString() {
-		return String.format("%s{epoch=%s view=%s author=%s %s}", getClass().getSimpleName(),
-			getEpoch(), getView(), author, highQC);
+		return String.format("%s{epoch=%s view=%s author=%s timeout?=%s %s}", getClass().getSimpleName(),
+			getEpoch(), getView(), author, isTimeout(), highQC);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.author, this.voteData, this.signature, this.highQC);
+		return Objects.hash(this.author, this.voteData, this.signature, this.highQC, this.timeoutSignature);
 	}
 
 	@Override
@@ -132,7 +163,8 @@ public final class Vote implements ConsensusEvent {
 			return Objects.equals(this.author, other.author)
 				&& Objects.equals(this.voteData, other.voteData)
 				&& Objects.equals(this.signature, other.signature)
-				&& Objects.equals(this.highQC, other.highQC);
+				&& Objects.equals(this.highQC, other.highQC)
+				&& Objects.equals(this.timeoutSignature, other.timeoutSignature);
 		}
 		return false;
 	}

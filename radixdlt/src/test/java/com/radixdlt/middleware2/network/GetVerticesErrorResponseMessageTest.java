@@ -33,13 +33,15 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
 import org.junit.Test;
 
+import java.util.Optional;
+
 public class GetVerticesErrorResponseMessageTest {
 	@Test
 	public void sensibleToString() {
 		VerifiedVertex verifiedVertex = mock(VerifiedVertex.class);
 		when(verifiedVertex.getView()).thenReturn(View.genesis());
 		QuorumCertificate qc = QuorumCertificate.ofGenesis(verifiedVertex, mock(LedgerHeader.class));
-		HighQC highQC = HighQC.from(qc, qc);
+		HighQC highQC = HighQC.from(qc, qc, Optional.empty());
 		GetVerticesErrorResponseMessage msg1 = new GetVerticesErrorResponseMessage(0, highQC);
 		String s1 = msg1.toString();
 		assertThat(s1, containsString(GetVerticesErrorResponseMessage.class.getSimpleName()));

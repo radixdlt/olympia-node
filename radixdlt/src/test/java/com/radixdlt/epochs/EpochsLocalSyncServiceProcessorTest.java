@@ -94,7 +94,7 @@ public class EpochsLocalSyncServiceProcessorTest {
 		when(request.getTarget()).thenReturn(header);
 		processor.localSyncRequestEventProcessor().process(request);
 
-		verify(requestDispatcher, never()).dispatch(any(), any());
+		verify(requestDispatcher, never()).dispatch(any(BFTNode.class), any());
 		verify(syncedEpochSender, never()).sendSyncedEpoch(any());
 		verify(eventProcessor, times(1)).process(eq(request));
 	}
@@ -111,7 +111,7 @@ public class EpochsLocalSyncServiceProcessorTest {
 		when(request.getTarget()).thenReturn(header);
 		processor.localSyncRequestEventProcessor().process(request);
 
-		verify(requestDispatcher, times(1)).dispatch(any(), any());
+		verify(requestDispatcher, times(1)).dispatch(any(BFTNode.class), any());
 		verify(syncedEpochSender, never()).sendSyncedEpoch(any());
 		verify(eventProcessor, never()).process(any());
 	}
@@ -145,7 +145,7 @@ public class EpochsLocalSyncServiceProcessorTest {
 		when(request.getTarget()).thenReturn(header);
 		processor.localSyncRequestEventProcessor().process(request);
 
-		verify(requestDispatcher, never()).dispatch(any(), any());
+		verify(requestDispatcher, never()).dispatch(any(BFTNode.class), any());
 		verify(syncedEpochSender, never()).sendSyncedEpoch(any());
 		verify(eventProcessor, never()).process(any());
 		verify(localSyncEventProcessor, never()).process(any());
@@ -175,7 +175,7 @@ public class EpochsLocalSyncServiceProcessorTest {
 		when(request.getTarget()).thenReturn(header);
 		processor.localSyncRequestEventProcessor().process(request);
 
-		verify(requestDispatcher, never()).dispatch(any(), any());
+		verify(requestDispatcher, never()).dispatch(any(BFTNode.class), any());
 		verify(syncedEpochSender, never()).sendSyncedEpoch(any());
 		verify(eventProcessor, times(1)).process(any());
 		verify(localSyncEventProcessor, never()).process(any());

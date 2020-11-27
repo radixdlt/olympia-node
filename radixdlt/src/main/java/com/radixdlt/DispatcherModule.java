@@ -27,8 +27,9 @@ import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTUpdate;
-import com.radixdlt.consensus.bft.FormedQC;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.bft.ViewQuorumReached;
+import com.radixdlt.consensus.bft.ViewVotingResult;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.counters.SystemCounters;
@@ -60,7 +61,7 @@ public class DispatcherModule extends AbstractModule {
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochView>>() { });
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<BFTCommittedUpdate>>() { });
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<BFTCommittedUpdate>>() { }, ProcessOnDispatch.class);
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<FormedQC>>() { }, ProcessOnDispatch.class);
+		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<ViewQuorumReached>>() { }, ProcessOnDispatch.class);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<Vote>>() { }, ProcessOnDispatch.class);
 	}
 
@@ -91,14 +92,20 @@ public class DispatcherModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private EventDispatcher<FormedQC> formedQCEventDispatcher(
-		@ProcessOnDispatch Set<EventProcessor<FormedQC>> processors,
+	private EventDispatcher<ViewQuorumReached> viewQuorumReachedEventDispatcher(
+		@ProcessOnDispatch Set<EventProcessor<ViewQuorumReached>> processors,
 		SystemCounters systemCounters
 	) {
-		return formedQC -> {
-			logger.trace("Formed QC: {}", formedQC.qc());
-			systemCounters.increment(CounterType.BFT_VOTE_QUORUMS);
-			processors.forEach(p -> p.process(formedQC));
+		return viewQuorumReached -> {
+			logger.trace("View quorum reached with result: {}", viewQuorumReached.votingResult());
+
+			if (viewQuorumReached.votingResult() instanceof ViewVotingResult.FormedTC) {
+				systemCounters.increment(CounterType.BFT_TIMEOUT_QUORUMS);
+			} else if (viewQuorumReached.votingResult() instanceof ViewVotingResult.FormedQC) {
+				systemCounters.increment(CounterType.BFT_VOTE_QUORUMS);
+			}
+
+			processors.forEach(p -> p.process(viewQuorumReached));
 		};
 	}
 

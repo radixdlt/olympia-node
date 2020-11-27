@@ -26,6 +26,8 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Optional;
+
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -44,7 +46,7 @@ public class VoteTest {
 		this.timestampedVoteData = new TimestampedVoteData(this.voteData, 123456L);
 		this.author = mock(BFTNode.class);
 		this.highQC = mock(HighQC.class);
-		this.testObject = new Vote(author, timestampedVoteData, new ECDSASignature(), highQC);
+		this.testObject = new Vote(author, timestampedVoteData, new ECDSASignature(), highQC, Optional.empty());
 	}
 
 	@Test
@@ -71,5 +73,4 @@ public class VoteTest {
 			.contains("view=0")
 			.contains(this.author.toString());
 	}
-
 }

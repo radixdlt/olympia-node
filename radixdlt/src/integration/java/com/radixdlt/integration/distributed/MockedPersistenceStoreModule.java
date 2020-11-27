@@ -26,6 +26,6 @@ public class MockedPersistenceStoreModule extends AbstractModule {
 	@Provides
 	@Singleton
 	public PersistentSafetyStateStore persistentSafetyState() {
-		return (vote, safetyState) -> { };
+		return (safetyState) -> { };
 	}
 }

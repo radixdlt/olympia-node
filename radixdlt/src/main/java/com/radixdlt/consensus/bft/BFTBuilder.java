@@ -44,7 +44,7 @@ public final class BFTBuilder {
 	private Pacemaker pacemaker;
 	private VertexStore vertexStore;
 	private BFTSyncer bftSyncer;
-	private EventDispatcher<FormedQC> formedQCEventDispatcher;
+	private EventDispatcher<ViewQuorumReached> viewQuorumReachedEventDispatcher;
 
 	// Instance specific objects
 	private BFTNode self;
@@ -117,8 +117,8 @@ public final class BFTBuilder {
 		return this;
 	}
 
-	public BFTBuilder formedQCEventDispatcher(EventDispatcher<FormedQC> formedQCEventDispatcher) {
-		this.formedQCEventDispatcher = formedQCEventDispatcher;
+	public BFTBuilder viewQuorumReachedEventDispatcher(EventDispatcher<ViewQuorumReached> viewQuorumReachedEventDispatcher) {
+		this.viewQuorumReachedEventDispatcher = viewQuorumReachedEventDispatcher;
 		return this;
 	}
 
@@ -131,11 +131,11 @@ public final class BFTBuilder {
 		if (!validatorSet.containsNode(self)) {
 			return EmptyBFTEventProcessor.INSTANCE;
 		}
-		final PendingVotes pendingVotes = new PendingVotes(hasher);
+		final PendingVotes pendingVotes = new PendingVotes(hasher, self);
 		BFTEventReducer reducer = new BFTEventReducer(
 			pacemaker,
 			vertexStore,
-			formedQCEventDispatcher,
+			viewQuorumReachedEventDispatcher,
 			voteDispatcher,
 			hasher,
 			timeSupplier,

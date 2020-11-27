@@ -21,8 +21,6 @@ import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.liveness.Pacemaker;
 
@@ -52,7 +50,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 	private final VertexStore vertexStore;
 	private final Pacemaker pacemaker;
-	private final EventDispatcher<FormedQC> formedQCEventDispatcher;
+	private final EventDispatcher<ViewQuorumReached> viewQuorumReachedEventDispatcher;
 	private final RemoteEventDispatcher<Vote> voteDispatcher;
 	private final Hasher hasher;
 	private final TimeSupplier timeSupplier;
@@ -62,12 +60,17 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private final BFTValidatorSet validatorSet;
 	private final PendingVotes pendingVotes;
 
-	private ViewUpdate latestViewUpdate = new ViewUpdate(View.genesis(), View.genesis(), View.genesis());
+	private ViewUpdate latestViewUpdate = new ViewUpdate(View.genesis(), View.genesis());
+
+	/* Indicates whether the quorum (QC or TC) has already been formed for the current view.
+	 * If the quorum has been reached (but view hasn't yet been updated), subsequent votes are ignored.
+	 */
+	private boolean hasReachedQuorum = false;
 
 	public BFTEventReducer(
 		Pacemaker pacemaker,
 		VertexStore vertexStore,
-		EventDispatcher<FormedQC> formedQCEventDispatcher,
+		EventDispatcher<ViewQuorumReached> viewQuorumReachedEventDispatcher,
 		RemoteEventDispatcher<Vote> voteDispatcher,
 		Hasher hasher,
 		TimeSupplier timeSupplier,
@@ -79,7 +82,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	) {
 		this.pacemaker = Objects.requireNonNull(pacemaker);
 		this.vertexStore = Objects.requireNonNull(vertexStore);
-		this.formedQCEventDispatcher = Objects.requireNonNull(formedQCEventDispatcher);
+		this.viewQuorumReachedEventDispatcher = Objects.requireNonNull(viewQuorumReachedEventDispatcher);
 		this.voteDispatcher = Objects.requireNonNull(voteDispatcher);
 		this.hasher = Objects.requireNonNull(hasher);
 		this.timeSupplier = Objects.requireNonNull(timeSupplier);
@@ -97,32 +100,47 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 	@Override
 	public void processViewUpdate(ViewUpdate viewUpdate) {
+		this.hasReachedQuorum = false;
 		this.latestViewUpdate = viewUpdate;
 		this.pacemaker.processViewUpdate(viewUpdate);
 	}
 
 	@Override
 	public void processVote(Vote vote) {
-		log.trace("Vote: Processing {}", vote);
-		// accumulate votes into QCs in store
+		log.trace("Vote: Processing {} from {}", vote, vote.getAuthor().getSimpleName());
+
 		final View view = vote.getView();
-		if (view.lte(this.latestViewUpdate.getLastQuorumView())) {
-			log.trace("Vote: Ignoring vote from {} for view {}, last quorum at {}",
-					vote.getAuthor(), view, this.latestViewUpdate.getLastQuorumView());
-		} else {
-			final Optional<QuorumCertificate> maybeQc = this.pendingVotes.insertVote(vote, this.validatorSet)
-					.filter(qc -> view.gte(this.latestViewUpdate.getCurrentView()));
 
-			maybeQc.ifPresent(qc ->
-				formedQCEventDispatcher.dispatch(FormedQC.create(qc, vote.getAuthor()))
-			);
+		if (view.lt(this.latestViewUpdate.getCurrentView())) {
+			log.trace("Vote: Ignoring vote from {} for view {}, current view is {}",
+					vote.getAuthor(), view, this.latestViewUpdate.getCurrentView());
+			return;
 		}
-	}
 
-	@Override
-	public void processViewTimeout(ViewTimeout viewTimeout) {
-		log.trace("ViewTimeout: Processing {}", viewTimeout);
-		this.pacemaker.processViewTimeout(viewTimeout);
+		if (this.hasReachedQuorum) {
+			log.trace("Vote: Ignoring vote from {} for view {}, quorum has already been reached",
+					vote.getAuthor(), view);
+			return;
+		}
+
+		final BFTNode nextProposer =
+				this.proposerElection.getProposer(this.latestViewUpdate.getCurrentView().next());
+
+		final VoteProcessingResult result =
+				this.pendingVotes.insertVote(vote, this.validatorSet, nextProposer);
+
+		if (result instanceof VoteProcessingResult.VoteAccepted) {
+			log.trace("Vote has been processed but didn't form a quorum");
+		} else if (result instanceof VoteProcessingResult.VoteRejected) {
+			log.trace("Vote has been rejected because of: {}",
+					((VoteProcessingResult.VoteRejected) result).getReason());
+		} else if (result instanceof VoteProcessingResult.QuorumReached) {
+			this.hasReachedQuorum = true;
+			final ViewVotingResult viewResult =
+					((VoteProcessingResult.QuorumReached) result).getViewVotingResult();
+			viewQuorumReachedEventDispatcher
+					.dispatch(new ViewQuorumReached(viewResult, vote.getAuthor()));
+		}
 	}
 
 	@Override

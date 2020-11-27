@@ -30,6 +30,7 @@ import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Represents a proposal made by a leader in a round of consensus
@@ -55,21 +56,35 @@ public final class Proposal implements ConsensusEvent {
 	@DsonOutput(Output.ALL)
 	private final QuorumCertificate committedQC;
 
+	@JsonProperty("highestTC")
+	@DsonOutput(Output.ALL)
+	private final Optional<TimeoutCertificate> highestTC;
+
 	@JsonCreator
 	Proposal(
 		@JsonProperty("vertex") UnverifiedVertex vertex,
 		@JsonProperty("committedQC") QuorumCertificate committedQC,
 		@JsonProperty("author") byte[] author,
-		@JsonProperty("signature") ECDSASignature signature
+		@JsonProperty("signature") ECDSASignature signature,
+		@JsonProperty("highestTC") Optional<TimeoutCertificate> highestTC
 	) throws PublicKeyException {
-		this(vertex, committedQC, BFTNode.fromPublicKeyBytes(author), signature);
+		this(vertex, committedQC, BFTNode.fromPublicKeyBytes(author), signature, highestTC);
 	}
 
-	public Proposal(UnverifiedVertex vertex, QuorumCertificate committedQC, BFTNode author, ECDSASignature signature) {
+	public Proposal(
+			UnverifiedVertex vertex,
+			QuorumCertificate committedQC,
+			BFTNode author,
+			ECDSASignature signature,
+			Optional<TimeoutCertificate> highestTC
+	) {
 		this.vertex = Objects.requireNonNull(vertex);
 		this.committedQC = committedQC;
 		this.author = Objects.requireNonNull(author);
 		this.signature = Objects.requireNonNull(signature);
+
+		this.highestTC = // only relevant if it's for a higher view than QC
+			highestTC.filter(tc -> tc.getView().gt(vertex.getQC().getView()));
 	}
 
 	@Override
@@ -84,7 +99,7 @@ public final class Proposal implements ConsensusEvent {
 
 	@Override
 	public HighQC highQC() {
-		return HighQC.from(vertex.getQC(), committedQC);
+		return HighQC.from(vertex.getQC(), committedQC, highestTC);
 	}
 
 	@Override
@@ -114,7 +129,7 @@ public final class Proposal implements ConsensusEvent {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.author, this.vertex, this.signature, this.committedQC);
+		return Objects.hash(this.author, this.vertex, this.signature, this.committedQC, this.highestTC);
 	}
 
 	@Override
@@ -127,7 +142,8 @@ public final class Proposal implements ConsensusEvent {
 			return Objects.equals(this.author, other.author)
 				&& Objects.equals(this.vertex, other.vertex)
 				&& Objects.equals(this.signature, other.signature)
-				&& Objects.equals(this.committedQC, other.committedQC);
+				&& Objects.equals(this.committedQC, other.committedQC)
+				&& Objects.equals(this.highestTC, other.highestTC);
 		}
 		return false;
 	}

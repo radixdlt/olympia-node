@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus.liveness;
 
+import com.radixdlt.consensus.Vote;
 import com.radixdlt.crypto.Hasher;
 import java.util.Objects;
 
@@ -25,6 +26,8 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.network.TimeSupplier;
 
 /**
  * @author msandiford
@@ -34,25 +37,28 @@ public class PacemakerFactoryImpl implements PacemakerFactory {
 
 	private final BFTNode self;
 	private final SystemCounters counters;
-	private final VoteSender voteSender;
 	private final ProposalBroadcaster proposalBroadcaster;
 	private final NextCommandGenerator nextCommandGenerator;
 	private final Hasher hasher;
+	private RemoteEventDispatcher<Vote> voteDispatcher;
+	private TimeSupplier timeSupplier;
 
 	public PacemakerFactoryImpl(
 		BFTNode self,
 		SystemCounters counters,
-		VoteSender voteSender,
 		ProposalBroadcaster proposalBroadcaster,
 		NextCommandGenerator nextCommandGenerator,
-		Hasher hasher
+		Hasher hasher,
+		RemoteEventDispatcher<Vote> voteDispatcher,
+		TimeSupplier timeSupplier
 	) {
 		this.self = Objects.requireNonNull(self);
 		this.counters = Objects.requireNonNull(counters);
-		this.voteSender = Objects.requireNonNull(voteSender);
 		this.proposalBroadcaster = Objects.requireNonNull(proposalBroadcaster);
 		this.nextCommandGenerator = Objects.requireNonNull(nextCommandGenerator);
 		this.hasher = Objects.requireNonNull(hasher);
+		this.voteDispatcher = Objects.requireNonNull(voteDispatcher);
+		this.timeSupplier = Objects.requireNonNull(timeSupplier);
 	}
 
 	@Override
@@ -66,15 +72,12 @@ public class PacemakerFactoryImpl implements PacemakerFactory {
 		SafetyRules safetyRules,
 		ProposerElection proposerElection
 	) {
-		PendingViewTimeouts pendingViewTimeouts = new PendingViewTimeouts();
 		return new Pacemaker(
 			self,
 			counters,
-			pendingViewTimeouts,
 			validatorSet,
 			vertexStore,
 			safetyRules,
-			voteSender,
 			infoSender,
 			pacemakerState,
 			timeoutSender,
@@ -82,7 +85,9 @@ public class PacemakerFactoryImpl implements PacemakerFactory {
 			nextCommandGenerator,
 			proposalBroadcaster,
 			proposerElection,
-			hasher
+			hasher,
+			voteDispatcher,
+			timeSupplier
 		);
 	}
 }

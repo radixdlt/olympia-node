@@ -100,7 +100,8 @@ public class VertexStoreTest {
 			bftUpdateSender,
 			committedSender,
 			vertexStoreEventSender,
-			counters
+			counters,
+			Optional.empty()
 		);
 
 		AtomicReference<BFTHeader> lastParentHeader

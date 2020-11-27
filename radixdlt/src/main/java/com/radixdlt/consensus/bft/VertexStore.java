@@ -23,6 +23,7 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.BFTHeader;
+import com.radixdlt.consensus.TimeoutCertificate;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.google.common.hash.HashCode;
@@ -66,6 +67,7 @@ public final class VertexStore {
 	private VerifiedVertex rootVertex;
 	private QuorumCertificate highestQC;
 	private QuorumCertificate highestCommittedQC;
+	private Optional<TimeoutCertificate> highestTC;
 
 	private VertexStore(
 		Ledger ledger,
@@ -74,7 +76,8 @@ public final class VertexStore {
 		EventDispatcher<BFTUpdate> bftUpdateDispatcher,
 		EventDispatcher<BFTCommittedUpdate> bftCommittedDispatcher,
 		VertexStoreEventSender vertexStoreEventSender,
-		SystemCounters counters
+		SystemCounters counters,
+		Optional<TimeoutCertificate> highestTC
 	) {
 		this.ledger = Objects.requireNonNull(ledger);
 		this.vertexStoreEventSender = Objects.requireNonNull(vertexStoreEventSender);
@@ -84,6 +87,7 @@ public final class VertexStore {
 		this.rootVertex = Objects.requireNonNull(rootVertex);
 		this.highestQC = Objects.requireNonNull(rootQC);
 		this.highestCommittedQC = rootQC;
+		this.highestTC = highestTC;
 	}
 
 	public static VertexStore create(
@@ -93,7 +97,8 @@ public final class VertexStore {
 		EventDispatcher<BFTUpdate> bftUpdateDispatcher,
 		EventDispatcher<BFTCommittedUpdate> bftCommittedDispatcher,
 		VertexStoreEventSender vertexStoreEventSender,
-		SystemCounters counters
+		SystemCounters counters,
+		Optional<TimeoutCertificate> highestTC
 	) {
 		if (!rootQC.getProposed().getVertexId().equals(rootVertex.getId())) {
 			throw new IllegalStateException(String.format("rootQC=%s does not match rootVertex=%s", rootQC, rootVertex));
@@ -114,7 +119,8 @@ public final class VertexStore {
 			bftUpdateDispatcher,
 			bftCommittedDispatcher,
 			vertexStoreEventSender,
-			counters
+			counters,
+			highestTC
 		);
 	}
 
@@ -194,6 +200,25 @@ public final class VertexStore {
 		});
 
 		return true;
+	}
+
+	/**
+	 * Inserts a timeout certificate into the store.
+	 * @param timeoutCertificate the timeout certificate
+	 */
+	public void insertTimeoutCertificate(TimeoutCertificate timeoutCertificate) {
+		if (this.highestTC.isEmpty()
+				|| this.highestTC.get().getView().lt(timeoutCertificate.getView())) {
+			this.highestTC = Optional.of(timeoutCertificate);
+		}
+	}
+
+	/**
+	 * Returns the highest inserted timeout certificate.
+	 * @return the highest inserted timeout certificate
+	 */
+	public Optional<TimeoutCertificate> getHighestTimeoutCertificate() {
+		return this.highestTC;
 	}
 
 	/**
@@ -312,7 +337,7 @@ public final class VertexStore {
 	 * @return the highest QCs
 	 */
 	public HighQC highQC() {
-		return HighQC.from(this.highestQC, this.highestCommittedQC);
+		return HighQC.from(this.highestQC, this.highestCommittedQC, this.highestTC);
 	}
 
 	/**

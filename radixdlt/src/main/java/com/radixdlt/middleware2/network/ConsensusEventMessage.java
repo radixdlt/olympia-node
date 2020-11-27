@@ -20,7 +20,6 @@ package com.radixdlt.middleware2.network;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -35,9 +34,6 @@ import java.util.Objects;
  */
 @SerializerId2("message.consensus.event")
 public final class ConsensusEventMessage extends Message {
-	@JsonProperty("view_timeout")
-	@DsonOutput(Output.ALL)
-	private final ViewTimeout viewTimeout;
 
 	@JsonProperty("proposal")
 	@DsonOutput(Output.ALL)
@@ -50,28 +46,24 @@ public final class ConsensusEventMessage extends Message {
 	ConsensusEventMessage() {
 		// Serializer only
 		super(0);
-		this.viewTimeout = null;
 		this.proposal = null;
 		this.vote = null;
 	}
 
-	ConsensusEventMessage(int magic, ViewTimeout viewTimeout) {
+	ConsensusEventMessage(int magic) {
 		super(magic);
-		this.viewTimeout = viewTimeout;
 		this.proposal = null;
 		this.vote = null;
 	}
 
 	ConsensusEventMessage(int magic, Proposal proposal) {
 		super(magic);
-		this.viewTimeout = null;
 		this.proposal = proposal;
 		this.vote = null;
 	}
 
 	ConsensusEventMessage(int magic, Vote vote) {
 		super(magic);
-		this.viewTimeout = null;
 		this.proposal = null;
 		this.vote = vote;
 	}
@@ -85,10 +77,6 @@ public final class ConsensusEventMessage extends Message {
 	}
 
 	private ConsensusEvent consensusMessageInternal() {
-		if (this.viewTimeout != null) {
-			return this.viewTimeout;
-		}
-
 		if (this.proposal != null) {
 			return this.proposal;
 		}
@@ -114,8 +102,7 @@ public final class ConsensusEventMessage extends Message {
 			return false;
 		}
 		ConsensusEventMessage that = (ConsensusEventMessage) o;
-		return Objects.equals(viewTimeout, that.viewTimeout)
-				&& Objects.equals(proposal, that.proposal)
+		return Objects.equals(proposal, that.proposal)
 				&& Objects.equals(vote, that.vote)
 				&& Objects.equals(getTimestamp(), that.getTimestamp())
 				&& Objects.equals(getMagic(), that.getMagic());
@@ -123,6 +110,6 @@ public final class ConsensusEventMessage extends Message {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(viewTimeout, proposal, vote, getTimestamp(), getMagic());
+		return Objects.hash(proposal, vote, getTimestamp(), getMagic());
 	}
 }

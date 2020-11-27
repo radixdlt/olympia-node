@@ -38,6 +38,8 @@ import com.radixdlt.ledger.AccumulatorState;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Optional;
+
 public class VertexStoreCreationTest {
 	private VerifiedVertex genesisVertex;
 	private HashCode genesisHash;
@@ -74,7 +76,8 @@ public class VertexStoreCreationTest {
 				bftUpdateSender,
 				committedSender,
 				vertexStoreEventSender,
-				counters
+				counters,
+				Optional.empty()
 			)
 		).isInstanceOf(IllegalStateException.class);
 	}
@@ -93,7 +96,8 @@ public class VertexStoreCreationTest {
 				bftUpdateSender,
 				committedSender,
 				vertexStoreEventSender,
-				counters
+				counters,
+				Optional.empty()
 			)
 		).isInstanceOf(IllegalStateException.class);
 	}
@@ -111,7 +115,8 @@ public class VertexStoreCreationTest {
 				bftUpdateSender,
 				committedSender,
 				vertexStoreEventSender,
-				counters
+				counters,
+				Optional.empty()
 			)
 		).isInstanceOf(IllegalStateException.class);
 	}

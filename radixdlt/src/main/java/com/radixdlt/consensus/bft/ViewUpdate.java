@@ -25,23 +25,16 @@ import java.util.Objects;
 public final class ViewUpdate {
 
 	private final View currentView;
-	// Last view that we had any kind of quorum for
-	private final View lastQuorumView;
 	// Highest view in which a commit happened
 	private final View highestCommitView;
 
-	public ViewUpdate(View currentView, View lastQuorumView, View highestCommitView) {
+	public ViewUpdate(View currentView, View highestCommitView) {
 		this.currentView = Objects.requireNonNull(currentView);
-		this.lastQuorumView = Objects.requireNonNull(lastQuorumView);
 		this.highestCommitView = Objects.requireNonNull(highestCommitView);
 	}
 
 	public View getCurrentView() {
 		return currentView;
-	}
-
-	public View getLastQuorumView() {
-		return lastQuorumView;
 	}
 
 	public View getHighestCommitView() {
@@ -54,10 +47,9 @@ public final class ViewUpdate {
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s,%s,%s]",
+		return String.format("%s[%s,%s]",
 			getClass().getSimpleName(),
 			this.currentView,
-			this.lastQuorumView,
 			this.highestCommitView);
 	}
 
@@ -71,12 +63,11 @@ public final class ViewUpdate {
 		}
 		final ViewUpdate that = (ViewUpdate) o;
 		return Objects.equals(currentView, that.currentView)
-				&& Objects.equals(lastQuorumView, that.lastQuorumView)
 				&& Objects.equals(highestCommitView, that.highestCommitView);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(currentView, lastQuorumView, highestCommitView);
+		return Objects.hash(currentView, highestCommitView);
 	}
 }

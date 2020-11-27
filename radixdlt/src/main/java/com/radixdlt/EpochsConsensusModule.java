@@ -23,6 +23,7 @@ import com.google.inject.Scopes;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.Self;
@@ -55,7 +56,6 @@ import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.consensus.liveness.VoteSender;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
@@ -68,11 +68,14 @@ import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 
+import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.sync.LocalSyncRequest;
 import java.util.Comparator;
+import java.util.Optional;
 import java.util.Random;
 import java.util.function.Consumer;
 
@@ -162,18 +165,21 @@ public class EpochsConsensusModule extends AbstractModule {
 	private PacemakerFactory pacemakerFactory(
 		@Self BFTNode self,
 		SystemCounters counters,
-		VoteSender voteSender,
 		ProposalBroadcaster proposalBroadcaster,
 		NextCommandGenerator nextCommandGenerator,
-		Hasher hasher
+		Hasher hasher,
+		RemoteEventDispatcher<Vote> voteDispatcher,
+		TimeSupplier timeSupplier
 	) {
 		return new PacemakerFactoryImpl(
 			self,
 			counters,
-			voteSender,
 			proposalBroadcaster,
 			nextCommandGenerator,
-			hasher);
+			hasher,
+			voteDispatcher,
+			timeSupplier
+		);
 	}
 
 	@Provides
@@ -233,7 +239,8 @@ public class EpochsConsensusModule extends AbstractModule {
 			updateSender,
 			committedDispatcher,
 			vertexStoreEventSender,
-			counters
+			counters,
+			Optional.empty()
 		);
 	}
 }

@@ -42,8 +42,6 @@ public class PacemakerState {
     private View currentView = View.genesis();
     // Highest view in which a commit happened
     private View highestCommitView = View.genesis();
-    // Last view that we had any kind of quorum for
-    private View lastQuorumView = View.genesis();
 
     public PacemakerState(ViewUpdateSender viewUpdateSender) {
         this.viewUpdateSender = Objects.requireNonNull(viewUpdateSender);
@@ -54,30 +52,26 @@ public class PacemakerState {
      * been completed.
      *
      * @param highQC the sync info for the view
-     * @return {@code true} if proceeded to a new view
      */
-    public boolean processQC(HighQC highQC) {
-        log.trace("QuorumCertificate: {}", highQC);
+    public void processQC(HighQC highQC) {
+        log.trace("Processing HighQC: {}", highQC);
 
-        final View view = highQC.highestQC().getView();
+        final View view = highQC.getHighestView();
         if (view.gte(this.currentView)) {
-            this.lastQuorumView = view;
             this.highestCommitView = highQC.highestCommittedQC().getView();
             this.updateView(view.next());
-            return true;
+        } else {
+            log.trace("Ignoring QC for view {}: current view is {}", view, this.currentView);
         }
-        log.trace("Ignoring QC for view {}: current view is {}", view, this.currentView);
-        return false;
     }
 
-    public void updateView(View nextView) {
+    private void updateView(View nextView) {
         if (nextView.lte(this.currentView)) {
             return;
         }
         this.currentView = nextView;
         viewUpdateSender.sendViewUpdate(new ViewUpdate(
                 this.currentView,
-                this.lastQuorumView,
                 this.highestCommitView
         ));
     }

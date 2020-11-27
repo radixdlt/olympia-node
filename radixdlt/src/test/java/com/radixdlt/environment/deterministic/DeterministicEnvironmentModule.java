@@ -31,7 +31,6 @@ import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.epoch.LocalTimeoutSender;
 import com.radixdlt.consensus.epoch.LocalViewUpdate;
 import com.radixdlt.consensus.epoch.LocalViewUpdateSender;
-import com.radixdlt.consensus.liveness.VoteSender;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
@@ -64,7 +63,6 @@ public class DeterministicEnvironmentModule extends AbstractModule {
 		bind(SyncEpochsRPCSender.class).to(DeterministicSender.class);
 		bind(LocalTimeoutSender.class).to(DeterministicSender.class);
 		bind(LocalViewUpdateSender.class).to(DeterministicSender.class);
-		bind(VoteSender.class).to(DeterministicSender.class);
 
 		// TODO: Remove multibind?
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<LocalSyncRequest>>() { }, ProcessOnDispatch.class);

@@ -22,8 +22,10 @@ import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.safety.SafetyState;
+import com.radixdlt.serialization.DeserializeException;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.Longs;
-import com.radixdlt.utils.Pair;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
@@ -51,10 +53,15 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
 
 	private final DatabaseEnvironment dbEnv;
 	private Database safetyStore;
+	private Serialization serialization;
 
 	@Inject
-	public BerkeleySafetyStateStore(DatabaseEnvironment dbEnv) {
+	public BerkeleySafetyStateStore(
+			DatabaseEnvironment dbEnv,
+			Serialization serialization
+	) {
 		this.dbEnv = Objects.requireNonNull(dbEnv, "dbEnv is required");
+		this.serialization = Objects.requireNonNull(serialization);
 
 		this.open();
 	}
@@ -89,17 +96,20 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
 		}
 	}
 
-	public Optional<Pair<Long, SafetyState>> get() {
+	public Optional<SafetyState> get() {
 		try (com.sleepycat.je.Cursor cursor = this.safetyStore.openCursor(null, null)) {
 			DatabaseEntry pKey = new DatabaseEntry();
 			DatabaseEntry value = new DatabaseEntry();
 			OperationStatus status = cursor.getLast(pKey, value, LockMode.DEFAULT);
 			if (status == OperationStatus.SUCCESS) {
-				long lockedView = Longs.fromByteArray(value.getData());
-				long epochFound = Longs.fromByteArray(pKey.getData(), 0);
-				long view = Longs.fromByteArray(pKey.getData(), Long.BYTES);
-
-				return Optional.of(Pair.of(epochFound, new SafetyState(View.of(view), View.of(lockedView))));
+				try {
+					final SafetyState deserializedState =
+							serialization.fromDson(value.getData(), SafetyState.class);
+					return Optional.of(deserializedState);
+				} catch (DeserializeException ex) {
+					logger.error("Failed to deserialize persisted SafetyState", ex);
+					return Optional.empty();
+				}
 			} else {
 				return Optional.empty();
 			}
@@ -107,31 +117,34 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
 	}
 
 	@Override
-	public void commitState(Vote vote, SafetyState safetyState) {
-		if (!safetyState.getLastVotedView().equals(vote.getView())) {
-			throw new IllegalStateException("SafetyState and vote views don't match.");
-		}
-		long epoch = vote.getVoteData().getProposed().getLedgerHeader().getEpoch();
-		long view = vote.getView().number();
-		long lockedView = safetyState.getLockedView().number();
-
-		byte[] keyBytes = new byte[Long.BYTES * 2];
-		Longs.copyTo(epoch, keyBytes, 0);
-		Longs.copyTo(view, keyBytes, Long.BYTES);
-		Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);
+	public void commitState(SafetyState safetyState) {
+		final Transaction transaction =
+				dbEnv.getEnvironment().beginTransaction(null, null);
 		try {
-			DatabaseEntry key = new DatabaseEntry(keyBytes);
-			DatabaseEntry data = new DatabaseEntry(Longs.toByteArray(lockedView));
+			final byte[] serializedState = serialization.toDson(safetyState, DsonOutput.Output.PERSIST);
 
-			OperationStatus status = this.safetyStore.put(transaction, key, data);
+			final DatabaseEntry key = new DatabaseEntry(keyFor(safetyState));
+			final DatabaseEntry data = new DatabaseEntry(serializedState);
+
+			final OperationStatus status = this.safetyStore.put(transaction, key, data);
 			if (status != OperationStatus.SUCCESS) {
 				fail("Database returned status " + status + " for put operation");
 			}
-
 			transaction.commit();
 		} catch (Exception e) {
 			transaction.abort();
 			fail("Error while storing safety state for " + safetyState, e);
 		}
+	}
+
+	private byte[] keyFor(SafetyState safetyState) {
+		long epoch = safetyState.getLastVote().map(Vote::getEpoch).orElse(0L);
+		long view = safetyState.getLastVote().map(Vote::getView).orElse(View.genesis()).number();
+
+		byte[] keyBytes = new byte[Long.BYTES * 2];
+		Longs.copyTo(epoch, keyBytes, 0);
+		Longs.copyTo(view, keyBytes, Long.BYTES);
+
+		return keyBytes;
 	}
 }

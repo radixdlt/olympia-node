@@ -20,6 +20,7 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.store.berkeley.BerkeleySafetyStateStore;
@@ -32,13 +33,14 @@ public class RecoveryModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private SafetyState safetyState(EpochChange initialEpoch, BerkeleySafetyStateStore berkeleySafetyStore) {
-		return berkeleySafetyStore.get().flatMap(p -> {
-			if (p.getFirst() > initialEpoch.getEpoch()) {
-				throw new IllegalStateException("Last vote is in a future epoch.");
-			}
+		return berkeleySafetyStore.get().flatMap(safetyState -> {
+			final long safetyStateEpoch =
+				safetyState.getLastVote().map(Vote::getEpoch).orElse(0L);
 
-			if (p.getFirst() == initialEpoch.getEpoch()) {
-				return Optional.of(p.getSecond());
+			if (safetyStateEpoch > initialEpoch.getEpoch()) {
+				throw new IllegalStateException("Last vote is in a future epoch.");
+			} else if (safetyStateEpoch == initialEpoch.getEpoch()) {
+				return Optional.of(safetyState);
 			} else {
 				return Optional.empty();
 			}

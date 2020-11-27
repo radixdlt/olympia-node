@@ -22,7 +22,6 @@ import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTSyncer.SyncResult;
 import com.radixdlt.consensus.bft.SyncQueues.SyncQueue;
@@ -60,7 +59,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	private final SyncQueues syncQueues;
 
 	private final Map<View, List<ConsensusEvent>> viewQueues = new HashMap<>();
-	private ViewUpdate latestViewUpdate = new ViewUpdate(View.genesis(), View.genesis(), View.genesis());
+	private ViewUpdate latestViewUpdate = new ViewUpdate(View.genesis(), View.genesis());
 
 	public BFTEventPreprocessor(
 		BFTNode self,
@@ -110,9 +109,6 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		} else if (event instanceof Vote) {
 			log.trace("Processing cached vote {}", event);
 			processVote((Vote) event);
-		} else if (event instanceof ViewTimeout) {
-			log.trace("Processing cached view timeout {}", event);
-			processViewTimeout((ViewTimeout) event);
 		} else {
 			log.error("Ignoring cached ConsensusEvent {}", event);
 		}
@@ -141,15 +137,6 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		if (syncQueues.isEmptyElseAdd(vote) && !processVoteInternal(vote)) {
 			log.debug("Vote: Queuing {}, waiting for Sync", vote);
 			syncQueues.add(vote);
-		}
-	}
-
-	@Override
-	public void processViewTimeout(ViewTimeout viewTimeout) {
-		log.trace("ViewTimeout: PreProcessing {}", viewTimeout);
-		if (syncQueues.isEmptyElseAdd(viewTimeout) && !processViewTimeoutInternal(viewTimeout)) {
-			log.debug("ViewTimeout: Queuing {}, waiting for Sync", viewTimeout);
-			syncQueues.add(viewTimeout);
 		}
 	}
 
@@ -204,55 +191,37 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 			return processVoteInternal(vote);
 		}
 
-		if (event instanceof ViewTimeout) {
-			final ViewTimeout viewTimeout = (ViewTimeout) event;
-			return processViewTimeoutInternal(viewTimeout);
-		}
-
 		throw new IllegalStateException("Unexpected consensus event: " + event);
 	}
 
-	private boolean processViewTimeoutInternal(ViewTimeout viewTimeout) {
-		log.trace("ViewTimeout: PreProcessing {}", viewTimeout);
-
-		// Only do something if it's a view on or after our current
-		if (!onCurrentView("ViewTimeout", viewTimeout.getView(), viewTimeout)) {
-			return true;
-		}
-		return syncUp(
-			viewTimeout.highQC(),
-			viewTimeout.getAuthor(),
-			() -> processOnCurrentViewOrCache(viewTimeout, forwardTo::processViewTimeout)
-		);
-	}
-
 	private boolean processVoteInternal(Vote vote) {
-		log.trace("Vote: PreProcessing {}", vote);
-
-		// Only do something if it's a view on or after our current, and we are the leader for the next view
-		if (!checkForCurrentViewAndIAmNextLeader("Vote", vote.getView(), vote)) {
+		final View currentView = this.latestViewUpdate.getCurrentView();
+		if (vote.getView().gte(currentView)) {
+			log.trace("Vote: PreProcessing {}", vote);
+			return syncUp(
+					vote.highQC(),
+					vote.getAuthor(),
+					() -> processOnCurrentViewOrCache(vote, forwardTo::processVote)
+			);
+		} else {
+			log.trace("Vote: Ignoring for past view {}, current view is {}", vote, currentView);
 			return true;
 		}
-		return syncUp(
-			vote.highQC(),
-			vote.getAuthor(),
-			() -> processOnCurrentViewOrCache(vote, forwardTo::processVote)
-		);
 	}
 
 	private boolean processProposalInternal(Proposal proposal) {
-		log.trace("Proposal: PreProcessing {}", proposal);
-
-		// Only do something if it's a view on or after our current
-		if (!onCurrentView("Proposal", proposal.getVertex().getView(), proposal)) {
+		final View currentView = this.latestViewUpdate.getCurrentView();
+		if (proposal.getView().gte(currentView)) {
+			log.trace("Proposal: PreProcessing {}", proposal);
+			return syncUp(
+					proposal.highQC(),
+					proposal.getAuthor(),
+					() -> processOnCurrentViewOrCache(proposal, forwardTo::processProposal)
+			);
+		} else {
+			log.trace("Proposal: Ignoring for past view {}, current view is {}", proposal, currentView);
 			return true;
 		}
-
-		return syncUp(
-			proposal.highQC(),
-			proposal.getAuthor(),
-			() -> processOnCurrentViewOrCache(proposal, forwardTo::processProposal)
-		);
 	}
 
 	private <T extends ConsensusEvent> void processOnCurrentViewOrCache(T event, Consumer<T> processFn) {
@@ -290,32 +259,5 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 			default:
 				throw new IllegalStateException("Unknown syncResult " + syncResult);
 		}
-	}
-
-	private boolean checkForCurrentViewAndIAmNextLeader(String what, View view, Object thing) {
-		return onCurrentView(what, view, thing) && iAmNextLeader(what, view, thing);
-	}
-
-	private boolean onCurrentView(String what, View view, Object thing) {
-		final View currentView = this.latestViewUpdate.getCurrentView();
-		if (view.compareTo(currentView) < 0) {
-			log.trace("{}: Ignoring view {}, current is {}: {}", what, view, currentView, thing);
-			return false;
-		}
-		return true;
-	}
-
-	private boolean iAmNextLeader(String what, View view, Object thing) {
-		// TODO: currently we don't check view of vote relative to our pacemakerState. This opens
-		// TODO: up to dos attacks on calculation of next proposer if ProposerElection is
-		// TODO: an expensive operation. Need to figure out a way of mitigating this problem
-		// TODO: perhaps through filter views too out of bounds
-		BFTNode nextLeader = proposerElection.getProposer(view.next());
-		boolean iAmTheNextLeader = Objects.equals(nextLeader, this.self);
-		if (!iAmTheNextLeader) {
-			log.warn("{}: Confused message for view {} (should be sent to {}, I am {}): {}", what, view, nextLeader, this.self, thing);
-			return false;
-		}
-		return true;
 	}
 }

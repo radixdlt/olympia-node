@@ -19,7 +19,6 @@ package com.radixdlt.environment.deterministic.network;
 
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.epoch.LocalViewUpdate;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
@@ -85,14 +84,6 @@ public final class ControlledSender implements DeterministicSender, Environment 
 			int receiverIndex = this.network.lookup(node);
 			ChannelId channelId = ChannelId.of(this.senderIndex, receiverIndex);
 			handleMessage(new ControlledMessage(self, channelId, proposal, arrivalTime(channelId)));
-		}
-	}
-
-	@Override
-	public void broadcastViewTimeout(ViewTimeout viewTimeout, Set<BFTNode> nodes) {
-		for (BFTNode node : nodes) {
-			ChannelId channelId = ChannelId.of(this.senderIndex, this.network.lookup(node));
-			handleMessage(new ControlledMessage(self, channelId, viewTimeout, arrivalTime(channelId)));
 		}
 	}
 

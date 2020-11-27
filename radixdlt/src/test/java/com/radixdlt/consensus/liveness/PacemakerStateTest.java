@@ -25,7 +25,6 @@ import com.radixdlt.consensus.liveness.PacemakerState.ViewUpdateSender;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.times;
 
@@ -45,6 +44,7 @@ public class PacemakerStateTest {
         HighQC highQC = mock(HighQC.class);
         QuorumCertificate qc = mock(QuorumCertificate.class);
         when(qc.getView()).thenReturn(View.of(1));
+        when(highQC.getHighestView()).thenReturn(View.of(1));
         when(highQC.highestQC()).thenReturn(qc);
         when(highQC.highestCommittedQC()).thenReturn(qc);
 
@@ -53,11 +53,11 @@ public class PacemakerStateTest {
         this.pacemakerState.processQC(highQCFor(View.of(1)));
         this.pacemakerState.processQC(highQCFor(View.of(2)));
 
-        verify(viewUpdateSender, times(1)).sendViewUpdate(new ViewUpdate(View.of(1), View.of(0), View.of(0)));
-        verify(viewUpdateSender, times(1)).sendViewUpdate(new ViewUpdate(View.of(2), View.of(1), View.of(0)));
-        verify(viewUpdateSender, times(1)).sendViewUpdate(new ViewUpdate(View.of(3), View.of(2), View.of(0)));
+        verify(viewUpdateSender, times(1)).sendViewUpdate(new ViewUpdate(View.of(1), View.of(0)));
+        verify(viewUpdateSender, times(1)).sendViewUpdate(new ViewUpdate(View.of(2), View.of(1)));
+        verify(viewUpdateSender, times(1)).sendViewUpdate(new ViewUpdate(View.of(3), View.of(2)));
 
-        assertThat(this.pacemakerState.processQC(highQC)).isFalse();
+        this.pacemakerState.processQC(highQC);
         verifyNoMoreInteractions(viewUpdateSender);
     }
 
@@ -66,15 +66,29 @@ public class PacemakerStateTest {
         HighQC highQC = mock(HighQC.class);
         QuorumCertificate qc = mock(QuorumCertificate.class);
         when(qc.getView()).thenReturn(View.of(0));
+        when(highQC.getHighestView()).thenReturn(View.of(0));
         when(highQC.highestQC()).thenReturn(qc);
         when(highQC.highestCommittedQC()).thenReturn(qc);
 
-        assertThat(this.pacemakerState.processQC(highQC)).isTrue();
-        verify(viewUpdateSender, times(1)).sendViewUpdate(new ViewUpdate(View.of(1), View.of(0), View.of(0)));
+        this.pacemakerState.processQC(highQC);
+        verify(viewUpdateSender, times(1)).sendViewUpdate(new ViewUpdate(View.of(1), View.of(0)));
 
         when(qc.getView()).thenReturn(View.of(1));
-        assertThat(this.pacemakerState.processQC(highQC)).isTrue();
-        verify(viewUpdateSender, times(1)).sendViewUpdate(new ViewUpdate(View.of(2), View.of(1), View.of(1)));
+        when(highQC.getHighestView()).thenReturn(View.of(1));
+        this.pacemakerState.processQC(highQC);
+        verify(viewUpdateSender, times(1)).sendViewUpdate(new ViewUpdate(View.of(2), View.of(1)));
+    }
+
+    @Test
+    public void when_process_qc_with_a_high_tc__then_should_move_to_tc_view() {
+        HighQC highQC = mock(HighQC.class);
+        QuorumCertificate qc = mock(QuorumCertificate.class);
+        when(qc.getView()).thenReturn(View.of(3));
+        when(highQC.getHighestView()).thenReturn(View.of(5));
+        when(highQC.highestCommittedQC()).thenReturn(qc);
+
+        this.pacemakerState.processQC(highQC);
+        verify(viewUpdateSender, times(1)).sendViewUpdate(new ViewUpdate(View.of(6), View.of(3)));
     }
 
     private HighQC highQCFor(View view) {
@@ -82,9 +96,10 @@ public class PacemakerStateTest {
         QuorumCertificate hqc = mock(QuorumCertificate.class);
         QuorumCertificate cqc = mock(QuorumCertificate.class);
         when(hqc.getView()).thenReturn(view);
-        when(cqc.getView()).thenReturn(View.of(0));
+        when(cqc.getView()).thenReturn(view);
         when(highQC.highestQC()).thenReturn(hqc);
         when(highQC.highestCommittedQC()).thenReturn(cqc);
+        when(highQC.getHighestView()).thenReturn(view);
         return highQC;
     }
 }
