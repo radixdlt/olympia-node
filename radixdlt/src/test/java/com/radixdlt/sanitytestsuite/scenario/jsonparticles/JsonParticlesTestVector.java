@@ -1,14 +1,13 @@
 package com.radixdlt.sanitytestsuite.scenario.jsonparticles;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.sanitytestsuite.model.SanityTestVector;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.utils.JSONFormatter;
-import org.json.JSONObject;
 
+// CHECKSTYLE:OFF checkstyle:VisibilityModifier
 public class JsonParticlesTestVector implements SanityTestVector {
 
 	public static final class Expected {
@@ -43,3 +42,4 @@ public class JsonParticlesTestVector implements SanityTestVector {
 	public Expected expected;
 	public Input input;
 }
+// CHECKSTYLE:ON checkstyle:VisibilityModifier

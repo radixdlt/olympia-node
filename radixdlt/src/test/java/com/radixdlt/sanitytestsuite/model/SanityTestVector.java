@@ -1,3 +1,6 @@
 package com.radixdlt.sanitytestsuite.model;
 
-public interface SanityTestVector {}
+// Marker interface
+public interface SanityTestVector {
+
+}

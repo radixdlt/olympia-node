@@ -4,6 +4,7 @@ import com.radixdlt.sanitytestsuite.model.SanityTestVector;
 
 import java.nio.charset.StandardCharsets;
 
+// CHECKSTYLE:OFF checkstyle:VisibilityModifier
 public final class RadixHashingTestVector implements SanityTestVector {
 	public static final class Expected {
 		public String hashOfHash;
@@ -19,3 +20,4 @@ public final class RadixHashingTestVector implements SanityTestVector {
 	public Expected expected;
 	public Input input;
 }
+// CHECKSTYLE:ON checkstyle:VisibilityModifier

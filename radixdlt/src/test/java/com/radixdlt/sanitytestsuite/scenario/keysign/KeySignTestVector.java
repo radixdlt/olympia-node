@@ -2,6 +2,7 @@ package com.radixdlt.sanitytestsuite.scenario.keysign;
 
 import com.radixdlt.sanitytestsuite.model.SanityTestVector;
 
+// CHECKSTYLE:OFF checkstyle:VisibilityModifier
 public final class KeySignTestVector implements SanityTestVector {
 	public static final class Input {
 		public String privateKey;
@@ -20,3 +21,4 @@ public final class KeySignTestVector implements SanityTestVector {
 	public Expected expected;
 	public Input input;
 }
+// CHECKSTYLE:ON checkstyle:VisibilityModifier

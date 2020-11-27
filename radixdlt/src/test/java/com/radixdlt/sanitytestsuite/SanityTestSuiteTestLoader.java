@@ -22,7 +22,12 @@ import java.nio.charset.StandardCharsets;
 
 import static org.junit.Assert.assertEquals;
 
+// CHECKSTYLE:OFF checkstyle:VisibilityModifier
 public class SanityTestSuiteTestLoader {
+
+	public static Gson gson = new GsonBuilder()
+			.registerTypeAdapter(Double.class, new SanityTestSuiteTestLoader.DoubleSerializer())
+			.create();
 
 	public static class DoubleSerializer implements JsonSerializer<Double> {
 		@Override
@@ -32,9 +37,6 @@ public class SanityTestSuiteTestLoader {
 	}
 
 	public SanityTestSuiteRoot sanityTestSuiteRootFromFileNamed(String sanityTestJSONFileName) {
-
-
-		Gson gson = new GsonBuilder().registerTypeAdapter(Double.class, new DoubleSerializer()).setPrettyPrinting().create();
 
 		JsonReader reader = null;
 		try {
@@ -63,3 +65,5 @@ public class SanityTestSuiteTestLoader {
 
 	}
 }
+
+// CHECKSTYLE:ON checkstyle:VisibilityModifier

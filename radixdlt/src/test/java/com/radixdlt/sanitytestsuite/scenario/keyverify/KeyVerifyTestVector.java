@@ -2,6 +2,7 @@ package com.radixdlt.sanitytestsuite.scenario.keyverify;
 
 import com.radixdlt.sanitytestsuite.model.SanityTestVector;
 
+// CHECKSTYLE:OFF checkstyle:VisibilityModifier
 public final class KeyVerifyTestVector implements SanityTestVector {
 	public static final class Input {
 		public String comment;
@@ -16,3 +17,4 @@ public final class KeyVerifyTestVector implements SanityTestVector {
 	public Expected expected;
 	public Input input;
 }
+// CHECKSTYLE:ON checkstyle:VisibilityModifier

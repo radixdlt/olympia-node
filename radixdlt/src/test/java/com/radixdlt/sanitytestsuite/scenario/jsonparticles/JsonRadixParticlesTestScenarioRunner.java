@@ -1,6 +1,5 @@
 package com.radixdlt.sanitytestsuite.scenario.jsonparticles;
 
-import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.constraintmachine.Particle;
@@ -36,7 +35,7 @@ public class JsonRadixParticlesTestScenarioRunner extends SanityTestScenarioRunn
 		try {
 			particle = DefaultSerialization.getInstance().fromJson(bundledJsonPretty, testVector.input.metaData.particleClass());
 		} catch (DeserializeException e) {
-			throw new AssertionError("Failed to convert bundled JSON into Particle DTO.", e);
+			throw new AssertionError("Failed to convert bundled JSON into Particle model.", e);
 		}
 		String serializedJson = DefaultSerialization.getInstance().toJson(particle, testVector.input.metaData.output());
 		String serializedJsonPretty = JSONFormatter.sortPrettyPrintJSONString(serializedJson);

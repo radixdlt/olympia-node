@@ -15,6 +15,10 @@ import java.util.TreeMap;
 
 public class JSONFormatter {
 
+	private JSONFormatter() {
+		throw new UnsupportedOperationException("Cannot instantiate.");
+	}
+
 	static class SortingNodeFactory extends JsonNodeFactory {
 		@Override
 		public ObjectNode objectNode() {

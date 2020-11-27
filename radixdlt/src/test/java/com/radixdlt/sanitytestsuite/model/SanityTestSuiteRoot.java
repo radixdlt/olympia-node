@@ -4,6 +4,7 @@ package com.radixdlt.sanitytestsuite.model;
 import javax.annotation.Nullable;
 import java.util.List;
 
+// CHECKSTYLE:OFF checkstyle:VisibilityModifier
 public final class SanityTestSuiteRoot {
 
 	public static final class SanityTestSuite {
@@ -78,3 +79,4 @@ public final class SanityTestSuiteRoot {
 	public String hashOfSuite;
 	public SanityTestSuite suite;
 }
+// CHECKSTYLE:ON checkstyle:VisibilityModifier
