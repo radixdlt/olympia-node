@@ -1,5 +1,5 @@
 {
-	"hashOfSuite": "1ebcfe6108421b7eb9b6d55b57fa4b5350ae5d3adddac1ea545afdccc37d00d2",
+	"hashOfSuite": "588e6868e33b157bca126be97a1c4945e68382b5c122da8ef143feb3f28e438f",
 	"suite": {
 		"scenarios": [
 			{
@@ -232,7 +232,7 @@
 								"link": "https://try.jsonata.org/",
 								"version": "1.8.4"
 							},
-							"expression": "(\n$vectors := testGroups@$G.{\n'tests': $G.tests@$T[$T.result='valid'].{\n'expected': {\n'isValid': $T.result='valid'\n},\n'input': {\n'comment': $T.comment,\n'wycheProofVectorId': $T.tcId,\n'msg': $T.msg,\n'publicKeyUncompressed': $G.key.uncompressed,\n'signatureDerEncoded': $T.sig\n}\n}\n}.tests;\n\n$distinctBasedOnComment := function($acc, $el) {\n($el.input.comment in ($map($acc, function($accEl) { $accEl.input.comment }))) ? $acc : $append($acc,$el)\n};\n\n$distinctVectors := $reduce($vectors, $distinctBasedOnComment);\n\n$takeFirstN := function($toTake, $acc, $el) {\n$count($acc) = $toTake ? $acc : $append($acc,$el)\n};\n\n$takeFirstTen := function($acc, $el) {\n$takeFirstN(10, $acc, $el)\n};\n\n$reduce($distinctVectors, $takeFirstTen);\n)"
+							"expression": "(\n\t$vectors := testGroups@$G.{\n\t\t'tests': $G.tests@$T[$T.result='valid'].{\n\t\t\t'expected': {\n\t\t\t\t'isValid': $T.result='valid'\n\t\t\t},\n\t\t\t'input': {\n\t\t\t\t'comment': $T.comment,\n\t\t\t\t'wycheProofVectorId': $T.tcId,\n\t\t\t\t'msg': $T.msg,\n\t\t\t\t'publicKeyUncompressed': $G.key.uncompressed,\n\t\t\t\t'signatureDerEncoded': $T.sig\n\t\t\t}\n\t\t}\n\t}.tests;\n\n\t$distinctBasedOnComment := function($acc, $el) {\n\t\t($el.input.comment in ($map($acc, function($accEl) { $accEl.input.comment }))) ? $acc : $append($acc,$el)\n\t};\n\n\t$distinctVectors := $reduce($vectors, $distinctBasedOnComment);\n\n\t$takeFirstN := function($toTake, $acc, $el) {\n\t\t$count($acc) = $toTake ? $acc : $append($acc,$el)\n\t};\n\n\t$takeFirstTen := function($acc, $el) {\n\t\t$takeFirstN(10, $acc, $el)\n\t};\n\n\t$reduce($distinctVectors, $takeFirstTen);\n)"
 						}
 					},
 					"vectors": [
