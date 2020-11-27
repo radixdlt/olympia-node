@@ -22,6 +22,7 @@
 
 package com.radixdlt.client.application;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
@@ -52,6 +53,7 @@ import com.radixdlt.client.application.translate.tokens.BurnTokensActionMapper;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.application.translate.tokens.CreateTokenToParticleGroupsMapper;
+import com.radixdlt.client.application.translate.tokens.DelegatedTokenBalanceState;
 import com.radixdlt.client.application.translate.tokens.MintTokensAction;
 import com.radixdlt.client.application.translate.tokens.MintTokensActionMapper;
 import com.radixdlt.client.application.translate.tokens.StakeTokensAction;
@@ -76,8 +78,10 @@ import com.radixdlt.client.application.translate.validators.RegisterValidatorAct
 import com.radixdlt.client.application.translate.validators.UnregisterValidatorAction;
 import com.radixdlt.client.application.translate.validators.RegisterValidatorActionMapper;
 import com.radixdlt.client.application.translate.validators.UnregisterValidatorActionMapper;
+import com.radixdlt.client.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.ledger.AtomObservation;
 import com.radixdlt.client.core.ledger.AtomStore;
@@ -107,6 +111,7 @@ import io.reactivex.disposables.Disposable;
 import io.reactivex.disposables.Disposables;
 import io.reactivex.observables.ConnectableObservable;
 
+import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.RadixConstants;
 
 import java.math.BigDecimal;
@@ -531,16 +536,51 @@ public class RadixApplicationAPI {
 	}
 
 	/**
-	 * Returns a stream of the latest stake balance at a given address.
-	 * pull() must be called to continually retrieve the latest balances.
+	 * Returns a stream of the latest staked balances for the staker at the specified address.
+	 * pull() must have previously been called to ensure balances are retrieved and updated.
 	 *
-	 * @param address the address to observe stake balance of
-	 * @return a cold observable of the latest stake balances at an address
+	 * @param address the staker's address
+	 * @return a cold observable of the latest staked amounts by validator and token RRI
 	 */
-	public Observable<Map<RRI, BigDecimal>> observeStake(RadixAddress address) {
+	public Observable<Map<Pair<RadixAddress, RRI>, BigDecimal>> observeStakedBalances(RadixAddress address) {
 		Objects.requireNonNull(address);
 		return observeState(StakedTokenBalanceState.class, address)
 			.map(StakedTokenBalanceState::getBalance);
+	}
+
+	/**
+	 * Returns a stream of the latest delegated stake balance for the validator at the specified address.
+	 * pull() must have previously been called to ensure balances are retrieved and updated.
+	 *
+	 * @param delegateAddress the address of the validator to observe stake balance of
+	 * @return a cold observable of the latest stake balances of the validator by token RRI
+	 */
+	public Observable<Map<RRI, BigDecimal>> observeValidatorStake(RadixAddress validator) {
+		Objects.requireNonNull(validator);
+		return this.universe.getAtomStore().getAtomObservations(validator)
+			.filter(AtomObservation::hasAtom)
+			.map(AtomObservation::getAtom)
+			.flatMap(atom -> Observable.fromIterable(atom.spunParticles().collect(ImmutableList.toImmutableList())))
+			.filter(sp -> sp.getParticle() instanceof StakedTokensParticle)
+			.scan(DelegatedTokenBalanceState.empty(), (stp, spunParticle) -> accumulateTokens(stp, validator, spunParticle))
+			.map(DelegatedTokenBalanceState::getBalance);
+	}
+
+	private DelegatedTokenBalanceState accumulateTokens(
+		DelegatedTokenBalanceState previous,
+		RadixAddress delegateAddress,
+		SpunParticle spunParticle
+	) {
+		final var particle = spunParticle.getParticle();
+		if (particle instanceof StakedTokensParticle) {
+			final var stp = (StakedTokensParticle) particle;
+			if (delegateAddress.equals(stp.getDelegateAddress())) {
+				final var baseAmount = TokenUnitConversions.subunitsToUnits(stp.getAmount());
+				final var amount = Spin.UP.equals(spunParticle.getSpin()) ? baseAmount : baseAmount.negate();
+				return DelegatedTokenBalanceState.merge(previous, stp.getTokenDefinitionReference(), amount);
+			}
+		}
+		return previous;
 	}
 
 	/**
