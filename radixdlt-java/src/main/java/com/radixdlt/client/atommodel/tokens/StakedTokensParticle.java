@@ -86,7 +86,7 @@ public final class StakedTokensParticle extends Particle implements Accountable,
 		RRI tokenDefinitionReference,
 		Map<TokenTransition, TokenPermission> tokenPermissions
 	) {
-		super(address.euid());
+		super(ImmutableSet.of(address.euid(), delegateAddress.euid()));
 
 		// Redundant null check added for completeness
 		Objects.requireNonNull(amount, "amount is required");
