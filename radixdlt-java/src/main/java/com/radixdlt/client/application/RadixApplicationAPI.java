@@ -566,7 +566,11 @@ public class RadixApplicationAPI {
 			.map(DelegatedTokenBalanceState::getBalance);
 	}
 
-	private DelegatedTokenBalanceState accumulateTokens(DelegatedTokenBalanceState previous, RadixAddress delegateAddress, SpunParticle spunParticle) {
+	private DelegatedTokenBalanceState accumulateTokens(
+		DelegatedTokenBalanceState previous,
+		RadixAddress delegateAddress,
+		SpunParticle spunParticle
+	) {
 		final var particle = spunParticle.getParticle();
 		if (particle instanceof StakedTokensParticle) {
 			final var stp = (StakedTokensParticle) particle;
