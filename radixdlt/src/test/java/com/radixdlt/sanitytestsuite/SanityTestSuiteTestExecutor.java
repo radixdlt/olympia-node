@@ -56,7 +56,7 @@ public class SanityTestSuiteTestExecutor {
 			} catch (AssertionError testAssertionError) {
 				String failDebugInfo = scenario.failDescriptionWithAssertionError(testAssertionError);
 				log.error(failDebugInfo);
-				Assert.fail(failDebugInfo);
+				throw new AssertionError(failDebugInfo, testAssertionError);
 			}
 		}
 	}

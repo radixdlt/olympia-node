@@ -2,7 +2,9 @@ package com.radixdlt.sanitytestsuite.scenario;
 
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
+import com.radixdlt.sanitytestsuite.SanityTestSuiteTestLoader;
 import com.radixdlt.sanitytestsuite.model.SanityTestSuiteRoot;
 import com.radixdlt.sanitytestsuite.model.SanityTestVector;
 import com.radixdlt.sanitytestsuite.model.UnknownTestVector;
@@ -53,14 +55,14 @@ public abstract class SanityTestScenarioRunner<Vector extends SanityTestVector> 
 	}
 
 	private static final String prettyJsonStringFromObject(Object object) {
-		Gson gson = new Gson();
+		Gson gson = new GsonBuilder().registerTypeAdapter(Double.class, new SanityTestSuiteTestLoader.DoubleSerializer()).setPrettyPrinting().create();
 		String jsonStringPretty = JSONFormatter.sortPrettyPrintJSONString(gson.toJson(object));
 
 		return jsonStringPretty;
 	}
 
 	private static <T> T cast(Object object, TypeToken<T> typeToken) {
-		Gson gson = new Gson();
+		Gson gson = new GsonBuilder().registerTypeAdapter(Double.class, new SanityTestSuiteTestLoader.DoubleSerializer()).setPrettyPrinting().create();
 		String jsonFromObj = gson.toJson(object);
 		return gson.fromJson(jsonFromObj, typeToken.getType());
 	}

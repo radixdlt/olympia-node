@@ -3,6 +3,11 @@ package com.radixdlt.sanitytestsuite;
 import com.google.common.hash.HashCode;
 import com.google.common.io.Files;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
 import com.google.gson.stream.JsonReader;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.crypto.Hasher;
@@ -12,13 +17,25 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileReader;
+import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 
 import static org.junit.Assert.assertEquals;
 
 public class SanityTestSuiteTestLoader {
+
+	public static class DoubleSerializer implements JsonSerializer<Double> {
+		@Override
+		public JsonElement serialize(Double src, Type typeOfSrc, JsonSerializationContext context) {
+			return src == src.longValue() ? new JsonPrimitive(src.longValue()) : new JsonPrimitive(src);
+		}
+	}
+
 	public SanityTestSuiteRoot sanityTestSuiteRootFromFileNamed(String sanityTestJSONFileName) {
-		Gson gson = new Gson();
+
+
+		Gson gson = new GsonBuilder().registerTypeAdapter(Double.class, new DoubleSerializer()).setPrettyPrinting().create();
+
 		JsonReader reader = null;
 		try {
 			ClassLoader classLoader = getClass().getClassLoader();
