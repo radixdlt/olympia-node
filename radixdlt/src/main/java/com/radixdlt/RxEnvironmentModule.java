@@ -18,18 +18,23 @@
 package com.radixdlt;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSet.Builder;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.radixdlt.consensus.Timeout;
+import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTUpdate;
-import com.radixdlt.consensus.epoch.EpochView;
+import com.radixdlt.consensus.bft.ViewUpdate;
+import com.radixdlt.consensus.epoch.EpochViewUpdate;
+import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.rx.RxEnvironment;
 import com.radixdlt.environment.rx.RxRemoteDispatcher;
 import com.radixdlt.sync.LocalSyncRequest;
+import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
 import com.radixdlt.utils.ThreadFactories;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.Set;
@@ -50,19 +55,39 @@ public class RxEnvironmentModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private RxEnvironment rxEnvironment(ScheduledExecutorService ses, Set<RxRemoteDispatcher<?>> dispatchers) {
+	private RxEnvironment rxEnvironment(
+		ScheduledExecutorService ses,
+		Set<RxRemoteDispatcher<?>> dispatchers
+	) {
+		Builder<Class<?>> eventClasses = ImmutableSet.builder();
+		eventClasses.add(
+			ScheduledLocalTimeout.class,
+			LocalSyncRequest.class,
+			LocalGetVerticesRequest.class,
+			BFTUpdate.class,
+			BFTCommittedUpdate.class,
+			LocalTimeoutOccurrence.class,
+			EpochLocalTimeoutOccurrence.class,
+			SyncInProgress.class,
+			ViewUpdate.class,
+			EpochViewUpdate.class
+		);
+
 		return new RxEnvironment(
-			ImmutableSet.of(
-				LocalSyncRequest.class,
-				LocalGetVerticesRequest.class,
-				BFTUpdate.class,
-				BFTCommittedUpdate.class,
-				EpochView.class,
-				Timeout.class
-			),
+			eventClasses.build(),
 			ses,
 			dispatchers
 		);
+	}
+
+	@Provides
+	Observable<ScheduledLocalTimeout> localTimeouts(RxEnvironment rxEnvironment) {
+		return rxEnvironment.getObservable(ScheduledLocalTimeout.class);
+	}
+
+	@Provides
+	Observable<SyncInProgress> syncTimeouts(RxEnvironment rxEnvironment) {
+		return rxEnvironment.getObservable(SyncInProgress.class);
 	}
 
 	@Provides
@@ -86,12 +111,22 @@ public class RxEnvironmentModule extends AbstractModule {
 	}
 
 	@Provides
-	public Observable<EpochView> currentViews(RxEnvironment rxEnvironment) {
-		return rxEnvironment.getObservable(EpochView.class);
+	public Observable<LocalTimeoutOccurrence> timeouts(RxEnvironment rxEnvironment) {
+		return rxEnvironment.getObservable(LocalTimeoutOccurrence.class);
 	}
 
 	@Provides
-	public Observable<Timeout> timeouts(RxEnvironment rxEnvironment) {
-		return rxEnvironment.getObservable(Timeout.class);
+	public Observable<EpochLocalTimeoutOccurrence> epochTimeouts(RxEnvironment rxEnvironment) {
+		return rxEnvironment.getObservable(EpochLocalTimeoutOccurrence.class);
+	}
+
+	@Provides
+	public Observable<EpochViewUpdate> epochViewUpdates(RxEnvironment rxEnvironment) {
+		return rxEnvironment.getObservable(EpochViewUpdate.class);
+	}
+
+	@Provides
+	public Observable<ViewUpdate> viewUpdates(RxEnvironment rxEnvironment) {
+		return rxEnvironment.getObservable(ViewUpdate.class);
 	}
 }

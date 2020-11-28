@@ -115,8 +115,9 @@ public final class VerifiedVertex {
 
 	@Override
 	public String toString() {
-		return String.format("%s{view=%s parentView=%s id=%s}",
+		return String.format("%s{epoch=%s view=%s parentView=%s id=%s}",
 			this.getClass().getSimpleName(),
+			this.vertex.getQC().getProposed().getLedgerHeader().getEpoch(),
 			this.vertex.getView(),
 			this.vertex.getQC().getProposed().getView(),
 			this.id

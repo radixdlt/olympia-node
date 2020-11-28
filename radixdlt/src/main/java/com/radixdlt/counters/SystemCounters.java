@@ -34,6 +34,8 @@ public interface SystemCounters {
 		BFT_REJECTED("bft.rejected"),
 		/** Number of times a view-timeout message was broadcast. */
 		BFT_TIMEOUT("bft.timeout"),
+		/** Number of views that timed out. Rescheduled timeouts of the same view are not counted */
+		BFT_TIMED_OUT_VIEWS("bft.timed_out_views"),
 		/** Number of view-timeout quorums formed. */
 		BFT_TIMEOUT_QUORUMS("bft.timeout_quorums"),
 		BFT_VERTEX_STORE_SIZE("bft.vertex_store_size"),

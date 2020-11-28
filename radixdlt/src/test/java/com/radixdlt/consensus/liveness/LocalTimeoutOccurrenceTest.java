@@ -15,37 +15,18 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.epoch;
+package com.radixdlt.consensus.liveness;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.mock;
-
-import com.radixdlt.consensus.bft.View;
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.Before;
 import org.junit.Test;
 
-public class LocalTimeoutTest {
-	private LocalTimeout localTimeout;
-	private long epoch;
-	private View view;
-
-	@Before
-	public void setup() {
-		epoch = 12345;
-		view = mock(View.class);
-		localTimeout = new LocalTimeout(epoch, view);
-	}
-
+public class LocalTimeoutOccurrenceTest {
 	@Test
 	public void equalsContract() {
-		EqualsVerifier.forClass(LocalTimeout.class)
+		EqualsVerifier.forClass(LocalTimeoutOccurrence.class)
+			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 			.verify();
-	}
-
-	@Test
-	public void testGetters() {
-		assertEquals(this.view, this.localTimeout.getView());
-		assertEquals(this.epoch, this.localTimeout.getEpoch());
 	}
 }

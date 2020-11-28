@@ -30,6 +30,7 @@ import java.util.function.Predicate;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import java.util.stream.Collectors;
 
 /**
  * Queue for messages by view.
@@ -120,6 +121,12 @@ public final class MessageQueue {
 				out.println("    }");
 			});
 		out.println("}");
+	}
+
+	Set<ControlledMessage> allMessages() {
+		return this.messagesByTime.values().stream()
+			.flatMap(LinkedList::stream)
+			.collect(Collectors.toSet());
 	}
 
 	List<ControlledMessage> lowestTimeMessages() {

@@ -24,8 +24,8 @@ import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
-import com.radixdlt.consensus.liveness.LocalTimeoutSender;
-import com.radixdlt.consensus.liveness.ProceedToViewSender;
+import com.radixdlt.consensus.epoch.LocalTimeoutSender;
+import com.radixdlt.consensus.liveness.VoteSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.epochs.EpochChangeManager.EpochsLedgerUpdateSender;
 import com.radixdlt.utils.Pair;
@@ -34,6 +34,7 @@ import io.reactivex.rxjava3.schedulers.Timed;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import java.util.function.Predicate;
@@ -50,7 +51,7 @@ public final class DeterministicNetwork {
 
 	public interface DeterministicSender extends
 		ProposalBroadcaster,
-		ProceedToViewSender,
+		VoteSender,
 		VertexStoreEventSender,
 		SyncVerticesRequestSender,
 		SyncVerticesResponseSender,
@@ -110,6 +111,21 @@ public final class DeterministicNetwork {
 		this.currentTime = Math.max(this.currentTime, controlledMessage.arrivalTime());
 
 		return new Timed<>(controlledMessage, this.currentTime, TimeUnit.MILLISECONDS);
+	}
+
+	public Timed<ControlledMessage> nextMessage(Predicate<ControlledMessage> predicate) {
+		Set<ControlledMessage> allMessages = this.messageQueue.allMessages();
+		ControlledMessage controlledMessage = allMessages.stream().filter(predicate).findAny().orElseThrow(
+			() -> new IllegalStateException(String.format("Could not find message. Messages present: %s", allMessages))
+		);
+		this.messageQueue.remove(controlledMessage);
+		this.currentTime = Math.max(this.currentTime, controlledMessage.arrivalTime());
+
+		return new Timed<>(controlledMessage, this.currentTime, TimeUnit.MILLISECONDS);
+	}
+
+	public Set<ControlledMessage> allMessages() {
+		return this.messageQueue.allMessages();
 	}
 
 	public void dropMessages(Predicate<ControlledMessage> controlledMessagePredicate) {

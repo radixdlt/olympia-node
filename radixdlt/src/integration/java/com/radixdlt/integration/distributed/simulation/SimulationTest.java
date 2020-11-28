@@ -44,12 +44,11 @@ import com.radixdlt.RadixEngineModule;
 import com.radixdlt.RadixEngineRxModule;
 import com.radixdlt.RxEnvironmentModule;
 import com.radixdlt.SyncServiceModule;
-import com.radixdlt.SyncRxModule;
 import com.radixdlt.SyncRunnerModule;
 import com.radixdlt.SystemInfoRxModule;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.consensus.Sha256Hasher;
-import com.radixdlt.consensus.Timeout;
+import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
@@ -57,6 +56,7 @@ import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
@@ -206,7 +206,6 @@ public class SimulationTest {
 							}
 						});
 						modules.add(new SyncServiceModule());
-						modules.add(new SyncRxModule());
 						modules.add(new MockedCommittedReaderModule());
 						if (!hasEpochs) {
 							modules.add(new MockedSyncRunnerModule());
@@ -491,13 +490,21 @@ public class SimulationTest {
 		}
 
 		public Builder checkConsensusNoTimeouts(String invariantName) {
+			// TODO: Cleanup and separate epoch timeouts and non-epoch timeouts
 			this.modules.add(new AbstractModule() {
 				@ProcessOnDispatch
 				@ProvidesIntoSet
-				private EventProcessor<Timeout> timeoutEventProcessor(@Self BFTNode node) {
-					return nodeEvents.processor(node, Timeout.class);
+				private EventProcessor<EpochLocalTimeoutOccurrence> epochTimeoutProcessor(@Self BFTNode node) {
+					return nodeEvents.processor(node, EpochLocalTimeoutOccurrence.class);
+				}
+
+				@ProcessOnDispatch
+				@ProvidesIntoSet
+				private EventProcessor<LocalTimeoutOccurrence> timeoutEventProcessor(@Self BFTNode node) {
+					return nodeEvents.processor(node, LocalTimeoutOccurrence.class);
 				}
 			});
+
 			this.checksBuilder.put(invariantName, nodes -> new NoTimeoutsInvariant(nodeEvents));
 			return this;
 		}

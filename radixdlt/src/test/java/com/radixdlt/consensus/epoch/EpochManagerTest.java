@@ -44,7 +44,7 @@ import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.Timeout;
+import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.Vote;
@@ -56,16 +56,18 @@ import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.VerifiedVertex;
+import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
+import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
-import com.radixdlt.consensus.liveness.ProceedToViewSender;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
+import com.radixdlt.consensus.liveness.VoteSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
@@ -91,6 +93,8 @@ import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.utils.UInt256;
+
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.junit.Before;
 import org.junit.Test;
@@ -107,7 +111,7 @@ public class EpochManagerTest {
 	private SyncEpochsRPCSender syncEpochsRPCSender = mock(SyncEpochsRPCSender.class);
 	private LocalTimeoutSender localTimeoutSender = mock(LocalTimeoutSender.class);
 	private NextCommandGenerator nextCommandGenerator = mock(NextCommandGenerator.class);
-	private ProceedToViewSender proceedToViewSender = mock(ProceedToViewSender.class);
+	private VoteSender voteSender = mock(VoteSender.class);
 	private ProposalBroadcaster proposalBroadcaster = mock(ProposalBroadcaster.class);
 	private ScheduledEventDispatcher<LocalGetVerticesRequest> timeoutScheduler = rmock(ScheduledEventDispatcher.class);
 	private SyncVerticesRequestSender syncVerticesRequestSender = mock(SyncVerticesRequestSender.class);
@@ -134,20 +138,24 @@ public class EpochManagerTest {
 			protected void configure() {
 				bind(HashSigner.class).toInstance(ecKeyPair::sign);
 				bind(BFTNode.class).annotatedWith(Self.class).toInstance(self);
+				bind(new TypeLiteral<EventDispatcher<LocalTimeoutOccurrence>>() { }).toInstance(rmock(EventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<BFTUpdate>>() { }).toInstance(rmock(EventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<BFTCommittedUpdate>>() { }).toInstance(rmock(EventDispatcher.class));
-				bind(new TypeLiteral<EventDispatcher<Timeout>>() { }).toInstance(rmock(EventDispatcher.class));
+				bind(new TypeLiteral<EventDispatcher<EpochLocalTimeoutOccurrence>>() { }).toInstance(rmock(EventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<EpochView>>() { }).toInstance(rmock(EventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<LocalSyncRequest>>() { }).toInstance(syncLedgerRequestSender);
 				bind(new TypeLiteral<EventDispatcher<FormedQC>>() { }).toInstance(rmock(EventDispatcher.class));
+				bind(new TypeLiteral<EventDispatcher<EpochViewUpdate>>() { }).toInstance(rmock(EventDispatcher.class));
+				bind(new TypeLiteral<EventDispatcher<ViewUpdate>>() { }).toInstance(rmock(EventDispatcher.class));
 				bind(new TypeLiteral<ScheduledEventDispatcher<LocalGetVerticesRequest>>() { }).toInstance(timeoutScheduler);
+				bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledLocalTimeout>>() { }).toInstance(rmock(ScheduledEventDispatcher.class));
 				bind(new TypeLiteral<RemoteEventDispatcher<Vote>>() { }).toInstance(voteDispatcher);
 
 				bind(PersistentSafetyStateStore.class).toInstance(mock(PersistentSafetyStateStore.class));
 				bind(SyncEpochsRPCSender.class).toInstance(syncEpochsRPCSender);
 				bind(LocalTimeoutSender.class).toInstance(localTimeoutSender);
 				bind(NextCommandGenerator.class).toInstance(nextCommandGenerator);
-				bind(ProceedToViewSender.class).toInstance(proceedToViewSender);
+				bind(VoteSender.class).toInstance(voteSender);
 				bind(ProposalBroadcaster.class).toInstance(proposalBroadcaster);
 				bind(SystemCounters.class).toInstance(new SystemCountersImpl());
 				bind(SyncVerticesRequestSender.class).toInstance(syncVerticesRequestSender);
@@ -160,6 +168,8 @@ public class EpochManagerTest {
 				bindConstant().annotatedWith(PacemakerRate.class).to(2.0);
 				bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0);
 				bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
+
+				bind(new TypeLiteral<Consumer<EpochViewUpdate>>() { }).toInstance(rmock(Consumer.class));
 			}
 
 			@Provides
@@ -230,7 +240,7 @@ public class EpochManagerTest {
 		epochManager.processLedgerUpdate(epochsLedgerUpdate);
 
 		// Assert
-		verify(proposalBroadcaster, times(1)).broadcastProposal(any(), any());
+		verify(proposalBroadcaster, never()).broadcastProposal(any(), any());
 		verify(voteDispatcher, never()).dispatch(any(), any());
 	}
 

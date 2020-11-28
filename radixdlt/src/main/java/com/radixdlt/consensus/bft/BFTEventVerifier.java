@@ -22,6 +22,7 @@ import com.radixdlt.SecurityCritical.SecurityKind;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.HashVerifier;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.ViewTimeout;
@@ -63,6 +64,11 @@ public final class BFTEventVerifier implements BFTEventProcessor {
 	}
 
 	@Override
+	public void processViewUpdate(ViewUpdate viewUpdate) {
+		forwardTo.processViewUpdate(viewUpdate);
+	}
+
+	@Override
 	public void processVote(Vote vote) {
 		validAuthor(vote).ifPresent(node -> {
 			if (verify(node, vote.getTimestampedVoteData(), vote.getSignature(), vote)) {
@@ -90,8 +96,8 @@ public final class BFTEventVerifier implements BFTEventProcessor {
 	}
 
 	@Override
-	public void processLocalTimeout(View view) {
-		forwardTo.processLocalTimeout(view);
+	public void processLocalTimeout(ScheduledLocalTimeout localTimeout) {
+		forwardTo.processLocalTimeout(localTimeout);
 	}
 
 	@Override

@@ -32,7 +32,7 @@ import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor;
-import com.radixdlt.sync.LocalSyncServiceProcessor;
+import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
 import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier;
 import com.radixdlt.sync.SyncServiceRunner;
 
@@ -45,7 +45,7 @@ public class MockedSyncRunnerModule extends AbstractModule {
 		MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class)
 			.addBinding("sync").to(Key.get(new TypeLiteral<SyncServiceRunner<LedgerUpdate>>() { }));
 		bind(new TypeLiteral<RemoteEventProcessor<DtoCommandsAndProof>>() { }).to(RemoteSyncResponseValidatorSetVerifier.class).in(Scopes.SINGLETON);
-		bind(LocalSyncServiceProcessor.class).to(LocalSyncServiceAccumulatorProcessor.class).in(Scopes.SINGLETON);
+		bind(LocalSyncServiceAccumulatorProcessor.class).in(Scopes.SINGLETON);
 	}
 
 	@ProvidesIntoSet
@@ -59,5 +59,13 @@ public class MockedSyncRunnerModule extends AbstractModule {
 		LocalSyncServiceAccumulatorProcessor localSyncServiceAccumulatorProcessor
 	) {
 		return localSyncServiceAccumulatorProcessor.localSyncRequestEventProcessor();
+	}
+
+
+	@Provides
+	private EventProcessor<SyncInProgress> syncInProgressEventProcessor(
+		LocalSyncServiceAccumulatorProcessor localSyncServiceAccumulatorProcessor
+	) {
+		return localSyncServiceAccumulatorProcessor.syncTimeoutProcessor();
 	}
 }

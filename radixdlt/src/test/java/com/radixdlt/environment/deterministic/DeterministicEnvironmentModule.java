@@ -23,16 +23,16 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.consensus.Timeout;
+import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
-import com.radixdlt.consensus.epoch.EpochView;
+import com.radixdlt.consensus.epoch.EpochViewUpdate;
+import com.radixdlt.consensus.epoch.LocalTimeoutSender;
+import com.radixdlt.consensus.liveness.VoteSender;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
-import com.radixdlt.consensus.liveness.LocalTimeoutSender;
-import com.radixdlt.consensus.liveness.ProceedToViewSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
@@ -56,11 +56,11 @@ public class DeterministicEnvironmentModule extends AbstractModule {
 	protected void configure() {
 
 		bind(ProposalBroadcaster.class).to(DeterministicSender.class);
-		bind(ProceedToViewSender.class).to(DeterministicSender.class);
 		bind(SyncVerticesRequestSender.class).to(DeterministicSender.class);
 		bind(SyncVerticesResponseSender.class).to(DeterministicSender.class);
-		bind(LocalTimeoutSender.class).to(DeterministicSender.class);
 		bind(SyncEpochsRPCSender.class).to(DeterministicSender.class);
+		bind(LocalTimeoutSender.class).to(DeterministicSender.class);
+		bind(VoteSender.class).to(DeterministicSender.class);
 
 		// TODO: Remove multibind?
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<LocalSyncRequest>>() { }, ProcessOnDispatch.class);
@@ -72,12 +72,13 @@ public class DeterministicEnvironmentModule extends AbstractModule {
 		bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
 		bind(Environment.class).to(ControlledSender.class);
 
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<Timeout>>() { }, ProcessOnDispatch.class)
-			.addBinding().to(new TypeLiteral<DeterministicSavedLastEvent<Timeout>>() { });
-		bind(new TypeLiteral<DeterministicSavedLastEvent<Timeout>>() { }).in(Scopes.SINGLETON);
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochView>>() { }, ProcessOnDispatch.class)
-			.addBinding().to(new TypeLiteral<DeterministicSavedLastEvent<EpochView>>() { });
-		bind(new TypeLiteral<DeterministicSavedLastEvent<EpochView>>() { }).in(Scopes.SINGLETON);
+		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochLocalTimeoutOccurrence>>() { }, ProcessOnDispatch.class)
+			.addBinding().to(new TypeLiteral<DeterministicSavedLastEvent<EpochLocalTimeoutOccurrence>>() { });
+		bind(new TypeLiteral<DeterministicSavedLastEvent<EpochLocalTimeoutOccurrence>>() { }).in(Scopes.SINGLETON);
+
+		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochViewUpdate>>() { }, ProcessOnDispatch.class)
+			.addBinding().to(new TypeLiteral<DeterministicSavedLastEvent<EpochViewUpdate>>() { });
+		bind(new TypeLiteral<DeterministicSavedLastEvent<EpochViewUpdate>>() { }).in(Scopes.SINGLETON);
 	}
 
 

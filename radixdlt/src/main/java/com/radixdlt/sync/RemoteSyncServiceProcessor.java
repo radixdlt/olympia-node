@@ -95,7 +95,7 @@ public class RemoteSyncServiceProcessor implements RemoteEventProcessor<DtoLedge
 			committedCommands.getHeader().toDto()
 		);
 
-		log.info("REMOTE_SYNC_REQUEST: Sending response {}", verifiable);
+		log.info("REMOTE_SYNC_REQUEST: Sending response {} to request {} from {}", verifiable, currentHeader, sender);
 
 		syncResponseDispatcher.dispatch(sender, verifiable);
 	}

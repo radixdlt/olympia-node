@@ -15,15 +15,18 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.epoch;
+package com.radixdlt.consensus.liveness;
 
-import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.consensus.liveness.PacemakerState;
-import com.radixdlt.consensus.sync.BFTSync;
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
 
-/**
- * Creates a new bft sync given a vertex store and pacemaker
- */
-public interface BFTSyncFactory {
-	BFTSync create(VertexStore vertexStore, PacemakerState pacemakerState);
+public class ScheduledLocalTimeoutTest {
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(ScheduledLocalTimeout.class)
+			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+			.verify();
+	}
 }

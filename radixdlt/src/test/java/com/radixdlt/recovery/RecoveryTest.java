@@ -35,6 +35,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
+import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.crypto.ECKeyPair;
@@ -160,7 +161,8 @@ public class RecoveryTest {
 	}
 
 	private EpochView getLastEpochView() {
-		return currentInjector.getInstance(Key.get(new TypeLiteral<DeterministicSavedLastEvent<EpochView>>() { })).getLastEvent();
+		return currentInjector.getInstance(Key.get(new TypeLiteral<DeterministicSavedLastEvent<EpochViewUpdate>>() { }))
+			.getLastEvent().getEpochView();
 	}
 
 	private Vote getLastVote() {
@@ -228,6 +230,7 @@ public class RecoveryTest {
 		VerifiedLedgerHeaderAndProof restartedEpochProof = currentInjector.getInstance(
 			Key.get(VerifiedLedgerHeaderAndProof.class, LastEpochProof.class)
 		);
+
 		assertThat(restartedEpochProof.isEndOfEpoch()).isTrue();
 		assertThat(restartedEpochProof.getEpoch()).isEqualTo(epochView.getEpoch() - 1);
 	}

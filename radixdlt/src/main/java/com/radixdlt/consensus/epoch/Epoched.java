@@ -17,46 +17,62 @@
 
 package com.radixdlt.consensus.epoch;
 
-import com.radixdlt.consensus.bft.View;
 import java.util.Objects;
 
 /**
- * A timeout for a given epoch and view
+ * Epoch wrapper for events
+ * @param <T> event which is wrapped
+ * TODO: Move other epoch events into this kind of object
  */
-public final class LocalTimeout {
+public final class Epoched<T> {
 	private final long epoch;
-	private final View view;
+	private final T event;
 
-	public LocalTimeout(long epoch, View view) {
+	private Epoched(long epoch, T event) {
 		this.epoch = epoch;
-		this.view = Objects.requireNonNull(view);
+		this.event = event;
 	}
 
-	public long getEpoch() {
+	public static <T> Epoched<T> from(long epoch, T event) {
+		Objects.requireNonNull(event);
+		return new Epoched<>(epoch, event);
+	}
+
+	public static boolean isInstance(Object event, Class<?> eventClass) {
+		if (event instanceof Epoched) {
+			Epoched<?> epoched = (Epoched<?>) event;
+			return eventClass.isInstance(epoched.event);
+		}
+
+		return false;
+	}
+
+	public long epoch() {
 		return epoch;
 	}
 
-	public View getView() {
-		return view;
+	public T event() {
+		return event;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(epoch, view);
+		return Objects.hash(epoch, event);
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof LocalTimeout)) {
+		if (!(o instanceof Epoched)) {
 			return false;
 		}
-		LocalTimeout other = (LocalTimeout) o;
-		return other.epoch == this.epoch
-			&& Objects.equals(other.view, this.view);
+
+		Epoched<?> other = (Epoched<?>) o;
+		return Objects.equals(other.event, this.event)
+			&& other.epoch == this.epoch;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{epoch=%s view=%s}", this.getClass().getSimpleName(), epoch, view);
+		return String.format("%s{epoch=%s event=%s}", this.getClass().getSimpleName(), epoch, event);
 	}
 }

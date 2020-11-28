@@ -23,6 +23,7 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
@@ -39,7 +40,7 @@ import org.apache.logging.log4j.Logger;
  * Thread-safety must be handled by caller.
  */
 @NotThreadSafe
-public final class LocalSyncServiceAccumulatorProcessor implements LocalSyncServiceProcessor {
+public final class LocalSyncServiceAccumulatorProcessor {
 	public static final class SyncInProgress {
 		private final VerifiedLedgerHeaderAndProof targetHeader;
 		private final ImmutableList<BFTNode> targetNodes;
@@ -48,22 +49,18 @@ public final class LocalSyncServiceAccumulatorProcessor implements LocalSyncServ
 			this.targetNodes = targetNodes;
 		}
 
-		private ImmutableList<BFTNode> getTargetNodes() {
+		public ImmutableList<BFTNode> getTargetNodes() {
 			return targetNodes;
 		}
 
-		private VerifiedLedgerHeaderAndProof getTargetHeader() {
+		public VerifiedLedgerHeaderAndProof getTargetHeader() {
 			return targetHeader;
 		}
 	}
 
-	public interface SyncTimeoutScheduler {
-		void scheduleTimeout(SyncInProgress syncInProgress, long milliseconds);
-	}
-
 	private static final Logger log = LogManager.getLogger();
 
-	private final SyncTimeoutScheduler syncTimeoutScheduler;
+	private final ScheduledEventDispatcher<SyncInProgress> timeoutScheduler;
 	private final long patienceMilliseconds;
 	private final RemoteEventDispatcher<DtoLedgerHeaderAndProof> requestDispatcher;
 	private final Comparator<AccumulatorState> accComparator;
@@ -73,7 +70,7 @@ public final class LocalSyncServiceAccumulatorProcessor implements LocalSyncServ
 	@Inject
 	public LocalSyncServiceAccumulatorProcessor(
 		RemoteEventDispatcher<DtoLedgerHeaderAndProof> requestDispatcher,
-		SyncTimeoutScheduler syncTimeoutScheduler,
+		ScheduledEventDispatcher<SyncInProgress> timeoutScheduler,
 		Comparator<AccumulatorState> accComparator,
 		@LastProof VerifiedLedgerHeaderAndProof current,
 		@SyncPatienceMillis int patienceMilliseconds
@@ -83,7 +80,7 @@ public final class LocalSyncServiceAccumulatorProcessor implements LocalSyncServ
 		}
 
 		this.requestDispatcher = Objects.requireNonNull(requestDispatcher);
-		this.syncTimeoutScheduler = Objects.requireNonNull(syncTimeoutScheduler);
+		this.timeoutScheduler = Objects.requireNonNull(timeoutScheduler);
 		this.patienceMilliseconds = patienceMilliseconds;
 		this.accComparator = Objects.requireNonNull(accComparator);
 		this.currentHeader = current;
@@ -106,6 +103,7 @@ public final class LocalSyncServiceAccumulatorProcessor implements LocalSyncServ
 
 		final VerifiedLedgerHeaderAndProof nextTargetHeader = request.getTarget();
 		if (accComparator.compare(nextTargetHeader.getAccumulatorState(), this.targetHeader.getAccumulatorState()) <= 0) {
+			log.trace("SYNC_LOCAL_REQUEST: skipping as already targeted {}", this.targetHeader);
 			return;
 		}
 
@@ -114,9 +112,8 @@ public final class LocalSyncServiceAccumulatorProcessor implements LocalSyncServ
 		this.refreshRequest(syncInProgress);
 	}
 
-	@Override
-	public void processSyncTimeout(SyncInProgress syncInProgress) {
-		this.refreshRequest(syncInProgress);
+	public EventProcessor<SyncInProgress> syncTimeoutProcessor() {
+		return this::refreshRequest;
 	}
 
 	private void refreshRequest(SyncInProgress syncInProgress) {
@@ -129,6 +126,6 @@ public final class LocalSyncServiceAccumulatorProcessor implements LocalSyncServ
 		// TODO: remove thread local random
 		BFTNode node = targetNodes.get(ThreadLocalRandom.current().nextInt(targetNodes.size()));
 		requestDispatcher.dispatch(node, this.currentHeader.toDto());
-		syncTimeoutScheduler.scheduleTimeout(syncInProgress, patienceMilliseconds);
+		timeoutScheduler.dispatch(syncInProgress, patienceMilliseconds);
 	}
 }

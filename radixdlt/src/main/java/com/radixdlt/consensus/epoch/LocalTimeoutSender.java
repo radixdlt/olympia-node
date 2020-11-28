@@ -15,23 +15,13 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.liveness;
+package com.radixdlt.consensus.epoch;
 
-import java.util.Set;
-
-import com.radixdlt.consensus.ViewTimeout;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 
 /**
- * Hotstuff's Event-Driven OnNextSyncView.
+ * Sender for local timeouts.
  */
-public interface ProceedToViewSender {
-	/**
-	 * Send a view timeout message to the specified validator.
-	 *
-	 * @param viewTimeout the view timeout message
-	 * @param nodes the validators to broadcast the message to
-	 */
-	// FIXME: To be change when TCs implemented
-	void broadcastViewTimeout(ViewTimeout viewTimeout, Set<BFTNode> nodes);
+public interface LocalTimeoutSender {
+	void scheduleTimeout(Epoched<ScheduledLocalTimeout> localTimeout, long timeoutMilliseconds);
 }

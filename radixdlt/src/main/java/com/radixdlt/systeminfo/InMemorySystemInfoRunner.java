@@ -20,8 +20,8 @@ package com.radixdlt.systeminfo;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.Timeout;
-import com.radixdlt.consensus.epoch.EpochView;
+import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
+import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.environment.EventProcessor;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
@@ -33,21 +33,22 @@ import java.util.Set;
  */
 public final class InMemorySystemInfoRunner {
 
-	private final Observable<EpochView> currentViews;
-	private final Observable<Timeout> timeouts;
+	private final Observable<EpochViewUpdate> currentViews;
+	private final Set<EventProcessor<EpochViewUpdate>> viewEventProcessors;
+
+	private final Observable<EpochLocalTimeoutOccurrence> timeouts;
 	private final Observable<QuorumCertificate> highQCs;
 	private final Observable<BFTCommittedUpdate> bftCommittedUpdates;
-	private final Set<EventProcessor<EpochView>> viewEventProcessors;
-	private final Set<EventProcessor<Timeout>> timeoutEventProcessors;
+	private final Set<EventProcessor<EpochLocalTimeoutOccurrence>> timeoutEventProcessors;
 	private final Set<EventProcessor<QuorumCertificate>> highQCProcessors;
 	private final Set<EventProcessor<BFTCommittedUpdate>> committedProcessors;
 
 	@Inject
 	public InMemorySystemInfoRunner(
-		Observable<EpochView> currentViews,
-		Set<EventProcessor<EpochView>> viewEventProcessors,
-		Observable<Timeout> timeouts,
-		Set<EventProcessor<Timeout>> timeoutEventProcessors,
+		Observable<EpochViewUpdate> currentViews,
+		Set<EventProcessor<EpochViewUpdate>> viewEventProcessors,
+		Observable<EpochLocalTimeoutOccurrence> timeouts,
+		Set<EventProcessor<EpochLocalTimeoutOccurrence>> timeoutEventProcessors,
 		Observable<QuorumCertificate> highQCs,
 		Set<EventProcessor<QuorumCertificate>> highQCProcessors,
 		Observable<BFTCommittedUpdate> bftCommittedUpdates,

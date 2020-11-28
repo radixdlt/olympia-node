@@ -28,8 +28,8 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.BFTSyncRequestProcessor;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.epoch.LocalTimeout;
-import com.radixdlt.consensus.liveness.PacemakerRx;
+import com.radixdlt.consensus.bft.ViewUpdate;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.environment.EventProcessor;
@@ -72,8 +72,11 @@ public class BFTRunner implements ModuleRunner {
 		Set<EventProcessor<BFTUpdate>> bftUpdateProcessors,
 		Observable<LocalGetVerticesRequest> bftSyncTimeouts,
 		EventProcessor<LocalGetVerticesRequest> bftSyncTimeoutProcessor,
+		Observable<ViewUpdate> viewUpdates,
+		Set<EventProcessor<ViewUpdate>> viewUpdateProcessors,
+		Observable<ScheduledLocalTimeout> timeouts,
+		Set<EventProcessor<ScheduledLocalTimeout>> timeoutProcessors,
 		BFTEventsRx networkRx,
-		PacemakerRx pacemakerRx,
 		SyncVerticesRPCRx rpcRx,
 		BFTEventProcessor bftEventProcessor,
 		BFTSync vertexStoreSync,
@@ -88,10 +91,12 @@ public class BFTRunner implements ModuleRunner {
 		// It is important that all of these events are executed on the same thread
 		// as all logic is dependent on this assumption
 		final Observable<Object> eventCoordinatorEvents = Observable.merge(Arrays.asList(
-			pacemakerRx.localTimeouts()
+			timeouts
 				.observeOn(singleThreadScheduler)
-				.map(LocalTimeout::getView)
-				.doOnNext(bftEventProcessor::processLocalTimeout),
+				.doOnNext(t -> timeoutProcessors.forEach(p -> p.process(t))),
+			viewUpdates
+				.observeOn(singleThreadScheduler)
+				.doOnNext(v -> viewUpdateProcessors.forEach(p -> p.process(v))),
 			networkRx.bftEvents()
 				.observeOn(singleThreadScheduler)
 				.doOnNext(e -> {

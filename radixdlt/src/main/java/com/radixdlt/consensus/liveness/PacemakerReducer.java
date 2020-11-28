@@ -17,28 +17,26 @@
 
 package com.radixdlt.consensus.liveness;
 
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.consensus.bft.ViewUpdate;
-import com.radixdlt.consensus.safety.SafetyRules;
+import com.radixdlt.consensus.HighQC;
+import com.radixdlt.consensus.bft.View;
 
 /**
- * Pacemaker factory
+ * Reduces state for a pacemaker given some events
+ * TODO: This is currently hack, should move to a more message based interface
  */
-public interface PacemakerFactory {
+public interface PacemakerReducer {
+	/**
+	 * Signifies to the pacemaker that a quorum has agreed that a view has
+	 * been completed.
+	 *
+	 * @param highQC the sync info for the view
+	 */
+	void processQC(HighQC highQC);
 
 	/**
-	 * Creates a new clean pacemaker.
-	 *
-	 * @return a new pacemaker
+	 * Signifies to the pacemaker that it should move to the next view
+	 * TODO: Replace or combine with processQC on implementation of timeout quorum
+	 * @param nextView the view to move to
 	 */
-	Pacemaker create(
-		BFTValidatorSet validatorSet,
-		VertexStore vertexStore,
-		PacemakerState pacemakerState,
-		PacemakerTimeoutCalculator timeoutCalculator,
-		SafetyRules safetyRules,
-		ViewUpdate initialViewUpdate,
-		long nextEpoch
-	);
+	void updateView(View nextView);
 }
