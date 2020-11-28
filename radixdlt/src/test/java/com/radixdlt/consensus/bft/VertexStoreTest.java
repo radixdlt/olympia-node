@@ -205,7 +205,7 @@ public class VertexStoreTest {
 		);
 
 		// Act
-		sut.rebuild(vertexStoreState);
+		sut.tryRebuild(vertexStoreState);
 
 		// Assert
 		verify(bftUpdateSender, times(1)).dispatch(argThat(u -> u.getInsertedVertex().equals(vertices.get(0))));

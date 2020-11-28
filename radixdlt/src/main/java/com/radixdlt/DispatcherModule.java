@@ -138,9 +138,20 @@ public class DispatcherModule extends AbstractModule {
 
 	@Provides
 	private EventDispatcher<BFTUpdate> viewEventDispatcher(
-		Environment environment
+		Environment environment,
+		SystemCounters systemCounters
 	) {
-		return environment.getDispatcher(BFTUpdate.class);
+		EventDispatcher<BFTUpdate> dispatcher = environment.getDispatcher(BFTUpdate.class);
+		return update -> {
+			if (update.getSiblingsCount() > 1) {
+				systemCounters.increment(CounterType.BFT_VERTEX_STORE_FORKS);
+			}
+			if (!update.getInsertedVertex().hasDirectParent()) {
+				systemCounters.increment(CounterType.BFT_INDIRECT_PARENT);
+			}
+
+			dispatcher.dispatch(update);
+		};
 	}
 
 	@Provides

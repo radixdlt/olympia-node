@@ -24,11 +24,17 @@ import java.util.Objects;
  */
 public final class BFTUpdate {
 	private final VerifiedVertex insertedVertex;
+	private final int siblings;
 	private final int vertexStoreSize;
 
-	public BFTUpdate(VerifiedVertex insertedVertex, int vertexStoreSize) {
+	public BFTUpdate(VerifiedVertex insertedVertex, int siblings, int vertexStoreSize) {
 		this.insertedVertex = Objects.requireNonNull(insertedVertex);
+		this.siblings = siblings;
 		this.vertexStoreSize = vertexStoreSize;
+	}
+
+	public int getSiblingsCount() {
+		return siblings;
 	}
 
 	public int getVertexStoreSize() {

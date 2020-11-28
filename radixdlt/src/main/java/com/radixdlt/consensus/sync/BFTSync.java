@@ -294,7 +294,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 				syncState.fetched.get(0),
 				nonRootVertices
 			);
-			vertexStore.rebuild(vertexStoreState);
+			vertexStore.tryRebuild(vertexStoreState);
 		} else {
 			log.debug("SYNC_STATE: skipping rebuild");
 		}

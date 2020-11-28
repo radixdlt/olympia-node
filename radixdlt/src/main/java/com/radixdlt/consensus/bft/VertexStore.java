@@ -128,23 +128,35 @@ public final class VertexStore {
 		return rootVertex;
 	}
 
-	public void rebuild(VerifiedVertexStoreState vertexStoreState) {
+	public boolean tryRebuild(VerifiedVertexStoreState vertexStoreState) {
+
+		// FIXME: Currently this assumes vertexStoreState is a chain with no forks which is our only use case at the moment.
+		LinkedList<PreparedVertex> prepared = new LinkedList<>();
+		for (VerifiedVertex vertex : vertexStoreState.getVertices()) {
+			Optional<PreparedVertex> preparedVertexMaybe = ledger.prepare(prepared, vertex);
+			if (preparedVertexMaybe.isEmpty()) {
+				return false;
+			}
+
+			prepared.add(preparedVertexMaybe.get());
+		}
+
 		this.rootVertex = vertexStoreState.getRoot();
 		this.highestCommittedQC = vertexStoreState.getHighQC().highestCommittedQC();
 		this.highestQC = vertexStoreState.getHighQC().highestQC();
-
 		this.vertices.clear();
 		this.vertexChildren.clear();
 		this.vertexChildren.put(rootVertex.getId(), new HashSet<>());
 
-		for (VerifiedVertex vertex : vertexStoreState.getVertices()) {
-			// An insertion may have failed due to the ledger being ahead of vertex store
-			// in this case, just stop inserting vertices for now
-			// TODO: fix once more persistent prepare branches are implemented
-			Optional<BFTHeader> maybeInserted = insertVertexInternal(vertex);
-			if (maybeInserted.isEmpty()) {
-				break;
-			}
+		for (PreparedVertex preparedVertex : prepared) {
+			this.vertices.put(preparedVertex.getId(), preparedVertex);
+			this.vertexChildren.put(preparedVertex.getId(), new HashSet<>());
+			Set<HashCode> siblings = vertexChildren.get(preparedVertex.getParentId());
+			siblings.add(preparedVertex.getId());
+
+			updateVertexStoreSize();
+			final BFTUpdate update = new BFTUpdate(preparedVertex.getVertex(), siblings.size(), this.vertices.size());
+			bftUpdateDispatcher.dispatch(update);
 		}
 
 		// TODO: refactor this out
@@ -152,8 +164,9 @@ public final class VertexStore {
 
 		// TODO: combine all these bft updates into one
 		this.vertexStoreEventSender.highQC(highestQC);
-		BFTUpdate bftUpdate = new BFTUpdate(rootVertex, 0);
+		BFTUpdate bftUpdate = new BFTUpdate(rootVertex, 0, 1);
 		bftUpdateDispatcher.dispatch(bftUpdate);
+		return true;
 	}
 
 	public boolean containsVertex(HashCode vertexId) {
@@ -220,16 +233,25 @@ public final class VertexStore {
 	 * @return a bft header if creation of next header is successful.
 	 */
 	public Optional<BFTHeader> insertVertex(VerifiedVertex vertex) {
+		PreparedVertex v = vertices.get(vertex.getId());
+		if (v != null) {
+			return Optional.of(new BFTHeader(
+				v.getVertex().getView(),
+				v.getVertex().getId(),
+				v.getLedgerHeader()
+			));
+		}
+
+		if (!this.containsVertex(vertex.getParentId())) {
+			throw new MissingParentException(vertex.getParentId());
+		}
+
 		Optional<BFTHeader> result = insertVertexInternal(vertex);
 		result.ifPresent(h -> save());
 		return result;
 	}
 
 	private Optional<BFTHeader> insertVertexInternal(VerifiedVertex vertex) {
-		if (!this.containsVertex(vertex.getParentId())) {
-			throw new MissingParentException(vertex.getParentId());
-		}
-
 		LinkedList<PreparedVertex> previous = getPathFromRoot(vertex.getParentId());
 		Optional<PreparedVertex> preparedVertexMaybe = ledger.prepare(previous, vertex);
 		preparedVertexMaybe.ifPresent(preparedVertex -> {
@@ -237,22 +259,15 @@ public final class VertexStore {
 			// TODO: have to deal with failing leader proposals
 			// TODO: Reinstate this when ProposalGenerator + Mempool can guarantee correct proposals
 			// TODO: (also see commitVertex->storeAtom)
-			if (!vertices.containsKey(preparedVertex.getId())) {
-				vertices.put(preparedVertex.getId(), preparedVertex);
-				vertexChildren.put(preparedVertex.getId(), new HashSet<>());
-				Set<HashCode> siblings = vertexChildren.get(preparedVertex.getParentId());
-				siblings.add(preparedVertex.getId());
-				if (siblings.size() > 1) {
-					this.counters.increment(CounterType.BFT_VERTEX_STORE_FORKS);
-				}
-				if (!vertex.hasDirectParent()) {
-					this.counters.increment(CounterType.BFT_INDIRECT_PARENT);
-				}
+			vertices.put(preparedVertex.getId(), preparedVertex);
+			vertexChildren.put(preparedVertex.getId(), new HashSet<>());
+			Set<HashCode> siblings = vertexChildren.get(preparedVertex.getParentId());
+			siblings.add(preparedVertex.getId());
 
-				updateVertexStoreSize();
-				final BFTUpdate update = new BFTUpdate(vertex, this.vertices.size());
-				bftUpdateDispatcher.dispatch(update);
-			}
+
+			updateVertexStoreSize();
+			final BFTUpdate update = new BFTUpdate(vertex, siblings.size(), this.vertices.size());
+			bftUpdateDispatcher.dispatch(update);
 		});
 
 		return preparedVertexMaybe
