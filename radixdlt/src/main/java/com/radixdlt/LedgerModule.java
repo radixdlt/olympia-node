@@ -45,10 +45,11 @@ import java.util.Comparator;
 public class LedgerModule extends AbstractModule {
 	@Override
 	protected void configure() {
-		bind(Ledger.class).to(StateComputerLedger.class).in(Scopes.SINGLETON);
+		bind(Ledger.class).to(StateComputerLedger.class);
 		bind(new TypeLiteral<Comparator<VerifiedLedgerHeaderAndProof>>() { }).to(OrderByEpochAndVersionComparator.class).in(Scopes.SINGLETON);
 		bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 		bind(LedgerAccumulatorVerifier.class).to(SimpleLedgerAccumulatorAndVerifier.class);
+		bind(StateComputerLedger.class).in(Scopes.SINGLETON);
 	}
 
 	@Provides
@@ -56,6 +57,11 @@ public class LedgerModule extends AbstractModule {
 		return Comparator.comparingLong(AccumulatorState::getStateVersion);
 	}
 
+	@ProvidesIntoSet
+	@ProcessOnDispatch
+	private EventProcessor<BFTCommittedUpdate> bftToLedgerCommittor(StateComputerLedger stateComputerLedger) {
+		return stateComputerLedger.bftCommittedUpdateEventProcessor();
+	}
 
 	// TODO: This is a temporary fix until Mempool is fixed
 	@ProvidesIntoSet

@@ -42,17 +42,6 @@ public interface Ledger {
 	Optional<PreparedVertex> prepare(LinkedList<PreparedVertex> previous, VerifiedVertex vertex);
 
 	/**
-	 * Commit prepared vertices from bft consensus
-	 * @param prunedVertices vertices which no longer can be committed
-	 * @param vertices vertices to commit
-	 */
-	void commit(
-		ImmutableSet<HashCode> prunedVertices,
-		ImmutableList<PreparedVertex> vertices,
-		VerifiedVertexStoreState vertexStoreState
-	);
-
-	/**
 	 * Commit commands
 	 * @param verifiedCommandsAndProof the command to commit
 	 */

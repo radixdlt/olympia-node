@@ -104,6 +104,8 @@ public final class VertexStore {
 			LinkedList<PreparedVertex> previous = vertexStore.getPathFromRoot(vertex.getParentId());
 			Optional<PreparedVertex> preparedVertexMaybe = ledger.prepare(previous, vertex);
 			if (preparedVertexMaybe.isEmpty()) {
+				// FIXME: If this occurs then it means that our highQC may not have an associated vertex
+				// FIXME: so should save preparedVertex
 				break;
 			} else {
 				PreparedVertex preparedVertex = preparedVertexMaybe.get();
@@ -173,7 +175,7 @@ public final class VertexStore {
 			// TODO: we lose all other tail QCs on this save, Not sure if this is okay...investigate...
 			VerifiedVertexStoreState vertexStoreState = getState();
 			this.highQCUpdateDispatcher.dispatch(BFTHighQCUpdate.create(vertexStoreState));
-			this.persistentVertexStore.save(getState());
+			this.persistentVertexStore.save(vertexStoreState);
 		}
 
 		qc.getCommittedAndLedgerStateProof().map(Pair::getFirst)
@@ -296,11 +298,7 @@ public final class VertexStore {
 
 		VerifiedVertexStoreState vertexStoreState = getState();
 		ImmutableSet<HashCode> pruned = prunedSetBuilder.build();
-		final BFTCommittedUpdate bftCommittedUpdate = new BFTCommittedUpdate(pruned, path, vertexStoreState);
-		// TODO: Make these two persistent saves atomic
-		this.bftCommittedDispatcher.dispatch(bftCommittedUpdate);
-		this.ledger.commit(pruned, path, vertexStoreState);
-		this.persistentVertexStore.save(vertexStoreState);
+		this.bftCommittedDispatcher.dispatch(BFTCommittedUpdate.create(pruned, path, vertexStoreState));
 	}
 
 	public LinkedList<PreparedVertex> getPathFromRoot(HashCode vertexId) {

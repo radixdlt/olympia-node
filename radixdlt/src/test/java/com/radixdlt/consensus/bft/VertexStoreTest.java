@@ -168,11 +168,9 @@ public class VertexStoreTest {
 		assertThat(sut.getVertices(vertices.get(2).getId(), 3)).hasValue(ImmutableList.of(
 			vertices.get(2), vertices.get(1), vertices.get(0)
 		));
-		verify(ledger, times(1)).commit(
-			any(),
-			argThat(l -> l.size() == 1 && l.get(0).getVertex().equals(vertices.get(0))),
-			any()
-		);
+		verify(committedSender, times(1)).dispatch(argThat(
+			u -> u.getCommitted().size() == 1 && u.getCommitted().get(0).getVertex().equals(vertices.get(0))
+		));
 	}
 
 	@Test

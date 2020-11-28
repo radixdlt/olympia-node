@@ -30,10 +30,14 @@ public final class BFTCommittedUpdate {
 	private final ImmutableList<PreparedVertex> committed;
 	private final VerifiedVertexStoreState vertexStoreState;
 
-	BFTCommittedUpdate(ImmutableSet<HashCode> pruned, ImmutableList<PreparedVertex> committed, VerifiedVertexStoreState vertexStoreState) {
+	private BFTCommittedUpdate(ImmutableSet<HashCode> pruned, ImmutableList<PreparedVertex> committed, VerifiedVertexStoreState vertexStoreState) {
 		this.pruned = Objects.requireNonNull(pruned);
 		this.committed = Objects.requireNonNull(committed);
 		this.vertexStoreState = Objects.requireNonNull(vertexStoreState);
+	}
+
+	public static BFTCommittedUpdate create(ImmutableSet<HashCode> pruned, ImmutableList<PreparedVertex> committed, VerifiedVertexStoreState vertexStoreState) {
+		return new BFTCommittedUpdate(pruned, committed, vertexStoreState);
 	}
 
 	public int getVertexStoreSize() {

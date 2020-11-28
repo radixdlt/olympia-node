@@ -65,12 +65,6 @@ public class MockedLedgerModule extends AbstractModule {
 			}
 
 			@Override
-			public void commit(ImmutableSet<HashCode> prunedVertices, ImmutableList<PreparedVertex> vertices,
-				VerifiedVertexStoreState vertexStoreState) {
-
-			}
-
-			@Override
 			public void commit(VerifiedCommandsAndProof command) {
 				// Nothing to do here
 			}
