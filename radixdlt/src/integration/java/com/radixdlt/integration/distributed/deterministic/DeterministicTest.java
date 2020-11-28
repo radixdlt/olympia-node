@@ -284,6 +284,37 @@ public final class DeterministicTest {
 		return new Builder();
 	}
 
+	public DeterministicNetwork getNetwork() {
+		return this.network;
+	}
+
+	public DeterministicNodes getNodes() {
+		return this.nodes;
+	}
+
+	public interface DeterministicManualExecutor {
+		void start();
+		void processNext(int senderIndex, int receiverIndex, Class<?> eventClass);
+	}
+
+	public DeterministicManualExecutor createExecutor() {
+		return new DeterministicManualExecutor() {
+			@Override
+			public void start() {
+				nodes.start();
+			}
+
+			@Override
+			public void processNext(int senderIndex, int receiverIndex, Class<?> eventClass) {
+				Timed<ControlledMessage> nextMsg = network.nextMessage(msg -> msg.channelId().senderIndex() == senderIndex
+					&& msg.channelId().receiverIndex() == receiverIndex
+					&& eventClass.isInstance(msg.message()));
+
+				nodes.handleMessage(nextMsg);
+			}
+		};
+	}
+
 	public DeterministicTest runForCount(int count) {
 		this.nodes.start();
 
