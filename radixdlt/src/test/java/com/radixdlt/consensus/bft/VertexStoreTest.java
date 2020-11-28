@@ -40,8 +40,6 @@ import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
@@ -68,7 +66,6 @@ public class VertexStoreTest {
 	private VertexStoreEventSender vertexStoreEventSender;
 	private EventDispatcher<BFTUpdate> bftUpdateSender;
 	private EventDispatcher<BFTCommittedUpdate> committedSender;
-	private SystemCounters counters;
 	private Hasher hasher = Sha256Hasher.withDefaultSerialization();
 
 	private static final LedgerHeader MOCKED_HEADER = LedgerHeader.create(
@@ -87,7 +84,6 @@ public class VertexStoreTest {
 		}).when(ledger).prepare(any(), any());
 
 		this.vertexStoreEventSender = mock(VertexStoreEventSender.class);
-		this.counters = new SystemCountersImpl();
 		this.bftUpdateSender = rmock(EventDispatcher.class);
 		this.committedSender = rmock(EventDispatcher.class);
 
@@ -100,8 +96,7 @@ public class VertexStoreTest {
 			ledger,
 			bftUpdateSender,
 			committedSender,
-			vertexStoreEventSender,
-			counters
+			vertexStoreEventSender
 		);
 
 		AtomicReference<BFTHeader> lastParentHeader
@@ -208,9 +203,11 @@ public class VertexStoreTest {
 		sut.tryRebuild(vertexStoreState);
 
 		// Assert
-		verify(bftUpdateSender, times(1)).dispatch(argThat(u -> u.getInsertedVertex().equals(vertices.get(0))));
-		verify(bftUpdateSender, times(1)).dispatch(argThat(u -> u.getInsertedVertex().equals(vertices.get(1))));
-		verify(bftUpdateSender, times(1)).dispatch(argThat(u -> u.getInsertedVertex().equals(vertices.get(2))));
-		verify(bftUpdateSender, times(1)).dispatch(argThat(u -> u.getInsertedVertex().equals(vertices.get(3))));
+		verify(bftUpdateSender, times(1)).dispatch(
+			argThat(u -> {
+				List<VerifiedVertex> sentVertices = u.getInsertedVertices().collect(Collectors.toList());
+				return sentVertices.equals(vertices);
+			})
+		);
 	}
 }

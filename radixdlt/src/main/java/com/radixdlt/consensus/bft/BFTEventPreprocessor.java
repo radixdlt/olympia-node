@@ -119,17 +119,17 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 
 	@Override
 	public void processBFTUpdate(BFTUpdate update) {
-		HashCode vertexId = update.getInsertedVertex().getId();
-
-		log.trace("LOCAL_SYNC: {}", update.getInsertedVertex());
-		for (SyncQueue queue : syncQueues.getQueues()) {
-			if (peekAndExecute(queue, vertexId)) {
-				queue.pop();
-				while (peekAndExecute(queue, null)) {
+		update.getInsertedVertices().map(VerifiedVertex::getId).forEach(vertexId -> {
+			log.trace("LOCAL_SYNC: {}", vertexId);
+			for (SyncQueue queue : syncQueues.getQueues()) {
+				if (peekAndExecute(queue, vertexId)) {
 					queue.pop();
+					while (peekAndExecute(queue, null)) {
+						queue.pop();
+					}
 				}
 			}
-		}
+		});
 
 		forwardTo.processBFTUpdate(update);
 	}

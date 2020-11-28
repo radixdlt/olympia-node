@@ -34,6 +34,7 @@ import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
@@ -60,6 +61,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.apache.commons.cli.ParseException;
+import org.assertj.core.api.Condition;
 import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
@@ -247,5 +249,21 @@ public class RecoveryTest {
 		// Assert
 		SafetyState safetyState = currentInjector.getInstance(SafetyState.class);
 		assertThat(safetyState.getLastVotedView()).isEqualTo(vote.getView());
+	}
+
+
+	@Test
+	public void on_reboot_should_only_emit_pacemaker_events() {
+		// Arrange
+		processForCount(100);
+
+		// Act
+		restartNode();
+
+		// Assert
+		assertThat(network.allMessages())
+			.hasSize(2)
+			.haveExactly(1, new Condition<>(msg -> msg.message() instanceof EpochViewUpdate, "A single view update has been emitted"))
+			.haveExactly(1, new Condition<>(msg -> msg.message() instanceof ViewUpdate, "A single view update has been emitted"));
 	}
 }

@@ -18,32 +18,33 @@
 package com.radixdlt.consensus.bft;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.QuorumCertificate;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.hash.HashCode;
 import java.util.Objects;
 
 /**
  * Vertex Store update of committed vertices
  */
 public final class BFTCommittedUpdate {
+	private final ImmutableSet<HashCode> pruned;
 	private final ImmutableList<PreparedVertex> committed;
-	private final QuorumCertificate qc;
-	private final int vertexStoreSize;
+	private final VerifiedVertexStoreState vertexStoreState;
 
-	BFTCommittedUpdate(ImmutableList<PreparedVertex> committed, QuorumCertificate qc, int vertexStoreSize) {
+	BFTCommittedUpdate(ImmutableSet<HashCode> pruned, ImmutableList<PreparedVertex> committed, VerifiedVertexStoreState vertexStoreState) {
+		this.pruned = Objects.requireNonNull(pruned);
 		this.committed = Objects.requireNonNull(committed);
-		this.qc = Objects.requireNonNull(qc);
-		this.vertexStoreSize = vertexStoreSize;
+		this.vertexStoreState = Objects.requireNonNull(vertexStoreState);
 	}
 
 	public int getVertexStoreSize() {
-		return vertexStoreSize;
+		return vertexStoreState.getVertices().size();
 	}
 
 	public ImmutableList<PreparedVertex> getCommitted() {
 		return committed;
 	}
 
-	public QuorumCertificate getProof() {
-		return qc;
+	public VerifiedVertexStoreState getVertexStoreState() {
+		return vertexStoreState;
 	}
 }

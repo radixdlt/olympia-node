@@ -272,7 +272,6 @@ public final class ConsensusModule extends AbstractModule {
 		EventDispatcher<BFTUpdate> updateSender,
 		EventDispatcher<BFTCommittedUpdate> committedSender,
 		BFTConfiguration bftConfiguration,
-		SystemCounters counters,
 		Ledger ledger
 	) {
 		return VertexStore.create(
@@ -281,8 +280,7 @@ public final class ConsensusModule extends AbstractModule {
 			ledger,
 			updateSender,
 			committedSender,
-			vertexStoreEventSender,
-			counters
+			vertexStoreEventSender
 		);
 	}
 }

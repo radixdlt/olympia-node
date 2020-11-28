@@ -18,19 +18,37 @@
 package com.radixdlt.consensus.bft;
 
 import java.util.Objects;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 /**
  * An update to the BFT state
  */
 public final class BFTUpdate {
-	private final VerifiedVertex insertedVertex;
+	private final Supplier<Stream<VerifiedVertex>> insertedVertices;
 	private final int siblings;
 	private final int vertexStoreSize;
 
-	public BFTUpdate(VerifiedVertex insertedVertex, int siblings, int vertexStoreSize) {
-		this.insertedVertex = Objects.requireNonNull(insertedVertex);
+	private BFTUpdate(Supplier<Stream<VerifiedVertex>> insertedVertices, int siblings, int vertexStoreSize) {
+		this.insertedVertices = Objects.requireNonNull(insertedVertices);
 		this.siblings = siblings;
 		this.vertexStoreSize = vertexStoreSize;
+	}
+
+	public static BFTUpdate fromRebuild(VerifiedVertexStoreState vertexStoreState) {
+		return new BFTUpdate(
+			() -> Stream.concat(Stream.of(vertexStoreState.getRoot()), vertexStoreState.getVertices().stream()),
+			0,
+			vertexStoreState.getVertices().size() + 1
+		);
+	}
+
+	public static BFTUpdate insertedVertex(VerifiedVertex insertedVertex, int siblingsCount, VerifiedVertexStoreState vertexStoreState) {
+		return new BFTUpdate(
+			() -> Stream.of(insertedVertex),
+			siblingsCount,
+			vertexStoreState.getVertices().size() + 1
+		);
 	}
 
 	public int getSiblingsCount() {
@@ -41,12 +59,12 @@ public final class BFTUpdate {
 		return vertexStoreSize;
 	}
 
-	public VerifiedVertex getInsertedVertex() {
-		return insertedVertex;
+	public Stream<VerifiedVertex> getInsertedVertices() {
+		return insertedVertices.get();
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s]", getClass().getSimpleName(), this.insertedVertex);
+		return String.format("%s", getClass().getSimpleName());
 	}
 }

@@ -146,13 +146,39 @@ public class DispatcherModule extends AbstractModule {
 			if (update.getSiblingsCount() > 1) {
 				systemCounters.increment(CounterType.BFT_VERTEX_STORE_FORKS);
 			}
-			if (!update.getInsertedVertex().hasDirectParent()) {
-				systemCounters.increment(CounterType.BFT_INDIRECT_PARENT);
-			}
+			long indirectParents = update.getInsertedVertices().filter(v -> !v.hasDirectParent()).count();
+			systemCounters.add(CounterType.BFT_INDIRECT_PARENT, indirectParents);
+			systemCounters.set(CounterType.BFT_VERTEX_STORE_SIZE, update.getVertexStoreSize());
+
 
 			dispatcher.dispatch(update);
 		};
 	}
+
+	@Provides
+	private EventDispatcher<BFTCommittedUpdate> committedUpdateEventDispatcher(
+		@ProcessOnDispatch Set<EventProcessor<BFTCommittedUpdate>> processors,
+		Set<EventProcessor<BFTCommittedUpdate>> asyncProcessors,
+		Environment environment,
+		SystemCounters systemCounters
+	) {
+		if (asyncProcessors.isEmpty()) {
+			return commit -> {
+				systemCounters.add(CounterType.BFT_PROCESSED, commit.getCommitted().size());
+				systemCounters.set(CounterType.BFT_VERTEX_STORE_SIZE, commit.getVertexStoreSize());
+				processors.forEach(e -> e.process(commit));
+			};
+		} else {
+			EventDispatcher<BFTCommittedUpdate> dispatcher = environment.getDispatcher(BFTCommittedUpdate.class);
+			return commit -> {
+				systemCounters.add(CounterType.BFT_PROCESSED, commit.getCommitted().size());
+				systemCounters.set(CounterType.BFT_VERTEX_STORE_SIZE, commit.getVertexStoreSize());
+				processors.forEach(e -> e.process(commit));
+				dispatcher.dispatch(commit);
+			};
+		}
+	}
+
 
 	@Provides
 	private EventDispatcher<LocalTimeoutOccurrence> localConsensusTimeoutDispatcher(
@@ -192,22 +218,6 @@ public class DispatcherModule extends AbstractModule {
 		}
 	}
 
-	@Provides
-	private EventDispatcher<BFTCommittedUpdate> committedUpdateEventDispatcher(
-		@ProcessOnDispatch Set<EventProcessor<BFTCommittedUpdate>> processors,
-		Set<EventProcessor<BFTCommittedUpdate>> asyncProcessors,
-		Environment environment
-	) {
-		if (asyncProcessors.isEmpty()) {
-			return commit -> processors.forEach(e -> e.process(commit));
-		} else {
-			EventDispatcher<BFTCommittedUpdate> dispatcher = environment.getDispatcher(BFTCommittedUpdate.class);
-			return commit -> {
-				processors.forEach(e -> e.process(commit));
-				dispatcher.dispatch(commit);
-			};
-		}
-	}
 
 	@Provides
 	private RemoteEventDispatcher<Vote> voteDispatcher(

@@ -241,7 +241,6 @@ public class EpochsConsensusModule extends AbstractModule {
 		PersistentVertexStore persistentVertexStore,
 		EventDispatcher<BFTUpdate> updateSender,
 		EventDispatcher<BFTCommittedUpdate> committedDispatcher,
-		SystemCounters counters,
 		Ledger ledger,
 		VertexStoreEventSender vertexStoreEventSender
 	) {
@@ -251,8 +250,7 @@ public class EpochsConsensusModule extends AbstractModule {
 			ledger,
 			updateSender,
 			committedDispatcher,
-			vertexStoreEventSender,
-			counters
+			vertexStoreEventSender
 		);
 	}
 }
