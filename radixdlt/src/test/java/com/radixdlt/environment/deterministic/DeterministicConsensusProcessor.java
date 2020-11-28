@@ -22,6 +22,7 @@ import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTSyncRequestProcessor;
 import com.radixdlt.consensus.bft.BFTUpdate;
@@ -44,6 +45,7 @@ public class DeterministicConsensusProcessor implements DeterministicMessageProc
 	private final BFTEventProcessor bftEventProcessor;
 	private final BFTSync vertexStoreSync;
 	private final BFTSyncRequestProcessor requestProcessor;
+	private final Set<EventProcessor<BFTHighQCUpdate>> bftHighQCUpdateProcessors;
 	private final Set<EventProcessor<BFTUpdate>> bftUpdateProcessors;
 	private final Set<EventProcessor<ViewUpdate>> viewUpdateProcessors;
 	private final Set<EventProcessor<ScheduledLocalTimeout>> timeoutProcessors;
@@ -55,12 +57,14 @@ public class DeterministicConsensusProcessor implements DeterministicMessageProc
 		BFTSyncRequestProcessor requestProcessor,
 		Set<EventProcessor<ViewUpdate>> viewUpdateProcessors,
 		Set<EventProcessor<BFTUpdate>> bftUpdateProcessors,
+		Set<EventProcessor<BFTHighQCUpdate>> bftHighQCUpdateProcessors,
 		Set<EventProcessor<ScheduledLocalTimeout>> timeoutProcessors
 	) {
 		this.bftEventProcessor = Objects.requireNonNull(bftEventProcessor);
 		this.vertexStoreSync = Objects.requireNonNull(vertexStoreSync);
 		this.requestProcessor = Objects.requireNonNull(requestProcessor);
 		this.bftUpdateProcessors = Objects.requireNonNull(bftUpdateProcessors);
+		this.bftHighQCUpdateProcessors = Objects.requireNonNull(bftHighQCUpdateProcessors);
 		this.viewUpdateProcessors = Objects.requireNonNull(viewUpdateProcessors);
 		this.timeoutProcessors = Objects.requireNonNull(timeoutProcessors);
 	}
@@ -88,6 +92,8 @@ public class DeterministicConsensusProcessor implements DeterministicMessageProc
 			vertexStoreSync.processGetVerticesResponse((GetVerticesResponse) message);
 		} else if (message instanceof GetVerticesErrorResponse) {
 			vertexStoreSync.processGetVerticesErrorResponse((GetVerticesErrorResponse) message);
+		} else if (message instanceof BFTHighQCUpdate) {
+			bftHighQCUpdateProcessors.forEach(p -> p.process((BFTHighQCUpdate) message));
 		} else if (message instanceof BFTUpdate) {
 			bftUpdateProcessors.forEach(p -> p.process((BFTUpdate) message));
 		} else if (message instanceof LedgerUpdate) {

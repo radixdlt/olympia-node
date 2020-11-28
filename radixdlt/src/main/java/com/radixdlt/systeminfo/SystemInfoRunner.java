@@ -19,10 +19,11 @@ package com.radixdlt.systeminfo;
 
 import com.google.inject.Inject;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
-import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.ProcessWithSystemInfoRunner;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.util.Objects;
@@ -31,26 +32,28 @@ import java.util.Set;
 /**
  * Processes system info events
  */
-public final class InMemorySystemInfoRunner {
+public final class SystemInfoRunner {
 
 	private final Observable<EpochViewUpdate> currentViews;
 	private final Set<EventProcessor<EpochViewUpdate>> viewEventProcessors;
 
 	private final Observable<EpochLocalTimeoutOccurrence> timeouts;
-	private final Observable<QuorumCertificate> highQCs;
-	private final Observable<BFTCommittedUpdate> bftCommittedUpdates;
 	private final Set<EventProcessor<EpochLocalTimeoutOccurrence>> timeoutEventProcessors;
-	private final Set<EventProcessor<QuorumCertificate>> highQCProcessors;
+
+	private final Observable<BFTHighQCUpdate> bftUpdates;
+	private final Set<EventProcessor<BFTHighQCUpdate>> bftUpdateProcessors;
+
+	private final Observable<BFTCommittedUpdate> bftCommittedUpdates;
 	private final Set<EventProcessor<BFTCommittedUpdate>> committedProcessors;
 
 	@Inject
-	public InMemorySystemInfoRunner(
+	public SystemInfoRunner(
 		Observable<EpochViewUpdate> currentViews,
 		Set<EventProcessor<EpochViewUpdate>> viewEventProcessors,
 		Observable<EpochLocalTimeoutOccurrence> timeouts,
 		Set<EventProcessor<EpochLocalTimeoutOccurrence>> timeoutEventProcessors,
-		Observable<QuorumCertificate> highQCs,
-		Set<EventProcessor<QuorumCertificate>> highQCProcessors,
+		Observable<BFTHighQCUpdate> bftUpdates,
+		@ProcessWithSystemInfoRunner Set<EventProcessor<BFTHighQCUpdate>> bftUpdateProcessors,
 		Observable<BFTCommittedUpdate> bftCommittedUpdates,
 		Set<EventProcessor<BFTCommittedUpdate>> committedProcessors
 	) {
@@ -58,8 +61,8 @@ public final class InMemorySystemInfoRunner {
 		this.viewEventProcessors = Objects.requireNonNull(viewEventProcessors);
 		this.timeouts = Objects.requireNonNull(timeouts);
 		this.timeoutEventProcessors = Objects.requireNonNull(timeoutEventProcessors);
-		this.highQCs = Objects.requireNonNull(highQCs);
-		this.highQCProcessors = Objects.requireNonNull(highQCProcessors);
+		this.bftUpdates = Objects.requireNonNull(bftUpdates);
+		this.bftUpdateProcessors = Objects.requireNonNull(bftUpdateProcessors);
 		this.bftCommittedUpdates = Objects.requireNonNull(bftCommittedUpdates);
 		this.committedProcessors = Objects.requireNonNull(committedProcessors);
 	}
@@ -73,9 +76,9 @@ public final class InMemorySystemInfoRunner {
 			.observeOn(Schedulers.io())
 			.subscribe(e -> timeoutEventProcessors.forEach(p -> p.process(e)));
 
-		this.highQCs
+		this.bftUpdates
 			.observeOn(Schedulers.io())
-			.subscribe(e -> highQCProcessors.forEach(p -> p.process(e)));
+			.subscribe(e -> bftUpdateProcessors.forEach(p -> p.process(e)));
 
 		this.bftCommittedUpdates
 			.observeOn(Schedulers.io())

@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableSet.Builder;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTUpdate;
@@ -65,6 +66,7 @@ public class RxEnvironmentModule extends AbstractModule {
 			LocalSyncRequest.class,
 			LocalGetVerticesRequest.class,
 			BFTUpdate.class,
+			BFTHighQCUpdate.class,
 			BFTCommittedUpdate.class,
 			LocalTimeoutOccurrence.class,
 			EpochLocalTimeoutOccurrence.class,
@@ -93,6 +95,11 @@ public class RxEnvironmentModule extends AbstractModule {
 	@Provides
 	Observable<BFTUpdate> bftUpdates(RxEnvironment rxEnvironment) {
 		return rxEnvironment.getObservable(BFTUpdate.class);
+	}
+
+	@Provides
+	Observable<BFTHighQCUpdate> bftHighQCUpdates(RxEnvironment rxEnvironment) {
+		return rxEnvironment.getObservable(BFTHighQCUpdate.class);
 	}
 
 	@Provides

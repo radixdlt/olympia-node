@@ -45,11 +45,7 @@ import javax.annotation.concurrent.NotThreadSafe;
 @NotThreadSafe
 public final class VertexStore {
 
-	// TODO: combine all of the following senders as an update sender
-	public interface VertexStoreEventSender {
-		void highQC(QuorumCertificate qc);
-	}
-	private final VertexStoreEventSender vertexStoreEventSender;
+	private final EventDispatcher<BFTHighQCUpdate> highQCUpdateDispatcher;
 	private final EventDispatcher<BFTUpdate> bftUpdateDispatcher;
 	private final EventDispatcher<BFTCommittedUpdate> bftCommittedDispatcher;
 
@@ -71,13 +67,13 @@ public final class VertexStore {
 		QuorumCertificate commitQC,
 		QuorumCertificate highestQC,
 		EventDispatcher<BFTUpdate> bftUpdateDispatcher,
-		EventDispatcher<BFTCommittedUpdate> bftCommittedDispatcher,
-		VertexStoreEventSender vertexStoreEventSender
+		EventDispatcher<BFTHighQCUpdate> highQCUpdateDispatcher,
+		EventDispatcher<BFTCommittedUpdate> bftCommittedDispatcher
 	) {
 		this.persistentVertexStore = Objects.requireNonNull(persistentVertexStore);
 		this.ledger = Objects.requireNonNull(ledger);
-		this.vertexStoreEventSender = Objects.requireNonNull(vertexStoreEventSender);
 		this.bftUpdateDispatcher = Objects.requireNonNull(bftUpdateDispatcher);
+		this.highQCUpdateDispatcher = Objects.requireNonNull(highQCUpdateDispatcher);
 		this.bftCommittedDispatcher = Objects.requireNonNull(bftCommittedDispatcher);
 		this.rootVertex = Objects.requireNonNull(rootVertex);
 		this.highestQC = Objects.requireNonNull(highestQC);
@@ -90,8 +86,8 @@ public final class VertexStore {
 		VerifiedVertexStoreState vertexStoreState,
 		Ledger ledger,
 		EventDispatcher<BFTUpdate> bftUpdateDispatcher,
-		EventDispatcher<BFTCommittedUpdate> bftCommittedDispatcher,
-		VertexStoreEventSender vertexStoreEventSender
+		EventDispatcher<BFTHighQCUpdate> bftHighQCUpdateDispatcher,
+		EventDispatcher<BFTCommittedUpdate> bftCommittedDispatcher
 	) {
 		VertexStore vertexStore = new VertexStore(
 			persistentVertexStore,
@@ -100,8 +96,8 @@ public final class VertexStore {
 			vertexStoreState.getHighQC().highestCommittedQC(),
 			vertexStoreState.getHighQC().highestQC(),
 			bftUpdateDispatcher,
-			bftCommittedDispatcher,
-			vertexStoreEventSender
+			bftHighQCUpdateDispatcher,
+			bftCommittedDispatcher
 		);
 
 		for (VerifiedVertex vertex : vertexStoreState.getVertices()) {
@@ -154,8 +150,6 @@ public final class VertexStore {
 
 		// TODO: refactor this out
 		this.persistentVertexStore.save(vertexStoreState);
-		// TODO: combine all these bft updates into one
-		this.vertexStoreEventSender.highQC(highestQC);
 		bftUpdateDispatcher.dispatch(BFTUpdate.fromRebuild(vertexStoreState));
 		return true;
 	}
@@ -176,8 +170,9 @@ public final class VertexStore {
 
 		if (highestQC.getView().compareTo(qc.getView()) < 0) {
 			highestQC = qc;
-			vertexStoreEventSender.highQC(qc);
 			// TODO: we lose all other tail QCs on this save, Not sure if this is okay...investigate...
+			VerifiedVertexStoreState vertexStoreState = getState();
+			this.highQCUpdateDispatcher.dispatch(BFTHighQCUpdate.create(vertexStoreState));
 			this.persistentVertexStore.save(getState());
 		}
 

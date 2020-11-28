@@ -39,7 +39,6 @@ import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
@@ -63,8 +62,8 @@ public class VertexStoreTest {
 	private QuorumCertificate rootQC;
 	private VertexStore sut;
 	private Ledger ledger;
-	private VertexStoreEventSender vertexStoreEventSender;
 	private EventDispatcher<BFTUpdate> bftUpdateSender;
+	private EventDispatcher<BFTHighQCUpdate> bftHighQCUpdateEventDispatcher;
 	private EventDispatcher<BFTCommittedUpdate> committedSender;
 	private Hasher hasher = Sha256Hasher.withDefaultSerialization();
 
@@ -83,8 +82,8 @@ public class VertexStoreTest {
 			return Optional.of(new PreparedVertex(verifiedVertex, MOCKED_HEADER, ImmutableList.of(), ImmutableMap.of()));
 		}).when(ledger).prepare(any(), any());
 
-		this.vertexStoreEventSender = mock(VertexStoreEventSender.class);
 		this.bftUpdateSender = rmock(EventDispatcher.class);
+		this.bftHighQCUpdateEventDispatcher = rmock(EventDispatcher.class);
 		this.committedSender = rmock(EventDispatcher.class);
 
 		this.genesisHash = HashUtils.zero256();
@@ -95,8 +94,8 @@ public class VertexStoreTest {
 			VerifiedVertexStoreState.create(HighQC.from(rootQC), genesisVertex),
 			ledger,
 			bftUpdateSender,
-			committedSender,
-			vertexStoreEventSender
+			bftHighQCUpdateEventDispatcher,
+			committedSender
 		);
 
 		AtomicReference<BFTHeader> lastParentHeader

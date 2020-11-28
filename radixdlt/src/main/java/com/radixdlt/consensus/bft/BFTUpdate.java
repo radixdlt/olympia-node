@@ -39,7 +39,7 @@ public final class BFTUpdate {
 		return new BFTUpdate(
 			() -> Stream.concat(Stream.of(vertexStoreState.getRoot()), vertexStoreState.getVertices().stream()),
 			0,
-			vertexStoreState.getVertices().size() + 1
+			vertexStoreState.getVertices().size()
 		);
 	}
 
@@ -47,7 +47,7 @@ public final class BFTUpdate {
 		return new BFTUpdate(
 			() -> Stream.of(insertedVertex),
 			siblingsCount,
-			vertexStoreState.getVertices().size() + 1
+			vertexStoreState.getVertices().size()
 		);
 	}
 

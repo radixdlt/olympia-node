@@ -25,10 +25,10 @@ import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
+import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.epoch.LocalTimeoutSender;
@@ -240,17 +240,17 @@ public class EpochsConsensusModule extends AbstractModule {
 	private VertexStoreFactory vertexStoreFactory(
 		PersistentVertexStore persistentVertexStore,
 		EventDispatcher<BFTUpdate> updateSender,
+		EventDispatcher<BFTHighQCUpdate> highQCUpdateEventDispatcher,
 		EventDispatcher<BFTCommittedUpdate> committedDispatcher,
-		Ledger ledger,
-		VertexStoreEventSender vertexStoreEventSender
+		Ledger ledger
 	) {
 		return vertexStoreState -> VertexStore.create(
 			persistentVertexStore,
 			vertexStoreState,
 			ledger,
 			updateSender,
-			committedDispatcher,
-			vertexStoreEventSender
+			highQCUpdateEventDispatcher,
+			committedDispatcher
 		);
 	}
 }

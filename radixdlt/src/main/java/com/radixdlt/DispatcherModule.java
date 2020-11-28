@@ -23,6 +23,7 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
+import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
@@ -73,6 +74,8 @@ public class DispatcherModule extends AbstractModule {
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<ViewUpdate>>() { });
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochViewUpdate>>() { }, ProcessOnDispatch.class);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochViewUpdate>>() { });
+
+		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<BFTHighQCUpdate>>() { });
 
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<BFTCommittedUpdate>>() { });
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<BFTCommittedUpdate>>() { }, ProcessOnDispatch.class);
@@ -153,6 +156,13 @@ public class DispatcherModule extends AbstractModule {
 
 			dispatcher.dispatch(update);
 		};
+	}
+
+	@Provides
+	private EventDispatcher<BFTHighQCUpdate> bftHighQCUpdateEventDispatcher(
+		Environment environment
+	) {
+		return environment.getDispatcher(BFTHighQCUpdate.class);
 	}
 
 	@Provides

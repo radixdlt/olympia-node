@@ -21,7 +21,6 @@ import com.google.common.collect.Ordering;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.integration.distributed.simulation.TestInvariant;
-import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
@@ -50,7 +49,7 @@ public class LivenessInvariant implements TestInvariant {
 		Observable<EpochView> highest =
 			network.highQCs()
 				.map(Pair::getSecond)
-				.map(QuorumCertificate::getProposed)
+				.map(u -> u.getHighQC().highestQC().getProposed())
 				.map(header -> EpochView.of(header.getLedgerHeader().getEpoch(), header.getView()))
 				.scan(EpochView.of(0, View.genesis()), Ordering.natural()::max);
 

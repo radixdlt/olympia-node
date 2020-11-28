@@ -21,12 +21,14 @@ import com.google.common.collect.EvictingQueue;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
+import com.radixdlt.environment.EventProcessor;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicReference;
@@ -55,14 +57,13 @@ public final class InMemorySystemInfo {
 		currentView.set(epochView);
 	}
 
-	public void processHighQC(QuorumCertificate qc) {
-		this.highQC.set(qc);
+	public EventProcessor<BFTHighQCUpdate> bftHighQCEventProcessor() {
+		return update -> this.highQC.set(update.getHighQC().highestQC());
 	}
 
 	public void processCommitted(BFTCommittedUpdate committedUpdate) {
 		committedUpdate.getCommitted().stream().map(PreparedVertex::getVertex).forEach(this.vertexRingBuffer::add);
 	}
-
 
 	public EpochView getCurrentView() {
 		return this.currentView.get();

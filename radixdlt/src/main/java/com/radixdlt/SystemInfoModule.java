@@ -24,11 +24,13 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
+import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.ProcessWithSystemInfoRunner;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
-import com.radixdlt.systeminfo.InMemorySystemInfoRunner;
+import com.radixdlt.systeminfo.SystemInfoRunner;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.epoch.EpochView;
@@ -47,7 +49,7 @@ public class SystemInfoModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
-		bind(InMemorySystemInfoRunner.class).in(Scopes.SINGLETON);
+		bind(SystemInfoRunner.class).in(Scopes.SINGLETON);
 	}
 
 	@ProvidesIntoSet
@@ -66,8 +68,9 @@ public class SystemInfoModule extends AbstractModule {
 	}
 
 	@ProvidesIntoSet
-	private EventProcessor<QuorumCertificate> highQCProcessor(InMemorySystemInfo inMemorySystemInfo) {
-		return inMemorySystemInfo::processHighQC;
+	@ProcessWithSystemInfoRunner
+	private EventProcessor<BFTHighQCUpdate> highQCProcessor(InMemorySystemInfo inMemorySystemInfo) {
+		return inMemorySystemInfo.bftHighQCEventProcessor();
 	}
 
 	@Provides
