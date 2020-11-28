@@ -29,6 +29,7 @@ import com.radixdlt.consensus.bft.BFTSyncer;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.FormedQC;
 import com.radixdlt.consensus.bft.VerifiedVertex;
+import com.radixdlt.consensus.bft.VerifiedVertexChain;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.View;
@@ -339,16 +340,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 		HashCode parentId = vertex.getParentId();
 
 		if (vertexStore.containsVertex(parentId)) {
-			// TODO: combine
-			for (VerifiedVertex v: syncState.fetched) {
-				if (!vertexStore.addQC(v.getQC())) {
-					log.info("GET_VERTICES failed: {}", syncState.highQC);
-					return;
-				}
-
-				vertexStore.insertVertex(v);
-			}
-
+			vertexStore.insertVertexChain(VerifiedVertexChain.create(syncState.fetched));
 			// Finish it off
 			this.syncing.remove(syncState.localSyncId);
 			this.syncToQC(syncState.highQC, syncState.author);

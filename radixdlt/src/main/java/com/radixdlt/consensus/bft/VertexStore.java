@@ -168,6 +168,19 @@ public final class VertexStore {
 		return vertices.containsKey(vertexId) || rootVertex.getId().equals(vertexId);
 	}
 
+	public void insertVertexChain(VerifiedVertexChain verifiedVertexChain) {
+		for (VerifiedVertex v: verifiedVertexChain.getVertices()) {
+			if (!addQC(v.getQC())) {
+				throw new IllegalStateException();
+			}
+
+			Optional<BFTHeader> headerMaybe = insertVertex(v);
+			if (headerMaybe.isEmpty()) {
+				break;
+			}
+		}
+	}
+
 	public boolean addQC(QuorumCertificate qc) {
 		if (!this.containsVertex(qc.getProposed().getVertexId())) {
 			return false;
