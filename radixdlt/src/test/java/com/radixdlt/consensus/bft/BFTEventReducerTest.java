@@ -40,81 +40,81 @@ import static org.mockito.Mockito.*;
 
 public class BFTEventReducerTest {
 
-    private SystemCounters counters = mock(SystemCounters.class);
-    private Hasher hasher = mock(Hasher.class);
-    private RemoteEventDispatcher<Vote> voteSender = rmock(RemoteEventDispatcher.class);
-    private PendingVotes pendingVotes = mock(PendingVotes.class);
-    private BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
-    private VertexStore vertexStore = mock(VertexStore.class);
-    private ProposerElection proposerElection = mock(ProposerElection.class);
-    private SafetyRules safetyRules = mock(SafetyRules.class);
-    private Pacemaker pacemaker = mock(Pacemaker.class);
-    private EventDispatcher<FormedQC> qcEventDispatcher = rmock(EventDispatcher.class);
-    private TimeSupplier timeSupplier = mock(TimeSupplier.class);
+	private SystemCounters counters = mock(SystemCounters.class);
+	private Hasher hasher = mock(Hasher.class);
+	private RemoteEventDispatcher<Vote> voteSender = rmock(RemoteEventDispatcher.class);
+	private PendingVotes pendingVotes = mock(PendingVotes.class);
+	private BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
+	private VertexStore vertexStore = mock(VertexStore.class);
+	private ProposerElection proposerElection = mock(ProposerElection.class);
+	private SafetyRules safetyRules = mock(SafetyRules.class);
+	private Pacemaker pacemaker = mock(Pacemaker.class);
+	private EventDispatcher<FormedQC> qcEventDispatcher = rmock(EventDispatcher.class);
+	private TimeSupplier timeSupplier = mock(TimeSupplier.class);
 
-    private BFTEventReducer bftEventReducer;
+	private BFTEventReducer bftEventReducer;
 
-    @Before
-    public void setUp() {
-        when(proposerElection.getProposer(any())).thenReturn(BFTNode.random());
+	@Before
+	public void setUp() {
+		when(proposerElection.getProposer(any())).thenReturn(BFTNode.random());
 
-        this.bftEventReducer = new BFTEventReducer(
-            this.pacemaker,
-            this.vertexStore,
-            this.qcEventDispatcher,
-            this.voteSender,
-            this.hasher,
-            this.timeSupplier,
-            this.counters,
-            this.safetyRules,
-            this.validatorSet,
-            this.pendingVotes,
-            ViewUpdate.genesis()
-        );
-    }
+		this.bftEventReducer = new BFTEventReducer(
+			this.pacemaker,
+			this.vertexStore,
+			this.qcEventDispatcher,
+			this.voteSender,
+			this.hasher,
+			this.timeSupplier,
+			this.counters,
+			this.safetyRules,
+			this.validatorSet,
+			this.pendingVotes,
+			ViewUpdate.genesis()
+		);
+	}
 
-    @Test
-    public void when_process_vote_equal_last_quorum__then_ignored() {
-        Vote vote = mock(Vote.class);
-        when(vote.getView()).thenReturn(View.of(0));
-        when(this.proposerElection.getProposer(any())).thenReturn(BFTNode.random());
-        this.bftEventReducer.processVote(vote);
-        verifyNoMoreInteractions(this.pendingVotes);
-    }
+	@Test
+	public void when_process_vote_equal_last_quorum__then_ignored() {
+		Vote vote = mock(Vote.class);
+		when(vote.getView()).thenReturn(View.of(0));
+		when(this.proposerElection.getProposer(any())).thenReturn(BFTNode.random());
+		this.bftEventReducer.processVote(vote);
+		verifyNoMoreInteractions(this.pendingVotes);
+	}
 
-    @Test
-    public void when_process_vote_with_quorum_wrong_view__then_ignored() {
-        Vote vote = mock(Vote.class);
-        when(vote.getView()).thenReturn(View.of(1));
-        when(this.proposerElection.getProposer(any())).thenReturn(BFTNode.random());
-        this.bftEventReducer.processViewUpdate(ViewUpdate.create(View.of(3), View.of(2), View.of(2), BFTNode.random(), BFTNode.random()));
-        this.bftEventReducer.processVote(vote);
-        verifyNoMoreInteractions(this.pendingVotes);
-    }
+	@Test
+	public void when_process_vote_with_quorum_wrong_view__then_ignored() {
+		Vote vote = mock(Vote.class);
+		when(vote.getView()).thenReturn(View.of(1));
+		when(this.proposerElection.getProposer(any())).thenReturn(BFTNode.random());
+		this.bftEventReducer.processViewUpdate(ViewUpdate.create(View.of(3), View.of(2), View.of(2), BFTNode.random(), BFTNode.random()));
+		this.bftEventReducer.processVote(vote);
+		verifyNoMoreInteractions(this.pendingVotes);
+	}
 
-    @Test
-    public void when_process_vote_with_quorum__then_processed() {
-        BFTNode author = mock(BFTNode.class);
-        Vote vote = mock(Vote.class);
-        when(vote.getAuthor()).thenReturn(author);
+	@Test
+	public void when_process_vote_with_quorum__then_processed() {
+		BFTNode author = mock(BFTNode.class);
+		Vote vote = mock(Vote.class);
+		when(vote.getAuthor()).thenReturn(author);
 
-        QuorumCertificate qc = mock(QuorumCertificate.class);
-        HighQC highQc = mock(HighQC.class);
-        QuorumCertificate highestCommittedQc = mock(QuorumCertificate.class);
-        when(highQc.highestCommittedQC()).thenReturn(highestCommittedQc);
-        when(vote.getView()).thenReturn(View.of(1));
-        when(this.proposerElection.getProposer(any())).thenReturn(BFTNode.random());
-        when(this.pendingVotes.insertVote(any(), any())).thenReturn(Optional.of(qc));
-        when(this.vertexStore.highQC()).thenReturn(highQc);
+		QuorumCertificate qc = mock(QuorumCertificate.class);
+		HighQC highQc = mock(HighQC.class);
+		QuorumCertificate highestCommittedQc = mock(QuorumCertificate.class);
+		when(highQc.highestCommittedQC()).thenReturn(highestCommittedQc);
+		when(vote.getView()).thenReturn(View.of(1));
+		when(this.proposerElection.getProposer(any())).thenReturn(BFTNode.random());
+		when(this.pendingVotes.insertVote(any(), any())).thenReturn(Optional.of(qc));
+		when(this.vertexStore.highQC()).thenReturn(highQc);
 
-        // Move to view 1
-        this.bftEventReducer.processViewUpdate(ViewUpdate.create(View.of(1), View.of(0), View.of(0), BFTNode.random(), BFTNode.random()));
+		// Move to view 1
+		this.bftEventReducer.processViewUpdate(ViewUpdate.create(View.of(1), View.of(0), View.of(0), BFTNode.random(), BFTNode.random()));
 
-        this.bftEventReducer.processVote(vote);
+		this.bftEventReducer.processVote(vote);
 
-        verify(this.qcEventDispatcher, times(1)).dispatch(any());
-        verify(this.pendingVotes, times(1)).insertVote(eq(vote), any());
-        verifyNoMoreInteractions(this.pendingVotes);
-    }
+		verify(this.qcEventDispatcher, times(1)).dispatch(any());
+		verify(this.pendingVotes, times(1)).insertVote(eq(vote), any());
+		verifyNoMoreInteractions(this.pendingVotes);
+	}
 
 }

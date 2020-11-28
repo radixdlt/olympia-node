@@ -122,7 +122,7 @@ public class EpochsConsensusModule extends AbstractModule {
 		EpochChange initialEpoch
 	) {
 		return localTimeout -> {
-			Epoched<ScheduledLocalTimeout> epochTimeout = Epoched.create(initialEpoch.getEpoch(), localTimeout);
+			Epoched<ScheduledLocalTimeout> epochTimeout = Epoched.from(initialEpoch.getEpoch(), localTimeout);
 			localTimeoutSender.scheduleTimeout(epochTimeout, localTimeout.millisecondsWaitTime());
 		};
 	}
@@ -193,7 +193,7 @@ public class EpochsConsensusModule extends AbstractModule {
 				voteSender,
 				timeout -> timeoutEventDispatcher.dispatch(new EpochLocalTimeoutOccurrence(epoch, timeout)),
 				pacemakerState,
-				(scheduledTimeout, ms) -> localTimeoutSender.scheduleTimeout(Epoched.create(epoch, scheduledTimeout), ms),
+				(scheduledTimeout, ms) -> localTimeoutSender.scheduleTimeout(Epoched.from(epoch, scheduledTimeout), ms),
 				timeoutCalculator,
 				nextCommandGenerator,
 				proposalBroadcaster,
