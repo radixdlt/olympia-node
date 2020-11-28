@@ -36,7 +36,11 @@ public final class BFTCommittedUpdate {
 		this.vertexStoreState = Objects.requireNonNull(vertexStoreState);
 	}
 
-	public static BFTCommittedUpdate create(ImmutableSet<HashCode> pruned, ImmutableList<PreparedVertex> committed, VerifiedVertexStoreState vertexStoreState) {
+	public static BFTCommittedUpdate create(
+		ImmutableSet<HashCode> pruned,
+		ImmutableList<PreparedVertex> committed,
+		VerifiedVertexStoreState vertexStoreState
+	) {
 		return new BFTCommittedUpdate(pruned, committed, vertexStoreState);
 	}
 

@@ -17,12 +17,8 @@
 
 package com.radixdlt.consensus;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import java.util.LinkedList;
 import java.util.Optional;

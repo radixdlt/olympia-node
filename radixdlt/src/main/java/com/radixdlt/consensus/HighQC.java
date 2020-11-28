@@ -66,8 +66,8 @@ public final class HighQC {
 		}
 	}
 
-	public static HighQC from(QuorumCertificate genesisQC) {
-		return new HighQC(Objects.requireNonNull(genesisQC), genesisQC);
+	public static HighQC from(QuorumCertificate qc) {
+		return new HighQC(Objects.requireNonNull(qc), qc);
 	}
 
 	/**

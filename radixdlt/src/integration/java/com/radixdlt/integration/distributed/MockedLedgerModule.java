@@ -19,11 +19,8 @@ package com.radixdlt.integration.distributed;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;

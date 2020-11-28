@@ -104,6 +104,14 @@ public final class VertexStore {
 			LinkedList<PreparedVertex> previous = vertexStore.getPathFromRoot(vertex.getParentId());
 			Optional<PreparedVertex> preparedVertexMaybe = ledger.prepare(previous, vertex);
 			if (preparedVertexMaybe.isEmpty()) {
+				// Try pruning to see if that helps catching up to the ledger
+				// This can occur if a node crashes between persisting a new QC and committing
+				// TODO: Cleanup and remove
+				VerifiedVertexStoreState pruned = vertexStoreState.prune();
+				if (!pruned.equals(vertexStoreState)) {
+					return create(persistentVertexStore, pruned, ledger, bftUpdateDispatcher, bftHighQCUpdateDispatcher, bftCommittedDispatcher);
+				}
+
 				// FIXME: If this occurs then it means that our highQC may not have an associated vertex
 				// FIXME: so should save preparedVertex
 				break;
