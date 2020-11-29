@@ -103,7 +103,7 @@ public class PacemakerTest {
 	}
 
 	@Test
-	public void on_startup_pacemaker_should_emit_a_single_epoch_view_update() {
+	public void on_startup_pacemaker_should_schedule_timeouts() {
 		// Arrange
 		createRunner(ecKeyPair).injectMembers(this);
 
@@ -112,17 +112,16 @@ public class PacemakerTest {
 
 		// Assert
 		assertThat(network.allMessages())
-			.hasSize(2)
-			.haveExactly(1, new Condition<>(msg -> msg.message() instanceof EpochViewUpdate, "A single view update has been emitted"))
-			.haveExactly(1, new Condition<>(msg -> msg.message() instanceof ViewUpdate, "A single view update has been emitted"));
-
-		ViewUpdate viewUpdateEvent = network.allMessages().stream()
-			.map(ControlledMessage::message)
-			.filter(ViewUpdate.class::isInstance)
-			.map(ViewUpdate.class::cast)
-			.findAny()
-			.orElseThrow();
-		assertThat(viewUpdateEvent.getCurrentView()).isGreaterThan(initialViewUpdate.getCurrentView());
+			.hasSize(3)
+			.haveExactly(1,
+				new Condition<>(msg -> Epoched.isInstance(msg.message(), ScheduledLocalTimeout.class),
+				"A single epoched scheduled timeout has been emitted"))
+			.haveExactly(1,
+				new Condition<>(msg -> msg.message() instanceof ScheduledLocalTimeout,
+					"A single scheduled timeout update has been emitted"))
+			.haveExactly(1,
+				new Condition<>(msg -> msg.message() instanceof Proposal,
+					"A proposal has been emitted"));
 	}
 
 	@Test
@@ -130,8 +129,6 @@ public class PacemakerTest {
 		// Arrange
 		createRunner(ecKeyPair).injectMembers(this);
 		processor.start();
-		ControlledMessage viewUpdate = network.nextMessage(e -> e.message() instanceof EpochViewUpdate).value();
-		processor.handleMessage(viewUpdate.origin(), viewUpdate.message());
 
 		// Act
 		ControlledMessage timeoutMsg = network.nextMessage(e -> Epoched.isInstance(e.message(), ScheduledLocalTimeout.class)).value();
@@ -147,9 +144,6 @@ public class PacemakerTest {
 		// Arrange
 		createRunner(ecKeyPair).injectMembers(this);
 		processor.start();
-		ControlledMessage viewUpdate = network.nextMessage(e -> e.message() instanceof EpochViewUpdate).value();
-		EpochViewUpdate firstUpdate = (EpochViewUpdate) viewUpdate.message();
-		processor.handleMessage(viewUpdate.origin(), firstUpdate);
 		ControlledMessage timeoutMsg = network.nextMessage(e -> Epoched.isInstance(e.message(), ScheduledLocalTimeout.class)).value();
 		processor.handleMessage(timeoutMsg.origin(), timeoutMsg.message());
 
@@ -166,6 +160,6 @@ public class PacemakerTest {
 			.map(EpochViewUpdate.class::cast)
 			.findAny()
 			.orElseThrow();
-		assertThat(nextEpochViewUpdate.getViewUpdate().getCurrentView()).isEqualTo(firstUpdate.getViewUpdate().getCurrentView().next());
+		assertThat(nextEpochViewUpdate.getViewUpdate().getCurrentView()).isEqualTo(initialViewUpdate.getCurrentView().next());
 	}
 }

@@ -235,7 +235,7 @@ public class RecoveryLivenessTest {
 	private EpochView latestEpochView() {
 		return this.nodes.stream()
 			.map(i -> i.getInstance(Key.get(new TypeLiteral<DeterministicSavedLastEvent<EpochViewUpdate>>() { })).getLastEvent())
-			.map(EpochViewUpdate::getEpochView)
+			.map(e -> e == null ? new EpochView(0, View.genesis()) : e.getEpochView())
 			.max(Comparator.naturalOrder()).orElse(new EpochView(0, View.genesis()));
 	}
 

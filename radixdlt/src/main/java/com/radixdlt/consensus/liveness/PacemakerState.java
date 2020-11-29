@@ -38,16 +38,19 @@ public class PacemakerState implements PacemakerReducer {
     private final EventDispatcher<ViewUpdate> viewUpdateSender;
     private final ProposerElection proposerElection;
 
-    private View currentView = View.genesis();
+    private View currentView;
     private HighQC highQC;
 
     @Inject
     public PacemakerState(
+        ViewUpdate viewUpdate,
         ProposerElection proposerElection,
         EventDispatcher<ViewUpdate> viewUpdateSender
     ) {
         this.proposerElection = Objects.requireNonNull(proposerElection);
         this.viewUpdateSender = Objects.requireNonNull(viewUpdateSender);
+        this.highQC = viewUpdate.getHighQC();
+        this.currentView = viewUpdate.getCurrentView();
     }
 
 

@@ -24,8 +24,10 @@ import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.HashSigner;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.liveness.PacemakerStateFactory;
@@ -217,11 +219,15 @@ public final class EpochManager implements BFTSyncRequestProcessor {
 		// Config
 		final BFTConfiguration bftConfiguration = this.currentEpoch.getBFTConfiguration();
 		final ProposerElection proposerElection = proposerElectionFactory.create(validatorSet);
-		final ViewUpdate initialViewUpdate = ViewUpdate.genesis();
+		HighQC highQC = bftConfiguration.getVertexStoreState().getHighQC();
+		View view = highQC.highestQC().getView().next();
+		final BFTNode leader = proposerElection.getProposer(view);
+		final BFTNode nextLeader = proposerElection.getProposer(view.next());
+		final ViewUpdate initialViewUpdate = ViewUpdate.create(view, highQC, leader, nextLeader);
 
 		// Mutable Consensus State
 		final VertexStore vertexStore = vertexStoreFactory.create(bftConfiguration.getVertexStoreState());
-		final PacemakerState pacemakerState = pacemakerStateFactory.create(nextEpoch, proposerElection);
+		final PacemakerState pacemakerState = pacemakerStateFactory.create(initialViewUpdate, nextEpoch, proposerElection);
 
 		// Consensus Drivers
 		final SafetyRules safetyRules = new SafetyRules(self, SafetyState.initialState(), persistentSafetyStateStore, hasher, signer);
@@ -253,6 +259,7 @@ public final class EpochManager implements BFTSyncRequestProcessor {
 			bftSync,
 			bftSync.formedQCEventProcessor(),
 			validatorSet,
+			initialViewUpdate,
 			safetyRules
 		);
 

@@ -40,7 +40,8 @@ public class PacemakerStateTest {
     @Before
     public void setUp() {
         when(proposerElection.getProposer(any())).thenReturn(BFTNode.random());
-        this.pacemakerState = new PacemakerState(this.proposerElection, this.viewUpdateSender);
+        ViewUpdate viewUpdate = ViewUpdate.create(View.genesis(), mock(HighQC.class), BFTNode.random(), BFTNode.random());
+        this.pacemakerState = new PacemakerState(viewUpdate, this.proposerElection, this.viewUpdateSender);
     }
 
     @Test

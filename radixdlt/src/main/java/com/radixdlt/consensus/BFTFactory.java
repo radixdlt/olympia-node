@@ -21,6 +21,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTSyncer;
 import com.radixdlt.consensus.bft.FormedQC;
 import com.radixdlt.consensus.bft.VertexStore;
+import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.safety.SafetyRules;
@@ -42,6 +43,7 @@ public interface BFTFactory {
 		BFTSyncer bftSyncer,
 		EventProcessor<FormedQC> formedQCEventProcessor,
 		BFTValidatorSet validatorSet,
+		ViewUpdate viewUpdate,
 		SafetyRules safetyRules
 	);
 }

@@ -105,6 +105,7 @@ public final class ConsensusModule extends AbstractModule {
 			bftSyncer,
 			formedQCEventProcessor,
 			validatorSet,
+			viewUpdate,
 			safetyRules
 		) ->
 			BFTBuilder.create()
@@ -121,6 +122,7 @@ public final class ConsensusModule extends AbstractModule {
 					formedQCEventProcessor.process(formedQC);
 					formedQCEventDispatcher.dispatch(formedQC);
 				})
+				.viewUpdate(viewUpdate)
 				.bftSyncer(bftSyncer)
 				.validatorSet(validatorSet)
 				.build();
@@ -150,7 +152,8 @@ public final class ConsensusModule extends AbstractModule {
 		Pacemaker pacemaker,
 		VertexStore vertexStore,
 		BFTSync bftSync,
-		SafetyRules safetyRules
+		SafetyRules safetyRules,
+		ViewUpdate viewUpdate
 	) {
 		return bftFactory.create(
 			self,
@@ -159,6 +162,7 @@ public final class ConsensusModule extends AbstractModule {
 			bftSync,
 			bftSync.formedQCEventProcessor(),
 			config.getValidatorSet(),
+			viewUpdate,
 			safetyRules
 		);
 	}
@@ -244,11 +248,6 @@ public final class ConsensusModule extends AbstractModule {
 			random,
 			bftSyncPatienceMillis
 		);
-	}
-
-	@Provides
-	private ViewUpdate initialView() {
-		return ViewUpdate.genesis();
 	}
 
 	@Provides

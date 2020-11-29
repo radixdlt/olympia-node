@@ -28,12 +28,15 @@ import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
@@ -47,6 +50,18 @@ import java.util.Optional;
  * Manages consensus recovery on restarts
  */
 public class RecoveryModule extends AbstractModule {
+	@Provides
+	private ViewUpdate view(
+		VerifiedVertexStoreState vertexStoreState,
+		ProposerElection proposerElection
+	) {
+		HighQC highQC = vertexStoreState.getHighQC();
+		View view = highQC.highestQC().getView().next();
+		final BFTNode leader = proposerElection.getProposer(view);
+		final BFTNode nextLeader = proposerElection.getProposer(view.next());
+
+		return ViewUpdate.create(view, highQC, leader, nextLeader);
+	}
 
 	@Provides
 	@Singleton

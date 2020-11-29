@@ -65,7 +65,7 @@ public class BFTEventReducerTest {
             this.safetyRules,
             this.validatorSet,
             this.pendingVotes,
-            ViewUpdate.genesis()
+            mock(ViewUpdate.class)
         );
     }
 

@@ -26,7 +26,6 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.network.TimeSupplier;
 
 /**
  * A helper class to help in constructing a BFT validator state machine
@@ -47,7 +46,7 @@ public final class BFTBuilder {
 	// Instance specific objects
 	private BFTNode self;
 
-	private TimeSupplier timeSupplier;
+	private ViewUpdate viewUpdate;
 	private RemoteEventDispatcher<Vote> voteDispatcher;
 	private SafetyRules safetyRules;
 
@@ -114,12 +113,16 @@ public final class BFTBuilder {
 		return this;
 	}
 
+	public BFTBuilder viewUpdate(ViewUpdate viewUpdate) {
+		this.viewUpdate = viewUpdate;
+		return this;
+	}
+
 	public BFTEventProcessor build() {
 		if (!validatorSet.containsNode(self)) {
 			return EmptyBFTEventProcessor.INSTANCE;
 		}
 		final PendingVotes pendingVotes = new PendingVotes(hasher);
-		final ViewUpdate initialViewUpdate = ViewUpdate.genesis();
 
 		BFTEventReducer reducer = new BFTEventReducer(
 			pacemaker,
@@ -131,7 +134,7 @@ public final class BFTBuilder {
 			safetyRules,
 			validatorSet,
 			pendingVotes,
-			initialViewUpdate
+			viewUpdate
 		);
 
 		SyncQueues syncQueues = new SyncQueues();
@@ -141,7 +144,7 @@ public final class BFTBuilder {
 			reducer,
 			bftSyncer,
 			syncQueues,
-			initialViewUpdate
+			viewUpdate
 		);
 
 		return new BFTEventVerifier(

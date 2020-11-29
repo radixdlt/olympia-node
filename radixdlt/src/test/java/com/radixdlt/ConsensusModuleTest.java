@@ -170,6 +170,11 @@ public class ConsensusModuleTest {
 			}
 
 			@Provides
+			ViewUpdate viewUpdate(@Self BFTNode node) {
+				return ViewUpdate.create(View.of(1), mock(HighQC.class), node, node);
+			}
+
+			@Provides
 			@Self
 			private BFTNode bftNode() {
 				return BFTNode.create(ecKeyPair.getPublicKey());

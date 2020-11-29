@@ -183,6 +183,15 @@ public class EpochManagerTest {
 			}
 
 			@Provides
+			private ViewUpdate view(
+				BFTConfiguration bftConfiguration
+			) {
+				HighQC highQC = bftConfiguration.getVertexStoreState().getHighQC();
+				View view = highQC.highestQC().getView().next();
+				return ViewUpdate.create(view, highQC, self, self);
+			}
+
+			@Provides
 			BFTValidatorSet validatorSet() {
 				return BFTValidatorSet.from(Stream.of(BFTValidator.from(self, UInt256.ONE)));
 			}
@@ -254,7 +263,7 @@ public class EpochManagerTest {
 		epochManager.processLedgerUpdate(epochsLedgerUpdate);
 
 		// Assert
-		verify(proposalBroadcaster, never()).broadcastProposal(any(), any());
+		verify(proposalBroadcaster, never()).broadcastProposal(argThat(p -> p.getEpoch() == epochChange.getEpoch()), any());
 		verify(voteDispatcher, never()).dispatch(any(), any());
 	}
 

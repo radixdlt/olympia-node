@@ -24,7 +24,10 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.HighQC;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
+import com.radixdlt.consensus.bft.ViewUpdate;
+import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -54,6 +57,16 @@ public class MockedStateComputerWithEpochsModule extends AbstractModule {
 	) {
 		this.validatorSetMapping = validatorSetMapping;
 		this.epochHighView = epochHighView;
+	}
+
+	@Provides
+	private ViewUpdate view(BFTConfiguration configuration, ProposerElection proposerElection) {
+		HighQC highQC = configuration.getVertexStoreState().getHighQC();
+		View view = highQC.highestQC().getView().next();
+		final BFTNode leader = proposerElection.getProposer(view);
+		final BFTNode nextLeader = proposerElection.getProposer(view.next());
+
+		return ViewUpdate.create(view, highQC, leader, nextLeader);
 	}
 
 	@Provides

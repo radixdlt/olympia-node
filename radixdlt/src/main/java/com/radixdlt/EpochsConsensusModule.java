@@ -150,8 +150,8 @@ public class EpochsConsensusModule extends AbstractModule {
 	private PacemakerStateFactory pacemakerStateFactory(
 		EventDispatcher<EpochViewUpdate> epochViewUpdateEventDispatcher
 	) {
-		return (epoch, proposerElection) ->
-			new PacemakerState(proposerElection, viewUpdate -> {
+		return (initialView, epoch, proposerElection) ->
+			new PacemakerState(initialView, proposerElection, viewUpdate -> {
 				EpochViewUpdate epochViewUpdate = new EpochViewUpdate(epoch, viewUpdate);
 				epochViewUpdateEventDispatcher.dispatch(epochViewUpdate);
 			});

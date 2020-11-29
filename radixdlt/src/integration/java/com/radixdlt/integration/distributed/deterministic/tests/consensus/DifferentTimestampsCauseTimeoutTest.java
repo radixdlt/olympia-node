@@ -106,12 +106,8 @@ public class DifferentTimestampsCauseTimeoutTest {
 
 	private void executeTwoViews(DeterministicManualExecutor executor) {
 		// Proposal here has genesis qc, which has no timestamps
-		executor.processNext(1, 1, ViewUpdate.class); // Messages to self first
 		executor.processNext(1, 1, Proposal.class);
 		executor.processNext(1, 1, BFTInsertUpdate.class);
-		executor.processNext(0, 0, ViewUpdate.class);
-		executor.processNext(2, 2, ViewUpdate.class);
-		executor.processNext(3, 3, ViewUpdate.class);
 		executor.processNext(1, 0, Proposal.class);
 		executor.processNext(0, 0, BFTInsertUpdate.class);
 		executor.processNext(1, 2, Proposal.class);

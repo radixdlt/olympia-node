@@ -40,15 +40,11 @@ public final class ViewUpdate {
 
 	public static ViewUpdate create(View currentView, HighQC highQC, BFTNode leader, BFTNode nextLeader) {
 		Objects.requireNonNull(currentView);
+		Objects.requireNonNull(highQC);
 		Objects.requireNonNull(leader);
 		Objects.requireNonNull(nextLeader);
 
 		return new ViewUpdate(currentView, highQC, leader, nextLeader);
-	}
-
-	public static ViewUpdate genesis() {
-		return new ViewUpdate(
-			View.genesis(), null, null, null);
 	}
 
 	public HighQC getHighQC() {

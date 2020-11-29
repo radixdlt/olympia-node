@@ -108,6 +108,11 @@ public final class Pacemaker {
 		this.latestViewUpdate = Objects.requireNonNull(initialViewUpdate);
 	}
 
+	public void start() {
+		log.info("Pacemaker Start: {}", latestViewUpdate);
+		this.startView();
+	}
+
 	/** Processes a local view update message **/
 	public void processViewUpdate(ViewUpdate viewUpdate) {
 		log.trace("View Update: {}", viewUpdate);
@@ -222,16 +227,5 @@ public final class Pacemaker {
 
 		ScheduledLocalTimeout nextTimeout = scheduledTimeout.nextRetry(timeout);
 		this.timeoutSender.dispatch(nextTimeout, timeout);
-	}
-
-	/**
-	 * Signifies to the pacemaker that a quorum has agreed that a view has
-	 * been completed.
-	 *
-	 * @param highQC the sync info for the view
-	 * @return {@code true} if proceeded to a new view
-	 */
-	public void processQC(HighQC highQC) {
-		this.pacemakerReducer.processQC(highQC);
 	}
 }

@@ -17,6 +17,8 @@
 
 package com.radixdlt.consensus.liveness;
 
+import com.radixdlt.consensus.bft.ViewUpdate;
+
 /**
  * Pacemaker state factory
  */
@@ -27,5 +29,5 @@ public interface PacemakerStateFactory {
 	 *
 	 * @return a new pacemaker state
 	 */
-	PacemakerState create(long epoch, ProposerElection proposerElection);
+	PacemakerState create(ViewUpdate initialView, long epoch, ProposerElection proposerElection);
 }

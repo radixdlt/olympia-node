@@ -160,6 +160,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 	@Override
 	public void start() {
-		this.pacemaker.processQC(this.vertexStore.highQC());
+		this.pacemaker.start();
 	}
 }
