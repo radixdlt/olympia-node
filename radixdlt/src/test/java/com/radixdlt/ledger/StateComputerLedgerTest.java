@@ -53,6 +53,7 @@ import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.mempool.Mempool;
+import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.TypedMocks;
 
@@ -120,6 +121,7 @@ public class StateComputerLedgerTest {
 
 		this.sut = new StateComputerLedger(
 			mock(PersistentVertexStore.class),
+			mock(TimeSupplier.class),
 			currentLedgerHeader,
 			headerComparator,
 			mempool,
@@ -148,6 +150,7 @@ public class StateComputerLedgerTest {
 
 		this.sut = new StateComputerLedger(
 			mock(PersistentVertexStore.class),
+			mock(TimeSupplier.class),
 			currentLedgerHeader,
 			headerComparator,
 			mempool,

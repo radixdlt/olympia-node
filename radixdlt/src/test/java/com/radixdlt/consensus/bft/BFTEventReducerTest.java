@@ -27,7 +27,6 @@ import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.network.TimeSupplier;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -49,7 +48,6 @@ public class BFTEventReducerTest {
     private Pacemaker pacemaker = mock(Pacemaker.class);
     private EventDispatcher<FormedQC> qcEventDispatcher = rmock(EventDispatcher.class);
     private EventDispatcher<NoVote> noVoteEventDispatcher = rmock(EventDispatcher.class);
-    private TimeSupplier timeSupplier = mock(TimeSupplier.class);
 
     private BFTEventReducer bftEventReducer;
 
@@ -64,7 +62,6 @@ public class BFTEventReducerTest {
             this.noVoteEventDispatcher,
             this.voteSender,
             this.hasher,
-            this.timeSupplier,
             this.safetyRules,
             this.validatorSet,
             this.pendingVotes,

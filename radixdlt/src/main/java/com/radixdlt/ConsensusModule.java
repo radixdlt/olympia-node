@@ -70,7 +70,6 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
-import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.LocalSyncRequest;
 import java.util.Comparator;
@@ -97,8 +96,7 @@ public final class ConsensusModule extends AbstractModule {
 		HashVerifier verifier,
 		EventDispatcher<FormedQC> formedQCEventDispatcher,
 		EventDispatcher<NoVote> noVoteEventDispatcher,
-		RemoteEventDispatcher<Vote> voteDispatcher,
-		TimeSupplier timeSupplier
+		RemoteEventDispatcher<Vote> voteDispatcher
 	) {
 		return (
 			self,
@@ -113,7 +111,6 @@ public final class ConsensusModule extends AbstractModule {
 				.self(self)
 				.hasher(hasher)
 				.verifier(verifier)
-				.timeSupplier(timeSupplier)
 				.noVoteEventDispatcher(noVoteEventDispatcher)
 				.voteSender(voteDispatcher)
 				.safetyRules(safetyRules)

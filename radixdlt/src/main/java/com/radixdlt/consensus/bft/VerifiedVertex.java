@@ -95,8 +95,8 @@ public final class VerifiedVertex {
 		);
 	}
 
-	public PreparedVertexBuilder withHeader(LedgerHeader ledgerHeader) {
-		return (success, exceptions) -> new PreparedVertex(this, ledgerHeader, success, exceptions);
+	public PreparedVertexBuilder withHeader(LedgerHeader ledgerHeader, long timeOfExecution) {
+		return (success, exceptions) -> new PreparedVertex(this, ledgerHeader, success, exceptions, timeOfExecution);
 	}
 
 	@Override

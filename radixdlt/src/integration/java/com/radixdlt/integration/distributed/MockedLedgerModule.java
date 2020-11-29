@@ -31,6 +31,7 @@ import com.google.inject.Singleton;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.network.TimeSupplier;
 import java.util.LinkedList;
 import java.util.Optional;
 
@@ -42,7 +43,7 @@ public class MockedLedgerModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	Ledger syncedLedger(Hasher hasher) {
+	Ledger syncedLedger(Hasher hasher, TimeSupplier timeSupplier) {
 		return new Ledger() {
 			@Override
 			public Optional<PreparedVertex> prepare(LinkedList<PreparedVertex> previous, VerifiedVertex vertex) {
@@ -51,7 +52,7 @@ public class MockedLedgerModule extends AbstractModule {
 					.updateViewAndTimestamp(vertex.getView(), timestamp);
 
 				return Optional.of(vertex
-					.withHeader(ledgerHeader)
+					.withHeader(ledgerHeader, timeSupplier.currentTime())
 					.andCommands(
 						vertex.getCommand()
 							.<PreparedCommand>map(cmd -> new MockPrepared(cmd, hasher.hash(cmd)))

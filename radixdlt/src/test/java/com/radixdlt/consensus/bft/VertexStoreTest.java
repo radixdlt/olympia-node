@@ -80,7 +80,7 @@ public class VertexStoreTest {
 		// TODO: replace mock with the real thing
 		doAnswer(invocation -> {
 			VerifiedVertex verifiedVertex = invocation.getArgument(1);
-			return Optional.of(new PreparedVertex(verifiedVertex, MOCKED_HEADER, ImmutableList.of(), ImmutableMap.of()));
+			return Optional.of(new PreparedVertex(verifiedVertex, MOCKED_HEADER, ImmutableList.of(), ImmutableMap.of(), 1L));
 		}).when(ledger).prepare(any(), any());
 
 		this.bftUpdateSender = rmock(EventDispatcher.class);

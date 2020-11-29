@@ -37,6 +37,7 @@ import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.mempool.Mempool;
+import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.store.LastProof;
 import java.util.Comparator;
 import java.util.LinkedList;
@@ -107,12 +108,14 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	private final LedgerAccumulatorVerifier verifier;
 	private final Hasher hasher;
 	private final Object lock = new Object();
+	private final TimeSupplier timeSupplier;
 
 	private VerifiedLedgerHeaderAndProof currentLedgerHeader;
 
 	@Inject
 	public StateComputerLedger(
 		PersistentVertexStore persistentVertexStore,
+		TimeSupplier timeSupplier,
 		@LastProof VerifiedLedgerHeaderAndProof initialLedgerState,
 		Comparator<VerifiedLedgerHeaderAndProof> headerComparator,
 		Mempool mempool,
@@ -124,6 +127,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		Hasher hasher
 	) {
 		this.persistentVertexStore = Objects.requireNonNull(persistentVertexStore);
+		this.timeSupplier = Objects.requireNonNull(timeSupplier);
 		this.headerComparator = Objects.requireNonNull(headerComparator);
 		this.currentLedgerHeader = initialLedgerState;
 		this.mempool = Objects.requireNonNull(mempool);
@@ -148,15 +152,16 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		final ImmutableList<PreparedCommand> prevCommands = previous.stream()
 			.flatMap(PreparedVertex::successfulCommands)
 			.collect(ImmutableList.toImmutableList());
-		final long timestamp;
+		final long quorumTimestamp;
 		// if vertex has genesis parent then QC is mocked so just use previous timestamp
 		// this does have the edge case of never increasing timestamps if configuration is
 		// one view per epoch but good enough for now
 		if (vertex.getParentHeader().getView().isGenesis()) {
-			timestamp = vertex.getParentHeader().getLedgerHeader().timestamp();
+			quorumTimestamp = vertex.getParentHeader().getLedgerHeader().timestamp();
 		} else {
-			timestamp = vertex.getQC().getTimestampedSignatures().weightedTimestamp();
+			quorumTimestamp = vertex.getQC().getTimestampedSignatures().weightedTimestamp();
 		}
+
 
 		synchronized (lock) {
 			if (this.currentLedgerHeader.getStateVersion() > parentAccumulatorState.getStateVersion()) {
@@ -165,8 +170,9 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 
 			// Don't execute atom if in process of epoch change
 			if (parentHeader.isEndOfEpoch()) {
+				final long localTimestamp = timeSupplier.currentTime();
 				final PreparedVertex preparedVertex = vertex
-					.withHeader(parentHeader.updateViewAndTimestamp(vertex.getView(), timestamp))
+					.withHeader(parentHeader.updateViewAndTimestamp(vertex.getView(), quorumTimestamp), localTimestamp)
 					.andCommands(ImmutableList.of(), ImmutableMap.of());
 				return Optional.of(preparedVertex);
 			}
@@ -185,7 +191,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 				vertex.getCommand().orElse(null),
 				vertex.getParentHeader().getLedgerHeader().getEpoch(),
 				vertex.getView(),
-				timestamp
+				quorumTimestamp
 			);
 
 			AccumulatorState accumulatorState = parentHeader.getAccumulatorState();
@@ -197,12 +203,13 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 				parentHeader.getEpoch(),
 				vertex.getView(),
 				accumulatorState,
-				timestamp,
+				quorumTimestamp,
 				result.getNextValidatorSet().orElse(null)
 			);
 
+			final long localTimestamp = timeSupplier.currentTime();
 			return Optional.of(vertex
-				.withHeader(ledgerHeader)
+				.withHeader(ledgerHeader, localTimestamp)
 				.andCommands(result.getSuccessfulCommands(), result.getFailedCommands())
 			);
 		}

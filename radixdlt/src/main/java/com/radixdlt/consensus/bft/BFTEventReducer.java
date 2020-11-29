@@ -18,10 +18,8 @@
 package com.radixdlt.consensus.bft;
 
 import com.radixdlt.consensus.BFTEventProcessor;
-import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.liveness.Pacemaker;
@@ -31,7 +29,6 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.network.TimeSupplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -53,7 +50,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private final EventDispatcher<NoVote> noVoteDispatcher;
 	private final RemoteEventDispatcher<Vote> voteDispatcher;
 	private final Hasher hasher;
-	private final TimeSupplier timeSupplier;
 	private final SafetyRules safetyRules;
 	private final BFTValidatorSet validatorSet;
 	private final PendingVotes pendingVotes;
@@ -67,7 +63,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		EventDispatcher<NoVote> noVoteDispatcher,
 		RemoteEventDispatcher<Vote> voteDispatcher,
 		Hasher hasher,
-		TimeSupplier timeSupplier,
 		SafetyRules safetyRules,
 		BFTValidatorSet validatorSet,
 		PendingVotes pendingVotes,
@@ -79,7 +74,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		this.noVoteDispatcher = Objects.requireNonNull(noVoteDispatcher);
 		this.voteDispatcher = Objects.requireNonNull(voteDispatcher);
 		this.hasher = Objects.requireNonNull(hasher);
-		this.timeSupplier = Objects.requireNonNull(timeSupplier);
 		this.safetyRules = Objects.requireNonNull(safetyRules);
 		this.validatorSet = Objects.requireNonNull(validatorSet);
 		this.pendingVotes = Objects.requireNonNull(pendingVotes);
@@ -99,7 +93,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		final Optional<Vote> maybeVote = this.safetyRules.voteFor(
 			update.getInserted().getVertex(),
 			update.getHeader(),
-			this.timeSupplier.currentTime(),
+			update.getInserted().getTimeOfExecution(),
 			this.latestViewUpdate.getHighQC()
 		);
 		maybeVote.ifPresentOrElse(

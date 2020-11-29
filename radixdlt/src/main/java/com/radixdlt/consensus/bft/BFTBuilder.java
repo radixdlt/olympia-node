@@ -64,11 +64,6 @@ public final class BFTBuilder {
 		return this;
 	}
 
-	public BFTBuilder timeSupplier(TimeSupplier timeSupplier) {
-		this.timeSupplier = timeSupplier;
-		return this;
-	}
-
 	public BFTBuilder voteSender(RemoteEventDispatcher<Vote> voteDispatcher) {
 		this.voteDispatcher = voteDispatcher;
 		return this;
@@ -133,7 +128,6 @@ public final class BFTBuilder {
 			noVoteEventDispatcher,
 			voteDispatcher,
 			hasher,
-			timeSupplier,
 			safetyRules,
 			validatorSet,
 			pendingVotes,
