@@ -61,8 +61,11 @@ public final class InMemorySystemInfo {
 		return update -> this.highQC.set(update.getHighQC().highestQC());
 	}
 
-	public void processCommitted(BFTCommittedUpdate committedUpdate) {
-		committedUpdate.getCommitted().stream().map(PreparedVertex::getVertex).forEach(this.vertexRingBuffer::add);
+	public EventProcessor<BFTCommittedUpdate> bftCommittedUpdateEventProcessor() {
+		return update -> {
+			update.getCommitted().stream().map(PreparedVertex::getVertex).forEach(this.vertexRingBuffer::add);
+			this.highQC.set(update.getVertexStoreState().getHighQC().highestQC());
+		};
 	}
 
 	public EpochView getCurrentView() {

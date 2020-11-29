@@ -21,8 +21,12 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
+import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.LedgerEntryStoreView;
@@ -48,5 +52,11 @@ public class PersistenceModule extends AbstractModule {
 	@Singleton
 	private DatabaseEnvironment databaseEnvironment(RuntimeProperties properties) {
 		return new DatabaseEnvironment(properties);
+	}
+
+	@ProvidesIntoSet
+	@ProcessOnDispatch
+	public EventProcessor<BFTHighQCUpdate> persistQC(PersistentVertexStore persistentVertexStore) {
+		return update -> persistentVertexStore.save(update.getVertexStoreState());
 	}
 }

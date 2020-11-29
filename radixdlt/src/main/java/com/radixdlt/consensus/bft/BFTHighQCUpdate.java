@@ -20,17 +20,21 @@ package com.radixdlt.consensus.bft;
 import com.radixdlt.consensus.HighQC;
 
 public final class BFTHighQCUpdate {
-	private final HighQC highQC;
+	private final VerifiedVertexStoreState vertexStoreState;
 
-	private BFTHighQCUpdate(HighQC highQC) {
-		this.highQC = highQC;
+	private BFTHighQCUpdate(VerifiedVertexStoreState vertexStoreState) {
+		this.vertexStoreState = vertexStoreState;
 	}
 
 	public static BFTHighQCUpdate create(VerifiedVertexStoreState vertexStoreState) {
-		return new BFTHighQCUpdate(vertexStoreState.getHighQC());
+		return new BFTHighQCUpdate(vertexStoreState);
 	}
 
 	public HighQC getHighQC() {
-		return highQC;
+		return vertexStoreState.getHighQC();
+	}
+
+	public VerifiedVertexStoreState getVertexStoreState() {
+		return vertexStoreState;
 	}
 }

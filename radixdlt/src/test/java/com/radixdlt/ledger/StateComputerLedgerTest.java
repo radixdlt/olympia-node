@@ -40,6 +40,7 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
@@ -118,6 +119,7 @@ public class StateComputerLedgerTest {
 			.map(Pair::getSecond).orElseThrow();
 
 		this.sut = new StateComputerLedger(
+			mock(PersistentVertexStore.class),
 			currentLedgerHeader,
 			headerComparator,
 			mempool,
@@ -145,6 +147,7 @@ public class StateComputerLedgerTest {
 			.map(Pair::getSecond).orElseThrow();
 
 		this.sut = new StateComputerLedger(
+			mock(PersistentVertexStore.class),
 			currentLedgerHeader,
 			headerComparator,
 			mempool,

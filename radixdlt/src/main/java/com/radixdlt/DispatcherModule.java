@@ -160,9 +160,14 @@ public class DispatcherModule extends AbstractModule {
 
 	@Provides
 	private EventDispatcher<BFTHighQCUpdate> bftHighQCUpdateEventDispatcher(
+		@ProcessOnDispatch Set<EventProcessor<BFTHighQCUpdate>> processors,
 		Environment environment
 	) {
-		return environment.getDispatcher(BFTHighQCUpdate.class);
+		EventDispatcher<BFTHighQCUpdate> dispatcher = environment.getDispatcher(BFTHighQCUpdate.class);
+		return update -> {
+			dispatcher.dispatch(update);
+			processors.forEach(p -> p.process(update));
+		};
 	}
 
 	@Provides

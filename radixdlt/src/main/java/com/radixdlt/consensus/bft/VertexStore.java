@@ -191,16 +191,24 @@ public final class VertexStore {
 			return true;
 		}
 
-		if (highestQC.getView().compareTo(qc.getView()) < 0) {
+		boolean isHighQC = qc.getView().gt(highestQC.getView());
+		boolean isHighCommit = qc.getCommittedAndLedgerStateProof().isPresent();
+		if (!isHighQC && !isHighCommit) {
+			return true;
+		}
+
+		if (isHighQC) {
 			highestQC = qc;
+		}
+
+		if (isHighCommit) {
+			qc.getCommittedAndLedgerStateProof().map(Pair::getFirst)
+				.ifPresent(header -> this.commit(header, qc));
+		} else {
 			// TODO: we lose all other tail QCs on this save, Not sure if this is okay...investigate...
 			VerifiedVertexStoreState vertexStoreState = getState();
 			this.highQCUpdateDispatcher.dispatch(BFTHighQCUpdate.create(vertexStoreState));
-			this.persistentVertexStore.save(vertexStoreState);
 		}
-
-		qc.getCommittedAndLedgerStateProof().map(Pair::getFirst)
-			.ifPresent(header -> this.commit(header, qc));
 
 		return true;
 	}

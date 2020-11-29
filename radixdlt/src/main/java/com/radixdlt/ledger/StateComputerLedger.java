@@ -19,6 +19,7 @@ package com.radixdlt.ledger;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.LedgerHeader;
@@ -26,8 +27,10 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.Ledger;
+import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
+import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.counters.SystemCounters;
@@ -98,6 +101,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	private final Comparator<VerifiedLedgerHeaderAndProof> headerComparator;
 	private final Mempool mempool;
 
+	private final PersistentVertexStore persistentVertexStore;
 	private final StateComputer stateComputer;
 	private final LedgerUpdateSender ledgerUpdateSender;
 	private final SystemCounters counters;
@@ -110,6 +114,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 
 	@Inject
 	public StateComputerLedger(
+		PersistentVertexStore persistentVertexStore,
 		@LastProof VerifiedLedgerHeaderAndProof initialLedgerState,
 		Comparator<VerifiedLedgerHeaderAndProof> headerComparator,
 		Mempool mempool,
@@ -120,6 +125,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		SystemCounters counters,
 		Hasher hasher
 	) {
+		this.persistentVertexStore = Objects.requireNonNull(persistentVertexStore);
 		this.headerComparator = Objects.requireNonNull(headerComparator);
 		this.currentLedgerHeader = initialLedgerState;
 		this.mempool = Objects.requireNonNull(mempool);
@@ -213,7 +219,9 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			VerifiedLedgerHeaderAndProof proof = committedUpdate.getVertexStoreState().getRootHeader();
 			VerifiedCommandsAndProof verifiedCommandsAndProof = new VerifiedCommandsAndProof(commands, proof);
 
+			// TODO: Make these two atomic
 			this.commit(verifiedCommandsAndProof);
+			this.persistentVertexStore.save(committedUpdate.getVertexStoreState());
 		};
 	}
 

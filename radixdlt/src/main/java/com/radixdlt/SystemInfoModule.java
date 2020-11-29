@@ -64,7 +64,7 @@ public class SystemInfoModule extends AbstractModule {
 
 	@ProvidesIntoSet
 	private EventProcessor<BFTCommittedUpdate> committedUpdateEventProcessor(InMemorySystemInfo inMemorySystemInfo) {
-		return inMemorySystemInfo::processCommitted;
+		return inMemorySystemInfo.bftCommittedUpdateEventProcessor();
 	}
 
 	@ProvidesIntoSet
