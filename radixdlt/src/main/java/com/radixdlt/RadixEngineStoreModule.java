@@ -22,11 +22,7 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.Hasher;
@@ -43,8 +39,6 @@ import com.radixdlt.middleware2.store.CommandToBinaryConverter;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.store.EngineStore;
-import com.radixdlt.store.LastEpochProof;
-import com.radixdlt.store.LastProof;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
 import com.radixdlt.sync.CommittedReader;
@@ -57,7 +51,6 @@ public class RadixEngineStoreModule extends AbstractModule {
 		bind(new TypeLiteral<EngineStore<CommittedAtom>>() { }).to(CommittedAtomsStore.class).in(Scopes.SINGLETON);
 		bind(CommittedReader.class).to(CommittedAtomsStore.class);
 	}
-
 
 	@Provides
 	@Singleton
@@ -94,57 +87,6 @@ public class RadixEngineStoreModule extends AbstractModule {
 	@Singleton
 	private AtomIndexer buildAtomIndexer(Serialization serialization, Hasher hasher) {
 		return atom -> EngineAtomIndices.from(atom, serialization, hasher);
-	}
-
-	@Provides
-	private BFTValidatorSet validatorSet(
-		@LastEpochProof VerifiedLedgerHeaderAndProof lastEpochProof
-	) {
-		return lastEpochProof.getNextValidatorSet().orElseThrow(() -> new IllegalStateException("Genesis has no validator set"));
-	}
-
-	@Provides
-	@Singleton
-	@LastProof
-	VerifiedLedgerHeaderAndProof lastProof(
-		@LastEpochProof VerifiedLedgerHeaderAndProof lastEpochProof,
-		CommittedAtomsStore store,
-		VerifiedCommandsAndProof genesisCheckpoint, // TODO: remove once genesis creation resolved
-		BFTConfiguration bftConfiguration
-	) {
-		VerifiedLedgerHeaderAndProof lastStoredProof = store.getLastVerifiedHeader()
-			.orElse(genesisCheckpoint.getHeader());
-
-		if (lastStoredProof.isEndOfEpoch()) {
-			return bftConfiguration.getVertexStoreState().getRootHeader();
-		} else {
-			return lastStoredProof;
-		}
-	}
-
-	@Provides
-	@Singleton
-	@LastEpochProof
-	VerifiedLedgerHeaderAndProof lastEpochProof(
-		CommittedAtomsStore store,
-		VerifiedCommandsAndProof genesisCheckpoint // TODO: remove once genesis creation resolved
-	) {
-		VerifiedLedgerHeaderAndProof lastStoredProof = store.getLastVerifiedHeader()
-			.orElse(genesisCheckpoint.getHeader());
-
-		if (lastStoredProof.isEndOfEpoch()) {
-			return lastStoredProof;
-		}
-		return store.getEpochVerifiedHeader(lastStoredProof.getEpoch()).orElseThrow();
-	}
-
-	@Provides
-	@Singleton
-	private BFTConfiguration initialConfig(
-		BFTValidatorSet validatorSet,
-		VerifiedVertexStoreState vertexStoreState
-	) {
-		return new BFTConfiguration(validatorSet, vertexStoreState);
 	}
 
 	@Provides

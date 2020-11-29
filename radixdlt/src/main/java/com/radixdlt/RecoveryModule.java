@@ -22,11 +22,13 @@ import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
@@ -34,7 +36,10 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.store.LastEpochProof;
+import com.radixdlt.store.LastProof;
 import com.radixdlt.store.berkeley.BerkeleySafetyStateStore;
 import java.util.Optional;
 
@@ -42,6 +47,58 @@ import java.util.Optional;
  * Manages consensus recovery on restarts
  */
 public class RecoveryModule extends AbstractModule {
+
+	@Provides
+	@Singleton
+	private BFTConfiguration initialConfig(
+		BFTValidatorSet validatorSet,
+		VerifiedVertexStoreState vertexStoreState
+	) {
+		return new BFTConfiguration(validatorSet, vertexStoreState);
+	}
+
+	@Provides
+	private BFTValidatorSet validatorSet(
+		@LastEpochProof VerifiedLedgerHeaderAndProof lastEpochProof
+	) {
+		return lastEpochProof.getNextValidatorSet().orElseThrow(() -> new IllegalStateException("Genesis has no validator set"));
+	}
+
+	@Provides
+	@Singleton
+	@LastProof
+	VerifiedLedgerHeaderAndProof lastProof(
+		@LastEpochProof VerifiedLedgerHeaderAndProof lastEpochProof,
+		CommittedAtomsStore store,
+		VerifiedCommandsAndProof genesisCheckpoint, // TODO: remove once genesis creation resolved
+		BFTConfiguration bftConfiguration
+	) {
+		VerifiedLedgerHeaderAndProof lastStoredProof = store.getLastVerifiedHeader()
+			.orElse(genesisCheckpoint.getHeader());
+
+		if (lastStoredProof.isEndOfEpoch()) {
+			return bftConfiguration.getVertexStoreState().getRootHeader();
+		} else {
+			return lastStoredProof;
+		}
+	}
+
+	@Provides
+	@Singleton
+	@LastEpochProof
+	VerifiedLedgerHeaderAndProof lastEpochProof(
+		CommittedAtomsStore store,
+		VerifiedCommandsAndProof genesisCheckpoint // TODO: remove once genesis creation resolved
+	) {
+		VerifiedLedgerHeaderAndProof lastStoredProof = store.getLastVerifiedHeader()
+			.orElse(genesisCheckpoint.getHeader());
+
+		if (lastStoredProof.isEndOfEpoch()) {
+			return lastStoredProof;
+		}
+		return store.getEpochVerifiedHeader(lastStoredProof.getEpoch()).orElseThrow();
+	}
+
 	@Provides
 	@Singleton
 	private SafetyState safetyState(EpochChange initialEpoch, BerkeleySafetyStateStore berkeleySafetyStore) {
