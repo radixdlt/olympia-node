@@ -54,7 +54,7 @@ public class MockedPersistenceStoreModule extends AbstractModule {
 		}
 
 		@Override
-		public Optional<SerializedVertexStoreState> lastRootVertex() {
+		public Optional<SerializedVertexStoreState> loadLastState() {
 			return Optional.empty();
 		}
 	}

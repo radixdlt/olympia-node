@@ -23,5 +23,5 @@ import java.util.Optional;
 public interface PersistentVertexStore {
 	void save(VerifiedVertexStoreState vertexStoreState);
 
-	Optional<SerializedVertexStoreState> lastRootVertex();
+	Optional<SerializedVertexStoreState> loadLastState();
 }

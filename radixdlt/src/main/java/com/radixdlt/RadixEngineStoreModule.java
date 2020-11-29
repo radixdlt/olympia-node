@@ -17,8 +17,6 @@
 
 package com.radixdlt;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
@@ -26,16 +24,9 @@ import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.PersistentVertexStore;
-import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.Hasher;
@@ -150,41 +141,10 @@ public class RadixEngineStoreModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private BFTConfiguration initialConfig(
-		@LastEpochProof VerifiedLedgerHeaderAndProof lastEpochProof,
 		BFTValidatorSet validatorSet,
-		PersistentVertexStore persistentVertexStore,
-		Hasher hasher
+		VerifiedVertexStoreState vertexStoreState
 	) {
-		return persistentVertexStore.lastRootVertex()
-			.map(serializedVertexStoreState -> {
-				UnverifiedVertex root = serializedVertexStoreState.getRoot();
-				HashCode rootVertexId = hasher.hash(root);
-				VerifiedVertex verifiedRoot = new VerifiedVertex(root, rootVertexId);
-
-				ImmutableList<VerifiedVertex> vertices = serializedVertexStoreState.getVertices().stream()
-					.map(v -> new VerifiedVertex(v, hasher.hash(v)))
-					.collect(ImmutableList.toImmutableList());
-
-				VerifiedVertexStoreState vertexStoreState = VerifiedVertexStoreState.create(
-					serializedVertexStoreState.getHighQC(),
-					verifiedRoot,
-					vertices
-				);
-
-				return new BFTConfiguration(validatorSet, vertexStoreState);
-			})
-			.orElseGet(() -> {
-				UnverifiedVertex genesisVertex = UnverifiedVertex.createGenesis(lastEpochProof.getRaw());
-				VerifiedVertex verifiedGenesisVertex = new VerifiedVertex(genesisVertex, hasher.hash(genesisVertex));
-				LedgerHeader nextLedgerHeader = LedgerHeader.create(
-					lastEpochProof.getEpoch() + 1,
-					View.genesis(),
-					lastEpochProof.getAccumulatorState(),
-					lastEpochProof.timestamp()
-				);
-				QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
-				return new BFTConfiguration(validatorSet, VerifiedVertexStoreState.create(HighQC.from(genesisQC), verifiedGenesisVertex));
-			});
+		return new BFTConfiguration(validatorSet, vertexStoreState);
 	}
 
 	@Provides

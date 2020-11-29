@@ -282,7 +282,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 		}
 	}
 
-	public Optional<SerializedVertexStoreState> lastRootVertex() {
+	public Optional<SerializedVertexStoreState> loadLastState() {
 		try (Cursor cursor = this.pendingDatabase.openCursor(null, null)) {
 			DatabaseEntry pKey = new DatabaseEntry();
 			DatabaseEntry value = new DatabaseEntry();
