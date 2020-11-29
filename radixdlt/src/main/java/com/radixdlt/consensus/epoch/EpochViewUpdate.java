@@ -26,46 +26,46 @@ import java.util.Objects;
  */
 public final class EpochViewUpdate {
 
-    private final long epoch;
-    private final ViewUpdate viewUpdate;
+	private final long epoch;
+	private final ViewUpdate viewUpdate;
 
-    public EpochViewUpdate(long epoch, ViewUpdate viewUpdate) {
-        this.epoch = epoch;
-        this.viewUpdate = Objects.requireNonNull(viewUpdate);
-    }
+	public EpochViewUpdate(long epoch, ViewUpdate viewUpdate) {
+		this.epoch = epoch;
+		this.viewUpdate = Objects.requireNonNull(viewUpdate);
+	}
 
-    public EpochView getEpochView() {
-        return new EpochView(epoch, viewUpdate.getCurrentView());
-    }
+	public EpochView getEpochView() {
+		return new EpochView(epoch, viewUpdate.getCurrentView());
+	}
 
-    public long getEpoch() {
-        return epoch;
-    }
+	public long getEpoch() {
+		return epoch;
+	}
 
-    public ViewUpdate getViewUpdate() {
-        return viewUpdate;
-    }
+	public ViewUpdate getViewUpdate() {
+		return viewUpdate;
+	}
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        EpochViewUpdate that = (EpochViewUpdate) o;
-        return epoch == that.epoch
-                && Objects.equals(viewUpdate, that.viewUpdate);
-    }
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		EpochViewUpdate that = (EpochViewUpdate) o;
+		return epoch == that.epoch
+				&& Objects.equals(viewUpdate, that.viewUpdate);
+	}
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(epoch, viewUpdate);
-    }
+	@Override
+	public int hashCode() {
+		return Objects.hash(epoch, viewUpdate);
+	}
 
-    @Override
-    public String toString() {
-        return String.format("%s{epoch=%s view=%s}", this.getClass().getSimpleName(), epoch, viewUpdate);
-    }
+	@Override
+	public String toString() {
+		return String.format("%s{epoch=%s view=%s}", this.getClass().getSimpleName(), epoch, viewUpdate);
+	}
 }

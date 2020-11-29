@@ -33,56 +33,55 @@ import java.util.Objects;
  * It sends an internal ViewUpdate message on a transition to next view.
  */
 public class PacemakerState implements PacemakerReducer {
-    private static final Logger log = LogManager.getLogger();
+	private static final Logger log = LogManager.getLogger();
 
-    private final EventDispatcher<ViewUpdate> viewUpdateSender;
-    private final ProposerElection proposerElection;
+	private final EventDispatcher<ViewUpdate> viewUpdateSender;
+	private final ProposerElection proposerElection;
 
-    private View currentView;
-    private HighQC highQC;
+	private View currentView;
+	private HighQC highQC;
 
-    @Inject
-    public PacemakerState(
-        ViewUpdate viewUpdate,
-        ProposerElection proposerElection,
-        EventDispatcher<ViewUpdate> viewUpdateSender
-    ) {
-        this.proposerElection = Objects.requireNonNull(proposerElection);
-        this.viewUpdateSender = Objects.requireNonNull(viewUpdateSender);
-        this.highQC = viewUpdate.getHighQC();
-        this.currentView = viewUpdate.getCurrentView();
-    }
+	@Inject
+	public PacemakerState(
+		ViewUpdate viewUpdate,
+		ProposerElection proposerElection,
+		EventDispatcher<ViewUpdate> viewUpdateSender
+	) {
+		this.proposerElection = Objects.requireNonNull(proposerElection);
+		this.viewUpdateSender = Objects.requireNonNull(viewUpdateSender);
+		this.highQC = viewUpdate.getHighQC();
+		this.currentView = viewUpdate.getCurrentView();
+	}
 
+	@Override
+	public void processQC(HighQC highQC) {
+		log.trace("QuorumCertificate: {}", highQC);
 
-    @Override
-    public void processQC(HighQC highQC) {
-        log.trace("QuorumCertificate: {}", highQC);
+		final View view = highQC.highestQC().getView();
+		if (view.gte(this.currentView)) {
+			this.highQC = highQC;
+			this.updateView(view.next());
+		} else {
+			log.trace("Ignoring QC for view {}: current view is {}", view, this.currentView);
+		}
+	}
 
-        final View view = highQC.highestQC().getView();
-        if (view.gte(this.currentView)) {
-        	this.highQC = highQC;
-            this.updateView(view.next());
-        } else {
-            log.trace("Ignoring QC for view {}: current view is {}", view, this.currentView);
-        }
-    }
+	@Override
+	public void updateView(View nextView) {
+		if (nextView.lte(this.currentView)) {
+			return;
+		}
 
-    @Override
-    public void updateView(View nextView) {
-        if (nextView.lte(this.currentView)) {
-            return;
-        }
-
-        final BFTNode leader = this.proposerElection.getProposer(nextView);
-        final BFTNode nextLeader = this.proposerElection.getProposer(nextView.next());
-        this.currentView = nextView;
-        viewUpdateSender.dispatch(
-            ViewUpdate.create(
-                this.currentView,
-                this.highQC,
-                leader,
-                nextLeader
-            )
-        );
-    }
+		final BFTNode leader = this.proposerElection.getProposer(nextView);
+		final BFTNode nextLeader = this.proposerElection.getProposer(nextView.next());
+		this.currentView = nextView;
+		viewUpdateSender.dispatch(
+			ViewUpdate.create(
+				this.currentView,
+				this.highQC,
+				leader,
+				nextLeader
+			)
+		);
+	}
 }

@@ -103,5 +103,4 @@ public class BFTEventReducerTest {
         verify(this.pendingVotes, times(1)).insertVote(eq(vote), any());
         verifyNoMoreInteractions(this.pendingVotes);
     }
-
 }

@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,15 +15,20 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.liveness;
+package com.radixdlt.consensus.epoch;
 
-public interface PacemakerTimeoutCalculator {
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
 
-	/**
-	 * Calculates the pacemaker view timeout.
-	 *
-	 * @param uncommittedViews the number of uncommitted views
-	 * @return pacemaker view timeout in milliseconds
-	 */
-	long timeout(long uncommittedViews);
+public class EpochedTest {
+
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(Epoched.class)
+			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+			.verify();
+	}
+
 }

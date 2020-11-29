@@ -33,7 +33,7 @@ public final class Epoched<T> {
 		this.event = event;
 	}
 
-	public static <T> Epoched<T> create(long epoch, T event) {
+	public static <T> Epoched<T> from(long epoch, T event) {
 		Objects.requireNonNull(event);
 		return new Epoched<>(epoch, event);
 	}
