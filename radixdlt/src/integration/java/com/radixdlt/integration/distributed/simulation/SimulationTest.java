@@ -66,7 +66,6 @@ import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.integration.distributed.MockedBFTConfigurationModule;
 import com.radixdlt.integration.distributed.MockedCommandGeneratorModule;
 import com.radixdlt.integration.distributed.MockedCryptoModule;
 import com.radixdlt.integration.distributed.MockedLedgerModule;
@@ -74,6 +73,7 @@ import com.radixdlt.integration.distributed.MockedLedgerUpdateSender;
 import com.radixdlt.integration.distributed.MockedMempoolModule;
 import com.radixdlt.integration.distributed.MockedPersistenceStoreModule;
 import com.radixdlt.integration.distributed.MockedRadixEngineStoreModule;
+import com.radixdlt.integration.distributed.MockedRecoveryModule;
 import com.radixdlt.integration.distributed.MockedStateComputerModule;
 import com.radixdlt.integration.distributed.MockedStateComputerWithEpochsModule;
 import com.radixdlt.integration.distributed.MockedCommittedReaderModule;
@@ -206,7 +206,6 @@ public class SimulationTest {
 				}
 				// Ledger
 				if (!hasLedger) {
-					modules.add(new MockedBFTConfigurationModule());
 					modules.add(new MockedLedgerModule());
 					modules.add(new MockedLedgerUpdateRxModule());
 				} else {
@@ -607,6 +606,7 @@ public class SimulationTest {
 			modules.add(new DispatcherModule());
 			modules.add(new RxEnvironmentModule());
 			modules.add(new MockedPersistenceStoreModule());
+			modules.add(new MockedRecoveryModule());
 
 			modules.add(ledgerType.getCoreModule());
 

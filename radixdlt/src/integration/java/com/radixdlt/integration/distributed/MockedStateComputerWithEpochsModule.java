@@ -22,29 +22,15 @@ import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
-import com.radixdlt.consensus.bft.ViewUpdate;
-import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.UnverifiedVertex;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.store.LastEpochProof;
-import com.radixdlt.store.LastProof;
 import java.util.function.Function;
 
 public class MockedStateComputerWithEpochsModule extends AbstractModule {
@@ -57,46 +43,6 @@ public class MockedStateComputerWithEpochsModule extends AbstractModule {
 	) {
 		this.validatorSetMapping = validatorSetMapping;
 		this.epochHighView = epochHighView;
-	}
-
-	@Provides
-	private ViewUpdate view(BFTConfiguration configuration, ProposerElection proposerElection) {
-		HighQC highQC = configuration.getVertexStoreState().getHighQC();
-		View view = highQC.highestQC().getView().next();
-		final BFTNode leader = proposerElection.getProposer(view);
-		final BFTNode nextLeader = proposerElection.getProposer(view.next());
-
-		return ViewUpdate.create(view, highQC, leader, nextLeader);
-	}
-
-	@Provides
-	private BFTConfiguration initialConfiguration(
-		BFTValidatorSet validatorSet,
-		@LastEpochProof VerifiedLedgerHeaderAndProof proof,
-		Hasher hasher
-	) {
-		UnverifiedVertex genesisVertex = UnverifiedVertex.createGenesis(proof.getRaw());
-		VerifiedVertex verifiedGenesisVertex = new VerifiedVertex(genesisVertex, hasher.hash(genesisVertex));
-		LedgerHeader nextLedgerHeader = LedgerHeader.create(
-			proof.getEpoch() + 1,
-			View.genesis(),
-			proof.getAccumulatorState(),
-			proof.timestamp()
-		);
-		QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
-		return new BFTConfiguration(validatorSet, VerifiedVertexStoreState.create(HighQC.from(genesisQC), verifiedGenesisVertex));
-	}
-
-	@Provides
-	@LastEpochProof
-	private VerifiedLedgerHeaderAndProof lastEpochProof(BFTValidatorSet validatorSet) {
-		return VerifiedLedgerHeaderAndProof.genesis(HashUtils.zero256(), validatorSet);
-	}
-
-	@Provides
-	@LastProof
-	private VerifiedLedgerHeaderAndProof lastProof(BFTConfiguration bftConfiguration) {
-		return bftConfiguration.getVertexStoreState().getRootHeader();
 	}
 
 	@Provides

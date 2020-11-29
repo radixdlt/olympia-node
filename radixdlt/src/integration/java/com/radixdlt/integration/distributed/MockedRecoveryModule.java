@@ -34,25 +34,23 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
 
-/**
- * An initial bft configuration
- */
-public class MockedBFTConfigurationModule extends AbstractModule {
+public class MockedRecoveryModule extends AbstractModule {
 
 	private final HashCode genesisHash;
 
-	public MockedBFTConfigurationModule() {
+	public MockedRecoveryModule() {
 		this(HashUtils.zero256());
 	}
 
-	public MockedBFTConfigurationModule(HashCode genesisHash) {
+	public MockedRecoveryModule(HashCode genesisHash) {
 		this.genesisHash = genesisHash;
 	}
 
 	@Provides
-	ViewUpdate view(BFTConfiguration configuration, ProposerElection proposerElection) {
+	private ViewUpdate view(BFTConfiguration configuration, ProposerElection proposerElection) {
 		HighQC highQC = configuration.getVertexStoreState().getHighQC();
 		View view = highQC.highestQC().getView().next();
 		final BFTNode leader = proposerElection.getProposer(view);
@@ -62,19 +60,31 @@ public class MockedBFTConfigurationModule extends AbstractModule {
 	}
 
 	@Provides
-	BFTConfiguration config(BFTValidatorSet validatorSet) {
+	private BFTConfiguration configuration(
+		@LastEpochProof VerifiedLedgerHeaderAndProof proof,
+		BFTValidatorSet validatorSet
+	) {
 		UnverifiedVertex genesis = UnverifiedVertex.createGenesis(LedgerHeader.genesis(genesisHash, validatorSet));
-		VerifiedVertex hashedGenesis = new VerifiedVertex(genesis, genesisHash);
-		QuorumCertificate rootQC = QuorumCertificate.ofGenesis(hashedGenesis, LedgerHeader.genesis(genesisHash, null));
-		return new BFTConfiguration(
-			validatorSet,
-			VerifiedVertexStoreState.create(HighQC.from(rootQC), hashedGenesis)
+		VerifiedVertex verifiedGenesis = new VerifiedVertex(genesis, genesisHash);
+		LedgerHeader nextLedgerHeader = LedgerHeader.create(
+			proof.getEpoch() + 1,
+			View.genesis(),
+			proof.getAccumulatorState(),
+			proof.timestamp()
 		);
+		QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesis, nextLedgerHeader);
+		return new BFTConfiguration(validatorSet, VerifiedVertexStoreState.create(HighQC.from(genesisQC), verifiedGenesis));
+	}
+
+	@Provides
+	@LastEpochProof
+	public VerifiedLedgerHeaderAndProof lastEpochProof(BFTValidatorSet validatorSet) {
+		return VerifiedLedgerHeaderAndProof.genesis(HashUtils.zero256(), validatorSet);
 	}
 
 	@Provides
 	@LastProof
-	VerifiedLedgerHeaderAndProof lastProof(BFTConfiguration configuration) {
-		return configuration.getVertexStoreState().getRootHeader();
+	private VerifiedLedgerHeaderAndProof lastProof(BFTConfiguration bftConfiguration) {
+		return bftConfiguration.getVertexStoreState().getRootHeader();
 	}
 }

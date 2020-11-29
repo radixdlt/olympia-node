@@ -24,27 +24,14 @@ import com.google.inject.Singleton;
 import com.google.inject.name.Names;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.system.SystemParticle;
-import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.HighQC;
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.UnverifiedVertex;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
-import com.radixdlt.store.LastEpochProof;
-import com.radixdlt.store.LastProof;
 
 public class MockedRadixEngineStoreModule extends AbstractModule {
 	@Override
@@ -68,32 +55,4 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 		return inMemoryEngineStore;
 	}
 
-	@Provides
-	private BFTConfiguration configuration(
-		@LastEpochProof VerifiedLedgerHeaderAndProof proof,
-		BFTValidatorSet validatorSet
-	) {
-		LedgerHeader nextLedgerHeader = LedgerHeader.create(
-			proof.getEpoch() + 1,
-			View.genesis(),
-			proof.getAccumulatorState(),
-			proof.timestamp()
-		);
-		UnverifiedVertex genesis = UnverifiedVertex.createGenesis(nextLedgerHeader);
-		VerifiedVertex verifiedGenesis = new VerifiedVertex(genesis, HashUtils.zero256());
-		QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesis, nextLedgerHeader);
-		return new BFTConfiguration(validatorSet, VerifiedVertexStoreState.create(HighQC.from(genesisQC), verifiedGenesis));
-	}
-
-	@Provides
-	@LastEpochProof
-	public VerifiedLedgerHeaderAndProof lastEpochProof(BFTValidatorSet validatorSet) {
-		return VerifiedLedgerHeaderAndProof.genesis(HashUtils.zero256(), validatorSet);
-	}
-
-	@Provides
-	@LastProof
-	public VerifiedLedgerHeaderAndProof lastProof(BFTValidatorSet validatorSet) {
-		return VerifiedLedgerHeaderAndProof.genesis(HashUtils.zero256(), validatorSet);
-	}
 }

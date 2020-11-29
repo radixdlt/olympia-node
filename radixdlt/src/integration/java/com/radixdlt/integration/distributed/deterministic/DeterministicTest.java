@@ -47,6 +47,7 @@ import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.integration.distributed.MockedCryptoModule;
 import com.radixdlt.integration.distributed.MockedPersistenceStoreModule;
+import com.radixdlt.integration.distributed.MockedRecoveryModule;
 import com.radixdlt.integration.distributed.deterministic.configuration.EpochNodeWeightMapping;
 import com.radixdlt.integration.distributed.deterministic.configuration.NodeIndexAndWeight;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
@@ -204,6 +205,7 @@ public final class DeterministicTest {
 			modules.add(new ConsensusModule());
 			modules.add(new MockedCryptoModule());
 			modules.add(new MockedPersistenceStoreModule());
+			modules.add(new MockedRecoveryModule());
 			modules.add(new LedgerLocalMempoolModule(10));
 			modules.add(new DeterministicMempoolModule());
 			modules.add(new DispatcherModule());
