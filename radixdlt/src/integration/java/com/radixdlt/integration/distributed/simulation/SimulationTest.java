@@ -47,6 +47,7 @@ import com.radixdlt.SyncServiceModule;
 import com.radixdlt.SyncRunnerModule;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.consensus.Sha256Hasher;
+import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
@@ -467,23 +468,17 @@ public class SimulationTest {
 		}
 
 		public Builder checkConsensusLiveness(String invariantName) {
-			this.checksBuilder.put(invariantName, nodes -> new LivenessInvariant(8 * SimulationNetwork.DEFAULT_LATENCY, TimeUnit.MILLISECONDS));
+			this.checksBuilder.put(invariantName, nodes -> new LivenessInvariant(nodeEvents, 8 * SimulationNetwork.DEFAULT_LATENCY, TimeUnit.MILLISECONDS));
 			return this;
 		}
 
 		public Builder checkConsensusLiveness(String invariantName, long duration, TimeUnit timeUnit) {
-			this.checksBuilder.put(invariantName, nodes -> new LivenessInvariant(duration, timeUnit));
+			this.checksBuilder.put(invariantName, nodes -> new LivenessInvariant(nodeEvents, duration, timeUnit));
 			return this;
 		}
 
 		public Builder checkConsensusSafety(String invariantName) {
-			this.modules.add(new AbstractModule() {
-				@ProvidesIntoSet
-				@ProcessOnDispatch
-				private EventProcessor<BFTCommittedUpdate> committedProcessor(@Self BFTNode node) {
-					return nodeEvents.processor(node, BFTCommittedUpdate.class);
-				}
-			});
+
 			this.checksBuilder.put(invariantName, nodes -> new SafetyInvariant(nodeEvents));
 			return this;
 		}
@@ -563,6 +558,18 @@ public class SimulationTest {
 					bindConstant().annotatedWith(PacemakerTimeout.class).to(pacemakerTimeout);
 					bindConstant().annotatedWith(PacemakerRate.class).to(2.0);
 					bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0); // Use constant timeout for now
+				}
+
+				@ProvidesIntoSet
+				@ProcessOnDispatch
+				private EventProcessor<BFTCommittedUpdate> committedProcessor(@Self BFTNode node) {
+					return nodeEvents.processor(node, BFTCommittedUpdate.class);
+				}
+
+				@ProvidesIntoSet
+				@ProcessOnDispatch
+				private EventProcessor<BFTHighQCUpdate> highQCProcessor(@Self BFTNode node) {
+					return nodeEvents.processor(node, BFTHighQCUpdate.class);
 				}
 			});
 			modules.add(new MockedSystemModule());
