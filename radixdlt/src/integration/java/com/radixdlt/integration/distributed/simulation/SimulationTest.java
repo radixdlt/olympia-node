@@ -193,8 +193,34 @@ public class SimulationTest {
 				this.hasSync = hasSync;
 			}
 
-			Module getSyncModule() {
+			Module getCoreModule() {
 				List<Module> modules = new ArrayList<>();
+				// Consensus
+				modules.add(new ConsensusModule());
+				modules.add(new ConsensusRxModule());
+				if (!hasEpochs) {
+					modules.add(new MockedConsensusRunnerModule());
+				} else {
+					modules.add(new EpochsConsensusModule());
+					modules.add(new ConsensusRunnerModule());
+				}
+				// Ledger
+				if (!hasLedger) {
+					modules.add(new MockedBFTConfigurationModule());
+					modules.add(new MockedLedgerModule());
+					modules.add(new MockedLedgerUpdateRxModule());
+				} else {
+					modules.add(new LedgerModule());
+					modules.add(new LedgerRxModule());
+					if (!hasEpochs) {
+						modules.add(new MockedLedgerUpdateRxModule());
+						modules.add(new MockedLedgerUpdateSender());
+					} else {
+						modules.add(new EpochsLedgerUpdateModule());
+						modules.add(new EpochsLedgerUpdateRxModule());
+					}
+				}
+				// Sync
 				if (hasLedger) {
 					if (!hasSync) {
 						modules.add(new MockedSyncServiceModule());
@@ -468,7 +494,10 @@ public class SimulationTest {
 		}
 
 		public Builder checkConsensusLiveness(String invariantName) {
-			this.checksBuilder.put(invariantName, nodes -> new LivenessInvariant(nodeEvents, 8 * SimulationNetwork.DEFAULT_LATENCY, TimeUnit.MILLISECONDS));
+			this.checksBuilder.put(
+				invariantName,
+				nodes -> new LivenessInvariant(nodeEvents, 8 * SimulationNetwork.DEFAULT_LATENCY, TimeUnit.MILLISECONDS)
+			);
 			return this;
 		}
 
@@ -579,35 +608,7 @@ public class SimulationTest {
 			modules.add(new RxEnvironmentModule());
 			modules.add(new MockedPersistenceStoreModule());
 
-			// Consensus
-			modules.add(new ConsensusModule());
-			modules.add(new ConsensusRxModule());
-			if (!ledgerType.hasEpochs) {
-				modules.add(new MockedConsensusRunnerModule());
-			} else {
-				modules.add(new EpochsConsensusModule());
-				modules.add(new ConsensusRunnerModule());
-			}
-
-			// Ledger
-			if (!ledgerType.hasLedger) {
-				modules.add(new MockedBFTConfigurationModule());
-				modules.add(new MockedLedgerModule());
-				modules.add(new MockedLedgerUpdateRxModule());
-			} else {
-				modules.add(new LedgerModule());
-				modules.add(new LedgerRxModule());
-				if (!ledgerType.hasEpochs) {
-					modules.add(new MockedLedgerUpdateRxModule());
-					modules.add(new MockedLedgerUpdateSender());
-				} else {
-					modules.add(new EpochsLedgerUpdateModule());
-					modules.add(new EpochsLedgerUpdateRxModule());
-				}
-			}
-
-			// Sync
-			modules.add(ledgerType.getSyncModule());
+			modules.add(ledgerType.getCoreModule());
 
 			if (ledgerType == LedgerType.LEDGER) {
 				modules.add(new MockedCommandGeneratorModule());

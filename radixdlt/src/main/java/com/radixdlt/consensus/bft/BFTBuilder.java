@@ -22,7 +22,6 @@ import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.safety.SafetyRules;
-import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.environment.EventDispatcher;
