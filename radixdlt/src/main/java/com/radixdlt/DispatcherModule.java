@@ -155,7 +155,7 @@ public class DispatcherModule extends AbstractModule {
 			if (update.getSiblingsCount() > 1) {
 				systemCounters.increment(CounterType.BFT_VERTEX_STORE_FORKS);
 			}
-			if (!update.getInsertedVertex().hasDirectParent()) {
+			if (!update.getInserted().getVertex().hasDirectParent()) {
 				systemCounters.increment(CounterType.BFT_INDIRECT_PARENT);
 			}
 			systemCounters.set(CounterType.BFT_VERTEX_STORE_SIZE, update.getVertexStoreSize());

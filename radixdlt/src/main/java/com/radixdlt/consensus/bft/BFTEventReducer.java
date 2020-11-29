@@ -89,13 +89,23 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	@Override
 	public void processBFTUpdate(BFTInsertUpdate update) {
 		log.trace("BFTUpdate: Processing {}", update);
-		/*
-		if (update.getInsertedVertices().count() == 1) {
-			update.getInsertedVertices()
-				.filter(v -> v.getView().equals(this.latestViewUpdate.getCurrentView()))
-				.forEach();
+
+		if (!this.latestViewUpdate.getCurrentView().equals(update.getHeader().getView())) {
+			return;
 		}
-		 */
+
+		// TODO: what if insertUpdate occurs before viewUpdate
+		final BFTNode nextLeader = this.latestViewUpdate.getNextLeader();
+		final Optional<Vote> maybeVote = this.safetyRules.voteFor(
+			update.getInserted().getVertex(),
+			update.getHeader(),
+			this.timeSupplier.currentTime(),
+			this.latestViewUpdate.getHighQC()
+		);
+		maybeVote.ifPresentOrElse(
+			vote -> this.voteDispatcher.dispatch(nextLeader, vote),
+			() -> this.noVoteDispatcher.dispatch(NoVote.create(update.getInserted().getVertex()))
+		);
 	}
 
 	@Override
@@ -117,14 +127,12 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		if (view.lt(this.latestViewUpdate.getCurrentView())) {
 			log.trace("Vote: Ignoring vote from {} for view {}, current view at {}",
 					vote.getAuthor(), view, this.latestViewUpdate.getCurrentView());
-		} else {
-			final Optional<QuorumCertificate> maybeQc = this.pendingVotes.insertVote(vote, this.validatorSet)
-					.filter(qc -> view.gte(this.latestViewUpdate.getCurrentView()));
-
-			maybeQc.ifPresent(qc ->
-				formedQCEventDispatcher.dispatch(FormedQC.create(qc, vote.getAuthor()))
-			);
+			return;
 		}
+
+		this.pendingVotes.insertVote(vote, this.validatorSet)
+			.filter(qc -> view.gte(this.latestViewUpdate.getCurrentView()))
+			.ifPresent(qc -> this.formedQCEventDispatcher.dispatch(FormedQC.create(qc, vote.getAuthor())));
 	}
 
 	@Override
@@ -147,21 +155,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 		// TODO: Move insertion and maybe check into BFTSync
 		final VerifiedVertex proposedVertex = new VerifiedVertex(proposal.getVertex(), this.hasher.hash(proposal.getVertex()));
-		final Optional<BFTHeader> maybeHeader = this.vertexStore.insertVertex(proposedVertex);
-		// The header may not be present if the ledger is ahead of consensus
-		maybeHeader.ifPresent(header -> {
-			final BFTNode nextLeader = this.latestViewUpdate.getNextLeader();
-			final Optional<Vote> maybeVote = this.safetyRules.voteFor(
-				proposedVertex,
-				header,
-				this.timeSupplier.currentTime(),
-				this.latestViewUpdate.getHighQC()
-			);
-			maybeVote.ifPresentOrElse(
-				vote -> this.voteDispatcher.dispatch(nextLeader, vote),
-				() -> noVoteDispatcher.dispatch(NoVote.create(proposedVertex))
-			);
-		});
+		this.vertexStore.insertVertex(proposedVertex);
 	}
 
 	@Override

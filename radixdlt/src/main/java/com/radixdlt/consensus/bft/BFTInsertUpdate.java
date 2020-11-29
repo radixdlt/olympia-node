@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus.bft;
 
+import com.radixdlt.consensus.BFTHeader;
 import java.util.Objects;
 
 /**
@@ -24,16 +25,16 @@ import java.util.Objects;
  */
 public final class BFTInsertUpdate {
 	private final VerifiedVertexStoreState vertexStoreState;
-	private final VerifiedVertex insertedVertex;
+	private final PreparedVertex insertedVertex;
 	private final int siblings;
 
-	private BFTInsertUpdate(VerifiedVertexStoreState vertexStoreState, VerifiedVertex insertedVertex, int siblings) {
+	private BFTInsertUpdate(VerifiedVertexStoreState vertexStoreState, PreparedVertex insertedVertex, int siblings) {
 		this.vertexStoreState = vertexStoreState;
 		this.insertedVertex = Objects.requireNonNull(insertedVertex);
 		this.siblings = siblings;
 	}
 
-	public static BFTInsertUpdate insertedVertex(VerifiedVertex insertedVertex, int siblingsCount, VerifiedVertexStoreState vertexStoreState) {
+	public static BFTInsertUpdate insertedVertex(PreparedVertex insertedVertex, int siblingsCount, VerifiedVertexStoreState vertexStoreState) {
 		return new BFTInsertUpdate(
 			vertexStoreState,
 			insertedVertex,
@@ -53,12 +54,16 @@ public final class BFTInsertUpdate {
 		return vertexStoreState.getVertices().size();
 	}
 
-	public VerifiedVertex getInsertedVertex() {
+	public BFTHeader getHeader() {
+		return new BFTHeader(insertedVertex.getView(), insertedVertex.getId(), insertedVertex.getLedgerHeader());
+	}
+
+	public PreparedVertex getInserted() {
 		return insertedVertex;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s", getClass().getSimpleName());
+		return String.format("%s{inserted=%s}", getClass().getSimpleName(), insertedVertex);
 	}
 }

@@ -169,13 +169,10 @@ public final class VertexStore {
 	public void insertVertexChain(VerifiedVertexChain verifiedVertexChain) {
 		for (VerifiedVertex v: verifiedVertexChain.getVertices()) {
 			if (!addQC(v.getQC())) {
-				throw new IllegalStateException();
+				return;
 			}
 
-			Optional<BFTHeader> headerMaybe = insertVertex(v);
-			if (headerMaybe.isEmpty()) {
-				break;
-			}
+			insertVertex(v);
 		}
 	}
 
@@ -241,26 +238,21 @@ public final class VertexStore {
 	 * otherwise an empty optional.
 	 *
 	 * @param vertex vertex to insert
-	 * @return a bft header if creation of next header is successful.
 	 */
-	public Optional<BFTHeader> insertVertex(VerifiedVertex vertex) {
+	public void insertVertex(VerifiedVertex vertex) {
 		PreparedVertex v = vertices.get(vertex.getId());
 		if (v != null) {
-			return Optional.of(new BFTHeader(
-				v.getVertex().getView(),
-				v.getVertex().getId(),
-				v.getLedgerHeader()
-			));
+			return;
 		}
 
 		if (!this.containsVertex(vertex.getParentId())) {
 			throw new MissingParentException(vertex.getParentId());
 		}
 
-		return insertVertexInternal(vertex);
+		insertVertexInternal(vertex);
 	}
 
-	private Optional<BFTHeader> insertVertexInternal(VerifiedVertex vertex) {
+	private void insertVertexInternal(VerifiedVertex vertex) {
 		LinkedList<PreparedVertex> previous = getPathFromRoot(vertex.getParentId());
 		Optional<PreparedVertex> preparedVertexMaybe = ledger.prepare(previous, vertex);
 		preparedVertexMaybe.ifPresent(preparedVertex -> {
@@ -270,11 +262,9 @@ public final class VertexStore {
 			siblings.add(preparedVertex.getId());
 
 			VerifiedVertexStoreState vertexStoreState = getState();
-			bftUpdateDispatcher.dispatch(BFTInsertUpdate.insertedVertex(vertex, siblings.size(), vertexStoreState));
+			BFTInsertUpdate update = BFTInsertUpdate.insertedVertex(preparedVertex, siblings.size(), vertexStoreState);
+			bftUpdateDispatcher.dispatch(update);
 		});
-
-		return preparedVertexMaybe
-			.map(executedVertex -> new BFTHeader(vertex.getView(), vertex.getId(), executedVertex.getLedgerHeader()));
 	}
 
 	private void removeVertexAndPruneInternal(HashCode vertexId, HashCode skip, Builder<HashCode> prunedVerticesBuilder) {

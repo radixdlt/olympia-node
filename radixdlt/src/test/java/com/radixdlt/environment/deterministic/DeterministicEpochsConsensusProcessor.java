@@ -66,7 +66,7 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 		EventProcessor<SyncInProgress> syncTimeoutProcessor,
 		EventProcessor<EpochViewUpdate> epochViewUpdateProcessor,
 		EventProcessor<BFTRebuildUpdate> rebuildUpdateEventProcessor,
-		Set<EventProcessor<BFTInsertUpdate>> bftUpdateProcessors,
+		EventProcessor<BFTInsertUpdate> bftUpdateProcessor,
 		Set<EventProcessor<BFTHighQCUpdate>> bftHighQcUpdateProcessors,
 		RemoteEventProcessor<DtoLedgerHeaderAndProof> syncRequestProcessor,
 		RemoteEventProcessor<DtoCommandsAndProof> syncResponseProcessor
@@ -83,7 +83,7 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 		processorsBuilder.put(LocalSyncRequest.class, e -> localSyncRequestEventProcessor.process((LocalSyncRequest) e));
 		processorsBuilder.put(LocalGetVerticesRequest.class, e -> localGetVerticesRequestEventProcessor.process((LocalGetVerticesRequest) e));
 		processorsBuilder.put(SyncInProgress.class, e -> syncTimeoutProcessor.process((SyncInProgress) e));
-		processorsBuilder.put(BFTInsertUpdate.class, e -> bftUpdateProcessors.forEach(p -> p.process((BFTInsertUpdate) e)));
+		processorsBuilder.put(BFTInsertUpdate.class, e -> bftUpdateProcessor.process((BFTInsertUpdate) e));
 		processorsBuilder.put(BFTRebuildUpdate.class, e -> rebuildUpdateEventProcessor.process((BFTRebuildUpdate) e));
 		processorsBuilder.put(BFTHighQCUpdate.class, e -> bftHighQcUpdateProcessors.forEach(p -> p.process((BFTHighQCUpdate) e)));
 		this.eventProcessors = processorsBuilder.build();
