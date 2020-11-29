@@ -22,21 +22,20 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.MessageInTransit;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 
 /**
  * Drops one proposal per view
  */
 public class FProposalsPerViewDropper implements Predicate<MessageInTransit> {
-	private final Map<View, Set<BFTNode>> proposalToDrop = new HashMap<>();
-	private final Map<View, Integer> proposalCount = new HashMap<>();
+	private final ConcurrentHashMap<View, Set<BFTNode>> proposalToDrop = new ConcurrentHashMap<>();
+	private final ConcurrentHashMap<View, Integer> proposalCount = new ConcurrentHashMap<>();
 	private final ImmutableList<BFTNode> validatorSet;
 	private final Random random;
 	private final int faultySize;
