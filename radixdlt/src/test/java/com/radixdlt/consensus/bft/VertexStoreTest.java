@@ -90,7 +90,6 @@ public class VertexStoreTest {
 		this.genesisVertex = new VerifiedVertex(UnverifiedVertex.createGenesis(MOCKED_HEADER), genesisHash);
 		this.rootQC = QuorumCertificate.ofGenesis(genesisVertex, MOCKED_HEADER);
 		this.sut = VertexStore.create(
-			mock(PersistentVertexStore.class),
 			VerifiedVertexStoreState.create(HighQC.from(rootQC), genesisVertex),
 			ledger,
 			bftUpdateSender,

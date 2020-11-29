@@ -25,30 +25,34 @@ import java.util.stream.Stream;
  * An update to the BFT state
  */
 public final class BFTUpdate {
+	private final VerifiedVertexStoreState vertexStoreState;
 	private final Supplier<Stream<VerifiedVertex>> insertedVertices;
 	private final int siblings;
-	private final int vertexStoreSize;
 
-	private BFTUpdate(Supplier<Stream<VerifiedVertex>> insertedVertices, int siblings, int vertexStoreSize) {
+	private BFTUpdate(VerifiedVertexStoreState vertexStoreState, Supplier<Stream<VerifiedVertex>> insertedVertices, int siblings) {
+		this.vertexStoreState = vertexStoreState;
 		this.insertedVertices = Objects.requireNonNull(insertedVertices);
 		this.siblings = siblings;
-		this.vertexStoreSize = vertexStoreSize;
 	}
 
 	public static BFTUpdate fromRebuild(VerifiedVertexStoreState vertexStoreState) {
 		return new BFTUpdate(
+			vertexStoreState,
 			() -> Stream.concat(Stream.of(vertexStoreState.getRoot()), vertexStoreState.getVertices().stream()),
-			0,
-			vertexStoreState.getVertices().size()
+			0
 		);
 	}
 
 	public static BFTUpdate insertedVertex(VerifiedVertex insertedVertex, int siblingsCount, VerifiedVertexStoreState vertexStoreState) {
 		return new BFTUpdate(
+			vertexStoreState,
 			() -> Stream.of(insertedVertex),
-			siblingsCount,
-			vertexStoreState.getVertices().size()
+			siblingsCount
 		);
+	}
+
+	public VerifiedVertexStoreState getVertexStoreState() {
+		return vertexStoreState;
 	}
 
 	public int getSiblingsCount() {
@@ -56,7 +60,7 @@ public final class BFTUpdate {
 	}
 
 	public int getVertexStoreSize() {
-		return vertexStoreSize;
+		return vertexStoreState.getVertices().size();
 	}
 
 	public Stream<VerifiedVertex> getInsertedVertices() {

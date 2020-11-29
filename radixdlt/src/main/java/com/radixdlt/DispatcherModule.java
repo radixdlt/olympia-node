@@ -75,10 +75,12 @@ public class DispatcherModule extends AbstractModule {
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochViewUpdate>>() { }, ProcessOnDispatch.class);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochViewUpdate>>() { });
 
+		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<BFTUpdate>>() { }, ProcessOnDispatch.class);
+		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<BFTHighQCUpdate>>() { }, ProcessOnDispatch.class);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<BFTHighQCUpdate>>() { });
-
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<BFTCommittedUpdate>>() { });
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<BFTCommittedUpdate>>() { }, ProcessOnDispatch.class);
+
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<FormedQC>>() { }, ProcessOnDispatch.class);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<Vote>>() { }, ProcessOnDispatch.class);
 	}
@@ -141,6 +143,7 @@ public class DispatcherModule extends AbstractModule {
 
 	@Provides
 	private EventDispatcher<BFTUpdate> viewEventDispatcher(
+		@ProcessOnDispatch Set<EventProcessor<BFTUpdate>> processors,
 		Environment environment,
 		SystemCounters systemCounters
 	) {
@@ -152,9 +155,8 @@ public class DispatcherModule extends AbstractModule {
 			long indirectParents = update.getInsertedVertices().filter(v -> !v.hasDirectParent()).count();
 			systemCounters.add(CounterType.BFT_INDIRECT_PARENT, indirectParents);
 			systemCounters.set(CounterType.BFT_VERTEX_STORE_SIZE, update.getVertexStoreSize());
-
-
 			dispatcher.dispatch(update);
+			processors.forEach(p -> p.process(update));
 		};
 	}
 

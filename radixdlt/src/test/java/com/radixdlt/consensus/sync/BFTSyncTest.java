@@ -47,7 +47,6 @@ import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.TypedMocks;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;

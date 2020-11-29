@@ -18,6 +18,7 @@
 package com.radixdlt.consensus.bft;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.hash.HashCode;
 import java.util.List;
 
 public class VerifiedVertexChain {
@@ -30,7 +31,9 @@ public class VerifiedVertexChain {
 	public static VerifiedVertexChain create(List<VerifiedVertex> vertices) {
 		if (vertices.size() >= 2) {
 			for (int index = 1; index < vertices.size(); index++) {
-				if (vertices.get(index - 1).getId().equals(vertices.get(index).getParentId())) {
+				HashCode parentId = vertices.get(index - 1).getId();
+				HashCode parentIdCheck = vertices.get(index).getParentId();
+				if (!parentId.equals(parentIdCheck)) {
 					throw new IllegalStateException("Invalid chain");
 				}
 			}

@@ -49,7 +49,6 @@ public final class VertexStore {
 	private final EventDispatcher<BFTUpdate> bftUpdateDispatcher;
 	private final EventDispatcher<BFTCommittedUpdate> bftCommittedDispatcher;
 
-	private final PersistentVertexStore persistentVertexStore;
 	private final Ledger ledger;
 
 	private final Map<HashCode, PreparedVertex> vertices = new HashMap<>();
@@ -61,7 +60,6 @@ public final class VertexStore {
 	private QuorumCertificate highestCommittedQC;
 
 	private VertexStore(
-		PersistentVertexStore persistentVertexStore,
 		Ledger ledger,
 		VerifiedVertex rootVertex,
 		QuorumCertificate commitQC,
@@ -70,7 +68,6 @@ public final class VertexStore {
 		EventDispatcher<BFTHighQCUpdate> highQCUpdateDispatcher,
 		EventDispatcher<BFTCommittedUpdate> bftCommittedDispatcher
 	) {
-		this.persistentVertexStore = Objects.requireNonNull(persistentVertexStore);
 		this.ledger = Objects.requireNonNull(ledger);
 		this.bftUpdateDispatcher = Objects.requireNonNull(bftUpdateDispatcher);
 		this.highQCUpdateDispatcher = Objects.requireNonNull(highQCUpdateDispatcher);
@@ -82,7 +79,6 @@ public final class VertexStore {
 	}
 
 	public static VertexStore create(
-		PersistentVertexStore persistentVertexStore,
 		VerifiedVertexStoreState vertexStoreState,
 		Ledger ledger,
 		EventDispatcher<BFTUpdate> bftUpdateDispatcher,
@@ -90,7 +86,6 @@ public final class VertexStore {
 		EventDispatcher<BFTCommittedUpdate> bftCommittedDispatcher
 	) {
 		VertexStore vertexStore = new VertexStore(
-			persistentVertexStore,
 			ledger,
 			vertexStoreState.getRoot(),
 			vertexStoreState.getHighQC().highestCommittedQC(),
@@ -109,7 +104,7 @@ public final class VertexStore {
 				// TODO: Cleanup and remove
 				VerifiedVertexStoreState pruned = vertexStoreState.prune();
 				if (!pruned.equals(vertexStoreState)) {
-					return create(persistentVertexStore, pruned, ledger, bftUpdateDispatcher, bftHighQCUpdateDispatcher, bftCommittedDispatcher);
+					return create(pruned, ledger, bftUpdateDispatcher, bftHighQCUpdateDispatcher, bftCommittedDispatcher);
 				}
 
 				// FIXME: If this occurs then it means that our highQC may not have an associated vertex
@@ -158,8 +153,6 @@ public final class VertexStore {
 			siblings.add(preparedVertex.getId());
 		}
 
-		// TODO: refactor this out
-		this.persistentVertexStore.save(vertexStoreState);
 		bftUpdateDispatcher.dispatch(BFTUpdate.fromRebuild(vertexStoreState));
 		return true;
 	}
@@ -273,7 +266,6 @@ public final class VertexStore {
 
 			VerifiedVertexStoreState vertexStoreState = getState();
 			bftUpdateDispatcher.dispatch(BFTUpdate.insertedVertex(vertex, siblings.size(), vertexStoreState));
-			this.persistentVertexStore.save(vertexStoreState);
 		});
 
 		return preparedVertexMaybe
