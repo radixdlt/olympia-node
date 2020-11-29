@@ -24,7 +24,6 @@ import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
-import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
@@ -40,7 +39,6 @@ import static org.mockito.Mockito.*;
 
 public class BFTEventReducerTest {
 
-    private SystemCounters counters = mock(SystemCounters.class);
     private Hasher hasher = mock(Hasher.class);
     private RemoteEventDispatcher<Vote> voteSender = rmock(RemoteEventDispatcher.class);
     private PendingVotes pendingVotes = mock(PendingVotes.class);
@@ -50,6 +48,7 @@ public class BFTEventReducerTest {
     private SafetyRules safetyRules = mock(SafetyRules.class);
     private Pacemaker pacemaker = mock(Pacemaker.class);
     private EventDispatcher<FormedQC> qcEventDispatcher = rmock(EventDispatcher.class);
+    private EventDispatcher<NoVote> noVoteEventDispatcher = rmock(EventDispatcher.class);
     private TimeSupplier timeSupplier = mock(TimeSupplier.class);
 
     private BFTEventReducer bftEventReducer;
@@ -62,10 +61,10 @@ public class BFTEventReducerTest {
             this.pacemaker,
             this.vertexStore,
             this.qcEventDispatcher,
+            this.noVoteEventDispatcher,
             this.voteSender,
             this.hasher,
             this.timeSupplier,
-            this.counters,
             this.safetyRules,
             this.validatorSet,
             this.pendingVotes,

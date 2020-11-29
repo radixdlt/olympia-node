@@ -24,6 +24,7 @@ import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
+import com.radixdlt.consensus.bft.NoVote;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
@@ -50,6 +51,7 @@ import java.util.Set;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.message.FormattedMessage;
 
 /**
  * Manages dispatching of internal events to a given environment
@@ -235,7 +237,6 @@ public class DispatcherModule extends AbstractModule {
 		}
 	}
 
-
 	@Provides
 	private RemoteEventDispatcher<Vote> voteDispatcher(
 		@ProcessOnDispatch Set<EventProcessor<Vote>> processors,
@@ -246,6 +247,17 @@ public class DispatcherModule extends AbstractModule {
 			logger.trace("Vote sending to {}: {}", node, vote);
 			processors.forEach(e -> e.process(vote));
 			dispatcher.dispatch(node, vote);
+		};
+	}
+
+	@Provides
+	private EventDispatcher<NoVote> noVoteDispatcher(
+		Environment environment,
+		SystemCounters systemCounters
+	) {
+		return (noVote) -> {
+			systemCounters.increment(CounterType.BFT_REJECTED);
+			logger.warn(() -> new FormattedMessage("Proposal: Rejected {}", noVote.getVertex()));
 		};
 	}
 

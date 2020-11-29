@@ -43,13 +43,13 @@ public final class BFTBuilder {
 	private VertexStore vertexStore;
 	private BFTSyncer bftSyncer;
 	private EventDispatcher<FormedQC> formedQCEventDispatcher;
+	private EventDispatcher<NoVote> noVoteEventDispatcher;
 
 	// Instance specific objects
 	private BFTNode self;
 
 	private TimeSupplier timeSupplier;
 	private RemoteEventDispatcher<Vote> voteDispatcher;
-	private SystemCounters counters;
 	private SafetyRules safetyRules;
 
 	private BFTBuilder() {
@@ -72,11 +72,6 @@ public final class BFTBuilder {
 
 	public BFTBuilder voteSender(RemoteEventDispatcher<Vote> voteDispatcher) {
 		this.voteDispatcher = voteDispatcher;
-		return this;
-	}
-
-	public BFTBuilder counters(SystemCounters counters) {
-		this.counters = counters;
 		return this;
 	}
 
@@ -120,6 +115,11 @@ public final class BFTBuilder {
 		return this;
 	}
 
+	public BFTBuilder noVoteEventDispatcher(EventDispatcher<NoVote> noVoteEventDispatcher) {
+		this.noVoteEventDispatcher = noVoteEventDispatcher;
+		return this;
+	}
+
 	public BFTEventProcessor build() {
 		if (!validatorSet.containsNode(self)) {
 			return EmptyBFTEventProcessor.INSTANCE;
@@ -131,10 +131,10 @@ public final class BFTBuilder {
 			pacemaker,
 			vertexStore,
 			formedQCEventDispatcher,
+			noVoteEventDispatcher,
 			voteDispatcher,
 			hasher,
 			timeSupplier,
-			counters,
 			safetyRules,
 			validatorSet,
 			pendingVotes,

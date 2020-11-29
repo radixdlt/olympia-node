@@ -31,6 +31,7 @@ import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.FormedQC;
+import com.radixdlt.consensus.bft.NoVote;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
@@ -94,6 +95,7 @@ public final class ConsensusModule extends AbstractModule {
 		Hasher hasher,
 		HashVerifier verifier,
 		EventDispatcher<FormedQC> formedQCEventDispatcher,
+		EventDispatcher<NoVote> noVoteEventDispatcher,
 		RemoteEventDispatcher<Vote> voteDispatcher,
 		TimeSupplier timeSupplier
 	) {
@@ -104,7 +106,6 @@ public final class ConsensusModule extends AbstractModule {
 			bftSyncer,
 			formedQCEventProcessor,
 			validatorSet,
-			counters,
 			safetyRules
 		) ->
 			BFTBuilder.create()
@@ -112,8 +113,8 @@ public final class ConsensusModule extends AbstractModule {
 				.hasher(hasher)
 				.verifier(verifier)
 				.timeSupplier(timeSupplier)
+				.noVoteEventDispatcher(noVoteEventDispatcher)
 				.voteSender(voteDispatcher)
-				.counters(counters)
 				.safetyRules(safetyRules)
 				.pacemaker(pacemaker)
 				.vertexStore(vertexStore)
@@ -146,7 +147,6 @@ public final class ConsensusModule extends AbstractModule {
 		Pacemaker pacemaker,
 		VertexStore vertexStore,
 		BFTSync bftSync,
-		SystemCounters counters,
 		SafetyRules safetyRules
 	) {
 		return bftFactory.create(
@@ -156,7 +156,6 @@ public final class ConsensusModule extends AbstractModule {
 			bftSync,
 			bftSync.formedQCEventProcessor(),
 			config.getValidatorSet(),
-			counters,
 			safetyRules
 		);
 	}
@@ -245,7 +244,7 @@ public final class ConsensusModule extends AbstractModule {
 	}
 
 	@Provides
-	private ViewUpdate initialView(BFTConfiguration bftConfiguration, ProposerElection proposerElection) {
+	private ViewUpdate initialView() {
 		return ViewUpdate.genesis();
 	}
 

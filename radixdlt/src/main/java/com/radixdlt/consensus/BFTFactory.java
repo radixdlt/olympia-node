@@ -43,7 +43,6 @@ public interface BFTFactory {
 		BFTSyncer bftSyncer,
 		EventProcessor<FormedQC> formedQCEventProcessor,
 		BFTValidatorSet validatorSet,
-		SystemCounters counters,
 		SafetyRules safetyRules
 	);
 }

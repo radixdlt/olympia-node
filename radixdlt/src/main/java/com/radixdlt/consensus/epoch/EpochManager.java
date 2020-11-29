@@ -247,7 +247,6 @@ public final class EpochManager implements BFTSyncRequestProcessor {
 			bftSync,
 			bftSync.formedQCEventProcessor(),
 			validatorSet,
-			counters,
 			safetyRules
 		);
 

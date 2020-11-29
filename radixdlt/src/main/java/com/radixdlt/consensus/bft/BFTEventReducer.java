@@ -53,10 +53,10 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private final VertexStore vertexStore;
 	private final Pacemaker pacemaker;
 	private final EventDispatcher<FormedQC> formedQCEventDispatcher;
+	private final EventDispatcher<NoVote> noVoteDispatcher;
 	private final RemoteEventDispatcher<Vote> voteDispatcher;
 	private final Hasher hasher;
 	private final TimeSupplier timeSupplier;
-	private final SystemCounters counters;
 	private final SafetyRules safetyRules;
 	private final BFTValidatorSet validatorSet;
 	private final PendingVotes pendingVotes;
@@ -67,10 +67,10 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		Pacemaker pacemaker,
 		VertexStore vertexStore,
 		EventDispatcher<FormedQC> formedQCEventDispatcher,
+		EventDispatcher<NoVote> noVoteDispatcher,
 		RemoteEventDispatcher<Vote> voteDispatcher,
 		Hasher hasher,
 		TimeSupplier timeSupplier,
-		SystemCounters counters,
 		SafetyRules safetyRules,
 		BFTValidatorSet validatorSet,
 		PendingVotes pendingVotes,
@@ -79,10 +79,10 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		this.pacemaker = Objects.requireNonNull(pacemaker);
 		this.vertexStore = Objects.requireNonNull(vertexStore);
 		this.formedQCEventDispatcher = Objects.requireNonNull(formedQCEventDispatcher);
+		this.noVoteDispatcher = Objects.requireNonNull(noVoteDispatcher);
 		this.voteDispatcher = Objects.requireNonNull(voteDispatcher);
 		this.hasher = Objects.requireNonNull(hasher);
 		this.timeSupplier = Objects.requireNonNull(timeSupplier);
-		this.counters = Objects.requireNonNull(counters);
 		this.safetyRules = Objects.requireNonNull(safetyRules);
 		this.validatorSet = Objects.requireNonNull(validatorSet);
 		this.pendingVotes = Objects.requireNonNull(pendingVotes);
@@ -149,14 +149,8 @@ public final class BFTEventReducer implements BFTEventProcessor {
 				this.vertexStore.highQC()
 			);
 			maybeVote.ifPresentOrElse(
-				vote -> {
-					log.trace("Proposal: Sending vote to {}: {}", nextLeader, vote);
-					this.voteDispatcher.dispatch(nextLeader, vote);
-				},
-				() -> {
-					this.counters.increment(CounterType.BFT_REJECTED);
-					log.warn(() -> new FormattedMessage("Proposal: Rejected {}", proposedVertex));
-				}
+				vote -> this.voteDispatcher.dispatch(nextLeader, vote),
+				() -> noVoteDispatcher.dispatch(NoVote.create(proposedVertex))
 			);
 		});
 	}
