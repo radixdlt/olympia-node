@@ -136,7 +136,7 @@ public final class Pacemaker {
 
 	private Optional<Proposal> generateProposal(View view) {
 		// Hotstuff's Event-Driven OnBeat
-		final HighQC highQC = this.vertexStore.highQC();
+		final HighQC highQC = this.latestViewUpdate.getHighQC();
 		final QuorumCertificate highestQC = highQC.highestQC();
 		final QuorumCertificate highestCommitted = highQC.highestCommittedQC();
 
@@ -167,9 +167,9 @@ public final class Pacemaker {
 	 */
 	public void processViewTimeout(ViewTimeout viewTimeout) {
 		final View view = viewTimeout.getView();
-		if (view.lte(this.latestViewUpdate.getLastQuorumView())) {
-			log.trace("ViewTimeout: Ignoring view timeout from {} for view {}, last quorum at {}",
-				viewTimeout.getAuthor(), view, this.latestViewUpdate.getLastQuorumView());
+		if (view.lt(this.latestViewUpdate.getCurrentView())) {
+			log.trace("ViewTimeout: Ignoring view timeout from {} for view {}, current view at {}",
+				viewTimeout.getAuthor(), view, this.latestViewUpdate.getCurrentView());
 			return;
 		}
 		this.pendingViewTimeouts.insertViewTimeout(viewTimeout, this.validatorSet)
@@ -206,7 +206,7 @@ public final class Pacemaker {
 		}
 		counters.increment(CounterType.BFT_TIMEOUT);
 
-		final ViewTimeout viewTimeout = this.safetyRules.viewTimeout(view, this.vertexStore.highQC());
+		final ViewTimeout viewTimeout = this.safetyRules.viewTimeout(view, this.latestViewUpdate.getHighQC());
 		this.voteSender.broadcastViewTimeout(viewTimeout, this.validatorSet.nodes());
 
 		LocalTimeoutOccurrence localTimeoutOccurrence = new LocalTimeoutOccurrence(scheduledTimeout);

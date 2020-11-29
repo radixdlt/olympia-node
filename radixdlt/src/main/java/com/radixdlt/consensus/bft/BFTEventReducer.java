@@ -114,9 +114,9 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		log.trace("Vote: Processing {}", vote);
 		// accumulate votes into QCs in store
 		final View view = vote.getView();
-		if (view.lte(this.latestViewUpdate.getLastQuorumView())) {
-			log.trace("Vote: Ignoring vote from {} for view {}, last quorum at {}",
-					vote.getAuthor(), view, this.latestViewUpdate.getLastQuorumView());
+		if (view.lt(this.latestViewUpdate.getCurrentView())) {
+			log.trace("Vote: Ignoring vote from {} for view {}, current view at {}",
+					vote.getAuthor(), view, this.latestViewUpdate.getCurrentView());
 		} else {
 			final Optional<QuorumCertificate> maybeQc = this.pendingVotes.insertVote(vote, this.validatorSet)
 					.filter(qc -> view.gte(this.latestViewUpdate.getCurrentView()));
@@ -155,7 +155,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 				proposedVertex,
 				header,
 				this.timeSupplier.currentTime(),
-				this.vertexStore.highQC()
+				this.latestViewUpdate.getHighQC()
 			);
 			maybeVote.ifPresentOrElse(
 				vote -> this.voteDispatcher.dispatch(nextLeader, vote),

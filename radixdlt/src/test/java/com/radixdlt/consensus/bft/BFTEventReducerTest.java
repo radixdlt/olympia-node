@@ -73,20 +73,11 @@ public class BFTEventReducerTest {
     }
 
     @Test
-    public void when_process_vote_equal_last_quorum__then_ignored() {
-        Vote vote = mock(Vote.class);
-        when(vote.getView()).thenReturn(View.of(0));
-        when(this.proposerElection.getProposer(any())).thenReturn(BFTNode.random());
-        this.bftEventReducer.processVote(vote);
-        verifyNoMoreInteractions(this.pendingVotes);
-    }
-
-    @Test
     public void when_process_vote_with_quorum_wrong_view__then_ignored() {
         Vote vote = mock(Vote.class);
         when(vote.getView()).thenReturn(View.of(1));
         when(this.proposerElection.getProposer(any())).thenReturn(BFTNode.random());
-        this.bftEventReducer.processViewUpdate(ViewUpdate.create(View.of(3), View.of(2), View.of(2), BFTNode.random(), BFTNode.random()));
+        this.bftEventReducer.processViewUpdate(ViewUpdate.create(View.of(3), mock(HighQC.class), BFTNode.random(), BFTNode.random()));
         this.bftEventReducer.processVote(vote);
         verifyNoMoreInteractions(this.pendingVotes);
     }
@@ -107,7 +98,7 @@ public class BFTEventReducerTest {
         when(this.vertexStore.highQC()).thenReturn(highQc);
 
         // Move to view 1
-        this.bftEventReducer.processViewUpdate(ViewUpdate.create(View.of(1), View.of(0), View.of(0), BFTNode.random(), BFTNode.random()));
+        this.bftEventReducer.processViewUpdate(ViewUpdate.create(View.of(1), highQc, BFTNode.random(), BFTNode.random()));
 
         this.bftEventReducer.processVote(vote);
 

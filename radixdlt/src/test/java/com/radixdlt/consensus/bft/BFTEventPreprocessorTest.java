@@ -68,7 +68,7 @@ public class BFTEventPreprocessorTest {
 			forwardTo,
 			vertexStoreSync,
 			syncQueues,
-			ViewUpdate.create(View.genesis().next(), View.genesis(), View.genesis(), self, BFTNode.random())
+			ViewUpdate.create(View.genesis().next(), mock(HighQC.class), self, BFTNode.random())
 		);
 	}
 

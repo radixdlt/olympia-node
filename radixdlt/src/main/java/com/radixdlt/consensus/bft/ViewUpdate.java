@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus.bft;
 
+import com.radixdlt.consensus.HighQC;
 import java.util.Objects;
 
 /**
@@ -25,34 +26,33 @@ import java.util.Objects;
 public final class ViewUpdate {
 
 	private final View currentView;
-	// Last view that we had any kind of quorum for
-	private final View lastQuorumView;
-	// Highest view in which a commit happened
-	private final View highestCommitView;
+	private final HighQC highQC;
 
 	private final BFTNode leader;
 	private final BFTNode nextLeader;
 
-	private ViewUpdate(View currentView, View lastQuorumView, View highestCommitView, BFTNode leader, BFTNode nextLeader) {
+	private ViewUpdate(View currentView, HighQC highQC, BFTNode leader, BFTNode nextLeader) {
 		this.currentView = currentView;
-		this.lastQuorumView = lastQuorumView;
-		this.highestCommitView = highestCommitView;
+		this.highQC = highQC;
 		this.leader = leader;
 		this.nextLeader = nextLeader;
 	}
 
-	public static ViewUpdate create(View currentView, View lastQuorumView, View highestCommitView, BFTNode leader, BFTNode nextLeader) {
+	public static ViewUpdate create(View currentView, HighQC highQC, BFTNode leader, BFTNode nextLeader) {
 		Objects.requireNonNull(currentView);
-		Objects.requireNonNull(lastQuorumView);
-		Objects.requireNonNull(highestCommitView);
 		Objects.requireNonNull(leader);
 		Objects.requireNonNull(nextLeader);
 
-		return new ViewUpdate(currentView, lastQuorumView, highestCommitView, leader, nextLeader);
+		return new ViewUpdate(currentView, highQC, leader, nextLeader);
 	}
 
 	public static ViewUpdate genesis() {
-		return new ViewUpdate(View.genesis(), View.genesis(), View.genesis(), null, null);
+		return new ViewUpdate(
+			View.genesis(), null, null, null);
+	}
+
+	public HighQC getHighQC() {
+		return highQC;
 	}
 
 	public BFTNode getLeader() {
@@ -67,25 +67,16 @@ public final class ViewUpdate {
 		return currentView;
 	}
 
-	public View getLastQuorumView() {
-		return lastQuorumView;
-	}
-
-	public View getHighestCommitView() {
-		return highestCommitView;
-	}
-
 	public long uncommittedViewsCount() {
-		return Math.max(0L, currentView.number() - highestCommitView.number() - 1);
+		return Math.max(0L, currentView.number() - highQC.highestCommittedQC().getView().number() - 1);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s,%s,%s leader=%s next=%s]",
+		return String.format("%s[%s %s leader=%s next=%s]",
 			getClass().getSimpleName(),
 			this.currentView,
-			this.lastQuorumView,
-			this.highestCommitView,
+			this.highQC,
 			this.leader,
 			this.nextLeader);
 	}
@@ -100,14 +91,13 @@ public final class ViewUpdate {
 		}
 		final ViewUpdate that = (ViewUpdate) o;
 		return Objects.equals(currentView, that.currentView)
-			&& Objects.equals(lastQuorumView, that.lastQuorumView)
-			&& Objects.equals(highestCommitView, that.highestCommitView)
+			&& Objects.equals(highQC, that.highQC)
 			&& Objects.equals(leader, that.leader)
 			&& Objects.equals(nextLeader, that.nextLeader);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(currentView, lastQuorumView, highestCommitView, leader, nextLeader);
+		return Objects.hash(currentView, highQC, leader, nextLeader);
 	}
 }

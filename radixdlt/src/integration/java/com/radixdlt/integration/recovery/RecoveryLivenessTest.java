@@ -228,7 +228,7 @@ public class RecoveryLivenessTest {
 		return network.allMessages().stream()
 			.filter(msg -> msg.message() instanceof EpochViewUpdate)
 			.map(msg -> (EpochViewUpdate) msg.message())
-			.map(e -> new EpochView(e.getEpoch(), e.getViewUpdate().getHighestCommitView()))
+			.map(e -> new EpochView(e.getEpoch(), e.getViewUpdate().getHighQC().highestCommittedQC().getView()))
 			.max(Comparator.naturalOrder());
 	}
 
