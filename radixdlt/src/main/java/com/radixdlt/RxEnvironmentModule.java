@@ -23,9 +23,10 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
+import com.radixdlt.consensus.bft.BFTRebuildUpdate;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
-import com.radixdlt.consensus.bft.BFTUpdate;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
@@ -65,7 +66,8 @@ public class RxEnvironmentModule extends AbstractModule {
 			ScheduledLocalTimeout.class,
 			LocalSyncRequest.class,
 			LocalGetVerticesRequest.class,
-			BFTUpdate.class,
+			BFTInsertUpdate.class,
+			BFTRebuildUpdate.class,
 			BFTHighQCUpdate.class,
 			BFTCommittedUpdate.class,
 			LocalTimeoutOccurrence.class,
@@ -93,8 +95,13 @@ public class RxEnvironmentModule extends AbstractModule {
 	}
 
 	@Provides
-	Observable<BFTUpdate> bftUpdates(RxEnvironment rxEnvironment) {
-		return rxEnvironment.getObservable(BFTUpdate.class);
+	Observable<BFTInsertUpdate> bftUpdates(RxEnvironment rxEnvironment) {
+		return rxEnvironment.getObservable(BFTInsertUpdate.class);
+	}
+
+	@Provides
+	Observable<BFTRebuildUpdate> bftRebuilds(RxEnvironment rxEnvironment) {
+		return rxEnvironment.getObservable(BFTRebuildUpdate.class);
 	}
 
 	@Provides

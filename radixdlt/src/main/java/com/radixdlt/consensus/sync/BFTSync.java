@@ -26,7 +26,7 @@ import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTSyncer;
-import com.radixdlt.consensus.bft.BFTUpdate;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.FormedQC;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexChain;
@@ -181,6 +181,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 
 		if (vertexStore.addQC(qc)) {
 			// TODO: check if already sent highest
+			// TODO: Move pacemaker outside of sync
 			this.pacemakerReducer.processQC(vertexStore.highQC());
 			return SyncResult.SYNCED;
 		}
@@ -295,7 +296,10 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 				syncState.fetched.get(0),
 				nonRootVertices
 			);
-			vertexStore.tryRebuild(vertexStoreState);
+			if (vertexStore.tryRebuild(vertexStoreState)) {
+				// TODO: Move pacemaker outside of sync
+				pacemakerReducer.processQC(vertexStoreState.getHighQC());
+			}
 		} else {
 			log.debug("SYNC_STATE: skipping rebuild");
 		}
@@ -398,7 +402,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 		}
 	}
 
-	public void processBFTUpdate(BFTUpdate update) {
+	public void processBFTUpdate(BFTInsertUpdate update) {
 	}
 
 	// TODO: Verify headers match

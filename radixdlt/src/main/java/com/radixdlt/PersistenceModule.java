@@ -23,7 +23,7 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
-import com.radixdlt.consensus.bft.BFTUpdate;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.environment.EventProcessor;
@@ -63,7 +63,7 @@ public class PersistenceModule extends AbstractModule {
 
 	@ProvidesIntoSet
 	@ProcessOnDispatch
-	public EventProcessor<BFTUpdate> persistUpdates(PersistentVertexStore persistentVertexStore) {
+	public EventProcessor<BFTInsertUpdate> persistUpdates(PersistentVertexStore persistentVertexStore) {
 		return update -> persistentVertexStore.save(update.getVertexStoreState());
 	}
 }

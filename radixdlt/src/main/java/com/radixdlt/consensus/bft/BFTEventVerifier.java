@@ -101,8 +101,13 @@ public final class BFTEventVerifier implements BFTEventProcessor {
 	}
 
 	@Override
-	public void processBFTUpdate(BFTUpdate update) {
+	public void processBFTUpdate(BFTInsertUpdate update) {
 		forwardTo.processBFTUpdate(update);
+	}
+
+	@Override
+	public void processBFTRebuildUpdate(BFTRebuildUpdate update) {
+		forwardTo.processBFTRebuildUpdate(update);
 	}
 
 	private Optional<BFTNode> validAuthor(ConsensusEvent event) {

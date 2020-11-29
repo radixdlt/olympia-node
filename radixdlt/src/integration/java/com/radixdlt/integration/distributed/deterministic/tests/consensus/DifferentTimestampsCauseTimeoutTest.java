@@ -20,7 +20,7 @@ package com.radixdlt.integration.distributed.deterministic.tests.consensus;
 import com.google.inject.AbstractModule;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.bft.BFTUpdate;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.integration.distributed.deterministic.DeterministicTest.DeterministicManualExecutor;
@@ -62,16 +62,16 @@ public class DifferentTimestampsCauseTimeoutTest {
 
 		executor.processNext(3, 3, ViewUpdate.class);
 		executor.processNext(3, 3, Proposal.class);
-		executor.processNext(3, 3, BFTUpdate.class);
+		executor.processNext(3, 3, BFTInsertUpdate.class);
 		executor.processNext(3, 0, Proposal.class);
 		executor.processNext(0, 0, ViewUpdate.class);
-		executor.processNext(0, 0, BFTUpdate.class);
+		executor.processNext(0, 0, BFTInsertUpdate.class);
 		executor.processNext(3, 1, Proposal.class);
 		executor.processNext(1, 1, ViewUpdate.class);
-		executor.processNext(1, 1, BFTUpdate.class);
+		executor.processNext(1, 1, BFTInsertUpdate.class);
 		executor.processNext(3, 2, Proposal.class);
 		executor.processNext(2, 2, ViewUpdate.class);
-		executor.processNext(2, 2, BFTUpdate.class);
+		executor.processNext(2, 2, BFTInsertUpdate.class);
 	}
 
 	@Test
@@ -108,16 +108,16 @@ public class DifferentTimestampsCauseTimeoutTest {
 		// Proposal here has genesis qc, which has no timestamps
 		executor.processNext(1, 1, ViewUpdate.class); // Messages to self first
 		executor.processNext(1, 1, Proposal.class);
-		executor.processNext(1, 1, BFTUpdate.class);
+		executor.processNext(1, 1, BFTInsertUpdate.class);
 		executor.processNext(0, 0, ViewUpdate.class);
 		executor.processNext(2, 2, ViewUpdate.class);
 		executor.processNext(3, 3, ViewUpdate.class);
 		executor.processNext(1, 0, Proposal.class);
-		executor.processNext(0, 0, BFTUpdate.class);
+		executor.processNext(0, 0, BFTInsertUpdate.class);
 		executor.processNext(1, 2, Proposal.class);
-		executor.processNext(2, 2, BFTUpdate.class);
+		executor.processNext(2, 2, BFTInsertUpdate.class);
 		executor.processNext(1, 3, Proposal.class);
-		executor.processNext(3, 3, BFTUpdate.class);
+		executor.processNext(3, 3, BFTInsertUpdate.class);
 
 		executor.processNext(2, 2, Vote.class); // Messages to self first
 		executor.processNext(1, 2, Vote.class); // Leader votes early as it sees proposal early
@@ -128,16 +128,16 @@ public class DifferentTimestampsCauseTimeoutTest {
 		// They are mutated as required by the test
 		executor.processNext(2, 2, ViewUpdate.class);
 		executor.processNext(2, 2, Proposal.class);
-		executor.processNext(2, 2, BFTUpdate.class);
+		executor.processNext(2, 2, BFTInsertUpdate.class);
 		executor.processNext(2, 0, Proposal.class);
 		executor.processNext(0, 0, ViewUpdate.class);
-		executor.processNext(0, 0, BFTUpdate.class);
+		executor.processNext(0, 0, BFTInsertUpdate.class);
 		executor.processNext(2, 1, Proposal.class);
 		executor.processNext(1, 1, ViewUpdate.class);
-		executor.processNext(1, 1, BFTUpdate.class);
+		executor.processNext(1, 1, BFTInsertUpdate.class);
 		executor.processNext(2, 3, Proposal.class);
 		executor.processNext(3, 3, ViewUpdate.class);
-		executor.processNext(3, 3, BFTUpdate.class);
+		executor.processNext(3, 3, BFTInsertUpdate.class);
 
 		executor.processNext(3, 3, Vote.class);
 		executor.processNext(2, 3, Vote.class);

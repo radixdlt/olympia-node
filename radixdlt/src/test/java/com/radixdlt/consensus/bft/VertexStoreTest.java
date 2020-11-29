@@ -62,7 +62,8 @@ public class VertexStoreTest {
 	private QuorumCertificate rootQC;
 	private VertexStore sut;
 	private Ledger ledger;
-	private EventDispatcher<BFTUpdate> bftUpdateSender;
+	private EventDispatcher<BFTInsertUpdate> bftUpdateSender;
+	private EventDispatcher<BFTRebuildUpdate> rebuildUpdateEventDispatcher;
 	private EventDispatcher<BFTHighQCUpdate> bftHighQCUpdateEventDispatcher;
 	private EventDispatcher<BFTCommittedUpdate> committedSender;
 	private Hasher hasher = Sha256Hasher.withDefaultSerialization();
@@ -83,6 +84,7 @@ public class VertexStoreTest {
 		}).when(ledger).prepare(any(), any());
 
 		this.bftUpdateSender = rmock(EventDispatcher.class);
+		this.rebuildUpdateEventDispatcher = rmock(EventDispatcher.class);
 		this.bftHighQCUpdateEventDispatcher = rmock(EventDispatcher.class);
 		this.committedSender = rmock(EventDispatcher.class);
 
@@ -93,6 +95,7 @@ public class VertexStoreTest {
 			VerifiedVertexStoreState.create(HighQC.from(rootQC), genesisVertex),
 			ledger,
 			bftUpdateSender,
+			rebuildUpdateEventDispatcher,
 			bftHighQCUpdateEventDispatcher,
 			committedSender
 		);
@@ -199,10 +202,10 @@ public class VertexStoreTest {
 		sut.tryRebuild(vertexStoreState);
 
 		// Assert
-		verify(bftUpdateSender, times(1)).dispatch(
+		verify(rebuildUpdateEventDispatcher, times(1)).dispatch(
 			argThat(u -> {
-				List<VerifiedVertex> sentVertices = u.getInsertedVertices().collect(Collectors.toList());
-				return sentVertices.equals(vertices);
+				List<VerifiedVertex> sentVertices = u.getVertexStoreState().getVertices();
+				return sentVertices.equals(vertices.subList(1, vertices.size()));
 			})
 		);
 	}

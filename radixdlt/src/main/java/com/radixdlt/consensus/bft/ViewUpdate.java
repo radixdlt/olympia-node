@@ -81,7 +81,7 @@ public final class ViewUpdate {
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s,%s,%s leader=%s nextLeader=%s]",
+		return String.format("%s[%s,%s,%s leader=%s next=%s]",
 			getClass().getSimpleName(),
 			this.currentView,
 			this.lastQuorumView,

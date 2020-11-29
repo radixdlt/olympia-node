@@ -26,7 +26,8 @@ import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
-import com.radixdlt.consensus.bft.BFTUpdate;
+import com.radixdlt.consensus.bft.BFTRebuildUpdate;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.Epoched;
@@ -84,8 +85,13 @@ public class EpochsConsensusModule extends AbstractModule {
 	}
 
 	@Provides
-	private EventProcessor<BFTUpdate> bftUpdateProcessor(EpochManager epochManager) {
+	private EventProcessor<BFTInsertUpdate> bftUpdateProcessor(EpochManager epochManager) {
 		return epochManager::processBFTUpdate;
+	}
+
+	@Provides
+	private EventProcessor<BFTRebuildUpdate> bftRebuildUpdateEventProcessor(EpochManager epochManager) {
+		return epochManager.bftRebuildUpdateEventProcessor();
 	}
 
 	@Provides
@@ -237,7 +243,8 @@ public class EpochsConsensusModule extends AbstractModule {
 
 	@Provides
 	private VertexStoreFactory vertexStoreFactory(
-		EventDispatcher<BFTUpdate> updateSender,
+		EventDispatcher<BFTInsertUpdate> updateSender,
+		EventDispatcher<BFTRebuildUpdate> rebuildUpdateDispatcher,
 		EventDispatcher<BFTHighQCUpdate> highQCUpdateEventDispatcher,
 		EventDispatcher<BFTCommittedUpdate> committedDispatcher,
 		Ledger ledger
@@ -246,6 +253,7 @@ public class EpochsConsensusModule extends AbstractModule {
 			vertexStoreState,
 			ledger,
 			updateSender,
+			rebuildUpdateDispatcher,
 			highQCUpdateEventDispatcher,
 			committedDispatcher
 		);

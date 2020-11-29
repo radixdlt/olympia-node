@@ -21,7 +21,8 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTUpdate;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
+import com.radixdlt.consensus.bft.BFTRebuildUpdate;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.epoch.Epoched;
@@ -64,7 +65,8 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 		EventProcessor<LocalGetVerticesRequest> localGetVerticesRequestEventProcessor,
 		EventProcessor<SyncInProgress> syncTimeoutProcessor,
 		EventProcessor<EpochViewUpdate> epochViewUpdateProcessor,
-		Set<EventProcessor<BFTUpdate>> bftUpdateProcessors,
+		EventProcessor<BFTRebuildUpdate> rebuildUpdateEventProcessor,
+		Set<EventProcessor<BFTInsertUpdate>> bftUpdateProcessors,
 		Set<EventProcessor<BFTHighQCUpdate>> bftHighQcUpdateProcessors,
 		RemoteEventProcessor<DtoLedgerHeaderAndProof> syncRequestProcessor,
 		RemoteEventProcessor<DtoCommandsAndProof> syncResponseProcessor
@@ -81,7 +83,8 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 		processorsBuilder.put(LocalSyncRequest.class, e -> localSyncRequestEventProcessor.process((LocalSyncRequest) e));
 		processorsBuilder.put(LocalGetVerticesRequest.class, e -> localGetVerticesRequestEventProcessor.process((LocalGetVerticesRequest) e));
 		processorsBuilder.put(SyncInProgress.class, e -> syncTimeoutProcessor.process((SyncInProgress) e));
-		processorsBuilder.put(BFTUpdate.class, e -> bftUpdateProcessors.forEach(p -> p.process((BFTUpdate) e)));
+		processorsBuilder.put(BFTInsertUpdate.class, e -> bftUpdateProcessors.forEach(p -> p.process((BFTInsertUpdate) e)));
+		processorsBuilder.put(BFTRebuildUpdate.class, e -> rebuildUpdateEventProcessor.process((BFTRebuildUpdate) e));
 		processorsBuilder.put(BFTHighQCUpdate.class, e -> bftHighQcUpdateProcessors.forEach(p -> p.process((BFTHighQCUpdate) e)));
 		this.eventProcessors = processorsBuilder.build();
 

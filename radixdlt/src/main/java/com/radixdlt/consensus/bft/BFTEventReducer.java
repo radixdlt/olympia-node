@@ -29,14 +29,11 @@ import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.consensus.safety.SafetyRules;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.network.TimeSupplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.message.FormattedMessage;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -90,8 +87,20 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	}
 
 	@Override
-	public void processBFTUpdate(BFTUpdate update) {
+	public void processBFTUpdate(BFTInsertUpdate update) {
 		log.trace("BFTUpdate: Processing {}", update);
+		/*
+		if (update.getInsertedVertices().count() == 1) {
+			update.getInsertedVertices()
+				.filter(v -> v.getView().equals(this.latestViewUpdate.getCurrentView()))
+				.forEach();
+		}
+		 */
+	}
+
+	@Override
+	public void processBFTRebuildUpdate(BFTRebuildUpdate update) {
+
 	}
 
 	@Override

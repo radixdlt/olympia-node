@@ -29,7 +29,8 @@ import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
-import com.radixdlt.consensus.bft.BFTUpdate;
+import com.radixdlt.consensus.bft.BFTRebuildUpdate;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.FormedQC;
 import com.radixdlt.consensus.bft.NoVote;
 import com.radixdlt.consensus.bft.Self;
@@ -129,12 +130,17 @@ public final class ConsensusModule extends AbstractModule {
 	}
 
 	@ProvidesIntoSet
-	public EventProcessor<BFTUpdate> bftUpdateEventProcessor(BFTEventProcessor eventProcessor) {
+	public EventProcessor<BFTRebuildUpdate> bftRebuildUpdateEventProcessor(BFTEventProcessor eventProcessor) {
+		return eventProcessor::processBFTRebuildUpdate;
+	}
+
+	@ProvidesIntoSet
+	public EventProcessor<BFTInsertUpdate> bftUpdateEventProcessor(BFTEventProcessor eventProcessor) {
 		return eventProcessor::processBFTUpdate;
 	}
 
 	@ProvidesIntoSet
-	public EventProcessor<BFTUpdate> bftSync(BFTSync bftSync) {
+	public EventProcessor<BFTInsertUpdate> bftSync(BFTSync bftSync) {
 		return bftSync::processBFTUpdate;
 	}
 
@@ -251,7 +257,8 @@ public final class ConsensusModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private VertexStore vertexStore(
-		EventDispatcher<BFTUpdate> updateSender,
+		EventDispatcher<BFTInsertUpdate> updateSender,
+		EventDispatcher<BFTRebuildUpdate> rebuildUpdateDispatcher,
 		EventDispatcher<BFTHighQCUpdate> highQCUpdateEventDispatcher,
 		EventDispatcher<BFTCommittedUpdate> committedSender,
 		BFTConfiguration bftConfiguration,
@@ -261,6 +268,7 @@ public final class ConsensusModule extends AbstractModule {
 			bftConfiguration.getVertexStoreState(),
 			ledger,
 			updateSender,
+			rebuildUpdateDispatcher,
 			highQCUpdateEventDispatcher,
 			committedSender
 		);

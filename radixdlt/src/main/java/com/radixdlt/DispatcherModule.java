@@ -24,12 +24,13 @@ import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
+import com.radixdlt.consensus.bft.BFTRebuildUpdate;
 import com.radixdlt.consensus.bft.NoVote;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTUpdate;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.FormedQC;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.ViewUpdate;
@@ -77,7 +78,7 @@ public class DispatcherModule extends AbstractModule {
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochViewUpdate>>() { }, ProcessOnDispatch.class);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochViewUpdate>>() { });
 
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<BFTUpdate>>() { }, ProcessOnDispatch.class);
+		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<BFTInsertUpdate>>() { }, ProcessOnDispatch.class);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<BFTHighQCUpdate>>() { }, ProcessOnDispatch.class);
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<BFTHighQCUpdate>>() { });
 		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<BFTCommittedUpdate>>() { });
@@ -144,21 +145,34 @@ public class DispatcherModule extends AbstractModule {
 	}
 
 	@Provides
-	private EventDispatcher<BFTUpdate> viewEventDispatcher(
-		@ProcessOnDispatch Set<EventProcessor<BFTUpdate>> processors,
+	private EventDispatcher<BFTInsertUpdate> viewEventDispatcher(
+		@ProcessOnDispatch Set<EventProcessor<BFTInsertUpdate>> processors,
 		Environment environment,
 		SystemCounters systemCounters
 	) {
-		EventDispatcher<BFTUpdate> dispatcher = environment.getDispatcher(BFTUpdate.class);
+		EventDispatcher<BFTInsertUpdate> dispatcher = environment.getDispatcher(BFTInsertUpdate.class);
 		return update -> {
 			if (update.getSiblingsCount() > 1) {
 				systemCounters.increment(CounterType.BFT_VERTEX_STORE_FORKS);
 			}
-			long indirectParents = update.getInsertedVertices().filter(v -> !v.hasDirectParent()).count();
-			systemCounters.add(CounterType.BFT_INDIRECT_PARENT, indirectParents);
+			if (!update.getInsertedVertex().hasDirectParent()) {
+				systemCounters.increment(CounterType.BFT_INDIRECT_PARENT);
+			}
 			systemCounters.set(CounterType.BFT_VERTEX_STORE_SIZE, update.getVertexStoreSize());
 			dispatcher.dispatch(update);
 			processors.forEach(p -> p.process(update));
+		};
+	}
+
+	@Provides
+	private EventDispatcher<BFTRebuildUpdate> bftRebuildUpdateEventDispatcher(
+		Environment environment,
+		SystemCounters systemCounters
+	) {
+		EventDispatcher<BFTRebuildUpdate> dispatcher = environment.getDispatcher(BFTRebuildUpdate.class);
+		return update -> {
+			systemCounters.set(CounterType.BFT_VERTEX_STORE_SIZE, update.getVertexStoreState().getVertices().size());
+			dispatcher.dispatch(update);
 		};
 	}
 
