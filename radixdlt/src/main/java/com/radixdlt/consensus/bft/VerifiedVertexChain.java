@@ -20,8 +20,14 @@ package com.radixdlt.consensus.bft;
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
 import java.util.List;
+import java.util.Objects;
+import javax.annotation.concurrent.Immutable;
 
-public class VerifiedVertexChain {
+/**
+ * A chain of vertices verified to be consistent
+ */
+@Immutable
+public final class VerifiedVertexChain {
 	private final ImmutableList<VerifiedVertex> vertices;
 
 	private VerifiedVertexChain(ImmutableList<VerifiedVertex> vertices) {
@@ -34,7 +40,7 @@ public class VerifiedVertexChain {
 				HashCode parentId = vertices.get(index - 1).getId();
 				HashCode parentIdCheck = vertices.get(index).getParentId();
 				if (!parentId.equals(parentIdCheck)) {
-					throw new IllegalStateException("Invalid chain");
+					throw new IllegalArgumentException(String.format("Invalid chain: %s", vertices));
 				}
 			}
 		}
@@ -44,5 +50,25 @@ public class VerifiedVertexChain {
 
 	public ImmutableList<VerifiedVertex> getVertices() {
 		return vertices;
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{vertices=%s}", this.getClass().getSimpleName(), this.vertices);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hashCode(vertices);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (!(o instanceof VerifiedVertexChain)) {
+			return false;
+		}
+
+		VerifiedVertexChain other = (VerifiedVertexChain) o;
+		return Objects.equals(this.vertices, other.vertices);
 	}
 }

@@ -18,7 +18,11 @@
 package com.radixdlt.consensus.bft;
 
 import com.radixdlt.consensus.HighQC;
+import java.util.Objects;
 
+/**
+ * An event emitted when the high qc has been updated
+ */
 public final class BFTHighQCUpdate {
 	private final VerifiedVertexStoreState vertexStoreState;
 
@@ -36,5 +40,25 @@ public final class BFTHighQCUpdate {
 
 	public VerifiedVertexStoreState getVertexStoreState() {
 		return vertexStoreState;
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{highQC=%s}", this.getClass().getSimpleName(), vertexStoreState.getHighQC());
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(vertexStoreState);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (!(o instanceof BFTHighQCUpdate)) {
+			return false;
+		}
+
+		BFTHighQCUpdate other = (BFTHighQCUpdate) o;
+		return Objects.equals(other.vertexStoreState, this.vertexStoreState);
 	}
 }

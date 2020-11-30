@@ -29,6 +29,9 @@ import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
 
+/**
+ * Vertex Store State version which can be serialized.
+ */
 @SerializerId2("store.vertices")
 public class SerializedVertexStoreState {
 

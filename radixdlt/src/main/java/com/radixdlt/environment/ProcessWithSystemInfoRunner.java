@@ -26,6 +26,10 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import javax.inject.Qualifier;
 
+/**
+ * To be used with SystemInfoRunner, this annotation indicates that
+ * the processor should be processed in the SystemInfoRunner thread.
+ */
 @Qualifier
 @Target({ FIELD, PARAMETER, METHOD })
 @Retention(RUNTIME)

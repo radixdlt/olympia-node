@@ -21,24 +21,24 @@ import com.radixdlt.consensus.BFTHeader;
 import java.util.Objects;
 
 /**
- * An update to the BFT state
+ * An update emitted when the BFT has inserted a new vertex
  */
 public final class BFTInsertUpdate {
 	private final VerifiedVertexStoreState vertexStoreState;
 	private final PreparedVertex insertedVertex;
-	private final int siblings;
+	private final int siblingsCount;
 
-	private BFTInsertUpdate(VerifiedVertexStoreState vertexStoreState, PreparedVertex insertedVertex, int siblings) {
-		this.vertexStoreState = vertexStoreState;
+	private BFTInsertUpdate(PreparedVertex insertedVertex, int siblingsCount, VerifiedVertexStoreState vertexStoreState) {
 		this.insertedVertex = Objects.requireNonNull(insertedVertex);
-		this.siblings = siblings;
+		this.siblingsCount = siblingsCount;
+		this.vertexStoreState = Objects.requireNonNull(vertexStoreState);
 	}
 
 	public static BFTInsertUpdate insertedVertex(PreparedVertex insertedVertex, int siblingsCount, VerifiedVertexStoreState vertexStoreState) {
 		return new BFTInsertUpdate(
-			vertexStoreState,
 			insertedVertex,
-			siblingsCount
+			siblingsCount,
+			vertexStoreState
 		);
 	}
 
@@ -47,7 +47,7 @@ public final class BFTInsertUpdate {
 	}
 
 	public int getSiblingsCount() {
-		return siblings;
+		return siblingsCount;
 	}
 
 	public int getVertexStoreSize() {
@@ -60,6 +60,23 @@ public final class BFTInsertUpdate {
 
 	public PreparedVertex getInserted() {
 		return insertedVertex;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(vertexStoreState, insertedVertex, siblingsCount);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (!(o instanceof BFTInsertUpdate)) {
+			return false;
+		}
+
+		BFTInsertUpdate other = (BFTInsertUpdate) o;
+		return Objects.equals(this.vertexStoreState, other.vertexStoreState)
+			&& Objects.equals(this.insertedVertex, other.insertedVertex)
+			&& this.siblingsCount == other.siblingsCount;
 	}
 
 	@Override

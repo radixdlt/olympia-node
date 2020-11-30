@@ -27,11 +27,17 @@ import com.radixdlt.store.berkeley.SerializedVertexStoreState;
 import com.radixdlt.utils.Pair;
 import java.util.HashMap;
 import java.util.Objects;
+import javax.annotation.concurrent.Immutable;
 
+/**
+ * State of the vertex store which can be serialized.
+ */
+@Immutable
 public final class VerifiedVertexStoreState {
 	private final VerifiedVertex root;
 	private final VerifiedLedgerHeaderAndProof rootHeader;
 	private final HighQC highQC;
+	// TODO: collapse the following two
 	private final ImmutableList<VerifiedVertex> vertices;
 	private final ImmutableMap<HashCode, VerifiedVertex> idToVertex;
 

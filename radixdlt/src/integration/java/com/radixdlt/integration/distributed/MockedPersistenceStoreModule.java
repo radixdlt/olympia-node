@@ -23,8 +23,6 @@ import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.safety.SafetyState;
-import com.radixdlt.store.berkeley.SerializedVertexStoreState;
-import java.util.Optional;
 
 public class MockedPersistenceStoreModule extends AbstractModule {
 
@@ -51,11 +49,6 @@ public class MockedPersistenceStoreModule extends AbstractModule {
 		@Override
 		public void save(VerifiedVertexStoreState vertexStoreState) {
 			// Nothing to do here
-		}
-
-		@Override
-		public Optional<SerializedVertexStoreState> loadLastState() {
-			return Optional.empty();
 		}
 	}
 }

@@ -37,6 +37,9 @@ import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
 
+/**
+ * Starting configuration for simulation/deterministic steady state tests.
+ */
 public class MockedRecoveryModule extends AbstractModule {
 
 	private final HashCode genesisHash;

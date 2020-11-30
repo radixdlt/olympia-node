@@ -30,7 +30,6 @@ import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
@@ -43,6 +42,7 @@ import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
+import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.store.berkeley.BerkeleySafetyStateStore;
 import java.util.Optional;
 
@@ -134,10 +134,10 @@ public class RecoveryModule extends AbstractModule {
 	@Singleton
 	private VerifiedVertexStoreState vertexStoreState(
 		@LastEpochProof VerifiedLedgerHeaderAndProof lastEpochProof,
-		PersistentVertexStore persistentVertexStore,
+		BerkeleyLedgerEntryStore berkeleyLedgerEntryStore,
 		Hasher hasher
 	) {
-		return persistentVertexStore.loadLastState()
+		return berkeleyLedgerEntryStore.loadLastVertexStoreState()
 			.map(serializedVertexStoreState -> {
 				UnverifiedVertex root = serializedVertexStoreState.getRoot();
 				HashCode rootVertexId = hasher.hash(root);

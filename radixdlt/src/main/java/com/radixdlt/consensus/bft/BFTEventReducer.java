@@ -84,7 +84,10 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	public void processBFTUpdate(BFTInsertUpdate update) {
 		log.trace("BFTUpdate: Processing {}", update);
 
-		if (!this.latestViewUpdate.getCurrentView().equals(update.getHeader().getView())) {
+		final View view = update.getHeader().getView();
+		if (view.lt(this.latestViewUpdate.getCurrentView())) {
+			log.trace("InsertUpdate: Ignoring insert {} for view {}, current view at {}",
+				update, view, this.latestViewUpdate.getCurrentView());
 			return;
 		}
 
@@ -104,7 +107,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 	@Override
 	public void processBFTRebuildUpdate(BFTRebuildUpdate update) {
-
+		// No-op
 	}
 
 	@Override

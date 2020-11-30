@@ -266,7 +266,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		long stateVersion = headerAndProof.getAccumulatorState().getStateVersion();
 		long firstVersion = stateVersion - verifiedCommandsAndProof.getCommands().size() + 1;
 
-		// TODO: This needs to be an atomic transaction
+		// TODO: This needs to be an atomic transaction (RPNV1-827)
 		for (int i = 0; i < verifiedCommandsAndProof.getCommands().size(); i++) {
 			this.commitCommand(firstVersion + i, verifiedCommandsAndProof.getCommands().get(i), headerAndProof);
 

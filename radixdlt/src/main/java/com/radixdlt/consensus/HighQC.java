@@ -66,8 +66,14 @@ public final class HighQC {
 		}
 	}
 
+	/**
+	 * Creates a {@link HighQC} from the a QC
+	 *
+	 * @param qc The qc
+	 * @return A new {@link HighQC}
+	 */
 	public static HighQC from(QuorumCertificate qc) {
-		return new HighQC(Objects.requireNonNull(qc), qc);
+		return HighQC.from(qc, qc);
 	}
 
 	/**

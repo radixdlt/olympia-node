@@ -17,7 +17,12 @@
 
 package com.radixdlt.consensus.bft;
 
-public class BFTRebuildUpdate {
+import java.util.Objects;
+
+/**
+ * An update emitted when the BFT has been rebuilt
+ */
+public final class BFTRebuildUpdate {
 	private final VerifiedVertexStoreState vertexStoreState;
 
 	private BFTRebuildUpdate(VerifiedVertexStoreState vertexStoreState) {
@@ -30,5 +35,26 @@ public class BFTRebuildUpdate {
 
 	public VerifiedVertexStoreState getVertexStoreState() {
 		return vertexStoreState;
+	}
+
+
+	@Override
+	public String toString() {
+		return String.format("%s{root=%s}", this.getClass().getSimpleName(), vertexStoreState.getRoot());
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(vertexStoreState);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (!(o instanceof BFTRebuildUpdate)) {
+			return false;
+		}
+
+		BFTRebuildUpdate other = (BFTRebuildUpdate) o;
+		return Objects.equals(other.vertexStoreState, this.vertexStoreState);
 	}
 }

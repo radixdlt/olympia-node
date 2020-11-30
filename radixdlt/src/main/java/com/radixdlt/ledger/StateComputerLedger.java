@@ -224,7 +224,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			VerifiedLedgerHeaderAndProof proof = committedUpdate.getVertexStoreState().getRootHeader();
 			VerifiedCommandsAndProof verifiedCommandsAndProof = new VerifiedCommandsAndProof(commands, proof);
 
-			// TODO: Make these two atomic
+			// TODO: Make these two atomic (RPNV1-827)
 			this.commit(verifiedCommandsAndProof);
 			this.persistentVertexStore.save(committedUpdate.getVertexStoreState());
 		};

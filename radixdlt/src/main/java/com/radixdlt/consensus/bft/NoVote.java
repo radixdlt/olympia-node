@@ -17,7 +17,12 @@
 
 package com.radixdlt.consensus.bft;
 
-public class NoVote {
+import java.util.Objects;
+
+/**
+ * An event emitted when the node decides not to vote for a view
+ */
+public final class NoVote {
 	private final VerifiedVertex vertex;
 
 	private NoVote(VerifiedVertex vertex) {
@@ -30,5 +35,25 @@ public class NoVote {
 
 	public VerifiedVertex getVertex() {
 		return vertex;
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{vertex=%s}", this.getClass().getSimpleName(), this.vertex);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(vertex);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (!(o instanceof NoVote)) {
+			return false;
+		}
+
+		NoVote other = (NoVote) o;
+		return Objects.equals(this.vertex, other.vertex);
 	}
 }
