@@ -21,18 +21,14 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.MapBinder;
+import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.ModuleRunner;
-import com.radixdlt.consensus.Timeout;
-import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.consensus.BFTEventProcessor;
+import com.radixdlt.consensus.bft.ViewUpdate;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.BFTSyncResponseProcessor;
-import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker.PacemakerInfoSender;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.BFTSync;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.epoch.EpochView;
-import com.radixdlt.consensus.epoch.LocalTimeout;
-import com.radixdlt.consensus.liveness.LocalTimeoutSender;
-import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
+import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.integration.distributed.BFTRunner;
 
@@ -44,28 +40,18 @@ public class MockedConsensusRunnerModule extends AbstractModule {
 		bind(BFTSyncResponseProcessor.class).to(BFTSync.class).in(Scopes.SINGLETON);
 	}
 
-	@Provides
-	public PacemakerInfoSender pacemakerInfoSender(
-		EventProcessor<Timeout> timeoutEventProcessor,
-		EventProcessor<EpochView> epochViewEventProcessor,
-		ProposerElection proposerElection
-	) {
-		return new PacemakerInfoSender() {
-			@Override
-			public void sendCurrentView(View view) {
-				epochViewEventProcessor.processEvent(EpochView.of(1, view));
-			}
-
-			@Override
-			public void sendTimeoutProcessed(View view) {
-				BFTNode leader = proposerElection.getProposer(view);
-				timeoutEventProcessor.processEvent(new Timeout(EpochView.of(1, view), leader));
-			}
-		};
+	@ProvidesIntoSet
+	private EventProcessor<ScheduledLocalTimeout> timeoutProcessor(BFTEventProcessor processor) {
+		return processor::processLocalTimeout;
 	}
 
 	@Provides
-	private PacemakerTimeoutSender initialTimeoutSender(LocalTimeoutSender localTimeoutSender) {
-		 return (view, ms) -> localTimeoutSender.scheduleTimeout(new LocalTimeout(1, view), ms);
+	public EventProcessor<LocalGetVerticesRequest> bftSyncTimeoutProcessor(BFTSync bftSync) {
+		return bftSync::processGetVerticesLocalTimeout;
+	}
+
+	@ProvidesIntoSet
+	private EventProcessor<ViewUpdate> viewUpdateProcessor(BFTEventProcessor processor) {
+		return processor::processViewUpdate;
 	}
 }

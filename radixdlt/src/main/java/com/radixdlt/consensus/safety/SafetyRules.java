@@ -18,6 +18,8 @@
 package com.radixdlt.consensus.safety;
 
 import com.google.common.hash.HashCode;
+import com.google.inject.Inject;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.HighQC;
@@ -26,7 +28,6 @@ import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimestampedVoteData;
-import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.ViewTimeoutData;
 import com.radixdlt.consensus.BFTHeader;
@@ -51,18 +52,52 @@ public final class SafetyRules {
 	private final Hasher hasher;
 	private final HashSigner signer;
 
+	private final PersistentSafetyStateStore persistentSafetyStateStore;
 	private SafetyState state;
 
+	@Inject
 	public SafetyRules(
-		BFTNode self,
+		@Self BFTNode self,
 		SafetyState initialState,
+		PersistentSafetyStateStore persistentSafetyStateStore,
 		Hasher hasher,
 		HashSigner signer
 	) {
 		this.self = self;
 		this.state = Objects.requireNonNull(initialState);
+		this.persistentSafetyStateStore = Objects.requireNonNull(persistentSafetyStateStore);
 		this.hasher = Objects.requireNonNull(hasher);
 		this.signer = Objects.requireNonNull(signer);
+	}
+
+	private boolean checkLastVoted(VerifiedVertex proposedVertex, Builder nextStateBuilder) {
+		// ensure vertex does not violate earlier votes
+		if (proposedVertex.getView().compareTo(this.state.getLastVotedView()) <= 0) {
+			logger.warn("Safety warning: Vertex {} violates earlier vote at view {}",
+				proposedVertex,
+				this.state.getLastVotedView()
+			);
+			return false;
+		}
+
+		nextStateBuilder.lastVotedView(proposedVertex.getView());
+		return true;
+	}
+
+	private boolean checkLocked(VerifiedVertex proposedVertex, Builder nextStateBuilder) {
+		if (proposedVertex.getParentHeader().getView().compareTo(this.state.getLockedView()) < 0) {
+			logger.warn("Safety warning: Vertex {} does not respect locked view {}",
+				proposedVertex,
+				this.state.getLockedView()
+			);
+			return false;
+		}
+
+		// pre-commit phase on consecutive qc's proposed vertex
+		if (proposedVertex.getGrandParentHeader().getView().compareTo(this.state.getLockedView()) > 0) {
+			nextStateBuilder.lockedView(proposedVertex.getGrandParentHeader().getView());
+		}
+		return true;
 	}
 
 	/**
@@ -71,10 +106,17 @@ public final class SafetyRules {
 	 * @param highestCommittedQC highest known committed QC
 	 * @return signed proposal object for consensus
 	 */
-	public Proposal signProposal(UnverifiedVertex proposedVertex, QuorumCertificate highestCommittedQC) {
-		final HashCode vertexHash = this.hasher.hash(proposedVertex);
-		ECDSASignature signature = this.signer.sign(vertexHash);
-		return new Proposal(proposedVertex, highestCommittedQC, this.self, signature);
+	public Optional<Proposal> signProposal(VerifiedVertex proposedVertex, QuorumCertificate highestCommittedQC) {
+		Builder safetyStateBuilder = this.state.toBuilder();
+		if (!checkLocked(proposedVertex, safetyStateBuilder)) {
+			return Optional.empty();
+		}
+
+		this.state = safetyStateBuilder.build();
+
+		ECDSASignature signature = this.signer.sign(proposedVertex.getId());
+		Proposal proposal = new Proposal(proposedVertex.toSerializable(), highestCommittedQC, this.self, signature);
+		return Optional.of(proposal);
 	}
 
 	private static VoteData constructVoteData(VerifiedVertex proposedVertex, BFTHeader proposedHeader) {
@@ -115,22 +157,14 @@ public final class SafetyRules {
 	 * @return A vote result containing the vote and any committed vertices
 	 */
 	public Optional<Vote> voteFor(VerifiedVertex proposedVertex, BFTHeader proposedHeader, long timestamp, HighQC highQC) {
-		// ensure vertex does not violate earlier votes
-		if (proposedVertex.getView().compareTo(this.state.getLastVotedView()) <= 0) {
-			logger.warn("Violates earlier vote at view {}", this.state.getLastVotedView());
-			return Optional.empty();
-		}
-
-		if (proposedVertex.getParentHeader().getView().compareTo(this.state.getLockedView()) < 0) {
-			logger.warn("Does not respect locked view {}", this.state.getLockedView());
-			return Optional.empty();
-		}
-
 		Builder safetyStateBuilder = this.state.toBuilder();
-		safetyStateBuilder.lastVotedView(proposedVertex.getView());
-		// pre-commit phase on consecutive qc's proposed vertex
-		if (proposedVertex.getGrandParentHeader().getView().compareTo(this.state.getLockedView()) > 0) {
-			safetyStateBuilder.lockedView(proposedVertex.getGrandParentHeader().getView());
+
+		// ensure vertex does not violate earlier votes
+		if (!checkLastVoted(proposedVertex, safetyStateBuilder)) {
+			return Optional.empty();
+		}
+		if (!checkLocked(proposedVertex, safetyStateBuilder)) {
+			return Optional.empty();
 		}
 
 		final VoteData voteData = constructVoteData(proposedVertex, proposedHeader);
@@ -143,6 +177,9 @@ public final class SafetyRules {
 		// TODO make signing more robust by including author in signed hash
 		ECDSASignature signature = this.signer.sign(voteHash);
 		Vote vote = new Vote(this.self, timestampedVoteData, signature, highQC);
+
+		this.persistentSafetyStateStore.commitState(vote, this.state);
+
 		return Optional.of(vote);
 	}
 }

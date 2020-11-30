@@ -18,11 +18,16 @@
 package com.radixdlt.sync;
 
 import com.google.common.collect.ImmutableList;
+import com.google.inject.Inject;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.LedgerUpdateProcessor;
+import com.radixdlt.store.LastProof;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
@@ -35,7 +40,7 @@ import org.apache.logging.log4j.Logger;
  * Thread-safety must be handled by caller.
  */
 @NotThreadSafe
-public final class LocalSyncServiceAccumulatorProcessor implements LocalSyncServiceProcessor, LedgerUpdateProcessor<LedgerUpdate> {
+public final class LocalSyncServiceAccumulatorProcessor {
 	public static final class SyncInProgress {
 		private final VerifiedLedgerHeaderAndProof targetHeader;
 		private final ImmutableList<BFTNode> targetNodes;
@@ -44,48 +49,44 @@ public final class LocalSyncServiceAccumulatorProcessor implements LocalSyncServ
 			this.targetNodes = targetNodes;
 		}
 
-		private ImmutableList<BFTNode> getTargetNodes() {
+		public ImmutableList<BFTNode> getTargetNodes() {
 			return targetNodes;
 		}
 
-		private VerifiedLedgerHeaderAndProof getTargetHeader() {
+		public VerifiedLedgerHeaderAndProof getTargetHeader() {
 			return targetHeader;
 		}
 	}
 
-	public interface SyncTimeoutScheduler {
-		void scheduleTimeout(SyncInProgress syncInProgress, long milliseconds);
-	}
-
 	private static final Logger log = LogManager.getLogger();
 
-	private final SyncTimeoutScheduler syncTimeoutScheduler;
+	private final ScheduledEventDispatcher<SyncInProgress> timeoutScheduler;
 	private final long patienceMilliseconds;
-	private final StateSyncNetworkSender stateSyncNetworkSender;
+	private final RemoteEventDispatcher<DtoLedgerHeaderAndProof> requestDispatcher;
 	private final Comparator<AccumulatorState> accComparator;
 	private VerifiedLedgerHeaderAndProof targetHeader;
 	private VerifiedLedgerHeaderAndProof currentHeader;
 
+	@Inject
 	public LocalSyncServiceAccumulatorProcessor(
-		StateSyncNetworkSender stateSyncNetworkSender,
-		SyncTimeoutScheduler syncTimeoutScheduler,
+		RemoteEventDispatcher<DtoLedgerHeaderAndProof> requestDispatcher,
+		ScheduledEventDispatcher<SyncInProgress> timeoutScheduler,
 		Comparator<AccumulatorState> accComparator,
-		VerifiedLedgerHeaderAndProof current,
-		long patienceMilliseconds
+		@LastProof VerifiedLedgerHeaderAndProof current,
+		@SyncPatienceMillis int patienceMilliseconds
 	) {
 		if (patienceMilliseconds <= 0) {
 			throw new IllegalArgumentException();
 		}
 
-		this.stateSyncNetworkSender = Objects.requireNonNull(stateSyncNetworkSender);
-		this.syncTimeoutScheduler = Objects.requireNonNull(syncTimeoutScheduler);
+		this.requestDispatcher = Objects.requireNonNull(requestDispatcher);
+		this.timeoutScheduler = Objects.requireNonNull(timeoutScheduler);
 		this.patienceMilliseconds = patienceMilliseconds;
 		this.accComparator = Objects.requireNonNull(accComparator);
 		this.currentHeader = current;
 		this.targetHeader = current;
 	}
 
-	@Override
 	public void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
 		VerifiedLedgerHeaderAndProof updatedHeader = ledgerUpdate.getTail();
 		if (accComparator.compare(updatedHeader.getAccumulatorState(), this.currentHeader.getAccumulatorState()) > 0) {
@@ -93,12 +94,16 @@ public final class LocalSyncServiceAccumulatorProcessor implements LocalSyncServ
 		}
 	}
 
-	@Override
-	public void processLocalSyncRequest(LocalSyncRequest request) {
-		log.info("SYNC_LOCAL_REQUEST: {}", request);
+	public EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor() {
+		return this::processLocalSyncRequest;
+	}
+
+	private void processLocalSyncRequest(LocalSyncRequest request) {
+		log.info("SYNC_LOCAL_REQUEST: {} current {}", request, this.currentHeader);
 
 		final VerifiedLedgerHeaderAndProof nextTargetHeader = request.getTarget();
 		if (accComparator.compare(nextTargetHeader.getAccumulatorState(), this.targetHeader.getAccumulatorState()) <= 0) {
+			log.trace("SYNC_LOCAL_REQUEST: skipping as already targeted {}", this.targetHeader);
 			return;
 		}
 
@@ -107,9 +112,8 @@ public final class LocalSyncServiceAccumulatorProcessor implements LocalSyncServ
 		this.refreshRequest(syncInProgress);
 	}
 
-	@Override
-	public void processSyncTimeout(SyncInProgress syncInProgress) {
-		this.refreshRequest(syncInProgress);
+	public EventProcessor<SyncInProgress> syncTimeoutProcessor() {
+		return this::refreshRequest;
 	}
 
 	private void refreshRequest(SyncInProgress syncInProgress) {
@@ -119,8 +123,9 @@ public final class LocalSyncServiceAccumulatorProcessor implements LocalSyncServ
 		}
 
 		ImmutableList<BFTNode> targetNodes = syncInProgress.getTargetNodes();
+		// TODO: remove thread local random
 		BFTNode node = targetNodes.get(ThreadLocalRandom.current().nextInt(targetNodes.size()));
-		stateSyncNetworkSender.sendSyncRequest(node, this.currentHeader.toDto());
-		syncTimeoutScheduler.scheduleTimeout(syncInProgress, patienceMilliseconds);
+		requestDispatcher.dispatch(node, this.currentHeader.toDto());
+		timeoutScheduler.dispatch(syncInProgress, patienceMilliseconds);
 	}
 }

@@ -17,10 +17,12 @@
 
 package com.radixdlt.environment.deterministic;
 
+import com.radixdlt.consensus.bft.BFTNode;
+
 /**
  * Processor of consensus messages one at a time
  */
 public interface DeterministicMessageProcessor {
 	void start();
-	void handleMessage(Object o);
+	void handleMessage(BFTNode origin, Object o);
 }

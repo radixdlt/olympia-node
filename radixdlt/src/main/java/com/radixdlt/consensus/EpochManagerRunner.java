@@ -18,11 +18,14 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.ModuleRunner;
-import com.radixdlt.consensus.bft.BFTUpdate;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
+import com.radixdlt.consensus.bft.BFTRebuildUpdate;
 import com.radixdlt.consensus.epoch.EpochManager;
+import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
+import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.utils.ThreadFactories;
 
@@ -58,8 +61,14 @@ public final class EpochManagerRunner implements ModuleRunner {
 	@Inject
 	public EpochManagerRunner(
 		Observable<EpochsLedgerUpdate> ledgerUpdates,
-		Observable<BFTUpdate> bftUpdates,
+		Observable<BFTInsertUpdate> bftUpdates,
+		EventProcessor<BFTInsertUpdate> bftUpdateProcessor,
+		Observable<BFTRebuildUpdate> bftRebuilds,
+		EventProcessor<BFTRebuildUpdate> bftRebuildProcessor,
 		Observable<LocalGetVerticesRequest> bftSyncTimeouts,
+		EventProcessor<LocalGetVerticesRequest> bftSyncTimeoutProcessor,
+		Observable<EpochViewUpdate> localViewUpdates,
+		EventProcessor<EpochViewUpdate> epochViewUpdateEventProcessor,
 		BFTEventsRx networkRx,
 		PacemakerRx pacemakerRx,
 		SyncVerticesRPCRx rpcRx,
@@ -78,10 +87,16 @@ public final class EpochManagerRunner implements ModuleRunner {
 				.doOnNext(epochManager::processLedgerUpdate),
 			bftUpdates
 				.observeOn(singleThreadScheduler)
-				.doOnNext(epochManager::processBFTUpdate),
+				.doOnNext(bftUpdateProcessor::process),
+			bftRebuilds
+				.observeOn(singleThreadScheduler)
+				.doOnNext(bftRebuildProcessor::process),
 			bftSyncTimeouts
 				.observeOn(singleThreadScheduler)
-				.doOnNext(epochManager::processGetVerticesLocalTimeout),
+				.doOnNext(bftSyncTimeoutProcessor::process),
+			localViewUpdates
+				.observeOn(singleThreadScheduler)
+				.doOnNext(epochViewUpdateEventProcessor::process),
 			pacemakerRx.localTimeouts()
 				.observeOn(singleThreadScheduler)
 				.doOnNext(epochManager::processLocalTimeout),

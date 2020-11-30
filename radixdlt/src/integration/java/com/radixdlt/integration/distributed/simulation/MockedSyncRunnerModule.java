@@ -19,15 +19,20 @@ package com.radixdlt.integration.distributed.simulation;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Key;
+import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.MapBinder;
+import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.ModuleRunner;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.ProcessWithSyncRunner;
+import com.radixdlt.environment.RemoteEventProcessor;
+import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.ledger.LedgerUpdateProcessor;
+import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor;
-import com.radixdlt.sync.LocalSyncServiceProcessor;
-import com.radixdlt.sync.RemoteSyncResponseProcessor;
+import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
 import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier;
 import com.radixdlt.sync.SyncServiceRunner;
 
@@ -39,9 +44,28 @@ public class MockedSyncRunnerModule extends AbstractModule {
 	public void configure() {
 		MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class)
 			.addBinding("sync").to(Key.get(new TypeLiteral<SyncServiceRunner<LedgerUpdate>>() { }));
-		bind(RemoteSyncResponseProcessor.class).to(RemoteSyncResponseValidatorSetVerifier.class).in(Scopes.SINGLETON);
-		bind(LocalSyncServiceProcessor.class).to(LocalSyncServiceAccumulatorProcessor.class).in(Scopes.SINGLETON);
-		bind(new TypeLiteral<LedgerUpdateProcessor<LedgerUpdate>>() { })
-			.to(LocalSyncServiceAccumulatorProcessor.class).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<RemoteEventProcessor<DtoCommandsAndProof>>() { }).to(RemoteSyncResponseValidatorSetVerifier.class).in(Scopes.SINGLETON);
+		bind(LocalSyncServiceAccumulatorProcessor.class).in(Scopes.SINGLETON);
+	}
+
+	@ProvidesIntoSet
+	@ProcessWithSyncRunner
+	private EventProcessor<LedgerUpdate> epochsLedgerUpdateEventProcessor(LocalSyncServiceAccumulatorProcessor localSyncServiceAccumulatorProcessor) {
+		return localSyncServiceAccumulatorProcessor::processLedgerUpdate;
+	}
+
+	@Provides
+	public EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor(
+		LocalSyncServiceAccumulatorProcessor localSyncServiceAccumulatorProcessor
+	) {
+		return localSyncServiceAccumulatorProcessor.localSyncRequestEventProcessor();
+	}
+
+
+	@Provides
+	private EventProcessor<SyncInProgress> syncInProgressEventProcessor(
+		LocalSyncServiceAccumulatorProcessor localSyncServiceAccumulatorProcessor
+	) {
+		return localSyncServiceAccumulatorProcessor.syncTimeoutProcessor();
 	}
 }

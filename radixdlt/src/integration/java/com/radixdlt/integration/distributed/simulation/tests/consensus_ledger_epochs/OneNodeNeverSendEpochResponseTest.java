@@ -36,7 +36,7 @@ import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
 /**
- * Drops all epoch responses from the first node to send the epoch response.
+ * Drops all epoch responses from the first node to send the epoch response (effectively a down node).
  * Tests to make sure that epoch changes are still smooth even with an epoch dropper.
  */
 public class OneNodeNeverSendEpochResponseTest {
@@ -48,13 +48,11 @@ public class OneNodeNeverSendEpochResponseTest {
 			NetworkLatencies.fixed(),
 			NetworkDroppers.oneNodePerEpochResponseDropped()
 		)
-		.pacemakerTimeout(5000)
-		.numNodes(numNodes, 2)
+		.pacemakerTimeout(1000)
+		.numNodes(numNodes, 4)
 		.ledgerAndEpochs(View.of(4), goodRandomEpochToNodesMapper())
 		.checkConsensusSafety("safety")
 		.checkConsensusLiveness("liveness", 5000, TimeUnit.MILLISECONDS)
-		.checkConsensusNoTimeouts("noTimeouts")
-		.checkConsensusAllProposalsHaveDirectParents("directParents")
 		.checkLedgerInOrder("ledgerInOrder")
 		.checkLedgerProcessesConsensusCommitted("consensusToLedger")
 		.addTimestampChecker("timestamps");

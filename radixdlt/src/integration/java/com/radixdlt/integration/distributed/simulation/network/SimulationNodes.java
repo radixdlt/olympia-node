@@ -28,7 +28,7 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.util.Modules;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.bft.BFTCommittedUpdate;
+import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.counters.SystemCounters;
@@ -37,7 +37,6 @@ import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.integration.distributed.simulation.NodeNetworkMessagesModule;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.Mempool;
-import com.radixdlt.systeminfo.InfoRx;
 import com.radixdlt.consensus.bft.BFTNode;
 
 import com.radixdlt.utils.Pair;
@@ -112,11 +111,9 @@ public class SimulationNodes {
 
 		Observable<EpochChange> latestEpochChanges();
 
-		Observable<Pair<BFTNode, BFTCommittedUpdate>> bftCommittedUpdates();
-
 		Observable<Pair<BFTNode, LedgerUpdate>> ledgerUpdates();
 
-		InfoRx getInfo(BFTNode node);
+		Observable<Pair<BFTNode, BFTHighQCUpdate>> highQCs();
 
 		Mempool getMempool(BFTNode node);
 
@@ -167,19 +164,6 @@ public class SimulationNodes {
 			}
 
 			@Override
-			public Observable<Pair<BFTNode, BFTCommittedUpdate>> bftCommittedUpdates() {
-				Set<Observable<Pair<BFTNode, BFTCommittedUpdate>>> committedVertices = nodeInstances.stream()
-					.map(i -> {
-						BFTNode node = i.getInstance(Key.get(BFTNode.class, Self.class));
-						return i.getInstance(Key.get(new TypeLiteral<Observable<BFTCommittedUpdate>>() { }))
-							.map(v -> Pair.of(node, v));
-					})
-					.collect(Collectors.toSet());
-
-				return Observable.merge(committedVertices);
-			}
-
-			@Override
 			public Observable<Pair<BFTNode, LedgerUpdate>> ledgerUpdates() {
 				Set<Observable<Pair<BFTNode, LedgerUpdate>>> committedCommands = nodeInstances.stream()
 					.map(i -> {
@@ -193,9 +177,16 @@ public class SimulationNodes {
 			}
 
 			@Override
-			public InfoRx getInfo(BFTNode node) {
-				int index = getNodes().indexOf(node);
-				return nodeInstances.get(index).getInstance(InfoRx.class);
+			public Observable<Pair<BFTNode, BFTHighQCUpdate>> highQCs() {
+				Set<Observable<Pair<BFTNode, BFTHighQCUpdate>>> highQCs = nodeInstances.stream()
+					.map(i -> {
+						BFTNode node = i.getInstance(Key.get(BFTNode.class, Self.class));
+						return i.getInstance(Key.get(new TypeLiteral<Observable<BFTHighQCUpdate>>() { }))
+							.map(v -> Pair.of(node, v));
+					})
+					.collect(Collectors.toSet());
+
+				return Observable.merge(highQCs);
 			}
 
 			@Override

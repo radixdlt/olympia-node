@@ -70,7 +70,7 @@ public class MessageCentralBFTNetworkTest {
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
 		network.bftEvents().subscribe(testObserver);
 		Vote vote = mock(Vote.class);
-		network.sendVote(vote, self);
+		network.voteDispatcher().dispatch(self, vote);
 		testObserver.awaitCount(1);
 		testObserver.assertValue(vote);
 	}
@@ -118,7 +118,7 @@ public class MessageCentralBFTNetworkTest {
 		when(peer.getNID()).thenReturn(leaderPk.euid());
 		when(addressBook.peer(leaderPk.euid())).thenReturn(Optional.of(peer));
 
-		network.sendVote(vote, leader);
+		network.voteDispatcher().dispatch(leader, vote);
 		verify(messageCentral, times(1)).send(eq(peer), any(ConsensusEventMessage.class));
 	}
 }

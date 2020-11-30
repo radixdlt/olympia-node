@@ -17,17 +17,34 @@
 
 package com.radixdlt.environment.deterministic;
 
+import com.google.common.collect.ImmutableMap;
 import com.radixdlt.consensus.ConsensusEvent;
-import com.radixdlt.consensus.bft.BFTUpdate;
+import com.radixdlt.consensus.bft.BFTHighQCUpdate;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
+import com.radixdlt.consensus.bft.BFTRebuildUpdate;
+import com.radixdlt.consensus.bft.ViewUpdate;
+import com.radixdlt.consensus.epoch.EpochViewUpdate;
+import com.radixdlt.consensus.epoch.Epoched;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
-import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
+import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.ProcessWithSyncRunner;
+import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
+import com.radixdlt.ledger.DtoCommandsAndProof;
+import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
+import com.radixdlt.sync.LocalSyncRequest;
+import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import javax.annotation.concurrent.NotThreadSafe;
 import javax.inject.Inject;
 
@@ -37,24 +54,75 @@ import javax.inject.Inject;
 @NotThreadSafe
 public final class DeterministicEpochsConsensusProcessor implements DeterministicMessageProcessor {
 	private final EpochManager epochManager;
+	private final Map<Class<?>, EventProcessor<Object>>	eventProcessors;
+	private final Map<Class<?>, RemoteEventProcessor<Object>> remoteEventProcessors;
 
 	@Inject
-	public DeterministicEpochsConsensusProcessor(EpochManager epochManager) {
+	public DeterministicEpochsConsensusProcessor(
+		EpochManager epochManager,
+		@ProcessWithSyncRunner Set<EventProcessor<EpochsLedgerUpdate>> epochsLedgerUpdateProcessors,
+		EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor,
+		EventProcessor<LocalGetVerticesRequest> localGetVerticesRequestEventProcessor,
+		EventProcessor<SyncInProgress> syncTimeoutProcessor,
+		EventProcessor<EpochViewUpdate> epochViewUpdateProcessor,
+		EventProcessor<BFTRebuildUpdate> rebuildUpdateEventProcessor,
+		EventProcessor<BFTInsertUpdate> bftUpdateProcessor,
+		Set<EventProcessor<BFTHighQCUpdate>> bftHighQcUpdateProcessors,
+		RemoteEventProcessor<DtoLedgerHeaderAndProof> syncRequestProcessor,
+		RemoteEventProcessor<DtoCommandsAndProof> syncResponseProcessor
+	) {
 		this.epochManager = Objects.requireNonNull(epochManager);
+
+		ImmutableMap.Builder<Class<?>, EventProcessor<Object>> processorsBuilder = ImmutableMap.builder();
+		// TODO: allow randomization in processing order for a given message
+		processorsBuilder.put(EpochsLedgerUpdate.class, e -> {
+			epochManager.processLedgerUpdate((EpochsLedgerUpdate) e);
+			epochsLedgerUpdateProcessors.forEach(p -> p.process((EpochsLedgerUpdate) e));
+		});
+		processorsBuilder.put(EpochViewUpdate.class, e -> epochViewUpdateProcessor.process((EpochViewUpdate) e));
+		processorsBuilder.put(LocalSyncRequest.class, e -> localSyncRequestEventProcessor.process((LocalSyncRequest) e));
+		processorsBuilder.put(LocalGetVerticesRequest.class, e -> localGetVerticesRequestEventProcessor.process((LocalGetVerticesRequest) e));
+		processorsBuilder.put(SyncInProgress.class, e -> syncTimeoutProcessor.process((SyncInProgress) e));
+		processorsBuilder.put(BFTInsertUpdate.class, e -> bftUpdateProcessor.process((BFTInsertUpdate) e));
+		processorsBuilder.put(BFTRebuildUpdate.class, e -> rebuildUpdateEventProcessor.process((BFTRebuildUpdate) e));
+		processorsBuilder.put(BFTHighQCUpdate.class, e -> bftHighQcUpdateProcessors.forEach(p -> p.process((BFTHighQCUpdate) e)));
+		this.eventProcessors = processorsBuilder.build();
+
+		ImmutableMap.Builder<Class<?>, RemoteEventProcessor<Object>> remoteProcessorsBuilder = ImmutableMap.builder();
+		remoteProcessorsBuilder.put(
+			DtoLedgerHeaderAndProof.class,
+			(node, event) -> syncRequestProcessor.process(node, (DtoLedgerHeaderAndProof) event)
+		);
+		remoteProcessorsBuilder.put(
+			DtoCommandsAndProof.class,
+			(node, event) -> syncResponseProcessor.process(node, (DtoCommandsAndProof) event)
+		);
+		remoteEventProcessors = remoteProcessorsBuilder.build();
 	}
 
+	@Override
 	public void start() {
 		epochManager.start();
 	}
 
 	@Override
-	public void handleMessage(Object message) {
-		if (message instanceof ConsensusEvent) {
+	public void handleMessage(BFTNode origin, Object message) {
+		if (message instanceof ViewUpdate || message instanceof ScheduledLocalTimeout) {
+			// FIXME: Should remove this message type but required due to guice dependency graph
+			// FIXME: Should be fixable once an Epoch Environment is implemented
+			return;
+		} else if (message instanceof ConsensusEvent) {
 			this.epochManager.processConsensusEvent((ConsensusEvent) message);
-		} else if (message instanceof LocalTimeout) {
-			this.epochManager.processLocalTimeout((LocalTimeout) message);
-		} else if (message instanceof BFTUpdate) {
-			this.epochManager.processBFTUpdate((BFTUpdate) message);
+		} else if (message instanceof Epoched) {
+			Epoched<?> epoched = (Epoched<?>) message;
+			Object epochedMessage = epoched.event();
+			if (epochedMessage instanceof ScheduledLocalTimeout) {
+				@SuppressWarnings("unchecked")
+				Epoched<ScheduledLocalTimeout> epochTimeout = (Epoched<ScheduledLocalTimeout>) message;
+				this.epochManager.processLocalTimeout(epochTimeout);
+			} else {
+				throw new IllegalArgumentException("Unknown epoch message type: " + epochedMessage.getClass().getName());
+			}
 		} else if (message instanceof GetVerticesRequest) {
 			this.epochManager.processGetVerticesRequest((GetVerticesRequest) message);
 		} else if (message instanceof GetVerticesResponse) {
@@ -65,9 +133,20 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 			this.epochManager.processGetEpochRequest((GetEpochRequest) message);
 		} else if (message instanceof GetEpochResponse) {
 			this.epochManager.processGetEpochResponse((GetEpochResponse) message);
-		} else if (message instanceof EpochsLedgerUpdate) {
-			this.epochManager.processLedgerUpdate((EpochsLedgerUpdate) message);
 		} else {
+
+			EventProcessor<Object> processor = eventProcessors.get(message.getClass());
+			if (processor != null) {
+				processor.process(message);
+				return;
+			}
+
+			RemoteEventProcessor<Object> remoteEventProcessor = remoteEventProcessors.get(message.getClass());
+			if (remoteEventProcessor != null) {
+				remoteEventProcessor.process(origin, message);
+				return;
+			}
+
 			throw new IllegalArgumentException("Unknown message type: " + message.getClass().getName());
 		}
 	}

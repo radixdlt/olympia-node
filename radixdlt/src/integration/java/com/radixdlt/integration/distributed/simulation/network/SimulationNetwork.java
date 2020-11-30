@@ -25,28 +25,24 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.HighQC;
+import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
-import com.radixdlt.consensus.liveness.ProceedToViewSender;
+import com.radixdlt.consensus.liveness.VoteSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
-import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
-import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
-import com.radixdlt.sync.RemoteSyncResponse;
-import com.radixdlt.sync.StateSyncNetworkRx;
-import com.radixdlt.sync.StateSyncNetworkSender;
-import com.radixdlt.sync.RemoteSyncRequest;
-import com.radixdlt.ledger.DtoCommandsAndProof;
+import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.environment.rx.RemoteEvent;
 import io.reactivex.rxjava3.core.Observable;
 
 import io.reactivex.rxjava3.subjects.ReplaySubject;
@@ -137,8 +133,8 @@ public class SimulationNetwork {
 	}
 
 	public class SimulatedNetworkImpl implements
-		ProposalBroadcaster, ProceedToViewSender, SyncVerticesRequestSender, SyncVerticesResponseSender, SyncEpochsRPCSender, BFTEventsRx,
-		SyncVerticesRPCRx, SyncEpochsRPCRx, StateSyncNetworkSender, StateSyncNetworkRx {
+		ProposalBroadcaster, VoteSender, SyncVerticesRequestSender, SyncVerticesResponseSender, SyncEpochsRPCSender, BFTEventsRx,
+		SyncVerticesRPCRx, SyncEpochsRPCRx {
 		private final Observable<Object> myMessages;
 		private final BFTNode thisNode;
 
@@ -148,6 +144,7 @@ public class SimulationNetwork {
 			this.myMessages = receivedMessages
 				.filter(msg -> msg.receiver.equals(node))
 				.groupBy(MessageInTransit::getSender)
+				.serialize()
 				.flatMap(groupedObservable ->
 					channelCommunication
 						.transform(groupedObservable.getKey(), node, groupedObservable)
@@ -169,11 +166,6 @@ public class SimulationNetwork {
 			for (BFTNode reader : nodes) {
 				receivedMessages.onNext(MessageInTransit.newMessage(viewTimeout, thisNode, reader));
 			}
-		}
-
-		@Override
-		public void sendVote(Vote vote, BFTNode leader) {
-			receivedMessages.onNext(MessageInTransit.newMessage(vote, thisNode, leader));
 		}
 
 		@Override
@@ -208,7 +200,10 @@ public class SimulationNetwork {
 
 		@Override
 		public Observable<ConsensusEvent> bftEvents() {
-			return myMessages.ofType(ConsensusEvent.class);
+			return Observable.merge(
+				myMessages.ofType(ConsensusEvent.class),
+				remoteEvents(Vote.class).map(RemoteEvent::getEvent)
+			);
 		}
 
 		@Override
@@ -236,26 +231,18 @@ public class SimulationNetwork {
 			return myMessages.ofType(GetEpochResponse.class);
 		}
 
-		@Override
-		public Observable<RemoteSyncResponse> syncResponses() {
-			return myMessages.ofType(RemoteSyncResponse.class);
+		public <T> Observable<RemoteEvent<T>> remoteEvents(Class<T> eventClass) {
+			return myMessages.ofType(RemoteEvent.class)
+				.flatMapMaybe(e -> RemoteEvent.ofEventType(e, eventClass));
 		}
 
-		@Override
-		public Observable<RemoteSyncRequest> syncRequests() {
-			return myMessages.ofType(RemoteSyncRequest.class);
+		public <T> RemoteEventDispatcher<T> remoteEventDispatcher(Class<T> eventClass) {
+			return (node, event) -> sendRemoteEvent(node, event, eventClass);
 		}
 
-		@Override
-		public void sendSyncRequest(BFTNode node, DtoLedgerHeaderAndProof currentHeader) {
-			RemoteSyncRequest syncRequest = new RemoteSyncRequest(thisNode, currentHeader);
-			receivedMessages.onNext(MessageInTransit.newMessage(syncRequest, thisNode, node));
-		}
-
-		@Override
-		public void sendSyncResponse(BFTNode node, DtoCommandsAndProof commandsAndProof) {
-			RemoteSyncResponse syncResponse = new RemoteSyncResponse(thisNode, commandsAndProof);
-			receivedMessages.onNext(MessageInTransit.newMessage(syncResponse, thisNode, node));
+		private <T> void sendRemoteEvent(BFTNode node, T event, Class<T> eventClass) {
+			RemoteEvent<T> remoteEvent = RemoteEvent.create(thisNode, event, eventClass);
+			receivedMessages.onNext(MessageInTransit.newMessage(remoteEvent, thisNode, node));
 		}
 	}
 

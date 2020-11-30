@@ -26,12 +26,17 @@ import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTSyncer;
-import com.radixdlt.consensus.bft.BFTUpdate;
-import com.radixdlt.consensus.bft.BFTUpdateProcessor;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
+import com.radixdlt.consensus.bft.FormedQC;
 import com.radixdlt.consensus.bft.VerifiedVertex;
+import com.radixdlt.consensus.bft.VerifiedVertexChain;
+import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.liveness.Pacemaker;
+import com.radixdlt.consensus.liveness.PacemakerReducer;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdateProcessor;
 import com.radixdlt.sync.LocalSyncRequest;
@@ -56,8 +61,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * Manages keeping the VertexStore and pacemaker in sync for consensus
  */
-public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcessor, BFTSyncRequestTimeoutProcessor,
-	BFTSyncer, LedgerUpdateProcessor<LedgerUpdate> {
+public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, LedgerUpdateProcessor<LedgerUpdate> {
 	private enum SyncStage {
 		PREPARING,
 		GET_COMMITTED_VERTICES,
@@ -124,44 +128,46 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 		void sendGetVerticesRequest(BFTNode node, LocalGetVerticesRequest request);
 	}
 
-
-	public interface BFTSyncTimeoutScheduler {
-		void scheduleTimeout(LocalGetVerticesRequest request, long milliseconds);
-	}
-
 	private static final Logger log = LogManager.getLogger();
 	private final VertexStore vertexStore;
-	private final Pacemaker pacemaker;
+	private final PacemakerReducer pacemakerReducer;
 	private final Map<HashCode, SyncState> syncing = new HashMap<>();
 	private final TreeMap<LedgerHeader, List<HashCode>> ledgerSyncing;
 	private final Map<LocalGetVerticesRequest, SyncRequestState> bftSyncing = new HashMap<>();
 	private final SyncVerticesRequestSender requestSender;
-	private final SyncLedgerRequestSender syncLedgerRequestSender;
-	private final BFTSyncTimeoutScheduler timeoutScheduler;
+	private final EventDispatcher<LocalSyncRequest> localSyncRequestProcessor;
+	private final ScheduledEventDispatcher<LocalGetVerticesRequest> timeoutDispatcher;
 	private final Random random;
 	private final int bftSyncPatienceMillis;
 	private VerifiedLedgerHeaderAndProof currentLedgerHeader;
 
 	public BFTSync(
 		VertexStore vertexStore,
-		Pacemaker pacemaker,
+		PacemakerReducer pacemakerReducer,
 		Comparator<LedgerHeader> ledgerHeaderComparator,
 		SyncVerticesRequestSender requestSender,
-		SyncLedgerRequestSender syncLedgerRequestSender,
-		BFTSyncTimeoutScheduler timeoutScheduler,
+		EventDispatcher<LocalSyncRequest> localSyncRequestProcessor,
+		ScheduledEventDispatcher<LocalGetVerticesRequest> timeoutDispatcher,
 		VerifiedLedgerHeaderAndProof currentLedgerHeader,
 		Random random,
 		int bftSyncPatienceMillis
 	) {
 		this.vertexStore = vertexStore;
-		this.pacemaker = pacemaker;
+		this.pacemakerReducer = pacemakerReducer;
 		this.ledgerSyncing = new TreeMap<>(ledgerHeaderComparator);
 		this.requestSender = requestSender;
-		this.syncLedgerRequestSender = syncLedgerRequestSender;
-		this.timeoutScheduler = Objects.requireNonNull(timeoutScheduler);
+		this.localSyncRequestProcessor = Objects.requireNonNull(localSyncRequestProcessor);
+		this.timeoutDispatcher = Objects.requireNonNull(timeoutDispatcher);
 		this.currentLedgerHeader = Objects.requireNonNull(currentLedgerHeader);
 		this.random = random;
 		this.bftSyncPatienceMillis = bftSyncPatienceMillis;
+	}
+
+	public EventProcessor<FormedQC> formedQCEventProcessor() {
+		return formedQC -> {
+			HighQC highQC = HighQC.from(formedQC.qc(), this.vertexStore.highQC().highestCommittedQC());
+			syncToQC(highQC, formedQC.lastAuthor());
+		};
 	}
 
 	@Override
@@ -175,7 +181,8 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 
 		if (vertexStore.addQC(qc)) {
 			// TODO: check if already sent highest
-			this.pacemaker.processQC(vertexStore.highQC());
+			// TODO: Move pacemaker outside of sync
+			this.pacemakerReducer.processQC(vertexStore.highQC());
 			return SyncResult.SYNCED;
 		}
 
@@ -246,7 +253,6 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 		this.sendBFTSyncRequest(committedQCId, 3, authors, syncState.localSyncId);
 	}
 
-	@Override
 	public void processGetVerticesLocalTimeout(LocalGetVerticesRequest request) {
 		SyncRequestState syncRequestState = bftSyncing.remove(request);
 		if (syncRequestState == null) {
@@ -269,7 +275,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 		LocalGetVerticesRequest request = new LocalGetVerticesRequest(vertexId, count);
 		SyncRequestState syncRequestState = bftSyncing.getOrDefault(request, new SyncRequestState(authors));
 		if (syncRequestState.syncIds.isEmpty()) {
-			this.timeoutScheduler.scheduleTimeout(request, bftSyncPatienceMillis);
+			this.timeoutDispatcher.dispatch(request, bftSyncPatienceMillis);
 			this.requestSender.sendGetVerticesRequest(authors.get(0), request);
 			this.bftSyncing.put(request, syncRequestState);
 		}
@@ -282,13 +288,18 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 		// TODO: check if there are any vertices which haven't been local sync processed yet
 		if (requiresLedgerSync(syncState)) {
 			syncState.fetched.sort(Comparator.comparing(VerifiedVertex::getView));
-			List<VerifiedVertex> nonRootVertices = syncState.fetched.stream().skip(1).collect(Collectors.toList());
-			vertexStore.rebuild(
+			ImmutableList<VerifiedVertex> nonRootVertices = syncState.fetched.stream()
+				.skip(1)
+				.collect(ImmutableList.toImmutableList());
+			VerifiedVertexStoreState vertexStoreState = VerifiedVertexStoreState.create(
+				HighQC.from(syncState.highQC().highestCommittedQC()),
 				syncState.fetched.get(0),
-				syncState.fetched.get(1).getQC(),
-				syncState.highQC().highestCommittedQC(),
 				nonRootVertices
 			);
+			if (vertexStore.tryRebuild(vertexStoreState)) {
+				// TODO: Move pacemaker outside of sync
+				pacemakerReducer.processQC(vertexStoreState.getHighQC());
+			}
 		} else {
 			log.debug("SYNC_STATE: skipping rebuild");
 		}
@@ -300,15 +311,17 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 	}
 
 	private void processVerticesResponseForCommittedSync(SyncState syncState, GetVerticesResponse response) {
-		log.debug("SYNC_STATE: Processing vertices {} View {} From {}", syncState, response.getVertices().get(0).getView(), response.getSender());
+		log.debug("SYNC_STATE: Processing vertices {} View {} From {} CurrentLedgerHeader {}",
+			syncState, response.getVertices().get(0).getView(), response.getSender(), this.currentLedgerHeader
+		);
 
-		ImmutableList<BFTNode> signers = ImmutableList.of(syncState.author);
 		syncState.fetched.addAll(response.getVertices());
 
 		// TODO: verify actually extends rather than just state version comparison
 		if (syncState.committedProof.getStateVersion() <= this.currentLedgerHeader.getStateVersion()) {
 			rebuildAndSyncQC(syncState);
 		} else {
+			ImmutableList<BFTNode> signers = ImmutableList.of(syncState.author);
 			syncState.setSyncStage(SyncStage.SYNC_TO_COMMIT);
 			ledgerSyncing.compute(syncState.committedProof.getRaw(), (header, syncing) -> {
 				if (syncing == null) {
@@ -321,7 +334,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 				syncState.committedProof,
 				signers
 			);
-			syncLedgerRequestSender.sendLocalSyncRequest(localSyncRequest);
+			localSyncRequestProcessor.dispatch(localSyncRequest);
 		}
 	}
 
@@ -331,16 +344,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 		HashCode parentId = vertex.getParentId();
 
 		if (vertexStore.containsVertex(parentId)) {
-			// TODO: combine
-			for (VerifiedVertex v: syncState.fetched) {
-				if (!vertexStore.addQC(v.getQC())) {
-					log.info("GET_VERTICES failed: {}", syncState.highQC);
-					return;
-				}
-
-				vertexStore.insertVertex(v);
-			}
-
+			vertexStore.insertVertexChain(VerifiedVertexChain.create(syncState.fetched));
 			// Finish it off
 			this.syncing.remove(syncState.localSyncId);
 			this.syncToQC(syncState.highQC, syncState.author);
@@ -363,8 +367,10 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 
 		log.debug("SYNC_VERTICES: Received GetVerticesErrorResponse: {} highQC: {}", response, vertexStore.highQC());
 
-		// error response indicates that the node has moved on from last sync so try and sync to a new sync
-		this.syncToQC(response.highQC(), response.getSender());
+		if (response.highQC().highestQC().getView().compareTo(vertexStore.highQC().highestQC().getView()) > 0) {
+			// error response indicates that the node has moved on from last sync so try and sync to a new sync
+			this.syncToQC(response.highQC(), response.getSender());
+		}
 	}
 
 	@Override
@@ -396,14 +402,13 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTUpdateProcess
 		}
 	}
 
-	@Override
-	public void processBFTUpdate(BFTUpdate update) {
+	public void processBFTUpdate(BFTInsertUpdate update) {
 	}
 
 	// TODO: Verify headers match
 	@Override
 	public void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
-		log.trace("SYNC_STATE: update {}", ledgerUpdate);
+		log.trace("SYNC_STATE: update {}", ledgerUpdate.getTail());
 
 		this.currentLedgerHeader = ledgerUpdate.getTail();
 

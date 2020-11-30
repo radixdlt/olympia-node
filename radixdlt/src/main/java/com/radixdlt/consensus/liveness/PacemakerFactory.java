@@ -19,7 +19,8 @@ package com.radixdlt.consensus.liveness;
 
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker.PacemakerInfoSender;
+import com.radixdlt.consensus.bft.ViewUpdate;
+import com.radixdlt.consensus.safety.SafetyRules;
 
 /**
  * Pacemaker factory
@@ -34,8 +35,10 @@ public interface PacemakerFactory {
 	Pacemaker create(
 		BFTValidatorSet validatorSet,
 		VertexStore vertexStore,
-		ProposerElection proposerElection,
-		PacemakerTimeoutSender timeoutSender,
-		PacemakerInfoSender infoSender
+		PacemakerState pacemakerState,
+		PacemakerTimeoutCalculator timeoutCalculator,
+		SafetyRules safetyRules,
+		ViewUpdate initialViewUpdate,
+		long nextEpoch
 	);
 }

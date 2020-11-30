@@ -17,9 +17,6 @@
 
 package com.radixdlt.consensus;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
@@ -39,14 +36,6 @@ public interface Ledger {
 	 * @return the results of executing the prepare stage
 	 */
 	Optional<PreparedVertex> prepare(LinkedList<PreparedVertex> previous, VerifiedVertex vertex);
-
-	/**
-	 * Commit prepared vertices from bft consensus
-	 * @param vertices vertices to commit
-	 * @param proof proof of commit
-	 * @param prunedVertices vertices which no longer can be committed
-	 */
-	void commit(ImmutableList<PreparedVertex> vertices, HighQC proof, ImmutableSet<HashCode> prunedVertices);
 
 	/**
 	 * Commit commands

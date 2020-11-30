@@ -28,16 +28,15 @@ import static org.mockito.Mockito.when;
 
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.network.addressbook.AddressBook;
-import com.radixdlt.sync.RemoteSyncRequest;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageListener;
 import com.radixdlt.ledger.DtoCommandsAndProof;
-import com.radixdlt.sync.RemoteSyncResponse;
 import com.radixdlt.universe.Universe;
 import io.reactivex.rxjava3.observers.TestObserver;
 import java.util.Optional;
@@ -69,7 +68,7 @@ public class MessageCentralLedgerSyncTest {
 		PeerWithSystem peer = mock(PeerWithSystem.class);
 		when(peer.hasSystem()).thenReturn(true);
 		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
-		messageCentralLedgerSync.sendSyncRequest(node, mock(DtoLedgerHeaderAndProof.class));
+		messageCentralLedgerSync.syncRequestDispatcher().dispatch(node, mock(DtoLedgerHeaderAndProof.class));
 		verify(messageCentral, times(1)).send(eq(peer), argThat(msg -> msg.getMagic() == 123));
 	}
 
@@ -82,7 +81,7 @@ public class MessageCentralLedgerSyncTest {
 		PeerWithSystem peer = mock(PeerWithSystem.class);
 		when(peer.hasSystem()).thenReturn(true);
 		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
-		messageCentralLedgerSync.sendSyncResponse(node, mock(DtoCommandsAndProof.class));
+		messageCentralLedgerSync.syncResponseDispatcher().dispatch(node, mock(DtoCommandsAndProof.class));
 		verify(messageCentral, times(1)).send(eq(peer), argThat(msg -> msg.getMagic() == 123));
 	}
 
@@ -94,7 +93,7 @@ public class MessageCentralLedgerSyncTest {
 			return null;
 		}).when(messageCentral).addListener(eq(SyncRequestMessage.class), any());
 
-		TestObserver<RemoteSyncRequest> testObserver = this.messageCentralLedgerSync.syncRequests().test();
+		TestObserver<RemoteEvent<DtoLedgerHeaderAndProof>> testObserver = this.messageCentralLedgerSync.syncRequests().test();
 		Peer peer = mock(Peer.class);
 		when(peer.hasSystem()).thenReturn(true);
 		RadixSystem system = mock(RadixSystem.class);
@@ -108,7 +107,7 @@ public class MessageCentralLedgerSyncTest {
 		messageListenerAtomicReference.get().handleMessage(peer, syncRequestMessage);
 		testObserver.awaitCount(1);
 		testObserver.assertValue(syncRequest ->
-			syncRequest.getCurrentHeader().equals(header) && syncRequest.getNode().getKey().equals(key)
+			syncRequest.getEvent().equals(header) && syncRequest.getOrigin().getKey().equals(key)
 		);
 	}
 
@@ -120,7 +119,7 @@ public class MessageCentralLedgerSyncTest {
 			return null;
 		}).when(messageCentral).addListener(eq(SyncResponseMessage.class), any());
 
-		TestObserver<RemoteSyncResponse> testObserver = this.messageCentralLedgerSync.syncResponses().test();
+		TestObserver<RemoteEvent<DtoCommandsAndProof>> testObserver = this.messageCentralLedgerSync.syncResponses().test();
 		Peer peer = mock(Peer.class);
 		when(peer.hasSystem()).thenReturn(true);
 		RadixSystem system = mock(RadixSystem.class);
@@ -133,6 +132,6 @@ public class MessageCentralLedgerSyncTest {
 		when(syncResponseMessage.getCommands()).thenReturn(commands);
 		messageListenerAtomicReference.get().handleMessage(peer, syncResponseMessage);
 		testObserver.awaitCount(1);
-		testObserver.assertValue(resp -> resp.getCommandsAndProof().equals(commands));
+		testObserver.assertValue(resp -> resp.getEvent().equals(commands));
 	}
 }

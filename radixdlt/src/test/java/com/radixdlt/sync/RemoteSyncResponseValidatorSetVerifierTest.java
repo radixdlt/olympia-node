@@ -18,7 +18,6 @@
 package com.radixdlt.sync;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -27,6 +26,7 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.ValidationState;
 import com.radixdlt.ledger.DtoCommandsAndProof;
@@ -41,7 +41,7 @@ public class RemoteSyncResponseValidatorSetVerifierTest {
 	private InvalidValidatorSetSender invalidSender;
 	private BFTValidatorSet validatorSet;
 	private RemoteSyncResponseValidatorSetVerifier validatorSetVerifier;
-	private RemoteSyncResponse response;
+	private DtoCommandsAndProof commandsAndProof;
 
 	@Before
 	public void setup() {
@@ -54,14 +54,12 @@ public class RemoteSyncResponseValidatorSetVerifierTest {
 			validatorSet
 		);
 
-		this.response = mock(RemoteSyncResponse.class);
-		DtoCommandsAndProof commandsAndProof = mock(DtoCommandsAndProof.class);
+		commandsAndProof = mock(DtoCommandsAndProof.class);
 		DtoLedgerHeaderAndProof headerAndProof = mock(DtoLedgerHeaderAndProof.class);
 		TimestampedECDSASignatures signatures = mock(TimestampedECDSASignatures.class);
 		when(signatures.getSignatures()).thenReturn(ImmutableMap.of());
 		when(headerAndProof.getSignatures()).thenReturn(signatures);
 		when(commandsAndProof.getTail()).thenReturn(headerAndProof);
-		when(response.getCommandsAndProof()).thenReturn(commandsAndProof);
 	}
 
 	@Test
@@ -70,9 +68,9 @@ public class RemoteSyncResponseValidatorSetVerifierTest {
 		when(validatorSet.newValidationState()).thenReturn(validationState);
 		when(validationState.complete()).thenReturn(true);
 
-		validatorSetVerifier.processSyncResponse(response);
+		validatorSetVerifier.process(BFTNode.random(), commandsAndProof);
 
-		verify(verifiedSender, times(1)).sendVerified(eq(response));
+		verify(verifiedSender, times(1)).sendVerified(any());
 		verify(invalidSender, never()).sendInvalid(any());
 	}
 
@@ -82,9 +80,9 @@ public class RemoteSyncResponseValidatorSetVerifierTest {
 		when(validatorSet.newValidationState()).thenReturn(validationState);
 		when(validationState.complete()).thenReturn(false);
 
-		validatorSetVerifier.processSyncResponse(response);
+		validatorSetVerifier.process(BFTNode.random(), commandsAndProof);
 
-		verify(verifiedSender, never()).sendVerified(eq(response));
+		verify(verifiedSender, never()).sendVerified(any());
 		verify(invalidSender, times(1)).sendInvalid(any());
 	}
 }

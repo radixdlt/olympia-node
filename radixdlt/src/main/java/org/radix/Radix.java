@@ -24,7 +24,7 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.utils.MemoryLeakDetector;
 import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.systeminfo.InMemorySystemInfoManager;
+import com.radixdlt.systeminfo.SystemInfoRunner;
 import com.radixdlt.mempool.MempoolReceiver;
 import com.radixdlt.network.addressbook.PeerManager;
 import com.radixdlt.properties.RuntimeProperties;
@@ -107,7 +107,7 @@ public final class Radix {
 
 	public static void main(String[] args) {
 		try {
-			new MemoryLeakDetector();
+			MemoryLeakDetector.start();
 
 			logVersion();
 			dumpExecutionLocation();
@@ -144,7 +144,7 @@ public final class Radix {
 		final MempoolReceiver mempoolReceiver = globalInjector.getInjector().getInstance(MempoolReceiver.class);
 		mempoolReceiver.start();
 
-		final InMemorySystemInfoManager infoStateRunner = globalInjector.getInjector().getInstance(InMemorySystemInfoManager.class);
+		final SystemInfoRunner infoStateRunner = globalInjector.getInjector().getInstance(SystemInfoRunner.class);
 		infoStateRunner.start();
 
 		final Map<String, ModuleRunner> moduleRunners = globalInjector.getInjector()

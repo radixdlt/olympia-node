@@ -19,55 +19,61 @@ package com.radixdlt;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.Scopes;
 import com.google.inject.Singleton;
-import com.google.inject.multibindings.Multibinder;
+import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.BFTFactory;
-import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.bft.PacemakerMaxExponent;
-import com.radixdlt.consensus.bft.PacemakerRate;
-import com.radixdlt.consensus.bft.PacemakerTimeout;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.bft.BFTHighQCUpdate;
+import com.radixdlt.consensus.bft.BFTRebuildUpdate;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
+import com.radixdlt.consensus.bft.FormedQC;
+import com.radixdlt.consensus.bft.NoVote;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.bft.ViewUpdate;
+import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
+import com.radixdlt.consensus.liveness.PacemakerReducer;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
+import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
+import com.radixdlt.consensus.liveness.ExponentialPacemakerTimeoutCalculator;
+import com.radixdlt.consensus.liveness.PacemakerState;
+import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
+import com.radixdlt.consensus.liveness.VoteSender;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.bft.BFTBuilder;
-import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
-import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker.PacemakerInfoSender;
 import com.radixdlt.consensus.safety.SafetyRules;
-import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTSyncRequestProcessor;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
-import com.radixdlt.consensus.liveness.ExponentialTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.sync.BFTSync;
-import com.radixdlt.consensus.sync.BFTSync.BFTSyncTimeoutScheduler;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
-import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
-import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
 import com.radixdlt.consensus.liveness.PendingViewTimeouts;
-import com.radixdlt.consensus.liveness.ProceedToViewSender;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.network.TimeSupplier;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.store.LastProof;
+import com.radixdlt.sync.LocalSyncRequest;
 import java.util.Comparator;
 import java.util.Random;
-import java.util.Set;
 
 /**
  * Module responsible for running BFT validator logic
@@ -77,47 +83,64 @@ public final class ConsensusModule extends AbstractModule {
 
 	@Override
 	public void configure() {
-		Multibinder.newSetBinder(binder(), VertexStoreEventSender.class);
-	}
-
-	@Provides
-	private VertexStoreEventSender sender(Set<VertexStoreEventSender> senders) {
-		return new VertexStoreEventSender() {
-			@Override
-			public void sendCommitted(BFTCommittedUpdate committedUpdate) {
-				senders.forEach(s -> s.sendCommitted(committedUpdate));
-			}
-
-			@Override
-			public void highQC(QuorumCertificate qc) {
-				senders.forEach(s -> s.highQC(qc));
-			}
-		};
+		bind(SafetyRules.class).in(Scopes.SINGLETON);
+		bind(PacemakerState.class).in(Scopes.SINGLETON);
+		bind(PacemakerReducer.class).to(PacemakerState.class);
+		bind(ExponentialPacemakerTimeoutCalculator.class).in(Scopes.SINGLETON);
+		bind(PacemakerTimeoutCalculator.class).to(ExponentialPacemakerTimeoutCalculator.class);
 	}
 
 	@Provides
 	private BFTFactory bftFactory(
 		Hasher hasher,
-		HashVerifier verifier
+		HashVerifier verifier,
+		EventDispatcher<FormedQC> formedQCEventDispatcher,
+		EventDispatcher<NoVote> noVoteEventDispatcher,
+		RemoteEventDispatcher<Vote> voteDispatcher
 	) {
 		return (
 			self,
 			pacemaker,
 			vertexStore,
-			vertexStoreSync,
-			proposerElection,
-			validatorSet
+			bftSyncer,
+			formedQCEventProcessor,
+			validatorSet,
+			viewUpdate,
+			safetyRules
 		) ->
 			BFTBuilder.create()
 				.self(self)
 				.hasher(hasher)
 				.verifier(verifier)
+				.noVoteEventDispatcher(noVoteEventDispatcher)
+				.voteSender(voteDispatcher)
+				.safetyRules(safetyRules)
 				.pacemaker(pacemaker)
 				.vertexStore(vertexStore)
-				.bftSyncer(vertexStoreSync)
-				.proposerElection(proposerElection)
+				.formedQCEventDispatcher(formedQC -> {
+					// FIXME: a hack for now until replacement of epochmanager factories
+					formedQCEventProcessor.process(formedQC);
+					formedQCEventDispatcher.dispatch(formedQC);
+				})
+				.viewUpdate(viewUpdate)
+				.bftSyncer(bftSyncer)
 				.validatorSet(validatorSet)
 				.build();
+	}
+
+	@ProvidesIntoSet
+	public EventProcessor<BFTRebuildUpdate> bftRebuildUpdateEventProcessor(BFTEventProcessor eventProcessor) {
+		return eventProcessor::processBFTRebuildUpdate;
+	}
+
+	@ProvidesIntoSet
+	public EventProcessor<BFTInsertUpdate> bftUpdateEventProcessor(BFTEventProcessor eventProcessor) {
+		return eventProcessor::processBFTUpdate;
+	}
+
+	@ProvidesIntoSet
+	public EventProcessor<BFTInsertUpdate> bftSync(BFTSync bftSync) {
+		return bftSync::processBFTUpdate;
 	}
 
 	@Provides
@@ -128,16 +151,19 @@ public final class ConsensusModule extends AbstractModule {
 		BFTFactory bftFactory,
 		Pacemaker pacemaker,
 		VertexStore vertexStore,
-		BFTSync vertexStoreSync,
-		ProposerElection proposerElection
+		BFTSync bftSync,
+		SafetyRules safetyRules,
+		ViewUpdate viewUpdate
 	) {
 		return bftFactory.create(
 			self,
 			pacemaker,
 			vertexStore,
-			vertexStoreSync,
-			proposerElection,
-			config.getValidatorSet()
+			bftSync,
+			bftSync.formedQCEventProcessor(),
+			config.getValidatorSet(),
+			viewUpdate,
+			safetyRules
 		);
 	}
 
@@ -154,48 +180,37 @@ public final class ConsensusModule extends AbstractModule {
 	@Singleton
 	private Pacemaker pacemaker(
 		@Self BFTNode self,
+		SafetyRules safetyRules,
 		SystemCounters counters,
 		BFTConfiguration configuration,
 		VertexStore vertexStore,
-		ProposerElection proposerElection,
+		VoteSender voteSender,
+		EventDispatcher<LocalTimeoutOccurrence> timeoutDispatcher,
+		PacemakerReducer pacemakerReducer,
+		ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutSender,
+		PacemakerTimeoutCalculator timeoutCalculator,
 		NextCommandGenerator nextCommandGenerator,
-		TimeSupplier timeSupplier,
-		Hasher hasher,
-		HashSigner signer,
 		ProposalBroadcaster proposalBroadcaster,
-		ProceedToViewSender proceedToViewSender,
-		PacemakerTimeoutSender timeoutSender,
-		PacemakerInfoSender infoSender,
-		@PacemakerTimeout long pacemakerTimeout,
-		@PacemakerRate double pacemakerRate,
-		@PacemakerMaxExponent int pacemakerMaxExponent
+		Hasher hasher,
+		ViewUpdate initialViewUpdate
 	) {
-		PendingVotes pendingVotes = new PendingVotes(hasher);
 		PendingViewTimeouts pendingViewTimeouts = new PendingViewTimeouts();
 		BFTValidatorSet validatorSet = configuration.getValidatorSet();
-		SafetyRules safetyRules = new SafetyRules(self, SafetyState.initialState(), hasher, signer);
-		return new ExponentialTimeoutPacemaker(
-			pacemakerTimeout,
-			pacemakerRate,
-			pacemakerMaxExponent,
-
+		return new Pacemaker(
 			self,
 			counters,
-
-			pendingVotes,
 			pendingViewTimeouts,
 			validatorSet,
 			vertexStore,
-			proposerElection,
 			safetyRules,
-			nextCommandGenerator,
-			timeSupplier,
-			hasher,
-
-			proposalBroadcaster,
-			proceedToViewSender,
+			voteSender,
+			timeoutDispatcher, pacemakerReducer,
 			timeoutSender,
-			infoSender
+			timeoutCalculator,
+			nextCommandGenerator,
+			proposalBroadcaster,
+			hasher,
+			initialViewUpdate
 		);
 	}
 
@@ -211,26 +226,25 @@ public final class ConsensusModule extends AbstractModule {
 	@Singleton
 	private BFTSync bftSync(
 		VertexStore vertexStore,
-		Pacemaker pacemaker,
+		PacemakerReducer pacemakerReducer,
 		SyncVerticesRequestSender requestSender,
-		SyncLedgerRequestSender syncLedgerRequestSender,
-		BFTSyncTimeoutScheduler timeoutScheduler,
-		BFTConfiguration configuration,
+		EventDispatcher<LocalSyncRequest> syncLedgerRequestSender,
+		ScheduledEventDispatcher<LocalGetVerticesRequest> timeoutDispatcher,
+		@LastProof VerifiedLedgerHeaderAndProof ledgerLastProof, // Use this instead of configuration.getRoot()
 		SystemCounters counters,
 		Random random,
 		@BFTSyncPatienceMillis int bftSyncPatienceMillis
 	) {
 		return new BFTSync(
-			vertexStore,
-			pacemaker,
+			vertexStore, pacemakerReducer,
 			Comparator.comparingLong((LedgerHeader h) -> h.getAccumulatorState().getStateVersion()),
 			(node, request)  -> {
 				counters.increment(CounterType.BFT_SYNC_REQUESTS_SENT);
 				requestSender.sendGetVerticesRequest(node, request);
 			},
 			syncLedgerRequestSender,
-			timeoutScheduler,
-			configuration.getGenesisHeader(),
+			timeoutDispatcher,
+			ledgerLastProof,
 			random,
 			bftSyncPatienceMillis
 		);
@@ -239,19 +253,20 @@ public final class ConsensusModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private VertexStore vertexStore(
-		VertexStoreEventSender vertexStoreEventSender,
-		BFTUpdateSender updateSender,
+		EventDispatcher<BFTInsertUpdate> updateSender,
+		EventDispatcher<BFTRebuildUpdate> rebuildUpdateDispatcher,
+		EventDispatcher<BFTHighQCUpdate> highQCUpdateEventDispatcher,
+		EventDispatcher<BFTCommittedUpdate> committedSender,
 		BFTConfiguration bftConfiguration,
-		SystemCounters counters,
 		Ledger ledger
 	) {
 		return VertexStore.create(
-			bftConfiguration.getGenesisVertex(),
-			bftConfiguration.getGenesisQC(),
+			bftConfiguration.getVertexStoreState(),
 			ledger,
 			updateSender,
-			vertexStoreEventSender,
-			counters
+			rebuildUpdateDispatcher,
+			highQCUpdateEventDispatcher,
+			committedSender
 		);
 	}
 }

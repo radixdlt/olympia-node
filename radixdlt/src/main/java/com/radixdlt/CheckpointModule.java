@@ -22,16 +22,13 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
-import com.radixdlt.consensus.AddressBookGenesisValidatorSetProvider;
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.GenesisValidatorSetProvider;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -45,10 +42,9 @@ import org.radix.universe.UniverseValidator;
  * which the node will always align with
  */
 public class CheckpointModule extends AbstractModule {
-	private final int fixedNodeCount;
 
-	public CheckpointModule(int fixedNodeCount) {
-		this.fixedNodeCount = fixedNodeCount;
+	public CheckpointModule() {
+		// Nothing to do here
 	}
 
 	@Provides
@@ -72,23 +68,10 @@ public class CheckpointModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private AddressBookGenesisValidatorSetProvider provider(
-		AddressBook addressBook,
-		@Self BFTNode self
-	) {
-		return new AddressBookGenesisValidatorSetProvider(
-			self.getKey(),
-			addressBook,
-			fixedNodeCount
-		);
-	}
-
-	@Provides
-	@Singleton
 	private VerifiedCommandsAndProof genesisCheckpoint(
 		Serialization serialization,
 		Universe universe,
-		AddressBookGenesisValidatorSetProvider initialValidatorSetProvider,
+		GenesisValidatorSetProvider initialValidatorSetProvider,
 		Hasher hasher
 	) {
 		final ClientAtom genesisAtom = ClientAtom.convertFromApiAtom(universe.getGenesis().get(0), hasher);
@@ -96,7 +79,7 @@ public class CheckpointModule extends AbstractModule {
 		Command command = new Command(payload);
 		VerifiedLedgerHeaderAndProof genesisLedgerHeader = VerifiedLedgerHeaderAndProof.genesis(
 			hasher.hash(command),
-			initialValidatorSetProvider.getGenesisValidatorSet()
+			initialValidatorSetProvider.genesisValidatorSet()
 		);
 
 		return new VerifiedCommandsAndProof(

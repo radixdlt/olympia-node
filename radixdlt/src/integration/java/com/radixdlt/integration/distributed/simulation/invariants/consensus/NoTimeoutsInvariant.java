@@ -17,28 +17,36 @@
 
 package com.radixdlt.integration.distributed.simulation.invariants.consensus;
 
-import com.radixdlt.consensus.Timeout;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
+import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
 import com.radixdlt.integration.distributed.simulation.TestInvariant;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
-import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Checks that no local timeouts are occurring.
  * Only makes sense to check in networks where there are no failing nodes.
  */
 public class NoTimeoutsInvariant implements TestInvariant {
+	private final NodeEvents nodeTimeouts;
+
+	public NoTimeoutsInvariant(NodeEvents nodeTimeouts) {
+		this.nodeTimeouts = nodeTimeouts;
+	}
 
 	@Override
 	public Observable<TestInvariantError> check(RunningNetwork network) {
-		List<Observable<Pair<BFTNode, Timeout>>> timeouts = network.getNodes().stream()
-			.map(n -> network.getInfo(n).timeouts().map(t -> Pair.of(n, t)))
-			.collect(Collectors.toList());
-
-		return Observable.merge(timeouts)
-			.map(pair -> new TestInvariantError("Timeout at node " + pair.getFirst().getSimpleName() + " " + pair.getSecond()));
+		return Observable.<TestInvariantError>create(
+			emitter -> {
+				this.nodeTimeouts.addListener(
+					(node, event) -> emitter.onNext(new TestInvariantError("Timeout at node " + node + " " + event)),
+					EpochLocalTimeoutOccurrence.class
+				);
+				this.nodeTimeouts.addListener(
+					(node, event) -> emitter.onNext(new TestInvariantError("Timeout at node " + node + " " + event)),
+					LocalTimeoutOccurrence.class
+				);
+			})
+			.serialize();
 	}
 }

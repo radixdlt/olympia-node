@@ -17,6 +17,7 @@
 
 package com.radixdlt;
 
+import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -35,20 +36,23 @@ import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.HashVerifier;
+import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
+import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.CommittedReader;
-import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncTimeoutScheduler;
+import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
 import com.radixdlt.sync.RemoteSyncResponse;
 import com.radixdlt.sync.RemoteSyncResponseAccumulatorVerifier.VerifiedAccumulatorSender;
-import com.radixdlt.sync.StateSyncNetworkSender;
 import com.radixdlt.sync.SyncPatienceMillis;
 import com.radixdlt.utils.TypedMocks;
 
@@ -71,10 +75,12 @@ public class SyncServiceModuleTest {
 				bind(Hasher.class).toInstance(mock(Hasher.class));
 				bind(LedgerAccumulatorVerifier.class).toInstance(mock(LedgerAccumulatorVerifier.class));
 				bind(CommittedReader.class).toInstance(mock(CommittedReader.class));
-				bind(SyncTimeoutScheduler.class).toInstance(mock(SyncTimeoutScheduler.class));
-				bind(StateSyncNetworkSender.class).toInstance(mock(StateSyncNetworkSender.class));
+				bind(new TypeLiteral<RemoteEventDispatcher<DtoLedgerHeaderAndProof>>() { }).toInstance(rmock(RemoteEventDispatcher.class));
+				bind(new TypeLiteral<RemoteEventDispatcher<DtoCommandsAndProof>>() { }).toInstance(rmock(RemoteEventDispatcher.class));
+				bind(new TypeLiteral<ScheduledEventDispatcher<SyncInProgress>>() { }).toInstance(rmock(ScheduledEventDispatcher.class));
 				bind(Key.get(new TypeLiteral<Comparator<AccumulatorState>>() { })).toInstance(TypedMocks.rmock(Comparator.class));
 				bind(BFTConfiguration.class).toInstance(mock(BFTConfiguration.class));
+				bind(Key.get(VerifiedLedgerHeaderAndProof.class, LastProof.class)).toInstance(mock(VerifiedLedgerHeaderAndProof.class));
 				bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(200);
 			}
 		};
