@@ -57,6 +57,25 @@ public final class UnregisteredValidatorParticle extends Particle {
 	}
 
 	@Override
+	public int hashCode() {
+		return Objects.hash(this.address, this.nonce, getDestinations());
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (!(obj instanceof UnregisteredValidatorParticle)) {
+			return false;
+		}
+		final var that = (UnregisteredValidatorParticle) obj;
+		return this.nonce == that.nonce
+			&& Objects.equals(this.address, that.address)
+			&& Objects.equals(getDestinations(), that.getDestinations());
+	}
+
+	@Override
 	public String toString() {
 		return String.format("%s[%s]", getClass().getSimpleName(), getAddress());
 	}

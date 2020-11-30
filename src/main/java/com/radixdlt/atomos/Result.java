@@ -94,6 +94,17 @@ public final class Result {
 	}
 
 	/**
+	 * Map a success result into a subsequent result, using the specified
+	 * result supplier.
+	 *
+	 * @param onSuccess supplier to use to calculate result if this result
+	 * 		is a success value
+	 */
+	public Result mapSuccess(Supplier<Result> onSuccess) {
+		return isSuccess() ? onSuccess.get() : this;
+	}
+
+	/**
 	 * Returns singleton stream of the error message if an error exists.
 	 * Useful for functional stream logic
 	 *
