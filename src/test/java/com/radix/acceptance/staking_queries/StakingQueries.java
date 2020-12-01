@@ -17,7 +17,6 @@ import io.cucumber.java.en.When;
 import io.reactivex.observers.TestObserver;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -68,19 +67,14 @@ public class StakingQueries {
 		validator.sendTokens(token, delegator2.getAddress(), STAKING_AMOUNT).blockUntilComplete();
 	}
 
-	@And("^I have registered validator with allowed (delegator1)(?: and)?( delegator2)?$")
-	public void register_validator_with_delegators(final String name1, final String name2) {
-		final var builder = ImmutableSet.<RadixAddress>builder();
+	@And("^I have registered validator with allowed delegator1$")
+	public void register_validator_with_delegator1() {
+		registerValidatorWithDelegators(ImmutableSet.of(delegator1.getAddress()));
+	}
 
-		if (name1 != null) {
-			builder.add(delegator1.getAddress());
-		}
-
-		if (name2 != null) {
-			builder.add(delegator2.getAddress());
-		}
-
-		validator.registerValidator(validator.getAddress(), builder.build()).blockUntilComplete();
+	@And("^I have registered validator with allowed delegator1 and delegator2$")
+	public void register_validator_with_delegators() {
+		registerValidatorWithDelegators(ImmutableSet.of(delegator1.getAddress(), delegator2.getAddress()));
 	}
 
 	@And("^I stake some tokens by delegator1$")
@@ -93,21 +87,14 @@ public class StakingQueries {
 		makeStakeByDelegator(this.delegator2);
 	}
 
-	@And("^I unstake (.*) amount by delegator1$")
-	public void i_unstake_full_amount_by_delegator1(final String unstakeType) {
-		final BigDecimal unstakeAmount = decodeUnstakeAmountString(unstakeType);
-		delegator1.unstakeTokens(unstakeAmount, token, validator.getAddress()).blockUntilComplete();
+	@And("^I unstake full amount by delegator1$")
+	public void i_unstake_full_amount_by_delegator1() {
+		delegator1.unstakeTokens(STAKING_AMOUNT, token, validator.getAddress()).blockUntilComplete();
 	}
 
-	private BigDecimal decodeUnstakeAmountString(String unstakeType) {
-		switch (unstakeType) {
-			case "full":
-				return STAKING_AMOUNT;
-			case "partial":
-				return STAKING_AMOUNT.divide(BigDecimal.valueOf(2), RoundingMode.HALF_UP);
-		}
-
-		throw new IllegalStateException("Unknown unstaking type: " + unstakeType);
+	@And("^I unstake partial amount by delegator1$")
+	public void i_unstake_partial_amount_by_delegator1() {
+		delegator1.unstakeTokens(PARTIAL_UNSTAKING_AMOUNT, token, validator.getAddress()).blockUntilComplete();
 	}
 
 	@When("^I request validator stake balance$")
@@ -176,5 +163,9 @@ public class StakingQueries {
 				return STAKING_AMOUNT.add(STAKING_AMOUNT);
 		}
 		throw new IllegalStateException("Unknown balance string: [" + balanceString + "]");
+	}
+
+	private void registerValidatorWithDelegators(ImmutableSet<RadixAddress> delegators) {
+		validator.registerValidator(validator.getAddress(), delegators).blockUntilComplete();
 	}
 }
