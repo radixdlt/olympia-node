@@ -33,7 +33,7 @@ import java.util.Objects;
  * Vertex Store State version which can be serialized.
  */
 @SerializerId2("store.vertices")
-public class SerializedVertexStoreState {
+public final class SerializedVertexStoreState {
 
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(Output.ALL)
@@ -72,5 +72,31 @@ public class SerializedVertexStoreState {
 
 	public HighQC getHighQC() {
 		return highQC;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(root, vertices, highQC);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (!(o instanceof SerializedVertexStoreState)) {
+			return false;
+		}
+
+		SerializedVertexStoreState other = (SerializedVertexStoreState) o;
+		return Objects.equals(this.root, other.root)
+			&& Objects.equals(this.vertices, other.vertices)
+			&& Objects.equals(this.highQC, other.highQC);
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{highQC=%s root=%s vertices=%s}",
+			this.getClass().getSimpleName(),
+			this.root,
+			this.vertices
+		);
 	}
 }
