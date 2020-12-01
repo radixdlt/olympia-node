@@ -552,7 +552,7 @@ public class RadixApplicationAPI {
 	 * Returns a stream of the latest delegated stake balance for the validator at the specified address.
 	 * pull() must have previously been called to ensure balances are retrieved and updated.
 	 *
-	 * @param delegateAddress the address of the validator to observe stake balance of
+	 * @param validator the address of the validator to observe stake balance of
 	 * @return a cold observable of the latest stake balances of the validator by token RRI
 	 */
 	public Observable<Map<RRI, BigDecimal>> observeValidatorStake(RadixAddress validator) {
@@ -568,13 +568,13 @@ public class RadixApplicationAPI {
 
 	private DelegatedTokenBalanceState accumulateTokens(
 		DelegatedTokenBalanceState previous,
-		RadixAddress delegateAddress,
+		RadixAddress validator,
 		SpunParticle spunParticle
 	) {
 		final var particle = spunParticle.getParticle();
 		if (particle instanceof StakedTokensParticle) {
 			final var stp = (StakedTokensParticle) particle;
-			if (delegateAddress.equals(stp.getDelegateAddress())) {
+			if (validator.equals(stp.getDelegateAddress())) {
 				final var baseAmount = TokenUnitConversions.subunitsToUnits(stp.getAmount());
 				final var amount = Spin.UP.equals(spunParticle.getSpin()) ? baseAmount : baseAmount.negate();
 				return DelegatedTokenBalanceState.merge(previous, stp.getTokenDefinitionReference(), amount);
