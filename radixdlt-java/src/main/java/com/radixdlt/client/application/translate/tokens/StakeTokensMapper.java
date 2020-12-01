@@ -83,7 +83,7 @@ public class StakeTokensMapper implements StatefulActionToParticleGroupsMapper<S
 			amt ->
 				new StakedTokensParticle(
 					stake.getDelegate(),
-					totalAmountToRedelegate,
+					amt,
 					granularity,
 					stake.getFrom(),
 					System.nanoTime(),

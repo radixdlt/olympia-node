@@ -22,15 +22,24 @@
 
 package com.radixdlt.client.application.translate.tokens;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.atommodel.tokens.StakedTokensParticle;
+import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.client.core.atoms.particles.Spin;
+import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
+
+import org.assertj.core.api.Condition;
 import org.junit.Test;
 
 import java.math.BigDecimal;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -88,5 +97,64 @@ public class UnstakeTokensMapperTest {
 			)
 		));
 	}
+
+	@Test
+	public void when_partial_unstaking_tokens__amounts_are_correct() {
+		RadixAddress address1 = RadixAddress.from("JEbhKQzBn4qJzWJFBbaPioA2GTeaQhuUjYWkanTE6N8VvvPpvM8");
+		RadixAddress address2 = RadixAddress.from("23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x");
+		RRI token = RRI.of(address1, "COOKIE");
+		UnstakeTokensAction action = UnstakeTokensAction.create(
+			TokenUnitConversions.subunitsToUnits(3L),
+			token,
+			address1,
+			address2
+		);
+		UnstakeTokensMapper transferTranslator = new UnstakeTokensMapper();
+
+		final var result = transferTranslator.mapToParticleGroups(action, Stream.of(
+			new StakedTokensParticle(
+				address2,
+				UInt256.TEN,
+				UInt256.ONE,
+				address1,
+				0,
+				token,
+				ImmutableMap.of()
+			)
+		));
+
+		assertThat(result).hasSize(1);
+		final var particleGroup = result.get(0);
+		final var spunParticles = particleGroup.spunParticles().collect(ImmutableList.toImmutableList());
+		assertThat(spunParticles)
+			.hasSize(3)
+			.haveExactly(1, stakedTokens(Spin.DOWN, UInt256.TEN))
+			.haveExactly(1, stakedTokens(Spin.UP, UInt256.SEVEN))
+			.haveExactly(1, transferrableTokens(Spin.UP, UInt256.THREE));
+	}
+
+	private Condition<SpunParticle> stakedTokens(Spin spin, UInt256 amount) {
+		return givenParticle(spin, StakedTokensParticle.class, StakedTokensParticle::getAmount, amount);
+	}
+
+	private Condition<SpunParticle> transferrableTokens(Spin spin, UInt256 amount) {
+		return givenParticle(spin, TransferrableTokensParticle.class, TransferrableTokensParticle::getAmount, amount);
+	}
+
+	private <T> Condition<SpunParticle> givenParticle(Spin spin, Class<T> cls, Function<T, UInt256> getAmount, UInt256 amount) {
+		final var condition = new Condition<SpunParticle>() {
+			@Override
+			public boolean matches(SpunParticle value) {
+				final var particle = value.getParticle();
+				if (!value.getSpin().equals(spin) || !cls.isAssignableFrom(particle.getClass())) {
+					return false;
+				}
+				UInt256 particleAmount = getAmount.apply(cls.cast(particle));
+				return amount.equals(particleAmount);
+			}
+		};
+		return condition.describedAs("%s %s with amount %s", spin, cls.getSimpleName(), amount);
+	}
+
 
 }
