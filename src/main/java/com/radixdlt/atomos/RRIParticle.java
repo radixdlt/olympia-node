@@ -17,6 +17,8 @@
 
 package com.radixdlt.atomos;
 
+import java.util.Objects;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.RRI;
@@ -54,6 +56,22 @@ public final class RRIParticle extends Particle {
 
 	public long getNonce() {
 		return nonce;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(this.rri, this.nonce, this.getDestinations());
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (!(obj instanceof RRIParticle)) {
+			return false;
+		}
+		final var that = (RRIParticle) obj;
+		return this.nonce == that.nonce
+			&& Objects.equals(this.rri, that.rri)
+			&& Objects.equals(this.getDestinations(), that.getDestinations());
 	}
 
 	@Override

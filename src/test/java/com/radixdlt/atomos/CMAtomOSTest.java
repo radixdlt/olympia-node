@@ -21,6 +21,8 @@ import com.google.common.reflect.TypeToken;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.VoidUsedData;
+
+import java.util.Objects;
 import java.util.function.Function;
 
 import com.radixdlt.identifiers.RadixAddress;
@@ -33,7 +35,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mock;
 
 public class CMAtomOSTest {
-	private static class TestParticle extends Particle {
+	private static final class TestParticle extends Particle {
 		@Override
 		public String toString() {
 			return "Test";
@@ -41,12 +43,16 @@ public class CMAtomOSTest {
 
 		@Override
 		public boolean equals(Object o) {
-			return this == o;
+			if (!(o instanceof TestParticle)) {
+				return false;
+			}
+			final var that = (TestParticle) o;
+			return Objects.equals(this.getDestinations(), that.getDestinations());
 		}
 
 		@Override
 		public int hashCode() {
-			return 0;
+			return Objects.hash(this.getDestinations());
 		}
 	}
 

@@ -26,7 +26,7 @@ import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
 
 @SerializerId2("radix.particles.unique")
-public class UniqueParticle extends Particle {
+public final class UniqueParticle extends Particle {
 	@JsonProperty("name")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private String name;
@@ -57,6 +57,23 @@ public class UniqueParticle extends Particle {
 
 	public RadixAddress getAddress() {
 		return address;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(this.name, this.address, this.nonce, getDestinations());
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (!(obj instanceof UniqueParticle)) {
+			return false;
+		}
+		final var that = (UniqueParticle) obj;
+		return this.nonce == that.nonce
+			&& Objects.equals(this.name, that.name)
+			&& Objects.equals(this.address, that.address)
+			&& Objects.equals(this.getDestinations(), that.getDestinations());
 	}
 
 	@Override

@@ -92,6 +92,27 @@ public final class RegisteredValidatorParticle extends Particle {
 	}
 
 	@Override
+	public int hashCode() {
+		return Objects.hash(this.address, this.allowedDelegators, this.url, this.nonce, getDestinations());
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (!(obj instanceof RegisteredValidatorParticle)) {
+			return false;
+		}
+		final var that = (RegisteredValidatorParticle) obj;
+		return this.nonce == that.nonce
+			&& Objects.equals(this.address, that.address)
+			&& Objects.equals(this.allowedDelegators, that.allowedDelegators)
+			&& Objects.equals(this.url, that.url)
+			&& Objects.equals(getDestinations(), that.getDestinations());
+	}
+
+	@Override
 	public String toString() {
 		return String.format(
 			"%s[%s, %s, %s]",
