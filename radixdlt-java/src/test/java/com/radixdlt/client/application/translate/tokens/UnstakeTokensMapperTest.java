@@ -27,7 +27,6 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.identifiers.RRI;
@@ -38,7 +37,6 @@ import org.assertj.core.api.Condition;
 import org.junit.Test;
 
 import java.math.BigDecimal;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
