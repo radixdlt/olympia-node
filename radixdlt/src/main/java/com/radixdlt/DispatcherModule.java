@@ -62,30 +62,41 @@ public class DispatcherModule extends AbstractModule {
 	private static final Logger logger = LogManager.getLogger();
 	@Override
 	public void configure() {
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<ScheduledLocalTimeout>>() { }, ProcessOnDispatch.class);
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<ScheduledLocalTimeout>>() { });
+		final var scheduledTimeoutKey = new TypeLiteral<EventProcessor<ScheduledLocalTimeout>>() { };
+		Multibinder.newSetBinder(binder(), scheduledTimeoutKey, ProcessOnDispatch.class);
+		Multibinder.newSetBinder(binder(), scheduledTimeoutKey);
 
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<LocalSyncRequest>>() { }, ProcessOnDispatch.class);
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<LocalSyncRequest>>() { });
+		final var syncRequestKey = new TypeLiteral<EventProcessor<LocalSyncRequest>>() { };
+		Multibinder.newSetBinder(binder(), syncRequestKey, ProcessOnDispatch.class);
+		Multibinder.newSetBinder(binder(), syncRequestKey);
 
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<LocalTimeoutOccurrence>>() { }, ProcessOnDispatch.class);
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<LocalTimeoutOccurrence>>() { });
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochLocalTimeoutOccurrence>>() { }, ProcessOnDispatch.class);
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochLocalTimeoutOccurrence>>() { });
+		final var timeoutOccurrenceKey = new TypeLiteral<EventProcessor<LocalTimeoutOccurrence>>() { };
+		Multibinder.newSetBinder(binder(), timeoutOccurrenceKey, ProcessOnDispatch.class);
+		Multibinder.newSetBinder(binder(), timeoutOccurrenceKey);
+		final var epochTimeoutOccurrenceKey = new TypeLiteral<EventProcessor<EpochLocalTimeoutOccurrence>>() { };
+		Multibinder.newSetBinder(binder(), epochTimeoutOccurrenceKey, ProcessOnDispatch.class);
+		Multibinder.newSetBinder(binder(), epochTimeoutOccurrenceKey);
 
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<ViewUpdate>>() { }, ProcessOnDispatch.class);
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<ViewUpdate>>() { });
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochViewUpdate>>() { }, ProcessOnDispatch.class);
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochViewUpdate>>() { });
+		final var viewUpdateKey = new TypeLiteral<EventProcessor<ViewUpdate>>() { };
+		Multibinder.newSetBinder(binder(), viewUpdateKey, ProcessOnDispatch.class);
+		Multibinder.newSetBinder(binder(), viewUpdateKey);
+		final var epochViewUpdateKey = new TypeLiteral<EventProcessor<EpochViewUpdate>>() { };
+		Multibinder.newSetBinder(binder(), epochViewUpdateKey, ProcessOnDispatch.class);
+		Multibinder.newSetBinder(binder(), epochViewUpdateKey);
 
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<BFTInsertUpdate>>() { }, ProcessOnDispatch.class);
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<BFTHighQCUpdate>>() { }, ProcessOnDispatch.class);
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<BFTHighQCUpdate>>() { });
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<BFTCommittedUpdate>>() { });
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<BFTCommittedUpdate>>() { }, ProcessOnDispatch.class);
+		final var insertUpdateKey = new TypeLiteral<EventProcessor<BFTInsertUpdate>>() { };
+		Multibinder.newSetBinder(binder(), insertUpdateKey, ProcessOnDispatch.class);
+		final var highQcUpdateKey = new TypeLiteral<EventProcessor<BFTHighQCUpdate>>() { };
+		Multibinder.newSetBinder(binder(), highQcUpdateKey, ProcessOnDispatch.class);
+		Multibinder.newSetBinder(binder(), highQcUpdateKey);
+		final var committedUpdateKey = new TypeLiteral<EventProcessor<BFTCommittedUpdate>>() { };
+		Multibinder.newSetBinder(binder(), committedUpdateKey);
+		Multibinder.newSetBinder(binder(), committedUpdateKey, ProcessOnDispatch.class);
 
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<FormedQC>>() { }, ProcessOnDispatch.class);
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<Vote>>() { }, ProcessOnDispatch.class);
+		final var formQcKey = new TypeLiteral<EventProcessor<FormedQC>>() { };
+		Multibinder.newSetBinder(binder(), formQcKey, ProcessOnDispatch.class);
+		final var voteKey = new TypeLiteral<EventProcessor<Vote>>() { };
+		Multibinder.newSetBinder(binder(), voteKey, ProcessOnDispatch.class);
 	}
 
 	@Provides

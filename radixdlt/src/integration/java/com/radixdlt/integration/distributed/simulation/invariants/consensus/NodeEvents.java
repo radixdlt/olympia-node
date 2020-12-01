@@ -19,7 +19,6 @@ package com.radixdlt.integration.distributed.simulation.invariants.consensus;
 
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.EventProcessor;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -40,6 +39,6 @@ public final class NodeEvents {
 	}
 
 	public <T> EventProcessor<T> processor(BFTNode node, Class<T> eventClass) {
-		return t -> consumers.getOrDefault(eventClass, Collections.emptySet()).forEach(c -> c.accept(node, t));
+		return t -> consumers.getOrDefault(eventClass, Set.of()).forEach(c -> c.accept(node, t));
 	}
 }
