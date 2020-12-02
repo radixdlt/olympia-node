@@ -69,7 +69,7 @@ public class UnstakeTokensMapper implements StatefulActionToParticleGroupsMapper
 			amt ->
 				new StakedTokensParticle(
 					unstake.getDelegate(),
-					totalAmountToRedelegate,
+					amt,
 					granularity,
 					unstake.getFrom(),
 					System.nanoTime(),
