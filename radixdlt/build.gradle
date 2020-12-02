@@ -213,6 +213,11 @@ tasks.withType(JavaExec) {
     jvmArgs = ['-Xmx1024m']
 }
 
+tasks.withType(Test){
+    minHeapSize = "128m"
+    maxHeapSize = "512m"
+}
+
 // Compress distTar
 tasks.withType(Tar) {
     compression = Compression.GZIP
