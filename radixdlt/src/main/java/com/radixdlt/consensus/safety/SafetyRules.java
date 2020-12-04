@@ -171,18 +171,26 @@ public final class SafetyRules {
 		safetyStateBuilder.lastVote(vote);
 
 		this.state = safetyStateBuilder.build();
-
 		this.persistentSafetyStateStore.commitState(this.state);
 
 		return Optional.of(vote);
 	}
 
 	public Vote timeoutVote(Vote vote) {
+		if (vote.isTimeout()) { // vote is already timed out
+			return vote;
+		}
+
 		final VoteTimeout voteTimeout = VoteTimeout.of(vote);
 		final HashCode voteTimeoutHash = hasher.hash(voteTimeout);
 
 		final ECDSASignature timeoutSignature = this.signer.sign(voteTimeoutHash);
-		return vote.withTimeoutSignature(timeoutSignature);
+		final Vote timeoutVote = vote.withTimeoutSignature(timeoutSignature);
+
+		this.state = this.state.toBuilder().lastVote(timeoutVote).build();
+		this.persistentSafetyStateStore.commitState(this.state);
+
+		return timeoutVote;
 	}
 
 	public Vote createVote(

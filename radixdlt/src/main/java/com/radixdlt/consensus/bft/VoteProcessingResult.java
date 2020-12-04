@@ -104,7 +104,7 @@ public abstract class VoteProcessingResult {
 
         @Override
         public String toString() {
-            return String.format("VoteRejected[%s]", reason);
+            return String.format("VoteRejected{reason=%s}", reason);
         }
     }
 
@@ -125,7 +125,7 @@ public abstract class VoteProcessingResult {
 
         @Override
         public String toString() {
-            return "QuorumReached";
+            return String.format("QuorumReached{votingResult=%s}", viewVotingResult);
         }
 
         @Override

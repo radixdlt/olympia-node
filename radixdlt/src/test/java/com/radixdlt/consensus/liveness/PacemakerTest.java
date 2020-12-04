@@ -17,22 +17,22 @@
 
 package com.radixdlt.consensus.liveness;
 
-// TODO: luk
-/*
 import com.google.common.collect.ImmutableSet;
+
 import java.util.Optional;
 
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.network.TimeSupplier;
 import org.junit.Before;
 import org.junit.Test;
 
 import com.radixdlt.consensus.BFTHeader;
-import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.bft.View;
@@ -56,16 +56,16 @@ public class PacemakerTest {
 
 	private BFTNode self = mock(BFTNode.class);
 	private SystemCounters counters = mock(SystemCounters.class);
-	private HashSigner signer = mock(HashSigner.class);
 	private BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 	private VertexStore vertexStore = mock(VertexStore.class);
-	private ProposerElection proposerElection = mock(ProposerElection.class);
 	private SafetyRules safetyRules = mock(SafetyRules.class);
 	private PacemakerState pacemakerState = mock(PacemakerState.class);
 	private PacemakerTimeoutCalculator timeoutCalculator = mock(PacemakerTimeoutCalculator.class);
 	private NextCommandGenerator nextCommandGenerator = mock(NextCommandGenerator.class);
 	private ProposalBroadcaster proposalBroadcaster = mock(ProposalBroadcaster.class);
 	private RemoteEventDispatcher<Vote> voteDispatcher = rmock(RemoteEventDispatcher.class);
+	private EventDispatcher<LocalTimeoutOccurrence> timeoutDispatcher = rmock(EventDispatcher.class);
+	private ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutSender = rmock(ScheduledEventDispatcher.class);
 	private TimeSupplier timeSupplier = mock(TimeSupplier.class);
 
 	private Pacemaker pacemaker;
@@ -79,14 +79,15 @@ public class PacemakerTest {
 			this.vertexStore,
 			this.safetyRules,
 			this.pacemakerState,
-			this.timeoutDi
+			this.timeoutDispatcher,
+			this.timeoutSender,
 			this.timeoutCalculator,
 			this.nextCommandGenerator,
 			this.proposalBroadcaster,
-			this.proposerElection,
 			hasher,
             voteDispatcher,
-            timeSupplier
+            timeSupplier,
+            ViewUpdate.genesis()
 		);
 	}
 
@@ -101,7 +102,7 @@ public class PacemakerTest {
         when(this.safetyRules.timeoutVote(lastVote)).thenReturn(lastVoteWithTimeout);
         when(this.validatorSet.nodes()).thenReturn(validators);
 
-        this.pacemaker.processLocalTimeout(view);
+        this.pacemaker.processLocalTimeout(ScheduledLocalTimeout.create(ViewUpdate.genesis(), 0L));
 
         verify(this.voteDispatcher, times(1)).dispatch(eq(validators), eq(lastVoteWithTimeout));
         verifyNoMoreInteractions(this.vertexStore);
@@ -112,7 +113,7 @@ public class PacemakerTest {
 
     @Test
     public void when_local_timeout__then_send_empty_vote_if_no_previous() {
-	    this.pacemaker.processViewUpdate(new ViewUpdate(View.of(1), View.of(0)));
+	    this.pacemaker.processViewUpdate(ViewUpdate.create(View.of(1), View.of(0), mock(BFTNode.class), mock(BFTNode.class)));
         View view = View.of(1);
         Vote emptyVote = mock(Vote.class);
         Vote emptyVoteWithTimeout = mock(Vote.class);
@@ -129,7 +130,8 @@ public class PacemakerTest {
         when(this.validatorSet.nodes()).thenReturn(validators);
         when(this.vertexStore.insertVertex(any())).thenReturn(Optional.of(bftHeader));
 
-        this.pacemaker.processLocalTimeout(view);
+        this.pacemaker.processLocalTimeout(ScheduledLocalTimeout.create(
+            ViewUpdate.create(View.of(1), View.of(0), mock(BFTNode.class), mock(BFTNode.class)), 0L));
 
         verify(this.voteDispatcher, times(1)).dispatch(eq(validators), eq(emptyVoteWithTimeout));
         verify(this.safetyRules, times(1)).getLastVote(view);
@@ -140,10 +142,9 @@ public class PacemakerTest {
 
 	@Test
 	public void when_local_timeout_for_non_current_view__then_ignored() {
-		this.pacemaker.processLocalTimeout(View.of(1));
-		verifyNoMoreInteractions(this.proposerElection);
+        this.pacemaker.processLocalTimeout(ScheduledLocalTimeout.create(
+                ViewUpdate.create(View.of(1), View.of(0), mock(BFTNode.class), mock(BFTNode.class)), 0L));
 		verifyNoMoreInteractions(this.safetyRules);
 		verifyNoMoreInteractions(this.pacemakerState);
 	}
 }
-*/

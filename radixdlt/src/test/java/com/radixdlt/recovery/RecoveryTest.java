@@ -237,7 +237,7 @@ public class RecoveryTest {
 	}
 
 	@Test
-	@Ignore // TODO: luk
+	@Ignore // TODO(luk): fixme
 	public void on_reboot_should_load_same_last_vote() {
 		// Arrange
 		processForCount(100);

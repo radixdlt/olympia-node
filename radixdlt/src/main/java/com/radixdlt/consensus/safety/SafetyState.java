@@ -42,12 +42,8 @@ public final class SafetyState {
 	@DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("locked_view")
-	@DsonOutput(DsonOutput.Output.ALL)
 	private final View lockedView; // the highest 2-chain head
 
-	@JsonProperty("last_vote")
-	@DsonOutput(DsonOutput.Output.ALL)
 	private final Optional<Vote> lastVote;
 
 	@Inject
@@ -57,8 +53,15 @@ public final class SafetyState {
 
 	@JsonCreator
 	public SafetyState(
-		@JsonProperty("locked_view") View lockedView,
-		@JsonProperty("last_vote") Optional<Vote> lastVote
+		@JsonProperty("locked_view") Long lockedView,
+		@JsonProperty("last_vote") Vote lastVote
+	) {
+		this(View.of(lockedView), Optional.ofNullable(lastVote));
+	}
+
+	public SafetyState(
+		View lockedView,
+		Optional<Vote> lastVote
 	) {
 		this.lockedView = Objects.requireNonNull(lockedView);
 		this.lastVote = Objects.requireNonNull(lastVote);
@@ -136,5 +139,17 @@ public final class SafetyState {
 
 	public Optional<Vote> getLastVote() {
 		return lastVote;
+	}
+
+	@JsonProperty("locked_view")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private Long getSerializerLockedView() {
+		return this.lockedView == null ? null : this.lockedView.number();
+	}
+
+	@JsonProperty("last_vote")
+	@DsonOutput(DsonOutput.Output.ALL)
+	public Vote getSerializerLastVote() {
+		return lastVote.orElse(null);
 	}
 }

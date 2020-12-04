@@ -106,7 +106,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 	@Override
 	public void processVote(Vote vote) {
-		log.trace("Vote: Processing {} from {}", vote, vote.getAuthor().getSimpleName());
+		log.trace("Vote: Processing {}", vote);
 
 		final View view = vote.getView();
 

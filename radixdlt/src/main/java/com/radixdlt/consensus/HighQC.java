@@ -49,23 +49,22 @@ public final class HighQC {
 	@DsonOutput(Output.ALL)
 	private final QuorumCertificate highestCommittedQC;
 
-	@JsonProperty("highest_tc")
-	@DsonOutput(Output.ALL)
 	private final Optional<TimeoutCertificate> highestTC;
 
 	@JsonCreator
 	private static HighQC serializerCreate(
 		@JsonProperty("highest_qc") QuorumCertificate highestQC,
 		@JsonProperty("committed_qc") QuorumCertificate highestCommittedQC,
-		@JsonProperty("highest_tc") Optional<TimeoutCertificate> highestTC
+		@JsonProperty("highest_tc") TimeoutCertificate highestTC
 	) {
-		return new HighQC(highestQC, highestCommittedQC, highestTC);
+		return new HighQC(highestQC, highestCommittedQC, Optional.ofNullable(highestTC));
 	}
 
 	private HighQC(
 			QuorumCertificate highestQC,
 			QuorumCertificate highestCommittedQC,
-			Optional<TimeoutCertificate> highestTC) {
+			Optional<TimeoutCertificate> highestTC
+	) {
 		this.highestQC = Objects.requireNonNull(highestQC);
 		// Don't include separate committedQC if it is the same as highQC.
 		// This significantly reduces the serialised size of the object.
@@ -76,7 +75,7 @@ public final class HighQC {
 		}
 
 		this.highestTC = // only relevant if it's for a higher view than QC
-				highestTC.filter(tc -> tc.getView().gt(highestQC.getView()));
+			highestTC.filter(tc -> tc.getView().gt(highestQC.getView()));
 	}
 
 	/**
@@ -147,5 +146,11 @@ public final class HighQC {
 		String highestCommittedString = (this.highestCommittedQC == null) ? "<same>" : this.highestCommittedQC.toString();
 		return String.format("%s[highest=%s, highestCommitted=%s, highestTC=%s]",
 			getClass().getSimpleName(), this.highestQC, highestCommittedString, highestTC);
+	}
+
+	@JsonProperty("highest_tc")
+	@DsonOutput(Output.ALL)
+	public TimeoutCertificate getSerializerTimeoutCertificate() {
+		return this.highestTC.orElse(null);
 	}
 }

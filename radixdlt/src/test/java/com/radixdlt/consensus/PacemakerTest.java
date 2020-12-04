@@ -30,6 +30,8 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
+import com.radixdlt.consensus.epoch.Epoched;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.deterministic.ControlledSenderFactory;
 import com.radixdlt.environment.deterministic.DeterministicEpochsConsensusProcessor;
@@ -123,10 +125,8 @@ public class PacemakerTest {
 		assertThat(viewUpdateEvent.getCurrentView()).isGreaterThan(initialViewUpdate.getCurrentView());
 	}
 
-	// TODO: luk
-	/*
 	@Test
-	public void on_timeout_pacemaker_should_send_view_timeout() {
+	public void on_timeout_pacemaker_should_send_vote_with_timeout() {
 		// Arrange
 		createRunner(ecKeyPair).injectMembers(this);
 		processor.start();
@@ -139,12 +139,11 @@ public class PacemakerTest {
 
 		// Assert
 		assertThat(network.allMessages())
-			.haveExactly(1, new Condition<>(msg -> msg.message() instanceof ViewTimeout, "A remote view timeout has been emitted"));
+			.haveExactly(1, new Condition<>(
+				msg -> (msg.message() instanceof Vote) && ((Vote) msg.message()).isTimeout(),
+				"A remote timeout vote has been emitted"));
 	}
-	 */
 
-	// TODO: luk
-	/*
 	@Test
 	public void on_view_timeout_quorum_pacemaker_should_move_to_next_view() {
 		// Arrange
@@ -157,7 +156,8 @@ public class PacemakerTest {
 		processor.handleMessage(timeoutMsg.origin(), timeoutMsg.message());
 
 		// Act
-		ControlledMessage viewTimeout = network.nextMessage(e -> e.message() instanceof ViewTimeout).value();
+		ControlledMessage viewTimeout = network.nextMessage(e ->
+			(e.message() instanceof Vote) && ((Vote) e.message()).isTimeout()).value();
 		processor.handleMessage(viewTimeout.origin(), viewTimeout.message());
 
 		// Assert
@@ -171,5 +171,4 @@ public class PacemakerTest {
 			.orElseThrow();
 		assertThat(nextEpochViewUpdate.getViewUpdate().getCurrentView()).isEqualTo(firstUpdate.getViewUpdate().getCurrentView().next());
 	}
-	 */
 }

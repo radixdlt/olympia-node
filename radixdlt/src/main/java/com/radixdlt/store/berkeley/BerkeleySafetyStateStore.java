@@ -58,7 +58,8 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
 	@Inject
 	public BerkeleySafetyStateStore(
 			DatabaseEnvironment dbEnv,
-			Serialization serialization) {
+			Serialization serialization
+	) {
 		this.dbEnv = Objects.requireNonNull(dbEnv, "dbEnv is required");
 		this.serialization = Objects.requireNonNull(serialization);
 

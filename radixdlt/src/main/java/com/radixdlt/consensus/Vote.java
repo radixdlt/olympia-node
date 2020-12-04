@@ -57,8 +57,6 @@ public final class Vote implements ConsensusEvent {
 	@DsonOutput(Output.ALL)
 	private final ECDSASignature signature;
 
-	@JsonProperty("timeout_signature")
-	@DsonOutput(Output.ALL)
 	private final Optional<ECDSASignature> timeoutSignature;
 
 	@JsonCreator
@@ -67,9 +65,9 @@ public final class Vote implements ConsensusEvent {
 		@JsonProperty("vote_data") TimestampedVoteData voteData,
 		@JsonProperty("signature") ECDSASignature signature,
 		@JsonProperty("high_qc") HighQC highQC,
-		@JsonProperty("timeout_signature") Optional<ECDSASignature> timeoutSignature
+		@JsonProperty("timeout_signature") ECDSASignature timeoutSignature
 	) throws PublicKeyException {
-		this(BFTNode.fromPublicKeyBytes(author), voteData, signature, highQC, timeoutSignature);
+		this(BFTNode.fromPublicKeyBytes(author), voteData, signature, highQC, Optional.ofNullable(timeoutSignature));
 	}
 
 	public Vote(
@@ -124,11 +122,11 @@ public final class Vote implements ConsensusEvent {
 
 	public Vote withTimeoutSignature(ECDSASignature timeoutSignature) {
 		return new Vote(
-				this.author,
-				this.voteData,
-				this.signature,
-				this.highQC,
-				Optional.of(timeoutSignature)
+			this.author,
+			this.voteData,
+			this.signature,
+			this.highQC,
+			Optional.of(timeoutSignature)
 		);
 	}
 
@@ -140,6 +138,12 @@ public final class Vote implements ConsensusEvent {
 	@DsonOutput(Output.ALL)
 	private byte[] getSerializerAuthor() {
 		return this.author == null ? null : this.author.getKey().getBytes();
+	}
+
+	@JsonProperty("timeout_signature")
+	@DsonOutput(Output.ALL)
+	private ECDSASignature getSerializerTimeoutSignature() {
+		return this.timeoutSignature.orElse(null);
 	}
 
 	@Override

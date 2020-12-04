@@ -17,10 +17,9 @@
 
 package com.radixdlt.integration.distributed.deterministic.tests.consensus;
 
+import com.radixdlt.counters.SystemCounters.CounterType;
 import java.util.Random;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.Test;
 
 import com.radixdlt.consensus.Proposal;
@@ -33,8 +32,6 @@ import com.radixdlt.counters.SystemCounters;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class OneProposalTimeoutResponsiveTest {
-	private static final Logger log = LogManager.getLogger();
-
 	private final Random random = new Random(123456);
 
 	private void run(int numNodes, long numViews, long dropPeriod) {
@@ -50,8 +47,8 @@ public class OneProposalTimeoutResponsiveTest {
 		long requiredTimeouts = numViews / dropPeriod * 2;
 		for (int nodeIndex = 0; nodeIndex < numNodes; ++nodeIndex) {
 			SystemCounters counters = test.getSystemCounters(nodeIndex);
-			long numberOfIndirectParents = counters.get(SystemCounters.CounterType.BFT_INDIRECT_PARENT);
-			long totalNumberOfTimeouts = counters.get(SystemCounters.CounterType.BFT_TIMEOUT);
+			long numberOfIndirectParents = counters.get(CounterType.BFT_INDIRECT_PARENT);
+			long totalNumberOfTimeouts = counters.get(CounterType.BFT_TIMEOUT);
 			assertThat(numberOfIndirectParents).isEqualTo(requiredIndirectParents);
 			assertThat(totalNumberOfTimeouts).isEqualTo(requiredTimeouts);
 		}
@@ -73,7 +70,7 @@ public class OneProposalTimeoutResponsiveTest {
 
 	@Test
 	public void when_run_3_correct_nodes_with_1_timeout__then_bft_should_be_responsive() {
-		this.run(4, 6, 3);
+		this.run(3, 50_000, 100);
 	}
 
 	@Test

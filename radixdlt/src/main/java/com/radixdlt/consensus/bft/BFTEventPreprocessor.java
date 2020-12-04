@@ -200,9 +200,9 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		if (vote.getView().gte(currentView)) {
 			log.trace("Vote: PreProcessing {}", vote);
 			return syncUp(
-					vote.highQC(),
-					vote.getAuthor(),
-					() -> processOnCurrentViewOrCache(vote, forwardTo::processVote)
+				vote.highQC(),
+				vote.getAuthor(),
+				() -> processOnCurrentViewOrCache(vote, forwardTo::processVote)
 			);
 		} else {
 			log.trace("Vote: Ignoring for past view {}, current view is {}", vote, currentView);
@@ -215,9 +215,9 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		if (proposal.getView().gte(currentView)) {
 			log.trace("Proposal: PreProcessing {}", proposal);
 			return syncUp(
-					proposal.highQC(),
-					proposal.getAuthor(),
-					() -> processOnCurrentViewOrCache(proposal, forwardTo::processProposal)
+				proposal.highQC(),
+				proposal.getAuthor(),
+				() -> processOnCurrentViewOrCache(proposal, forwardTo::processProposal)
 			);
 		} else {
 			log.trace("Proposal: Ignoring for past view {}, current view is {}", proposal, currentView);

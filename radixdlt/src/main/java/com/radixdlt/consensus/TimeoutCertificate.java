@@ -28,8 +28,12 @@ import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Stream;
 
+/**
+ * Represents a timeout certificate for given epoch and view signed by the quorum of validators.
+ */
 @SerializerId2("consensus.tc")
 public final class TimeoutCertificate {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
@@ -40,8 +44,6 @@ public final class TimeoutCertificate {
 	@DsonOutput(Output.ALL)
 	private final long epoch;
 
-	@JsonProperty("view")
-	@DsonOutput(Output.ALL)
 	private final View view;
 
 	@JsonProperty("signatures")
@@ -49,11 +51,15 @@ public final class TimeoutCertificate {
 	private final TimestampedECDSASignatures signatures;
 
 	@JsonCreator
-	public TimeoutCertificate(
+	private static TimeoutCertificate serializerCreate(
 		@JsonProperty("epoch") long epoch,
-		@JsonProperty("view") View view,
+		@JsonProperty("view") Long view,
 		@JsonProperty("signatures") TimestampedECDSASignatures signatures
 	) {
+		return new TimeoutCertificate(epoch, View.of(view), signatures);
+	}
+
+	public TimeoutCertificate(long epoch, View view, TimestampedECDSASignatures signatures) {
 		this.epoch = epoch;
 		this.view = Objects.requireNonNull(view);
 		this.signatures = Objects.requireNonNull(signatures);
@@ -73,6 +79,12 @@ public final class TimeoutCertificate {
 
 	public Stream<BFTNode> getSigners() {
 		return signatures.getSignatures().keySet().stream();
+	}
+
+	@JsonProperty("view")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private Long getSerializerView() {
+		return this.view.number();
 	}
 
 	@Override
@@ -96,6 +108,6 @@ public final class TimeoutCertificate {
 
 	@Override
 	public String toString() {
-		return String.format("TC{view=%s}", this.getView());
+		return String.format("TC{view=%s epoch=%s}", view, epoch);
 	}
 }

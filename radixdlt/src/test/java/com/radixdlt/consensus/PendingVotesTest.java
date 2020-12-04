@@ -131,8 +131,8 @@ public class PendingVotesTest {
 		BFTNode nextProposer = mock(BFTNode.class); // not self
 
 		assertTrue(
-				this.pendingVotes.insertVote(vote1, validatorSet, nextProposer)
-						instanceof VoteProcessingResult.VoteAccepted);
+			this.pendingVotes.insertVote(vote1, validatorSet, nextProposer)
+				instanceof VoteProcessingResult.VoteAccepted);
 
 		VoteProcessingResult result2 =
 			this.pendingVotes.insertVote(vote2, validatorSet, nextProposer);

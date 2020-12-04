@@ -64,8 +64,8 @@ public class SimulationNetworkTest {
 		network.getNetwork(node1).bftEvents()
 			.subscribe(testObserver);
 		Vote vote = mock(Vote.class);
-        network.getNetwork(node1).remoteEventDispatcher(Vote.class).dispatch(node1, vote);
-        network.getNetwork(node1).remoteEventDispatcher(Vote.class).dispatch(node1, vote);
+		network.getNetwork(node1).remoteEventDispatcher(Vote.class).dispatch(node1, vote);
+		network.getNetwork(node1).remoteEventDispatcher(Vote.class).dispatch(node1, vote);
 		testObserver.awaitCount(2);
 		testObserver.assertValues(vote, vote);
 	}
@@ -93,7 +93,7 @@ public class SimulationNetworkTest {
 	}
 
 	@Test
-    public void when_disabling_messages_and_send_vote_message_to_other_node__then_should_not_receive_it() {
+	public void when_disabling_messages_and_send_vote_message_to_other_node__then_should_not_receive_it() {
 		SimulationNetwork network = new SimulationNetwork(new InOrderChannels(msg -> -1));
 
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();

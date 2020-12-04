@@ -17,8 +17,6 @@
 
 package com.radixdlt.consensus.bft;
 
-// TODO: fixme
-/*
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -34,8 +32,6 @@ import com.radixdlt.network.TimeSupplier;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Optional;
-
 import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -44,7 +40,7 @@ public class BFTEventReducerTest {
 
     private SystemCounters counters = mock(SystemCounters.class);
     private Hasher hasher = mock(Hasher.class);
-    private RemoteEventDispatcher<Vote> voteSender = rmock(RemoteEventDispatcher.class);
+    private RemoteEventDispatcher<Vote> voteDispatcher = rmock(RemoteEventDispatcher.class);
     private PendingVotes pendingVotes = mock(PendingVotes.class);
     private BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
     private VertexStore vertexStore = mock(VertexStore.class);
@@ -59,17 +55,17 @@ public class BFTEventReducerTest {
     @Before
     public void setUp() {
         this.bftEventReducer = new BFTEventReducer(
-                this.pacemaker,
-                this.vertexStore,
-                this.viewQuorumReachedEventDispatcher,
-                this.voteSender,
-                this.hasher,
-                this.timeSupplier,
-                this.proposerElection,
-                this.counters,
-                this.safetyRules,
-                this.validatorSet,
-                this.pendingVotes
+            this.pacemaker,
+            this.vertexStore,
+            this.viewQuorumReachedEventDispatcher,
+            this.voteDispatcher,
+            this.hasher,
+            this.timeSupplier,
+            this.counters,
+            this.safetyRules,
+            this.validatorSet,
+            this.pendingVotes,
+            ViewUpdate.genesis()
         );
     }
 
@@ -77,6 +73,7 @@ public class BFTEventReducerTest {
     public void when_process_vote_equal_last_quorum__then_ignored() {
         Vote vote = mock(Vote.class);
         when(vote.getView()).thenReturn(View.of(0));
+        this.bftEventReducer.processViewUpdate(ViewUpdate.create(View.of(1), View.of(0), mock(BFTNode.class), mock(BFTNode.class)));
         this.bftEventReducer.processVote(vote);
         verifyNoMoreInteractions(this.pendingVotes);
     }
@@ -85,7 +82,7 @@ public class BFTEventReducerTest {
     public void when_process_vote_with_quorum_wrong_view__then_ignored() {
         Vote vote = mock(Vote.class);
         when(vote.getView()).thenReturn(View.of(1));
-        this.bftEventReducer.processViewUpdate(new ViewUpdate(View.of(3), View.of(2), View.of(2)));
+        this.bftEventReducer.processViewUpdate(ViewUpdate.create(View.of(3), View.of(2), mock(BFTNode.class), mock(BFTNode.class)));
         this.bftEventReducer.processVote(vote);
         verifyNoMoreInteractions(this.pendingVotes);
     }
@@ -101,19 +98,17 @@ public class BFTEventReducerTest {
         QuorumCertificate highestCommittedQc = mock(QuorumCertificate.class);
         when(highQc.highestCommittedQC()).thenReturn(highestCommittedQc);
         when(vote.getView()).thenReturn(View.of(1));
-        // TODO: luk
-        //when(this.pendingVotes.insertVote(any(), any())).thenReturn(Optional.of(qc));
+
+        when(this.pendingVotes.insertVote(any(), any(), any())).thenReturn(VoteProcessingResult.qcQuorum(qc));
         when(this.vertexStore.highQC()).thenReturn(highQc);
 
         // Move to view 1
-        this.bftEventReducer.processViewUpdate(new ViewUpdate(View.of(1), View.of(0), View.of(0)));
+        this.bftEventReducer.processViewUpdate(ViewUpdate.create(View.of(1), View.of(0), mock(BFTNode.class), mock(BFTNode.class)));
 
         this.bftEventReducer.processVote(vote);
 
         verify(this.viewQuorumReachedEventDispatcher, times(1)).dispatch(any());
-        verify(this.pendingVotes, times(1)).insertVote(eq(vote), any());
+        verify(this.pendingVotes, times(1)).insertVote(eq(vote), any(), any());
         verifyNoMoreInteractions(this.pendingVotes);
     }
-
 }
- */

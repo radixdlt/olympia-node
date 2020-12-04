@@ -23,7 +23,7 @@ import com.radixdlt.consensus.TimeoutCertificate;
 import java.util.Objects;
 
 /**
- * The result of a view voting.
+ * The result of a view voting (either QC or TC).
  */
 public abstract class ViewVotingResult {
 
@@ -73,6 +73,11 @@ public abstract class ViewVotingResult {
         public int hashCode() {
             return Objects.hash(qc);
         }
+
+        @Override
+        public String toString() {
+            return String.format("FormedQC{qc=%s}", qc);
+        }
     }
 
     /**
@@ -110,6 +115,11 @@ public abstract class ViewVotingResult {
         @Override
         public int hashCode() {
             return Objects.hash(tc);
+        }
+
+        @Override
+        public String toString() {
+            return String.format("FormedTC{tc=%s}", tc);
         }
     }
 }

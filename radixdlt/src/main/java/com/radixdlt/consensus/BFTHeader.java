@@ -47,7 +47,7 @@ public final class BFTHeader {
 	@DsonOutput(Output.ALL)
 	private final HashCode vertexId;
 
-	// TODO: rename this json property?
+	// TODO(luk): rename this json property?
 	@JsonProperty("ledger_state")
 	@DsonOutput(Output.ALL)
 	private final LedgerHeader ledgerHeader;
