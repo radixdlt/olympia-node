@@ -19,65 +19,71 @@ package com.radixdlt.consensus.liveness;
 
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewUpdate;
-import com.radixdlt.consensus.liveness.PacemakerState.ViewUpdateSender;
+import com.radixdlt.environment.EventDispatcher;
 import org.junit.Before;
 import org.junit.Test;
 
+import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.times;
 
 public class PacemakerStateTest {
 
-    private ViewUpdateSender viewUpdateSender = mock(ViewUpdateSender.class);
+	private EventDispatcher<ViewUpdate> viewUpdateSender = rmock(EventDispatcher.class);
+	private ProposerElection proposerElection = mock(ProposerElection.class);
 
-    private PacemakerState pacemakerState;
+	private PacemakerState pacemakerState;
 
-    @Before
-    public void setUp() {
-        this.pacemakerState = new PacemakerState(this.viewUpdateSender);
-    }
+	@Before
+	public void setUp() {
+		when(proposerElection.getProposer(any())).thenReturn(BFTNode.random());
+		this.pacemakerState = new PacemakerState(this.proposerElection, this.viewUpdateSender);
+	}
 
-    @Test
-    public void when_process_qc_for_wrong_view__then_ignored() {
-        HighQC highQC = mock(HighQC.class);
-        QuorumCertificate qc = mock(QuorumCertificate.class);
-        when(qc.getView()).thenReturn(View.of(1));
-        when(highQC.getHighestView()).thenReturn(View.of(1));
-        when(highQC.highestQC()).thenReturn(qc);
-        when(highQC.highestCommittedQC()).thenReturn(qc);
+	@Test
+	public void when_process_qc_for_wrong_view__then_ignored() {
+		HighQC highQC = mock(HighQC.class);
+		QuorumCertificate qc = mock(QuorumCertificate.class);
+		when(qc.getView()).thenReturn(View.of(1));
+		when(highQC.highestQC()).thenReturn(qc);
+		when(highQC.highestCommittedQC()).thenReturn(qc);
 
-        // Move ahead for a bit so we can send in a QC for a lower view
-        this.pacemakerState.processQC(highQCFor(View.of(0)));
-        this.pacemakerState.processQC(highQCFor(View.of(1)));
-        this.pacemakerState.processQC(highQCFor(View.of(2)));
+		// Move ahead for a bit so we can send in a QC for a lower view
+		this.pacemakerState.processQC(highQCFor(View.of(0)));
+		this.pacemakerState.processQC(highQCFor(View.of(1)));
+		this.pacemakerState.processQC(highQCFor(View.of(2)));
 
-        verify(viewUpdateSender, times(1)).sendViewUpdate(new ViewUpdate(View.of(1), View.of(0)));
-        verify(viewUpdateSender, times(1)).sendViewUpdate(new ViewUpdate(View.of(2), View.of(1)));
-        verify(viewUpdateSender, times(1)).sendViewUpdate(new ViewUpdate(View.of(3), View.of(2)));
+		verify(viewUpdateSender, times(1))
+			.dispatch(argThat(v -> v.getCurrentView().equals(View.of(1))));
+		verify(viewUpdateSender, times(1))
+			.dispatch(argThat(v -> v.getCurrentView().equals(View.of(2))));
+		verify(viewUpdateSender, times(1))
+			.dispatch(argThat(v -> v.getCurrentView().equals(View.of(3))));
 
-        this.pacemakerState.processQC(highQC);
-        verifyNoMoreInteractions(viewUpdateSender);
-    }
+		this.pacemakerState.processQC(highQC);
+		verifyNoMoreInteractions(viewUpdateSender);
+	}
 
-    @Test
-    public void when_process_qc_for_current_view__then_processed() {
-        HighQC highQC = mock(HighQC.class);
-        QuorumCertificate qc = mock(QuorumCertificate.class);
-        when(qc.getView()).thenReturn(View.of(0));
-        when(highQC.getHighestView()).thenReturn(View.of(0));
-        when(highQC.highestQC()).thenReturn(qc);
-        when(highQC.highestCommittedQC()).thenReturn(qc);
+	@Test
+	public void when_process_qc_for_current_view__then_processed() {
+		HighQC highQC = mock(HighQC.class);
+		QuorumCertificate qc = mock(QuorumCertificate.class);
+		when(qc.getView()).thenReturn(View.of(0));
+		when(highQC.highestQC()).thenReturn(qc);
+		when(highQC.highestCommittedQC()).thenReturn(qc);
 
-        this.pacemakerState.processQC(highQC);
-        verify(viewUpdateSender, times(1)).sendViewUpdate(new ViewUpdate(View.of(1), View.of(0)));
+		this.pacemakerState.processQC(highQC);
+		verify(viewUpdateSender, times(1))
+			.dispatch(argThat(v -> v.getCurrentView().equals(View.of(1))));
 
-        when(qc.getView()).thenReturn(View.of(1));
-        when(highQC.getHighestView()).thenReturn(View.of(1));
-        this.pacemakerState.processQC(highQC);
-        verify(viewUpdateSender, times(1)).sendViewUpdate(new ViewUpdate(View.of(2), View.of(1)));
-    }
+		when(qc.getView()).thenReturn(View.of(1));
+		this.pacemakerState.processQC(highQC);
+		verify(viewUpdateSender, times(1))
+			.dispatch(argThat(v -> v.getCurrentView().equals(View.of(2))));
+	}
 
     @Test
     public void when_process_qc_with_a_high_tc__then_should_move_to_tc_view() {
@@ -88,18 +94,18 @@ public class PacemakerStateTest {
         when(highQC.highestCommittedQC()).thenReturn(qc);
 
         this.pacemakerState.processQC(highQC);
-        verify(viewUpdateSender, times(1)).sendViewUpdate(new ViewUpdate(View.of(6), View.of(3)));
+        verify(viewUpdateSender, times(1))
+			.dispatch(argThat(v -> v.getCurrentView().equals(View.of(6))));
     }
 
     private HighQC highQCFor(View view) {
-        HighQC highQC = mock(HighQC.class);
-        QuorumCertificate hqc = mock(QuorumCertificate.class);
-        QuorumCertificate cqc = mock(QuorumCertificate.class);
-        when(hqc.getView()).thenReturn(view);
-        when(cqc.getView()).thenReturn(view);
-        when(highQC.highestQC()).thenReturn(hqc);
-        when(highQC.highestCommittedQC()).thenReturn(cqc);
-        when(highQC.getHighestView()).thenReturn(view);
-        return highQC;
-    }
+		HighQC highQC = mock(HighQC.class);
+		QuorumCertificate hqc = mock(QuorumCertificate.class);
+		QuorumCertificate cqc = mock(QuorumCertificate.class);
+		when(hqc.getView()).thenReturn(view);
+		when(cqc.getView()).thenReturn(View.of(0));
+		when(highQC.highestQC()).thenReturn(hqc);
+		when(highQC.highestCommittedQC()).thenReturn(cqc);
+		return highQC;
+	}
 }

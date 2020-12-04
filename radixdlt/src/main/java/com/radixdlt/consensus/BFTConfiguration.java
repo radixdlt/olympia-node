@@ -54,4 +54,32 @@ public final class BFTConfiguration {
 	public QuorumCertificate getGenesisQC() {
 		return genesisQC;
 	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(
+			this.validatorSet,
+			this.genesisVertex,
+			this.genesisQC,
+			this.genesisHeader
+		);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj instanceof BFTConfiguration) {
+			BFTConfiguration that = (BFTConfiguration) obj;
+			return Objects.equals(this.validatorSet, that.validatorSet)
+				&& Objects.equals(this.genesisVertex, that.genesisVertex)
+				&& Objects.equals(this.genesisQC, that.genesisQC)
+				&& Objects.equals(this.genesisHeader, that.genesisHeader);
+		}
+		return false;
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s[validatorSet=%s, genesisVertex=%s, genesisQC=%s, genesisHeader=%s]",
+			getClass().getSimpleName(), this.validatorSet, this.genesisVertex, this.genesisQC, this.genesisHeader);
+	}
 }

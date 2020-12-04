@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *  http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,15 +15,20 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.epoch;
+package com.radixdlt.consensus;
 
-import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.Test;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 
-public class LocalViewUpdateTest {
-	@Test
-	public void equalsContract() {
-		EqualsVerifier.forClass(LocalViewUpdate.class)
-			.verify();
-	}
+/**
+ * Provider of the initial validator set.
+ */
+@FunctionalInterface
+public interface GenesisValidatorSetProvider {
+
+	/**
+	 * Return the genesis validator set.
+	 *
+	 * @return The genesis validator set.
+	 */
+	BFTValidatorSet genesisValidatorSet();
 }

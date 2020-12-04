@@ -26,7 +26,6 @@ import java.util.Optional;
 
 import javax.annotation.concurrent.NotThreadSafe;
 
-import com.radixdlt.consensus.bft.ViewVotingResult;
 import com.radixdlt.consensus.bft.VoteProcessingResult;
 import com.radixdlt.consensus.bft.VoteProcessingResult.VoteRejected.VoteRejectedReason;
 import com.radixdlt.consensus.liveness.VoteTimeout;

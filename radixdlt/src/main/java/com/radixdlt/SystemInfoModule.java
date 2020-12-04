@@ -24,11 +24,12 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
+import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 import com.radixdlt.systeminfo.InMemorySystemInfoRunner;
-import com.radixdlt.consensus.Timeout;
+import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.middleware2.InfoSupplier;
@@ -50,12 +51,12 @@ public class SystemInfoModule extends AbstractModule {
 	}
 
 	@ProvidesIntoSet
-	private EventProcessor<EpochView> epochViewEventProcessor(InMemorySystemInfo inMemorySystemInfo) {
-		return inMemorySystemInfo::processView;
+	private EventProcessor<EpochViewUpdate> epochViewEventProcessor(InMemorySystemInfo inMemorySystemInfo) {
+		return v -> inMemorySystemInfo.processView(v.getEpochView());
 	}
 
 	@ProvidesIntoSet
-	private EventProcessor<Timeout> timeoutEventProcessor(InMemorySystemInfo inMemorySystemInfo) {
+	private EventProcessor<EpochLocalTimeoutOccurrence> timeoutEventProcessor(InMemorySystemInfo inMemorySystemInfo) {
 		return inMemorySystemInfo::processTimeout;
 	}
 
@@ -84,7 +85,7 @@ public class SystemInfoModule extends AbstractModule {
 	) {
 		return () -> {
 			EpochView currentEpochView = infoStateManager.getCurrentView();
-			Timeout timeout = infoStateManager.getLastTimeout();
+			EpochLocalTimeoutOccurrence timeout = infoStateManager.getLastTimeout();
 			QuorumCertificate highQC = infoStateManager.getHighestQC();
 
 			return ImmutableMap.of(

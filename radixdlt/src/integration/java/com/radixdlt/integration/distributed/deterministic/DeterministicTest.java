@@ -20,8 +20,8 @@ package com.radixdlt.integration.distributed.deterministic;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
-import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.DispatcherModule;
@@ -30,8 +30,9 @@ import com.radixdlt.LedgerCommandGeneratorModule;
 import com.radixdlt.EpochsLedgerUpdateModule;
 import com.radixdlt.LedgerLocalMempoolModule;
 import com.radixdlt.LedgerModule;
+import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.Timeout;
+import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -39,18 +40,10 @@ import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochView;
-import com.radixdlt.consensus.epoch.LocalTimeout;
-import com.radixdlt.consensus.epoch.LocalViewUpdate;
-import com.radixdlt.consensus.epoch.LocalViewUpdateSender;
-import com.radixdlt.consensus.liveness.PacemakerInfoSender;
-import com.radixdlt.consensus.epoch.LocalTimeoutSender;
-import com.radixdlt.consensus.liveness.PacemakerState.ViewUpdateSender;
-import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
-import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
-import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
-import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.integration.distributed.MockedCryptoModule;
 import com.radixdlt.integration.distributed.MockedPersistenceStoreModule;
@@ -224,42 +217,14 @@ public final class DeterministicTest {
 						bind(DeterministicMessageProcessor.class).to(DeterministicConsensusProcessor.class);
 					}
 
-					@Provides
-					public PacemakerInfoSender pacemakerInfoSender(
-						EventDispatcher<Timeout> timeoutEventDispatcher,
-						EventDispatcher<EpochView> epochViewEventDispatcher,
-						ProposerElection proposerElection
-					) {
-						return new PacemakerInfoSender() {
-							@Override
-							public void sendCurrentView(View view) {
-								epochViewEventDispatcher.dispatch(EpochView.of(1, view));
-							}
-
-							@Override
-							public void sendTimeoutProcessed(View view) {
-								BFTNode leader = proposerElection.getProposer(view);
-								timeoutEventDispatcher.dispatch(new Timeout(EpochView.of(1, view), leader));
-							}
-						};
+					@ProvidesIntoSet
+					private EventProcessor<ScheduledLocalTimeout> timeoutProcessor(BFTEventProcessor processor) {
+						return processor::processLocalTimeout;
 					}
 
-					@Provides
-					private PacemakerTimeoutSender timeoutSender(LocalTimeoutSender localTimeoutSender) {
-						return (view, ms) -> localTimeoutSender.scheduleTimeout(new LocalTimeout(1, view), ms);
-					}
-
-					@Provides
-					private ViewUpdateSender viewUpdateSender(
-						PacemakerTimeoutCalculator pacemakerTimeoutCalculator,
-						PacemakerTimeoutSender pacemakerTimeoutSender,
-						LocalViewUpdateSender localViewUpdateSender
-					) {
-						return (view) -> {
-							long timeout = pacemakerTimeoutCalculator.timeout(view.uncommittedViewsCount());
-							pacemakerTimeoutSender.scheduleTimeout(view.getCurrentView(), timeout);
-							localViewUpdateSender.sendLocalViewUpdate(new LocalViewUpdate(1, view));
-						};
+					@ProvidesIntoSet
+					private EventProcessor<ViewUpdate> viewUpdateProcessor(BFTEventProcessor processor) {
+						return processor::processViewUpdate;
 					}
 				});
 				modules.add(new MockedStateComputerModule());
@@ -273,7 +238,7 @@ public final class DeterministicTest {
 						bind(BFTValidatorSet.class).toInstance(epochToValidatorSetMapping.apply(1L));
 						bind(DeterministicMessageProcessor.class).to(DeterministicEpochsConsensusProcessor.class);
 						bind(new TypeLiteral<EventProcessor<EpochView>>() { }).toInstance(epochView -> { });
-						bind(new TypeLiteral<EventProcessor<Timeout>>() { }).toInstance(t -> { });
+						bind(new TypeLiteral<EventProcessor<EpochLocalTimeoutOccurrence>>() { }).toInstance(t -> { });
 					}
 				});
 				modules.add(new LedgerModule());

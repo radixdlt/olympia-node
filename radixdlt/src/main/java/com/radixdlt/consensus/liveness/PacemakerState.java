@@ -17,9 +17,12 @@
 
 package com.radixdlt.consensus.liveness;
 
+import com.google.inject.Inject;
 import com.radixdlt.consensus.HighQC;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewUpdate;
+import com.radixdlt.environment.EventDispatcher;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -29,50 +32,56 @@ import java.util.Objects;
  * This class is responsible for keeping track of current consensus view state.
  * It sends an internal ViewUpdate message on a transition to next view.
  */
-public class PacemakerState {
+public class PacemakerState implements PacemakerReducer {
+	private static final Logger log = LogManager.getLogger();
 
-    public interface ViewUpdateSender {
-        void sendViewUpdate(ViewUpdate viewUpdate);
-    }
+	private final EventDispatcher<ViewUpdate> viewUpdateSender;
+	private final ProposerElection proposerElection;
 
-    private static final Logger log = LogManager.getLogger();
+	private View currentView = View.genesis();
+	// Highest view in which a commit happened
+	private View highestCommitView = View.genesis();
+	// Last view that we had any kind of quorum for
 
-    private final ViewUpdateSender viewUpdateSender;
+	@Inject
+	public PacemakerState(
+		ProposerElection proposerElection,
+		EventDispatcher<ViewUpdate> viewUpdateSender
+	) {
+		this.proposerElection = Objects.requireNonNull(proposerElection);
+		this.viewUpdateSender = Objects.requireNonNull(viewUpdateSender);
+	}
 
-    private View currentView = View.genesis();
-    // Highest view in which a commit happened
-    private View highestCommitView = View.genesis();
 
-    public PacemakerState(ViewUpdateSender viewUpdateSender) {
-        this.viewUpdateSender = Objects.requireNonNull(viewUpdateSender);
-    }
+	@Override
+	public void processQC(HighQC highQC) {
+		log.trace("QuorumCertificate: {}", highQC);
 
-    /**
-     * Signifies to the pacemaker that a quorum has agreed that a view has
-     * been completed.
-     *
-     * @param highQC the sync info for the view
-     */
-    public void processQC(HighQC highQC) {
-        log.trace("Processing HighQC: {}", highQC);
+		final View view = highQC.getHighestView();
+		if (view.gte(this.currentView)) {
+			this.highestCommitView = highQC.highestCommittedQC().getView();
+			this.updateView(view.next());
+		} else {
+			log.trace("Ignoring QC for view {}: current view is {}", view, this.currentView);
+		}
+	}
 
-        final View view = highQC.getHighestView();
-        if (view.gte(this.currentView)) {
-            this.highestCommitView = highQC.highestCommittedQC().getView();
-            this.updateView(view.next());
-        } else {
-            log.trace("Ignoring QC for view {}: current view is {}", view, this.currentView);
-        }
-    }
+	@Override
+	public void updateView(View nextView) {
+		if (nextView.lte(this.currentView)) {
+			return;
+		}
 
-    private void updateView(View nextView) {
-        if (nextView.lte(this.currentView)) {
-            return;
-        }
-        this.currentView = nextView;
-        viewUpdateSender.sendViewUpdate(new ViewUpdate(
-                this.currentView,
-                this.highestCommitView
-        ));
-    }
+		final BFTNode leader = this.proposerElection.getProposer(nextView);
+		final BFTNode nextLeader = this.proposerElection.getProposer(nextView.next());
+		this.currentView = nextView;
+		viewUpdateSender.dispatch(
+			ViewUpdate.create(
+				this.currentView,
+				this.highestCommitView,
+				leader,
+				nextLeader
+			)
+		);
+	}
 }

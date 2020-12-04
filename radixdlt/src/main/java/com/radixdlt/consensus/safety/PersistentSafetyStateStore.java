@@ -22,4 +22,5 @@ package com.radixdlt.consensus.safety;
  */
 public interface PersistentSafetyStateStore {
 	void commitState(SafetyState safetyState);
+	void close();
 }

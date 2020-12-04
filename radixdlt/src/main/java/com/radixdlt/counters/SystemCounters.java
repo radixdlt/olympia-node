@@ -32,10 +32,10 @@ public interface SystemCounters {
 		BFT_PROPOSALS_MADE("bft.proposals_made"),
 		/** Number of proposals rejected. */
 		BFT_REJECTED("bft.rejected"),
+		/** Number of times a view-timeout message was broadcast. */
+		BFT_TIMEOUT("bft.timeout"),
 		/** Number of views that timed out. Rescheduled timeouts of the same view are not counted */
 		BFT_TIMED_OUT_VIEWS("bft.timed_out_views"),
-		/** Number of times a view-timeout message was processed (including rescheduled timeouts) */
-		BFT_TOTAL_VIEW_TIMEOUTS("bft.total_view_timeouts"),
 		/** Number of view-timeout quorums formed. */
 		BFT_TIMEOUT_QUORUMS("bft.timeout_quorums"),
 		BFT_VERTEX_STORE_SIZE("bft.vertex_store_size"),
@@ -71,6 +71,8 @@ public interface SystemCounters {
 		NETWORKING_TCP_CLOSED("networking.tcp.closed"),
 		NETWORKING_SENT_BYTES("networking.sent_bytes"),
 		NETWORKING_RECEIVED_BYTES("networking.received_bytes"),
+
+		NETWORKING_DROPPED_ERROR_RESPONSES("networking.dropped_error_responses"),
 
 		SIGNATURES_SIGNED("signatures.signed"),
 		SIGNATURES_VERIFIED("signatures.verified");

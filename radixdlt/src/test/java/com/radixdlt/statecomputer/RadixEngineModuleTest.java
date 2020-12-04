@@ -17,11 +17,8 @@
 
 package com.radixdlt.statecomputer;
 
-import java.util.stream.IntStream;
-
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -29,6 +26,7 @@ import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
 import com.radixdlt.RadixEngineModule;
+import com.radixdlt.RadixEngineValidatorComputersModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -37,6 +35,8 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.AtomChecker;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.fees.NativeToken;
+import com.radixdlt.identifiers.RRI;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.EngineStore;
@@ -44,8 +44,6 @@ import com.radixdlt.utils.TypedMocks;
 import com.radixdlt.utils.UInt256;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -58,6 +56,7 @@ import static org.mockito.Mockito.when;
  * {@code RadixEngineValidatorSetBuilder.build()}.
  */
 public class RadixEngineModuleTest {
+
 	private static class ExternalRadixEngineModule extends AbstractModule {
 		private final BFTValidatorSet validatorSet;
 
@@ -69,9 +68,11 @@ public class RadixEngineModuleTest {
 		protected void configure() {
 			bind(Integer.class).annotatedWith(Names.named("magic")).toInstance(1);
 			bind(Integer.class).annotatedWith(MinValidators.class).toInstance(1);
+			bind(Integer.class).annotatedWith(MaxValidators.class).toInstance(100);
 			bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(100));
 			bind(Hasher.class).toInstance(mock(Hasher.class));
 			bind(BFTValidatorSet.class).toInstance(this.validatorSet);
+			bind(RRI.class).annotatedWith(NativeToken.class).toInstance(mock(RRI.class));
 			bind(Serialization.class).toInstance(mock(Serialization.class));
 			bind(new TypeLiteral<AtomChecker<LedgerAtom>>() { }).toInstance(TypedMocks.rmock(AtomChecker.class));
 			EngineStore<LedgerAtom> engineStore = TypedMocks.rmock(EngineStore.class);
@@ -91,45 +92,12 @@ public class RadixEngineModuleTest {
 		when(validatorSet.getValidators()).thenReturn(validators);
 		final var injector = Guice.createInjector(
 			new RadixEngineModule(),
+			new RadixEngineValidatorComputersModule(),
 			new ExternalRadixEngineModule(validatorSet)
 		);
 
 		final var radixEngine = injector.getInstance(Key.get(new TypeLiteral<RadixEngine<LedgerAtom>>() { }));
 
 		assertThat(radixEngine).isNotNull();
-	}
-
-	@Test
-	public void when_engine_created__validator_set_order_not_changed() {
-		final var validators = IntStream.range(0, 100)
-			.mapToObj(n -> ECKeyPair.generateNew())
-			.map(ECKeyPair::getPublicKey)
-			.map(BFTNode::create)
-			.map(node -> BFTValidator.from(node, UInt256.ONE))
-			.collect(ImmutableList.toImmutableList());
-		final var validatorSet = BFTValidatorSet.from(validators);
-		final var injector = Guice.createInjector(
-			new RadixEngineModule(),
-			new ExternalRadixEngineModule(validatorSet)
-		);
-		final var radixEngine = injector.getInstance(Key.get(new TypeLiteral<RadixEngine<LedgerAtom>>() { }));
-		assertThat(radixEngine).isNotNull(); // Precondition for the rest working correctly
-
-		final var newValidatorSet = radixEngine.getComputedState(RadixEngineValidatorSetBuilder.class).build();
-
-		checkIterableOrder(validators, newValidatorSet.getValidators());
-	}
-
-	private <T> void checkIterableOrder(Iterable<T> iterable1, Iterable<T> iterable2) {
-		final var i1 = iterable1.iterator();
-		final var i2 = iterable2.iterator();
-
-		while (i1.hasNext() && i2.hasNext()) {
-			final var o1 = i1.next();
-			final var o2 = i2.next();
-			assertEquals("Objects not the same", o1, o2);
-		}
-		assertFalse("Iterable 1 larger than iterable 2", i1.hasNext());
-		assertFalse("Iterable 2 larger than iterable 1", i2.hasNext());
 	}
 }

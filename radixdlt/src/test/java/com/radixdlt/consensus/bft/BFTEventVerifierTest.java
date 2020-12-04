@@ -27,6 +27,7 @@ import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.HashVerifier;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
@@ -61,9 +62,9 @@ public class BFTEventVerifierTest {
 
 	@Test
 	public void when_process_local_timeout__then_should_be_forwarded() {
-		View view = mock(View.class);
-		eventVerifier.processLocalTimeout(view);
-		verify(forwardTo, times(1)).processLocalTimeout(eq(view));
+		ScheduledLocalTimeout timeout = mock(ScheduledLocalTimeout.class);
+		eventVerifier.processLocalTimeout(timeout);
+		verify(forwardTo, times(1)).processLocalTimeout(eq(timeout));
 	}
 
 	@Test

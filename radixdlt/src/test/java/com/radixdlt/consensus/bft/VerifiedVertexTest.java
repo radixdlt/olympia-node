@@ -15,11 +15,25 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.epoch;
+package com.radixdlt.consensus.bft;
+
+import org.junit.Test;
+
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
+
+import nl.jqno.equalsverifier.EqualsVerifier;
 
 /**
- * Sender for local view updates.
+ * Basic tests for {@link VerifiedVertex}
  */
-public interface LocalViewUpdateSender {
-	void sendLocalViewUpdate(LocalViewUpdate localViewUpdate);
+public class VerifiedVertexTest {
+
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(VerifiedVertex.class)
+			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+			.verify();
+	}
+
 }

@@ -29,7 +29,6 @@ import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
 import com.radixdlt.sync.LocalSyncRequest;
-import com.radixdlt.sync.LocalSyncServiceProcessor;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -43,7 +42,7 @@ import org.apache.logging.log4j.Logger;
  * Manages the syncing service across epochs
  */
 @NotThreadSafe
-public class EpochsLocalSyncServiceProcessor implements LocalSyncServiceProcessor {
+public class EpochsLocalSyncServiceProcessor {
 	private static final Logger log = LogManager.getLogger();
 
 	private final Function<BFTConfiguration, LocalSyncServiceAccumulatorProcessor> localSyncFactory;
@@ -128,8 +127,11 @@ public class EpochsLocalSyncServiceProcessor implements LocalSyncServiceProcesso
 		localSyncServiceProcessor.localSyncRequestEventProcessor().process(request);
 	}
 
-	@Override
-	public void processSyncTimeout(SyncInProgress timeout) {
-		localSyncServiceProcessor.processSyncTimeout(timeout);
+	public EventProcessor<SyncInProgress> syncTimeoutProcessor() {
+		return syncTimeout -> {
+			if (syncTimeout.getTargetHeader().getEpoch() == this.currentEpoch.getEpoch()) {
+				localSyncServiceProcessor.syncTimeoutProcessor().process(syncTimeout);
+			}
+		};
 	}
 }

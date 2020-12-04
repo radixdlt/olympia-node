@@ -17,35 +17,48 @@
 
 package com.radixdlt.consensus.liveness;
 
-public class ExponentialPacemakerTimeoutCalculator implements PacemakerTimeoutCalculator {
+import com.google.inject.Inject;
+import com.radixdlt.consensus.bft.PacemakerMaxExponent;
+import com.radixdlt.consensus.bft.PacemakerRate;
+import com.radixdlt.consensus.bft.PacemakerTimeout;
 
-    private final long timeoutMilliseconds;
-    private final double rate;
-    private final int maxExponent;
+/**
+ * Timeout calculator which exponentially increases based on number of uncommitted views.
+ */
+public final class ExponentialPacemakerTimeoutCalculator implements PacemakerTimeoutCalculator {
 
-    public ExponentialPacemakerTimeoutCalculator(long timeoutMilliseconds, double rate, int maxExponent) {
-        if (timeoutMilliseconds <= 0) {
-            throw new IllegalArgumentException("timeoutMilliseconds must be > 0 but was " + timeoutMilliseconds);
-        }
-        if (rate <= 1.0) {
-            throw new IllegalArgumentException("rate must be > 1.0, but was " + rate);
-        }
-        if (maxExponent < 0) {
-            throw new IllegalArgumentException("maxExponent must be >= 0, but was " + maxExponent);
-        }
-        double maxTimeout = timeoutMilliseconds * Math.pow(rate, maxExponent);
-        if (maxTimeout > Long.MAX_VALUE) {
-            throw new IllegalArgumentException("Maximum timeout value of " + maxTimeout + " is too large");
-        }
+	private final long timeoutMilliseconds;
+	private final double rate;
+	private final int maxExponent;
 
-        this.timeoutMilliseconds = timeoutMilliseconds;
-        this.rate = rate;
-        this.maxExponent = maxExponent;
-    }
+	@Inject
+	public ExponentialPacemakerTimeoutCalculator(
+		@PacemakerTimeout long timeoutMilliseconds,
+		@PacemakerRate double rate,
+		@PacemakerMaxExponent int maxExponent
+	) {
+		if (timeoutMilliseconds <= 0) {
+			throw new IllegalArgumentException("timeoutMilliseconds must be > 0 but was " + timeoutMilliseconds);
+		}
+		if (rate <= 1.0) {
+			throw new IllegalArgumentException("rate must be > 1.0, but was " + rate);
+		}
+		if (maxExponent < 0) {
+			throw new IllegalArgumentException("maxExponent must be >= 0, but was " + maxExponent);
+		}
+		double maxTimeout = timeoutMilliseconds * Math.pow(rate, maxExponent);
+		if (maxTimeout > Long.MAX_VALUE) {
+			throw new IllegalArgumentException("Maximum timeout value of " + maxTimeout + " is too large");
+		}
 
-    @Override
-    public long timeout(long uncommittedViews) {
-        double exponential = Math.pow(this.rate, Math.min(this.maxExponent, uncommittedViews));
-        return Math.round(this.timeoutMilliseconds * exponential);
-    }
+		this.timeoutMilliseconds = timeoutMilliseconds;
+		this.rate = rate;
+		this.maxExponent = maxExponent;
+	}
+
+	@Override
+	public long timeout(long uncommittedViews) {
+		double exponential = Math.pow(this.rate, Math.min(this.maxExponent, uncommittedViews));
+		return Math.round(this.timeoutMilliseconds * exponential);
+	}
 }

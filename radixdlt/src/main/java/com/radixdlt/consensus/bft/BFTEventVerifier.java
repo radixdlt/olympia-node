@@ -22,6 +22,7 @@ import com.radixdlt.SecurityCritical.SecurityKind;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.HashVerifier;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.liveness.VoteTimeout;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.Proposal;
@@ -91,8 +92,8 @@ public final class BFTEventVerifier implements BFTEventProcessor {
 	}
 
 	@Override
-	public void processLocalTimeout(View view) {
-		forwardTo.processLocalTimeout(view);
+	public void processLocalTimeout(ScheduledLocalTimeout localTimeout) {
+		forwardTo.processLocalTimeout(localTimeout);
 	}
 
 	@Override

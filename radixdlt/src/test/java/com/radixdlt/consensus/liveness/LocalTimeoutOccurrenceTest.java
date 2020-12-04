@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,18 +15,18 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.epoch;
+package com.radixdlt.consensus.liveness;
 
-import com.radixdlt.consensus.liveness.PacemakerInfoSender;
-import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
 
-/**
- * A factory for LocalViewUpdateSenders.
- */
-public interface LocalViewUpdateSenderFactory {
-
-	/**
-	 * Creates a new clean LocalViewUpdateSender.
-	 */
-	LocalViewUpdateSender create(PacemakerInfoSender infoSender, PacemakerTimeoutSender timeoutSender);
+public class LocalTimeoutOccurrenceTest {
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(LocalTimeoutOccurrence.class)
+			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+			.verify();
+	}
 }

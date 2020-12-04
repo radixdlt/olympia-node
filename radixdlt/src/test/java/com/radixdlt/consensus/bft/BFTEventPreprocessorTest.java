@@ -37,7 +37,6 @@ import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTSyncer.SyncResult;
 import com.radixdlt.consensus.bft.SyncQueues.SyncQueue;
-import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
@@ -49,7 +48,6 @@ import org.junit.Test;
 public class BFTEventPreprocessorTest {
 	private static final ECKeyPair SELF_KEY = ECKeyPair.generateNew();
 	private BFTEventPreprocessor preprocessor;
-	private ProposerElection proposerElection;
 	private BFTSync vertexStoreSync;
 	private BFTEventProcessor forwardTo;
 	private SyncQueues syncQueues;
@@ -58,25 +56,21 @@ public class BFTEventPreprocessorTest {
 	@Before
 	public void setUp() {
 		this.vertexStoreSync = mock(BFTSync.class);
-		this.proposerElection = mock(ProposerElection.class);
 		this.forwardTo = mock(BFTEventProcessor.class);
 		this.syncQueues = mock(SyncQueues.class);
 		this.self = mock(BFTNode.class);
 
 		when(this.self.getKey()).thenReturn(SELF_KEY.getPublicKey());
 
-		when(proposerElection.getProposer(any())).thenReturn(self);
 		when(syncQueues.isEmptyElseAdd(any())).thenReturn(true);
 
 		this.preprocessor = new BFTEventPreprocessor(
 			self,
 			forwardTo,
 			vertexStoreSync,
-			proposerElection,
-			syncQueues
+			syncQueues,
+			ViewUpdate.create(View.genesis().next(), View.genesis(), self, BFTNode.random())
 		);
-
-		preprocessor.processViewUpdate(new ViewUpdate(View.genesis().next(), View.genesis()));
 	}
 
 	private Proposal createProposal(boolean goodView, boolean synced) {

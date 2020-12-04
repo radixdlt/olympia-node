@@ -23,8 +23,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Module;
-import com.google.inject.Provides;
 import com.google.inject.Scopes;
+import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.util.Modules;
 import com.radixdlt.ConsensusModule;
@@ -44,11 +44,11 @@ import com.radixdlt.RadixEngineModule;
 import com.radixdlt.RadixEngineRxModule;
 import com.radixdlt.RxEnvironmentModule;
 import com.radixdlt.SyncServiceModule;
-import com.radixdlt.SyncRxModule;
 import com.radixdlt.SyncRunnerModule;
 import com.radixdlt.SystemInfoRxModule;
+import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.consensus.Sha256Hasher;
-import com.radixdlt.consensus.Timeout;
+import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
@@ -56,12 +56,16 @@ import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
+import com.radixdlt.fees.NativeToken;
+import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.integration.distributed.MockedBFTConfigurationModule;
 import com.radixdlt.integration.distributed.MockedCommandGeneratorModule;
 import com.radixdlt.integration.distributed.MockedCryptoModule;
@@ -103,7 +107,9 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
 import com.radixdlt.statecomputer.EpochCeilingView;
+import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;
+import com.radixdlt.statecomputer.ValidatorSetBuilder;
 import com.radixdlt.sync.SyncPatienceMillis;
 import com.radixdlt.utils.DurationParser;
 import com.radixdlt.utils.Pair;
@@ -113,6 +119,7 @@ import io.reactivex.rxjava3.core.Single;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import java.util.Iterator;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -128,6 +135,9 @@ import java.util.stream.Stream;
  * High level BFT Simulation Test Runner
  */
 public class SimulationTest {
+	private static final ECKeyPair UNIVERSE_KEY = ECKeyPair.generateNew();
+	private static final RadixAddress UNIVERSE_ADDRESS = new RadixAddress((byte) 0, UNIVERSE_KEY.getPublicKey());
+	private static final RRI NATIVE_TOKEN = RRI.of(UNIVERSE_ADDRESS, TokenDefinitionUtils.getNativeTokenShortCode());
 	private static final String ENVIRONMENT_VAR_NAME = "TEST_DURATION"; // Same as used by regression test suite
 	private static final Duration DEFAULT_TEST_DURATION = Duration.ofSeconds(30);
 
@@ -196,7 +206,6 @@ public class SimulationTest {
 							}
 						});
 						modules.add(new SyncServiceModule());
-						modules.add(new SyncRxModule());
 						modules.add(new MockedCommittedReaderModule());
 						if (!hasEpochs) {
 							modules.add(new MockedSyncRunnerModule());
@@ -225,6 +234,10 @@ public class SimulationTest {
 		private Module networkModule;
 		private Module overrideModule = null;
 		private Function<ImmutableList<ECKeyPair>, ImmutableMap<ECKeyPair, Module>> byzantineModuleCreator = i -> ImmutableMap.of();
+		// TODO: Fix pacemaker so can Default 1 so can debug in IDE, possibly from properties at some point
+		// TODO: Specifically, simulation test with engine, epochs and mempool gets stuck on a single validator
+		private final int minValidators = 2;
+		private int maxValidators = Integer.MAX_VALUE;
 
 		private Builder() {
 		}
@@ -260,34 +273,73 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder numNodes(int numNodes, int numInitialValidators) {
+		public Builder numNodes(int numNodes, int numInitialValidators, int maxValidators, Iterable<UInt256> initialStakes) {
+			this.maxValidators = maxValidators;
 			this.nodes = Stream.generate(ECKeyPair::generateNew)
 				.limit(numNodes)
 				.collect(ImmutableList.toImmutableList());
 
-			final ImmutableList<BFTNode> bftNodes =
-				nodes.stream().map(node -> BFTNode.create(node.getPublicKey())).collect(ImmutableList.toImmutableList());
+			final var stakesIterator = repeatLast(initialStakes);
+			final var initialStakesMap = nodes.stream()
+				.collect(ImmutableMap.toImmutableMap(ECKeyPair::getPublicKey, k -> stakesIterator.next()));
+
+			final var vsetBuilder = ValidatorSetBuilder.create(this.minValidators, numInitialValidators);
+			final var initialVset = vsetBuilder.buildValidatorSet(initialStakesMap);
+			if (initialVset == null) {
+				throw new IllegalStateException(
+					String.format(
+						"Can't build a validator set between %s and %s validators from %s",
+						this.minValidators, numInitialValidators, initialStakesMap
+					)
+				);
+			}
+
+			final var bftNodes = initialStakesMap.keySet().stream()
+					.map(BFTNode::create)
+					.collect(ImmutableList.toImmutableList());
+			final var validators = initialStakesMap.entrySet().stream()
+					.map(e -> BFTValidator.from(BFTNode.create(e.getKey()), e.getValue()))
+					.collect(ImmutableList.toImmutableList());
 
 			this.initialNodesModule = new AbstractModule() {
-				@Provides
-				ImmutableList<BFTNode> nodes() {
-					return bftNodes;
+				@Override
+				protected void configure() {
+					bind(new TypeLiteral<ImmutableList<BFTNode>>() { }).toInstance(bftNodes);
+					bind(new TypeLiteral<ImmutableList<BFTValidator>>() { }).toInstance(validators);
 				}
 			};
 
 			modules.add(new AbstractModule() {
-				@Provides
-				BFTValidatorSet initialValidatorSet() {
-					return BFTValidatorSet.from(bftNodes.stream().limit(numInitialValidators)
-						.map(node -> BFTValidator.from(node, UInt256.ONE)));
+				@Override
+				protected void configure() {
+					bind(new TypeLiteral<ImmutableList<BFTNode>>() { }).toInstance(bftNodes);
+					bind(new TypeLiteral<ImmutableList<BFTValidator>>() { }).toInstance(validators);
+					bind(BFTValidatorSet.class).toInstance(initialVset);
 				}
 			});
 
 			return this;
 		}
 
+		public Builder numNodes(int numNodes, int numInitialValidators, Iterable<UInt256> initialStakes) {
+			return numNodes(numNodes, numInitialValidators, numInitialValidators, initialStakes);
+		}
+
+		public Builder numNodes(int numNodes, int numInitialValidators, int maxValidators) {
+			return numNodes(numNodes, numInitialValidators, maxValidators, ImmutableList.of(UInt256.ONE));
+		}
+
+		public Builder numNodes(int numNodes, int numInitialValidators) {
+			return numNodes(numNodes, numInitialValidators, ImmutableList.of(UInt256.ONE));
+		}
+
 		public Builder numNodes(int numNodes) {
-			return this.numNodes(numNodes, numNodes);
+			return numNodes(numNodes, numNodes);
+		}
+
+		public Builder maxValidators(int maxValidators) {
+			this.maxValidators = maxValidators;
+			return this;
 		}
 
 		public Builder ledgerAndEpochs(View epochHighView, Function<Long, IntStream> epochToNodeIndexMapper) {
@@ -438,13 +490,21 @@ public class SimulationTest {
 		}
 
 		public Builder checkConsensusNoTimeouts(String invariantName) {
+			// TODO: Cleanup and separate epoch timeouts and non-epoch timeouts
 			this.modules.add(new AbstractModule() {
 				@ProcessOnDispatch
 				@ProvidesIntoSet
-				private EventProcessor<Timeout> timeoutEventProcessor(@Self BFTNode node) {
-					return nodeEvents.processor(node, Timeout.class);
+				private EventProcessor<EpochLocalTimeoutOccurrence> epochTimeoutProcessor(@Self BFTNode node) {
+					return nodeEvents.processor(node, EpochLocalTimeoutOccurrence.class);
+				}
+
+				@ProcessOnDispatch
+				@ProvidesIntoSet
+				private EventProcessor<LocalTimeoutOccurrence> timeoutEventProcessor(@Self BFTNode node) {
+					return nodeEvents.processor(node, LocalTimeoutOccurrence.class);
 				}
 			});
+
 			this.checksBuilder.put(invariantName, nodes -> new NoTimeoutsInvariant(nodeEvents));
 			return this;
 		}
@@ -594,12 +654,15 @@ public class SimulationTest {
 						bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(epochHighView);
 						// TODO: Fix pacemaker so can Default 1 so can debug in IDE, possibly from properties at some point
 						// TODO: Specifically, simulation test with engine, epochs and mempool gets stuck on a single validator
-						bind(Integer.class).annotatedWith(MinValidators.class).toInstance(2);
+						bind(Integer.class).annotatedWith(MinValidators.class).toInstance(minValidators);
+						bind(Integer.class).annotatedWith(MaxValidators.class).toInstance(maxValidators);
+						bind(RRI.class).annotatedWith(NativeToken.class).toInstance(NATIVE_TOKEN);
 					}
 				});
 				modules.add(new RadixEngineModule());
 				modules.add(new RadixEngineRxModule());
 				modules.add(new MockedRadixEngineStoreModule());
+				modules.add(new SimulationValidatorComputersModule());
 			}
 
 			ImmutableSet<SimulationNetworkActor> runners = this.runnableBuilder.build().stream()
@@ -732,5 +795,28 @@ public class SimulationTest {
 			.blockingStream()
 			.collect(Collectors.toMap(Pair::getFirst, Pair::getSecond));
 		return new TestResults(checkResults, runningNetwork);
+	}
+
+	private static <T> Iterator<T> repeatLast(Iterable<T> iterable) {
+		final var iterator = iterable.iterator();
+		if (!iterator.hasNext()) {
+			throw new IllegalArgumentException("Can't repeat an empty iterable");
+		}
+		return new Iterator<>() {
+			T lastValue = null;
+
+			@Override
+			public boolean hasNext() {
+				return true;
+			}
+
+			@Override
+			public T next() {
+				if (iterator.hasNext()) {
+					this.lastValue = iterator.next();
+				}
+				return this.lastValue;
+			}
+		};
 	}
 }

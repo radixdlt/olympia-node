@@ -58,11 +58,7 @@ public abstract class VoteProcessingResult {
 
         @Override
         public boolean equals(Object o) {
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            } else {
-                return true;
-            }
+            return o != null && getClass() == o.getClass();
         }
 
         @Override

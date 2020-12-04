@@ -28,6 +28,7 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessWithSyncRunner;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
+import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.epochs.EpochsLocalSyncServiceProcessor;
 import com.radixdlt.epochs.EpochsRemoteSyncResponseProcessor;
@@ -38,11 +39,10 @@ import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor;
-import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncTimeoutScheduler;
+import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
 import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier;
 import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier.InvalidValidatorSetSender;
 import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier.VerifiedValidatorSetSender;
-import com.radixdlt.sync.LocalSyncServiceProcessor;
 import com.radixdlt.sync.SyncPatienceMillis;
 import java.util.Comparator;
 import java.util.function.Function;
@@ -53,7 +53,6 @@ import java.util.function.Function;
 public class EpochsSyncModule extends AbstractModule {
 	@Override
 	public void configure() {
-		bind(LocalSyncServiceProcessor.class).to(EpochsLocalSyncServiceProcessor.class);
 		bind(EpochsRemoteSyncResponseProcessor.class).in(Scopes.SINGLETON);
 		bind(EpochsLocalSyncServiceProcessor.class).in(Scopes.SINGLETON);
 	}
@@ -74,6 +73,11 @@ public class EpochsSyncModule extends AbstractModule {
 	@Provides
 	private EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor(EpochsLocalSyncServiceProcessor epochsLocalSyncServiceProcessor) {
 		return epochsLocalSyncServiceProcessor.localSyncRequestEventProcessor();
+	}
+
+	@Provides
+	private EventProcessor<SyncInProgress> syncInProgressEventProcessor(EpochsLocalSyncServiceProcessor epochsLocalSyncServiceProcessor) {
+		return epochsLocalSyncServiceProcessor.syncTimeoutProcessor();
 	}
 
 	@Provides
@@ -110,7 +114,7 @@ public class EpochsSyncModule extends AbstractModule {
 	private Function<BFTConfiguration, LocalSyncServiceAccumulatorProcessor> localSyncFactory(
 		Comparator<AccumulatorState> accumulatorComparator,
 		RemoteEventDispatcher<DtoLedgerHeaderAndProof> requestDispatcher,
-		SyncTimeoutScheduler syncTimeoutScheduler,
+		ScheduledEventDispatcher<SyncInProgress> syncTimeoutScheduler,
 		@SyncPatienceMillis int syncPatienceMillis
 	) {
 		return config ->

@@ -25,6 +25,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
@@ -48,6 +49,7 @@ public class NetworkModuleTest {
 			bind(AddressBook.class).toInstance(mock(AddressBook.class));
 			bind(MessageCentral.class).toInstance(mock(MessageCentral.class));
 			bind(Hasher.class).toInstance(mock(Hasher.class));
+			bind(SystemCounters.class).toInstance(mock(SystemCounters.class));
 		}
 	}
 

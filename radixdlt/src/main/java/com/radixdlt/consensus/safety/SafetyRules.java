@@ -19,7 +19,6 @@ package com.radixdlt.consensus.safety;
 
 import com.google.common.hash.HashCode;
 import com.google.inject.Inject;
-import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.TimeoutCertificate;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.VerifiedVertex;

@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,24 +15,20 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.liveness;
+package com.radixdlt.consensus.epoch;
 
-import com.radixdlt.consensus.bft.View;
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
 
-/**
- * Sender of information regarding the BFT
- */
-public interface PacemakerInfoSender {
+public class EpochedTest {
 
-    /**
-     * Signify that the bft node is starting a new view
-     * @param view the view the bft node has changed to
-     */
-    void sendCurrentView(View view);
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(Epoched.class)
+			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+			.verify();
+	}
 
-    /**
-     * Signify that a timeout was processed by this bft node
-     * @param view the view of the timeout
-     */
-    void sendTimeoutProcessed(View view);
 }

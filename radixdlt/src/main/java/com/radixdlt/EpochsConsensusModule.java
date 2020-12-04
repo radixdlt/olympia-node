@@ -20,6 +20,7 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
+import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
@@ -28,34 +29,28 @@ import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
+import com.radixdlt.consensus.bft.ViewUpdate;
+import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.epoch.LocalTimeoutSender;
-import com.radixdlt.consensus.epoch.LocalViewUpdate;
-import com.radixdlt.consensus.epoch.LocalViewUpdateSender;
-import com.radixdlt.consensus.epoch.LocalViewUpdateSenderFactory;
-import com.radixdlt.consensus.epoch.LocalViewUpdateSenderWithTimeout;
+import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.epoch.ProposerElectionFactory;
-import com.radixdlt.consensus.Timeout;
+import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.epoch.VertexStoreFactory;
 import com.radixdlt.consensus.epoch.BFTSyncFactory;
 import com.radixdlt.consensus.epoch.BFTSyncRequestProcessorFactory;
-import com.radixdlt.consensus.liveness.PacemakerInfoSender;
+import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
+import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.epoch.EpochManager;
-import com.radixdlt.consensus.epoch.EpochView;
-import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
-import com.radixdlt.consensus.liveness.PacemakerFactoryImpl;
 import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.liveness.PacemakerStateFactory;
-import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
-import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
-import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
@@ -68,6 +63,7 @@ import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 
@@ -77,7 +73,6 @@ import com.radixdlt.sync.LocalSyncRequest;
 import java.util.Comparator;
 import java.util.Optional;
 import java.util.Random;
-import java.util.function.Consumer;
 
 /**
  * Module which allows for consensus to have multiple epochs
@@ -101,45 +96,6 @@ public class EpochsConsensusModule extends AbstractModule {
 	}
 
 	@Provides
-	private PacemakerTimeoutSender initialTimeoutSender(LocalTimeoutSender localTimeoutSender, EpochChange initialEpoch) {
-		return (view, ms) -> localTimeoutSender.scheduleTimeout(new LocalTimeout(initialEpoch.getEpoch(), view), ms);
-	}
-
-	@Provides
-	private PacemakerState.ViewUpdateSender initialViewUpdateSender(
-		EventDispatcher<EpochView> epochViewEventDispatcher,
-		LocalViewUpdateSender localViewUpdateSender,
-		EpochChange initialEpoch
-	) {
-		return (viewUpdate) -> {
-			epochViewEventDispatcher.dispatch(EpochView.of(initialEpoch.getEpoch(), viewUpdate.getCurrentView()));
-			localViewUpdateSender.sendLocalViewUpdate(new LocalViewUpdate(initialEpoch.getEpoch(), viewUpdate));
-		};
-	}
-
-	@Provides
-	public PacemakerInfoSender pacemakerInfoSender(
-		EventDispatcher<Timeout> timeoutEventDispatcher,
-		EventDispatcher<EpochView> epochViewEventDispatcher,
-		EpochChange initialEpoch,
-		ProposerElection proposerElection
-	) {
-		return new PacemakerInfoSender() {
-			@Override
-			public void sendCurrentView(View view) {
-				epochViewEventDispatcher.dispatch(EpochView.of(initialEpoch.getEpoch(), view));
-			}
-
-			@Override
-			public void sendTimeoutProcessed(View view) {
-				BFTNode leader = proposerElection.getProposer(view);
-				Timeout timeout = new Timeout(EpochView.of(initialEpoch.getEpoch(), view), leader);
-				timeoutEventDispatcher.dispatch(timeout);
-			}
-		};
-	}
-
-	@Provides
 	private EpochChange initialEpoch(
 		@LastEpochProof VerifiedLedgerHeaderAndProof proof,
 		BFTConfiguration initialBFTConfig
@@ -157,8 +113,54 @@ public class EpochsConsensusModule extends AbstractModule {
 	}
 
 	@Provides
-	private PacemakerStateFactory pacemakerStateFactory() {
-		return (viewUpdateSender) -> new PacemakerState(viewUpdateSender);
+	private EventProcessor<EpochViewUpdate> epochViewUpdateEventProcessor(EpochManager epochManager) {
+		return epochManager.epochViewUpdateEventProcessor();
+	}
+
+	@ProvidesIntoSet
+	@ProcessOnDispatch
+	private EventProcessor<ScheduledLocalTimeout> initialEpochsTimeoutSender(
+		LocalTimeoutSender localTimeoutSender,
+		EpochChange initialEpoch
+	) {
+		return localTimeout -> {
+			Epoched<ScheduledLocalTimeout> epochTimeout = Epoched.from(initialEpoch.getEpoch(), localTimeout);
+			localTimeoutSender.scheduleTimeout(epochTimeout, localTimeout.millisecondsWaitTime());
+		};
+	}
+
+
+	@ProvidesIntoSet
+	@ProcessOnDispatch
+	private EventProcessor<ViewUpdate> initialViewUpdateSender(
+		EventDispatcher<EpochViewUpdate> epochViewUpdateEventDispatcher,
+		EpochChange initialEpoch
+	) {
+		return viewUpdate -> {
+			EpochViewUpdate epochViewUpdate = new EpochViewUpdate(initialEpoch.getEpoch(), viewUpdate);
+			epochViewUpdateEventDispatcher.dispatch(epochViewUpdate);
+		};
+	}
+
+	@Provides
+	private PacemakerStateFactory pacemakerStateFactory(
+		EventDispatcher<EpochViewUpdate> epochViewUpdateEventDispatcher
+	) {
+		return (epoch, proposerElection) ->
+			new PacemakerState(proposerElection, viewUpdate -> {
+				EpochViewUpdate epochViewUpdate = new EpochViewUpdate(epoch, viewUpdate);
+				epochViewUpdateEventDispatcher.dispatch(epochViewUpdate);
+			});
+	}
+
+	@ProvidesIntoSet
+	@ProcessOnDispatch
+	EventProcessor<LocalTimeoutOccurrence> initialEpochsTimeoutProcessor(
+		EpochChange initialEpoch,
+		EventDispatcher<EpochLocalTimeoutOccurrence> timeoutDispatcher
+	) {
+		return timeoutOccurrence ->
+			timeoutDispatcher.dispatch(new EpochLocalTimeoutOccurrence(initialEpoch.getEpoch(), timeoutOccurrence));
 	}
 
 	@Provides
@@ -168,27 +170,38 @@ public class EpochsConsensusModule extends AbstractModule {
 		ProposalBroadcaster proposalBroadcaster,
 		NextCommandGenerator nextCommandGenerator,
 		Hasher hasher,
+		EventDispatcher<EpochLocalTimeoutOccurrence> timeoutEventDispatcher,
+		LocalTimeoutSender localTimeoutSender,
 		RemoteEventDispatcher<Vote> voteDispatcher,
 		TimeSupplier timeSupplier
 	) {
-		return new PacemakerFactoryImpl(
-			self,
-			counters,
-			proposalBroadcaster,
-			nextCommandGenerator,
-			hasher,
-			voteDispatcher,
-			timeSupplier
-		);
-	}
-
-	@Provides
-	private LocalViewUpdateSenderFactory localViewUpdateSenderFactory(
-		PacemakerTimeoutCalculator timeoutCalculator,
-		Consumer<LocalViewUpdate> consumer
-	) {
-		return (infoSender, timeoutSender) ->
-			new LocalViewUpdateSenderWithTimeout(timeoutSender, timeoutCalculator, infoSender, consumer);
+		return (
+			validatorSet,
+			vertexStore,
+			pacemakerState,
+			timeoutCalculator,
+			safetyRules,
+			initialViewUpdate,
+			epoch
+		) -> {
+			return new Pacemaker(
+				self,
+				counters,
+				validatorSet,
+				vertexStore,
+				safetyRules,
+				pacemakerState,
+				timeout -> timeoutEventDispatcher.dispatch(new EpochLocalTimeoutOccurrence(epoch, timeout)),
+				(scheduledTimeout, ms) -> localTimeoutSender.scheduleTimeout(Epoched.from(epoch, scheduledTimeout), ms),
+				timeoutCalculator,
+				nextCommandGenerator,
+				proposalBroadcaster,
+				hasher,
+				voteDispatcher,
+				timeSupplier,
+				initialViewUpdate
+			);
+		};
 	}
 
 	@Provides

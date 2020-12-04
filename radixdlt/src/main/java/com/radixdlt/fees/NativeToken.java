@@ -15,10 +15,23 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.sync;
+package com.radixdlt.fees;
 
-import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-public interface LocalSyncServiceProcessor {
-	void processSyncTimeout(SyncInProgress timeout);
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import javax.inject.Qualifier;
+
+/**
+ * DI annotation used to identify the RRI of the ledger native token.
+ */
+@Qualifier
+@Target({ FIELD, PARAMETER, METHOD })
+@Retention(RUNTIME)
+public @interface NativeToken {
+	// Empty
 }

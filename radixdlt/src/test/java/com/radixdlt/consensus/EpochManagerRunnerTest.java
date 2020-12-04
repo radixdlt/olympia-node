@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus;
 
+import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
@@ -25,11 +26,13 @@ import static org.mockito.Mockito.when;
 
 import com.radixdlt.consensus.bft.BFTUpdate;
 import com.radixdlt.consensus.epoch.EpochManager;
-import com.radixdlt.consensus.epoch.LocalTimeout;
-import com.radixdlt.consensus.epoch.LocalViewUpdate;
+import com.radixdlt.consensus.epoch.EpochViewUpdate;
+import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.liveness.PacemakerRx;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
+import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
@@ -37,6 +40,7 @@ import io.reactivex.rxjava3.subjects.Subject;
 import org.junit.Test;
 
 public class EpochManagerRunnerTest {
+
 	@Test
 	public void when_events_get_emitted__then_event_coordinator_should_be_called() {
 		BFTEventsRx networkRx = mock(BFTEventsRx.class);
@@ -44,11 +48,11 @@ public class EpochManagerRunnerTest {
 		Subject<EpochsLedgerUpdate> ledgerUpdates = PublishSubject.create();
 		Subject<BFTUpdate> bftUpdates = PublishSubject.create();
 		Subject<LocalGetVerticesRequest> syncTimeouts = PublishSubject.create();
-		Subject<LocalViewUpdate> localViewUpdates = PublishSubject.create();
+		Subject<EpochViewUpdate> localViewUpdates = PublishSubject.create();
 
 		EpochManager epochManager = mock(EpochManager.class);
 
-		LocalTimeout timeout = mock(LocalTimeout.class);
+		Epoched<ScheduledLocalTimeout> timeout = rmock(Epoched.class);
 		PacemakerRx pacemakerRx = mock(PacemakerRx.class);
 		when(pacemakerRx.localTimeouts()).thenReturn(Observable.just(timeout).concatWith(Observable.never()));
 
@@ -75,6 +79,7 @@ public class EpochManagerRunnerTest {
 			syncTimeouts,
 			epochManager::processGetVerticesLocalTimeout,
 			localViewUpdates,
+			rmock(EventProcessor.class),
 			networkRx,
 			pacemakerRx,
 			syncVerticesRPCRx,

@@ -12,7 +12,7 @@ build:
 
 .PHONY: package
 package: build
-	docker-compose -f docker/single-node.yml build
+	docker-compose -f docker/node-1.yml build
 	docker tag radixdlt/radixdlt-core:develop $(REPO):$(TAG)
 
 .PHONY: publish

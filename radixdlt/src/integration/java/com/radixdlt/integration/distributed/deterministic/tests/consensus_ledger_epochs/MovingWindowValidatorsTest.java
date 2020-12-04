@@ -19,7 +19,8 @@ package com.radixdlt.integration.distributed.deterministic.tests.consensus_ledge
 
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
-import com.radixdlt.consensus.epoch.LocalTimeout;
+import com.radixdlt.consensus.epoch.Epoched;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.integration.distributed.deterministic.DeterministicTest;
@@ -58,7 +59,7 @@ public class MovingWindowValidatorsTest {
 
 		LinkedList<SystemCounters> testCounters = systemCounters(bftTest);
 		assertThat(testCounters).extracting(sc -> sc.get(CounterType.BFT_INDIRECT_PARENT)).containsOnly(0L);
-		assertThat(testCounters).extracting(sc -> sc.get(CounterType.BFT_TOTAL_VIEW_TIMEOUTS)).containsOnly(0L);
+		assertThat(testCounters).extracting(sc -> sc.get(CounterType.BFT_TIMEOUT)).containsOnly(0L);
 
 		long maxCount = maxProcessedFor(numNodes, windowSize, maxEpoch, highView.number());
 
@@ -69,7 +70,7 @@ public class MovingWindowValidatorsTest {
 
 	private MessageMutator mutator() {
 		return (message, queue) -> {
-			if (message.message() instanceof LocalTimeout) {
+			if (Epoched.isInstance(message.message(), ScheduledLocalTimeout.class)) {
 				// Discard
 				return true;
 			}

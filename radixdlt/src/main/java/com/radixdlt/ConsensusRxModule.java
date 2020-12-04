@@ -18,54 +18,24 @@
 package com.radixdlt;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.google.inject.TypeLiteral;
-import com.radixdlt.consensus.epoch.LocalTimeout;
+import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.epoch.LocalTimeoutSender;
-import com.radixdlt.consensus.epoch.LocalViewUpdate;
-import com.radixdlt.consensus.epoch.LocalViewUpdateSender;
-import com.radixdlt.consensus.epoch.LocalViewUpdateSenderWithTimeout;
-import com.radixdlt.consensus.liveness.PacemakerInfoSender;
 import com.radixdlt.consensus.liveness.PacemakerRx;
-import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
-import com.radixdlt.consensus.liveness.PacemakerTimeoutSender;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.utils.ScheduledSenderToRx;
-import com.radixdlt.utils.SenderToRx;
 import com.radixdlt.utils.ThreadFactories;
-import io.reactivex.rxjava3.core.Observable;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.function.Consumer;
 
 public class ConsensusRxModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
 		ScheduledExecutorService ses = Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("TimeoutSender"));
-		ScheduledSenderToRx<LocalTimeout> localTimeouts = new ScheduledSenderToRx<>(ses);
+		ScheduledSenderToRx<Epoched<ScheduledLocalTimeout>> localTimeouts = new ScheduledSenderToRx<>(ses);
 		// Timed local messages
 		bind(PacemakerRx.class).toInstance(localTimeouts::messages);
 		bind(LocalTimeoutSender.class).toInstance(localTimeouts::scheduleSend);
-
-		SenderToRx<LocalViewUpdate, LocalViewUpdate> localViewUpdates = new SenderToRx<>(u -> u);
-		bind(new TypeLiteral<Observable<LocalViewUpdate>>() { }).toInstance(localViewUpdates.rx());
-		bind(new TypeLiteral<Consumer<LocalViewUpdate>>() { }).toInstance(localViewUpdates::send);
-	}
-
-	@Provides
-	@Singleton
-	private LocalViewUpdateSender localViewUpdateSender(
-		PacemakerTimeoutSender timeoutSender,
-		PacemakerTimeoutCalculator timeoutCalculator,
-		PacemakerInfoSender pacemakerInfoSender,
-		Consumer<LocalViewUpdate> consumer
-	) {
-		return new LocalViewUpdateSenderWithTimeout(
-			timeoutSender,
-			timeoutCalculator,
-			pacemakerInfoSender,
-			consumer);
 	}
 }

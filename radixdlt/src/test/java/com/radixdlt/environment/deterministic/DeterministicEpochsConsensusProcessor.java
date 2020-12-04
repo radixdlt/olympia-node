@@ -21,13 +21,15 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTUpdate;
-import com.radixdlt.consensus.epoch.LocalViewUpdate;
+import com.radixdlt.consensus.bft.ViewUpdate;
+import com.radixdlt.consensus.epoch.EpochViewUpdate;
+import com.radixdlt.consensus.epoch.Epoched;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
-import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.environment.EventProcessor;
@@ -37,6 +39,7 @@ import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.sync.LocalSyncRequest;
+import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -58,6 +61,8 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 		@ProcessWithSyncRunner Set<EventProcessor<EpochsLedgerUpdate>> epochsLedgerUpdateProcessors,
 		EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor,
 		EventProcessor<LocalGetVerticesRequest> localGetVerticesRequestEventProcessor,
+		EventProcessor<SyncInProgress> syncTimeoutProcessor,
+		EventProcessor<EpochViewUpdate> epochViewUpdateProcessor,
 		Set<EventProcessor<BFTUpdate>> bftUpdateProcessors,
 		RemoteEventProcessor<DtoLedgerHeaderAndProof> syncRequestProcessor,
 		RemoteEventProcessor<DtoCommandsAndProof> syncResponseProcessor
@@ -70,8 +75,10 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 			epochManager.processLedgerUpdate((EpochsLedgerUpdate) e);
 			epochsLedgerUpdateProcessors.forEach(p -> p.process((EpochsLedgerUpdate) e));
 		});
+		processorsBuilder.put(EpochViewUpdate.class, e -> epochViewUpdateProcessor.process((EpochViewUpdate) e));
 		processorsBuilder.put(LocalSyncRequest.class, e -> localSyncRequestEventProcessor.process((LocalSyncRequest) e));
 		processorsBuilder.put(LocalGetVerticesRequest.class, e -> localGetVerticesRequestEventProcessor.process((LocalGetVerticesRequest) e));
+		processorsBuilder.put(SyncInProgress.class, e -> syncTimeoutProcessor.process((SyncInProgress) e));
 		processorsBuilder.put(BFTUpdate.class, e -> bftUpdateProcessors.forEach(p -> p.process((BFTUpdate) e)));
 		this.eventProcessors = processorsBuilder.build();
 
@@ -87,18 +94,29 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 		remoteEventProcessors = remoteProcessorsBuilder.build();
 	}
 
+	@Override
 	public void start() {
 		epochManager.start();
 	}
 
 	@Override
 	public void handleMessage(BFTNode origin, Object message) {
-		if (message instanceof ConsensusEvent) {
+		if (message instanceof ViewUpdate || message instanceof ScheduledLocalTimeout) {
+			// FIXME: Should remove this message type but required due to guice dependency graph
+			// FIXME: Should be fixable once an Epoch Environment is implemented
+			return;
+		} else if (message instanceof ConsensusEvent) {
 			this.epochManager.processConsensusEvent((ConsensusEvent) message);
-		} else if (message instanceof LocalTimeout) {
-			this.epochManager.processLocalTimeout((LocalTimeout) message);
-		} else if (message instanceof LocalViewUpdate) {
-			this.epochManager.processLocalViewUpdate((LocalViewUpdate) message);
+		} else if (message instanceof Epoched) {
+			Epoched<?> epoched = (Epoched<?>) message;
+			Object epochedMessage = epoched.event();
+			if (epochedMessage instanceof ScheduledLocalTimeout) {
+				@SuppressWarnings("unchecked")
+				Epoched<ScheduledLocalTimeout> epochTimeout = (Epoched<ScheduledLocalTimeout>) message;
+				this.epochManager.processLocalTimeout(epochTimeout);
+			} else {
+				throw new IllegalArgumentException("Unknown epoch message type: " + epochedMessage.getClass().getName());
+			}
 		} else if (message instanceof GetVerticesRequest) {
 			this.epochManager.processGetVerticesRequest((GetVerticesRequest) message);
 		} else if (message instanceof GetVerticesResponse) {

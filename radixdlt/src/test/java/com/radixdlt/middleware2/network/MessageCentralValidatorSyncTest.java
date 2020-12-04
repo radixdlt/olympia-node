@@ -29,6 +29,8 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
+import com.google.common.util.concurrent.RateLimiter;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.HighQC;
@@ -60,6 +62,7 @@ public class MessageCentralValidatorSyncTest {
 	private MessageCentral messageCentral;
 	private MessageCentralValidatorSync sync;
 	private Hasher hasher;
+	private SystemCounters counters;
 
 	@Before
 	public void setUp() {
@@ -69,10 +72,14 @@ public class MessageCentralValidatorSyncTest {
 		when(pubKey.euid()).thenReturn(selfEUID);
 		when(self.getKey()).thenReturn(pubKey);
 		Universe universe = mock(Universe.class);
+		var limiter = RateLimiter.create(1000.0);
 		this.addressBook = mock(AddressBook.class);
 		this.messageCentral = mock(MessageCentral.class);
 		this.hasher = mock(Hasher.class);
-		this.sync = new MessageCentralValidatorSync(self, universe, addressBook, messageCentral, hasher);
+		this.counters = mock(SystemCounters.class);
+		this.sync = new MessageCentralValidatorSync(
+				self, universe, addressBook, messageCentral, hasher, counters, limiter
+		);
 	}
 
 

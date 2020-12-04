@@ -19,7 +19,9 @@ package com.radixdlt.environment.deterministic.network;
 
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.epoch.LocalViewUpdate;
+import com.radixdlt.consensus.epoch.Epoched;
+import com.radixdlt.consensus.epoch.GetEpochRequest;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.environment.Environment;
@@ -37,7 +39,6 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
-import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork.DeterministicSender;
 
 /**
@@ -93,14 +94,16 @@ public final class ControlledSender implements DeterministicSender, Environment 
 	}
 
 	@Override
-	public void scheduleTimeout(LocalTimeout localTimeout, long milliseconds) {
+	public void scheduleTimeout(Epoched<ScheduledLocalTimeout> localTimeout, long milliseconds) {
 		ControlledMessage msg = new ControlledMessage(self, this.localChannel, localTimeout, arrivalTime(this.localChannel) + milliseconds);
 		handleMessage(msg);
 	}
 
 	@Override
 	public void sendGetEpochRequest(BFTNode node, long epoch) {
-		// Ignore get epoch requests for now
+		GetEpochRequest getEpochRequest = new GetEpochRequest(self, epoch);
+		ChannelId channelId = ChannelId.of(this.senderIndex, this.network.lookup(node));
+		handleMessage(new ControlledMessage(self, channelId, getEpochRequest, arrivalTime(channelId)));
 	}
 
 	@Override
@@ -113,11 +116,6 @@ public final class ControlledSender implements DeterministicSender, Environment 
 	@Override
 	public void sendLedgerUpdate(EpochsLedgerUpdate epochsLedgerUpdate) {
 		handleMessage(new ControlledMessage(self, this.localChannel, epochsLedgerUpdate, arrivalTime(this.localChannel)));
-	}
-
-	@Override
-	public void sendLocalViewUpdate(LocalViewUpdate viewUpdate) {
-		handleMessage(new ControlledMessage(self, this.localChannel, viewUpdate, arrivalTime(this.localChannel)));
 	}
 
 	@Override

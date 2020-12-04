@@ -31,12 +31,12 @@ import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewQuorumReached;
-import com.radixdlt.consensus.bft.ViewVotingResult.FormedQC;
 import com.radixdlt.consensus.bft.ViewVotingResult.FormedTC;
+import com.radixdlt.consensus.bft.ViewVotingResult.FormedQC;
+import com.radixdlt.consensus.liveness.PacemakerReducer;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
-import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdateProcessor;
 import com.radixdlt.sync.LocalSyncRequest;
@@ -131,7 +131,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 
 	private static final Logger log = LogManager.getLogger();
 	private final VertexStore vertexStore;
-	private final PacemakerState pacemakerState;
+	private final PacemakerReducer pacemakerReducer;
 	private final Map<HashCode, SyncState> syncing = new HashMap<>();
 	private final TreeMap<LedgerHeader, List<HashCode>> ledgerSyncing;
 	private final Map<LocalGetVerticesRequest, SyncRequestState> bftSyncing = new HashMap<>();
@@ -144,7 +144,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 
 	public BFTSync(
 		VertexStore vertexStore,
-		PacemakerState pacemakerState,
+		PacemakerReducer pacemakerReducer,
 		Comparator<LedgerHeader> ledgerHeaderComparator,
 		SyncVerticesRequestSender requestSender,
 		EventDispatcher<LocalSyncRequest> localSyncRequestProcessor,
@@ -154,7 +154,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 		int bftSyncPatienceMillis
 	) {
 		this.vertexStore = vertexStore;
-		this.pacemakerState = pacemakerState;
+		this.pacemakerReducer = pacemakerReducer;
 		this.ledgerSyncing = new TreeMap<>(ledgerHeaderComparator);
 		this.requestSender = requestSender;
 		this.localSyncRequestProcessor = Objects.requireNonNull(localSyncRequestProcessor);
@@ -197,7 +197,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 		highQC.highestTC().ifPresent(vertexStore::insertTimeoutCertificate);
 
 		if (vertexStore.addQC(qc)) {
-			this.pacemakerState.processQC(vertexStore.highQC());
+			this.pacemakerReducer.processQC(vertexStore.highQC());
 			return SyncResult.SYNCED;
 		}
 

@@ -28,9 +28,35 @@ public final class ViewUpdate {
 	// Highest view in which a commit happened
 	private final View highestCommitView;
 
-	public ViewUpdate(View currentView, View highestCommitView) {
-		this.currentView = Objects.requireNonNull(currentView);
-		this.highestCommitView = Objects.requireNonNull(highestCommitView);
+	private final BFTNode leader;
+	private final BFTNode nextLeader;
+
+	private ViewUpdate(View currentView, View highestCommitView, BFTNode leader, BFTNode nextLeader) {
+		this.currentView = currentView;
+		this.highestCommitView = highestCommitView;
+		this.leader = leader;
+		this.nextLeader = nextLeader;
+	}
+
+	public static ViewUpdate create(View currentView, View highestCommitView, BFTNode leader, BFTNode nextLeader) {
+		Objects.requireNonNull(currentView);
+		Objects.requireNonNull(highestCommitView);
+		Objects.requireNonNull(leader);
+		Objects.requireNonNull(nextLeader);
+
+		return new ViewUpdate(currentView, highestCommitView, leader, nextLeader);
+	}
+
+	public static ViewUpdate genesis() {
+		return new ViewUpdate(View.genesis(), View.genesis(), null, null);
+	}
+
+	public BFTNode getLeader() {
+		return leader;
+	}
+
+	public BFTNode getNextLeader() {
+		return nextLeader;
 	}
 
 	public View getCurrentView() {
@@ -47,10 +73,12 @@ public final class ViewUpdate {
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s,%s]",
+		return String.format("%s[%s,%s leader=%s nextLeader=%s]",
 			getClass().getSimpleName(),
 			this.currentView,
-			this.highestCommitView);
+			this.highestCommitView,
+			this.leader,
+			this.nextLeader);
 	}
 
 	@Override
@@ -63,11 +91,13 @@ public final class ViewUpdate {
 		}
 		final ViewUpdate that = (ViewUpdate) o;
 		return Objects.equals(currentView, that.currentView)
-				&& Objects.equals(highestCommitView, that.highestCommitView);
+			&& Objects.equals(highestCommitView, that.highestCommitView)
+			&& Objects.equals(leader, that.leader)
+			&& Objects.equals(nextLeader, that.nextLeader);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(currentView, highestCommitView);
+		return Objects.hash(currentView, highestCommitView, leader, nextLeader);
 	}
 }

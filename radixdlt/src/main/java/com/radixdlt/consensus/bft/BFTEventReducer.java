@@ -24,8 +24,8 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.liveness.Pacemaker;
 
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
@@ -54,13 +54,12 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private final RemoteEventDispatcher<Vote> voteDispatcher;
 	private final Hasher hasher;
 	private final TimeSupplier timeSupplier;
-	private final ProposerElection proposerElection;
 	private final SystemCounters counters;
 	private final SafetyRules safetyRules;
 	private final BFTValidatorSet validatorSet;
 	private final PendingVotes pendingVotes;
 
-	private ViewUpdate latestViewUpdate = new ViewUpdate(View.genesis(), View.genesis());
+	private ViewUpdate latestViewUpdate;
 
 	/* Indicates whether the quorum (QC or TC) has already been formed for the current view.
 	 * If the quorum has been reached (but view hasn't yet been updated), subsequent votes are ignored.
@@ -74,11 +73,11 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		RemoteEventDispatcher<Vote> voteDispatcher,
 		Hasher hasher,
 		TimeSupplier timeSupplier,
-		ProposerElection proposerElection,
 		SystemCounters counters,
 		SafetyRules safetyRules,
 		BFTValidatorSet validatorSet,
-		PendingVotes pendingVotes
+		PendingVotes pendingVotes,
+		ViewUpdate initialViewUpdate
 	) {
 		this.pacemaker = Objects.requireNonNull(pacemaker);
 		this.vertexStore = Objects.requireNonNull(vertexStore);
@@ -86,11 +85,11 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		this.voteDispatcher = Objects.requireNonNull(voteDispatcher);
 		this.hasher = Objects.requireNonNull(hasher);
 		this.timeSupplier = Objects.requireNonNull(timeSupplier);
-		this.proposerElection = Objects.requireNonNull(proposerElection);
 		this.counters = Objects.requireNonNull(counters);
 		this.safetyRules = Objects.requireNonNull(safetyRules);
 		this.validatorSet = Objects.requireNonNull(validatorSet);
 		this.pendingVotes = Objects.requireNonNull(pendingVotes);
+		this.latestViewUpdate = Objects.requireNonNull(initialViewUpdate);
 	}
 
 	@Override
@@ -123,11 +122,8 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			return;
 		}
 
-		final BFTNode nextProposer =
-				this.proposerElection.getProposer(this.latestViewUpdate.getCurrentView().next());
-
 		final VoteProcessingResult result =
-				this.pendingVotes.insertVote(vote, this.validatorSet, nextProposer);
+			this.pendingVotes.insertVote(vote, this.validatorSet, this.latestViewUpdate.getNextLeader());
 
 		if (result instanceof VoteProcessingResult.VoteAccepted) {
 			log.trace("Vote has been processed but didn't form a quorum");
@@ -160,7 +156,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		final Optional<BFTHeader> maybeHeader = this.vertexStore.insertVertex(proposedVertex);
 		// The header may not be present if the ledger is ahead of consensus
 		maybeHeader.ifPresent(header -> {
-			final BFTNode nextLeader = this.proposerElection.getProposer(currentView.next());
 			final Optional<Vote> maybeVote = this.safetyRules.voteFor(
 				proposedVertex,
 				header,
@@ -169,6 +164,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			);
 			maybeVote.ifPresentOrElse(
 				vote -> {
+					final BFTNode nextLeader = this.latestViewUpdate.getNextLeader();
 					log.trace("Proposal: Sending vote to {}: {}", nextLeader, vote);
 					this.voteDispatcher.dispatch(nextLeader, vote);
 				},
@@ -181,9 +177,9 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	}
 
 	@Override
-	public void processLocalTimeout(View view) {
-		log.trace("LocalTimeout: Processing {}", view);
-		this.pacemaker.processLocalTimeout(view);
+	public void processLocalTimeout(ScheduledLocalTimeout scheduledLocalTimeout) {
+		log.trace("LocalTimeout: Processing {}", scheduledLocalTimeout);
+		this.pacemaker.processLocalTimeout(scheduledLocalTimeout);
 	}
 
 	@Override

@@ -18,8 +18,8 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.bft.BFTUpdate;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewUpdate;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 
 /**
  * Processor of BFT events.
@@ -57,9 +57,9 @@ public interface BFTEventProcessor {
 	/**
 	 * Process a local consensus timeout message.
 	 *
-	 * @param view the view corresponding to the timeout
+	 * @param scheduledLocalTimeout the view corresponding to the timeout
 	 */
-	void processLocalTimeout(View view);
+	void processLocalTimeout(ScheduledLocalTimeout scheduledLocalTimeout);
 
 	/**
 	 * Process a BFT update.

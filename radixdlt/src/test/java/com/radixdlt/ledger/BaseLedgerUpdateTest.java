@@ -19,7 +19,15 @@ package com.radixdlt.ledger;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.epochs.EpochsLedgerUpdate;
+import com.radixdlt.utils.UInt256;
+
 import nl.jqno.equalsverifier.EqualsVerifier;
+
+import java.lang.reflect.Modifier;
+import java.util.Set;
+
+import org.assertj.core.util.Sets;
 import org.junit.Test;
 
 public class BaseLedgerUpdateTest {
@@ -28,5 +36,26 @@ public class BaseLedgerUpdateTest {
 		EqualsVerifier.forClass(BaseLedgerUpdate.class)
 			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 			.verify();
+	}
+
+	@Test
+	public void testEqualsForBaseLedgerUpdateHierarchy() {
+		final var cls = EpochsLedgerUpdate.class;
+		final Set<Class<?>> classesToIgnore = Sets.newLinkedHashSet(
+			UInt256.class // Assumes and ensures non-null fields in hashCode()
+		);
+		checkEquals(cls, classesToIgnore);
+	}
+
+	private static void checkEquals(Class<?> cls, Set<Class<?>> classesToIgnore) throws SecurityException {
+		EqualsVerifier.forClass(cls)
+			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+			.verify();
+		for (final var field : cls.getDeclaredFields()) {
+			final var fcls = field.getType();
+			if (!fcls.isPrimitive() && !fcls.isArray() && !Modifier.isAbstract(fcls.getModifiers()) && classesToIgnore.add(fcls)) {
+				checkEquals(fcls, classesToIgnore);
+			}
+		}
 	}
 }

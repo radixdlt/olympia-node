@@ -39,30 +39,14 @@ public class GlobalInjectorTest {
 	}
 
 	@Test
-	public void testInjectorNotNull() {
-		setup("none");
-		assertNotNull(this.globalInjector.getInjector());
-	}
-
-	@Test
 	public void testInjectorNotNullToken() {
-		setup("token");
-		assertNotNull(this.globalInjector.getInjector());
-	}
-
-	@Test(expected = IllegalStateException.class)
-	public void testInjectorInvalidFee() {
-		setup("rhinoplasty");
-	}
-
-	private void setup(String feeType) {
 		RuntimeProperties properties = mock(RuntimeProperties.class);
 		doReturn("127.0.0.1").when(properties).get(eq("host.ip"), any());
-		doReturn(feeType).when(properties).get(eq("debug.fee_module"), any());
-
 		Files.delete(new File("nonesuch.ks"));
 		when(properties.get(eq("node.key.path"), any(String.class))).thenReturn("nonesuch.ks");
 
 		this.globalInjector = new GlobalInjector(properties);
+
+		assertNotNull(this.globalInjector.getInjector());
 	}
 }

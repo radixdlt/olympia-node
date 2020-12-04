@@ -1,0 +1,83 @@
+version: '2.1'
+services:
+  core0:
+    extends:
+      file: core.yml
+      service: core
+    environment:
+      RADIXDLT_HOST_IP_ADDRESS: core0
+      RADIXDLT_NETWORK_SEEDS_REMOTE: core1,core2,core3,core4
+      RADIXDLT_NODE_KEY: ${RADIXDLT_VALIDATOR_0_PRIVKEY:?err}
+    networks:
+      - five_nodes
+    ports:
+      - "8080:8080"
+      - "9011:9011"
+      - "50505:50505"
+      - "10000:10000/tcp"
+      - "20000:20000/tcp"
+      - "30000:30000/tcp"
+  core1:
+    extends:
+      file: core.yml
+      service: core
+    environment:
+      RADIXDLT_HOST_IP_ADDRESS: core1
+      RADIXDLT_NETWORK_SEEDS_REMOTE: core0,core2,core3,core4
+      RADIXDLT_NODE_KEY: ${RADIXDLT_VALIDATOR_1_PRIVKEY:?err}
+    networks:
+      - five_nodes
+    ports:
+      - "8081:8080"
+      - "9012:9011"
+      - "50506:50505"
+  core2:
+    extends:
+      file: core.yml
+      service: core
+    environment:
+      RADIXDLT_HOST_IP_ADDRESS: core2
+      RADIXDLT_NETWORK_SEEDS_REMOTE: core0,core1,core3,core4
+      RADIXDLT_NODE_KEY: ${RADIXDLT_VALIDATOR_2_PRIVKEY:?err}
+    networks:
+      - five_nodes
+    ports:
+      - "8082:8080"
+      - "9013:9011"
+      - "50507:50505"
+  core3:
+    extends:
+      file: core.yml
+      service: core
+    environment:
+      RADIXDLT_HOST_IP_ADDRESS: core3
+      RADIXDLT_NETWORK_SEEDS_REMOTE: core0,core1,core2,core4
+      RADIXDLT_NODE_KEY: ${RADIXDLT_VALIDATOR_3_PRIVKEY:?err}
+    networks:
+      - five_nodes
+    ports:
+      - "8083:8080"
+      - "9014:9011"
+      - "50508:50505"
+  core4:
+    extends:
+      file: core.yml
+      service: core
+    environment:
+      RADIXDLT_HOST_IP_ADDRESS: core4
+      RADIXDLT_NETWORK_SEEDS_REMOTE: core0,core1,core2,core3
+      RADIXDLT_NODE_KEY: ${RADIXDLT_VALIDATOR_4_PRIVKEY:?err}
+    networks:
+      - five_nodes
+    ports:
+      - "8084:8080"
+      - "9015:9011"
+      - "50509:50505"
+  faucet:
+    extends:
+      file: faucet.yml
+      service: faucet
+    networks:
+      - five_nodes
+networks:
+  five_nodes:
