@@ -108,7 +108,7 @@ public class OutOfSynchronyBoundsTest {
 		private SlowNodeSetup taskRunner;
 		private StaticClusterNetwork network;
 
-		@Test
+		//@Test TODO disabled because this test might be causing a real issue on testnet2, we will enable it later
 		public void given_10_correct_bfts_in_latent_cluster_network__when_all_nodes_are_out_synchrony__then_a_liveness_check_should_fail() {
 			network = StaticClusterNetwork.clusterInfo(10);
 			String sshKeylocation = Optional.ofNullable(System.getenv("SSH_IDENTITY")).orElse(System.getenv("HOME") + "/.ssh/id_rsa");
