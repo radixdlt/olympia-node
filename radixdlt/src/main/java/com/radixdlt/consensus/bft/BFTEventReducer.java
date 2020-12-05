@@ -54,6 +54,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private final BFTValidatorSet validatorSet;
 	private final PendingVotes pendingVotes;
 
+	private BFTInsertUpdate latestInsertUpdate;
 	private ViewUpdate latestViewUpdate;
 
 	public BFTEventReducer(
@@ -91,6 +92,27 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			return;
 		}
 
+		this.latestInsertUpdate = update;
+		this.tryVote();
+	}
+
+	@Override
+	public void processViewUpdate(ViewUpdate viewUpdate) {
+		this.latestViewUpdate = viewUpdate;
+		this.pacemaker.processViewUpdate(viewUpdate);
+		this.tryVote();
+	}
+
+	private void tryVote() {
+		BFTInsertUpdate update = this.latestInsertUpdate;
+		if (update == null) {
+			return;
+		}
+
+		if (!Objects.equals(update.getHeader().getView(), this.latestViewUpdate.getCurrentView())) {
+			return;
+		}
+
 		// TODO: what if insertUpdate occurs before viewUpdate
 		final BFTNode nextLeader = this.latestViewUpdate.getNextLeader();
 		final Optional<Vote> maybeVote = this.safetyRules.voteFor(
@@ -108,12 +130,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	@Override
 	public void processBFTRebuildUpdate(BFTRebuildUpdate update) {
 		// No-op
-	}
-
-	@Override
-	public void processViewUpdate(ViewUpdate viewUpdate) {
-		this.latestViewUpdate = viewUpdate;
-		this.pacemaker.processViewUpdate(viewUpdate);
 	}
 
 	@Override
