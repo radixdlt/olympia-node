@@ -177,14 +177,20 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 				return Optional.of(preparedVertex);
 			}
 
-			final ImmutableList<PreparedCommand> concatenatedCommands = this.verifier.verifyAndGetExtension(
+			final Optional<ImmutableList<PreparedCommand>> maybeCommands = this.verifier.verifyAndGetExtension(
 				this.currentLedgerHeader.getAccumulatorState(),
 				prevCommands,
 				PreparedCommand::hash,
 				parentAccumulatorState
-			).orElseThrow(() -> new IllegalStateException("Evidence of safety break current: "
-				+ this.currentLedgerHeader.getAccumulatorState() + " prepare head: " + parentAccumulatorState)
 			);
+
+			// TODO: Write a test to get here
+			// Can possibly get here without maliciousness if parent vertex isn't locked by everyone else
+			if (maybeCommands.isEmpty()) {
+				return Optional.empty();
+			}
+
+			final ImmutableList<PreparedCommand> concatenatedCommands = maybeCommands.get();
 
 			final StateComputerResult result = stateComputer.prepare(
 				concatenatedCommands,
