@@ -38,6 +38,7 @@ import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.TypedMocks;
 
@@ -48,6 +49,7 @@ public class RadixEngineStateComputerTest {
 	private Serialization serialization;
 	private RadixEngineStateComputer stateComputer;
 	private RadixEngine<LedgerAtom> radixEngine;
+	private RadixEngineAtomicCommitManager commitManager;
 	private View epochHighView;
 	private ValidatorSetBuilder validatorSetBuilder;
 	private Hasher hasher;
@@ -59,9 +61,11 @@ public class RadixEngineStateComputerTest {
 		this.epochHighView = View.of(100);
 		this.validatorSetBuilder = mock(ValidatorSetBuilder.class);
 		this.hasher = Sha256Hasher.withDefaultSerialization();
+		this.commitManager = mock(RadixEngineAtomicCommitManager.class);
 		this.stateComputer = RadixEngineStateComputer.create(
 			serialization,
 			radixEngine,
+			commitManager,
 			epochHighView,
 			validatorSetBuilder,
 			hasher

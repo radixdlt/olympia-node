@@ -38,6 +38,7 @@ import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.statecomputer.CommittedAtoms;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
+import com.radixdlt.store.LedgerEntryStoreResult;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
 import com.radixdlt.store.LedgerSearchMode;
@@ -49,11 +50,12 @@ import com.radixdlt.store.StoreIndex.LedgerIndexType;
 import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
 import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.utils.Longs;
+import com.sleepycat.je.Transaction;
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.Optional;
 
-public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, CommittedReader {
+public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, CommittedReader, RadixEngineAtomicCommitManager {
 	private final Serialization serialization;
 	private final AtomIndexer atomIndexer;
 	private final LedgerEntryStore store;
@@ -61,6 +63,7 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 	private final ClientAtomToBinaryConverter clientAtomToBinaryConverter;
 	private final CommittedAtomSender committedAtomSender;
 	private final Hasher hasher;
+	private Transaction transaction;
 
 	public interface AtomIndexer {
 		EngineAtomIndices getIndices(LedgerAtom atom);
@@ -84,23 +87,29 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		this.hasher = hasher;
 	}
 
-	private Optional<ClientAtom> getAtomByParticle(Particle particle, boolean isInput) {
+	private boolean getAtomByParticle(Particle particle, boolean isInput) {
 		final byte[] indexableBytes = EngineAtomIndices.toByteArray(
 		isInput ? EngineAtomIndices.IndexType.PARTICLE_DOWN : EngineAtomIndices.IndexType.PARTICLE_UP,
 			Particle.euidOf(particle, hasher)
 		);
-		SearchCursor cursor = store.search(StoreIndex.LedgerIndexType.UNIQUE, new StoreIndex(indexableBytes), LedgerSearchMode.EXACT);
-		if (cursor != null) {
-			return store.get(cursor.get())
-				.flatMap(ledgerEntry ->  {
-					// TODO: Remove serialization/deserialization
-					StoredCommittedCommand committedCommand = commandToBinaryConverter.toCommand(ledgerEntry.getContent());
-					ClientAtom clientAtom = committedCommand.getCommand().map(clientAtomToBinaryConverter::toAtom);
-					return Optional.of(clientAtom);
-				});
-		} else {
-			return Optional.empty();
-		}
+		return store.contains(this.transaction, StoreIndex.LedgerIndexType.UNIQUE, new StoreIndex(indexableBytes), LedgerSearchMode.EXACT);
+	}
+
+	@Override
+	public void startTransaction() {
+		this.transaction = store.createTransaction();
+	}
+
+	@Override
+	public void commitTransaction() {
+		this.transaction.commit();
+		this.transaction = null;
+	}
+
+	@Override
+	public void abortTransction() {
+		this.transaction.abort();
+		this.transaction = null;
 	}
 
 	// TODO: Save proof in a separate index
@@ -123,7 +132,15 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 
 		// TODO: Replace Store + Commit with a single commit
 		// TODO: How it's done depends on how mempool and prepare phases are implemented
-        store.commit(ledgerEntry, engineAtomIndices.getUniqueIndices(), engineAtomIndices.getDuplicateIndices());
+		LedgerEntryStoreResult result = store.execute(
+			this.transaction,
+			ledgerEntry,
+			engineAtomIndices.getUniqueIndices(),
+			engineAtomIndices.getDuplicateIndices()
+		);
+		if (!result.isSuccess()) {
+			throw new IllegalStateException("Unable to store atom");
+		}
 
 		final ImmutableSet<EUID> indicies = engineAtomIndices.getDuplicateIndices().stream()
 			.filter(e -> e.getPrefix() == EngineAtomIndices.IndexType.DESTINATION.getValue())
@@ -216,9 +233,9 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 
 	@Override
 	public Spin getSpin(Particle particle) {
-		if (getAtomByParticle(particle, true).isPresent()) {
+		if (getAtomByParticle(particle, true)) {
 			return Spin.DOWN;
-		} else if (getAtomByParticle(particle, false).isPresent()) {
+		} else if (getAtomByParticle(particle, false)) {
 			return Spin.UP;
 		}
 		return Spin.NEUTRAL;

@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.identifiers.AID;
 
 import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
+import com.sleepycat.je.Transaction;
 import java.util.Optional;
 
 /**
@@ -65,7 +66,7 @@ public interface LedgerEntryStoreView {
 	 * @param mode The mode
 	 * @return The resulting ledger cursor
 	 */
-	boolean contains(StoreIndex.LedgerIndexType type, StoreIndex index, LedgerSearchMode mode);
+	boolean contains(Transaction tx, StoreIndex.LedgerIndexType type, StoreIndex index, LedgerSearchMode mode);
 
 	/**
 	 * Retrieve a chunk of {@link LedgerEntry} with state version greater than the given one

@@ -17,6 +17,7 @@
 
 package com.radixdlt.statecomputer;
 
+import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableSet;
@@ -79,6 +80,7 @@ public class RadixEngineModuleTest {
 			when(engineStore.compute(any(), any(), any(), any()))
 				.thenAnswer(inv -> inv.getArgument(1)); // Return initial value
 			bind(new TypeLiteral<EngineStore<LedgerAtom>>() { }).toInstance(engineStore);
+			bind(RadixEngineAtomicCommitManager.class).toInstance(mock(RadixEngineAtomicCommitManager.class));
 		}
 	}
 

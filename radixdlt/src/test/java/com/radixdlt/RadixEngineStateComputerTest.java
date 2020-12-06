@@ -66,6 +66,7 @@ import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.EpochCeilingView;
@@ -132,6 +133,7 @@ public class RadixEngineStateComputerTest {
 				bind(BFTValidatorSet.class).toInstance(validatorSet);
 				bind(Hasher.class).toInstance(Sha256Hasher.withDefaultSerialization());
 				bind(new TypeLiteral<EngineStore<LedgerAtom>>() { }).toInstance(engineStore);
+				bind(RadixEngineAtomicCommitManager.class).toInstance(mock(RadixEngineAtomicCommitManager.class));
 				bindConstant().annotatedWith(Names.named("magic")).to(0);
 				bindConstant().annotatedWith(MinValidators.class).to(1);
 				bindConstant().annotatedWith(MaxValidators.class).to(100);

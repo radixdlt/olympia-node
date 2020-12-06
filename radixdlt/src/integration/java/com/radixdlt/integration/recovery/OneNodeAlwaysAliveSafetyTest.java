@@ -31,6 +31,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.FormedQC;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.EventProcessor;
@@ -47,6 +48,7 @@ import com.radixdlt.integration.distributed.deterministic.SafetyCheckerModule;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.recovery.ModuleForRecoveryTests;
 import com.radixdlt.statecomputer.EpochCeilingView;
+import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.sync.LocalSyncRequest;
 import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.ArrayList;
@@ -61,6 +63,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
 import org.json.JSONObject;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -68,6 +71,7 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+import org.radix.database.DatabaseEnvironment;
 
 @RunWith(Parameterized.class)
 public class OneNodeAlwaysAliveSafetyTest {
@@ -141,6 +145,17 @@ public class OneNodeAlwaysAliveSafetyTest {
 		for (Supplier<Injector> nodeCreator : nodeCreators) {
 			this.nodes.add(nodeCreator.get());
 		}
+	}
+
+	private void stopDatabase(Injector injector) {
+		injector.getInstance(BerkeleyLedgerEntryStore.class).close();
+		injector.getInstance(PersistentSafetyStateStore.class).close();
+		injector.getInstance(DatabaseEnvironment.class).stop();
+	}
+
+	@After
+	public void teardown() {
+		this.nodes.forEach(this::stopDatabase);
 	}
 
 	private Injector createRunner(ECKeyPair ecKeyPair, List<BFTNode> allNodes) {

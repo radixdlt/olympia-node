@@ -32,6 +32,7 @@ import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.middleware2.store.CommittedAtomsStore.AtomIndexer;
 import com.radixdlt.middleware2.store.EngineAtomIndices;
+import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
@@ -49,6 +50,7 @@ public class RadixEngineStoreModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		bind(new TypeLiteral<EngineStore<CommittedAtom>>() { }).to(CommittedAtomsStore.class).in(Scopes.SINGLETON);
+		bind(RadixEngineAtomicCommitManager.class).to(CommittedAtomsStore.class);
 		bind(CommittedReader.class).to(CommittedAtomsStore.class);
 	}
 
