@@ -38,21 +38,20 @@ public class PacemakerState implements PacemakerReducer {
 	private final EventDispatcher<ViewUpdate> viewUpdateSender;
 	private final ProposerElection proposerElection;
 
-	private View currentView = View.genesis();
-	// Highest view in which a commit happened
-	private View highestCommitView = View.genesis();
-	// Last view that we had any kind of quorum for
-	private View lastQuorumView = View.genesis();
+	private View currentView;
+	private HighQC highQC;
 
 	@Inject
 	public PacemakerState(
+		ViewUpdate viewUpdate,
 		ProposerElection proposerElection,
 		EventDispatcher<ViewUpdate> viewUpdateSender
 	) {
 		this.proposerElection = Objects.requireNonNull(proposerElection);
 		this.viewUpdateSender = Objects.requireNonNull(viewUpdateSender);
+		this.highQC = viewUpdate.getHighQC();
+		this.currentView = viewUpdate.getCurrentView();
 	}
-
 
 	@Override
 	public void processQC(HighQC highQC) {
@@ -60,8 +59,7 @@ public class PacemakerState implements PacemakerReducer {
 
 		final View view = highQC.highestQC().getView();
 		if (view.gte(this.currentView)) {
-			this.lastQuorumView = view;
-			this.highestCommitView = highQC.highestCommittedQC().getView();
+			this.highQC = highQC;
 			this.updateView(view.next());
 		} else {
 			log.trace("Ignoring QC for view {}: current view is {}", view, this.currentView);
@@ -80,8 +78,7 @@ public class PacemakerState implements PacemakerReducer {
 		viewUpdateSender.dispatch(
 			ViewUpdate.create(
 				this.currentView,
-				this.lastQuorumView,
-				this.highestCommitView,
+				this.highQC,
 				leader,
 				nextLeader
 			)

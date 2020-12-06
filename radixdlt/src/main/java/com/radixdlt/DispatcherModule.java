@@ -23,11 +23,14 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
+import com.radixdlt.consensus.bft.BFTHighQCUpdate;
+import com.radixdlt.consensus.bft.BFTRebuildUpdate;
+import com.radixdlt.consensus.bft.NoVote;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTUpdate;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.FormedQC;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.ViewUpdate;
@@ -49,6 +52,7 @@ import java.util.Set;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.message.FormattedMessage;
 
 /**
  * Manages dispatching of internal events to a given environment
@@ -58,26 +62,41 @@ public class DispatcherModule extends AbstractModule {
 	private static final Logger logger = LogManager.getLogger();
 	@Override
 	public void configure() {
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<ScheduledLocalTimeout>>() { }, ProcessOnDispatch.class);
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<ScheduledLocalTimeout>>() { });
+		final var scheduledTimeoutKey = new TypeLiteral<EventProcessor<ScheduledLocalTimeout>>() { };
+		Multibinder.newSetBinder(binder(), scheduledTimeoutKey, ProcessOnDispatch.class);
+		Multibinder.newSetBinder(binder(), scheduledTimeoutKey);
 
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<LocalSyncRequest>>() { }, ProcessOnDispatch.class);
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<LocalSyncRequest>>() { });
+		final var syncRequestKey = new TypeLiteral<EventProcessor<LocalSyncRequest>>() { };
+		Multibinder.newSetBinder(binder(), syncRequestKey, ProcessOnDispatch.class);
+		Multibinder.newSetBinder(binder(), syncRequestKey);
 
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<LocalTimeoutOccurrence>>() { }, ProcessOnDispatch.class);
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<LocalTimeoutOccurrence>>() { });
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochLocalTimeoutOccurrence>>() { }, ProcessOnDispatch.class);
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochLocalTimeoutOccurrence>>() { });
+		final var timeoutOccurrenceKey = new TypeLiteral<EventProcessor<LocalTimeoutOccurrence>>() { };
+		Multibinder.newSetBinder(binder(), timeoutOccurrenceKey, ProcessOnDispatch.class);
+		Multibinder.newSetBinder(binder(), timeoutOccurrenceKey);
+		final var epochTimeoutOccurrenceKey = new TypeLiteral<EventProcessor<EpochLocalTimeoutOccurrence>>() { };
+		Multibinder.newSetBinder(binder(), epochTimeoutOccurrenceKey, ProcessOnDispatch.class);
+		Multibinder.newSetBinder(binder(), epochTimeoutOccurrenceKey);
 
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<ViewUpdate>>() { }, ProcessOnDispatch.class);
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<ViewUpdate>>() { });
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochViewUpdate>>() { }, ProcessOnDispatch.class);
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochViewUpdate>>() { });
+		final var viewUpdateKey = new TypeLiteral<EventProcessor<ViewUpdate>>() { };
+		Multibinder.newSetBinder(binder(), viewUpdateKey, ProcessOnDispatch.class);
+		Multibinder.newSetBinder(binder(), viewUpdateKey);
+		final var epochViewUpdateKey = new TypeLiteral<EventProcessor<EpochViewUpdate>>() { };
+		Multibinder.newSetBinder(binder(), epochViewUpdateKey, ProcessOnDispatch.class);
+		Multibinder.newSetBinder(binder(), epochViewUpdateKey);
 
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<BFTCommittedUpdate>>() { });
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<BFTCommittedUpdate>>() { }, ProcessOnDispatch.class);
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<FormedQC>>() { }, ProcessOnDispatch.class);
-		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<Vote>>() { }, ProcessOnDispatch.class);
+		final var insertUpdateKey = new TypeLiteral<EventProcessor<BFTInsertUpdate>>() { };
+		Multibinder.newSetBinder(binder(), insertUpdateKey, ProcessOnDispatch.class);
+		final var highQcUpdateKey = new TypeLiteral<EventProcessor<BFTHighQCUpdate>>() { };
+		Multibinder.newSetBinder(binder(), highQcUpdateKey, ProcessOnDispatch.class);
+		Multibinder.newSetBinder(binder(), highQcUpdateKey);
+		final var committedUpdateKey = new TypeLiteral<EventProcessor<BFTCommittedUpdate>>() { };
+		Multibinder.newSetBinder(binder(), committedUpdateKey);
+		Multibinder.newSetBinder(binder(), committedUpdateKey, ProcessOnDispatch.class);
+
+		final var formQcKey = new TypeLiteral<EventProcessor<FormedQC>>() { };
+		Multibinder.newSetBinder(binder(), formQcKey, ProcessOnDispatch.class);
+		final var voteKey = new TypeLiteral<EventProcessor<Vote>>() { };
+		Multibinder.newSetBinder(binder(), voteKey, ProcessOnDispatch.class);
 	}
 
 	@Provides
@@ -137,11 +156,73 @@ public class DispatcherModule extends AbstractModule {
 	}
 
 	@Provides
-	private EventDispatcher<BFTUpdate> viewEventDispatcher(
+	private EventDispatcher<BFTInsertUpdate> viewEventDispatcher(
+		@ProcessOnDispatch Set<EventProcessor<BFTInsertUpdate>> processors,
+		Environment environment,
+		SystemCounters systemCounters
+	) {
+		EventDispatcher<BFTInsertUpdate> dispatcher = environment.getDispatcher(BFTInsertUpdate.class);
+		return update -> {
+			if (update.getSiblingsCount() > 1) {
+				systemCounters.increment(CounterType.BFT_VERTEX_STORE_FORKS);
+			}
+			if (!update.getInserted().getVertex().hasDirectParent()) {
+				systemCounters.increment(CounterType.BFT_INDIRECT_PARENT);
+			}
+			systemCounters.set(CounterType.BFT_VERTEX_STORE_SIZE, update.getVertexStoreSize());
+			dispatcher.dispatch(update);
+			processors.forEach(p -> p.process(update));
+		};
+	}
+
+	@Provides
+	private EventDispatcher<BFTRebuildUpdate> bftRebuildUpdateEventDispatcher(
+		Environment environment,
+		SystemCounters systemCounters
+	) {
+		EventDispatcher<BFTRebuildUpdate> dispatcher = environment.getDispatcher(BFTRebuildUpdate.class);
+		return update -> {
+			systemCounters.set(CounterType.BFT_VERTEX_STORE_SIZE, update.getVertexStoreState().getVertices().size());
+			dispatcher.dispatch(update);
+		};
+	}
+
+	@Provides
+	private EventDispatcher<BFTHighQCUpdate> bftHighQCUpdateEventDispatcher(
+		@ProcessOnDispatch Set<EventProcessor<BFTHighQCUpdate>> processors,
 		Environment environment
 	) {
-		return environment.getDispatcher(BFTUpdate.class);
+		EventDispatcher<BFTHighQCUpdate> dispatcher = environment.getDispatcher(BFTHighQCUpdate.class);
+		return update -> {
+			dispatcher.dispatch(update);
+			processors.forEach(p -> p.process(update));
+		};
 	}
+
+	@Provides
+	private EventDispatcher<BFTCommittedUpdate> committedUpdateEventDispatcher(
+		@ProcessOnDispatch Set<EventProcessor<BFTCommittedUpdate>> processors,
+		Set<EventProcessor<BFTCommittedUpdate>> asyncProcessors,
+		Environment environment,
+		SystemCounters systemCounters
+	) {
+		if (asyncProcessors.isEmpty()) {
+			return commit -> {
+				systemCounters.add(CounterType.BFT_PROCESSED, commit.getCommitted().size());
+				systemCounters.set(CounterType.BFT_VERTEX_STORE_SIZE, commit.getVertexStoreSize());
+				processors.forEach(e -> e.process(commit));
+			};
+		} else {
+			EventDispatcher<BFTCommittedUpdate> dispatcher = environment.getDispatcher(BFTCommittedUpdate.class);
+			return commit -> {
+				systemCounters.add(CounterType.BFT_PROCESSED, commit.getCommitted().size());
+				systemCounters.set(CounterType.BFT_VERTEX_STORE_SIZE, commit.getVertexStoreSize());
+				processors.forEach(e -> e.process(commit));
+				dispatcher.dispatch(commit);
+			};
+		}
+	}
+
 
 	@Provides
 	private EventDispatcher<LocalTimeoutOccurrence> localConsensusTimeoutDispatcher(
@@ -182,23 +263,6 @@ public class DispatcherModule extends AbstractModule {
 	}
 
 	@Provides
-	private EventDispatcher<BFTCommittedUpdate> committedUpdateEventDispatcher(
-		@ProcessOnDispatch Set<EventProcessor<BFTCommittedUpdate>> processors,
-		Set<EventProcessor<BFTCommittedUpdate>> asyncProcessors,
-		Environment environment
-	) {
-		if (asyncProcessors.isEmpty()) {
-			return commit -> processors.forEach(e -> e.process(commit));
-		} else {
-			EventDispatcher<BFTCommittedUpdate> dispatcher = environment.getDispatcher(BFTCommittedUpdate.class);
-			return commit -> {
-				processors.forEach(e -> e.process(commit));
-				dispatcher.dispatch(commit);
-			};
-		}
-	}
-
-	@Provides
 	private RemoteEventDispatcher<Vote> voteDispatcher(
 		@ProcessOnDispatch Set<EventProcessor<Vote>> processors,
 		Environment environment
@@ -208,6 +272,17 @@ public class DispatcherModule extends AbstractModule {
 			logger.trace("Vote sending to {}: {}", node, vote);
 			processors.forEach(e -> e.process(vote));
 			dispatcher.dispatch(node, vote);
+		};
+	}
+
+	@Provides
+	private EventDispatcher<NoVote> noVoteDispatcher(
+		Environment environment,
+		SystemCounters systemCounters
+	) {
+		return (noVote) -> {
+			systemCounters.increment(CounterType.BFT_REJECTED);
+			logger.warn(() -> new FormattedMessage("Proposal: Rejected {}", noVote.getVertex()));
 		};
 	}
 

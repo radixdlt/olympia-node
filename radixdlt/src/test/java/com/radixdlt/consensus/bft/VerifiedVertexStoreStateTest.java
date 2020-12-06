@@ -17,30 +17,16 @@
 
 package com.radixdlt.consensus.bft;
 
-import java.util.Objects;
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
 
-/**
- * An update to the BFT state
- */
-public final class BFTUpdate {
-	private final VerifiedVertex insertedVertex;
-	private final int vertexStoreSize;
-
-	public BFTUpdate(VerifiedVertex insertedVertex, int vertexStoreSize) {
-		this.insertedVertex = Objects.requireNonNull(insertedVertex);
-		this.vertexStoreSize = vertexStoreSize;
-	}
-
-	public int getVertexStoreSize() {
-		return vertexStoreSize;
-	}
-
-	public VerifiedVertex getInsertedVertex() {
-		return insertedVertex;
-	}
-
-	@Override
-	public String toString() {
-		return String.format("%s[%s]", getClass().getSimpleName(), this.insertedVertex);
+public class VerifiedVertexStoreStateTest {
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(VerifiedVertexStoreState.class)
+			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+			.verify();
 	}
 }

@@ -68,7 +68,7 @@ public class BFTEventVerifierTest {
 
 	@Test
 	public void when_process_local_sync__then_should_be_forwarded() {
-		BFTUpdate update = mock(BFTUpdate.class);
+		BFTInsertUpdate update = mock(BFTInsertUpdate.class);
 		eventVerifier.processBFTUpdate(update);
 		verify(forwardTo, times(1)).processBFTUpdate(update);
 	}

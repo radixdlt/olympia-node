@@ -25,7 +25,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.Proposal;
@@ -37,7 +36,6 @@ import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTSyncer.SyncResult;
-import com.radixdlt.consensus.bft.SyncQueues.SyncQueue;
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
@@ -70,7 +68,7 @@ public class BFTEventPreprocessorTest {
 			forwardTo,
 			vertexStoreSync,
 			syncQueues,
-			ViewUpdate.create(View.genesis().next(), View.genesis(), View.genesis(), self, BFTNode.random())
+			ViewUpdate.create(View.genesis().next(), mock(HighQC.class), self, BFTNode.random())
 		);
 	}
 
@@ -196,17 +194,5 @@ public class BFTEventPreprocessorTest {
 		preprocessor.processProposal(proposal);
 		verify(syncQueues, never()).add(any());
 		verify(forwardTo, times(1)).processProposal(eq(proposal));
-	}
-
-	@Test
-	public void when_bft_update__then_pending_events_processed() {
-		BFTUpdate bftUpdate = mock(BFTUpdate.class);
-		VerifiedVertex verifiedVertex = mock(VerifiedVertex.class);
-		HashCode hash = mock(HashCode.class);
-		when(bftUpdate.getInsertedVertex()).thenReturn(verifiedVertex);
-		when(verifiedVertex.getId()).thenReturn(hash);
-		when(this.syncQueues.getQueues()).thenReturn(ImmutableList.of(mock(SyncQueue.class)));
-		preprocessor.processBFTUpdate(bftUpdate);
-		verify(syncQueues, times(1)).getQueues();
 	}
 }

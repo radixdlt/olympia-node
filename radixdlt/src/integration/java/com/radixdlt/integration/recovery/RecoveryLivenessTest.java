@@ -43,6 +43,7 @@ import com.radixdlt.environment.deterministic.DeterministicSavedLastEvent;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
+import com.radixdlt.environment.deterministic.network.MessageQueue;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.integration.distributed.deterministic.NodeEvents;
 import com.radixdlt.integration.distributed.deterministic.NodeEventsModule;
@@ -57,6 +58,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -67,7 +69,6 @@ import org.apache.logging.log4j.ThreadContext;
 import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -77,19 +78,17 @@ import org.junit.runners.Parameterized.Parameters;
 import org.radix.database.DatabaseEnvironment;
 
 /**
- * Given that one validator is always alive means that that validator will
- * always have the latest committed vertex which the validator can sync
- * others with.
+ * Various liveness+recovery tests
  */
 @RunWith(Parameterized.class)
-public class OneNodeAlwaysAliveLivenessTest {
+public class RecoveryLivenessTest {
 	private static final Logger logger = LogManager.getLogger();
 
 	@Parameters
 	public static Collection<Object[]> numNodes() {
 		return List.of(new Object[][] {
-			{2, 88L}, {3, 88L}, {4, 88L},
-			{2, 1L}
+			{1, 88L}, {2, 88L}, {3, 88L}, {4, 88L},
+			{2, 1L}, {10, 100L}
 		});
 	}
 
@@ -101,21 +100,23 @@ public class OneNodeAlwaysAliveLivenessTest {
 	private List<Injector> nodes = new ArrayList<>();
 	private final List<ECKeyPair> nodeKeys;
 	private final long epochCeilingView;
+	private MessageMutator messageMutator;
 
 	@Inject
 	private NodeEvents nodeEvents;
 
-	public OneNodeAlwaysAliveLivenessTest(int numNodes, long epochCeilingView) {
+	public RecoveryLivenessTest(int numNodes, long epochCeilingView) {
 		this.nodeKeys = Stream.generate(ECKeyPair::generateNew).limit(numNodes).collect(Collectors.toList());
 		this.epochCeilingView = epochCeilingView;
 	}
 
 	@Before
 	public void setup() {
+		this.messageMutator = MessageMutator.nothing();
 		this.network = new DeterministicNetwork(
 			nodeKeys.stream().map(k -> BFTNode.create(k.getPublicKey())).collect(Collectors.toList()),
 			MessageSelector.firstSelector(),
-			MessageMutator.nothing()
+			this::mutate
 		);
 
 		List<BFTNode> allNodes = nodeKeys.stream()
@@ -140,6 +141,16 @@ public class OneNodeAlwaysAliveLivenessTest {
 			this.nodes.add(nodeCreator.get());
 		}
 		this.nodes.forEach(i -> i.getInstance(DeterministicEpochsConsensusProcessor.class).start());
+	}
+
+	boolean mutate(ControlledMessage message, MessageQueue queue) {
+		return messageMutator.mutate(message, queue);
+	}
+
+	private void stopDatabase(Injector injector) {
+		injector.getInstance(BerkeleyLedgerEntryStore.class).close();
+		injector.getInstance(PersistentSafetyStateStore.class).close();
+		injector.getInstance(DatabaseEnvironment.class).stop();
 	}
 
 	@After
@@ -196,46 +207,150 @@ public class OneNodeAlwaysAliveLivenessTest {
 		}
 	}
 
+	private Timed<ControlledMessage> processNext() {
+		Timed<ControlledMessage> msg = this.network.nextMessage();
+		logger.debug("Processing message {}", msg);
+
+		int nodeIndex = msg.value().channelId().receiverIndex();
+		Injector injector = this.nodes.get(nodeIndex);
+		String bftNode = " " + injector.getInstance(Key.get(BFTNode.class, Self.class));
+		ThreadContext.put("bftNode", bftNode);
+		try {
+			injector.getInstance(DeterministicEpochsConsensusProcessor.class).handleMessage(msg.value().origin(), msg.value().message());
+		} finally {
+			ThreadContext.remove("bftNode");
+		}
+
+		return msg;
+	}
+
+	private Optional<EpochView> lastCommitViewEmitted() {
+		return network.allMessages().stream()
+			.filter(msg -> msg.message() instanceof EpochViewUpdate)
+			.map(msg -> (EpochViewUpdate) msg.message())
+			.map(e -> new EpochView(e.getEpoch(), e.getViewUpdate().getHighQC().highestCommittedQC().getView()))
+			.max(Comparator.naturalOrder());
+	}
+
+	private EpochView latestEpochView() {
+		final var lastEventKey = Key.get(new TypeLiteral<DeterministicSavedLastEvent<EpochViewUpdate>>() { });
+		return this.nodes.stream()
+			.map(i -> i.getInstance(lastEventKey).getLastEvent())
+			.map(e -> e == null ? new EpochView(0, View.genesis()) : e.getEpochView())
+			.max(Comparator.naturalOrder()).orElse(new EpochView(0, View.genesis()));
+	}
+
+	private int processUntilNextCommittedEmitted(int maxSteps) {
+		EpochView lastCommitted = this.lastCommitViewEmitted().orElse(new EpochView(0, View.genesis()));
+		int count = 0;
+		int senderIndex;
+		do {
+			if (count > maxSteps) {
+				throw new IllegalStateException("Already lost liveness");
+			}
+
+			Timed<ControlledMessage> msg = processNext();
+			senderIndex = msg.value().channelId().senderIndex();
+			count++;
+		} while (this.lastCommitViewEmitted().stream().noneMatch(v -> v.compareTo(lastCommitted) > 0));
+
+		return senderIndex;
+	}
+
 	private void processForCount(int messageCount) {
 		for (int i = 0; i < messageCount; i++) {
-			Timed<ControlledMessage> msg = this.network.nextMessage();
-
-			Injector injector = this.nodes.get(msg.value().channelId().receiverIndex());
-			String bftNode = " " + injector.getInstance(Key.get(BFTNode.class, Self.class));
-			ThreadContext.put("bftNode", bftNode);
-			try {
-				logger.debug("Processing message {}", msg);
-				injector.getInstance(DeterministicEpochsConsensusProcessor.class).handleMessage(msg.value().origin(), msg.value().message());
-			} finally {
-				ThreadContext.remove("bftNode");
-			}
+			processNext();
 		}
 	}
 
-	private void stopDatabase(Injector injector) {
-		injector.getInstance(BerkeleyLedgerEntryStore.class).close();
-		injector.getInstance(PersistentSafetyStateStore.class).close();
-		injector.getInstance(DatabaseEnvironment.class).stop();
-	}
-
+	/**
+	 * Given that one validator is always alive means that that validator will
+	 * always have the latest committed vertex which the validator can sync
+	 * others with.
+	 */
 	@Test
-	@Ignore("This fails occasionally (determinism broken: RPNV1-822) due to liveness recovery not being totally implemented: RPNV1-771")
-	public void all_nodes_except_for_one_need_to_restart_should_be_able_to_reboot_correctly_and_liveness_not_broken() {
-		EpochView epochView = this.nodes.get(0).getInstance(Key.get(new TypeLiteral<DeterministicSavedLastEvent<EpochViewUpdate>>() { }))
-			.getLastEvent().getEpochView();
+	public void liveness_check_when_restart_all_but_one_node() {
+		EpochView epochView = this.latestEpochView();
 
 		for (int restart = 0; restart < 5; restart++) {
 			processForCount(5000);
 
-			EpochView nextEpochView = this.nodes.stream()
-				.map(i -> i.getInstance(Key.get(new TypeLiteral<DeterministicSavedLastEvent<EpochViewUpdate>>() { })).getLastEvent())
-				.map(EpochViewUpdate::getEpochView)
-				.max(Comparator.naturalOrder()).orElse(new EpochView(0, View.genesis()));
+			EpochView nextEpochView = latestEpochView();
 			assertThat(nextEpochView).isGreaterThan(epochView);
 			epochView = nextEpochView;
 
 			logger.info("Restarting " + restart);
 			for (int nodeIndex = 1; nodeIndex < nodes.size(); nodeIndex++) {
+				restartNode(nodeIndex);
+			}
+		}
+	}
+
+	@Test
+	public void liveness_check_when_restart_node_on_view_update_with_commit() {
+		EpochView epochView = this.latestEpochView();
+
+		for (int restart = 0; restart < 5; restart++) {
+			processForCount(5000);
+
+			EpochView nextEpochView = latestEpochView();
+			assertThat(nextEpochView).isGreaterThan(epochView);
+			epochView = nextEpochView;
+
+			int nodeToRestart = processUntilNextCommittedEmitted(5000);
+
+			logger.info("Restarting " + restart);
+			for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
+				if (nodeIndex != (nodeToRestart + 1) % nodes.size()) {
+					restartNode(nodeIndex);
+				}
+			}
+		}
+	}
+
+	@Test
+	public void liveness_check_when_restart_all_nodes() {
+		EpochView epochView = this.latestEpochView();
+
+		for (int restart = 0; restart < 5; restart++) {
+			processForCount(5000);
+
+			EpochView nextEpochView = latestEpochView();
+			assertThat(nextEpochView).isGreaterThan(epochView);
+			epochView = nextEpochView;
+
+			logger.info("Restarting " + restart);
+			for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
+				restartNode(nodeIndex);
+			}
+		}
+	}
+
+	/**
+	 * This test tests for recovery when there is a vertex chain > 3 due to timeouts.
+	 * Probably won't be an issue once timeout certificates implemented.
+	 */
+	@Test
+	public void liveness_check_when_restart_all_nodes_and_f_nodes_down() {
+		int f = (nodes.size()  - 1) / 3;
+		if (f <= 0) {
+			// if f <= 0, this is equivalent to liveness_check_when_restart_all_nodes();
+			return;
+		}
+
+		this.messageMutator = (message, queue) -> message.channelId().receiverIndex() < f || message.channelId().senderIndex() < f;
+
+		EpochView epochView = this.latestEpochView();
+
+		for (int restart = 0; restart < 5; restart++) {
+			processForCount(5000);
+
+			EpochView nextEpochView = latestEpochView();
+			assertThat(nextEpochView).isGreaterThan(epochView);
+			epochView = nextEpochView;
+
+			logger.info("Restarting " + restart);
+			for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++) {
 				restartNode(nodeIndex);
 			}
 		}

@@ -42,18 +42,24 @@ import com.radixdlt.LedgerModule;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.HashSigner;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.bft.BFTHighQCUpdate;
+import com.radixdlt.consensus.bft.BFTRebuildUpdate;
+import com.radixdlt.consensus.bft.NoVote;
+import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
-import com.radixdlt.consensus.bft.BFTUpdate;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.FormedQC;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
+import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.ViewUpdate;
@@ -139,7 +145,9 @@ public class EpochManagerTest {
 				bind(HashSigner.class).toInstance(ecKeyPair::sign);
 				bind(BFTNode.class).annotatedWith(Self.class).toInstance(self);
 				bind(new TypeLiteral<EventDispatcher<LocalTimeoutOccurrence>>() { }).toInstance(rmock(EventDispatcher.class));
-				bind(new TypeLiteral<EventDispatcher<BFTUpdate>>() { }).toInstance(rmock(EventDispatcher.class));
+				bind(new TypeLiteral<EventDispatcher<BFTInsertUpdate>>() { }).toInstance(rmock(EventDispatcher.class));
+				bind(new TypeLiteral<EventDispatcher<BFTRebuildUpdate>>() { }).toInstance(rmock(EventDispatcher.class));
+				bind(new TypeLiteral<EventDispatcher<BFTHighQCUpdate>>() { }).toInstance(rmock(EventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<BFTCommittedUpdate>>() { }).toInstance(rmock(EventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<EpochLocalTimeoutOccurrence>>() { }).toInstance(rmock(EventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<EpochView>>() { }).toInstance(rmock(EventDispatcher.class));
@@ -147,6 +155,7 @@ public class EpochManagerTest {
 				bind(new TypeLiteral<EventDispatcher<FormedQC>>() { }).toInstance(rmock(EventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<EpochViewUpdate>>() { }).toInstance(rmock(EventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<ViewUpdate>>() { }).toInstance(rmock(EventDispatcher.class));
+				bind(new TypeLiteral<EventDispatcher<NoVote>>() { }).toInstance(rmock(EventDispatcher.class));
 				bind(new TypeLiteral<ScheduledEventDispatcher<LocalGetVerticesRequest>>() { }).toInstance(timeoutScheduler);
 				bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledLocalTimeout>>() { }).toInstance(rmock(ScheduledEventDispatcher.class));
 				bind(new TypeLiteral<RemoteEventDispatcher<Vote>>() { }).toInstance(voteDispatcher);
@@ -163,6 +172,7 @@ public class EpochManagerTest {
 				bind(LedgerUpdateSender.class).toInstance(ledgerUpdateSender);
 				bind(Mempool.class).toInstance(mempool);
 				bind(StateComputer.class).toInstance(stateComputer);
+				bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
 				bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(50);
 				bindConstant().annotatedWith(PacemakerTimeout.class).to(10L);
 				bindConstant().annotatedWith(PacemakerRate.class).to(2.0);
@@ -170,6 +180,15 @@ public class EpochManagerTest {
 				bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
 
 				bind(new TypeLiteral<Consumer<EpochViewUpdate>>() { }).toInstance(rmock(Consumer.class));
+			}
+
+			@Provides
+			private ViewUpdate view(
+				BFTConfiguration bftConfiguration
+			) {
+				HighQC highQC = bftConfiguration.getVertexStoreState().getHighQC();
+				View view = highQC.highestQC().getView().next();
+				return ViewUpdate.create(view, highQC, self, self);
 			}
 
 			@Provides
@@ -195,10 +214,11 @@ public class EpochManagerTest {
 					LedgerHeader.genesis(HashUtils.zero256(), validatorSet)
 				);
 				VerifiedVertex verifiedVertex = new VerifiedVertex(unverifiedVertex, hasher.hash(unverifiedVertex));
+
+				QuorumCertificate qc = QuorumCertificate.ofGenesis(verifiedVertex, LedgerHeader.genesis(HashUtils.zero256(), validatorSet));
 				return new BFTConfiguration(
 					validatorSet,
-					verifiedVertex,
-					QuorumCertificate.ofGenesis(verifiedVertex, LedgerHeader.genesis(HashUtils.zero256(), validatorSet))
+					VerifiedVertexStoreState.create(HighQC.from(qc), verifiedVertex)
 				);
 			}
 		};
@@ -230,7 +250,10 @@ public class EpochManagerTest {
 			header.timestamp()
 		);
 		QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
-		BFTConfiguration bftConfiguration = new BFTConfiguration(nextValidatorSet, verifiedGenesisVertex, genesisQC);
+		BFTConfiguration bftConfiguration = new BFTConfiguration(
+			nextValidatorSet,
+			VerifiedVertexStoreState.create(HighQC.from(genesisQC), verifiedGenesisVertex)
+		);
 		VerifiedLedgerHeaderAndProof proof = mock(VerifiedLedgerHeaderAndProof.class);
 		when(proof.getEpoch()).thenReturn(header.getEpoch() + 1);
 		EpochChange epochChange = new EpochChange(proof, bftConfiguration);
@@ -240,7 +263,7 @@ public class EpochManagerTest {
 		epochManager.processLedgerUpdate(epochsLedgerUpdate);
 
 		// Assert
-		verify(proposalBroadcaster, never()).broadcastProposal(any(), any());
+		verify(proposalBroadcaster, never()).broadcastProposal(argThat(p -> p.getEpoch() == epochChange.getEpoch()), any());
 		verify(voteDispatcher, never()).dispatch(any(), any());
 	}
 

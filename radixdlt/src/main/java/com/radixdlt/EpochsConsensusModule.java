@@ -25,9 +25,10 @@ import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
-import com.radixdlt.consensus.bft.BFTUpdate;
+import com.radixdlt.consensus.bft.BFTHighQCUpdate;
+import com.radixdlt.consensus.bft.BFTRebuildUpdate;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.epoch.LocalTimeoutSender;
@@ -84,8 +85,13 @@ public class EpochsConsensusModule extends AbstractModule {
 	}
 
 	@Provides
-	private EventProcessor<BFTUpdate> bftUpdateProcessor(EpochManager epochManager) {
+	private EventProcessor<BFTInsertUpdate> bftUpdateProcessor(EpochManager epochManager) {
 		return epochManager::processBFTUpdate;
+	}
+
+	@Provides
+	private EventProcessor<BFTRebuildUpdate> bftRebuildUpdateEventProcessor(EpochManager epochManager) {
+		return epochManager.bftRebuildUpdateEventProcessor();
 	}
 
 	@Provides
@@ -144,8 +150,8 @@ public class EpochsConsensusModule extends AbstractModule {
 	private PacemakerStateFactory pacemakerStateFactory(
 		EventDispatcher<EpochViewUpdate> epochViewUpdateEventDispatcher
 	) {
-		return (epoch, proposerElection) ->
-			new PacemakerState(proposerElection, viewUpdate -> {
+		return (initialView, epoch, proposerElection) ->
+			new PacemakerState(initialView, proposerElection, viewUpdate -> {
 				EpochViewUpdate epochViewUpdate = new EpochViewUpdate(epoch, viewUpdate);
 				epochViewUpdateEventDispatcher.dispatch(epochViewUpdate);
 			});
@@ -215,12 +221,11 @@ public class EpochsConsensusModule extends AbstractModule {
 		SyncVerticesRequestSender requestSender,
 		EventDispatcher<LocalSyncRequest> syncLedgerRequestSender,
 		ScheduledEventDispatcher<LocalGetVerticesRequest> timeoutDispatcher,
-		BFTConfiguration configuration,
 		SystemCounters counters,
 		Random random,
 		@BFTSyncPatienceMillis int bftSyncPatienceMillis
 	) {
-		return (vertexStore, pacemakerState) -> new BFTSync(
+		return (vertexStore, pacemakerState, configuration) -> new BFTSync(
 			vertexStore,
 			pacemakerState,
 			Comparator.comparingLong((LedgerHeader h) -> h.getAccumulatorState().getStateVersion()),
@@ -230,7 +235,7 @@ public class EpochsConsensusModule extends AbstractModule {
 			},
 			syncLedgerRequestSender,
 			timeoutDispatcher,
-			configuration.getGenesisHeader(),
+			configuration.getVertexStoreState().getRootHeader(),
 			random,
 			bftSyncPatienceMillis
 		);
@@ -238,20 +243,19 @@ public class EpochsConsensusModule extends AbstractModule {
 
 	@Provides
 	private VertexStoreFactory vertexStoreFactory(
-		EventDispatcher<BFTUpdate> updateSender,
+		EventDispatcher<BFTInsertUpdate> updateSender,
+		EventDispatcher<BFTRebuildUpdate> rebuildUpdateDispatcher,
+		EventDispatcher<BFTHighQCUpdate> highQCUpdateEventDispatcher,
 		EventDispatcher<BFTCommittedUpdate> committedDispatcher,
-		SystemCounters counters,
-		Ledger ledger,
-		VertexStoreEventSender vertexStoreEventSender
+		Ledger ledger
 	) {
-		return (genesisVertex, genesisQC) -> VertexStore.create(
-			genesisVertex,
-			genesisQC,
+		return vertexStoreState -> VertexStore.create(
+			vertexStoreState,
 			ledger,
 			updateSender,
-			committedDispatcher,
-			vertexStoreEventSender,
-			counters
+			rebuildUpdateDispatcher,
+			highQCUpdateEventDispatcher,
+			committedDispatcher
 		);
 	}
 }

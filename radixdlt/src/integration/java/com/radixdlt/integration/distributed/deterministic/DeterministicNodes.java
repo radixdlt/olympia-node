@@ -88,9 +88,17 @@ public final class DeterministicNodes {
 	}
 
 	public void start() {
-		this.nodeInstances.stream()
-			.map(i -> i.getInstance(DeterministicMessageProcessor.class))
-			.forEach(DeterministicMessageProcessor::start);
+		for (int index = 0; index < this.nodeInstances.size(); index++) {
+			Injector injector = nodeInstances.get(index);
+			DeterministicMessageProcessor processor = injector.getInstance(DeterministicMessageProcessor.class);
+			String bftNode = " " + this.nodeLookup.inverse().get(index);
+			ThreadContext.put("bftNode", bftNode);
+			try {
+				processor.start();
+			} finally {
+				ThreadContext.remove("bftNode");
+			}
+		}
 	}
 
 	public void handleMessage(Timed<ControlledMessage> timedNextMsg) {

@@ -45,9 +45,9 @@ import com.radixdlt.RadixEngineRxModule;
 import com.radixdlt.RxEnvironmentModule;
 import com.radixdlt.SyncServiceModule;
 import com.radixdlt.SyncRunnerModule;
-import com.radixdlt.SystemInfoRxModule;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.consensus.Sha256Hasher;
+import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
@@ -66,7 +66,6 @@ import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.integration.distributed.MockedBFTConfigurationModule;
 import com.radixdlt.integration.distributed.MockedCommandGeneratorModule;
 import com.radixdlt.integration.distributed.MockedCryptoModule;
 import com.radixdlt.integration.distributed.MockedLedgerModule;
@@ -74,6 +73,7 @@ import com.radixdlt.integration.distributed.MockedLedgerUpdateSender;
 import com.radixdlt.integration.distributed.MockedMempoolModule;
 import com.radixdlt.integration.distributed.MockedPersistenceStoreModule;
 import com.radixdlt.integration.distributed.MockedRadixEngineStoreModule;
+import com.radixdlt.integration.distributed.MockedRecoveryModule;
 import com.radixdlt.integration.distributed.MockedStateComputerModule;
 import com.radixdlt.integration.distributed.MockedStateComputerWithEpochsModule;
 import com.radixdlt.integration.distributed.MockedCommittedReaderModule;
@@ -193,8 +193,33 @@ public class SimulationTest {
 				this.hasSync = hasSync;
 			}
 
-			Module getSyncModule() {
+			Module getCoreModule() {
 				List<Module> modules = new ArrayList<>();
+				// Consensus
+				modules.add(new ConsensusModule());
+				modules.add(new ConsensusRxModule());
+				if (!hasEpochs) {
+					modules.add(new MockedConsensusRunnerModule());
+				} else {
+					modules.add(new EpochsConsensusModule());
+					modules.add(new ConsensusRunnerModule());
+				}
+				// Ledger
+				if (!hasLedger) {
+					modules.add(new MockedLedgerModule());
+					modules.add(new MockedLedgerUpdateRxModule());
+				} else {
+					modules.add(new LedgerModule());
+					modules.add(new LedgerRxModule());
+					if (!hasEpochs) {
+						modules.add(new MockedLedgerUpdateRxModule());
+						modules.add(new MockedLedgerUpdateSender());
+					} else {
+						modules.add(new EpochsLedgerUpdateModule());
+						modules.add(new EpochsLedgerUpdateRxModule());
+					}
+				}
+				// Sync
 				if (hasLedger) {
 					if (!hasSync) {
 						modules.add(new MockedSyncServiceModule());
@@ -468,23 +493,20 @@ public class SimulationTest {
 		}
 
 		public Builder checkConsensusLiveness(String invariantName) {
-			this.checksBuilder.put(invariantName, nodes -> new LivenessInvariant(8 * SimulationNetwork.DEFAULT_LATENCY, TimeUnit.MILLISECONDS));
+			this.checksBuilder.put(
+				invariantName,
+				nodes -> new LivenessInvariant(nodeEvents, 8 * SimulationNetwork.DEFAULT_LATENCY, TimeUnit.MILLISECONDS)
+			);
 			return this;
 		}
 
 		public Builder checkConsensusLiveness(String invariantName, long duration, TimeUnit timeUnit) {
-			this.checksBuilder.put(invariantName, nodes -> new LivenessInvariant(duration, timeUnit));
+			this.checksBuilder.put(invariantName, nodes -> new LivenessInvariant(nodeEvents, duration, timeUnit));
 			return this;
 		}
 
 		public Builder checkConsensusSafety(String invariantName) {
-			this.modules.add(new AbstractModule() {
-				@ProvidesIntoSet
-				@ProcessOnDispatch
-				private EventProcessor<BFTCommittedUpdate> committedProcessor(@Self BFTNode node) {
-					return nodeEvents.processor(node, BFTCommittedUpdate.class);
-				}
-			});
+
 			this.checksBuilder.put(invariantName, nodes -> new SafetyInvariant(nodeEvents));
 			return this;
 		}
@@ -565,44 +587,28 @@ public class SimulationTest {
 					bindConstant().annotatedWith(PacemakerRate.class).to(2.0);
 					bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0); // Use constant timeout for now
 				}
+
+				@ProvidesIntoSet
+				@ProcessOnDispatch
+				private EventProcessor<BFTCommittedUpdate> committedProcessor(@Self BFTNode node) {
+					return nodeEvents.processor(node, BFTCommittedUpdate.class);
+				}
+
+				@ProvidesIntoSet
+				@ProcessOnDispatch
+				private EventProcessor<BFTHighQCUpdate> highQCProcessor(@Self BFTNode node) {
+					return nodeEvents.processor(node, BFTHighQCUpdate.class);
+				}
 			});
 			modules.add(new MockedSystemModule());
 			modules.add(new NoFeeModule());
 			modules.add(new MockedCryptoModule());
-			modules.add(new SystemInfoRxModule());
 			modules.add(new DispatcherModule());
 			modules.add(new RxEnvironmentModule());
 			modules.add(new MockedPersistenceStoreModule());
+			modules.add(new MockedRecoveryModule());
 
-			// Consensus
-			modules.add(new ConsensusModule());
-			modules.add(new ConsensusRxModule());
-			if (!ledgerType.hasEpochs) {
-				modules.add(new MockedConsensusRunnerModule());
-			} else {
-				modules.add(new EpochsConsensusModule());
-				modules.add(new ConsensusRunnerModule());
-			}
-
-			// Ledger
-			if (!ledgerType.hasLedger) {
-				modules.add(new MockedBFTConfigurationModule());
-				modules.add(new MockedLedgerModule());
-				modules.add(new MockedLedgerUpdateRxModule());
-			} else {
-				modules.add(new LedgerModule());
-				modules.add(new LedgerRxModule());
-				if (!ledgerType.hasEpochs) {
-					modules.add(new MockedLedgerUpdateRxModule());
-					modules.add(new MockedLedgerUpdateSender());
-				} else {
-					modules.add(new EpochsLedgerUpdateModule());
-					modules.add(new EpochsLedgerUpdateRxModule());
-				}
-			}
-
-			// Sync
-			modules.add(ledgerType.getSyncModule());
+			modules.add(ledgerType.getCoreModule());
 
 			if (ledgerType == LedgerType.LEDGER) {
 				modules.add(new MockedCommandGeneratorModule());

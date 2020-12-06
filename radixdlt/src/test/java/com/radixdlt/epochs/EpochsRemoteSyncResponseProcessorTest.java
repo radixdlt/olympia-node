@@ -51,7 +51,7 @@ public class EpochsRemoteSyncResponseProcessorTest {
 	private RemoteSyncResponseValidatorSetVerifier initialVerifier;
 	private EpochChange initialEpoch;
 	private VerifiedLedgerHeaderAndProof currentHeader;
-	private Function<BFTConfiguration, RemoteSyncResponseValidatorSetVerifier> verifierFactory;
+	private Function<EpochChange, RemoteSyncResponseValidatorSetVerifier> verifierFactory;
 
 	@Before
 	public void setup() {

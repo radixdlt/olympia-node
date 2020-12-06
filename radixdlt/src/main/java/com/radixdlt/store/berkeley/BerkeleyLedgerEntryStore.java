@@ -23,11 +23,14 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.UnsignedBytes;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import com.radixdlt.consensus.bft.PersistentVertexStore;
+import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
 import com.radixdlt.store.StoreIndex.LedgerIndexType;
 import com.radixdlt.store.LedgerSearchMode;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.LedgerEntry;
@@ -54,9 +57,8 @@ import com.sleepycat.je.UniqueConstraintException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.database.DatabaseEnvironment;
-import org.xerial.snappy.Snappy;
 
-import java.io.IOException;
+import java.text.MessageFormat;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.Objects;
@@ -69,7 +71,7 @@ import java.util.stream.Collectors;
 import static com.radixdlt.store.berkeley.LedgerEntryIndices.ENTRY_INDEX_PREFIX;
 
 @Singleton
-public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
+public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVertexStore {
 	private static final Logger log = LogManager.getLogger();
 
 	private static final String ATOM_INDICES_DB_NAME = "tempo2.atom_indices";
@@ -224,7 +226,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 			DatabaseEntry value = new DatabaseEntry();
 
 			if (this.uniqueIndices.get(null, key, value, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-				return Optional.of(decode(value.getData(), LedgerEntry.class));
+				return Optional.of(serialization.fromDson(value.getData(), LedgerEntry.class));
 			}
 		} catch (Exception e) {
 			fail("Get of atom '" + aid + "' failed", e);
@@ -234,12 +236,14 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 	}
 
 	@Override
-	public void commit(LedgerEntry ledgerEntry, Set<StoreIndex> uniqueIndices, Set<StoreIndex> duplicateIndices) {
+	public void commit(LedgerEntry atom, Set<StoreIndex> uniqueIndices, Set<StoreIndex> duplicateIndices) {
 		Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);
-		LedgerEntryIndices indices = LedgerEntryIndices.from(ledgerEntry, uniqueIndices, duplicateIndices);
+
+		LedgerEntryIndices indices = LedgerEntryIndices.from(atom, uniqueIndices, duplicateIndices);
+		byte[] atomData = serialization.toDson(atom, Output.PERSIST);
 
 		try {
-			LedgerEntryStoreResult result = doStore(PREFIX_COMMITTED, ledgerEntry, indices, transaction);
+			LedgerEntryStoreResult result = doStore(PREFIX_COMMITTED, atom.getStateVersion(), atom.getAID(), atomData, indices, transaction);
 			if (result.isSuccess()) {
 				transaction.commit();
 			}
@@ -278,15 +282,49 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 		}
 	}
 
-	private LedgerEntryStoreResult doStore(
-			byte prefix,
-			LedgerEntry ledgerEntry,
-			LedgerEntryIndices indices,
-			Transaction transaction) throws IOException {
-		byte[] ledgerEntryData = encode(ledgerEntry);
-		log.trace("Storing atom {} with size {}", ledgerEntry.getAID(), ledgerEntryData.length);
+	public Optional<SerializedVertexStoreState> loadLastVertexStoreState() {
+		try (Cursor cursor = this.pendingDatabase.openCursor(null, null)) {
+			DatabaseEntry pKey = new DatabaseEntry();
+			DatabaseEntry value = new DatabaseEntry();
+			OperationStatus status = cursor.getLast(pKey, value, LockMode.DEFAULT);
+			if (status == OperationStatus.SUCCESS) {
+				try {
+					SerializedVertexStoreState serializedVertexWithQC = serialization.fromDson(value.getData(), SerializedVertexStoreState.class);
+					return Optional.of(serializedVertexWithQC);
+				} catch (DeserializeException e) {
+					throw new IllegalStateException(e);
+				}
+			} else {
+				return Optional.empty();
+			}
+		}
+	}
 
-		return doStore(prefix, ledgerEntry.getStateVersion(), ledgerEntry.getAID(), ledgerEntryData, indices, transaction);
+	@Override
+	public void save(VerifiedVertexStoreState vertexStoreState) {
+		Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);
+		try (Cursor cursor = this.pendingDatabase.openCursor(transaction, null)) {
+			DatabaseEntry pKey = new DatabaseEntry();
+			DatabaseEntry value = new DatabaseEntry();
+			OperationStatus status = cursor.getLast(pKey, value, LockMode.DEFAULT);
+			if (status == OperationStatus.SUCCESS) {
+				this.pendingDatabase.delete(transaction, pKey);
+			}
+		} catch (Exception e) {
+			transaction.abort();
+			fail("Commit of atom failed", e);
+		}
+
+		DatabaseEntry vertexKey = new DatabaseEntry(vertexStoreState.getRoot().getId().asBytes());
+
+		SerializedVertexStoreState serializedVertexWithQC = vertexStoreState.toSerialized();
+		DatabaseEntry vertexEntry = new DatabaseEntry(serialization.toDson(serializedVertexWithQC, Output.ALL));
+		OperationStatus putStatus = this.pendingDatabase.put(transaction, vertexKey, vertexEntry);
+		if (putStatus == OperationStatus.SUCCESS) {
+			transaction.commit();
+		} else {
+			fail("Store of root vertex failed");
+		}
 	}
 
 	private LedgerEntryStoreResult doStore(
@@ -296,7 +334,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 		byte[] ledgerEntryData,
 		LedgerEntryIndices indices,
 		Transaction transaction
-	) throws IOException {
+	) throws DeserializeException {
 		try {
 			DatabaseEntry pKey = toPKey(prefix, logicalClock, aid);
 			DatabaseEntry pData = new DatabaseEntry(ledgerEntryData);
@@ -308,16 +346,16 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 				fail("Atom write for '" + aid + "' failed with status " + status);
 			}
 
-			DatabaseEntry indicesData = new DatabaseEntry(encode(indices));
+			DatabaseEntry indicesData = new DatabaseEntry(serialization.toDson(indices, Output.PERSIST));
 			status = this.atomIndices.putNoOverwrite(transaction, pKey, indicesData);
 			if (status != OperationStatus.SUCCESS) {
 				fail("LedgerEntry indices write for '" + aid + "' failed with status " + status);
 			}
 		} catch (UniqueConstraintException e) {
-			log.error("Unique indices of ledgerEntry {} are in conflict, aborting transaction", aid);
+			log.error("Unique indices of ledgerEntry '" + aid + "' are in conflict, aborting transaction");
 			transaction.abort();
 
-			LedgerEntry ledgerEntry = decode(ledgerEntryData, LedgerEntry.class);
+			LedgerEntry ledgerEntry = serialization.fromDson(ledgerEntryData, LedgerEntry.class);
 			ImmutableMap<StoreIndex, LedgerEntry> conflictingAtoms = doGetConflictingAtoms(indices.getUniqueIndices(), null);
 			return LedgerEntryStoreResult.conflict(new LedgerEntryConflict(ledgerEntry, conflictingAtoms));
 		} finally {
@@ -334,7 +372,8 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 			for (StoreIndex uniqueIndex : uniqueIndices) {
 				key.setData(uniqueIndex.asKey());
 				if (this.uniqueIndices.get(transaction, key, value, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-					conflictingAtoms.put(uniqueIndex, decode(value.getData(), LedgerEntry.class));
+					LedgerEntry conflictingAtom = serialization.fromDson(value.getData(), LedgerEntry.class);
+					conflictingAtoms.put(uniqueIndex, conflictingAtom);
 				}
 			}
 		} catch (Exception e) {
@@ -361,7 +400,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 		}
 	}
 
-	private LedgerEntryIndices doGetIndices(Transaction transaction, AID aid, DatabaseEntry pKey) throws IOException {
+	private LedgerEntryIndices doGetIndices(Transaction transaction, AID aid, DatabaseEntry pKey) throws DeserializeException {
 		DatabaseEntry key = new DatabaseEntry(StoreIndex.from(ENTRY_INDEX_PREFIX, aid.getBytes()));
 		DatabaseEntry value = new DatabaseEntry();
 
@@ -375,8 +414,10 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 			fail("Getting indices of atom '" + aid + "' failed with status " + status);
 		}
 
-		return decode(value.getData(), LedgerEntryIndices.class);
+		return serialization.fromDson(value.getData(), LedgerEntryIndices.class);
 	}
+
+
 
 	@Override
 	public ImmutableList<LedgerEntry> getNextCommittedLedgerEntries(long stateVersion, int limit) throws NextCommittedLimitReachedException {
@@ -402,8 +443,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 
 					// TODO when uqCursor fails to fetch value, which means some form of DB corruption has occurred, how should we handle it?
 					if (uqCursorStatus == OperationStatus.SUCCESS) {
-						LedgerEntry ledgerEntry = decode(value.getData(), LedgerEntry.class);
-
+						LedgerEntry ledgerEntry = serialization.fromDson(value.getData(), LedgerEntry.class);
 						if (proofVersion == -1) {
 							proofVersion = ledgerEntry.getProofVersion();
 						} else if (ledgerEntry.getProofVersion() != proofVersion) {
@@ -414,7 +454,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 						++size;
 					}
 				} catch (Exception e) {
-					String message = String.format("Unable to fetch ledger entry for Atom ID %s", atomId);
+					String message = MessageFormat.format("Unable to fetch ledger entry for Atom ID %s", atomId);
 					log.error(message, e);
 				}
 				atomCursorStatus = atomCursor.getNext(atomSearchKey, null, LockMode.DEFAULT);
@@ -605,14 +645,6 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 
 	private static long lcFromPKey(byte[] pKey) {
 		return Longs.fromByteArray(pKey, 1);
-	}
-
-	private <T> T decode(final byte[] input, Class<T> clazz) throws IOException {
-		return serialization.fromDson(Snappy.uncompress(input), clazz);
-	}
-
-	private byte[] encode(final Object o) throws IOException {
-		return Snappy.compress(serialization.toDson(o, Output.PERSIST));
 	}
 
 	public static class AtomStorePackedPrimaryKeyComparator implements Comparator<byte[]> {

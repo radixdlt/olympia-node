@@ -21,7 +21,13 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
+import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.consensus.bft.BFTHighQCUpdate;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
+import com.radixdlt.consensus.bft.PersistentVertexStore;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.LedgerEntryStoreView;
@@ -38,6 +44,7 @@ public class PersistenceModule extends AbstractModule {
 		// TODO: should be singletons?
 		bind(LedgerEntryStore.class).to(BerkeleyLedgerEntryStore.class).in(Scopes.SINGLETON);
 		bind(LedgerEntryStoreView.class).to(BerkeleyLedgerEntryStore.class);
+		bind(PersistentVertexStore.class).to(BerkeleyLedgerEntryStore.class);
 		bind(PersistentSafetyStateStore.class).to(BerkeleySafetyStateStore.class);
 		bind(BerkeleySafetyStateStore.class).in(Scopes.SINGLETON);
 	}
@@ -46,5 +53,17 @@ public class PersistenceModule extends AbstractModule {
 	@Singleton
 	private DatabaseEnvironment databaseEnvironment(RuntimeProperties properties) {
 		return new DatabaseEnvironment(properties);
+	}
+
+	@ProvidesIntoSet
+	@ProcessOnDispatch
+	public EventProcessor<BFTHighQCUpdate> persistQC(PersistentVertexStore persistentVertexStore) {
+		return update -> persistentVertexStore.save(update.getVertexStoreState());
+	}
+
+	@ProvidesIntoSet
+	@ProcessOnDispatch
+	public EventProcessor<BFTInsertUpdate> persistUpdates(PersistentVertexStore persistentVertexStore) {
+		return update -> persistentVertexStore.save(update.getVertexStoreState());
 	}
 }

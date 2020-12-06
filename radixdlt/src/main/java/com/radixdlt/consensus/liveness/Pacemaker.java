@@ -108,24 +108,32 @@ public final class Pacemaker {
 		this.latestViewUpdate = Objects.requireNonNull(initialViewUpdate);
 	}
 
+	public void start() {
+		log.info("Pacemaker Start: {}", latestViewUpdate);
+		this.startView();
+	}
+
 	/** Processes a local view update message **/
 	public void processViewUpdate(ViewUpdate viewUpdate) {
+		log.trace("View Update: {}", viewUpdate);
+
 		final View previousView = this.latestViewUpdate.getCurrentView();
-		this.latestViewUpdate = viewUpdate;
-
-		final BFTNode currentViewProposer = viewUpdate.getLeader();
-		log.trace("View Update: {} nextLeader: {}", viewUpdate, currentViewProposer);
-
 		if (viewUpdate.getCurrentView().lte(previousView)) {
 			return;
 		}
+		this.latestViewUpdate = viewUpdate;
 
-		long timeout = timeoutCalculator.timeout(viewUpdate.uncommittedViewsCount());
-		ScheduledLocalTimeout scheduledLocalTimeout = ScheduledLocalTimeout.create(viewUpdate, timeout);
+		this.startView();
+	}
+
+	private void startView() {
+		long timeout = timeoutCalculator.timeout(latestViewUpdate.uncommittedViewsCount());
+		ScheduledLocalTimeout scheduledLocalTimeout = ScheduledLocalTimeout.create(latestViewUpdate, timeout);
 		this.timeoutSender.dispatch(scheduledLocalTimeout, timeout);
 
+		final BFTNode currentViewProposer = latestViewUpdate.getLeader();
 		if (this.self.equals(currentViewProposer)) {
-			Optional<Proposal> proposalMaybe = generateProposal(viewUpdate.getCurrentView());
+			Optional<Proposal> proposalMaybe = generateProposal(latestViewUpdate.getCurrentView());
 			proposalMaybe.ifPresent(proposal -> {
 				log.trace("Broadcasting proposal: {}", proposal);
 				this.proposalBroadcaster.broadcastProposal(proposal, this.validatorSet.nodes());
@@ -136,7 +144,7 @@ public final class Pacemaker {
 
 	private Optional<Proposal> generateProposal(View view) {
 		// Hotstuff's Event-Driven OnBeat
-		final HighQC highQC = this.vertexStore.highQC();
+		final HighQC highQC = this.latestViewUpdate.getHighQC();
 		final QuorumCertificate highestQC = highQC.highestQC();
 		final QuorumCertificate highestCommitted = highQC.highestCommittedQC();
 
@@ -167,9 +175,9 @@ public final class Pacemaker {
 	 */
 	public void processViewTimeout(ViewTimeout viewTimeout) {
 		final View view = viewTimeout.getView();
-		if (view.lte(this.latestViewUpdate.getLastQuorumView())) {
-			log.trace("ViewTimeout: Ignoring view timeout from {} for view {}, last quorum at {}",
-				viewTimeout.getAuthor(), view, this.latestViewUpdate.getLastQuorumView());
+		if (view.lt(this.latestViewUpdate.getCurrentView())) {
+			log.trace("ViewTimeout: Ignoring view timeout from {} for view {}, current view at {}",
+				viewTimeout.getAuthor(), view, this.latestViewUpdate.getCurrentView());
 			return;
 		}
 		this.pendingViewTimeouts.insertViewTimeout(viewTimeout, this.validatorSet)
@@ -206,7 +214,7 @@ public final class Pacemaker {
 		}
 		counters.increment(CounterType.BFT_TIMEOUT);
 
-		final ViewTimeout viewTimeout = this.safetyRules.viewTimeout(view, this.vertexStore.highQC());
+		final ViewTimeout viewTimeout = this.safetyRules.viewTimeout(view, this.latestViewUpdate.getHighQC());
 		this.voteSender.broadcastViewTimeout(viewTimeout, this.validatorSet.nodes());
 
 		LocalTimeoutOccurrence localTimeoutOccurrence = new LocalTimeoutOccurrence(scheduledTimeout);
@@ -219,16 +227,5 @@ public final class Pacemaker {
 
 		ScheduledLocalTimeout nextTimeout = scheduledTimeout.nextRetry(timeout);
 		this.timeoutSender.dispatch(nextTimeout, timeout);
-	}
-
-	/**
-	 * Signifies to the pacemaker that a quorum has agreed that a view has
-	 * been completed.
-	 *
-	 * @param highQC the sync info for the view
-	 * @return {@code true} if proceeded to a new view
-	 */
-	public void processQC(HighQC highQC) {
-		this.pacemakerReducer.processQC(highQC);
 	}
 }

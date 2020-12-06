@@ -39,6 +39,6 @@ public final class NodeEvents {
 	}
 
 	public <T> EventProcessor<T> processor(BFTNode node, Class<T> eventClass) {
-		return t -> consumers.get(eventClass).forEach(c -> c.accept(node, t));
+		return t -> consumers.getOrDefault(eventClass, Set.of()).forEach(c -> c.accept(node, t));
 	}
 }

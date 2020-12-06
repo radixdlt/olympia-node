@@ -18,10 +18,8 @@
 package com.radixdlt.consensus.bft;
 
 import com.radixdlt.consensus.BFTEventProcessor;
-import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.liveness.Pacemaker;
@@ -29,14 +27,10 @@ import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.consensus.safety.SafetyRules;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.network.TimeSupplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.message.FormattedMessage;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -53,24 +47,23 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private final VertexStore vertexStore;
 	private final Pacemaker pacemaker;
 	private final EventDispatcher<FormedQC> formedQCEventDispatcher;
+	private final EventDispatcher<NoVote> noVoteDispatcher;
 	private final RemoteEventDispatcher<Vote> voteDispatcher;
 	private final Hasher hasher;
-	private final TimeSupplier timeSupplier;
-	private final SystemCounters counters;
 	private final SafetyRules safetyRules;
 	private final BFTValidatorSet validatorSet;
 	private final PendingVotes pendingVotes;
 
+	private BFTInsertUpdate latestInsertUpdate;
 	private ViewUpdate latestViewUpdate;
 
 	public BFTEventReducer(
 		Pacemaker pacemaker,
 		VertexStore vertexStore,
 		EventDispatcher<FormedQC> formedQCEventDispatcher,
+		EventDispatcher<NoVote> noVoteDispatcher,
 		RemoteEventDispatcher<Vote> voteDispatcher,
 		Hasher hasher,
-		TimeSupplier timeSupplier,
-		SystemCounters counters,
 		SafetyRules safetyRules,
 		BFTValidatorSet validatorSet,
 		PendingVotes pendingVotes,
@@ -79,10 +72,9 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		this.pacemaker = Objects.requireNonNull(pacemaker);
 		this.vertexStore = Objects.requireNonNull(vertexStore);
 		this.formedQCEventDispatcher = Objects.requireNonNull(formedQCEventDispatcher);
+		this.noVoteDispatcher = Objects.requireNonNull(noVoteDispatcher);
 		this.voteDispatcher = Objects.requireNonNull(voteDispatcher);
 		this.hasher = Objects.requireNonNull(hasher);
-		this.timeSupplier = Objects.requireNonNull(timeSupplier);
-		this.counters = Objects.requireNonNull(counters);
 		this.safetyRules = Objects.requireNonNull(safetyRules);
 		this.validatorSet = Objects.requireNonNull(validatorSet);
 		this.pendingVotes = Objects.requireNonNull(pendingVotes);
@@ -90,14 +82,54 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	}
 
 	@Override
-	public void processBFTUpdate(BFTUpdate update) {
+	public void processBFTUpdate(BFTInsertUpdate update) {
 		log.trace("BFTUpdate: Processing {}", update);
+
+		final View view = update.getHeader().getView();
+		if (view.lt(this.latestViewUpdate.getCurrentView())) {
+			log.trace("InsertUpdate: Ignoring insert {} for view {}, current view at {}",
+				update, view, this.latestViewUpdate.getCurrentView());
+			return;
+		}
+
+		this.latestInsertUpdate = update;
+		this.tryVote();
 	}
 
 	@Override
 	public void processViewUpdate(ViewUpdate viewUpdate) {
 		this.latestViewUpdate = viewUpdate;
 		this.pacemaker.processViewUpdate(viewUpdate);
+		this.tryVote();
+	}
+
+	private void tryVote() {
+		BFTInsertUpdate update = this.latestInsertUpdate;
+		if (update == null) {
+			return;
+		}
+
+		if (!Objects.equals(update.getHeader().getView(), this.latestViewUpdate.getCurrentView())) {
+			return;
+		}
+
+		// TODO: what if insertUpdate occurs before viewUpdate
+		final BFTNode nextLeader = this.latestViewUpdate.getNextLeader();
+		final Optional<Vote> maybeVote = this.safetyRules.voteFor(
+			update.getInserted().getVertex(),
+			update.getHeader(),
+			update.getInserted().getTimeOfExecution(),
+			this.latestViewUpdate.getHighQC()
+		);
+		maybeVote.ifPresentOrElse(
+			vote -> this.voteDispatcher.dispatch(nextLeader, vote),
+			() -> this.noVoteDispatcher.dispatch(NoVote.create(update.getInserted().getVertex()))
+		);
+	}
+
+	@Override
+	public void processBFTRebuildUpdate(BFTRebuildUpdate update) {
+		// No-op
 	}
 
 	@Override
@@ -105,17 +137,15 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		log.trace("Vote: Processing {}", vote);
 		// accumulate votes into QCs in store
 		final View view = vote.getView();
-		if (view.lte(this.latestViewUpdate.getLastQuorumView())) {
-			log.trace("Vote: Ignoring vote from {} for view {}, last quorum at {}",
-					vote.getAuthor(), view, this.latestViewUpdate.getLastQuorumView());
-		} else {
-			final Optional<QuorumCertificate> maybeQc = this.pendingVotes.insertVote(vote, this.validatorSet)
-					.filter(qc -> view.gte(this.latestViewUpdate.getCurrentView()));
-
-			maybeQc.ifPresent(qc ->
-				formedQCEventDispatcher.dispatch(FormedQC.create(qc, vote.getAuthor()))
-			);
+		if (view.lt(this.latestViewUpdate.getCurrentView())) {
+			log.trace("Vote: Ignoring vote from {} for view {}, current view at {}",
+					vote.getAuthor(), view, this.latestViewUpdate.getCurrentView());
+			return;
 		}
+
+		this.pendingVotes.insertVote(vote, this.validatorSet)
+			.filter(qc -> view.gte(this.latestViewUpdate.getCurrentView()))
+			.ifPresent(qc -> this.formedQCEventDispatcher.dispatch(FormedQC.create(qc, vote.getAuthor())));
 	}
 
 	@Override
@@ -138,27 +168,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 		// TODO: Move insertion and maybe check into BFTSync
 		final VerifiedVertex proposedVertex = new VerifiedVertex(proposal.getVertex(), this.hasher.hash(proposal.getVertex()));
-		final Optional<BFTHeader> maybeHeader = this.vertexStore.insertVertex(proposedVertex);
-		// The header may not be present if the ledger is ahead of consensus
-		maybeHeader.ifPresent(header -> {
-			final BFTNode nextLeader = this.latestViewUpdate.getNextLeader();
-			final Optional<Vote> maybeVote = this.safetyRules.voteFor(
-				proposedVertex,
-				header,
-				this.timeSupplier.currentTime(),
-				this.vertexStore.highQC()
-			);
-			maybeVote.ifPresentOrElse(
-				vote -> {
-					log.trace("Proposal: Sending vote to {}: {}", nextLeader, vote);
-					this.voteDispatcher.dispatch(nextLeader, vote);
-				},
-				() -> {
-					this.counters.increment(CounterType.BFT_REJECTED);
-					log.warn(() -> new FormattedMessage("Proposal: Rejected {}", proposedVertex));
-				}
-			);
-		});
+		this.vertexStore.insertVertex(proposedVertex);
 	}
 
 	@Override
@@ -169,6 +179,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 	@Override
 	public void start() {
-		this.pacemaker.processQC(this.vertexStore.highQC());
+		this.pacemaker.start();
 	}
 }

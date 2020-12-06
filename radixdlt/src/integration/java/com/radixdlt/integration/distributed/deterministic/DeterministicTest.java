@@ -47,6 +47,7 @@ import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.integration.distributed.MockedCryptoModule;
 import com.radixdlt.integration.distributed.MockedPersistenceStoreModule;
+import com.radixdlt.integration.distributed.MockedRecoveryModule;
 import com.radixdlt.integration.distributed.deterministic.configuration.EpochNodeWeightMapping;
 import com.radixdlt.integration.distributed.deterministic.configuration.NodeIndexAndWeight;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
@@ -204,6 +205,7 @@ public final class DeterministicTest {
 			modules.add(new ConsensusModule());
 			modules.add(new MockedCryptoModule());
 			modules.add(new MockedPersistenceStoreModule());
+			modules.add(new MockedRecoveryModule());
 			modules.add(new LedgerLocalMempoolModule(10));
 			modules.add(new DeterministicMempoolModule());
 			modules.add(new DispatcherModule());
@@ -282,6 +284,37 @@ public final class DeterministicTest {
 
 	public static Builder builder() {
 		return new Builder();
+	}
+
+	public DeterministicNetwork getNetwork() {
+		return this.network;
+	}
+
+	public DeterministicNodes getNodes() {
+		return this.nodes;
+	}
+
+	public interface DeterministicManualExecutor {
+		void start();
+		void processNext(int senderIndex, int receiverIndex, Class<?> eventClass);
+	}
+
+	public DeterministicManualExecutor createExecutor() {
+		return new DeterministicManualExecutor() {
+			@Override
+			public void start() {
+				nodes.start();
+			}
+
+			@Override
+			public void processNext(int senderIndex, int receiverIndex, Class<?> eventClass) {
+				Timed<ControlledMessage> nextMsg = network.nextMessage(msg -> msg.channelId().senderIndex() == senderIndex
+					&& msg.channelId().receiverIndex() == receiverIndex
+					&& eventClass.isInstance(msg.message()));
+
+				nodes.handleMessage(nextMsg);
+			}
+		};
 	}
 
 	public DeterministicTest runForCount(int count) {

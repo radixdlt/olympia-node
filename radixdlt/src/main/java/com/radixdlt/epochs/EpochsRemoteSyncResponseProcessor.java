@@ -19,7 +19,6 @@ package com.radixdlt.epochs;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
-import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochChange;
@@ -46,7 +45,7 @@ import org.apache.logging.log4j.Logger;
 public final class EpochsRemoteSyncResponseProcessor {
 	private static final Logger log = LogManager.getLogger();
 
-	private final Function<BFTConfiguration, RemoteSyncResponseValidatorSetVerifier> verifierFactory;
+	private final Function<EpochChange, RemoteSyncResponseValidatorSetVerifier> verifierFactory;
 	private final EventDispatcher<LocalSyncRequest> localSyncRequestProcessor;
 
 	private RemoteSyncResponseValidatorSetVerifier currentVerifier;
@@ -59,7 +58,7 @@ public final class EpochsRemoteSyncResponseProcessor {
 		RemoteSyncResponseValidatorSetVerifier initialVerifier,
 		EpochChange initialEpoch,
 		@LastEpochProof VerifiedLedgerHeaderAndProof currentEpochProof,
-		Function<BFTConfiguration, RemoteSyncResponseValidatorSetVerifier> verifierFactory
+		Function<EpochChange, RemoteSyncResponseValidatorSetVerifier> verifierFactory
 	) {
 		this.localSyncRequestProcessor = Objects.requireNonNull(localSyncRequestProcessor);
 		this.currentEpoch = Objects.requireNonNull(initialEpoch);
@@ -74,7 +73,7 @@ public final class EpochsRemoteSyncResponseProcessor {
 			final EpochChange epochChange = maybeEpochChange.get();
 			this.currentEpoch = epochChange;
 			this.currentEpochProof = ledgerUpdate.getTail();
-			this.currentVerifier = verifierFactory.apply(epochChange.getBFTConfiguration());
+			this.currentVerifier = verifierFactory.apply(epochChange);
 		}
 	}
 

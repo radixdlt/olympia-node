@@ -22,8 +22,8 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.Ledger;
+import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessWithSyncRunner;
 import com.radixdlt.environment.RemoteEventDispatcher;
@@ -98,31 +98,31 @@ public class EpochsSyncModule extends AbstractModule {
 	}
 
 	@Provides
-	private Function<BFTConfiguration, RemoteSyncResponseValidatorSetVerifier> accumulatorVerifierFactory(
+	private Function<EpochChange, RemoteSyncResponseValidatorSetVerifier> accumulatorVerifierFactory(
 		VerifiedValidatorSetSender verifiedValidatorSetSender,
 		InvalidValidatorSetSender invalidValidatorSetSender
 	) {
-		return config ->
+		return epochChange ->
 			new RemoteSyncResponseValidatorSetVerifier(
 				verifiedValidatorSetSender,
 				invalidValidatorSetSender,
-				config.getValidatorSet()
+				epochChange.getBFTConfiguration().getValidatorSet()
 			);
 	}
 
 	@Provides
-	private Function<BFTConfiguration, LocalSyncServiceAccumulatorProcessor> localSyncFactory(
+	private Function<EpochChange, LocalSyncServiceAccumulatorProcessor> localSyncFactory(
 		Comparator<AccumulatorState> accumulatorComparator,
 		RemoteEventDispatcher<DtoLedgerHeaderAndProof> requestDispatcher,
 		ScheduledEventDispatcher<SyncInProgress> syncTimeoutScheduler,
 		@SyncPatienceMillis int syncPatienceMillis
 	) {
-		return config ->
+		return epochChange ->
 			new LocalSyncServiceAccumulatorProcessor(
 				requestDispatcher,
 				syncTimeoutScheduler,
 				accumulatorComparator,
-				config.getGenesisHeader(),
+				epochChange.getGenesisHeader(),
 				syncPatienceMillis
 			);
 	}

@@ -50,7 +50,12 @@ public enum EmptyBFTEventProcessor implements BFTEventProcessor {
 	}
 
 	@Override
-	public void processBFTUpdate(BFTUpdate update) {
+	public void processBFTUpdate(BFTInsertUpdate update) {
+		// No-op
+	}
+
+	@Override
+	public void processBFTRebuildUpdate(BFTRebuildUpdate update) {
 		// No-op
 	}
 

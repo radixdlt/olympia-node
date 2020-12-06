@@ -37,11 +37,12 @@ public class PacemakerStateTest {
 
 	private PacemakerState pacemakerState;
 
-	@Before
-	public void setUp() {
-		when(proposerElection.getProposer(any())).thenReturn(BFTNode.random());
-		this.pacemakerState = new PacemakerState(this.proposerElection, this.viewUpdateSender);
-	}
+    @Before
+    public void setUp() {
+        when(proposerElection.getProposer(any())).thenReturn(BFTNode.random());
+        ViewUpdate viewUpdate = ViewUpdate.create(View.genesis(), mock(HighQC.class), BFTNode.random(), BFTNode.random());
+        this.pacemakerState = new PacemakerState(viewUpdate, this.proposerElection, this.viewUpdateSender);
+    }
 
 	@Test
 	public void when_process_qc_for_wrong_view__then_ignored() {
