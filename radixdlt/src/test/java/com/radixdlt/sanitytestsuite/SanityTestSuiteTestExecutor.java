@@ -38,7 +38,7 @@ import java.util.stream.Collectors;
 import static java.util.stream.Collectors.toMap;
 import static org.junit.Assert.assertEquals;
 
-public class SanityTestSuiteTestExecutor {
+public final class SanityTestSuiteTestExecutor {
 
 	private static final Logger log = LogManager.getLogger();
 	private static final String SANITY_TEST_SUITE_JSON_FILE_NAME = "sanity_test_suite.json";

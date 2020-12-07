@@ -26,7 +26,7 @@ import com.radixdlt.utils.Bytes;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertNotNull;
 
-public class KeyGenTestScenarioRunner extends SanityTestScenarioRunner<KeyGenTestVector> {
+public final class KeyGenTestScenarioRunner extends SanityTestScenarioRunner<KeyGenTestVector> {
 
 
 	public String testScenarioIdentifier() {

@@ -24,7 +24,7 @@ import com.radixdlt.utils.Bytes;
 
 import static org.junit.Assert.assertEquals;
 
-public class RadixHashingTestScenarioRunner extends SanityTestScenarioRunner<RadixHashingTestVector> {
+public final class RadixHashingTestScenarioRunner extends SanityTestScenarioRunner<RadixHashingTestVector> {
 
 	public String testScenarioIdentifier() {
 		return "radix_hashing";

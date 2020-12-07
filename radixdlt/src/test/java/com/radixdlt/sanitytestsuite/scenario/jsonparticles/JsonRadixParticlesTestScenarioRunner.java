@@ -31,7 +31,7 @@ import java.nio.charset.StandardCharsets;
 
 import static junit.framework.TestCase.assertEquals;
 
-public class JsonRadixParticlesTestScenarioRunner extends SanityTestScenarioRunner<JsonParticlesTestVector> {
+public final class JsonRadixParticlesTestScenarioRunner extends SanityTestScenarioRunner<JsonParticlesTestVector> {
 
 	private static final Logger log = LogManager.getLogger();
 

@@ -25,7 +25,7 @@ import com.radixdlt.utils.Bytes;
 
 import static org.junit.Assert.assertEquals;
 
-public class KeyVerifyTestScenarioRunner extends SanityTestScenarioRunner<KeyVerifyTestVector> {
+public final class KeyVerifyTestScenarioRunner extends SanityTestScenarioRunner<KeyVerifyTestVector> {
 
 
 	public String testScenarioIdentifier() {

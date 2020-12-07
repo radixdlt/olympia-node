@@ -23,7 +23,7 @@ import com.radixdlt.utils.Bytes;
 
 import static org.junit.Assert.assertEquals;
 
-public class HashingTestScenarioRunner extends SanityTestScenarioRunner<HashingTestVector> {
+public final class HashingTestScenarioRunner extends SanityTestScenarioRunner<HashingTestVector> {
 
 
 	public String testScenarioIdentifier() {

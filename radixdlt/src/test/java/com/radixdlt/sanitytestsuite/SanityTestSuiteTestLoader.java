@@ -40,7 +40,7 @@ import java.nio.charset.StandardCharsets;
 import static org.junit.Assert.assertEquals;
 
 // CHECKSTYLE:OFF checkstyle:VisibilityModifier
-public class SanityTestSuiteTestLoader {
+public final class SanityTestSuiteTestLoader {
 
 	public static Gson gson = new GsonBuilder()
 			.registerTypeAdapter(Double.class, new SanityTestSuiteTestLoader.DoubleSerializer())

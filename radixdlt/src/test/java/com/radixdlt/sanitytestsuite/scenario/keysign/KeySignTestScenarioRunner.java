@@ -27,7 +27,7 @@ import java.nio.charset.StandardCharsets;
 
 import static org.junit.Assert.assertEquals;
 
-public class KeySignTestScenarioRunner extends SanityTestScenarioRunner<KeySignTestVector> {
+public final class KeySignTestScenarioRunner extends SanityTestScenarioRunner<KeySignTestVector> {
 
 
 	public String testScenarioIdentifier() {
