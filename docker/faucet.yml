@@ -6,8 +6,8 @@ services:
       context: .
       dockerfile: Dockerfile.faucet
     environment:
-      FAUCET_TOKEN_RRI: ${RADIXDLT_UNIVERSE_TOKEN:?err}
-      FAUCET_IDENTITY_KEY: ${RADIXDLT_UNIVERSE_PRIVKEY:?err}
+      FAUCET_TOKEN_RRI: ${RADIXDLT_UNIVERSE_TOKEN}
+      FAUCET_IDENTITY_KEY: ${RADIXDLT_UNIVERSE_PRIVKEY}
       RADIX_BOOTSTRAP_TRUSTED_NODE: http://core0:8080
       JAVA_OPTS: -server -XX:+HeapDumpOnOutOfMemoryError -Xms512m -Xmx512m -XX:+AlwaysPreTouch -Djava.security.egd=file:/dev/urandom
     image: radixdlt/faucet:develop
