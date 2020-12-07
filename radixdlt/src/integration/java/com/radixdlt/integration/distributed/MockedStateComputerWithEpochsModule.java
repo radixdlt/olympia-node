@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -67,7 +68,7 @@ public class MockedStateComputerWithEpochsModule extends AbstractModule {
 			}
 
 			@Override
-			public void commit(VerifiedCommandsAndProof command) {
+			public void commit(VerifiedCommandsAndProof command, VerifiedVertexStoreState vertexStoreState) {
 			}
 		};
 	}

@@ -21,10 +21,13 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
+import com.google.inject.Inject;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.PersistentVertexStore;
+import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -70,13 +73,14 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private final View epochCeilingView;
 	private final ValidatorSetBuilder validatorSetBuilder;
 	private final Hasher hasher;
-
+	private final PersistentVertexStore persistentVertexStore;
 	private final RadixEngineAtomicCommitManager atomicCommitManager;
 
 	private RadixEngineStateComputer(
 		Serialization serialization,
 		RadixEngine<LedgerAtom> radixEngine,
 		RadixEngineAtomicCommitManager atomicCommitManager,
+		PersistentVertexStore persistentVertexStore,
 		View epochCeilingView,
 		ValidatorSetBuilder validatorSetBuilder,
 		Hasher hasher
@@ -87,13 +91,15 @@ public final class RadixEngineStateComputer implements StateComputer {
 		this.validatorSetBuilder = Objects.requireNonNull(validatorSetBuilder);
 		this.hasher = Objects.requireNonNull(hasher);
 		this.atomicCommitManager = Objects.requireNonNull(atomicCommitManager);
+		this.persistentVertexStore = Objects.requireNonNull(persistentVertexStore);
 	}
 
 	public static RadixEngineStateComputer create(
 		Serialization serialization,
 		RadixEngine<LedgerAtom> radixEngine,
 		RadixEngineAtomicCommitManager atomicCommitManager,
-		View epochCeilingView,
+		PersistentVertexStore persistentVertexStore,
+		@EpochCeilingView View epochCeilingView,
 		ValidatorSetBuilder validatorSetBuilder,
 		Hasher hasher
 	) {
@@ -101,7 +107,15 @@ public final class RadixEngineStateComputer implements StateComputer {
 			throw new IllegalArgumentException("Epoch change view must not be genesis.");
 		}
 
-		return new RadixEngineStateComputer(serialization, radixEngine, atomicCommitManager, epochCeilingView, validatorSetBuilder, hasher);
+		return new RadixEngineStateComputer(
+			serialization,
+			radixEngine,
+			atomicCommitManager,
+			persistentVertexStore,
+			epochCeilingView,
+			validatorSetBuilder,
+			hasher
+		);
 	}
 
 	public static class RadixEngineCommand implements PreparedCommand {
@@ -305,7 +319,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	}
 
 	@Override
-	public void commit(VerifiedCommandsAndProof verifiedCommandsAndProof) {
+	public void commit(VerifiedCommandsAndProof verifiedCommandsAndProof, VerifiedVertexStoreState vertexStoreState) {
 		atomicCommitManager.startTransaction();
 		try {
 			commitInternal(verifiedCommandsAndProof);
@@ -316,5 +330,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 			throw e;
 		}
 		atomicCommitManager.commitTransaction();
+		if (vertexStoreState != null) {
+			persistentVertexStore.save(vertexStoreState);
+		}
 	}
 }

@@ -29,6 +29,7 @@ import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
+import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.counters.SystemCounters;
@@ -90,7 +91,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 
 	public interface StateComputer {
 		StateComputerResult prepare(ImmutableList<PreparedCommand> previous, Command next, long epoch, View view, long timestamp);
-		void commit(VerifiedCommandsAndProof verifiedCommandsAndProof);
+		void commit(VerifiedCommandsAndProof verifiedCommandsAndProof, VerifiedVertexStoreState vertexStoreState);
 	}
 
 	public interface LedgerUpdateSender {
@@ -100,7 +101,6 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	private final Comparator<VerifiedLedgerHeaderAndProof> headerComparator;
 	private final Mempool mempool;
 
-	private final PersistentVertexStore persistentVertexStore;
 	private final StateComputer stateComputer;
 	private final LedgerUpdateSender ledgerUpdateSender;
 	private final SystemCounters counters;
@@ -114,7 +114,6 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 
 	@Inject
 	public StateComputerLedger(
-		PersistentVertexStore persistentVertexStore,
 		TimeSupplier timeSupplier,
 		@LastProof VerifiedLedgerHeaderAndProof initialLedgerState,
 		Comparator<VerifiedLedgerHeaderAndProof> headerComparator,
@@ -126,7 +125,6 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		SystemCounters counters,
 		Hasher hasher
 	) {
-		this.persistentVertexStore = Objects.requireNonNull(persistentVertexStore);
 		this.timeSupplier = Objects.requireNonNull(timeSupplier);
 		this.headerComparator = Objects.requireNonNull(headerComparator);
 		this.currentLedgerHeader = initialLedgerState;
@@ -231,13 +229,16 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			VerifiedCommandsAndProof verifiedCommandsAndProof = new VerifiedCommandsAndProof(commands, proof);
 
 			// TODO: Make these two atomic (RPNV1-827)
-			this.commit(verifiedCommandsAndProof);
-			this.persistentVertexStore.save(committedUpdate.getVertexStoreState());
+			this.commit(verifiedCommandsAndProof, committedUpdate.getVertexStoreState());
 		};
 	}
 
 	@Override
 	public void commit(VerifiedCommandsAndProof verifiedCommandsAndProof) {
+		this.commit(verifiedCommandsAndProof, null);
+	}
+
+	private void commit(VerifiedCommandsAndProof verifiedCommandsAndProof, VerifiedVertexStoreState vertexStoreState) {
 		this.counters.increment(CounterType.LEDGER_PROCESSED);
 		synchronized (lock) {
 			final VerifiedLedgerHeaderAndProof nextHeader = verifiedCommandsAndProof.getHeader();
@@ -261,7 +262,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			);
 
 			// persist
-			this.stateComputer.commit(commandsToStore);
+			this.stateComputer.commit(commandsToStore, vertexStoreState);
 
 			// TODO: move all of the following to post-persist event handling
 			this.currentLedgerHeader = nextHeader;

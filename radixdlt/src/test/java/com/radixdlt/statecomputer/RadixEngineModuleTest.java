@@ -17,6 +17,7 @@
 
 package com.radixdlt.statecomputer;
 
+import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
 import org.junit.Test;
 
@@ -81,6 +82,7 @@ public class RadixEngineModuleTest {
 				.thenAnswer(inv -> inv.getArgument(1)); // Return initial value
 			bind(new TypeLiteral<EngineStore<LedgerAtom>>() { }).toInstance(engineStore);
 			bind(RadixEngineAtomicCommitManager.class).toInstance(mock(RadixEngineAtomicCommitManager.class));
+			bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
 		}
 	}
 

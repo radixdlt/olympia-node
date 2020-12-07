@@ -29,6 +29,7 @@ import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.crypto.Hasher;
@@ -66,6 +67,7 @@ public class RadixEngineStateComputerTest {
 			serialization,
 			radixEngine,
 			commitManager,
+			mock(PersistentVertexStore.class),
 			epochHighView,
 			validatorSetBuilder,
 			hasher
@@ -92,7 +94,7 @@ public class RadixEngineStateComputerTest {
 		when(command.getCommands()).thenReturn(ImmutableList.of(mock(Command.class)));
 		when(radixEngine.getComputedState(any())).thenReturn(mock(SystemParticle.class));
 
-		stateComputer.commit(command);
+		stateComputer.commit(command, null);
 
 		verify(radixEngine, times(1)).checkAndStore(any(), any());
 	}

@@ -120,7 +120,6 @@ public class StateComputerLedgerTest {
 			.map(Pair::getSecond).orElseThrow();
 
 		this.sut = new StateComputerLedger(
-			mock(PersistentVertexStore.class),
 			mock(TimeSupplier.class),
 			currentLedgerHeader,
 			headerComparator,
@@ -149,7 +148,6 @@ public class StateComputerLedgerTest {
 			.map(Pair::getSecond).orElseThrow();
 
 		this.sut = new StateComputerLedger(
-			mock(PersistentVertexStore.class),
 			mock(TimeSupplier.class),
 			currentLedgerHeader,
 			headerComparator,
@@ -260,7 +258,7 @@ public class StateComputerLedgerTest {
 		sut.commit(verified);
 
 		// Assert
-		verify(stateComputer, never()).commit(any());
+		verify(stateComputer, never()).commit(any(), any());
 		verify(mempool, never()).removeCommitted(any());
 		verify(ledgerUpdateSender, never()).sendLedgerUpdate(any());
 	}
