@@ -46,6 +46,7 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
 import java.util.Set;
@@ -92,6 +93,8 @@ public class DispatcherModule extends AbstractModule {
 		final var committedUpdateKey = new TypeLiteral<EventProcessor<BFTCommittedUpdate>>() { };
 		Multibinder.newSetBinder(binder(), committedUpdateKey);
 		Multibinder.newSetBinder(binder(), committedUpdateKey, ProcessOnDispatch.class);
+		final var syncUpdateKey = new TypeLiteral<EventProcessor<VerifiedCommandsAndProof>>() { };
+		Multibinder.newSetBinder(binder(), syncUpdateKey, ProcessOnDispatch.class);
 
 		final var formQcKey = new TypeLiteral<EventProcessor<FormedQC>>() { };
 		Multibinder.newSetBinder(binder(), formQcKey, ProcessOnDispatch.class);
@@ -196,6 +199,17 @@ public class DispatcherModule extends AbstractModule {
 		return update -> {
 			dispatcher.dispatch(update);
 			processors.forEach(p -> p.process(update));
+		};
+	}
+
+	@Provides
+	private EventDispatcher<VerifiedCommandsAndProof> syncUpdateEventDispatcher(
+		@ProcessOnDispatch Set<EventProcessor<VerifiedCommandsAndProof>> processors,
+		SystemCounters systemCounters
+	) {
+		return commit -> {
+			systemCounters.add(CounterType.SYNC_PROCESSED, commit.getCommands().size());
+			processors.forEach(e -> e.process(commit));
 		};
 	}
 

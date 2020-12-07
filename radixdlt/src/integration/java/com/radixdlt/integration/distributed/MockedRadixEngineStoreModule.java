@@ -24,6 +24,7 @@ import com.google.inject.Singleton;
 import com.google.inject.name.Names;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.system.SystemParticle;
+import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.Hasher;
@@ -71,6 +72,11 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 
 			@Override
 			public void abortTransction() {
+				// no-op
+			}
+
+			@Override
+			public void save(VerifiedVertexStoreState vertexStoreState) {
 				// no-op
 			}
 		};

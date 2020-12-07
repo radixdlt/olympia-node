@@ -21,6 +21,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.bft.PersistentVertexStore;
+import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
@@ -59,6 +61,7 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 	private final Serialization serialization;
 	private final AtomIndexer atomIndexer;
 	private final LedgerEntryStore store;
+	private final PersistentVertexStore persistentVertexStore;
 	private final CommandToBinaryConverter commandToBinaryConverter;
 	private final ClientAtomToBinaryConverter clientAtomToBinaryConverter;
 	private final CommittedAtomSender committedAtomSender;
@@ -72,6 +75,7 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 	public CommittedAtomsStore(
 		CommittedAtomSender committedAtomSender,
 		LedgerEntryStore store,
+		PersistentVertexStore persistentVertexStore,
 		CommandToBinaryConverter commandToBinaryConverter,
 		ClientAtomToBinaryConverter clientAtomToBinaryConverter,
 		AtomIndexer atomIndexer,
@@ -80,6 +84,7 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 	) {
 		this.committedAtomSender = Objects.requireNonNull(committedAtomSender);
 		this.store = Objects.requireNonNull(store);
+		this.persistentVertexStore = Objects.requireNonNull(persistentVertexStore);
 		this.commandToBinaryConverter = Objects.requireNonNull(commandToBinaryConverter);
 		this.clientAtomToBinaryConverter = Objects.requireNonNull(clientAtomToBinaryConverter);
 		this.atomIndexer = Objects.requireNonNull(atomIndexer);
@@ -110,6 +115,11 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 	public void abortTransction() {
 		this.transaction.abort();
 		this.transaction = null;
+	}
+
+	@Override
+	public void save(VerifiedVertexStoreState vertexStoreState) {
+		persistentVertexStore.save(this.transaction, vertexStoreState);
 	}
 
 	// TODO: Save proof in a separate index

@@ -26,7 +26,6 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.Ledger;
-import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
@@ -233,9 +232,8 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		};
 	}
 
-	@Override
-	public void commit(VerifiedCommandsAndProof verifiedCommandsAndProof) {
-		this.commit(verifiedCommandsAndProof, null);
+	public EventProcessor<VerifiedCommandsAndProof> verifiedCommandsAndProofEventProcessor() {
+		return p -> this.commit(p, null);
 	}
 
 	private void commit(VerifiedCommandsAndProof verifiedCommandsAndProof, VerifiedVertexStoreState vertexStoreState) {

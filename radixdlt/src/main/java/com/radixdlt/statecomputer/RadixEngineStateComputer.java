@@ -21,12 +21,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
-import com.google.inject.Inject;
 import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
@@ -73,14 +71,12 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private final View epochCeilingView;
 	private final ValidatorSetBuilder validatorSetBuilder;
 	private final Hasher hasher;
-	private final PersistentVertexStore persistentVertexStore;
 	private final RadixEngineAtomicCommitManager atomicCommitManager;
 
 	private RadixEngineStateComputer(
 		Serialization serialization,
 		RadixEngine<LedgerAtom> radixEngine,
 		RadixEngineAtomicCommitManager atomicCommitManager,
-		PersistentVertexStore persistentVertexStore,
 		View epochCeilingView,
 		ValidatorSetBuilder validatorSetBuilder,
 		Hasher hasher
@@ -91,14 +87,12 @@ public final class RadixEngineStateComputer implements StateComputer {
 		this.validatorSetBuilder = Objects.requireNonNull(validatorSetBuilder);
 		this.hasher = Objects.requireNonNull(hasher);
 		this.atomicCommitManager = Objects.requireNonNull(atomicCommitManager);
-		this.persistentVertexStore = Objects.requireNonNull(persistentVertexStore);
 	}
 
 	public static RadixEngineStateComputer create(
 		Serialization serialization,
 		RadixEngine<LedgerAtom> radixEngine,
 		RadixEngineAtomicCommitManager atomicCommitManager,
-		PersistentVertexStore persistentVertexStore,
 		@EpochCeilingView View epochCeilingView,
 		ValidatorSetBuilder validatorSetBuilder,
 		Hasher hasher
@@ -111,7 +105,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 			serialization,
 			radixEngine,
 			atomicCommitManager,
-			persistentVertexStore,
 			epochCeilingView,
 			validatorSetBuilder,
 			hasher
@@ -329,9 +322,9 @@ public final class RadixEngineStateComputer implements StateComputer {
 			// TODO: resolve issues with byzantine quorum (RPNV1-828)
 			throw e;
 		}
-		atomicCommitManager.commitTransaction();
 		if (vertexStoreState != null) {
-			persistentVertexStore.save(vertexStoreState);
+			atomicCommitManager.save(vertexStoreState);
 		}
+		atomicCommitManager.commitTransaction();
 	}
 }

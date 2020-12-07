@@ -17,6 +17,8 @@
 
 package com.radixdlt.middleware2.store;
 
+import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
+
 /**
  * Controls atomic commits of multiple atoms.
  * FIXME: This is simply a hack to get atomic commits implemented.
@@ -27,4 +29,5 @@ public interface RadixEngineAtomicCommitManager {
 	void startTransaction();
 	void commitTransaction();
 	void abortTransction();
+	void save(VerifiedVertexStoreState vertexStoreState);
 }

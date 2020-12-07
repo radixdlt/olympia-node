@@ -27,6 +27,7 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
@@ -69,6 +70,7 @@ public class CommittedAtomsStoreTest {
 		this.committedAtomsStore = new CommittedAtomsStore(
 			committedAtomSender,
 			store,
+			mock(PersistentVertexStore.class),
 			commandToBinaryConverter,
 			clientAtomToBinaryConverter,
 			atomIndexer,

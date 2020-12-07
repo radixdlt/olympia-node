@@ -23,6 +23,7 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.Hasher;
@@ -96,6 +97,7 @@ public class RadixEngineStoreModule extends AbstractModule {
 	private CommittedAtomsStore committedAtomsStore(
 		CommittedAtomSender committedAtomSender,
 		LedgerEntryStore store,
+		PersistentVertexStore persistentVertexStore,
 		CommandToBinaryConverter commandToBinaryConverter,
 		ClientAtomToBinaryConverter clientAtomToBinaryConverter,
 		AtomIndexer atomIndexer,
@@ -106,6 +108,7 @@ public class RadixEngineStoreModule extends AbstractModule {
 		final CommittedAtomsStore atomsStore = new CommittedAtomsStore(
 			committedAtomSender,
 			store,
+			persistentVertexStore,
 			commandToBinaryConverter,
 			clientAtomToBinaryConverter,
 			atomIndexer,

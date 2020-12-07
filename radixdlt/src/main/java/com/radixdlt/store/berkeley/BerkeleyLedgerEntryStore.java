@@ -305,8 +305,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 	}
 
 	@Override
-	public void save(VerifiedVertexStoreState vertexStoreState) {
-		Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);
+	public void save(Transaction transaction, VerifiedVertexStoreState vertexStoreState) {
 		try (Cursor cursor = this.pendingDatabase.openCursor(transaction, null)) {
 			DatabaseEntry pKey = new DatabaseEntry();
 			DatabaseEntry value = new DatabaseEntry();
@@ -320,15 +319,19 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 		}
 
 		DatabaseEntry vertexKey = new DatabaseEntry(vertexStoreState.getRoot().getId().asBytes());
-
 		SerializedVertexStoreState serializedVertexWithQC = vertexStoreState.toSerialized();
 		DatabaseEntry vertexEntry = new DatabaseEntry(serialization.toDson(serializedVertexWithQC, Output.ALL));
 		OperationStatus putStatus = this.pendingDatabase.put(transaction, vertexKey, vertexEntry);
-		if (putStatus == OperationStatus.SUCCESS) {
-			transaction.commit();
-		} else {
+		if (putStatus != OperationStatus.SUCCESS) {
 			fail("Store of root vertex failed");
 		}
+	}
+
+	@Override
+	public void save(VerifiedVertexStoreState vertexStoreState) {
+		Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);
+		this.save(transaction, vertexStoreState);
+		transaction.commit();
 	}
 
 	private LedgerEntryStoreResult doStore(

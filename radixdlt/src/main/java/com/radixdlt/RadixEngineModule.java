@@ -19,7 +19,6 @@ package com.radixdlt;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import com.radixdlt.atommodel.message.MessageParticleConstraintScrypt;
@@ -32,7 +31,6 @@ import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.crypto.Hasher;
@@ -68,7 +66,6 @@ public class RadixEngineModule extends AbstractModule {
 		Serialization serialization,
 		RadixEngine<LedgerAtom> radixEngine,
 		RadixEngineAtomicCommitManager atomicCommitManager,
-		PersistentVertexStore persistentVertexStore,
 		@EpochCeilingView View epochCeilingView,
 		ValidatorSetBuilder validatorSetBuilder,
 		Hasher hasher
@@ -77,7 +74,6 @@ public class RadixEngineModule extends AbstractModule {
 			serialization,
 			radixEngine,
 			atomicCommitManager,
-			persistentVertexStore,
 			epochCeilingView,
 			validatorSetBuilder,
 			hasher

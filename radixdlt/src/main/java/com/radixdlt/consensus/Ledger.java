@@ -19,7 +19,6 @@ package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import java.util.LinkedList;
 import java.util.Optional;
 
@@ -36,10 +35,4 @@ public interface Ledger {
 	 * @return the results of executing the prepare stage
 	 */
 	Optional<PreparedVertex> prepare(LinkedList<PreparedVertex> previous, VerifiedVertex vertex);
-
-	/**
-	 * Commit commands
-	 * @param verifiedCommandsAndProof the command to commit
-	 */
-	void commit(VerifiedCommandsAndProof verifiedCommandsAndProof);
 }
