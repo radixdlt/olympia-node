@@ -51,8 +51,8 @@ public class KeyVerifyTestScenarioRunner extends SanityTestScenarioRunner<KeyVer
 		byte[] hashedMessageToVerify = sha256Hash(Bytes.fromHexString(testVector.input.msg));
 
 		assertEquals(
-				testVector.expected.isValid,
-				publicKey.verify(hashedMessageToVerify, signature)
+			testVector.expected.isValid,
+			publicKey.verify(hashedMessageToVerify, signature)
 		);
 	}
 }

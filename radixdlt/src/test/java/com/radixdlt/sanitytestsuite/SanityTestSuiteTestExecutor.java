@@ -44,12 +44,12 @@ public class SanityTestSuiteTestExecutor {
 	private static final String SANITY_TEST_SUITE_JSON_FILE_NAME = "sanity_test_suite.json";
 
 	private final List<SanityTestScenarioRunner<?>> testScenarios = ImmutableList.of(
-			new HashingTestScenarioRunner(),
-			new RadixHashingTestScenarioRunner(),
-			new KeyGenTestScenarioRunner(),
-			new KeySignTestScenarioRunner(),
-			new KeyVerifyTestScenarioRunner(),
-			new JsonRadixParticlesTestScenarioRunner()
+		new HashingTestScenarioRunner(),
+		new RadixHashingTestScenarioRunner(),
+		new KeyGenTestScenarioRunner(),
+		new KeySignTestScenarioRunner(),
+		new KeyVerifyTestScenarioRunner(),
+		new JsonRadixParticlesTestScenarioRunner()
 	);
 
 	@Test
@@ -57,8 +57,8 @@ public class SanityTestSuiteTestExecutor {
 		SanityTestSuiteRoot sanityTestSuiteRoot = sanityTestSuiteRootFromFile();
 		Map<String, Consumer<SanityTestSuiteRoot.SanityTestSuite.SanityTestScenario>> scenarioRunnerMap = makeScenarioRunnerMap();
 		assertEquals(
-				scenarioRunnerMap.keySet(),
-				sanityTestSuiteRoot.suite.scenarios.stream().map(s -> s.identifier).collect(Collectors.toSet())
+			scenarioRunnerMap.keySet(),
+			sanityTestSuiteRoot.suite.scenarios.stream().map(s -> s.identifier).collect(Collectors.toSet())
 		);
 
 		for (SanityTestSuiteRoot.SanityTestSuite.SanityTestScenario scenario : sanityTestSuiteRoot.suite.scenarios) {
@@ -83,11 +83,11 @@ public class SanityTestSuiteTestExecutor {
 
 	private Map<String, Consumer<SanityTestSuiteRoot.SanityTestSuite.SanityTestScenario>> makeScenarioRunnerMap() {
 		return testScenarios.stream()
-				.collect(
-						toMap(
-								SanityTestScenarioRunner::testScenarioIdentifier,
-								s -> s::executeTest
-						)
-				);
+			.collect(
+				toMap(
+					SanityTestScenarioRunner::testScenarioIdentifier,
+					s -> s::executeTest
+				)
+			);
 	}
 }

@@ -31,31 +31,30 @@ import java.security.NoSuchAlgorithmException;
 
 import static org.junit.Assert.assertEquals;
 
-public abstract class SanityTestScenarioRunner<Vector extends SanityTestVector> {
+public abstract class SanityTestScenarioRunner<TestVector extends SanityTestVector> {
 
 	private static final Logger log = LogManager.getLogger();
 
 	public abstract String testScenarioIdentifier();
 
-	public abstract TypeToken<Vector> typeOfVector();
+	public abstract TypeToken<TestVector> typeOfVector();
 
 
-	public abstract void doRunTestVector(Vector testVector) throws AssertionError;
+	public abstract void doRunTestVector(TestVector testVector) throws AssertionError;
 
 	public void executeTest(SanityTestSuiteRoot.SanityTestSuite.SanityTestScenario scenario) {
 		assertEquals(testScenarioIdentifier(), scenario.identifier);
 
-
 		for (int testVectorIndex = 0; testVectorIndex < scenario.tests.vectors.size(); ++testVectorIndex) {
 			UnknownTestVector untypedVector = scenario.tests.vectors.get(testVectorIndex);
-			Vector testVector = cast(untypedVector, this.typeOfVector());
+			TestVector testVector = cast(untypedVector, this.typeOfVector());
 			try {
 				doRunTestVector(testVector);
 			} catch (AssertionError e) {
 				String msg = String.format(
-						"Failing test vector index: %d, vector: %s",
-						testVectorIndex,
-						prettyJsonStringFromObject(testVector)
+					"Failing test vector index: %d, vector: %s",
+					testVectorIndex,
+					prettyJsonStringFromObject(testVector)
 				);
 				throw new AssertionError(msg, e);
 			}

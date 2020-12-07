@@ -52,12 +52,12 @@ public class KeySignTestScenarioRunner extends SanityTestScenarioRunner<KeySignT
 		byte[] hashedMessageToSign = sha256Hash(unhashedEncodedMessage);
 		ECDSASignature signature = keyPair.sign(hashedMessageToSign, true, true);
 		assertEquals(
-				testVector.expected.signature.r,
-				signature.getR().toString(16)
+			testVector.expected.signature.r,
+			signature.getR().toString(16)
 		);
 		assertEquals(
-				testVector.expected.signature.s,
-				signature.getS().toString(16)
+			testVector.expected.signature.s,
+			signature.getS().toString(16)
 		);
 
 	}
