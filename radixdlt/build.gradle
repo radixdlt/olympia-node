@@ -150,7 +150,7 @@ configurations.all {
 }
 
 dependencies {
-    compile 'com.radixdlt:radix-engine-library:integration~rpnv1-742-validator-selection-SNAPSHOT'
+    compile 'com.radixdlt:radix-engine-library:1.0-beta.19'
     compile 'io.reactivex.rxjava3:rxjava:3.0.0'
     compile 'com.sleepycat:je:18.3.12'
 
@@ -213,6 +213,11 @@ tasks.withType(JavaExec) {
     jvmArgs = ['-Xmx1024m']
 }
 
+tasks.withType(Test){
+    minHeapSize = "128m"
+    maxHeapSize = "512m"
+}
+
 // Compress distTar
 tasks.withType(Tar) {
     compression = Compression.GZIP
@@ -223,7 +228,12 @@ task generateDevUniverse(type: Exec) {
     group = "Execution"
     description = "Generate development universe"
     commandLine "java", "-classpath", sourceSets.main.runtimeClasspath.getAsPath(),
-	    "org.radix.GenerateUniverses", "-t", "development", "-p", "-v", validators, "-j"
+        "org.radix.GenerateUniverses",
+        "--universe-type=development",
+        "--validator-count=${validators}",
+        "--include-private-keys",
+        "--no-json-output",
+        "--issue-default-tokens"
 }
 
 task createGenerateUniversesScripts(type: CreateStartScripts) {

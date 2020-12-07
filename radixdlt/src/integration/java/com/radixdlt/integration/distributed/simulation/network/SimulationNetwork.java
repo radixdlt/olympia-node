@@ -128,7 +128,7 @@ public class SimulationNetwork {
 	@Inject
 	public SimulationNetwork(ChannelCommunication channelCommunication) {
 		this.channelCommunication = Objects.requireNonNull(channelCommunication);
-		this.receivedMessages = ReplaySubject.<MessageInTransit>createWithSize(20) // To catch startup timing issues
+		this.receivedMessages = ReplaySubject.<MessageInTransit>createWithSize(128) // To catch startup timing issues
 			.toSerialized();
 	}
 

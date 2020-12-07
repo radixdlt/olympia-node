@@ -226,7 +226,11 @@ public final class RadixHttpServer {
 			List<VerifiedVertex> vertices = inMemorySystemInfo.getCommittedVertices();
 			JSONArray array = new JSONArray();
 			vertices.stream()
-				.map(v -> new JSONObject().put("view", v.getView().number()).put("hash", v.getId().toString()))
+				.map(v -> new JSONObject()
+					.put("epoch", v.getParentHeader().getLedgerHeader().getEpoch())
+					.put("view", v.getView().number())
+					.put("hash", v.getId().toString())
+				)
 				.forEachOrdered(array::put);
 			respond(array, exchange);
 		}, handler);
