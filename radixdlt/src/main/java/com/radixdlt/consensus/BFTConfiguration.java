@@ -18,8 +18,7 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.utils.Pair;
+import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import java.util.Objects;
 
 /**
@@ -27,41 +26,29 @@ import java.util.Objects;
  */
 public final class BFTConfiguration {
 	private final BFTValidatorSet validatorSet;
-	private final VerifiedVertex genesisVertex;
-	private final QuorumCertificate genesisQC;
-	private final VerifiedLedgerHeaderAndProof genesisHeader;
+	private final VerifiedVertexStoreState vertexStoreState;
 
-	public BFTConfiguration(BFTValidatorSet validatorSet, VerifiedVertex genesisVertex, QuorumCertificate genesisQC) {
+	public BFTConfiguration(
+		BFTValidatorSet validatorSet,
+		VerifiedVertexStoreState vertexStoreState
+	) {
 		this.validatorSet = Objects.requireNonNull(validatorSet);
-		this.genesisVertex = Objects.requireNonNull(genesisVertex);
-		this.genesisQC = Objects.requireNonNull(genesisQC);
-		this.genesisHeader = this.genesisQC.getCommittedAndLedgerStateProof().map(Pair::getSecond)
-			.orElseThrow(() -> new IllegalArgumentException("genesisQC must be committed."));
+		this.vertexStoreState = Objects.requireNonNull(vertexStoreState);
 	}
 
 	public BFTValidatorSet getValidatorSet() {
 		return validatorSet;
 	}
 
-	public VerifiedVertex getGenesisVertex() {
-		return genesisVertex;
-	}
-
-	public VerifiedLedgerHeaderAndProof getGenesisHeader() {
-		return this.genesisHeader;
-	}
-
-	public QuorumCertificate getGenesisQC() {
-		return genesisQC;
+	public VerifiedVertexStoreState getVertexStoreState() {
+		return vertexStoreState;
 	}
 
 	@Override
 	public int hashCode() {
 		return Objects.hash(
 			this.validatorSet,
-			this.genesisVertex,
-			this.genesisQC,
-			this.genesisHeader
+			this.vertexStoreState
 		);
 	}
 
@@ -70,16 +57,14 @@ public final class BFTConfiguration {
 		if (obj instanceof BFTConfiguration) {
 			BFTConfiguration that = (BFTConfiguration) obj;
 			return Objects.equals(this.validatorSet, that.validatorSet)
-				&& Objects.equals(this.genesisVertex, that.genesisVertex)
-				&& Objects.equals(this.genesisQC, that.genesisQC)
-				&& Objects.equals(this.genesisHeader, that.genesisHeader);
+				&& Objects.equals(this.vertexStoreState, that.vertexStoreState);
 		}
 		return false;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s[validatorSet=%s, genesisVertex=%s, genesisQC=%s, genesisHeader=%s]",
-			getClass().getSimpleName(), this.validatorSet, this.genesisVertex, this.genesisQC, this.genesisHeader);
+		return String.format("%s[validatorSet=%s, vertexStoreState=%s]",
+			getClass().getSimpleName(), this.validatorSet, this.vertexStoreState);
 	}
 }

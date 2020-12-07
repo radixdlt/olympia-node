@@ -79,6 +79,16 @@ public final class HighQC {
 	}
 
 	/**
+	 * Creates a {@link HighQC} from the a QC
+	 *
+	 * @param qc The qc
+	 * @return A new {@link HighQC}
+	 */
+	public static HighQC from(QuorumCertificate qc) {
+		return HighQC.from(qc, qc, Optional.empty());
+	}
+
+	/**
 	 * Creates a {@link HighQC} from the specified QCs.
 	 * <p>
 	 * Note that highestCommittedQC->committed needs to be an ancestor of

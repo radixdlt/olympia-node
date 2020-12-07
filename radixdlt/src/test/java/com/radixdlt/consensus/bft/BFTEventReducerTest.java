@@ -22,13 +22,10 @@ import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.liveness.Pacemaker;
-import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
-import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.network.TimeSupplier;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -38,17 +35,15 @@ import static org.mockito.Mockito.*;
 
 public class BFTEventReducerTest {
 
-    private SystemCounters counters = mock(SystemCounters.class);
     private Hasher hasher = mock(Hasher.class);
     private RemoteEventDispatcher<Vote> voteDispatcher = rmock(RemoteEventDispatcher.class);
     private PendingVotes pendingVotes = mock(PendingVotes.class);
     private BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
     private VertexStore vertexStore = mock(VertexStore.class);
-    private ProposerElection proposerElection = mock(ProposerElection.class);
     private SafetyRules safetyRules = mock(SafetyRules.class);
     private Pacemaker pacemaker = mock(Pacemaker.class);
     private EventDispatcher<ViewQuorumReached> viewQuorumReachedEventDispatcher = rmock(EventDispatcher.class);
-    private TimeSupplier timeSupplier = mock(TimeSupplier.class);
+    private EventDispatcher<NoVote> noVoteEventDispatcher = rmock(EventDispatcher.class);
 
     private BFTEventReducer bftEventReducer;
 
@@ -58,31 +53,21 @@ public class BFTEventReducerTest {
             this.pacemaker,
             this.vertexStore,
             this.viewQuorumReachedEventDispatcher,
+            this.noVoteEventDispatcher,
             this.voteDispatcher,
             this.hasher,
-            this.timeSupplier,
-            this.counters,
             this.safetyRules,
             this.validatorSet,
             this.pendingVotes,
-            ViewUpdate.genesis()
+            mock(ViewUpdate.class)
         );
-    }
-
-    @Test
-    public void when_process_vote_equal_last_quorum__then_ignored() {
-        Vote vote = mock(Vote.class);
-        when(vote.getView()).thenReturn(View.of(0));
-        this.bftEventReducer.processViewUpdate(ViewUpdate.create(View.of(1), View.of(0), mock(BFTNode.class), mock(BFTNode.class)));
-        this.bftEventReducer.processVote(vote);
-        verifyNoMoreInteractions(this.pendingVotes);
     }
 
     @Test
     public void when_process_vote_with_quorum_wrong_view__then_ignored() {
         Vote vote = mock(Vote.class);
         when(vote.getView()).thenReturn(View.of(1));
-        this.bftEventReducer.processViewUpdate(ViewUpdate.create(View.of(3), View.of(2), mock(BFTNode.class), mock(BFTNode.class)));
+        this.bftEventReducer.processViewUpdate(ViewUpdate.create(View.of(3), mock(HighQC.class), mock(BFTNode.class), mock(BFTNode.class)));
         this.bftEventReducer.processVote(vote);
         verifyNoMoreInteractions(this.pendingVotes);
     }
@@ -103,7 +88,7 @@ public class BFTEventReducerTest {
         when(this.vertexStore.highQC()).thenReturn(highQc);
 
         // Move to view 1
-        this.bftEventReducer.processViewUpdate(ViewUpdate.create(View.of(1), View.of(0), mock(BFTNode.class), mock(BFTNode.class)));
+        this.bftEventReducer.processViewUpdate(ViewUpdate.create(View.of(1), highQc, mock(BFTNode.class), mock(BFTNode.class)));
 
         this.bftEventReducer.processVote(vote);
 

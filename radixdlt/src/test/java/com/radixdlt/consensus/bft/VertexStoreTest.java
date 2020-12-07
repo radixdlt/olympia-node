@@ -29,6 +29,7 @@ import static org.mockito.Mockito.verify;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -38,9 +39,6 @@ import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
@@ -64,10 +62,10 @@ public class VertexStoreTest {
 	private QuorumCertificate rootQC;
 	private VertexStore sut;
 	private Ledger ledger;
-	private VertexStoreEventSender vertexStoreEventSender;
-	private EventDispatcher<BFTUpdate> bftUpdateSender;
+	private EventDispatcher<BFTInsertUpdate> bftUpdateSender;
+	private EventDispatcher<BFTRebuildUpdate> rebuildUpdateEventDispatcher;
+	private EventDispatcher<BFTHighQCUpdate> bftHighQCUpdateEventDispatcher;
 	private EventDispatcher<BFTCommittedUpdate> committedSender;
-	private SystemCounters counters;
 	private Hasher hasher = Sha256Hasher.withDefaultSerialization();
 
 	private static final LedgerHeader MOCKED_HEADER = LedgerHeader.create(
@@ -82,26 +80,24 @@ public class VertexStoreTest {
 		// TODO: replace mock with the real thing
 		doAnswer(invocation -> {
 			VerifiedVertex verifiedVertex = invocation.getArgument(1);
-			return Optional.of(new PreparedVertex(verifiedVertex, MOCKED_HEADER, ImmutableList.of(), ImmutableMap.of()));
+			return Optional.of(new PreparedVertex(verifiedVertex, MOCKED_HEADER, ImmutableList.of(), ImmutableMap.of(), 1L));
 		}).when(ledger).prepare(any(), any());
 
-		this.vertexStoreEventSender = mock(VertexStoreEventSender.class);
-		this.counters = new SystemCountersImpl();
 		this.bftUpdateSender = rmock(EventDispatcher.class);
+		this.rebuildUpdateEventDispatcher = rmock(EventDispatcher.class);
+		this.bftHighQCUpdateEventDispatcher = rmock(EventDispatcher.class);
 		this.committedSender = rmock(EventDispatcher.class);
 
 		this.genesisHash = HashUtils.zero256();
 		this.genesisVertex = new VerifiedVertex(UnverifiedVertex.createGenesis(MOCKED_HEADER), genesisHash);
 		this.rootQC = QuorumCertificate.ofGenesis(genesisVertex, MOCKED_HEADER);
 		this.sut = VertexStore.create(
-			genesisVertex,
-			rootQC,
+			VerifiedVertexStoreState.create(HighQC.from(rootQC), genesisVertex),
 			ledger,
 			bftUpdateSender,
-			committedSender,
-			vertexStoreEventSender,
-			counters,
-			Optional.empty()
+			rebuildUpdateEventDispatcher,
+			bftHighQCUpdateEventDispatcher,
+			committedSender
 		);
 
 		AtomicReference<BFTHeader> lastParentHeader
@@ -174,9 +170,9 @@ public class VertexStoreTest {
 		assertThat(sut.getVertices(vertices.get(2).getId(), 3)).hasValue(ImmutableList.of(
 			vertices.get(2), vertices.get(1), vertices.get(0)
 		));
-		verify(ledger, times(1)).commit(
-			argThat(l -> l.size() == 1 && l.get(0).getVertex().equals(vertices.get(0))), any(), any()
-		);
+		verify(committedSender, times(1)).dispatch(argThat(
+			u -> u.getCommitted().size() == 1 && u.getCommitted().get(0).getVertex().equals(vertices.get(0))
+		));
 	}
 
 	@Test
@@ -196,14 +192,21 @@ public class VertexStoreTest {
 	public void rebuilding_should_emit_updates() {
 		// Arrange
 		final List<VerifiedVertex> vertices = Stream.generate(this.nextVertex).limit(4).collect(Collectors.toList());
+		VerifiedVertexStoreState vertexStoreState = VerifiedVertexStoreState.create(
+			HighQC.from(vertices.get(3).getQC()),
+			vertices.get(0),
+			vertices.stream().skip(1).collect(ImmutableList.toImmutableList())
+		);
 
 		// Act
-		sut.rebuild(vertices.get(0), vertices.get(1).getQC(), vertices.get(3).getQC(), vertices.stream().skip(1).collect(Collectors.toList()));
+		sut.tryRebuild(vertexStoreState);
 
 		// Assert
-		verify(bftUpdateSender, times(1)).dispatch(argThat(u -> u.getInsertedVertex().equals(vertices.get(0))));
-		verify(bftUpdateSender, times(1)).dispatch(argThat(u -> u.getInsertedVertex().equals(vertices.get(1))));
-		verify(bftUpdateSender, times(1)).dispatch(argThat(u -> u.getInsertedVertex().equals(vertices.get(2))));
-		verify(bftUpdateSender, times(1)).dispatch(argThat(u -> u.getInsertedVertex().equals(vertices.get(3))));
+		verify(rebuildUpdateEventDispatcher, times(1)).dispatch(
+			argThat(u -> {
+				List<VerifiedVertex> sentVertices = u.getVertexStoreState().getVertices();
+				return sentVertices.equals(vertices.subList(1, vertices.size()));
+			})
+		);
 	}
 }

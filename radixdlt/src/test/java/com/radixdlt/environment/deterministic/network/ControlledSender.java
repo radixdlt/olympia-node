@@ -33,7 +33,6 @@ import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
@@ -86,11 +85,6 @@ public final class ControlledSender implements DeterministicSender, Environment 
 			ChannelId channelId = ChannelId.of(this.senderIndex, receiverIndex);
 			handleMessage(new ControlledMessage(self, channelId, proposal, arrivalTime(channelId)));
 		}
-	}
-
-	@Override
-	public void highQC(QuorumCertificate qc) {
-		// Ignore high QC signal
 	}
 
 	@Override

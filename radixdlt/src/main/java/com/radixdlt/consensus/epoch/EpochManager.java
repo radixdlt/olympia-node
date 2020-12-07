@@ -24,7 +24,10 @@ import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.HashSigner;
+import com.radixdlt.consensus.HighQC;
+import com.radixdlt.consensus.bft.BFTRebuildUpdate;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.liveness.PacemakerStateFactory;
@@ -38,7 +41,7 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.BFTSyncResponseProcessor;
-import com.radixdlt.consensus.bft.BFTUpdate;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.BFTSyncRequestProcessor;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -130,7 +133,9 @@ public final class EpochManager implements BFTSyncRequestProcessor {
 	private LedgerUpdateProcessor<LedgerUpdate> syncLedgerUpdateProcessor;
 	private BFTSyncRequestProcessor syncRequestProcessor;
 	private BFTEventProcessor bftEventProcessor;
-	private Set<EventProcessor<BFTUpdate>> bftUpdateProcessors;
+
+	private Set<EventProcessor<BFTInsertUpdate>> bftUpdateProcessors;
+	private Set<EventProcessor<BFTRebuildUpdate>> bftRebuildProcessors;
 
 	private final PersistentSafetyStateStore persistentSafetyStateStore;
 
@@ -140,7 +145,8 @@ public final class EpochManager implements BFTSyncRequestProcessor {
 		BFTEventProcessor initialBFTEventProcessor,
 		BFTSyncRequestProcessor initialSyncRequestProcessor,
 		BFTSync initialBFTSync,
-		Set<EventProcessor<BFTUpdate>> initialBFTUpdateProcessors,
+		Set<EventProcessor<BFTInsertUpdate>> initialBFTUpdateProcessors,
+		Set<EventProcessor<BFTRebuildUpdate>> initialBFTRebuildUpdateProcessors,
 		EpochChange initialEpoch,
 		SyncEpochsRPCSender epochsRPCSender,
 		PacemakerFactory pacemakerFactory,
@@ -172,6 +178,8 @@ public final class EpochManager implements BFTSyncRequestProcessor {
 		}
 
 		this.bftUpdateProcessors = initialBFTUpdateProcessors;
+		this.bftRebuildProcessors = initialBFTRebuildUpdateProcessors;
+
 		this.currentEpoch = Objects.requireNonNull(initialEpoch);
 		this.self = Objects.requireNonNull(self);
 		this.epochsRPCSender = Objects.requireNonNull(epochsRPCSender);
@@ -210,14 +218,15 @@ public final class EpochManager implements BFTSyncRequestProcessor {
 		// Config
 		final BFTConfiguration bftConfiguration = this.currentEpoch.getBFTConfiguration();
 		final ProposerElection proposerElection = proposerElectionFactory.create(validatorSet);
-		final ViewUpdate initialViewUpdate = ViewUpdate.genesis();
+		HighQC highQC = bftConfiguration.getVertexStoreState().getHighQC();
+		View view = highQC.highestQC().getView().next();
+		final BFTNode leader = proposerElection.getProposer(view);
+		final BFTNode nextLeader = proposerElection.getProposer(view.next());
+		final ViewUpdate initialViewUpdate = ViewUpdate.create(view, highQC, leader, nextLeader);
 
 		// Mutable Consensus State
-		final VertexStore vertexStore = vertexStoreFactory.create(
-			bftConfiguration.getGenesisVertex(),
-			bftConfiguration.getGenesisQC()
-		);
-		final PacemakerState pacemakerState = pacemakerStateFactory.create(nextEpoch, proposerElection);
+		final VertexStore vertexStore = vertexStoreFactory.create(bftConfiguration.getVertexStoreState());
+		final PacemakerState pacemakerState = pacemakerStateFactory.create(initialViewUpdate, nextEpoch, proposerElection);
 
 		// Consensus Drivers
 		final SafetyRules safetyRules = new SafetyRules(self, SafetyState.initialState(), persistentSafetyStateStore, hasher, signer);
@@ -230,7 +239,11 @@ public final class EpochManager implements BFTSyncRequestProcessor {
 			initialViewUpdate,
 			nextEpoch
 		);
-		final BFTSync bftSync = bftSyncFactory.create(vertexStore, pacemakerState);
+		final BFTSync bftSync = bftSyncFactory.create(
+			vertexStore,
+			pacemakerState,
+			bftConfiguration
+		);
 
 		this.syncBFTResponseProcessor = bftSync;
 		this.syncLedgerUpdateProcessor = bftSync;
@@ -245,10 +258,11 @@ public final class EpochManager implements BFTSyncRequestProcessor {
 			bftSync,
 			bftSync.viewQuorumReachedEventProcessor(),
 			validatorSet,
-			counters,
+			initialViewUpdate,
 			safetyRules
 		);
 
+		this.bftRebuildProcessors = ImmutableSet.of(bftEventProcessor::processBFTRebuildUpdate);
 		this.bftUpdateProcessors = ImmutableSet.of(bftSync::processBFTUpdate, bftEventProcessor::processBFTUpdate);
 	}
 
@@ -423,8 +437,18 @@ public final class EpochManager implements BFTSyncRequestProcessor {
 		};
 	}
 
-	public void processBFTUpdate(BFTUpdate update) {
+	public void processBFTUpdate(BFTInsertUpdate update) {
 		bftUpdateProcessors.forEach(p -> p.process(update));
+	}
+
+	public EventProcessor<BFTRebuildUpdate> bftRebuildUpdateEventProcessor() {
+		return update -> {
+			if (update.getVertexStoreState().getRoot().getParentHeader().getLedgerHeader().getEpoch() != this.currentEpoch()) {
+				return;
+			}
+
+			bftRebuildProcessors.forEach(p -> p.process(update));
+		};
 	}
 
 	@Override

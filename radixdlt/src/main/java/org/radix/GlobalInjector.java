@@ -49,7 +49,6 @@ import com.radixdlt.SyncServiceModule;
 import com.radixdlt.SyncMempoolServiceModule;
 import com.radixdlt.LedgerRxModule;
 import com.radixdlt.LedgerModule;
-import com.radixdlt.SystemInfoRxModule;
 import com.radixdlt.SystemModule;
 import com.radixdlt.TokenFeeModule;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -170,7 +169,6 @@ public class GlobalInjector {
 
 			// System Info
 			new SystemInfoModule(),
-			new SystemInfoRxModule(),
 
 			// Network
 			new NetworkModule(),

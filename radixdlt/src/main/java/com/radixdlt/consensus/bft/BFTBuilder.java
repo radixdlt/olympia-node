@@ -22,12 +22,10 @@ import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.safety.SafetyRules;
-import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.network.TimeSupplier;
 
 /**
  * A helper class to help in constructing a BFT validator state machine
@@ -43,13 +41,13 @@ public final class BFTBuilder {
 	private VertexStore vertexStore;
 	private BFTSyncer bftSyncer;
 	private EventDispatcher<ViewQuorumReached> viewQuorumReachedEventDispatcher;
+	private EventDispatcher<NoVote> noVoteEventDispatcher;
 
 	// Instance specific objects
 	private BFTNode self;
 
-	private TimeSupplier timeSupplier;
+	private ViewUpdate viewUpdate;
 	private RemoteEventDispatcher<Vote> voteDispatcher;
-	private SystemCounters counters;
 	private SafetyRules safetyRules;
 
 	private BFTBuilder() {
@@ -65,18 +63,13 @@ public final class BFTBuilder {
 		return this;
 	}
 
-	public BFTBuilder timeSupplier(TimeSupplier timeSupplier) {
-		this.timeSupplier = timeSupplier;
+	public BFTBuilder viewUpdate(ViewUpdate viewUpdate) {
+		this.viewUpdate = viewUpdate;
 		return this;
 	}
 
-	public BFTBuilder voteSender(RemoteEventDispatcher<Vote> voteDispatcher) {
+	public BFTBuilder voteDispatcher(RemoteEventDispatcher<Vote> voteDispatcher) {
 		this.voteDispatcher = voteDispatcher;
-		return this;
-	}
-
-	public BFTBuilder counters(SystemCounters counters) {
-		this.counters = counters;
 		return this;
 	}
 
@@ -120,25 +113,28 @@ public final class BFTBuilder {
 		return this;
 	}
 
+	public BFTBuilder noVoteEventDispatcher(EventDispatcher<NoVote> noVoteEventDispatcher) {
+		this.noVoteEventDispatcher = noVoteEventDispatcher;
+		return this;
+	}
+
 	public BFTEventProcessor build() {
 		if (!validatorSet.containsNode(self)) {
 			return EmptyBFTEventProcessor.INSTANCE;
 		}
 		final PendingVotes pendingVotes = new PendingVotes(hasher, self);
-		final ViewUpdate initialViewUpdate = ViewUpdate.genesis();
 
 		BFTEventReducer reducer = new BFTEventReducer(
 			pacemaker,
 			vertexStore,
 			viewQuorumReachedEventDispatcher,
+			noVoteEventDispatcher,
 			voteDispatcher,
 			hasher,
-			timeSupplier,
-			counters,
 			safetyRules,
 			validatorSet,
 			pendingVotes,
-			initialViewUpdate
+			viewUpdate
 		);
 
 		SyncQueues syncQueues = new SyncQueues();
@@ -148,7 +144,7 @@ public final class BFTBuilder {
 			reducer,
 			bftSyncer,
 			syncQueues,
-			initialViewUpdate
+			viewUpdate
 		);
 
 		return new BFTEventVerifier(

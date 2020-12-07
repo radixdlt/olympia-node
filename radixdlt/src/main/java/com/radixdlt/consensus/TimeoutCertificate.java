@@ -28,7 +28,6 @@ import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 
 import java.util.Objects;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 /**

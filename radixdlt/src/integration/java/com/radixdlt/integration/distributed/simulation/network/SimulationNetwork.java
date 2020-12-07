@@ -142,6 +142,7 @@ public class SimulationNetwork {
 			this.myMessages = receivedMessages
 				.filter(msg -> msg.receiver.equals(node))
 				.groupBy(MessageInTransit::getSender)
+				.serialize()
 				.flatMap(groupedObservable ->
 					channelCommunication
 						.transform(groupedObservable.getKey(), node, groupedObservable)

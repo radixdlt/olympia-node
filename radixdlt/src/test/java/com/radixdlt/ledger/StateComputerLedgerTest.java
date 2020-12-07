@@ -40,6 +40,7 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.View;
@@ -52,6 +53,7 @@ import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.mempool.Mempool;
+import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.TypedMocks;
 
@@ -118,6 +120,8 @@ public class StateComputerLedgerTest {
 			.map(Pair::getSecond).orElseThrow();
 
 		this.sut = new StateComputerLedger(
+			mock(PersistentVertexStore.class),
+			mock(TimeSupplier.class),
 			currentLedgerHeader,
 			headerComparator,
 			mempool,
@@ -145,6 +149,8 @@ public class StateComputerLedgerTest {
 			.map(Pair::getSecond).orElseThrow();
 
 		this.sut = new StateComputerLedger(
+			mock(PersistentVertexStore.class),
+			mock(TimeSupplier.class),
 			currentLedgerHeader,
 			headerComparator,
 			mempool,

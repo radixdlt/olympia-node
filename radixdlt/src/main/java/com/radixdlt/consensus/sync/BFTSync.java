@@ -26,13 +26,15 @@ import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTSyncer;
-import com.radixdlt.consensus.bft.BFTUpdate;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.VerifiedVertex;
+import com.radixdlt.consensus.bft.VerifiedVertexChain;
+import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.ViewQuorumReached;
-import com.radixdlt.consensus.bft.ViewVotingResult.FormedTC;
 import com.radixdlt.consensus.bft.ViewVotingResult.FormedQC;
+import com.radixdlt.consensus.bft.ViewVotingResult.FormedTC;
 import com.radixdlt.consensus.liveness.PacemakerReducer;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
@@ -197,6 +199,8 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 		highQC.highestTC().ifPresent(vertexStore::insertTimeoutCertificate);
 
 		if (vertexStore.addQC(qc)) {
+			// TODO: check if already sent highest
+			// TODO: Move pacemaker outside of sync
 			this.pacemakerReducer.processQC(vertexStore.highQC());
 			return SyncResult.SYNCED;
 		}
@@ -303,13 +307,18 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 		// TODO: check if there are any vertices which haven't been local sync processed yet
 		if (requiresLedgerSync(syncState)) {
 			syncState.fetched.sort(Comparator.comparing(VerifiedVertex::getView));
-			List<VerifiedVertex> nonRootVertices = syncState.fetched.stream().skip(1).collect(Collectors.toList());
-			vertexStore.rebuild(
+			ImmutableList<VerifiedVertex> nonRootVertices = syncState.fetched.stream()
+				.skip(1)
+				.collect(ImmutableList.toImmutableList());
+			VerifiedVertexStoreState vertexStoreState = VerifiedVertexStoreState.create(
+				HighQC.from(syncState.highQC().highestCommittedQC()),
 				syncState.fetched.get(0),
-				syncState.fetched.get(1).getQC(),
-				syncState.highQC().highestCommittedQC(),
 				nonRootVertices
 			);
+			if (vertexStore.tryRebuild(vertexStoreState)) {
+				// TODO: Move pacemaker outside of sync
+				pacemakerReducer.processQC(vertexStoreState.getHighQC());
+			}
 		} else {
 			log.debug("SYNC_STATE: skipping rebuild");
 		}
@@ -325,13 +334,13 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 			syncState, response.getVertices().get(0).getView(), response.getSender(), this.currentLedgerHeader
 		);
 
-		ImmutableList<BFTNode> signers = ImmutableList.of(syncState.author);
 		syncState.fetched.addAll(response.getVertices());
 
 		// TODO: verify actually extends rather than just state version comparison
 		if (syncState.committedProof.getStateVersion() <= this.currentLedgerHeader.getStateVersion()) {
 			rebuildAndSyncQC(syncState);
 		} else {
+			ImmutableList<BFTNode> signers = ImmutableList.of(syncState.author);
 			syncState.setSyncStage(SyncStage.SYNC_TO_COMMIT);
 			ledgerSyncing.compute(syncState.committedProof.getRaw(), (header, syncing) -> {
 				if (syncing == null) {
@@ -354,16 +363,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 		HashCode parentId = vertex.getParentId();
 
 		if (vertexStore.containsVertex(parentId)) {
-			// TODO: combine
-			for (VerifiedVertex v: syncState.fetched) {
-				if (!vertexStore.addQC(v.getQC())) {
-					log.info("GET_VERTICES failed: {}", syncState.highQC);
-					return;
-				}
-
-				vertexStore.insertVertex(v);
-			}
-
+			vertexStore.insertVertexChain(VerifiedVertexChain.create(syncState.fetched));
 			// Finish it off
 			this.syncing.remove(syncState.localSyncId);
 			this.syncToQC(syncState.highQC, syncState.author);
@@ -421,7 +421,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 		}
 	}
 
-	public void processBFTUpdate(BFTUpdate update) {
+	public void processBFTUpdate(BFTInsertUpdate update) {
 	}
 
 	// TODO: Verify headers match

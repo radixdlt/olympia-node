@@ -17,7 +17,8 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.consensus.bft.BFTUpdate;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
+import com.radixdlt.consensus.bft.BFTRebuildUpdate;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 
@@ -66,5 +67,7 @@ public interface BFTEventProcessor {
 	 *
 	 * @param update the BFT update
 	 */
-	void processBFTUpdate(BFTUpdate update);
+	void processBFTUpdate(BFTInsertUpdate update);
+
+	void processBFTRebuildUpdate(BFTRebuildUpdate update);
 }

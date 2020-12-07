@@ -24,7 +24,8 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTUpdate;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
+import com.radixdlt.consensus.bft.BFTRebuildUpdate;
 import com.radixdlt.consensus.bft.BFTSyncRequestProcessor;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.ViewUpdate;
@@ -67,8 +68,10 @@ public class BFTRunner implements ModuleRunner {
 	@Inject
 	public BFTRunner(
 		Observable<LedgerUpdate> ledgerUpdates,
-		Observable<BFTUpdate> bftUpdates,
-		Set<EventProcessor<BFTUpdate>> bftUpdateProcessors,
+		Observable<BFTRebuildUpdate> rebuildUpdates,
+		Set<EventProcessor<BFTRebuildUpdate>> rebuildProcessors,
+		Observable<BFTInsertUpdate> bftUpdates,
+		Set<EventProcessor<BFTInsertUpdate>> bftUpdateProcessors,
 		Observable<LocalGetVerticesRequest> bftSyncTimeouts,
 		EventProcessor<LocalGetVerticesRequest> bftSyncTimeoutProcessor,
 		Observable<ViewUpdate> viewUpdates,
@@ -119,6 +122,9 @@ public class BFTRunner implements ModuleRunner {
 			bftUpdates
 				.observeOn(singleThreadScheduler)
 				.doOnNext(update -> bftUpdateProcessors.forEach(p -> p.process(update))),
+			rebuildUpdates
+				.observeOn(singleThreadScheduler)
+				.doOnNext(update -> rebuildProcessors.forEach(p -> p.process(update))),
 			ledgerUpdates
 				.observeOn(singleThreadScheduler)
 				.doOnNext(vertexStoreSync::processLedgerUpdate),

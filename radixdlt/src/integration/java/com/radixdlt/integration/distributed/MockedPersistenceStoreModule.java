@@ -18,15 +18,20 @@
 package com.radixdlt.integration.distributed;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
+import com.radixdlt.consensus.bft.PersistentVertexStore;
+import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.safety.SafetyState;
 
 public class MockedPersistenceStoreModule extends AbstractModule {
 
-	private static class MockedPersistenceStore implements PersistentSafetyStateStore {
+	@Override
+	public void configure() {
+		bind(PersistentSafetyStateStore.class).to(MockedPersistenceStore.class);
+		bind(PersistentVertexStore.class).to(MockedPersistentVertexStore.class);
+	}
 
+	private static class MockedPersistenceStore implements PersistentSafetyStateStore {
 		@Override
 		public void commitState(SafetyState safetyState) {
 			// Nothing to do here
@@ -38,9 +43,11 @@ public class MockedPersistenceStoreModule extends AbstractModule {
 		}
 
 	}
-	@Provides
-	@Singleton
-	public PersistentSafetyStateStore persistentSafetyState() {
-		return new MockedPersistenceStore();
+
+	private static class MockedPersistentVertexStore implements PersistentVertexStore {
+		@Override
+		public void save(VerifiedVertexStoreState vertexStoreState) {
+			// Nothing to do here
+		}
 	}
 }

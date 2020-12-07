@@ -48,7 +48,7 @@ public class EpochsLocalSyncServiceProcessorTest {
 	private LocalSyncServiceAccumulatorProcessor initialProcessor;
 	private EpochChange initialEpoch;
 	private VerifiedLedgerHeaderAndProof initialHeader;
-	private Function<BFTConfiguration, LocalSyncServiceAccumulatorProcessor> localSyncFactory;
+	private Function<EpochChange, LocalSyncServiceAccumulatorProcessor> localSyncFactory;
 	private SyncedEpochSender syncedEpochSender;
 
 	private EventProcessor<LocalSyncRequest> eventProcessor;
@@ -124,7 +124,7 @@ public class EpochsLocalSyncServiceProcessorTest {
 		VerifiedLedgerHeaderAndProof genesisHeader = mock(VerifiedLedgerHeaderAndProof.class);
 		when(genesisHeader.getAccumulatorState()).thenReturn(accumulatorState);
 		when(genesisHeader.isEndOfEpoch()).thenReturn(false);
-		when(configuration.getGenesisHeader()).thenReturn(genesisHeader);
+		when(epochChange.getGenesisHeader()).thenReturn(genesisHeader);
 		when(epochChange.getBFTConfiguration()).thenReturn(configuration);
 		when(ledgerUpdate.getEpochChange()).thenReturn(Optional.of(epochChange));
 		processor.epochsLedgerUpdateEventProcessor().process(ledgerUpdate);

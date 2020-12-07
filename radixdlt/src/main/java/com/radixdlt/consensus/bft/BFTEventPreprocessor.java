@@ -98,6 +98,16 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 			viewQueues.getOrDefault(viewUpdate.getCurrentView(), new LinkedList<>())
 					.forEach(this::processViewCachedEvent);
 			viewQueues.keySet().removeIf(v -> v.lte(viewUpdate.getCurrentView()));
+
+			log.debug("ViewUpdate: Clearing Queues: {}", syncQueues);
+			for (SyncQueue queue : syncQueues.getQueues()) {
+				if (clearAndExecute(queue, viewUpdate.getCurrentView().previous())) {
+					queue.pop();
+					while (peekAndExecute(queue, null)) {
+						queue.pop();
+					}
+				}
+			}
 		}
 	}
 
@@ -114,10 +124,9 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	}
 
 	@Override
-	public void processBFTUpdate(BFTUpdate update) {
-		HashCode vertexId = update.getInsertedVertex().getId();
-
-		log.trace("LOCAL_SYNC: {}", update.getInsertedVertex());
+	public void processBFTUpdate(BFTInsertUpdate update) {
+		HashCode vertexId = update.getInserted().getId();
+		log.trace("LOCAL_SYNC: {}", vertexId);
 		for (SyncQueue queue : syncQueues.getQueues()) {
 			if (peekAndExecute(queue, vertexId)) {
 				queue.pop();
@@ -128,6 +137,21 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		}
 
 		forwardTo.processBFTUpdate(update);
+	}
+
+	@Override
+	public void processBFTRebuildUpdate(BFTRebuildUpdate rebuildUpdate) {
+		rebuildUpdate.getVertexStoreState().getVertices().forEach(v -> {
+			HashCode vertexId = v.getId();
+			for (SyncQueue queue : syncQueues.getQueues()) {
+				if (peekAndExecute(queue, vertexId)) {
+					queue.pop();
+					while (peekAndExecute(queue, null)) {
+						queue.pop();
+					}
+				}
+			}
+		});
 	}
 
 	@Override
@@ -151,23 +175,6 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	@Override
 	public void processLocalTimeout(ScheduledLocalTimeout scheduledLocalTimeout) {
 		forwardTo.processLocalTimeout(scheduledLocalTimeout);
-
-		View view = scheduledLocalTimeout.view();
-
-		if (!view.equals(this.latestViewUpdate.getCurrentView())) {
-			return;
-		}
-
-		// TODO: check if this is correct; move to processViewUpdate?
-		log.debug("LocalTimeout: Clearing Queues: {}", syncQueues);
-		for (SyncQueue queue : syncQueues.getQueues()) {
-			if (clearAndExecute(queue, view)) {
-				queue.pop();
-				while (peekAndExecute(queue, null)) {
-					queue.pop();
-				}
-			}
-		}
 	}
 
 	@Override

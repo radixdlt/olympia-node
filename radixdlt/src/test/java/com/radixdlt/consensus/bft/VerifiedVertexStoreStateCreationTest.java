@@ -17,37 +17,25 @@
 
 package com.radixdlt.consensus.bft;
 
-import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.BFTHeader;
-import com.radixdlt.consensus.Ledger;
+import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.VoteData;
-import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.HashUtils;
-import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Optional;
-
-public class VertexStoreCreationTest {
+public class VerifiedVertexStoreStateCreationTest {
 	private VerifiedVertex genesisVertex;
 	private HashCode genesisHash;
-	private Ledger ledger;
-	private VertexStoreEventSender vertexStoreEventSender;
-	private EventDispatcher<BFTUpdate> bftUpdateSender;
-	private EventDispatcher<BFTCommittedUpdate> committedSender;
-	private SystemCounters counters;
 	private static final LedgerHeader MOCKED_HEADER = LedgerHeader.create(
 		0, View.genesis(), new AccumulatorState(0, HashUtils.zero256()), 0
 	);
@@ -56,11 +44,6 @@ public class VertexStoreCreationTest {
 	public void setup() {
 		this.genesisHash = HashUtils.zero256();
 		this.genesisVertex = new VerifiedVertex(UnverifiedVertex.createGenesis(MOCKED_HEADER), genesisHash);
-		this.ledger = mock(Ledger.class);
-		this.vertexStoreEventSender = mock(VertexStoreEventSender.class);
-		this.counters = new SystemCountersImpl();
-		this.bftUpdateSender = rmock(EventDispatcher.class);
-		this.committedSender = rmock(EventDispatcher.class);
 	}
 
 	@Test
@@ -69,15 +52,9 @@ public class VertexStoreCreationTest {
 		VoteData voteData = new VoteData(genesisHeader, genesisHeader, null);
 		QuorumCertificate badRootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 		assertThatThrownBy(() ->
-			VertexStore.create(
-				genesisVertex,
-				badRootQC,
-				ledger,
-				bftUpdateSender,
-				committedSender,
-				vertexStoreEventSender,
-				counters,
-				Optional.empty()
+			VerifiedVertexStoreState.create(
+				HighQC.from(badRootQC),
+				genesisVertex
 			)
 		).isInstanceOf(IllegalStateException.class);
 	}
@@ -89,15 +66,9 @@ public class VertexStoreCreationTest {
 		VoteData voteData = new VoteData(genesisHeader, genesisHeader, otherHeader);
 		QuorumCertificate badRootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 		assertThatThrownBy(() ->
-			VertexStore.create(
-				genesisVertex,
-				badRootQC,
-				ledger,
-				bftUpdateSender,
-				committedSender,
-				vertexStoreEventSender,
-				counters,
-				Optional.empty()
+			VerifiedVertexStoreState.create(
+				HighQC.from(badRootQC),
+				genesisVertex
 			)
 		).isInstanceOf(IllegalStateException.class);
 	}
@@ -108,15 +79,9 @@ public class VertexStoreCreationTest {
 		VoteData voteData = new VoteData(genesisHeader, genesisHeader, genesisHeader);
 		QuorumCertificate badRootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 		assertThatThrownBy(() ->
-			VertexStore.create(
-				genesisVertex,
-				badRootQC,
-				ledger,
-				bftUpdateSender,
-				committedSender,
-				vertexStoreEventSender,
-				counters,
-				Optional.empty()
+			VerifiedVertexStoreState.create(
+				HighQC.from(badRootQC),
+				genesisVertex
 			)
 		).isInstanceOf(IllegalStateException.class);
 	}

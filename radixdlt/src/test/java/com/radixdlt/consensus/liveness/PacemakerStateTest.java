@@ -37,19 +37,17 @@ public class PacemakerStateTest {
 
 	private PacemakerState pacemakerState;
 
-	@Before
-	public void setUp() {
-		when(proposerElection.getProposer(any())).thenReturn(BFTNode.random());
-		this.pacemakerState = new PacemakerState(this.proposerElection, this.viewUpdateSender);
-	}
+    @Before
+    public void setUp() {
+        when(proposerElection.getProposer(any())).thenReturn(BFTNode.random());
+        ViewUpdate viewUpdate = ViewUpdate.create(View.genesis(), mock(HighQC.class), BFTNode.random(), BFTNode.random());
+        this.pacemakerState = new PacemakerState(viewUpdate, this.proposerElection, this.viewUpdateSender);
+    }
 
 	@Test
 	public void when_process_qc_for_wrong_view__then_ignored() {
 		HighQC highQC = mock(HighQC.class);
-		QuorumCertificate qc = mock(QuorumCertificate.class);
-		when(qc.getView()).thenReturn(View.of(1));
-		when(highQC.highestQC()).thenReturn(qc);
-		when(highQC.highestCommittedQC()).thenReturn(qc);
+		when(highQC.getHighestView()).thenReturn(View.of(1));
 
 		// Move ahead for a bit so we can send in a QC for a lower view
 		this.pacemakerState.processQC(highQCFor(View.of(0)));
@@ -70,16 +68,13 @@ public class PacemakerStateTest {
 	@Test
 	public void when_process_qc_for_current_view__then_processed() {
 		HighQC highQC = mock(HighQC.class);
-		QuorumCertificate qc = mock(QuorumCertificate.class);
-		when(qc.getView()).thenReturn(View.of(0));
-		when(highQC.highestQC()).thenReturn(qc);
-		when(highQC.highestCommittedQC()).thenReturn(qc);
+		when(highQC.getHighestView()).thenReturn(View.of(0));
 
 		this.pacemakerState.processQC(highQC);
 		verify(viewUpdateSender, times(1))
 			.dispatch(argThat(v -> v.getCurrentView().equals(View.of(1))));
 
-		when(qc.getView()).thenReturn(View.of(1));
+		when(highQC.getHighestView()).thenReturn(View.of(1));
 		this.pacemakerState.processQC(highQC);
 		verify(viewUpdateSender, times(1))
 			.dispatch(argThat(v -> v.getCurrentView().equals(View.of(2))));
@@ -106,6 +101,7 @@ public class PacemakerStateTest {
 		when(cqc.getView()).thenReturn(View.of(0));
 		when(highQC.highestQC()).thenReturn(hqc);
 		when(highQC.highestCommittedQC()).thenReturn(cqc);
+		when(highQC.getHighestView()).thenReturn(view);
 		return highQC;
 	}
 }

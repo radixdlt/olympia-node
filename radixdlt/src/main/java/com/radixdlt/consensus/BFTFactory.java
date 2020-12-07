@@ -21,10 +21,10 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTSyncer;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.ViewQuorumReached;
+import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.safety.SafetyRules;
-import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.environment.EventProcessor;
 
 /**
@@ -43,7 +43,7 @@ public interface BFTFactory {
 		BFTSyncer bftSyncer,
 		EventProcessor<ViewQuorumReached> viewQuorumReachedEventProcessor,
 		BFTValidatorSet validatorSet,
-		SystemCounters counters,
+		ViewUpdate viewUpdate,
 		SafetyRules safetyRules
 	);
 }

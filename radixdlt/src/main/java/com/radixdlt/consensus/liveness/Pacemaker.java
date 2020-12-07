@@ -110,24 +110,32 @@ public final class Pacemaker {
 		this.latestViewUpdate = Objects.requireNonNull(initialViewUpdate);
 	}
 
+	public void start() {
+		log.info("Pacemaker Start: {}", latestViewUpdate);
+		this.startView();
+	}
+
 	/** Processes a local view update message **/
 	public void processViewUpdate(ViewUpdate viewUpdate) {
+		log.trace("View Update: {}", viewUpdate);
+
 		final View previousView = this.latestViewUpdate.getCurrentView();
-		this.latestViewUpdate = viewUpdate;
-
-		final BFTNode currentViewProposer = viewUpdate.getLeader();
-		log.trace("View Update: {} nextLeader: {}", viewUpdate, currentViewProposer);
-
 		if (viewUpdate.getCurrentView().lte(previousView)) {
 			return;
 		}
+		this.latestViewUpdate = viewUpdate;
 
-		long timeout = timeoutCalculator.timeout(viewUpdate.uncommittedViewsCount());
-		ScheduledLocalTimeout scheduledLocalTimeout = ScheduledLocalTimeout.create(viewUpdate, timeout);
+		this.startView();
+	}
+
+	private void startView() {
+		long timeout = timeoutCalculator.timeout(latestViewUpdate.uncommittedViewsCount());
+		ScheduledLocalTimeout scheduledLocalTimeout = ScheduledLocalTimeout.create(latestViewUpdate, timeout);
 		this.timeoutSender.dispatch(scheduledLocalTimeout, timeout);
 
+		final BFTNode currentViewProposer = latestViewUpdate.getLeader();
 		if (this.self.equals(currentViewProposer)) {
-			Optional<Proposal> proposalMaybe = generateProposal(viewUpdate.getCurrentView());
+			Optional<Proposal> proposalMaybe = generateProposal(latestViewUpdate.getCurrentView());
 			proposalMaybe.ifPresent(proposal -> {
 				log.trace("Broadcasting proposal: {}", proposal);
 				this.proposalBroadcaster.broadcastProposal(proposal, this.validatorSet.nodes());
@@ -137,7 +145,7 @@ public final class Pacemaker {
 	}
 
 	private Optional<Proposal> generateProposal(View view) {
-		final HighQC highQC = this.vertexStore.highQC();
+		final HighQC highQC = this.latestViewUpdate.getHighQC();
 		final QuorumCertificate highestQC = highQC.highestQC();
 
 		final Command nextCommand;
@@ -204,8 +212,9 @@ public final class Pacemaker {
 		final UnverifiedVertex proposedVertex = UnverifiedVertex.createVertex(highQC.highestQC(), view, null);
 		final VerifiedVertex verifiedVertex = new VerifiedVertex(proposedVertex, hasher.hash(proposedVertex));
 		final long currentTime = this.timeSupplier.currentTime();
+
 		return this.vertexStore.insertVertex(verifiedVertex)
-			.map(header -> this.safetyRules.createVote(verifiedVertex, header, currentTime, highQC));
+			.map(update -> this.safetyRules.createVote(verifiedVertex, update.getHeader(), currentTime, highQC));
 	}
 
 	private void  updateTimeoutCounters(ScheduledLocalTimeout scheduledTimeout) {

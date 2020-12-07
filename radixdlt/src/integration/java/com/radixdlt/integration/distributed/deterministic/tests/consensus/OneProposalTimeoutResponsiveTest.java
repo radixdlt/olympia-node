@@ -68,6 +68,7 @@ public class OneProposalTimeoutResponsiveTest {
 		};
 	}
 
+	// TODO(luk): failing
 	@Test
 	public void when_run_3_correct_nodes_with_1_timeout__then_bft_should_be_responsive() {
 		this.run(3, 50_000, 100);
