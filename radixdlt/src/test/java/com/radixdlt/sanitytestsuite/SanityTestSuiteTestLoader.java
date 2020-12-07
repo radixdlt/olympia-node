@@ -33,7 +33,9 @@ import com.radixdlt.utils.JSONFormatter;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 
@@ -72,7 +74,7 @@ public final class SanityTestSuiteTestLoader {
 
 			FileReader fileReader = new FileReader(file);
 			reader = new JsonReader(fileReader);
-		} catch (Exception e) {
+		} catch (IOException e) {
 			throw new IllegalStateException("failed to load test vectors, e: " + e);
 		}
 
