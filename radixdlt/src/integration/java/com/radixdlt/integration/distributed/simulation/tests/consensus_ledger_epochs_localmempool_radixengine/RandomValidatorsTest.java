@@ -40,7 +40,6 @@ public class RandomValidatorsTest {
 			NetworkLatencies.fixed()
 		)
 		.ledgerAndRadixEngineWithEpochHighView(View.of(10))
-		.checkEpochsHighViewCorrect("epochHighView", View.of(100))
 		.checkConsensusSafety("safety")
 		.checkConsensusLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
 		.checkConsensusNoTimeouts("noTimeouts")
