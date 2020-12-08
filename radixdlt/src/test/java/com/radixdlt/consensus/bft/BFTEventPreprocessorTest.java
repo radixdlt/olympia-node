@@ -17,7 +17,6 @@
 
 package com.radixdlt.consensus.bft;
 
-/*
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -26,8 +25,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -37,7 +34,6 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTSyncer.SyncResult;
-import com.radixdlt.consensus.bft.SyncQueues.SyncQueue;
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
@@ -45,111 +41,96 @@ import com.radixdlt.utils.Pair;
 import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
- */
+
 public class BFTEventPreprocessorTest {
-	/* TODO(luk): fixme
-	private static final ECKeyPair SELF_KEY = ECKeyPair.generateNew();
-	private BFTEventPreprocessor preprocessor;
-	private BFTSync vertexStoreSync;
-	private BFTEventProcessor forwardTo;
-	private SyncQueues syncQueues;
-	private BFTNode self;
+    private static final ECKeyPair SELF_KEY = ECKeyPair.generateNew();
+    private BFTEventPreprocessor preprocessor;
+    private BFTSync vertexStoreSync;
+    private BFTEventProcessor forwardTo;
+    private SyncQueues syncQueues;
+    private BFTNode self;
 
-	@Before
-	public void setUp() {
-		this.vertexStoreSync = mock(BFTSync.class);
-		this.forwardTo = mock(BFTEventProcessor.class);
-		this.syncQueues = mock(SyncQueues.class);
-		this.self = mock(BFTNode.class);
+    @Before
+    public void setUp() {
+        this.vertexStoreSync = mock(BFTSync.class);
+        this.forwardTo = mock(BFTEventProcessor.class);
+        this.syncQueues = mock(SyncQueues.class);
+        this.self = mock(BFTNode.class);
 
-		when(this.self.getKey()).thenReturn(SELF_KEY.getPublicKey());
+        when(this.self.getKey()).thenReturn(SELF_KEY.getPublicKey());
 
-		when(syncQueues.isEmptyElseAdd(any())).thenReturn(true);
+        when(syncQueues.isEmptyElseAdd(any())).thenReturn(true);
 
-		this.preprocessor = new BFTEventPreprocessor(
-			self,
-			forwardTo,
-			vertexStoreSync,
-			syncQueues,
-			ViewUpdate.create(View.genesis().next(), mock(HighQC.class), self, BFTNode.random())
-		);
-	}
+        this.preprocessor = new BFTEventPreprocessor(
+                self,
+                forwardTo,
+                vertexStoreSync,
+                syncQueues,
+                ViewUpdate.create(View.genesis().next(), mock(HighQC.class), self, BFTNode.random())
+        );
+    }
 
-	private Proposal createProposal(boolean goodView, boolean synced) {
-		Proposal proposal = mock(Proposal.class);
-		when(proposal.getAuthor()).thenReturn(self);
-		UnverifiedVertex vertex = mock(UnverifiedVertex.class);
-		when(proposal.getVertex()).thenReturn(vertex);
-		when(vertex.getView()).thenReturn(goodView ? View.of(1) : View.of(0));
-		when(proposal.getView()).thenReturn(goodView ? View.of(1) : View.of(0));
+    private Proposal createProposal(boolean goodView, boolean synced) {
+        Proposal proposal = mock(Proposal.class);
+        when(proposal.getAuthor()).thenReturn(self);
+        UnverifiedVertex vertex = mock(UnverifiedVertex.class);
+        when(proposal.getVertex()).thenReturn(vertex);
+        when(vertex.getView()).thenReturn(goodView ? View.of(1) : View.of(0));
+        when(proposal.getView()).thenReturn(goodView ? View.of(1) : View.of(0));
 
-		QuorumCertificate qc = mock(QuorumCertificate.class);
-		BFTHeader proposed = mock(BFTHeader.class);
-		when(qc.getProposed()).thenReturn(proposed);
-		when(vertex.getQC()).thenReturn(qc);
+        QuorumCertificate qc = mock(QuorumCertificate.class);
+        BFTHeader proposed = mock(BFTHeader.class);
+        when(qc.getProposed()).thenReturn(proposed);
+        when(vertex.getQC()).thenReturn(qc);
 
-		QuorumCertificate committedQC = mock(QuorumCertificate.class);
-		when(committedQC.getCommittedAndLedgerStateProof()).thenReturn(
-			Optional.of(Pair.of(mock(BFTHeader.class), mock(VerifiedLedgerHeaderAndProof.class)))
-		);
-		HighQC highQC = mock(HighQC.class);
-		when(highQC.highestQC()).thenReturn(qc);
-		when(highQC.highestCommittedQC()).thenReturn(committedQC);
-		when(proposal.highQC()).thenReturn(highQC);
+        QuorumCertificate committedQC = mock(QuorumCertificate.class);
+        when(committedQC.getCommittedAndLedgerStateProof()).thenReturn(
+                Optional.of(Pair.of(mock(BFTHeader.class), mock(VerifiedLedgerHeaderAndProof.class)))
+        );
+        HighQC highQC = mock(HighQC.class);
+        when(highQC.highestQC()).thenReturn(qc);
+        when(highQC.highestCommittedQC()).thenReturn(committedQC);
+        when(proposal.highQC()).thenReturn(highQC);
 
-		when(vertexStoreSync.syncToQC(any(), any())).thenReturn(synced ? SyncResult.SYNCED : SyncResult.IN_PROGRESS);
-		return proposal;
-	}
+        when(vertexStoreSync.syncToQC(any(), any())).thenReturn(synced ? SyncResult.SYNCED : SyncResult.IN_PROGRESS);
+        return proposal;
+    }
 
-	@Test
-	public void when_process_vote_unsynced__event_not_forwarded() {
-		Vote vote = mock(Vote.class);
-		when(vote.getView()).thenReturn(View.of(1));
-		when(vote.getSignature()).thenReturn(mock(ECDSASignature.class));
-		when(vote.getAuthor()).thenReturn(mock(BFTNode.class));
-		when(vertexStoreSync.syncToQC(any(), any())).thenReturn(SyncResult.IN_PROGRESS);
-		preprocessor.processVote(vote);
-		verify(forwardTo, never()).processVote(vote);
-	}
+    @Test
+    public void when_process_vote_unsynced__event_not_forwarded() {
+        Vote vote = mock(Vote.class);
+        when(vote.getView()).thenReturn(View.of(1));
+        when(vote.getSignature()).thenReturn(mock(ECDSASignature.class));
+        when(vote.getAuthor()).thenReturn(mock(BFTNode.class));
+        when(vertexStoreSync.syncToQC(any(), any())).thenReturn(SyncResult.IN_PROGRESS);
+        preprocessor.processVote(vote);
+        verify(forwardTo, never()).processVote(vote);
+    }
 
-	@Test
-	public void when_process_irrelevant_proposal__event_gets_thrown_away() {
-		Proposal proposal = createProposal(false, true);
-		when(syncQueues.isEmptyElseAdd(any())).thenReturn(true);
-		preprocessor.processProposal(proposal);
-		verify(syncQueues, never()).add(any());
-		verify(forwardTo, never()).processProposal(any());
-	}
+    @Test
+    public void when_process_irrelevant_proposal__event_gets_thrown_away() {
+        Proposal proposal = createProposal(false, true);
+        when(syncQueues.isEmptyElseAdd(any())).thenReturn(true);
+        preprocessor.processProposal(proposal);
+        verify(syncQueues, never()).add(any());
+        verify(forwardTo, never()).processProposal(any());
+    }
 
-	@Test
-	public void when_process_proposal_not_synced__then_proposal_is_queued() {
-		Proposal proposal = createProposal(true, false);
-		when(syncQueues.isEmptyElseAdd(eq(proposal))).thenReturn(true);
-		preprocessor.processProposal(proposal);
-		verify(syncQueues, times(1)).add(eq(proposal));
-		verify(forwardTo, never()).processProposal(any());
-	}
+    @Test
+    public void when_process_proposal_not_synced__then_proposal_is_queued() {
+        Proposal proposal = createProposal(true, false);
+        when(syncQueues.isEmptyElseAdd(eq(proposal))).thenReturn(true);
+        preprocessor.processProposal(proposal);
+        verify(syncQueues, times(1)).add(eq(proposal));
+        verify(forwardTo, never()).processProposal(any());
+    }
 
-	@Test
-	public void when_process_proposal_synced__then_proposal_is_forwarded() {
-		Proposal proposal = createProposal(true, true);
-		when(syncQueues.isEmptyElseAdd(eq(proposal))).thenReturn(true);
-		preprocessor.processProposal(proposal);
-		verify(syncQueues, never()).add(any());
-		verify(forwardTo, times(1)).processProposal(eq(proposal));
-	}
-
-	@Test
-	public void when_bft_update__then_pending_events_processed() {
-		BFTUpdate bftUpdate = mock(BFTUpdate.class);
-		VerifiedVertex verifiedVertex = mock(VerifiedVertex.class);
-		HashCode hash = mock(HashCode.class);
-		when(bftUpdate.getInsertedVertex()).thenReturn(verifiedVertex);
-		when(verifiedVertex.getId()).thenReturn(hash);
-		when(this.syncQueues.getQueues()).thenReturn(ImmutableList.of(mock(SyncQueue.class)));
-		preprocessor.processBFTUpdate(bftUpdate);
-		verify(syncQueues, times(1)).getQueues();
-	}
-
-	 */
+    @Test
+    public void when_process_proposal_synced__then_proposal_is_forwarded() {
+        Proposal proposal = createProposal(true, true);
+        when(syncQueues.isEmptyElseAdd(eq(proposal))).thenReturn(true);
+        preprocessor.processProposal(proposal);
+        verify(syncQueues, never()).add(any());
+        verify(forwardTo, times(1)).processProposal(eq(proposal));
+    }
 }

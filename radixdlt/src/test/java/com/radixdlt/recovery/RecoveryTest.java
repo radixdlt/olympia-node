@@ -67,7 +67,6 @@ import org.assertj.core.api.Condition;
 import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -241,7 +240,6 @@ public class RecoveryTest {
 	}
 
 	@Test
-	@Ignore // TODO(luk): fixme
 	public void on_reboot_should_load_same_last_vote() {
 		// Arrange
 		processForCount(100);
@@ -254,7 +252,6 @@ public class RecoveryTest {
 		SafetyState safetyState = currentInjector.getInstance(SafetyState.class);
 		assertThat(safetyState.getLastVotedView()).isEqualTo(vote.getView());
 	}
-
 
 	@Test
 	public void on_reboot_should_only_emit_pacemaker_events() {

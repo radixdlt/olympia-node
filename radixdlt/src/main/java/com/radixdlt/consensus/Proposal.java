@@ -56,8 +56,6 @@ public final class Proposal implements ConsensusEvent {
 	@DsonOutput(Output.ALL)
 	private final QuorumCertificate committedQC;
 
-	@JsonProperty("highestTC")
-	@DsonOutput(Output.ALL)
 	private final Optional<TimeoutCertificate> highestTC;
 
 	@JsonCreator
@@ -66,17 +64,17 @@ public final class Proposal implements ConsensusEvent {
 		@JsonProperty("committedQC") QuorumCertificate committedQC,
 		@JsonProperty("author") byte[] author,
 		@JsonProperty("signature") ECDSASignature signature,
-		@JsonProperty("highestTC") Optional<TimeoutCertificate> highestTC
+		@JsonProperty("highestTC") TimeoutCertificate highestTC
 	) throws PublicKeyException {
-		this(vertex, committedQC, BFTNode.fromPublicKeyBytes(author), signature, highestTC);
+		this(vertex, committedQC, BFTNode.fromPublicKeyBytes(author), signature, Optional.ofNullable(highestTC));
 	}
 
 	public Proposal(
-			UnverifiedVertex vertex,
-			QuorumCertificate committedQC,
-			BFTNode author,
-			ECDSASignature signature,
-			Optional<TimeoutCertificate> highestTC
+		UnverifiedVertex vertex,
+		QuorumCertificate committedQC,
+		BFTNode author,
+		ECDSASignature signature,
+		Optional<TimeoutCertificate> highestTC
 	) {
 		this.vertex = Objects.requireNonNull(vertex);
 		this.committedQC = committedQC;
@@ -119,6 +117,12 @@ public final class Proposal implements ConsensusEvent {
 	@DsonOutput(Output.ALL)
 	private byte[] getSerializerAuthor() {
 		return this.author == null ? null : this.author.getKey().getBytes();
+	}
+
+	@JsonProperty("highestTC")
+	@DsonOutput(Output.ALL)
+	public TimeoutCertificate getSerializerTimeoutCertificate() {
+		return this.highestTC.orElse(null);
 	}
 
 	@Override

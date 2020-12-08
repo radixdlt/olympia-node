@@ -92,7 +92,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		final View view = update.getHeader().getView();
 		if (view.lt(this.latestViewUpdate.getCurrentView())) {
 			log.trace("InsertUpdate: Ignoring insert {} for view {}, current view at {}",
-					update, view, this.latestViewUpdate.getCurrentView());
+				update, view, this.latestViewUpdate.getCurrentView());
 			return;
 		}
 
@@ -144,14 +144,14 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		final View view = vote.getView();
 
 		if (view.lt(this.latestViewUpdate.getCurrentView())) {
-			log.trace("Vote: Ignoring vote from {} for view {}, current view is {}",
-					vote.getAuthor(), view, this.latestViewUpdate.getCurrentView());
+			log.trace("Vote: Ignoring vote from {} for view {}, current view at {}",
+				vote.getAuthor(), view, this.latestViewUpdate.getCurrentView());
 			return;
 		}
 
 		if (this.hasReachedQuorum) {
 			log.trace("Vote: Ignoring vote from {} for view {}, quorum has already been reached",
-					vote.getAuthor(), view);
+				vote.getAuthor(), view);
 			return;
 		}
 
@@ -162,13 +162,13 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			log.trace("Vote has been processed but didn't form a quorum");
 		} else if (result instanceof VoteProcessingResult.VoteRejected) {
 			log.trace("Vote has been rejected because of: {}",
-					((VoteProcessingResult.VoteRejected) result).getReason());
+				((VoteProcessingResult.VoteRejected) result).getReason());
 		} else if (result instanceof VoteProcessingResult.QuorumReached) {
 			this.hasReachedQuorum = true;
 			final ViewVotingResult viewResult =
-					((VoteProcessingResult.QuorumReached) result).getViewVotingResult();
+				((VoteProcessingResult.QuorumReached) result).getViewVotingResult();
 			viewQuorumReachedEventDispatcher
-					.dispatch(new ViewQuorumReached(viewResult, vote.getAuthor()));
+				.dispatch(new ViewQuorumReached(viewResult, vote.getAuthor()));
 		}
 	}
 

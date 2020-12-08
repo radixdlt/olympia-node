@@ -40,7 +40,7 @@ import static org.mockito.Mockito.when;
 
 /**
  * This tests that the {@link SafetyRules} implementation obeys HotStuff's safety and commit rules.
-*/
+ */
 public class SafetyRulesTest {
 	private SafetyState safetyState;
 	private SafetyRules safetyRules;

@@ -259,7 +259,6 @@ public final class ConsensusModule extends AbstractModule {
 		EventDispatcher<BFTHighQCUpdate> highQCUpdateEventDispatcher,
 		EventDispatcher<BFTCommittedUpdate> committedSender,
 		BFTConfiguration bftConfiguration,
-		SystemCounters counters,
 		Ledger ledger
 	) {
 		return VertexStore.create(

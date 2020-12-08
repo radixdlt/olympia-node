@@ -107,9 +107,9 @@ public final class SafetyRules {
 	 * @return signed proposal object for consensus
 	 */
 	public Optional<Proposal> signProposal(
-			VerifiedVertex proposedVertex,
-			QuorumCertificate highestCommittedQC,
-			Optional<TimeoutCertificate> highestTC
+		VerifiedVertex proposedVertex,
+		QuorumCertificate highestCommittedQC,
+		Optional<TimeoutCertificate> highestTC
 	) {
 		final Builder safetyStateBuilder = this.state.toBuilder();
 		if (!checkLocked(proposedVertex, safetyStateBuilder)) {
@@ -211,6 +211,6 @@ public final class SafetyRules {
 
 	public Optional<Vote> getLastVote(View view) {
 		return this.state.getLastVote()
-				.filter(lastVote -> lastVote.getView().equals(view));
+			.filter(lastVote -> lastVote.getView().equals(view));
 	}
 }

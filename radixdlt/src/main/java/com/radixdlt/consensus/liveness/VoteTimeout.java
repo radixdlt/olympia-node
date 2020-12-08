@@ -47,8 +47,8 @@ public class VoteTimeout {
 
     @JsonCreator
     public VoteTimeout(
-            @JsonProperty("view") View view,
-            @JsonProperty("epoch") long epoch
+        @JsonProperty("view") View view,
+        @JsonProperty("epoch") long epoch
     ) {
         this.view = Objects.requireNonNull(view);
         this.epoch = epoch;
@@ -93,6 +93,6 @@ public class VoteTimeout {
     @Override
     public String toString() {
         return String.format("%s{epoch=%s view=%s}",
-                getClass().getSimpleName(), getEpoch(), getView());
+            getClass().getSimpleName(), getEpoch(), getView());
     }
 }

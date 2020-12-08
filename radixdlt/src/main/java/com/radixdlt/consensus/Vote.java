@@ -71,11 +71,11 @@ public final class Vote implements ConsensusEvent {
 	}
 
 	public Vote(
-			BFTNode author,
-			TimestampedVoteData voteData,
-			ECDSASignature signature,
-			HighQC highQC,
-			Optional<ECDSASignature> timeoutSignature
+		BFTNode author,
+		TimestampedVoteData voteData,
+		ECDSASignature signature,
+		HighQC highQC,
+		Optional<ECDSASignature> timeoutSignature
 	) {
 		this.author = Objects.requireNonNull(author);
 		this.voteData = Objects.requireNonNull(voteData);

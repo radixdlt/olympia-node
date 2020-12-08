@@ -61,9 +61,9 @@ public final class HighQC {
 	}
 
 	private HighQC(
-			QuorumCertificate highestQC,
-			QuorumCertificate highestCommittedQC,
-			Optional<TimeoutCertificate> highestTC
+		QuorumCertificate highestQC,
+		QuorumCertificate highestCommittedQC,
+		Optional<TimeoutCertificate> highestTC
 	) {
 		this.highestQC = Objects.requireNonNull(highestQC);
 		// Don't include separate committedQC if it is the same as highQC.
@@ -101,9 +101,10 @@ public final class HighQC {
 	 * @return A new {@link HighQC}
 	 */
 	public static HighQC from(
-			QuorumCertificate highestQC,
-			QuorumCertificate highestCommittedQC,
-			Optional<TimeoutCertificate> highestTC) {
+		QuorumCertificate highestQC,
+		QuorumCertificate highestCommittedQC,
+		Optional<TimeoutCertificate> highestTC
+	) {
 		return new HighQC(highestQC, Objects.requireNonNull(highestCommittedQC), highestTC);
 	}
 

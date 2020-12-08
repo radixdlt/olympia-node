@@ -236,14 +236,4 @@ public final class Pacemaker {
 		final ScheduledLocalTimeout nextTimeout = scheduledTimeout.nextRetry(timeout);
 		this.timeoutSender.dispatch(nextTimeout, timeout);
 	}
-
-	/**
-	 * Signifies to the pacemaker that a quorum has agreed that a view has
-	 * been completed.
-	 *
-	 * @param highQC the sync info for the view
-	 */
-	public void processQC(HighQC highQC) {
-		this.pacemakerReducer.processQC(highQC);
-	}
 }

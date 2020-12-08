@@ -57,8 +57,8 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
 
 	@Inject
 	public BerkeleySafetyStateStore(
-			DatabaseEnvironment dbEnv,
-			Serialization serialization
+		DatabaseEnvironment dbEnv,
+		Serialization serialization
 	) {
 		this.dbEnv = Objects.requireNonNull(dbEnv, "dbEnv is required");
 		this.serialization = Objects.requireNonNull(serialization);
@@ -111,7 +111,7 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
 			if (status == OperationStatus.SUCCESS) {
 				try {
 					final SafetyState deserializedState =
-							serialization.fromDson(value.getData(), SafetyState.class);
+						serialization.fromDson(value.getData(), SafetyState.class);
 					return Optional.of(deserializedState);
 				} catch (DeserializeException ex) {
 					logger.error("Failed to deserialize persisted SafetyState", ex);
@@ -126,7 +126,7 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
 	@Override
 	public void commitState(SafetyState safetyState) {
 		final Transaction transaction =
-				dbEnv.getEnvironment().beginTransaction(null, null);
+			dbEnv.getEnvironment().beginTransaction(null, null);
 		try {
 			final byte[] serializedState = serialization.toDson(safetyState, DsonOutput.Output.PERSIST);
 
