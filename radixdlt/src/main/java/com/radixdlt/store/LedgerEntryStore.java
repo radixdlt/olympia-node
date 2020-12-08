@@ -28,7 +28,7 @@ import java.util.Set;
 public interface LedgerEntryStore extends LedgerEntryStoreView {
 	Transaction createTransaction();
 
-	LedgerEntryStoreResult execute(
+	LedgerEntryStoreResult store(
 		Transaction tx,
 		LedgerEntry atom,
 		Set<StoreIndex> uniqueIndices,

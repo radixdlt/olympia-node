@@ -28,6 +28,6 @@ import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 public interface RadixEngineAtomicCommitManager {
 	void startTransaction();
 	void commitTransaction();
-	void abortTransction();
+	void abortTransaction();
 	void save(VerifiedVertexStoreState vertexStoreState);
 }

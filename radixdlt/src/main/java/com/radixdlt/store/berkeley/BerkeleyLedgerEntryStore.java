@@ -241,7 +241,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 	}
 
 	@Override
-	public LedgerEntryStoreResult execute(
+	public LedgerEntryStoreResult store(
 		Transaction tx,
 		LedgerEntry atom,
 		Set<StoreIndex> uniqueIndices,
@@ -498,11 +498,11 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 	}
 
 	@Override
-	public boolean contains(Transaction transaction, LedgerIndexType type, StoreIndex index, LedgerSearchMode mode) {
+	public boolean contains(Transaction tx, LedgerIndexType type, StoreIndex index, LedgerSearchMode mode) {
 		Objects.requireNonNull(type, "type is required");
 		Objects.requireNonNull(index, "index is required");
 		Objects.requireNonNull(mode, "mode is required");
-		try (SecondaryCursor databaseCursor = toSecondaryCursor(transaction, type)) {
+		try (SecondaryCursor databaseCursor = toSecondaryCursor(tx, type)) {
 			DatabaseEntry pKey = new DatabaseEntry();
 			DatabaseEntry key = new DatabaseEntry(index.asKey());
 			if (mode == LedgerSearchMode.EXACT) {

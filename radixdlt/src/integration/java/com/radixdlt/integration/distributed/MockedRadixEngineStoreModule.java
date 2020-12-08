@@ -71,7 +71,7 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 			}
 
 			@Override
-			public void abortTransction() {
+			public void abortTransaction() {
 				// no-op
 			}
 

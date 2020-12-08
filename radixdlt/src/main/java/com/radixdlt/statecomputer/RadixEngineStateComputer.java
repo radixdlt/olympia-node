@@ -317,7 +317,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		try {
 			commitInternal(verifiedCommandsAndProof);
 		} catch (Exception e) {
-			atomicCommitManager.abortTransction();
+			atomicCommitManager.abortTransaction();
 			// At this point the radix engine has no mechanism to recover from byzantine quorum failure
 			// TODO: resolve issues with byzantine quorum (RPNV1-828)
 			throw e;

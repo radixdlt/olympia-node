@@ -42,8 +42,13 @@ public class BerkeleySearchCursorTests extends RadixTestWithStores {
 		List<LedgerEntry> ledgerEntries = ledgerEntryGenerator.createLedgerEntries(identity, 1);
 		StoreIndex uniqueIndex = new StoreIndex(PREFIX, ledgerEntries.get(0).getAID().getBytes());
 		Transaction tx = getStore().createTransaction();
-		getStore().execute(tx, ledgerEntries.get(0), ImmutableSet.of(uniqueIndex), ImmutableSet.of());
-		tx.commit();
+		try {
+			getStore().store(tx, ledgerEntries.get(0), ImmutableSet.of(uniqueIndex), ImmutableSet.of());
+			tx.commit();
+		} catch (Exception e) {
+			tx.abort();
+			throw e;
+		}
 
 		SearchCursor cursor = getStore().search(
 			StoreIndex.LedgerIndexType.UNIQUE,
@@ -61,8 +66,13 @@ public class BerkeleySearchCursorTests extends RadixTestWithStores {
 		StoreIndex uniqueIndex = new StoreIndex(PREFIX, ledgerEntries.get(0).getAID().getBytes());
 
 		Transaction tx = getStore().createTransaction();
-		getStore().execute(tx, ledgerEntries.get(0), ImmutableSet.of(uniqueIndex), ImmutableSet.of());
-		tx.commit();
+		try {
+			getStore().store(tx, ledgerEntries.get(0), ImmutableSet.of(uniqueIndex), ImmutableSet.of());
+			tx.commit();
+		} catch (Exception e) {
+			tx.abort();
+			throw e;
+		}
 
 		SearchCursor cursor = getStore().search(
 			StoreIndex.LedgerIndexType.UNIQUE,
@@ -80,11 +90,16 @@ public class BerkeleySearchCursorTests extends RadixTestWithStores {
 		List<LedgerEntry> ledgerEntries = ledgerEntryGenerator.createLedgerEntries(identity, 2);
 
 		Transaction tx = getStore().createTransaction();
-		for (LedgerEntry ledgerEntry : ledgerEntries) {
-			StoreIndex uniqueIndex = new StoreIndex(PREFIX, ledgerEntry.getAID().getBytes());
-			getStore().execute(tx, ledgerEntry, ImmutableSet.of(uniqueIndex), ImmutableSet.of(index));
+		try {
+			for (LedgerEntry ledgerEntry : ledgerEntries) {
+				StoreIndex uniqueIndex = new StoreIndex(PREFIX, ledgerEntry.getAID().getBytes());
+				getStore().store(tx, ledgerEntry, ImmutableSet.of(uniqueIndex), ImmutableSet.of(index));
+			}
+			tx.commit();
+		} catch (Exception e) {
+			tx.abort();
+			throw e;
 		}
-		tx.commit();
 
 		SearchCursor cursor = getStore().search(StoreIndex.LedgerIndexType.DUPLICATE, index, LedgerSearchMode.EXACT);
 		Assert.assertNotNull(cursor);
@@ -106,11 +121,16 @@ public class BerkeleySearchCursorTests extends RadixTestWithStores {
 		List<LedgerEntry> ledgerEntries = ledgerEntryGenerator.createLedgerEntries(identity, 2);
 
 		Transaction tx = getStore().createTransaction();
-		for (LedgerEntry ledgerEntry : ledgerEntries) {
-			StoreIndex uniqueIndex = new StoreIndex(PREFIX, ledgerEntry.getAID().getBytes());
-			getStore().execute(tx, ledgerEntry, ImmutableSet.of(uniqueIndex), ImmutableSet.of(index));
+		try {
+			for (LedgerEntry ledgerEntry : ledgerEntries) {
+				StoreIndex uniqueIndex = new StoreIndex(PREFIX, ledgerEntry.getAID().getBytes());
+				getStore().store(tx, ledgerEntry, ImmutableSet.of(uniqueIndex), ImmutableSet.of(index));
+			}
+			tx.commit();
+		} catch (Exception e) {
+			tx.abort();
+			throw e;
 		}
-		tx.commit();
 
 		SearchCursor cursor = getStore().search(StoreIndex.LedgerIndexType.DUPLICATE, index, LedgerSearchMode.EXACT);
 		Assert.assertNotNull(cursor);
@@ -132,11 +152,16 @@ public class BerkeleySearchCursorTests extends RadixTestWithStores {
 		List<LedgerEntry> ledgerEntries = ledgerEntryGenerator.createLedgerEntries(identity, 2);
 
 		Transaction tx = getStore().createTransaction();
-		for (LedgerEntry ledgerEntry : ledgerEntries) {
-			StoreIndex uniqueIndex = new StoreIndex(PREFIX, ledgerEntry.getAID().getBytes());
-			getStore().execute(tx, ledgerEntry, ImmutableSet.of(uniqueIndex), ImmutableSet.of(index));
+		try {
+			for (LedgerEntry ledgerEntry : ledgerEntries) {
+				StoreIndex uniqueIndex = new StoreIndex(PREFIX, ledgerEntry.getAID().getBytes());
+				getStore().store(tx, ledgerEntry, ImmutableSet.of(uniqueIndex), ImmutableSet.of(index));
+			}
+			tx.commit();
+		} catch (Exception e) {
+			tx.abort();
+			throw e;
 		}
-		tx.commit();
 
 		SearchCursor cursor = getStore().search(StoreIndex.LedgerIndexType.DUPLICATE, index, LedgerSearchMode.EXACT);
 		Assert.assertNotNull(cursor);

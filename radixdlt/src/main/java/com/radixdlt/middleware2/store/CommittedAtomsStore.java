@@ -92,7 +92,7 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 		this.hasher = hasher;
 	}
 
-	private boolean getAtomByParticle(Particle particle, boolean isInput) {
+	private boolean particleExists(Particle particle, boolean isInput) {
 		final byte[] indexableBytes = EngineAtomIndices.toByteArray(
 		isInput ? EngineAtomIndices.IndexType.PARTICLE_DOWN : EngineAtomIndices.IndexType.PARTICLE_UP,
 			Particle.euidOf(particle, hasher)
@@ -112,7 +112,7 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 	}
 
 	@Override
-	public void abortTransction() {
+	public void abortTransaction() {
 		this.transaction.abort();
 		this.transaction = null;
 	}
@@ -142,7 +142,7 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 
 		// TODO: Replace Store + Commit with a single commit
 		// TODO: How it's done depends on how mempool and prepare phases are implemented
-		LedgerEntryStoreResult result = store.execute(
+		LedgerEntryStoreResult result = store.store(
 			this.transaction,
 			ledgerEntry,
 			engineAtomIndices.getUniqueIndices(),
@@ -243,9 +243,9 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom>, Co
 
 	@Override
 	public Spin getSpin(Particle particle) {
-		if (getAtomByParticle(particle, true)) {
+		if (particleExists(particle, true)) {
 			return Spin.DOWN;
-		} else if (getAtomByParticle(particle, false)) {
+		} else if (particleExists(particle, false)) {
 			return Spin.UP;
 		}
 		return Spin.NEUTRAL;
