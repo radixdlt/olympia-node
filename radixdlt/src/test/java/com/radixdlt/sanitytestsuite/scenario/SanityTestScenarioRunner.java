@@ -61,7 +61,7 @@ public abstract class SanityTestScenarioRunner<TestVector extends SanityTestVect
 		}
 	}
 
-	protected static byte[] sha256Hash(byte[] bytes) {
+	public static byte[] sha256Hash(byte[] bytes) {
 		MessageDigest hasher = null;
 		try {
 			hasher = MessageDigest.getInstance("SHA-256");
