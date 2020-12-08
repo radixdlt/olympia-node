@@ -218,6 +218,7 @@ public class EpochsConsensusModule extends AbstractModule {
 
 	@Provides
 	private BFTSyncFactory bftSyncFactory(
+		@Self BFTNode self,
 		SyncVerticesRequestSender requestSender,
 		EventDispatcher<LocalSyncRequest> syncLedgerRequestSender,
 		ScheduledEventDispatcher<LocalGetVerticesRequest> timeoutDispatcher,
@@ -226,6 +227,7 @@ public class EpochsConsensusModule extends AbstractModule {
 		@BFTSyncPatienceMillis int bftSyncPatienceMillis
 	) {
 		return (vertexStore, pacemakerState, configuration) -> new BFTSync(
+			self,
 			vertexStore,
 			pacemakerState,
 			Comparator.comparingLong((LedgerHeader h) -> h.getAccumulatorState().getStateVersion()),
