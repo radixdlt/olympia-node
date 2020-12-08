@@ -108,8 +108,10 @@ public class DispatcherModule extends AbstractModule {
 	) {
 		EventDispatcher<LocalSyncRequest> envDispatcher = environment.getDispatcher(LocalSyncRequest.class);
 		return req -> {
-			Class<?> callingClass = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE).getCallerClass();
-			logger.info("LOCAL_SYNC_REQUEST dispatched by {}", callingClass);
+			if (logger.isTraceEnabled()) {
+				Class<?> callingClass = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE).getCallerClass();
+				logger.trace("LOCAL_SYNC_REQUEST dispatched by {}", callingClass);
+			}
 
 			if (req.getTargetNodes().contains(self)) {
 				throw new IllegalStateException("Should not be targeting self.");
@@ -256,13 +258,13 @@ public class DispatcherModule extends AbstractModule {
 	) {
 		if (asyncProcessors.isEmpty()) {
 			return timeout -> {
-				logger.warn("LOCAL_TIMEOUT_OCCURRENCE: {}", timeout);
+				logger.info("LOCAL_TIMEOUT_OCCURRENCE: {}", timeout);
 				processors.forEach(e -> e.process(timeout));
 			};
 		} else {
 			EventDispatcher<EpochLocalTimeoutOccurrence> dispatcher = environment.getDispatcher(EpochLocalTimeoutOccurrence.class);
 			return timeout -> {
-				logger.warn("LOCAL_TIMEOUT_OCCURRENCE: {}", timeout);
+				logger.info("LOCAL_TIMEOUT_OCCURRENCE: {}", timeout);
 				dispatcher.dispatch(timeout);
 				processors.forEach(e -> e.process(timeout));
 			};
@@ -318,7 +320,7 @@ public class DispatcherModule extends AbstractModule {
 		final RateLimiter logLimiter = RateLimiter.create(1.0);
 		EventDispatcher<EpochViewUpdate> dispatcher = environment.getDispatcher(EpochViewUpdate.class);
 		return epochViewUpdate -> {
-			Level logLevel = logLimiter.tryAcquire() ? Level.INFO : Level.TRACE;
+			Level logLevel = logLimiter.tryAcquire() ? Level.DEBUG : Level.TRACE;
 			logger.log(logLevel, "NextSyncView: {}", epochViewUpdate);
 			dispatcher.dispatch(epochViewUpdate);
 			processors.forEach(e -> e.process(epochViewUpdate));

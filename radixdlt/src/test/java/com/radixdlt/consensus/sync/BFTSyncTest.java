@@ -55,6 +55,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class BFTSyncTest {
+	private BFTNode self;
 	private BFTSync bftSync;
 	private VertexStore vertexStore;
 	private PacemakerState pacemakerState;
@@ -66,6 +67,7 @@ public class BFTSyncTest {
 
 	@Before
 	public void setup() {
+		this.self = BFTNode.random();
 		this.vertexStore = mock(VertexStore.class);
 		this.ledgerHeaderComparator = rmock(Comparator.class);
 		this.pacemakerState = mock(PacemakerState.class);
@@ -76,6 +78,7 @@ public class BFTSyncTest {
 		this.bftSyncTimeoutScheduler = rmock(ScheduledEventDispatcher.class);
 
 		bftSync = new BFTSync(
+			self,
 			vertexStore,
 			pacemakerState,
 			ledgerHeaderComparator,

@@ -150,7 +150,7 @@ configurations.all {
 }
 
 dependencies {
-    compile 'com.radixdlt:radix-engine-library:bugfix~registeredvalidatorparticle-delegators-ordering-SNAPSHOT'
+    compile 'com.radixdlt:radix-engine-library:1.0-beta.19'
     compile 'io.reactivex.rxjava3:rxjava:3.0.0'
     compile 'com.sleepycat:je:18.3.12'
 

@@ -99,7 +99,9 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 					.forEach(this::processViewCachedEvent);
 			viewQueues.keySet().removeIf(v -> v.lte(viewUpdate.getCurrentView()));
 
-			log.debug("ViewUpdate: Clearing Queues: {}", syncQueues);
+			if (!this.syncQueues.isEmpty()) {
+				log.debug("ViewUpdate: Clearing Queues: {}", syncQueues);
+			}
 			for (SyncQueue queue : syncQueues.getQueues()) {
 				if (clearAndExecute(queue, viewUpdate.getCurrentView().previous())) {
 					queue.pop();

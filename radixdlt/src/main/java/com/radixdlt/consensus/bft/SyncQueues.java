@@ -113,6 +113,10 @@ public final class SyncQueues {
 		return queues.values();
 	}
 
+	public boolean isEmpty() {
+		return this.queues.isEmpty();
+	}
+
 	boolean isEmptyElseAdd(ConsensusEvent event) {
 		return this.getQueue(event.getAuthor()).isEmptyElseAdd(event);
 	}
@@ -135,4 +139,5 @@ public final class SyncQueues {
 		});
 		return String.format("{%s}", joiner);
 	}
+
 }
