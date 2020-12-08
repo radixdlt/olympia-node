@@ -43,6 +43,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 	private static final Logger log = LogManager.getLogger();
 
+	private final BFTNode self;
 	private final VertexStore vertexStore;
 	private final Pacemaker pacemaker;
 	private final EventDispatcher<ViewQuorumReached> viewQuorumReachedEventDispatcher;
@@ -62,6 +63,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private boolean hasReachedQuorum = false;
 
 	public BFTEventReducer(
+		BFTNode self,
 		Pacemaker pacemaker,
 		VertexStore vertexStore,
 		EventDispatcher<ViewQuorumReached> viewQuorumReachedEventDispatcher,
@@ -73,6 +75,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		PendingVotes pendingVotes,
 		ViewUpdate initialViewUpdate
 	) {
+		this.self = Objects.requireNonNull(self);
 		this.pacemaker = Objects.requireNonNull(pacemaker);
 		this.vertexStore = Objects.requireNonNull(vertexStore);
 		this.viewQuorumReachedEventDispatcher = Objects.requireNonNull(viewQuorumReachedEventDispatcher);
@@ -155,8 +158,13 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			return;
 		}
 
-		final VoteProcessingResult result =
-			this.pendingVotes.insertVote(vote, this.validatorSet, this.latestViewUpdate.getNextLeader());
+		if (!this.self.equals(this.latestViewUpdate.getNextLeader()) && !vote.isTimeout()) {
+			log.trace("Vote: Ignoring vote from {} for view {}, unexpected vote",
+				vote.getAuthor(), view);
+			return;
+		}
+
+		final VoteProcessingResult result = this.pendingVotes.insertVote(vote, this.validatorSet);
 
 		if (result instanceof VoteProcessingResult.VoteAccepted) {
 			log.trace("Vote has been processed but didn't form a quorum");

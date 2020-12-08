@@ -122,9 +122,10 @@ public final class BFTBuilder {
 		if (!validatorSet.containsNode(self)) {
 			return EmptyBFTEventProcessor.INSTANCE;
 		}
-		final PendingVotes pendingVotes = new PendingVotes(hasher, self);
+		final PendingVotes pendingVotes = new PendingVotes(hasher);
 
 		BFTEventReducer reducer = new BFTEventReducer(
+			self,
 			pacemaker,
 			vertexStore,
 			viewQuorumReachedEventDispatcher,

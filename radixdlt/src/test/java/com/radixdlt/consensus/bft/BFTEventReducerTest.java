@@ -35,6 +35,7 @@ import static org.mockito.Mockito.*;
 
 public class BFTEventReducerTest {
 
+    private BFTNode self = mock(BFTNode.class);
     private Hasher hasher = mock(Hasher.class);
     private RemoteEventDispatcher<Vote> voteDispatcher = rmock(RemoteEventDispatcher.class);
     private PendingVotes pendingVotes = mock(PendingVotes.class);
@@ -50,6 +51,7 @@ public class BFTEventReducerTest {
     @Before
     public void setUp() {
         this.bftEventReducer = new BFTEventReducer(
+            this.self,
             this.pacemaker,
             this.vertexStore,
             this.viewQuorumReachedEventDispatcher,
@@ -67,7 +69,7 @@ public class BFTEventReducerTest {
     public void when_process_vote_with_quorum_wrong_view__then_ignored() {
         Vote vote = mock(Vote.class);
         when(vote.getView()).thenReturn(View.of(1));
-        this.bftEventReducer.processViewUpdate(ViewUpdate.create(View.of(3), mock(HighQC.class), mock(BFTNode.class), mock(BFTNode.class)));
+        this.bftEventReducer.processViewUpdate(ViewUpdate.create(View.of(3), mock(HighQC.class), mock(BFTNode.class), this.self));
         this.bftEventReducer.processVote(vote);
         verifyNoMoreInteractions(this.pendingVotes);
     }
@@ -84,16 +86,16 @@ public class BFTEventReducerTest {
         when(highQc.highestCommittedQC()).thenReturn(highestCommittedQc);
         when(vote.getView()).thenReturn(View.of(1));
 
-        when(this.pendingVotes.insertVote(any(), any(), any())).thenReturn(VoteProcessingResult.qcQuorum(qc));
+        when(this.pendingVotes.insertVote(any(), any())).thenReturn(VoteProcessingResult.qcQuorum(qc));
         when(this.vertexStore.highQC()).thenReturn(highQc);
 
         // Move to view 1
-        this.bftEventReducer.processViewUpdate(ViewUpdate.create(View.of(1), highQc, mock(BFTNode.class), mock(BFTNode.class)));
+        this.bftEventReducer.processViewUpdate(ViewUpdate.create(View.of(1), highQc, mock(BFTNode.class), this.self));
 
         this.bftEventReducer.processVote(vote);
 
         verify(this.viewQuorumReachedEventDispatcher, times(1)).dispatch(any());
-        verify(this.pendingVotes, times(1)).insertVote(eq(vote), any(), any());
+        verify(this.pendingVotes, times(1)).insertVote(eq(vote), any());
         verifyNoMoreInteractions(this.pendingVotes);
     }
 }

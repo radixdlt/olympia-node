@@ -49,14 +49,12 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class PendingVotesTest {
 	private PendingVotes pendingVotes;
-	private BFTNode self;
 	private Hasher hasher;
 
 	@Before
 	public void setup() {
 		this.hasher = new RandomHasher();
-		this.self = mock(BFTNode.class);
-		this.pendingVotes = new PendingVotes(hasher, self);
+		this.pendingVotes = new PendingVotes(hasher);
 	}
 
 	@Test
@@ -79,11 +77,9 @@ public class PendingVotesTest {
 		BFTHeader proposed = vote1.getVoteData().getProposed();
 		when(voteData.getProposed()).thenReturn(proposed);
 
-		BFTNode nextProposer = this.self;
-
 		assertEquals(
 			VoteProcessingResult.rejected(VoteRejectedReason.INVALID_AUTHOR),
-			this.pendingVotes.insertVote(vote2, validatorSet, nextProposer));
+			this.pendingVotes.insertVote(vote2, validatorSet));
 	}
 
 	@Test
@@ -104,11 +100,8 @@ public class PendingVotesTest {
 		BFTHeader proposed = vote.getVoteData().getProposed();
 		when(voteData.getProposed()).thenReturn(proposed);
 
-		BFTNode nextProposer = this.self;
-
 		assertTrue(
-			this.pendingVotes.insertVote(vote, validatorSet, nextProposer)
-					instanceof VoteProcessingResult.QuorumReached);
+			this.pendingVotes.insertVote(vote, validatorSet) instanceof VoteProcessingResult.QuorumReached);
 	}
 
 	@Test
@@ -128,14 +121,10 @@ public class PendingVotesTest {
 				BFTValidator.from(vote2.getAuthor(), UInt256.ONE))
 		);
 
-		BFTNode nextProposer = mock(BFTNode.class); // not self
-
 		assertTrue(
-			this.pendingVotes.insertVote(vote1, validatorSet, nextProposer)
-				instanceof VoteProcessingResult.VoteAccepted);
+			this.pendingVotes.insertVote(vote1, validatorSet) instanceof VoteProcessingResult.VoteAccepted);
 
-		VoteProcessingResult result2 =
-			this.pendingVotes.insertVote(vote2, validatorSet, nextProposer);
+		VoteProcessingResult result2 = this.pendingVotes.insertVote(vote2, validatorSet);
 
 		assertTrue(result2 instanceof VoteProcessingResult.QuorumReached);
 
@@ -160,12 +149,10 @@ public class PendingVotesTest {
 		BFTHeader proposed = vote.getVoteData().getProposed();
 		when(voteData.getProposed()).thenReturn(proposed);
 
-		BFTNode nextProposer = this.self;
-
 		// Preconditions
 		assertEquals(
 			VoteProcessingResult.accepted(),
-			this.pendingVotes.insertVote(vote, validatorSet, nextProposer));
+			this.pendingVotes.insertVote(vote, validatorSet));
 		assertEquals(1, this.pendingVotes.voteStateSize());
 		assertEquals(1, this.pendingVotes.previousVotesSize());
 
@@ -173,7 +160,7 @@ public class PendingVotesTest {
 		// Need a different hash for this (different) vote
 		assertEquals(
 			VoteProcessingResult.accepted(),
-			this.pendingVotes.insertVote(vote2, validatorSet, nextProposer));
+			this.pendingVotes.insertVote(vote2, validatorSet));
 		assertEquals(1, this.pendingVotes.voteStateSize());
 		assertEquals(1, this.pendingVotes.previousVotesSize());
 	}

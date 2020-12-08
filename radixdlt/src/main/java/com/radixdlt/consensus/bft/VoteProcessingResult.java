@@ -72,7 +72,7 @@ public abstract class VoteProcessingResult {
      */
     public static final class VoteRejected extends VoteProcessingResult {
         public enum VoteRejectedReason {
-            INVALID_AUTHOR, DUPLICATE_VOTE, UNEXPECTED_VOTE
+            INVALID_AUTHOR, DUPLICATE_VOTE
         }
 
         private final VoteRejectedReason reason;

@@ -83,11 +83,9 @@ public final class PendingVotes {
 	private final Map<HashCode, ValidationState> timeoutVoteState = Maps.newHashMap();
 	private final Map<BFTNode, PreviousVote> previousVotes = Maps.newHashMap();
 	private final Hasher hasher;
-	private final BFTNode self;
 
-	public PendingVotes(Hasher hasher, BFTNode self) {
+	public PendingVotes(Hasher hasher) {
 		this.hasher = Objects.requireNonNull(hasher);
-		this.self = Objects.requireNonNull(self);
 	}
 
 	/**
@@ -99,7 +97,7 @@ public final class PendingVotes {
 	 * @param vote The vote to be inserted
 	 * @return The result of vote processing
 	 */
-	public VoteProcessingResult insertVote(Vote vote, BFTValidatorSet validatorSet, BFTNode nextProposer) {
+	public VoteProcessingResult insertVote(Vote vote, BFTValidatorSet validatorSet) {
 		final BFTNode node = vote.getAuthor();
 		final TimestampedVoteData timestampedVoteData = vote.getTimestampedVoteData();
 		final VoteData voteData = timestampedVoteData.getVoteData();
@@ -112,10 +110,6 @@ public final class PendingVotes {
 
 		if (!replacePreviousVote(node, voteView, voteDataHash)) {
 			return VoteProcessingResult.rejected(VoteRejectedReason.DUPLICATE_VOTE);
-		}
-
-		if (!this.self.equals(nextProposer) && !vote.isTimeout()) {
-			return VoteProcessingResult.rejected(VoteRejectedReason.UNEXPECTED_VOTE);
 		}
 
 		final Optional<QuorumCertificate> maybeQC = processVoteForQC(vote, validatorSet);

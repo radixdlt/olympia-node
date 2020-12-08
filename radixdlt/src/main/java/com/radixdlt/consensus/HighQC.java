@@ -117,12 +117,10 @@ public final class HighQC {
 	}
 
 	public View getHighestView() {
-		if (this.highestTC.isPresent()
-				&& this.highestTC.get().getView().gt(this.highestQC.getView())) {
-			return this.highestTC.get().getView();
-		} else {
-			return this.highestQC.getView();
-		}
+		return this.highestTC
+			.filter(tc -> tc.getView().gt(this.highestQC.getView()))
+			.map(TimeoutCertificate::getView)
+			.orElse(this.highestQC.getView());
 	}
 
 	public QuorumCertificate highestCommittedQC() {
