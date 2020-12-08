@@ -93,7 +93,12 @@ public final class SanityTestSuiteRoot {
 
 	}
 
-	public String hashOfSuite;
+	public static final class SanityTestIntegrity {
+		public String hashOfSuite;
+		public String implementationInfo;
+	}
+
+	public SanityTestIntegrity integrity;
 	public SanityTestSuite suite;
 }
 // CHECKSTYLE:ON checkstyle:VisibilityModifier

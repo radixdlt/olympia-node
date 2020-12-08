@@ -64,16 +64,16 @@ public final class SanityTestSuiteTestLoader {
 			String jsonFileContent = Files.asCharSource(file, StandardCharsets.UTF_8).read();
 			JSONObject sanityTestSuiteRootAsJsonObject = new JSONObject(jsonFileContent);
 
-
-
 			String prettyPrintedSorted = JSONFormatter.sortPrettyPrintJSONString(sanityTestSuiteRootAsJsonObject.getJSONObject("suite").toString());
+
+			JSONObject integrity = sanityTestSuiteRootAsJsonObject.getJSONObject("integrity");
 
 			sanityTestSuiteRoot = gson.fromJson(jsonFileContent, SanityTestSuiteRoot.class);
 
-			String sanityTestSuiteSavedHash = sanityTestSuiteRoot.hashOfSuite;
+			String sanityTestSuiteSavedHash = sanityTestSuiteRoot.integrity.hashOfSuite;
 			byte[] suiteBytes = prettyPrintedSorted.getBytes(StandardCharsets.UTF_8);
 			byte[] calculatedHashOfSanityTestSuite = sha256Hash(suiteBytes);
-			assertEquals(sanityTestSuiteSavedHash, Bytes.toHexString(calculatedHashOfSanityTestSuite));
+			assertEquals(String.format("Mismatch between calculated hash of test suite and expected (bundled hash), implementation info: %s", integrity.getString("implementationInfo")), sanityTestSuiteSavedHash, Bytes.toHexString(calculatedHashOfSanityTestSuite));
 		} catch (IOException e) {
 			throw new IllegalStateException("failed to load test vectors, e: " + e);
 		}
