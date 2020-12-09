@@ -85,6 +85,10 @@ public final class SyncQueues {
 			return false;
 		}
 
+		boolean isEmpty() {
+			return queue.isEmpty();
+		}
+
 		public void add(ConsensusEvent event) {
 			queue.addLast(event);
 		}
@@ -114,7 +118,11 @@ public final class SyncQueues {
 	}
 
 	public boolean isEmpty() {
-		return this.queues.isEmpty();
+		return queues.values()
+			.stream()
+			.filter(queue -> !queue.isEmpty())
+			.findFirst()
+			.isEmpty();
 	}
 
 	boolean isEmptyElseAdd(ConsensusEvent event) {
@@ -139,5 +147,4 @@ public final class SyncQueues {
 		});
 		return String.format("{%s}", joiner);
 	}
-
 }
