@@ -19,17 +19,21 @@ package com.radixdlt.store;
 
 import com.radixdlt.identifiers.AID;
 
+import com.sleepycat.je.Transaction;
 import java.util.Set;
 
 /**
  * A read/write instance of a ledger store containing ledger entries.
  */
 public interface LedgerEntryStore extends LedgerEntryStoreView {
-	/**
-	 * Irreversibly commits this store to an atom with at a certain logical clock.
-	 * Once committed, an atom may no longer be deleted or replaced.
-	 */
-	void commit(LedgerEntry atom, Set<StoreIndex> uniqueIndices, Set<StoreIndex> duplicateIndices);
+	Transaction createTransaction();
+
+	LedgerEntryStoreResult store(
+		Transaction tx,
+		LedgerEntry atom,
+		Set<StoreIndex> uniqueIndices,
+		Set<StoreIndex> duplicateIndices
+	);
 
 	/**
 	 * Irreversibly commits this store to an atom with at a certain logical clock.

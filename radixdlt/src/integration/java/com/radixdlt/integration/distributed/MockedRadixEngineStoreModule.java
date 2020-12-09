@@ -24,11 +24,13 @@ import com.google.inject.Singleton;
 import com.google.inject.name.Names;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.system.SystemParticle;
+import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
@@ -55,4 +57,28 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 		return inMemoryEngineStore;
 	}
 
+	@Provides
+	private RadixEngineAtomicCommitManager atomicCommitManager() {
+		return new RadixEngineAtomicCommitManager() {
+			@Override
+			public void startTransaction() {
+				// no-op
+			}
+
+			@Override
+			public void commitTransaction() {
+				// no-op
+			}
+
+			@Override
+			public void abortTransaction() {
+				// no-op
+			}
+
+			@Override
+			public void save(VerifiedVertexStoreState vertexStoreState) {
+				// no-op
+			}
+		};
+	}
 }

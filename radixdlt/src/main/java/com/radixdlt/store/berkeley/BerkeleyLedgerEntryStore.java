@@ -236,20 +236,24 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 	}
 
 	@Override
-	public void commit(LedgerEntry atom, Set<StoreIndex> uniqueIndices, Set<StoreIndex> duplicateIndices) {
-		Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);
+	public Transaction createTransaction() {
+		return dbEnv.getEnvironment().beginTransaction(null, null);
+	}
 
+	@Override
+	public LedgerEntryStoreResult store(
+		Transaction tx,
+		LedgerEntry atom,
+		Set<StoreIndex> uniqueIndices,
+		Set<StoreIndex> duplicateIndices
+	) {
 		LedgerEntryIndices indices = LedgerEntryIndices.from(atom, uniqueIndices, duplicateIndices);
 		byte[] atomData = serialization.toDson(atom, Output.PERSIST);
 
 		try {
-			LedgerEntryStoreResult result = doStore(PREFIX_COMMITTED, atom.getStateVersion(), atom.getAID(), atomData, indices, transaction);
-			if (result.isSuccess()) {
-				transaction.commit();
-			}
+			return doStore(PREFIX_COMMITTED, atom.getStateVersion(), atom.getAID(), atomData, indices, tx);
 		} catch (Exception e) {
-			transaction.abort();
-			fail("Commit of atom failed", e);
+			throw new BerkeleyStoreException("Commit of atom failed", e);
 		}
 	}
 
@@ -301,8 +305,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 	}
 
 	@Override
-	public void save(VerifiedVertexStoreState vertexStoreState) {
-		Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);
+	public void save(Transaction transaction, VerifiedVertexStoreState vertexStoreState) {
 		try (Cursor cursor = this.pendingDatabase.openCursor(transaction, null)) {
 			DatabaseEntry pKey = new DatabaseEntry();
 			DatabaseEntry value = new DatabaseEntry();
@@ -316,15 +319,19 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 		}
 
 		DatabaseEntry vertexKey = new DatabaseEntry(vertexStoreState.getRoot().getId().asBytes());
-
 		SerializedVertexStoreState serializedVertexWithQC = vertexStoreState.toSerialized();
 		DatabaseEntry vertexEntry = new DatabaseEntry(serialization.toDson(serializedVertexWithQC, Output.ALL));
 		OperationStatus putStatus = this.pendingDatabase.put(transaction, vertexKey, vertexEntry);
-		if (putStatus == OperationStatus.SUCCESS) {
-			transaction.commit();
-		} else {
+		if (putStatus != OperationStatus.SUCCESS) {
 			fail("Store of root vertex failed");
 		}
+	}
+
+	@Override
+	public void save(VerifiedVertexStoreState vertexStoreState) {
+		Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);
+		this.save(transaction, vertexStoreState);
+		transaction.commit();
 	}
 
 	private LedgerEntryStoreResult doStore(
@@ -491,11 +498,11 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 	}
 
 	@Override
-	public boolean contains(LedgerIndexType type, StoreIndex index, LedgerSearchMode mode) {
+	public boolean contains(Transaction tx, LedgerIndexType type, StoreIndex index, LedgerSearchMode mode) {
 		Objects.requireNonNull(type, "type is required");
 		Objects.requireNonNull(index, "index is required");
 		Objects.requireNonNull(mode, "mode is required");
-		try (SecondaryCursor databaseCursor = toSecondaryCursor(type)) {
+		try (SecondaryCursor databaseCursor = toSecondaryCursor(tx, type)) {
 			DatabaseEntry pKey = new DatabaseEntry();
 			DatabaseEntry key = new DatabaseEntry(index.asKey());
 			if (mode == LedgerSearchMode.EXACT) {
@@ -614,14 +621,18 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 		}
 	}
 
-	private SecondaryCursor toSecondaryCursor(LedgerIndexType type) {
+	private SecondaryCursor toSecondaryCursor(Transaction tx, LedgerIndexType type) {
 		if (type.equals(StoreIndex.LedgerIndexType.UNIQUE)) {
-			return this.uniqueIndices.openCursor(null, null);
+			return this.uniqueIndices.openCursor(tx, null);
 		} else if (type.equals(StoreIndex.LedgerIndexType.DUPLICATE)) {
-			return this.duplicatedIndices.openCursor(null, null);
+			return this.duplicatedIndices.openCursor(tx, null);
 		} else {
 			throw new IllegalStateException("Cursor type " + type + " not supported");
 		}
+	}
+
+	private SecondaryCursor toSecondaryCursor(LedgerIndexType type) {
+		return toSecondaryCursor(null, type);
 	}
 
 	private static AID getAidFromPKey(DatabaseEntry pKey) {

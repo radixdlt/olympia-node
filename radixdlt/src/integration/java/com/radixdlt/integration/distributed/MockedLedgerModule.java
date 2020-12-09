@@ -23,7 +23,6 @@ import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
@@ -60,11 +59,6 @@ public class MockedLedgerModule extends AbstractModule {
 							.orElse(ImmutableList.of()),
 						ImmutableMap.of()
 				));
-			}
-
-			@Override
-			public void commit(VerifiedCommandsAndProof command) {
-				// Nothing to do here
 			}
 		};
 	}
