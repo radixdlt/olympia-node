@@ -118,7 +118,7 @@ public class BFTRunner implements ModuleRunner {
 				.doOnNext(requestProcessor::processGetVerticesRequest),
 			rpcRx.responses()
 				.observeOn(singleThreadScheduler)
-				.doOnNext(vertexStoreSync::processGetVerticesResponse),
+				.doOnNext(resp -> vertexStoreSync.responseProcessor().process(resp)),
 			rpcRx.errorResponses()
 				.observeOn(singleThreadScheduler)
 				.doOnNext(vertexStoreSync::processGetVerticesErrorResponse),

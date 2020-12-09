@@ -233,7 +233,7 @@ public class ConsensusModuleTest {
 
 		// Act
 		GetVerticesResponse response = new GetVerticesResponse(bftNode, ImmutableList.of(nextNextVertex.getSecond()));
-		bftSync.processGetVerticesResponse(response);
+		bftSync.responseProcessor().process(response);
 
 		// Assert
 		verify(requestSender, times(1))

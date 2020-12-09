@@ -93,7 +93,7 @@ public class DeterministicConsensusProcessor implements DeterministicMessageProc
 		} else if (message instanceof GetVerticesRequest) {
 			requestProcessor.processGetVerticesRequest((GetVerticesRequest) message);
 		} else if (message instanceof GetVerticesResponse) {
-			vertexStoreSync.processGetVerticesResponse((GetVerticesResponse) message);
+			vertexStoreSync.responseProcessor().process((GetVerticesResponse) message);
 		} else if (message instanceof GetVerticesErrorResponse) {
 			vertexStoreSync.processGetVerticesErrorResponse((GetVerticesErrorResponse) message);
 		} else if (message instanceof BFTHighQCUpdate) {

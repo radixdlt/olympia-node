@@ -373,8 +373,11 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 		}
 	}
 
-	@Override
-	public void processGetVerticesResponse(GetVerticesResponse response) {
+	public EventProcessor<GetVerticesResponse> responseProcessor() {
+		return this::processGetVerticesResponse;
+	}
+
+	private void processGetVerticesResponse(GetVerticesResponse response) {
 		// TODO: check response
 
 		log.debug("SYNC_VERTICES: Received GetVerticesResponse {}", response);

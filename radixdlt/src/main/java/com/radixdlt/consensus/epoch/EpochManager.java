@@ -130,6 +130,7 @@ public final class EpochManager implements BFTSyncRequestProcessor {
 	private int numQueuedConsensusEvents = 0;
 
 	private BFTSyncResponseProcessor syncBFTResponseProcessor;
+	private EventProcessor<GetVerticesResponse> verticesResponseProcessor;
 	private EventProcessor<LocalGetVerticesRequest> syncTimeoutProcessor;
 	private LedgerUpdateProcessor<LedgerUpdate> syncLedgerUpdateProcessor;
 	private BFTSyncRequestProcessor syncRequestProcessor;
@@ -166,12 +167,14 @@ public final class EpochManager implements BFTSyncRequestProcessor {
 	) {
 		if (!initialEpoch.getBFTConfiguration().getValidatorSet().containsNode(self)) {
 			this.bftEventProcessor =  EmptyBFTEventProcessor.INSTANCE;
+			this.verticesResponseProcessor = resp -> { };
 			this.syncBFTResponseProcessor = EmptyBFTSyncResponseProcessor.INSTANCE;
 			this.syncRequestProcessor = req -> { };
 			this.syncLedgerUpdateProcessor = update -> { };
 			this.syncTimeoutProcessor = timeout -> { };
 		} else {
 			this.bftEventProcessor = Objects.requireNonNull(initialBFTEventProcessor);
+			this.verticesResponseProcessor = initialBFTSync.responseProcessor();
 			this.syncBFTResponseProcessor = initialBFTSync;
 			this.syncLedgerUpdateProcessor = initialBFTSync;
 			this.syncTimeoutProcessor = initialBFTSync::processGetVerticesLocalTimeout;
@@ -246,6 +249,8 @@ public final class EpochManager implements BFTSyncRequestProcessor {
 			bftConfiguration
 		);
 
+
+		this.verticesResponseProcessor = bftSync.responseProcessor();
 		this.syncBFTResponseProcessor = bftSync;
 		this.syncLedgerUpdateProcessor = bftSync;
 		this.syncTimeoutProcessor = bftSync::processGetVerticesLocalTimeout;
@@ -468,6 +473,6 @@ public final class EpochManager implements BFTSyncRequestProcessor {
 	}
 
 	public void processGetVerticesResponse(GetVerticesResponse response) {
-		syncBFTResponseProcessor.processGetVerticesResponse(response);
+		verticesResponseProcessor.process(response);
 	}
 }

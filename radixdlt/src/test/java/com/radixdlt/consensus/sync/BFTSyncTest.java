@@ -326,7 +326,7 @@ public class BFTSyncTest {
 			mock(BFTNode.class),
 			List.of(vertex, vertex, vertex)
 		);
-		bftSync.processGetVerticesResponse(getVerticesResponse);
+		bftSync.responseProcessor().process(getVerticesResponse);
 
 		verify(syncVerticesRequestSender, times(1)).sendGetVerticesRequest(any(), any());
 		verify(syncLedgerRequestSender, times(1)).dispatch(any());
