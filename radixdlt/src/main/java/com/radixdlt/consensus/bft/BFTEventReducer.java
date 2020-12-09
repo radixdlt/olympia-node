@@ -101,6 +101,8 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 		this.latestInsertUpdate = update;
 		this.tryVote();
+
+		this.pacemaker.processBFTUpdate(update);
 	}
 
 	@Override

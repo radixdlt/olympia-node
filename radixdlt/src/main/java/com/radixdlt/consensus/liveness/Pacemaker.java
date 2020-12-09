@@ -25,6 +25,7 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.PreparedVertex;
@@ -75,6 +76,8 @@ public final class Pacemaker {
 	private final TimeSupplier timeSupplier;
 
 	private ViewUpdate latestViewUpdate;
+	private boolean isViewTimedOut = false;
+	private Optional<HashCode> timeoutVoteVertexId = Optional.empty();
 
 	public Pacemaker(
 		BFTNode self,
@@ -128,7 +131,31 @@ public final class Pacemaker {
 		this.startView();
 	}
 
+	/**
+	 * Processes a local BFTInsertUpdate message
+	 */
+	public void processBFTUpdate(BFTInsertUpdate update) {
+		/* we only process the insertion of an empty vertex used for timeout vote (see: processLocalTimeout) */
+		if (!this.isViewTimedOut
+				|| this.timeoutVoteVertexId.filter(update.getInserted().getId()::equals).isEmpty()) {
+			return;
+		}
+
+		final Vote baseVote = this.safetyRules.createVote(
+			update.getInserted().getVertex(),
+			update.getHeader(),
+			this.timeSupplier.currentTime(),
+			update.getVertexStoreState().getHighQC());
+
+		final Vote timeoutVote = this.safetyRules.timeoutVote(baseVote);
+
+		this.voteDispatcher.dispatch(this.validatorSet.nodes(), timeoutVote);
+	}
+
 	private void startView() {
+		this.isViewTimedOut = false;
+		this.timeoutVoteVertexId = Optional.empty();
+
 		long timeout = timeoutCalculator.timeout(latestViewUpdate.uncommittedViewsCount());
 		ScheduledLocalTimeout scheduledLocalTimeout = ScheduledLocalTimeout.create(latestViewUpdate, timeout);
 		this.timeoutSender.dispatch(scheduledLocalTimeout, timeout);
@@ -192,29 +219,33 @@ public final class Pacemaker {
 			return;
 		}
 
+		this.isViewTimedOut = true;
+
 		updateTimeoutCounters(scheduledTimeout);
 
-		final Optional<Vote> maybeLastVote = this.safetyRules.getLastVote(view);
-		final Optional<Vote> maybeTimeoutVote = maybeLastVote
-				.or(() -> createEmptyVote(view))
-				.map(this.safetyRules::timeoutVote);
-
-		maybeTimeoutVote.ifPresentOrElse(
-			timeoutVote -> this.voteDispatcher.dispatch(this.validatorSet.nodes(), timeoutVote),
-			() -> log.warn("No timeout vote to send")
-		);
+		this.safetyRules
+			.getLastVote(view)
+			.map(this.safetyRules::timeoutVote)
+			.ifPresentOrElse(
+				/* if there is a previously sent vote, we time it out and broadcast to all nodes */
+				vote -> this.voteDispatcher.dispatch(this.validatorSet.nodes(), vote),
+				/* otherwise, we asynchronously insert an empty vertex and, when done,
+					we send a timeout vote on it (see processBFTUpdate) */
+				() -> insertEmptyVertex(view));
 
 		rescheduleTimeout(scheduledTimeout);
 	}
 
-	private Optional<Vote> createEmptyVote(View view) {
+	private void insertEmptyVertex(View view) {
+		if (this.timeoutVoteVertexId.isPresent()) {
+			return; // vertex for a timeout vote for this view is already inserted
+		}
+
 		final HighQC highQC = this.vertexStore.highQC();
 		final UnverifiedVertex proposedVertex = UnverifiedVertex.createVertex(highQC.highestQC(), view, null);
 		final VerifiedVertex verifiedVertex = new VerifiedVertex(proposedVertex, hasher.hash(proposedVertex));
-		final long currentTime = this.timeSupplier.currentTime();
-
-		return this.vertexStore.insertVertex(verifiedVertex)
-			.map(update -> this.safetyRules.createVote(verifiedVertex, update.getHeader(), currentTime, highQC));
+		this.timeoutVoteVertexId = Optional.of(verifiedVertex.getId());
+		this.vertexStore.insertVertex(verifiedVertex);
 	}
 
 	private void  updateTimeoutCounters(ScheduledLocalTimeout scheduledTimeout) {

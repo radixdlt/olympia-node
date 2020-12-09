@@ -258,28 +258,26 @@ public final class VertexStore {
 
 	/**
 	 * Inserts a vertex and then attempts to create the next header.
-	 * If the ledger is ahead of the vertex store then returns an empty optional
-	 * otherwise an empty optional.
 	 *
 	 * @param vertex vertex to insert
 	 */
-	public Optional<BFTInsertUpdate> insertVertex(VerifiedVertex vertex) {
+	public void insertVertex(VerifiedVertex vertex) {
 		PreparedVertex v = vertices.get(vertex.getId());
 		if (v != null) {
-			return Optional.empty();
+			return;
 		}
 
 		if (!this.containsVertex(vertex.getParentId())) {
 			throw new MissingParentException(vertex.getParentId());
 		}
 
-		return insertVertexInternal(vertex);
+		insertVertexInternal(vertex);
 	}
 
-	private Optional<BFTInsertUpdate> insertVertexInternal(VerifiedVertex vertex) {
+	private void insertVertexInternal(VerifiedVertex vertex) {
 		LinkedList<PreparedVertex> previous = getPathFromRoot(vertex.getParentId());
 		Optional<PreparedVertex> preparedVertexMaybe = ledger.prepare(previous, vertex);
-		return preparedVertexMaybe.map(preparedVertex -> {
+		preparedVertexMaybe.ifPresent(preparedVertex -> {
 			vertices.put(preparedVertex.getId(), preparedVertex);
 			vertexChildren.put(preparedVertex.getId(), new HashSet<>());
 			Set<HashCode> siblings = vertexChildren.get(preparedVertex.getParentId());
@@ -288,7 +286,6 @@ public final class VertexStore {
 			VerifiedVertexStoreState vertexStoreState = getState();
 			BFTInsertUpdate update = BFTInsertUpdate.insertedVertex(preparedVertex, siblings.size(), vertexStoreState);
 			bftUpdateDispatcher.dispatch(update);
-			return update;
 		});
 	}
 
