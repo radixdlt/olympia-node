@@ -24,7 +24,7 @@ import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 
-import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
+import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.utils.ThreadFactories;
@@ -65,8 +65,8 @@ public final class EpochManagerRunner implements ModuleRunner {
 		EventProcessor<BFTInsertUpdate> bftUpdateProcessor,
 		Observable<BFTRebuildUpdate> bftRebuilds,
 		EventProcessor<BFTRebuildUpdate> bftRebuildProcessor,
-		Observable<LocalGetVerticesRequest> bftSyncTimeouts,
-		EventProcessor<LocalGetVerticesRequest> bftSyncTimeoutProcessor,
+		Observable<VertexRequestTimeout> bftSyncTimeouts,
+		EventProcessor<VertexRequestTimeout> vertexRequestTimeoutEventProcessor,
 		Observable<EpochViewUpdate> localViewUpdates,
 		EventProcessor<EpochViewUpdate> epochViewUpdateEventProcessor,
 		BFTEventsRx networkRx,
@@ -93,7 +93,7 @@ public final class EpochManagerRunner implements ModuleRunner {
 				.doOnNext(bftRebuildProcessor::process),
 			bftSyncTimeouts
 				.observeOn(singleThreadScheduler)
-				.doOnNext(bftSyncTimeoutProcessor::process),
+				.doOnNext(vertexRequestTimeoutEventProcessor::process),
 			localViewUpdates
 				.observeOn(singleThreadScheduler)
 				.doOnNext(epochViewUpdateEventProcessor::process),

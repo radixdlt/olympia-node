@@ -33,7 +33,7 @@ import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
-import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
+import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessWithSyncRunner;
 import com.radixdlt.environment.RemoteEventProcessor;
@@ -62,7 +62,7 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 		EpochManager epochManager,
 		@ProcessWithSyncRunner Set<EventProcessor<EpochsLedgerUpdate>> epochsLedgerUpdateProcessors,
 		EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor,
-		EventProcessor<LocalGetVerticesRequest> localGetVerticesRequestEventProcessor,
+		EventProcessor<VertexRequestTimeout> vertexRequestTimeoutEventProcessor,
 		EventProcessor<SyncInProgress> syncTimeoutProcessor,
 		EventProcessor<EpochViewUpdate> epochViewUpdateProcessor,
 		EventProcessor<BFTRebuildUpdate> rebuildUpdateEventProcessor,
@@ -81,7 +81,7 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 		});
 		processorsBuilder.put(EpochViewUpdate.class, e -> epochViewUpdateProcessor.process((EpochViewUpdate) e));
 		processorsBuilder.put(LocalSyncRequest.class, e -> localSyncRequestEventProcessor.process((LocalSyncRequest) e));
-		processorsBuilder.put(LocalGetVerticesRequest.class, e -> localGetVerticesRequestEventProcessor.process((LocalGetVerticesRequest) e));
+		processorsBuilder.put(VertexRequestTimeout.class, e -> vertexRequestTimeoutEventProcessor.process((VertexRequestTimeout) e));
 		processorsBuilder.put(SyncInProgress.class, e -> syncTimeoutProcessor.process((SyncInProgress) e));
 		processorsBuilder.put(BFTInsertUpdate.class, e -> bftUpdateProcessor.process((BFTInsertUpdate) e));
 		processorsBuilder.put(BFTRebuildUpdate.class, e -> rebuildUpdateEventProcessor.process((BFTRebuildUpdate) e));

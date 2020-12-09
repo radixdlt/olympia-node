@@ -33,7 +33,7 @@ import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
-import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
+import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
 import java.util.Objects;
@@ -104,8 +104,8 @@ public class DeterministicConsensusProcessor implements DeterministicMessageProc
 			bftRebuildUpdateProcessors.forEach(p -> p.process((BFTRebuildUpdate) message));
 		} else if (message instanceof LedgerUpdate) {
 			vertexStoreSync.processLedgerUpdate((LedgerUpdate) message);
-		} else if (message instanceof LocalGetVerticesRequest) {
-			vertexStoreSync.processGetVerticesLocalTimeout((LocalGetVerticesRequest) message);
+		} else if (message instanceof VertexRequestTimeout) {
+			vertexStoreSync.vertexRequestTimeoutEventProcessor().process((VertexRequestTimeout) message);
 		} else {
 			throw new IllegalArgumentException("Unknown message type: " + message.getClass().getName());
 		}

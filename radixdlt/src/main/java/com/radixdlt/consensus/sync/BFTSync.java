@@ -136,7 +136,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 	private final Map<LocalGetVerticesRequest, SyncRequestState> bftSyncing = new HashMap<>();
 	private final SyncVerticesRequestSender requestSender;
 	private final EventDispatcher<LocalSyncRequest> localSyncRequestProcessor;
-	private final ScheduledEventDispatcher<LocalGetVerticesRequest> timeoutDispatcher;
+	private final ScheduledEventDispatcher<VertexRequestTimeout> timeoutDispatcher;
 	private final Random random;
 	private final int bftSyncPatienceMillis;
 	private VerifiedLedgerHeaderAndProof currentLedgerHeader;
@@ -147,7 +147,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 		Comparator<LedgerHeader> ledgerHeaderComparator,
 		SyncVerticesRequestSender requestSender,
 		EventDispatcher<LocalSyncRequest> localSyncRequestProcessor,
-		ScheduledEventDispatcher<LocalGetVerticesRequest> timeoutDispatcher,
+		ScheduledEventDispatcher<VertexRequestTimeout> timeoutDispatcher,
 		VerifiedLedgerHeaderAndProof currentLedgerHeader,
 		Random random,
 		int bftSyncPatienceMillis
@@ -253,8 +253,13 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 		this.sendBFTSyncRequest(committedQCId, 3, authors, syncState.localSyncId);
 	}
 
-	public void processGetVerticesLocalTimeout(LocalGetVerticesRequest request) {
-		SyncRequestState syncRequestState = bftSyncing.remove(request);
+
+	public EventProcessor<VertexRequestTimeout> vertexRequestTimeoutEventProcessor() {
+		return this::processGetVerticesLocalTimeout;
+	}
+
+	private void processGetVerticesLocalTimeout(VertexRequestTimeout timeout) {
+		SyncRequestState syncRequestState = bftSyncing.remove(timeout.getRequest());
 		if (syncRequestState == null) {
 			return;
 		}
@@ -275,7 +280,8 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 		LocalGetVerticesRequest request = new LocalGetVerticesRequest(vertexId, count);
 		SyncRequestState syncRequestState = bftSyncing.getOrDefault(request, new SyncRequestState(authors));
 		if (syncRequestState.syncIds.isEmpty()) {
-			this.timeoutDispatcher.dispatch(request, bftSyncPatienceMillis);
+			VertexRequestTimeout scheduledTimeout = VertexRequestTimeout.create(request);
+			this.timeoutDispatcher.dispatch(scheduledTimeout, bftSyncPatienceMillis);
 			this.requestSender.sendGetVerticesRequest(authors.get(0), request);
 			this.bftSyncing.put(request, syncRequestState);
 		}

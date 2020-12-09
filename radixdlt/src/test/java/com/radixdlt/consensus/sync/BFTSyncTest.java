@@ -62,7 +62,7 @@ public class BFTSyncTest {
 	private SyncVerticesRequestSender syncVerticesRequestSender;
 	private EventDispatcher<LocalSyncRequest> syncLedgerRequestSender;
 	private VerifiedLedgerHeaderAndProof verifiedLedgerHeaderAndProof;
-	private ScheduledEventDispatcher<LocalGetVerticesRequest> bftSyncTimeoutScheduler;
+	private ScheduledEventDispatcher<VertexRequestTimeout> bftSyncTimeoutScheduler;
 
 	@Before
 	public void setup() {

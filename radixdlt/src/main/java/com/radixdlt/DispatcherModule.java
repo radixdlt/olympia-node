@@ -37,7 +37,7 @@ import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
-import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
+import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.environment.Environment;
@@ -135,8 +135,8 @@ public class DispatcherModule extends AbstractModule {
 	}
 
 	@Provides
-	private ScheduledEventDispatcher<LocalGetVerticesRequest> localGetVerticesRequestRemoteEventDispatcher(Environment environment) {
-		return environment.getScheduledDispatcher(LocalGetVerticesRequest.class);
+	private ScheduledEventDispatcher<VertexRequestTimeout> localGetVerticesRequestRemoteEventDispatcher(Environment environment) {
+		return environment.getScheduledDispatcher(VertexRequestTimeout.class);
 	}
 
 	@Provides

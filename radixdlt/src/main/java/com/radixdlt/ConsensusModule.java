@@ -38,11 +38,11 @@ import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.liveness.PacemakerReducer;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
-import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.consensus.liveness.ExponentialPacemakerTimeoutCalculator;
 import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
 import com.radixdlt.consensus.liveness.VoteSender;
+import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
@@ -229,7 +229,7 @@ public final class ConsensusModule extends AbstractModule {
 		PacemakerReducer pacemakerReducer,
 		SyncVerticesRequestSender requestSender,
 		EventDispatcher<LocalSyncRequest> syncLedgerRequestSender,
-		ScheduledEventDispatcher<LocalGetVerticesRequest> timeoutDispatcher,
+		ScheduledEventDispatcher<VertexRequestTimeout> timeoutDispatcher,
 		@LastProof VerifiedLedgerHeaderAndProof ledgerLastProof, // Use this instead of configuration.getRoot()
 		SystemCounters counters,
 		Random random,

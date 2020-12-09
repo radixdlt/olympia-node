@@ -55,6 +55,7 @@ import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
+import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
@@ -148,6 +149,7 @@ public class ConsensusModuleTest {
 				bind(new TypeLiteral<RemoteEventDispatcher<Vote>>() { }).toInstance(rmock(RemoteEventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<NoVote>>() { }).toInstance(rmock(EventDispatcher.class));
 				bind(new TypeLiteral<ScheduledEventDispatcher<View>>() { }).toInstance(rmock(ScheduledEventDispatcher.class));
+				bind(new TypeLiteral<ScheduledEventDispatcher<VertexRequestTimeout>>() { }).toInstance(rmock(ScheduledEventDispatcher.class));
 
 				bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
 				bind(PersistentSafetyStateStore.class).toInstance(mock(PersistentSafetyStateStore.class));
@@ -212,9 +214,11 @@ public class ConsensusModuleTest {
 		Pair<QuorumCertificate, VerifiedVertex> nextVertex = createNextVertex(parent, bftNode);
 		HighQC unsyncedHighQC = HighQC.from(nextVertex.getFirst(), nextVertex.getFirst());
 		bftSync.syncToQC(unsyncedHighQC, bftNode);
+		LocalGetVerticesRequest request = new LocalGetVerticesRequest(nextVertex.getSecond().getId(), 1);
+		VertexRequestTimeout timeout = VertexRequestTimeout.create(request);
 
 		// Act
-		bftSync.processGetVerticesLocalTimeout(new LocalGetVerticesRequest(nextVertex.getSecond().getId(), 1));
+		bftSync.vertexRequestTimeoutEventProcessor().process(timeout);
 
 		// Assert
 		verify(requestSender, times(2))

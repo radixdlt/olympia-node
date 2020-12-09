@@ -55,7 +55,7 @@ import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.liveness.VoteSender;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
-import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
+import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.sync.BFTSync;
@@ -95,8 +95,8 @@ public class EpochsConsensusModule extends AbstractModule {
 	}
 
 	@Provides
-	private EventProcessor<LocalGetVerticesRequest> bftSyncTimeoutProcessor(EpochManager epochManager) {
-		return epochManager::processGetVerticesLocalTimeout;
+	private EventProcessor<VertexRequestTimeout> bftSyncTimeoutProcessor(EpochManager epochManager) {
+		return epochManager.timeoutEventProcessor();
 	}
 
 	@Provides
@@ -220,7 +220,7 @@ public class EpochsConsensusModule extends AbstractModule {
 	private BFTSyncFactory bftSyncFactory(
 		SyncVerticesRequestSender requestSender,
 		EventDispatcher<LocalSyncRequest> syncLedgerRequestSender,
-		ScheduledEventDispatcher<LocalGetVerticesRequest> timeoutDispatcher,
+		ScheduledEventDispatcher<VertexRequestTimeout> timeoutDispatcher,
 		SystemCounters counters,
 		Random random,
 		@BFTSyncPatienceMillis int bftSyncPatienceMillis

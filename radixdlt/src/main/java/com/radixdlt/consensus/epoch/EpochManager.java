@@ -55,8 +55,8 @@ import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.consensus.sync.BFTSync;
+import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.environment.EventDispatcher;
@@ -131,7 +131,7 @@ public final class EpochManager implements BFTSyncRequestProcessor {
 
 	private BFTSyncResponseProcessor syncBFTResponseProcessor;
 	private EventProcessor<GetVerticesResponse> verticesResponseProcessor;
-	private EventProcessor<LocalGetVerticesRequest> syncTimeoutProcessor;
+	private EventProcessor<VertexRequestTimeout> syncTimeoutProcessor;
 	private LedgerUpdateProcessor<LedgerUpdate> syncLedgerUpdateProcessor;
 	private BFTSyncRequestProcessor syncRequestProcessor;
 	private BFTEventProcessor bftEventProcessor;
@@ -177,7 +177,7 @@ public final class EpochManager implements BFTSyncRequestProcessor {
 			this.verticesResponseProcessor = initialBFTSync.responseProcessor();
 			this.syncBFTResponseProcessor = initialBFTSync;
 			this.syncLedgerUpdateProcessor = initialBFTSync;
-			this.syncTimeoutProcessor = initialBFTSync::processGetVerticesLocalTimeout;
+			this.syncTimeoutProcessor = initialBFTSync.vertexRequestTimeoutEventProcessor();
 			this.syncRequestProcessor = initialSyncRequestProcessor;
 		}
 
@@ -253,7 +253,7 @@ public final class EpochManager implements BFTSyncRequestProcessor {
 		this.verticesResponseProcessor = bftSync.responseProcessor();
 		this.syncBFTResponseProcessor = bftSync;
 		this.syncLedgerUpdateProcessor = bftSync;
-		this.syncTimeoutProcessor = bftSync::processGetVerticesLocalTimeout;
+		this.syncTimeoutProcessor = bftSync.vertexRequestTimeoutEventProcessor();
 
 		this.syncRequestProcessor = bftSyncRequestProcessorFactory.create(vertexStore);
 
@@ -464,8 +464,12 @@ public final class EpochManager implements BFTSyncRequestProcessor {
 		syncRequestProcessor.processGetVerticesRequest(request);
 	}
 
-	public void processGetVerticesLocalTimeout(LocalGetVerticesRequest request) {
-		syncTimeoutProcessor.process(request);
+	public EventProcessor<VertexRequestTimeout> timeoutEventProcessor() {
+		return this::processGetVerticesLocalTimeout;
+	}
+
+	private void processGetVerticesLocalTimeout(VertexRequestTimeout timeout) {
+		syncTimeoutProcessor.process(timeout);
 	}
 
 	public void processGetVerticesErrorResponse(GetVerticesErrorResponse response) {
