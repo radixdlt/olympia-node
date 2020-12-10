@@ -17,17 +17,21 @@
 
 package com.radixdlt.consensus.bft;
 
+import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.liveness.Pacemaker;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.util.Optional;
 
 import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.mockito.ArgumentMatchers.any;
@@ -63,6 +67,58 @@ public class BFTEventReducerTest {
             this.pendingVotes,
             mock(ViewUpdate.class)
         );
+    }
+
+    @Test
+    public void when_bft_update_for_previous_view__then_ignore() {
+        BFTInsertUpdate update = mock(BFTInsertUpdate.class);
+        BFTHeader header = mock(BFTHeader.class);
+        this.bftEventReducer.processViewUpdate(ViewUpdate.create(View.of(3), mock(HighQC.class), mock(BFTNode.class), this.self));
+        verify(this.pacemaker, times(1)).processViewUpdate(any());
+
+        when(update.getHeader()).thenReturn(header);
+        when(header.getView()).thenReturn(View.of(2));
+        this.bftEventReducer.processBFTUpdate(update);
+
+        verifyNoMoreInteractions(this.pacemaker);
+    }
+
+    @Test
+    public void when_view_is_timed_out__then_dont_vote() {
+        BFTInsertUpdate bftUpdate = mock(BFTInsertUpdate.class);
+        BFTHeader header = mock(BFTHeader.class);
+        when(bftUpdate.getHeader()).thenReturn(header);
+        when(header.getView()).thenReturn(View.of(3));
+
+        ViewUpdate viewUpdate = ViewUpdate.create(View.of(3), mock(HighQC.class), mock(BFTNode.class), this.self);
+        this.bftEventReducer.processViewUpdate(viewUpdate);
+        verify(this.pacemaker, times(1)).processViewUpdate(any());
+
+        this.bftEventReducer.processLocalTimeout(ScheduledLocalTimeout.create(viewUpdate, 1000));
+        verify(this.pacemaker, times(1)).processLocalTimeout(any());
+
+        this.bftEventReducer.processBFTUpdate(bftUpdate);
+
+        verifyNoMoreInteractions(this.voteDispatcher);
+        verifyNoMoreInteractions(this.noVoteEventDispatcher);
+    }
+
+    @Test
+    public void when_previous_vote_exists_for_this_view__then_dont_vote() {
+        BFTInsertUpdate bftUpdate = mock(BFTInsertUpdate.class);
+        BFTHeader header = mock(BFTHeader.class);
+        when(bftUpdate.getHeader()).thenReturn(header);
+        when(header.getView()).thenReturn(View.of(3));
+
+        ViewUpdate viewUpdate = ViewUpdate.create(View.of(3), mock(HighQC.class), mock(BFTNode.class), this.self);
+        this.bftEventReducer.processViewUpdate(viewUpdate);
+        verify(this.pacemaker, times(1)).processViewUpdate(any());
+
+        when(safetyRules.getLastVote(View.of(3))).thenReturn(Optional.of(mock(Vote.class)));
+        this.bftEventReducer.processBFTUpdate(bftUpdate);
+
+        verifyNoMoreInteractions(this.voteDispatcher);
+        verifyNoMoreInteractions(this.noVoteEventDispatcher);
     }
 
     @Test

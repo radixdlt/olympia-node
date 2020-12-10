@@ -34,7 +34,7 @@ import java.util.Objects;
  */
 @Immutable
 @SerializerId2("consensus.vote_timeout")
-public class VoteTimeout {
+public final class VoteTimeout {
     @JsonProperty(SerializerConstants.SERIALIZER_NAME)
     @DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
     SerializerDummy serializer = SerializerDummy.DUMMY;
@@ -47,9 +47,13 @@ public class VoteTimeout {
 
     @JsonCreator
     public VoteTimeout(
-        @JsonProperty("view") View view,
+        @JsonProperty("view") long view,
         @JsonProperty("epoch") long epoch
     ) {
+        this(View.of(view), epoch);
+    }
+
+    public VoteTimeout(View view, long epoch) {
         this.view = Objects.requireNonNull(view);
         this.epoch = epoch;
     }
