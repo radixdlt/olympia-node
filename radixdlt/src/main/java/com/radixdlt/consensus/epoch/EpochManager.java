@@ -233,7 +233,6 @@ public final class EpochManager implements BFTSyncRequestProcessor {
 		final Pacemaker pacemaker = pacemakerFactory.create(
 			validatorSet,
 			vertexStore,
-			pacemakerState,
 			timeoutCalculator,
 			safetyRules,
 			initialViewUpdate,

@@ -36,43 +36,36 @@ import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTSyncer.SyncResult;
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.utils.Pair;
 import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
 
 public class BFTEventPreprocessorTest {
-    private static final ECKeyPair SELF_KEY = ECKeyPair.generateNew();
+
     private BFTEventPreprocessor preprocessor;
     private BFTSync vertexStoreSync;
     private BFTEventProcessor forwardTo;
     private SyncQueues syncQueues;
-    private BFTNode self;
 
     @Before
     public void setUp() {
         this.vertexStoreSync = mock(BFTSync.class);
         this.forwardTo = mock(BFTEventProcessor.class);
         this.syncQueues = mock(SyncQueues.class);
-        this.self = mock(BFTNode.class);
-
-        when(this.self.getKey()).thenReturn(SELF_KEY.getPublicKey());
 
         when(syncQueues.isEmptyElseAdd(any())).thenReturn(true);
 
         this.preprocessor = new BFTEventPreprocessor(
-                self,
-                forwardTo,
-                vertexStoreSync,
-                syncQueues,
-                ViewUpdate.create(View.genesis().next(), mock(HighQC.class), self, BFTNode.random())
+            forwardTo,
+            vertexStoreSync,
+            syncQueues,
+            ViewUpdate.create(View.genesis().next(), mock(HighQC.class), mock(BFTNode.class), BFTNode.random())
         );
     }
 
     private Proposal createProposal(boolean goodView, boolean synced) {
         Proposal proposal = mock(Proposal.class);
-        when(proposal.getAuthor()).thenReturn(self);
         UnverifiedVertex vertex = mock(UnverifiedVertex.class);
         when(proposal.getVertex()).thenReturn(vertex);
         when(vertex.getView()).thenReturn(goodView ? View.of(1) : View.of(0));

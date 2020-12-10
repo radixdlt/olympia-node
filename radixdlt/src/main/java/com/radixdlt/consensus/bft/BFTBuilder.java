@@ -141,7 +141,6 @@ public final class BFTBuilder {
 		SyncQueues syncQueues = new SyncQueues();
 
 		BFTEventPreprocessor preprocessor = new BFTEventPreprocessor(
-			self,
 			reducer,
 			bftSyncer,
 			syncQueues,

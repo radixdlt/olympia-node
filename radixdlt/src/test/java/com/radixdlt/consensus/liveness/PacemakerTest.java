@@ -63,7 +63,6 @@ public class PacemakerTest {
 	private BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 	private VertexStore vertexStore = mock(VertexStore.class);
 	private SafetyRules safetyRules = mock(SafetyRules.class);
-	private PacemakerState pacemakerState = mock(PacemakerState.class);
 	private PacemakerTimeoutCalculator timeoutCalculator = mock(PacemakerTimeoutCalculator.class);
 	private NextCommandGenerator nextCommandGenerator = mock(NextCommandGenerator.class);
 	private ProposalBroadcaster proposalBroadcaster = mock(ProposalBroadcaster.class);
@@ -90,7 +89,6 @@ public class PacemakerTest {
 			this.validatorSet,
 			this.vertexStore,
 			this.safetyRules,
-			this.pacemakerState,
 			this.timeoutDispatcher,
 			this.timeoutSender,
 			this.timeoutCalculator,
@@ -171,6 +169,5 @@ public class PacemakerTest {
         this.pacemaker.processLocalTimeout(ScheduledLocalTimeout.create(
                 ViewUpdate.create(View.of(1), mock(HighQC.class), mock(BFTNode.class), mock(BFTNode.class)), 0L));
 		verifyNoMoreInteractions(this.safetyRules);
-		verifyNoMoreInteractions(this.pacemakerState);
 	}
 }

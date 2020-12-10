@@ -19,6 +19,7 @@ package com.radixdlt.consensus.liveness;
 
 import com.google.common.hash.HashCode;
 import com.google.common.util.concurrent.RateLimiter;
+import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -65,7 +66,6 @@ public final class Pacemaker {
 	private final BFTValidatorSet validatorSet;
 	private final VertexStore vertexStore;
 	private final SafetyRules safetyRules;
-	private final PacemakerReducer pacemakerReducer;
 	private final ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutSender;
 	private final PacemakerTimeoutCalculator timeoutCalculator;
 	private final ProposalBroadcaster proposalBroadcaster;
@@ -85,7 +85,6 @@ public final class Pacemaker {
 		BFTValidatorSet validatorSet,
 		VertexStore vertexStore,
 		SafetyRules safetyRules,
-		PacemakerReducer pacemakerReducer,
 		EventDispatcher<LocalTimeoutOccurrence> timeoutDispatcher,
 		ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutSender,
 		PacemakerTimeoutCalculator timeoutCalculator,
@@ -101,7 +100,6 @@ public final class Pacemaker {
 		this.validatorSet = Objects.requireNonNull(validatorSet);
 		this.vertexStore = Objects.requireNonNull(vertexStore);
 		this.safetyRules = Objects.requireNonNull(safetyRules);
-		this.pacemakerReducer = Objects.requireNonNull(pacemakerReducer);
 		this.timeoutSender = Objects.requireNonNull(timeoutSender);
 		this.timeoutDispatcher = Objects.requireNonNull(timeoutDispatcher);
 		this.timeoutCalculator = Objects.requireNonNull(timeoutCalculator);
@@ -141,15 +139,7 @@ public final class Pacemaker {
 			return;
 		}
 
-		final Vote baseVote = this.safetyRules.createVote(
-			update.getInserted().getVertex(),
-			update.getHeader(),
-			this.timeSupplier.currentTime(),
-			update.getVertexStoreState().getHighQC());
-
-		final Vote timeoutVote = this.safetyRules.timeoutVote(baseVote);
-
-		this.voteDispatcher.dispatch(this.validatorSet.nodes(), timeoutVote);
+		this.createAndSendTimeoutVote(update.getInserted());
 	}
 
 	private void startView() {
@@ -245,7 +235,26 @@ public final class Pacemaker {
 		final UnverifiedVertex proposedVertex = UnverifiedVertex.createVertex(highQC.highestQC(), view, null);
 		final VerifiedVertex verifiedVertex = new VerifiedVertex(proposedVertex, hasher.hash(proposedVertex));
 		this.timeoutVoteVertexId = Optional.of(verifiedVertex.getId());
-		this.vertexStore.insertVertex(verifiedVertex);
+
+		this.vertexStore.getPreparedVertex(verifiedVertex.getId()).ifPresentOrElse(
+			this::createAndSendTimeoutVote, // if vertex is already there, send the vote immediately
+			() -> this.vertexStore.insertVertex(verifiedVertex) // otherwise insert and wait for async bft update msg
+		);
+	}
+
+	private void createAndSendTimeoutVote(PreparedVertex preparedVertex) {
+		final BFTHeader bftHeader =
+			new BFTHeader(preparedVertex.getView(), preparedVertex.getId(), preparedVertex.getLedgerHeader());
+
+		final Vote baseVote = this.safetyRules.createVote(
+			preparedVertex.getVertex(),
+			bftHeader,
+			this.timeSupplier.currentTime(),
+			this.vertexStore.highQC());
+
+		final Vote timeoutVote = this.safetyRules.timeoutVote(baseVote);
+
+		this.voteDispatcher.dispatch(this.validatorSet.nodes(), timeoutVote);
 	}
 
 	private void  updateTimeoutCounters(ScheduledLocalTimeout scheduledTimeout) {

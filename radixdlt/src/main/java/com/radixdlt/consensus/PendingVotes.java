@@ -30,8 +30,6 @@ import com.radixdlt.consensus.bft.VoteProcessingResult;
 import com.radixdlt.consensus.bft.VoteProcessingResult.VoteRejected.VoteRejectedReason;
 import com.radixdlt.consensus.liveness.VoteTimeout;
 import com.radixdlt.crypto.Hasher;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
@@ -51,7 +49,6 @@ import com.radixdlt.crypto.ECDSASignature;
 @NotThreadSafe
 @SecurityCritical({ SecurityKind.SIG_VERIFY, SecurityKind.GENERAL })
 public final class PendingVotes {
-	private static final Logger log = LogManager.getLogger();
 
 	@VisibleForTesting
 	// Make sure equals tester can access.
@@ -148,7 +145,7 @@ public final class PendingVotes {
 			return Optional.empty(); // TC can't be formed if vote is not timed out
 		}
 
-		final ECDSASignature timeoutSignature = vote.getTimeoutSignature().get();
+		final ECDSASignature timeoutSignature = vote.getTimeoutSignature().orElseThrow();
 
 		final VoteTimeout voteTimeout = VoteTimeout.of(vote);
 		final HashCode voteTimeoutHash = this.hasher.hash(voteTimeout);

@@ -25,22 +25,22 @@ import java.util.Objects;
 /**
  * The result of a view voting (either QC or TC).
  */
-public abstract class ViewVotingResult {
+public interface ViewVotingResult {
 
-    public static FormedQC qc(QuorumCertificate qc) {
+    static FormedQC qc(QuorumCertificate qc) {
         return new FormedQC(qc);
     }
 
-    public static FormedTC tc(TimeoutCertificate tc) {
+    static FormedTC tc(TimeoutCertificate tc) {
         return new FormedTC(tc);
     }
 
-    public abstract View getView();
+    View getView();
 
     /**
      * Signifies that the view has been completed with a formed quorum certificate.
      */
-    public static final class FormedQC extends ViewVotingResult {
+    final class FormedQC implements ViewVotingResult {
 
         private final QuorumCertificate qc;
 
@@ -83,7 +83,7 @@ public abstract class ViewVotingResult {
     /**
      * Signifies that the view has been completed with a timeout certificate.
      */
-    public static final class FormedTC extends ViewVotingResult {
+    final class FormedTC implements ViewVotingResult {
 
         private final TimeoutCertificate tc;
 

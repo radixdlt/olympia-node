@@ -90,10 +90,14 @@ public final class SafetyState {
 		}
 
 		public SafetyState build() {
-			return changed ? new SafetyState(
-				lockedView == null ? original.lockedView : lockedView,
-				lastVote == null ? original.lastVote : Optional.of(lastVote)
-			) : original;
+			if (changed) {
+				return new SafetyState(
+					lockedView == null ? original.lockedView : lockedView,
+					lastVote == null ? original.lastVote : Optional.of(lastVote)
+				);
+			} else {
+				return original;
+			}
 		}
 	}
 

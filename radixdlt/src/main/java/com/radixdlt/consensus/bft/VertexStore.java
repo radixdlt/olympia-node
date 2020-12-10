@@ -257,6 +257,15 @@ public final class VertexStore {
 	}
 
 	/**
+	 * Returns the vertex with specified id or empty if not exists.
+	 * @param id the id of a vertex
+	 * @return the specified vertex or empty
+	 */
+	public Optional<PreparedVertex> getPreparedVertex(HashCode id) {
+		return Optional.ofNullable(vertices.get(id));
+	}
+
+	/**
 	 * Inserts a vertex and then attempts to create the next header.
 	 *
 	 * @param vertex vertex to insert

@@ -52,7 +52,6 @@ import org.apache.logging.log4j.Logger;
 public final class BFTEventPreprocessor implements BFTEventProcessor {
 	private static final Logger log = LogManager.getLogger();
 
-	private final BFTNode self;
 	private final BFTEventProcessor forwardTo;
 	private final BFTSyncer bftSyncer;
 	private final SyncQueues syncQueues;
@@ -61,13 +60,11 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	private ViewUpdate latestViewUpdate;
 
 	public BFTEventPreprocessor(
-		BFTNode self,
 		BFTEventProcessor forwardTo,
 		BFTSyncer bftSyncer,
 		SyncQueues syncQueues,
 		ViewUpdate initialViewUpdate
 	) {
-		this.self = Objects.requireNonNull(self);
 		this.bftSyncer = Objects.requireNonNull(bftSyncer);
 		this.syncQueues = syncQueues;
 		this.forwardTo = forwardTo;

@@ -25,32 +25,32 @@ import java.util.Objects;
 /**
  * The result of processing a received vote.
  */
-public abstract class VoteProcessingResult {
+public interface VoteProcessingResult {
 
-    public static VoteAccepted accepted() {
+    static VoteAccepted accepted() {
         return new VoteAccepted();
     }
 
-    public static VoteRejected rejected(VoteRejected.VoteRejectedReason reason) {
+    static VoteRejected rejected(VoteRejected.VoteRejectedReason reason) {
         return new VoteRejected(reason);
     }
 
-    public static QuorumReached quorum(ViewVotingResult result) {
+    static QuorumReached quorum(ViewVotingResult result) {
         return new QuorumReached(result);
     }
 
-    public static QuorumReached qcQuorum(QuorumCertificate qc) {
+    static QuorumReached qcQuorum(QuorumCertificate qc) {
         return quorum(ViewVotingResult.qc(qc));
     }
 
-    public static QuorumReached tcQuorum(TimeoutCertificate tc) {
+    static QuorumReached tcQuorum(TimeoutCertificate tc) {
         return quorum(ViewVotingResult.tc(tc));
     }
 
     /**
      * Signifies that a vote has been accepted, but the quorum hasn't been reached.
      */
-    public static final class VoteAccepted extends VoteProcessingResult {
+    final class VoteAccepted implements VoteProcessingResult {
         @Override
         public String toString() {
             return "VoteAccepted";
@@ -70,7 +70,7 @@ public abstract class VoteProcessingResult {
     /**
      * Signifies that a vote has been rejected.
      */
-    public static final class VoteRejected extends VoteProcessingResult {
+    final class VoteRejected implements VoteProcessingResult {
         public enum VoteRejectedReason {
             INVALID_AUTHOR, DUPLICATE_VOTE
         }
@@ -111,7 +111,7 @@ public abstract class VoteProcessingResult {
     /**
      * Signifies that a vote has been accepted and quorum has been reached.
      */
-    public static final class QuorumReached extends VoteProcessingResult {
+    final class QuorumReached implements VoteProcessingResult {
 
         private final ViewVotingResult viewVotingResult;
 

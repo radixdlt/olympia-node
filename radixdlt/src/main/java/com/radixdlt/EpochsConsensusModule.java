@@ -183,7 +183,6 @@ public class EpochsConsensusModule extends AbstractModule {
 		return (
 			validatorSet,
 			vertexStore,
-			pacemakerState,
 			timeoutCalculator,
 			safetyRules,
 			initialViewUpdate,
@@ -194,7 +193,6 @@ public class EpochsConsensusModule extends AbstractModule {
 			validatorSet,
 			vertexStore,
 			safetyRules,
-			pacemakerState,
 			timeout -> timeoutEventDispatcher.dispatch(new EpochLocalTimeoutOccurrence(epoch, timeout)),
 			(scheduledTimeout, ms) -> localTimeoutSender.scheduleTimeout(Epoched.from(epoch, scheduledTimeout), ms),
 			timeoutCalculator,
