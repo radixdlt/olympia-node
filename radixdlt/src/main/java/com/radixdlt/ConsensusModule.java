@@ -57,7 +57,6 @@ import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.sync.BFTSync;
-import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
@@ -65,7 +64,6 @@ import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.liveness.PendingViewTimeouts;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
@@ -228,21 +226,17 @@ public final class ConsensusModule extends AbstractModule {
 	private BFTSync bftSync(
 		VertexStore vertexStore,
 		PacemakerReducer pacemakerReducer,
-		SyncVerticesRequestSender requestSender,
+		RemoteEventDispatcher<GetVerticesRequest> requestSender,
 		EventDispatcher<LocalSyncRequest> syncLedgerRequestSender,
 		ScheduledEventDispatcher<VertexRequestTimeout> timeoutDispatcher,
 		@LastProof VerifiedLedgerHeaderAndProof ledgerLastProof, // Use this instead of configuration.getRoot()
-		SystemCounters counters,
 		Random random,
 		@BFTSyncPatienceMillis int bftSyncPatienceMillis
 	) {
 		return new BFTSync(
 			vertexStore, pacemakerReducer,
 			Comparator.comparingLong((LedgerHeader h) -> h.getAccumulatorState().getStateVersion()),
-			(node, request)  -> {
-				counters.increment(CounterType.BFT_SYNC_REQUESTS_SENT);
-				requestSender.sendGetVerticesRequest(node, request);
-			},
+			requestSender,
 			syncLedgerRequestSender,
 			timeoutDispatcher,
 			ledgerLastProof,

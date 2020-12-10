@@ -126,7 +126,8 @@ public class SimulationNetworkTest {
 
 		network
 			.getNetwork(node1)
-			.sendGetVerticesRequest(node2, new GetVerticesRequest(vertexId, 1));
+			.remoteEventDispatcher(GetVerticesRequest.class)
+			.dispatch(node2, new GetVerticesRequest(vertexId, 1));
 
 		rpcRequestListener.awaitCount(1);
 		rpcRequestListener.assertValueAt(0, r -> r.getEvent().getVertexId().equals(vertexId));

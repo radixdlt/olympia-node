@@ -25,7 +25,6 @@ import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
@@ -39,6 +38,7 @@ import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
@@ -58,7 +58,7 @@ import org.radix.network.messaging.Message;
 /**
  * Network interface for syncing vertices using the MessageCentral
  */
-public class MessageCentralValidatorSync implements SyncVerticesRequestSender, SyncVerticesResponseSender,
+public class MessageCentralValidatorSync implements SyncVerticesResponseSender,
 	SyncVerticesRPCRx, SyncEpochsRPCSender, SyncEpochsRPCRx {
 	private static final Logger log = LogManager.getLogger();
 
@@ -89,7 +89,10 @@ public class MessageCentralValidatorSync implements SyncVerticesRequestSender, S
 		this.errorResponseRateLimiter = errorResponseRateLimiter;
 	}
 
-	@Override
+	public RemoteEventDispatcher<GetVerticesRequest> verticesRequestDispatcher() {
+		return this::sendGetVerticesRequest;
+	}
+
 	public void sendGetVerticesRequest(BFTNode node, GetVerticesRequest request) {
 		if (this.self.equals(node)) {
 			throw new IllegalStateException("Should never need to retrieve a vertex from self.");

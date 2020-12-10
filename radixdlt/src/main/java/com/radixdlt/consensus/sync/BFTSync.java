@@ -36,6 +36,7 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.liveness.PacemakerReducer;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.ledger.LedgerUpdateProcessor;
@@ -112,29 +113,13 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 		}
 	}
 
-
-	/**
-	 * An asynchronous supplier which retrieves data for a vertex with a given id
-	 */
-	public interface SyncVerticesRequestSender {
-		/**
-		 * Send an RPC request to retrieve vertices given an Id and number of
-		 * vertices. i.e. The vertex with the given id and (count - 1) ancestors
-		 * will be returned.
-		 *
-		 * @param node the node to retrieve the vertex info from
-		 * @param request get vertices request
-		 */
-		void sendGetVerticesRequest(BFTNode node, GetVerticesRequest request);
-	}
-
 	private static final Logger log = LogManager.getLogger();
 	private final VertexStore vertexStore;
 	private final PacemakerReducer pacemakerReducer;
 	private final Map<HashCode, SyncState> syncing = new HashMap<>();
 	private final TreeMap<LedgerHeader, List<HashCode>> ledgerSyncing;
 	private final Map<GetVerticesRequest, SyncRequestState> bftSyncing = new HashMap<>();
-	private final SyncVerticesRequestSender requestSender;
+	private final RemoteEventDispatcher<GetVerticesRequest> requestSender;
 	private final EventDispatcher<LocalSyncRequest> localSyncRequestProcessor;
 	private final ScheduledEventDispatcher<VertexRequestTimeout> timeoutDispatcher;
 	private final Random random;
@@ -145,7 +130,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 		VertexStore vertexStore,
 		PacemakerReducer pacemakerReducer,
 		Comparator<LedgerHeader> ledgerHeaderComparator,
-		SyncVerticesRequestSender requestSender,
+		RemoteEventDispatcher<GetVerticesRequest> requestSender,
 		EventDispatcher<LocalSyncRequest> localSyncRequestProcessor,
 		ScheduledEventDispatcher<VertexRequestTimeout> timeoutDispatcher,
 		VerifiedLedgerHeaderAndProof currentLedgerHeader,
@@ -282,7 +267,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 		if (syncRequestState.syncIds.isEmpty()) {
 			VertexRequestTimeout scheduledTimeout = VertexRequestTimeout.create(request);
 			this.timeoutDispatcher.dispatch(scheduledTimeout, bftSyncPatienceMillis);
-			this.requestSender.sendGetVerticesRequest(authors.get(0), request);
+			this.requestSender.dispatch(authors.get(0), request);
 			this.bftSyncing.put(request, syncRequestState);
 		}
 		syncRequestState.syncIds.add(syncId);

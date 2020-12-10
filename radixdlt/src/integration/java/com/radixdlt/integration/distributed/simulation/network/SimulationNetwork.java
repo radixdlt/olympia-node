@@ -27,8 +27,6 @@ import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
-import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.VoteSender;
@@ -132,7 +130,7 @@ public class SimulationNetwork {
 	}
 
 	public class SimulatedNetworkImpl implements
-		ProposalBroadcaster, VoteSender, SyncVerticesRequestSender, SyncVerticesResponseSender, SyncEpochsRPCSender, BFTEventsRx,
+		ProposalBroadcaster, VoteSender, SyncVerticesResponseSender, SyncEpochsRPCSender, BFTEventsRx,
 		SyncVerticesRPCRx, SyncEpochsRPCRx {
 		private final Observable<Object> myMessages;
 		private final BFTNode thisNode;
@@ -165,11 +163,6 @@ public class SimulationNetwork {
 			for (BFTNode reader : nodes) {
 				receivedMessages.onNext(MessageInTransit.newMessage(viewTimeout, thisNode, reader));
 			}
-		}
-
-		@Override
-		public void sendGetVerticesRequest(BFTNode node, GetVerticesRequest request) {
-			sendRemoteEvent(node, request, GetVerticesRequest.class);
 		}
 
 		@Override

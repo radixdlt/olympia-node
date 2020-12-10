@@ -60,13 +60,12 @@ import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.sync.BFTSync;
-import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
+import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 
@@ -225,10 +224,9 @@ public class EpochsConsensusModule extends AbstractModule {
 
 	@Provides
 	private BFTSyncFactory bftSyncFactory(
-		SyncVerticesRequestSender requestSender,
+		RemoteEventDispatcher<GetVerticesRequest> requestSender,
 		EventDispatcher<LocalSyncRequest> syncLedgerRequestSender,
 		ScheduledEventDispatcher<VertexRequestTimeout> timeoutDispatcher,
-		SystemCounters counters,
 		Random random,
 		@BFTSyncPatienceMillis int bftSyncPatienceMillis
 	) {
@@ -236,10 +234,7 @@ public class EpochsConsensusModule extends AbstractModule {
 			vertexStore,
 			pacemakerState,
 			Comparator.comparingLong((LedgerHeader h) -> h.getAccumulatorState().getStateVersion()),
-			(node, request)  -> {
-				counters.increment(CounterType.BFT_SYNC_REQUESTS_SENT);
-				requestSender.sendGetVerticesRequest(node, request);
-			},
+			requestSender,
 			syncLedgerRequestSender,
 			timeoutDispatcher,
 			configuration.getVertexStoreState().getRootHeader(),

@@ -33,7 +33,6 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.VoteSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
-import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.universe.Universe;
@@ -64,7 +63,6 @@ public class NetworkModuleTest {
 		List<Class<?>> classesToCheckFor = Arrays.asList(
 			SyncEpochsRPCSender.class,
 			SyncEpochsRPCRx.class,
-			SyncVerticesRequestSender.class,
 			SyncVerticesRPCRx.class,
 			ProposalBroadcaster.class,
 			VoteSender.class,

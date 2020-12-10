@@ -73,7 +73,6 @@ import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.sync.BFTSync;
-import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
@@ -110,7 +109,7 @@ public class ConsensusModuleTest {
 	private BFTConfiguration bftConfiguration;
 
 	private ECKeyPair ecKeyPair;
-	private SyncVerticesRequestSender requestSender;
+	private RemoteEventDispatcher<GetVerticesRequest> requestSender;
 
 	@Before
 	public void setup() {
@@ -121,7 +120,7 @@ public class ConsensusModuleTest {
 		VerifiedVertexStoreState vertexStoreState = VerifiedVertexStoreState.create(HighQC.from(qc), hashedGenesis);
 		this.bftConfiguration = new BFTConfiguration(validatorSet, vertexStoreState);
 		this.ecKeyPair = ECKeyPair.generateNew();
-		this.requestSender = mock(SyncVerticesRequestSender.class);
+		this.requestSender = rmock(RemoteEventDispatcher.class);
 
 		Guice.createInjector(
 			new ConsensusModule(),
@@ -147,6 +146,7 @@ public class ConsensusModuleTest {
 				bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledLocalTimeout>>() { }).toInstance(rmock(ScheduledEventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<FormedQC>>() { }).toInstance(rmock(EventDispatcher.class));
 				bind(new TypeLiteral<RemoteEventDispatcher<Vote>>() { }).toInstance(rmock(RemoteEventDispatcher.class));
+				bind(new TypeLiteral<RemoteEventDispatcher<GetVerticesRequest>>() { }).toInstance(requestSender);
 				bind(new TypeLiteral<EventDispatcher<NoVote>>() { }).toInstance(rmock(EventDispatcher.class));
 				bind(new TypeLiteral<ScheduledEventDispatcher<View>>() { }).toInstance(rmock(ScheduledEventDispatcher.class));
 				bind(new TypeLiteral<ScheduledEventDispatcher<VertexRequestTimeout>>() { }).toInstance(rmock(ScheduledEventDispatcher.class));
@@ -155,7 +155,6 @@ public class ConsensusModuleTest {
 				bind(PersistentSafetyStateStore.class).toInstance(mock(PersistentSafetyStateStore.class));
 				bind(VoteSender.class).toInstance(mock(VoteSender.class));
 				bind(ProposalBroadcaster.class).toInstance(mock(ProposalBroadcaster.class));
-				bind(SyncVerticesRequestSender.class).toInstance(requestSender);
 				bind(SyncVerticesResponseSender.class).toInstance(mock(SyncVerticesResponseSender.class));
 				bind(NextCommandGenerator.class).toInstance(mock(NextCommandGenerator.class));
 				bind(SystemCounters.class).toInstance(mock(SystemCounters.class));
@@ -222,7 +221,7 @@ public class ConsensusModuleTest {
 
 		// Assert
 		verify(requestSender, times(2))
-			.sendGetVerticesRequest(eq(bftNode), argThat(r -> r.getCount() == 1 && r.getVertexId().equals(nextVertex.getSecond().getId())));
+			.dispatch(eq(bftNode), argThat(r -> r.getCount() == 1 && r.getVertexId().equals(nextVertex.getSecond().getId())));
 	}
 
 	@Test
@@ -241,6 +240,6 @@ public class ConsensusModuleTest {
 
 		// Assert
 		verify(requestSender, times(1))
-			.sendGetVerticesRequest(eq(bftNode), argThat(r -> r.getCount() == 1 && r.getVertexId().equals(nextVertex.getSecond().getId())));
+			.dispatch(eq(bftNode), argThat(r -> r.getCount() == 1 && r.getVertexId().equals(nextVertex.getSecond().getId())));
 	}
 }
