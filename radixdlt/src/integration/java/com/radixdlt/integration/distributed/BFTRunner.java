@@ -27,13 +27,14 @@ import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
-import com.radixdlt.consensus.bft.BFTSyncRequestProcessor;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.BFTSync;
+import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.utils.ThreadFactories;
 import io.reactivex.rxjava3.core.Observable;
@@ -83,7 +84,7 @@ public class BFTRunner implements ModuleRunner {
 		SyncVerticesRPCRx rpcRx,
 		BFTEventProcessor bftEventProcessor,
 		BFTSync vertexStoreSync,
-		BFTSyncRequestProcessor requestProcessor,
+		Set<RemoteEventProcessor<LocalGetVerticesRequest>> requestProcessors,
 		@Self BFTNode self
 	) {
 		this.bftEventProcessor = Objects.requireNonNull(bftEventProcessor);
@@ -115,7 +116,7 @@ public class BFTRunner implements ModuleRunner {
 				}),
 			rpcRx.requests()
 				.observeOn(singleThreadScheduler)
-				.doOnNext(requestProcessor::processGetVerticesRequest),
+				.doOnNext(r -> requestProcessors.forEach(p -> p.process(r.getSender(), new LocalGetVerticesRequest(r.getVertexId(), r.getCount())))),
 			rpcRx.responses()
 				.observeOn(singleThreadScheduler)
 				.doOnNext(resp -> vertexStoreSync.responseProcessor().process(resp)),

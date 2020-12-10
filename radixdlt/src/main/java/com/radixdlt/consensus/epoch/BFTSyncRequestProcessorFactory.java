@@ -18,11 +18,12 @@
 package com.radixdlt.consensus.epoch;
 
 import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
+import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
+import com.radixdlt.environment.RemoteEventProcessor;
 
 /**
  * Creates new instances of sync request processors given a vertex store
  */
 public interface BFTSyncRequestProcessorFactory {
-	VertexStoreBFTSyncRequestProcessor create(VertexStore vertexStore);
+	RemoteEventProcessor<LocalGetVerticesRequest> create(VertexStore vertexStore);
 }

@@ -21,9 +21,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTSyncRequestProcessor;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VertexStore;
+import com.radixdlt.environment.RemoteEventProcessor;
 import java.util.Objects;
 import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
@@ -32,7 +32,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * Processor of sync requests and responds with info from a VertexStore
  */
-public final class VertexStoreBFTSyncRequestProcessor implements BFTSyncRequestProcessor {
+public final class VertexStoreBFTSyncRequestProcessor implements RemoteEventProcessor<LocalGetVerticesRequest> {
 	private static final Logger log = LogManager.getLogger();
 	private final VertexStore vertexStore;
 	private final SyncVerticesResponseSender syncVerticesResponseSender;
@@ -63,7 +63,7 @@ public final class VertexStoreBFTSyncRequestProcessor implements BFTSyncRequestP
 	}
 
 	@Override
-	public void processGetVerticesRequest(GetVerticesRequest request) {
+	public void process(BFTNode sender, LocalGetVerticesRequest request) {
 		// TODO: Handle nodes trying to DDOS this endpoint
 
 		log.debug("SYNC_VERTICES: Received GetVerticesRequest {}", request);
@@ -71,11 +71,11 @@ public final class VertexStoreBFTSyncRequestProcessor implements BFTSyncRequestP
 		verticesMaybe.ifPresentOrElse(
 			fetched -> {
 				log.debug("SYNC_VERTICES: Sending Response {}", fetched);
-				this.syncVerticesResponseSender.sendGetVerticesResponse(request.getSender(), fetched);
+				this.syncVerticesResponseSender.sendGetVerticesResponse(sender, fetched);
 			},
 			() -> {
 				log.debug("SYNC_VERTICES: Sending error response {}", vertexStore.highQC());
-				this.syncVerticesResponseSender.sendGetVerticesErrorResponse(request.getSender(), vertexStore.highQC());
+				this.syncVerticesResponseSender.sendGetVerticesErrorResponse(sender, vertexStore.highQC());
 			}
 		);
 	}

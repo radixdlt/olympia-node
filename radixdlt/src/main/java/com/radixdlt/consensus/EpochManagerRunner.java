@@ -24,6 +24,7 @@ import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 
+import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
@@ -105,7 +106,8 @@ public final class EpochManagerRunner implements ModuleRunner {
 				.doOnNext(epochManager::processConsensusEvent),
 			rpcRx.requests()
 				.observeOn(singleThreadScheduler)
-				.doOnNext(epochManager::processGetVerticesRequest),
+				.doOnNext(req -> epochManager.localGetVerticesRequestRemoteEventProcessor()
+					.process(req.getSender(), new LocalGetVerticesRequest(req.getVertexId(), req.getCount()))),
 			rpcRx.responses()
 				.observeOn(singleThreadScheduler)
 				.doOnNext(epochManager::processGetVerticesResponse),

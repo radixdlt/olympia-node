@@ -55,6 +55,7 @@ import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.liveness.VoteSender;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
+import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
@@ -66,6 +67,7 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
+import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 
 import com.radixdlt.store.LastEpochProof;
@@ -82,6 +84,11 @@ public class EpochsConsensusModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		bind(EpochManager.class).in(Scopes.SINGLETON);
+	}
+
+	@Provides
+	private RemoteEventProcessor<LocalGetVerticesRequest> localGetVerticesRequestRemoteEventProcessor(EpochManager epochManager) {
+		return epochManager.localGetVerticesRequestRemoteEventProcessor();
 	}
 
 	@Provides
