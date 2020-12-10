@@ -24,9 +24,10 @@ import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 
-import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
+import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.utils.ThreadFactories;
 
@@ -70,6 +71,7 @@ public final class EpochManagerRunner implements ModuleRunner {
 		EventProcessor<VertexRequestTimeout> vertexRequestTimeoutEventProcessor,
 		Observable<EpochViewUpdate> localViewUpdates,
 		EventProcessor<EpochViewUpdate> epochViewUpdateEventProcessor,
+		Observable<RemoteEvent<GetVerticesRequest>> verticesRequests,
 		BFTEventsRx networkRx,
 		PacemakerRx pacemakerRx,
 		SyncVerticesRPCRx rpcRx,
@@ -104,10 +106,9 @@ public final class EpochManagerRunner implements ModuleRunner {
 			networkRx.bftEvents()
 				.observeOn(singleThreadScheduler)
 				.doOnNext(epochManager::processConsensusEvent),
-			rpcRx.requests()
+			verticesRequests
 				.observeOn(singleThreadScheduler)
-				.doOnNext(req -> epochManager.localGetVerticesRequestRemoteEventProcessor()
-					.process(req.getSender(), new LocalGetVerticesRequest(req.getVertexId(), req.getCount()))),
+				.doOnNext(req -> epochManager.localGetVerticesRequestRemoteEventProcessor().process(req.getOrigin(), req.getEvent())),
 			rpcRx.responses()
 				.observeOn(singleThreadScheduler)
 				.doOnNext(epochManager::processGetVerticesResponse),

@@ -32,7 +32,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * Processor of sync requests and responds with info from a VertexStore
  */
-public final class VertexStoreBFTSyncRequestProcessor implements RemoteEventProcessor<LocalGetVerticesRequest> {
+public final class VertexStoreBFTSyncRequestProcessor implements RemoteEventProcessor<GetVerticesRequest> {
 	private static final Logger log = LogManager.getLogger();
 	private final VertexStore vertexStore;
 	private final SyncVerticesResponseSender syncVerticesResponseSender;
@@ -63,7 +63,7 @@ public final class VertexStoreBFTSyncRequestProcessor implements RemoteEventProc
 	}
 
 	@Override
-	public void process(BFTNode sender, LocalGetVerticesRequest request) {
+	public void process(BFTNode sender, GetVerticesRequest request) {
 		// TODO: Handle nodes trying to DDOS this endpoint
 
 		log.debug("SYNC_VERTICES: Received GetVerticesRequest {}", request);

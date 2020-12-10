@@ -76,7 +76,7 @@ import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
-import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
+import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.liveness.VoteSender;
@@ -143,7 +143,7 @@ public class ConsensusModuleTest {
 				bind(new TypeLiteral<EventDispatcher<BFTHighQCUpdate>>() { }).toInstance(rmock(EventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<BFTCommittedUpdate>>() { }).toInstance(rmock(EventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<LocalSyncRequest>>() { }).toInstance(rmock(EventDispatcher.class));
-				bind(new TypeLiteral<ScheduledEventDispatcher<LocalGetVerticesRequest>>() { }).toInstance(rmock(ScheduledEventDispatcher.class));
+				bind(new TypeLiteral<ScheduledEventDispatcher<GetVerticesRequest>>() { }).toInstance(rmock(ScheduledEventDispatcher.class));
 				bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledLocalTimeout>>() { }).toInstance(rmock(ScheduledEventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<FormedQC>>() { }).toInstance(rmock(EventDispatcher.class));
 				bind(new TypeLiteral<RemoteEventDispatcher<Vote>>() { }).toInstance(rmock(RemoteEventDispatcher.class));
@@ -214,7 +214,7 @@ public class ConsensusModuleTest {
 		Pair<QuorumCertificate, VerifiedVertex> nextVertex = createNextVertex(parent, bftNode);
 		HighQC unsyncedHighQC = HighQC.from(nextVertex.getFirst(), nextVertex.getFirst());
 		bftSync.syncToQC(unsyncedHighQC, bftNode);
-		LocalGetVerticesRequest request = new LocalGetVerticesRequest(nextVertex.getSecond().getId(), 1);
+		GetVerticesRequest request = new GetVerticesRequest(nextVertex.getSecond().getId(), 1);
 		VertexRequestTimeout timeout = VertexRequestTimeout.create(request);
 
 		// Act

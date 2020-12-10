@@ -33,7 +33,6 @@ import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
-import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessWithSyncRunner;
@@ -69,7 +68,7 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 		EventProcessor<BFTRebuildUpdate> rebuildUpdateEventProcessor,
 		EventProcessor<BFTInsertUpdate> bftUpdateProcessor,
 		Set<EventProcessor<BFTHighQCUpdate>> bftHighQcUpdateProcessors,
-		RemoteEventProcessor<LocalGetVerticesRequest> verticesRequestProcessor,
+		RemoteEventProcessor<GetVerticesRequest> verticesRequestProcessor,
 		RemoteEventProcessor<DtoLedgerHeaderAndProof> syncRequestProcessor,
 		RemoteEventProcessor<DtoCommandsAndProof> syncResponseProcessor
 	) {
@@ -92,8 +91,8 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 
 		ImmutableMap.Builder<Class<?>, RemoteEventProcessor<Object>> remoteProcessorsBuilder = ImmutableMap.builder();
 		remoteProcessorsBuilder.put(
-			LocalGetVerticesRequest.class,
-			(node, event) -> verticesRequestProcessor.process(node, (LocalGetVerticesRequest) event)
+			GetVerticesRequest.class,
+			(node, event) -> verticesRequestProcessor.process(node, (GetVerticesRequest) event)
 		);
 		remoteProcessorsBuilder.put(
 			DtoLedgerHeaderAndProof.class,
@@ -129,12 +128,6 @@ public final class DeterministicEpochsConsensusProcessor implements Deterministi
 			} else {
 				throw new IllegalArgumentException("Unknown epoch message type: " + epochedMessage.getClass().getName());
 			}
-		} else if (message instanceof GetVerticesRequest) {
-			GetVerticesRequest request = (GetVerticesRequest) message;
-			remoteEventProcessors.get(LocalGetVerticesRequest.class).process(
-				origin,
-				new LocalGetVerticesRequest(request.getVertexId(), request.getCount())
-			);
 		} else if (message instanceof GetVerticesResponse) {
 			this.epochManager.processGetVerticesResponse((GetVerticesResponse) message);
 		} else if (message instanceof GetVerticesErrorResponse) {

@@ -24,7 +24,6 @@ import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
-import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
@@ -59,8 +58,7 @@ public final class ControlledSender implements DeterministicSender, Environment 
 	}
 
 	@Override
-	public void sendGetVerticesRequest(BFTNode node, LocalGetVerticesRequest localRequest) {
-		GetVerticesRequest request = new GetVerticesRequest(self, localRequest.getVertexId(), localRequest.getCount());
+	public void sendGetVerticesRequest(BFTNode node, GetVerticesRequest request) {
 		ChannelId channelId = ChannelId.of(this.senderIndex, this.network.lookup(node));
 		handleMessage(new ControlledMessage(self, channelId, request, arrivalTime(channelId)));
 	}

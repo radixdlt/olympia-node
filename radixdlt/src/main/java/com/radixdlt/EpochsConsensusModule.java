@@ -55,7 +55,7 @@ import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.liveness.VoteSender;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
-import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
+import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
@@ -87,7 +87,7 @@ public class EpochsConsensusModule extends AbstractModule {
 	}
 
 	@Provides
-	private RemoteEventProcessor<LocalGetVerticesRequest> localGetVerticesRequestRemoteEventProcessor(EpochManager epochManager) {
+	private RemoteEventProcessor<GetVerticesRequest> localGetVerticesRequestRemoteEventProcessor(EpochManager epochManager) {
 		return epochManager.localGetVerticesRequestRemoteEventProcessor();
 	}
 

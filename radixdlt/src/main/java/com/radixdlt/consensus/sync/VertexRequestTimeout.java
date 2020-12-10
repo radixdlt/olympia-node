@@ -18,17 +18,17 @@
 package com.radixdlt.consensus.sync;
 
 public class VertexRequestTimeout {
-	private final LocalGetVerticesRequest request;
+	private final GetVerticesRequest request;
 
-	private VertexRequestTimeout(LocalGetVerticesRequest request) {
+	private VertexRequestTimeout(GetVerticesRequest request) {
 		this.request = request;
 	}
 
-	public static VertexRequestTimeout create(LocalGetVerticesRequest request) {
+	public static VertexRequestTimeout create(GetVerticesRequest request) {
 		return new VertexRequestTimeout(request);
 	}
 
-	public LocalGetVerticesRequest getRequest() {
+	public GetVerticesRequest getRequest() {
 		return request;
 	}
 }

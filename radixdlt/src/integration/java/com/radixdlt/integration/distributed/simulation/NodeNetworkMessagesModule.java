@@ -29,6 +29,7 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.liveness.VoteSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
+import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.environment.RemoteEventDispatcher;
@@ -65,6 +66,11 @@ public class NodeNetworkMessagesModule extends AbstractModule {
 	}
 
 	@ProvidesIntoSet
+	private RxRemoteDispatcher<?> vertexRequestDispatcher(SimulatedNetworkImpl network) {
+		return RxRemoteDispatcher.create(GetVerticesRequest.class, network.remoteEventDispatcher(GetVerticesRequest.class));
+	}
+
+	@ProvidesIntoSet
 	private RxRemoteDispatcher<?> voteDispatcher(SimulatedNetworkImpl network) {
 		return RxRemoteDispatcher.create(Vote.class, network.remoteEventDispatcher(Vote.class));
 	}
@@ -77,6 +83,11 @@ public class NodeNetworkMessagesModule extends AbstractModule {
 	@Provides
 	private RemoteEventDispatcher<DtoCommandsAndProof> syncResponseDispatcher(SimulatedNetworkImpl network) {
 		return network.remoteEventDispatcher(DtoCommandsAndProof.class);
+	}
+
+	@Provides
+	private Observable<RemoteEvent<GetVerticesRequest>> vertexRequests(SimulatedNetworkImpl network) {
+		return network.remoteEvents(GetVerticesRequest.class);
 	}
 
 	@Provides

@@ -31,6 +31,7 @@ import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
+import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.rx.RxEnvironment;
@@ -65,6 +66,7 @@ public class RxEnvironmentModule extends AbstractModule {
 		eventClasses.add(
 			ScheduledLocalTimeout.class,
 			LocalSyncRequest.class,
+			GetVerticesRequest.class,
 			VertexRequestTimeout.class,
 			BFTInsertUpdate.class,
 			BFTRebuildUpdate.class,

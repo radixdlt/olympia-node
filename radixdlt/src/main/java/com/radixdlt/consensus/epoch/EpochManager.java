@@ -54,7 +54,7 @@ import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.sync.BFTSync;
-import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
+import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
@@ -135,7 +135,7 @@ public final class EpochManager {
 	private LedgerUpdateProcessor<LedgerUpdate> syncLedgerUpdateProcessor;
 	private BFTEventProcessor bftEventProcessor;
 
-	private Set<RemoteEventProcessor<LocalGetVerticesRequest>> syncRequestProcessors;
+	private Set<RemoteEventProcessor<GetVerticesRequest>> syncRequestProcessors;
 	private Set<EventProcessor<BFTInsertUpdate>> bftUpdateProcessors;
 	private Set<EventProcessor<BFTRebuildUpdate>> bftRebuildProcessors;
 
@@ -145,7 +145,7 @@ public final class EpochManager {
 	public EpochManager(
 		@Self BFTNode self,
 		BFTEventProcessor initialBFTEventProcessor,
-		Set<RemoteEventProcessor<LocalGetVerticesRequest>> initialSyncRequestProcessors,
+		Set<RemoteEventProcessor<GetVerticesRequest>> initialSyncRequestProcessors,
 		BFTSync initialBFTSync,
 		Set<EventProcessor<BFTInsertUpdate>> initialBFTUpdateProcessors,
 		Set<EventProcessor<BFTRebuildUpdate>> initialBFTRebuildUpdateProcessors,
@@ -460,7 +460,7 @@ public final class EpochManager {
 		};
 	}
 
-	public RemoteEventProcessor<LocalGetVerticesRequest> localGetVerticesRequestRemoteEventProcessor() {
+	public RemoteEventProcessor<GetVerticesRequest> localGetVerticesRequestRemoteEventProcessor() {
 		return (node, request) -> syncRequestProcessors.forEach(p -> p.process(node, request));
 	}
 

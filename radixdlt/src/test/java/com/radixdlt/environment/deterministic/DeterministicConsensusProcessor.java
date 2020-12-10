@@ -30,9 +30,8 @@ import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
-import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
-import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
+import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;
@@ -46,7 +45,7 @@ import java.util.Set;
 public class DeterministicConsensusProcessor implements DeterministicMessageProcessor {
 	private final BFTEventProcessor bftEventProcessor;
 	private final BFTSync vertexStoreSync;
-	private final Set<RemoteEventProcessor<LocalGetVerticesRequest>> verticesRequestProcessors;
+	private final Set<RemoteEventProcessor<GetVerticesRequest>> verticesRequestProcessors;
 	private final Set<EventProcessor<BFTHighQCUpdate>> bftHighQCUpdateProcessors;
 	private final Set<EventProcessor<BFTInsertUpdate>> bftUpdateProcessors;
 	private final Set<EventProcessor<BFTRebuildUpdate>> bftRebuildUpdateProcessors;
@@ -57,7 +56,7 @@ public class DeterministicConsensusProcessor implements DeterministicMessageProc
 	public DeterministicConsensusProcessor(
 		BFTEventProcessor bftEventProcessor,
 		BFTSync vertexStoreSync,
-		Set<RemoteEventProcessor<LocalGetVerticesRequest>> verticesRequestProcessors,
+		Set<RemoteEventProcessor<GetVerticesRequest>> verticesRequestProcessors,
 		Set<EventProcessor<ViewUpdate>> viewUpdateProcessors,
 		Set<EventProcessor<BFTInsertUpdate>> bftUpdateProcessors,
 		Set<EventProcessor<BFTRebuildUpdate>> bftRebuildUpdateProcessors,
@@ -92,9 +91,7 @@ public class DeterministicConsensusProcessor implements DeterministicMessageProc
 		} else if (message instanceof ViewUpdate) {
 			viewUpdateProcessors.forEach(p -> p.process((ViewUpdate) message));
 		} else if (message instanceof GetVerticesRequest) {
-			GetVerticesRequest request = (GetVerticesRequest) message;
-			verticesRequestProcessors.forEach(p -> p.process(request.getSender(), new LocalGetVerticesRequest(request.getVertexId(),
-				request.getCount())));
+			verticesRequestProcessors.forEach(p -> p.process(origin, (GetVerticesRequest) message));
 		} else if (message instanceof GetVerticesResponse) {
 			vertexStoreSync.responseProcessor().process((GetVerticesResponse) message);
 		} else if (message instanceof GetVerticesErrorResponse) {

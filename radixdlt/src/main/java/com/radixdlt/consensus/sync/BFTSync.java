@@ -125,7 +125,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 		 * @param node the node to retrieve the vertex info from
 		 * @param request get vertices request
 		 */
-		void sendGetVerticesRequest(BFTNode node, LocalGetVerticesRequest request);
+		void sendGetVerticesRequest(BFTNode node, GetVerticesRequest request);
 	}
 
 	private static final Logger log = LogManager.getLogger();
@@ -133,7 +133,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 	private final PacemakerReducer pacemakerReducer;
 	private final Map<HashCode, SyncState> syncing = new HashMap<>();
 	private final TreeMap<LedgerHeader, List<HashCode>> ledgerSyncing;
-	private final Map<LocalGetVerticesRequest, SyncRequestState> bftSyncing = new HashMap<>();
+	private final Map<GetVerticesRequest, SyncRequestState> bftSyncing = new HashMap<>();
 	private final SyncVerticesRequestSender requestSender;
 	private final EventDispatcher<LocalSyncRequest> localSyncRequestProcessor;
 	private final ScheduledEventDispatcher<VertexRequestTimeout> timeoutDispatcher;
@@ -277,7 +277,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 	}
 
 	private void sendBFTSyncRequest(HashCode vertexId, int count, ImmutableList<BFTNode> authors, HashCode syncId) {
-		LocalGetVerticesRequest request = new LocalGetVerticesRequest(vertexId, count);
+		GetVerticesRequest request = new GetVerticesRequest(vertexId, count);
 		SyncRequestState syncRequestState = bftSyncing.getOrDefault(request, new SyncRequestState(authors));
 		if (syncRequestState.syncIds.isEmpty()) {
 			VertexRequestTimeout scheduledTimeout = VertexRequestTimeout.create(request);
@@ -389,7 +389,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 		log.debug("SYNC_VERTICES: Received GetVerticesResponse {}", response);
 
 		VerifiedVertex firstVertex = response.getVertices().get(0);
-		LocalGetVerticesRequest requestInfo = new LocalGetVerticesRequest(firstVertex.getId(), response.getVertices().size());
+		GetVerticesRequest requestInfo = new GetVerticesRequest(firstVertex.getId(), response.getVertices().size());
 		SyncRequestState syncRequestState = bftSyncing.remove(requestInfo);
 		if (syncRequestState != null) {
 			for (HashCode syncTo : syncRequestState.syncIds) {

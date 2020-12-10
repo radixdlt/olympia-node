@@ -25,9 +25,8 @@ import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
-import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
+import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -40,6 +39,7 @@ import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.addressbook.PeerWithSystem;
@@ -90,7 +90,7 @@ public class MessageCentralValidatorSync implements SyncVerticesRequestSender, S
 	}
 
 	@Override
-	public void sendGetVerticesRequest(BFTNode node, LocalGetVerticesRequest request) {
+	public void sendGetVerticesRequest(BFTNode node, GetVerticesRequest request) {
 		if (this.self.equals(node)) {
 			throw new IllegalStateException("Should never need to retrieve a vertex from self.");
 		}
@@ -130,8 +130,7 @@ public class MessageCentralValidatorSync implements SyncVerticesRequestSender, S
 		);
 	}
 
-	@Override
-	public Observable<GetVerticesRequest> requests() {
+	public Observable<RemoteEvent<GetVerticesRequest>> requests() {
 		return this.createObservable(
 			GetVerticesRequestMessage.class,
 			(peer, msg) -> {
@@ -140,7 +139,7 @@ public class MessageCentralValidatorSync implements SyncVerticesRequestSender, S
 				}
 
 				final BFTNode node = BFTNode.create(peer.getSystem().getKey());
-				return new GetVerticesRequest(node, msg.getVertexId(), msg.getCount());
+				return RemoteEvent.create(node, new GetVerticesRequest(msg.getVertexId(), msg.getCount()), GetVerticesRequest.class);
 			}
 		);
 	}
