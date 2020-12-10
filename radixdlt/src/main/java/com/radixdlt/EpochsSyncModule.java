@@ -22,8 +22,8 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessWithSyncRunner;
 import com.radixdlt.environment.RemoteEventDispatcher;
@@ -86,14 +86,14 @@ public class EpochsSyncModule extends AbstractModule {
 	}
 
 	@Provides
-	SyncedEpochSender syncedEpochSender(Ledger ledger) {
+	SyncedEpochSender syncedEpochSender(EventDispatcher<VerifiedCommandsAndProof> commandsDispatcher) {
 		return header -> {
 			VerifiedCommandsAndProof commandsAndProof = new VerifiedCommandsAndProof(
 				ImmutableList.of(),
 				header
 			);
 
-			ledger.commit(commandsAndProof);
+			commandsDispatcher.dispatch(commandsAndProof);
 		};
 	}
 

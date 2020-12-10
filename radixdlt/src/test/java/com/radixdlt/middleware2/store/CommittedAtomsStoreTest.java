@@ -27,6 +27,7 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
@@ -69,6 +70,7 @@ public class CommittedAtomsStoreTest {
 		this.committedAtomsStore = new CommittedAtomsStore(
 			committedAtomSender,
 			store,
+			mock(PersistentVertexStore.class),
 			commandToBinaryConverter,
 			clientAtomToBinaryConverter,
 			atomIndexer,
@@ -129,10 +131,8 @@ public class CommittedAtomsStoreTest {
 	@Test
 	public void when_get_spin_and_particle_exists__then_should_return_spin() {
 		Particle particle = mock(Particle.class);
-		SearchCursor searchCursor = mock(SearchCursor.class);
 		AID aid = mock(AID.class);
-		when(searchCursor.get()).thenReturn(aid);
-		when(store.search(any(), any(), any())).thenReturn(searchCursor);
+		when(store.contains(any(), any(), any(), any())).thenReturn(true);
 		LedgerEntry ledgerEntry = mock(LedgerEntry.class);
 		when(ledgerEntry.getContent()).thenReturn(new byte[0]);
 		StoredCommittedCommand committedCommand = mock(StoredCommittedCommand.class);

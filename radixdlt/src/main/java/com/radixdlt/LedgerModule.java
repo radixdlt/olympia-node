@@ -35,6 +35,7 @@ import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.StateComputerLedger;
+import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.utils.Pair;
 import java.util.Comparator;
@@ -55,6 +56,12 @@ public class LedgerModule extends AbstractModule {
 	@Provides
 	private Comparator<AccumulatorState> accumulatorStateComparator() {
 		return Comparator.comparingLong(AccumulatorState::getStateVersion);
+	}
+
+	@ProvidesIntoSet
+	@ProcessOnDispatch
+	private EventProcessor<VerifiedCommandsAndProof> syncToLedgerCommittor(StateComputerLedger stateComputerLedger) {
+		return stateComputerLedger.verifiedCommandsAndProofEventProcessor();
 	}
 
 	@ProvidesIntoSet

@@ -46,6 +46,7 @@ import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
@@ -66,6 +67,7 @@ import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.EpochCeilingView;
@@ -132,6 +134,8 @@ public class RadixEngineStateComputerTest {
 				bind(BFTValidatorSet.class).toInstance(validatorSet);
 				bind(Hasher.class).toInstance(Sha256Hasher.withDefaultSerialization());
 				bind(new TypeLiteral<EngineStore<LedgerAtom>>() { }).toInstance(engineStore);
+				bind(RadixEngineAtomicCommitManager.class).toInstance(mock(RadixEngineAtomicCommitManager.class));
+				bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
 				bindConstant().annotatedWith(Names.named("magic")).to(0);
 				bindConstant().annotatedWith(MinValidators.class).to(1);
 				bindConstant().annotatedWith(MaxValidators.class).to(100);
@@ -311,7 +315,7 @@ public class RadixEngineStateComputerTest {
 
 		// Act
 		// Assert
-		assertThatThrownBy(() -> sut.commit(commandsAndProof))
+		assertThatThrownBy(() -> sut.commit(commandsAndProof, null))
 			.isInstanceOf(ByzantineQuorumException.class);
 	}
 
@@ -337,7 +341,7 @@ public class RadixEngineStateComputerTest {
 
 		// Act
 		// Assert
-		assertThatThrownBy(() -> sut.commit(commandsAndProof))
+		assertThatThrownBy(() -> sut.commit(commandsAndProof, null))
 			.isInstanceOf(ByzantineQuorumException.class);
 	}
 
@@ -363,7 +367,7 @@ public class RadixEngineStateComputerTest {
 
 		// Act
 		// Assert
-		assertThatThrownBy(() -> sut.commit(commandsAndProof))
+		assertThatThrownBy(() -> sut.commit(commandsAndProof, null))
 			.isInstanceOf(ByzantineQuorumException.class);
 	}
 }

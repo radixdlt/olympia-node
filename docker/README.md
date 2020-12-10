@@ -12,10 +12,21 @@ Configuration is done by means of environment variables passed to Docker contain
 
 Different network setups are implemented in [docker-compose](https://docs.docker.com/compose/) files. (*.yml).
 
-Configuration files are provided for [single node](single-node.yml), [two](two-node.yml), 
-[three](three-nodes.yml) and [four](four-nodes.yml) nodes. Description below refers single node
-configuration. In order to run other configurations just replace ```docker/single-node.yml``` 
-with relative path to necessary configuration file. 
+Ready to use configuration files are provided for 1-5 nodes: [1](node-1.yml), [2](node-2.yml), 
+[3](node-3.yml), [4](node-4.yml) and [5](node-5.yml) nodes. If configuration with other number of nodes is necessary, 
+it can be generated using [configuration generator](scripts/generate-yml.sh). 
+
+Description below refers single node configuration. In order to run other configurations just replace ```docker/node-1.yml``` 
+with relative path to necessary configuration file.
+
+## Generating New Configuration
+In order to generate `.yml` file for necessary number of nodes, just run following command 
+from `docker/script` subdirectory:
+```shell
+$ ./generate-yml.sh <number of nodes>
+```
+Script will generate configuration file named `node-<number of nodes>.yml` in the same directory 
+where other `node-X.yml` files reside.
 
 ## Build the radixdlt debian package
 
@@ -28,7 +39,7 @@ $ ./gradlew deb4docker
 ## Create and start the single node network
 
 ```shell
-$ docker-compose -f docker/single-node.yml up -d --build
+$ docker-compose -f docker/node-1.yml up -d --build
 ```
 
 To see the individual `radixdlt` containers:
@@ -40,13 +51,13 @@ $ docker ps
 ## Destroy the network
 
 ```shell
-$ docker-compose -f docker/single-node.yml down
+$ docker-compose -f docker/node-1.yml down
 ```
 
 ## Follow combined logs
 
 ```shell
-docker-compose -f docker/single-node.yml logs -f
+docker-compose -f docker/node-1.yml logs -f
 ```
 
 ## See the container metrics
@@ -124,5 +135,5 @@ $ for i in 0 1 2 3 4 5; do docker inspect -f '{{range .NetworkSettings.Networks}
 # kill the network
 
 ```shell
-$ docker-compose -p  test$BUILD_NUMBER -f docker/single-node.yml down
+$ docker-compose -p  test$BUILD_NUMBER -f docker/node-1.yml down
 ```

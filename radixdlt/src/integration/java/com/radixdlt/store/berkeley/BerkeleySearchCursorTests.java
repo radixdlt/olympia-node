@@ -23,6 +23,7 @@ import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerSearchMode;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
+import com.sleepycat.je.Transaction;
 import org.junit.Assert;
 import org.junit.Test;
 import org.radix.integration.RadixTestWithStores;
@@ -40,7 +41,14 @@ public class BerkeleySearchCursorTests extends RadixTestWithStores {
 
 		List<LedgerEntry> ledgerEntries = ledgerEntryGenerator.createLedgerEntries(identity, 1);
 		StoreIndex uniqueIndex = new StoreIndex(PREFIX, ledgerEntries.get(0).getAID().getBytes());
-		getStore().commit(ledgerEntries.get(0), ImmutableSet.of(uniqueIndex), ImmutableSet.of());
+		Transaction tx = getStore().createTransaction();
+		try {
+			getStore().store(tx, ledgerEntries.get(0), ImmutableSet.of(uniqueIndex), ImmutableSet.of());
+			tx.commit();
+		} catch (Exception e) {
+			tx.abort();
+			throw e;
+		}
 
 		SearchCursor cursor = getStore().search(
 			StoreIndex.LedgerIndexType.UNIQUE,
@@ -56,7 +64,15 @@ public class BerkeleySearchCursorTests extends RadixTestWithStores {
 	public void create_two_atoms__store_single_atom__search_by_non_existing_unique_aid__fail() throws Exception {
 		List<LedgerEntry> ledgerEntries = ledgerEntryGenerator.createLedgerEntries(2);
 		StoreIndex uniqueIndex = new StoreIndex(PREFIX, ledgerEntries.get(0).getAID().getBytes());
-		getStore().commit(ledgerEntries.get(0), ImmutableSet.of(uniqueIndex), ImmutableSet.of());
+
+		Transaction tx = getStore().createTransaction();
+		try {
+			getStore().store(tx, ledgerEntries.get(0), ImmutableSet.of(uniqueIndex), ImmutableSet.of());
+			tx.commit();
+		} catch (Exception e) {
+			tx.abort();
+			throw e;
+		}
 
 		SearchCursor cursor = getStore().search(
 			StoreIndex.LedgerIndexType.UNIQUE,
@@ -72,9 +88,17 @@ public class BerkeleySearchCursorTests extends RadixTestWithStores {
 
 		StoreIndex index = new StoreIndex(PREFIX, identity.euid().toByteArray());
 		List<LedgerEntry> ledgerEntries = ledgerEntryGenerator.createLedgerEntries(identity, 2);
-		for (LedgerEntry ledgerEntry : ledgerEntries) {
-			StoreIndex uniqueIndex = new StoreIndex(PREFIX, ledgerEntry.getAID().getBytes());
-			getStore().commit(ledgerEntry, ImmutableSet.of(uniqueIndex), ImmutableSet.of(index));
+
+		Transaction tx = getStore().createTransaction();
+		try {
+			for (LedgerEntry ledgerEntry : ledgerEntries) {
+				StoreIndex uniqueIndex = new StoreIndex(PREFIX, ledgerEntry.getAID().getBytes());
+				getStore().store(tx, ledgerEntry, ImmutableSet.of(uniqueIndex), ImmutableSet.of(index));
+			}
+			tx.commit();
+		} catch (Exception e) {
+			tx.abort();
+			throw e;
 		}
 
 		SearchCursor cursor = getStore().search(StoreIndex.LedgerIndexType.DUPLICATE, index, LedgerSearchMode.EXACT);
@@ -95,9 +119,17 @@ public class BerkeleySearchCursorTests extends RadixTestWithStores {
 
 		StoreIndex index = new StoreIndex(PREFIX, identity.euid().toByteArray());
 		List<LedgerEntry> ledgerEntries = ledgerEntryGenerator.createLedgerEntries(identity, 2);
-		for (LedgerEntry ledgerEntry : ledgerEntries) {
-			StoreIndex uniqueIndex = new StoreIndex(PREFIX, ledgerEntry.getAID().getBytes());
-			getStore().commit(ledgerEntry, ImmutableSet.of(uniqueIndex), ImmutableSet.of(index));
+
+		Transaction tx = getStore().createTransaction();
+		try {
+			for (LedgerEntry ledgerEntry : ledgerEntries) {
+				StoreIndex uniqueIndex = new StoreIndex(PREFIX, ledgerEntry.getAID().getBytes());
+				getStore().store(tx, ledgerEntry, ImmutableSet.of(uniqueIndex), ImmutableSet.of(index));
+			}
+			tx.commit();
+		} catch (Exception e) {
+			tx.abort();
+			throw e;
 		}
 
 		SearchCursor cursor = getStore().search(StoreIndex.LedgerIndexType.DUPLICATE, index, LedgerSearchMode.EXACT);
@@ -118,10 +150,17 @@ public class BerkeleySearchCursorTests extends RadixTestWithStores {
 
 		StoreIndex index = new StoreIndex(PREFIX, identity.euid().toByteArray());
 		List<LedgerEntry> ledgerEntries = ledgerEntryGenerator.createLedgerEntries(identity, 2);
-		for (LedgerEntry ledgerEntry : ledgerEntries) {
-			StoreIndex uniqueIndex = new StoreIndex(PREFIX, ledgerEntry.getAID().getBytes());
-			getStore().commit(ledgerEntry, ImmutableSet.of(uniqueIndex), ImmutableSet.of(index));
-			getStore().commit(ledgerEntry.getAID());
+
+		Transaction tx = getStore().createTransaction();
+		try {
+			for (LedgerEntry ledgerEntry : ledgerEntries) {
+				StoreIndex uniqueIndex = new StoreIndex(PREFIX, ledgerEntry.getAID().getBytes());
+				getStore().store(tx, ledgerEntry, ImmutableSet.of(uniqueIndex), ImmutableSet.of(index));
+			}
+			tx.commit();
+		} catch (Exception e) {
+			tx.abort();
+			throw e;
 		}
 
 		SearchCursor cursor = getStore().search(StoreIndex.LedgerIndexType.DUPLICATE, index, LedgerSearchMode.EXACT);

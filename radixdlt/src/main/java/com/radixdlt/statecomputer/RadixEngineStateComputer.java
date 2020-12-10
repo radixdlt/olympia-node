@@ -25,6 +25,7 @@ import com.radixdlt.atommodel.system.SystemParticle;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.PermissionLevel;
@@ -38,6 +39,7 @@ import com.radixdlt.ledger.ByzantineQuorumException;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
 import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
@@ -69,10 +71,12 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private final View epochCeilingView;
 	private final ValidatorSetBuilder validatorSetBuilder;
 	private final Hasher hasher;
+	private final RadixEngineAtomicCommitManager atomicCommitManager;
 
 	private RadixEngineStateComputer(
 		Serialization serialization,
 		RadixEngine<LedgerAtom> radixEngine,
+		RadixEngineAtomicCommitManager atomicCommitManager,
 		View epochCeilingView,
 		ValidatorSetBuilder validatorSetBuilder,
 		Hasher hasher
@@ -82,12 +86,14 @@ public final class RadixEngineStateComputer implements StateComputer {
 		this.epochCeilingView = epochCeilingView;
 		this.validatorSetBuilder = Objects.requireNonNull(validatorSetBuilder);
 		this.hasher = Objects.requireNonNull(hasher);
+		this.atomicCommitManager = Objects.requireNonNull(atomicCommitManager);
 	}
 
 	public static RadixEngineStateComputer create(
 		Serialization serialization,
 		RadixEngine<LedgerAtom> radixEngine,
-		View epochCeilingView,
+		RadixEngineAtomicCommitManager atomicCommitManager,
+		@EpochCeilingView View epochCeilingView,
 		ValidatorSetBuilder validatorSetBuilder,
 		Hasher hasher
 	) {
@@ -95,7 +101,14 @@ public final class RadixEngineStateComputer implements StateComputer {
 			throw new IllegalArgumentException("Epoch change view must not be genesis.");
 		}
 
-		return new RadixEngineStateComputer(serialization, radixEngine, epochCeilingView, validatorSetBuilder, hasher);
+		return new RadixEngineStateComputer(
+			serialization,
+			radixEngine,
+			atomicCommitManager,
+			epochCeilingView,
+			validatorSetBuilder,
+			hasher
+		);
 	}
 
 	public static class RadixEngineCommand implements PreparedCommand {
@@ -256,8 +269,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		}
 	}
 
-	@Override
-	public void commit(VerifiedCommandsAndProof verifiedCommandsAndProof) {
+	private void commitInternal(VerifiedCommandsAndProof verifiedCommandsAndProof) {
 		final SystemParticle lastSystemParticle = radixEngine.getComputedState(SystemParticle.class);
 		final long currentEpoch = lastSystemParticle.getEpoch();
 		boolean epochChange = false;
@@ -266,7 +278,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 		long stateVersion = headerAndProof.getAccumulatorState().getStateVersion();
 		long firstVersion = stateVersion - verifiedCommandsAndProof.getCommands().size() + 1;
 
-		// TODO: This needs to be an atomic transaction (RPNV1-827)
 		for (int i = 0; i < verifiedCommandsAndProof.getCommands().size(); i++) {
 			this.commitCommand(firstVersion + i, verifiedCommandsAndProof.getCommands().get(i), headerAndProof);
 
@@ -281,7 +292,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 		}
 
 		// Verify that output of radix engine and signed output match
-		// TODO: Always follow radix engine as its a deeper source of truth and just mark validator set as malicious
+		// TODO: Always follow radix engine as its a deeper source of truth and just mark validator
+		// TODO: set as malicious (RPNV1-633)
 		if (epochChange) {
 			final var reNextValidatorSet = this.validatorSetBuilder.buildValidatorSet(
 				this.radixEngine.getComputedState(RadixEngineValidatorsComputer.class),
@@ -297,5 +309,22 @@ public final class RadixEngineStateComputer implements StateComputer {
 				throw new ByzantineQuorumException("Trying to change epochs when RE isn't");
 			}
 		}
+	}
+
+	@Override
+	public void commit(VerifiedCommandsAndProof verifiedCommandsAndProof, VerifiedVertexStoreState vertexStoreState) {
+		atomicCommitManager.startTransaction();
+		try {
+			commitInternal(verifiedCommandsAndProof);
+		} catch (Exception e) {
+			atomicCommitManager.abortTransaction();
+			// At this point the radix engine has no mechanism to recover from byzantine quorum failure
+			// TODO: resolve issues with byzantine quorum (RPNV1-828)
+			throw e;
+		}
+		if (vertexStoreState != null) {
+			atomicCommitManager.save(vertexStoreState);
+		}
+		atomicCommitManager.commitTransaction();
 	}
 }

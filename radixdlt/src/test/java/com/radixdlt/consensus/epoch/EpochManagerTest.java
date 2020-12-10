@@ -131,7 +131,7 @@ public class EpochManagerTest {
 		}
 
 		@Override
-		public void commit(VerifiedCommandsAndProof verifiedCommandsAndProof) {
+		public void commit(VerifiedCommandsAndProof verifiedCommandsAndProof, VerifiedVertexStoreState vertexStoreState) {
 		}
 	};
 
