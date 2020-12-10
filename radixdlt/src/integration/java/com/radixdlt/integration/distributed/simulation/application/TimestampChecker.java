@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
  * to the real wall clock time.
  */
 public final class TimestampChecker implements TestInvariant {
-	private static final long ACCEPTABLE_TIME_RANGE = TimeUnit.SECONDS.toMillis(1);
+	private static final long ACCEPTABLE_TIME_RANGE = TimeUnit.SECONDS.toMillis(2);
 
 	private Maybe<TestInvariantError> checkCloseTimestamp(LedgerUpdate update) {
 		final var now = System.currentTimeMillis();

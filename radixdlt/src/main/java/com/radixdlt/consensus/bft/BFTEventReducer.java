@@ -62,6 +62,8 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	 */
 	private boolean hasReachedQuorum = false;
 
+	private boolean isViewTimedOut = false;
+
 	public BFTEventReducer(
 		BFTNode self,
 		Pacemaker pacemaker,
@@ -108,6 +110,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	@Override
 	public void processViewUpdate(ViewUpdate viewUpdate) {
 		this.hasReachedQuorum = false;
+		this.isViewTimedOut = false;
 		this.latestViewUpdate = viewUpdate;
 		this.pacemaker.processViewUpdate(viewUpdate);
 		this.tryVote();
@@ -120,6 +123,16 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		}
 
 		if (!Objects.equals(update.getHeader().getView(), this.latestViewUpdate.getCurrentView())) {
+			return;
+		}
+
+		// check if already voted in this round
+		if (this.safetyRules.getLastVote(this.latestViewUpdate.getCurrentView()).isPresent()) {
+			return;
+		}
+
+		// don't vote if view has timed out
+		if (this.isViewTimedOut) {
 			return;
 		}
 
@@ -202,6 +215,11 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	@Override
 	public void processLocalTimeout(ScheduledLocalTimeout scheduledLocalTimeout) {
 		log.trace("LocalTimeout: Processing {}", scheduledLocalTimeout);
+
+		if (scheduledLocalTimeout.view().equals(this.latestViewUpdate.getCurrentView())) {
+			this.isViewTimedOut = true;
+		}
+
 		this.pacemaker.processLocalTimeout(scheduledLocalTimeout);
 	}
 

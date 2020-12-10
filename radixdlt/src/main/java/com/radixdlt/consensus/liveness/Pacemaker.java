@@ -212,12 +212,12 @@ public final class Pacemaker {
 	public void processLocalTimeout(ScheduledLocalTimeout scheduledTimeout) {
 		final View view = scheduledTimeout.view();
 
-		log.trace("LocalTimeout: {}", scheduledTimeout);
-
 		if (!view.equals(this.latestViewUpdate.getCurrentView())) {
 			log.trace("LocalTimeout: Ignoring timeout {}, current is {}", scheduledTimeout, this.latestViewUpdate.getCurrentView());
 			return;
 		}
+
+		log.trace("LocalTimeout: {}", scheduledTimeout);
 
 		this.isViewTimedOut = true;
 

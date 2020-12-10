@@ -64,7 +64,7 @@ public class OneNodeNeverSendEpochResponseTest {
 			for (long i = 0; i < epoch; i++) {
 				random.nextInt(numNodes);
 			}
-			return IntStream.range(0, random.nextInt(numNodes - 1) + 2)
+			return IntStream.range(0, random.nextInt(numNodes - 3) + 4)
 				.map(i -> indices.remove(random.nextInt(indices.size())));
 		};
 	}
@@ -73,7 +73,6 @@ public class OneNodeNeverSendEpochResponseTest {
 		return randomEpochToNodesMapper(Random::new);
 	}
 
-	// TODO(luk): fixme
 	@Test
 	public void given_deterministic_randomized_validator_sets__then_should_pass_bft_and_epoch_invariants() {
 		SimulationTest bftTest = bftTestBuilder

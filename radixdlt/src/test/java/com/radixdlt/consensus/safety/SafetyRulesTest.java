@@ -34,9 +34,9 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /**
  * This tests that the {@link SafetyRules} implementation obeys HotStuff's safety and commit rules.
@@ -188,5 +188,31 @@ public class SafetyRulesTest {
 		assertThat(voteMaybe).isNotEmpty();
 		Vote vote = voteMaybe.get();
 		assertThat(vote.getVoteData().getCommitted()).isEmpty();
+	}
+
+	@Test
+	public void when_timeout_already_timed_out_vote_than_the_same_vote_is_returned() {
+		Vote vote = mock(Vote.class);
+		when(vote.isTimeout()).thenReturn(true);
+		assertEquals(vote, safetyRules.timeoutVote(vote));
+	}
+
+	@Test
+	public void when_timeout_a_vote_than_it_has_a_timeout_signature() {
+		Vote vote = mock(Vote.class);
+		Vote voteWithTimeout = mock(Vote.class);
+		when(vote.getView()).thenReturn(View.of(1));
+		when(vote.getEpoch()).thenReturn(1L);
+		when(vote.withTimeoutSignature(any())).thenReturn(voteWithTimeout);
+		when(vote.isTimeout()).thenReturn(false);
+
+		Builder builder = mock(Builder.class);
+		when(builder.lastVote(any())).thenReturn(builder);
+		when(builder.build()).thenReturn(this.safetyState);
+		when(safetyState.toBuilder()).thenReturn(builder);
+
+		Vote resultVote = safetyRules.timeoutVote(vote);
+		verify(vote, times(1)).withTimeoutSignature(any());
+		assertEquals(voteWithTimeout, resultVote);
 	}
 }

@@ -42,7 +42,10 @@ public class OneProposalTimeoutResponsiveTest {
 			.build()
 			.runUntil(DeterministicTest.hasReachedView(View.of(numViews)));
 
-		long requiredIndirectParents = (numViews - 1) / dropPeriod; // Edge case if dropPeriod a factor of numViews
+		long requiredIndirectParents =
+			numNodes <= 3
+				? 0 // there are no indirect parents for 3 nodes (QC is always formed)
+				: (numViews - 1) / dropPeriod; // Edge case if dropPeriod a factor of numViews
 
 		long requiredTimeouts = numViews / dropPeriod * 2;
 		for (int nodeIndex = 0; nodeIndex < numNodes; ++nodeIndex) {
@@ -68,7 +71,6 @@ public class OneProposalTimeoutResponsiveTest {
 		};
 	}
 
-	// TODO(luk): failing
 	@Test
 	public void when_run_3_correct_nodes_with_1_timeout__then_bft_should_be_responsive() {
 		this.run(3, 50_000, 100);
