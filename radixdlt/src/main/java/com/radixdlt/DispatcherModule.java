@@ -279,13 +279,16 @@ public class DispatcherModule extends AbstractModule {
 
 	@Provides
 	private RemoteEventDispatcher<GetVerticesRequest> verticesRequestDispatcher(
+		@ProcessOnDispatch Set<EventProcessor<GetVerticesRequest>> processors,
 		Environment environment,
 		SystemCounters counters
 	) {
 		RemoteEventDispatcher<GetVerticesRequest> dispatcher = environment.getRemoteDispatcher(GetVerticesRequest.class);
 		return (node, request) -> {
+			logger.info("Request sending to {}: {}", node, request);
 			counters.increment(CounterType.BFT_SYNC_REQUESTS_SENT);
 			dispatcher.dispatch(node, request);
+			processors.forEach(e -> e.process(request));
 		};
 	}
 
@@ -297,8 +300,8 @@ public class DispatcherModule extends AbstractModule {
 		RemoteEventDispatcher<Vote> dispatcher = environment.getRemoteDispatcher(Vote.class);
 		return (node, vote) -> {
 			logger.trace("Vote sending to {}: {}", node, vote);
-			processors.forEach(e -> e.process(vote));
 			dispatcher.dispatch(node, vote);
+			processors.forEach(e -> e.process(vote));
 		};
 	}
 

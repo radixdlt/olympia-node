@@ -19,6 +19,7 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
@@ -66,7 +67,8 @@ public class FProposalsPerViewDropperTest {
 			)
 			.pacemakerTimeout(5000)
 			.checkConsensusSafety("safety")
-			.checkConsensusNoTimeouts("noTimeouts");
+			.checkConsensusNoTimeouts("noTimeouts")
+			.checkVertexRequestRate("vertexRequestRate", 100); // Conservative check
 	}
 
 	/**

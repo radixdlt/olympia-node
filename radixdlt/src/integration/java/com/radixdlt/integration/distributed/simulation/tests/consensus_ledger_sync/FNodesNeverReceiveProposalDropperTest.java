@@ -64,7 +64,8 @@ public class FNodesNeverReceiveProposalDropperTest {
 			.checkConsensusLiveness("liveness", 5000, TimeUnit.MILLISECONDS)
 			.checkConsensusAllProposalsHaveDirectParents("directParents")
 			.checkLedgerInOrder("ledgerInOrder")
-			.checkLedgerProcessesConsensusCommitted("consensusToLedger");
+			.checkLedgerProcessesConsensusCommitted("consensusToLedger")
+			.checkVertexRequestRate("vertexRequestRate", 100); // Conservative check
 	}
 
 	@Test

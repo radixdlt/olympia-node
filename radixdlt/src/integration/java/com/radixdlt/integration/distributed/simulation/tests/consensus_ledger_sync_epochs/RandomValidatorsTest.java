@@ -58,7 +58,8 @@ public class RandomValidatorsTest {
 		.checkConsensusNoTimeouts("noTimeouts")
 		.checkConsensusAllProposalsHaveDirectParents("directParents")
 		.checkLedgerInOrder("ledgerInOrder")
-		.checkLedgerProcessesConsensusCommitted("consensusToLedger");
+		.checkLedgerProcessesConsensusCommitted("consensusToLedger")
+		.checkVertexRequestRate("vertexRequestRate", 100); // Conservative check
 
 	private static Function<Long, IntStream> randomEpochToNodesMapper(Function<Long, Random> randomSupplier) {
 		return epoch -> {
