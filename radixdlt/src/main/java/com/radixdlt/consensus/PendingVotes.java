@@ -112,13 +112,9 @@ public final class PendingVotes {
 		final Optional<QuorumCertificate> maybeQC = processVoteForQC(vote, validatorSet);
 		final Optional<TimeoutCertificate> maybeTC = processVoteForTC(vote, validatorSet);
 
-		if (maybeQC.isPresent()) {
-			return VoteProcessingResult.qcQuorum(maybeQC.get());
-		} else if (maybeTC.isPresent()) {
-			return VoteProcessingResult.tcQuorum(maybeTC.get());
-		} else {
-			return VoteProcessingResult.accepted();
-		}
+		return maybeQC.<VoteProcessingResult>map(VoteProcessingResult::qcQuorum)
+			.or(() -> maybeTC.map(VoteProcessingResult::tcQuorum))
+			.orElseGet(VoteProcessingResult::accepted);
 	}
 
 	private Optional<QuorumCertificate> processVoteForQC(Vote vote, BFTValidatorSet validatorSet) {
