@@ -108,6 +108,7 @@ public final class SerializedVertexStoreState {
 	public String toString() {
 		return String.format("%s{highQC=%s root=%s vertices=%s highestTc=%s}",
 			this.getClass().getSimpleName(),
+			this.highQC,
 			this.root,
 			this.vertices,
 			this.highestTC
