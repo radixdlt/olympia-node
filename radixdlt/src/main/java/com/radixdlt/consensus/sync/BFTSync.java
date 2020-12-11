@@ -28,6 +28,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTSyncer;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.FormedQC;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexChain;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
@@ -114,6 +115,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 	}
 
 	private static final Logger log = LogManager.getLogger();
+	private final BFTNode self;
 	private final VertexStore vertexStore;
 	private final PacemakerReducer pacemakerReducer;
 	private final Map<HashCode, SyncState> syncing = new HashMap<>();
@@ -127,6 +129,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 	private VerifiedLedgerHeaderAndProof currentLedgerHeader;
 
 	public BFTSync(
+		@Self BFTNode self,
 		VertexStore vertexStore,
 		PacemakerReducer pacemakerReducer,
 		Comparator<LedgerHeader> ledgerHeaderComparator,
@@ -137,6 +140,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 		Random random,
 		int bftSyncPatienceMillis
 	) {
+		this.self = self;
 		this.vertexStore = vertexStore;
 		this.pacemakerReducer = pacemakerReducer;
 		this.ledgerSyncing = new TreeMap<>(ledgerHeaderComparator);
@@ -249,16 +253,26 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 			return;
 		}
 
-		List<HashCode> syncIds = syncRequestState.syncIds.stream().filter(syncing::containsKey).collect(Collectors.toList());
-		for (HashCode syncId : syncIds) {
-			SyncState syncState = syncing.get(syncId);
+		var authors = syncRequestState.authors.stream()
+			.filter(author -> !author.equals(self)).collect(ImmutableList.toImmutableList());
 
-			// Retry full sync on timeout
-			int nextIndex = random.nextInt(syncRequestState.authors.size());
-			BFTNode nextNode = syncRequestState.authors.get(nextIndex);
-			syncing.remove(syncId);
-			syncToQC(syncState.highQC, nextNode);
+		if (authors.isEmpty()) {
+			throw new IllegalStateException("Request contains no authors except ourselves");
 		}
+
+		var syncIds = syncRequestState.syncIds.stream()
+			.filter(syncing::containsKey).collect(Collectors.toList());
+
+		//noinspection UnstableApiUsage
+		for (var syncId : syncIds) {
+			SyncState syncState = syncing.remove(syncId);
+			syncToQC(syncState.highQC, randomFrom(authors));
+		}
+	}
+
+	private <T> T randomFrom(List<T> elements) {
+		int nextIndex = random.nextInt(elements.size());
+		return elements.get(nextIndex);
 	}
 
 	private void sendBFTSyncRequest(HashCode vertexId, int count, ImmutableList<BFTNode> authors, HashCode syncId) {
