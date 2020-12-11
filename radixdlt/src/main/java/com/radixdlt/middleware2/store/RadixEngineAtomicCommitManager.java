@@ -15,15 +15,19 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.middleware2.store;
 
-import com.sleepycat.je.Transaction;
+import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 
 /**
- * Store which saves the Vertex Store State for recovery
- * TODO: Remove this interface, integrate with RadixEngine ((RPNV1-718)
+ * Controls atomic commits of multiple atoms.
+ * FIXME: This is simply a hack to get atomic commits implemented.
+ * FIXME: A better commit management stategy should be done which integrates
+ * FIXME: the PREPARE phase (RPNV1-718)
  */
-public interface PersistentVertexStore {
+public interface RadixEngineAtomicCommitManager {
+	void startTransaction();
+	void commitTransaction();
+	void abortTransaction();
 	void save(VerifiedVertexStoreState vertexStoreState);
-	void save(Transaction transaction, VerifiedVertexStoreState vertexStoreState);
 }

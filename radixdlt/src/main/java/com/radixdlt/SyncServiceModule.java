@@ -23,10 +23,10 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.ledger.DtoCommandsAndProof;
@@ -83,7 +83,9 @@ public class SyncServiceModule extends AbstractModule {
 	}
 
 	@Provides
-	private VerifiedAccumulatorSender verifiedSyncedCommandsSender(SystemCounters counters, Ledger ledger) {
+	private VerifiedAccumulatorSender verifiedSyncedCommandsSender(
+		EventDispatcher<VerifiedCommandsAndProof> syncCommandsDispatcher
+	) {
 		return resp -> {
 			DtoCommandsAndProof commandsAndProof = resp.getCommandsAndProof();
 			// TODO: Stateful ledger header verification:
@@ -102,8 +104,7 @@ public class SyncServiceModule extends AbstractModule {
 				nextHeader
 			);
 
-			counters.add(CounterType.SYNC_PROCESSED, verified.getCommands().size());
-			ledger.commit(verified);
+			syncCommandsDispatcher.dispatch(verified);
 		};
 	}
 

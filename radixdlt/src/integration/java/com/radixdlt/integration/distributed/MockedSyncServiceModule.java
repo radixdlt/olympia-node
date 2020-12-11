@@ -24,8 +24,8 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessWithSyncRunner;
 import com.radixdlt.environment.RemoteEventProcessor;
@@ -79,7 +79,7 @@ public class MockedSyncServiceModule extends AbstractModule {
 	@Singleton
 	@ProcessOnDispatch
 	EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor(
-		Ledger ledger
+		EventDispatcher<VerifiedCommandsAndProof> syncCommandsDispatcher
 	) {
 		return new EventProcessor<>() {
 			long currentVersion = 0;
@@ -89,7 +89,7 @@ public class MockedSyncServiceModule extends AbstractModule {
 				ImmutableList<Command> commands = LongStream.range(currentVersion + 1, headerAndProof.getStateVersion() + 1)
 					.mapToObj(sharedCommittedCommands::get)
 					.collect(ImmutableList.toImmutableList());
-				ledger.commit(new VerifiedCommandsAndProof(commands, headerAndProof));
+				syncCommandsDispatcher.dispatch(new VerifiedCommandsAndProof(commands, headerAndProof));
 				currentVersion = headerAndProof.getStateVersion();
 				if (headerAndProof.isEndOfEpoch()) {
 					currentEpoch = headerAndProof.getEpoch() + 1;
@@ -111,7 +111,7 @@ public class MockedSyncServiceModule extends AbstractModule {
 					.mapToObj(sharedCommittedCommands::get)
 					.collect(ImmutableList.toImmutableList());
 
-				ledger.commit(new VerifiedCommandsAndProof(commands, request.getTarget()));
+				syncCommandsDispatcher.dispatch(new VerifiedCommandsAndProof(commands, request.getTarget()));
 				currentVersion = targetVersion;
 				currentEpoch = request.getTarget().getEpoch();
 			}
