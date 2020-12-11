@@ -56,7 +56,9 @@ public final class Proposal implements ConsensusEvent {
 	@DsonOutput(Output.ALL)
 	private final QuorumCertificate committedQC;
 
-	private final Optional<TimeoutCertificate> highestTC;
+	@JsonProperty("highestTC")
+	@DsonOutput(Output.ALL)
+	private final TimeoutCertificate highestTC;
 
 	@JsonCreator
 	Proposal(
@@ -82,7 +84,7 @@ public final class Proposal implements ConsensusEvent {
 		this.signature = Objects.requireNonNull(signature);
 
 		this.highestTC = // only relevant if it's for a higher view than QC
-			highestTC.filter(tc -> tc.getView().gt(vertex.getQC().getView()));
+			highestTC.filter(tc -> tc.getView().gt(vertex.getQC().getView())).orElse(null);
 	}
 
 	@Override
@@ -97,7 +99,7 @@ public final class Proposal implements ConsensusEvent {
 
 	@Override
 	public HighQC highQC() {
-		return HighQC.from(vertex.getQC(), committedQC, highestTC);
+		return HighQC.from(vertex.getQC(), committedQC, Optional.ofNullable(highestTC));
 	}
 
 	@Override
@@ -117,12 +119,6 @@ public final class Proposal implements ConsensusEvent {
 	@DsonOutput(Output.ALL)
 	private byte[] getSerializerAuthor() {
 		return this.author == null ? null : this.author.getKey().getBytes();
-	}
-
-	@JsonProperty("highestTC")
-	@DsonOutput(Output.ALL)
-	public TimeoutCertificate getSerializerTimeoutCertificate() {
-		return this.highestTC.orElse(null);
 	}
 
 	@Override

@@ -28,8 +28,6 @@ public interface RemoteEventDispatcher<T> {
 	void dispatch(BFTNode receiver, T t);
 
 	default void dispatch(Iterable<BFTNode> receivers, T t) {
-		for (BFTNode receiver: receivers) {
-			dispatch(receiver, t);
-		}
+		receivers.forEach(r -> dispatch(r, t));
 	}
 }

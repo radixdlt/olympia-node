@@ -109,11 +109,8 @@ public final class PendingVotes {
 			return VoteProcessingResult.rejected(VoteRejectedReason.DUPLICATE_VOTE);
 		}
 
-		final Optional<QuorumCertificate> maybeQC = processVoteForQC(vote, validatorSet);
-		final Optional<TimeoutCertificate> maybeTC = processVoteForTC(vote, validatorSet);
-
-		return maybeQC.<VoteProcessingResult>map(VoteProcessingResult::qcQuorum)
-			.or(() -> maybeTC.map(VoteProcessingResult::tcQuorum))
+		return processVoteForQC(vote, validatorSet).<VoteProcessingResult>map(VoteProcessingResult::qcQuorum)
+			.or(() -> processVoteForTC(vote, validatorSet).map(VoteProcessingResult::tcQuorum))
 			.orElseGet(VoteProcessingResult::accepted);
 	}
 
@@ -137,7 +134,7 @@ public final class PendingVotes {
 	}
 
 	private Optional<TimeoutCertificate> processVoteForTC(Vote vote, BFTValidatorSet validatorSet) {
-		if (vote.getTimeoutSignature().isEmpty()) {
+		if (!vote.isTimeout()) {
 			return Optional.empty(); // TC can't be formed if vote is not timed out
 		}
 

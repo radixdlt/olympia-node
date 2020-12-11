@@ -59,6 +59,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 	/* Indicates whether the quorum (QC or TC) has already been formed for the current view.
 	 * If the quorum has been reached (but view hasn't yet been updated), subsequent votes are ignored.
+	 * TODO: consider moving it to PendingVotes or elsewhere.
 	 */
 	private boolean hasReachedQuorum = false;
 
@@ -192,6 +193,8 @@ public final class BFTEventReducer implements BFTEventProcessor {
 				((VoteProcessingResult.QuorumReached) result).getViewVotingResult();
 			viewQuorumReachedEventDispatcher
 				.dispatch(new ViewQuorumReached(viewResult, vote.getAuthor()));
+		} else {
+			throw new IllegalStateException("Unknown vote processing result type: " + result);
 		}
 	}
 

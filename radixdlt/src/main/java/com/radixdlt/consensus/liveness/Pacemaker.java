@@ -221,12 +221,12 @@ public final class Pacemaker {
 				vote -> this.voteDispatcher.dispatch(this.validatorSet.nodes(), vote),
 				/* otherwise, we asynchronously insert an empty vertex and, when done,
 					we send a timeout vote on it (see processBFTUpdate) */
-				() -> insertEmptyVertex(view));
+				() -> createTimeoutVertexAndSendVote(view));
 
 		rescheduleTimeout(scheduledTimeout);
 	}
 
-	private void insertEmptyVertex(View view) {
+	private void createTimeoutVertexAndSendVote(View view) {
 		if (this.timeoutVoteVertexId.isPresent()) {
 			return; // vertex for a timeout vote for this view is already inserted
 		}

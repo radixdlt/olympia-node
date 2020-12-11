@@ -28,7 +28,7 @@ import java.util.Objects;
 public interface VoteProcessingResult {
 
     static VoteAccepted accepted() {
-        return new VoteAccepted();
+        return VoteAccepted.INSTANCE;
     }
 
     static VoteRejected rejected(VoteRejected.VoteRejectedReason reason) {
@@ -51,6 +51,12 @@ public interface VoteProcessingResult {
      * Signifies that a vote has been accepted, but the quorum hasn't been reached.
      */
     final class VoteAccepted implements VoteProcessingResult {
+
+        public static final VoteAccepted INSTANCE = new VoteAccepted();
+
+        private VoteAccepted() {
+        }
+
         @Override
         public String toString() {
             return "VoteAccepted";

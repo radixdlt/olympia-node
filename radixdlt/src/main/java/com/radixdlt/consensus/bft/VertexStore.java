@@ -82,7 +82,7 @@ public final class VertexStore {
 		this.highestQC = Objects.requireNonNull(highestQC);
 		this.highestCommittedQC = Objects.requireNonNull(commitQC);
 		this.vertexChildren.put(rootVertex.getId(), new HashSet<>());
-		this.highestTC = highestTC;
+		this.highestTC = Objects.requireNonNull(highestTC);
 	}
 
 	public static VertexStore create(

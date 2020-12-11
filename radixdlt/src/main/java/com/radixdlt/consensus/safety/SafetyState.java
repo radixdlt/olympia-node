@@ -39,7 +39,7 @@ import java.util.Optional;
 public final class SafetyState {
 
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
+	@DsonOutput(DsonOutput.Output.ALL)
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
 	private final View lockedView; // the highest 2-chain head

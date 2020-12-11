@@ -81,4 +81,9 @@ public class QuorumWithoutALeaderWithTimeoutsTest {
 	public void when_run_10_correct_nodes_with_for_2k_views__then_bft_should_be_responsive() {
 		this.run(10, 2000);
 	}
+
+	@Test
+	public void when_run_100_correct_nodes_with_for_300_views__then_bft_should_be_responsive() {
+		this.run(100, 300);
+	}
 }

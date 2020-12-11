@@ -49,7 +49,9 @@ public final class HighQC {
 	@DsonOutput(Output.ALL)
 	private final QuorumCertificate highestCommittedQC;
 
-	private final Optional<TimeoutCertificate> highestTC;
+	@JsonProperty("highest_tc")
+	@DsonOutput(Output.ALL)
+	private final TimeoutCertificate highestTC;
 
 	@JsonCreator
 	private static HighQC serializerCreate(
@@ -57,13 +59,13 @@ public final class HighQC {
 		@JsonProperty("committed_qc") QuorumCertificate highestCommittedQC,
 		@JsonProperty("highest_tc") TimeoutCertificate highestTC
 	) {
-		return new HighQC(highestQC, highestCommittedQC, Optional.ofNullable(highestTC));
+		return new HighQC(highestQC, highestCommittedQC, highestTC);
 	}
 
 	private HighQC(
 		QuorumCertificate highestQC,
 		QuorumCertificate highestCommittedQC,
-		Optional<TimeoutCertificate> highestTC
+		TimeoutCertificate highestTC
 	) {
 		this.highestQC = Objects.requireNonNull(highestQC);
 		// Don't include separate committedQC if it is the same as highQC.
@@ -74,8 +76,12 @@ public final class HighQC {
 			this.highestCommittedQC = highestCommittedQC;
 		}
 
-		this.highestTC = // only relevant if it's for a higher view than QC
-			highestTC.filter(tc -> tc.getView().gt(highestQC.getView()));
+		// only relevant if it's for a higher view than QC
+		if (highestTC != null && highestTC.getView().gt(highestQC.getView())) {
+			this.highestTC = highestTC;
+		} else {
+			this.highestTC = null;
+		}
 	}
 
 	/**
@@ -105,11 +111,11 @@ public final class HighQC {
 		QuorumCertificate highestCommittedQC,
 		Optional<TimeoutCertificate> highestTC
 	) {
-		return new HighQC(highestQC, Objects.requireNonNull(highestCommittedQC), highestTC);
+		return new HighQC(highestQC, Objects.requireNonNull(highestCommittedQC), highestTC.orElse(null));
 	}
 
 	public Optional<TimeoutCertificate> highestTC() {
-		return this.highestTC;
+		return Optional.ofNullable(this.highestTC);
 	}
 
 	public QuorumCertificate highestQC() {
@@ -117,10 +123,11 @@ public final class HighQC {
 	}
 
 	public View getHighestView() {
-		return this.highestTC
-			.filter(tc -> tc.getView().gt(this.highestQC.getView()))
-			.map(TimeoutCertificate::getView)
-			.orElse(this.highestQC.getView());
+		if (this.highestTC != null && this.highestTC.getView().gt(this.highestQC.getView())) {
+			return this.highestTC.getView();
+		} else {
+			return this.highestQC.getView();
+		}
 	}
 
 	public QuorumCertificate highestCommittedQC() {
@@ -155,11 +162,5 @@ public final class HighQC {
 		String highestCommittedString = (this.highestCommittedQC == null) ? "<same>" : this.highestCommittedQC.toString();
 		return String.format("%s[highest=%s, highestCommitted=%s, highestTC=%s]",
 			getClass().getSimpleName(), this.highestQC, highestCommittedString, highestTC);
-	}
-
-	@JsonProperty("highest_tc")
-	@DsonOutput(Output.ALL)
-	public TimeoutCertificate getSerializerTimeoutCertificate() {
-		return this.highestTC.orElse(null);
 	}
 }
