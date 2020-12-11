@@ -19,7 +19,6 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.radixdlt.integration.distributed.simulation.NetworkDroppers;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
@@ -42,13 +41,11 @@ public class OneSlowNodeTest {
 		.numNodes(4)
 		.networkModules(
 			NetworkOrdering.inOrder(),
-			NetworkLatencies.oneOutOfBounds(minLatency, maxLatency),
-			NetworkDroppers.bftSyncMessagesDropped()
+			NetworkLatencies.oneSlowProposalSender(minLatency, maxLatency)
 		)
 		.pacemakerTimeout(synchronousTimeout)
 		.checkConsensusSafety("safety")
-		.checkConsensusAllProposalsHaveDirectParents("directParents")
-		.checkConsensusNoTimeouts("noTimeouts");
+		.checkConsensusAllProposalsHaveDirectParents("directParents");
 
 	/**
 	 * Tests a static configuration of 3 fast, equal nodes and 1 slow node.

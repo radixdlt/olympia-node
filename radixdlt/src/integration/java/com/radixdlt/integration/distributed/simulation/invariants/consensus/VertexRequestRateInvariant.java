@@ -17,14 +17,12 @@
 
 package com.radixdlt.integration.distributed.simulation.invariants.consensus;
 
-import com.google.common.util.concurrent.RateLimiter;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.integration.distributed.simulation.TestInvariant;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -49,9 +47,9 @@ public class VertexRequestRateInvariant implements TestInvariant {
 					String.format("Get Vertices over the rate limit (%s/sec) for node: %s buffer: %s",
 						permitsPerSecond,
 						o.getKey(),
-						l.stream().map(Pair::getSecond).collect(Collectors.toSet())
+						l.stream().collect(Collectors.groupingBy(Pair::getSecond, Collectors.counting())
 					))
-				)
+				))
 			);
 	}
 

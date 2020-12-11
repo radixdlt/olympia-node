@@ -49,7 +49,7 @@ public class RandomValidatorsTest {
 			NetworkOrdering.inOrder(),
 			NetworkLatencies.fixed()
 		)
-		.ledgerAndEpochsAndSync(View.of(3), goodRandomEpochToNodesMapper()) // TODO: investigate why this fails with View.of(10)
+		.ledgerAndEpochsAndSync(View.of(3), goodRandomEpochToNodesMapper(), 0) // TODO: investigate why this fails with View.of(10)
 		.pacemakerTimeout(5000)
 		.numNodes(numNodes, 2)
 		.checkEpochsHighViewCorrect("epochHighView", View.of(100))
@@ -59,7 +59,7 @@ public class RandomValidatorsTest {
 		.checkConsensusAllProposalsHaveDirectParents("directParents")
 		.checkLedgerInOrder("ledgerInOrder")
 		.checkLedgerProcessesConsensusCommitted("consensusToLedger")
-		.checkVertexRequestRate("vertexRequestRate", 100); // Conservative check
+		.checkVertexRequestRate("vertexRequestRate", 50); // Conservative check
 
 	private static Function<Long, IntStream> randomEpochToNodesMapper(Function<Long, Random> randomSupplier) {
 		return epoch -> {

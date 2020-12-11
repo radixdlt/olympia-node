@@ -23,7 +23,11 @@ import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.ViewTimeout;
+import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.integration.distributed.simulation.network.RandomLatencyProvider;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
 import com.radixdlt.integration.distributed.simulation.network.LatencyProvider;
@@ -53,6 +57,26 @@ public final class NetworkLatencies {
 			@Named("base")
 			LatencyProvider base() {
 				return new RandomLatencyProvider(minLatency, maxLatency);
+			}
+		};
+	}
+
+	public static Module oneSlowProposalSender(int inBoundsLatency, int outOfBoundsLatency) {
+		return new AbstractModule() {
+			@Provides
+			@Singleton
+			@Named("base")
+			LatencyProvider base(ImmutableList<BFTNode> nodes) {
+				return msg -> {
+					if ((msg.getSender().equals(nodes.get(0)) || msg.getReceiver().equals(nodes.get(0)))
+						&& (msg.getContent() instanceof Proposal || msg.getContent() instanceof Vote
+						|| msg.getContent() instanceof ViewTimeout || msg.getContent() instanceof GetVerticesResponse)
+					) {
+						return outOfBoundsLatency;
+					} else {
+						return inBoundsLatency;
+					}
+				};
 			}
 		};
 	}

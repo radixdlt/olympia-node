@@ -55,6 +55,41 @@ public final class NetworkDroppers {
 		};
 	}
 
+	public static Module dropAllMessagesForOneNode(long durationMillis, long timeBetweenMillis) {
+		return new AbstractModule() {
+			@ProvidesIntoSet
+			Predicate<MessageInTransit> dropper(ImmutableList<BFTNode> nodes) {
+				return msg -> {
+					if (msg.getSender().equals(msg.getReceiver())) {
+						return false;
+					}
+
+					if (!msg.getSender().equals(nodes.get(0)) && !msg.getReceiver().equals(nodes.get(0))) {
+						return false;
+					}
+
+					long current = System.currentTimeMillis() % (durationMillis + timeBetweenMillis);
+					return current < durationMillis;
+				};
+			}
+		};
+	}
+
+	public static Module dropAllMessages(long durationMillis, long timeBetweenMillis) {
+		return new AbstractModule() {
+			@ProvidesIntoSet
+			Predicate<MessageInTransit> dropper() {
+				return msg -> {
+					if (msg.getSender().equals(msg.getReceiver())) {
+						return false;
+					}
+					long current = System.currentTimeMillis() % (durationMillis + timeBetweenMillis);
+					return current < durationMillis;
+				};
+			}
+		};
+	}
+
 	public static Module randomVotesAndViewTimeoutsDropped(double drops) {
 		return new AbstractModule() {
 			@ProvidesIntoSet

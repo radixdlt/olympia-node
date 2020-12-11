@@ -42,18 +42,26 @@ class InMemoryCommittedReader implements LedgerUpdateSender, CommittedReader {
 	private final LedgerAccumulatorVerifier accumulatorVerifier;
 	private final Hasher hasher;
 	private final TreeMap<Long, VerifiedLedgerHeaderAndProof> epochProofs = new TreeMap<>();
+	private final int delayMillis;
 
 	@Inject
-	InMemoryCommittedReader(LedgerAccumulatorVerifier accumulatorVerifier, Hasher hasher) {
+	InMemoryCommittedReader(
+		LedgerAccumulatorVerifier accumulatorVerifier,
+		Hasher hasher,
+		@CommittedReaderDelayMillis int delayMillis
+	) {
 		this.accumulatorVerifier = Objects.requireNonNull(accumulatorVerifier);
 		this.hasher = Objects.requireNonNull(hasher);
+		this.delayMillis = delayMillis;
 	}
 
 	@Override
 	public void sendLedgerUpdate(LedgerUpdate update) {
 		long firstVersion = update.getNewCommands().isEmpty() ? update.getTail().getStateVersion()
 			: update.getTail().getStateVersion() - update.getNewCommands().size() + 1;
-		commandsAndProof.put(firstVersion, new VerifiedCommandsAndProof(update.getNewCommands(), update.getTail()));
+		for (long version = firstVersion; version <= update.getTail().getStateVersion(); version++) {
+			commandsAndProof.put(version, new VerifiedCommandsAndProof(update.getNewCommands(), update.getTail()));
+		}
 
 		if (update.getTail().isEndOfEpoch()) {
 			this.epochProofs.put(update.getTail().getEpoch() + 1, update.getTail());
@@ -64,6 +72,13 @@ class InMemoryCommittedReader implements LedgerUpdateSender, CommittedReader {
 	public VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start, int batchSize) {
 		final long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
 		Entry<Long, VerifiedCommandsAndProof> entry = commandsAndProof.higherEntry(stateVersion);
+
+		try {
+			// TODO: replace with async style delay when async io implemented
+			Thread.sleep(delayMillis);
+		} catch (InterruptedException e) {
+		}
+
 		if (entry != null) {
 			ImmutableList<Command> cmds = accumulatorVerifier
 				.verifyAndGetExtension(

@@ -20,7 +20,6 @@ package com.radixdlt.integration.distributed.simulation;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Module;
@@ -68,6 +67,7 @@ import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.integration.distributed.CommittedReaderDelayMillis;
 import com.radixdlt.integration.distributed.MockedCommandGeneratorModule;
 import com.radixdlt.integration.distributed.MockedCryptoModule;
 import com.radixdlt.integration.distributed.MockedLedgerModule;
@@ -382,15 +382,31 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder ledgerAndSync() {
+		public Builder ledgerAndSync(int committedReaderDelayMillis) {
 			this.ledgerType = LedgerType.LEDGER_AND_SYNC;
+			modules.add(new AbstractModule() {
+				@Override
+				protected void configure() {
+					bind(Integer.class).annotatedWith(CommittedReaderDelayMillis.class).toInstance(committedReaderDelayMillis);
+				}
+			});
 			return this;
 		}
 
-		public Builder ledgerAndEpochsAndSync(View epochHighView, Function<Long, IntStream> epochToNodeIndexMapper) {
+		public Builder ledgerAndEpochsAndSync(
+			View epochHighView,
+			Function<Long, IntStream> epochToNodeIndexMapper,
+			int committedReaderDelayMillis
+		) {
 			this.ledgerType = LedgerType.LEDGER_AND_EPOCHS_AND_SYNC;
 			this.epochHighView = epochHighView;
 			this.epochToNodeIndexMapper = epochToNodeIndexMapper;
+			modules.add(new AbstractModule() {
+				@Override
+				protected void configure() {
+					bind(Integer.class).annotatedWith(CommittedReaderDelayMillis.class).toInstance(committedReaderDelayMillis);
+				}
+			});
 			return this;
 		}
 

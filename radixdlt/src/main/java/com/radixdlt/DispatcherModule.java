@@ -97,6 +97,9 @@ public class DispatcherModule extends AbstractModule {
 		final var syncUpdateKey = new TypeLiteral<EventProcessor<VerifiedCommandsAndProof>>() { };
 		Multibinder.newSetBinder(binder(), syncUpdateKey, ProcessOnDispatch.class);
 
+		final var verticesRequestKey = new TypeLiteral<EventProcessor<GetVerticesRequest>>() { };
+		Multibinder.newSetBinder(binder(), verticesRequestKey, ProcessOnDispatch.class);
+
 		final var formQcKey = new TypeLiteral<EventProcessor<FormedQC>>() { };
 		Multibinder.newSetBinder(binder(), formQcKey, ProcessOnDispatch.class);
 		final var voteKey = new TypeLiteral<EventProcessor<Vote>>() { };
@@ -285,7 +288,6 @@ public class DispatcherModule extends AbstractModule {
 	) {
 		RemoteEventDispatcher<GetVerticesRequest> dispatcher = environment.getRemoteDispatcher(GetVerticesRequest.class);
 		return (node, request) -> {
-			logger.info("Request sending to {}: {}", node, request);
 			counters.increment(CounterType.BFT_SYNC_REQUESTS_SENT);
 			dispatcher.dispatch(node, request);
 			processors.forEach(e -> e.process(request));
