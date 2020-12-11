@@ -55,6 +55,8 @@ public final class Proposal implements ConsensusEvent {
 	@DsonOutput(Output.ALL)
 	private final QuorumCertificate committedQC;
 
+	private final transient long created = System.nanoTime();
+
 	@JsonCreator
 	Proposal(
 		@JsonProperty("vertex") UnverifiedVertex vertex,
@@ -98,6 +100,10 @@ public final class Proposal implements ConsensusEvent {
 
 	public ECDSASignature getSignature() {
 		return signature;
+	}
+
+	public long elapsedMicrosecondsSinceCreation() {
+		return (System.nanoTime() - this.created + 500L) / 1000L;
 	}
 
 	@JsonProperty("author")

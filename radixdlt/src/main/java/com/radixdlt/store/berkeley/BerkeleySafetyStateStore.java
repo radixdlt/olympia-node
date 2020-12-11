@@ -22,6 +22,8 @@ import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.safety.SafetyState;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.utils.Longs;
 import com.radixdlt.utils.Pair;
 import com.sleepycat.je.Database;
@@ -51,10 +53,12 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
 
 	private final DatabaseEnvironment dbEnv;
 	private final Database safetyStore;
+	private final SystemCounters systemCounters;
 
 	@Inject
-	public BerkeleySafetyStateStore(DatabaseEnvironment dbEnv) {
+	public BerkeleySafetyStateStore(DatabaseEnvironment dbEnv, SystemCounters systemCounters) {
 		this.dbEnv = Objects.requireNonNull(dbEnv, "dbEnv is required");
+		this.systemCounters = Objects.requireNonNull(systemCounters);
 
 		this.safetyStore = this.open();
 
@@ -97,6 +101,7 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
 	}
 
 	public Optional<Pair<Long, SafetyState>> get() {
+		final var start = System.nanoTime();
 		try (com.sleepycat.je.Cursor cursor = this.safetyStore.openCursor(null, null)) {
 			DatabaseEntry pKey = new DatabaseEntry();
 			DatabaseEntry value = new DatabaseEntry();
@@ -110,35 +115,47 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
 			} else {
 				return Optional.empty();
 			}
+		} finally {
+			addTime(start);
 		}
 	}
 
 	@Override
 	public void commitState(Vote vote, SafetyState safetyState) {
-		if (!safetyState.getLastVotedView().equals(vote.getView())) {
-			throw new IllegalStateException("SafetyState and vote views don't match.");
-		}
-		long epoch = vote.getVoteData().getProposed().getLedgerHeader().getEpoch();
-		long view = vote.getView().number();
-		long lockedView = safetyState.getLockedView().number();
-
-		byte[] keyBytes = new byte[Long.BYTES * 2];
-		Longs.copyTo(epoch, keyBytes, 0);
-		Longs.copyTo(view, keyBytes, Long.BYTES);
-		Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);
+		final var start = System.nanoTime();
 		try {
-			DatabaseEntry key = new DatabaseEntry(keyBytes);
-			DatabaseEntry data = new DatabaseEntry(Longs.toByteArray(lockedView));
-
-			OperationStatus status = this.safetyStore.put(transaction, key, data);
-			if (status != OperationStatus.SUCCESS) {
-				fail("Database returned status " + status + " for put operation");
+			if (!safetyState.getLastVotedView().equals(vote.getView())) {
+				throw new IllegalStateException("SafetyState and vote views don't match.");
 			}
+			long epoch = vote.getVoteData().getProposed().getLedgerHeader().getEpoch();
+			long view = vote.getView().number();
+			long lockedView = safetyState.getLockedView().number();
 
-			transaction.commit();
-		} catch (Exception e) {
-			transaction.abort();
-			fail("Error while storing safety state for " + safetyState, e);
+			byte[] keyBytes = new byte[Long.BYTES * 2];
+			Longs.copyTo(epoch, keyBytes, 0);
+			Longs.copyTo(view, keyBytes, Long.BYTES);
+			Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);
+			try {
+				DatabaseEntry key = new DatabaseEntry(keyBytes);
+				DatabaseEntry data = new DatabaseEntry(Longs.toByteArray(lockedView));
+
+				OperationStatus status = this.safetyStore.put(transaction, key, data);
+				if (status != OperationStatus.SUCCESS) {
+					fail("Database returned status " + status + " for put operation");
+				}
+
+				transaction.commit();
+			} catch (Exception e) {
+				transaction.abort();
+				fail("Error while storing safety state for " + safetyState, e);
+			}
+		} finally {
+			addTime(start);
 		}
+	}
+
+	private void addTime(long start) {
+		final var elapsed = (System.nanoTime() - start + 500L) / 1000L;
+		this.systemCounters.add(CounterType.ELAPSED_BDB_SAFETY_STATE, elapsed);
 	}
 }

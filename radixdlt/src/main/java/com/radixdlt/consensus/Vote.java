@@ -56,6 +56,8 @@ public final class Vote implements ConsensusEvent {
 	@DsonOutput(Output.ALL)
 	private final ECDSASignature signature;
 
+	private final transient long created = System.nanoTime();
+
 	@JsonCreator
 	Vote(
 		@JsonProperty("author") byte[] author,
@@ -103,6 +105,10 @@ public final class Vote implements ConsensusEvent {
 
 	public ECDSASignature getSignature() {
 		return this.signature;
+	}
+
+	public long elapsedMicrosecondsSinceCreation() {
+		return (System.nanoTime() - this.created + 500L) / 1000L;
 	}
 
 	@JsonProperty("author")

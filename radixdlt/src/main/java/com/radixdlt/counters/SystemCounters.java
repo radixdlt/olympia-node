@@ -44,6 +44,16 @@ public interface SystemCounters {
 		BFT_VOTE_QUORUMS("bft.vote_quorums"),
 		BFT_SYNC_REQUESTS_SENT("bft.sync.requests_sent"),
 
+		// Total elapsed time for database access, in microseconds
+		ELAPSED_BDB_ADDRESS_BOOK("elapsed.bdb.address_book"),
+		ELAPSED_BDB_LEDGER("elapsed.bdb.ledger"),
+		ELAPSED_BDB_SAFETY_STATE("elapsed.bdb.safety_state"),
+
+		// Total elapsed time for processing BFT messages, in microseconds
+		ELAPSED_BFT_PROPOSAL("elapsed.bft.proposal"),
+		ELAPSED_BFT_VIEW_TIMEOUT("elapsed.bft.view_timeout"),
+		ELAPSED_BFT_VOTE("elapsed.bft.vote"),
+
 		EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS("epoch_manager.queued_consensus_events"),
 
 		HASHED_BYTES("hashed.bytes"),
