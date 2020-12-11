@@ -327,7 +327,8 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 			VerifiedVertexStoreState vertexStoreState = VerifiedVertexStoreState.create(
 				HighQC.from(syncState.highQC().highestCommittedQC()),
 				syncState.fetched.get(0),
-				nonRootVertices
+				nonRootVertices,
+				vertexStore.getHighestTimeoutCertificate()
 			);
 			if (vertexStore.tryRebuild(vertexStoreState)) {
 				// TODO: Move pacemaker outside of sync

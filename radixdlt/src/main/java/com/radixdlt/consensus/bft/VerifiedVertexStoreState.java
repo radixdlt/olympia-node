@@ -22,11 +22,13 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.HighQC;
+import com.radixdlt.consensus.TimeoutCertificate;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.store.berkeley.SerializedVertexStoreState;
 import com.radixdlt.utils.Pair;
 import java.util.HashMap;
 import java.util.Objects;
+import java.util.Optional;
 import javax.annotation.concurrent.Immutable;
 
 /**
@@ -40,32 +42,37 @@ public final class VerifiedVertexStoreState {
 	// TODO: collapse the following two
 	private final ImmutableList<VerifiedVertex> vertices;
 	private final ImmutableMap<HashCode, VerifiedVertex> idToVertex;
+	private Optional<TimeoutCertificate> highestTC;
 
 	private VerifiedVertexStoreState(
 		HighQC highQC,
 		VerifiedLedgerHeaderAndProof rootHeader,
 		VerifiedVertex root,
 		ImmutableMap<HashCode, VerifiedVertex> idToVertex,
-		ImmutableList<VerifiedVertex> vertices
+		ImmutableList<VerifiedVertex> vertices,
+		Optional<TimeoutCertificate> highestTC
 	) {
 		this.highQC = highQC;
 		this.rootHeader = rootHeader;
 		this.root = root;
 		this.idToVertex = idToVertex;
 		this.vertices = vertices;
-	}
-
-	public static VerifiedVertexStoreState create(
-		HighQC highQC,
-		VerifiedVertex root
-	) {
-		return create(highQC, root, ImmutableList.of());
+		this.highestTC = highestTC;
 	}
 
 	public static VerifiedVertexStoreState create(
 		HighQC highQC,
 		VerifiedVertex root,
-		ImmutableList<VerifiedVertex> vertices
+		Optional<TimeoutCertificate> highestTC
+	) {
+		return create(highQC, root, ImmutableList.of(), highestTC);
+	}
+
+	public static VerifiedVertexStoreState create(
+		HighQC highQC,
+		VerifiedVertex root,
+		ImmutableList<VerifiedVertex> vertices,
+		Optional<TimeoutCertificate> highestTC
 	) {
 		final Pair<BFTHeader, VerifiedLedgerHeaderAndProof> headers = highQC.highestCommittedQC()
 			.getCommittedAndLedgerStateProof()
@@ -102,11 +109,10 @@ public final class VerifiedVertexStoreState {
 			throw new IllegalStateException(String.format("highQC=%s highQC proposed does not have a corresponding vertex", highQC));
 		}
 
-		return new VerifiedVertexStoreState(highQC, rootHeader, root, idToVertex, vertices);
+		return new VerifiedVertexStoreState(highQC, rootHeader, root, idToVertex, vertices, highestTC);
 	}
 
 	public VerifiedVertexStoreState prune() {
-
 		if (highQC.highestQC().getCommittedAndLedgerStateProof().isPresent()) {
 			Pair<BFTHeader, VerifiedLedgerHeaderAndProof> newHeaders = highQC.highestQC().getCommittedAndLedgerStateProof().get();
 			BFTHeader header = newHeaders.getFirst();
@@ -122,7 +128,7 @@ public final class VerifiedVertexStoreState {
 				);
 				HighQC newHighQC = HighQC.from(highQC.highestQC());
 				VerifiedLedgerHeaderAndProof proof = newHeaders.getSecond();
-				return new VerifiedVertexStoreState(newHighQC, proof, newRoot, idToVertex, newVertices);
+				return new VerifiedVertexStoreState(newHighQC, proof, newRoot, idToVertex, newVertices, highestTC);
 			}
 		}
 
@@ -131,9 +137,10 @@ public final class VerifiedVertexStoreState {
 
 	public SerializedVertexStoreState toSerialized() {
 		return new SerializedVertexStoreState(
-			highQC,
-			root.toSerializable(),
-			vertices.stream().map(VerifiedVertex::toSerializable).collect(ImmutableList.toImmutableList())
+			this.highQC,
+			this.root.toSerializable(),
+			this.vertices.stream().map(VerifiedVertex::toSerializable).collect(ImmutableList.toImmutableList()),
+			this.highestTC.orElse(null)
 		);
 	}
 
@@ -155,7 +162,7 @@ public final class VerifiedVertexStoreState {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(root, rootHeader, highQC, idToVertex, vertices);
+		return Objects.hash(root, rootHeader, highQC, idToVertex, vertices, highestTC);
 	}
 
 	@Override
@@ -173,6 +180,7 @@ public final class VerifiedVertexStoreState {
 			&& Objects.equals(this.rootHeader, other.rootHeader)
 			&& Objects.equals(this.highQC, other.highQC)
 			&& Objects.equals(this.vertices, other.vertices)
-			&& Objects.equals(this.idToVertex, other.idToVertex);
+			&& Objects.equals(this.idToVertex, other.idToVertex)
+			&& Objects.equals(this.highestTC, other.highestTC);
 	}
 }

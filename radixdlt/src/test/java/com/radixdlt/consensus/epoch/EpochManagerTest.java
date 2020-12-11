@@ -99,6 +99,7 @@ import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.utils.UInt256;
 
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.junit.Before;
@@ -215,7 +216,7 @@ public class EpochManagerTest {
 				QuorumCertificate qc = QuorumCertificate.ofGenesis(verifiedVertex, LedgerHeader.genesis(HashUtils.zero256(), validatorSet));
 				return new BFTConfiguration(
 					validatorSet,
-					VerifiedVertexStoreState.create(HighQC.from(qc), verifiedVertex)
+					VerifiedVertexStoreState.create(HighQC.from(qc), verifiedVertex, Optional.empty())
 				);
 			}
 		};
@@ -249,7 +250,7 @@ public class EpochManagerTest {
 		QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
 		BFTConfiguration bftConfiguration = new BFTConfiguration(
 			nextValidatorSet,
-			VerifiedVertexStoreState.create(HighQC.from(genesisQC), verifiedGenesisVertex)
+			VerifiedVertexStoreState.create(HighQC.from(genesisQC), verifiedGenesisVertex, Optional.empty())
 		);
 		VerifiedLedgerHeaderAndProof proof = mock(VerifiedLedgerHeaderAndProof.class);
 		when(proof.getEpoch()).thenReturn(header.getEpoch() + 1);

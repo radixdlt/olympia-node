@@ -19,6 +19,7 @@ package com.radixdlt.consensus.bft;
 
 import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doAnswer;
@@ -34,6 +35,7 @@ import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.BFTHeader;
+import com.radixdlt.consensus.TimeoutCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.UnverifiedVertex;
@@ -92,7 +94,7 @@ public class VertexStoreTest {
 		this.genesisVertex = new VerifiedVertex(UnverifiedVertex.createGenesis(MOCKED_HEADER), genesisHash);
 		this.rootQC = QuorumCertificate.ofGenesis(genesisVertex, MOCKED_HEADER);
 		this.sut = VertexStore.create(
-			VerifiedVertexStoreState.create(HighQC.from(rootQC), genesisVertex),
+			VerifiedVertexStoreState.create(HighQC.from(rootQC), genesisVertex, Optional.empty()),
 			ledger,
 			bftUpdateSender,
 			rebuildUpdateEventDispatcher,
@@ -195,7 +197,8 @@ public class VertexStoreTest {
 		VerifiedVertexStoreState vertexStoreState = VerifiedVertexStoreState.create(
 			HighQC.from(vertices.get(3).getQC()),
 			vertices.get(0),
-			vertices.stream().skip(1).collect(ImmutableList.toImmutableList())
+			vertices.stream().skip(1).collect(ImmutableList.toImmutableList()),
+			sut.getHighestTimeoutCertificate()
 		);
 
 		// Act
@@ -208,5 +211,20 @@ public class VertexStoreTest {
 				return sentVertices.equals(vertices.subList(1, vertices.size()));
 			})
 		);
+	}
+
+	@Test
+	public void inserting_a_tc_should_only_replace_tcs_for_lower_views() {
+		TimeoutCertificate initialTC = new TimeoutCertificate(1, View.of(100), mock(TimestampedECDSASignatures.class));
+		TimeoutCertificate higherTC = new TimeoutCertificate(1, View.of(101), mock(TimestampedECDSASignatures.class));
+
+		sut.insertTimeoutCertificate(initialTC);
+		assertEquals(initialTC, sut.getHighestTimeoutCertificate().orElse(null));
+
+		sut.insertTimeoutCertificate(higherTC);
+		assertEquals(higherTC, sut.getHighestTimeoutCertificate().orElse(null));
+
+		sut.insertTimeoutCertificate(initialTC);
+		assertEquals(higherTC, sut.getHighestTimeoutCertificate().orElse(null));
 	}
 }

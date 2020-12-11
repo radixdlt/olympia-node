@@ -233,7 +233,8 @@ public final class VertexStore {
 		return VerifiedVertexStoreState.create(
 			this.highQC(),
 			this.rootVertex,
-			verticesBuilder.build()
+			verticesBuilder.build(),
+			this.highestTC
 		);
 	}
 

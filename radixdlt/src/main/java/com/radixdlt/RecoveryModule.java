@@ -152,7 +152,8 @@ public class RecoveryModule extends AbstractModule {
 				return VerifiedVertexStoreState.create(
 					serializedVertexStoreState.getHighQC(),
 					verifiedRoot,
-					vertices
+					vertices,
+					serializedVertexStoreState.getHighestTC()
 				);
 			})
 			.orElseGet(() -> {
@@ -165,7 +166,7 @@ public class RecoveryModule extends AbstractModule {
 					lastEpochProof.timestamp()
 				);
 				QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
-				return VerifiedVertexStoreState.create(HighQC.from(genesisQC), verifiedGenesisVertex);
+				return VerifiedVertexStoreState.create(HighQC.from(genesisQC), verifiedGenesisVertex, Optional.empty());
 			});
 	}
 

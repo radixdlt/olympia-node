@@ -119,7 +119,8 @@ public class ConsensusModuleTest {
 		VerifiedVertex hashedGenesis = new VerifiedVertex(genesis, HashUtils.zero256());
 		QuorumCertificate qc = QuorumCertificate.ofGenesis(hashedGenesis, LedgerHeader.genesis(HashUtils.zero256(), null));
 		BFTValidatorSet validatorSet = BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)));
-		VerifiedVertexStoreState vertexStoreState = VerifiedVertexStoreState.create(HighQC.from(qc), hashedGenesis);
+		VerifiedVertexStoreState vertexStoreState =
+			VerifiedVertexStoreState.create(HighQC.from(qc), hashedGenesis, Optional.empty());
 		this.bftConfiguration = new BFTConfiguration(validatorSet, vertexStoreState);
 		this.ecKeyPair = ECKeyPair.generateNew();
 		this.requestSender = mock(SyncVerticesRequestSender.class);
