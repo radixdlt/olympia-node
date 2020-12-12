@@ -26,7 +26,10 @@ import io.reactivex.rxjava3.core.Observable;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-public class VertexRequestRateInvariant implements TestInvariant {
+/**
+ * Checks that vertex request explosions don't occur
+ */
+public final class VertexRequestRateInvariant implements TestInvariant {
 	private final NodeEvents nodeEvents;
 	private final int permitsPerSecond;
 

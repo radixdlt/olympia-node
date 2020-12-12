@@ -75,21 +75,6 @@ public final class NetworkDroppers {
 		};
 	}
 
-	public static Module dropAllMessages(long durationMillis, long timeBetweenMillis) {
-		return new AbstractModule() {
-			@ProvidesIntoSet
-			Predicate<MessageInTransit> dropper() {
-				return msg -> {
-					if (msg.getSender().equals(msg.getReceiver())) {
-						return false;
-					}
-					long current = System.currentTimeMillis() % (durationMillis + timeBetweenMillis);
-					return current < durationMillis;
-				};
-			}
-		};
-	}
-
 	public static Module randomVotesAndViewTimeoutsDropped(double drops) {
 		return new AbstractModule() {
 			@ProvidesIntoSet

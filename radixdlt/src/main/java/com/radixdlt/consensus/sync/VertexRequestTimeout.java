@@ -17,7 +17,12 @@
 
 package com.radixdlt.consensus.sync;
 
-public class VertexRequestTimeout {
+import java.util.Objects;
+
+/**
+ * A scheduled timeout for a given vertex request
+ */
+public final class VertexRequestTimeout {
 	private final GetVerticesRequest request;
 
 	private VertexRequestTimeout(GetVerticesRequest request) {
@@ -30,5 +35,20 @@ public class VertexRequestTimeout {
 
 	public GetVerticesRequest getRequest() {
 		return request;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(request);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (!(o instanceof VertexRequestTimeout)) {
+			return false;
+		}
+
+		VertexRequestTimeout other = (VertexRequestTimeout) o;
+		return Objects.equals(this.request, other.request);
 	}
 }
