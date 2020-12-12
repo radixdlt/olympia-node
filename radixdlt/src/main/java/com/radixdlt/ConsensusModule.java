@@ -246,7 +246,8 @@ public final class ConsensusModule extends AbstractModule {
 			timeoutDispatcher,
 			ledgerLastProof,
 			random,
-			bftSyncPatienceMillis
+			bftSyncPatienceMillis,
+			counters
 		);
 	}
 

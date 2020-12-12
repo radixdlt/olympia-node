@@ -41,6 +41,7 @@ import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
@@ -84,7 +85,8 @@ public class BFTSyncTest {
 			bftSyncTimeoutScheduler,
 			verifiedLedgerHeaderAndProof,
 			new Random(),
-			100
+			100,
+			mock(SystemCounters.class)
 		);
 	}
 

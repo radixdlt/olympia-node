@@ -34,6 +34,8 @@ import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.liveness.PacemakerReducer;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
@@ -139,6 +141,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 	private final ScheduledEventDispatcher<LocalGetVerticesRequest> timeoutDispatcher;
 	private final Random random;
 	private final int bftSyncPatienceMillis;
+	private final SystemCounters systemCounters;
 	private VerifiedLedgerHeaderAndProof currentLedgerHeader;
 
 	public BFTSync(
@@ -150,7 +153,8 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 		ScheduledEventDispatcher<LocalGetVerticesRequest> timeoutDispatcher,
 		VerifiedLedgerHeaderAndProof currentLedgerHeader,
 		Random random,
-		int bftSyncPatienceMillis
+		int bftSyncPatienceMillis,
+		SystemCounters systemCounters
 	) {
 		this.vertexStore = vertexStore;
 		this.pacemakerReducer = pacemakerReducer;
@@ -161,6 +165,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 		this.currentLedgerHeader = Objects.requireNonNull(currentLedgerHeader);
 		this.random = random;
 		this.bftSyncPatienceMillis = bftSyncPatienceMillis;
+		this.systemCounters = Objects.requireNonNull(systemCounters);
 	}
 
 	public EventProcessor<FormedQC> formedQCEventProcessor() {
@@ -262,6 +267,8 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 		List<HashCode> syncIds = syncRequestState.syncIds.stream().filter(syncing::containsKey).collect(Collectors.toList());
 		for (HashCode syncId : syncIds) {
 			SyncState syncState = syncing.get(syncId);
+
+			systemCounters.increment(CounterType.BFT_SYNC_REQUEST_TIMEOUTS);
 
 			// Retry full sync on timeout
 			int nextIndex = random.nextInt(syncRequestState.authors.size());

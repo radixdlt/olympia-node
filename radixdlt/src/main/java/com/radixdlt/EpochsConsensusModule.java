@@ -237,7 +237,8 @@ public class EpochsConsensusModule extends AbstractModule {
 			timeoutDispatcher,
 			configuration.getVertexStoreState().getRootHeader(),
 			random,
-			bftSyncPatienceMillis
+			bftSyncPatienceMillis,
+			counters
 		);
 	}
 
