@@ -38,8 +38,10 @@ public interface SystemCounters {
 		BFT_TIMED_OUT_VIEWS("bft.timed_out_views"),
 		/** Number of view-timeout quorums formed. */
 		BFT_TIMEOUT_QUORUMS("bft.timeout_quorums"),
+		BFT_STATE_VERSION("bft.state_version"),
 		BFT_VERTEX_STORE_SIZE("bft.vertex_store_size"),
 		BFT_VERTEX_STORE_FORKS("bft.vertex_store_forks"),
+		BFT_VERTEX_STORE_REBUILDS("bft.vertex_store_rebuilds"),
 		/** Number of vote quorums formed. */
 		BFT_VOTE_QUORUMS("bft.vote_quorums"),
 		BFT_SYNC_REQUESTS_SENT("bft.sync.requests_sent"),

@@ -146,7 +146,6 @@ public class DispatcherModule extends AbstractModule {
 		return environment.getScheduledDispatcher(SyncInProgress.class);
 	}
 
-
 	@Provides
 	@Singleton
 	private EventDispatcher<FormedQC> formedQCEventDispatcher(
@@ -187,7 +186,10 @@ public class DispatcherModule extends AbstractModule {
 	) {
 		EventDispatcher<BFTRebuildUpdate> dispatcher = environment.getDispatcher(BFTRebuildUpdate.class);
 		return update -> {
+			long stateVersion = update.getVertexStoreState().getRootHeader().getStateVersion();
+			systemCounters.set(CounterType.BFT_STATE_VERSION, stateVersion);
 			systemCounters.set(CounterType.BFT_VERTEX_STORE_SIZE, update.getVertexStoreState().getVertices().size());
+			systemCounters.increment(CounterType.BFT_VERTEX_STORE_REBUILDS);
 			dispatcher.dispatch(update);
 		};
 	}
@@ -224,6 +226,8 @@ public class DispatcherModule extends AbstractModule {
 	) {
 		if (asyncProcessors.isEmpty()) {
 			return commit -> {
+				long stateVersion = commit.getVertexStoreState().getRootHeader().getStateVersion();
+				systemCounters.set(CounterType.BFT_STATE_VERSION, stateVersion);
 				systemCounters.add(CounterType.BFT_PROCESSED, commit.getCommitted().size());
 				systemCounters.set(CounterType.BFT_VERTEX_STORE_SIZE, commit.getVertexStoreSize());
 				processors.forEach(e -> e.process(commit));
@@ -231,6 +235,8 @@ public class DispatcherModule extends AbstractModule {
 		} else {
 			EventDispatcher<BFTCommittedUpdate> dispatcher = environment.getDispatcher(BFTCommittedUpdate.class);
 			return commit -> {
+				long stateVersion = commit.getVertexStoreState().getRootHeader().getStateVersion();
+				systemCounters.set(CounterType.BFT_STATE_VERSION, stateVersion);
 				systemCounters.add(CounterType.BFT_PROCESSED, commit.getCommitted().size());
 				systemCounters.set(CounterType.BFT_VERTEX_STORE_SIZE, commit.getVertexStoreSize());
 				processors.forEach(e -> e.process(commit));
