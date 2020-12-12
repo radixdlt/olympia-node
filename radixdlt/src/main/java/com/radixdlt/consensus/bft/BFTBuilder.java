@@ -22,7 +22,6 @@ import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.safety.SafetyRules;
-import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.environment.EventDispatcher;
@@ -50,7 +49,6 @@ public final class BFTBuilder {
 	private ViewUpdate viewUpdate;
 	private RemoteEventDispatcher<Vote> voteDispatcher;
 	private SafetyRules safetyRules;
-	private SystemCounters systemCounters;
 
 	private BFTBuilder() {
 		// Just making this inaccessible
@@ -120,11 +118,6 @@ public final class BFTBuilder {
 		return this;
 	}
 
-	public BFTBuilder systemCounters(SystemCounters systemCounters) {
-		this.systemCounters = systemCounters;
-		return this;
-	}
-
 	public BFTEventProcessor build() {
 		if (!validatorSet.containsNode(self)) {
 			return EmptyBFTEventProcessor.INSTANCE;
@@ -141,8 +134,7 @@ public final class BFTBuilder {
 			safetyRules,
 			validatorSet,
 			pendingVotes,
-			viewUpdate,
-			systemCounters
+			viewUpdate
 		);
 
 		SyncQueues syncQueues = new SyncQueues();

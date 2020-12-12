@@ -24,7 +24,6 @@ import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
-import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
@@ -66,8 +65,7 @@ public class BFTEventReducerTest {
             this.safetyRules,
             this.validatorSet,
             this.pendingVotes,
-            mock(ViewUpdate.class),
-            mock(SystemCounters.class)
+            mock(ViewUpdate.class)
         );
     }
 

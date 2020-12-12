@@ -27,8 +27,6 @@ import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.consensus.safety.SafetyRules;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import org.apache.logging.log4j.LogManager;
@@ -55,7 +53,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private final SafetyRules safetyRules;
 	private final BFTValidatorSet validatorSet;
 	private final PendingVotes pendingVotes;
-	private final SystemCounters systemCounters;
 
 	private BFTInsertUpdate latestInsertUpdate;
 	private ViewUpdate latestViewUpdate;
@@ -70,8 +67,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		SafetyRules safetyRules,
 		BFTValidatorSet validatorSet,
 		PendingVotes pendingVotes,
-		ViewUpdate initialViewUpdate,
-		SystemCounters systemCounters
+		ViewUpdate initialViewUpdate
 	) {
 		this.pacemaker = Objects.requireNonNull(pacemaker);
 		this.vertexStore = Objects.requireNonNull(vertexStore);
@@ -83,7 +79,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		this.validatorSet = Objects.requireNonNull(validatorSet);
 		this.pendingVotes = Objects.requireNonNull(pendingVotes);
 		this.latestViewUpdate = Objects.requireNonNull(initialViewUpdate);
-		this.systemCounters = Objects.requireNonNull(systemCounters);
 	}
 
 	@Override
@@ -139,53 +134,41 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 	@Override
 	public void processVote(Vote vote) {
-		try {
-			log.trace("Vote: Processing {}", vote);
-			// accumulate votes into QCs in store
-			final View view = vote.getView();
-			if (view.lt(this.latestViewUpdate.getCurrentView())) {
-				log.trace("Vote: Ignoring vote from {} for view {}, current view at {}",
-					vote.getAuthor(), view, this.latestViewUpdate.getCurrentView());
-				return;
-			}
-
-			this.pendingVotes.insertVote(vote, this.validatorSet)
-				.filter(qc -> view.gte(this.latestViewUpdate.getCurrentView()))
-				.ifPresent(qc -> this.formedQCEventDispatcher.dispatch(FormedQC.create(qc, vote.getAuthor())));
-		} finally {
-			this.systemCounters.add(CounterType.ELAPSED_BFT_VOTE, vote.elapsedMicrosecondsSinceCreation());
+		log.trace("Vote: Processing {}", vote);
+		// accumulate votes into QCs in store
+		final View view = vote.getView();
+		if (view.lt(this.latestViewUpdate.getCurrentView())) {
+			log.trace("Vote: Ignoring vote from {} for view {}, current view at {}",
+				vote.getAuthor(), view, this.latestViewUpdate.getCurrentView());
+			return;
 		}
+
+		this.pendingVotes.insertVote(vote, this.validatorSet)
+			.filter(qc -> view.gte(this.latestViewUpdate.getCurrentView()))
+			.ifPresent(qc -> this.formedQCEventDispatcher.dispatch(FormedQC.create(qc, vote.getAuthor())));
 	}
 
 	@Override
 	public void processViewTimeout(ViewTimeout viewTimeout) {
-		try {
-			log.trace("ViewTimeout: Processing {}", viewTimeout);
-			this.pacemaker.processViewTimeout(viewTimeout);
-		} finally {
-			this.systemCounters.add(CounterType.ELAPSED_BFT_VIEW_TIMEOUT, viewTimeout.elapsedMicrosecondsSinceCreation());
-		}
+		log.trace("ViewTimeout: Processing {}", viewTimeout);
+		this.pacemaker.processViewTimeout(viewTimeout);
 	}
 
 	@Override
 	public void processProposal(Proposal proposal) {
-		try {
-			log.trace("Proposal: Processing {}", proposal);
+		log.trace("Proposal: Processing {}", proposal);
 
-			// TODO: Move into preprocessor
-			final View proposedVertexView = proposal.getView();
-			final View currentView = this.latestViewUpdate.getCurrentView();
-			if (!currentView.equals(proposedVertexView)) {
-				log.trace("Proposal: Ignoring view {}, current is: {}", proposedVertexView, currentView);
-				return;
-			}
-
-			// TODO: Move insertion and maybe check into BFTSync
-			final VerifiedVertex proposedVertex = new VerifiedVertex(proposal.getVertex(), this.hasher.hash(proposal.getVertex()));
-			this.vertexStore.insertVertex(proposedVertex);
-		} finally {
-			this.systemCounters.add(CounterType.ELAPSED_BFT_PROPOSAL, proposal.elapsedMicrosecondsSinceCreation());
+		// TODO: Move into preprocessor
+		final View proposedVertexView = proposal.getView();
+		final View currentView = this.latestViewUpdate.getCurrentView();
+		if (!currentView.equals(proposedVertexView)) {
+			log.trace("Proposal: Ignoring view {}, current is: {}", proposedVertexView, currentView);
+			return;
 		}
+
+		// TODO: Move insertion and maybe check into BFTSync
+		final VerifiedVertex proposedVertex = new VerifiedVertex(proposal.getVertex(), this.hasher.hash(proposal.getVertex()));
+		this.vertexStore.insertVertex(proposedVertex);
 	}
 
 	@Override

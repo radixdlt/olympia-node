@@ -56,8 +56,6 @@ public final class ViewTimeout implements ConsensusEvent {
 	@DsonOutput(Output.ALL)
 	private final ECDSASignature signature;
 
-	private final transient long created = System.nanoTime();
-
 	/**
 	 * Creates a view timeout message from the specified arguments.
 	 *
@@ -107,10 +105,6 @@ public final class ViewTimeout implements ConsensusEvent {
 
 	public ECDSASignature signature() {
 		return this.signature;
-	}
-
-	public long elapsedMicrosecondsSinceCreation() {
-		return (System.nanoTime() - this.created + 500L) / 1000L;
 	}
 
 	@Override
