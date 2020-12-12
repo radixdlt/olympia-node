@@ -26,6 +26,8 @@ import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.properties.RuntimeProperties;
@@ -57,13 +59,25 @@ public class PersistenceModule extends AbstractModule {
 
 	@ProvidesIntoSet
 	@ProcessOnDispatch
-	public EventProcessor<BFTHighQCUpdate> persistQC(PersistentVertexStore persistentVertexStore) {
-		return update -> persistentVertexStore.save(update.getVertexStoreState());
+	public EventProcessor<BFTHighQCUpdate> persistQC(
+		PersistentVertexStore persistentVertexStore,
+		SystemCounters systemCounters
+	) {
+		return update -> {
+			systemCounters.increment(CounterType.PERSISTENCE_VERTEX_STORE_SAVES);
+			persistentVertexStore.save(update.getVertexStoreState());
+		};
 	}
 
 	@ProvidesIntoSet
 	@ProcessOnDispatch
-	public EventProcessor<BFTInsertUpdate> persistUpdates(PersistentVertexStore persistentVertexStore) {
-		return update -> persistentVertexStore.save(update.getVertexStoreState());
+	public EventProcessor<BFTInsertUpdate> persistUpdates(
+		PersistentVertexStore persistentVertexStore,
+		SystemCounters systemCounters
+	) {
+		return update -> {
+			systemCounters.increment(CounterType.PERSISTENCE_VERTEX_STORE_SAVES);
+			persistentVertexStore.save(update.getVertexStoreState());
+		};
 	}
 }
