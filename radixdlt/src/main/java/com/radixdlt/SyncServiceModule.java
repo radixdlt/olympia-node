@@ -112,12 +112,14 @@ public class SyncServiceModule extends AbstractModule {
 	@Singleton
 	private RemoteSyncServiceProcessor remoteSyncServiceProcessor(
 		CommittedReader committedReader,
-		RemoteEventDispatcher<DtoCommandsAndProof> syncResponseDispatcher
+		RemoteEventDispatcher<DtoCommandsAndProof> syncResponseDispatcher,
+		SystemCounters systemCounters
 	) {
 		return new RemoteSyncServiceProcessor(
 			committedReader,
 			syncResponseDispatcher,
-			BATCH_SIZE
+			BATCH_SIZE,
+			systemCounters
 		);
 	}
 
