@@ -52,6 +52,7 @@ public interface SystemCounters {
 		ELAPSED_BDB_SAFETY_STATE("elapsed.bdb.safety_state"),
 
 		PERSISTENCE_VERTEX_STORE_SAVES("persistence.vertex_store_saves"),
+		PERSISTENCE_SAFETY_STORE_SAVES("persistence.safety_store_saves"),
 
 		EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS("epoch_manager.queued_consensus_events"),
 
