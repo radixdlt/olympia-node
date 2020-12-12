@@ -51,6 +51,8 @@ public interface SystemCounters {
 		ELAPSED_BDB_LEDGER("elapsed.bdb.ledger"),
 		ELAPSED_BDB_SAFETY_STATE("elapsed.bdb.safety_state"),
 
+		PERSISTENCE_VERTEX_STORE_SAVES("persistence.vertex_store_saves"),
+
 		EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS("epoch_manager.queued_consensus_events"),
 
 		HASHED_BYTES("hashed.bytes"),
