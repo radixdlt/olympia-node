@@ -17,6 +17,7 @@
 
 package com.radixdlt.network.addressbook;
 
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.properties.RuntimeProperties;
 import org.radix.database.DatabaseEnvironment;
 import com.google.inject.AbstractModule;
@@ -42,8 +43,8 @@ public final class AddressBookModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	PeerPersistence addressBookPersistenceProvider(Serialization serialization, DatabaseEnvironment dbEnv) {
-		AddressBookPersistence persistence = new AddressBookPersistence(serialization, dbEnv);
+	PeerPersistence addressBookPersistenceProvider(Serialization serialization, DatabaseEnvironment dbEnv, SystemCounters systemCounters) {
+		AddressBookPersistence persistence = new AddressBookPersistence(serialization, dbEnv, systemCounters);
 		persistence.start();
 		return persistence;
 	}

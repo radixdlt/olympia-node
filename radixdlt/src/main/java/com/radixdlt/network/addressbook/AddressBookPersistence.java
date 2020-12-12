@@ -17,6 +17,8 @@
 
 package com.radixdlt.network.addressbook;
 
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
@@ -48,12 +50,15 @@ public class AddressBookPersistence implements PeerPersistence {
 
 	private final Serialization serialization;
 	private final DatabaseEnvironment dbEnv;
+	private final SystemCounters systemCounters;
 	private Database peersByNidDB;
 
-	AddressBookPersistence(Serialization serialization, DatabaseEnvironment dbEnv) {
+
+	AddressBookPersistence(Serialization serialization, DatabaseEnvironment dbEnv, SystemCounters systemCounters) {
 		super();
 		this.serialization = Objects.requireNonNull(serialization);
 		this.dbEnv = Objects.requireNonNull(dbEnv);
+		this.systemCounters = Objects.requireNonNull(systemCounters);
 	}
 
 	public void start() {
@@ -97,31 +102,51 @@ public class AddressBookPersistence implements PeerPersistence {
 
 	@Override
 	public boolean savePeer(PeerWithSystem peer) {
-		DatabaseEntry key = new DatabaseEntry(peer.getNID().toByteArray());
-		byte[] bytes = serialization.toDson(peer, Output.PERSIST);
-		DatabaseEntry value = new DatabaseEntry(bytes);
-		return (peersByNidDB.put(null, key, value) == OperationStatus.SUCCESS);
+		final var start = System.nanoTime();
+		try {
+			DatabaseEntry key = new DatabaseEntry(peer.getNID().toByteArray());
+			byte[] bytes = serialization.toDson(peer, Output.PERSIST);
+			DatabaseEntry value = new DatabaseEntry(bytes);
+			return (peersByNidDB.put(null, key, value) == OperationStatus.SUCCESS);
+		} finally {
+			addTime(start);
+		}
 	}
 
 	@Override
 	public boolean deletePeer(EUID nid) {
-		DatabaseEntry key = new DatabaseEntry(nid.toByteArray());
-		return (peersByNidDB.delete(null, key) == OperationStatus.SUCCESS);
+		final var start = System.nanoTime();
+		try {
+			DatabaseEntry key = new DatabaseEntry(nid.toByteArray());
+			return (peersByNidDB.delete(null, key) == OperationStatus.SUCCESS);
+		} finally {
+			addTime(start);
+		}
 	}
 
 	@Override
 	public void forEachPersistedPeer(Consumer<PeerWithSystem> c) {
-		try (Cursor cursor = this.peersByNidDB.openCursor(null, null)) {
-			DatabaseEntry key = new DatabaseEntry();
-			DatabaseEntry value = new DatabaseEntry();
+		final var start = System.nanoTime();
+		try {
+			try (Cursor cursor = this.peersByNidDB.openCursor(null, null)) {
+				DatabaseEntry key = new DatabaseEntry();
+				DatabaseEntry value = new DatabaseEntry();
 
-			while (cursor.getNext(key, value, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-				PeerWithSystem peer = this.serialization.fromDson(value.getData(), PeerWithSystem.class);
-				c.accept(peer);
+				while (cursor.getNext(key, value, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
+					PeerWithSystem peer = this.serialization.fromDson(value.getData(), PeerWithSystem.class);
+					c.accept(peer);
+				}
+			} catch (IOException ex) {
+				throw new UncheckedIOException("Error while loading database", ex);
 			}
-		} catch (IOException ex) {
-			throw new UncheckedIOException("Error while loading database", ex);
+		} finally {
+			addTime(start);
 		}
+	}
+
+	private void addTime(long start) {
+		final var elapsed = (System.nanoTime() - start + 500L) / 1000L;
+		this.systemCounters.add(CounterType.ELAPSED_BDB_ADDRESS_BOOK, elapsed);
 	}
 }
 

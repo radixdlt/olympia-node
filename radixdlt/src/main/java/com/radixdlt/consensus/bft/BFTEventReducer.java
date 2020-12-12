@@ -139,7 +139,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		final View view = vote.getView();
 		if (view.lt(this.latestViewUpdate.getCurrentView())) {
 			log.trace("Vote: Ignoring vote from {} for view {}, current view at {}",
-					vote.getAuthor(), view, this.latestViewUpdate.getCurrentView());
+				vote.getAuthor(), view, this.latestViewUpdate.getCurrentView());
 			return;
 		}
 
