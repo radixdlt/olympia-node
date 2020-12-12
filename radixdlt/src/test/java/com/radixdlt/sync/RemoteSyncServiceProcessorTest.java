@@ -38,6 +38,7 @@ import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.google.common.hash.HashCode;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
@@ -61,7 +62,7 @@ public class RemoteSyncServiceProcessorTest {
 	public void setUp() {
 		this.reader = mock(CommittedReader.class);
 		this.syncResponseDispatcher =  rmock(RemoteEventDispatcher.class);
-		this.processor = new RemoteSyncServiceProcessor(reader, syncResponseDispatcher, 1);
+		this.processor = new RemoteSyncServiceProcessor(reader, syncResponseDispatcher, 1, mock(SystemCounters.class));
 	}
 
 	@Test

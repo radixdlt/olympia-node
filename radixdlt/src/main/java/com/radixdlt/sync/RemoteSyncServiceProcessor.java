@@ -20,6 +20,8 @@ package com.radixdlt.sync;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.ledger.DtoCommandsAndProof;
@@ -39,13 +41,14 @@ public class RemoteSyncServiceProcessor implements RemoteEventProcessor<DtoLedge
 
 	private final CommittedReader committedReader;
 	private final RemoteEventDispatcher<DtoCommandsAndProof> syncResponseDispatcher;
-
 	private final int batchSize;
+	private final SystemCounters systemCounters;
 
 	public RemoteSyncServiceProcessor(
 		CommittedReader committedReader,
 		RemoteEventDispatcher<DtoCommandsAndProof> syncResponseDispatcher,
-		int batchSize
+		int batchSize,
+		SystemCounters systemCounters
 	) {
 		if (batchSize <= 0) {
 			throw new IllegalArgumentException();
@@ -53,6 +56,7 @@ public class RemoteSyncServiceProcessor implements RemoteEventProcessor<DtoLedge
 		this.committedReader = Objects.requireNonNull(committedReader);
 		this.batchSize = batchSize;
 		this.syncResponseDispatcher = Objects.requireNonNull(syncResponseDispatcher);
+		this.systemCounters = systemCounters;
 	}
 
 	@Override
@@ -78,7 +82,10 @@ public class RemoteSyncServiceProcessor implements RemoteEventProcessor<DtoLedge
 
 		final VerifiedCommandsAndProof committedCommands;
 		try {
+			final long start = System.currentTimeMillis();
 			committedCommands = committedReader.getNextCommittedCommands(currentHeader, batchSize);
+			final long finish = System.currentTimeMillis();
+			systemCounters.set(CounterType.SYNC_LAST_READ_MILLIS, finish - start);
 		} catch (NextCommittedLimitReachedException e) {
 			log.warn("REMOTE_SYNC_REQUEST: Unable to serve sync request {}.", currentHeader);
 			return;

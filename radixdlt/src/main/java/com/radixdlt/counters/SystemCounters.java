@@ -56,6 +56,7 @@ public interface SystemCounters {
 		LEDGER_PROCESSED("ledger.processed"),
 		LEDGER_STATE_VERSION("ledger.state_version"),
 
+		SYNC_LAST_READ_MILLIS("sync.last_read_millis"),
 		SYNC_INVALID_COMMANDS_RECEIVED("sync.invalid_commands_received"),
 		SYNC_PROCESSED("sync.processed"),
 
