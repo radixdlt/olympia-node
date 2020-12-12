@@ -60,6 +60,7 @@ public interface SystemCounters {
 
 		SYNC_INVALID_COMMANDS_RECEIVED("sync.invalid_commands_received"),
 		SYNC_PROCESSED("sync.processed"),
+		SYNC_TARGET_STATE_VERSION("sync.target_state_version"),
 
 		MEMPOOL_COUNT("mempool.count"),
 		MEMPOOL_MAXCOUNT("mempool.maxcount"),
