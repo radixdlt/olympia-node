@@ -106,7 +106,8 @@ public class DispatcherModule extends AbstractModule {
 	private EventDispatcher<LocalSyncRequest> localSyncRequestEventDispatcher(
 		@Self BFTNode self,
 		@ProcessOnDispatch Set<EventProcessor<LocalSyncRequest>> syncProcessors,
-		Environment environment
+		Environment environment,
+		SystemCounters systemCounters
 	) {
 		EventDispatcher<LocalSyncRequest> envDispatcher = environment.getDispatcher(LocalSyncRequest.class);
 		return req -> {
@@ -117,6 +118,11 @@ public class DispatcherModule extends AbstractModule {
 
 			if (req.getTargetNodes().contains(self)) {
 				throw new IllegalStateException("Should not be targeting self.");
+			}
+
+			long stateVersion = systemCounters.get(CounterType.SYNC_TARGET_STATE_VERSION);
+			if (req.getTarget().getStateVersion() > stateVersion) {
+				systemCounters.set(CounterType.SYNC_TARGET_STATE_VERSION, req.getTarget().getStateVersion());
 			}
 
 			syncProcessors.forEach(e -> e.process(req));
