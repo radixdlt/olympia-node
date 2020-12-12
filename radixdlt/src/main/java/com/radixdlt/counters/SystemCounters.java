@@ -59,7 +59,7 @@ public interface SystemCounters {
 		ELAPSED_BDB_LEDGER_GET_NEXT("elapsed.bdb.ledger.get_next"),
 		ELAPSED_BDB_LEDGER_GET_PREV("elapsed.bdb.ledger.get_prev"),
 		ELAPSED_BDB_LEDGER_STORE("elapsed.bdb.ledger.store"),
-		ELAPSED_BDB_LEDGER_LAST_COMMITTED("elapsed.bdb.ledger.last_comitted"),
+		ELAPSED_BDB_LEDGER_LAST_COMMITTED("elapsed.bdb.ledger.last_committed"),
 		ELAPSED_BDB_LEDGER_LAST_VERTEX("elapsed.bdb.ledger.last_vertex"),
 		ELAPSED_BDB_LEDGER_SAVE("elapsed.bdb.ledger.save"),
 		ELAPSED_BDB_LEDGER_SAVE_TX("elapsed.bdb.ledger.save_tx"),
