@@ -76,6 +76,7 @@ public class BFTSyncTest {
 		this.syncVerticesRequestSender = mock(SyncVerticesRequestSender.class);
 		this.syncLedgerRequestSender = rmock(EventDispatcher.class);
 		this.verifiedLedgerHeaderAndProof = mock(VerifiedLedgerHeaderAndProof.class);
+		when(verifiedLedgerHeaderAndProof.getView()).thenReturn(View.genesis());
 		this.bftSyncTimeoutScheduler = rmock(ScheduledEventDispatcher.class);
 
 		bftSync = new BFTSync(

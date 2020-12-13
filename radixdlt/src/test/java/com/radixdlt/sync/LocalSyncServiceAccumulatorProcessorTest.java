@@ -30,6 +30,7 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
@@ -64,7 +65,8 @@ public class LocalSyncServiceAccumulatorProcessorTest {
 			syncTimeoutScheduler,
 			accumulatorComparator,
 			currentHeader,
-			1
+			1,
+			mock(SystemCounters.class)
 		);
 	}
 
