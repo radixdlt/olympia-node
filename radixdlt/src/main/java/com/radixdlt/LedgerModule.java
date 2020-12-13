@@ -61,7 +61,7 @@ public class LedgerModule extends AbstractModule {
 	@ProvidesIntoSet
 	@ProcessOnDispatch
 	private EventProcessor<VerifiedCommandsAndProof> syncToLedgerCommittor(StateComputerLedger stateComputerLedger) {
-		return stateComputerLedger.verifiedCommandsAndProofEventProcessor();
+		return stateComputerLedger.syncEventProcessor();
 	}
 
 	@ProvidesIntoSet

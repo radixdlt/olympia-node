@@ -23,6 +23,7 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessWithSyncRunner;
@@ -115,7 +116,8 @@ public class EpochsSyncModule extends AbstractModule {
 		Comparator<AccumulatorState> accumulatorComparator,
 		RemoteEventDispatcher<DtoLedgerHeaderAndProof> requestDispatcher,
 		ScheduledEventDispatcher<SyncInProgress> syncTimeoutScheduler,
-		@SyncPatienceMillis int syncPatienceMillis
+		@SyncPatienceMillis int syncPatienceMillis,
+		SystemCounters systemCounters
 	) {
 		return epochChange ->
 			new LocalSyncServiceAccumulatorProcessor(
@@ -123,7 +125,8 @@ public class EpochsSyncModule extends AbstractModule {
 				syncTimeoutScheduler,
 				accumulatorComparator,
 				epochChange.getGenesisHeader(),
-				syncPatienceMillis
+				syncPatienceMillis,
+				systemCounters
 			);
 	}
 }

@@ -122,6 +122,8 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
 
 	@Override
 	public void commitState(Vote vote, SafetyState safetyState) {
+		this.systemCounters.increment(CounterType.PERSISTENCE_SAFETY_STORE_SAVES);
+
 		final var start = System.nanoTime();
 		try {
 			if (!safetyState.getLastVotedView().equals(vote.getView())) {

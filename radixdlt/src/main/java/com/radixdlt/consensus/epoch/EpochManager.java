@@ -68,6 +68,7 @@ import com.radixdlt.ledger.LedgerUpdateProcessor;
 import com.radixdlt.sync.LocalSyncRequest;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -127,7 +128,6 @@ public final class EpochManager implements BFTSyncRequestProcessor {
 	private final PacemakerStateFactory pacemakerStateFactory;
 
 	private EpochChange currentEpoch;
-	private int numQueuedConsensusEvents = 0;
 
 	private BFTSyncResponseProcessor syncBFTResponseProcessor;
 	private EventProcessor<LocalGetVerticesRequest> syncTimeoutProcessor;
@@ -312,12 +312,10 @@ public final class EpochManager implements BFTSyncRequestProcessor {
 
 		// Execute any queued up consensus events
 		final List<ConsensusEvent> queuedEventsForEpoch = queuedEvents.getOrDefault(epochChange.getEpoch(), Collections.emptyList());
-		for (ConsensusEvent consensusEvent : queuedEventsForEpoch) {
-			this.processConsensusEventInternal(consensusEvent);
-		}
+		View highView = queuedEventsForEpoch.stream().map(ConsensusEvent::getView).max(Comparator.naturalOrder()).orElse(View.genesis());
+		queuedEventsForEpoch.stream().filter(e -> e.getView().equals(highView))
+			.forEach(this::processConsensusEventInternal);
 
-		numQueuedConsensusEvents -= queuedEventsForEpoch.size();
-		counters.set(CounterType.EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS, numQueuedConsensusEvents);
 		queuedEvents.remove(epochChange.getEpoch());
 	}
 
@@ -384,6 +382,8 @@ public final class EpochManager implements BFTSyncRequestProcessor {
 	}
 
 	private void processConsensusEventInternal(ConsensusEvent consensusEvent) {
+		this.counters.increment(CounterType.BFT_CONSENSUS_EVENTS);
+
 		if (consensusEvent instanceof ViewTimeout) {
 			bftEventProcessor.processViewTimeout((ViewTimeout) consensusEvent);
 		} else if (consensusEvent instanceof Proposal) {
@@ -404,8 +404,7 @@ public final class EpochManager implements BFTSyncRequestProcessor {
 			// queue higher epoch events for later processing
 			// TODO: need to clear this by some rule (e.g. timeout or max size) or else memory leak attack possible
 			queuedEvents.computeIfAbsent(consensusEvent.getEpoch(), e -> new ArrayList<>()).add(consensusEvent);
-			numQueuedConsensusEvents++;
-			counters.set(CounterType.EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS, numQueuedConsensusEvents);
+			counters.increment(CounterType.EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS);
 
 			// Send request for higher epoch proof
 			epochsRPCSender.sendGetEpochRequest(consensusEvent.getAuthor(), this.currentEpoch());

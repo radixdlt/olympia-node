@@ -28,12 +28,15 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTSyncer;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.FormedQC;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertexChain;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.liveness.PacemakerReducer;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
@@ -129,6 +132,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 	}
 
 	private static final Logger log = LogManager.getLogger();
+	private final BFTNode self;
 	private final VertexStore vertexStore;
 	private final PacemakerReducer pacemakerReducer;
 	private final Map<HashCode, SyncState> syncing = new HashMap<>();
@@ -139,9 +143,11 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 	private final ScheduledEventDispatcher<LocalGetVerticesRequest> timeoutDispatcher;
 	private final Random random;
 	private final int bftSyncPatienceMillis;
+	private final SystemCounters systemCounters;
 	private VerifiedLedgerHeaderAndProof currentLedgerHeader;
 
 	public BFTSync(
+		@Self BFTNode self,
 		VertexStore vertexStore,
 		PacemakerReducer pacemakerReducer,
 		Comparator<LedgerHeader> ledgerHeaderComparator,
@@ -150,8 +156,10 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 		ScheduledEventDispatcher<LocalGetVerticesRequest> timeoutDispatcher,
 		VerifiedLedgerHeaderAndProof currentLedgerHeader,
 		Random random,
-		int bftSyncPatienceMillis
+		int bftSyncPatienceMillis,
+		SystemCounters systemCounters
 	) {
+		this.self = self;
 		this.vertexStore = vertexStore;
 		this.pacemakerReducer = pacemakerReducer;
 		this.ledgerSyncing = new TreeMap<>(ledgerHeaderComparator);
@@ -161,6 +169,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 		this.currentLedgerHeader = Objects.requireNonNull(currentLedgerHeader);
 		this.random = random;
 		this.bftSyncPatienceMillis = bftSyncPatienceMillis;
+		this.systemCounters = Objects.requireNonNull(systemCounters);
 	}
 
 	public EventProcessor<FormedQC> formedQCEventProcessor() {
@@ -176,6 +185,10 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 		final HashCode vertexId = qc.getProposed().getVertexId();
 
 		if (qc.getProposed().getView().compareTo(vertexStore.getRoot().getView()) < 0) {
+			return SyncResult.INVALID;
+		}
+
+		if (qc.getProposed().getView().compareTo(this.currentLedgerHeader.getView()) < 0) {
 			return SyncResult.INVALID;
 		}
 
@@ -259,16 +272,27 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 			return;
 		}
 
-		List<HashCode> syncIds = syncRequestState.syncIds.stream().filter(syncing::containsKey).collect(Collectors.toList());
-		for (HashCode syncId : syncIds) {
-			SyncState syncState = syncing.get(syncId);
+		var authors = syncRequestState.authors.stream()
+			.filter(author -> !author.equals(self)).collect(ImmutableList.toImmutableList());
 
-			// Retry full sync on timeout
-			int nextIndex = random.nextInt(syncRequestState.authors.size());
-			BFTNode nextNode = syncRequestState.authors.get(nextIndex);
-			syncing.remove(syncId);
-			syncToQC(syncState.highQC, nextNode);
+		if (authors.isEmpty()) {
+			throw new IllegalStateException("Request contains no authors except ourselves");
 		}
+
+		var syncIds = syncRequestState.syncIds.stream()
+			.filter(syncing::containsKey).collect(Collectors.toList());
+
+		//noinspection UnstableApiUsage
+		for (var syncId : syncIds) {
+			systemCounters.increment(CounterType.BFT_SYNC_REQUEST_TIMEOUTS);
+			SyncState syncState = syncing.remove(syncId);
+			syncToQC(syncState.highQC, randomFrom(authors));
+		}
+	}
+
+	private <T> T randomFrom(List<T> elements) {
+		int nextIndex = random.nextInt(elements.size());
+		return elements.get(nextIndex);
 	}
 
 	private void sendBFTSyncRequest(HashCode vertexId, int count, ImmutableList<BFTNode> authors, HashCode syncId) {
@@ -426,5 +450,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 			}
 			listenersIterator.remove();
 		}
+
+		syncing.values().removeIf(state -> state.highQC.highestQC().getView().lte(ledgerUpdate.getTail().getView()));
 	}
 }

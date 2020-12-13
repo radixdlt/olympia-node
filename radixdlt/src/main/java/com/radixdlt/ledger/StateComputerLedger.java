@@ -232,7 +232,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		};
 	}
 
-	public EventProcessor<VerifiedCommandsAndProof> verifiedCommandsAndProofEventProcessor() {
+	public EventProcessor<VerifiedCommandsAndProof> syncEventProcessor() {
 		return p -> this.commit(p, null);
 	}
 
@@ -255,8 +255,15 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 				throw new ByzantineQuorumException("Accumulator failure " + currentLedgerHeader + " " + verifiedCommandsAndProof);
 			}
 
+			ImmutableList<Command> commands = verifiedExtension.get();
+			if (vertexStoreState == null) {
+				this.counters.add(CounterType.LEDGER_SYNC_COMMANDS_PROCESSED, commands.size());
+			} else {
+				this.counters.add(CounterType.LEDGER_BFT_COMMANDS_PROCESSED, commands.size());
+			}
+
 			VerifiedCommandsAndProof commandsToStore = new VerifiedCommandsAndProof(
-				verifiedExtension.get(), verifiedCommandsAndProof.getHeader()
+				commands, verifiedCommandsAndProof.getHeader()
 			);
 
 			// persist

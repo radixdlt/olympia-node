@@ -27,6 +27,7 @@ public interface SystemCounters {
 	enum CounterType {
 		// Please keep these sorted
 
+		BFT_CONSENSUS_EVENTS("bft.consensus_events"),
 		BFT_INDIRECT_PARENT("bft.indirect_parent"),
 		BFT_PROCESSED("bft.processed"),
 		BFT_PROPOSALS_MADE("bft.proposals_made"),
@@ -45,6 +46,7 @@ public interface SystemCounters {
 		/** Number of vote quorums formed. */
 		BFT_VOTE_QUORUMS("bft.vote_quorums"),
 		BFT_SYNC_REQUESTS_SENT("bft.sync.requests_sent"),
+		BFT_SYNC_REQUEST_TIMEOUTS("bft.sync.request_timeouts"),
 
 		// Count of database accesses
 		COUNT_BDB_ADDRESS_BOOK("count.bdb.address_book"),
@@ -88,15 +90,22 @@ public interface SystemCounters {
 		ELAPSED_BDB_LEDGER_TOTAL("elapsed.bdb.ledger.total"),
 		ELAPSED_BDB_SAFETY_STATE("elapsed.bdb.safety_state"),
 
+		PERSISTENCE_VERTEX_STORE_SAVES("persistence.vertex_store_saves"),
+		PERSISTENCE_SAFETY_STORE_SAVES("persistence.safety_store_saves"),
+
 		EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS("epoch_manager.queued_consensus_events"),
 
 		HASHED_BYTES("hashed.bytes"),
 
 		LEDGER_PROCESSED("ledger.processed"),
 		LEDGER_STATE_VERSION("ledger.state_version"),
+		LEDGER_SYNC_COMMANDS_PROCESSED("ledger.sync_commands_processed"),
+		LEDGER_BFT_COMMANDS_PROCESSED("ledger.bft_commands_processed"),
 
 		SYNC_INVALID_COMMANDS_RECEIVED("sync.invalid_commands_received"),
 		SYNC_PROCESSED("sync.processed"),
+		SYNC_TARGET_STATE_VERSION("sync.target_state_version"),
+		SYNC_TARGET_CURRENT_DIFF("sync.target_current_diff"),
 
 		MEMPOOL_COUNT("mempool.count"),
 		MEMPOOL_MAXCOUNT("mempool.maxcount"),
