@@ -68,6 +68,7 @@ import com.radixdlt.ledger.LedgerUpdateProcessor;
 import com.radixdlt.sync.LocalSyncRequest;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -311,9 +312,9 @@ public final class EpochManager implements BFTSyncRequestProcessor {
 
 		// Execute any queued up consensus events
 		final List<ConsensusEvent> queuedEventsForEpoch = queuedEvents.getOrDefault(epochChange.getEpoch(), Collections.emptyList());
-		for (ConsensusEvent consensusEvent : queuedEventsForEpoch) {
-			this.processConsensusEventInternal(consensusEvent);
-		}
+		View highView = queuedEventsForEpoch.stream().map(ConsensusEvent::getView).max(Comparator.naturalOrder()).orElse(View.genesis());
+		queuedEventsForEpoch.stream().filter(e -> e.getView().equals(highView))
+			.forEach(this::processConsensusEventInternal);
 
 		queuedEvents.remove(epochChange.getEpoch());
 	}
@@ -381,6 +382,8 @@ public final class EpochManager implements BFTSyncRequestProcessor {
 	}
 
 	private void processConsensusEventInternal(ConsensusEvent consensusEvent) {
+		this.counters.increment(CounterType.BFT_CONSENSUS_EVENTS);
+
 		if (consensusEvent instanceof ViewTimeout) {
 			bftEventProcessor.processViewTimeout((ViewTimeout) consensusEvent);
 		} else if (consensusEvent instanceof Proposal) {
@@ -415,7 +418,6 @@ public final class EpochManager implements BFTSyncRequestProcessor {
 			return;
 		}
 
-		this.counters.increment(CounterType.BFT_CONSENSUS_EVENTS);
 		this.processConsensusEventInternal(consensusEvent);
 	}
 
