@@ -27,6 +27,7 @@ public interface SystemCounters {
 	enum CounterType {
 		// Please keep these sorted
 
+		BFT_CONSENSUS_EVENTS("bft.consensus_events"),
 		BFT_INDIRECT_PARENT("bft.indirect_parent"),
 		BFT_PROCESSED("bft.processed"),
 		BFT_PROPOSALS_MADE("bft.proposals_made"),

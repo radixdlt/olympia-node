@@ -97,6 +97,7 @@ public final class LocalSyncServiceAccumulatorProcessor {
 		if (accComparator.compare(updatedHeader.getAccumulatorState(), this.currentHeader.getAccumulatorState()) > 0) {
 			this.currentHeader = updatedHeader;
 		}
+		systemCounters.set(CounterType.SYNC_TARGET_CURRENT_DIFF, this.targetHeader.getStateVersion() - this.currentHeader.getStateVersion());
 	}
 
 	public EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor() {

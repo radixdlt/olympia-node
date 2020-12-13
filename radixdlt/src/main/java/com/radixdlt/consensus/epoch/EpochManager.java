@@ -127,7 +127,6 @@ public final class EpochManager implements BFTSyncRequestProcessor {
 	private final PacemakerStateFactory pacemakerStateFactory;
 
 	private EpochChange currentEpoch;
-	private int numQueuedConsensusEvents = 0;
 
 	private BFTSyncResponseProcessor syncBFTResponseProcessor;
 	private EventProcessor<LocalGetVerticesRequest> syncTimeoutProcessor;
@@ -316,8 +315,6 @@ public final class EpochManager implements BFTSyncRequestProcessor {
 			this.processConsensusEventInternal(consensusEvent);
 		}
 
-		numQueuedConsensusEvents -= queuedEventsForEpoch.size();
-		counters.set(CounterType.EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS, numQueuedConsensusEvents);
 		queuedEvents.remove(epochChange.getEpoch());
 	}
 
@@ -404,8 +401,7 @@ public final class EpochManager implements BFTSyncRequestProcessor {
 			// queue higher epoch events for later processing
 			// TODO: need to clear this by some rule (e.g. timeout or max size) or else memory leak attack possible
 			queuedEvents.computeIfAbsent(consensusEvent.getEpoch(), e -> new ArrayList<>()).add(consensusEvent);
-			numQueuedConsensusEvents++;
-			counters.set(CounterType.EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS, numQueuedConsensusEvents);
+			counters.increment(CounterType.EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS);
 
 			// Send request for higher epoch proof
 			epochsRPCSender.sendGetEpochRequest(consensusEvent.getAuthor(), this.currentEpoch());
@@ -419,6 +415,7 @@ public final class EpochManager implements BFTSyncRequestProcessor {
 			return;
 		}
 
+		this.counters.increment(CounterType.BFT_CONSENSUS_EVENTS);
 		this.processConsensusEventInternal(consensusEvent);
 	}
 
