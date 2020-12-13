@@ -85,6 +85,10 @@ public final class SyncQueues {
 			return false;
 		}
 
+		boolean isEmpty() {
+			return queue.isEmpty();
+		}
+
 		public void add(ConsensusEvent event) {
 			queue.addLast(event);
 		}
