@@ -188,6 +188,10 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 			return SyncResult.INVALID;
 		}
 
+		if (qc.getProposed().getView().compareTo(this.currentLedgerHeader.getView()) < 0) {
+			return SyncResult.INVALID;
+		}
+
 		if (vertexStore.addQC(qc)) {
 			// TODO: check if already sent highest
 			// TODO: Move pacemaker outside of sync
@@ -446,5 +450,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 			}
 			listenersIterator.remove();
 		}
+
+		syncing.values().removeIf(state -> state.highQC.highestQC().getView().lte(ledgerUpdate.getTail().getView()));
 	}
 }

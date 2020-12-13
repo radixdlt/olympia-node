@@ -224,7 +224,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 			DatabaseEntry key = new DatabaseEntry(StoreIndex.from(ENTRY_INDEX_PREFIX, aid.getBytes()));
 			return OperationStatus.SUCCESS == this.uniqueIndices.get(null, key, null, LockMode.DEFAULT);
 		} finally {
-			addTime(start, CounterType.ELAPSED_BDB_LEDGER_CONTAINS);
+			addTime(start, CounterType.ELAPSED_BDB_LEDGER_CONTAINS, CounterType.COUNT_BDB_LEDGER_CONTAINS);
 		}
 	}
 
@@ -245,7 +245,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 
 			return Optional.empty();
 		} finally {
-			addTime(start, CounterType.ELAPSED_BDB_LEDGER_GET);
+			addTime(start, CounterType.ELAPSED_BDB_LEDGER_GET, CounterType.COUNT_BDB_LEDGER_GET);
 		}
 	}
 
@@ -255,7 +255,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 		try {
 			return dbEnv.getEnvironment().beginTransaction(null, null);
 		} finally {
-			addTime(start, CounterType.ELAPSED_BDB_LEDGER_CREATE_TX);
+			addTime(start, CounterType.ELAPSED_BDB_LEDGER_CREATE_TX, CounterType.COUNT_BDB_LEDGER_CREATE_TX);
 		}
 	}
 
@@ -275,7 +275,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 		} catch (Exception e) {
 			throw new BerkeleyStoreException("Commit of atom failed", e);
 		} finally {
-			addTime(start, CounterType.ELAPSED_BDB_LEDGER_STORE);
+			addTime(start, CounterType.ELAPSED_BDB_LEDGER_STORE, CounterType.COUNT_BDB_LEDGER_STORE);
 		}
 	}
 
@@ -309,7 +309,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 				fail("Commit of pending atom '" + aid + "' failed", e);
 			}
 		} finally {
-			addTime(start, CounterType.ELAPSED_BDB_LEDGER_COMMIT);
+			addTime(start, CounterType.ELAPSED_BDB_LEDGER_COMMIT, CounterType.COUNT_BDB_LEDGER_COMMIT);
 		}
 	}
 
@@ -332,7 +332,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 				}
 			}
 		} finally {
-			addTime(start, CounterType.ELAPSED_BDB_LEDGER_LAST_VERTEX);
+			addTime(start, CounterType.ELAPSED_BDB_LEDGER_LAST_VERTEX, CounterType.COUNT_BDB_LEDGER_LAST_VERTEX);
 		}
 	}
 
@@ -342,7 +342,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 		try {
 			doSave(transaction, vertexStoreState);
 		} finally {
-			addTime(start, CounterType.ELAPSED_BDB_LEDGER_SAVE_TX);
+			addTime(start, CounterType.ELAPSED_BDB_LEDGER_SAVE_TX, CounterType.COUNT_BDB_LEDGER_SAVE_TX);
 		}
 	}
 
@@ -354,7 +354,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 			doSave(transaction, vertexStoreState);
 			transaction.commit();
 		} finally {
-			addTime(start, CounterType.ELAPSED_BDB_LEDGER_SAVE);
+			addTime(start, CounterType.ELAPSED_BDB_LEDGER_SAVE, CounterType.COUNT_BDB_LEDGER_SAVE);
 		}
 	}
 
@@ -520,7 +520,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 				return ledgerEntries.build();
 			}
 		} finally {
-			addTime(start, CounterType.ELAPSED_BDB_LEDGER_ENTRIES);
+			addTime(start, CounterType.ELAPSED_BDB_LEDGER_ENTRIES, CounterType.COUNT_BDB_LEDGER_ENTRIES);
 		}
 	}
 
@@ -545,7 +545,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 
 			return null;
 		} finally {
-			addTime(start, CounterType.ELAPSED_BDB_LEDGER_SEARCH);
+			addTime(start, CounterType.ELAPSED_BDB_LEDGER_SEARCH, CounterType.COUNT_BDB_LEDGER_SEARCH);
 		}
 	}
 
@@ -570,7 +570,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 
 			return false;
 		} finally {
-			addTime(start, CounterType.ELAPSED_BDB_LEDGER_CONTAINS_TX);
+			addTime(start, CounterType.ELAPSED_BDB_LEDGER_CONTAINS_TX, CounterType.COUNT_BDB_LEDGER_CONTAINS_TX);
 		}
 	}
 
@@ -588,7 +588,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 				return Optional.empty();
 			}
 		} finally {
-			addTime(start, CounterType.ELAPSED_BDB_LEDGER_LAST_COMMITTED);
+			addTime(start, CounterType.ELAPSED_BDB_LEDGER_LAST_COMMITTED, CounterType.COUNT_BDB_LEDGER_LAST_COMMITTED);
 		}
 	}
 
@@ -607,7 +607,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 		} catch (Exception ex) {
 			throw new BerkeleyStoreException("Error while advancing cursor", ex);
 		} finally {
-			addTime(start, CounterType.ELAPSED_BDB_LEDGER_GET_NEXT);
+			addTime(start, CounterType.ELAPSED_BDB_LEDGER_GET_NEXT, CounterType.COUNT_BDB_LEDGER_GET_NEXT);
 		}
 	}
 
@@ -626,7 +626,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 		} catch (Exception ex) {
 			throw new BerkeleyStoreException("Error while advancing cursor", ex);
 		} finally {
-			addTime(start, CounterType.ELAPSED_BDB_LEDGER_GET_PREV);
+			addTime(start, CounterType.ELAPSED_BDB_LEDGER_GET_PREV, CounterType.COUNT_BDB_LEDGER_GET_PREV);
 		}
 	}
 
@@ -649,7 +649,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 		} catch (Exception ex) {
 			throw new BerkeleyStoreException("Error while advancing cursor", ex);
 		} finally {
-			addTime(start, CounterType.ELAPSED_BDB_LEDGER_GET_FIRST);
+			addTime(start, CounterType.ELAPSED_BDB_LEDGER_GET_FIRST, CounterType.COUNT_BDB_LEDGER_GET_FIRST);
 		}
 	}
 
@@ -673,7 +673,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 		} catch (Exception ex) {
 			throw new BerkeleyStoreException("Error while advancing cursor", ex);
 		} finally {
-			addTime(start, CounterType.ELAPSED_BDB_LEDGER_GET_LAST);
+			addTime(start, CounterType.ELAPSED_BDB_LEDGER_GET_LAST, CounterType.COUNT_BDB_LEDGER_GET_LAST);
 		}
 	}
 
@@ -755,9 +755,11 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 		}
 	}
 
-	private void addTime(long start, CounterType detailCounter) {
+	private void addTime(long start, CounterType detailTime, CounterType detailCounter) {
 		final var elapsed = (System.nanoTime() - start + 500L) / 1000L;
 		this.systemCounters.add(CounterType.ELAPSED_BDB_LEDGER_TOTAL, elapsed);
-		this.systemCounters.add(detailCounter, elapsed);
+		this.systemCounters.increment(CounterType.COUNT_BDB_LEDGER_TOTAL);
+		this.systemCounters.add(detailTime, elapsed);
+		this.systemCounters.increment(detailCounter);
 	}
 }

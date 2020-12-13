@@ -137,13 +137,10 @@ public final class BFTBuilder {
 			viewUpdate
 		);
 
-		SyncQueues syncQueues = new SyncQueues();
-
 		BFTEventPreprocessor preprocessor = new BFTEventPreprocessor(
 			self,
 			reducer,
 			bftSyncer,
-			syncQueues,
 			viewUpdate
 		);
 

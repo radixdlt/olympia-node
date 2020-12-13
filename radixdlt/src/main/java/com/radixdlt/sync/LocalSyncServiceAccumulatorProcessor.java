@@ -21,6 +21,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
@@ -64,6 +66,7 @@ public final class LocalSyncServiceAccumulatorProcessor {
 	private final long patienceMilliseconds;
 	private final RemoteEventDispatcher<DtoLedgerHeaderAndProof> requestDispatcher;
 	private final Comparator<AccumulatorState> accComparator;
+	private final SystemCounters systemCounters;
 	private VerifiedLedgerHeaderAndProof targetHeader;
 	private VerifiedLedgerHeaderAndProof currentHeader;
 
@@ -73,7 +76,8 @@ public final class LocalSyncServiceAccumulatorProcessor {
 		ScheduledEventDispatcher<SyncInProgress> timeoutScheduler,
 		Comparator<AccumulatorState> accComparator,
 		@LastProof VerifiedLedgerHeaderAndProof current,
-		@SyncPatienceMillis int patienceMilliseconds
+		@SyncPatienceMillis int patienceMilliseconds,
+		SystemCounters systemCounters
 	) {
 		if (patienceMilliseconds <= 0) {
 			throw new IllegalArgumentException();
@@ -81,6 +85,7 @@ public final class LocalSyncServiceAccumulatorProcessor {
 
 		this.requestDispatcher = Objects.requireNonNull(requestDispatcher);
 		this.timeoutScheduler = Objects.requireNonNull(timeoutScheduler);
+		this.systemCounters = Objects.requireNonNull(systemCounters);
 		this.patienceMilliseconds = patienceMilliseconds;
 		this.accComparator = Objects.requireNonNull(accComparator);
 		this.currentHeader = current;
@@ -92,6 +97,7 @@ public final class LocalSyncServiceAccumulatorProcessor {
 		if (accComparator.compare(updatedHeader.getAccumulatorState(), this.currentHeader.getAccumulatorState()) > 0) {
 			this.currentHeader = updatedHeader;
 		}
+		systemCounters.set(CounterType.SYNC_TARGET_CURRENT_DIFF, this.targetHeader.getStateVersion() - this.currentHeader.getStateVersion());
 	}
 
 	public EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor() {
@@ -121,6 +127,8 @@ public final class LocalSyncServiceAccumulatorProcessor {
 		if (accComparator.compare(requestTargetHeader.getAccumulatorState(), this.currentHeader.getAccumulatorState()) <= 0) {
 			return;
 		}
+
+		systemCounters.set(CounterType.SYNC_TARGET_CURRENT_DIFF, requestTargetHeader.getStateVersion() - this.currentHeader.getStateVersion());
 
 		ImmutableList<BFTNode> targetNodes = syncInProgress.getTargetNodes();
 		// TODO: remove thread local random
