@@ -46,6 +46,27 @@ public interface SystemCounters {
 		BFT_VOTE_QUORUMS("bft.vote_quorums"),
 		BFT_SYNC_REQUESTS_SENT("bft.sync.requests_sent"),
 
+		// Count of database accesses
+		COUNT_BDB_ADDRESS_BOOK("count.bdb.address_book"),
+		COUNT_BDB_LEDGER_COMMIT("count.bdb.ledger.commit"),
+		COUNT_BDB_LEDGER_CREATE_TX("count.bdb.ledger.create_tx"),
+		COUNT_BDB_LEDGER_CONTAINS("count.bdb.ledger.contains"),
+		COUNT_BDB_LEDGER_CONTAINS_TX("count.bdb.ledger.contains_tx"),
+		COUNT_BDB_LEDGER_ENTRIES("count.bdb.ledger.entries"),
+		COUNT_BDB_LEDGER_GET("count.bdb.ledger.get"),
+		COUNT_BDB_LEDGER_GET_FIRST("count.bdb.ledger.get_first"),
+		COUNT_BDB_LEDGER_GET_LAST("count.bdb.ledger.get_last"),
+		COUNT_BDB_LEDGER_GET_NEXT("count.bdb.ledger.get_next"),
+		COUNT_BDB_LEDGER_GET_PREV("count.bdb.ledger.get_prev"),
+		COUNT_BDB_LEDGER_STORE("count.bdb.ledger.store"),
+		COUNT_BDB_LEDGER_LAST_COMMITTED("count.bdb.ledger.last_committed"),
+		COUNT_BDB_LEDGER_LAST_VERTEX("count.bdb.ledger.last_vertex"),
+		COUNT_BDB_LEDGER_SAVE("count.bdb.ledger.save"),
+		COUNT_BDB_LEDGER_SAVE_TX("count.bdb.ledger.save_tx"),
+		COUNT_BDB_LEDGER_SEARCH("count.bdb.ledger.search"),
+		COUNT_BDB_LEDGER_TOTAL("count.bdb.ledger.total"),
+		COUNT_BDB_SAFETY_STATE("count.bdb.safety_state"),
+
 		// Total elapsed time for database access, in microseconds
 		ELAPSED_BDB_ADDRESS_BOOK("elapsed.bdb.address_book"),
 		ELAPSED_BDB_LEDGER_COMMIT("elapsed.bdb.ledger.commit"),
