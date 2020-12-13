@@ -45,6 +45,7 @@ public interface SystemCounters {
 		/** Number of vote quorums formed. */
 		BFT_VOTE_QUORUMS("bft.vote_quorums"),
 		BFT_SYNC_REQUESTS_SENT("bft.sync.requests_sent"),
+		BFT_SYNC_REQUEST_TIMEOUTS("bft.sync.request_timeouts"),
 
 		// Total elapsed time for database access, in microseconds
 		ELAPSED_BDB_ADDRESS_BOOK("elapsed.bdb.address_book"),
@@ -68,6 +69,7 @@ public interface SystemCounters {
 		ELAPSED_BDB_SAFETY_STATE("elapsed.bdb.safety_state"),
 
 		PERSISTENCE_VERTEX_STORE_SAVES("persistence.vertex_store_saves"),
+		PERSISTENCE_SAFETY_STORE_SAVES("persistence.safety_store_saves"),
 
 		EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS("epoch_manager.queued_consensus_events"),
 
