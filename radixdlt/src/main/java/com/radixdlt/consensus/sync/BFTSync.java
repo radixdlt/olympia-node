@@ -446,5 +446,7 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 			}
 			listenersIterator.remove();
 		}
+
+		syncing.values().removeIf(state -> state.highQC.highestQC().getView().lte(ledgerUpdate.getTail().getView()));
 	}
 }
