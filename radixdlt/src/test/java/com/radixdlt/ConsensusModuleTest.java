@@ -23,6 +23,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -159,7 +160,9 @@ public class ConsensusModuleTest {
 				bind(SystemCounters.class).toInstance(mock(SystemCounters.class));
 				bind(TimeSupplier.class).toInstance(mock(TimeSupplier.class));
 				bind(BFTConfiguration.class).toInstance(bftConfiguration);
-				bind(VerifiedLedgerHeaderAndProof.class).annotatedWith(LastProof.class).toInstance(mock(VerifiedLedgerHeaderAndProof.class));
+				VerifiedLedgerHeaderAndProof proof = mock(VerifiedLedgerHeaderAndProof.class);
+				when(proof.getView()).thenReturn(View.genesis());
+				bind(VerifiedLedgerHeaderAndProof.class).annotatedWith(LastProof.class).toInstance(proof);
 				bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(200);
 				bindConstant().annotatedWith(PacemakerTimeout.class).to(1000L);
 				bindConstant().annotatedWith(PacemakerRate.class).to(2.0);

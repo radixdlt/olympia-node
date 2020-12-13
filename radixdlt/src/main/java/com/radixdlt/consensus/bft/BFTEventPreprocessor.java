@@ -161,7 +161,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	@Override
 	public void processVote(Vote vote) {
 		log.trace("Vote: PreProcessing {}", vote);
-		if (syncQueues.isEmptyElseAdd(vote) && !processVoteInternal(vote)) {
+		if (!processVoteInternal(vote)) {
 			log.debug("Vote: Queuing {}, waiting for Sync", vote);
 			syncQueues.add(vote);
 		}
@@ -170,7 +170,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	@Override
 	public void processViewTimeout(ViewTimeout viewTimeout) {
 		log.trace("ViewTimeout: PreProcessing {}", viewTimeout);
-		if (syncQueues.isEmptyElseAdd(viewTimeout) && !processViewTimeoutInternal(viewTimeout)) {
+		if (!processViewTimeoutInternal(viewTimeout)) {
 			log.debug("ViewTimeout: Queuing {}, waiting for Sync", viewTimeout);
 			syncQueues.add(viewTimeout);
 		}
@@ -179,7 +179,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	@Override
 	public void processProposal(Proposal proposal) {
 		log.trace("Proposal: PreProcessing {}", proposal);
-		if (syncQueues.isEmptyElseAdd(proposal) && !processProposalInternal(proposal)) {
+		if (!processProposalInternal(proposal)) {
 			log.debug("Proposal: Queuing {}, waiting for Sync", proposal);
 			syncQueues.add(proposal);
 		}
