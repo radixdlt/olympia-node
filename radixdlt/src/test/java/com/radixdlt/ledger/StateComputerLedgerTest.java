@@ -254,7 +254,7 @@ public class StateComputerLedgerTest {
 		VerifiedCommandsAndProof verified = new VerifiedCommandsAndProof(ImmutableList.of(nextCommand), header);
 
 		// Act
-		sut.verifiedCommandsAndProofEventProcessor().process(verified);
+		sut.syncEventProcessor().process(verified);
 
 		// Assert
 		verify(stateComputer, never()).commit(any(), any());
