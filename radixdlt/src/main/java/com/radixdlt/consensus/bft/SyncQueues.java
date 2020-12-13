@@ -113,14 +113,6 @@ public final class SyncQueues {
 		return queues.values();
 	}
 
-	boolean isEmptyElseAdd(ConsensusEvent event) {
-		return this.getQueue(event.getAuthor()).isEmptyElseAdd(event);
-	}
-
-	private SyncQueue getQueue(BFTNode author) {
-		return queues.computeIfAbsent(author, a -> new SyncQueue());
-	}
-
 	void add(ConsensusEvent event) {
 		queues.computeIfAbsent(event.getAuthor(), a -> new SyncQueue()).add(event);
 	}
