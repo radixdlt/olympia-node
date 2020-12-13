@@ -90,7 +90,7 @@ public class GlobalInjector {
 				bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(properties.get("bft.sync.patience", 200));
 				bindConstant().annotatedWith(MinValidators.class).to(properties.get("consensus.min_validators", 1));
 				bindConstant().annotatedWith(MaxValidators.class).to(properties.get("consensus.max_validators", 100));
-				bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(properties.get("epochs.views_per_epoch", 100L)));
+				bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(properties.get("epochs.views_per_epoch", 10000L)));
 
 				// Default values mean that pacemakers will sync if they are within 5 views of each other.
 				// 5 consecutive failing views will take 1*(2^6)-1 seconds = 63 seconds.
