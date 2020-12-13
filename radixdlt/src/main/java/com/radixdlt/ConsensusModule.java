@@ -225,6 +225,7 @@ public final class ConsensusModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private BFTSync bftSync(
+		@Self BFTNode self,
 		VertexStore vertexStore,
 		PacemakerReducer pacemakerReducer,
 		SyncVerticesRequestSender requestSender,
@@ -236,7 +237,9 @@ public final class ConsensusModule extends AbstractModule {
 		@BFTSyncPatienceMillis int bftSyncPatienceMillis
 	) {
 		return new BFTSync(
-			vertexStore, pacemakerReducer,
+			self,
+			vertexStore,
+			pacemakerReducer,
 			Comparator.comparingLong((LedgerHeader h) -> h.getAccumulatorState().getStateVersion()),
 			(node, request)  -> {
 				counters.increment(CounterType.BFT_SYNC_REQUESTS_SENT);
