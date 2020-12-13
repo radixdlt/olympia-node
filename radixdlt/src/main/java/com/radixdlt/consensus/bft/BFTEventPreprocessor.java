@@ -25,7 +25,6 @@ import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTSyncer.SyncResult;
-import com.radixdlt.consensus.bft.SyncQueues.SyncQueue;
 
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import java.util.HashMap;
@@ -58,10 +57,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	private final BFTNode self;
 	private final BFTEventProcessor forwardTo;
 	private final BFTSyncer bftSyncer;
-	private final Set<ConsensusEvent> events = new HashSet<>();
-
-	//private final SyncQueues syncQueues;
-
+	private final Set<ConsensusEvent> syncingEvents = new HashSet<>();
 	private final Map<View, List<ConsensusEvent>> viewQueues = new HashMap<>();
 	private ViewUpdate latestViewUpdate;
 
@@ -69,26 +65,12 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		BFTNode self,
 		BFTEventProcessor forwardTo,
 		BFTSyncer bftSyncer,
-		//SyncQueues syncQueues,
 		ViewUpdate initialViewUpdate
 	) {
 		this.self = Objects.requireNonNull(self);
 		this.bftSyncer = Objects.requireNonNull(bftSyncer);
-		//this.syncQueues = syncQueues;
 		this.forwardTo = forwardTo;
 		this.latestViewUpdate = Objects.requireNonNull(initialViewUpdate);
-	}
-
-	// TODO: Cleanup
-	// TODO: remove queues and treat each message independently
-	private boolean clearAndExecute(SyncQueue queue, View view) {
-		final ConsensusEvent event = queue.clearViewAndGetNext(view);
-		return processQueuedConsensusEvent(event);
-	}
-
-	private boolean peekAndExecute(SyncQueue queue, HashCode vertexId) {
-		final ConsensusEvent event = queue.peek(vertexId);
-		return processQueuedConsensusEvent(event);
 	}
 
 	@Override
@@ -104,7 +86,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 					.forEach(this::processViewCachedEvent);
 			viewQueues.keySet().removeIf(v -> v.lte(viewUpdate.getCurrentView()));
 
-			events.removeIf(e -> e.getView().lt(viewUpdate.getCurrentView()));
+			syncingEvents.removeIf(e -> e.getView().lt(viewUpdate.getCurrentView()));
 		}
 	}
 
@@ -128,11 +110,11 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		HashCode vertexId = update.getInserted().getId();
 		log.trace("LOCAL_SYNC: {}", vertexId);
 
-		events.stream()
+		syncingEvents.stream()
 			.filter(e -> e.highQC().highestQC().getProposed().getVertexId().equals(vertexId))
 			.forEach(this::processQueuedConsensusEvent);
 
-		events.removeIf(e -> e.highQC().highestQC().getProposed().getVertexId().equals(vertexId));
+		syncingEvents.removeIf(e -> e.highQC().highestQC().getProposed().getVertexId().equals(vertexId));
 
 		forwardTo.processBFTUpdate(update);
 	}
@@ -141,11 +123,11 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	public void processBFTRebuildUpdate(BFTRebuildUpdate rebuildUpdate) {
 		rebuildUpdate.getVertexStoreState().getVertices().forEach(v -> {
 			HashCode vertexId = v.getId();
-			events.stream()
+			syncingEvents.stream()
 				.filter(e -> e.highQC().highestQC().getProposed().getVertexId().equals(vertexId))
 				.forEach(this::processQueuedConsensusEvent);
 
-			events.removeIf(e -> e.highQC().highestQC().getProposed().getVertexId().equals(vertexId));
+			syncingEvents.removeIf(e -> e.highQC().highestQC().getProposed().getVertexId().equals(vertexId));
 		});
 	}
 
@@ -154,7 +136,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		log.trace("Vote: PreProcessing {}", vote);
 		if (!processVoteInternal(vote)) {
 			log.debug("Vote: Queuing {}, waiting for Sync", vote);
-			events.add(vote);
+			syncingEvents.add(vote);
 		}
 	}
 
@@ -163,7 +145,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		log.trace("ViewTimeout: PreProcessing {}", viewTimeout);
 		if (!processViewTimeoutInternal(viewTimeout)) {
 			log.debug("ViewTimeout: Queuing {}, waiting for Sync", viewTimeout);
-			events.add(viewTimeout);
+			syncingEvents.add(viewTimeout);
 		}
 	}
 
@@ -172,7 +154,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		log.trace("Proposal: PreProcessing {}", proposal);
 		if (!processProposalInternal(proposal)) {
 			log.debug("Proposal: Queuing {}, waiting for Sync", proposal);
-			events.add(proposal);
+			syncingEvents.add(proposal);
 		}
 	}
 
