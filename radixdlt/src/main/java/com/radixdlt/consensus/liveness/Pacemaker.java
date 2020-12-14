@@ -236,6 +236,7 @@ public final class Pacemaker {
 		final VerifiedVertex verifiedVertex = new VerifiedVertex(proposedVertex, hasher.hash(proposedVertex));
 		this.timeoutVoteVertexId = Optional.of(verifiedVertex.getId());
 
+		// TODO: reimplement in async way
 		this.vertexStore.getPreparedVertex(verifiedVertex.getId()).ifPresentOrElse(
 			this::createAndSendTimeoutVote, // if vertex is already there, send the vote immediately
 			() -> this.vertexStore.insertVertex(verifiedVertex) // otherwise insert and wait for async bft update msg

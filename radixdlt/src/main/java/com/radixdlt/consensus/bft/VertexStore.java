@@ -262,6 +262,7 @@ public final class VertexStore {
 	 * @param id the id of a vertex
 	 * @return the specified vertex or empty
 	 */
+	// TODO: reimplement in async way
 	public Optional<PreparedVertex> getPreparedVertex(HashCode id) {
 		return Optional.ofNullable(vertices.get(id));
 	}
