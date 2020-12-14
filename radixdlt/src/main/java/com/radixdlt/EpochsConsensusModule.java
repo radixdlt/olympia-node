@@ -54,18 +54,18 @@ import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
-import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
+import com.radixdlt.consensus.sync.GetVerticesRequest;
+import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.sync.BFTSync;
-import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 
 import com.radixdlt.network.TimeSupplier;
@@ -86,6 +86,11 @@ public class EpochsConsensusModule extends AbstractModule {
 	}
 
 	@Provides
+	private RemoteEventProcessor<GetVerticesRequest> localGetVerticesRequestRemoteEventProcessor(EpochManager epochManager) {
+		return epochManager.localGetVerticesRequestRemoteEventProcessor();
+	}
+
+	@Provides
 	private EventProcessor<BFTInsertUpdate> bftUpdateProcessor(EpochManager epochManager) {
 		return epochManager::processBFTUpdate;
 	}
@@ -96,8 +101,8 @@ public class EpochsConsensusModule extends AbstractModule {
 	}
 
 	@Provides
-	private EventProcessor<LocalGetVerticesRequest> bftSyncTimeoutProcessor(EpochManager epochManager) {
-		return epochManager::processGetVerticesLocalTimeout;
+	private EventProcessor<VertexRequestTimeout> bftSyncTimeoutProcessor(EpochManager epochManager) {
+		return epochManager.timeoutEventProcessor();
 	}
 
 	@Provides
@@ -214,23 +219,20 @@ public class EpochsConsensusModule extends AbstractModule {
 
 	@Provides
 	private BFTSyncFactory bftSyncFactory(
+		RemoteEventDispatcher<GetVerticesRequest> requestSender,
 		@Self BFTNode self,
-		SyncVerticesRequestSender requestSender,
 		EventDispatcher<LocalSyncRequest> syncLedgerRequestSender,
-		ScheduledEventDispatcher<LocalGetVerticesRequest> timeoutDispatcher,
-		SystemCounters counters,
+		ScheduledEventDispatcher<VertexRequestTimeout> timeoutDispatcher,
 		Random random,
-		@BFTSyncPatienceMillis int bftSyncPatienceMillis
+		@BFTSyncPatienceMillis int bftSyncPatienceMillis,
+		SystemCounters counters
 	) {
 		return (vertexStore, pacemakerState, configuration) -> new BFTSync(
 			self,
 			vertexStore,
 			pacemakerState,
 			Comparator.comparingLong((LedgerHeader h) -> h.getAccumulatorState().getStateVersion()),
-			(node, request)  -> {
-				counters.increment(CounterType.BFT_SYNC_REQUESTS_SENT);
-				requestSender.sendGetVerticesRequest(node, request);
-			},
+			requestSender,
 			syncLedgerRequestSender,
 			timeoutDispatcher,
 			configuration.getVertexStoreState().getRootHeader(),

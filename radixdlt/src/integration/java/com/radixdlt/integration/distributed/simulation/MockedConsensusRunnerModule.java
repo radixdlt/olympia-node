@@ -18,7 +18,6 @@
 package com.radixdlt.integration.distributed.simulation;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
@@ -28,7 +27,7 @@ import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.BFTSyncResponseProcessor;
 import com.radixdlt.consensus.sync.BFTSync;
-import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
+import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.integration.distributed.BFTRunner;
 
@@ -45,9 +44,9 @@ public class MockedConsensusRunnerModule extends AbstractModule {
 		return processor::processLocalTimeout;
 	}
 
-	@Provides
-	public EventProcessor<LocalGetVerticesRequest> bftSyncTimeoutProcessor(BFTSync bftSync) {
-		return bftSync::processGetVerticesLocalTimeout;
+	@ProvidesIntoSet
+	public EventProcessor<VertexRequestTimeout> bftSyncTimeoutProcessor(BFTSync bftSync) {
+		return bftSync.vertexRequestTimeoutEventProcessor();
 	}
 
 	@ProvidesIntoSet

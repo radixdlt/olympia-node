@@ -28,7 +28,6 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.epoch.LocalTimeoutSender;
-import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
@@ -54,7 +53,6 @@ public class DeterministicEnvironmentModule extends AbstractModule {
 	protected void configure() {
 
 		bind(ProposalBroadcaster.class).to(DeterministicSender.class);
-		bind(SyncVerticesRequestSender.class).to(DeterministicSender.class);
 		bind(SyncVerticesResponseSender.class).to(DeterministicSender.class);
 		bind(SyncEpochsRPCSender.class).to(DeterministicSender.class);
 		bind(LocalTimeoutSender.class).to(DeterministicSender.class);

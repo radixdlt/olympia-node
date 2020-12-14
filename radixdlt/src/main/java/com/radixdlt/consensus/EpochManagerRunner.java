@@ -24,8 +24,10 @@ import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 
-import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
+import com.radixdlt.consensus.sync.GetVerticesRequest;
+import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.utils.ThreadFactories;
 
@@ -65,10 +67,11 @@ public final class EpochManagerRunner implements ModuleRunner {
 		EventProcessor<BFTInsertUpdate> bftUpdateProcessor,
 		Observable<BFTRebuildUpdate> bftRebuilds,
 		EventProcessor<BFTRebuildUpdate> bftRebuildProcessor,
-		Observable<LocalGetVerticesRequest> bftSyncTimeouts,
-		EventProcessor<LocalGetVerticesRequest> bftSyncTimeoutProcessor,
+		Observable<VertexRequestTimeout> bftSyncTimeouts,
+		EventProcessor<VertexRequestTimeout> vertexRequestTimeoutEventProcessor,
 		Observable<EpochViewUpdate> localViewUpdates,
 		EventProcessor<EpochViewUpdate> epochViewUpdateEventProcessor,
+		Observable<RemoteEvent<GetVerticesRequest>> verticesRequests,
 		BFTEventsRx networkRx,
 		PacemakerRx pacemakerRx,
 		SyncVerticesRPCRx rpcRx,
@@ -93,7 +96,7 @@ public final class EpochManagerRunner implements ModuleRunner {
 				.doOnNext(bftRebuildProcessor::process),
 			bftSyncTimeouts
 				.observeOn(singleThreadScheduler)
-				.doOnNext(bftSyncTimeoutProcessor::process),
+				.doOnNext(vertexRequestTimeoutEventProcessor::process),
 			localViewUpdates
 				.observeOn(singleThreadScheduler)
 				.doOnNext(epochViewUpdateEventProcessor::process),
@@ -103,9 +106,9 @@ public final class EpochManagerRunner implements ModuleRunner {
 			networkRx.bftEvents()
 				.observeOn(singleThreadScheduler)
 				.doOnNext(epochManager::processConsensusEvent),
-			rpcRx.requests()
+			verticesRequests
 				.observeOn(singleThreadScheduler)
-				.doOnNext(epochManager::processGetVerticesRequest),
+				.doOnNext(req -> epochManager.localGetVerticesRequestRemoteEventProcessor().process(req.getOrigin(), req.getEvent())),
 			rpcRx.responses()
 				.observeOn(singleThreadScheduler)
 				.doOnNext(epochManager::processGetVerticesResponse),

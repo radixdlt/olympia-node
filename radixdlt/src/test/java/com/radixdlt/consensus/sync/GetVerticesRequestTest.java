@@ -15,13 +15,19 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.consensus.sync;
 
-import com.radixdlt.consensus.sync.GetVerticesRequest;
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
 
-/**
- * Processes a remote GetVertices request
- */
-public interface BFTSyncRequestProcessor {
-	void processGetVerticesRequest(GetVerticesRequest request);
+public class GetVerticesRequestTest {
+
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(GetVerticesRequest.class)
+			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+			.verify();
+	}
 }

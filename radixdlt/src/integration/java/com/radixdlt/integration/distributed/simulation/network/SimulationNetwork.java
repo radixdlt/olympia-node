@@ -26,9 +26,6 @@ import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.sync.GetVerticesRequest;
-import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
-import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
@@ -131,7 +128,7 @@ public class SimulationNetwork {
 	}
 
 	public class SimulatedNetworkImpl implements
-		ProposalBroadcaster, SyncVerticesRequestSender, SyncVerticesResponseSender, SyncEpochsRPCSender, BFTEventsRx,
+		ProposalBroadcaster, SyncVerticesResponseSender, SyncEpochsRPCSender, BFTEventsRx,
 		SyncVerticesRPCRx, SyncEpochsRPCRx {
 		private final Observable<Object> myMessages;
 		private final BFTNode thisNode;
@@ -157,12 +154,6 @@ public class SimulationNetwork {
 			for (BFTNode reader : nodes) {
 				receivedMessages.onNext(MessageInTransit.newMessage(proposal, thisNode, reader));
 			}
-		}
-
-		@Override
-		public void sendGetVerticesRequest(BFTNode node, LocalGetVerticesRequest request) {
-			final GetVerticesRequest getVerticesRequest = new GetVerticesRequest(thisNode, request.getVertexId(), request.getCount());
-			receivedMessages.onNext(MessageInTransit.newMessage(getVerticesRequest, thisNode, node));
 		}
 
 		@Override
@@ -195,11 +186,6 @@ public class SimulationNetwork {
 				myMessages.ofType(ConsensusEvent.class),
 				remoteEvents(Vote.class).map(RemoteEvent::getEvent)
 			);
-		}
-
-		@Override
-		public Observable<GetVerticesRequest> requests() {
-			return myMessages.ofType(GetVerticesRequest.class);
 		}
 
 		@Override

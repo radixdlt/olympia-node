@@ -56,6 +56,7 @@ import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
+import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
@@ -73,10 +74,9 @@ import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.sync.BFTSync;
-import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
-import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
+import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.counters.SystemCounters;
@@ -112,7 +112,7 @@ public class ConsensusModuleTest {
 	private BFTConfiguration bftConfiguration;
 
 	private ECKeyPair ecKeyPair;
-	private SyncVerticesRequestSender requestSender;
+	private RemoteEventDispatcher<GetVerticesRequest> requestSender;
 
 	@Before
 	public void setup() {
@@ -124,7 +124,7 @@ public class ConsensusModuleTest {
 			VerifiedVertexStoreState.create(HighQC.from(qc), hashedGenesis, Optional.empty());
 		this.bftConfiguration = new BFTConfiguration(validatorSet, vertexStoreState);
 		this.ecKeyPair = ECKeyPair.generateNew();
-		this.requestSender = mock(SyncVerticesRequestSender.class);
+		this.requestSender = rmock(RemoteEventDispatcher.class);
 
 		Guice.createInjector(
 			new ConsensusModule(),
@@ -146,17 +146,18 @@ public class ConsensusModuleTest {
 				bind(new TypeLiteral<EventDispatcher<BFTHighQCUpdate>>() { }).toInstance(rmock(EventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<BFTCommittedUpdate>>() { }).toInstance(rmock(EventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<LocalSyncRequest>>() { }).toInstance(rmock(EventDispatcher.class));
-				bind(new TypeLiteral<ScheduledEventDispatcher<LocalGetVerticesRequest>>() { }).toInstance(rmock(ScheduledEventDispatcher.class));
+				bind(new TypeLiteral<ScheduledEventDispatcher<GetVerticesRequest>>() { }).toInstance(rmock(ScheduledEventDispatcher.class));
 				bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledLocalTimeout>>() { }).toInstance(rmock(ScheduledEventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<ViewQuorumReached>>() { }).toInstance(rmock(EventDispatcher.class));
 				bind(new TypeLiteral<RemoteEventDispatcher<Vote>>() { }).toInstance(rmock(RemoteEventDispatcher.class));
+				bind(new TypeLiteral<RemoteEventDispatcher<GetVerticesRequest>>() { }).toInstance(requestSender);
 				bind(new TypeLiteral<EventDispatcher<NoVote>>() { }).toInstance(rmock(EventDispatcher.class));
 				bind(new TypeLiteral<ScheduledEventDispatcher<View>>() { }).toInstance(rmock(ScheduledEventDispatcher.class));
+				bind(new TypeLiteral<ScheduledEventDispatcher<VertexRequestTimeout>>() { }).toInstance(rmock(ScheduledEventDispatcher.class));
 
 				bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
 				bind(PersistentSafetyStateStore.class).toInstance(mock(PersistentSafetyStateStore.class));
 				bind(ProposalBroadcaster.class).toInstance(mock(ProposalBroadcaster.class));
-				bind(SyncVerticesRequestSender.class).toInstance(requestSender);
 				bind(SyncVerticesResponseSender.class).toInstance(mock(SyncVerticesResponseSender.class));
 				bind(NextCommandGenerator.class).toInstance(mock(NextCommandGenerator.class));
 				bind(SystemCounters.class).toInstance(mock(SystemCounters.class));
@@ -217,13 +218,15 @@ public class ConsensusModuleTest {
 		Pair<QuorumCertificate, VerifiedVertex> nextVertex = createNextVertex(parent, bftNode);
 		HighQC unsyncedHighQC = HighQC.from(nextVertex.getFirst(), nextVertex.getFirst(), Optional.empty());
 		bftSync.syncToQC(unsyncedHighQC, bftNode);
+		GetVerticesRequest request = new GetVerticesRequest(nextVertex.getSecond().getId(), 1);
+		VertexRequestTimeout timeout = VertexRequestTimeout.create(request);
 
 		// Act
-		bftSync.processGetVerticesLocalTimeout(new LocalGetVerticesRequest(nextVertex.getSecond().getId(), 1));
+		bftSync.vertexRequestTimeoutEventProcessor().process(timeout);
 
 		// Assert
 		verify(requestSender, times(2))
-			.sendGetVerticesRequest(eq(bftNode), argThat(r -> r.getCount() == 1 && r.getVertexId().equals(nextVertex.getSecond().getId())));
+			.dispatch(eq(bftNode), argThat(r -> r.getCount() == 1 && r.getVertexId().equals(nextVertex.getSecond().getId())));
 	}
 
 	@Test
@@ -238,10 +241,10 @@ public class ConsensusModuleTest {
 
 		// Act
 		GetVerticesResponse response = new GetVerticesResponse(bftNode, ImmutableList.of(nextNextVertex.getSecond()));
-		bftSync.processGetVerticesResponse(response);
+		bftSync.responseProcessor().process(response);
 
 		// Assert
 		verify(requestSender, times(1))
-			.sendGetVerticesRequest(eq(bftNode), argThat(r -> r.getCount() == 1 && r.getVertexId().equals(nextVertex.getSecond().getId())));
+			.dispatch(eq(bftNode), argThat(r -> r.getCount() == 1 && r.getVertexId().equals(nextVertex.getSecond().getId())));
 	}
 }

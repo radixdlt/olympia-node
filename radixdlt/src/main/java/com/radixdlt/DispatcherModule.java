@@ -38,7 +38,8 @@ import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
-import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
+import com.radixdlt.consensus.sync.GetVerticesRequest;
+import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.environment.Environment;
@@ -97,8 +98,12 @@ public class DispatcherModule extends AbstractModule {
 		final var syncUpdateKey = new TypeLiteral<EventProcessor<VerifiedCommandsAndProof>>() { };
 		Multibinder.newSetBinder(binder(), syncUpdateKey, ProcessOnDispatch.class);
 
+		final var verticesRequestKey = new TypeLiteral<EventProcessor<GetVerticesRequest>>() { };
+		Multibinder.newSetBinder(binder(), verticesRequestKey, ProcessOnDispatch.class);
+
 		final var viewQuorumReachedKey = new TypeLiteral<EventProcessor<ViewQuorumReached>>() { };
 		Multibinder.newSetBinder(binder(), viewQuorumReachedKey, ProcessOnDispatch.class);
+
 		final var voteKey = new TypeLiteral<EventProcessor<Vote>>() { };
 		Multibinder.newSetBinder(binder(), voteKey, ProcessOnDispatch.class);
 	}
@@ -144,8 +149,8 @@ public class DispatcherModule extends AbstractModule {
 	}
 
 	@Provides
-	private ScheduledEventDispatcher<LocalGetVerticesRequest> localGetVerticesRequestRemoteEventDispatcher(Environment environment) {
-		return environment.getScheduledDispatcher(LocalGetVerticesRequest.class);
+	private ScheduledEventDispatcher<VertexRequestTimeout> localGetVerticesRequestRemoteEventDispatcher(Environment environment) {
+		return environment.getScheduledDispatcher(VertexRequestTimeout.class);
 	}
 
 	@Provides
@@ -298,6 +303,20 @@ public class DispatcherModule extends AbstractModule {
 	}
 
 	@Provides
+	private RemoteEventDispatcher<GetVerticesRequest> verticesRequestDispatcher(
+		@ProcessOnDispatch Set<EventProcessor<GetVerticesRequest>> processors,
+		Environment environment,
+		SystemCounters counters
+	) {
+		RemoteEventDispatcher<GetVerticesRequest> dispatcher = environment.getRemoteDispatcher(GetVerticesRequest.class);
+		return (node, request) -> {
+			counters.increment(CounterType.BFT_SYNC_REQUESTS_SENT);
+			dispatcher.dispatch(node, request);
+			processors.forEach(e -> e.process(request));
+		};
+	}
+
+	@Provides
 	private RemoteEventDispatcher<Vote> voteDispatcher(
 		@ProcessOnDispatch Set<EventProcessor<Vote>> processors,
 		Environment environment
@@ -305,8 +324,8 @@ public class DispatcherModule extends AbstractModule {
 		RemoteEventDispatcher<Vote> dispatcher = environment.getRemoteDispatcher(Vote.class);
 		return (node, vote) -> {
 			logger.trace("Vote sending to {}: {}", node, vote);
-			processors.forEach(e -> e.process(vote));
 			dispatcher.dispatch(node, vote);
+			processors.forEach(e -> e.process(vote));
 		};
 	}
 

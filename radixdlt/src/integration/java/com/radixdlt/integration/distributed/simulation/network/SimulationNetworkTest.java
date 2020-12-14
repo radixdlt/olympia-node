@@ -26,7 +26,7 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
-import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
+import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.ChannelCommunication;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.junit.Before;
@@ -109,15 +109,16 @@ public class SimulationNetworkTest {
 	public void when_send_get_vertex_request_to_another_node__then_should_receive_it() {
 		HashCode vertexId = mock(HashCode.class);
 
-		TestObserver<GetVerticesRequest> rpcRequestListener =
-			network.getNetwork(node2).requests().test();
+		TestObserver<RemoteEvent<GetVerticesRequest>> rpcRequestListener =
+			network.getNetwork(node2).remoteEvents(GetVerticesRequest.class).test();
 
 		network
 			.getNetwork(node1)
-			.sendGetVerticesRequest(node2, new LocalGetVerticesRequest(vertexId, 1));
+			.remoteEventDispatcher(GetVerticesRequest.class)
+			.dispatch(node2, new GetVerticesRequest(vertexId, 1));
 
 		rpcRequestListener.awaitCount(1);
-		rpcRequestListener.assertValueAt(0, r -> r.getVertexId().equals(vertexId));
+		rpcRequestListener.assertValueAt(0, r -> r.getEvent().getVertexId().equals(vertexId));
 	}
 
 }

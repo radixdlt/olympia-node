@@ -58,6 +58,7 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
+import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.Hasher;
@@ -89,6 +90,7 @@ import com.radixdlt.integration.distributed.simulation.application.RadixEngineVa
 import com.radixdlt.integration.distributed.simulation.application.RegisteredValidatorChecker;
 import com.radixdlt.integration.distributed.simulation.application.TimestampChecker;
 import com.radixdlt.integration.distributed.simulation.invariants.consensus.NodeEvents;
+import com.radixdlt.integration.distributed.simulation.invariants.consensus.VertexRequestRateInvariant;
 import com.radixdlt.integration.distributed.simulation.invariants.epochs.EpochViewInvariant;
 import com.radixdlt.integration.distributed.simulation.application.LocalMempoolPeriodicSubmittor;
 import com.radixdlt.integration.distributed.simulation.invariants.ledger.ConsensusToLedgerCommittedInvariant;
@@ -224,12 +226,6 @@ public class SimulationTest {
 					if (!hasSync) {
 						modules.add(new MockedSyncServiceModule());
 					} else {
-						modules.add(new AbstractModule() {
-							@Override
-							public void configure() {
-								bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(50);
-							}
-						});
 						modules.add(new SyncServiceModule());
 						modules.add(new MockedCommittedReaderModule());
 						if (!hasEpochs) {
@@ -379,15 +375,31 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder ledgerAndSync() {
+		public Builder ledgerAndSync(int syncPatienceMillis) {
 			this.ledgerType = LedgerType.LEDGER_AND_SYNC;
+			modules.add(new AbstractModule() {
+				@Override
+				protected void configure() {
+					bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(syncPatienceMillis);
+				}
+			});
 			return this;
 		}
 
-		public Builder ledgerAndEpochsAndSync(View epochHighView, Function<Long, IntStream> epochToNodeIndexMapper) {
+		public Builder ledgerAndEpochsAndSync(
+			View epochHighView,
+			Function<Long, IntStream> epochToNodeIndexMapper,
+			int syncPatienceMillis
+		) {
 			this.ledgerType = LedgerType.LEDGER_AND_EPOCHS_AND_SYNC;
 			this.epochHighView = epochHighView;
 			this.epochToNodeIndexMapper = epochToNodeIndexMapper;
+			modules.add(new AbstractModule() {
+				@Override
+				protected void configure() {
+					bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(syncPatienceMillis);
+				}
+			});
 			return this;
 		}
 
@@ -496,6 +508,21 @@ public class SimulationTest {
 			return this;
 		}
 
+		public Builder checkVertexRequestRate(String invariantName, int permitsPerSecond) {
+			this.modules.add(new AbstractModule() {
+				@ProvidesIntoSet
+				@ProcessOnDispatch
+				private EventProcessor<GetVerticesRequest> committedProcessor(@Self BFTNode node) {
+					return nodeEvents.processor(node, GetVerticesRequest.class);
+				}
+			});
+			this.checksBuilder.put(
+				invariantName,
+				nodes -> new VertexRequestRateInvariant(nodeEvents, permitsPerSecond)
+			);
+			return this;
+		}
+
 		public Builder checkConsensusLiveness(String invariantName) {
 			this.checksBuilder.put(
 				invariantName,
@@ -510,7 +537,6 @@ public class SimulationTest {
 		}
 
 		public Builder checkConsensusSafety(String invariantName) {
-
 			this.checksBuilder.put(invariantName, nodes -> new SafetyInvariant(nodeEvents));
 			return this;
 		}
@@ -586,7 +612,7 @@ public class SimulationTest {
 				@Override
 				public void configure() {
 					bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
-					bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(50);
+					bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(200);
 					bindConstant().annotatedWith(PacemakerTimeout.class).to(pacemakerTimeout);
 					bindConstant().annotatedWith(PacemakerRate.class).to(2.0);
 					bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0); // Use constant timeout for now

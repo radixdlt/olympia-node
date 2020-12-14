@@ -58,10 +58,8 @@ public class VertexStoreBFTSyncRequestProcessorTest {
 		when(highQC.highestCommittedQC()).thenReturn(committedQC);
 		when(vertexStore.highQC()).thenReturn(highQC);
 
-		GetVerticesRequest request = mock(GetVerticesRequest.class);
 		BFTNode sender = mock(BFTNode.class);
-		when(request.getSender()).thenReturn(sender);
-		requestProcessor.processGetVerticesRequest(request);
+		requestProcessor.process(sender, mock(GetVerticesRequest.class));
 
 		verify(responseSender, times(1)).sendGetVerticesErrorResponse(eq(sender), eq(highQC));
 		verify(responseSender, never()).sendGetVerticesResponse(any(), any());
@@ -78,10 +76,8 @@ public class VertexStoreBFTSyncRequestProcessorTest {
 		when(highQC.highestCommittedQC()).thenReturn(committedQC);
 		when(vertexStore.highQC()).thenReturn(highQC);
 
-		GetVerticesRequest request = mock(GetVerticesRequest.class);
 		BFTNode sender = mock(BFTNode.class);
-		when(request.getSender()).thenReturn(sender);
-		requestProcessor.processGetVerticesRequest(request);
+		requestProcessor.process(sender, mock(GetVerticesRequest.class));
 
 		verify(responseSender, never()).sendGetVerticesErrorResponse(any(), any());
 		verify(responseSender, times(1)).sendGetVerticesResponse(eq(sender), any());
