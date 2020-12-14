@@ -77,9 +77,9 @@ public final class NetworkModule extends AbstractModule {
 		return RxRemoteDispatcher.create(Vote.class, bftNetwork.voteDispatcher());
 	}
 
-	@Provides
-	private RemoteEventDispatcher<?> vertexRequestDispatcher(MessageCentralValidatorSync messageCentralValidatorSync) {
-		return messageCentralValidatorSync.verticesRequestDispatcher();
+	@ProvidesIntoSet
+	private RxRemoteDispatcher<?> vertexRequestDispatcher(MessageCentralValidatorSync messageCentralValidatorSync) {
+		return RxRemoteDispatcher.create(GetVerticesRequest.class, messageCentralValidatorSync.verticesRequestDispatcher());
 	}
 
 	@Provides
