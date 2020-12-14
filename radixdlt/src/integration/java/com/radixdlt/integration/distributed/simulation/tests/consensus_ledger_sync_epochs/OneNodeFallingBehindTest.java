@@ -48,7 +48,7 @@ public class OneNodeFallingBehindTest {
 			NetworkDroppers.dropAllMessagesForOneNode(10000, 10000)
 		)
 		.pacemakerTimeout(1000)
-		.ledgerAndEpochsAndSync(View.of(100), epoch -> IntStream.range(0, 10), 100)
+		.ledgerAndEpochsAndSync(View.of(100), epoch -> IntStream.range(0, 10), 200)
 		.checkConsensusSafety("safety")
 		.checkConsensusLiveness("liveness", 30, TimeUnit.SECONDS)
 		.checkLedgerInOrder("ledgerInOrder")

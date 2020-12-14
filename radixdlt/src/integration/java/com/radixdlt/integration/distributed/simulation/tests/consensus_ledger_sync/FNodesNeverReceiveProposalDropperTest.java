@@ -59,7 +59,7 @@ public class FNodesNeverReceiveProposalDropperTest {
 				NetworkDroppers.fNodesAllReceivedProposalsDropped()
 			)
 			.pacemakerTimeout(5000)
-			.ledgerAndSync(0)
+			.ledgerAndSync(50)
 			.checkConsensusSafety("safety")
 			.checkConsensusLiveness("liveness", 5000, TimeUnit.MILLISECONDS)
 			.checkConsensusAllProposalsHaveDirectParents("directParents")

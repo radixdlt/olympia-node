@@ -67,7 +67,6 @@ import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.fees.NativeToken;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.integration.distributed.CommittedReaderDelayMillis;
 import com.radixdlt.integration.distributed.MockedCommandGeneratorModule;
 import com.radixdlt.integration.distributed.MockedCryptoModule;
 import com.radixdlt.integration.distributed.MockedLedgerModule;
@@ -230,7 +229,7 @@ public class SimulationTest {
 						modules.add(new AbstractModule() {
 							@Override
 							public void configure() {
-								bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(50);
+								bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(200);
 							}
 						});
 						modules.add(new SyncServiceModule());
@@ -382,12 +381,12 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder ledgerAndSync(int committedReaderDelayMillis) {
+		public Builder ledgerAndSync(int syncPatienceMillis) {
 			this.ledgerType = LedgerType.LEDGER_AND_SYNC;
 			modules.add(new AbstractModule() {
 				@Override
 				protected void configure() {
-					bind(Integer.class).annotatedWith(CommittedReaderDelayMillis.class).toInstance(committedReaderDelayMillis);
+					bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(syncPatienceMillis);
 				}
 			});
 			return this;
@@ -396,7 +395,7 @@ public class SimulationTest {
 		public Builder ledgerAndEpochsAndSync(
 			View epochHighView,
 			Function<Long, IntStream> epochToNodeIndexMapper,
-			int committedReaderDelayMillis
+			int syncPatienceMillis
 		) {
 			this.ledgerType = LedgerType.LEDGER_AND_EPOCHS_AND_SYNC;
 			this.epochHighView = epochHighView;
@@ -404,7 +403,7 @@ public class SimulationTest {
 			modules.add(new AbstractModule() {
 				@Override
 				protected void configure() {
-					bind(Integer.class).annotatedWith(CommittedReaderDelayMillis.class).toInstance(committedReaderDelayMillis);
+					bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(syncPatienceMillis);
 				}
 			});
 			return this;

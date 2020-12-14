@@ -42,17 +42,14 @@ class InMemoryCommittedReader implements LedgerUpdateSender, CommittedReader {
 	private final LedgerAccumulatorVerifier accumulatorVerifier;
 	private final Hasher hasher;
 	private final TreeMap<Long, VerifiedLedgerHeaderAndProof> epochProofs = new TreeMap<>();
-	private final int delayMillis;
 
 	@Inject
 	InMemoryCommittedReader(
 		LedgerAccumulatorVerifier accumulatorVerifier,
-		Hasher hasher,
-		@CommittedReaderDelayMillis int delayMillis
+		Hasher hasher
 	) {
 		this.accumulatorVerifier = Objects.requireNonNull(accumulatorVerifier);
 		this.hasher = Objects.requireNonNull(hasher);
-		this.delayMillis = delayMillis;
 	}
 
 	@Override
@@ -72,12 +69,6 @@ class InMemoryCommittedReader implements LedgerUpdateSender, CommittedReader {
 	public VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start, int batchSize) {
 		final long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
 		Entry<Long, VerifiedCommandsAndProof> entry = commandsAndProof.higherEntry(stateVersion);
-
-		try {
-			// TODO: replace with async style delay when async io implemented
-			Thread.sleep(delayMillis);
-		} catch (InterruptedException e) {
-		}
 
 		if (entry != null) {
 			ImmutableList<Command> cmds = accumulatorVerifier

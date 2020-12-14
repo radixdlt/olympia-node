@@ -49,7 +49,7 @@ public class RandomValidatorsTest {
 			NetworkOrdering.inOrder(),
 			NetworkLatencies.fixed()
 		)
-		.ledgerAndEpochsAndSync(View.of(3), goodRandomEpochToNodesMapper(), 0) // TODO: investigate why this fails with View.of(10)
+		.ledgerAndEpochsAndSync(View.of(3), goodRandomEpochToNodesMapper(), 50) // TODO: investigate why this fails with View.of(10)
 		.pacemakerTimeout(5000)
 		.numNodes(numNodes, 2)
 		.checkEpochsHighViewCorrect("epochHighView", View.of(100))
