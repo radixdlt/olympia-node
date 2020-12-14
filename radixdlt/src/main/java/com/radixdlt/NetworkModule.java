@@ -26,7 +26,7 @@ import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
+import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.VoteSender;
@@ -65,7 +65,6 @@ public final class NetworkModule extends AbstractModule {
 		bind(SyncVerticesResponseSender.class).to(MessageCentralValidatorSync.class);
 		bind(SyncEpochsRPCSender.class).to(MessageCentralValidatorSync.class);
 		bind(SyncEpochsRPCRx.class).to(MessageCentralValidatorSync.class);
-		bind(SyncVerticesRequestSender.class).to(MessageCentralValidatorSync.class);
 		bind(SyncVerticesRPCRx.class).to(MessageCentralValidatorSync.class);
 
 		// Network BFT messages
@@ -78,6 +77,11 @@ public final class NetworkModule extends AbstractModule {
 	@ProvidesIntoSet
 	private RxRemoteDispatcher<?> syncRequestDispatcher(MessageCentralBFTNetwork bftNetwork) {
 		return RxRemoteDispatcher.create(Vote.class, bftNetwork.voteDispatcher());
+	}
+
+	@Provides
+	private RemoteEventDispatcher<?> vertexRequestDispatcher(MessageCentralValidatorSync messageCentralValidatorSync) {
+		return messageCentralValidatorSync.verticesRequestDispatcher();
 	}
 
 	@Provides
@@ -98,5 +102,10 @@ public final class NetworkModule extends AbstractModule {
 	@Provides
 	private Observable<RemoteEvent<DtoLedgerHeaderAndProof>> syncRequests(MessageCentralLedgerSync messageCentralLedgerSync) {
 		return messageCentralLedgerSync.syncRequests();
+	}
+
+	@Provides
+	private Observable<RemoteEvent<GetVerticesRequest>> vertexSyncRequests(MessageCentralValidatorSync validatorSync) {
+		return validatorSync.requests();
 	}
 }

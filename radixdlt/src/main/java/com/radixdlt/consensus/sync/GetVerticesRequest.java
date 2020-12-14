@@ -18,25 +18,18 @@
 package com.radixdlt.consensus.sync;
 
 import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.bft.BFTNode;
 import java.util.Objects;
 
 /**
- * A request for bft vertices info
+ * Parameters for a local get vertices request
  */
 public final class GetVerticesRequest {
-	private final BFTNode sender;
 	private final HashCode vertexId;
 	private final int count;
 
-	public GetVerticesRequest(BFTNode sender, HashCode vertexId, int count) {
-		this.sender = Objects.requireNonNull(sender);
+	public GetVerticesRequest(HashCode vertexId, int count) {
 		this.vertexId = Objects.requireNonNull(vertexId);
 		this.count = count;
-	}
-
-	public BFTNode getSender() {
-		return sender;
 	}
 
 	public HashCode getVertexId() {
@@ -45,6 +38,22 @@ public final class GetVerticesRequest {
 
 	public int getCount() {
 		return count;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(vertexId, count);
+	}
+
+	@Override
+	public boolean equals(Object o)  {
+		if (!(o instanceof GetVerticesRequest)) {
+			return false;
+		}
+		GetVerticesRequest other = (GetVerticesRequest) o;
+
+		return Objects.equals(other.vertexId, this.vertexId)
+			&& other.count == this.count;
 	}
 
 	@Override

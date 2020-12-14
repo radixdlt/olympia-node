@@ -15,46 +15,58 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.simulation.tests.consensus;
+package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_sync_epochs;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
+import com.radixdlt.consensus.bft.View;
+import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.integration.distributed.simulation.NetworkDroppers;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
-import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
+import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
+import java.time.Duration;
+import java.util.LongSummaryStatistics;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
 /**
- * Simulation which tests for bft correctness if one node is significantly slower than
- * the others but is still within bounds of synchrony. Correctness depends on whether syncing is
- * enabled or not. Both cases are verified in this test.
+ * Get the system into a configuration where one node needs to catch up to
+ * BFT but is slowed down by Ledger sync.
  */
-public class OneSlowNodeTest {
-	private final int minLatency = 10;
-	private final int maxLatency = 200;
-	private final int trips = 8;
-	private final int synchronousTimeout = maxLatency * trips;
+public class OneNodeFallingBehindTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
-		.numNodes(4)
+		.numNodes(10)
 		.networkModules(
 			NetworkOrdering.inOrder(),
-			NetworkLatencies.oneSlowProposalSender(minLatency, maxLatency)
+			NetworkLatencies.fixed(),
+			NetworkDroppers.dropAllMessagesForOneNode(10000, 10000)
 		)
-		.pacemakerTimeout(synchronousTimeout)
+		.pacemakerTimeout(1000)
+		.ledgerAndEpochsAndSync(View.of(100), epoch -> IntStream.range(0, 10), 200)
 		.checkConsensusSafety("safety")
-		.checkConsensusAllProposalsHaveDirectParents("directParents");
+		.checkConsensusLiveness("liveness", 30, TimeUnit.SECONDS)
+		.checkLedgerInOrder("ledgerInOrder")
+		.checkLedgerProcessesConsensusCommitted("consensusToLedger")
+		.checkVertexRequestRate("vertexRequestRate", 50); // Conservative check
 
-	/**
-	 * Tests a static configuration of 3 fast, equal nodes and 1 slow node.
-	 * Test should pass even with GetVertices RPC disabled
-	 */
 	@Test
-	public void given_4_nodes_3_fast_and_1_slow_node_and_sync_disabled__then_a_timeout_wont_occur() {
+	public void sanity_test() {
 		SimulationTest test = bftTestBuilder.build();
-		TestResults results = test.run();
+		TestResults results = test.run(Duration.ofSeconds(60));
+
+		LongSummaryStatistics statistics = results.getNetwork().getSystemCounters().values().stream()
+			.map(s -> s.get(CounterType.BFT_SYNC_REQUESTS_SENT))
+			.mapToLong(l -> l)
+			.summaryStatistics();
+
+		System.out.println(statistics);
+
 		assertThat(results.getCheckResults()).allSatisfy((name, error) -> AssertionsForClassTypes.assertThat(error).isNotPresent());
 	}
+
 }

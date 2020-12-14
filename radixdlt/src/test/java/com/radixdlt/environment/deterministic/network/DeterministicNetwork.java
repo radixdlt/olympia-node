@@ -20,7 +20,6 @@ package com.radixdlt.environment.deterministic.network;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.Streams;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.epoch.LocalTimeoutSender;
@@ -51,7 +50,6 @@ public final class DeterministicNetwork {
 	public interface DeterministicSender extends
 		ProposalBroadcaster,
 		VoteSender,
-		SyncVerticesRequestSender,
 		SyncVerticesResponseSender,
 		EpochsLedgerUpdateSender,
 		LocalTimeoutSender,

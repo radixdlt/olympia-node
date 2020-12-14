@@ -38,11 +38,12 @@ import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.liveness.PacemakerReducer;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
-import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.consensus.liveness.ExponentialPacemakerTimeoutCalculator;
 import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculator;
 import com.radixdlt.consensus.liveness.VoteSender;
+import com.radixdlt.consensus.sync.GetVerticesRequest;
+import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
@@ -50,14 +51,12 @@ import com.radixdlt.consensus.bft.BFTBuilder;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTSyncRequestProcessor;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.sync.BFTSync;
-import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
@@ -65,10 +64,10 @@ import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.liveness.PendingViewTimeouts;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.LocalSyncRequest;
@@ -214,8 +213,8 @@ public final class ConsensusModule extends AbstractModule {
 		);
 	}
 
-	@Provides
-	private BFTSyncRequestProcessor bftSyncRequestProcessor(
+	@ProvidesIntoSet
+	private RemoteEventProcessor<GetVerticesRequest> bftSyncRequestProcessor(
 		VertexStore vertexStore,
 		SyncVerticesResponseSender responseSender
 	) {
@@ -228,23 +227,20 @@ public final class ConsensusModule extends AbstractModule {
 		@Self BFTNode self,
 		VertexStore vertexStore,
 		PacemakerReducer pacemakerReducer,
-		SyncVerticesRequestSender requestSender,
+		RemoteEventDispatcher<GetVerticesRequest> requestSender,
 		EventDispatcher<LocalSyncRequest> syncLedgerRequestSender,
-		ScheduledEventDispatcher<LocalGetVerticesRequest> timeoutDispatcher,
+		ScheduledEventDispatcher<VertexRequestTimeout> timeoutDispatcher,
 		@LastProof VerifiedLedgerHeaderAndProof ledgerLastProof, // Use this instead of configuration.getRoot()
-		SystemCounters counters,
 		Random random,
-		@BFTSyncPatienceMillis int bftSyncPatienceMillis
+		@BFTSyncPatienceMillis int bftSyncPatienceMillis,
+		SystemCounters counters
 	) {
 		return new BFTSync(
 			self,
 			vertexStore,
 			pacemakerReducer,
 			Comparator.comparingLong((LedgerHeader h) -> h.getAccumulatorState().getStateVersion()),
-			(node, request)  -> {
-				counters.increment(CounterType.BFT_SYNC_REQUESTS_SENT);
-				requestSender.sendGetVerticesRequest(node, request);
-			},
+			requestSender,
 			syncLedgerRequestSender,
 			timeoutDispatcher,
 			ledgerLastProof,

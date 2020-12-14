@@ -27,13 +27,15 @@ import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
-import com.radixdlt.consensus.bft.BFTSyncRequestProcessor;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.BFTSync;
-import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
+import com.radixdlt.consensus.sync.GetVerticesRequest;
+import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.RemoteEventProcessor;
+import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.utils.ThreadFactories;
 import io.reactivex.rxjava3.core.Observable;
@@ -73,17 +75,18 @@ public class BFTRunner implements ModuleRunner {
 		Set<EventProcessor<BFTRebuildUpdate>> rebuildProcessors,
 		Observable<BFTInsertUpdate> bftUpdates,
 		Set<EventProcessor<BFTInsertUpdate>> bftUpdateProcessors,
-		Observable<LocalGetVerticesRequest> bftSyncTimeouts,
-		EventProcessor<LocalGetVerticesRequest> bftSyncTimeoutProcessor,
+		Observable<VertexRequestTimeout> bftSyncTimeouts,
+		Set<EventProcessor<VertexRequestTimeout>> vertexRequestTimeoutProcessors,
 		Observable<ViewUpdate> viewUpdates,
 		Set<EventProcessor<ViewUpdate>> viewUpdateProcessors,
 		Observable<ScheduledLocalTimeout> timeouts,
 		Set<EventProcessor<ScheduledLocalTimeout>> timeoutProcessors,
+		Observable<RemoteEvent<GetVerticesRequest>> verticesRequests,
+		Set<RemoteEventProcessor<GetVerticesRequest>> requestProcessors,
 		BFTEventsRx networkRx,
 		SyncVerticesRPCRx rpcRx,
 		BFTEventProcessor bftEventProcessor,
 		BFTSync vertexStoreSync,
-		BFTSyncRequestProcessor requestProcessor,
 		@Self BFTNode self
 	) {
 		this.bftEventProcessor = Objects.requireNonNull(bftEventProcessor);
@@ -113,12 +116,12 @@ public class BFTRunner implements ModuleRunner {
 						throw new IllegalStateException(self + ": Unknown consensus event: " + e);
 					}
 				}),
-			rpcRx.requests()
+			verticesRequests
 				.observeOn(singleThreadScheduler)
-				.doOnNext(requestProcessor::processGetVerticesRequest),
+				.doOnNext(r -> requestProcessors.forEach(p -> p.process(r.getOrigin(), r.getEvent()))),
 			rpcRx.responses()
 				.observeOn(singleThreadScheduler)
-				.doOnNext(vertexStoreSync::processGetVerticesResponse),
+				.doOnNext(resp -> vertexStoreSync.responseProcessor().process(resp)),
 			rpcRx.errorResponses()
 				.observeOn(singleThreadScheduler)
 				.doOnNext(vertexStoreSync::processGetVerticesErrorResponse),
@@ -133,7 +136,7 @@ public class BFTRunner implements ModuleRunner {
 				.doOnNext(vertexStoreSync::processLedgerUpdate),
 			bftSyncTimeouts
 				.observeOn(singleThreadScheduler)
-				.doOnNext(bftSyncTimeoutProcessor::process)
+				.doOnNext(t -> vertexRequestTimeoutProcessors.forEach(p -> p.process(t)))
 		));
 
 		this.events = eventCoordinatorEvents

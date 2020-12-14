@@ -25,8 +25,8 @@ import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
-import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
+import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.integration.distributed.simulation.network.MessageDropper;
 import com.radixdlt.integration.distributed.simulation.network.OneNodePerEpochResponseDropper;
 import com.radixdlt.integration.distributed.simulation.network.FProposalsPerViewDropper;
@@ -51,6 +51,26 @@ public final class NetworkDroppers {
 			@ProvidesIntoSet
 			Predicate<MessageInTransit> dropper(ImmutableList<BFTNode> nodes) {
 				return new FProposalsPerViewDropper(nodes);
+			}
+		};
+	}
+
+	public static Module dropAllMessagesForOneNode(long durationMillis, long timeBetweenMillis) {
+		return new AbstractModule() {
+			@ProvidesIntoSet
+			Predicate<MessageInTransit> dropper(ImmutableList<BFTNode> nodes) {
+				return msg -> {
+					if (msg.getSender().equals(msg.getReceiver())) {
+						return false;
+					}
+
+					if (!msg.getSender().equals(nodes.get(0)) && !msg.getReceiver().equals(nodes.get(0))) {
+						return false;
+					}
+
+					long current = System.currentTimeMillis() % (durationMillis + timeBetweenMillis);
+					return current < durationMillis;
+				};
 			}
 		};
 	}
