@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -17,21 +17,24 @@
 
 package com.radixdlt.consensus.liveness;
 
-import java.util.Set;
+import com.radixdlt.consensus.bft.View;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
+import org.radix.serialization.SerializeMessageObject;
 
-import com.radixdlt.consensus.ViewTimeout;
-import com.radixdlt.consensus.bft.BFTNode;
+public class VoteTimeoutTest extends SerializeMessageObject<VoteTimeout> {
 
-/**
- * Hotstuff's Event-Driven OnNextSyncView as well as vote sending
- */
-public interface VoteSender {
-	/**
-	 * Send a view timeout message to the specified validator.
-	 *
-	 * @param viewTimeout the view timeout message
-	 * @param nodes the validators to broadcast the message to
-	 */
-	// FIXME: To be change when TCs implemented
-	void broadcastViewTimeout(ViewTimeout viewTimeout, Set<BFTNode> nodes);
+    public VoteTimeoutTest() {
+        super(VoteTimeout.class, VoteTimeoutTest::get);
+    }
+
+    private static VoteTimeout get() {
+        return new VoteTimeout(View.of(1), 2);
+    }
+
+    @Test
+    public void equalsTest() {
+        EqualsVerifier.forClass(VoteTimeout.class)
+            .verify();
+    }
 }

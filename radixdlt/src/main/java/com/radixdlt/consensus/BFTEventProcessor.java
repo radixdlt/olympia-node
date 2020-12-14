@@ -49,13 +49,6 @@ public interface BFTEventProcessor {
 	void processVote(Vote vote);
 
 	/**
-	 * Process a consensus view timeout message.
-	 *
-	 * @param viewTimeout the view timeout message
-	 */
-	void processViewTimeout(ViewTimeout viewTimeout);
-
-	/**
 	 * Process a consensus proposal message.
 	 *
 	 * @param proposal the proposal message

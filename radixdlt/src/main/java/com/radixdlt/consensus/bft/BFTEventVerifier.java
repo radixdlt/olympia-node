@@ -23,9 +23,9 @@ import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
+import com.radixdlt.consensus.liveness.VoteTimeout;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.crypto.ECDSASignature;
 import java.util.Objects;
@@ -71,17 +71,13 @@ public final class BFTEventVerifier implements BFTEventProcessor {
 	@Override
 	public void processVote(Vote vote) {
 		validAuthor(vote).ifPresent(node -> {
-			if (verify(node, vote.getTimestampedVoteData(), vote.getSignature(), vote)) {
-				forwardTo.processVote(vote);
-			}
-		});
-	}
+			boolean verifiedVoteData = verify(node, vote.getTimestampedVoteData(), vote.getSignature(), vote);
+			boolean verifiedTimeoutData = vote.getTimeoutSignature()
+				.map(timeoutSignature -> verify(node, VoteTimeout.of(vote), timeoutSignature, vote))
+				.orElse(true);
 
-	@Override
-	public void processViewTimeout(ViewTimeout viewTimeout) {
-		validAuthor(viewTimeout).ifPresent(node -> {
-			if (verify(node, viewTimeout.viewTimeoutData(), viewTimeout.signature(), viewTimeout)) {
-				forwardTo.processViewTimeout(viewTimeout);
+			if (verifiedVoteData && verifiedTimeoutData) {
+				forwardTo.processVote(vote);
 			}
 		});
 	}

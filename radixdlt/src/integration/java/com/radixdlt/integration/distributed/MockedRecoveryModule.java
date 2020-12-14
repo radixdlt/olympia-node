@@ -37,6 +37,8 @@ import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.store.LastProof;
 
+import java.util.Optional;
+
 /**
  * Starting configuration for simulation/deterministic steady state tests.
  */
@@ -76,7 +78,10 @@ public class MockedRecoveryModule extends AbstractModule {
 			proof.timestamp()
 		);
 		QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesis, nextLedgerHeader);
-		return new BFTConfiguration(validatorSet, VerifiedVertexStoreState.create(HighQC.from(genesisQC), verifiedGenesis));
+		return new BFTConfiguration(
+			validatorSet,
+			VerifiedVertexStoreState.create(HighQC.from(genesisQC), verifiedGenesis, Optional.empty())
+		);
 	}
 
 	@Provides

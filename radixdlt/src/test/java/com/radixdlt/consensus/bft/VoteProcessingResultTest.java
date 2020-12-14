@@ -17,33 +17,26 @@
 
 package com.radixdlt.consensus.bft;
 
-import com.radixdlt.consensus.QuorumCertificate;
-import java.util.Objects;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
 
-/**
- * A quorum certificate which has been constructed by this node.
- */
-public final class FormedQC {
-	private final QuorumCertificate qc;
-	private final BFTNode lastAuthor;
+public class VoteProcessingResultTest {
 
-	private FormedQC(QuorumCertificate qc, BFTNode lastAuthor) {
-		this.qc = qc;
-		this.lastAuthor = lastAuthor;
-	}
+    @Test
+    public void equalsVoteAccepted() {
+        EqualsVerifier.forClass(VoteProcessingResult.VoteAccepted.class)
+            .verify();
+    }
 
-	public QuorumCertificate qc() {
-		return qc;
-	}
+    @Test
+    public void equalsVoteRejected() {
+        EqualsVerifier.forClass(VoteProcessingResult.VoteRejected.class)
+            .verify();
+    }
 
-	public BFTNode lastAuthor() {
-		return lastAuthor;
-	}
-
-	public static FormedQC create(QuorumCertificate qc, BFTNode lastAuthor) {
-		return new FormedQC(
-			Objects.requireNonNull(qc),
-			Objects.requireNonNull(lastAuthor)
-		);
-	}
+    @Test
+    public void equalsQuorumReached() {
+        EqualsVerifier.forClass(VoteProcessingResult.QuorumReached.class)
+            .verify();
+    }
 }

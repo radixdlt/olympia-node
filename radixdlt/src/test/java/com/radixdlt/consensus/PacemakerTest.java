@@ -25,6 +25,7 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.TypeLiteral;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.View;
@@ -125,7 +126,7 @@ public class PacemakerTest {
 	}
 
 	@Test
-	public void on_timeout_pacemaker_should_send_view_timeout() {
+	public void on_timeout_pacemaker_should_send_vote_with_timeout() {
 		// Arrange
 		createRunner(ecKeyPair).injectMembers(this);
 		processor.start();
@@ -133,10 +134,14 @@ public class PacemakerTest {
 		// Act
 		ControlledMessage timeoutMsg = network.nextMessage(e -> Epoched.isInstance(e.message(), ScheduledLocalTimeout.class)).value();
 		processor.handleMessage(timeoutMsg.origin(), timeoutMsg.message());
+		ControlledMessage bftUpdateMsg = network.nextMessage(e -> e.message() instanceof BFTInsertUpdate).value();
+		processor.handleMessage(bftUpdateMsg.origin(), bftUpdateMsg.message());
 
 		// Assert
 		assertThat(network.allMessages())
-			.haveExactly(1, new Condition<>(msg -> msg.message() instanceof ViewTimeout, "A remote view timeout has been emitted"));
+			.haveExactly(1, new Condition<>(
+				msg -> (msg.message() instanceof Vote) && ((Vote) msg.message()).isTimeout(),
+				"A remote timeout vote has been emitted"));
 	}
 
 	@Test
@@ -146,9 +151,12 @@ public class PacemakerTest {
 		processor.start();
 		ControlledMessage timeoutMsg = network.nextMessage(e -> Epoched.isInstance(e.message(), ScheduledLocalTimeout.class)).value();
 		processor.handleMessage(timeoutMsg.origin(), timeoutMsg.message());
+		ControlledMessage bftUpdateMsg = network.nextMessage(e -> e.message() instanceof BFTInsertUpdate).value();
+		processor.handleMessage(bftUpdateMsg.origin(), bftUpdateMsg.message());
 
 		// Act
-		ControlledMessage viewTimeout = network.nextMessage(e -> e.message() instanceof ViewTimeout).value();
+		ControlledMessage viewTimeout = network.nextMessage(e ->
+			(e.message() instanceof Vote) && ((Vote) e.message()).isTimeout()).value();
 		processor.handleMessage(viewTimeout.origin(), viewTimeout.message());
 
 		// Assert

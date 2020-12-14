@@ -24,6 +24,7 @@ import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
@@ -49,10 +50,8 @@ import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.liveness.PacemakerStateFactory;
-import com.radixdlt.consensus.liveness.PendingViewTimeouts;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
-import com.radixdlt.consensus.liveness.VoteSender;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
@@ -66,8 +65,10 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessOnDispatch;
+import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 
+import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.store.LastEpochProof;
 import com.radixdlt.sync.LocalSyncRequest;
 import java.util.Comparator;
@@ -171,42 +172,37 @@ public class EpochsConsensusModule extends AbstractModule {
 	private PacemakerFactory pacemakerFactory(
 		@Self BFTNode self,
 		SystemCounters counters,
-		VoteSender voteSender,
 		ProposalBroadcaster proposalBroadcaster,
 		NextCommandGenerator nextCommandGenerator,
 		Hasher hasher,
 		EventDispatcher<EpochLocalTimeoutOccurrence> timeoutEventDispatcher,
-		LocalTimeoutSender localTimeoutSender
+		LocalTimeoutSender localTimeoutSender,
+		RemoteEventDispatcher<Vote> voteDispatcher,
+		TimeSupplier timeSupplier
 	) {
 		return (
 			validatorSet,
 			vertexStore,
-			pacemakerState,
 			timeoutCalculator,
 			safetyRules,
 			initialViewUpdate,
 			epoch
-		) -> {
-			PendingViewTimeouts pendingViewTimeouts = new PendingViewTimeouts();
-
-			return new Pacemaker(
-				self,
-				counters,
-				pendingViewTimeouts,
-				validatorSet,
-				vertexStore,
-				safetyRules,
-				voteSender,
-				timeout -> timeoutEventDispatcher.dispatch(new EpochLocalTimeoutOccurrence(epoch, timeout)),
-				pacemakerState,
-				(scheduledTimeout, ms) -> localTimeoutSender.scheduleTimeout(Epoched.from(epoch, scheduledTimeout), ms),
-				timeoutCalculator,
-				nextCommandGenerator,
-				proposalBroadcaster,
-				hasher,
-				initialViewUpdate
-			);
-		};
+		) -> new Pacemaker(
+			self,
+			counters,
+			validatorSet,
+			vertexStore,
+			safetyRules,
+			timeout -> timeoutEventDispatcher.dispatch(new EpochLocalTimeoutOccurrence(epoch, timeout)),
+			(scheduledTimeout, ms) -> localTimeoutSender.scheduleTimeout(Epoched.from(epoch, scheduledTimeout), ms),
+			timeoutCalculator,
+			nextCommandGenerator,
+			proposalBroadcaster,
+			hasher,
+			voteDispatcher,
+			timeSupplier,
+			initialViewUpdate
+		);
 	}
 
 	@Provides

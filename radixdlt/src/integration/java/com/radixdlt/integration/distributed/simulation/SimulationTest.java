@@ -403,7 +403,11 @@ public class SimulationTest {
 		}
 
 		public Builder addTimestampChecker(String invariantName) {
-			TimestampChecker timestampChecker = new TimestampChecker();
+			return addTimestampChecker(invariantName, Duration.ofSeconds(1));
+		}
+
+		public Builder addTimestampChecker(String invariantName, Duration maxDelay) {
+			TimestampChecker timestampChecker = new TimestampChecker(maxDelay);
 			this.checksBuilder.put(invariantName, nodes -> timestampChecker);
 			return this;
 		}

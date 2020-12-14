@@ -40,7 +40,7 @@ public final class BFTBuilder {
 	private Pacemaker pacemaker;
 	private VertexStore vertexStore;
 	private BFTSyncer bftSyncer;
-	private EventDispatcher<FormedQC> formedQCEventDispatcher;
+	private EventDispatcher<ViewQuorumReached> viewQuorumReachedEventDispatcher;
 	private EventDispatcher<NoVote> noVoteEventDispatcher;
 
 	// Instance specific objects
@@ -63,7 +63,12 @@ public final class BFTBuilder {
 		return this;
 	}
 
-	public BFTBuilder voteSender(RemoteEventDispatcher<Vote> voteDispatcher) {
+	public BFTBuilder viewUpdate(ViewUpdate viewUpdate) {
+		this.viewUpdate = viewUpdate;
+		return this;
+	}
+
+	public BFTBuilder voteDispatcher(RemoteEventDispatcher<Vote> voteDispatcher) {
 		this.voteDispatcher = voteDispatcher;
 		return this;
 	}
@@ -103,18 +108,13 @@ public final class BFTBuilder {
 		return this;
 	}
 
-	public BFTBuilder formedQCEventDispatcher(EventDispatcher<FormedQC> formedQCEventDispatcher) {
-		this.formedQCEventDispatcher = formedQCEventDispatcher;
+	public BFTBuilder viewQuorumReachedEventDispatcher(EventDispatcher<ViewQuorumReached> viewQuorumReachedEventDispatcher) {
+		this.viewQuorumReachedEventDispatcher = viewQuorumReachedEventDispatcher;
 		return this;
 	}
 
 	public BFTBuilder noVoteEventDispatcher(EventDispatcher<NoVote> noVoteEventDispatcher) {
 		this.noVoteEventDispatcher = noVoteEventDispatcher;
-		return this;
-	}
-
-	public BFTBuilder viewUpdate(ViewUpdate viewUpdate) {
-		this.viewUpdate = viewUpdate;
 		return this;
 	}
 
@@ -125,9 +125,10 @@ public final class BFTBuilder {
 		final PendingVotes pendingVotes = new PendingVotes(hasher);
 
 		BFTEventReducer reducer = new BFTEventReducer(
+			self,
 			pacemaker,
 			vertexStore,
-			formedQCEventDispatcher,
+			viewQuorumReachedEventDispatcher,
 			noVoteEventDispatcher,
 			voteDispatcher,
 			hasher,
@@ -138,7 +139,6 @@ public final class BFTBuilder {
 		);
 
 		BFTEventPreprocessor preprocessor = new BFTEventPreprocessor(
-			self,
 			reducer,
 			bftSyncer,
 			viewUpdate

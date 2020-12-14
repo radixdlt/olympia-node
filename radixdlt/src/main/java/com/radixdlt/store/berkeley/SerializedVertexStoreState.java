@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.HighQC;
+import com.radixdlt.consensus.TimeoutCertificate;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -28,6 +29,7 @@ import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Vertex Store State version which can be serialized.
@@ -51,15 +53,21 @@ public final class SerializedVertexStoreState {
 	@DsonOutput(Output.ALL)
 	private final HighQC highQC;
 
+	@JsonProperty("highest_tc")
+	@DsonOutput(Output.ALL)
+	private final TimeoutCertificate highestTC;
+
 	@JsonCreator
 	public SerializedVertexStoreState(
 		@JsonProperty("high_qc") HighQC highQC,
 		@JsonProperty("root") UnverifiedVertex root,
-		@JsonProperty("vertices") ImmutableList<UnverifiedVertex> vertices
+		@JsonProperty("vertices") ImmutableList<UnverifiedVertex> vertices,
+		@JsonProperty("highest_tc") TimeoutCertificate highestTC
 	) {
 		this.root = Objects.requireNonNull(root);
 		this.vertices = Objects.requireNonNull(vertices);
 		this.highQC = Objects.requireNonNull(highQC);
+		this.highestTC = highestTC;
 	}
 
 	public UnverifiedVertex getRoot() {
@@ -74,9 +82,13 @@ public final class SerializedVertexStoreState {
 		return highQC;
 	}
 
+	public Optional<TimeoutCertificate> getHighestTC() {
+		return Optional.ofNullable(highestTC);
+	}
+
 	@Override
 	public int hashCode() {
-		return Objects.hash(root, vertices, highQC);
+		return Objects.hash(root, vertices, highQC, highestTC);
 	}
 
 	@Override
@@ -88,15 +100,18 @@ public final class SerializedVertexStoreState {
 		SerializedVertexStoreState other = (SerializedVertexStoreState) o;
 		return Objects.equals(this.root, other.root)
 			&& Objects.equals(this.vertices, other.vertices)
-			&& Objects.equals(this.highQC, other.highQC);
+			&& Objects.equals(this.highQC, other.highQC)
+			&& Objects.equals(this.highestTC, other.highestTC);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{highQC=%s root=%s vertices=%s}",
+		return String.format("%s{highQC=%s root=%s vertices=%s highestTc=%s}",
 			this.getClass().getSimpleName(),
+			this.highQC,
 			this.root,
-			this.vertices
+			this.vertices,
+			this.highestTC
 		);
 	}
 }

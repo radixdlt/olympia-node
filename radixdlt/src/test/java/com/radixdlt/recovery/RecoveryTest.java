@@ -253,7 +253,6 @@ public class RecoveryTest {
 		assertThat(safetyState.getLastVotedView()).isEqualTo(vote.getView());
 	}
 
-
 	@Test
 	public void on_reboot_should_only_emit_pacemaker_events() {
 		// Arrange

@@ -57,7 +57,7 @@ public class PacemakerState implements PacemakerReducer {
 	public void processQC(HighQC highQC) {
 		log.trace("QuorumCertificate: {}", highQC);
 
-		final View view = highQC.highestQC().getView();
+		final View view = highQC.getHighestView();
 		if (view.gte(this.currentView)) {
 			this.highQC = highQC;
 			this.updateView(view.next());
