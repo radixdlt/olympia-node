@@ -18,7 +18,6 @@
 package com.radixdlt.integration.distributed;
 
 import com.google.inject.AbstractModule;
-import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
@@ -35,7 +34,7 @@ public class MockedPersistenceStoreModule extends AbstractModule {
 
 	private static class MockedPersistenceStore implements PersistentSafetyStateStore {
 		@Override
-		public void commitState(Vote vote, SafetyState safetyState) {
+		public void commitState(SafetyState safetyState) {
 			// Nothing to do here
 		}
 

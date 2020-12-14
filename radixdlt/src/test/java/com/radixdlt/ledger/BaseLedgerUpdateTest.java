@@ -42,7 +42,8 @@ public class BaseLedgerUpdateTest {
 	public void testEqualsForBaseLedgerUpdateHierarchy() {
 		final var cls = EpochsLedgerUpdate.class;
 		final Set<Class<?>> classesToIgnore = Sets.newLinkedHashSet(
-			UInt256.class // Assumes and ensures non-null fields in hashCode()
+			UInt256.class, // Assumes and ensures non-null fields in hashCode()
+			Object.class // for Optional fields
 		);
 		checkEquals(cls, classesToIgnore);
 	}

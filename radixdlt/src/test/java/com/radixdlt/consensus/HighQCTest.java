@@ -26,6 +26,8 @@ import org.junit.Test;
 import org.powermock.reflect.Whitebox;
 import org.radix.serialization.SerializeObject;
 
+import java.util.Optional;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
@@ -44,13 +46,13 @@ public class HighQCTest extends SerializeObject<HighQC> {
 		BFTHeader commit = new BFTHeader(View.of(1234567889L), HashUtils.random256(), ledgerHeader);
 		VoteData voteData = new VoteData(header, parent, commit);
 		QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-		return HighQC.from(qc, qc);
+		return HighQC.from(qc, qc, Optional.empty());
 	}
 
 	@Test
 	public void when_created_with_equal_qcs__highest_committed_is_elided() {
 		QuorumCertificate qc = mock(QuorumCertificate.class);
-		HighQC highQC = HighQC.from(qc, qc);
+		HighQC highQC = HighQC.from(qc, qc, Optional.empty());
 		QuorumCertificate storedCommitQC = Whitebox.getInternalState(highQC, "highestCommittedQC");
 		assertThat(storedCommitQC).isNull();
 		assertThat(highQC.highestQC()).isEqualTo(qc);
@@ -61,7 +63,7 @@ public class HighQCTest extends SerializeObject<HighQC> {
 	public void when_created_with_unequal_qcs__highest_committed_is_stored() {
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		QuorumCertificate cqc = mock(QuorumCertificate.class);
-		HighQC highQC = HighQC.from(qc, cqc);
+		HighQC highQC = HighQC.from(qc, cqc, Optional.empty());
 		QuorumCertificate storedCommitQC = Whitebox.getInternalState(highQC, "highestCommittedQC");
 		assertThat(storedCommitQC).isEqualTo(cqc);
 		assertThat(highQC.highestQC()).isEqualTo(qc);
@@ -72,7 +74,7 @@ public class HighQCTest extends SerializeObject<HighQC> {
 	public void sensibleToString() {
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		QuorumCertificate cqc = mock(QuorumCertificate.class);
-		HighQC highQC1 = HighQC.from(qc, cqc);
+		HighQC highQC1 = HighQC.from(qc, cqc, Optional.empty());
 
 		String s1 = highQC1.toString();
 		assertThat(s1)
@@ -80,7 +82,7 @@ public class HighQCTest extends SerializeObject<HighQC> {
 			.contains(qc.toString())
 			.contains(cqc.toString());
 
-		HighQC highQC2 = HighQC.from(qc, qc);
+		HighQC highQC2 = HighQC.from(qc, qc, Optional.empty());
 		String s2 = highQC2.toString();
 		assertThat(s2)
 			.contains(HighQC.class.getSimpleName())

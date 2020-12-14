@@ -97,7 +97,7 @@ public class RemoteSyncServiceProcessorTest {
 		when(header.getSignatures()).thenReturn(mock(TimestampedECDSASignatures.class));
 		when(request.getCurrentHeader()).thenReturn(header);
 		processor.process(BFTNode.random(), header);
-		verify(syncResponseDispatcher, never()).dispatch(any(), any());
+		verify(syncResponseDispatcher, never()).dispatch(any(BFTNode.class), any());
 	}
 
 	@Test
@@ -110,7 +110,7 @@ public class RemoteSyncServiceProcessorTest {
 		when(header.getSignatures()).thenReturn(mock(TimestampedECDSASignatures.class));
 		processor.process(BFTNode.random(), header);
 		when(reader.getNextCommittedCommands(any(), anyInt())).thenReturn(null);
-		verify(syncResponseDispatcher, never()).dispatch(any(), any());
+		verify(syncResponseDispatcher, never()).dispatch(any(BFTNode.class), any());
 	}
 
 	@Test
@@ -136,6 +136,6 @@ public class RemoteSyncServiceProcessorTest {
 		processor.process(BFTNode.random(), ledgerHeaderAndProof);
 
 		// Assert
-		verify(syncResponseDispatcher, times(1)).dispatch(any(), argThat(l -> l.getTail().equals(epoch2)));
+		verify(syncResponseDispatcher, times(1)).dispatch(any(BFTNode.class), argThat(l -> l.getTail().equals(epoch2)));
 	}
 }

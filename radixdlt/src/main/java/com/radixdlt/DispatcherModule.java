@@ -26,12 +26,13 @@ import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
 import com.radixdlt.consensus.bft.NoVote;
+import com.radixdlt.consensus.bft.ViewQuorumReached;
+import com.radixdlt.consensus.bft.ViewVotingResult;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
-import com.radixdlt.consensus.bft.FormedQC;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.epoch.EpochViewUpdate;
@@ -96,8 +97,8 @@ public class DispatcherModule extends AbstractModule {
 		final var syncUpdateKey = new TypeLiteral<EventProcessor<VerifiedCommandsAndProof>>() { };
 		Multibinder.newSetBinder(binder(), syncUpdateKey, ProcessOnDispatch.class);
 
-		final var formQcKey = new TypeLiteral<EventProcessor<FormedQC>>() { };
-		Multibinder.newSetBinder(binder(), formQcKey, ProcessOnDispatch.class);
+		final var viewQuorumReachedKey = new TypeLiteral<EventProcessor<ViewQuorumReached>>() { };
+		Multibinder.newSetBinder(binder(), viewQuorumReachedKey, ProcessOnDispatch.class);
 		final var voteKey = new TypeLiteral<EventProcessor<Vote>>() { };
 		Multibinder.newSetBinder(binder(), voteKey, ProcessOnDispatch.class);
 	}
@@ -154,14 +155,20 @@ public class DispatcherModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private EventDispatcher<FormedQC> formedQCEventDispatcher(
-		@ProcessOnDispatch Set<EventProcessor<FormedQC>> processors,
+	private EventDispatcher<ViewQuorumReached> viewQuorumReachedEventDispatcher(
+		@ProcessOnDispatch Set<EventProcessor<ViewQuorumReached>> processors,
 		SystemCounters systemCounters
 	) {
-		return formedQC -> {
-			logger.trace("Formed QC: {}", formedQC.qc());
-			systemCounters.increment(CounterType.BFT_VOTE_QUORUMS);
-			processors.forEach(p -> p.process(formedQC));
+		return viewQuorumReached -> {
+			logger.trace("View quorum reached with result: {}", viewQuorumReached.votingResult());
+
+			if (viewQuorumReached.votingResult() instanceof ViewVotingResult.FormedTC) {
+				systemCounters.increment(CounterType.BFT_TIMEOUT_QUORUMS);
+			} else if (viewQuorumReached.votingResult() instanceof ViewVotingResult.FormedQC) {
+				systemCounters.increment(CounterType.BFT_VOTE_QUORUMS);
+			}
+
+			processors.forEach(p -> p.process(viewQuorumReached));
 		};
 	}
 

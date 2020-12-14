@@ -20,7 +20,6 @@ package com.radixdlt.middleware2.network;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.liveness.VoteSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 
 import com.radixdlt.environment.RemoteEventDispatcher;
@@ -37,7 +36,6 @@ import org.radix.network.messaging.Message;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.PeerWithSystem;
@@ -52,7 +50,7 @@ import io.reactivex.rxjava3.subjects.PublishSubject;
  * BFT Network sending and receiving layer used on top of the MessageCentral
  * layer.
  */
-public final class MessageCentralBFTNetwork implements ProposalBroadcaster, VoteSender, BFTEventsRx {
+public final class MessageCentralBFTNetwork implements ProposalBroadcaster, BFTEventsRx {
 	private static final Logger log = LogManager.getLogger();
 
 	private final BFTNode self;
@@ -91,18 +89,6 @@ public final class MessageCentralBFTNetwork implements ProposalBroadcaster, Vote
 				this.localMessages.onNext(proposal);
 			} else {
 				ConsensusEventMessage message = new ConsensusEventMessage(this.magic, proposal);
-				send(message, node);
-			}
-		}
-	}
-
-	@Override
-	public void broadcastViewTimeout(ViewTimeout viewTimeout, Set<BFTNode> nodes) {
-		for (BFTNode node : nodes) {
-			if (this.self.equals(node)) {
-				this.localMessages.onNext(viewTimeout);
-			} else {
-				ConsensusEventMessage message = new ConsensusEventMessage(this.magic, viewTimeout);
 				send(message, node);
 			}
 		}

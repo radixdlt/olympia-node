@@ -26,9 +26,10 @@ import java.util.Optional;
 
 import javax.annotation.concurrent.NotThreadSafe;
 
+import com.radixdlt.consensus.bft.VoteProcessingResult;
+import com.radixdlt.consensus.bft.VoteProcessingResult.VoteRejected.VoteRejectedReason;
+import com.radixdlt.consensus.liveness.VoteTimeout;
 import com.radixdlt.crypto.Hasher;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
@@ -48,7 +49,6 @@ import com.radixdlt.crypto.ECDSASignature;
 @NotThreadSafe
 @SecurityCritical({ SecurityKind.SIG_VERIFY, SecurityKind.GENERAL })
 public final class PendingVotes {
-	private static final Logger log = LogManager.getLogger();
 
 	@VisibleForTesting
 	// Make sure equals tester can access.
@@ -77,6 +77,7 @@ public final class PendingVotes {
 	}
 
 	private final Map<HashCode, ValidationState> voteState = Maps.newHashMap();
+	private final Map<HashCode, ValidationState> timeoutVoteState = Maps.newHashMap();
 	private final Map<BFTNode, PreviousVote> previousVotes = Maps.newHashMap();
 	private final Hasher hasher;
 
@@ -85,46 +86,83 @@ public final class PendingVotes {
 	}
 
 	/**
-	 * Inserts a vote for a given vertex, attempting to form a quorum certificate for that vertex.
-	 * <p>
-	 * A QC will only be formed if permitted by the {@link BFTValidatorSet}.
+	 * Inserts a vote for a given vertex,
+	 * attempting to form either a quorum certificate for that vertex
+	 * or a timeout certificate.
+	 * A quorum will only be formed if permitted by the {@link BFTValidatorSet}.
 	 *
 	 * @param vote The vote to be inserted
-	 * @return The generated QC, if any
+	 * @return The result of vote processing
 	 */
-	public Optional<QuorumCertificate> insertVote(Vote vote, BFTValidatorSet validatorSet) {
+	public VoteProcessingResult insertVote(Vote vote, BFTValidatorSet validatorSet) {
 		final BFTNode node = vote.getAuthor();
-		// Only process for valid validators and signatures
-		if (!validatorSet.containsNode(node)) {
-			log.info("Ignoring vote from invalid author {}", node::getSimpleName);
-			return Optional.empty();
-		}
-
 		final TimestampedVoteData timestampedVoteData = vote.getTimestampedVoteData();
 		final VoteData voteData = timestampedVoteData.getVoteData();
 		final HashCode voteDataHash = this.hasher.hash(voteData);
 		final View voteView = voteData.getProposed().getView();
+
+		if (!validatorSet.containsNode(node)) {
+			return VoteProcessingResult.rejected(VoteRejectedReason.INVALID_AUTHOR);
+		}
+
 		if (!replacePreviousVote(node, voteView, voteDataHash)) {
-			return Optional.empty();
+			return VoteProcessingResult.rejected(VoteRejectedReason.DUPLICATE_VOTE);
 		}
 
-		// If there is no equivocation or duplication, we process the vote.
-		ValidationState validationState = this.voteState.computeIfAbsent(voteDataHash, k -> validatorSet.newValidationState());
+		return processVoteForQC(vote, validatorSet).<VoteProcessingResult>map(VoteProcessingResult::qcQuorum)
+			.or(() -> processVoteForTC(vote, validatorSet).map(VoteProcessingResult::tcQuorum))
+			.orElseGet(VoteProcessingResult::accepted);
+	}
 
-		// try to form a QC with the added signature according to the requirements
-		final ECDSASignature signature = vote.getSignature();
-		if (!(validationState.addSignature(node, timestampedVoteData.getNodeTimestamp(), signature) && validationState.complete())) {
+	private Optional<QuorumCertificate> processVoteForQC(Vote vote, BFTValidatorSet validatorSet) {
+		final TimestampedVoteData timestampedVoteData = vote.getTimestampedVoteData();
+		final VoteData voteData = timestampedVoteData.getVoteData();
+		final HashCode voteDataHash = this.hasher.hash(voteData);
+		final BFTNode node = vote.getAuthor();
+
+		final ValidationState validationState =
+			this.voteState.computeIfAbsent(voteDataHash, k -> validatorSet.newValidationState());
+
+		final boolean signatureAdded =
+			validationState.addSignature(node, timestampedVoteData.getNodeTimestamp(), vote.getSignature());
+
+		if (signatureAdded && validationState.complete()) {
+			return Optional.of(new QuorumCertificate(voteData, validationState.signatures()));
+		} else {
 			return Optional.empty();
 		}
+	}
 
-		// QC can be formed, so return it
-		QuorumCertificate qc = new QuorumCertificate(voteData, validationState.signatures());
-		return Optional.of(qc);
+	private Optional<TimeoutCertificate> processVoteForTC(Vote vote, BFTValidatorSet validatorSet) {
+		if (!vote.isTimeout()) {
+			return Optional.empty(); // TC can't be formed if vote is not timed out
+		}
+
+		final ECDSASignature timeoutSignature = vote.getTimeoutSignature().orElseThrow();
+
+		final VoteTimeout voteTimeout = VoteTimeout.of(vote);
+		final HashCode voteTimeoutHash = this.hasher.hash(voteTimeout);
+		final BFTNode node = vote.getAuthor();
+
+		final ValidationState validationState =
+			this.timeoutVoteState.computeIfAbsent(voteTimeoutHash, k -> validatorSet.newValidationState());
+
+		final boolean signatureAdded =
+			validationState.addSignature(node, vote.getTimestampedVoteData().getNodeTimestamp(), timeoutSignature);
+
+		if (signatureAdded && validationState.complete()) {
+			return Optional.of(new TimeoutCertificate(
+					voteTimeout.getEpoch(),
+					voteTimeout.getView(),
+					validationState.signatures()));
+		} else {
+			return Optional.empty();
+		}
 	}
 
 	private boolean replacePreviousVote(BFTNode author, View voteView, HashCode voteHash) {
-		PreviousVote thisVote = new PreviousVote(voteView, voteHash);
-		PreviousVote previousVote = this.previousVotes.put(author, thisVote);
+		final PreviousVote thisVote = new PreviousVote(voteView, voteHash);
+		final PreviousVote previousVote = this.previousVotes.put(author, thisVote);
 		if (previousVote == null) {
 			// No previous vote for this author, all good here
 			return true;

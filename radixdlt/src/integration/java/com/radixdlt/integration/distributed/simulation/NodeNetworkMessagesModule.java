@@ -26,7 +26,6 @@ import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.liveness.VoteSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
@@ -53,7 +52,6 @@ public class NodeNetworkMessagesModule extends AbstractModule {
 		bind(SyncEpochsRPCRx.class).to(SimulatedNetworkImpl.class);
 		bind(SyncVerticesRPCRx.class).to(SimulatedNetworkImpl.class);
 		bind(ProposalBroadcaster.class).to(SimulatedNetworkImpl.class);
-		bind(VoteSender.class).to(SimulatedNetworkImpl.class);
 		bind(SyncVerticesRequestSender.class).to(SimulatedNetworkImpl.class);
 		bind(SyncEpochsRPCSender.class).to(SimulatedNetworkImpl.class);
 		bind(SyncVerticesResponseSender.class).to(SimulatedNetworkImpl.class);

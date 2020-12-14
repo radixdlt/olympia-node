@@ -26,6 +26,7 @@ import com.radixdlt.consensus.BFTHeader;
 import com.google.common.hash.HashCode;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.TimeoutCertificate;
 import com.radixdlt.environment.EventDispatcher;
 
 import com.radixdlt.utils.Pair;
@@ -59,6 +60,7 @@ public final class VertexStore {
 	private VerifiedVertex rootVertex;
 	private QuorumCertificate highestQC;
 	private QuorumCertificate highestCommittedQC;
+	private Optional<TimeoutCertificate> highestTC;
 
 	private VertexStore(
 		Ledger ledger,
@@ -68,7 +70,8 @@ public final class VertexStore {
 		EventDispatcher<BFTInsertUpdate> bftUpdateDispatcher,
 		EventDispatcher<BFTRebuildUpdate> bftRebuildDispatcher,
 		EventDispatcher<BFTHighQCUpdate> highQCUpdateDispatcher,
-		EventDispatcher<BFTCommittedUpdate> bftCommittedDispatcher
+		EventDispatcher<BFTCommittedUpdate> bftCommittedDispatcher,
+		Optional<TimeoutCertificate> highestTC
 	) {
 		this.ledger = Objects.requireNonNull(ledger);
 		this.bftUpdateDispatcher = Objects.requireNonNull(bftUpdateDispatcher);
@@ -79,6 +82,7 @@ public final class VertexStore {
 		this.highestQC = Objects.requireNonNull(highestQC);
 		this.highestCommittedQC = Objects.requireNonNull(commitQC);
 		this.vertexChildren.put(rootVertex.getId(), new HashSet<>());
+		this.highestTC = Objects.requireNonNull(highestTC);
 	}
 
 	public static VertexStore create(
@@ -97,7 +101,8 @@ public final class VertexStore {
 			bftUpdateDispatcher,
 			bftRebuildDispatcher,
 			bftHighQCUpdateDispatcher,
-			bftCommittedDispatcher
+			bftCommittedDispatcher,
+			vertexStoreState.getHighQC().highestTC()
 		);
 
 		for (VerifiedVertex vertex : vertexStoreState.getVertices()) {
@@ -228,14 +233,42 @@ public final class VertexStore {
 		return VerifiedVertexStoreState.create(
 			this.highQC(),
 			this.rootVertex,
-			verticesBuilder.build()
+			verticesBuilder.build(),
+			this.highestTC
 		);
 	}
 
 	/**
+	 * Inserts a timeout certificate into the store.
+	 * @param timeoutCertificate the timeout certificate
+	 */
+	public void insertTimeoutCertificate(TimeoutCertificate timeoutCertificate) {
+		if (this.highestTC.isEmpty()
+				|| this.highestTC.get().getView().lt(timeoutCertificate.getView())) {
+			this.highestTC = Optional.of(timeoutCertificate);
+		}
+	}
+
+	/**
+	 * Returns the highest inserted timeout certificate.
+	 * @return the highest inserted timeout certificate
+	 */
+	public Optional<TimeoutCertificate> getHighestTimeoutCertificate() {
+		return this.highestTC;
+	}
+
+	/**
+	 * Returns the vertex with specified id or empty if not exists.
+	 * @param id the id of a vertex
+	 * @return the specified vertex or empty
+	 */
+	// TODO: reimplement in async way
+	public Optional<PreparedVertex> getPreparedVertex(HashCode id) {
+		return Optional.ofNullable(vertices.get(id));
+	}
+
+	/**
 	 * Inserts a vertex and then attempts to create the next header.
-	 * If the ledger is ahead of the vertex store then returns an empty optional
-	 * otherwise an empty optional.
 	 *
 	 * @param vertex vertex to insert
 	 */
@@ -335,7 +368,7 @@ public final class VertexStore {
 	 * @return the highest QCs
 	 */
 	public HighQC highQC() {
-		return HighQC.from(this.highestQC, this.highestCommittedQC);
+		return HighQC.from(this.highestQC, this.highestCommittedQC, this.highestTC);
 	}
 
 	/**
