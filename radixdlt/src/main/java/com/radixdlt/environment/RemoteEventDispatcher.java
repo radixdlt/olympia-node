@@ -26,4 +26,8 @@ import com.radixdlt.consensus.bft.BFTNode;
  */
 public interface RemoteEventDispatcher<T> {
 	void dispatch(BFTNode receiver, T t);
+
+	default void dispatch(Iterable<BFTNode> receivers, T t) {
+		receivers.forEach(r -> dispatch(r, t));
+	}
 }

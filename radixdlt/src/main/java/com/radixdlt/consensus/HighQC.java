@@ -18,11 +18,13 @@
 package com.radixdlt.consensus;
 
 import java.util.Objects;
+import java.util.Optional;
 
 import javax.annotation.concurrent.Immutable;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
@@ -47,15 +49,24 @@ public final class HighQC {
 	@DsonOutput(Output.ALL)
 	private final QuorumCertificate highestCommittedQC;
 
+	@JsonProperty("highest_tc")
+	@DsonOutput(Output.ALL)
+	private final TimeoutCertificate highestTC;
+
 	@JsonCreator
 	private static HighQC serializerCreate(
 		@JsonProperty("highest_qc") QuorumCertificate highestQC,
-		@JsonProperty("committed_qc") QuorumCertificate highestCommittedQC
+		@JsonProperty("committed_qc") QuorumCertificate highestCommittedQC,
+		@JsonProperty("highest_tc") TimeoutCertificate highestTC
 	) {
-		return new HighQC(highestQC, highestCommittedQC);
+		return new HighQC(highestQC, highestCommittedQC, highestTC);
 	}
 
-	private HighQC(QuorumCertificate highestQC, QuorumCertificate highestCommittedQC) {
+	private HighQC(
+		QuorumCertificate highestQC,
+		QuorumCertificate highestCommittedQC,
+		TimeoutCertificate highestTC
+	) {
 		this.highestQC = Objects.requireNonNull(highestQC);
 		// Don't include separate committedQC if it is the same as highQC.
 		// This significantly reduces the serialised size of the object.
@@ -63,6 +74,13 @@ public final class HighQC {
 			this.highestCommittedQC = null;
 		} else {
 			this.highestCommittedQC = highestCommittedQC;
+		}
+
+		// only relevant if it's for a higher view than QC
+		if (highestTC != null && highestTC.getView().gt(highestQC.getView())) {
+			this.highestTC = highestTC;
+		} else {
+			this.highestTC = null;
 		}
 	}
 
@@ -73,7 +91,7 @@ public final class HighQC {
 	 * @return A new {@link HighQC}
 	 */
 	public static HighQC from(QuorumCertificate qc) {
-		return HighQC.from(qc, qc);
+		return HighQC.from(qc, qc, Optional.empty());
 	}
 
 	/**
@@ -85,14 +103,31 @@ public final class HighQC {
 	 *
 	 * @param highestQC The highest QC we have seen
 	 * @param highestCommittedQC The highest QC we have committed
+	 * @param highestTC The highest timeout certificate
 	 * @return A new {@link HighQC}
 	 */
-	public static HighQC from(QuorumCertificate highestQC, QuorumCertificate highestCommittedQC) {
-		return new HighQC(highestQC, Objects.requireNonNull(highestCommittedQC));
+	public static HighQC from(
+		QuorumCertificate highestQC,
+		QuorumCertificate highestCommittedQC,
+		Optional<TimeoutCertificate> highestTC
+	) {
+		return new HighQC(highestQC, Objects.requireNonNull(highestCommittedQC), highestTC.orElse(null));
+	}
+
+	public Optional<TimeoutCertificate> highestTC() {
+		return Optional.ofNullable(this.highestTC);
 	}
 
 	public QuorumCertificate highestQC() {
 		return this.highestQC;
+	}
+
+	public View getHighestView() {
+		if (this.highestTC != null && this.highestTC.getView().gt(this.highestQC.getView())) {
+			return this.highestTC.getView();
+		} else {
+			return this.highestQC.getView();
+		}
 	}
 
 	public QuorumCertificate highestCommittedQC() {
@@ -105,7 +140,7 @@ public final class HighQC {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.highestQC, this.highestCommittedQC);
+		return Objects.hash(this.highestQC, this.highestCommittedQC, this.highestTC);
 	}
 
 	@Override
@@ -116,7 +151,8 @@ public final class HighQC {
 		if (o instanceof HighQC) {
 			HighQC that = (HighQC) o;
 			return Objects.equals(this.highestCommittedQC, that.highestCommittedQC)
-				&& Objects.equals(this.highestQC, that.highestQC);
+				&& Objects.equals(this.highestQC, that.highestQC)
+				&& Objects.equals(this.highestTC, that.highestTC);
 		}
 		return false;
 	}
@@ -124,7 +160,7 @@ public final class HighQC {
 	@Override
 	public String toString() {
 		String highestCommittedString = (this.highestCommittedQC == null) ? "<same>" : this.highestCommittedQC.toString();
-		return String.format("%s[highest=%s, highestCommitted=%s]",
-			getClass().getSimpleName(), this.highestQC, highestCommittedString);
+		return String.format("%s[highest=%s, highestCommitted=%s, highestTC=%s]",
+			getClass().getSimpleName(), this.highestQC, highestCommittedString, highestTC);
 	}
 }

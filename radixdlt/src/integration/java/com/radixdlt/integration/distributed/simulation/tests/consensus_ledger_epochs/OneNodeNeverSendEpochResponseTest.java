@@ -26,7 +26,9 @@ import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
-import java.util.List;
+
+import java.time.Duration;
+import java.util.Collections;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -41,6 +43,7 @@ import org.junit.Test;
  */
 public class OneNodeNeverSendEpochResponseTest {
 	private static final int numNodes = 10;
+	private static final int minValidators = 4; // need at least f=1 for this test
 
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.networkModules(
@@ -50,27 +53,21 @@ public class OneNodeNeverSendEpochResponseTest {
 		)
 		.pacemakerTimeout(1000)
 		.numNodes(numNodes, 4)
-		.ledgerAndEpochs(View.of(4), goodRandomEpochToNodesMapper())
+		.ledgerAndEpochs(View.of(4), randomEpochToNodesMapper())
 		.checkConsensusSafety("safety")
 		.checkConsensusLiveness("liveness", 5000, TimeUnit.MILLISECONDS)
 		.checkLedgerInOrder("ledgerInOrder")
 		.checkLedgerProcessesConsensusCommitted("consensusToLedger")
-		.addTimestampChecker("timestamps");
+		.addTimestampChecker("timestamps", Duration.ofSeconds(2));
 
-	private static Function<Long, IntStream> randomEpochToNodesMapper(Function<Long, Random> randomSupplier) {
+	private static Function<Long, IntStream> randomEpochToNodesMapper() {
 		return epoch -> {
-			List<Integer> indices = IntStream.range(0, numNodes).boxed().collect(Collectors.toList());
-			Random random = randomSupplier.apply(epoch);
-			for (long i = 0; i < epoch; i++) {
-				random.nextInt(numNodes);
-			}
-			return IntStream.range(0, random.nextInt(numNodes - 1) + 2)
-				.map(i -> indices.remove(random.nextInt(indices.size())));
+			final var indices = IntStream.range(0, numNodes).boxed().collect(Collectors.toList());
+			final var random = new Random(epoch);
+			Collections.shuffle(indices, random);
+			final var numValidators = minValidators + random.nextInt(numNodes - minValidators + 1);
+			return indices.subList(0, numValidators).stream().mapToInt(Integer::intValue);
 		};
-	}
-
-	private static Function<Long, IntStream> goodRandomEpochToNodesMapper() {
-		return randomEpochToNodesMapper(Random::new);
 	}
 
 	@Test

@@ -24,7 +24,6 @@ import nl.jqno.equalsverifier.Warning;
 import org.junit.Test;
 
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.Vote;
 
 import static org.hamcrest.CoreMatchers.*;
@@ -32,17 +31,6 @@ import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 public class ConsensusEventMessageTest {
-
-	@Test
-	public void sensibleToStringViewTimeout() {
-		ViewTimeout m = mock(ViewTimeout.class);
-		ConsensusEventMessage msg1 = new ConsensusEventMessage(0, m);
-		String s1 = msg1.toString();
-		assertThat(s1, containsString(ConsensusEventMessage.class.getSimpleName()));
-		assertThat(s1, containsString(m.toString()));
-
-		assertTrue(msg1.getConsensusMessage() instanceof ViewTimeout);
-	}
 
 	@Test
 	public void sensibleToStringProposal() {

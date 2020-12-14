@@ -23,19 +23,25 @@ import com.radixdlt.consensus.bft.ValidationState;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.ViewVotingResult;
+import com.radixdlt.consensus.bft.VoteProcessingResult;
+import com.radixdlt.consensus.bft.VoteProcessingResult.VoteRejected.VoteRejectedReason;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.utils.RandomHasher;
 import com.radixdlt.utils.UInt256;
+
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Optional;
+
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -47,8 +53,7 @@ public class PendingVotesTest {
 
 	@Before
 	public void setup() {
-		this.hasher = mock(Hasher.class);
-		when(hasher.hash(any())).thenReturn(HashUtils.random256());
+		this.hasher = new RandomHasher();
 		this.pendingVotes = new PendingVotes(hasher);
 	}
 
@@ -72,7 +77,9 @@ public class PendingVotesTest {
 		BFTHeader proposed = vote1.getVoteData().getProposed();
 		when(voteData.getProposed()).thenReturn(proposed);
 
-		assertThat(this.pendingVotes.insertVote(vote2, validatorSet)).isEmpty();
+		assertEquals(
+			VoteProcessingResult.rejected(VoteRejectedReason.INVALID_AUTHOR),
+			this.pendingVotes.insertVote(vote2, validatorSet));
 	}
 
 	@Test
@@ -93,7 +100,36 @@ public class PendingVotesTest {
 		BFTHeader proposed = vote.getVoteData().getProposed();
 		when(voteData.getProposed()).thenReturn(proposed);
 
-		assertThat(this.pendingVotes.insertVote(vote, validatorSet)).isPresent();
+		assertTrue(
+			this.pendingVotes.insertVote(vote, validatorSet) instanceof VoteProcessingResult.QuorumReached);
+	}
+
+	@Test
+	public void when_inserting_valid_timeout_votes__then_tc_is_formed() {
+		HashCode vertexId1 = HashUtils.random256();
+		HashCode vertexId2 = HashUtils.random256();
+		Vote vote1 = makeSignedVoteFor(mock(BFTNode.class), View.genesis(), vertexId1);
+		when(vote1.getTimeoutSignature()).thenReturn(Optional.of(mock(ECDSASignature.class)));
+		when(vote1.isTimeout()).thenReturn(true);
+		Vote vote2 = makeSignedVoteFor(mock(BFTNode.class), View.genesis(), vertexId2);
+		when(vote2.getTimeoutSignature()).thenReturn(Optional.of(mock(ECDSASignature.class)));
+		when(vote2.isTimeout()).thenReturn(true);
+
+		BFTValidatorSet validatorSet = BFTValidatorSet.from(
+			Arrays.asList(
+				BFTValidator.from(vote1.getAuthor(), UInt256.ONE),
+				BFTValidator.from(vote2.getAuthor(), UInt256.ONE))
+		);
+
+		assertTrue(
+			this.pendingVotes.insertVote(vote1, validatorSet) instanceof VoteProcessingResult.VoteAccepted);
+
+		VoteProcessingResult result2 = this.pendingVotes.insertVote(vote2, validatorSet);
+
+		assertTrue(result2 instanceof VoteProcessingResult.QuorumReached);
+
+		assertTrue(((VoteProcessingResult.QuorumReached) result2).getViewVotingResult()
+				instanceof ViewVotingResult.FormedTC);
 	}
 
 	@Test
@@ -114,14 +150,17 @@ public class PendingVotesTest {
 		when(voteData.getProposed()).thenReturn(proposed);
 
 		// Preconditions
-		assertThat(this.pendingVotes.insertVote(vote, validatorSet)).isNotPresent();
+		assertEquals(
+			VoteProcessingResult.accepted(),
+			this.pendingVotes.insertVote(vote, validatorSet));
 		assertEquals(1, this.pendingVotes.voteStateSize());
 		assertEquals(1, this.pendingVotes.previousVotesSize());
 
 		Vote vote2 = makeSignedVoteFor(author, View.of(1), HashUtils.random256());
 		// Need a different hash for this (different) vote
-		when(hasher.hash(eq(vote2.getVoteData()))).thenReturn(HashUtils.random256());
-		assertThat(this.pendingVotes.insertVote(vote2, validatorSet)).isNotPresent();
+		assertEquals(
+			VoteProcessingResult.accepted(),
+			this.pendingVotes.insertVote(vote2, validatorSet));
 		assertEquals(1, this.pendingVotes.voteStateSize());
 		assertEquals(1, this.pendingVotes.previousVotesSize());
 	}
@@ -141,6 +180,8 @@ public class PendingVotesTest {
 		when(vote.getVoteData()).thenReturn(voteData);
 		when(vote.getTimestampedVoteData()).thenReturn(timestampedVoteData);
 		when(vote.getAuthor()).thenReturn(author);
+		when(vote.getView()).thenReturn(parentView);
+		when(vote.getEpoch()).thenReturn(0L);
 		return vote;
 	}
 }

@@ -31,7 +31,6 @@ import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
-import com.radixdlt.consensus.liveness.VoteSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.messaging.MessageCentral;
@@ -65,7 +64,6 @@ public class NetworkModuleTest {
 			SyncEpochsRPCRx.class,
 			SyncVerticesRPCRx.class,
 			ProposalBroadcaster.class,
-			VoteSender.class,
 			BFTEventsRx.class
 		);
 

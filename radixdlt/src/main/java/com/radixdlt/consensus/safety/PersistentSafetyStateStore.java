@@ -17,12 +17,10 @@
 
 package com.radixdlt.consensus.safety;
 
-import com.radixdlt.consensus.Vote;
-
 /**
  * Responsible for synchronously persisting safety state
  */
 public interface PersistentSafetyStateStore {
-	void commitState(Vote vote, SafetyState safetyState);
+	void commitState(SafetyState safetyState);
 	void close();
 }

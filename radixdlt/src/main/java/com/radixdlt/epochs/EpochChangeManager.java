@@ -62,7 +62,8 @@ public final class EpochChangeManager implements LedgerUpdateSender {
 				header.timestamp()
 			);
 			QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
-			VerifiedVertexStoreState initialState = VerifiedVertexStoreState.create(HighQC.from(genesisQC), verifiedGenesisVertex);
+			final VerifiedVertexStoreState initialState =
+				VerifiedVertexStoreState.create(HighQC.from(genesisQC), verifiedGenesisVertex, Optional.empty());
 			BFTConfiguration bftConfiguration = new BFTConfiguration(validatorSet, initialState);
 			return new EpochChange(header, bftConfiguration);
 		});

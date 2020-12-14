@@ -80,7 +80,7 @@ public class LocalSyncServiceAccumulatorProcessorTest {
 		LocalSyncRequest request = mock(LocalSyncRequest.class);
 		when(request.getTarget()).thenReturn(targetHeader);
 		syncServiceProcessor.localSyncRequestEventProcessor().process(request);
-		verify(requestDispatcher, never()).dispatch(any(), any());
+		verify(requestDispatcher, never()).dispatch(any(BFTNode.class), any());
 		verify(syncTimeoutScheduler, never()).dispatch(any(), anyLong());
 	}
 
@@ -96,7 +96,7 @@ public class LocalSyncServiceAccumulatorProcessorTest {
 
 		syncServiceProcessor.localSyncRequestEventProcessor().process(request);
 
-		verify(requestDispatcher, times(1)).dispatch(any(), any());
+		verify(requestDispatcher, times(1)).dispatch(any(BFTNode.class), any());
 		verify(syncTimeoutScheduler, times(1)).dispatch(any(), anyLong());
 	}
 
@@ -122,7 +122,7 @@ public class LocalSyncServiceAccumulatorProcessorTest {
 		syncServiceProcessor.syncTimeoutProcessor().process(sync.get());
 
 		// Once only for initial setup
-		verify(requestDispatcher, times(1)).dispatch(any(), any());
+		verify(requestDispatcher, times(1)).dispatch(any(BFTNode.class), any());
 		verify(syncTimeoutScheduler, times(1)).dispatch(any(), anyLong());
 	}
 }

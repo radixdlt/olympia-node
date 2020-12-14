@@ -226,12 +226,6 @@ public class SimulationTest {
 					if (!hasSync) {
 						modules.add(new MockedSyncServiceModule());
 					} else {
-						modules.add(new AbstractModule() {
-							@Override
-							public void configure() {
-								bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(200);
-							}
-						});
 						modules.add(new SyncServiceModule());
 						modules.add(new MockedCommittedReaderModule());
 						if (!hasEpochs) {
@@ -421,7 +415,11 @@ public class SimulationTest {
 		}
 
 		public Builder addTimestampChecker(String invariantName) {
-			TimestampChecker timestampChecker = new TimestampChecker();
+			return addTimestampChecker(invariantName, Duration.ofSeconds(1));
+		}
+
+		public Builder addTimestampChecker(String invariantName, Duration maxDelay) {
+			TimestampChecker timestampChecker = new TimestampChecker(maxDelay);
 			this.checksBuilder.put(invariantName, nodes -> timestampChecker);
 			return this;
 		}

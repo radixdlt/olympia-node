@@ -33,6 +33,8 @@ import com.radixdlt.ledger.AccumulatorState;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Optional;
+
 public class VerifiedVertexStoreStateCreationTest {
 	private VerifiedVertex genesisVertex;
 	private HashCode genesisHash;
@@ -54,7 +56,8 @@ public class VerifiedVertexStoreStateCreationTest {
 		assertThatThrownBy(() ->
 			VerifiedVertexStoreState.create(
 				HighQC.from(badRootQC),
-				genesisVertex
+				genesisVertex,
+				Optional.empty()
 			)
 		).isInstanceOf(IllegalStateException.class);
 	}
@@ -68,7 +71,8 @@ public class VerifiedVertexStoreStateCreationTest {
 		assertThatThrownBy(() ->
 			VerifiedVertexStoreState.create(
 				HighQC.from(badRootQC),
-				genesisVertex
+				genesisVertex,
+				Optional.empty()
 			)
 		).isInstanceOf(IllegalStateException.class);
 	}
@@ -81,7 +85,8 @@ public class VerifiedVertexStoreStateCreationTest {
 		assertThatThrownBy(() ->
 			VerifiedVertexStoreState.create(
 				HighQC.from(badRootQC),
-				genesisVertex
+				genesisVertex,
+				Optional.empty()
 			)
 		).isInstanceOf(IllegalStateException.class);
 	}

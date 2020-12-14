@@ -24,7 +24,6 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
@@ -70,7 +69,7 @@ public final class NetworkLatencies {
 				return msg -> {
 					if ((msg.getSender().equals(nodes.get(0)) || msg.getReceiver().equals(nodes.get(0)))
 						&& (msg.getContent() instanceof Proposal || msg.getContent() instanceof Vote
-						|| msg.getContent() instanceof ViewTimeout || msg.getContent() instanceof GetVerticesResponse)
+						|| msg.getContent() instanceof GetVerticesResponse)
 					) {
 						return outOfBoundsLatency;
 					} else {

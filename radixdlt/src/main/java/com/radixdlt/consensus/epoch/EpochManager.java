@@ -39,7 +39,6 @@ import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.consensus.sync.EmptyBFTSyncResponseProcessor;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.sync.BFTSyncResponseProcessor;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.Vote;
@@ -238,7 +237,6 @@ public final class EpochManager {
 		final Pacemaker pacemaker = pacemakerFactory.create(
 			validatorSet,
 			vertexStore,
-			pacemakerState,
 			timeoutCalculator,
 			safetyRules,
 			initialViewUpdate,
@@ -262,7 +260,7 @@ public final class EpochManager {
 			pacemaker,
 			vertexStore,
 			bftSync,
-			bftSync.formedQCEventProcessor(),
+			bftSync.viewQuorumReachedEventProcessor(),
 			validatorSet,
 			initialViewUpdate,
 			safetyRules
@@ -390,9 +388,7 @@ public final class EpochManager {
 	private void processConsensusEventInternal(ConsensusEvent consensusEvent) {
 		this.counters.increment(CounterType.BFT_CONSENSUS_EVENTS);
 
-		if (consensusEvent instanceof ViewTimeout) {
-			bftEventProcessor.processViewTimeout((ViewTimeout) consensusEvent);
-		} else if (consensusEvent instanceof Proposal) {
+		if (consensusEvent instanceof Proposal) {
 			bftEventProcessor.processProposal((Proposal) consensusEvent);
 		} else if (consensusEvent instanceof Vote) {
 			bftEventProcessor.processVote((Vote) consensusEvent);

@@ -20,10 +20,14 @@ package com.radixdlt.consensus.safety;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mock;
 
-import com.radixdlt.consensus.bft.View;
+import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.safety.SafetyState.Builder;
+import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
+
+import java.util.Optional;
 
 public class SafetyStateTest {
 
@@ -35,18 +39,21 @@ public class SafetyStateTest {
 	}
 
 	@Test
-	public void when_build_with_new_last_voted_view__then_should_build_with_new_last_voted_view() {
+	public void when_build_with_new_last_vote__then_should_build_with_new_last_vote() {
 		SafetyState safetyState = SafetyState.initialState();
 		Builder builder = safetyState.toBuilder();
-		View view = mock(View.class);
-		builder.lastVotedView(view);
+		Vote vote = mock(Vote.class);
+		builder.lastVote(vote);
 		SafetyState nextSafetyState = builder.build();
-		assertThat(nextSafetyState.getLastVotedView()).isEqualTo(view);
+		assertThat(nextSafetyState.getLastVote()).isEqualTo(Optional.of(vote));
 		assertThat(nextSafetyState.getLockedView()).isEqualTo(safetyState.getLockedView());
 	}
 
 	@Test
 	public void equalsContract() {
-		EqualsVerifier.forClass(SafetyState.class).verify();
+		EqualsVerifier
+			.forClass(SafetyState.class)
+			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+			.verify();
 	}
 }

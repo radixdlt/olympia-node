@@ -22,14 +22,12 @@ import com.google.inject.Inject;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
-import com.radixdlt.consensus.liveness.VoteSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
@@ -130,7 +128,7 @@ public class SimulationNetwork {
 	}
 
 	public class SimulatedNetworkImpl implements
-		ProposalBroadcaster, VoteSender, SyncVerticesResponseSender, SyncEpochsRPCSender, BFTEventsRx,
+		ProposalBroadcaster, SyncVerticesResponseSender, SyncEpochsRPCSender, BFTEventsRx,
 		SyncVerticesRPCRx, SyncEpochsRPCRx {
 		private final Observable<Object> myMessages;
 		private final BFTNode thisNode;
@@ -155,13 +153,6 @@ public class SimulationNetwork {
 		public void broadcastProposal(Proposal proposal, Set<BFTNode> nodes) {
 			for (BFTNode reader : nodes) {
 				receivedMessages.onNext(MessageInTransit.newMessage(proposal, thisNode, reader));
-			}
-		}
-
-		@Override
-		public void broadcastViewTimeout(ViewTimeout viewTimeout, Set<BFTNode> nodes) {
-			for (BFTNode reader : nodes) {
-				receivedMessages.onNext(MessageInTransit.newMessage(viewTimeout, thisNode, reader));
 			}
 		}
 

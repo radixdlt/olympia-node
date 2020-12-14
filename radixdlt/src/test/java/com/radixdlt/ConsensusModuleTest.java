@@ -44,7 +44,6 @@ import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
-import com.radixdlt.consensus.bft.FormedQC;
 import com.radixdlt.consensus.bft.NoVote;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
@@ -52,6 +51,7 @@ import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
+import com.radixdlt.consensus.bft.ViewQuorumReached;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.LocalTimeoutOccurrence;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
@@ -79,7 +79,6 @@ import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
-import com.radixdlt.consensus.liveness.VoteSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
@@ -93,7 +92,10 @@ import com.radixdlt.store.LastProof;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
+
+import java.util.Optional;
 import java.util.stream.Stream;
+
 import org.junit.Before;
 import org.junit.Test;
 
@@ -118,7 +120,8 @@ public class ConsensusModuleTest {
 		VerifiedVertex hashedGenesis = new VerifiedVertex(genesis, HashUtils.zero256());
 		QuorumCertificate qc = QuorumCertificate.ofGenesis(hashedGenesis, LedgerHeader.genesis(HashUtils.zero256(), null));
 		BFTValidatorSet validatorSet = BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)));
-		VerifiedVertexStoreState vertexStoreState = VerifiedVertexStoreState.create(HighQC.from(qc), hashedGenesis);
+		VerifiedVertexStoreState vertexStoreState =
+			VerifiedVertexStoreState.create(HighQC.from(qc), hashedGenesis, Optional.empty());
 		this.bftConfiguration = new BFTConfiguration(validatorSet, vertexStoreState);
 		this.ecKeyPair = ECKeyPair.generateNew();
 		this.requestSender = rmock(RemoteEventDispatcher.class);
@@ -145,7 +148,7 @@ public class ConsensusModuleTest {
 				bind(new TypeLiteral<EventDispatcher<LocalSyncRequest>>() { }).toInstance(rmock(EventDispatcher.class));
 				bind(new TypeLiteral<ScheduledEventDispatcher<GetVerticesRequest>>() { }).toInstance(rmock(ScheduledEventDispatcher.class));
 				bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledLocalTimeout>>() { }).toInstance(rmock(ScheduledEventDispatcher.class));
-				bind(new TypeLiteral<EventDispatcher<FormedQC>>() { }).toInstance(rmock(EventDispatcher.class));
+				bind(new TypeLiteral<EventDispatcher<ViewQuorumReached>>() { }).toInstance(rmock(EventDispatcher.class));
 				bind(new TypeLiteral<RemoteEventDispatcher<Vote>>() { }).toInstance(rmock(RemoteEventDispatcher.class));
 				bind(new TypeLiteral<RemoteEventDispatcher<GetVerticesRequest>>() { }).toInstance(requestSender);
 				bind(new TypeLiteral<EventDispatcher<NoVote>>() { }).toInstance(rmock(EventDispatcher.class));
@@ -154,7 +157,6 @@ public class ConsensusModuleTest {
 
 				bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
 				bind(PersistentSafetyStateStore.class).toInstance(mock(PersistentSafetyStateStore.class));
-				bind(VoteSender.class).toInstance(mock(VoteSender.class));
 				bind(ProposalBroadcaster.class).toInstance(mock(ProposalBroadcaster.class));
 				bind(SyncVerticesResponseSender.class).toInstance(mock(SyncVerticesResponseSender.class));
 				bind(NextCommandGenerator.class).toInstance(mock(NextCommandGenerator.class));
@@ -214,7 +216,7 @@ public class ConsensusModuleTest {
 		BFTNode bftNode = BFTNode.random();
 		QuorumCertificate parent = vertexStore.highQC().highestQC();
 		Pair<QuorumCertificate, VerifiedVertex> nextVertex = createNextVertex(parent, bftNode);
-		HighQC unsyncedHighQC = HighQC.from(nextVertex.getFirst(), nextVertex.getFirst());
+		HighQC unsyncedHighQC = HighQC.from(nextVertex.getFirst(), nextVertex.getFirst(), Optional.empty());
 		bftSync.syncToQC(unsyncedHighQC, bftNode);
 		GetVerticesRequest request = new GetVerticesRequest(nextVertex.getSecond().getId(), 1);
 		VertexRequestTimeout timeout = VertexRequestTimeout.create(request);
@@ -234,7 +236,7 @@ public class ConsensusModuleTest {
 		QuorumCertificate parent = vertexStore.highQC().highestQC();
 		Pair<QuorumCertificate, VerifiedVertex> nextVertex = createNextVertex(parent, bftNode);
 		Pair<QuorumCertificate, VerifiedVertex> nextNextVertex = createNextVertex(nextVertex.getFirst(), bftNode);
-		HighQC unsyncedHighQC = HighQC.from(nextNextVertex.getFirst(), nextNextVertex.getFirst());
+		HighQC unsyncedHighQC = HighQC.from(nextNextVertex.getFirst(), nextNextVertex.getFirst(), Optional.empty());
 		bftSync.syncToQC(unsyncedHighQC, bftNode);
 
 		// Act

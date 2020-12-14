@@ -28,6 +28,7 @@ import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VerifiedVertex;
@@ -117,13 +118,14 @@ public class RecoveryModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private SafetyState safetyState(EpochChange initialEpoch, BerkeleySafetyStateStore berkeleySafetyStore) {
-		return berkeleySafetyStore.get().flatMap(p -> {
-			if (p.getFirst() > initialEpoch.getEpoch()) {
-				throw new IllegalStateException("Last vote is in a future epoch.");
-			}
+		return berkeleySafetyStore.get().flatMap(safetyState -> {
+			final long safetyStateEpoch =
+				safetyState.getLastVote().map(Vote::getEpoch).orElse(0L);
 
-			if (p.getFirst() == initialEpoch.getEpoch()) {
-				return Optional.of(p.getSecond());
+			if (safetyStateEpoch > initialEpoch.getEpoch()) {
+				throw new IllegalStateException("Last vote is in a future epoch.");
+			} else if (safetyStateEpoch == initialEpoch.getEpoch()) {
+				return Optional.of(safetyState);
 			} else {
 				return Optional.empty();
 			}
@@ -150,7 +152,8 @@ public class RecoveryModule extends AbstractModule {
 				return VerifiedVertexStoreState.create(
 					serializedVertexStoreState.getHighQC(),
 					verifiedRoot,
-					vertices
+					vertices,
+					serializedVertexStoreState.getHighestTC()
 				);
 			})
 			.orElseGet(() -> {
@@ -163,7 +166,7 @@ public class RecoveryModule extends AbstractModule {
 					lastEpochProof.timestamp()
 				);
 				QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
-				return VerifiedVertexStoreState.create(HighQC.from(genesisQC), verifiedGenesisVertex);
+				return VerifiedVertexStoreState.create(HighQC.from(genesisQC), verifiedGenesisVertex, Optional.empty());
 			});
 	}
 

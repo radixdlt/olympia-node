@@ -23,7 +23,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
@@ -48,38 +47,27 @@ public class SimulationNetworkTest {
 	}
 
 	@Test
-	public void when_send_view_timeout_to_self__then_should_receive_it() {
+	public void when_send_vote_to_self_twice__then_should_receive_both() {
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
 		network.getNetwork(node1).bftEvents()
 			.subscribe(testObserver);
-		ViewTimeout viewTimeout = mock(ViewTimeout.class);
-		network.getNetwork(node1).broadcastViewTimeout(viewTimeout, ImmutableSet.of(node1));
-		testObserver.awaitCount(1);
-		testObserver.assertValue(viewTimeout);
+		Vote vote = mock(Vote.class);
+		network.getNetwork(node1).remoteEventDispatcher(Vote.class).dispatch(node1, vote);
+		network.getNetwork(node1).remoteEventDispatcher(Vote.class).dispatch(node1, vote);
+		testObserver.awaitCount(2);
+		testObserver.assertValues(vote, vote);
 	}
 
 	@Test
-	public void when_send_view_timeout_to_self_twice__then_should_receive_both() {
+	public void when_self_and_other_send_vote_to_self__then_should_receive_both() {
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
 		network.getNetwork(node1).bftEvents()
 			.subscribe(testObserver);
-		ViewTimeout viewTimeout = mock(ViewTimeout.class);
-		network.getNetwork(node1).broadcastViewTimeout(viewTimeout, ImmutableSet.of(node1));
-		network.getNetwork(node1).broadcastViewTimeout(viewTimeout, ImmutableSet.of(node1));
+		Vote vote = mock(Vote.class);
+		network.getNetwork(node1).remoteEventDispatcher(Vote.class).dispatch(node1, vote);
+		network.getNetwork(node1).remoteEventDispatcher(Vote.class).dispatch(node1, vote);
 		testObserver.awaitCount(2);
-		testObserver.assertValues(viewTimeout, viewTimeout);
-	}
-
-	@Test
-	public void when_self_and_other_send_view_timeout_to_self__then_should_receive_both() {
-		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
-		network.getNetwork(node1).bftEvents()
-			.subscribe(testObserver);
-		ViewTimeout viewTimeout = mock(ViewTimeout.class);
-		network.getNetwork(node1).broadcastViewTimeout(viewTimeout, ImmutableSet.of(node1));
-		network.getNetwork(node2).broadcastViewTimeout(viewTimeout, ImmutableSet.of(node1));
-		testObserver.awaitCount(2);
-		testObserver.assertValues(viewTimeout, viewTimeout);
+		testObserver.assertValues(vote, vote);
 	}
 
 	@Test
@@ -105,14 +93,14 @@ public class SimulationNetworkTest {
 	}
 
 	@Test
-		public void when_disabling_messages_and_send_view_timeout_message_to_other_node__then_should_not_receive_it() {
+	public void when_disabling_messages_and_send_vote_message_to_other_node__then_should_not_receive_it() {
 		SimulationNetwork network = new SimulationNetwork(new InOrderChannels(msg -> -1));
 
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
 		network.getNetwork(node2).bftEvents()
 			.subscribe(testObserver);
-		ViewTimeout viewTimeout = mock(ViewTimeout.class);
-		network.getNetwork(node1).broadcastViewTimeout(viewTimeout, ImmutableSet.of(node1));
+		Vote vote = mock(Vote.class);
+		network.getNetwork(node1).remoteEventDispatcher(Vote.class).dispatch(node1, vote);
 		testObserver.awaitCount(1);
 		testObserver.assertEmpty();
 	}

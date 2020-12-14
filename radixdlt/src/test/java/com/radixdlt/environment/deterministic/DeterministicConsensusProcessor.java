@@ -20,7 +20,6 @@ package com.radixdlt.environment.deterministic;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -82,8 +81,6 @@ public class DeterministicConsensusProcessor implements DeterministicMessageProc
 	public void handleMessage(BFTNode origin, Object message) {
 		if (message instanceof ScheduledLocalTimeout) {
 			timeoutProcessors.forEach(p -> p.process((ScheduledLocalTimeout) message));
-		} else if (message instanceof ViewTimeout) {
-			bftEventProcessor.processViewTimeout((ViewTimeout) message);
 		} else if (message instanceof Proposal) {
 			bftEventProcessor.processProposal((Proposal) message);
 		} else if (message instanceof Vote) {

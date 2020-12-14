@@ -47,7 +47,7 @@ public final class BFTHeader {
 	@DsonOutput(Output.ALL)
 	private final HashCode vertexId;
 
-	@JsonProperty("ledger_state")
+	@JsonProperty("ledger_header")
 	@DsonOutput(Output.ALL)
 	private final LedgerHeader ledgerHeader;
 

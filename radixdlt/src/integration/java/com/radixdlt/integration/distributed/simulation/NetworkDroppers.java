@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
@@ -79,7 +78,7 @@ public final class NetworkDroppers {
 		return new AbstractModule() {
 			@ProvidesIntoSet
 			Predicate<MessageInTransit> dropper(Random random) {
-				return new MessageDropper(random, drops, Vote.class, ViewTimeout.class);
+				return new MessageDropper(random, drops, Vote.class);
 			}
 		};
 	}

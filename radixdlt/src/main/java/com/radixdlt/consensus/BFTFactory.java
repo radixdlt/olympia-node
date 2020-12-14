@@ -19,8 +19,8 @@ package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTSyncer;
-import com.radixdlt.consensus.bft.FormedQC;
 import com.radixdlt.consensus.bft.VertexStore;
+import com.radixdlt.consensus.bft.ViewQuorumReached;
 import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -41,7 +41,7 @@ public interface BFTFactory {
 		Pacemaker pacemaker,
 		VertexStore vertexStore,
 		BFTSyncer bftSyncer,
-		EventProcessor<FormedQC> formedQCEventProcessor,
+		EventProcessor<ViewQuorumReached> viewQuorumReachedEventProcessor,
 		BFTValidatorSet validatorSet,
 		ViewUpdate viewUpdate,
 		SafetyRules safetyRules
