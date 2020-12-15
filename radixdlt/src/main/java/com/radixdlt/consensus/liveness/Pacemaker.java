@@ -231,7 +231,7 @@ public final class Pacemaker {
 			return; // vertex for a timeout vote for this view is already inserted
 		}
 
-		final HighQC highQC = this.vertexStore.highQC();
+		final HighQC highQC = this.latestViewUpdate.getHighQC();
 		final UnverifiedVertex proposedVertex = UnverifiedVertex.createVertex(highQC.highestQC(), view, null);
 		final VerifiedVertex verifiedVertex = new VerifiedVertex(proposedVertex, hasher.hash(proposedVertex));
 		this.timeoutVoteVertexId = Optional.of(verifiedVertex.getId());
@@ -251,7 +251,7 @@ public final class Pacemaker {
 			preparedVertex.getVertex(),
 			bftHeader,
 			this.timeSupplier.currentTime(),
-			this.vertexStore.highQC());
+			this.latestViewUpdate.getHighQC());
 
 		final Vote timeoutVote = this.safetyRules.timeoutVote(baseVote);
 
