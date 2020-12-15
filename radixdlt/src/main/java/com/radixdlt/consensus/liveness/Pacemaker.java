@@ -29,6 +29,7 @@ import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.MissingParentException;
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.bft.VertexStore;
@@ -239,8 +240,18 @@ public final class Pacemaker {
 		// TODO: reimplement in async way
 		this.vertexStore.getPreparedVertex(verifiedVertex.getId()).ifPresentOrElse(
 			this::createAndSendTimeoutVote, // if vertex is already there, send the vote immediately
-			() -> this.vertexStore.insertVertex(verifiedVertex) // otherwise insert and wait for async bft update msg
+			() -> maybeInsertVertex(verifiedVertex) // otherwise insert and wait for async bft update msg
 		);
+	}
+
+	// FIXME: This is a temporary fix so that we can continue
+	// if the vertex store is too far ahead of the pacemaker
+	private void maybeInsertVertex(VerifiedVertex verifiedVertex) {
+		try {
+			this.vertexStore.insertVertex(verifiedVertex);
+		} catch (MissingParentException e) {
+			log.debug("Could not insert timeout vertex: {}", e.getMessage());
+		}
 	}
 
 	private void createAndSendTimeoutVote(PreparedVertex preparedVertex) {
