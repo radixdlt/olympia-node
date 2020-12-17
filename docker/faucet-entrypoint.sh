@@ -7,7 +7,7 @@ info() {
 }
 
 if [ "$RADIX_BOOTSTRAP_TRUSTED_NODE" ]; then
-    while ! wget -q -O - "$RADIX_BOOTSTRAP_TRUSTED_NODE/api/universe" >/dev/null 2>&1; do
+    while ! wget --no-check-certificate -qO - "$RADIX_BOOTSTRAP_TRUSTED_NODE/api/universe" >/dev/null 2>&1; do
         info "Waiting for $RADIX_BOOTSTRAP_TRUSTED_NODE to become ready ..."
         sleep 5
     done
