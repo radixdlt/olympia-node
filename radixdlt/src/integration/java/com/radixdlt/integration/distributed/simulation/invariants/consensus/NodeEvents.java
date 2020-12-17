@@ -17,12 +17,13 @@
 
 package com.radixdlt.integration.distributed.simulation.invariants.consensus;
 
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.EventProcessor;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
+
 import java.util.Set;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiConsumer;
 
 /**
@@ -30,15 +31,14 @@ import java.util.function.BiConsumer;
  * TODO: Replace use of this class with the NodeEvents class in deterministic tests.
  */
 public final class NodeEvents {
-	private final Map<Class<?>, Set<BiConsumer<BFTNode, Object>>> consumers = new HashMap<>();
+	private final ConcurrentMap<Class<?>, Set<BiConsumer<BFTNode, Object>>> consumers = Maps.newConcurrentMap();
 
 	public <T> void addListener(BiConsumer<BFTNode, T> eventConsumer, Class<T> eventClass) {
-		this.consumers.computeIfAbsent(eventClass, k -> new HashSet<>()).add((node, e) ->
-			eventConsumer.accept(node, eventClass.cast(e))
-		);
+		this.consumers.computeIfAbsent(eventClass, k -> Sets.newConcurrentHashSet())
+			.add((node, e) -> eventConsumer.accept(node, eventClass.cast(e)));
 	}
 
 	public <T> EventProcessor<T> processor(BFTNode node, Class<T> eventClass) {
-		return t -> consumers.getOrDefault(eventClass, Set.of()).forEach(c -> c.accept(node, t));
+		return t -> this.consumers.getOrDefault(eventClass, Set.of()).forEach(c -> c.accept(node, t));
 	}
 }
