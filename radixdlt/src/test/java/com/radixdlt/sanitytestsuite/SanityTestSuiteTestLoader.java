@@ -40,7 +40,6 @@ import static org.junit.Assert.assertEquals;
 // CHECKSTYLE:OFF checkstyle:VisibilityModifier
 public final class SanityTestSuiteTestLoader {
 
-
 	public static Gson gson = new GsonBuilder()
 			.registerTypeAdapter(Double.class, new SanityTestSuiteTestLoader.DoubleSerializer())
 			.create();
@@ -51,7 +50,6 @@ public final class SanityTestSuiteTestLoader {
 			return src == src.longValue() ? new JsonPrimitive(src.longValue()) : new JsonPrimitive(src);
 		}
 	}
-
 
 	public SanityTestSuiteRoot sanityTestSuiteRootFromFileNamed(String sanityTestJSONFileName) {
 
@@ -77,11 +75,7 @@ public final class SanityTestSuiteTestLoader {
 		} catch (IOException e) {
 			throw new IllegalStateException("failed to load test vectors, e: " + e);
 		}
-
-
-
 		return sanityTestSuiteRoot;
-
 	}
 }
 

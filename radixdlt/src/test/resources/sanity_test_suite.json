@@ -1,6 +1,6 @@
 {
 	"integrity": {
-		"hashOfSuite": "d0750490fa2ee4719878a16053b7ba9eb77df9891c1ebbc65e97080d41c2bc62",
+		"hashOfSuite": "81edbecb6cb0029b151e8d1d18c4c70d7b20825e7851120230ec20dc7d217eff",
 		"implementationInfo": "Read the 'suite' object from the root of this file, and prettify it to a JSON string with recursive sorting on keys and with 4 spaces indentation, then UTF8 encode the JSON string and SHA256 has it. Compare the hex of the hash with 'hashOfSuite'."
 	},
 	"suite": {
@@ -364,13 +364,13 @@
 			},
 			{
 				"description": {
-					"implementationInfo": "Each test vector contains plain JSON for some particle and a key-value indicating which object class to deserialize the JSON into inside some metadata.",
-					"purpose": "Verify that all Radix particles instantiated from JSON and serialized back into JSON and that it exactly matches the original JSON",
+					"implementationInfo": "Each test vector contains a list of key values representing the contents of a Radix particle, for which will try to instantiate a Particle. We will then serialize the particle into JSON and do a verbatim string comparison against an expected JSON string.",
+					"purpose": "Verify that all Radix models properly serializes into the expected JSON.",
 					"troubleshooting": "Please bear in mind the Radix JSON value prefixes e.g. ':byt:' prefix prepended to a byte string or ':adr:' prepended to a Radix address."
 			
 				},
-				"identifier": "json_radix_particles",
-				"name": "JSON roundtrip of Radix Particles",
+				"identifier": "json_serialization_radix_particles",
+				"name": "JSON serialization of Radix Models",
 				"tests": {
 					"source": {
 						"comment": "Radix employee named 'Alexander Cyon' made the first implementation of this."
@@ -378,39 +378,20 @@
 					"vectors": [
 						{
 							"expected": {
-								"hashOfJSON": "a298cfa5219adac2f8fd26a0a3a7d9d8c744248548529f12e801db730992b7da"
+								"jsonPrettyPrinted": "{\n  \"address\": \":adr:JEtKBRFrEbZUnY7zrtHsF7aU9eYvL74VyVukp5m5HsKogmWUW1h\",\n  \"amount\": \":u20:960000000000000000\",\n  \"destinations\": [\n    \":uid:e45e72925767ee14d7368fec2a141768\"\n  ],\n  \"granularity\": \":u20:1\",\n  \"nonce\": 12345678,\n  \"permissions\": {\n    \"burn\": \":str:all\",\n    \"mint\": \":str:token_owner_only\"\n  },\n  \"serializer\": \"radix.particles.transferrable_tokens\",\n  \"tokenDefinitionReference\": \":rri:/JH3BuQw985MrbEdrNvW9ixG7evay2rgAhVTppaUkvayJ2r1WszP/XRD\",\n  \"version\": 100\n}"
 							},
 							"input": {
-								"json": {
-									"destinations": [":uid:dfd7c486570a7ad40eb948c80cb89376"],
-									"rri": ":rri:/JFLKeSQmBZ73YkzWiesdEr2fRT14qCB1DQUvj8KxYQC6m8UTCcF/XRD",
-									"serializer": "radix.particles.rri",
-									"version": 100,
-									"nonce": 0
-								},
-								"metaData": {
-									"objectTypeSerializer": "radix.particles.rri",
-									"serializerFormat": "HASH"
-								}
-							}
-						},
-						{
-							"expected": {
-								"hashOfJSON": "bb56a896a058a9a139472cf85d402a5ecb060f64275e4dfc7d433f19e34e7e5b"
-							},
-							"input": {
-								"json": {
-									"bytes": ":byt:UmFkaXguLi4ganVzdCBpbWFnaW5lIQ==",
-									"destinations": [":uid:dfd7c486570a7ad40eb948c80cb89376"],
-									"serializer": "radix.particles.message",
-									"from": ":adr:JFLKeSQmBZ73YkzWiesdEr2fRT14qCB1DQUvj8KxYQC6m8UTCcF",
-									"to": ":adr:JFLKeSQmBZ73YkzWiesdEr2fRT14qCB1DQUvj8KxYQC6m8UTCcF",
-									"version": 100,
-									"nonce": 156115453148799
-								},
-								"metaData": {
-									"objectTypeSerializer": "radix.particles.message",
-									"serializerFormat": "HASH"
+								"typeSerialization": "radix.particles.transferrable_tokens",
+								"arguments": {
+									"address": "JEtKBRFrEbZUnY7zrtHsF7aU9eYvL74VyVukp5m5HsKogmWUW1h",
+									"amount": "960000000000000000",
+									"granularity": "1",
+									"tokenDefinitionReference": "/JH3BuQw985MrbEdrNvW9ixG7evay2rgAhVTppaUkvayJ2r1WszP/XRD",
+									"nonce": "12345678",
+									"tokenPermissions": {
+										"mint": "token_owner_only",
+										"burn": "all"
+									}
 								}
 							}
 						}

@@ -21,7 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.sanitytestsuite.model.SanityTestSuiteRoot;
 import com.radixdlt.sanitytestsuite.scenario.SanityTestScenarioRunner;
 import com.radixdlt.sanitytestsuite.scenario.hashing.HashingTestScenarioRunner;
-import com.radixdlt.sanitytestsuite.scenario.jsonparticles.JsonRadixParticlesTestScenarioRunner;
+import com.radixdlt.sanitytestsuite.scenario.jsonserialization.JsonSerializationTestScenarioRunner;
 import com.radixdlt.sanitytestsuite.scenario.keygen.KeyGenTestScenarioRunner;
 import com.radixdlt.sanitytestsuite.scenario.keysign.KeySignTestScenarioRunner;
 import com.radixdlt.sanitytestsuite.scenario.keyverify.KeyVerifyTestScenarioRunner;
@@ -49,7 +49,7 @@ public final class SanityTestSuiteTestExecutor {
 		new KeyGenTestScenarioRunner(),
 		new KeySignTestScenarioRunner(),
 		new KeyVerifyTestScenarioRunner(),
-		new JsonRadixParticlesTestScenarioRunner()
+		new JsonSerializationTestScenarioRunner()
 	);
 
 	@Test
