@@ -17,8 +17,8 @@
 
 package com.radixdlt.sanitytestsuite.scenario.jsonserialization;
 
-import com.google.gson.JsonObject;
 import com.radixdlt.sanitytestsuite.model.SanityTestVector;
+import org.json.JSONObject;
 
 // CHECKSTYLE:OFF checkstyle:VisibilityModifier
 public class JsonSerializationTestVector implements SanityTestVector {
@@ -28,7 +28,7 @@ public class JsonSerializationTestVector implements SanityTestVector {
 	}
 
 	public static final class Input {
-		public JsonObject arguments;
+		public Object arguments;
 		public String typeSerialization;
 	}
 

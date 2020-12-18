@@ -17,49 +17,52 @@
 
 package com.radixdlt.sanitytestsuite.scenario.jsonserialization;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableMap;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
+import org.json.JSONObject;
 
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
+import java.util.stream.Stream;
 
 public final class ArgumentsExtractor {
 
 	private final Set<String> fieldsExtracted;
-	private final JsonObject argumentsObject;
+	private final JsonNode argumentsObject;
 
-	ArgumentsExtractor(JsonObject argumentsObject) {
+	ArgumentsExtractor(JsonNode argumentsObject) {
 		this.fieldsExtracted = new HashSet<>();
 		this.argumentsObject = argumentsObject;
 	}
 
-	<T> T extractArgument(String fieldNameInJsonObject, Function<JsonElement, T> mapper) {
+	<T> T extractArgument(String fieldNameInJsonObject, Function<JsonNode, T> mapper) {
 		if (fieldsExtracted.contains(fieldNameInJsonObject)) {
 			throw new RuntimeException("Field with name " + fieldNameInJsonObject + " already extracted.");
 		}
 
-		JsonElement fieldValueJsonElement = Objects.requireNonNull(argumentsObject.get(fieldNameInJsonObject));
-
+		JsonNode fieldValueJSONObject = Objects.requireNonNull(argumentsObject.get(fieldNameInJsonObject));
 
 		fieldsExtracted.add(fieldNameInJsonObject);
 
-		return Objects.requireNonNull(mapper.apply(fieldValueJsonElement));
+		return Objects.requireNonNull(mapper.apply(fieldValueJSONObject));
 	}
 
 	<T> T extractArgumentAsStringAndMapTo(String fieldNameInJsonObject, Function<String, T> mapper) {
 		return Objects.requireNonNull(
-			mapper.apply(extractArgument(fieldNameInJsonObject, JsonElement::getAsString))
+			mapper.apply(extractArgument(fieldNameInJsonObject, JsonNode::asText))
 		);
+
 	}
 
 	static <OldKey, OldValue, NewKey, NewValue> Map<NewKey, NewValue> mapMap(
@@ -76,14 +79,13 @@ public final class ArgumentsExtractor {
 			.collect(ImmutableMap.toImmutableMap(Pair::getFirst, Pair::getSecond));
 	}
 
-	<K, V> Map<K, V> extractMap(String named, Function<String, K> mapKey, Function<JsonElement, V> mapValue) {
+	<K, V> Map<K, V> extractMap(String named, Function<String, K> mapKey, Function<JsonNode, V> mapValue) {
 		return mapMap(
 			this.extractArgument(named,
 				(
-					jsonElement -> Objects
-						.requireNonNull(jsonElement.getAsJsonObject())
-						.entrySet()
-						.stream()
+					jsonNode ->
+						Stream.iterate(jsonNode.fields(), Iterator::hasNext, UnaryOperator.identity())
+							.map(Iterator::next)
 						.collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue)))
 			),
 			mapKey,
@@ -93,7 +95,7 @@ public final class ArgumentsExtractor {
 
 	<K, V> Map<K, V> extractMapWithValueAsStringAndMapTo(String named, Function<String, K> mapKey, Function<String, V> mapValue) {
 		return mapMap(
-			this.extractMap(named, Function.identity(), JsonElement::getAsString),
+			this.extractMap(named, Function.identity(), JsonNode::asText),
 			mapKey,
 			mapValue
 		);

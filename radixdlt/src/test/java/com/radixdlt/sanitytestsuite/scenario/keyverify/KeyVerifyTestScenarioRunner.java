@@ -17,10 +17,12 @@
 
 package com.radixdlt.sanitytestsuite.scenario.keyverify;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.gson.reflect.TypeToken;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.sanitytestsuite.scenario.SanityTestScenarioRunner;
+import com.radixdlt.sanitytestsuite.scenario.keysign.KeySignTestVector;
 import com.radixdlt.utils.Bytes;
 
 import static org.junit.Assert.assertEquals;
@@ -33,9 +35,8 @@ public final class KeyVerifyTestScenarioRunner extends SanityTestScenarioRunner<
 	}
 
 	@Override
-	public TypeToken<KeyVerifyTestVector> typeOfVector() {
-		return new TypeToken<>() {
-		};
+	public TypeReference<KeyVerifyTestVector> testVectorTypeReference() {
+		return new TypeReference<KeyVerifyTestVector>() {};
 	}
 
 	public void doRunTestVector(KeyVerifyTestVector testVector) throws AssertionError {

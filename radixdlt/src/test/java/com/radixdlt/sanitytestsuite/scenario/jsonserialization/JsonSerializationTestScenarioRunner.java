@@ -19,16 +19,20 @@
 
 package com.radixdlt.sanitytestsuite.scenario.jsonserialization;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
-import com.google.gson.JsonObject;
-import com.google.gson.reflect.TypeToken;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.sanitytestsuite.scenario.SanityTestScenarioRunner;
+import com.radixdlt.sanitytestsuite.scenario.keygen.KeyGenTestVector;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.utils.JSONFormatter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.json.JSONObject;
 
 import java.util.Map;
 import java.util.function.Function;
@@ -45,13 +49,12 @@ public final class JsonSerializationTestScenarioRunner extends SanityTestScenari
 	}
 
 	@Override
-	public TypeToken<JsonSerializationTestVector> typeOfVector() {
-		return new TypeToken<>() {
-		};
+	public TypeReference<JsonSerializationTestVector> testVectorTypeReference() {
+		return new TypeReference<JsonSerializationTestVector>() {};
 	}
 
-	private static TransferrableTokensParticle makeTTP(JsonObject jsonObject) {
-		ArgumentsExtractor argsExtractor = new ArgumentsExtractor(jsonObject);
+	private static TransferrableTokensParticle makeTTP(JsonNode jsonNode) {
+		ArgumentsExtractor argsExtractor = new ArgumentsExtractor(jsonNode);
 
 		TransferrableTokensParticle ttp = new TransferrableTokensParticle(
 			argsExtractor.extractRadixAddress("address"),
@@ -65,28 +68,46 @@ public final class JsonSerializationTestScenarioRunner extends SanityTestScenari
 		assertTrue(argsExtractor.isFinished());
 
 		return ttp;
+
 	}
 
-	private static Map<String, Function<JsonObject, Object>> constructorMap = ImmutableMap.of(
+	private static Map<String, Function<JsonNode, Object>> constructorMap = ImmutableMap.of(
 		"radix.particles.transferrable_tokens", JsonSerializationTestScenarioRunner::makeTTP
 	);
 
 	public void doRunTestVector(JsonSerializationTestVector testVector) throws AssertionError {
-		Function<JsonObject, Object> constructor = constructorMap.get(testVector.input.typeSerialization);
+		Function<JsonNode, Object> constructor = constructorMap.get(testVector.input.typeSerialization);
 
 		if (constructor == null) {
 			throw new IllegalStateException("Cant find constructor");
 		}
 
-		JsonObject argumentsObj = testVector.input.arguments;
+		Object argumentsObj = testVector.input.arguments;
+		ObjectMapper mapper = new ObjectMapper();
+		String jsonString = null;
+		try {
+			jsonString = mapper.writeValueAsString(argumentsObj);
+		} catch (JsonProcessingException e) {
+			throw new IllegalStateException("Failed to write obj to JSON");
+		}
 
-		Object modelToSerialize = constructor.apply(argumentsObj);
+		JsonNode jsonNode = null;
+		try {
+			jsonNode = mapper.readTree(jsonString);
+		} catch (JsonProcessingException e) {
+			throw new IllegalStateException("Failed to write obj to JSON");
+		}
+
+
+		Object modelToSerialize = constructor.apply(jsonNode);
 
 		if (modelToSerialize == null) {
 			throw new IllegalStateException("Cant find input args for constructor");
 		}
 
 		String produced = DefaultSerialization.getInstance().toJson(modelToSerialize, DsonOutput.Output.HASH);
+
+		log.error(String.format("🧩🧩🧩 produced: %s", produced));
 
 		String expected = testVector.expected.jsonPrettyPrinted;
 

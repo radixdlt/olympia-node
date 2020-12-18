@@ -65,6 +65,18 @@ public class JSONFormatter {
 
 	}
 
+	public static String sortPrettyPrintObject(Object object) {
+		ObjectMapper mapper = new ObjectMapper();
+		String jsonString = null;
+		try {
+			jsonString = mapper.writeValueAsString(object);
+			return sortPrettyPrintJSONString(jsonString);
+		} catch (JsonProcessingException e) {
+			e.printStackTrace();
+		}
+		throw new IllegalStateException("Failed to pretty print object to JSON string");
+	}
+
 	public static String sortPrettyPrintJSONString(String uglyJson) {
 		ObjectMapper mapper = JsonMapper.builder()
 				.nodeFactory(new SortingNodeFactory())
@@ -78,11 +90,10 @@ public class JSONFormatter {
 		}
 
 		try {
-			String jsonStringSorted = mapper
-					.writer(new MyPrettyPrinter())
-					.writeValueAsString(jsonSorted);
+			return mapper
+				.writer(new MyPrettyPrinter())
+				.writeValueAsString(jsonSorted);
 
-			return jsonStringSorted;
 		} catch (JsonProcessingException e) {
 			e.printStackTrace();
 		}

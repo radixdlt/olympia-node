@@ -17,6 +17,7 @@
 
 package com.radixdlt.sanitytestsuite.scenario.hashing;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.gson.reflect.TypeToken;
 import com.radixdlt.sanitytestsuite.scenario.SanityTestScenarioRunner;
 import com.radixdlt.utils.Bytes;
@@ -31,9 +32,8 @@ public final class HashingTestScenarioRunner extends SanityTestScenarioRunner<Ha
 	}
 
 	@Override
-	public TypeToken<HashingTestVector> typeOfVector() {
-		return new TypeToken<>() {
-		};
+	public TypeReference<HashingTestVector> testVectorTypeReference() {
+		return new TypeReference<HashingTestVector>() {};
 	}
 
 	public void doRunTestVector(HashingTestVector testVector) throws AssertionError {

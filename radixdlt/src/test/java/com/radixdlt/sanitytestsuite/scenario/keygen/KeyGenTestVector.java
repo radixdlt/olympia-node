@@ -29,7 +29,7 @@ public final class KeyGenTestVector implements SanityTestVector {
 		public  String privateKey;
 	}
 
-	public  Expected expected;
+	public Expected expected;
 	public Input input;
 }
 // CHECKSTYLE:ON checkstyle:VisibilityModifier

@@ -18,6 +18,9 @@
 package com.radixdlt.sanitytestsuite.model;
 
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import javax.annotation.Nullable;
 import java.util.List;
 

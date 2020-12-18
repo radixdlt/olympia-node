@@ -28,7 +28,7 @@ public final class RadixHashingTestVector implements SanityTestVector {
 	}
 
 	public static final class Input {
-		private String stringToHash;
+		public String stringToHash;
 		public byte[] bytesToHash() {
 			return this.stringToHash.getBytes(StandardCharsets.UTF_8);
 		}

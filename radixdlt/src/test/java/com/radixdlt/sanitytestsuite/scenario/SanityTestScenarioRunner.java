@@ -17,8 +17,9 @@
 
 package com.radixdlt.sanitytestsuite.scenario;
 
-import com.google.gson.reflect.TypeToken;
-import com.radixdlt.sanitytestsuite.SanityTestSuiteTestLoader;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.radixdlt.sanitytestsuite.model.SanityTestSuiteRoot;
 import com.radixdlt.sanitytestsuite.model.SanityTestVector;
 import com.radixdlt.sanitytestsuite.model.UnknownTestVector;
@@ -37,8 +38,7 @@ public abstract class SanityTestScenarioRunner<TestVector extends SanityTestVect
 
 	public abstract String testScenarioIdentifier();
 
-	public abstract TypeToken<TestVector> typeOfVector();
-
+	public abstract TypeReference<TestVector> testVectorTypeReference();
 
 	public abstract void doRunTestVector(TestVector testVector) throws AssertionError;
 
@@ -47,14 +47,29 @@ public abstract class SanityTestScenarioRunner<TestVector extends SanityTestVect
 
 		for (int testVectorIndex = 0; testVectorIndex < scenario.tests.vectors.size(); ++testVectorIndex) {
 			UnknownTestVector untypedVector = scenario.tests.vectors.get(testVectorIndex);
-			TestVector testVector = cast(untypedVector, this.typeOfVector());
+
+			ObjectMapper mapper = new ObjectMapper();
+			String unknownTestVectorJSONString = null;
+			try {
+				unknownTestVectorJSONString = mapper.writeValueAsString(untypedVector);
+			} catch (JsonProcessingException e) {
+				throw new IllegalStateException("Failed to write JSON from unknown type");
+			}
+
+			TestVector testVector = null;
+			try {
+				testVector = mapper.readValue(unknownTestVectorJSONString, this.testVectorTypeReference());
+			} catch (JsonProcessingException e) {
+				throw new IllegalStateException("Failed to cast, error: " + e);
+			}
+
 			try {
 				doRunTestVector(testVector);
 			} catch (AssertionError e) {
 				String msg = String.format(
 					"Failing test vector index: %d, vector: %s",
 					testVectorIndex,
-					prettyJsonStringFromObject(testVector)
+					JSONFormatter.sortPrettyPrintObject(testVector)
 				);
 				throw new AssertionError(msg, e);
 			}
@@ -72,14 +87,10 @@ public abstract class SanityTestScenarioRunner<TestVector extends SanityTestVect
 		return hasher.digest();
 	}
 
-	protected String prettyJsonStringFromObject(Object object) {
-		String jsonStringPretty = JSONFormatter.sortPrettyPrintJSONString(SanityTestSuiteTestLoader.gson.toJson(object));
-		return jsonStringPretty;
-	}
 
-	private <T> T cast(Object object, TypeToken<T> typeToken) {
-		String jsonFromObj = SanityTestSuiteTestLoader.gson.toJson(object);
-		return SanityTestSuiteTestLoader.gson.fromJson(jsonFromObj, typeToken.getType());
-	}
+//	private <T> T cast(Object object, TypeToken<T> typeToken) {
+//		String jsonFromObj = SanityTestSuiteTestLoader.gson.toJson(object);
+//		return SanityTestSuiteTestLoader.gson.fromJson(jsonFromObj, typeToken.getType());
+//	}
 
 }
