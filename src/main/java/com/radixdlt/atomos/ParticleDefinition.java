@@ -30,6 +30,7 @@ import java.util.function.Function;
  * Defines how to retrieve important properties from a given particle type.
  * @param <T> the particle class
  */
+@SuppressWarnings({"unchecked", "rawtypes"})
 public class ParticleDefinition<T extends Particle> {
 	private final Function<T, Set<RadixAddress>> addressMapper; // must be set (since we need to route the particle)
 	private final Function<T, Result> staticValidation; // may be null
