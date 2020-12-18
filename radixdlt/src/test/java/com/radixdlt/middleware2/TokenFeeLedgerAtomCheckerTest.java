@@ -135,6 +135,27 @@ public class TokenFeeLedgerAtomCheckerTest {
 	}
 
 	@Test
+	public void when_validating_atom_with_fee_and_no_change__result_has_no_error() {
+		RadixAddress address = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
+		UniqueParticle particle1 = new UniqueParticle("FOO", address, 0L);
+		UnallocatedTokensParticle unallocatedParticle = new UnallocatedTokensParticle(
+				UInt256.TEN, UInt256.ONE, this.rri, TOKEN_PERMISSIONS_ALL);
+		TransferrableTokensParticle tokenInputParticle = new TransferrableTokensParticle(
+				address, UInt256.TEN, UInt256.ONE, this.rri, TOKEN_PERMISSIONS_ALL);
+		List<ParticleGroup> particleGroups = ImmutableList.of(
+			ParticleGroup.of(ImmutableList.of(SpunParticle.up(particle1))),
+			ParticleGroup.of(ImmutableList.of(
+					SpunParticle.up(unallocatedParticle),
+					SpunParticle.down(tokenInputParticle)
+			))
+		);
+		Atom atom = new Atom(particleGroups, ImmutableMap.of(), ImmutableMap.of());
+		ClientAtom ledgerAtom = ClientAtom.convertFromApiAtom(atom, hasher);
+
+		assertThat(checker.check(ledgerAtom).isSuccess()).isTrue();
+	}
+
+	@Test
 	public void when_validating_atom_with_extra_particles_in_fee_group__result_has_error() {
 		RadixAddress address = new RadixAddress((byte) 0, ECKeyPair.generateNew().getPublicKey());
 		UniqueParticle particle1 = new UniqueParticle("FOO", address, 0L);
@@ -188,10 +209,12 @@ public class TokenFeeLedgerAtomCheckerTest {
 		UnallocatedTokensParticle particle2 = new UnallocatedTokensParticle(
 				UInt256.TEN, UInt256.ONE, this.rri, TOKEN_PERMISSIONS_ALL);
 		TransferrableTokensParticle particle3 = new TransferrableTokensParticle(
-				address, UInt256.ONE, UInt256.ONE, this.rri, TOKEN_PERMISSIONS_ALL);
+				address, UInt256.from(20), UInt256.ONE, this.rri, TOKEN_PERMISSIONS_ALL);
+		TransferrableTokensParticle particle4 = new TransferrableTokensParticle(
+				address, UInt256.TEN, UInt256.ONE, this.rri, TOKEN_PERMISSIONS_ALL);
 		List<ParticleGroup> particleGroups = ImmutableList.of(
 			ParticleGroup.of(ImmutableList.of(SpunParticle.up(particle1))),
-			ParticleGroup.of(ImmutableList.of(SpunParticle.up(particle2), SpunParticle.up(particle3)))
+			ParticleGroup.of(ImmutableList.of(SpunParticle.up(particle2), SpunParticle.down(particle3), SpunParticle.up(particle4)))
 		);
 		Atom atom = new Atom(particleGroups, ImmutableMap.of(), ImmutableMap.of());
 		ClientAtom ledgerAtom = ClientAtom.convertFromApiAtom(atom, hasher);
