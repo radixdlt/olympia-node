@@ -17,29 +17,24 @@
 
 package com.radixdlt.sanitytestsuite.scenario.hashing;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.radixdlt.sanitytestsuite.scenario.SanityTestScenarioRunner;
 import com.radixdlt.utils.Bytes;
 
 import static org.junit.Assert.assertEquals;
 
 public final class HashingTestScenarioRunner extends SanityTestScenarioRunner<HashingTestVector> {
-
-
 	public String testScenarioIdentifier() {
 		return "hashing";
 	}
 
 	@Override
-	public TypeReference<HashingTestVector> testVectorTypeReference() {
-		return new TypeReference<HashingTestVector>() {
-		};
+	public Class<HashingTestVector> testVectorType() {
+		return HashingTestVector.class;
 	}
 
 	public void doRunTestVector(HashingTestVector testVector) throws AssertionError {
-		String hashHex = Bytes.toHexString(sha256Hash(testVector.input.bytesToHash()));
+		var hashHex = Bytes.toHexString(sha256Hash(testVector.input.bytesToHash()));
 
 		assertEquals(testVector.expected.hash, hashHex);
-
 	}
 }

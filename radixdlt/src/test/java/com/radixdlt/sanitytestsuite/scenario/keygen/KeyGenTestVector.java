@@ -19,8 +19,11 @@ package com.radixdlt.sanitytestsuite.scenario.keygen;
 
 import com.radixdlt.sanitytestsuite.model.SanityTestVector;
 
+import static com.radixdlt.sanitytestsuite.scenario.keygen.KeyGenTestVector.Expected;
+import static com.radixdlt.sanitytestsuite.scenario.keygen.KeyGenTestVector.Input;
+
 // CHECKSTYLE:OFF checkstyle:VisibilityModifier
-public final class KeyGenTestVector implements SanityTestVector {
+public final class KeyGenTestVector extends SanityTestVector<Input, Expected> {
 	public static final class Expected {
 		public  String uncompressedPublicKey;
 	}
@@ -28,8 +31,5 @@ public final class KeyGenTestVector implements SanityTestVector {
 	public static final class Input  {
 		public  String privateKey;
 	}
-
-	public Expected expected;
-	public Input input;
 }
 // CHECKSTYLE:ON checkstyle:VisibilityModifier

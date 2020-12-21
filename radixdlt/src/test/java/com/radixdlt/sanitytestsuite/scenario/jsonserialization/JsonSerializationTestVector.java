@@ -19,19 +19,20 @@ package com.radixdlt.sanitytestsuite.scenario.jsonserialization;
 
 import com.radixdlt.sanitytestsuite.model.SanityTestVector;
 
-// CHECKSTYLE:OFF checkstyle:VisibilityModifier
-public class JsonSerializationTestVector implements SanityTestVector {
+import java.util.Map;
 
+import static com.radixdlt.sanitytestsuite.scenario.jsonserialization.JsonSerializationTestVector.Expected;
+import static com.radixdlt.sanitytestsuite.scenario.jsonserialization.JsonSerializationTestVector.Input;
+
+// CHECKSTYLE:OFF checkstyle:VisibilityModifier
+public class JsonSerializationTestVector extends SanityTestVector<Input, Expected> {
 	public static final class Expected {
 		public String jsonPrettyPrinted;
 	}
 
 	public static final class Input {
-		public Object arguments;
+		public Map<String, Object> arguments;
 		public String typeSerialization;
 	}
-
-	public Expected expected;
-	public Input input;
 }
 // CHECKSTYLE:ON

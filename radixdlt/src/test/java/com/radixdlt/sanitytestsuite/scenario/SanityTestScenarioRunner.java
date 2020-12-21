@@ -17,12 +17,9 @@
 
 package com.radixdlt.sanitytestsuite.scenario;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.radixdlt.sanitytestsuite.model.SanityTestSuiteRoot;
+import com.radixdlt.sanitytestsuite.model.SanityTestSuiteRoot.Suite.Scenario;
 import com.radixdlt.sanitytestsuite.model.SanityTestVector;
-import com.radixdlt.sanitytestsuite.model.UnknownTestVector;
 import com.radixdlt.utils.JSONFormatter;
 
 import java.security.MessageDigest;
@@ -30,37 +27,24 @@ import java.security.NoSuchAlgorithmException;
 
 import static org.junit.Assert.assertEquals;
 
-public abstract class SanityTestScenarioRunner<TestVector extends SanityTestVector> {
+public abstract class SanityTestScenarioRunner<TestVector extends SanityTestVector<?, ?>> {
+	private final ObjectMapper mapper = new ObjectMapper();
 
 	public abstract String testScenarioIdentifier();
+	public abstract Class<TestVector> testVectorType();
 
-	public abstract TypeReference<TestVector> testVectorTypeReference();
+	public abstract void doRunTestVector(final TestVector testVector) throws AssertionError;
 
-	public abstract void doRunTestVector(TestVector testVector) throws AssertionError;
-
-	public void executeTest(SanityTestSuiteRoot.SanityTestSuite.SanityTestScenario scenario) {
+	public void executeTest(final Scenario scenario) {
 		assertEquals(testScenarioIdentifier(), scenario.identifier);
+		var testVectorIndex = 0;
 
-		for (int testVectorIndex = 0; testVectorIndex < scenario.tests.vectors.size(); ++testVectorIndex) {
-			UnknownTestVector untypedVector = scenario.tests.vectors.get(testVectorIndex);
-
-			ObjectMapper mapper = new ObjectMapper();
-			String unknownTestVectorJSONString = null;
-			try {
-				unknownTestVectorJSONString = mapper.writeValueAsString(untypedVector);
-			} catch (JsonProcessingException e) {
-				throw new IllegalStateException("Failed to write JSON from unknown type");
-			}
-
-			TestVector testVector = null;
-			try {
-				testVector = mapper.readValue(unknownTestVectorJSONString, this.testVectorTypeReference());
-			} catch (JsonProcessingException e) {
-				throw new IllegalStateException("Failed to cast, error: " + e);
-			}
+		for (var testVectorInput : scenario.tests.vectors) {
+			var testVector = mapper.convertValue(testVectorInput, this.testVectorType());
 
 			try {
 				doRunTestVector(testVector);
+				testVectorIndex++;
 			} catch (AssertionError e) {
 				String msg = String.format(
 					"Failing test vector index: %d, vector: %s",
@@ -72,14 +56,13 @@ public abstract class SanityTestScenarioRunner<TestVector extends SanityTestVect
 		}
 	}
 
-	public static byte[] sha256Hash(byte[] bytes) {
-		MessageDigest hasher = null;
+	public static byte[] sha256Hash(final byte[] bytes) {
 		try {
-			hasher = MessageDigest.getInstance("SHA-256");
+			var hasher = MessageDigest.getInstance("SHA-256");
+			hasher.update(bytes);
+			return hasher.digest();
 		} catch (NoSuchAlgorithmException e) {
 			throw new AssertionError("Failed to run test, found no hasher", e);
 		}
-		hasher.update(bytes);
-		return hasher.digest();
 	}
 }

@@ -17,41 +17,33 @@
 
 package com.radixdlt.sanitytestsuite.scenario.keygen;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.sanitytestsuite.scenario.SanityTestScenarioRunner;
-import com.radixdlt.utils.Bytes;
 
-import static junit.framework.TestCase.assertTrue;
-import static org.junit.Assert.assertNotNull;
+import static com.radixdlt.utils.Bytes.fromHexString;
+import static junit.framework.TestCase.assertEquals;
 
 public final class KeyGenTestScenarioRunner extends SanityTestScenarioRunner<KeyGenTestVector> {
-
-
 	public String testScenarioIdentifier() {
 		return "secp256k1";
 	}
 
 	@Override
-	public TypeReference<KeyGenTestVector> testVectorTypeReference() {
-		return new TypeReference<KeyGenTestVector>() {
-		};
+	public Class<KeyGenTestVector> testVectorType() {
+		return KeyGenTestVector.class;
 	}
 
 	public void doRunTestVector(KeyGenTestVector testVector) throws AssertionError {
-		ECPublicKey publicKey = null;
-		ECPublicKey expectedPublicKey = null;
-
 		try {
-			publicKey = ECKeyPair.fromPrivateKey(Bytes.fromHexString(testVector.input.privateKey)).getPublicKey();
-			expectedPublicKey = ECPublicKey.fromBytes(Bytes.fromHexString(testVector.expected.uncompressedPublicKey));
+			var	publicKey =
+				ECKeyPair.fromPrivateKey(fromHexString(testVector.input.privateKey)).getPublicKey();
+			var	expectedPublicKey =
+				ECPublicKey.fromBytes(fromHexString(testVector.expected.uncompressedPublicKey));
+
+			assertEquals(publicKey, expectedPublicKey);
 		} catch (Exception e) {
 			throw new AssertionError("Failed to create PublicKeys", e);
 		}
-
-		assertNotNull(publicKey);
-		assertTrue(publicKey.equals(expectedPublicKey));
-
 	}
 }

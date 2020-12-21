@@ -17,7 +17,6 @@
 
 package com.radixdlt.sanitytestsuite.scenario.jsonserialization;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenPermission;
@@ -27,41 +26,33 @@ import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.function.UnaryOperator;
-import java.util.stream.Stream;
+
+import static java.util.Optional.ofNullable;
 
 public final class ArgumentsExtractor {
+	private final Set<String> fieldsExtracted = new HashSet<>();
+	private final Map<String, Object> arguments;
 
-	private final Set<String> fieldsExtracted;
-	private final JsonNode argumentsObject;
-
-	ArgumentsExtractor(JsonNode argumentsObject) {
-		this.fieldsExtracted = new HashSet<>();
-		this.argumentsObject = argumentsObject;
+	private ArgumentsExtractor(final Map<String, Object> arguments) {
+		this.arguments = arguments;
 	}
 
-	<T> T extractArgument(String fieldNameInJsonObject, Function<JsonNode, T> mapper) {
-		if (fieldsExtracted.contains(fieldNameInJsonObject)) {
-			throw new RuntimeException("Field with name " + fieldNameInJsonObject + " already extracted.");
+	public static ArgumentsExtractor from(final Map<String, Object> arguments) {
+		return new ArgumentsExtractor(arguments);
+	}
+
+	<T> T extract(final String fieldName, final Function<Object, T> mapper) {
+		if (fieldsExtracted.contains(fieldName)) {
+			throw new IllegalArgumentException("Attempt to retrieve same field more than once. Field name " + fieldName);
 		}
+		fieldsExtracted.add(fieldName);
 
-		JsonNode fieldValueJSONObject = Objects.requireNonNull(argumentsObject.get(fieldNameInJsonObject));
-
-		fieldsExtracted.add(fieldNameInJsonObject);
-
-		return Objects.requireNonNull(mapper.apply(fieldValueJSONObject));
-	}
-
-	<T> T extractArgumentAsStringAndMapTo(String fieldNameInJsonObject, Function<String, T> mapper) {
-		return Objects.requireNonNull(
-			mapper.apply(extractArgument(fieldNameInJsonObject, JsonNode::asText))
-		);
-
+		return ofNullable(arguments.get(fieldName))
+			.map(mapper)
+			.orElseThrow(() -> new IllegalArgumentException("Field with name " + fieldName + " is absent"));
 	}
 
 	static <OldKey, OldValue, NewKey, NewValue> Map<NewKey, NewValue> mapMap(
@@ -69,65 +60,58 @@ public final class ArgumentsExtractor {
 		Function<OldKey, NewKey> mapKey,
 		Function<OldValue, NewValue> mapValue
 	) {
-		return oldMap.entrySet().stream()
-			.map(e -> Pair.of(
-				mapKey.apply(e.getKey()),
-				mapValue.apply(e.getValue())
-				)
-			)
+		return oldMap.entrySet()
+			.stream()
+			.map(e -> Pair.of(mapKey.apply(e.getKey()), mapValue.apply(e.getValue())))
 			.collect(ImmutableMap.toImmutableMap(Pair::getFirst, Pair::getSecond));
 	}
 
-	<K, V> Map<K, V> extractMap(String named, Function<String, K> mapKey, Function<JsonNode, V> mapValue) {
+	@SuppressWarnings("unchecked")
+	<K, V> Map<K, V> asMap(String named, Function<String, K> mapKey, Function<Object, V> mapValue) {
+		var map = this.extract(named, object -> (Map<String, Object>) object);
+
+		return mapMap(map, mapKey, mapValue);
+	}
+
+	<K, V> Map<K, V> extractAsMapAndConvert(String named, Function<String, K> mapKey, Function<String, V> mapValue) {
 		return mapMap(
-			this.extractArgument(named,
-				(
-					jsonNode ->
-						Stream.iterate(jsonNode.fields(), Iterator::hasNext, UnaryOperator.identity())
-							.map(Iterator::next)
-						.collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue)))
-			),
+			asMap(named, Function.identity(), value -> (String) value),
 			mapKey,
 			mapValue
 		);
 	}
 
-	<K, V> Map<K, V> extractMapWithValueAsStringAndMapTo(String named, Function<String, K> mapKey, Function<String, V> mapValue) {
-		return mapMap(
-			this.extractMap(named, Function.identity(), JsonNode::asText),
-			mapKey,
-			mapValue
-		);
+	<T> T extractAndMap(String named, Function<String, T> mapper) {
+		return extract(named, value -> mapper.apply((String) value));
 	}
 
-	long extractLong(String named) {
-		return extractArgumentAsStringAndMapTo(named, Long::parseLong);
+	long asLong(String named) {
+		return extractAndMap(named, Long::parseLong);
 	}
 
-	UInt256 extractUInt256(String named) {
-		return extractArgumentAsStringAndMapTo(named, UInt256::from);
+	UInt256 asUInt256(String named) {
+		return extractAndMap(named, UInt256::from);
 	}
 
-	RRI extractRRI(String named) {
-		return extractArgumentAsStringAndMapTo(named, RRI::from);
+	RRI asRRI(String named) {
+		return extractAndMap(named, RRI::from);
 	}
 
-	RadixAddress extractRadixAddress(String named) {
-		return extractArgumentAsStringAndMapTo(named, RadixAddress::from);
+	RadixAddress asRadixAddress(String named) {
+		return extractAndMap(named, RadixAddress::from);
 	}
 
 	Map<MutableSupplyTokenDefinitionParticle.TokenTransition, TokenPermission> extractTokenPermissions(String named) {
-		return extractMapWithValueAsStringAndMapTo(
+		return extractAsMapAndConvert(
 			named,
 			k -> MutableSupplyTokenDefinitionParticle.TokenTransition.valueOf(k.toUpperCase()),
 			v -> TokenPermission.valueOf(v.toUpperCase())
 		);
-
 	}
 
 	boolean isFinished() {
 		int numberOfFieldsExtracted = fieldsExtracted.size();
-		int numberOfFieldsInOriginalObject = argumentsObject.size();
+		int numberOfFieldsInOriginalObject = arguments.size();
 
 		if (numberOfFieldsExtracted > numberOfFieldsInOriginalObject) {
 			throw new RuntimeException("Incorrect implementation, should never have extracted more fields than the object contained.");

@@ -17,7 +17,6 @@
 
 package com.radixdlt.sanitytestsuite.scenario.keysign;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.sanitytestsuite.scenario.SanityTestScenarioRunner;
@@ -29,15 +28,13 @@ import static org.junit.Assert.assertEquals;
 
 public final class KeySignTestScenarioRunner extends SanityTestScenarioRunner<KeySignTestVector> {
 
-
 	public String testScenarioIdentifier() {
 		return "ecdsa_signing";
 	}
 
 	@Override
-	public TypeReference<KeySignTestVector> testVectorTypeReference() {
-		return new TypeReference<KeySignTestVector>() {
-		};
+	public Class<KeySignTestVector> testVectorType() {
+		return KeySignTestVector.class;
 	}
 
 	public void doRunTestVector(KeySignTestVector testVector) throws AssertionError {

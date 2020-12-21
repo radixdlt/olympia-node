@@ -19,8 +19,11 @@ package com.radixdlt.sanitytestsuite.scenario.keysign;
 
 import com.radixdlt.sanitytestsuite.model.SanityTestVector;
 
+import static com.radixdlt.sanitytestsuite.scenario.keysign.KeySignTestVector.Expected;
+import static com.radixdlt.sanitytestsuite.scenario.keysign.KeySignTestVector.Input;
+
 // CHECKSTYLE:OFF checkstyle:VisibilityModifier
-public final class KeySignTestVector implements SanityTestVector {
+public final class KeySignTestVector extends SanityTestVector<Input, Expected> {
 	public static final class Input {
 		public String privateKey;
 		public String messageToSign;
@@ -34,8 +37,5 @@ public final class KeySignTestVector implements SanityTestVector {
 		public String k;
 		public Signature signature;
 	}
-
-	public Expected expected;
-	public Input input;
 }
 // CHECKSTYLE:ON checkstyle:VisibilityModifier

@@ -17,38 +17,34 @@
 
 package com.radixdlt.sanitytestsuite.scenario.keyverify;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.sanitytestsuite.scenario.SanityTestScenarioRunner;
-import com.radixdlt.utils.Bytes;
 
+import static com.radixdlt.utils.Bytes.fromHexString;
 import static org.junit.Assert.assertEquals;
 
 public final class KeyVerifyTestScenarioRunner extends SanityTestScenarioRunner<KeyVerifyTestVector> {
-
-
 	public String testScenarioIdentifier() {
 		return "ecdsa_verification";
 	}
 
 	@Override
-	public TypeReference<KeyVerifyTestVector> testVectorTypeReference() {
-		return new TypeReference<KeyVerifyTestVector>() {
-		};
+	public Class<KeyVerifyTestVector> testVectorType() {
+		return KeyVerifyTestVector.class;
 	}
 
 	public void doRunTestVector(KeyVerifyTestVector testVector) throws AssertionError {
 
 		ECPublicKey publicKey = null;
 		try {
-			publicKey = ECPublicKey.fromBytes(Bytes.fromHexString(testVector.input.publicKeyUncompressed));
+			publicKey = ECPublicKey.fromBytes(fromHexString(testVector.input.publicKeyUncompressed));
 		} catch (Exception e) {
 			throw new AssertionError("Failed to construct public key from hex", e);
 		}
-		ECDSASignature signature = ECDSASignature.decodeFromDER(Bytes.fromHexString(testVector.input.signatureDerEncoded));
+		ECDSASignature signature = ECDSASignature.decodeFromDER(fromHexString(testVector.input.signatureDerEncoded));
 
-		byte[] hashedMessageToVerify = sha256Hash(Bytes.fromHexString(testVector.input.msg));
+		byte[] hashedMessageToVerify = sha256Hash(fromHexString(testVector.input.msg));
 
 		assertEquals(
 			testVector.expected.isValid,

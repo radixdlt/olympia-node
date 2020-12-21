@@ -31,41 +31,41 @@ import static org.junit.Assert.assertEquals;
 
 import static com.radixdlt.sanitytestsuite.scenario.SanityTestScenarioRunner.sha256Hash;
 
-// CHECKSTYLE:OFF checkstyle:VisibilityModifier
 public final class SanityTestSuiteTestLoader {
+	private final ObjectMapper mapper = new ObjectMapper();
 
 	public SanityTestSuiteRoot sanityTestSuiteRootFromFileNamed(String sanityTestJSONFileName) {
-
 		try {
-			ClassLoader classLoader = getClass().getClassLoader();
-			File file = new File(classLoader.getResource(sanityTestJSONFileName).getFile());
-
-			String jsonFileContent = Files.asCharSource(file, StandardCharsets.UTF_8).read();
-			ObjectMapper mapper = new ObjectMapper();
-			SanityTestSuiteRoot sanityTestSuiteRoot = mapper.readValue(jsonFileContent, SanityTestSuiteRoot.class);
-
-			String prettyPrintedSorted = JSONFormatter.sortPrettyPrintObject(sanityTestSuiteRoot.suite);
-
-			byte[] suiteBytes = prettyPrintedSorted.getBytes(StandardCharsets.UTF_8);
-			byte[] calculatedHashOfSanityTestSuite = sha256Hash(suiteBytes);
-
-
-			String calculated = Bytes.toHexString(calculatedHashOfSanityTestSuite);
-			String expected = sanityTestSuiteRoot.integrity.hashOfSuite;
+			var sanityTestSuiteRoot =	readTestSuiteContent(sanityTestJSONFileName);
+			var calculated = calculateSuiteHash(sanityTestSuiteRoot);
+			var expected = sanityTestSuiteRoot.integrity.hashOfSuite;
 
 			// Compare saved hash in file with calculated hash of test.
-			assertEquals(
-				String.format("Mismatch between calculated hash of test suite and expected (bundled hash), implementation info: %s", sanityTestSuiteRoot.integrity.implementationInfo),
-				expected,
-				calculated
-			);
+			assertEquals(prepareMessage(sanityTestSuiteRoot), expected, calculated);
 
 			return sanityTestSuiteRoot;
-
 		} catch (IOException e) {
-			throw new IllegalStateException("failed to sanity test suite, error: " + e);
+			throw new IllegalStateException("failed to sanity test suite", e);
 		}
 	}
-}
 
-// CHECKSTYLE:ON checkstyle:VisibilityModifier
+	private String prepareMessage(SanityTestSuiteRoot sanityTestSuiteRoot) {
+		return String.format(
+			"Mismatch between calculated hash of test suite and expected (bundled hash), implementation info: %s",
+			sanityTestSuiteRoot.integrity.implementationInfo
+		);
+	}
+
+	private String calculateSuiteHash(SanityTestSuiteRoot sanityTestSuiteRoot) {
+		var suiteBytes = JSONFormatter.sortPrettyPrintObject(sanityTestSuiteRoot.suite)
+				.getBytes(StandardCharsets.UTF_8);
+
+		return Bytes.toHexString(sha256Hash(suiteBytes));
+	}
+
+	private SanityTestSuiteRoot readTestSuiteContent(String sanityTestJSONFileName) throws IOException {
+		var file = new File(getClass().getResource(sanityTestJSONFileName).getFile());
+		var jsonFileContent = Files.asCharSource(file, StandardCharsets.UTF_8).read();
+		return mapper.readValue(jsonFileContent, SanityTestSuiteRoot.class);
+	}
+}

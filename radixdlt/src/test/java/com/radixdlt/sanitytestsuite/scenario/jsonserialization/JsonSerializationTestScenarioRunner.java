@@ -1,5 +1,3 @@
-
-
 /*
  * (C) Copyright 2020 Radix DLT Ltd
  *
@@ -19,15 +17,13 @@
 
 package com.radixdlt.sanitytestsuite.scenario.jsonserialization;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.sanitytestsuite.scenario.SanityTestScenarioRunner;
 import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.JSONFormatter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -35,81 +31,57 @@ import org.apache.logging.log4j.Logger;
 import java.util.Map;
 import java.util.function.Function;
 
+import static java.util.Optional.ofNullable;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public final class JsonSerializationTestScenarioRunner extends SanityTestScenarioRunner<JsonSerializationTestVector> {
+	private static final Logger LOG = LogManager.getLogger();
 
-	private static final Logger log = LogManager.getLogger();
+	private final ObjectMapper mapper = new ObjectMapper();
+	private final Serialization serialization = DefaultSerialization.getInstance();
 
 	public String testScenarioIdentifier() {
 		return "json_serialization_radix_particles";
 	}
 
 	@Override
-	public TypeReference<JsonSerializationTestVector> testVectorTypeReference() {
-		return new TypeReference<JsonSerializationTestVector>() {
-		};
+	public Class<JsonSerializationTestVector> testVectorType() {
+		return JsonSerializationTestVector.class;
 	}
 
-	private static TransferrableTokensParticle makeTTP(JsonNode jsonNode) {
-		ArgumentsExtractor argsExtractor = new ArgumentsExtractor(jsonNode);
+	private static TransferrableTokensParticle makeTTP(final Map<String, Object> arguments) {
+		var argsExtractor = ArgumentsExtractor.from(arguments);
 
-		TransferrableTokensParticle ttp = new TransferrableTokensParticle(
-			argsExtractor.extractRadixAddress("address"),
-			argsExtractor.extractUInt256("amount"),
-			argsExtractor.extractUInt256("granularity"),
-			argsExtractor.extractRRI("tokenDefinitionReference"),
+		var ttp = new TransferrableTokensParticle(
+			argsExtractor.asRadixAddress("address"),
+			argsExtractor.asUInt256("amount"),
+			argsExtractor.asUInt256("granularity"),
+			argsExtractor.asRRI("tokenDefinitionReference"),
 			argsExtractor.extractTokenPermissions("tokenPermissions"),
-			argsExtractor.extractLong("nonce")
+			argsExtractor.asLong("nonce")
 		);
 
 		assertTrue(argsExtractor.isFinished());
 
 		return ttp;
-
 	}
 
-	private static Map<String, Function<JsonNode, Object>> constructorMap = ImmutableMap.of(
+	private static Map<String, Function<Map<String, Object>, Object>> constructorMap = ImmutableMap.of(
 		"radix.particles.transferrable_tokens", JsonSerializationTestScenarioRunner::makeTTP
 	);
 
 	public void doRunTestVector(JsonSerializationTestVector testVector) throws AssertionError {
-		Function<JsonNode, Object> constructor = constructorMap.get(testVector.input.typeSerialization);
+		var produced = ofNullable(constructorMap.get(testVector.input.typeSerialization))
+			.map(constructor -> constructor.apply(testVector.input.arguments))
+			.map(model -> serialization.toJson(model, DsonOutput.Output.HASH))
+			.map(JSONFormatter::sortPrettyPrintJSONString)
+			.orElseThrow(() -> new IllegalStateException("Cant find constructor"));
 
-		if (constructor == null) {
-			throw new IllegalStateException("Cant find constructor");
-		}
+		LOG.info("🧩🧩🧩 produced: {}", produced);
 
-		Object argumentsObj = testVector.input.arguments;
-		ObjectMapper mapper = new ObjectMapper();
-		String jsonString = null;
-		try {
-			jsonString = mapper.writeValueAsString(argumentsObj);
-		} catch (JsonProcessingException e) {
-			throw new IllegalStateException("Failed to write obj to JSON");
-		}
+		String expected = JSONFormatter.sortPrettyPrintJSONString(testVector.expected.jsonPrettyPrinted);
 
-		JsonNode jsonNode = null;
-		try {
-			jsonNode = mapper.readTree(jsonString);
-		} catch (JsonProcessingException e) {
-			throw new IllegalStateException("Failed to write obj to JSON");
-		}
-
-
-		Object modelToSerialize = constructor.apply(jsonNode);
-
-		if (modelToSerialize == null) {
-			throw new IllegalStateException("Cant find input args for constructor");
-		}
-
-		String produced = DefaultSerialization.getInstance().toJson(modelToSerialize, DsonOutput.Output.HASH);
-
-		log.error(String.format("🧩🧩🧩 produced: %s", produced));
-
-		String expected = testVector.expected.jsonPrettyPrinted;
-
-		assertEquals(JSONFormatter.sortPrettyPrintJSONString(expected), JSONFormatter.sortPrettyPrintJSONString(produced));
+		assertEquals(expected, produced);
 	}
 }
