@@ -17,9 +17,9 @@
 
 package com.radixdlt.sanitytestsuite.scenario.jsonserialization;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.atommodel.message.MessageParticle;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.sanitytestsuite.scenario.SanityTestScenarioRunner;
 import com.radixdlt.serialization.DsonOutput;
@@ -28,6 +28,7 @@ import com.radixdlt.utils.JSONFormatter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -38,7 +39,6 @@ import static org.junit.Assert.assertTrue;
 public final class JsonSerializationTestScenarioRunner extends SanityTestScenarioRunner<JsonSerializationTestVector> {
 	private static final Logger LOG = LogManager.getLogger();
 
-	private final ObjectMapper mapper = new ObjectMapper();
 	private final Serialization serialization = DefaultSerialization.getInstance();
 
 	public String testScenarioIdentifier() {
@@ -50,7 +50,7 @@ public final class JsonSerializationTestScenarioRunner extends SanityTestScenari
 		return JsonSerializationTestVector.class;
 	}
 
-	private static TransferrableTokensParticle makeTTP(final Map<String, Object> arguments) {
+	private static TransferrableTokensParticle makeTransferrableTokensParticle(final Map<String, Object> arguments) {
 		var argsExtractor = ArgumentsExtractor.from(arguments);
 
 		var ttp = new TransferrableTokensParticle(
@@ -67,8 +67,24 @@ public final class JsonSerializationTestScenarioRunner extends SanityTestScenari
 		return ttp;
 	}
 
-	private static Map<String, Function<Map<String, Object>, Object>> constructorMap = ImmutableMap.of(
-		"radix.particles.transferrable_tokens", JsonSerializationTestScenarioRunner::makeTTP
+	private static MessageParticle makeMessageParticle(final Map<String, Object> arguments) {
+		var argsExtractor = ArgumentsExtractor.from(arguments);
+
+		var particle = new MessageParticle(
+			argsExtractor.asRadixAddress("from"),
+			argsExtractor.asRadixAddress("to"),
+			argsExtractor.asString("message").getBytes(StandardCharsets.UTF_8),
+			argsExtractor.asLong("nonce")
+		);
+
+		assertTrue(argsExtractor.isFinished());
+
+		return particle;
+	}
+
+	private static final Map<String, Function<Map<String, Object>, Object>> constructorMap = ImmutableMap.of(
+		"radix.particles.transferrable_tokens", JsonSerializationTestScenarioRunner::makeTransferrableTokensParticle,
+		"radix.particles.message", JsonSerializationTestScenarioRunner::makeMessageParticle
 	);
 
 	public void doRunTestVector(JsonSerializationTestVector testVector) throws AssertionError {
@@ -78,7 +94,8 @@ public final class JsonSerializationTestScenarioRunner extends SanityTestScenari
 			.map(JSONFormatter::sortPrettyPrintJSONString)
 			.orElseThrow(() -> new IllegalStateException("Cant find constructor"));
 
-		LOG.info("🧩🧩🧩 produced: {}", produced);
+		LOG.error("🧩");
+		LOG.error(produced);
 
 		String expected = JSONFormatter.sortPrettyPrintJSONString(testVector.expected.jsonPrettyPrinted);
 

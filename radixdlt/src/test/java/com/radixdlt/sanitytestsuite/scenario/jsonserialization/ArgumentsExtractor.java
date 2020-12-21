@@ -85,6 +85,11 @@ public final class ArgumentsExtractor {
 		return extract(named, value -> mapper.apply((String) value));
 	}
 
+
+	String asString(String named) {
+		return extractAndMap(named, Function.identity());
+	}
+
 	long asLong(String named) {
 		return extractAndMap(named, Long::parseLong);
 	}

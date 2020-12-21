@@ -64,7 +64,9 @@ public final class SanityTestSuiteTestLoader {
 	}
 
 	private SanityTestSuiteRoot readTestSuiteContent(String sanityTestJSONFileName) throws IOException {
-		var file = new File(getClass().getResource(sanityTestJSONFileName).getFile());
+		var resource = getClass().getClassLoader().getResource(sanityTestJSONFileName);
+		File file = new File(resource.getFile());
+
 		var jsonFileContent = Files.asCharSource(file, StandardCharsets.UTF_8).read();
 		return mapper.readValue(jsonFileContent, SanityTestSuiteRoot.class);
 	}

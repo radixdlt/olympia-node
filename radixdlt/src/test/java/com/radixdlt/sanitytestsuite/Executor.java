@@ -80,7 +80,8 @@ public final class Executor {
 	}
 
 	private SanityTestSuiteRoot sanityTestSuiteRootFromFile() {
-		return new SanityTestSuiteTestLoader().sanityTestSuiteRootFromFileNamed(SANITY_TEST_SUITE_JSON_FILE_NAME);
+		return new SanityTestSuiteTestLoader()
+			.sanityTestSuiteRootFromFileNamed(SANITY_TEST_SUITE_JSON_FILE_NAME);
 	}
 
 	private Map<String, Consumer<SanityTestSuiteRoot.Suite.Scenario>> makeScenarioRunnerMap() {

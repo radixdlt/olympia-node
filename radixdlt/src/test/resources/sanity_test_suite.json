@@ -1,6 +1,6 @@
 {
 	"integrity": {
-		"hashOfSuite": "ac28be002db1b0df0b0123a0f2ea2916ed152de523aadfb92736d0ddef67de52",
+		"hashOfSuite": "16dd3a1391dadde3ee1cd26b1aadfedec9564abba3de76d1e359df13e4e0eb53",
 		"implementationInfo": "Read the 'suite' object from the root of this file, and prettify it to a JSON string with recursive sorting on keys and with 4 spaces indentation, then UTF8 encode the JSON string and SHA256 has it. Compare the hex of the hash with 'hashOfSuite'."
 	},
 	"suite": {
@@ -392,6 +392,20 @@
 										"mint": "token_owner_only",
 										"burn": "all"
 									}
+								}
+							}
+						}, 
+						{
+							"expected": {
+								"jsonPrettyPrinted": "{\n  \"bytes\": \":byt:SGVsbG8gQm9iLCB0aGlzIGlzIHlvdXIgZnJpZW5kIEFsaWNlLg==\",\n  \"destinations\": [\n    \":uid:e45e72925767ee14d7368fec2a141768\",\n    \":uid:dfd7c486570a7ad40eb948c80cb89376\"\n  ],\n  \"from\": \":adr:JEtKBRFrEbZUnY7zrtHsF7aU9eYvL74VyVukp5m5HsKogmWUW1h\",\n  \"nonce\": 156115453148799,\n  \"serializer\": \"radix.particles.message\",\n  \"to\": \":adr:JFLKeSQmBZ73YkzWiesdEr2fRT14qCB1DQUvj8KxYQC6m8UTCcF\",\n  \"version\": 100\n}"
+							},
+							"input": {
+								"typeSerialization": "radix.particles.message",
+								"arguments": {
+									"message": "Hello Bob, this is your friend Alice.",
+									"from": "JEtKBRFrEbZUnY7zrtHsF7aU9eYvL74VyVukp5m5HsKogmWUW1h",
+									"to": "JFLKeSQmBZ73YkzWiesdEr2fRT14qCB1DQUvj8KxYQC6m8UTCcF",
+									"nonce": "156115453148799"
 								}
 							}
 						}
