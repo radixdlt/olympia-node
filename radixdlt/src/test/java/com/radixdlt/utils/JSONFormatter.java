@@ -31,7 +31,6 @@ import java.io.IOException;
 import java.util.TreeMap;
 
 public class JSONFormatter {
-
 	private JSONFormatter() {
 		throw new UnsupportedOperationException("Cannot instantiate.");
 	}
@@ -44,7 +43,6 @@ public class JSONFormatter {
 	}
 
 	static class MyPrettyPrinter extends DefaultPrettyPrinter {
-
 		@Override
 		public DefaultPrettyPrinter createInstance() {
 			MyPrettyPrinter printer = new MyPrettyPrinter();
@@ -62,7 +60,17 @@ public class JSONFormatter {
 		public void writeObjectFieldValueSeparator(JsonGenerator jg) throws IOException {
 			jg.writeRaw(": ");
 		}
+	}
 
+	public static String sortPrettyPrintObject(Object object) {
+		ObjectMapper mapper = new ObjectMapper();
+		try {
+			var jsonString = mapper.writeValueAsString(object);
+
+			return sortPrettyPrintJSONString(jsonString);
+		} catch (JsonProcessingException e) {
+			throw new IllegalArgumentException("Failed to pretty print object to JSON string", e);
+		}
 	}
 
 	public static String sortPrettyPrintJSONString(String uglyJson) {
@@ -70,23 +78,15 @@ public class JSONFormatter {
 				.nodeFactory(new SortingNodeFactory())
 				.build();
 
-		JsonNode jsonSorted = null;
 		try {
-			jsonSorted = mapper.readTree(uglyJson);
+			var jsonSorted = mapper.readTree(uglyJson);
+
+			return mapper
+				.writer(new MyPrettyPrinter())
+				.writeValueAsString(jsonSorted);
+
 		} catch (JsonProcessingException e) {
-			e.printStackTrace();
+			throw new IllegalArgumentException("Failed to pretty print JSON string", e);
 		}
-
-		try {
-			String jsonStringSorted = mapper
-					.writer(new MyPrettyPrinter())
-					.writeValueAsString(jsonSorted);
-
-			return jsonStringSorted;
-		} catch (JsonProcessingException e) {
-			e.printStackTrace();
-		}
-
-		throw new IllegalStateException("Failed to pretty print JSON string");
 	}
 }

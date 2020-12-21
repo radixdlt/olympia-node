@@ -17,7 +17,12 @@
 
 package com.radixdlt.sanitytestsuite.model;
 
-// Marker interface
-public interface SanityTestVector {
-
+/**
+ * Sanity test vector interface.
+ * @param <I> - type of input value
+ * @param <E> - type of expected value
+ */
+public abstract class SanityTestVector<I, E> {
+	public I input;
+	public E expected;
 }

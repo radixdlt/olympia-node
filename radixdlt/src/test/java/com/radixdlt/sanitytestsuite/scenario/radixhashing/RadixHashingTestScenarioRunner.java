@@ -17,7 +17,6 @@
 
 package com.radixdlt.sanitytestsuite.scenario.radixhashing;
 
-import com.google.gson.reflect.TypeToken;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.sanitytestsuite.scenario.SanityTestScenarioRunner;
 import com.radixdlt.utils.Bytes;
@@ -31,14 +30,13 @@ public final class RadixHashingTestScenarioRunner extends SanityTestScenarioRunn
 	}
 
 	@Override
-	public TypeToken<RadixHashingTestVector> typeOfVector() {
-		return new TypeToken<>() {
-		};
+	public Class<RadixHashingTestVector> testVectorType() {
+		return RadixHashingTestVector.class;
 	}
 
 	public void doRunTestVector(RadixHashingTestVector testVector) throws AssertionError {
-		String hashHex = Bytes.toHexString(HashUtils.sha256(testVector.input.bytesToHash()).asBytes());
-		assertEquals(testVector.expected.hashOfHash, hashHex);
+		var hashHex = Bytes.toHexString(HashUtils.sha256(testVector.input.bytesToHash()).asBytes());
 
+		assertEquals(testVector.expected.hashOfHash, hashHex);
 	}
 }

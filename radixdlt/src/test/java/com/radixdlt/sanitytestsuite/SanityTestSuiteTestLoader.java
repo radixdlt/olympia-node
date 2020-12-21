@@ -17,72 +17,55 @@
 
 package com.radixdlt.sanitytestsuite;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.Files;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonPrimitive;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
 import com.radixdlt.sanitytestsuite.model.SanityTestSuiteRoot;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.JSONFormatter;
-import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 
-import static com.radixdlt.sanitytestsuite.scenario.SanityTestScenarioRunner.sha256Hash;
 import static org.junit.Assert.assertEquals;
 
-// CHECKSTYLE:OFF checkstyle:VisibilityModifier
+import static com.radixdlt.sanitytestsuite.scenario.SanityTestScenarioRunner.sha256Hash;
+
 public final class SanityTestSuiteTestLoader {
-
-
-	public static Gson gson = new GsonBuilder()
-			.registerTypeAdapter(Double.class, new SanityTestSuiteTestLoader.DoubleSerializer())
-			.create();
-
-	public static class DoubleSerializer implements JsonSerializer<Double> {
-		@Override
-		public JsonElement serialize(Double src, Type typeOfSrc, JsonSerializationContext context) {
-			return src == src.longValue() ? new JsonPrimitive(src.longValue()) : new JsonPrimitive(src);
-		}
-	}
-
+	private final ObjectMapper mapper = new ObjectMapper();
 
 	public SanityTestSuiteRoot sanityTestSuiteRootFromFileNamed(String sanityTestJSONFileName) {
-
-		SanityTestSuiteRoot sanityTestSuiteRoot = null;
 		try {
-			ClassLoader classLoader = getClass().getClassLoader();
-			File file = new File(classLoader.getResource(sanityTestJSONFileName).getFile());
+			var sanityTestSuiteRoot =	readTestSuiteContent(sanityTestJSONFileName);
+			var calculated = calculateSuiteHash(sanityTestSuiteRoot);
+			var expected = sanityTestSuiteRoot.integrity.hashOfSuite;
 
 			// Compare saved hash in file with calculated hash of test.
-			String jsonFileContent = Files.asCharSource(file, StandardCharsets.UTF_8).read();
-			JSONObject sanityTestSuiteRootAsJsonObject = new JSONObject(jsonFileContent);
+			assertEquals(prepareMessage(sanityTestSuiteRoot), expected, calculated);
 
-			String prettyPrintedSorted = JSONFormatter.sortPrettyPrintJSONString(sanityTestSuiteRootAsJsonObject.getJSONObject("suite").toString());
-
-			JSONObject integrity = sanityTestSuiteRootAsJsonObject.getJSONObject("integrity");
-
-			sanityTestSuiteRoot = gson.fromJson(jsonFileContent, SanityTestSuiteRoot.class);
-
-			String sanityTestSuiteSavedHash = sanityTestSuiteRoot.integrity.hashOfSuite;
-			byte[] suiteBytes = prettyPrintedSorted.getBytes(StandardCharsets.UTF_8);
-			byte[] calculatedHashOfSanityTestSuite = sha256Hash(suiteBytes);
-			assertEquals(String.format("Mismatch between calculated hash of test suite and expected (bundled hash), implementation info: %s", integrity.getString("implementationInfo")), sanityTestSuiteSavedHash, Bytes.toHexString(calculatedHashOfSanityTestSuite));
+			return sanityTestSuiteRoot;
 		} catch (IOException e) {
-			throw new IllegalStateException("failed to load test vectors, e: " + e);
+			throw new IllegalStateException("failed to sanity test suite", e);
 		}
+	}
 
+	private String prepareMessage(SanityTestSuiteRoot sanityTestSuiteRoot) {
+		return String.format(
+			"Mismatch between calculated hash of test suite and expected (bundled hash), implementation info: %s",
+			sanityTestSuiteRoot.integrity.implementationInfo
+		);
+	}
 
+	private String calculateSuiteHash(SanityTestSuiteRoot sanityTestSuiteRoot) {
+		var suiteBytes = JSONFormatter.sortPrettyPrintObject(sanityTestSuiteRoot.suite)
+				.getBytes(StandardCharsets.UTF_8);
 
-		return sanityTestSuiteRoot;
+		return Bytes.toHexString(sha256Hash(suiteBytes));
+	}
 
+	private SanityTestSuiteRoot readTestSuiteContent(String sanityTestJSONFileName) throws IOException {
+		var file = new File(getClass().getResource(sanityTestJSONFileName).getFile());
+		var jsonFileContent = Files.asCharSource(file, StandardCharsets.UTF_8).read();
+		return mapper.readValue(jsonFileContent, SanityTestSuiteRoot.class);
 	}
 }
-
-// CHECKSTYLE:ON checkstyle:VisibilityModifier

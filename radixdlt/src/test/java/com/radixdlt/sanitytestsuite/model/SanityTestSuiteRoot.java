@@ -17,28 +17,45 @@
 
 package com.radixdlt.sanitytestsuite.model;
 
-
 import javax.annotation.Nullable;
 import java.util.List;
+import java.util.Map;
 
 // CHECKSTYLE:OFF checkstyle:VisibilityModifier
 public final class SanityTestSuiteRoot {
+	public SanityTestIntegrity integrity;
+	public Suite suite;
 
-	public static final class SanityTestSuite {
+	public static final class Suite {
+		public List<Suite.Scenario> scenarios;
 
-		public static final class SanityTestScenario {
-			public static final class SanityTestScenarioDescription {
+		public static final class Scenario {
+			public Description description;
+			public String identifier;
+			public String name;
+			public Tests tests;
+
+			public static final class Description {
 				public String implementationInfo;
 				public String purpose;
 				public String troubleshooting;
 			}
 
-			public static final class SanityTestScenarioTests {
+			public static final class Tests {
+				public Source source;
+				public List<Map<String, Object>> vectors;
 
-				public static final class TestSource {
+				public static final class Source {
+					@Nullable
+					public String link;
+					@Nullable
+					public String comment;
+					@Nullable
+					public String originalSourceLink;
+					@Nullable
+					public ModifiedByTool modifiedByTool;
 
 					public static final class ModifiedByTool {
-
 						public static final class ToolInfo {
 							public String name;
 							public String link;
@@ -48,23 +65,8 @@ public final class SanityTestSuiteRoot {
 						public String expression;
 						public ToolInfo tool;
 					}
-
-					public @Nullable
-					String link;
-					public @Nullable String comment;
-					public @Nullable String originalSourceLink;
-					public @Nullable ModifiedByTool modifiedByTool;
 				}
-
-				public TestSource source;
-				public List<UnknownTestVector> vectors;
-
 			}
-
-			public SanityTestScenarioDescription description;
-			public String identifier;
-			public String name;
-			public SanityTestScenarioTests tests;
 
 			public String failDescriptionWithAssertionError(AssertionError testAssertionError) {
 				return String.format(
@@ -86,19 +88,12 @@ public final class SanityTestSuiteRoot {
 						testAssertionError.getLocalizedMessage()
 				);
 			}
-
 		}
-
-		public List<SanityTestScenario> scenarios;
-
 	}
 
 	public static final class SanityTestIntegrity {
 		public String hashOfSuite;
 		public String implementationInfo;
 	}
-
-	public SanityTestIntegrity integrity;
-	public SanityTestSuite suite;
 }
 // CHECKSTYLE:ON checkstyle:VisibilityModifier

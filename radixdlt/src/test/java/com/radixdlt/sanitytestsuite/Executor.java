@@ -21,7 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.sanitytestsuite.model.SanityTestSuiteRoot;
 import com.radixdlt.sanitytestsuite.scenario.SanityTestScenarioRunner;
 import com.radixdlt.sanitytestsuite.scenario.hashing.HashingTestScenarioRunner;
-import com.radixdlt.sanitytestsuite.scenario.jsonparticles.JsonRadixParticlesTestScenarioRunner;
+import com.radixdlt.sanitytestsuite.scenario.jsonserialization.JsonSerializationTestScenarioRunner;
 import com.radixdlt.sanitytestsuite.scenario.keygen.KeyGenTestScenarioRunner;
 import com.radixdlt.sanitytestsuite.scenario.keysign.KeySignTestScenarioRunner;
 import com.radixdlt.sanitytestsuite.scenario.keyverify.KeyVerifyTestScenarioRunner;
@@ -38,9 +38,8 @@ import java.util.stream.Collectors;
 import static java.util.stream.Collectors.toMap;
 import static org.junit.Assert.assertEquals;
 
-public final class SanityTestSuiteTestExecutor {
-
-	private static final Logger log = LogManager.getLogger();
+public final class Executor {
+	private static final Logger LOG = LogManager.getLogger();
 	private static final String SANITY_TEST_SUITE_JSON_FILE_NAME = "sanity_test_suite.json";
 
 	private final List<SanityTestScenarioRunner<?>> testScenarios = ImmutableList.of(
@@ -49,29 +48,32 @@ public final class SanityTestSuiteTestExecutor {
 		new KeyGenTestScenarioRunner(),
 		new KeySignTestScenarioRunner(),
 		new KeyVerifyTestScenarioRunner(),
-		new JsonRadixParticlesTestScenarioRunner()
+		new JsonSerializationTestScenarioRunner()
 	);
 
 	@Test
 	public void test_sanity_suite() {
-		SanityTestSuiteRoot sanityTestSuiteRoot = sanityTestSuiteRootFromFile();
-		Map<String, Consumer<SanityTestSuiteRoot.SanityTestSuite.SanityTestScenario>> scenarioRunnerMap = makeScenarioRunnerMap();
+		var sanityTestSuiteRoot = sanityTestSuiteRootFromFile();
+		var scenarioRunnerMap = makeScenarioRunnerMap();
+
 		assertEquals(
 			scenarioRunnerMap.keySet(),
-			sanityTestSuiteRoot.suite.scenarios.stream().map(s -> s.identifier).collect(Collectors.toSet())
+			sanityTestSuiteRoot.suite.scenarios.stream()
+				.map(s -> s.identifier)
+				.collect(Collectors.toSet())
 		);
 
-		for (SanityTestSuiteRoot.SanityTestSuite.SanityTestScenario scenario : sanityTestSuiteRoot.suite.scenarios) {
-			Consumer<SanityTestSuiteRoot.SanityTestSuite.SanityTestScenario> scenarioRunner = scenarioRunnerMap.get(scenario.identifier);
+		for (var scenario : sanityTestSuiteRoot.suite.scenarios) {
+			var scenarioRunner = scenarioRunnerMap.get(scenario.identifier);
 			// Run test scenario
-			log.debug(String.format("🔮 Running scenario: %s", scenario.name));
+			LOG.debug("🔮 Running scenario: {}", scenario.name);
 
 			try {
 				scenarioRunner.accept(scenario);
-				log.info(String.format("✅ Test of scenario '%s' passed", scenario.name));
+				LOG.info("✅ Test of scenario '{}' passed", scenario.name);
 			} catch (AssertionError testAssertionError) {
-				String failDebugInfo = scenario.failDescriptionWithAssertionError(testAssertionError);
-				log.error(failDebugInfo);
+				var failDebugInfo = scenario.failDescriptionWithAssertionError(testAssertionError);
+				LOG.error(failDebugInfo);
 				throw new AssertionError(failDebugInfo, testAssertionError);
 			}
 		}
@@ -81,7 +83,7 @@ public final class SanityTestSuiteTestExecutor {
 		return new SanityTestSuiteTestLoader().sanityTestSuiteRootFromFileNamed(SANITY_TEST_SUITE_JSON_FILE_NAME);
 	}
 
-	private Map<String, Consumer<SanityTestSuiteRoot.SanityTestSuite.SanityTestScenario>> makeScenarioRunnerMap() {
+	private Map<String, Consumer<SanityTestSuiteRoot.Suite.Scenario>> makeScenarioRunnerMap() {
 		return testScenarios.stream()
 			.collect(
 				toMap(
