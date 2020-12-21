@@ -22,6 +22,7 @@ out/
 *.bak
 *.jar
 *.log
+TempUniverseCreator
 
 # radixdlt non-versioned files
 RADIXDB/
