@@ -13,7 +13,7 @@ public class AssertionChecks {
 			.assertAllProposalsHaveDirectParents()
 			.assertNoTimeouts()
 			.assertSafety()
-			.assertLiveness(80);
+			.assertLiveness();
 	}
 
 	/**

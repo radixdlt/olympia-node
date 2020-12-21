@@ -41,7 +41,7 @@ class CmdHelper {
         workdir?logger.info("------Working dir ${workdir}-----"):""
         process = cmd.execute(
                 env ?: null,
-                workdir? new File(workdir):null
+                workdir? new File(workdir):new File(".")
         )
 
         process.consumeProcessOutput(sout, serr)
@@ -176,7 +176,8 @@ class CmdHelper {
     }
 
     static String runContainer(String dockerCommand, String[] dockerEnv) {
-        def results = CmdHelper.runCommand("bash -c".tokenize() << dockerCommand, dockerEnv, true);
+        def results
+        results = runCommand(dockerCommand, dockerEnv, true)
         return results[0][0]
     }
 
@@ -252,8 +253,8 @@ class CmdHelper {
     }
 
     static String[] generateUniverseValidators(int numNodes){
-        String[] exportVars,error
-        (exportVars, error) =  runCommand("./gradlew -P validators=${numNodes} clean generateDevUniverse",null,true,true,System.getenv("CORE_DIR"));
+        String[] exportVars, error
+        (exportVars, error) = runCommand("./gradlew -P validators=${numNodes} clean generateDevUniverse", null, true, true, System.getenv("CORE_DIR"));
         return exportVars
                 .findAll({ it.contains("export") })
                 .collect({it.replaceAll("export","")})
@@ -276,4 +277,21 @@ class CmdHelper {
         def present = Optional.ofNullable(System.getenv("TEST_NETWORK")).isPresent()
         return present
     }
+
+    static String stopContainer(String containerName) {
+        def (output, error) = runCommand("docker stop " + containerName);
+        if (error) {
+            throw new RuntimeException("Could not stop container '" + containerName + "' because: " + error.toString())
+        } else {
+            return output;
+        }
+    }
+
+    static void startContainer(String containerName) {
+        def (output, error) = runCommand("docker start " + containerName);
+        if (error) {
+            throw new RuntimeException("Could not start container '" + containerName + "' because: " + error.toString())
+        }
+    }
+
 }

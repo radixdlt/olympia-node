@@ -1,5 +1,7 @@
 package com.radixdlt.test;
 
+import com.google.common.collect.Lists;
+import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
 import junitparams.naming.TestCaseName;
 import org.apache.logging.log4j.LogManager;
@@ -10,15 +12,17 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.TestName;
+import org.junit.runner.RunWith;
 import utils.CmdHelper;
 import utils.Generic;
 
-import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import static com.radixdlt.test.AssertionChecks.latentTestBuilder;
 import static com.radixdlt.test.AssertionChecks.outOfSynchronyTestBuilder;
-import static com.radixdlt.test.AssertionChecks.slowNodeTestBuilder;
 
+@RunWith(JUnitParamsRunner.class)
 @Category(Docker.class)
 public class DockerTests {
 
@@ -27,44 +31,57 @@ public class DockerTests {
     @Rule
     public TestName testNameRule = new TestName();
 
-    private String testName;
+    private String testMethodName;
 
     @Before
     public void setup() {
-        testName = Generic.extractTestName(this.testNameRule.getMethodName());
-        logger.info("Test name is {}", testName);
+        testMethodName = Generic.extractTestName(this.testNameRule.getMethodName());
+        logger.info("Test name is {}", testMethodName);
     }
 
     @Test
-    public void given_5_correct_bfts_in_latent_docker_network__when_one_instance_is_down__then_all_instances_should_get_same_commits_and_progress_should_be_made() {
-        try (DockerNetwork network = DockerNetwork.builder().numNodes(5).testName(testName).startConsensusOnBoot().build()) {
+    public void smoke_test() {
+        try (DockerNetwork network = DockerNetwork.builder().numNodes(4).testName(testMethodName).startConsensusOnBoot().build()) {
             network.startBlocking();
+            Conditions.waitUntilNetworkHasLiveness(network);
 
-            RemoteBFTTest test = slowNodeTestBuilder().network(RemoteBFTNetworkBridge.of(network)).waitUntilResponsive().build();
+            // make all nodes slow/latent
+            network.getNodeIds().stream().map(CmdHelper::getVethByContainerName)
+                    .forEach(veth -> CmdHelper.setupQueueQuality(veth, "delay 100ms loss 20%"));
+
+            // first check
+            RemoteBFTTest test = latentTestBuilder()
+                    .network(RemoteBFTNetworkBridge.of(network))
+                    .waitUntilResponsive()
+                    .startConsensusOnRun()
+                    .build();
             test.runBlocking(CmdHelper.getTestDurationInSeconds(), TimeUnit.SECONDS);
 
-            String nodeNetworkSlowed = network.getNodeIds().stream().findFirst().get();
-            String veth = CmdHelper.getVethByContainerName(nodeNetworkSlowed);
-            CmdHelper.setupQueueQuality(veth, "delay 100ms loss 100%");
+            String nodeToStopAndStart = network.getNodeIds().iterator().next();
+            CmdHelper.stopContainer(nodeToStopAndStart);
 
-            ArrayList<String> setNodesToIgnore = new ArrayList<String>();
-            setNodesToIgnore.add(nodeNetworkSlowed);
-
-            RemoteBFTTest testOutOfSynchronyBounds = outOfSynchronyTestBuilder(setNodesToIgnore)
+            // second check
+            RemoteBFTTest testOutOfSynchronyBounds = outOfSynchronyTestBuilder(Lists.newArrayList(nodeToStopAndStart))
                     .network(RemoteBFTNetworkBridge.of(network))
                     .build();
-
             testOutOfSynchronyBounds.runBlocking(CmdHelper.getTestDurationInSeconds(), TimeUnit.SECONDS);
+
+            CmdHelper.startContainer(nodeToStopAndStart);
+
+            // third check
+            List<String> restOfTheNodes = Lists.newArrayList(network.getNodeIds());
+            restOfTheNodes.remove(nodeToStopAndStart);
+            RemoteBFTTest lastTest = RemoteBFTTest.builder().assertLiveness(10, restOfTheNodes)
+                    .network(RemoteBFTNetworkBridge.of(network)).build();
+            lastTest.runBlocking(CmdHelper.getTestDurationInSeconds(), TimeUnit.SECONDS);
         }
     }
 
     @Parameters({"4", "5"})
     @TestCaseName("given_{0}_correct_bfts_in_latent_docker_network__when_all_nodes_are_out_synchrony__then_a_liveness_check_should_fail")
-    @Test
+    //@Test
     public void given_X_correct_bfts_in_latent_docker_network__when_all_nodes_are_out_synchrony__then_a_liveness_check_should_fail(int numberOfNodes) {
-        String name = Generic.extractTestName(this.testNameRule.getMethodName());
-        logger.info("Test name is " + name);
-        try (DockerNetwork network = DockerNetwork.builder().numNodes(numberOfNodes).testName(name).startConsensusOnBoot().build()) {
+        try (DockerNetwork network = DockerNetwork.builder().numNodes(numberOfNodes).testName(testMethodName).startConsensusOnBoot().build()) {
             network.startBlocking();
 
             Conditions.waitUntilNetworkHasLiveness(network);
@@ -81,39 +98,5 @@ public class DockerTests {
             Generic.assertAssertionErrorIsLivenessError(error);
         }
     }
-
-    @Parameters({"3", "5"})
-    @TestCaseName("given_{0}_correct_bfts_in_latent_docker_network_and_one_slow_node__then_all_instances_should_get_same_commits_and_progress_should_be_made")
-    @Test
-    public void given_X_correct_bfts_in_latent_docker_network_and_one_slow_node__then_all_instances_should_get_same_commits_and_progress_should_be_made(int numberOfNodes) {
-        try (DockerNetwork network = DockerNetwork.builder().numNodes(numberOfNodes).testName(testName).build()) {
-            network.startBlocking();
-            String veth = CmdHelper.getVethByContainerName(network.getNodeIds().stream().findFirst().get());
-            CmdHelper.setupQueueQuality(veth, "delay 100ms loss 20%");
-
-            RemoteBFTTest test = AssertionChecks
-                    .slowNodeTestBuilder()
-                    .network(RemoteBFTNetworkBridge.of(network))
-                    .waitUntilResponsive()
-                    .startConsensusOnRun().build();
-            test.runBlocking(CmdHelper.getTestDurationInSeconds(), TimeUnit.SECONDS);
-        }
-    }
-
-    @Parameters({"3", "5"})
-    @TestCaseName("given_{0}_correct_bfts_in_latent_docker_network__then_all_instances_should_get_same_commits_and_progress_should_be_made")
-    @Test
-    public void given_X_correct_bfts_in_latent_docker_network__then_all_instances_should_get_same_commits_and_progress_should_be_made(int numberOfNodes) {
-        try (DockerNetwork network = DockerNetwork.builder().numNodes(numberOfNodes).testName(testName).build()) {
-            network.startBlocking();
-            RemoteBFTTest test = AssertionChecks.latentTestBuilder()
-                    .network(RemoteBFTNetworkBridge.of(network))
-                    .waitUntilResponsive()
-                    .startConsensusOnRun()
-                    .build();
-            test.runBlocking(CmdHelper.getTestDurationInSeconds(), TimeUnit.SECONDS);
-        }
-    }
-
 
 }
