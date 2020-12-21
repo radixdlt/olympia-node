@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Contributes to steady state by submitting commands to the mempool every few seconds
  */
-public class LocalMempoolPeriodicSubmittor implements SimulationNetworkActor {
+public class LocalMempoolPeriodicSubmitter implements SimulationNetworkActor {
 
 	private final PublishSubject<Pair<Command, BFTNode>> commands;
 	private final CommandGenerator commandGenerator;
@@ -42,7 +42,7 @@ public class LocalMempoolPeriodicSubmittor implements SimulationNetworkActor {
 
 	private Disposable commandsDisposable;
 
-	public LocalMempoolPeriodicSubmittor(CommandGenerator commandGenerator, NodeSelector nodeSelector) {
+	public LocalMempoolPeriodicSubmitter(CommandGenerator commandGenerator, NodeSelector nodeSelector) {
 		this.commands = PublishSubject.create();
 		this.commandGenerator = commandGenerator;
 		this.nodeSelector = nodeSelector;
@@ -64,6 +64,10 @@ public class LocalMempoolPeriodicSubmittor implements SimulationNetworkActor {
 
 	@Override
 	public void start(RunningNetwork network) {
+		if (commandsDisposable != null) {
+			return;
+		}
+
 		commandsDisposable = Observable.interval(1, 10, TimeUnit.SECONDS)
 			.map(i -> commandGenerator.nextCommand())
 			.flatMapSingle(cmd -> nodeSelector.nextNode(network).map(node -> Pair.of(cmd, node)))
