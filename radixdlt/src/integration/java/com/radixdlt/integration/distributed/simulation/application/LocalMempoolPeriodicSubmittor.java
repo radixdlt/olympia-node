@@ -19,6 +19,7 @@ package com.radixdlt.integration.distributed.simulation.application;
 
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.integration.distributed.simulation.SimulationTest.SimulationNetworkActor;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolDuplicateException;
@@ -32,10 +33,13 @@ import java.util.concurrent.TimeUnit;
 /**
  * Contributes to steady state by submitting commands to the mempool every few seconds
  */
-public class LocalMempoolPeriodicSubmittor {
+public class LocalMempoolPeriodicSubmittor implements SimulationNetworkActor {
+
 	private final PublishSubject<Pair<Command, BFTNode>> commands;
 	private final CommandGenerator commandGenerator;
 	private final NodeSelector nodeSelector;
+
+	private boolean isRunning;
 
 	public LocalMempoolPeriodicSubmittor(CommandGenerator commandGenerator, NodeSelector nodeSelector) {
 		this.commands = PublishSubject.create();
@@ -57,11 +61,19 @@ public class LocalMempoolPeriodicSubmittor {
 		return commands.observeOn(Schedulers.io());
 	}
 
-	public void run(RunningNetwork network) {
+	@Override
+	public void start(RunningNetwork network) {
+		this.isRunning = true;
 		Observable.interval(1, 10, TimeUnit.SECONDS)
 			.map(i -> commandGenerator.nextCommand())
+			.takeWhile(unused -> this.isRunning)
 			.flatMapSingle(cmd -> nodeSelector.nextNode(network).map(node -> Pair.of(cmd, node)))
 			.doOnNext(p -> this.act(network, p.getFirst(), p.getSecond()))
 			.subscribe(commands);
+	}
+
+	@Override
+	public void stop() {
+		this.isRunning = false;
 	}
 }

@@ -146,7 +146,8 @@ public class SimulationTest {
 	private static final Hasher hasher = Sha256Hasher.withDefaultSerialization();
 
 	public interface SimulationNetworkActor {
-		void run(RunningNetwork network);
+		void start(RunningNetwork network);
+		void stop();
 	}
 
 	private final ImmutableList<ECKeyPair> nodes;
@@ -440,7 +441,7 @@ public class SimulationTest {
 				nodeSelector
 			);
 			CommittedChecker committedChecker = new CommittedChecker(mempoolSubmission.issuedCommands().map(Pair::getFirst), nodeEvents);
-			this.runnableBuilder.add(nodes -> mempoolSubmission::run);
+			this.runnableBuilder.add(nodes -> mempoolSubmission);
 			this.checksBuilder.put(invariantName, nodes -> committedChecker);
 
 			return this;
@@ -452,7 +453,7 @@ public class SimulationTest {
 					= new RadixEngineValidatorRegistratorAndUnregistrator(nodes, hasher);
 				NodeSelector nodeSelector = this.ledgerType.hasEpochs ? new EpochsNodeSelector() : new BFTValidatorSetNodeSelector();
 				LocalMempoolPeriodicSubmittor submittor = new LocalMempoolPeriodicSubmittor(randomValidatorSubmittor, nodeSelector);
-				return submittor::run;
+				return submittor;
 			});
 			return this;
 		}
@@ -476,7 +477,7 @@ public class SimulationTest {
 					submittedInvariantName,
 					nodes2 -> new CommittedChecker(submittor.issuedCommands().map(Pair::getFirst), nodeEvents)
 				);
-				return submittor::run;
+				return submittor;
 			});
 			return this;
 		}
@@ -503,7 +504,7 @@ public class SimulationTest {
 					registeredInvariantName,
 					nodes2 -> new RegisteredValidatorChecker(validatorRegistrator.validatorRegistrationSubmissions())
 				);
-				return submittor::run;
+				return submittor;
 			});
 			return this;
 		}
@@ -763,7 +764,7 @@ public class SimulationTest {
 			.collect(Collectors.toList());
 
 		return Single.merge(results).toObservable()
-			.doOnSubscribe(d -> runners.forEach(c -> c.run(runningNetwork)));
+			.doOnSubscribe(d -> runners.forEach(r -> r.start(runningNetwork)));
 	}
 
 	public static class TestResults {
@@ -827,7 +828,10 @@ public class SimulationTest {
 		RunningNetwork runningNetwork = bftNetwork.start();
 
 		Map<String, Optional<TestInvariantError>> checkResults = runChecks(runningNetwork, duration)
-			.doFinally(bftNetwork::stop)
+			.doFinally(() -> {
+				runners.forEach(SimulationNetworkActor::stop);
+				bftNetwork.stop();
+			})
 			.blockingStream()
 			.collect(Collectors.toMap(Pair::getFirst, Pair::getSecond));
 		return new TestResults(checkResults, runningNetwork);
