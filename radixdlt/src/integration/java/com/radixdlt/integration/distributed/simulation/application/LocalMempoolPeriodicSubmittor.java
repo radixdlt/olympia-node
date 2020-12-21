@@ -26,6 +26,7 @@ import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import java.util.concurrent.TimeUnit;
@@ -39,7 +40,7 @@ public class LocalMempoolPeriodicSubmittor implements SimulationNetworkActor {
 	private final CommandGenerator commandGenerator;
 	private final NodeSelector nodeSelector;
 
-	private boolean isRunning;
+	private Disposable commandsDisposable;
 
 	public LocalMempoolPeriodicSubmittor(CommandGenerator commandGenerator, NodeSelector nodeSelector) {
 		this.commands = PublishSubject.create();
@@ -63,17 +64,16 @@ public class LocalMempoolPeriodicSubmittor implements SimulationNetworkActor {
 
 	@Override
 	public void start(RunningNetwork network) {
-		this.isRunning = true;
-		Observable.interval(1, 10, TimeUnit.SECONDS)
+		commandsDisposable = Observable.interval(1, 10, TimeUnit.SECONDS)
 			.map(i -> commandGenerator.nextCommand())
-			.takeWhile(unused -> this.isRunning)
 			.flatMapSingle(cmd -> nodeSelector.nextNode(network).map(node -> Pair.of(cmd, node)))
 			.doOnNext(p -> this.act(network, p.getFirst(), p.getSecond()))
-			.subscribe(commands);
+			.subscribe(commands::onNext);
 	}
 
 	@Override
 	public void stop() {
-		this.isRunning = false;
+		commandsDisposable.dispose();
+		commands.onComplete();
 	}
 }
