@@ -15,18 +15,25 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.sanitytestsuite.model;
+package com.radixdlt.sanitytestsuite.scenario.jsondeserialization;
+
+
+import com.radixdlt.sanitytestsuite.model.SanityTestVector;
+
+import java.util.Map;
+
+import static com.radixdlt.sanitytestsuite.scenario.jsondeserialization.JsonDeserializationTestVector.Expected;
+import static com.radixdlt.sanitytestsuite.scenario.jsondeserialization.JsonDeserializationTestVector.Input;
 
 // CHECKSTYLE:OFF checkstyle:VisibilityModifier
+public final class JsonDeserializationTestVector extends SanityTestVector<Input, Expected> {
+	public static final class Expected {
+		public Map<String, Object> arguments;
+	}
 
-/**
- * Sanity test vector interface.
- * @param <I> - type of input value
- * @param <E> - type of expected value
- */
-public abstract class SanityTestVector<I, E> {
-	public E expected;
-	public I input;
+	public static final class Input {
+		public Map<String, Object> json;
+		public String typeSerialization;
+	}
 }
-
 // CHECKSTYLE:ON

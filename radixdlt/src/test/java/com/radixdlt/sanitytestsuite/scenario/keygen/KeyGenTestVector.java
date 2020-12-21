@@ -25,11 +25,11 @@ import static com.radixdlt.sanitytestsuite.scenario.keygen.KeyGenTestVector.Inpu
 // CHECKSTYLE:OFF checkstyle:VisibilityModifier
 public final class KeyGenTestVector extends SanityTestVector<Input, Expected> {
 	public static final class Expected {
-		public  String uncompressedPublicKey;
+		public String uncompressedPublicKey;
 	}
 
 	public static final class Input  {
-		public  String privateKey;
+		public String privateKey;
 	}
 }
 // CHECKSTYLE:ON checkstyle:VisibilityModifier

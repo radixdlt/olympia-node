@@ -1,6 +1,6 @@
 {
 	"integrity": {
-		"hashOfSuite": "16dd3a1391dadde3ee1cd26b1aadfedec9564abba3de76d1e359df13e4e0eb53",
+		"hashOfSuite": "eb508085c94e2a3b0528c03695f1afb5ad5535e0bd8defc55326d48db37da645",
 		"implementationInfo": "Read the 'suite' object from the root of this file, and prettify it to a JSON string with recursive sorting on keys and with 4 spaces indentation, then UTF8 encode the JSON string and SHA256 has it. Compare the hex of the hash with 'hashOfSuite'."
 	},
 	"suite": {
@@ -364,12 +364,12 @@
 			},
 			{
 				"description": {
-					"implementationInfo": "Each test vector contains a list of key values representing the contents of a Radix particle, for which will try to instantiate a Particle. We will then serialize the particle into JSON and do a verbatim string comparison against an expected JSON string.",
+					"implementationInfo": "Each test vector contains a list of key values representing the contents of a Radix model, for which will try to instantiate it. We will then serialize the model into JSON and do a verbatim string comparison against an expected JSON string.",
 					"purpose": "Verify that all Radix models properly serializes into the expected JSON.",
 					"troubleshooting": "Please bear in mind the Radix JSON value prefixes e.g. ':byt:' prefix prepended to a byte string or ':adr:' prepended to a Radix address."
 			
 				},
-				"identifier": "json_serialization_radix_particles",
+				"identifier": "json_serialization_radix_models",
 				"name": "JSON serialization of Radix Models",
 				"tests": {
 					"source": {
@@ -406,6 +406,57 @@
 									"from": "JEtKBRFrEbZUnY7zrtHsF7aU9eYvL74VyVukp5m5HsKogmWUW1h",
 									"to": "JFLKeSQmBZ73YkzWiesdEr2fRT14qCB1DQUvj8KxYQC6m8UTCcF",
 									"nonce": "156115453148799"
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"description": {
+					"implementationInfo": "Each test vector contains a list of key values representing the contents of a Radix model, for which will try to instantiate a Particle. We will then serialize the particle into JSON and do a verbatim string comparison against an expected JSON string.",
+					"purpose": "Verify that all Radix models properly deserializes from JSON.",
+					"troubleshooting": "Please bear in mind the Radix JSON value prefixes e.g. ':byt:' prefix prepended to a byte string or ':adr:' prepended to a Radix address."
+
+				},
+				"identifier": "json_deserialization_radix_models",
+				"name": "JSON deserialization of Radix Models",
+				"tests": {
+					"source": {
+						"comment": "Radix employee named 'Alexander Cyon' made the first implementation of this."
+					},
+					"vectors": [
+						{
+							"expected": {
+								"arguments": {
+									"address": "JEtKBRFrEbZUnY7zrtHsF7aU9eYvL74VyVukp5m5HsKogmWUW1h",
+									"amount": "960000000000000000",
+									"granularity": "1",
+									"tokenDefinitionReference": "/JH3BuQw985MrbEdrNvW9ixG7evay2rgAhVTppaUkvayJ2r1WszP/XRD",
+									"nonce": "12345678",
+									"tokenPermissions": {
+										"mint": "token_owner_only",
+										"burn": "all"
+									}
+								}
+							},
+							"input": {
+								"typeSerialization": "radix.particles.transferrable_tokens",
+								"json": {
+									"address": ":adr:JEtKBRFrEbZUnY7zrtHsF7aU9eYvL74VyVukp5m5HsKogmWUW1h",
+									"amount": ":u20:960000000000000000",
+									"destinations": [
+										":uid:e45e72925767ee14d7368fec2a141768"
+									],
+									"granularity": ":u20:1",
+									"nonce": 12345678,
+									"permissions": {
+										"burn": ":str:all",
+										"mint": ":str:token_owner_only"
+									},
+									"serializer": "radix.particles.transferrable_tokens",
+									"tokenDefinitionReference": ":rri:/JH3BuQw985MrbEdrNvW9ixG7evay2rgAhVTppaUkvayJ2r1WszP/XRD",
+									"version": 100
 								}
 							}
 						}

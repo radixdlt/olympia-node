@@ -22,6 +22,7 @@ import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.message.MessageParticle;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.sanitytestsuite.scenario.SanityTestScenarioRunner;
+import com.radixdlt.sanitytestsuite.utility.ArgumentsExtractor;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.JSONFormatter;
@@ -42,7 +43,7 @@ public final class JsonSerializationTestScenarioRunner extends SanityTestScenari
 	private final Serialization serialization = DefaultSerialization.getInstance();
 
 	public String testScenarioIdentifier() {
-		return "json_serialization_radix_particles";
+		return "json_serialization_radix_models";
 	}
 
 	@Override
@@ -93,9 +94,6 @@ public final class JsonSerializationTestScenarioRunner extends SanityTestScenari
 			.map(model -> serialization.toJson(model, DsonOutput.Output.HASH))
 			.map(JSONFormatter::sortPrettyPrintJSONString)
 			.orElseThrow(() -> new IllegalStateException("Cant find constructor"));
-
-		LOG.error("🧩");
-		LOG.error(produced);
 
 		String expected = JSONFormatter.sortPrettyPrintJSONString(testVector.expected.jsonPrettyPrinted);
 

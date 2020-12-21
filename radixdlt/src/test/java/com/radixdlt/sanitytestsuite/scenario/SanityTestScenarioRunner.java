@@ -33,7 +33,7 @@ public abstract class SanityTestScenarioRunner<TestVector extends SanityTestVect
 	public abstract String testScenarioIdentifier();
 	public abstract Class<TestVector> testVectorType();
 
-	public abstract void doRunTestVector(final TestVector testVector) throws AssertionError;
+	public abstract void doRunTestVector(TestVector testVector) throws AssertionError;
 
 	public void executeTest(final Scenario scenario) {
 		assertEquals(testScenarioIdentifier(), scenario.identifier);

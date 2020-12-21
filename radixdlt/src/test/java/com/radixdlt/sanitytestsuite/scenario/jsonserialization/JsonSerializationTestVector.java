@@ -25,7 +25,7 @@ import static com.radixdlt.sanitytestsuite.scenario.jsonserialization.JsonSerial
 import static com.radixdlt.sanitytestsuite.scenario.jsonserialization.JsonSerializationTestVector.Input;
 
 // CHECKSTYLE:OFF checkstyle:VisibilityModifier
-public class JsonSerializationTestVector extends SanityTestVector<Input, Expected> {
+public final class JsonSerializationTestVector extends SanityTestVector<Input, Expected> {
 	public static final class Expected {
 		public String jsonPrettyPrinted;
 	}

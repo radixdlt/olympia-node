@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.sanitytestsuite.scenario.jsonserialization;
+package com.radixdlt.sanitytestsuite.utility;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
@@ -86,27 +86,27 @@ public final class ArgumentsExtractor {
 	}
 
 
-	String asString(String named) {
+	public String asString(String named) {
 		return extractAndMap(named, Function.identity());
 	}
 
-	long asLong(String named) {
+	public long asLong(String named) {
 		return extractAndMap(named, Long::parseLong);
 	}
 
-	UInt256 asUInt256(String named) {
+	public UInt256 asUInt256(String named) {
 		return extractAndMap(named, UInt256::from);
 	}
 
-	RRI asRRI(String named) {
+	public RRI asRRI(String named) {
 		return extractAndMap(named, RRI::from);
 	}
 
-	RadixAddress asRadixAddress(String named) {
+	public RadixAddress asRadixAddress(String named) {
 		return extractAndMap(named, RadixAddress::from);
 	}
 
-	Map<MutableSupplyTokenDefinitionParticle.TokenTransition, TokenPermission> extractTokenPermissions(String named) {
+	public Map<MutableSupplyTokenDefinitionParticle.TokenTransition, TokenPermission> extractTokenPermissions(String named) {
 		return extractAsMapAndConvert(
 			named,
 			k -> MutableSupplyTokenDefinitionParticle.TokenTransition.valueOf(k.toUpperCase()),
@@ -114,7 +114,7 @@ public final class ArgumentsExtractor {
 		);
 	}
 
-	boolean isFinished() {
+	public boolean isFinished() {
 		int numberOfFieldsExtracted = fieldsExtracted.size();
 		int numberOfFieldsInOriginalObject = arguments.size();
 
