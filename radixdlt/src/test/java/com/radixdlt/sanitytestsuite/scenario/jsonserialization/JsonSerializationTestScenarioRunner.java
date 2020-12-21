@@ -27,17 +27,15 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.sanitytestsuite.scenario.SanityTestScenarioRunner;
-import com.radixdlt.sanitytestsuite.scenario.keygen.KeyGenTestVector;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.utils.JSONFormatter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.json.JSONObject;
 
 import java.util.Map;
 import java.util.function.Function;
 
-import static junit.framework.TestCase.assertEquals;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public final class JsonSerializationTestScenarioRunner extends SanityTestScenarioRunner<JsonSerializationTestVector> {
@@ -50,7 +48,8 @@ public final class JsonSerializationTestScenarioRunner extends SanityTestScenari
 
 	@Override
 	public TypeReference<JsonSerializationTestVector> testVectorTypeReference() {
-		return new TypeReference<JsonSerializationTestVector>() {};
+		return new TypeReference<JsonSerializationTestVector>() {
+		};
 	}
 
 	private static TransferrableTokensParticle makeTTP(JsonNode jsonNode) {

@@ -18,7 +18,6 @@
 package com.radixdlt.sanitytestsuite.scenario.jsonserialization;
 
 import com.radixdlt.sanitytestsuite.model.SanityTestVector;
-import org.json.JSONObject;
 
 // CHECKSTYLE:OFF checkstyle:VisibilityModifier
 public class JsonSerializationTestVector implements SanityTestVector {

@@ -24,8 +24,6 @@ import com.radixdlt.sanitytestsuite.model.SanityTestSuiteRoot;
 import com.radixdlt.sanitytestsuite.model.SanityTestVector;
 import com.radixdlt.sanitytestsuite.model.UnknownTestVector;
 import com.radixdlt.utils.JSONFormatter;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -33,8 +31,6 @@ import java.security.NoSuchAlgorithmException;
 import static org.junit.Assert.assertEquals;
 
 public abstract class SanityTestScenarioRunner<TestVector extends SanityTestVector> {
-
-	private static final Logger log = LogManager.getLogger();
 
 	public abstract String testScenarioIdentifier();
 
@@ -86,11 +82,4 @@ public abstract class SanityTestScenarioRunner<TestVector extends SanityTestVect
 		hasher.update(bytes);
 		return hasher.digest();
 	}
-
-
-//	private <T> T cast(Object object, TypeToken<T> typeToken) {
-//		String jsonFromObj = SanityTestSuiteTestLoader.gson.toJson(object);
-//		return SanityTestSuiteTestLoader.gson.fromJson(jsonFromObj, typeToken.getType());
-//	}
-
 }

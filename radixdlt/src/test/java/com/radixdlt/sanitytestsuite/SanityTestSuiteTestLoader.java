@@ -27,8 +27,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-import static com.radixdlt.sanitytestsuite.scenario.SanityTestScenarioRunner.sha256Hash;
 import static org.junit.Assert.assertEquals;
+
+import static com.radixdlt.sanitytestsuite.scenario.SanityTestScenarioRunner.sha256Hash;
 
 // CHECKSTYLE:OFF checkstyle:VisibilityModifier
 public final class SanityTestSuiteTestLoader {
@@ -53,11 +54,11 @@ public final class SanityTestSuiteTestLoader {
 			String expected = sanityTestSuiteRoot.integrity.hashOfSuite;
 
 			// Compare saved hash in file with calculated hash of test.
-//			assertEquals(
-//				String.format("Mismatch between calculated hash of test suite and expected (bundled hash), implementation info: %s", sanityTestSuiteRoot.integrity.implementationInfo),
-//				expected,
-//				calculated
-//			);
+			assertEquals(
+				String.format("Mismatch between calculated hash of test suite and expected (bundled hash), implementation info: %s", sanityTestSuiteRoot.integrity.implementationInfo),
+				expected,
+				calculated
+			);
 
 			return sanityTestSuiteRoot;
 

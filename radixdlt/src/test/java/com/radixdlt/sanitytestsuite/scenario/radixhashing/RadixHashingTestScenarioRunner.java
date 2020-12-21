@@ -18,10 +18,8 @@
 package com.radixdlt.sanitytestsuite.scenario.radixhashing;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.google.gson.reflect.TypeToken;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.sanitytestsuite.scenario.SanityTestScenarioRunner;
-import com.radixdlt.sanitytestsuite.scenario.keyverify.KeyVerifyTestVector;
 import com.radixdlt.utils.Bytes;
 
 import static org.junit.Assert.assertEquals;
@@ -34,7 +32,8 @@ public final class RadixHashingTestScenarioRunner extends SanityTestScenarioRunn
 
 	@Override
 	public TypeReference<RadixHashingTestVector> testVectorTypeReference() {
-		return new TypeReference<RadixHashingTestVector>() {};
+		return new TypeReference<RadixHashingTestVector>() {
+		};
 	}
 
 	public void doRunTestVector(RadixHashingTestVector testVector) throws AssertionError {

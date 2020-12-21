@@ -18,11 +18,9 @@
 package com.radixdlt.sanitytestsuite.scenario.keygen;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.google.gson.reflect.TypeToken;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.sanitytestsuite.scenario.SanityTestScenarioRunner;
-import com.radixdlt.sanitytestsuite.scenario.hashing.HashingTestVector;
 import com.radixdlt.utils.Bytes;
 
 import static junit.framework.TestCase.assertTrue;
@@ -37,7 +35,8 @@ public final class KeyGenTestScenarioRunner extends SanityTestScenarioRunner<Key
 
 	@Override
 	public TypeReference<KeyGenTestVector> testVectorTypeReference() {
-		return new TypeReference<KeyGenTestVector>() {};
+		return new TypeReference<KeyGenTestVector>() {
+		};
 	}
 
 	public void doRunTestVector(KeyGenTestVector testVector) throws AssertionError {

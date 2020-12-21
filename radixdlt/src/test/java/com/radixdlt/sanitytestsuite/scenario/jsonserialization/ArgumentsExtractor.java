@@ -25,7 +25,6 @@ import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
-import org.json.JSONObject;
 
 import java.util.HashSet;
 import java.util.Iterator;
