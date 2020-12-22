@@ -111,7 +111,7 @@ public class EphemeralClusterTests {
                 .build();
         test.runBlocking(30, TimeUnit.SECONDS);
 
-        crashedNodesURLs = new ArrayList<>(network.getNodeIds())
+        crashedNodesURLs = network.getNodeIds()
                 .stream()
                 .limit(nodesCrashed)
                 .collect(Collectors.toList());
@@ -132,7 +132,7 @@ public class EphemeralClusterTests {
     @After
     public void removeCluster() {
         String TESTNET_NAME = System.getenv(EphemeralNetworkCreator.ENV_TESTNET_NAME);
-        List<String> runningNodes = new ArrayList<>(network.getNodeIds())
+        List<String> runningNodes = network.getNodeIds()
                 .stream()
                 .filter(this::isNodeRunning)
                 .map(Generic::getDomainName)
