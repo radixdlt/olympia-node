@@ -95,7 +95,7 @@ class CmdHelper {
                 "-e RADIXDLT_NODE_KEY " +
                 "-l com.radixdlt.roles='core' " +
                 "${testRunningOnDocker() ? '' : hostPortMapping} " +
-                "--cap-add=NET_ADMIN "
+                "--cap-add=NET_ADMIN " +
                 "--network ${options.network} " +
                 "radixdlt/radixdlt-core:develop"
         return [env as String[], dockerContainer]
