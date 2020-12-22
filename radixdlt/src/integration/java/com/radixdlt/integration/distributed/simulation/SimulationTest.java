@@ -92,7 +92,7 @@ import com.radixdlt.integration.distributed.simulation.application.TimestampChec
 import com.radixdlt.integration.distributed.simulation.invariants.consensus.NodeEvents;
 import com.radixdlt.integration.distributed.simulation.invariants.consensus.VertexRequestRateInvariant;
 import com.radixdlt.integration.distributed.simulation.invariants.epochs.EpochViewInvariant;
-import com.radixdlt.integration.distributed.simulation.application.LocalMempoolPeriodicSubmittor;
+import com.radixdlt.integration.distributed.simulation.application.LocalMempoolPeriodicSubmitter;
 import com.radixdlt.integration.distributed.simulation.invariants.ledger.ConsensusToLedgerCommittedInvariant;
 import com.radixdlt.integration.distributed.simulation.invariants.ledger.LedgerInOrderInvariant;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes;
@@ -146,7 +146,8 @@ public class SimulationTest {
 	private static final Hasher hasher = Sha256Hasher.withDefaultSerialization();
 
 	public interface SimulationNetworkActor {
-		void run(RunningNetwork network);
+		void start(RunningNetwork network);
+		void stop();
 	}
 
 	private final ImmutableList<ECKeyPair> nodes;
@@ -435,12 +436,12 @@ public class SimulationTest {
 
 			IncrementalBytes incrementalBytes = new IncrementalBytes();
 			NodeSelector nodeSelector = this.ledgerType.hasEpochs ? new EpochsNodeSelector() : new BFTValidatorSetNodeSelector();
-			LocalMempoolPeriodicSubmittor mempoolSubmission = new LocalMempoolPeriodicSubmittor(
+			LocalMempoolPeriodicSubmitter mempoolSubmitter = new LocalMempoolPeriodicSubmitter(
 				incrementalBytes,
 				nodeSelector
 			);
-			CommittedChecker committedChecker = new CommittedChecker(mempoolSubmission.issuedCommands().map(Pair::getFirst), nodeEvents);
-			this.runnableBuilder.add(nodes -> mempoolSubmission::run);
+			CommittedChecker committedChecker = new CommittedChecker(mempoolSubmitter.issuedCommands().map(Pair::getFirst), nodeEvents);
+			this.runnableBuilder.add(nodes -> mempoolSubmitter);
 			this.checksBuilder.put(invariantName, nodes -> committedChecker);
 
 			return this;
@@ -448,11 +449,10 @@ public class SimulationTest {
 
 		public Builder addRadixEngineValidatorRegisterUnregisterMempoolSubmissions() {
 			this.runnableBuilder.add(nodes -> {
-				RadixEngineValidatorRegistratorAndUnregistrator randomValidatorSubmittor
-					= new RadixEngineValidatorRegistratorAndUnregistrator(nodes, hasher);
+				RadixEngineValidatorRegistratorAndUnregistrator randomValidatorSubmitter =
+					new RadixEngineValidatorRegistratorAndUnregistrator(nodes, hasher);
 				NodeSelector nodeSelector = this.ledgerType.hasEpochs ? new EpochsNodeSelector() : new BFTValidatorSetNodeSelector();
-				LocalMempoolPeriodicSubmittor submittor = new LocalMempoolPeriodicSubmittor(randomValidatorSubmittor, nodeSelector);
-				return submittor::run;
+				return new LocalMempoolPeriodicSubmitter(randomValidatorSubmitter, nodeSelector);
 			});
 			return this;
 		}
@@ -467,16 +467,16 @@ public class SimulationTest {
 			});
 
 			this.runnableBuilder.add(nodes -> {
-				RadixEngineValidatorRegistratorAndUnregistrator randomValidatorSubmittor
-					= new RadixEngineValidatorRegistratorAndUnregistrator(nodes, hasher);
+				RadixEngineValidatorRegistratorAndUnregistrator randomValidatorSubmitter =
+					new RadixEngineValidatorRegistratorAndUnregistrator(nodes, hasher);
 				NodeSelector nodeSelector = this.ledgerType.hasEpochs ? new EpochsNodeSelector() : new BFTValidatorSetNodeSelector();
-				LocalMempoolPeriodicSubmittor submittor = new LocalMempoolPeriodicSubmittor(randomValidatorSubmittor, nodeSelector);
+				LocalMempoolPeriodicSubmitter mempoolSubmitter = new LocalMempoolPeriodicSubmitter(randomValidatorSubmitter, nodeSelector);
 				// TODO: Fix hack, hack required due to lack of Guice
 				this.checksBuilder.put(
 					submittedInvariantName,
-					nodes2 -> new CommittedChecker(submittor.issuedCommands().map(Pair::getFirst), nodeEvents)
+					nodes2 -> new CommittedChecker(mempoolSubmitter.issuedCommands().map(Pair::getFirst), nodeEvents)
 				);
-				return submittor::run;
+				return mempoolSubmitter;
 			});
 			return this;
 		}
@@ -493,17 +493,17 @@ public class SimulationTest {
 			this.runnableBuilder.add(nodes -> {
 				RadixEngineValidatorRegistrator validatorRegistrator = new RadixEngineValidatorRegistrator(nodes);
 				NodeSelector nodeSelector = this.ledgerType.hasEpochs ? new EpochsNodeSelector() : new BFTValidatorSetNodeSelector();
-				LocalMempoolPeriodicSubmittor submittor = new LocalMempoolPeriodicSubmittor(validatorRegistrator, nodeSelector);
+				LocalMempoolPeriodicSubmitter mempoolSubmitter = new LocalMempoolPeriodicSubmitter(validatorRegistrator, nodeSelector);
 				// TODO: Fix hack, hack required due to lack of Guice
 				this.checksBuilder.put(
 					submittedInvariantName,
-					nodes2 -> new CommittedChecker(submittor.issuedCommands().map(Pair::getFirst), nodeEvents)
+					nodes2 -> new CommittedChecker(mempoolSubmitter.issuedCommands().map(Pair::getFirst), nodeEvents)
 				);
 				this.checksBuilder.put(
 					registeredInvariantName,
 					nodes2 -> new RegisteredValidatorChecker(validatorRegistrator.validatorRegistrationSubmissions())
 				);
-				return submittor::run;
+				return mempoolSubmitter;
 			});
 			return this;
 		}
@@ -763,7 +763,7 @@ public class SimulationTest {
 			.collect(Collectors.toList());
 
 		return Single.merge(results).toObservable()
-			.doOnSubscribe(d -> runners.forEach(c -> c.run(runningNetwork)));
+			.doOnSubscribe(d -> runners.forEach(r -> r.start(runningNetwork)));
 	}
 
 	public static class TestResults {
@@ -827,7 +827,10 @@ public class SimulationTest {
 		RunningNetwork runningNetwork = bftNetwork.start();
 
 		Map<String, Optional<TestInvariantError>> checkResults = runChecks(runningNetwork, duration)
-			.doFinally(bftNetwork::stop)
+			.doFinally(() -> {
+				runners.forEach(SimulationNetworkActor::stop);
+				bftNetwork.stop();
+			})
 			.blockingStream()
 			.collect(Collectors.toMap(Pair::getFirst, Pair::getSecond));
 		return new TestResults(checkResults, runningNetwork);
