@@ -18,7 +18,6 @@
 
 package utils
 
-import com.radixdlt.test.TempUniverseCreator
 import me.alexpanov.net.FreePortFinder
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
@@ -96,8 +95,7 @@ class CmdHelper {
                 "-e RADIXDLT_NODE_KEY " +
                 "-l com.radixdlt.roles='core' " +
                 "${testRunningOnDocker() ? '' : hostPortMapping} " +
-                "--cap-add=ALL " +
-                "--privileged " +
+                "--cap-add=NET_ADMIN "
                 "--network ${options.network} " +
                 "radixdlt/radixdlt-core:develop"
         return [env as String[], dockerContainer]
@@ -177,7 +175,9 @@ class CmdHelper {
     }
 
     static String runContainer(String dockerCommand, String[] dockerEnv) {
-        def results = runCommand(dockerCommand.tokenize(), dockerEnv, true);
+        def results = isRunningOnWindows() ?
+                runCommand(dockerCommand.tokenize(), dockerEnv, true) :
+                runCommand("bash -c".tokenize() << dockerCommand, dockerEnv, true)
         return results[0][0]
     }
 
@@ -255,11 +255,11 @@ class CmdHelper {
 
     static String[] generateUniverseValidators(int numNodes){
         String[] exportVars, error
-        if (!System.getProperty("os.name").toLowerCase().contains("windows")) {
-            (exportVars, error) = runCommand("./gradlew -P validators=${numNodes} clean generateDevUniverse", null, true, true, System.getenv("CORE_DIR"));
-        } else {
-            //exportVars = TempUniverseCreator.getHardcodedUniverse();
+        if (isRunningOnWindows()) {
+            //exportVars = TempUniverseCreator.getHardcodedUniverse(); TODO a bit weird but this helps development on windows
             throw new RuntimeException("For these tests to run on windows, you need to find a way to provide a universe.")
+        } else {
+            (exportVars, error) = runCommand("./gradlew -P validators=${numNodes} clean generateDevUniverse", null, true, true, System.getenv("CORE_DIR"));
         }
 
         return exportVars
@@ -299,6 +299,10 @@ class CmdHelper {
         if (error) {
             throw new RuntimeException("Could not start container '" + containerName + "' because: " + error.toString())
         }
+    }
+
+    static boolean isRunningOnWindows() {
+        return System.getProperty("os.name").toLowerCase().contains("windows")
     }
 
 }
