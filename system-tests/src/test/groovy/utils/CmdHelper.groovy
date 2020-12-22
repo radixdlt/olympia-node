@@ -82,8 +82,7 @@ class CmdHelper {
                         "RADIXDLT_CONSENSUS_START_ON_BOOT=${options.startConsensusOnBoot}",
                         "RADIXDLT_UNIVERSE=${universe}",
                         "RADIXDLT_NODE_KEY=${validatorKey}",
-                        "RADIXDLT_LOG_LEVEL=debug",
-                        "userprofile=C:\\bro"
+                        "RADIXDLT_LOG_LEVEL=debug"
         ]
 
         String hostPortMapping = "-p ${options.hostPort}:8080 "
