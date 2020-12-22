@@ -46,8 +46,7 @@ public class DockerTests {
             Conditions.waitUntilNetworkHasLiveness(network);
 
             // make all nodes slow/latent
-            network.getNodeIds().stream().map(CmdHelper::getVethByContainerName)
-                    .forEach(veth -> CmdHelper.setupQueueQuality(veth, "delay 100ms loss 20%"));
+            network.getNodeIds().forEach(nodeId -> CmdHelper.setupQueueQuality(nodeId, "delay 100ms loss 20%"));
 
             // first check
             RemoteBFTTest test = latentTestBuilder()
@@ -60,7 +59,7 @@ public class DockerTests {
             String nodeToStopAndStart = network.getNodeIds().iterator().next();
             CmdHelper.stopContainer(nodeToStopAndStart);
 
-            // second check
+            // second check, after the down is down
             RemoteBFTTest testOutOfSynchronyBounds = outOfSynchronyTestBuilder(Lists.newArrayList(nodeToStopAndStart))
                     .network(RemoteBFTNetworkBridge.of(network))
                     .build();
@@ -68,12 +67,10 @@ public class DockerTests {
 
             CmdHelper.startContainer(nodeToStopAndStart);
 
-            // third check
+            // third check. The node that was brought back up should have liveness by itself (i.e. it should report an increasing view/epoch)
             List<String> restOfTheNodes = Lists.newArrayList(network.getNodeIds());
             restOfTheNodes.remove(nodeToStopAndStart);
-            RemoteBFTTest lastTest = RemoteBFTTest.builder().assertLiveness(10, restOfTheNodes)
-                    .network(RemoteBFTNetworkBridge.of(network)).build();
-            lastTest.runBlocking(CmdHelper.getTestDurationInSeconds(), TimeUnit.SECONDS);
+            Conditions.waitUntilNetworkHasLiveness(network, restOfTheNodes);
         }
     }
 

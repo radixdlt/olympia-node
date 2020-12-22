@@ -83,7 +83,7 @@ public final class RemoteBFTTest {
 			.collect(Collectors.toList()))
 			.doOnNext(results -> {
 				if (results.stream().anyMatch(RemoteBFTCheckResult::isError)) {
-					logger.info("prerequisites unsatisfied, retrying: " + results.stream()
+					logger.debug("prerequisites unsatisfied, retrying: " + results.stream()
 						.filter(RemoteBFTCheckResult::isError)
 						.map(RemoteBFTCheckResult::toString)
 						.collect(Collectors.joining(", ")));

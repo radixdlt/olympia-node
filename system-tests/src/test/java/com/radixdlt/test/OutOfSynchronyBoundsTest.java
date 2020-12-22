@@ -39,7 +39,7 @@ public class OutOfSynchronyBoundsTest {
             network = StaticClusterNetwork.clusterInfo(10);
             String sshKeylocation = Optional.ofNullable(System.getenv("SSH_IDENTITY")).orElse(System.getenv("HOME") + "/.ssh/id_rsa");
 
-            Conditions.waitUntilNetworkHasLiveness(network);
+            Conditions.waitUntilNetworkHasLiveness(network, );
 
             // The SlowNodeSetup object here is used only to run ansible playbook tasks via the togglePortViaAnsible() method
             taskRunner = SlowNodeSetup.builder()
@@ -65,7 +65,7 @@ public class OutOfSynchronyBoundsTest {
         @After
         public void teardown() {
             taskRunner.togglePortViaAnsible(30000, false);
-            Conditions.waitUntilNetworkHasLiveness(network);
+            Conditions.waitUntilNetworkHasLiveness(network, );
         }
     }
 

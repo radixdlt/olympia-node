@@ -18,6 +18,7 @@
 
 package utils
 
+import com.radixdlt.test.TempUniverseCreator
 import me.alexpanov.net.FreePortFinder
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
@@ -41,7 +42,7 @@ class CmdHelper {
         workdir?logger.info("------Working dir ${workdir}-----"):""
         process = cmd.execute(
                 env ?: null,
-                workdir? new File(workdir):new File(".")
+                workdir? new File(workdir):null
         )
 
         process.consumeProcessOutput(sout, serr)
@@ -81,8 +82,8 @@ class CmdHelper {
                         "RADIXDLT_CONSENSUS_START_ON_BOOT=${options.startConsensusOnBoot}",
                         "RADIXDLT_UNIVERSE=${universe}",
                         "RADIXDLT_NODE_KEY=${validatorKey}",
-                        "RADIXDLT_LOG_LEVEL=debug"
-
+                        "RADIXDLT_LOG_LEVEL=debug",
+                        "userprofile=C:\\bro"
         ]
 
         String hostPortMapping = "-p ${options.hostPort}:8080 "
@@ -96,7 +97,8 @@ class CmdHelper {
                 "-e RADIXDLT_NODE_KEY " +
                 "-l com.radixdlt.roles='core' " +
                 "${testRunningOnDocker() ? '' : hostPortMapping} " +
-                "--cap-add=NET_ADMIN " +
+                "--cap-add=ALL " +
+                "--privileged " +
                 "--network ${options.network} " +
                 "radixdlt/radixdlt-core:develop"
         return [env as String[], dockerContainer]
@@ -105,9 +107,9 @@ class CmdHelper {
     /**
      * Blocks tcp communication over a specific port, via iptables
      */
-    static String blockPort(String nodeId, int gossipPortNumber) {
+    static String blockPort(String containerName, int gossipPortNumber) {
         def iptablesCommand = "iptables -A OUTPUT -p tcp --dport ${gossipPortNumber} -j DROP"
-        def (output, error) = runCommand("docker exec ${nodeId} bash -c".tokenize() << iptablesCommand, null, false, true)
+        def (output, error) = runCommand("docker exec ${containerName} bash -c".tokenize() << iptablesCommand, null, false, true)
         return output;
     }
 
@@ -176,8 +178,7 @@ class CmdHelper {
     }
 
     static String runContainer(String dockerCommand, String[] dockerEnv) {
-        def results
-        results = runCommand(dockerCommand, dockerEnv, true)
+        def results = runCommand(dockerCommand.tokenize(), dockerEnv, true);
         return results[0][0]
     }
 
@@ -242,10 +243,11 @@ class CmdHelper {
         runCommand("iptables -t mangle -F")
     }
 
-    static String setupQueueQuality(veth, optionsArgs = "delay 100ms loss 20%") {
-        runCommand("tc qdisc add dev ${veth} handle 10: root netem ${optionsArgs}")
+    static String setupQueueQuality(containerName, optionsArgs = "delay 100ms loss 20%") {
+        def tcCommand = "tc qdisc add dev eth0 handle 10: root netem ${optionsArgs}"
+        def (output, error) = runCommand("docker exec ${containerName} bash -c".tokenize() << tcCommand, null, false, true)
+        return output;
     }
-
 
     static void captureLogs(String containerId,String testName) {
         Files.createDirectories(Paths.get("${System.getProperty('logs.dir')}/${testName}"));
@@ -254,7 +256,13 @@ class CmdHelper {
 
     static String[] generateUniverseValidators(int numNodes){
         String[] exportVars, error
-        (exportVars, error) = runCommand("./gradlew -P validators=${numNodes} clean generateDevUniverse", null, true, true, System.getenv("CORE_DIR"));
+        if (!System.getProperty("os.name").toLowerCase().contains("windows")) {
+            (exportVars, error) = runCommand("./gradlew -P validators=${numNodes} clean generateDevUniverse", null, true, true, System.getenv("CORE_DIR"));
+        } else {
+            //exportVars = TempUniverseCreator.getHardcodedUniverse();
+            throw new RuntimeException("For these tests to run on windows, you need to find a way to provide a universe.")
+        }
+
         return exportVars
                 .findAll({ it.contains("export") })
                 .collect({it.replaceAll("export","")})
