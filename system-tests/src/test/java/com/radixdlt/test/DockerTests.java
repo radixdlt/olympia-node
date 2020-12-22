@@ -35,7 +35,7 @@ public class DockerTests {
 
     @Before
     public void setup() {
-        testMethodName = Generic.extractTestName(this.testNameRule.getMethodName());
+        testMethodName = Generic.extractTestName(testNameRule.getMethodName());
         logger.info("Test name is {}", testMethodName);
     }
 
