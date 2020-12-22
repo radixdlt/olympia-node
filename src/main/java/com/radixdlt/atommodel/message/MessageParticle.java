@@ -67,6 +67,15 @@ public final class MessageParticle extends Particle {
 		super(ImmutableSet.of());
 	}
 
+	public MessageParticle(RadixAddress from, RadixAddress to, byte[] bytes, long nonce) {
+		super(ImmutableSet.of(from.euid(), to.euid()));
+
+		this.from = Objects.requireNonNull(from, "from is required");
+		this.to = Objects.requireNonNull(to, "to is required");
+		this.bytes = Arrays.copyOf(bytes, bytes.length);
+		this.nonce = nonce;
+	}
+
 	public MessageParticle(RadixAddress from, RadixAddress to, byte[] bytes) {
 		super(ImmutableSet.of(from.euid(), to.euid()));
 
@@ -88,6 +97,11 @@ public final class MessageParticle extends Particle {
 
 	Set<RadixAddress> getAddresses() {
 		return ImmutableSet.of(from, to);
+	}
+
+
+	public long getNonce() {
+		return nonce;
 	}
 
 	public RadixAddress getFrom() {
