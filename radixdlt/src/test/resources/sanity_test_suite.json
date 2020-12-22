@@ -1,6 +1,6 @@
 {
 	"integrity": {
-		"hashOfSuite": "eb508085c94e2a3b0528c03695f1afb5ad5535e0bd8defc55326d48db37da645",
+		"hashOfSuite": "45648c4ad69554b49ff3df094cbd5652c8cc9c284413789df4b8759c91e312c4",
 		"implementationInfo": "Read the 'suite' object from the root of this file, and prettify it to a JSON string with recursive sorting on keys and with 4 spaces indentation, then UTF8 encode the JSON string and SHA256 has it. Compare the hex of the hash with 'hashOfSuite'."
 	},
 	"suite": {
@@ -456,6 +456,31 @@
 									},
 									"serializer": "radix.particles.transferrable_tokens",
 									"tokenDefinitionReference": ":rri:/JH3BuQw985MrbEdrNvW9ixG7evay2rgAhVTppaUkvayJ2r1WszP/XRD",
+									"version": 100
+								}
+							}
+						},
+						{
+							"expected": {
+								"arguments": {
+									"message": "Hello Bob, this is your friend Alice.",
+									"from": "JEtKBRFrEbZUnY7zrtHsF7aU9eYvL74VyVukp5m5HsKogmWUW1h",
+									"to": "JFLKeSQmBZ73YkzWiesdEr2fRT14qCB1DQUvj8KxYQC6m8UTCcF",
+									"nonce": "156115453148799"
+								}
+							},
+							"input": {
+								"typeSerialization": "radix.particles.message",
+								"json": {
+									"bytes": ":byt:SGVsbG8gQm9iLCB0aGlzIGlzIHlvdXIgZnJpZW5kIEFsaWNlLg==",
+									"destinations": [
+										":uid:e45e72925767ee14d7368fec2a141768",
+										":uid:dfd7c486570a7ad40eb948c80cb89376"
+									],
+									"from": ":adr:JEtKBRFrEbZUnY7zrtHsF7aU9eYvL74VyVukp5m5HsKogmWUW1h",
+									"nonce": 156115453148799,
+									"serializer": "radix.particles.message",
+									"to": ":adr:JFLKeSQmBZ73YkzWiesdEr2fRT14qCB1DQUvj8KxYQC6m8UTCcF",
 									"version": 100
 								}
 							}
