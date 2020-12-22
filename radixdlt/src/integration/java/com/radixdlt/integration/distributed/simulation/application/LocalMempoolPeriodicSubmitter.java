@@ -19,12 +19,14 @@ package com.radixdlt.integration.distributed.simulation.application;
 
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.integration.distributed.simulation.SimulationTest.SimulationNetworkActor;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import java.util.concurrent.TimeUnit;
@@ -32,12 +34,15 @@ import java.util.concurrent.TimeUnit;
 /**
  * Contributes to steady state by submitting commands to the mempool every few seconds
  */
-public class LocalMempoolPeriodicSubmittor {
+public class LocalMempoolPeriodicSubmitter implements SimulationNetworkActor {
+
 	private final PublishSubject<Pair<Command, BFTNode>> commands;
 	private final CommandGenerator commandGenerator;
 	private final NodeSelector nodeSelector;
 
-	public LocalMempoolPeriodicSubmittor(CommandGenerator commandGenerator, NodeSelector nodeSelector) {
+	private Disposable commandsDisposable;
+
+	public LocalMempoolPeriodicSubmitter(CommandGenerator commandGenerator, NodeSelector nodeSelector) {
 		this.commands = PublishSubject.create();
 		this.commandGenerator = commandGenerator;
 		this.nodeSelector = nodeSelector;
@@ -57,11 +62,22 @@ public class LocalMempoolPeriodicSubmittor {
 		return commands.observeOn(Schedulers.io());
 	}
 
-	public void run(RunningNetwork network) {
-		Observable.interval(1, 10, TimeUnit.SECONDS)
+	@Override
+	public void start(RunningNetwork network) {
+		if (commandsDisposable != null) {
+			return;
+		}
+
+		commandsDisposable = Observable.interval(1, 10, TimeUnit.SECONDS)
 			.map(i -> commandGenerator.nextCommand())
 			.flatMapSingle(cmd -> nodeSelector.nextNode(network).map(node -> Pair.of(cmd, node)))
 			.doOnNext(p -> this.act(network, p.getFirst(), p.getSecond()))
-			.subscribe(commands);
+			.subscribe(commands::onNext);
+	}
+
+	@Override
+	public void stop() {
+		commandsDisposable.dispose();
+		commands.onComplete();
 	}
 }

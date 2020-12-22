@@ -128,6 +128,7 @@ public final class EpochManagerRunner implements ModuleRunner {
 				// TODO: Implement better error handling especially against Byzantine nodes.
 				// TODO: Exit process for now.
 				log.error("Unexpected exception occurred", e);
+				LogManager.shutdown(); // Flush any async logs
 				System.exit(-1);
 			})
 			.publish();

@@ -1,9 +1,9 @@
 FROM ubuntu:20.04
 MAINTAINER radixdlt <devops@radixdlt.com>
 
-RUN apt-get -y update && \
-    apt-get -y --no-install-recommends install net-tools iptables iproute2 gettext-base curl tcpdump strace attr software-properties-common openjdk-11-jdk && \
-    apt-get clean && \
+RUN apt-get -y update > /dev/null && \
+    apt-get -y --no-install-recommends install net-tools iptables iproute2 gettext-base curl tcpdump strace attr software-properties-common openjdk-11-jdk > /dev/null && \
+    apt-get clean > /dev/null && \
     rm -rf /var/lib/apt/lists/* /var/tmp/* /tmp/*
 
 # set entrypoint and default command
