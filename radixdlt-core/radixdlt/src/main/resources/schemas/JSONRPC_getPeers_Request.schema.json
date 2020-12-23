@@ -1,0 +1,34 @@
+{
+  "$schema": "http://json-schema.org/draft-06/schema#",
+  "$id": "http://localhost:8080/schemas/JSONRPC_getPeers_Request",
+  "title": "Get Peers Request",
+  "type": "object",
+  "description": "A JSON RPC Request which can be sent either as a POST HTTP request to http://localhost:8080/rpc or as a websocket message to ws://localhost:8080/rpc. The server will respond with a 'Get Peers Response'.",
+  "properties": {
+    "id": {
+      "type": "integer"
+    },
+    "method": {
+      "type": "string",
+      "enum": [
+        "Network.getPeers"
+      ]
+    },
+    "params": {
+      "type": "array",
+      "description": "Should be an empty array",
+      "items": {
+        "type": "object"
+      }
+    }
+  },
+  "required": [ "id", "method", "params" ],
+  "additionalProperties": false,
+  "examples": [
+    {
+      "id": 0,
+      "method": "Network.getPeers",
+      "params": []
+    }
+  ]
+}

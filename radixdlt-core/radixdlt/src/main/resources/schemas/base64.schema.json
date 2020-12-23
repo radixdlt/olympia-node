@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-06/schema#",
+  "$id": "http://localhost:8080/schemas/base64",
+  "title": "Base64 Object",
+  "type": "object",
+  "description": "byte array encoded in base64",
+  "properties": {
+    "serializer": {
+      "type": "string",
+      "enum": [ "BASE64" ]
+    },
+    "value": {
+      "type": "string"
+    }
+  },
+  "required": [ "serializer", "value" ],
+  "additionalProperties": false,
+  "examples": [
+    {
+      "serializer": "BASE64",
+      "value": "eyJzdWJqZWN0IjoiSGVsbG8iLCJkZXN0aW5hdGlvbnMiOlsiLTMwMTQ3MzQ1MDI1ODk2MTQzNzYyNDkyODcxNjMwIl0sInNlcmlhbGl6ZXIiOjUxOTk2MjUzNSwibWVzc2FnZSI6IkhlbGxvIiwidmVyc2lvbiI6MTAwLCJwYXJ0aWNpcGFudHMiOlt7ImFkZHJlc3MiOnsiYWRkcmVzcyI6IjE3dXlwdjRhTjQ3bjR4eDZEd3p6TllWdnNpdVRLb29jQlhFY2ZKeGJxZnJDbTZ4dzVmayIsInNlcmlhbGl6ZXIiOi00Mjk3MDkzNTYsImlkIjoiLTMwMTQ3MzQ1MDI1ODk2MTQzNzYyNDkyODcxNjMwIiwidmVyc2lvbiI6MTAwfSwic2VyaWFsaXplciI6LTEzNzQ1ODQwNDUsInR5cGUiOiJTRU5ERVIiLCJ2ZXJzaW9uIjoxMDB9XX0="
+    }
+  ]
+}

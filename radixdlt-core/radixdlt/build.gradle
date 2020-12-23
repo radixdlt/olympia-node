@@ -1,0 +1,362 @@
+/*
+ * (C) Copyright 2020 Radix DLT Ltd
+ *
+ * Radix DLT Ltd licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License.  You may obtain a copy of the
+ * License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied.  See the License for the specific
+ * language governing permissions and limitations under the License.
+ */
+
+apply plugin: 'jacoco'
+apply plugin: 'checkstyle'
+apply plugin: 'application'
+apply plugin: 'distribution'
+apply plugin: 'project-report'
+apply plugin: 'nebula.ospackage'
+apply plugin: 'com.github.johnrengelman.shadow'
+apply plugin: 'com.moowork.node'
+apply plugin: 'me.champeau.gradle.jmh'
+apply plugin: 'org.sonarqube'
+apply plugin: 'com.adarshr.test-logger'
+apply plugin: 'net.nemerosa.versioning'
+apply plugin: 'com.palantir.git-version'
+
+node {
+    download = true
+}
+
+// Example: ./gradlew run ... -P overrideMainClassName=org.radix.GenerateUniverses
+mainClassName = properties.get('overrideMainClassName', 'org.radix.Radix')
+def validators = properties.get('validators', '2')
+
+startScripts {
+    classpath = files('src/resources') + classpath
+    // ^^ will prepend '$APP_HOME/lib/resources' to the classpath, which we'll use it as a pattern below
+    doLast {
+        def windowsScriptFile = file getWindowsScript()
+        def unixScriptFile = file getUnixScript()
+        windowsScriptFile.text = windowsScriptFile.text.replace('%APP_HOME%\\lib\\resources', '%RADIXDLT_HOME%')
+        unixScriptFile.text = unixScriptFile.text.replace('$APP_HOME/lib/resources', '$RADIXDLT_HOME')
+    }
+}
+sourceSets {
+    integrationTest {
+        java {
+            compileClasspath += main.output + test.output
+            runtimeClasspath += main.output + test.output
+            srcDir file('src/integration/java')
+        }
+        resources.srcDir file('src/integration/resources')
+    }
+}
+
+configurations {
+    integrationTestCompile.extendsFrom testCompile
+    integrationTestRuntime.extendsFrom testRuntime
+}
+
+task integrationTest(type: Test) {
+    testClassesDirs = sourceSets.integrationTest.output.classesDirs
+    classpath = sourceSets.integrationTest.runtimeClasspath
+    mustRunAfter(test)
+}
+
+checkstyle {
+    toolVersion '8.10.1'
+    showViolations = true
+}
+
+versionFile {
+    mustRunAfter(processResources)
+    // Path to the file to be written
+    file = new File("$buildDir/resources/main", 'version.properties')
+}
+
+classes {
+    dependsOn(versionFile)
+}
+
+checkstyleMain {
+    configFile project.file('config/checkstyle/checkstyle.xml')
+    exclude "**/org/radix/**/*.java"
+}
+
+checkstyleTest {
+    // Largely the same as the main file, but extended snake case allowed
+    configFile project.file('config/checkstyle/checkstyle_test.xml')
+    exclude "**/org/radix/**/*.java"
+}
+
+checkstyleIntegrationTest {
+    // Largely the same as the main file, but extended snake case allowed
+    configFile project.file('config/checkstyle/checkstyle_test.xml')
+}
+
+checkstyleJmh {
+    // Largely the same as the main file, but extended snake case allowed
+    configFile project.file('config/checkstyle/checkstyle_test.xml')
+}
+
+test {
+    testLogging {
+        events "passed", "skipped", "failed"
+        exceptionFormat "full"
+        outputs.upToDateWhen { false }
+        showStandardStreams true
+    }
+    systemProperty "java.security.egd", "file:/dev/urandom"
+}
+
+integrationTest {
+    testLogging {
+        events "passed", "skipped", "failed"
+        exceptionFormat "full"
+        outputs.upToDateWhen { false }
+        showStandardStreams true
+    }
+    systemProperty "java.security.egd", "file:/dev/urandom"
+    jacoco {
+        // It appears that Jacoco can introduce thread and/or JVM pauses, which
+        // in turn can cause timeouts that interfere with integration tests.
+        enabled false
+    }
+}
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.enabled true
+        csv.enabled false
+    }
+}
+
+configurations.all {
+    resolutionStrategy.eachDependency {
+        if(it.requested.name == 'guava') {
+            it.useTarget 'com.google.guava:guava:29.0-jre'
+        }
+        if(it.requested.name == 'json') {
+            it.useTarget 'org.json:json:20180813'
+        }
+    }
+}
+
+dependencies {
+    compile 'com.radixdlt:radix-engine-library:1.0-beta.19'
+    compile 'io.reactivex.rxjava3:rxjava:3.0.0'
+    compile 'com.sleepycat:je:18.3.12'
+
+    // LMAX Disruptor for async logging
+    compile 'com.lmax:disruptor:3.4.2'
+
+    compile 'commons-cli:commons-cli:1.4'
+    compile 'org.xerial.snappy:snappy-java:1.1.7.3'
+    compile 'io.netty:netty-all:4.1.51.Final'
+    compile('com.google.inject:guice:4.2.2:no_aop') {
+        exclude group: 'com.google.guava', module: 'guava'
+    }
+    compile('com.google.inject.extensions:guice-grapher:4.2.2') {
+        exclude group: 'com.google.guava', module: 'guava'
+    }
+
+    compile group: 'io.undertow', name: 'undertow-core', version: '2.0.32.Final'
+    compile group: 'io.undertow', name: 'undertow-servlet', version: '2.0.32.Final'
+    compile group: 'com.stijndewitt.undertow.cors', name: 'undertow-cors-filter', version: '0.4.0'
+
+    testCompile 'org.awaitility:awaitility:4.0.3'
+    testCompile('org.objenesis:objenesis:3.1') { force = true }
+    testCompile('org.javassist:javassist:3.27.0-GA') { force = true }
+    testCompile('org.mockito:mockito-core:3.5.10') { force = true }
+    testCompile('net.bytebuddy:byte-buddy:1.10.13') { force = true }
+    testCompile('net.bytebuddy:byte-buddy-agent:1.10.13') { force = true }
+    testCompile 'org.powermock:powermock-module-junit4:2.0.7'
+    testCompile 'org.powermock:powermock-api-mockito2:2.0.7'
+    testCompile 'nl.jqno.equalsverifier:equalsverifier:3.4.2'
+    testCompile 'org.hamcrest:hamcrest-library:1.3'
+    testCompile 'org.assertj:assertj-core:3.11.1'
+    testCompile('com.flipkart.zjsonpatch:zjsonpatch:0.4.5') {
+        exclude group: 'com.fasterxml.jackson.core', module: 'jackson-core'
+        exclude group: 'com.fasterxml.jackson.core', module: 'jackson-databind'
+    }
+    testCompile 'org.reflections:reflections:0.9.11'
+
+    // JMH
+    testCompile 'org.openjdk.jmh:jmh-core:1.25'
+    testCompile 'org.openjdk.jmh:jmh-generator-annprocess:1.25'
+}
+
+jmh {
+    duplicateClassesStrategy = 'include'
+    fork = 2
+    iterations = 3
+    warmupIterations = 1
+}
+
+// More warnings
+tasks.withType(JavaCompile) {
+    options.compilerArgs << '-proc:none'
+    options.compilerArgs << '-Xlint:deprecation'
+    //options.compilerArgs << '-Xlint:unchecked' // Way too many of these at the moment
+    options.deprecation = true
+}
+
+// More memory
+tasks.withType(JavaExec) {
+    jvmArgs = ['-Xmx1024m']
+}
+
+tasks.withType(Test){
+    minHeapSize = "128m"
+    maxHeapSize = "512m"
+}
+
+// Compress distTar
+tasks.withType(Tar) {
+    compression = Compression.GZIP
+}
+
+task generateDevUniverse(type: Exec) {
+    dependsOn compileJava
+    group = "Execution"
+    description = "Generate development universe"
+    commandLine "java", "-classpath", sourceSets.main.runtimeClasspath.getAsPath(),
+        "org.radix.GenerateUniverses",
+        "--universe-type=development",
+        "--validator-count=${validators}",
+        "--include-private-keys",
+        "--no-json-output",
+        "--issue-default-tokens"
+}
+
+task createGenerateUniversesScripts(type: CreateStartScripts) {
+  mainClassName = 'org.radix.GenerateUniverses'
+  applicationName = 'generate_universes'
+}
+tasks.getByName("createGenerateUniversesScripts").outputDir = tasks.getByName("startScripts").outputDir
+tasks.getByName("createGenerateUniversesScripts").classpath = tasks.getByName("startScripts").classpath
+tasks.getByName("createGenerateUniversesScripts").optsEnvironmentVar = tasks.getByName("startScripts").optsEnvironmentVar
+tasks.getByName("createGenerateUniversesScripts") {
+    // Make sure all scripts have consistent classpath
+    doLast {
+        def windowsScriptFile = file getWindowsScript()
+        def unixScriptFile = file getUnixScript()
+        windowsScriptFile.text = windowsScriptFile.text.replace('%APP_HOME%\\lib\\resources', '%RADIXDLT_HOME%')
+        unixScriptFile.text = unixScriptFile.text.replace('$APP_HOME/lib/resources', '$RADIXDLT_HOME')
+    }
+}
+tasks.getByName("startScripts").dependsOn createGenerateUniversesScripts
+
+task createGenerateNodeKeyScripts(type: CreateStartScripts) {
+  mainClassName = 'org.radix.GenerateNodeKey'
+  applicationName = 'generate_node_key'
+}
+tasks.getByName("createGenerateNodeKeyScripts").outputDir = tasks.getByName("startScripts").outputDir
+tasks.getByName("createGenerateNodeKeyScripts").classpath = tasks.getByName("startScripts").classpath
+tasks.getByName("createGenerateNodeKeyScripts").optsEnvironmentVar = tasks.getByName("startScripts").optsEnvironmentVar
+tasks.getByName("createGenerateNodeKeyScripts") {
+    // Make sure all scripts have consistent classpath
+    doLast {
+        def windowsScriptFile = file getWindowsScript()
+        def unixScriptFile = file getUnixScript()
+        windowsScriptFile.text = windowsScriptFile.text.replace('%APP_HOME%\\lib\\resources', '%RADIXDLT_HOME%')
+        unixScriptFile.text = unixScriptFile.text.replace('$APP_HOME/lib/resources', '$RADIXDLT_HOME')
+    }
+}
+tasks.getByName("startScripts").dependsOn createGenerateNodeKeyScripts
+
+ospackage {
+    os = LINUX
+
+    postInstall file('ospackage/postinst.sh')
+    preUninstall file('ospackage/prerm.sh')
+    postUninstall file('ospackage/postrm.sh')
+
+    from("$buildDir/install/$name") {
+        into "/opt/$name"
+    }
+    from("ospackage/${name}.service") {
+        into "/etc/systemd/system"
+    }
+
+    buildDeb {
+        dependsOn += [installDist]
+    }
+    buildRpm {
+        dependsOn += [installDist]
+    }
+}
+
+/**
+ * Display size of each dependency
+ */
+task depsize {
+    doLast {
+        final formatStr = "%,10.2f"
+        final conf = configurations.default
+        final size = conf.collect { it.length() / (1024 * 1024) }.sum()
+        final out = new StringBuffer()
+        out << 'Total dependencies size:'.padRight(45)
+        out << "${String.format(formatStr, size)} Mb\n\n"
+        conf.sort { -it.length() }
+                .each {
+            out << "${it.name}".padRight(45)
+            out << "${String.format(formatStr, (it.length() / 1024))} kb\n"
+        }
+        println(out)
+    }
+}
+
+/**
+ * Manages the *.deb file in the docker directory
+ */
+task deb4docker(type: Copy, dependsOn: buildDeb) {
+    def ospackageVersion = version.replaceAll('-', '~')
+
+    from("$buildDir/distributions") {
+        include "radixdlt_${ospackageVersion}_all.deb"
+    }
+    into rootProject.file('docker')
+    doFirst {
+        def names = [] as Set
+        destinationDir.eachFileMatch(groovy.io.FileType.FILES, ~/radixdlt_.+_all\.deb/) {
+            names << it.name
+        }
+        names.toSorted().each {
+            def rip = new File(destinationDir, it)
+            rip.delete()
+            println "Deleted conflicting deb package: ${rip.name} ..."
+        }
+    }
+}
+
+/**
+ * Creates the JSON RPC documentation
+ */
+task updatejsonschema2md(type: Copy, dependsOn: npmInstall) {
+    from 'header.ejs'
+    into 'node_modules/@adobe/jsonschema2md/templates/md'
+}
+
+task genmarkdown(type: NodeTask, dependsOn: updatejsonschema2md) {
+    script = file('node_modules/@adobe/jsonschema2md/cli.js')
+    args = ["-d", "$projectDir/src/main/resources/schemas", "-o", "$projectDir/src/main/resources/markdown"]
+}
+
+task gendoc(type: NodeTask, dependsOn: genmarkdown) {
+    script = file('create-html.js')
+}
+
+/**
+ * Creates the JSON RPC documentation and manages the *.deb file in the docker directory
+ */
+task gendocanddeb4docker(dependsOn: [gendoc, deb4docker]) {
+    deb4docker.mustRunAfter(gendoc);
+}

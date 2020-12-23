@@ -1,0 +1,102 @@
+/*
+ * (C) Copyright 2020 Radix DLT Ltd
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the “Software”),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
+ */
+
+group 'com.radixdlt.faucet'
+
+apply plugin: 'java'
+apply plugin: 'jacoco'
+apply plugin: 'application'
+apply plugin: 'distribution'
+apply plugin: 'net.nemerosa.versioning'
+
+mainClassName = 'com.radixdlt.faucet.Faucet'
+
+versionFile {
+    mustRunAfter(processResources)
+    // Path to the file to be written
+    file = new File("$buildDir/resources/main", 'version.properties')
+}
+
+configurations.all {
+    resolutionStrategy.eachDependency {
+        if(it.requested.name == 'guava') {
+            it.useTarget 'com.google.guava:guava:29.0-jre'
+        }
+        if(it.requested.name == 'json') {
+            it.useTarget 'org.json:json:20180813'
+        }
+    }
+}
+
+dependencies {
+    compile 'com.radixdlt:radixdlt-java:1.0-beta.19'
+    compile 'io.undertow:undertow-core:2.0.6.Final'
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+
+    testCompile('org.objenesis:objenesis:3.1') { force = true }
+    testCompile('org.javassist:javassist:3.27.0-GA') { force = true }
+    testCompile('org.mockito:mockito-core:3.5.10') { force = true }
+    testCompile('net.bytebuddy:byte-buddy:1.10.13') { force = true }
+    testCompile('net.bytebuddy:byte-buddy-agent:1.10.13') { force = true }
+    testCompile 'org.powermock:powermock-module-junit4:2.0.7'
+    testCompile 'org.powermock:powermock-api-mockito2:2.0.7'
+    testCompile 'org.assertj:assertj-core:3.11.1'
+}
+
+classes {
+    dependsOn(versionFile)
+}
+
+jacocoTestReport {
+    reports {
+        xml.enabled true
+        csv.enabled false
+    }
+}
+
+compileJava {
+    options.compilerArgs << '-proc:none'
+    options.compilerArgs << "-Xlint:all" << "-Werror"
+    options.release = 11
+}
+
+// Using deb4docker name here, so that we can build faucet and ledger
+// in one command, even though this produces a tar file, not a deb.
+task deb4docker(type: Copy, dependsOn: distTar) {
+    def ospackageVersion = version.replaceAll('-', '~')
+
+    from("$buildDir/distributions") {
+        include "faucet-service-${version}.tar"
+    }
+    into rootProject.file('docker')
+    doFirst {
+        def names = [] as Set
+        destinationDir.eachFileMatch(groovy.io.FileType.FILES, ~/faucet-service-.+\.tar/) {
+            names << it.name
+        }
+        names.toSorted().each {
+            def rip = new File(destinationDir, it)
+            rip.delete()
+            println "Deleted conflicting deb package: ${rip.name} ..."
+        }
+    }
+}

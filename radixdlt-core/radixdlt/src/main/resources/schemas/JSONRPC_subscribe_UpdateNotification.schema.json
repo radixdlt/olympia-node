@@ -1,0 +1,138 @@
+{
+  "$schema": "http://json-schema.org/draft-06/schema#",
+  "$id": "http://localhost:8080/schemas/JSONRPC_subscribe_UpdateNotification",
+  "title": "Subscribe Update Notification",
+  "type": "object",
+  "description": "JSON RPC 2.0 Notification sent to a client asynchronously over websockets after they have subscribed using 'Subscribe Request'.",
+  "properties": {
+    "jsonrpc": {
+      "type": "string",
+      "enum": [
+        "2.0"
+      ]
+    },
+    "method": {
+      "type": "string",
+      "enum": [
+        "Atoms.subscribeUpdate"
+      ]
+    },
+    "params": {
+      "type": "object",
+      "properties": {
+        "subscriberId": {
+          "type": [
+            "string",
+            "number"
+          ]
+        },
+        "atoms": {
+          "type": "array",
+          "items": {
+            "$ref": "http://localhost:8080/schemas/atom"
+          }
+        }
+      },
+      "required": [
+        "subscriberId",
+        "atoms"
+      ]
+    }
+  },
+  "required": [
+    "jsonrpc",
+    "method",
+    "params"
+  ],
+  "examples": [
+    {
+      "jsonrpc": "2.0",
+      "method": "Atoms.subscribeUpdate",
+      "params": {
+        "atoms": [
+          {
+            "hid": {
+              "serializer": "EUID",
+              "value": "25637046921011093835439864414"
+            },
+            "temporal_proof": {
+              "atom_id": {
+                "serializer": "EUID",
+                "value": "25637046921011093835439864414"
+              },
+              "vertices": [
+                {
+                  "timestamps": {
+                    "default": 1520437544766
+                  },
+                  "commitment": {
+                    "serializer": "HASH",
+                    "value": "0000000000000000000000000000000000000000000000000000000000000000"
+                  },
+                  "serializer": -909337786,
+                  "owners": [
+                    {
+                      "serializer": "BASE64",
+                      "value": "A45dx+SmFxHkMZMl2bN3WUMx/cI+cdb9ctTVrQZfKTMr"
+                    }
+                  ],
+                  "clock": 14,
+                  "version": 100,
+                  "signatures": {
+                    "r": {
+                      "serializer": "BASE64",
+                      "value": "Rnl+Oc5m0IYZGUPLNbMS6b9CLQAzOKfMzzlVFPPLUVk="
+                    },
+                    "s": {
+                      "serializer": "BASE64",
+                      "value": "AJao/ocLZ+3AQYLJNhlaa9YA70BPnAykL4JjVFCizKFy"
+                    },
+                    "serializer": -434788200,
+                    "version": 100
+                  }
+                }
+              ],
+              "serializer": 1905172290,
+              "version": 100
+            },
+            "timestamps": {
+              "default": 1519834945738
+            },
+            "destinations": [
+              {
+                "serializer": "EUID",
+                "value": "-30147345025896143762492871630"
+              }
+            ],
+            "serializer": -1123323048,
+            "action": "STORE",
+            "particles": [
+              {
+                "destinations": [
+                  {
+                    "serializer": "EUID",
+                    "value": "-30147345025896143762492871630"
+                  }
+                ],
+                "junk": {
+                  "serializer": "BASE64",
+                  "value": "/5ESUQ=="
+                },
+                "serializer": -1123054001,
+                "owners": [
+                  {
+                    "serializer": "BASE64",
+                    "value": "A455PdOZNwyRWaSWFXyYYkbj7Wv9jtgCCqUYhuOHiPLC"
+                  }
+                ],
+                "version": 100
+              }
+            ],
+            "version": 100
+          }
+        ],
+        "subscriberId": "subscriberID-0"
+      }
+    }
+  ]
+}

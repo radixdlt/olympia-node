@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-06/schema#",
+  "$id": "http://localhost:8080/schemas/JSONRPC_Error",
+  "title": "Error message",
+  "type": "object",
+  "description": "A JSON RPC Error returned by the server.",
+  "properties": {
+    "id": {
+      "type": "integer"
+    },
+    "jsonrpc": {
+      "type": "string",
+      "enum": [ "2.0" ]
+    },
+    "error": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "message": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object"
+        }
+      },
+      "required": [ "code", "message" ]
+    }
+  },
+  "required": [ "id", "jsonrpc", "error" ],
+  "additionalProperties": false,
+  "examples": [
+    {
+      "id": 0,
+      "jsonrpc": "2.0",
+      "error": {
+        "code": -32000,
+        "message": "Atom 25637046921011093835439864412 not found."
+      }
+    }
+  ]
+}

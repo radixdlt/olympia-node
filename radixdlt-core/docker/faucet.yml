@@ -1,0 +1,19 @@
+version: '2.1'
+
+services:
+  faucet:
+    build:
+      context: .
+      dockerfile: Dockerfile.faucet
+    environment:
+      FAUCET_TOKEN_RRI: ${RADIXDLT_UNIVERSE_TOKEN}
+      FAUCET_IDENTITY_KEY: ${RADIXDLT_UNIVERSE_PRIVKEY}
+      RADIX_BOOTSTRAP_TRUSTED_NODE: http://core0:8080
+      JAVA_OPTS: -server -XX:+HeapDumpOnOutOfMemoryError -Xms512m -Xmx512m -XX:+AlwaysPreTouch -Djava.security.egd=file:/dev/urandom
+    image: radixdlt/faucet:develop
+    ports:
+      - "8079:8079"
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "30"
