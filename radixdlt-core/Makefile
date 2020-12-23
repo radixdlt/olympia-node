@@ -9,7 +9,7 @@ all:
 
 .PHONY: build
 build:
-	./gradlew deb4docker
+	../gradlew deb4docker
 
 .PHONY: package
 package: build
