@@ -70,8 +70,8 @@ public final class MessageParticle extends Particle {
 	public MessageParticle(RadixAddress from, RadixAddress to, byte[] bytes, long nonce) {
 		super(ImmutableSet.of(from.euid(), to.euid()));
 
-		this.from = Objects.requireNonNull(from, "from is required");
-		this.to = Objects.requireNonNull(to, "to is required");
+		this.from = Objects.requireNonNull(from);
+		this.to = Objects.requireNonNull(to);
 		this.bytes = Arrays.copyOf(bytes, bytes.length);
 		this.nonce = nonce;
 	}
@@ -79,8 +79,8 @@ public final class MessageParticle extends Particle {
 	public MessageParticle(RadixAddress from, RadixAddress to, byte[] bytes) {
 		super(ImmutableSet.of(from.euid(), to.euid()));
 
-		this.from = Objects.requireNonNull(from, "from is required");
-		this.to = Objects.requireNonNull(to, "to is required");
+		this.from = Objects.requireNonNull(from);
+		this.to = Objects.requireNonNull(to);
 		this.bytes = Arrays.copyOf(bytes, bytes.length);
 		this.nonce = System.nanoTime();
 	}
@@ -88,8 +88,8 @@ public final class MessageParticle extends Particle {
 	public MessageParticle(RadixAddress from, RadixAddress to, byte[] bytes, String contentType) {
 		super(ImmutableSet.of(from.euid(), to.euid()));
 
-		this.from = Objects.requireNonNull(from, "from is required");
-		this.to = Objects.requireNonNull(to, "to is required");
+		this.from = Objects.requireNonNull(from);
+		this.to = Objects.requireNonNull(to);
 		this.bytes = Arrays.copyOf(bytes, bytes.length);
 		this.metaData.put("contentType", contentType);
 		this.nonce = System.nanoTime();
@@ -98,7 +98,6 @@ public final class MessageParticle extends Particle {
 	Set<RadixAddress> getAddresses() {
 		return ImmutableSet.of(from, to);
 	}
-
 
 	public long getNonce() {
 		return nonce;
