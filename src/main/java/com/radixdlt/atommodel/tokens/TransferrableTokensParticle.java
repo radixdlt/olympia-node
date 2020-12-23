@@ -69,6 +69,24 @@ public final class TransferrableTokensParticle extends Particle {
 		UInt256 amount,
 		UInt256 granularity,
 		RRI tokenDefinitionReference,
+		Map<TokenTransition, TokenPermission> tokenPermissions,
+		long nonce
+	) {
+		super(address.euid());
+
+		this.address = Objects.requireNonNull(address);
+		this.granularity = Objects.requireNonNull(granularity);
+		this.tokenDefinitionReference = Objects.requireNonNull(tokenDefinitionReference);
+		this.nonce = nonce;
+		this.amount = Objects.requireNonNull(amount);
+		this.tokenPermissions = ImmutableMap.copyOf(tokenPermissions);
+	}
+
+	public TransferrableTokensParticle(
+		RadixAddress address,
+		UInt256 amount,
+		UInt256 granularity,
+		RRI tokenDefinitionReference,
 		Map<TokenTransition, TokenPermission> tokenPermissions
 	) {
 		super(address.euid());
