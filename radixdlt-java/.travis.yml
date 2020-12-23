@@ -1,0 +1,29 @@
+language: java
+sudo: false
+install: true
+
+addons:
+  sonarcloud:
+    organization: "radixdlt-github"
+    token:
+      secure: "guNmqmLZ/ehYK6WMpNyPpHniankJ0skE9xTF0O1zDnKdHXMXQjrr2tZwOao+/6cbnrXdpe9/BjL/6wy6xLhYsOtV+p8Y8NQKaE9y8JpkUDIwKePwhJEFg88nrCLwrL6JTZ4dsXbrLCnf3W95/vruQpXZYAg4yknjlCyxzWj7rHS6a+TeaRod1G4m4EKACIsqY7gS3sHx8DffWBaWBUsTg7dd7ZEHtyi6oMlLC0l+kBm5HZ8wUHzEHwGl0o3K5ICZ4EDkLrSvyjcW/1ArDfeYd9mvHCy330/91fWofdQS124MjmvpQawRPvkb3dkTaAtVLbgXs8TGHI4p26SJOVpiKIcP60+rYecoHxULGOgd2x4k4GBV2pZAncIbB3Krw4GC8/w+s1yvI8/FDlmkBSxFrcHq5fjnSFZnXjDhvdTg4CzwYzf0DAgoDmumradjuhkwI8MnmrPnayqHw7LzNfhCh81XyRWSdyhP7K/5ZaxC0/YzIplIwf4Tkb1/lHaZVTdkNj04q3iaWeoNlIMTJDwsobIpOLRlgmJBhex7eDe03gY0JzQYNbHVHzOgcWvec1F60QK+5UXY79X7drFZtaANw+2JbVM+FCPoeo/xiGPnMV1pOnNcraizgM064WMHB71/gxRnCT+nQOlQZewADTx3vh3lxzrMtreuLzIiwYKwqLg="
+
+jdk:
+  - openjdk11
+
+git:
+  depth: false
+
+jobs:
+  include:
+    - stage: check
+      script: ./gradlew check --info --refresh-dependencies
+    - stage: sonar
+      script: ./gradlew check jacocoTestReport sonarqube --info --refresh-dependencies
+
+cache:
+  directories:
+    - '$HOME/.m2/repository'
+    - '$HOME/.sonar/cache'
+    - '$HOME/.gradle'
+    - '.gradle'
