@@ -186,6 +186,14 @@ class CmdHelper {
     }
 
     /**
+     * gets the veth for the given container name and then runs tc on it
+     */
+    static String runTcUsingVeth(containerName, optionsArgs = "delay 100ms loss 20%") {
+        String veth = getVethByContainerName(containerName);
+        setupQueueQuality(veth, optionsArgs)
+    }
+
+    /**
      * For a given container name, method returns the virtual ethernet of the docker container. This method executes a
      * command on a docker container with @param name to find system wide unique index of the interface  it is linked to. Typically a container has interface
      * eth0 and iflink has an index in decimal number that is mapped to virtual ethernet interface on host
@@ -242,7 +250,14 @@ class CmdHelper {
         runCommand("iptables -t mangle -F")
     }
 
-    static String setupQueueQuality(containerName, optionsArgs = "delay 100ms loss 20%") {
+    static String setupQueueQuality(veth, optionsArgs = "delay 100ms loss 20%") {
+        runCommand("tc qdisc add dev ${veth} handle 10: root netem ${optionsArgs}")
+    }
+
+    /**
+     * directly calls tc (traffic control) on a docker
+     */
+    static String runTcOnContainer(containerName, optionsArgs = "delay 100ms loss 20%") {
         def tcCommand = "tc qdisc add dev eth0 handle 10: root netem ${optionsArgs}"
         def (output, error) = runCommand("docker exec ${containerName} bash -c".tokenize() << tcCommand, null, false, true)
         return output;

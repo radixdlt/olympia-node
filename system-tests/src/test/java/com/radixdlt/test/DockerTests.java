@@ -46,7 +46,7 @@ public class DockerTests {
             Conditions.waitUntilNetworkHasLiveness(network);
 
             // make all nodes slow/latent
-            network.getNodeIds().forEach(nodeId -> CmdHelper.setupQueueQuality(nodeId, "delay 100ms loss 20%"));
+            network.getNodeIds().forEach(CmdHelper::runTcUsingVeth);
 
             // first check
             RemoteBFTTest test = latentTestBuilder()
@@ -57,7 +57,10 @@ public class DockerTests {
             test.runBlocking(CmdHelper.getTestDurationInSeconds(), TimeUnit.SECONDS);
 
             String nodeToStopAndStart = network.getNodeIds().iterator().next();
-            CmdHelper.stopContainer(nodeToStopAndStart);
+            //CmdHelper.stopContainer(nodeToStopAndStart);
+            // TODO unfortunately we can't stop and start the container due to https://radixdlt.atlassian.net/browse/RPNV1-859
+            // for now, we are just dropping all packets to simulate a disconnect
+            CmdHelper.runTcUsingVeth(nodeToStopAndStart, "loss 100%");
 
             // second check, after the down is down
             RemoteBFTTest testOutOfSynchronyBounds = outOfSynchronyTestBuilder(Lists.newArrayList(nodeToStopAndStart))
@@ -65,7 +68,9 @@ public class DockerTests {
                     .build();
             testOutOfSynchronyBounds.runBlocking(CmdHelper.getTestDurationInSeconds(), TimeUnit.SECONDS);
 
-            CmdHelper.startContainer(nodeToStopAndStart);
+            // TODO as above
+            //CmdHelper.startContainer(nodeToStopAndStart);
+            CmdHelper.runTcUsingVeth(nodeToStopAndStart, "loss 0%");
 
             // third check. The node that was brought back up should have liveness by itself (i.e. it should report an increasing view/epoch)
             List<String> restOfTheNodes = Lists.newArrayList(network.getNodeIds());

@@ -39,7 +39,7 @@ public class ClusterTests {
 
         //Creating named volume and copying over the file to volume works with or without docker in docker setup
         slowNodeSetup = SlowNodeSetup.builder()
-                .withImage("eu.gcr.io/lunar-arc-236318/node-ansible:python3")
+                .withImage("eu.gcr.io/lunar-arc-236318/node-ansible")
                 .nodesToSlowDown(1)
                 .usingCluster(network.getClusterName())
                 .runOptions("--rm -v key-volume:/ansible/ssh --name node-ansible")
