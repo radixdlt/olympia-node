@@ -32,8 +32,11 @@ import org.radix.time.Timestamps;
 import org.radix.universe.system.RadixSystem;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
+
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.mock;
 
 public class AddressBookPersistenceTest extends RadixTest {
 
@@ -43,7 +46,7 @@ public class AddressBookPersistenceTest extends RadixTest {
 	@Before
 	public void setUp() {
 		this.dbEnv = new DatabaseEnvironment(getProperties());
-		this.abp = new AddressBookPersistence(getSerialization(), dbEnv);
+		this.abp = new AddressBookPersistence(getSerialization(), dbEnv, mock(SystemCounters.class));
 		this.abp.reset();
 	}
 

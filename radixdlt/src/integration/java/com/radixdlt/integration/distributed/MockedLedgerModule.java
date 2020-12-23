@@ -19,22 +19,18 @@ package com.radixdlt.integration.distributed;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.hash.HashCode;
-import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
-import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
 import com.radixdlt.consensus.LedgerHeader;
+import com.radixdlt.network.TimeSupplier;
 import java.util.LinkedList;
 import java.util.Optional;
 
@@ -42,12 +38,11 @@ public class MockedLedgerModule extends AbstractModule {
 	@Override
 	public void configure() {
 		bind(NextCommandGenerator.class).toInstance((view, aids) -> null);
-		bind(SyncLedgerRequestSender.class).toInstance(req -> { });
 	}
 
 	@Provides
 	@Singleton
-	Ledger syncedLedger(Hasher hasher) {
+	Ledger syncedLedger(Hasher hasher, TimeSupplier timeSupplier) {
 		return new Ledger() {
 			@Override
 			public Optional<PreparedVertex> prepare(LinkedList<PreparedVertex> previous, VerifiedVertex vertex) {
@@ -56,7 +51,7 @@ public class MockedLedgerModule extends AbstractModule {
 					.updateViewAndTimestamp(vertex.getView(), timestamp);
 
 				return Optional.of(vertex
-					.withHeader(ledgerHeader)
+					.withHeader(ledgerHeader, timeSupplier.currentTime())
 					.andCommands(
 						vertex.getCommand()
 							.<PreparedCommand>map(cmd -> new MockPrepared(cmd, hasher.hash(cmd)))
@@ -64,16 +59,6 @@ public class MockedLedgerModule extends AbstractModule {
 							.orElse(ImmutableList.of()),
 						ImmutableMap.of()
 				));
-			}
-
-			@Override
-			public void commit(ImmutableList<PreparedVertex> vertices, HighQC highQC, ImmutableSet<HashCode> prunedVertices) {
-				// Nothing to do here
-			}
-
-			@Override
-			public void commit(VerifiedCommandsAndProof command) {
-				// Nothing to do here
 			}
 		};
 	}

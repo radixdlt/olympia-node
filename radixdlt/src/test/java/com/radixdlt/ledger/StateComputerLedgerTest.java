@@ -52,6 +52,7 @@ import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.mempool.Mempool;
+import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.TypedMocks;
 
@@ -118,6 +119,7 @@ public class StateComputerLedgerTest {
 			.map(Pair::getSecond).orElseThrow();
 
 		this.sut = new StateComputerLedger(
+			mock(TimeSupplier.class),
 			currentLedgerHeader,
 			headerComparator,
 			mempool,
@@ -145,6 +147,7 @@ public class StateComputerLedgerTest {
 			.map(Pair::getSecond).orElseThrow();
 
 		this.sut = new StateComputerLedger(
+			mock(TimeSupplier.class),
 			currentLedgerHeader,
 			headerComparator,
 			mempool,
@@ -251,10 +254,10 @@ public class StateComputerLedgerTest {
 		VerifiedCommandsAndProof verified = new VerifiedCommandsAndProof(ImmutableList.of(nextCommand), header);
 
 		// Act
-		sut.commit(verified);
+		sut.syncEventProcessor().process(verified);
 
 		// Assert
-		verify(stateComputer, never()).commit(any());
+		verify(stateComputer, never()).commit(any(), any());
 		verify(mempool, never()).removeCommitted(any());
 		verify(ledgerUpdateSender, never()).sendLedgerUpdate(any());
 	}

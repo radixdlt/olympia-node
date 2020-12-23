@@ -17,7 +17,6 @@
 
 package com.radixdlt;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
@@ -25,29 +24,31 @@ import com.google.inject.name.Named;
 import com.radixdlt.atommodel.message.MessageParticleConstraintScrypt;
 import com.radixdlt.atommodel.system.SystemConstraintScrypt;
 import com.radixdlt.atommodel.system.SystemParticle;
+import com.radixdlt.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
 import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.AtomChecker;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
 import com.radixdlt.statecomputer.EpochCeilingView;
+import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;
+import com.radixdlt.statecomputer.RadixEngineStakeComputer;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
+import com.radixdlt.statecomputer.RadixEngineValidatorsComputer;
+import com.radixdlt.statecomputer.ValidatorSetBuilder;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.statecomputer.RadixEngineValidatorSetBuilder;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
-import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
 /**
@@ -64,22 +65,33 @@ public class RadixEngineModule extends AbstractModule {
 	private RadixEngineStateComputer radixEngineStateComputer(
 		Serialization serialization,
 		RadixEngine<LedgerAtom> radixEngine,
-		Hasher hasher,
-		@EpochCeilingView View epochCeilingView
+		RadixEngineAtomicCommitManager atomicCommitManager,
+		@EpochCeilingView View epochCeilingView,
+		ValidatorSetBuilder validatorSetBuilder,
+		Hasher hasher
 	) {
 		return RadixEngineStateComputer.create(
 			serialization,
 			radixEngine,
+			atomicCommitManager,
 			epochCeilingView,
+			validatorSetBuilder,
 			hasher
 		);
 	}
 
 	@Provides
+	private ValidatorSetBuilder validatorSetBuilder(
+		@MinValidators int minValidators,
+		@MaxValidators int maxValidators
+	) {
+		return ValidatorSetBuilder.create(minValidators, maxValidators);
+	}
+
+	@Provides
 	@Singleton
 	private CMAtomOS buildCMAtomOS(
-		@Named("magic") int magic,
-		@EpochCeilingView View epochCeilingView
+		@Named("magic") int magic
 	) {
 		final CMAtomOS os = new CMAtomOS(addr -> {
 			final int universeMagic = magic & 0xff;
@@ -92,7 +104,7 @@ public class RadixEngineModule extends AbstractModule {
 		os.load(new TokensConstraintScrypt());
 		os.load(new UniqueParticleConstraintScrypt());
 		os.load(new MessageParticleConstraintScrypt());
-		os.load(new SystemConstraintScrypt(epochCeilingView.number()));
+		os.load(new SystemConstraintScrypt());
 		return os;
 	}
 
@@ -113,12 +125,12 @@ public class RadixEngineModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private RadixEngine<LedgerAtom> getRadixEngine(
-		BFTValidatorSet validatorSet,
 		ConstraintMachine constraintMachine,
 		UnaryOperator<CMStore> virtualStoreLayer,
 		EngineStore<LedgerAtom> engineStore,
 		AtomChecker<LedgerAtom> ledgerAtomChecker,
-		@MinValidators int minValidators
+		RadixEngineValidatorsComputer validatorsComputer,
+		RadixEngineStakeComputer stakeComputer
 	) {
 		RadixEngine<LedgerAtom> radixEngine = new RadixEngine<>(
 			constraintMachine,
@@ -134,46 +146,30 @@ public class RadixEngineModule extends AbstractModule {
 		//   .toWindowedSet(initialValidatorSet, RegisteredValidatorParticle.class, p -> p.getAddress(), 2)
 		//   .build();
 
-		// Note this relies on predictable iterator ordering for ImmutableSet
-		ImmutableSet<ECPublicKey> initialValidatorKeys = validatorSet.getValidators().stream()
-			.map(v -> v.getNode().getKey())
-			.collect(ImmutableSet.toImmutableSet());
 		radixEngine.addStateComputer(
 			RegisteredValidatorParticle.class,
-			new RadixEngineValidatorSetBuilder(initialValidatorKeys, new AtLeastNValidators(minValidators)),
-			(builder, p) -> builder.addValidator(p.getAddress()),
-			(builder, p) -> builder.removeValidator(p.getAddress())
+			RadixEngineValidatorsComputer.class,
+			validatorsComputer,
+			(computer, p) -> computer.addValidator(p.getAddress().getPublicKey()),
+			(computer, p) -> computer.removeValidator(p.getAddress().getPublicKey())
+		);
+		radixEngine.addStateComputer(
+			StakedTokensParticle.class,
+			RadixEngineStakeComputer.class,
+			stakeComputer,
+			(computer, p) -> computer.addStake(p.getDelegateAddress().getPublicKey(), p.getTokDefRef(), p.getAmount()),
+			(computer, p) -> computer.removeStake(p.getDelegateAddress().getPublicKey(), p.getTokDefRef(), p.getAmount())
 		);
 
 		// TODO: should use different mechanism for constructing system atoms but this is good enough for now
 		radixEngine.addStateComputer(
 			SystemParticle.class,
-			new SystemParticle(1, 0, 0),
+			SystemParticle.class,
+			new SystemParticle(0, 0, 0),
 			(prev, p) -> p,
 			(prev, p) -> prev
 		);
 
 		return radixEngine;
-	}
-
-	private static final class AtLeastNValidators implements Predicate<ImmutableSet<ECPublicKey>> {
-		private final int n;
-
-		private AtLeastNValidators(int n) {
-			if (n < 1) {
-				throw new IllegalArgumentException("Minimum number of validators must be at least 1: " + n);
-			}
-			this.n = n;
-		}
-
-		@Override
-		public boolean test(ImmutableSet<ECPublicKey> vset) {
-			return vset.size() >= this.n;
-		}
-
-		@Override
-		public String toString() {
-			return String.format("At least %s validators", this.n);
-		}
 	}
 }

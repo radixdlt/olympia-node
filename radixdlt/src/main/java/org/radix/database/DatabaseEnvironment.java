@@ -21,7 +21,6 @@ import com.google.inject.Inject;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.utils.RadixConstants;
 import com.sleepycat.je.CacheMode;
-import com.sleepycat.je.CheckpointConfig;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
@@ -31,7 +30,6 @@ import com.sleepycat.je.EnvironmentConfig;
 import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.Transaction;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.util.Arrays;
@@ -40,123 +38,61 @@ import java.io.File;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
-public final class DatabaseEnvironment
-{
+public final class DatabaseEnvironment {
 	private static final Logger log = LogManager.getLogger();
-	private class CheckpointerTask implements Runnable {
-
-		private volatile boolean interrupted = false;
-		void interrupt() {
-			// It appears that berkeley behaves quite badly when checkpoint thread
-			// is interrupted.  We use special magic here to make sure we exit in
-			// a timely fashion.
-			this.interrupted = true;
-		}
-
-		@Override
-		public void run()
-		{
-			CheckpointConfig checkpointConfig = new CheckpointConfig();
-			checkpointConfig.setForce(true);
-
-			while (!interrupted) {
-				try {
-					long start = System.currentTimeMillis();
-
-					while (DatabaseEnvironment.this.environment.cleanLogFile() && System.currentTimeMillis() - start < TimeUnit.MINUTES.toMillis(10)) {
-						TimeUnit.SECONDS.sleep(10);
-					}
-
-					DatabaseEnvironment.this.environment.checkpoint(checkpointConfig);
-					DatabaseEnvironment.this.environment.evictMemory();
-
-					while (!interrupted && (System.currentTimeMillis() - start < TimeUnit.MINUTES.toMillis(10))) {
-						Thread.sleep(100);
-					}
-				} catch (InterruptedException ex) {
-					interrupted = true;
-					Thread.currentThread().interrupt();
-				} catch (Exception ex) {
-					log.error("Checkpointing of environment failed!", ex);
-				}
-			}
-		}
-
-	}
 
 	private final ReentrantLock lock = new ReentrantLock(true);
 	private Database metaDatabase;
-
-	private Environment						environment = null;
-	private CheckpointerTask checkpointTask;
-	private Thread 							checkpointThread = null;
+	private Environment environment = null;
 
 	@Inject
 	public DatabaseEnvironment(RuntimeProperties properties) {
 		File dbhome = new File(properties.get("db.location", ".//RADIXDB"));
 		dbhome.mkdir();
 
-	    System.setProperty("je.disable.java.adler32", "true");
+		System.setProperty("je.disable.java.adler32", "true");
 
-	    EnvironmentConfig environmentConfig = new EnvironmentConfig();
-	    environmentConfig.setTransactional(true);
-	    environmentConfig.setAllowCreate(true);
-	    environmentConfig.setLockTimeout(30, TimeUnit.SECONDS);
-	    environmentConfig.setDurability(Durability.COMMIT_NO_SYNC);
-	    environmentConfig.setConfigParam(EnvironmentConfig.LOG_FILE_MAX, "100000000");
-	    environmentConfig.setConfigParam(EnvironmentConfig.LOG_FILE_CACHE_SIZE, "256");
-	    environmentConfig.setConfigParam(EnvironmentConfig.ENV_RUN_CHECKPOINTER, "false");
-	    environmentConfig.setConfigParam(EnvironmentConfig.ENV_RUN_CLEANER, "false");
-	    environmentConfig.setConfigParam(EnvironmentConfig.ENV_RUN_EVICTOR, "false");
-	    environmentConfig.setConfigParam(EnvironmentConfig.ENV_RUN_VERIFIER, "false");
-	    environmentConfig.setConfigParam(EnvironmentConfig.TREE_MAX_EMBEDDED_LN, "0");
+		EnvironmentConfig environmentConfig = new EnvironmentConfig();
+		environmentConfig.setTransactional(true);
+		environmentConfig.setAllowCreate(true);
+		environmentConfig.setLockTimeout(30, TimeUnit.SECONDS);
+		environmentConfig.setDurability(Durability.COMMIT_NO_SYNC);
+		environmentConfig.setConfigParam(EnvironmentConfig.LOG_FILE_MAX, "100000000");
+		environmentConfig.setConfigParam(EnvironmentConfig.LOG_FILE_CACHE_SIZE, "256");
+		environmentConfig.setConfigParam(EnvironmentConfig.ENV_RUN_CHECKPOINTER, "true");
+		environmentConfig.setConfigParam(EnvironmentConfig.ENV_RUN_CLEANER, "true");
+		environmentConfig.setConfigParam(EnvironmentConfig.ENV_RUN_EVICTOR, "true");
+		environmentConfig.setConfigParam(EnvironmentConfig.ENV_RUN_VERIFIER, "false");
+		environmentConfig.setConfigParam(EnvironmentConfig.TREE_MAX_EMBEDDED_LN, "0");
 
-	    long minCacheSize = properties.get("db.cache_size.min", Math.max(50000000, (long)(Runtime.getRuntime().maxMemory()*0.1)));
-	    long maxCacheSize = properties.get("db.cache_size.max", (long)(Runtime.getRuntime().maxMemory()*0.25));
-	    long cacheSize = properties.get("db.cache_size", (long)(Runtime.getRuntime().maxMemory()*0.125));
-	    cacheSize = Math.max(cacheSize, minCacheSize);
-	    cacheSize = Math.min(cacheSize, maxCacheSize);
+		long minCacheSize = properties.get("db.cache_size.min", Math.max(50000000, (long) (Runtime.getRuntime().maxMemory() * 0.1)));
+		long maxCacheSize = properties.get("db.cache_size.max", (long) (Runtime.getRuntime().maxMemory() * 0.25));
+		long cacheSize = properties.get("db.cache_size", (long) (Runtime.getRuntime().maxMemory() * 0.125));
+		cacheSize = Math.max(cacheSize, minCacheSize);
+		cacheSize = Math.min(cacheSize, maxCacheSize);
 
-	    environmentConfig.setCacheSize(cacheSize);
-	    environmentConfig.setCacheMode(CacheMode.EVICT_LN);
+		environmentConfig.setCacheSize(cacheSize);
+		environmentConfig.setCacheMode(CacheMode.EVICT_LN);
 
-	    this.environment = new Environment(dbhome, environmentConfig);
+		this.environment = new Environment(dbhome, environmentConfig);
 
-	    DatabaseConfig primaryConfig = new DatabaseConfig();
-	    primaryConfig.setAllowCreate(true);
-	    primaryConfig.setTransactional(true);
+		DatabaseConfig primaryConfig = new DatabaseConfig();
+		primaryConfig.setAllowCreate(true);
+		primaryConfig.setTransactional(true);
 
-	    try
-	    {
-		    this.metaDatabase = this.environment.openDatabase(null, "environment.meta_data", primaryConfig);
-	    }
-	    catch (Exception ex)
-	    {
-		    throw new RuntimeException("while opening database", ex);
-	    }
+		try {
+			this.metaDatabase = this.environment.openDatabase(null, "environment.meta_data", primaryConfig);
+		} catch (Exception ex) {
+			throw new RuntimeException("while opening database", ex);
+		}
+	}
 
-	    this.checkpointTask = new CheckpointerTask();
-	    this.checkpointThread = new Thread(this.checkpointTask);
-	    this.checkpointThread.setDaemon(true);
-	    this.checkpointThread.setName("Checkpointer");
-	    this.checkpointThread.start();
-    }
-
-	public void stop()
-	{
-        this.metaDatabase.close();
+	public void stop() {
+		this.metaDatabase.close();
 		this.metaDatabase = null;
 
-		this.checkpointTask.interrupt();
-		try {
-			this.checkpointThread.join();
-		} catch (InterruptedException ex) {
-			// Ignore and continue
-			Thread.currentThread().interrupt();
-		}
-
-       	this.environment.close();
-       	this.environment = null;
+		this.environment.close();
+		this.environment = null;
 	}
 
 	public void withLock(Runnable runnable) {
@@ -168,8 +104,7 @@ public final class DatabaseEnvironment
 		}
 	}
 
-	public Environment getEnvironment()
-	{
+	public Environment getEnvironment() {
 		if (this.environment == null) {
 			throw new IllegalStateException("environment is not started");
 		}
@@ -177,18 +112,15 @@ public final class DatabaseEnvironment
 		return this.environment;
 	}
 
-	public OperationStatus put(Transaction transaction, String resource, String key, byte[] value)
-	{
+	public OperationStatus put(Transaction transaction, String resource, String key, byte[] value) {
 		return this.put(transaction, resource, new DatabaseEntry(key.getBytes()), new DatabaseEntry(value));
 	}
 
-	public OperationStatus put(Transaction transaction, String resource, String key, DatabaseEntry value)
-	{
+	public OperationStatus put(Transaction transaction, String resource, String key, DatabaseEntry value) {
 		return this.put(transaction, resource, new DatabaseEntry(key.getBytes()), value);
 	}
 
-	public OperationStatus put(Transaction transaction, String resource, DatabaseEntry key, DatabaseEntry value)
-	{
+	public OperationStatus put(Transaction transaction, String resource, DatabaseEntry key, DatabaseEntry value) {
 		if (resource == null || resource.length() == 0)
 			throw new IllegalArgumentException("Resource can not be null or empty");
 
@@ -204,8 +136,7 @@ public final class DatabaseEnvironment
 		return this.metaDatabase.put(transaction, key, value);
 	}
 
-	public byte[] get(String resource, String key)
-	{
+	public byte[] get(String resource, String key) {
 		DatabaseEntry value = new DatabaseEntry();
 
 		if (this.get(resource, new DatabaseEntry(key.getBytes()), value) == OperationStatus.SUCCESS)
@@ -214,13 +145,11 @@ public final class DatabaseEnvironment
 		return null;
 	}
 
-	public OperationStatus get(String resource, String key, DatabaseEntry value)
-	{
+	public OperationStatus get(String resource, String key, DatabaseEntry value) {
 		return this.get(resource, new DatabaseEntry(key.getBytes()), value);
 	}
 
-	public OperationStatus get(String resource, DatabaseEntry key, DatabaseEntry value)
-	{
+	public OperationStatus get(String resource, DatabaseEntry key, DatabaseEntry value) {
 		if (resource == null || resource.length() == 0)
 			throw new IllegalArgumentException("Resource can not be null or empty");
 

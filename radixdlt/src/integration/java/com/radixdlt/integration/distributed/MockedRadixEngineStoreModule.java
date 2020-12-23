@@ -17,63 +17,68 @@
 
 package com.radixdlt.integration.distributed;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.google.inject.Scopes;
-import com.google.inject.TypeLiteral;
+import com.google.inject.Singleton;
 import com.google.inject.name.Names;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.UnverifiedVertex;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.atommodel.system.SystemParticle;
+import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
+import com.radixdlt.constraintmachine.CMMicroInstruction;
+import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.crypto.Hasher;
+import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
-import com.radixdlt.store.LastEpochProof;
-import com.radixdlt.store.LastProof;
 
 public class MockedRadixEngineStoreModule extends AbstractModule {
 	@Override
 	public void configure() {
 		bind(Serialization.class).toInstance(DefaultSerialization.getInstance());
 		bind(Integer.class).annotatedWith(Names.named("magic")).toInstance(1);
-		bind(new TypeLiteral<EngineStore<LedgerAtom>>() { }).to(new TypeLiteral<InMemoryEngineStore<LedgerAtom>>() { })
-			.in(Scopes.SINGLETON);
 	}
 
 	@Provides
-	private BFTConfiguration configuration(
-		@LastEpochProof VerifiedLedgerHeaderAndProof proof,
-		BFTValidatorSet validatorSet
-	) {
-		LedgerHeader nextLedgerHeader = LedgerHeader.create(
-			proof.getEpoch() + 1,
-			View.genesis(),
-			proof.getAccumulatorState(),
-			proof.timestamp()
+	@Singleton
+	private EngineStore<LedgerAtom> engineStore(Hasher hasher) {
+		InMemoryEngineStore<LedgerAtom> inMemoryEngineStore = new InMemoryEngineStore<>();
+		final ClientAtom genesisAtom = ClientAtom.create(
+			ImmutableList.of(
+				CMMicroInstruction.checkSpinAndPush(new SystemParticle(0, 0, 0), Spin.UP),
+				CMMicroInstruction.checkSpinAndPush(new SystemParticle(1, 0, 0), Spin.NEUTRAL)
+			),
+			hasher
 		);
-		UnverifiedVertex genesis = UnverifiedVertex.createGenesis(nextLedgerHeader);
-		VerifiedVertex verifiedGenesis = new VerifiedVertex(genesis, HashUtils.zero256());
-		QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesis, nextLedgerHeader);
-		return new BFTConfiguration(validatorSet, verifiedGenesis, genesisQC);
+		inMemoryEngineStore.storeAtom(genesisAtom);
+		return inMemoryEngineStore;
 	}
 
 	@Provides
-	@LastEpochProof
-	public VerifiedLedgerHeaderAndProof lastEpochProof(BFTValidatorSet validatorSet) {
-		return VerifiedLedgerHeaderAndProof.genesis(HashUtils.zero256(), validatorSet);
-	}
+	private RadixEngineAtomicCommitManager atomicCommitManager() {
+		return new RadixEngineAtomicCommitManager() {
+			@Override
+			public void startTransaction() {
+				// no-op
+			}
 
-	@Provides
-	@LastProof
-	public VerifiedLedgerHeaderAndProof lastProof(BFTValidatorSet validatorSet) {
-		return VerifiedLedgerHeaderAndProof.genesis(HashUtils.zero256(), validatorSet);
+			@Override
+			public void commitTransaction() {
+				// no-op
+			}
+
+			@Override
+			public void abortTransaction() {
+				// no-op
+			}
+
+			@Override
+			public void save(VerifiedVertexStoreState vertexStoreState) {
+				// no-op
+			}
+		};
 	}
 }

@@ -49,7 +49,6 @@ public class RadixTest {
 		properties = new RuntimeProperties(runtimeConfigurationJSON, null);
 
 		// Tests need this
-		properties.set("debug.nopow", true);
 		properties.set("host.ip", "127.0.0.1");
 
 		if (dbLocation == null) {

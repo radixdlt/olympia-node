@@ -18,11 +18,16 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.ModuleRunner;
-import com.radixdlt.consensus.bft.BFTUpdate;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
+import com.radixdlt.consensus.bft.BFTRebuildUpdate;
 import com.radixdlt.consensus.epoch.EpochManager;
+import com.radixdlt.consensus.epoch.EpochViewUpdate;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 
-import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
+import com.radixdlt.consensus.sync.GetVerticesRequest;
+import com.radixdlt.consensus.sync.VertexRequestTimeout;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.utils.ThreadFactories;
 
@@ -58,8 +63,15 @@ public final class EpochManagerRunner implements ModuleRunner {
 	@Inject
 	public EpochManagerRunner(
 		Observable<EpochsLedgerUpdate> ledgerUpdates,
-		Observable<BFTUpdate> bftUpdates,
-		Observable<LocalGetVerticesRequest> bftSyncTimeouts,
+		Observable<BFTInsertUpdate> bftUpdates,
+		EventProcessor<BFTInsertUpdate> bftUpdateProcessor,
+		Observable<BFTRebuildUpdate> bftRebuilds,
+		EventProcessor<BFTRebuildUpdate> bftRebuildProcessor,
+		Observable<VertexRequestTimeout> bftSyncTimeouts,
+		EventProcessor<VertexRequestTimeout> vertexRequestTimeoutEventProcessor,
+		Observable<EpochViewUpdate> localViewUpdates,
+		EventProcessor<EpochViewUpdate> epochViewUpdateEventProcessor,
+		Observable<RemoteEvent<GetVerticesRequest>> verticesRequests,
 		BFTEventsRx networkRx,
 		PacemakerRx pacemakerRx,
 		SyncVerticesRPCRx rpcRx,
@@ -78,19 +90,25 @@ public final class EpochManagerRunner implements ModuleRunner {
 				.doOnNext(epochManager::processLedgerUpdate),
 			bftUpdates
 				.observeOn(singleThreadScheduler)
-				.doOnNext(epochManager::processBFTUpdate),
+				.doOnNext(bftUpdateProcessor::process),
+			bftRebuilds
+				.observeOn(singleThreadScheduler)
+				.doOnNext(bftRebuildProcessor::process),
 			bftSyncTimeouts
 				.observeOn(singleThreadScheduler)
-				.doOnNext(epochManager::processGetVerticesLocalTimeout),
+				.doOnNext(vertexRequestTimeoutEventProcessor::process),
+			localViewUpdates
+				.observeOn(singleThreadScheduler)
+				.doOnNext(epochViewUpdateEventProcessor::process),
 			pacemakerRx.localTimeouts()
 				.observeOn(singleThreadScheduler)
 				.doOnNext(epochManager::processLocalTimeout),
 			networkRx.bftEvents()
 				.observeOn(singleThreadScheduler)
 				.doOnNext(epochManager::processConsensusEvent),
-			rpcRx.requests()
+			verticesRequests
 				.observeOn(singleThreadScheduler)
-				.doOnNext(epochManager::processGetVerticesRequest),
+				.doOnNext(req -> epochManager.localGetVerticesRequestRemoteEventProcessor().process(req.getOrigin(), req.getEvent())),
 			rpcRx.responses()
 				.observeOn(singleThreadScheduler)
 				.doOnNext(epochManager::processGetVerticesResponse),
@@ -110,6 +128,7 @@ public final class EpochManagerRunner implements ModuleRunner {
 				// TODO: Implement better error handling especially against Byzantine nodes.
 				// TODO: Exit process for now.
 				log.error("Unexpected exception occurred", e);
+				LogManager.shutdown(); // Flush any async logs
 				System.exit(-1);
 			})
 			.publish();

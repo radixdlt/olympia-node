@@ -31,6 +31,7 @@ import java.util.stream.Stream;
  * Vertex which has been executed in the prepare phase
  */
 public final class PreparedVertex {
+	private final long timeOfExecution;
 	private final VerifiedVertex vertex;
 
 	private final LedgerHeader ledgerHeader;
@@ -42,12 +43,18 @@ public final class PreparedVertex {
 		VerifiedVertex vertex,
 		LedgerHeader ledgerHeader,
 		ImmutableList<PreparedCommand> preparedCommands,
-		ImmutableMap<Command, Exception> commandExceptions
+		ImmutableMap<Command, Exception> commandExceptions,
+		long timeOfExecution
 	) {
 		this.vertex = Objects.requireNonNull(vertex);
 		this.ledgerHeader = Objects.requireNonNull(ledgerHeader);
 		this.preparedCommands = Objects.requireNonNull(preparedCommands);
 		this.commandExceptions = Objects.requireNonNull(commandExceptions);
+		this.timeOfExecution = timeOfExecution;
+	}
+
+	public long getTimeOfExecution() {
+		return timeOfExecution;
 	}
 
 	public HashCode getId() {

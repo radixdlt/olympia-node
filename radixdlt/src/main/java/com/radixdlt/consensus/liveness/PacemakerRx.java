@@ -17,7 +17,7 @@
 
 package com.radixdlt.consensus.liveness;
 
-import com.radixdlt.consensus.epoch.LocalTimeout;
+import com.radixdlt.consensus.epoch.Epoched;
 import io.reactivex.rxjava3.core.Observable;
 
 /**
@@ -27,5 +27,5 @@ public interface PacemakerRx {
 	/**
 	 * @return observable of timeout events which begins emitting on the first subscription
 	 */
-	Observable<LocalTimeout> localTimeouts();
+	Observable<Epoched<ScheduledLocalTimeout>> localTimeouts();
 }

@@ -18,25 +18,25 @@
 package com.radixdlt.integration.distributed.simulation.network;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.MessageInTransit;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 
 /**
  * Drops one proposal per view
  */
 public class FProposalsPerViewDropper implements Predicate<MessageInTransit> {
-	private final Map<View, Set<BFTNode>> proposalToDrop = new HashMap<>();
-	private final Map<View, Integer> proposalCount = new HashMap<>();
+	private final ConcurrentHashMap<View, Set<BFTNode>> proposalToDrop = new ConcurrentHashMap<>();
+	private final ConcurrentHashMap<View, Integer> proposalCount = new ConcurrentHashMap<>();
 	private final ImmutableList<BFTNode> validatorSet;
 	private final Random random;
 	private final int faultySize;
@@ -59,13 +59,11 @@ public class FProposalsPerViewDropper implements Predicate<MessageInTransit> {
 			final Proposal proposal = (Proposal) msg.getContent();
 			final View view = proposal.getVertex().getView();
 			final Set<BFTNode> nodesToDrop = proposalToDrop.computeIfAbsent(view, v -> {
-				List<BFTNode> nodes = new LinkedList<>(validatorSet);
-				Set<BFTNode> nextFaultySet = new HashSet<>();
-				for (int i = 0; i < faultySize; i++) {
-					BFTNode nextFaultyNode = nodes.remove(random == null ? i : random.nextInt(nodes.size()));
-					nextFaultySet.add(nextFaultyNode);
+				final List<BFTNode> nodes = Lists.newArrayList(validatorSet);
+				if (random != null) {
+					Collections.shuffle(nodes, random);
 				}
-				return nextFaultySet;
+				return ImmutableSet.copyOf(nodes.subList(0, faultySize));
 			});
 			if (proposalCount.merge(view, 1, Integer::sum).equals(validatorSet.size())) {
 				proposalToDrop.remove(view);

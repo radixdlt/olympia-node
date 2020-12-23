@@ -27,13 +27,15 @@ import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.HashVerifier;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.crypto.ECDSASignature;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.util.Optional;
 
 public class BFTEventVerifierTest {
 
@@ -60,14 +62,14 @@ public class BFTEventVerifierTest {
 
 	@Test
 	public void when_process_local_timeout__then_should_be_forwarded() {
-		View view = mock(View.class);
-		eventVerifier.processLocalTimeout(view);
-		verify(forwardTo, times(1)).processLocalTimeout(eq(view));
+		ScheduledLocalTimeout timeout = mock(ScheduledLocalTimeout.class);
+		eventVerifier.processLocalTimeout(timeout);
+		verify(forwardTo, times(1)).processLocalTimeout(eq(timeout));
 	}
 
 	@Test
 	public void when_process_local_sync__then_should_be_forwarded() {
-		BFTUpdate update = mock(BFTUpdate.class);
+		BFTInsertUpdate update = mock(BFTInsertUpdate.class);
 		eventVerifier.processBFTUpdate(update);
 		verify(forwardTo, times(1)).processBFTUpdate(update);
 	}
@@ -109,53 +111,19 @@ public class BFTEventVerifierTest {
 	}
 
 	@Test
-	public void when_process_correct_viewtimeout_then_should_be_forwarded() {
-		ViewTimeout viewTimeout = mock(ViewTimeout.class);
-		BFTNode author = mock(BFTNode.class);
-		when(viewTimeout.getAuthor()).thenReturn(author);
-		when(viewTimeout.getView()).thenReturn(View.of(1));
-		when(viewTimeout.signature()).thenReturn(mock(ECDSASignature.class));
-		when(validatorSet.containsNode(eq(author))).thenReturn(true);
-		when(verifier.verify(any(), any(), any())).thenReturn(true);
-		eventVerifier.processViewTimeout(viewTimeout);
-		verify(forwardTo, times(1)).processViewTimeout(eq(viewTimeout));
-	}
-
-	@Test
-	public void when_process_bad_author_viewtimeout_then_should_not_be_forwarded() {
-		ViewTimeout viewTimeout = mock(ViewTimeout.class);
-		BFTNode author = mock(BFTNode.class);
-		when(viewTimeout.getAuthor()).thenReturn(author);
-		when(viewTimeout.getView()).thenReturn(View.of(1));
-		when(viewTimeout.signature()).thenReturn(mock(ECDSASignature.class));
-		when(validatorSet.containsNode(eq(author))).thenReturn(false);
-		when(verifier.verify(any(), any(), any())).thenReturn(true);
-		eventVerifier.processViewTimeout(viewTimeout);
-		verify(forwardTo, never()).processViewTimeout(any());
-	}
-
-	@Test
-	public void when_process_bad_signature_viewtimeout_then_should_not_be_forwarded() {
-		ViewTimeout viewTimeout = mock(ViewTimeout.class);
-		BFTNode author = mock(BFTNode.class);
-		when(viewTimeout.getAuthor()).thenReturn(author);
-		when(viewTimeout.getView()).thenReturn(View.of(1));
-		when(viewTimeout.signature()).thenReturn(mock(ECDSASignature.class));
-		when(validatorSet.containsNode(eq(author))).thenReturn(true);
-		when(verifier.verify(any(), any(), any())).thenReturn(false);
-		eventVerifier.processViewTimeout(viewTimeout);
-		verify(forwardTo, never()).processViewTimeout(any());
-	}
-
-
-	@Test
 	public void when_process_correct_vote_then_should_be_forwarded() {
 		Vote vote = mock(Vote.class);
+		when(vote.getView()).thenReturn(View.of(1));
+		when(vote.getEpoch()).thenReturn(0L);
 		BFTNode author = mock(BFTNode.class);
 		when(vote.getAuthor()).thenReturn(author);
-		when(vote.getSignature()).thenReturn(mock(ECDSASignature.class));
+		ECDSASignature voteSignature = mock(ECDSASignature.class);
+		ECDSASignature timeoutSignature = mock(ECDSASignature.class);
+		when(vote.getSignature()).thenReturn(voteSignature);
+		when(vote.getTimeoutSignature()).thenReturn(Optional.of(timeoutSignature));
 		when(validatorSet.containsNode(eq(author))).thenReturn(true);
-		when(verifier.verify(any(), any(), any())).thenReturn(true);
+		when(verifier.verify(any(), any(), eq(voteSignature))).thenReturn(true);
+		when(verifier.verify(any(), any(), eq(timeoutSignature))).thenReturn(true);
 		eventVerifier.processVote(vote);
 		verify(forwardTo, times(1)).processVote(eq(vote));
 	}
@@ -180,6 +148,24 @@ public class BFTEventVerifierTest {
 		when(vote.getSignature()).thenReturn(mock(ECDSASignature.class));
 		when(validatorSet.containsNode(eq(author))).thenReturn(true);
 		when(verifier.verify(any(), any(), any())).thenReturn(false);
+		eventVerifier.processVote(vote);
+		verify(forwardTo, never()).processVote(any());
+	}
+
+	@Test
+	public void when_process_bad_timeout_signature_vote_then_should_not_be_forwarded() {
+		Vote vote = mock(Vote.class);
+		when(vote.getView()).thenReturn(View.of(1));
+		when(vote.getEpoch()).thenReturn(0L);
+		BFTNode author = mock(BFTNode.class);
+		when(vote.getAuthor()).thenReturn(author);
+		ECDSASignature voteSignature = mock(ECDSASignature.class);
+		ECDSASignature timeoutSignature = mock(ECDSASignature.class);
+		when(vote.getSignature()).thenReturn(voteSignature);
+		when(vote.getTimeoutSignature()).thenReturn(Optional.of(timeoutSignature));
+		when(validatorSet.containsNode(eq(author))).thenReturn(true);
+		when(verifier.verify(any(), any(), eq(voteSignature))).thenReturn(true);
+		when(verifier.verify(any(), any(), eq(timeoutSignature))).thenReturn(false);
 		eventVerifier.processVote(vote);
 		verify(forwardTo, never()).processVote(any());
 	}

@@ -23,18 +23,19 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.Ledger;
-import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof.OrderByEpochAndVersionComparator;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.PreparedVertex;
-import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.ledger.AccumulatorState;
 import com.radixdlt.ledger.LedgerAccumulator;
 import com.radixdlt.ledger.LedgerAccumulatorVerifier;
 import com.radixdlt.ledger.SimpleLedgerAccumulatorAndVerifier;
 import com.radixdlt.ledger.StateComputerLedger;
+import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.utils.Pair;
 import java.util.Comparator;
@@ -45,10 +46,11 @@ import java.util.Comparator;
 public class LedgerModule extends AbstractModule {
 	@Override
 	protected void configure() {
-		bind(Ledger.class).to(StateComputerLedger.class).in(Scopes.SINGLETON);
+		bind(Ledger.class).to(StateComputerLedger.class);
 		bind(new TypeLiteral<Comparator<VerifiedLedgerHeaderAndProof>>() { }).to(OrderByEpochAndVersionComparator.class).in(Scopes.SINGLETON);
 		bind(LedgerAccumulator.class).to(SimpleLedgerAccumulatorAndVerifier.class);
 		bind(LedgerAccumulatorVerifier.class).to(SimpleLedgerAccumulatorAndVerifier.class);
+		bind(StateComputerLedger.class).in(Scopes.SINGLETON);
 	}
 
 	@Provides
@@ -56,24 +58,27 @@ public class LedgerModule extends AbstractModule {
 		return Comparator.comparingLong(AccumulatorState::getStateVersion);
 	}
 
+	@ProvidesIntoSet
+	@ProcessOnDispatch
+	private EventProcessor<VerifiedCommandsAndProof> syncToLedgerCommittor(StateComputerLedger stateComputerLedger) {
+		return stateComputerLedger.syncEventProcessor();
+	}
+
+	@ProvidesIntoSet
+	@ProcessOnDispatch
+	private EventProcessor<BFTCommittedUpdate> bftToLedgerCommittor(StateComputerLedger stateComputerLedger) {
+		return stateComputerLedger.bftCommittedUpdateEventProcessor();
+	}
 
 	// TODO: This is a temporary fix until Mempool is fixed
 	@ProvidesIntoSet
-	private VertexStoreEventSender eventSender(Mempool mempool, Hasher hasher) {
-		return new VertexStoreEventSender() {
-			@Override
-			public void sendCommitted(BFTCommittedUpdate committedUpdate) {
-				committedUpdate.getCommitted().stream()
-					.flatMap(PreparedVertex::errorCommands)
-					.map(Pair::getFirst)
-					.map(hasher::hash)
-					.forEach(mempool::removeRejected);
-			}
-
-			@Override
-			public void highQC(QuorumCertificate qc) {
-				// Not required
-			}
-		};
+	@ProcessOnDispatch
+	private EventProcessor<BFTCommittedUpdate> mempoolCommittor(Mempool mempool, Hasher hasher) {
+		return e ->
+			e.getCommitted().stream()
+				.flatMap(PreparedVertex::errorCommands)
+				.map(Pair::getFirst)
+				.map(hasher::hash)
+				.forEach(mempool::removeRejected);
 	}
 }

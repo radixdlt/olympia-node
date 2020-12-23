@@ -17,104 +17,30 @@
 
 package com.radixdlt.integration.distributed.simulation.invariants.consensus;
 
-import com.radixdlt.consensus.bft.PreparedVertex;
-import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.BFTHeader;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.integration.distributed.simulation.TestInvariant;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
+import com.radixdlt.integration.invariants.SafetyChecker;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.TreeMap;
 
 /**
  * Checks that validator nodes do not commit on conflicting vertices
  */
 public class SafetyInvariant implements TestInvariant {
+	private final NodeEvents nodeEvents;
 
-	private static Observable<TestInvariantError> conflictingVerticesError(VerifiedVertex vertex, VerifiedVertex currentVertex) {
-		return Observable.just(
-			new TestInvariantError(
-				String.format("Conflicting vertices [%s, %s] committed at same view: %s",
-					vertex,
-					currentVertex,
-					vertex.getView()
-				)
-			)
-		);
-	}
-
-	private static Observable<TestInvariantError> brokenChainError(VerifiedVertex vertex, VerifiedVertex closeVertex) {
-		return Observable.just(
-			new TestInvariantError(
-				String.format("Broken Chain [%s, %s]",
-					vertex,
-					closeVertex
-				)
-			)
-		);
+	public SafetyInvariant(NodeEvents nodeEvents) {
+		this.nodeEvents = nodeEvents;
 	}
 
 	@Override
 	public Observable<TestInvariantError> check(RunningNetwork network) {
-		final TreeMap<EpochView, VerifiedVertex> committedVertices = new TreeMap<>();
-		final Map<BFTNode, EpochView> lastCommittedByNode = new HashMap<>();
-
-		return network.bftCommittedUpdates()
-			.concatMap(nodeAndVertices -> Observable.fromStream(nodeAndVertices.getSecond().getCommitted().stream()
-				.map(PreparedVertex::getVertex))
-				.map(v -> Pair.of(nodeAndVertices.getFirst(), v))
-			)
-			.flatMap(nodeAndVertex -> {
-				final BFTNode node = nodeAndVertex.getFirst();
-				final VerifiedVertex vertex = nodeAndVertex.getSecond();
-				final EpochView epochView = EpochView.of(
-					vertex.getParentHeader().getLedgerHeader().getEpoch(),
-					vertex.getView()
-				);
-
-				final VerifiedVertex currentVertexAtView = committedVertices.get(epochView);
-				if (currentVertexAtView != null) {
-					if (!currentVertexAtView.getId().equals(vertex.getId())) {
-						return conflictingVerticesError(vertex, currentVertexAtView);
-					}
-				} else {
-					EpochView parentEpochView = EpochView.of(
-						vertex.getParentHeader().getLedgerHeader().getEpoch(),
-						vertex.getParentHeader().getView()
-					);
-					VerifiedVertex parent = committedVertices.get(parentEpochView);
-					if (parent == null) {
-						Entry<EpochView, VerifiedVertex> higherCommitted = committedVertices.higherEntry(parentEpochView);
-						if (higherCommitted != null) {
-							BFTHeader higherParentHeader = higherCommitted.getValue().getParentHeader();
-							EpochView higherCommittedParentEpochView = EpochView.of(
-								higherParentHeader.getLedgerHeader().getEpoch(),
-								higherParentHeader.getView()
-							);
-							if (epochView.compareTo(higherCommittedParentEpochView) > 0) {
-								return brokenChainError(vertex, higherCommitted.getValue());
-							}
-						}
-					}
-
-					committedVertices.put(epochView, vertex);
-				}
-
-				// Clean up old vertices so that we avoid consuming too much memory
-				lastCommittedByNode.put(node, epochView);
-				final EpochView lowest = network.getNodes().stream()
-					.map(n -> lastCommittedByNode.getOrDefault(n, EpochView.of(0, View.genesis())))
-					.reduce((v0, v1) -> v0.compareTo(v1) < 0 ? v0 : v1)
-					.orElse(EpochView.of(0, View.genesis()));
-				committedVertices.headMap(lowest).clear();
-
-				return Observable.empty();
-			});
+		final SafetyChecker safetyChecker = new SafetyChecker(network.getNodes());
+		return Observable.<Pair<BFTNode, BFTCommittedUpdate>>create(emitter ->
+			nodeEvents.addListener((node, update) -> emitter.onNext(Pair.of(node, update)), BFTCommittedUpdate.class)
+		).serialize()
+			.flatMap(e -> safetyChecker.process(e.getFirst(), e.getSecond()).map(Observable::just).orElse(Observable.empty()));
 	}
 }

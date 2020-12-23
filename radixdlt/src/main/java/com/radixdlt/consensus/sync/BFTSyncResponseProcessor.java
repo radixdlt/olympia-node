@@ -26,10 +26,4 @@ public interface BFTSyncResponseProcessor {
 	 * @param response the get vertices error response
 	 */
 	void processGetVerticesErrorResponse(GetVerticesErrorResponse response);
-
-	/**
-	 * Process a get vertices response
-	 * @param response the get vertices response
-	 */
-	void processGetVerticesResponse(GetVerticesResponse response);
 }

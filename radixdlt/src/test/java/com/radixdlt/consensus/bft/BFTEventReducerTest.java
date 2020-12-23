@@ -17,148 +17,141 @@
 
 package com.radixdlt.consensus.bft;
 
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.ViewTimeout;
-import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.BFTHeader;
+import com.radixdlt.consensus.HighQC;
+import com.radixdlt.consensus.PendingVotes;
+import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.VoteData;
-import com.radixdlt.consensus.bft.BFTSyncer.SyncResult;
 import com.radixdlt.consensus.liveness.Pacemaker;
-import com.radixdlt.consensus.sync.BFTSync;
-import com.radixdlt.crypto.HashUtils;
-import java.util.Optional;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
+import com.radixdlt.consensus.safety.SafetyRules;
+import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.RemoteEventDispatcher;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Optional;
+
+import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class BFTEventReducerTest {
-	private BFTEventReducer reducer;
-	private Pacemaker pacemaker;
-	private VertexStore vertexStore;
-	private BFTSync vertexStoreSync;
 
-	@Before
-	public void setUp() {
-		this.pacemaker = mock(Pacemaker.class);
-		this.vertexStore = mock(VertexStore.class);
-		this.vertexStoreSync = mock(BFTSync.class);
-		this.reducer = new BFTEventReducer(
-			pacemaker,
-			vertexStore,
-			vertexStoreSync
-		);
-	}
+    private BFTNode self = mock(BFTNode.class);
+    private Hasher hasher = mock(Hasher.class);
+    private RemoteEventDispatcher<Vote> voteDispatcher = rmock(RemoteEventDispatcher.class);
+    private PendingVotes pendingVotes = mock(PendingVotes.class);
+    private BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
+    private VertexStore vertexStore = mock(VertexStore.class);
+    private SafetyRules safetyRules = mock(SafetyRules.class);
+    private Pacemaker pacemaker = mock(Pacemaker.class);
+    private EventDispatcher<ViewQuorumReached> viewQuorumReachedEventDispatcher = rmock(EventDispatcher.class);
+    private EventDispatcher<NoVote> noVoteEventDispatcher = rmock(EventDispatcher.class);
 
-	@Test
-	public void when_start__then_should_proceed_to_first_view() {
-		QuorumCertificate qc = mock(QuorumCertificate.class);
-		HighQC highQC = mock(HighQC.class);
-		View view = mock(View.class);
-		when(qc.getView()).thenReturn(view);
-		when(highQC.highestQC()).thenReturn(qc);
-		when(vertexStore.highQC()).thenReturn(highQC);
-		reducer.start();
-		verify(pacemaker, times(1)).processQC(highQC);
-		verifyNoMoreInteractions(pacemaker);
-	}
+    private BFTEventReducer bftEventReducer;
 
-	@Test
-	public void when_processing_vote_no_quorum__then_pacemaker_processes() {
-		Vote voteMessage = mock(Vote.class);
-		BFTHeader proposal = new BFTHeader(View.of(2), HashUtils.random256(), mock(LedgerHeader.class));
-		BFTHeader parent = new BFTHeader(View.of(1), HashUtils.random256(), mock(LedgerHeader.class));
-		VoteData voteData = new VoteData(proposal, parent, null);
-		when(voteMessage.getVoteData()).thenReturn(voteData);
+    @Before
+    public void setUp() {
+        this.bftEventReducer = new BFTEventReducer(
+            this.self,
+            this.pacemaker,
+            this.vertexStore,
+            this.viewQuorumReachedEventDispatcher,
+            this.noVoteEventDispatcher,
+            this.voteDispatcher,
+            this.hasher,
+            this.safetyRules,
+            this.validatorSet,
+            this.pendingVotes,
+            mock(ViewUpdate.class)
+        );
+    }
 
-		reducer.processVote(voteMessage);
-		verify(pacemaker, times(1)).processVote(eq(voteMessage));
-		verifyNoMoreInteractions(pacemaker);
-	}
+    @Test
+    public void when_bft_update_for_previous_view__then_ignore() {
+        BFTInsertUpdate update = mock(BFTInsertUpdate.class);
+        BFTHeader header = mock(BFTHeader.class);
+        this.bftEventReducer.processViewUpdate(ViewUpdate.create(View.of(3), mock(HighQC.class), mock(BFTNode.class), this.self));
+        verify(this.pacemaker, times(1)).processViewUpdate(any());
 
-	@Test
-	public void when_processing_vote_with_quorum_and_synced__then_pacemaker_processes() {
-		Vote voteMessage = mock(Vote.class);
-		BFTHeader proposal = new BFTHeader(View.of(2), HashUtils.random256(), mock(LedgerHeader.class));
-		BFTHeader parent = new BFTHeader(View.of(1), HashUtils.random256(), mock(LedgerHeader.class));
-		VoteData voteData = new VoteData(proposal, parent, null);
-		when(voteMessage.getVoteData()).thenReturn(voteData);
+        when(update.getHeader()).thenReturn(header);
+        when(header.getView()).thenReturn(View.of(2));
+        this.bftEventReducer.processBFTUpdate(update);
 
-		HighQC highQC = mock(HighQC.class);
-		when(highQC.highestCommittedQC()).thenReturn(mock(QuorumCertificate.class));
+        verifyNoMoreInteractions(this.pacemaker);
+    }
 
-		when(pacemaker.processVote(any())).thenReturn(Optional.of(mock(QuorumCertificate.class)));
-		when(vertexStore.highQC()).thenReturn(highQC);
-		when(vertexStoreSync.syncToQC(any(), any())).thenReturn(SyncResult.SYNCED);
+    @Test
+    public void when_view_is_timed_out__then_dont_vote() {
+        BFTInsertUpdate bftUpdate = mock(BFTInsertUpdate.class);
+        BFTHeader header = mock(BFTHeader.class);
+        when(bftUpdate.getHeader()).thenReturn(header);
+        when(header.getView()).thenReturn(View.of(3));
 
-		reducer.processVote(voteMessage);
+        ViewUpdate viewUpdate = ViewUpdate.create(View.of(3), mock(HighQC.class), mock(BFTNode.class), this.self);
+        this.bftEventReducer.processViewUpdate(viewUpdate);
+        verify(this.pacemaker, times(1)).processViewUpdate(any());
 
-		verify(pacemaker, times(1)).processVote(eq(voteMessage));
-		verify(vertexStoreSync, times(1)).syncToQC(any(),  any());
-		verifyNoMoreInteractions(pacemaker);
-	}
+        this.bftEventReducer.processLocalTimeout(ScheduledLocalTimeout.create(viewUpdate, 1000));
+        verify(this.pacemaker, times(1)).processLocalTimeout(any());
 
-	@Test
-	public void when_processing_vote_with_quorum_and_not_synced__then_pacemaker_processes() {
-		Vote voteMessage = mock(Vote.class);
-		BFTHeader proposal = new BFTHeader(View.of(2), HashUtils.random256(), mock(LedgerHeader.class));
-		BFTHeader parent = new BFTHeader(View.of(1), HashUtils.random256(), mock(LedgerHeader.class));
-		VoteData voteData = new VoteData(proposal, parent, null);
-		when(voteMessage.getVoteData()).thenReturn(voteData);
+        this.bftEventReducer.processBFTUpdate(bftUpdate);
 
-		HighQC highQC = mock(HighQC.class);
-		when(highQC.highestCommittedQC()).thenReturn(mock(QuorumCertificate.class));
+        verifyNoMoreInteractions(this.voteDispatcher);
+        verifyNoMoreInteractions(this.noVoteEventDispatcher);
+    }
 
-		when(pacemaker.processVote(eq(voteMessage))).thenReturn(Optional.of(mock(QuorumCertificate.class)));
-		when(vertexStore.highQC()).thenReturn(highQC);
-		when(vertexStoreSync.syncToQC(any(), any())).thenReturn(SyncResult.IN_PROGRESS);
+    @Test
+    public void when_previous_vote_exists_for_this_view__then_dont_vote() {
+        BFTInsertUpdate bftUpdate = mock(BFTInsertUpdate.class);
+        BFTHeader header = mock(BFTHeader.class);
+        when(bftUpdate.getHeader()).thenReturn(header);
+        when(header.getView()).thenReturn(View.of(3));
 
-		reducer.processVote(voteMessage);
+        ViewUpdate viewUpdate = ViewUpdate.create(View.of(3), mock(HighQC.class), mock(BFTNode.class), this.self);
+        this.bftEventReducer.processViewUpdate(viewUpdate);
+        verify(this.pacemaker, times(1)).processViewUpdate(any());
 
-		verify(pacemaker, times(1)).processVote(eq(voteMessage));
-		verifyNoMoreInteractions(pacemaker);
-	}
+        when(safetyRules.getLastVote(View.of(3))).thenReturn(Optional.of(mock(Vote.class)));
+        this.bftEventReducer.processBFTUpdate(bftUpdate);
 
-	@Test
-	public void when_processing_relevant_local_timeout__then_pacemaker_processes() {
-		reducer.processLocalTimeout(View.of(0L));
+        verifyNoMoreInteractions(this.voteDispatcher);
+        verifyNoMoreInteractions(this.noVoteEventDispatcher);
+    }
 
-		verify(pacemaker, times(1)).processLocalTimeout(eq(View.of(0L)));
-		verifyNoMoreInteractions(pacemaker);
-	}
+    @Test
+    public void when_process_vote_with_quorum_wrong_view__then_ignored() {
+        Vote vote = mock(Vote.class);
+        when(vote.getView()).thenReturn(View.of(1));
+        this.bftEventReducer.processViewUpdate(ViewUpdate.create(View.of(3), mock(HighQC.class), mock(BFTNode.class), this.self));
+        this.bftEventReducer.processVote(vote);
+        verifyNoMoreInteractions(this.pendingVotes);
+    }
 
-	@Test
-	public void when_processing_view_timeout__then_pacemaker_processes() {
-		ViewTimeout viewTimeout = mock(ViewTimeout.class);
-		reducer.processViewTimeout(viewTimeout);
+    @Test
+    public void when_process_vote_with_quorum__then_processed() {
+        BFTNode author = mock(BFTNode.class);
+        Vote vote = mock(Vote.class);
+        when(vote.getAuthor()).thenReturn(author);
 
-		verify(pacemaker, times(1)).processViewTimeout(eq(viewTimeout));
-		verifyNoMoreInteractions(pacemaker);
-	}
+        QuorumCertificate qc = mock(QuorumCertificate.class);
+        HighQC highQc = mock(HighQC.class);
+        QuorumCertificate highestCommittedQc = mock(QuorumCertificate.class);
+        when(highQc.highestCommittedQC()).thenReturn(highestCommittedQc);
+        when(vote.getView()).thenReturn(View.of(1));
 
-	@Test
-	public void when_processing_proposal__then_pacemaker_processes() {
-		Proposal proposal = mock(Proposal.class);
-		reducer.processProposal(proposal);
+        when(this.pendingVotes.insertVote(any(), any())).thenReturn(VoteProcessingResult.qcQuorum(qc));
+        when(this.vertexStore.highQC()).thenReturn(highQc);
 
-		verify(pacemaker, times(1)).processProposal(eq(proposal));
-		verifyNoMoreInteractions(pacemaker);
-	}
+        // Move to view 1
+        this.bftEventReducer.processViewUpdate(ViewUpdate.create(View.of(1), highQc, mock(BFTNode.class), this.self));
 
-	@Test
-	public void when_processing_update__then_pacemaker_does_not_processes() {
-		BFTUpdate update = mock(BFTUpdate.class);
-		reducer.processBFTUpdate(update);
+        this.bftEventReducer.processVote(vote);
 
-		verifyNoMoreInteractions(pacemaker);
-	}
+        verify(this.viewQuorumReachedEventDispatcher, times(1)).dispatch(any());
+        verify(this.pendingVotes, times(1)).insertVote(eq(vote), any());
+        verifyNoMoreInteractions(this.pendingVotes);
+    }
 }

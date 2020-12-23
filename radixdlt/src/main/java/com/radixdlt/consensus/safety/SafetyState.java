@@ -17,42 +17,64 @@
 
 package com.radixdlt.consensus.safety;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.inject.Inject;
+import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.SerializerConstants;
+import com.radixdlt.serialization.SerializerDummy;
+import com.radixdlt.serialization.SerializerId2;
 
+import javax.annotation.concurrent.Immutable;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * The state maintained to ensure the safety of the consensus system.
  */
+@Immutable
+@SerializerId2("consensus.safety_state")
 public final class SafetyState {
-	private final View lastVotedView; // the last view this node voted on (and is thus safe)
+
+	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
+	@DsonOutput(DsonOutput.Output.ALL)
+	SerializerDummy serializer = SerializerDummy.DUMMY;
+
 	private final View lockedView; // the highest 2-chain head
 
+	private final Optional<Vote> lastVote;
+
 	@Inject
-	protected SafetyState() {
-		this(View.genesis(), View.genesis());
+	public SafetyState() {
+		this(View.genesis(), Optional.empty());
 	}
 
-	SafetyState(View lastVotedView, View lockedView) {
-		this.lastVotedView = Objects.requireNonNull(lastVotedView);
+	@JsonCreator
+	public SafetyState(
+		@JsonProperty("locked_view") Long lockedView,
+		@JsonProperty("last_vote") Vote lastVote
+	) {
+		this(View.of(lockedView), Optional.ofNullable(lastVote));
+	}
+
+	public SafetyState(
+		View lockedView,
+		Optional<Vote> lastVote
+	) {
 		this.lockedView = Objects.requireNonNull(lockedView);
+		this.lastVote = Objects.requireNonNull(lastVote);
 	}
 
 	static class Builder {
 		private final SafetyState original;
-		private View lastVotedView;
 		private View lockedView;
+		private Vote lastVote;
 		private boolean changed = false;
 
 		private Builder(SafetyState safetyState) {
 			this.original = safetyState;
-		}
-
-		public Builder lastVotedView(View lastVotedView) {
-			this.lastVotedView = lastVotedView;
-			this.changed = true;
-			return this;
 		}
 
 		public Builder lockedView(View lockedView) {
@@ -61,11 +83,21 @@ public final class SafetyState {
 			return this;
 		}
 
+		public Builder lastVote(Vote vote) {
+			this.lastVote = vote;
+			this.changed = true;
+			return this;
+		}
+
 		public SafetyState build() {
-			return changed ? new SafetyState(
-				lastVotedView == null ? original.lastVotedView : lastVotedView,
-				lockedView == null ? original.lockedView : lockedView
-			) : original;
+			if (changed) {
+				return new SafetyState(
+					lockedView == null ? original.lockedView : lockedView,
+					lastVote == null ? original.lastVote : Optional.of(lastVote)
+				);
+			} else {
+				return original;
+			}
 		}
 	}
 
@@ -86,25 +118,42 @@ public final class SafetyState {
 			return false;
 		}
 		SafetyState that = (SafetyState) o;
-		return Objects.equals(lastVotedView, that.lastVotedView)
-			&& Objects.equals(lockedView, that.lockedView);
+		return Objects.equals(lockedView, that.lockedView)
+			&& Objects.equals(lastVote, that.lastVote);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(lastVotedView, lockedView);
+		return Objects.hash(lockedView, lastVote);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("SafetyState{lastVotedView=%s, lockedView=%s}", lastVotedView, lockedView);
+		return String.format("SafetyState{lockedView=%s, lastVote=%s}",
+				lockedView, lastVote);
 	}
 
 	public View getLastVotedView() {
-		return lastVotedView;
+		return getLastVote().map(Vote::getView).orElse(View.genesis());
 	}
 
 	public View getLockedView() {
 		return lockedView;
+	}
+
+	public Optional<Vote> getLastVote() {
+		return lastVote;
+	}
+
+	@JsonProperty("locked_view")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private Long getSerializerLockedView() {
+		return this.lockedView == null ? null : this.lockedView.number();
+	}
+
+	@JsonProperty("last_vote")
+	@DsonOutput(DsonOutput.Output.ALL)
+	public Vote getSerializerLastVote() {
+		return lastVote.orElse(null);
 	}
 }

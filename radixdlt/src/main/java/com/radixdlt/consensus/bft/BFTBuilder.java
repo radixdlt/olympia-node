@@ -19,9 +19,13 @@ package com.radixdlt.consensus.bft;
 
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.HashVerifier;
+import com.radixdlt.consensus.PendingVotes;
+import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.liveness.Pacemaker;
-import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.RemoteEventDispatcher;
 
 /**
  * A helper class to help in constructing a BFT validator state machine
@@ -29,7 +33,6 @@ import com.radixdlt.consensus.liveness.ProposerElection;
 public final class BFTBuilder {
 	// BFT Configuration objects
 	private BFTValidatorSet validatorSet;
-	private ProposerElection proposerElection;
 	private Hasher hasher;
 	private HashVerifier verifier;
 
@@ -37,9 +40,15 @@ public final class BFTBuilder {
 	private Pacemaker pacemaker;
 	private VertexStore vertexStore;
 	private BFTSyncer bftSyncer;
+	private EventDispatcher<ViewQuorumReached> viewQuorumReachedEventDispatcher;
+	private EventDispatcher<NoVote> noVoteEventDispatcher;
 
 	// Instance specific objects
 	private BFTNode self;
+
+	private ViewUpdate viewUpdate;
+	private RemoteEventDispatcher<Vote> voteDispatcher;
+	private SafetyRules safetyRules;
 
 	private BFTBuilder() {
 		// Just making this inaccessible
@@ -51,6 +60,21 @@ public final class BFTBuilder {
 
 	public BFTBuilder self(BFTNode self) {
 		this.self = self;
+		return this;
+	}
+
+	public BFTBuilder viewUpdate(ViewUpdate viewUpdate) {
+		this.viewUpdate = viewUpdate;
+		return this;
+	}
+
+	public BFTBuilder voteDispatcher(RemoteEventDispatcher<Vote> voteDispatcher) {
+		this.voteDispatcher = voteDispatcher;
+		return this;
+	}
+
+	public BFTBuilder safetyRules(SafetyRules safetyRules) {
+		this.safetyRules = safetyRules;
 		return this;
 	}
 
@@ -84,28 +108,40 @@ public final class BFTBuilder {
 		return this;
 	}
 
+	public BFTBuilder viewQuorumReachedEventDispatcher(EventDispatcher<ViewQuorumReached> viewQuorumReachedEventDispatcher) {
+		this.viewQuorumReachedEventDispatcher = viewQuorumReachedEventDispatcher;
+		return this;
+	}
 
-	public BFTBuilder proposerElection(ProposerElection proposerElection) {
-		this.proposerElection = proposerElection;
+	public BFTBuilder noVoteEventDispatcher(EventDispatcher<NoVote> noVoteEventDispatcher) {
+		this.noVoteEventDispatcher = noVoteEventDispatcher;
 		return this;
 	}
 
 	public BFTEventProcessor build() {
+		if (!validatorSet.containsNode(self)) {
+			return EmptyBFTEventProcessor.INSTANCE;
+		}
+		final PendingVotes pendingVotes = new PendingVotes(hasher);
+
 		BFTEventReducer reducer = new BFTEventReducer(
+			self,
 			pacemaker,
 			vertexStore,
-			bftSyncer
+			viewQuorumReachedEventDispatcher,
+			noVoteEventDispatcher,
+			voteDispatcher,
+			hasher,
+			safetyRules,
+			validatorSet,
+			pendingVotes,
+			viewUpdate
 		);
 
-		SyncQueues syncQueues = new SyncQueues();
-
 		BFTEventPreprocessor preprocessor = new BFTEventPreprocessor(
-			self,
 			reducer,
-			pacemaker,
 			bftSyncer,
-			proposerElection,
-			syncQueues
+			viewUpdate
 		);
 
 		return new BFTEventVerifier(

@@ -24,7 +24,7 @@ import java.util.Objects;
  * Exception specifying that a vertex cannot be inserted because
  * it's parent is missing from the current store.
  */
-class MissingParentException extends RuntimeException {
+public class MissingParentException extends RuntimeException {
 	MissingParentException(HashCode parentId) {
 		super("Parent Vertex missing: " + Objects.requireNonNull(parentId));
 	}

@@ -19,23 +19,25 @@ package com.radixdlt.ledger;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
+import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.consensus.bft.VerifiedVertex;
+import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.mempool.Mempool;
+import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.store.LastProof;
 import java.util.Comparator;
 import java.util.LinkedList;
@@ -88,7 +90,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 
 	public interface StateComputer {
 		StateComputerResult prepare(ImmutableList<PreparedCommand> previous, Command next, long epoch, View view, long timestamp);
-		void commit(VerifiedCommandsAndProof verifiedCommandsAndProof);
+		void commit(VerifiedCommandsAndProof verifiedCommandsAndProof, VerifiedVertexStoreState vertexStoreState);
 	}
 
 	public interface LedgerUpdateSender {
@@ -97,6 +99,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 
 	private final Comparator<VerifiedLedgerHeaderAndProof> headerComparator;
 	private final Mempool mempool;
+
 	private final StateComputer stateComputer;
 	private final LedgerUpdateSender ledgerUpdateSender;
 	private final SystemCounters counters;
@@ -104,11 +107,13 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	private final LedgerAccumulatorVerifier verifier;
 	private final Hasher hasher;
 	private final Object lock = new Object();
+	private final TimeSupplier timeSupplier;
 
 	private VerifiedLedgerHeaderAndProof currentLedgerHeader;
 
 	@Inject
 	public StateComputerLedger(
+		TimeSupplier timeSupplier,
 		@LastProof VerifiedLedgerHeaderAndProof initialLedgerState,
 		Comparator<VerifiedLedgerHeaderAndProof> headerComparator,
 		Mempool mempool,
@@ -119,6 +124,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		SystemCounters counters,
 		Hasher hasher
 	) {
+		this.timeSupplier = Objects.requireNonNull(timeSupplier);
 		this.headerComparator = Objects.requireNonNull(headerComparator);
 		this.currentLedgerHeader = initialLedgerState;
 		this.mempool = Objects.requireNonNull(mempool);
@@ -143,15 +149,16 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		final ImmutableList<PreparedCommand> prevCommands = previous.stream()
 			.flatMap(PreparedVertex::successfulCommands)
 			.collect(ImmutableList.toImmutableList());
-		final long timestamp;
+		final long quorumTimestamp;
 		// if vertex has genesis parent then QC is mocked so just use previous timestamp
 		// this does have the edge case of never increasing timestamps if configuration is
 		// one view per epoch but good enough for now
 		if (vertex.getParentHeader().getView().isGenesis()) {
-			timestamp = vertex.getParentHeader().getLedgerHeader().timestamp();
+			quorumTimestamp = vertex.getParentHeader().getLedgerHeader().timestamp();
 		} else {
-			timestamp = vertex.getQC().getTimestampedSignatures().weightedTimestamp();
+			quorumTimestamp = vertex.getQC().getTimestampedSignatures().weightedTimestamp();
 		}
+
 
 		synchronized (lock) {
 			if (this.currentLedgerHeader.getStateVersion() > parentAccumulatorState.getStateVersion()) {
@@ -160,27 +167,34 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 
 			// Don't execute atom if in process of epoch change
 			if (parentHeader.isEndOfEpoch()) {
+				final long localTimestamp = timeSupplier.currentTime();
 				final PreparedVertex preparedVertex = vertex
-					.withHeader(parentHeader.updateViewAndTimestamp(vertex.getView(), timestamp))
+					.withHeader(parentHeader.updateViewAndTimestamp(vertex.getView(), quorumTimestamp), localTimestamp)
 					.andCommands(ImmutableList.of(), ImmutableMap.of());
 				return Optional.of(preparedVertex);
 			}
 
-			final ImmutableList<PreparedCommand> concatenatedCommands = this.verifier.verifyAndGetExtension(
+			final Optional<ImmutableList<PreparedCommand>> maybeCommands = this.verifier.verifyAndGetExtension(
 				this.currentLedgerHeader.getAccumulatorState(),
 				prevCommands,
 				PreparedCommand::hash,
 				parentAccumulatorState
-			).orElseThrow(() -> new IllegalStateException("Evidence of safety break current: "
-				+ this.currentLedgerHeader.getAccumulatorState() + " prepare head: " + parentAccumulatorState)
 			);
+
+			// TODO: Write a test to get here
+			// Can possibly get here without maliciousness if parent vertex isn't locked by everyone else
+			if (maybeCommands.isEmpty()) {
+				return Optional.empty();
+			}
+
+			final ImmutableList<PreparedCommand> concatenatedCommands = maybeCommands.get();
 
 			final StateComputerResult result = stateComputer.prepare(
 				concatenatedCommands,
 				vertex.getCommand().orElse(null),
 				vertex.getParentHeader().getLedgerHeader().getEpoch(),
 				vertex.getView(),
-				timestamp
+				quorumTimestamp
 			);
 
 			AccumulatorState accumulatorState = parentHeader.getAccumulatorState();
@@ -192,30 +206,37 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 				parentHeader.getEpoch(),
 				vertex.getView(),
 				accumulatorState,
-				timestamp,
+				quorumTimestamp,
 				result.getNextValidatorSet().orElse(null)
 			);
 
+			final long localTimestamp = timeSupplier.currentTime();
 			return Optional.of(vertex
-				.withHeader(ledgerHeader)
+				.withHeader(ledgerHeader, localTimestamp)
 				.andCommands(result.getSuccessfulCommands(), result.getFailedCommands())
 			);
 		}
 	}
 
-	@Override
-	public void commit(ImmutableList<PreparedVertex> vertices, HighQC highQC, ImmutableSet<HashCode> prunedVertices) {
-		final ImmutableList<Command> commands = vertices.stream()
-			.flatMap(PreparedVertex::successfulCommands)
-			.map(PreparedCommand::command)
-			.collect(ImmutableList.toImmutableList());
-		VerifiedLedgerHeaderAndProof proof = highQC.proof();
-		VerifiedCommandsAndProof verifiedCommandsAndProof = new VerifiedCommandsAndProof(commands, proof);
-		this.commit(verifiedCommandsAndProof);
+	public EventProcessor<BFTCommittedUpdate> bftCommittedUpdateEventProcessor() {
+		return committedUpdate -> {
+			final ImmutableList<Command> commands = committedUpdate.getCommitted().stream()
+				.flatMap(PreparedVertex::successfulCommands)
+				.map(PreparedCommand::command)
+				.collect(ImmutableList.toImmutableList());
+			VerifiedLedgerHeaderAndProof proof = committedUpdate.getVertexStoreState().getRootHeader();
+			VerifiedCommandsAndProof verifiedCommandsAndProof = new VerifiedCommandsAndProof(commands, proof);
+
+			// TODO: Make these two atomic (RPNV1-827)
+			this.commit(verifiedCommandsAndProof, committedUpdate.getVertexStoreState());
+		};
 	}
 
-	@Override
-	public void commit(VerifiedCommandsAndProof verifiedCommandsAndProof) {
+	public EventProcessor<VerifiedCommandsAndProof> syncEventProcessor() {
+		return p -> this.commit(p, null);
+	}
+
+	private void commit(VerifiedCommandsAndProof verifiedCommandsAndProof, VerifiedVertexStoreState vertexStoreState) {
 		this.counters.increment(CounterType.LEDGER_PROCESSED);
 		synchronized (lock) {
 			final VerifiedLedgerHeaderAndProof nextHeader = verifiedCommandsAndProof.getHeader();
@@ -234,12 +255,19 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 				throw new ByzantineQuorumException("Accumulator failure " + currentLedgerHeader + " " + verifiedCommandsAndProof);
 			}
 
+			ImmutableList<Command> commands = verifiedExtension.get();
+			if (vertexStoreState == null) {
+				this.counters.add(CounterType.LEDGER_SYNC_COMMANDS_PROCESSED, commands.size());
+			} else {
+				this.counters.add(CounterType.LEDGER_BFT_COMMANDS_PROCESSED, commands.size());
+			}
+
 			VerifiedCommandsAndProof commandsToStore = new VerifiedCommandsAndProof(
-				verifiedExtension.get(), verifiedCommandsAndProof.getHeader()
+				commands, verifiedCommandsAndProof.getHeader()
 			);
 
 			// persist
-			this.stateComputer.commit(commandsToStore);
+			this.stateComputer.commit(commandsToStore, vertexStoreState);
 
 			// TODO: move all of the following to post-persist event handling
 			this.currentLedgerHeader = nextHeader;

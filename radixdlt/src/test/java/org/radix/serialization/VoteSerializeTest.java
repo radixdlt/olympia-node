@@ -32,6 +32,8 @@ import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.crypto.HashUtils;
 
+import java.util.Optional;
+
 public class VoteSerializeTest extends SerializeObject<Vote> {
 	public VoteSerializeTest() {
 		super(Vote.class, VoteSerializeTest::get);
@@ -48,7 +50,7 @@ public class VoteSerializeTest extends SerializeObject<Vote> {
 		TimestampedVoteData timestampedVoteData = new TimestampedVoteData(voteData, 123456L);
 		BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
 		QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-		HighQC highQC = HighQC.from(qc, qc);
-		return new Vote(author, timestampedVoteData, new ECDSASignature(), highQC);
+		HighQC highQC = HighQC.from(qc, qc, Optional.empty());
+		return new Vote(author, timestampedVoteData, new ECDSASignature(), highQC, Optional.empty());
 	}
 }

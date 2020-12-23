@@ -34,9 +34,9 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /**
  * This tests that the {@link SafetyRules} implementation obeys HotStuff's safety and commit rules.
@@ -52,12 +52,13 @@ public class SafetyRulesTest {
 		when(hasher.hash(any())).thenReturn(mock(HashCode.class));
 		HashSigner hashSigner = mock(HashSigner.class);
 		when(hashSigner.sign(Mockito.<HashCode>any())).thenReturn(new ECDSASignature());
-		this.safetyRules = new SafetyRules(mock(BFTNode.class), safetyState, hasher, hashSigner);
+		this.safetyRules = new SafetyRules(mock(BFTNode.class), safetyState, mock(PersistentSafetyStateStore.class), hasher, hashSigner);
 	}
 
 	@Test
 	public void when_vote_on_same_view__then_exception_is_thrown() {
 		View view = mock(View.class);
+		when(view.lte(view)).thenReturn(true);
 		when(safetyState.getLastVotedView()).thenReturn(view);
 		VerifiedVertex vertex = mock(VerifiedVertex.class);
 		when(vertex.getView()).thenReturn(view);
@@ -68,15 +69,29 @@ public class SafetyRulesTest {
 
 	@Test
 	public void when_vote_with_qc_on_different_locked_view__then_exception_is_thrown() {
-		when(safetyState.getLastVotedView()).thenReturn(View.of(2));
-		when(safetyState.getLockedView()).thenReturn(View.of(1));
+		Hasher hasher = mock(Hasher.class);
+		when(hasher.hash(any())).thenReturn(mock(HashCode.class));
+		HashSigner hashSigner = mock(HashSigner.class);
+		when(hashSigner.sign(Mockito.<HashCode>any())).thenReturn(new ECDSASignature());
+
+		Vote lastVote = mock(Vote.class);
+		when(lastVote.getView()).thenReturn(View.of(1));
+
+		SafetyRules safetyRules = new SafetyRules(
+			BFTNode.random(),
+			new SafetyState(View.of(2), Optional.of(lastVote)),
+			mock(PersistentSafetyStateStore.class),
+			hasher,
+			hashSigner
+		);
+
 		VerifiedVertex vertex = mock(VerifiedVertex.class);
 		when(vertex.getView()).thenReturn(View.of(3));
 		BFTHeader parent = mock(BFTHeader.class);
 		when(parent.getView()).thenReturn(View.of(0));
 		when(vertex.getParentHeader()).thenReturn(parent);
 
-		assertThat(this.safetyRules.voteFor(vertex, mock(BFTHeader.class), 0L, mock(HighQC.class)))
+		assertThat(safetyRules.voteFor(vertex, mock(BFTHeader.class), 0L, mock(HighQC.class)))
 			.isEmpty();
 	}
 
@@ -173,5 +188,31 @@ public class SafetyRulesTest {
 		assertThat(voteMaybe).isNotEmpty();
 		Vote vote = voteMaybe.get();
 		assertThat(vote.getVoteData().getCommitted()).isEmpty();
+	}
+
+	@Test
+	public void when_timeout_already_timed_out_vote_than_the_same_vote_is_returned() {
+		Vote vote = mock(Vote.class);
+		when(vote.isTimeout()).thenReturn(true);
+		assertEquals(vote, safetyRules.timeoutVote(vote));
+	}
+
+	@Test
+	public void when_timeout_a_vote_than_it_has_a_timeout_signature() {
+		Vote vote = mock(Vote.class);
+		Vote voteWithTimeout = mock(Vote.class);
+		when(vote.getView()).thenReturn(View.of(1));
+		when(vote.getEpoch()).thenReturn(1L);
+		when(vote.withTimeoutSignature(any())).thenReturn(voteWithTimeout);
+		when(vote.isTimeout()).thenReturn(false);
+
+		Builder builder = mock(Builder.class);
+		when(builder.lastVote(any())).thenReturn(builder);
+		when(builder.build()).thenReturn(this.safetyState);
+		when(safetyState.toBuilder()).thenReturn(builder);
+
+		Vote resultVote = safetyRules.timeoutVote(vote);
+		verify(vote, times(1)).withTimeoutSignature(any());
+		assertEquals(voteWithTimeout, resultVote);
 	}
 }

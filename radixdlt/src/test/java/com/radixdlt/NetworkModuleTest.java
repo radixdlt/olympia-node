@@ -25,17 +25,15 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.radixdlt.consensus.BFTEventsRx;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
-import com.radixdlt.consensus.liveness.ProceedToViewSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
-import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.messaging.MessageCentral;
-import com.radixdlt.sync.StateSyncNetworkSender;
 import com.radixdlt.universe.Universe;
 import java.util.Arrays;
 import java.util.List;
@@ -50,6 +48,7 @@ public class NetworkModuleTest {
 			bind(AddressBook.class).toInstance(mock(AddressBook.class));
 			bind(MessageCentral.class).toInstance(mock(MessageCentral.class));
 			bind(Hasher.class).toInstance(mock(Hasher.class));
+			bind(SystemCounters.class).toInstance(mock(SystemCounters.class));
 		}
 	}
 
@@ -61,13 +60,10 @@ public class NetworkModuleTest {
 		);
 
 		List<Class<?>> classesToCheckFor = Arrays.asList(
-			StateSyncNetworkSender.class,
 			SyncEpochsRPCSender.class,
 			SyncEpochsRPCRx.class,
-			SyncVerticesRequestSender.class,
 			SyncVerticesRPCRx.class,
 			ProposalBroadcaster.class,
-			ProceedToViewSender.class,
 			BFTEventsRx.class
 		);
 

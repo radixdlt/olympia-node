@@ -18,37 +18,24 @@
 package com.radixdlt;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.TypeLiteral;
-import com.radixdlt.consensus.bft.BFTUpdate;
-import com.radixdlt.consensus.bft.VertexStore.BFTUpdateSender;
-import com.radixdlt.consensus.epoch.LocalTimeout;
-import com.radixdlt.consensus.liveness.LocalTimeoutSender;
+import com.radixdlt.consensus.epoch.Epoched;
+import com.radixdlt.consensus.epoch.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.PacemakerRx;
-import com.radixdlt.consensus.sync.BFTSync.BFTSyncTimeoutScheduler;
-import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.utils.ScheduledSenderToRx;
-import com.radixdlt.utils.SenderToRx;
 import com.radixdlt.utils.ThreadFactories;
-import io.reactivex.rxjava3.core.Observable;
+
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 public class ConsensusRxModule extends AbstractModule {
+
 	@Override
 	protected void configure() {
 		ScheduledExecutorService ses = Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("TimeoutSender"));
-		ScheduledSenderToRx<LocalTimeout> localTimeouts = new ScheduledSenderToRx<>(ses);
+		ScheduledSenderToRx<Epoched<ScheduledLocalTimeout>> localTimeouts = new ScheduledSenderToRx<>(ses);
 		// Timed local messages
 		bind(PacemakerRx.class).toInstance(localTimeouts::messages);
 		bind(LocalTimeoutSender.class).toInstance(localTimeouts::scheduleSend);
-
-		// Local messages
-		SenderToRx<BFTUpdate, BFTUpdate> bftUpdates = new SenderToRx<>(u -> u);
-		bind(new TypeLiteral<Observable<BFTUpdate>>() { }).toInstance(bftUpdates.rx());
-		bind(BFTUpdateSender.class).toInstance(bftUpdates::send);
-
-		ScheduledSenderToRx<LocalGetVerticesRequest> syncRequests = new ScheduledSenderToRx<>(ses);
-		bind(BFTSyncTimeoutScheduler.class).toInstance(syncRequests::scheduleSend);
-		bind(new TypeLiteral<Observable<LocalGetVerticesRequest>>() { }).toInstance(syncRequests.messages());
 	}
 }

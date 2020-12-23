@@ -18,10 +18,11 @@
 package com.radixdlt.integration.distributed.simulation.invariants.ledger;
 
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.integration.distributed.simulation.TestInvariant;
+import com.radixdlt.integration.distributed.simulation.invariants.consensus.NodeEvents;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
-import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
@@ -34,6 +35,11 @@ import java.util.concurrent.TimeUnit;
  * of atleast one node (TODO: test for every node)
  */
 public class ConsensusToLedgerCommittedInvariant implements TestInvariant {
+	private final NodeEvents commits;
+
+	public ConsensusToLedgerCommittedInvariant(NodeEvents commits) {
+		this.commits = commits;
+	}
 
 	@Override
 	public Observable<TestInvariantError> check(RunningNetwork network) {
@@ -46,8 +52,9 @@ public class ConsensusToLedgerCommittedInvariant implements TestInvariant {
 			}
 		).subscribe(committedCommands::onNext);
 
-		return network.bftCommittedUpdates()
-			.map(Pair::getSecond)
+		return Observable.<BFTCommittedUpdate>create(emitter ->
+			commits.addListener((node, event) -> emitter.onNext(event), BFTCommittedUpdate.class)
+		).serialize()
 			.concatMap(committedUpdate -> Observable.fromStream(committedUpdate.getCommitted().stream()
 				.flatMap(PreparedVertex::successfulCommands)))
 			.flatMapMaybe(cmd -> committedCommands

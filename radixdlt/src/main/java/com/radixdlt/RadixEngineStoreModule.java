@@ -22,15 +22,8 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.LedgerHeader;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.UnverifiedVertex;
-import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.VerifiedVertex;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.PersistentVertexStore;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.Hasher;
@@ -40,6 +33,7 @@ import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.middleware2.store.CommittedAtomsStore.AtomIndexer;
 import com.radixdlt.middleware2.store.EngineAtomIndices;
+import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
@@ -47,8 +41,6 @@ import com.radixdlt.middleware2.store.CommandToBinaryConverter;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.store.EngineStore;
-import com.radixdlt.store.LastEpochProof;
-import com.radixdlt.store.LastProof;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
 import com.radixdlt.sync.CommittedReader;
@@ -59,9 +51,9 @@ public class RadixEngineStoreModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		bind(new TypeLiteral<EngineStore<CommittedAtom>>() { }).to(CommittedAtomsStore.class).in(Scopes.SINGLETON);
+		bind(RadixEngineAtomicCommitManager.class).to(CommittedAtomsStore.class);
 		bind(CommittedReader.class).to(CommittedAtomsStore.class);
 	}
-
 
 	@Provides
 	@Singleton
@@ -101,60 +93,11 @@ public class RadixEngineStoreModule extends AbstractModule {
 	}
 
 	@Provides
-	private BFTValidatorSet validatorSet(
-		@LastEpochProof VerifiedLedgerHeaderAndProof lastEpochProof
-	) {
-		return lastEpochProof.getNextValidatorSet().orElseThrow(() -> new IllegalStateException("Genesis has no validator set"));
-	}
-
-	@Provides
-	@Singleton
-	@LastProof
-	VerifiedLedgerHeaderAndProof lastProof(
-		CommittedAtomsStore store,
-		VerifiedCommandsAndProof genesisCheckpoint // TODO: remove once genesis creation resolved
-	) {
-		return store.getLastVerifiedHeader()
-			.orElse(genesisCheckpoint.getHeader());
-	}
-
-	@Provides
-	@Singleton
-	@LastEpochProof
-	VerifiedLedgerHeaderAndProof lastEpochProof(
-		@LastProof VerifiedLedgerHeaderAndProof lastProof,
-		CommittedAtomsStore store
-	) {
-		if (lastProof.isEndOfEpoch()) {
-			return lastProof;
-		}
-		return store.getEpochVerifiedHeader(lastProof.getEpoch()).orElseThrow();
-	}
-
-	@Provides
-	@Singleton
-	private BFTConfiguration initialConfig(
-		@LastEpochProof VerifiedLedgerHeaderAndProof lastEpochProof,
-		BFTValidatorSet validatorSet,
-		Hasher hasher
-	) {
-		UnverifiedVertex genesisVertex = UnverifiedVertex.createGenesis(lastEpochProof.getRaw());
-		VerifiedVertex verifiedGenesisVertex = new VerifiedVertex(genesisVertex, hasher.hash(genesisVertex));
-		LedgerHeader nextLedgerHeader = LedgerHeader.create(
-			lastEpochProof.getEpoch() + 1,
-			View.genesis(),
-			lastEpochProof.getAccumulatorState(),
-			lastEpochProof.timestamp()
-		);
-		QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(verifiedGenesisVertex, nextLedgerHeader);
-		return new BFTConfiguration(validatorSet, verifiedGenesisVertex, genesisQC);
-	}
-
-	@Provides
 	@Singleton
 	private CommittedAtomsStore committedAtomsStore(
 		CommittedAtomSender committedAtomSender,
 		LedgerEntryStore store,
+		PersistentVertexStore persistentVertexStore,
 		CommandToBinaryConverter commandToBinaryConverter,
 		ClientAtomToBinaryConverter clientAtomToBinaryConverter,
 		AtomIndexer atomIndexer,
@@ -165,6 +108,7 @@ public class RadixEngineStoreModule extends AbstractModule {
 		final CommittedAtomsStore atomsStore = new CommittedAtomsStore(
 			committedAtomSender,
 			store,
+			persistentVertexStore,
 			commandToBinaryConverter,
 			clientAtomToBinaryConverter,
 			atomIndexer,

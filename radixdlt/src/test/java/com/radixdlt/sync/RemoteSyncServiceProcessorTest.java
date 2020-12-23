@@ -17,6 +17,7 @@
 
 package com.radixdlt.sync;
 
+import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -37,8 +38,11 @@ import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.google.common.hash.HashCode;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.store.berkeley.NextCommittedLimitReachedException;
@@ -52,13 +56,13 @@ public class RemoteSyncServiceProcessorTest {
 
 	private RemoteSyncServiceProcessor processor;
 	private CommittedReader reader;
-	private StateSyncNetworkSender network;
+	private RemoteEventDispatcher<DtoCommandsAndProof> syncResponseDispatcher;
 
 	@Before
 	public void setUp() {
 		this.reader = mock(CommittedReader.class);
-		this.network =  mock(StateSyncNetworkSender.class);
-		this.processor = new RemoteSyncServiceProcessor(reader, network, 1);
+		this.syncResponseDispatcher =  rmock(RemoteEventDispatcher.class);
+		this.processor = new RemoteSyncServiceProcessor(reader, syncResponseDispatcher, 1, mock(SystemCounters.class));
 	}
 
 	@Test
@@ -78,8 +82,8 @@ public class RemoteSyncServiceProcessorTest {
 		when(verifiedHeader.toDto()).thenReturn(header);
 		when(verifiedCommandsAndProof.getHeader()).thenReturn(verifiedHeader);
 		when(reader.getNextCommittedCommands(any(), anyInt())).thenReturn(verifiedCommandsAndProof);
-		processor.processRemoteSyncRequest(request);
-		verify(network, times(1)).sendSyncResponse(eq(node), any());
+		processor.process(node, header);
+		verify(syncResponseDispatcher, times(1)).dispatch(eq(node), any());
 	}
 
 	@Test
@@ -92,23 +96,21 @@ public class RemoteSyncServiceProcessorTest {
 		when(header.getLedgerHeader()).thenReturn(mock(LedgerHeader.class));
 		when(header.getSignatures()).thenReturn(mock(TimestampedECDSASignatures.class));
 		when(request.getCurrentHeader()).thenReturn(header);
-		processor.processRemoteSyncRequest(request);
-		verify(network, never()).sendSyncResponse(any(), any());
+		processor.process(BFTNode.random(), header);
+		verify(syncResponseDispatcher, never()).dispatch(any(BFTNode.class), any());
 	}
 
 	@Test
 	public void when_remote_sync_request_and_null_return__then_dont_do_anything() throws NextCommittedLimitReachedException {
-		RemoteSyncRequest request = mock(RemoteSyncRequest.class);
 		DtoLedgerHeaderAndProof header = mock(DtoLedgerHeaderAndProof.class);
 		when(header.getOpaque0()).thenReturn(mock(BFTHeader.class));
 		when(header.getOpaque1()).thenReturn(mock(BFTHeader.class));
 		when(header.getOpaque3()).thenReturn(mock(HashCode.class));
 		when(header.getLedgerHeader()).thenReturn(mock(LedgerHeader.class));
 		when(header.getSignatures()).thenReturn(mock(TimestampedECDSASignatures.class));
-		when(request.getCurrentHeader()).thenReturn(header);
-		processor.processRemoteSyncRequest(request);
+		processor.process(BFTNode.random(), header);
 		when(reader.getNextCommittedCommands(any(), anyInt())).thenReturn(null);
-		verify(network, never()).sendSyncResponse(any(), any());
+		verify(syncResponseDispatcher, never()).dispatch(any(BFTNode.class), any());
 	}
 
 	@Test
@@ -131,10 +133,9 @@ public class RemoteSyncServiceProcessorTest {
 			BFTValidatorSet.from(Stream.of(BFTValidator.from(BFTNode.random(), UInt256.ONE)))
 		);
 		when(ledgerHeaderAndProof.getLedgerHeader()).thenReturn(ledgerHeader);
-		RemoteSyncRequest request = new RemoteSyncRequest(BFTNode.random(), ledgerHeaderAndProof);
-		processor.processRemoteSyncRequest(request);
+		processor.process(BFTNode.random(), ledgerHeaderAndProof);
 
 		// Assert
-		verify(network, times(1)).sendSyncResponse(any(), argThat(l -> l.getTail().equals(epoch2)));
+		verify(syncResponseDispatcher, times(1)).dispatch(any(BFTNode.class), argThat(l -> l.getTail().equals(epoch2)));
 	}
 }

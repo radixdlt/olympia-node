@@ -95,12 +95,32 @@ public final class VerifiedVertex {
 		);
 	}
 
-	public PreparedVertexBuilder withHeader(LedgerHeader ledgerHeader) {
-		return (success, exceptions) -> new PreparedVertex(this, ledgerHeader, success, exceptions);
+	public PreparedVertexBuilder withHeader(LedgerHeader ledgerHeader, long timeOfExecution) {
+		return (success, exceptions) -> new PreparedVertex(this, ledgerHeader, success, exceptions, timeOfExecution);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(this.vertex, this.id);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (o instanceof VerifiedVertex) {
+			final var that = (VerifiedVertex) o;
+			return Objects.equals(this.id, that.id) && Objects.equals(this.vertex, that.vertex);
+		}
+		return false;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{view=%s id=%s}", this.getClass().getSimpleName(), this.vertex.getView(), this.id);
+		return String.format("%s{epoch=%s view=%s parentView=%s id=%s}",
+			this.getClass().getSimpleName(),
+			this.vertex.getQC().getProposed().getLedgerHeader().getEpoch(),
+			this.vertex.getView(),
+			this.vertex.getQC().getProposed().getView(),
+			this.id
+		);
 	}
 }

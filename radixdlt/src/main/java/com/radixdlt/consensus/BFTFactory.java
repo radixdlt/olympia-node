@@ -18,11 +18,14 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTSyncer;
 import com.radixdlt.consensus.bft.VertexStore;
+import com.radixdlt.consensus.bft.ViewQuorumReached;
+import com.radixdlt.consensus.bft.ViewUpdate;
 import com.radixdlt.consensus.liveness.Pacemaker;
-import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.sync.BFTSync;
+import com.radixdlt.consensus.safety.SafetyRules;
+import com.radixdlt.environment.EventProcessor;
 
 /**
  * Creates a new bft processor
@@ -37,8 +40,10 @@ public interface BFTFactory {
 		BFTNode self,
 		Pacemaker pacemaker,
 		VertexStore vertexStore,
-		BFTSync vertexStoreSync,
-		ProposerElection proposerElection,
-		BFTValidatorSet validatorSet
+		BFTSyncer bftSyncer,
+		EventProcessor<ViewQuorumReached> viewQuorumReachedEventProcessor,
+		BFTValidatorSet validatorSet,
+		ViewUpdate viewUpdate,
+		SafetyRules safetyRules
 	);
 }

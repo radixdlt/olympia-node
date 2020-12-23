@@ -22,9 +22,10 @@ import com.radixdlt.SecurityCritical.SecurityKind;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.HashVerifier;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
+import com.radixdlt.consensus.liveness.VoteTimeout;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.crypto.ECDSASignature;
 import java.util.Objects;
@@ -63,19 +64,20 @@ public final class BFTEventVerifier implements BFTEventProcessor {
 	}
 
 	@Override
-	public void processVote(Vote vote) {
-		validAuthor(vote).ifPresent(node -> {
-			if (verify(node, vote.getTimestampedVoteData(), vote.getSignature(), vote)) {
-				forwardTo.processVote(vote);
-			}
-		});
+	public void processViewUpdate(ViewUpdate viewUpdate) {
+		forwardTo.processViewUpdate(viewUpdate);
 	}
 
 	@Override
-	public void processViewTimeout(ViewTimeout viewTimeout) {
-		validAuthor(viewTimeout).ifPresent(node -> {
-			if (verify(node, viewTimeout.viewTimeoutData(), viewTimeout.signature(), viewTimeout)) {
-				forwardTo.processViewTimeout(viewTimeout);
+	public void processVote(Vote vote) {
+		validAuthor(vote).ifPresent(node -> {
+			boolean verifiedVoteData = verify(node, vote.getTimestampedVoteData(), vote.getSignature(), vote);
+			boolean verifiedTimeoutData = vote.getTimeoutSignature()
+				.map(timeoutSignature -> verify(node, VoteTimeout.of(vote), timeoutSignature, vote))
+				.orElse(true);
+
+			if (verifiedVoteData && verifiedTimeoutData) {
+				forwardTo.processVote(vote);
 			}
 		});
 	}
@@ -90,13 +92,18 @@ public final class BFTEventVerifier implements BFTEventProcessor {
 	}
 
 	@Override
-	public void processLocalTimeout(View view) {
-		forwardTo.processLocalTimeout(view);
+	public void processLocalTimeout(ScheduledLocalTimeout localTimeout) {
+		forwardTo.processLocalTimeout(localTimeout);
 	}
 
 	@Override
-	public void processBFTUpdate(BFTUpdate update) {
+	public void processBFTUpdate(BFTInsertUpdate update) {
 		forwardTo.processBFTUpdate(update);
+	}
+
+	@Override
+	public void processBFTRebuildUpdate(BFTRebuildUpdate update) {
+		forwardTo.processBFTRebuildUpdate(update);
 	}
 
 	private Optional<BFTNode> validAuthor(ConsensusEvent event) {

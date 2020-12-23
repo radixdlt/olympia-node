@@ -17,7 +17,9 @@
 
 package com.radixdlt.integration.distributed.deterministic.tests.consensus;
 
+import com.radixdlt.counters.SystemCounters.CounterType;
 import java.util.Random;
+
 import org.junit.Test;
 
 import com.radixdlt.consensus.Proposal;
@@ -40,15 +42,26 @@ public class OneProposalTimeoutResponsiveTest {
 			.build()
 			.runUntil(DeterministicTest.hasReachedView(View.of(numViews)));
 
-		long requiredIndirectParents = (numViews - 1) / dropPeriod; // Edge case if dropPeriod a factor of numViews
+		long requiredIndirectParents =
+			numNodes <= 3
+				? 0 // there are no indirect parents for 3 nodes (QC is always formed)
+				: (numViews - 1) / dropPeriod; // Edge case if dropPeriod a factor of numViews
+
 		long requiredTimeouts = numViews / dropPeriod * 2;
+
+		long timeoutQuorums =
+			numNodes <= 3
+				? 0 // no timeout quorums for 3 nodes
+				: requiredTimeouts / 2; // otherwise, every 2nd timeout forms a TC
 
 		for (int nodeIndex = 0; nodeIndex < numNodes; ++nodeIndex) {
 			SystemCounters counters = test.getSystemCounters(nodeIndex);
-			long numberOfIndirectParents = counters.get(SystemCounters.CounterType.BFT_INDIRECT_PARENT);
-			long numberOfTimeouts = counters.get(SystemCounters.CounterType.BFT_TIMEOUT);
+			long numberOfIndirectParents = counters.get(CounterType.BFT_INDIRECT_PARENT);
+			long totalNumberOfTimeouts = counters.get(CounterType.BFT_TIMEOUT);
+			long totalNumberOfTimeoutQuorums = counters.get(CounterType.BFT_TIMEOUT_QUORUMS);
 			assertThat(numberOfIndirectParents).isEqualTo(requiredIndirectParents);
-			assertThat(numberOfTimeouts).isEqualTo(requiredTimeouts);
+			assertThat(totalNumberOfTimeouts).isEqualTo(requiredTimeouts);
+			assertThat(totalNumberOfTimeoutQuorums).isBetween(timeoutQuorums - 1, timeoutQuorums);
 		}
 	}
 

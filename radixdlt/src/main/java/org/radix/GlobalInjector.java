@@ -29,8 +29,10 @@ import com.radixdlt.ConsensusModule;
 import com.radixdlt.ConsensusRunnerModule;
 import com.radixdlt.ConsensusRxModule;
 import com.radixdlt.CryptoModule;
+import com.radixdlt.DispatcherModule;
 import com.radixdlt.EpochsConsensusModule;
 import com.radixdlt.EpochsSyncModule;
+import com.radixdlt.GenesisValidatorSetFromUniverseModule;
 import com.radixdlt.LedgerCommandGeneratorModule;
 import com.radixdlt.EpochsLedgerUpdateModule;
 import com.radixdlt.EpochsLedgerUpdateRxModule;
@@ -39,13 +41,14 @@ import com.radixdlt.PersistenceModule;
 import com.radixdlt.RadixEngineModule;
 import com.radixdlt.RadixEngineRxModule;
 import com.radixdlt.RadixEngineStoreModule;
+import com.radixdlt.RecoveryModule;
+import com.radixdlt.RxEnvironmentModule;
+import com.radixdlt.RadixEngineValidatorComputersModule;
 import com.radixdlt.SyncRunnerModule;
 import com.radixdlt.SyncServiceModule;
 import com.radixdlt.SyncMempoolServiceModule;
 import com.radixdlt.LedgerRxModule;
 import com.radixdlt.LedgerModule;
-import com.radixdlt.SyncRxModule;
-import com.radixdlt.SystemInfoRxModule;
 import com.radixdlt.SystemModule;
 import com.radixdlt.TokenFeeModule;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -58,7 +61,6 @@ import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.middleware2.InfoSupplier;
 import com.radixdlt.SystemInfoModule;
 import com.radixdlt.NetworkModule;
-import com.radixdlt.NoFeeModule;
 import com.radixdlt.network.addressbook.AddressBookModule;
 import com.radixdlt.network.hostip.HostIp;
 import com.radixdlt.network.hostip.HostIpModule;
@@ -67,6 +69,7 @@ import com.radixdlt.network.transport.tcp.TCPTransportModule;
 import com.radixdlt.network.transport.udp.UDPTransportModule;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.statecomputer.EpochCeilingView;
+import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.sync.SyncPatienceMillis;
 import com.radixdlt.universe.Universe;
@@ -83,9 +86,17 @@ public class GlobalInjector {
 			@Override
 			protected void configure() {
 				bind(RuntimeProperties.class).toInstance(properties);
-				bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(200);
-				bind(Integer.class).annotatedWith(BFTSyncPatienceMillis.class).toInstance(200);
-				bind(Integer.class).annotatedWith(MinValidators.class).toInstance(1);
+				bindConstant().annotatedWith(SyncPatienceMillis.class).to(properties.get("sync.patience", 50));
+				bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(properties.get("bft.sync.patience", 200));
+				bindConstant().annotatedWith(MinValidators.class).to(properties.get("consensus.min_validators", 1));
+				bindConstant().annotatedWith(MaxValidators.class).to(properties.get("consensus.max_validators", 100));
+				bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(properties.get("epochs.views_per_epoch", 10000L)));
+
+				// Default values mean that pacemakers will sync if they are within 5 views of each other.
+				// 5 consecutive failing views will take 1*(2^6)-1 seconds = 63 seconds.
+				bindConstant().annotatedWith(PacemakerTimeout.class).to(properties.get("consensus.pacemaker_timeout_millis", 1000L));
+				bindConstant().annotatedWith(PacemakerRate.class).to(properties.get("consensus.pacemaker_rate", 2.0));
+				bindConstant().annotatedWith(PacemakerMaxExponent.class).to(properties.get("consensus.pacemaker_max_exponent", 6));
 			}
 
 			@Provides
@@ -99,53 +110,17 @@ public class GlobalInjector {
 				String host = hostIp.hostIp().orElseThrow(() -> new IllegalStateException("Unable to determine host IP"));
 				return LocalSystem.create(self, infoSupplier, universe, host);
 			}
-
-			// Default values mean that pacemakers will sync if they are within 5 views of each other.
-			// 5 consecutive failing views will take 1*(2^6)-1 seconds = 63 seconds.
-			@Provides
-			@PacemakerTimeout
-			long pacemakerTimeout() {
-				return properties.get("consensus.pacemaker_timeout_millis", 1000L);
-			}
-
-			@Provides
-			@PacemakerRate
-			double pacemakerRate() {
-				return properties.get("consensus.pacemaker_rate", 2.0);
-			}
-
-			@Provides
-			@PacemakerMaxExponent
-			int pacemakerMaxExponent() {
-				return properties.get("consensus.pacemaker_max_exponent", 6);
-			}
-
-			@Provides
-			@EpochCeilingView
-			View epochCeilingView() {
-				return View.of(properties.get("epochs.views_per_epoch", 100L));
-			}
 		};
 
-		final int fixedNodeCount = properties.get("consensus.fixed_node_count", 1);
 		final int mempoolMaxSize = properties.get("mempool.maxSize", 1000);
-
-		final Module feeModule;
-		final String feeModuleName = properties.get("debug.fee_module", "token");
-		switch (feeModuleName.toLowerCase()) {
-		case "token":
-			feeModule = new TokenFeeModule();
-			break;
-		case "none":
-			feeModule = new NoFeeModule();
-			break;
-		default:
-			throw new IllegalStateException("No such fee module: " + feeModuleName);
-		}
 
 		injector = Guice.createInjector(
 			// System (e.g. time, random)
 			new SystemModule(),
+
+			new RxEnvironmentModule(),
+
+			new DispatcherModule(),
 
 			// Consensus
 			new BFTKeyModule(),
@@ -162,7 +137,6 @@ public class GlobalInjector {
 
 			// Sync
 			new SyncRunnerModule(),
-			new SyncRxModule(),
 			new SyncServiceModule(),
 			new SyncMempoolServiceModule(),
 
@@ -176,20 +150,25 @@ public class GlobalInjector {
 
 			// State Computer
 			new RadixEngineModule(),
+			new RadixEngineValidatorComputersModule(),
 			new RadixEngineRxModule(),
 			new RadixEngineStoreModule(),
 
 			// Checkpoints
-			new CheckpointModule(fixedNodeCount),
+			new CheckpointModule(),
+
+			// Genesis validators
+			new GenesisValidatorSetFromUniverseModule(),
 
 			// Fees
-			feeModule,
+			new TokenFeeModule(),
 
 			new PersistenceModule(),
 
+			new RecoveryModule(),
+
 			// System Info
-			new SystemInfoModule(properties),
-			new SystemInfoRxModule(),
+			new SystemInfoModule(),
 
 			// Network
 			new NetworkModule(),

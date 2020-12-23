@@ -19,16 +19,24 @@ package com.radixdlt.integration.distributed;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
-import com.radixdlt.consensus.sync.SyncLedgerRequestSender;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.ProcessWithSyncRunner;
+import com.radixdlt.environment.RemoteEventProcessor;
+import com.radixdlt.environment.ProcessOnDispatch;
+import com.radixdlt.epochs.EpochsLedgerUpdate;
+import com.radixdlt.ledger.DtoCommandsAndProof;
+import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.ledger.StateComputerLedger.LedgerUpdateSender;
 import com.radixdlt.sync.LocalSyncRequest;
+import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.LongStream;
@@ -40,6 +48,15 @@ public class MockedSyncServiceModule extends AbstractModule {
 	public MockedSyncServiceModule() {
 		this.sharedCommittedCommands = new ConcurrentHashMap<>();
 		this.sharedEpochProofs = new ConcurrentHashMap<>();
+	}
+
+	@Override
+	public void configure() {
+		Multibinder.newSetBinder(binder(), new TypeLiteral<EventProcessor<EpochsLedgerUpdate>>() { }, ProcessWithSyncRunner.class);
+		bind(new TypeLiteral<EventProcessor<SyncInProgress>>() { }).toInstance(req -> { });
+		bind(new TypeLiteral<EventProcessor<LocalSyncRequest>>() { }).toInstance(req -> { });
+		bind(new TypeLiteral<RemoteEventProcessor<DtoLedgerHeaderAndProof>>() { }).toInstance((node, res) -> { });
+		bind(new TypeLiteral<RemoteEventProcessor<DtoCommandsAndProof>>() { }).toInstance((node, res) -> { });
 	}
 
 	@ProvidesIntoSet
@@ -58,12 +75,13 @@ public class MockedSyncServiceModule extends AbstractModule {
 		};
 	}
 
-	@Provides
+	@ProvidesIntoSet
 	@Singleton
-	SyncLedgerRequestSender syncRequestSender(
-		Ledger ledger
+	@ProcessOnDispatch
+	EventProcessor<LocalSyncRequest> localSyncRequestEventProcessor(
+		EventDispatcher<VerifiedCommandsAndProof> syncCommandsDispatcher
 	) {
-		return new SyncLedgerRequestSender() {
+		return new EventProcessor<>() {
 			long currentVersion = 0;
 			long currentEpoch = 1;
 
@@ -71,7 +89,7 @@ public class MockedSyncServiceModule extends AbstractModule {
 				ImmutableList<Command> commands = LongStream.range(currentVersion + 1, headerAndProof.getStateVersion() + 1)
 					.mapToObj(sharedCommittedCommands::get)
 					.collect(ImmutableList.toImmutableList());
-				ledger.commit(new VerifiedCommandsAndProof(commands, headerAndProof));
+				syncCommandsDispatcher.dispatch(new VerifiedCommandsAndProof(commands, headerAndProof));
 				currentVersion = headerAndProof.getStateVersion();
 				if (headerAndProof.isEndOfEpoch()) {
 					currentEpoch = headerAndProof.getEpoch() + 1;
@@ -81,7 +99,7 @@ public class MockedSyncServiceModule extends AbstractModule {
 			}
 
 			@Override
-			public void sendLocalSyncRequest(LocalSyncRequest request) {
+			public void process(LocalSyncRequest request) {
 				while (currentEpoch != request.getTarget().getEpoch()) {
 					syncTo(sharedEpochProofs.get(currentEpoch + 1));
 				}
@@ -93,7 +111,7 @@ public class MockedSyncServiceModule extends AbstractModule {
 					.mapToObj(sharedCommittedCommands::get)
 					.collect(ImmutableList.toImmutableList());
 
-				ledger.commit(new VerifiedCommandsAndProof(commands, request.getTarget()));
+				syncCommandsDispatcher.dispatch(new VerifiedCommandsAndProof(commands, request.getTarget()));
 				currentVersion = targetVersion;
 				currentEpoch = request.getTarget().getEpoch();
 			}

@@ -23,11 +23,10 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
-import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
+import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.ChannelCommunication;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.junit.Before;
@@ -48,38 +47,27 @@ public class SimulationNetworkTest {
 	}
 
 	@Test
-	public void when_send_view_timeout_to_self__then_should_receive_it() {
+	public void when_send_vote_to_self_twice__then_should_receive_both() {
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
 		network.getNetwork(node1).bftEvents()
 			.subscribe(testObserver);
-		ViewTimeout viewTimeout = mock(ViewTimeout.class);
-		network.getNetwork(node1).broadcastViewTimeout(viewTimeout, ImmutableSet.of(node1));
-		testObserver.awaitCount(1);
-		testObserver.assertValue(viewTimeout);
+		Vote vote = mock(Vote.class);
+		network.getNetwork(node1).remoteEventDispatcher(Vote.class).dispatch(node1, vote);
+		network.getNetwork(node1).remoteEventDispatcher(Vote.class).dispatch(node1, vote);
+		testObserver.awaitCount(2);
+		testObserver.assertValues(vote, vote);
 	}
 
 	@Test
-	public void when_send_view_timeout_to_self_twice__then_should_receive_both() {
+	public void when_self_and_other_send_vote_to_self__then_should_receive_both() {
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
 		network.getNetwork(node1).bftEvents()
 			.subscribe(testObserver);
-		ViewTimeout viewTimeout = mock(ViewTimeout.class);
-		network.getNetwork(node1).broadcastViewTimeout(viewTimeout, ImmutableSet.of(node1));
-		network.getNetwork(node1).broadcastViewTimeout(viewTimeout, ImmutableSet.of(node1));
+		Vote vote = mock(Vote.class);
+		network.getNetwork(node1).remoteEventDispatcher(Vote.class).dispatch(node1, vote);
+		network.getNetwork(node1).remoteEventDispatcher(Vote.class).dispatch(node1, vote);
 		testObserver.awaitCount(2);
-		testObserver.assertValues(viewTimeout, viewTimeout);
-	}
-
-	@Test
-	public void when_self_and_other_send_view_timeout_to_self__then_should_receive_both() {
-		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
-		network.getNetwork(node1).bftEvents()
-			.subscribe(testObserver);
-		ViewTimeout viewTimeout = mock(ViewTimeout.class);
-		network.getNetwork(node1).broadcastViewTimeout(viewTimeout, ImmutableSet.of(node1));
-		network.getNetwork(node2).broadcastViewTimeout(viewTimeout, ImmutableSet.of(node1));
-		testObserver.awaitCount(2);
-		testObserver.assertValues(viewTimeout, viewTimeout);
+		testObserver.assertValues(vote, vote);
 	}
 
 	@Test
@@ -88,7 +76,7 @@ public class SimulationNetworkTest {
 		network.getNetwork(node1).bftEvents()
 			.subscribe(testObserver);
 		Vote vote = mock(Vote.class);
-		network.getNetwork(node1).sendVote(vote, node1);
+		network.getNetwork(node1).remoteEventDispatcher(Vote.class).dispatch(node1, vote);
 		testObserver.awaitCount(1);
 		testObserver.assertValue(vote);
 	}
@@ -105,14 +93,14 @@ public class SimulationNetworkTest {
 	}
 
 	@Test
-		public void when_disabling_messages_and_send_view_timeout_message_to_other_node__then_should_not_receive_it() {
+	public void when_disabling_messages_and_send_vote_message_to_other_node__then_should_not_receive_it() {
 		SimulationNetwork network = new SimulationNetwork(new InOrderChannels(msg -> -1));
 
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
 		network.getNetwork(node2).bftEvents()
 			.subscribe(testObserver);
-		ViewTimeout viewTimeout = mock(ViewTimeout.class);
-		network.getNetwork(node1).broadcastViewTimeout(viewTimeout, ImmutableSet.of(node1));
+		Vote vote = mock(Vote.class);
+		network.getNetwork(node1).remoteEventDispatcher(Vote.class).dispatch(node1, vote);
 		testObserver.awaitCount(1);
 		testObserver.assertEmpty();
 	}
@@ -121,15 +109,16 @@ public class SimulationNetworkTest {
 	public void when_send_get_vertex_request_to_another_node__then_should_receive_it() {
 		HashCode vertexId = mock(HashCode.class);
 
-		TestObserver<GetVerticesRequest> rpcRequestListener =
-			network.getNetwork(node2).requests().test();
+		TestObserver<RemoteEvent<GetVerticesRequest>> rpcRequestListener =
+			network.getNetwork(node2).remoteEvents(GetVerticesRequest.class).test();
 
 		network
 			.getNetwork(node1)
-			.sendGetVerticesRequest(node2, new LocalGetVerticesRequest(vertexId, 1));
+			.remoteEventDispatcher(GetVerticesRequest.class)
+			.dispatch(node2, new GetVerticesRequest(vertexId, 1));
 
 		rpcRequestListener.awaitCount(1);
-		rpcRequestListener.assertValueAt(0, r -> r.getVertexId().equals(vertexId));
+		rpcRequestListener.assertValueAt(0, r -> r.getEvent().getVertexId().equals(vertexId));
 	}
 
 }

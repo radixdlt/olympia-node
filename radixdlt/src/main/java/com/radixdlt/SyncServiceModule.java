@@ -19,14 +19,18 @@ package com.radixdlt;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.Scopes;
 import com.google.inject.Singleton;
+import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.ledger.AccumulatorState;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.ledger.DtoCommandsAndProof;
+import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.sync.CommittedReader;
 import com.radixdlt.sync.RemoteSyncResponseAccumulatorVerifier;
@@ -39,17 +43,19 @@ import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier;
 import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier.InvalidValidatorSetSender;
 import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier.VerifiedValidatorSetSender;
 import com.radixdlt.sync.RemoteSyncServiceProcessor;
-import com.radixdlt.sync.StateSyncNetworkSender;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor;
-import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncTimeoutScheduler;
-import com.radixdlt.sync.SyncPatienceMillis;
-import java.util.Comparator;
 
 /**
  * Module which manages synchronization of committed atoms across of nodes
  */
 public class SyncServiceModule extends AbstractModule {
 	private static final int BATCH_SIZE = 100;
+
+	@Override
+	public void configure() {
+		bind(new TypeLiteral<RemoteEventProcessor<DtoLedgerHeaderAndProof>>() { }).to(RemoteSyncServiceProcessor.class);
+		bind(LocalSyncServiceAccumulatorProcessor.class).in(Scopes.SINGLETON);
+	}
 
 	@Provides
 	private VerifiedValidatorSetSender verifiedValidatorSetSender(RemoteSyncResponseSignaturesVerifier signaturesVerifier) {
@@ -77,7 +83,9 @@ public class SyncServiceModule extends AbstractModule {
 	}
 
 	@Provides
-	private VerifiedAccumulatorSender verifiedSyncedCommandsSender(SystemCounters counters, Ledger ledger) {
+	private VerifiedAccumulatorSender verifiedSyncedCommandsSender(
+		EventDispatcher<VerifiedCommandsAndProof> syncCommandsDispatcher
+	) {
 		return resp -> {
 			DtoCommandsAndProof commandsAndProof = resp.getCommandsAndProof();
 			// TODO: Stateful ledger header verification:
@@ -96,8 +104,7 @@ public class SyncServiceModule extends AbstractModule {
 				nextHeader
 			);
 
-			counters.add(CounterType.SYNC_PROCESSED, verified.getCommands().size());
-			ledger.commit(verified);
+			syncCommandsDispatcher.dispatch(verified);
 		};
 	}
 
@@ -105,12 +112,14 @@ public class SyncServiceModule extends AbstractModule {
 	@Singleton
 	private RemoteSyncServiceProcessor remoteSyncServiceProcessor(
 		CommittedReader committedReader,
-		StateSyncNetworkSender stateSyncNetwork
+		RemoteEventDispatcher<DtoCommandsAndProof> syncResponseDispatcher,
+		SystemCounters systemCounters
 	) {
 		return new RemoteSyncServiceProcessor(
 			committedReader,
-			stateSyncNetwork,
-			BATCH_SIZE
+			syncResponseDispatcher,
+			BATCH_SIZE,
+			systemCounters
 		);
 	}
 
@@ -124,24 +133,6 @@ public class SyncServiceModule extends AbstractModule {
 			verifiedValidatorSetSender,
 			invalidValidatorSetSender,
 			initialConfiguration.getValidatorSet()
-		);
-	}
-
-	@Provides
-	@Singleton
-	private LocalSyncServiceAccumulatorProcessor localSyncServiceProcessor(
-		Comparator<AccumulatorState> accumulatorComparator,
-		StateSyncNetworkSender stateSyncNetwork,
-		SyncTimeoutScheduler syncTimeoutScheduler,
-		BFTConfiguration initialConfiguration,
-		@SyncPatienceMillis int syncPatienceMillis
-	) {
-		return new LocalSyncServiceAccumulatorProcessor(
-			stateSyncNetwork,
-			syncTimeoutScheduler,
-			accumulatorComparator,
-			initialConfiguration.getGenesisHeader(),
-			syncPatienceMillis
 		);
 	}
 }

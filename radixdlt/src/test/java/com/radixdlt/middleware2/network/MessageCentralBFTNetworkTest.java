@@ -21,10 +21,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
-import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.ViewTimeout;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
@@ -56,21 +54,11 @@ public class MessageCentralBFTNetworkTest {
 	}
 
 	@Test
-	public void when_send_view_timeout_to_self__then_should_receive_message() {
-		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
-		network.bftEvents().subscribe(testObserver);
-		ViewTimeout viewTimeout = mock(ViewTimeout.class);
-		network.broadcastViewTimeout(viewTimeout, ImmutableSet.of(self));
-		testObserver.awaitCount(1);
-		testObserver.assertValue(viewTimeout);
-	}
-
-	@Test
 	public void when_send_vote_to_self__then_should_receive_vote_message() {
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
 		network.bftEvents().subscribe(testObserver);
 		Vote vote = mock(Vote.class);
-		network.sendVote(vote, self);
+		network.voteDispatcher().dispatch(self, vote);
 		testObserver.awaitCount(1);
 		testObserver.assertValue(vote);
 	}
@@ -86,25 +74,11 @@ public class MessageCentralBFTNetworkTest {
 	}
 
 	@Test
-	public void when_send_view_timeout__then_message_central_should_be_sent_message() {
-		ViewTimeout viewTimeout = mock(ViewTimeout.class);
-		ECPublicKey leaderPk = ECKeyPair.generateNew().getPublicKey();
-		BFTNode leader = mock(BFTNode.class);
-		when(leader.getKey()).thenReturn(leaderPk);
-		PeerWithSystem peer = mock(PeerWithSystem.class);
-		when(peer.getNID()).thenReturn(leaderPk.euid());
-		when(addressBook.peer(leaderPk.euid())).thenReturn(Optional.of(peer));
-
-		network.broadcastViewTimeout(viewTimeout, ImmutableSet.of(leader));
-		verify(messageCentral, times(1)).send(eq(peer), any(ConsensusEventMessage.class));
-	}
-
-	@Test
-	public void when_send_view_timeout_to_nonexistent__then_no_message_sent() {
-		ViewTimeout viewTimeout = mock(ViewTimeout.class);
+	public void when_send_vote_to_nonexistent__then_no_message_sent() {
+		Vote vote = mock(Vote.class);
 		BFTNode node = mock(BFTNode.class);
 		when(node.getKey()).thenReturn(mock(ECPublicKey.class));
-		network.broadcastViewTimeout(viewTimeout, ImmutableSet.of(node));
+		network.voteDispatcher().dispatch(node, vote);
 		verify(messageCentral, never()).send(any(), any());
 	}
 
@@ -118,7 +92,7 @@ public class MessageCentralBFTNetworkTest {
 		when(peer.getNID()).thenReturn(leaderPk.euid());
 		when(addressBook.peer(leaderPk.euid())).thenReturn(Optional.of(peer));
 
-		network.sendVote(vote, leader);
+		network.voteDispatcher().dispatch(leader, vote);
 		verify(messageCentral, times(1)).send(eq(peer), any(ConsensusEventMessage.class));
 	}
 }

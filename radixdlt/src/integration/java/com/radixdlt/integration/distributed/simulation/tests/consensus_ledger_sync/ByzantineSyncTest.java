@@ -65,7 +65,7 @@ public class ByzantineSyncTest {
 				}
 			})
 			.pacemakerTimeout(5000)
-			.ledgerAndSync()
+			.ledgerAndSync(50)
 			.checkConsensusSafety("safety")
 			.checkConsensusLiveness("liveness", 5000, TimeUnit.MILLISECONDS)
 			.checkConsensusNoTimeouts("noTimeouts")

@@ -20,8 +20,11 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.inject.AbstractModule;
-import com.radixdlt.consensus.sync.BFTSync.BFTSyncTimeoutScheduler;
-import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
+import com.google.inject.TypeLiteral;
+import com.radixdlt.consensus.sync.GetVerticesRequest;
+import com.radixdlt.consensus.sync.VertexRequestTimeout;
+import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.integration.distributed.simulation.NetworkDroppers;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
@@ -63,7 +66,8 @@ public class FProposalsPerViewDropperTest {
 			)
 			.pacemakerTimeout(5000)
 			.checkConsensusSafety("safety")
-			.checkConsensusNoTimeouts("noTimeouts");
+			.checkConsensusNoTimeouts("noTimeouts")
+			.checkVertexRequestRate("vertexRequestRate", 50); // Conservative check
 	}
 
 	/**
@@ -76,7 +80,7 @@ public class FProposalsPerViewDropperTest {
 			.overrideWithIncorrectModule(new AbstractModule() {
 				@Override
 				protected void configure() {
-					bind(SyncVerticesRequestSender.class).toInstance((node, request) -> { });
+					bind(new TypeLiteral<RemoteEventDispatcher<GetVerticesRequest>>() { }).toInstance((node, request) -> { });
 				}
 			})
 			.build();
@@ -112,7 +116,7 @@ public class FProposalsPerViewDropperTest {
 			.overrideWithIncorrectModule(new AbstractModule() {
 				@Override
 				protected void configure() {
-					bind(BFTSyncTimeoutScheduler.class).toInstance((request, millis) -> { });
+					bind(new TypeLiteral<ScheduledEventDispatcher<VertexRequestTimeout>>() { }).toInstance((request, millis) -> { });
 				}
 			})
 			.build();

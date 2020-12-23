@@ -17,15 +17,71 @@
 
 package com.radixdlt.consensus.liveness;
 
+import com.google.inject.Inject;
+import com.radixdlt.consensus.HighQC;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.bft.ViewUpdate;
+import com.radixdlt.environment.EventDispatcher;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.util.Objects;
 
 /**
- * State of a pacemaker
+ * This class is responsible for keeping track of current consensus view state.
+ * It sends an internal ViewUpdate message on a transition to next view.
  */
-public interface PacemakerState {
-	/**
-	 * Retrieves the local current view the pacemaker is at
-	 * @return view of the pacemaker
-	 */
-	View getCurrentView();
+public class PacemakerState implements PacemakerReducer {
+	private static final Logger log = LogManager.getLogger();
+
+	private final EventDispatcher<ViewUpdate> viewUpdateSender;
+	private final ProposerElection proposerElection;
+
+	private View currentView;
+	private HighQC highQC;
+
+	@Inject
+	public PacemakerState(
+		ViewUpdate viewUpdate,
+		ProposerElection proposerElection,
+		EventDispatcher<ViewUpdate> viewUpdateSender
+	) {
+		this.proposerElection = Objects.requireNonNull(proposerElection);
+		this.viewUpdateSender = Objects.requireNonNull(viewUpdateSender);
+		this.highQC = viewUpdate.getHighQC();
+		this.currentView = viewUpdate.getCurrentView();
+	}
+
+	@Override
+	public void processQC(HighQC highQC) {
+		log.trace("QuorumCertificate: {}", highQC);
+
+		final View view = highQC.getHighestView();
+		if (view.gte(this.currentView)) {
+			this.highQC = highQC;
+			this.updateView(view.next());
+		} else {
+			log.trace("Ignoring QC for view {}: current view is {}", view, this.currentView);
+		}
+	}
+
+	@Override
+	public void updateView(View nextView) {
+		if (nextView.lte(this.currentView)) {
+			return;
+		}
+
+		final BFTNode leader = this.proposerElection.getProposer(nextView);
+		final BFTNode nextLeader = this.proposerElection.getProposer(nextView.next());
+		this.currentView = nextView;
+		viewUpdateSender.dispatch(
+			ViewUpdate.create(
+				this.currentView,
+				this.highQC,
+				leader,
+				nextLeader
+			)
+		);
+	}
 }

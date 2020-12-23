@@ -20,13 +20,15 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_s
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
-import com.radixdlt.sync.RemoteSyncResponseProcessor;
+import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.sync.RemoteSyncResponseValidatorSetVerifier;
 import java.util.List;
 import java.util.Optional;
@@ -47,7 +49,7 @@ public class RandomValidatorsTest {
 			NetworkOrdering.inOrder(),
 			NetworkLatencies.fixed()
 		)
-		.ledgerAndEpochsAndSync(View.of(3), goodRandomEpochToNodesMapper()) // TODO: investigate why this fails with View.of(10)
+		.ledgerAndEpochsAndSync(View.of(3), goodRandomEpochToNodesMapper(), 50) // TODO: investigate why this fails with View.of(10)
 		.pacemakerTimeout(5000)
 		.numNodes(numNodes, 2)
 		.checkEpochsHighViewCorrect("epochHighView", View.of(100))
@@ -56,7 +58,8 @@ public class RandomValidatorsTest {
 		.checkConsensusNoTimeouts("noTimeouts")
 		.checkConsensusAllProposalsHaveDirectParents("directParents")
 		.checkLedgerInOrder("ledgerInOrder")
-		.checkLedgerProcessesConsensusCommitted("consensusToLedger");
+		.checkLedgerProcessesConsensusCommitted("consensusToLedger")
+		.checkVertexRequestRate("vertexRequestRate", 50); // Conservative check
 
 	private static Function<Long, IntStream> randomEpochToNodesMapper(Function<Long, Random> randomSupplier) {
 		return epoch -> {
@@ -89,7 +92,8 @@ public class RandomValidatorsTest {
 			.overrideWithIncorrectModule(new AbstractModule() {
 				@Override
 				public void configure() {
-					bind(RemoteSyncResponseProcessor.class).to(RemoteSyncResponseValidatorSetVerifier.class);
+					bind(new TypeLiteral<RemoteEventProcessor<DtoCommandsAndProof>>() { })
+						.to(RemoteSyncResponseValidatorSetVerifier.class);
 				}
 			})
 			.build();

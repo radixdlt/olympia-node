@@ -33,8 +33,7 @@ import org.junit.Test;
  */
 public class OneOutOfBoundsTest {
 	private static final int latency = 50;
-	private static final int synchronousTimeout = 8 * latency;
-	private static final int outOfBoundsLatency = synchronousTimeout;
+	private static final int outOfBoundsLatency = 1500;
 
 	// TODO: Add 1 timeout check
 	private final Builder bftTestBuilder = SimulationTest.builder()
@@ -43,9 +42,8 @@ public class OneOutOfBoundsTest {
 			NetworkLatencies.oneOutOfBounds(latency, outOfBoundsLatency)
 		)
 		.ledger()
-		.pacemakerTimeout(synchronousTimeout)
-		// FIXME: Should be 2 * synchronousTimeout, and can be set back to that once message scheduling improved
-		.checkConsensusLiveness("liveness", 4 * synchronousTimeout, TimeUnit.MILLISECONDS)
+		.pacemakerTimeout(1000)
+		.checkConsensusLiveness("liveness", 4 * 1000, TimeUnit.MILLISECONDS)
 		.checkConsensusSafety("safety")
 		.checkLedgerInOrder("ledgerInOrder")
 		.checkLedgerProcessesConsensusCommitted("consensusToLedger");

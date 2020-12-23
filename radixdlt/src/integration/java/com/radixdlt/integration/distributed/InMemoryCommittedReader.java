@@ -44,7 +44,10 @@ class InMemoryCommittedReader implements LedgerUpdateSender, CommittedReader {
 	private final TreeMap<Long, VerifiedLedgerHeaderAndProof> epochProofs = new TreeMap<>();
 
 	@Inject
-	InMemoryCommittedReader(LedgerAccumulatorVerifier accumulatorVerifier, Hasher hasher) {
+	InMemoryCommittedReader(
+		LedgerAccumulatorVerifier accumulatorVerifier,
+		Hasher hasher
+	) {
 		this.accumulatorVerifier = Objects.requireNonNull(accumulatorVerifier);
 		this.hasher = Objects.requireNonNull(hasher);
 	}
@@ -53,7 +56,9 @@ class InMemoryCommittedReader implements LedgerUpdateSender, CommittedReader {
 	public void sendLedgerUpdate(LedgerUpdate update) {
 		long firstVersion = update.getNewCommands().isEmpty() ? update.getTail().getStateVersion()
 			: update.getTail().getStateVersion() - update.getNewCommands().size() + 1;
-		commandsAndProof.put(firstVersion, new VerifiedCommandsAndProof(update.getNewCommands(), update.getTail()));
+		for (long version = firstVersion; version <= update.getTail().getStateVersion(); version++) {
+			commandsAndProof.put(version, new VerifiedCommandsAndProof(update.getNewCommands(), update.getTail()));
+		}
 
 		if (update.getTail().isEndOfEpoch()) {
 			this.epochProofs.put(update.getTail().getEpoch() + 1, update.getTail());
@@ -64,6 +69,7 @@ class InMemoryCommittedReader implements LedgerUpdateSender, CommittedReader {
 	public VerifiedCommandsAndProof getNextCommittedCommands(DtoLedgerHeaderAndProof start, int batchSize) {
 		final long stateVersion = start.getLedgerHeader().getAccumulatorState().getStateVersion();
 		Entry<Long, VerifiedCommandsAndProof> entry = commandsAndProof.higherEntry(stateVersion);
+
 		if (entry != null) {
 			ImmutableList<Command> cmds = accumulatorVerifier
 				.verifyAndGetExtension(

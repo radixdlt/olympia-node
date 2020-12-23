@@ -32,6 +32,8 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.HashUtils;
 
+import java.util.Optional;
+
 public class ProposalSerializeTest extends SerializeObject<Proposal> {
 	public ProposalSerializeTest() {
 		super(Proposal.class, ProposalSerializeTest::get);
@@ -51,6 +53,6 @@ public class ProposalSerializeTest extends SerializeObject<Proposal> {
 		// add a particle to ensure atom is valid and has at least one shard
 		UnverifiedVertex vertex = UnverifiedVertex.createVertex(qc, view, command);
 		BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
-		return new Proposal(vertex, qc, author, new ECDSASignature());
+		return new Proposal(vertex, qc, author, new ECDSASignature(), Optional.empty());
 	}
 }

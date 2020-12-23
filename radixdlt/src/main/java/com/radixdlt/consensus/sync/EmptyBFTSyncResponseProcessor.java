@@ -27,9 +27,4 @@ public enum EmptyBFTSyncResponseProcessor implements BFTSyncResponseProcessor {
 	public void processGetVerticesErrorResponse(GetVerticesErrorResponse response) {
 		// No-op
 	}
-
-	@Override
-	public void processGetVerticesResponse(GetVerticesResponse response) {
-		// No-op
-	}
 }

@@ -18,6 +18,7 @@
 package com.radixdlt.middleware2.network;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.HighQC;
@@ -25,8 +26,6 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.VerifiedVertex;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
-import com.radixdlt.consensus.sync.BFTSync.SyncVerticesRequestSender;
-import com.radixdlt.consensus.sync.LocalGetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -36,7 +35,11 @@ import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.UnverifiedVertex;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.addressbook.PeerWithSystem;
@@ -55,7 +58,7 @@ import org.radix.network.messaging.Message;
 /**
  * Network interface for syncing vertices using the MessageCentral
  */
-public class MessageCentralValidatorSync implements SyncVerticesRequestSender, SyncVerticesResponseSender,
+public class MessageCentralValidatorSync implements SyncVerticesResponseSender,
 	SyncVerticesRPCRx, SyncEpochsRPCSender, SyncEpochsRPCRx {
 	private static final Logger log = LogManager.getLogger();
 
@@ -64,6 +67,8 @@ public class MessageCentralValidatorSync implements SyncVerticesRequestSender, S
 	private final AddressBook addressBook;
 	private final MessageCentral messageCentral;
 	private final Hasher hasher;
+	private final SystemCounters counters;
+	private final RateLimiter errorResponseRateLimiter;
 
 	@Inject
 	public MessageCentralValidatorSync(
@@ -71,17 +76,24 @@ public class MessageCentralValidatorSync implements SyncVerticesRequestSender, S
 		Universe universe,
 		AddressBook addressBook,
 		MessageCentral messageCentral,
-		Hasher hasher
+		Hasher hasher,
+		SystemCounters counters,
+		@GetVerticesErrorRateLimit RateLimiter errorResponseRateLimiter
 	) {
 		this.magic = universe.getMagic();
 		this.self = Objects.requireNonNull(self);
 		this.addressBook = Objects.requireNonNull(addressBook);
 		this.messageCentral = Objects.requireNonNull(messageCentral);
 		this.hasher = Objects.requireNonNull(hasher);
+		this.counters = counters;
+		this.errorResponseRateLimiter = errorResponseRateLimiter;
 	}
 
-	@Override
-	public void sendGetVerticesRequest(BFTNode node, LocalGetVerticesRequest request) {
+	public RemoteEventDispatcher<GetVerticesRequest> verticesRequestDispatcher() {
+		return this::sendGetVerticesRequest;
+	}
+
+	public void sendGetVerticesRequest(BFTNode node, GetVerticesRequest request) {
 		if (this.self.equals(node)) {
 			throw new IllegalStateException("Should never need to retrieve a vertex from self.");
 		}
@@ -121,8 +133,7 @@ public class MessageCentralValidatorSync implements SyncVerticesRequestSender, S
 		);
 	}
 
-	@Override
-	public Observable<GetVerticesRequest> requests() {
+	public Observable<RemoteEvent<GetVerticesRequest>> requests() {
 		return this.createObservable(
 			GetVerticesRequestMessage.class,
 			(peer, msg) -> {
@@ -131,7 +142,7 @@ public class MessageCentralValidatorSync implements SyncVerticesRequestSender, S
 				}
 
 				final BFTNode node = BFTNode.create(peer.getSystem().getKey());
-				return new GetVerticesRequest(node, msg.getVertexId(), msg.getCount());
+				return RemoteEvent.create(node, new GetVerticesRequest(msg.getVertexId(), msg.getCount()), GetVerticesRequest.class);
 			}
 		);
 	}
@@ -165,8 +176,17 @@ public class MessageCentralValidatorSync implements SyncVerticesRequestSender, S
 					return null;
 				}
 
-				BFTNode node = BFTNode.create(src.getSystem().getKey());
-				return new GetVerticesErrorResponse(node, msg.highQC());
+				if (errorResponseRateLimiter.tryAcquire()) {
+					BFTNode node = BFTNode.create(src.getSystem().getKey());
+					return new GetVerticesErrorResponse(node, msg.highQC());
+				} else {
+					var counter = counters.increment(CounterType.NETWORKING_DROPPED_ERROR_RESPONSES);
+
+					if (counter == 1 || counter % 1000 == 0) {
+						log.warn("Exceeded error response rate, total {} messages dropped", counter);
+					}
+					return null;
+				}
 			}
 		);
 	}
