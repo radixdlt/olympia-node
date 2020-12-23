@@ -29,8 +29,8 @@ Please report unacceptable behavior to [hello@radixdlt.com](mailto:hello@radixdl
 
 ### Reporting a bug
 
-* **Ensure the bug was not already reported** by searching on GitHub under [Issues](https://github.com/radixdlt/radixdlt-js/issues).
-* If you're unable to find an open issue addressing the problem, [open a new one](https://github.com/radixdlt/radixdlt-js/issues/new). Be sure to include:
+* **Ensure the bug was not already reported** by searching on GitHub under [Issues](https://github.com/radixdlt/radixdlt-parent/issues).
+* If you're unable to find an open issue addressing the problem, [open a new one](https://github.com/radixdlt/radixdlt-parent/issues/new). Be sure to include:
   * a **title**,
   * a **clear description**, 
   * as much **relevant information** as possible,
@@ -54,8 +54,8 @@ Rebasing should be avoided. Rebases cause potential conflicts with other people'
 
 ### Branch types and naming
 
-* Release candidate  - `rc/1.0.0`
-* Release - `release/1.0.0`
+* Release candidate  - `rc/1.0`
+* Release - `release/1.0`
 * Feature - `feature/cool-bananas`
 * Hotfix - `hotfix/bananas-too-hot`
 
@@ -146,5 +146,3 @@ Braces follow the Kernighan and Ritchie (K&R) style for nonempty blocks and bloc
 * Fork the codebase and make changes, following these guidelines.
 * Submit a new GitHub pull request with the proposed patch for review.
 * Ensure the **pull request** description clearly describes the problem and solution. Include the relevant issue number if applicable.
-
-

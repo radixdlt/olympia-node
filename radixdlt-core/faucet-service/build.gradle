@@ -23,7 +23,6 @@
 group 'com.radixdlt.faucet'
 
 apply plugin: 'java'
-apply plugin: 'jacoco'
 apply plugin: 'application'
 apply plugin: 'distribution'
 apply plugin: 'net.nemerosa.versioning'
@@ -36,47 +35,23 @@ versionFile {
     file = new File("$buildDir/resources/main", 'version.properties')
 }
 
-configurations.all {
-    resolutionStrategy.eachDependency {
-        if(it.requested.name == 'guava') {
-            it.useTarget 'com.google.guava:guava:29.0-jre'
-        }
-        if(it.requested.name == 'json') {
-            it.useTarget 'org.json:json:20180813'
-        }
-    }
-}
-
 dependencies {
-    compile 'com.radixdlt:radixdlt-java:1.0-beta.19'
-    compile 'io.undertow:undertow-core:2.0.6.Final'
-    testCompile group: 'junit', name: 'junit', version: '4.12'
+    implementation project(':radixdlt-java')
 
-    testCompile('org.objenesis:objenesis:3.1') { force = true }
-    testCompile('org.javassist:javassist:3.27.0-GA') { force = true }
-    testCompile('org.mockito:mockito-core:3.5.10') { force = true }
-    testCompile('net.bytebuddy:byte-buddy:1.10.13') { force = true }
-    testCompile('net.bytebuddy:byte-buddy-agent:1.10.13') { force = true }
-    testCompile 'org.powermock:powermock-module-junit4:2.0.7'
-    testCompile 'org.powermock:powermock-api-mockito2:2.0.7'
-    testCompile 'org.assertj:assertj-core:3.11.1'
+    implementation 'io.undertow:undertow-core'
+
+    testImplementation 'org.objenesis:objenesis'
+    testImplementation 'org.javassist:javassist'
+    testImplementation 'org.mockito:mockito-core'
+    testImplementation 'net.bytebuddy:byte-buddy'
+    testImplementation 'net.bytebuddy:byte-buddy-agent'
+    testImplementation 'org.powermock:powermock-module-junit4'
+    testImplementation 'org.powermock:powermock-api-mockito2'
+    testImplementation 'org.assertj:assertj-core'
 }
 
 classes {
     dependsOn(versionFile)
-}
-
-jacocoTestReport {
-    reports {
-        xml.enabled true
-        csv.enabled false
-    }
-}
-
-compileJava {
-    options.compilerArgs << '-proc:none'
-    options.compilerArgs << "-Xlint:all" << "-Werror"
-    options.release = 11
 }
 
 // Using deb4docker name here, so that we can build faucet and ledger
@@ -87,7 +62,7 @@ task deb4docker(type: Copy, dependsOn: distTar) {
     from("$buildDir/distributions") {
         include "faucet-service-${version}.tar"
     }
-    into rootProject.file('docker')
+    into project.file('../docker')
     doFirst {
         def names = [] as Set
         destinationDir.eachFileMatch(groovy.io.FileType.FILES, ~/faucet-service-.+\.tar/) {

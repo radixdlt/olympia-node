@@ -15,173 +15,34 @@
  * language governing permissions and limitations under the License.
  */
 
-plugins {
-    id 'maven-publish'
-    id 'com.adarshr.test-logger' version '2.1.0'
-    id 'org.sonarqube' version '2.7.1'
-    id 'com.palantir.git-version' version '0.12.3'
-}
-
-repositories {
-    jcenter()
-    mavenCentral()
-    maven { url 'https://plugins.gradle.org/m2/' }
-    maven { url 'https://maven.pkg.github.com/radixdlt/maven-packages' }
-}
-
-def radixVersion() {
-    def details = versionDetails()
-    def version
-    if (details.isCleanTag) {
-        version = details.lastTag
-    } else {
-        version = details.branchName
-        if (version == null) {
-            version = "detached-head-${details.gitHash}"
-        } else {
-            version = version.replaceAll('/', '~')
-        }
-        version = "${version}-SNAPSHOT"
-    }
-    return version
-}
-
-group 'com.radixdlt'
-version radixVersion()
 
 apply plugin: 'java-library'
-apply plugin: 'jacoco'
-apply plugin: 'checkstyle'
-apply plugin: 'org.sonarqube'
-apply plugin: 'com.adarshr.test-logger'
-
-compileJava {
-    options.release = 11
-    options.compilerArgs += '-proc:none'
-}
-
-allprojects {
-    repositories {
-        maven { url 'https://jitpack.io' }
-    }
-    gradle.projectsEvaluated {
-        tasks.withType(JavaCompile) {
-            options.compilerArgs << "-Xlint:all" << "-Werror"
-            options.compilerArgs << "-Xlint:-processing"    // Not really a useful warning
-            options.compilerArgs << "-Xlint:-serial"        // Not using Java serialization
-        }
-    }
-}
-
-checkstyle {
-    toolVersion '8.10.1'
-    showViolations = true
-}
-
-checkstyleMain {
-    configFile project.file('config/checkstyle/checkstyle.xml')
-}
-
-checkstyleTest {
-    // Largely the same as the main file, but extended snake case allowed
-    configFile project.file('config/checkstyle/checkstyle_test.xml')
-}
-
-test {
-    systemProperty 'java.security.egd', 'file:/dev/urandom'
-}
-
-jacoco {
-    toolVersion = "0.8.5"
-}
-
-jacocoTestReport {
-    reports {
-        xml.enabled true
-        csv.enabled false
-    }
-}
-
-configurations.all {
-    resolutionStrategy.eachDependency {
-        if(it.requested.name == 'guava') {
-            it.useTarget 'com.google.guava:guava:29.0-jre'
-        }
-        if(it.requested.name == 'json') {
-            it.useTarget 'org.json:json:20180813'
-        }
-    }
-}
 
 dependencies {
-    api group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.13.1'
-    api group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.13.1'
+    api 'org.apache.logging.log4j:log4j-api'
+    api 'org.apache.logging.log4j:log4j-core'
+    api 'org.reflections:reflections'
+    api 'com.google.code.gson:gson'
+    api 'org.bouncycastle:bcprov-jdk15to18'
+    api 'org.bouncycastle:bcpkix-jdk15to18'
+    api 'org.json:json'
+    api 'com.github.radixdlt:jackson-databind'
+    api 'com.fasterxml.jackson.core:jackson-core'
+    api 'com.fasterxml.jackson.dataformat:jackson-dataformat-cbor'
+    api 'com.fasterxml.jackson.datatype:jackson-datatype-json-org'
+    api 'com.fasterxml.jackson.datatype:jackson-datatype-guava'
+    api 'com.google.guava:guava'
+    api 'com.github.bitcoinj:bitcoinj'
 
-    api('org.reflections:reflections:0.9.11') {
-        exclude group: 'com.google.guava', module: 'guava'
-    }
-
-    api 'com.google.code.gson:gson:2.8.2'
-    api 'org.bouncycastle:bcprov-jdk15to18:1.65'
-    api 'org.bouncycastle:bcpkix-jdk15to18:1.65'
-
-    api 'org.json:json:20180813'
-
-    api 'com.github.radixdlt:jackson-databind:feature~strict-property-ordering-downgraded-version-SNAPSHOT'
-
-    api 'com.fasterxml.jackson.core:jackson-core:2.11.3'
-    api 'com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.11.3'
-    api('com.fasterxml.jackson.datatype:jackson-datatype-json-org:2.11.3') {
-        // Use our JSON lib
-        exclude group: 'org.json', module: 'json'
-    }
-    api('com.fasterxml.jackson.datatype:jackson-datatype-guava:2.11.3') {
-        // Use our Guava lib
-        exclude group: 'com.google.guava', module: 'guava'
-    }
-
-    api 'com.google.guava:guava:29.0-jre'
-
-    // need at least this commit (or later): https://github.com/bitcoinj/bitcoinj/commit/7629677103dbdd80f14c63b066ed27e1fad47014
-    // in order to work with BouncyCastle 1.64 or later
-    // see issue: https://github.com/bitcoinj/bitcoinj/issues/1951
-    //implementation('com.github.bitcoinj:bitcoinj:7c31dcb') {
-    api('com.github.bitcoinj:bitcoinj:7c31dcb') {
-        // Use our Guava lib
-        exclude group: 'com.google.guava', module: 'guava'
-    }
-
-    testCompile('org.objenesis:objenesis:3.1') { force = true } // make powermock 1.7.1 happy
-    testCompile('org.javassist:javassist:3.27.0-GA') { force = true } // make powermock 1.7.1 happy
-    testCompile('net.bytebuddy:byte-buddy:1.10.13') { force = true }
-    testCompile('net.bytebuddy:byte-buddy-agent:1.10.13') { force = true }
-    testCompile 'org.powermock:powermock-module-junit4:2.0.7'
-    testCompile 'org.powermock:powermock-api-mockito2:2.0.7'
-    testCompile 'nl.jqno.equalsverifier:equalsverifier:3.4.2'
-    testCompile 'org.hamcrest:hamcrest-library:1.3'
-    testCompile 'org.assertj:assertj-core:3.11.1'
-    testCompile('com.flipkart.zjsonpatch:zjsonpatch:0.4.5') {
-        exclude group: 'com.fasterxml.jackson.core', module: 'jackson-core'
-        exclude group: 'com.fasterxml.jackson.core', module: 'jackson-databind'
-    }
-
-    testCompile group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: '2.13.3'
-}
-
-publishing {
-    repositories {
-        maven {
-            name = 'GitHubPackages'
-            url = uri('https://maven.pkg.github.com/radixdlt/maven-packages')
-            credentials {
-                username = project.findProperty('gpr.user') ?: System.getenv('GPR_USER')
-                password = project.findProperty('gpr.key') ?: System.getenv('GPR_TOKEN')
-            }
-        }
-    }
-    publications {
-        gpr(MavenPublication) {
-            from(components.java)
-        }
-    }
+    testImplementation 'org.objenesis:objenesis'
+    testImplementation 'org.javassist:javassist'
+    testImplementation 'net.bytebuddy:byte-buddy'
+    testImplementation 'net.bytebuddy:byte-buddy-agent'
+    testImplementation 'org.powermock:powermock-module-junit4'
+    testImplementation 'org.powermock:powermock-api-mockito2'
+    testImplementation 'nl.jqno.equalsverifier:equalsverifier'
+    testImplementation 'org.hamcrest:hamcrest-library'
+    testImplementation 'org.assertj:assertj-core'
+    testImplementation 'com.flipkart.zjsonpatch:zjsonpatch'
+    testImplementation 'org.apache.logging.log4j:log4j-slf4j-impl'
 }

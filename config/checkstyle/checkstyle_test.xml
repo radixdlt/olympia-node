@@ -70,18 +70,23 @@
        <property name="message" value="Line has trailing spaces."/>
     </module>
 
+    <!-- Checks for Size Violations.                    -->
+    <!-- See http://checkstyle.sf.net/config_sizes.html -->
+    <module name="LineLength">
+        <property name="max" value="300"/>
+        <property name="ignorePattern" value="^*BQAA.*$"/>
+    </module>
+
     <!-- Checks for Headers                                -->
     <!-- See http://checkstyle.sf.net/config_header.html   -->
     <!-- <module name="Header"> -->
     <!--   <property name="headerFile" value="${checkstyle.header.file}"/> -->
     <!--   <property name="fileExtensions" value="java"/> -->
     <!-- </module> -->
-    <module name="SuppressWarningsFilter"/>
 
     <module name="TreeWalker">
         
         <module name="SuppressionCommentFilter"/>
-        <module name="SuppressWarningsHolder"/>
 
         <!-- Radix standard tab width -->
         <property name="tabWidth" value="4"/>
@@ -124,12 +129,6 @@
             <property name="processJavadoc" value="false"/>
         </module>
 
-        <!-- Checks for Size Violations.                    -->
-        <!-- See http://checkstyle.sf.net/config_sizes.html -->
-        <module name="LineLength">
-            <property name="max" value="150"/>
-            <property name="ignorePattern" value="^*BQAA.*$"/>
-        </module>
         <module name="MethodLength"/>
         <!-- module name="ParameterNumber"/ -->
 
@@ -178,7 +177,7 @@
         <!-- See http://checkstyle.sf.net/config_design.html -->
         <!-- module name="DesignForExtension"/ -->
         <!-- module name="FinalClass"/ -->
-        <module name="HideUtilityClassConstructor"/>
+        <!-- module name="HideUtilityClassConstructor"/ -->
         <module name="InterfaceIsType"/>
         <module name="VisibilityModifier">
             <property name="packageAllowed" value="true"/>

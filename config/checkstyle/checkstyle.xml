@@ -70,6 +70,14 @@
        <property name="message" value="Line has trailing spaces."/>
     </module>
 
+    <!-- Checks for Size Violations.                    -->
+    <!-- See http://checkstyle.sf.net/config_sizes.html -->
+    <!-- TODO: set to 150 once issues are fixed -->
+    <module name="LineLength">
+        <property name="max" value="300"/>
+        <property name="ignorePattern" value="^*BQAA.*$"/>
+    </module>
+
     <!-- Checks for Headers                                -->
     <!-- See http://checkstyle.sf.net/config_header.html   -->
     <!-- <module name="Header"> -->
@@ -78,6 +86,11 @@
     <!-- </module> -->
 
     <module name="TreeWalker">
+        
+        <module name="SuppressionCommentFilter"/>
+
+        <!-- Radix standard tab width -->
+        <property name="tabWidth" value="4"/>
 
         <!-- Checks for Javadoc comments.                     -->
         <!-- See http://checkstyle.sf.net/config_javadoc.html -->
@@ -88,7 +101,13 @@
 
         <!-- Checks for Naming Conventions.                  -->
         <!-- See http://checkstyle.sf.net/config_naming.html -->
-        <module name="ConstantName"/>
+        <module name="ConstantName">
+            <!-- Disabled, as not smart enough to work out if value is immutable -->
+            <property name="applyToPublic" value="false"/>
+            <property name="applyToProtected" value="false"/>
+            <property name="applyToPackage" value="false"/>
+            <property name="applyToPrivate" value="false"/>
+        </module>
         <module name="LocalFinalVariableName"/>
         <module name="LocalVariableName"/>
         <module name="MemberName"/>
@@ -107,12 +126,6 @@
             <property name="processJavadoc" value="false"/>
         </module>
 
-        <!-- Checks for Size Violations.                    -->
-        <!-- See http://checkstyle.sf.net/config_sizes.html -->
-        <module name="LineLength">
-            <property name="max" value="150"/>
-            <property name="ignorePattern" value="^*BQAA.*$"/>
-        </module>
         <module name="MethodLength"/>
         <!-- module name="ParameterNumber"/ -->
 
@@ -137,7 +150,9 @@
         <!-- Checks for blocks. You know, those {}'s         -->
         <!-- See http://checkstyle.sf.net/config_blocks.html -->
         <module name="AvoidNestedBlocks"/>
-        <module name="EmptyBlock"/>
+        <module name="EmptyBlock">
+            <property name="option" value="text"/>
+        </module>
         <module name="LeftCurly"/>
         <module name="NeedBraces"/>
         <module name="RightCurly"/>
@@ -151,7 +166,7 @@
         <module name="IllegalInstantiation"/>
         <module name="InnerAssignment"/>
         <!-- module name="MagicNumber"/ -->
-        <module name="MissingSwitchDefault"/>
+        <!-- module name="MissingSwitchDefault"/ -->
         <module name="SimplifyBooleanExpression"/>
         <module name="SimplifyBooleanReturn"/>
 
@@ -159,9 +174,13 @@
         <!-- See http://checkstyle.sf.net/config_design.html -->
         <!-- module name="DesignForExtension"/ -->
         <!-- module name="FinalClass"/ -->
-        <module name="HideUtilityClassConstructor"/>
+        <!-- TODO: enable it once issues are fixed -->
+        <!-- module name="HideUtilityClassConstructor"/ --> 
         <module name="InterfaceIsType"/>
-        <module name="VisibilityModifier"/>
+        <module name="VisibilityModifier">
+            <property name="packageAllowed" value="true"/>
+            <property name="protectedAllowed" value="true"/>
+        </module>
 
         <!-- Miscellaneous other checks.                   -->
         <!-- See http://checkstyle.sf.net/config_misc.html -->

@@ -20,36 +20,13 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-buildscript {
-    repositories {
-        maven { url "https://plugins.gradle.org/m2/" }
-    }
-    dependencies {
-        classpath 'com.github.jengelman.gradle.plugins:shadow:6.0.0'
-    }
-}
-
+apply plugin: 'java'
 apply plugin: 'com.github.johnrengelman.shadow'
 
-repositories {
-    mavenCentral()
-    maven { url 'https://jitpack.io' }
-}
-
-configurations.all {
-    resolutionStrategy.eachDependency {
-        if(it.requested.name == 'guava') {
-            it.useTarget 'com.google.guava:guava:29.0-jre'
-        }
-        if(it.requested.name == 'json') {
-            it.useTarget 'org.json:json:20180813'
-        }
-    }
-}
-
 dependencies {
-    compile project(':radixdlt-java')
-    testCompile group: 'junit', name: 'junit', version: '4.12'
+    implementation project(':radixdlt-java')
+
+    testImplementation 'junit:junit:4.13.1'
 }
 
 shadowJar {
