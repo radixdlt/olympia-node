@@ -18,6 +18,7 @@
 package com.radixdlt.atommodel.validators;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DsonOutput;
@@ -27,32 +28,36 @@ import java.util.Objects;
 import java.util.Set;
 
 @SerializerId2("radix.particles.registered_validator")
-public class RegisteredValidatorParticle extends Particle {
+public final class RegisteredValidatorParticle extends Particle {
 	@JsonProperty("address")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private RadixAddress address;
+	private final RadixAddress address;
 
 	@JsonProperty("allowedDelegators")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private Set<RadixAddress> allowedDelegators;
+	private final ImmutableSet<RadixAddress> allowedDelegators;
 
 	@JsonProperty("url")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private String url;
+	private final String url;
 
 	@JsonProperty("nonce")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private long nonce;
+	private final long nonce;
 
-	private RegisteredValidatorParticle() {
-		// for serializer
+	RegisteredValidatorParticle() {
+		// Serializer only
+		this.address = null;
+		this.allowedDelegators = null;
+		this.url = null;
+		this.nonce = 0;
 	}
 
-	public RegisteredValidatorParticle(RadixAddress address, Set<RadixAddress> allowedDelegators, long nonce) {
+	public RegisteredValidatorParticle(RadixAddress address, ImmutableSet<RadixAddress> allowedDelegators, long nonce) {
 		this(address, allowedDelegators, null, nonce);
 	}
 
-	public RegisteredValidatorParticle(RadixAddress address, Set<RadixAddress> allowedDelegators, String url, long nonce) {
+	public RegisteredValidatorParticle(RadixAddress address, ImmutableSet<RadixAddress> allowedDelegators, String url, long nonce) {
 		super(address.euid());
 		this.address = address;
 		this.allowedDelegators = allowedDelegators;
@@ -84,6 +89,27 @@ public class RegisteredValidatorParticle extends Particle {
 
 	public long getNonce() {
 		return nonce;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(this.address, this.allowedDelegators, this.url, this.nonce, getDestinations());
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (!(obj instanceof RegisteredValidatorParticle)) {
+			return false;
+		}
+		final var that = (RegisteredValidatorParticle) obj;
+		return this.nonce == that.nonce
+			&& Objects.equals(this.address, that.address)
+			&& Objects.equals(this.allowedDelegators, that.allowedDelegators)
+			&& Objects.equals(this.url, that.url)
+			&& Objects.equals(getDestinations(), that.getDestinations());
 	}
 
 	@Override

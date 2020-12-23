@@ -18,6 +18,9 @@
 package com.radixdlt.atommodel.routines;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
+
+import java.util.Objects;
+
 import org.junit.Test;
 
 import com.radixdlt.atommodel.routines.CreateFungibleTransitionRoutine.UsedAmount;
@@ -32,7 +35,7 @@ import static org.mockito.Mockito.mock;
 
 public class CreateFungibleTransitionRoutineTest {
 
-	private static class Fungible extends Particle {
+	private static final class Fungible extends Particle {
 		private final UInt256 amount;
 		Fungible(UInt256 amount) {
 			this.amount = amount;
@@ -40,6 +43,20 @@ public class CreateFungibleTransitionRoutineTest {
 
 		UInt256 getAmount() {
 			return amount;
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(this.amount, this.getDestinations());
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (!(obj instanceof Fungible)) {
+				return false;
+			}
+			final var that = (Fungible) obj;
+			return Objects.equals(this.amount, that.amount) && Objects.equals(this.getDestinations(), that.getDestinations());
 		}
 
 		@Override

@@ -41,10 +41,8 @@ import java.util.Optional;
  */
 public final class SystemConstraintScrypt implements ConstraintScrypt {
 
-	private final long epochViewCeiling;
-
-	public SystemConstraintScrypt(long epochViewCeiling) {
-		this.epochViewCeiling = epochViewCeiling;
+	public SystemConstraintScrypt() {
+		// Nothing here right now
 	}
 
 	private Result staticCheck(SystemParticle systemParticle) {
@@ -60,9 +58,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 			return Result.error("View is less than 0");
 		}
 
-		if (systemParticle.getView() >= epochViewCeiling) {
-			return Result.error("View is greater than epochHighView of " + epochViewCeiling);
-		}
+		// FIXME: Need to validate view, but need additional state to do that successfully
 
 		return Result.success();
 	}
@@ -72,7 +68,7 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 		os.registerParticle(SystemParticle.class, ParticleDefinition.<SystemParticle>builder()
 			.addressMapper(p -> ImmutableSet.of())
 			.staticValidation(this::staticCheck)
-			.virtualizeSpin(p -> p.getView() == 0 && p.getEpoch() == 1 && p.getTimestamp() == 0 ? Spin.UP : null)
+			.virtualizeSpin(p -> p.getView() == 0 && p.getEpoch() == 0 && p.getTimestamp() == 0 ? Spin.UP : null)
 			.build()
 		);
 

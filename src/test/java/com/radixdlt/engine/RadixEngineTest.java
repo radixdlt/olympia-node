@@ -37,6 +37,7 @@ import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.InMemoryEngineStore;
 import com.radixdlt.test.utils.TypedMocks;
 
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.UnaryOperator;
 import org.junit.Before;
@@ -53,10 +54,24 @@ import static org.mockito.Mockito.when;
 public class RadixEngineTest {
 
 	@SerializerId2("test.indexed_particle_2")
-	private class IndexedParticle extends Particle {
+	private final class IndexedParticle extends Particle {
 		@Override
 		public String toString() {
 			return String.format("%s", getClass().getSimpleName());
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(this.getDestinations());
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (!(o instanceof IndexedParticle)) {
+				return false;
+			}
+			final var that = (IndexedParticle) o;
+			return Objects.equals(this.getDestinations(), that.getDestinations());
 		}
 	}
 
@@ -81,7 +96,7 @@ public class RadixEngineTest {
 	public void empty_particle_group_should_throw_error() {
 		// Arrange
 		CMAtomOS cmAtomOS = new CMAtomOS();
-		cmAtomOS.load(new SystemConstraintScrypt(10));
+		cmAtomOS.load(new SystemConstraintScrypt());
 		ConstraintMachine cm = new ConstraintMachine.Builder()
 			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
 			.setParticleTransitionProcedures(cmAtomOS.buildTransitionProcedures())
@@ -108,6 +123,7 @@ public class RadixEngineTest {
 		when(engineStore.compute(any(), any(), any(), any())).thenReturn(state);
 		radixEngine.addStateComputer(
 			Particle.class,
+			Object.class,
 			mock(Object.class),
 			(o, p) -> o,
 			(o, p) -> o
@@ -130,6 +146,7 @@ public class RadixEngineTest {
 		when(engineStore.compute(any(), any(), any(), any())).thenReturn(initialState);
 		radixEngine.addStateComputer(
 			Particle.class,
+			Object.class,
 			mock(Object.class),
 			(o, p) -> state1,
 			(o, p) -> state2

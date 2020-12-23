@@ -99,7 +99,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		os.registerParticle(
 			StakedTokensParticle.class,
 			ParticleDefinition.<StakedTokensParticle>builder()
-				.singleAddressMapper(StakedTokensParticle::getAddress)
+				.addressMapper(StakedTokensParticle::getAddresses)
 				.staticValidation(TokenDefinitionUtils::staticCheck)
 				.rriMapper(StakedTokensParticle::getTokDefRef)
 				.build()
@@ -492,6 +492,26 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			),
 			(in, meta) -> checkSignedBy(meta, in.getAddress())
 		));
+
+		// Stake movement
+		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
+			StakedTokensParticle.class,
+			StakedTokensParticle.class,
+			StakedTokensParticle::getAmount,
+			StakedTokensParticle::getAmount,
+			checkEquals(
+				StakedTokensParticle::getGranularity,
+				StakedTokensParticle::getGranularity,
+				"Granularities not equal.",
+				StakedTokensParticle::getTokenPermissions,
+				StakedTokensParticle::getTokenPermissions,
+				"Permissions not equal.",
+				StakedTokensParticle::getAddress,
+				StakedTokensParticle::getAddress,
+				"Can't send staked tokens to another address."
+			),
+			(in, meta) -> checkSignedBy(meta, in.getAddress())
+		));
 	}
 
 	@VisibleForTesting
@@ -537,20 +557,21 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			: WitnessValidatorResult.error(String.format("Not signed by: %s", address.getPublicKey()));
 	}
 
-	private static <T, U, V> BiFunction<T, U, Result> checkEquals(
-		Function<T, V> firstMapper0, Function<U, V> firstMapper1, String firstErrorMessage,
-		Function<T, V> secondMapper0, Function<U, V> secondMapper1, String secondErrorMessage
+	private static <L, R, R0, R1> BiFunction<L, R, Result> checkEquals(
+		Function<L, R0> leftMapper0, Function<R, R0> rightMapper0, String errorMessage0,
+		Function<L, R1> leftMapper1, Function<R, R1> rightMapper1, String errorMessage1
 	) {
-		return (t, u) -> {
-			if (!Objects.equals(firstMapper0.apply(t), firstMapper1.apply(u))) {
-				return Result.error(firstErrorMessage);
-			}
+		return (l, r) -> Result.of(Objects.equals(leftMapper0.apply(l), rightMapper0.apply(r)), errorMessage0)
+			.mapSuccess(() -> Result.of(Objects.equals(leftMapper1.apply(l), rightMapper1.apply(r)), errorMessage1));
+	}
 
-			if (!Objects.equals(secondMapper0.apply(t), secondMapper1.apply(u))) {
-				return Result.error(secondErrorMessage);
-			}
-
-			return Result.success();
-		};
+	private static <L, R, R0, R1, R2> BiFunction<L, R, Result> checkEquals(
+		Function<L, R0> leftMapper0, Function<R, R0> rightMapper0, String errorMessage0,
+		Function<L, R1> leftMapper1, Function<R, R1> rightMapper1, String errorMessage1,
+		Function<L, R2> leftMapper2, Function<R, R2> rightMapper2, String errorMessage2
+	) {
+		return (l, r) -> Result.of(Objects.equals(leftMapper0.apply(l), rightMapper0.apply(r)), errorMessage0)
+			.mapSuccess(() -> Result.of(Objects.equals(leftMapper1.apply(l), rightMapper1.apply(r)), errorMessage1))
+			.mapSuccess(() -> Result.of(Objects.equals(leftMapper2.apply(l), rightMapper2.apply(r)), errorMessage2));
 	}
 }

@@ -17,6 +17,8 @@
 
 package com.radixdlt.atommodel.validators;
 
+import java.util.Objects;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.RadixAddress;
@@ -24,24 +26,27 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
 
 @SerializerId2("radix.particles.unregistered_validator")
-public class UnregisteredValidatorParticle extends Particle {
+public final class UnregisteredValidatorParticle extends Particle {
 	@JsonProperty("address")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private RadixAddress address;
+	private final RadixAddress address;
 
 	@JsonProperty("nonce")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private long nonce;
+	private final long nonce;
 
-	private UnregisteredValidatorParticle() {
-		// for serializer
+	UnregisteredValidatorParticle() {
+		// Serializer only
+		this.address = null;
+		this.nonce = 0;
 	}
 
 	public UnregisteredValidatorParticle(RadixAddress address, long nonce) {
 		super(address.euid());
-		this.address = address;
+		this.address = Objects.requireNonNull(address, "address");
 		this.nonce = nonce;
 	}
+
 
 	public RadixAddress getAddress() {
 		return address;
@@ -49,6 +54,25 @@ public class UnregisteredValidatorParticle extends Particle {
 
 	public long getNonce() {
 		return nonce;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(this.address, this.nonce, getDestinations());
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (!(obj instanceof UnregisteredValidatorParticle)) {
+			return false;
+		}
+		final var that = (UnregisteredValidatorParticle) obj;
+		return this.nonce == that.nonce
+			&& Objects.equals(this.address, that.address)
+			&& Objects.equals(getDestinations(), that.getDestinations());
 	}
 
 	@Override
