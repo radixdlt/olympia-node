@@ -120,6 +120,8 @@ jacocoTestReport {
 }
 
 dependencies {
+    // If dependencies on other projects appear, do not forget to update
+    // generateDevUniverse task to depend on those projects
     implementation project(':radixdlt-engine')
     implementation project(':radixdlt-java-common')
 
@@ -180,6 +182,12 @@ tasks.withType(Tar) {
 
 task generateDevUniverse(type: Exec) {
     dependsOn compileJava
+
+    //Alternative solution (slower, but does not require manual maintenance):
+    //dependsOn tasks.withType(Jar)
+    dependsOn ':radixdlt-java-common:jar'
+    dependsOn ':radixdlt-engine:jar'
+
     group = "Execution"
     description = "Generate development universe"
     commandLine "java", "-classpath", sourceSets.main.runtimeClasspath.getAsPath(),
