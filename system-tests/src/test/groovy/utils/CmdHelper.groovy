@@ -253,10 +253,16 @@ class CmdHelper {
 
     static String[] generateUniverseValidators(int numNodes){
         String[] exportVars,error
-        (exportVars, error) =  runCommand("./gradlew -P validators=${numNodes} clean generateDevUniverse",null,true,true,System.getenv("CORE_DIR"));
-        return exportVars
+        String gradlewPath = System.getProperty("user.dir")
+        (exportVars, error) =  runCommand("${gradlewPath}/gradlew -P validators=${numNodes} clean generateDevUniverse",
+                null,false, true,"${System.getenv('CORE_DIR')}/radixdlt-core/radixdlt");
+        String envVars =  exportVars
                 .findAll({ it.contains("export") })
                 .collect({it.replaceAll("export","")})
+        if (envVars.size() > 0)
+            return envVars
+        else
+            throw new Exception("Universe environment variables weren't generated")
     }
 
     static void cleanCoreGradleOutput(){
