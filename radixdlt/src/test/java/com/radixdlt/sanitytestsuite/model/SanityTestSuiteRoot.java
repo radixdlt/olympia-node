@@ -17,53 +17,96 @@
 
 package com.radixdlt.sanitytestsuite.model;
 
-import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Map;
 
 // CHECKSTYLE:OFF checkstyle:VisibilityModifier
 public final class SanityTestSuiteRoot {
-	public SanityTestIntegrity integrity;
-	public Suite suite;
+	public final Integrity integrity;
+	public final Suite suite;
+
+	private SanityTestSuiteRoot() {
+		/* Jackson will properly populate this fields during deserialize from JSON. */
+		this.integrity = null;
+		this.suite = null;
+	}
 
 	public static final class Suite {
-		public List<Suite.Scenario> scenarios;
+		public final List<Suite.Scenario> scenarios;
+
+
+		private Suite() {
+			/* Jackson will properly populate this fields during deserialize from JSON. */
+			this.scenarios = null;
+		}
 
 		public static final class Scenario {
-			public Description description;
-			public String identifier;
-			public String name;
-			public Tests tests;
+			public final Description description;
+			public final String identifier;
+			public final String name;
+			public final Tests tests;
+
+			private Scenario() {
+				/* Jackson will properly populate this fields during deserialize from JSON. */
+				this.description = null;
+				this.identifier = null;
+				this.name = null;
+				this.tests = null;
+			}
 
 			public static final class Description {
-				public String implementationInfo;
-				public String purpose;
-				public String troubleshooting;
+				public final String implementationInfo;
+				public final String purpose;
+				public final String troubleshooting;
+
+				private Description() {
+					/* Jackson will properly populate this fields during deserialize from JSON. */
+					this.implementationInfo = null;
+					this.purpose = null;
+					this.troubleshooting = null;
+				}
 			}
 
 			public static final class Tests {
-				public Source source;
-				public List<Map<String, Object>> vectors;
+				public final Source source;
+				public final List<Map<String, Object>> vectors;
+
+				private Tests() {
+					/* Jackson will properly populate this fields during deserialize from JSON. */
+					this.source = null;
+					this.vectors = null;
+				}
 
 				public static final class Source {
-					@Nullable
-					public String link;
-					@Nullable
-					public String comment;
-					@Nullable
-					public String originalSourceLink;
-					@Nullable
-					public ModifiedByTool modifiedByTool;
+					public final String link;
+					public final String comment;
+					public final String originalSourceLink;
+					public final ModifiedByTool modifiedByTool;
+
+					private Source() {
+						/* Jackson will properly populate this fields during deserialize from JSON. */
+						this.link = null;
+						this.comment = null;
+						this.originalSourceLink = null;
+						this.modifiedByTool = null;
+					}
 
 					public static final class ModifiedByTool {
+						public final String expression;
+						public final ToolInfo tool;
+
+						private ModifiedByTool() {
+							/* Jackson will properly populate this fields during deserialize from JSON. */
+							this.expression = null;
+							this.tool = null;
+						}
+
 						public static final class ToolInfo {
 							public String name;
 							public String link;
 							public String version;
 						}
 
-						public String expression;
-						public ToolInfo tool;
 					}
 				}
 			}
@@ -91,9 +134,16 @@ public final class SanityTestSuiteRoot {
 		}
 	}
 
-	public static final class SanityTestIntegrity {
-		public String hashOfSuite;
-		public String implementationInfo;
+	public static final class Integrity {
+		public final String hashOfSuite;
+		public final String implementationInfo;
+
+		private Integrity() {
+			/* Jackson will properly populate this fields during deserialize from JSON. */
+			this.hashOfSuite = null;
+			this.implementationInfo = null;
+		}
+
 	}
 }
 // CHECKSTYLE:ON checkstyle:VisibilityModifier

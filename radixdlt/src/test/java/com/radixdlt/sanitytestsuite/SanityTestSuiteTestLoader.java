@@ -49,15 +49,15 @@ public final class SanityTestSuiteTestLoader {
 		}
 	}
 
-	private String prepareMessage(SanityTestSuiteRoot sanityTestSuiteRoot) {
+	private String prepareMessage(SanityTestSuiteRoot sanityTest) {
 		return String.format(
 			"Mismatch between calculated hash of test suite and expected (bundled hash), implementation info: %s",
-			sanityTestSuiteRoot.integrity.implementationInfo
+			sanityTest.integrity.implementationInfo
 		);
 	}
 
-	private String calculateSuiteHash(SanityTestSuiteRoot sanityTestSuiteRoot) {
-		var suiteBytes = JSONFormatter.sortPrettyPrintObject(sanityTestSuiteRoot.suite)
+	private String calculateSuiteHash(SanityTestSuiteRoot sanityTest) {
+		var suiteBytes = JSONFormatter.sortPrettyPrintObject(sanityTest.suite)
 				.getBytes(StandardCharsets.UTF_8);
 
 		return Bytes.toHexString(sha256Hash(suiteBytes));
