@@ -266,7 +266,8 @@ class CmdHelper {
     }
 
     static void cleanCoreGradleOutput(){
-        runCommand("./gradlew clean",null,true,true,System.getenv("CORE_DIR"));
+        String gradlewPath = System.getProperty("user.dir")
+        runCommand("${gradlewPath}/gradlew clean",null,true,true,"${System.getenv('CORE_DIR')}/radixdlt-core/radixdlt");
     }
 
     static String getNodeValidator(String[] allEnvVariables,options){
