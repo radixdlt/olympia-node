@@ -16,10 +16,18 @@ git:
 
 jobs:
   include:
+jobs:
+  include:
     - stage: check
-      script: ./gradlew check jacocoTestReport sonarqube --info --refresh-dependencies
+      script: ./gradlew check --info
+    - stage: sonar
+      script: ./gradlew jacocoTestReport sonarqube --info
     - stage: integration
       script: ./gradlew integrationTest --refresh-dependencies
+
+before_cache:
+  - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
+  - rm -fr $HOME/.gradle/caches/*/plugin-resolution/
 
 cache:
   directories:
