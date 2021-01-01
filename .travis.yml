@@ -21,7 +21,7 @@ jobs:
     - stage: check
       script: ./gradlew check --info
     - stage: sonar
-      script: ./gradlew jacocoTestReport sonarqube --info
+      script: ./gradlew check jacocoTestReport sonarqube --info
     - stage: integration
       script: ./gradlew integrationTest --refresh-dependencies
 
