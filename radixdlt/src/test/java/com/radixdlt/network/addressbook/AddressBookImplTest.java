@@ -39,8 +39,20 @@ import com.radixdlt.network.transport.StaticTransportMetadata;
 import com.radixdlt.network.transport.TransportInfo;
 import com.radixdlt.properties.RuntimeProperties;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import io.reactivex.rxjava3.observers.TestObserver;
 
@@ -123,6 +135,7 @@ public class AddressBookImplTest {
 
 		// Quick check of internal state too
 		assertMapSize(1, Whitebox.getInternalState(this.addressbook, "peersByNid"));
+		assertMapSize(1, Whitebox.getInternalState(this.addressbook, "peersBySource"));
 		assertMapSize(1, Whitebox.getInternalState(this.addressbook, "peersByInfo"));
 	}
 
@@ -157,7 +170,8 @@ public class AddressBookImplTest {
 			.assertValueAt(1, v -> v instanceof PeersAddedEvent);
 
 		// Quick check of internal state too
-		assertMapSize(2, Whitebox.getInternalState(this.addressbook, "peersByInfo"));
+		assertMapSize(1, Whitebox.getInternalState(this.addressbook, "peersByInfo"));
+		assertMapSize(1, Whitebox.getInternalState(this.addressbook, "peersBySource"));
 		assertMapSize(1, Whitebox.getInternalState(this.addressbook, "peersByNid"));
 	}
 
@@ -208,7 +222,8 @@ public class AddressBookImplTest {
 		assertEquals(1, this.deletedPeerCount.get());
 
 		// Quick check of internal state too
-		assertMapSize(2, Whitebox.getInternalState(this.addressbook, "peersByInfo"));
+		assertMapSize(1, Whitebox.getInternalState(this.addressbook, "peersByInfo"));
+		assertMapSize(1, Whitebox.getInternalState(this.addressbook, "peersBySource"));
 		assertMapSize(1, Whitebox.getInternalState(this.addressbook, "peersByNid"));
 	}
 
@@ -236,6 +251,7 @@ public class AddressBookImplTest {
 
 		// Quick check of internal state too
 		assertMapSize(2, Whitebox.getInternalState(this.addressbook, "peersByInfo"));
+		assertMapSize(2, Whitebox.getInternalState(this.addressbook, "peersBySource"));
 		assertMapSize(2, Whitebox.getInternalState(this.addressbook, "peersByNid"));
 	}
 
@@ -263,6 +279,7 @@ public class AddressBookImplTest {
 
 		// Quick check of internal state too
 		assertMapSize(2, Whitebox.getInternalState(this.addressbook, "peersByInfo"));
+		assertMapSize(2, Whitebox.getInternalState(this.addressbook, "peersBySource"));
 		assertMapSize(2, Whitebox.getInternalState(this.addressbook, "peersByNid"));
 	}
 
@@ -287,7 +304,33 @@ public class AddressBookImplTest {
 
 		// Quick check of internal state too
 		assertMapSize(2, Whitebox.getInternalState(this.addressbook, "peersByNid"));
+		assertMapSize(2, Whitebox.getInternalState(this.addressbook, "peersBySource"));
 		assertMapSize(2, Whitebox.getInternalState(this.addressbook, "peersByInfo"));
+	}
+
+	@Test
+	public void testSourceChanged() {
+		TransportInfo systemTransport = TransportInfo.of("SYSTEM", StaticTransportMetadata.empty());
+		TransportInfo sourceTransport1 = TransportInfo.of("SOURCE1", StaticTransportMetadata.empty());
+		TransportInfo sourceTransport2 = TransportInfo.of("SOURCE2", StaticTransportMetadata.empty());
+
+		RadixSystem system = mock(RadixSystem.class);
+		when(system.getNID()).thenReturn(EUID.ONE);
+		when(system.supportedTransports()).thenAnswer(invocation -> Stream.of(systemTransport));
+
+		// Add initial peer
+		PeerWithSystem newPeer1 = this.addressbook.addOrUpdatePeer(Optional.empty(), system, sourceTransport1);
+		assertNotNull(newPeer1); // Should be added OK
+
+		// Now update source, without changing other details
+		assertNotNull(this.addressbook.addOrUpdatePeer(Optional.of(newPeer1), system, sourceTransport2));
+
+		// Should now be able to find by updated source...
+		assertThat(this.addressbook.peer(sourceTransport2)).isNotEmpty();
+
+		// ...and trying to find by old source should not be possible.
+		assertThat(this.addressbook.peer(sourceTransport1)).isEmpty();
+
 	}
 
 	// Type coercion

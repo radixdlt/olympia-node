@@ -18,7 +18,7 @@
 package com.radixdlt.network.addressbook;
 
 import java.io.IOException;
-import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -27,8 +27,11 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Stream;
 
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 import com.radixdlt.identifiers.EUID;
@@ -58,8 +61,16 @@ public class AddressBookImpl implements AddressBook {
 	private final long recencyThreshold;
 
 	private final Lock peersLock = new ReentrantLock();
-	private final Map<EUID, PeerWithSystem> peersByNid = new HashMap<>();
-	private final Map<TransportInfo, PeerWithSystem> peersByInfo = new HashMap<>();
+
+	// Used for NID lookups
+	private final Map<EUID, PeerWithSystem> peersByNid = Maps.newHashMap();
+
+	// Used for forward lookups when only transport is known (eg bootstrap nodes)
+	private final Map<TransportInfo, PeerWithSystem> peersByInfo = Maps.newHashMap();
+
+	// Used for reverse lookups when only source is known (eg incoming messages)
+	private final BiMap<TransportInfo, PeerWithSystem> peersBySource = HashBiMap.create();
+
 	private final Whitelist whitelist;
 	private final TimeSupplier timeSupplier;
 
@@ -145,7 +156,7 @@ public class AddressBookImpl implements AddressBook {
 
 	@Override
 	public Optional<PeerWithSystem> peer(TransportInfo transportInfo) {
-		PeerWithSystem peer = Locking.withFunctionLock(this.peersLock, this.peersByInfo::get, transportInfo);
+		PeerWithSystem peer = Locking.withFunctionLock(this.peersLock, this::getPeerByTransportInfo, transportInfo);
 		updateActiveTime(peer);
 		return Optional.ofNullable(peer);
 	}
@@ -204,6 +215,15 @@ public class AddressBookImpl implements AddressBook {
 	}
 
 	// Needs peersLock held
+	private PeerWithSystem getPeerByTransportInfo(TransportInfo transportInfo) {
+		PeerWithSystem peer = this.peersBySource.get(transportInfo);
+		if (peer == null) {
+			peer = this.peersByInfo.get(transportInfo);
+		}
+		return peer;
+	}
+
+	// Needs peersLock held
 	private PeerUpdates addUpdatePeerInternal(PeerWithSystem peer, TransportInfo source) {
 		PeerWithSystem oldPeer = peersByNid.get(peer.getNID());
 		if (oldPeer == null || !Objects.equals(oldPeer.getSystem(), peer.getSystem())) {
@@ -211,8 +231,10 @@ public class AddressBookImpl implements AddressBook {
 			if (updatePeerInternal(peer, source)) {
 				return oldPeer == null ? PeerUpdates.add(peer) : PeerUpdates.update(peer);
 			}
+		} else {
+			// No system change, just update source
+			updateSource(peer, source);
 		}
-		// No change
 		return oldPeer == null ? null : PeerUpdates.existing(oldPeer);
 	}
 
@@ -223,7 +245,7 @@ public class AddressBookImpl implements AddressBook {
 			// We overwrite transports here
 			peer.supportedTransports()
 				.forEachOrdered(t -> peersByInfo.put(t, peer));
-			peersByInfo.put(source, peer);
+			peersBySource.put(source, peer);
 			return true;
 		}
 		log.error("Failure saving {}", peer);
@@ -245,11 +267,14 @@ public class AddressBookImpl implements AddressBook {
 
 	// Needs peersLock held
 	private void removeTransports(PeerWithSystem peer) {
-		Set<TransportInfo> toRemove = this.peersByInfo.entrySet().stream()
-			.filter(e -> peer.equals(e.getValue()))
-			.map(Map.Entry::getKey)
-			.collect(ImmutableSet.toImmutableSet());
-		this.peersByInfo.keySet().removeAll(toRemove);
+		Iterator<Map.Entry<TransportInfo, PeerWithSystem>> i = this.peersByInfo.entrySet().iterator();
+		while (i.hasNext()) {
+			PeerWithSystem testPeer = i.next().getValue();
+			if (peer.equals(testPeer)) {
+				i.remove();
+			}
+		}
+		this.peersBySource.inverse().remove(peer);
 	}
 
 	// Needs peersLock held
@@ -257,9 +282,12 @@ public class AddressBookImpl implements AddressBook {
 		if (peer.getNID().equals(system.getNID())) {
 			if (!Objects.equals(peer.getSystem(), system)) {
 				// Here if old system does not match the updated system
-				// This is a simple update or add
+				// This is basically remove old, add new
 				removeTransports(peer);
 				return addUpdatePeerInternal(new PeerWithSystem(peer, system), source);
+			} else {
+				// No system change, just update source, as it may have changed
+				updateSource(peer, source);
 			}
 		} else {
 			// Peer has somehow changed NID?
@@ -288,6 +316,12 @@ public class AddressBookImpl implements AddressBook {
 			}
 		}
 		return oldPeer;
+	}
+
+	// Update source for peer, needs peersLock held
+	private void updateSource(PeerWithSystem peer, TransportInfo source) {
+		this.peersBySource.inverse().remove(peer);
+		this.peersBySource.put(source, peer);
 	}
 
 	// No locks required
