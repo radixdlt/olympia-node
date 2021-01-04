@@ -141,6 +141,12 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 					Collectors.groupingBy(SpunParticle::getSpin,
 					Collectors.mapping(sp -> (TransferrableTokensParticle) sp.getParticle(), Collectors.toList())));
 
+		// Needs to be at least some down transferrable tokens
+		final var downTransferrableParticles = transferableParticlesBySpin.get(Spin.DOWN);
+		if (downTransferrableParticles == null || downTransferrableParticles.isEmpty()) {
+			return false;
+		}
+
 		return allUpForFeeToken(spunUnallocatedTokens)
 				&& allSameAddressAndForFee(transferableParticlesBySpin)
 				&& noSuperfluousParticles(transferableParticlesBySpin);
@@ -148,7 +154,7 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 
 	// Check that all transferable particles are in for the same address and for the fee token
 	private boolean allSameAddressAndForFee(Map<Spin, List<TransferrableTokensParticle>> particlesBySpin) {
-		final RadixAddress addr = particlesBySpin.get(Spin.UP).get(0).getAddress();
+		final RadixAddress addr = particlesBySpin.get(Spin.DOWN).get(0).getAddress();
 		return particlesBySpin.values().stream()
 				.allMatch(transferableTokens -> transferableTokens.stream().allMatch(ttp ->
 						ttp.getAddress().equals(addr) && this.feeTokenRri.equals(ttp.getTokDefRef())));
