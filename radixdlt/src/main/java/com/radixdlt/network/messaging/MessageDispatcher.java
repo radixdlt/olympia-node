@@ -122,7 +122,7 @@ class MessageDispatcher {
 
 	private SendResult completionException(Throwable cause, Peer receiver, Message message) {
 		String msg = String.format("Send %s to %s failed", message.getClass().getSimpleName(), receiver);
-		log.warn(msg, cause);
+		log.warn("{}: {}", msg, cause.getMessage());
 		return SendResult.failure(new IOException(msg, cause));
 	}
 
