@@ -45,6 +45,7 @@ import com.radixdlt.environment.deterministic.network.DeterministicNetwork;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageQueue;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.integration.distributed.deterministic.NodeEvents;
 import com.radixdlt.integration.distributed.deterministic.NodeEventsModule;
 import com.radixdlt.integration.distributed.deterministic.SafetyCheckerModule;
@@ -106,7 +107,10 @@ public class RecoveryLivenessTest {
 	private NodeEvents nodeEvents;
 
 	public RecoveryLivenessTest(int numNodes, long epochCeilingView) {
-		this.nodeKeys = Stream.generate(ECKeyPair::generateNew).limit(numNodes).collect(Collectors.toList());
+		this.nodeKeys = Stream.generate(ECKeyPair::generateNew)
+			.limit(numNodes)
+			.sorted(Comparator.<ECKeyPair, EUID>comparing(k -> k.getPublicKey().euid()).reversed())
+			.collect(Collectors.toList());
 		this.epochCeilingView = epochCeilingView;
 	}
 
