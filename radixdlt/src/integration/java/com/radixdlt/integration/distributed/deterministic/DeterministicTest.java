@@ -63,7 +63,6 @@ import com.radixdlt.integration.distributed.MockedStateComputerModule;
 import com.radixdlt.integration.distributed.MockedSyncServiceModule;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.utils.UInt256;
 
@@ -129,7 +128,7 @@ public final class DeterministicTest {
 		public Builder numNodes(int numNodes) {
 			this.nodes = Stream.generate(ECKeyPair::generateNew)
 				.limit(numNodes)
-				.sorted(Comparator.<ECKeyPair, EUID>comparing(k -> k.getPublicKey().euid()).reversed())
+				.sorted(Comparator.comparing(k -> k.getPublicKey().euid()))
 				.map(kp -> BFTNode.create(kp.getPublicKey()))
 				.collect(ImmutableList.toImmutableList());
 			return this;
