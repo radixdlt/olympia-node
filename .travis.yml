@@ -21,7 +21,7 @@ jobs:
     - stage: check
       script: ./gradlew check --info
     - stage: sonar
-      script: ./gradlew jacocoTestReport sonarqube -Dsonar.login=$SONAR_TOKEN -Dsonar.projectKey=$SONAR_PROJECT_KEY -Dsonar.sourceEncoding=UTF-8 --info
+      script: ./gradlew jacocoTestReport sonarqube -Dsonar.login=$SONAR_TOKEN -Dsonar.projectKey=$SONAR_PROJECT_KEY -Dsonar.sourceEncoding=UTF-8 --info --debug
     - stage: integration
       script: ./gradlew integrationTest --info
 
