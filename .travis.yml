@@ -6,7 +6,7 @@ addons:
   sonarcloud:
     organization: "radixdlt-github"
     token:
-      secure: $SONAR_TOKEN
+      secure: "clTPI5Zs2fyg9xNe+Olx65qveTZNsQoUHif3LQK6LSVkglg//n/StrjeVKfnatcuRlIrOhlvn7QhRnRLXpbyJEAx6yO6JfxAc3ifElpD+ClTLd9sXFEuShIdK67DhNCjutHM0kl9gGlkyhZvMoSa/vMAfZX37N4ewle4M8ToH99FzS8he/GzjTJRs+fOGeZ3sufEHy5W9LOeYySIVXbolhyzrlEF6uYdQX9GkEXXWdKbz7YYaknuKFlXsEKAZIRLXKdo2DrmfVVBXDqp+UljOZmn6kuuk2tp9FFskxNwxi0avwZpwENXmTYqARE+I3zYoIRTFQ2pJFViQi523tL9g30r7DLv1BVAdzQoPk2uhM90hjjf4s4ddqDX9ismzqzQNLrMEWz+0sELKCv8UetLyc3eAeVqLxk0OrHAnb+0eUSY8e50lp1B5qoA4bqK3jXfp9gx9vSLEsFCundslyVH6CBHV11/EHJZQk9PmGunrkHN+u4m3GFkNzev445IIejCuffv5XKabPTATirjvEV0hItBSdjkxMfDm6e1m4ZDj7OE4/VOZbjiilA/MN9wD2gkBAzg6IzLAUmGXPdNjy4gJcnt5kn+3bIMlwRQPBnOkQ6IxiIfkr+4siqFwfwnMaPU2ZZaZQNV3fIpGFBXUFlBF3Pj7s2ia62MAqvin6WJ+m0="
 
 jdk:
   - openjdk11
@@ -21,7 +21,7 @@ jobs:
     - stage: check
       script: ./gradlew check --info
     - stage: sonar
-      script: ./gradlew jacocoTestReport sonarqube -Dsonar.sourceEncoding=UTF-8 --info
+      script: ./gradlew jacocoTestReport sonarqube --info
     - stage: integration
       script: ./gradlew integrationTest --info
 
