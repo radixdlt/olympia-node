@@ -38,6 +38,7 @@ import java.util.stream.Collectors;
 /**
  * Implementation of the AtomOS interface on top of a UTXO based Constraint Machine.
  */
+// FIXME: rawtypes
 @SuppressWarnings("rawtypes")
 public final class CMAtomOS {
 	private static final ParticleDefinition<Particle> VOID_PARTICLE_DEF = ParticleDefinition.builder()
