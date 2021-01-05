@@ -39,9 +39,10 @@ public class DockerTests {
         logger.info("Test name is {}", testMethodName);
     }
 
+    @Parameters({"4", "5"})
     @Test
-    public void smoke_test() {
-        try (DockerNetwork network = DockerNetwork.builder().numNodes(4).testName(testMethodName).startConsensusOnBoot().build()) {
+    public void smoke_test(int numberOfNodes) {
+        try (DockerNetwork network = DockerNetwork.builder().numNodes(numberOfNodes).testName(testMethodName).startConsensusOnBoot().build()) {
             network.startBlocking();
             Conditions.waitUntilNetworkHasLiveness(network);
 
@@ -57,10 +58,7 @@ public class DockerTests {
             test.runBlocking(CmdHelper.getTestDurationInSeconds(), TimeUnit.SECONDS);
 
             String nodeToStopAndStart = network.getNodeIds().iterator().next();
-            //CmdHelper.stopContainer(nodeToStopAndStart);
-            // TODO unfortunately we can't stop and start the container due to https://radixdlt.atlassian.net/browse/RPNV1-859
-            // for now, we are just dropping all packets to simulate a disconnect
-            CmdHelper.runTcUsingVeth(nodeToStopAndStart, "delay 100ms loss 100%");
+            CmdHelper.stopContainer(nodeToStopAndStart);
 
             // second check, after the down is down
             RemoteBFTTest testOutOfSynchronyBounds = outOfSynchronyTestBuilder(Lists.newArrayList(nodeToStopAndStart))
@@ -68,9 +66,7 @@ public class DockerTests {
                     .build();
             testOutOfSynchronyBounds.runBlocking(CmdHelper.getTestDurationInSeconds(), TimeUnit.SECONDS);
 
-            // TODO as above
-            //CmdHelper.startContainer(nodeToStopAndStart);
-            CmdHelper.runTcUsingVeth(nodeToStopAndStart, "delay 0ms loss 0%");
+            CmdHelper.startContainer(nodeToStopAndStart);
 
             // third check. The node that was brought back up should have liveness by itself (i.e. it should report an increasing view/epoch)
             List<String> restOfTheNodes = Lists.newArrayList(network.getNodeIds());
