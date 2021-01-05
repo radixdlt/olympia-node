@@ -45,6 +45,7 @@ import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.integration.distributed.MockedCryptoModule;
 import com.radixdlt.integration.distributed.MockedPersistenceStoreModule;
 import com.radixdlt.integration.distributed.MockedRecoveryModule;
@@ -128,7 +129,7 @@ public final class DeterministicTest {
 		public Builder numNodes(int numNodes) {
 			this.nodes = Stream.generate(ECKeyPair::generateNew)
 				.limit(numNodes)
-				.sorted(Comparator.comparing(k -> k.getPublicKey().euid()))
+				.sorted(Comparator.<ECKeyPair, EUID>comparing(k -> k.getPublicKey().euid()).reversed())
 				.map(kp -> BFTNode.create(kp.getPublicKey()))
 				.collect(ImmutableList.toImmutableList());
 			return this;
