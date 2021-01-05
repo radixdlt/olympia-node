@@ -75,14 +75,17 @@ configurations {
 compileJava {
     options.release = 11
     options.compilerArgs += '-proc:none'
+    options.compilerArgs << "-Xlint:all" << "-Werror"
 }
 
 compileTestJava {
     options.compilerArgs += '-proc:none'
+    options.compilerArgs << "-Xlint:all" << "-Werror"
 }
 
 compileIntegrationTestJava {
     options.compilerArgs += '-proc:none'
+    options.compilerArgs << "-Xlint:all" << "-Werror"
 }
  
 checkstyle {

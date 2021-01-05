@@ -25,6 +25,7 @@ import javax.annotation.Nullable;
 /**
  * Exception thrown by Radix Engine
  */
+@SuppressWarnings("serial")
 public final class RadixEngineException extends Exception {
 	private final RadixEngineErrorCode errorCode;
 	private final DataPointer dp;

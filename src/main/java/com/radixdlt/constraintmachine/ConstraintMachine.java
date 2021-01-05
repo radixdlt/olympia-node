@@ -34,6 +34,8 @@ import java.util.function.Function;
 /**
  * An implementation of a UTXO based constraint machine which uses Radix's atom structure.
  */
+// FIXME: unchecked, rawtypes
+@SuppressWarnings({"unchecked", "rawtypes"})
 public final class ConstraintMachine {
 	private static final boolean[] truefalse = new boolean[] {
 		true, false

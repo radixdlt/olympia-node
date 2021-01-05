@@ -43,6 +43,8 @@ import java.util.function.Function;
 /**
  * SysCall environment for CMAtomOS Constraint Scrypts.
  */
+// FIXME: unchecked, rawtypes
+@SuppressWarnings({"unchecked", "rawtypes"})
 final class ConstraintScryptEnv implements SysCalls {
 	private final ImmutableMap<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions;
 	private final Function<RadixAddress, Result> addressChecker;
