@@ -45,6 +45,7 @@ import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.integration.distributed.MockedCryptoModule;
 import com.radixdlt.integration.distributed.MockedPersistenceStoreModule;
 import com.radixdlt.integration.distributed.MockedRecoveryModule;
@@ -63,7 +64,6 @@ import com.radixdlt.integration.distributed.MockedStateComputerModule;
 import com.radixdlt.integration.distributed.MockedSyncServiceModule;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.utils.UInt256;
 

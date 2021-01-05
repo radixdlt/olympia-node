@@ -106,7 +106,10 @@ public class RecoveryLivenessTest {
 	private NodeEvents nodeEvents;
 
 	public RecoveryLivenessTest(int numNodes, long epochCeilingView) {
-		this.nodeKeys = Stream.generate(ECKeyPair::generateNew).limit(numNodes).collect(Collectors.toList());
+		this.nodeKeys = Stream.generate(ECKeyPair::generateNew)
+			.limit(numNodes)
+			.sorted(Comparator.comparing(k -> k.getPublicKey().euid()))
+			.collect(Collectors.toList());
 		this.epochCeilingView = epochCeilingView;
 	}
 
