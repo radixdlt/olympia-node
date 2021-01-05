@@ -82,7 +82,6 @@ class CmdHelper {
                         "RADIXDLT_UNIVERSE=${universe}",
                         "RADIXDLT_NODE_KEY=${validatorKey}",
                         "RADIXDLT_LOG_LEVEL=debug"
-
         ]
 
         String hostPortMapping = "-p ${options.hostPort}:8080 "
@@ -105,9 +104,9 @@ class CmdHelper {
     /**
      * Blocks tcp communication over a specific port, via iptables
      */
-    static String blockPort(String nodeId, int gossipPortNumber) {
+    static String blockPort(String containerName, int gossipPortNumber) {
         def iptablesCommand = "iptables -A OUTPUT -p tcp --dport ${gossipPortNumber} -j DROP"
-        def (output, error) = runCommand("docker exec ${nodeId} bash -c".tokenize() << iptablesCommand, null, false, true)
+        def (output, error) = runCommand("docker exec ${containerName} bash -c".tokenize() << iptablesCommand, null, false, true)
         return output;
     }
 
@@ -176,12 +175,22 @@ class CmdHelper {
     }
 
     static String runContainer(String dockerCommand, String[] dockerEnv) {
-        def results = CmdHelper.runCommand("bash -c".tokenize() << dockerCommand, dockerEnv, true);
+        def results = isRunningOnWindows() ?
+                runCommand(dockerCommand.tokenize(), dockerEnv, true) :
+                runCommand("bash -c".tokenize() << dockerCommand, dockerEnv, true)
         return results[0][0]
     }
 
     static String radixCliCommand(List cmdOptions) {
         return "java -jar ${Generic.pathToCLIJar()} ${listToDelimitedString(cmdOptions, ' ')}"
+    }
+
+    /**
+     * gets the veth for the given container name and then runs tc on it
+     */
+    static String runTcUsingVeth(containerName, optionsArgs = "delay 100ms loss 20%") {
+        String veth = getVethByContainerName(containerName);
+        setupQueueQuality(veth, optionsArgs)
     }
 
     /**
@@ -245,6 +254,14 @@ class CmdHelper {
         runCommand("tc qdisc add dev ${veth} handle 10: root netem ${optionsArgs}")
     }
 
+    /**
+     * directly calls tc (traffic control) on a docker
+     */
+    static String runTcOnContainer(containerName, optionsArgs = "delay 100ms loss 20%") {
+        def tcCommand = "tc qdisc add dev eth0 handle 10: root netem ${optionsArgs}"
+        def (output, error) = runCommand("docker exec ${containerName} bash -c".tokenize() << tcCommand, null, false, true)
+        return output;
+    }
 
     static void captureLogs(String containerId,String testName) {
         Files.createDirectories(Paths.get("${System.getProperty('logs.dir')}/${testName}"));
@@ -252,8 +269,14 @@ class CmdHelper {
     }
 
     static String[] generateUniverseValidators(int numNodes){
-        String[] exportVars,error
-        (exportVars, error) =  runCommand("./gradlew -P validators=${numNodes} clean generateDevUniverse",null,true,true,System.getenv("CORE_DIR"));
+        String[] exportVars, error
+        if (isRunningOnWindows()) {
+            //exportVars = TempUniverseCreator.getHardcodedUniverse(); TODO a bit weird but this helps development on windows
+            throw new RuntimeException("For these tests to run on windows, you need to find a way to provide a universe.")
+        } else {
+            (exportVars, error) = runCommand("./gradlew -P validators=${numNodes} clean generateDevUniverse", null, true, true, System.getenv("CORE_DIR"));
+        }
+
         return exportVars
                 .findAll({ it.contains("export") })
                 .collect({it.replaceAll("export","")})
@@ -276,4 +299,25 @@ class CmdHelper {
         def present = Optional.ofNullable(System.getenv("TEST_NETWORK")).isPresent()
         return present
     }
+
+    static String stopContainer(String containerName) {
+        def (output, error) = runCommand("docker stop " + containerName);
+        if (error) {
+            throw new RuntimeException("Could not stop container '" + containerName + "' because: " + error.toString())
+        } else {
+            return output;
+        }
+    }
+
+    static void startContainer(String containerName) {
+        def (output, error) = runCommand("docker start " + containerName);
+        if (error) {
+            throw new RuntimeException("Could not start container '" + containerName + "' because: " + error.toString())
+        }
+    }
+
+    static boolean isRunningOnWindows() {
+        return System.getProperty("os.name").toLowerCase().contains("windows")
+    }
+
 }

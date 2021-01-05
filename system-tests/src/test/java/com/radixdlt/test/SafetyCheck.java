@@ -81,10 +81,10 @@ public class SafetyCheck implements RemoteBFTCheck {
 				.map(node -> network.queryEndpoint(node, "api/vertices/committed")
 					.timeout(timeout, timeoutUnit)
 					.map(verticesString -> {
-						logger.info("Api/Vertices/commited endpoint response {} ",verticesString);
+						logger.debug("Api/Vertices/commited endpoint response {} ",verticesString);
 						return extractVertices(verticesString, node);
 					})
-					.doOnError(err -> logger.warn(
+					.doOnError(err -> logger.debug(
 						"error while querying {} for committed vertices, excluding from evaluation due to: {}",
 						node, err))
 					.onErrorReturnItem(ImmutableSet.of())) // unresponsive nodes are not our concern here
