@@ -27,14 +27,6 @@ plugins {
     id 'net.nemerosa.versioning' version '2.14.0'
 }
 
-/*
-sonarqube {
-    properties {
-        property "sonar.projectKey", "radixdlt_radixdlt-parent"
-    }
-}
-*/
-
 def radixVersion() {
     def details = versionDetails()
 
