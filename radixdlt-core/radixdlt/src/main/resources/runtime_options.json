@@ -1,0 +1,120 @@
+{
+	"network.address":{
+		"short":"na",
+		"long":"network.address",
+		"desc":"IP Address to bind to",
+		"has_arg":true
+	},
+
+	"network.port":{
+		"short":"np",
+		"long":"network.port",
+		"desc":"Port to bind to",
+		"has_arg":true
+	},
+
+	"atoms":{
+		"short":"a",
+		"long":"atoms",
+		"desc":"Defines this node as an atom processor",
+		"has_arg":false
+	},
+	
+	"transactions":{
+		"short":"tx",
+		"long":"transactions",
+		"desc":"Defines this node as a transaction processor",
+		"has_arg":false
+	},
+	
+	"exchange":{
+		"short":"exch",
+		"long":"exchange",
+		"desc":"Defines this node as a exchange",
+		"has_arg":false
+	},
+	
+	"scripts":{
+		"short":"scripts",
+		"long":"scripts",
+		"desc":"Defines this node as a script server",
+		"has_arg":false
+	},
+	
+	"market":{
+		"short":"mkt",
+		"long":"market",
+		"desc":"Defines this node as a marketplace server",
+		"has_arg":false
+	},
+	
+	"mail":{
+		"short":"mail",
+		"long":"mail",
+		"desc":"Defines this node as a mail server",
+		"has_arg":false
+	},
+	
+	"erc":{
+		"short":"erc",
+		"long":"erc",
+		"desc":"Defines this node as an ERC server",
+		"has_arg":false
+	},
+	
+	"ens":{
+		"short":"ens",
+		"long":"ens",
+		"desc":"Defines this node as an ENS server",
+		"has_arg":false
+	},
+	
+	"profiles":{
+		"short":"profiles",
+		"long":"profiles",
+		"desc":"Defines this node as a profile server",
+		"has_arg":false
+	},
+	
+	"ratings":{
+		"short":"ratings",
+		"long":"ratings",
+		"desc":"Defines this node as a rating server",
+		"has_arg":false
+	},
+	
+	"config":{
+		"short":"config",
+		"long":"config",
+		"desc":"The configuration to load",
+		"has_arg":true
+	},
+
+	"ntp":{
+		"short":"ntp",
+		"long":"ntp",
+		"desc":"Use NTP service",
+		"has_arg":true
+	},
+
+	"ntpoffset":{
+		"short":"ntpoffset",
+		"long":"ntpoffset",
+		"desc":"NTP time offset",
+		"has_arg":true
+	},
+	
+	"tests":{
+		"short":"tests",
+		"long":"tests",
+		"desc":"Tests",
+		"has_arg":false
+	},
+	
+	"universe.timestamp":{
+		"short":"ut",
+		"long":"universe.timestamp",
+		"desc":"Universe timestamp for all networks in seconds",
+		"has_arg":true
+	}
+}		

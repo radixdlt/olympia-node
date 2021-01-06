@@ -1,0 +1,102 @@
+/*
+ * (C) Copyright 2020 Radix DLT Ltd
+ *
+ * Radix DLT Ltd licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License.  You may obtain a copy of the
+ * License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied.  See the License for the specific
+ * language governing permissions and limitations under the License.
+ */
+
+package com.radixdlt.sanitytestsuite.scenario.jsonserialization;
+
+import com.google.common.collect.ImmutableMap;
+import com.radixdlt.DefaultSerialization;
+import com.radixdlt.atommodel.message.MessageParticle;
+import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.sanitytestsuite.scenario.SanityTestScenarioRunner;
+import com.radixdlt.sanitytestsuite.utility.ArgumentsExtractor;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.Serialization;
+import com.radixdlt.utils.JSONFormatter;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
+import java.util.function.Function;
+
+import static java.util.Optional.ofNullable;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+public final class JsonSerializationTestScenarioRunner extends SanityTestScenarioRunner<JsonSerializationTestVector> {
+	private static final Logger LOG = LogManager.getLogger();
+
+	private final Serialization serialization = DefaultSerialization.getInstance();
+
+	public String testScenarioIdentifier() {
+		return "json_serialization_radix_models";
+	}
+
+	@Override
+	public Class<JsonSerializationTestVector> testVectorType() {
+		return JsonSerializationTestVector.class;
+	}
+
+	private static TransferrableTokensParticle makeTransferrableTokensParticle(final Map<String, Object> arguments) {
+		var argsExtractor = ArgumentsExtractor.from(arguments);
+
+		var ttp = new TransferrableTokensParticle(
+			argsExtractor.asRadixAddress("address"),
+			argsExtractor.asUInt256("amount"),
+			argsExtractor.asUInt256("granularity"),
+			argsExtractor.asRRI("tokenDefinitionReference"),
+			argsExtractor.extractTokenPermissions("tokenPermissions"),
+			argsExtractor.asLong("nonce")
+		);
+
+		assertTrue(argsExtractor.isFinished());
+
+		return ttp;
+	}
+
+	private static MessageParticle makeMessageParticle(final Map<String, Object> arguments) {
+		var argsExtractor = ArgumentsExtractor.from(arguments);
+
+		var particle = new MessageParticle(
+			argsExtractor.asRadixAddress("from"),
+			argsExtractor.asRadixAddress("to"),
+			argsExtractor.asString("message").getBytes(StandardCharsets.UTF_8),
+			argsExtractor.asLong("nonce")
+		);
+
+		assertTrue(argsExtractor.isFinished());
+
+		return particle;
+	}
+
+	private static final Map<String, Function<Map<String, Object>, Object>> constructorMap = ImmutableMap.of(
+		"radix.particles.transferrable_tokens", JsonSerializationTestScenarioRunner::makeTransferrableTokensParticle,
+		"radix.particles.message", JsonSerializationTestScenarioRunner::makeMessageParticle
+	);
+
+	public void doRunTestVector(JsonSerializationTestVector testVector) throws AssertionError {
+		var produced = ofNullable(constructorMap.get(testVector.input.typeSerialization))
+			.map(constructor -> constructor.apply(testVector.input.arguments))
+			.map(model -> serialization.toJson(model, DsonOutput.Output.HASH))
+			.map(JSONFormatter::sortPrettyPrintJSONString)
+			.orElseThrow(() -> new IllegalStateException("Cant find constructor"));
+
+		String expected = JSONFormatter.sortPrettyPrintJSONString(testVector.expected.jsonPrettyPrinted);
+
+		assertEquals(expected, produced);
+	}
+}

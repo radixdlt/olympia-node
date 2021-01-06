@@ -1,0 +1,19 @@
+[Unit]
+Description=Radix DLT Client
+After=local-fs.target
+After=network-online.target
+After=nss-lookup.target
+After=time-sync.target
+After=systemd-journald-dev-log.socket
+Wants=network-online.target
+
+[Service]
+User=radixdlt
+WorkingDirectory=/opt/radixdlt
+ExecStart=/opt/radixdlt/bin/radixdlt
+SuccessExitStatus=143
+TimeoutStopSec=10
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
