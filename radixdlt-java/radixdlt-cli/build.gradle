@@ -50,3 +50,11 @@ shadowJar {
     }
     archiveName = "radixdlt-cli-${classifier}.${extension}"
 }
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.enabled true
+        csv.enabled false
+    }
+}

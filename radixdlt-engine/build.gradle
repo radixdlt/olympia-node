@@ -31,3 +31,11 @@ dependencies {
     testImplementation 'org.assertj:assertj-core'
     testImplementation 'com.flipkart.zjsonpatch:zjsonpatch'
 }
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.enabled true
+        csv.enabled false
+    }
+}

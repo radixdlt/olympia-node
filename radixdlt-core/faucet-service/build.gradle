@@ -75,3 +75,11 @@ task deb4docker(type: Copy, dependsOn: distTar) {
         }
     }
 }
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.enabled true
+        csv.enabled false
+    }
+}

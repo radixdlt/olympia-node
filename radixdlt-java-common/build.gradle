@@ -46,3 +46,11 @@ dependencies {
     testImplementation 'com.flipkart.zjsonpatch:zjsonpatch'
     testImplementation 'org.apache.logging.log4j:log4j-slf4j-impl'
 }
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.enabled true
+        csv.enabled false
+    }
+}

@@ -80,3 +80,11 @@ artifacts {
     archives sourcesJar
     archives javadocJar
 }
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.enabled true
+        csv.enabled false
+    }
+}
