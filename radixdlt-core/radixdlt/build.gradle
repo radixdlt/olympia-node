@@ -15,8 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-apply plugin: 'jacoco'
-apply plugin: 'checkstyle'
+apply plugin: 'java'
 apply plugin: 'application'
 apply plugin: 'distribution'
 apply plugin: 'project-report'
@@ -25,7 +24,6 @@ apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'com.moowork.node'
 apply plugin: 'me.champeau.gradle.jmh'
 apply plugin: 'org.sonarqube'
-apply plugin: 'com.adarshr.test-logger'
 apply plugin: 'net.nemerosa.versioning'
 apply plugin: 'com.palantir.git-version'
 
@@ -47,6 +45,7 @@ startScripts {
         unixScriptFile.text = unixScriptFile.text.replace('$APP_HOME/lib/resources', '$RADIXDLT_HOME')
     }
 }
+
 sourceSets {
     integrationTest {
         java {
@@ -58,20 +57,15 @@ sourceSets {
     }
 }
 
+
 configurations {
-    integrationTestCompile.extendsFrom testCompile
-    integrationTestRuntime.extendsFrom testRuntime
+    integrationTestImplementation.extendsFrom testImplementation
 }
 
 task integrationTest(type: Test) {
     testClassesDirs = sourceSets.integrationTest.output.classesDirs
     classpath = sourceSets.integrationTest.runtimeClasspath
     mustRunAfter(test)
-}
-
-checkstyle {
-    toolVersion '8.10.1'
-    showViolations = true
 }
 
 versionFile {
@@ -84,25 +78,12 @@ classes {
     dependsOn(versionFile)
 }
 
-checkstyleMain {
-    configFile project.file('config/checkstyle/checkstyle.xml')
-    exclude "**/org/radix/**/*.java"
-}
-
-checkstyleTest {
-    // Largely the same as the main file, but extended snake case allowed
-    configFile project.file('config/checkstyle/checkstyle_test.xml')
-    exclude "**/org/radix/**/*.java"
-}
-
 checkstyleIntegrationTest {
-    // Largely the same as the main file, but extended snake case allowed
-    configFile project.file('config/checkstyle/checkstyle_test.xml')
+    configFile rootProject.file('config/checkstyle/checkstyle_test.xml')
 }
 
 checkstyleJmh {
-    // Largely the same as the main file, but extended snake case allowed
-    configFile project.file('config/checkstyle/checkstyle_test.xml')
+    configFile rootProject.file('config/checkstyle/checkstyle_test.xml')
 }
 
 test {
@@ -138,59 +119,43 @@ jacocoTestReport {
     }
 }
 
-configurations.all {
-    resolutionStrategy.eachDependency {
-        if(it.requested.name == 'guava') {
-            it.useTarget 'com.google.guava:guava:29.0-jre'
-        }
-        if(it.requested.name == 'json') {
-            it.useTarget 'org.json:json:20180813'
-        }
-    }
-}
-
 dependencies {
-    compile 'com.radixdlt:radix-engine-library:feature~rpnv1-857-sanity-test-suite-json-scenarios-SNAPSHOT'
-    compile 'io.reactivex.rxjava3:rxjava:3.0.0'
-    compile 'com.sleepycat:je:18.3.12'
+    // If dependencies on other projects appear, do not forget to update
+    // generateDevUniverse task to depend on those projects
+    implementation project(':radixdlt-engine')
+    implementation project(':radixdlt-java-common')
 
-    // LMAX Disruptor for async logging
-    compile 'com.lmax:disruptor:3.4.2'
+    implementation 'io.reactivex.rxjava3:rxjava'
+    implementation 'com.sleepycat:je'
 
-    compile 'commons-cli:commons-cli:1.4'
-    compile 'org.xerial.snappy:snappy-java:1.1.7.3'
-    compile 'io.netty:netty-all:4.1.51.Final'
-    compile('com.google.inject:guice:4.2.2:no_aop') {
-        exclude group: 'com.google.guava', module: 'guava'
-    }
-    compile('com.google.inject.extensions:guice-grapher:4.2.2') {
-        exclude group: 'com.google.guava', module: 'guava'
-    }
+    implementation 'com.lmax:disruptor'
 
-    compile group: 'io.undertow', name: 'undertow-core', version: '2.0.32.Final'
-    compile group: 'io.undertow', name: 'undertow-servlet', version: '2.0.32.Final'
-    compile group: 'com.stijndewitt.undertow.cors', name: 'undertow-cors-filter', version: '0.4.0'
+    implementation 'commons-cli:commons-cli'
+    implementation 'org.xerial.snappy:snappy-java'
+    implementation 'io.netty:netty-all'
+    implementation 'com.google.inject:guice'
+    implementation 'com.google.inject.extensions:guice-grapher'
 
-    testCompile 'org.awaitility:awaitility:4.0.3'
-    testCompile('org.objenesis:objenesis:3.1') { force = true }
-    testCompile('org.javassist:javassist:3.27.0-GA') { force = true }
-    testCompile('org.mockito:mockito-core:3.5.10') { force = true }
-    testCompile('net.bytebuddy:byte-buddy:1.10.13') { force = true }
-    testCompile('net.bytebuddy:byte-buddy-agent:1.10.13') { force = true }
-    testCompile 'org.powermock:powermock-module-junit4:2.0.7'
-    testCompile 'org.powermock:powermock-api-mockito2:2.0.7'
-    testCompile 'nl.jqno.equalsverifier:equalsverifier:3.4.2'
-    testCompile 'org.hamcrest:hamcrest-library:1.3'
-    testCompile 'org.assertj:assertj-core:3.11.1'
-    testCompile('com.flipkart.zjsonpatch:zjsonpatch:0.4.5') {
-        exclude group: 'com.fasterxml.jackson.core', module: 'jackson-core'
-        exclude group: 'com.fasterxml.jackson.core', module: 'jackson-databind'
-    }
-    testCompile 'org.reflections:reflections:0.9.11'
+    implementation 'io.undertow:undertow-core'
+    implementation 'io.undertow:undertow-servlet'
+    implementation 'com.stijndewitt.undertow.cors:undertow-cors-filter'
 
-    // JMH
-    testCompile 'org.openjdk.jmh:jmh-core:1.25'
-    testCompile 'org.openjdk.jmh:jmh-generator-annprocess:1.25'
+    testImplementation 'org.awaitility:awaitility'
+    testImplementation 'org.objenesis:objenesis'
+    testImplementation 'org.javassist:javassist'
+    testImplementation 'org.mockito:mockito-core'
+    testImplementation 'net.bytebuddy:byte-buddy'
+    testImplementation 'net.bytebuddy:byte-buddy-agent'
+    testImplementation 'org.powermock:powermock-module-junit4'
+    testImplementation 'org.powermock:powermock-api-mockito2'
+    testImplementation 'nl.jqno.equalsverifier:equalsverifier'
+    testImplementation 'org.hamcrest:hamcrest-library'
+    testImplementation 'org.assertj:assertj-core'
+    testImplementation 'com.flipkart.zjsonpatch:zjsonpatch'
+    testImplementation 'org.reflections:reflections'
+
+    testImplementation 'org.openjdk.jmh:jmh-core'
+    testImplementation 'org.openjdk.jmh:jmh-generator-annprocess'
 }
 
 jmh {
@@ -198,14 +163,6 @@ jmh {
     fork = 2
     iterations = 3
     warmupIterations = 1
-}
-
-// More warnings
-tasks.withType(JavaCompile) {
-    options.compilerArgs << '-proc:none'
-    options.compilerArgs << '-Xlint:deprecation'
-    //options.compilerArgs << '-Xlint:unchecked' // Way too many of these at the moment
-    options.deprecation = true
 }
 
 // More memory
@@ -225,6 +182,12 @@ tasks.withType(Tar) {
 
 task generateDevUniverse(type: Exec) {
     dependsOn compileJava
+
+    //Alternative solution (slower, but does not require manual maintenance):
+    //dependsOn tasks.withType(Jar)
+    dependsOn ':radixdlt-java-common:jar'
+    dependsOn ':radixdlt-engine:jar'
+
     group = "Execution"
     description = "Generate development universe"
     commandLine "java", "-classpath", sourceSets.main.runtimeClasspath.getAsPath(),
@@ -240,6 +203,7 @@ task createGenerateUniversesScripts(type: CreateStartScripts) {
   mainClassName = 'org.radix.GenerateUniverses'
   applicationName = 'generate_universes'
 }
+
 tasks.getByName("createGenerateUniversesScripts").outputDir = tasks.getByName("startScripts").outputDir
 tasks.getByName("createGenerateUniversesScripts").classpath = tasks.getByName("startScripts").classpath
 tasks.getByName("createGenerateUniversesScripts").optsEnvironmentVar = tasks.getByName("startScripts").optsEnvironmentVar
@@ -258,6 +222,7 @@ task createGenerateNodeKeyScripts(type: CreateStartScripts) {
   mainClassName = 'org.radix.GenerateNodeKey'
   applicationName = 'generate_node_key'
 }
+
 tasks.getByName("createGenerateNodeKeyScripts").outputDir = tasks.getByName("startScripts").outputDir
 tasks.getByName("createGenerateNodeKeyScripts").classpath = tasks.getByName("startScripts").classpath
 tasks.getByName("createGenerateNodeKeyScripts").optsEnvironmentVar = tasks.getByName("startScripts").optsEnvironmentVar
@@ -323,7 +288,7 @@ task deb4docker(type: Copy, dependsOn: buildDeb) {
     from("$buildDir/distributions") {
         include "radixdlt_${ospackageVersion}_all.deb"
     }
-    into rootProject.file('docker')
+    into project.file('../docker')
     doFirst {
         def names = [] as Set
         destinationDir.eachFileMatch(groovy.io.FileType.FILES, ~/radixdlt_.+_all\.deb/) {

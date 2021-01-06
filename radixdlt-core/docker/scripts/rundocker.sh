@@ -9,10 +9,6 @@ scriptdir=$(dirname "$0")
 # Number of validators
 validators=${1:-1}
 
-# How to run docker-compose.
-# Can use: export DOCKER_COMPOSE_LAUNCH="sudo -E docker-compose"
-dockercompose=${DOCKER_COMPOSE_LAUNCH:-docker-compose}
-
 # Check for dockerfile
 dockerfile="${scriptdir}/../node-${validators}.yml"
 if [ ! -f "${dockerfile}" ]; then
@@ -21,9 +17,9 @@ if [ ! -f "${dockerfile}" ]; then
 fi
 
 # Load environment
-eval $(${scriptdir}/../../gradlew -q -p "${scriptdir}/../../radixdlt" -P "validators=${validators}" clean generateDevUniverse)
+eval $(${scriptdir}/../../../gradlew -q -p "${scriptdir}/../../radixdlt" -P "validators=${validators}" :radixdlt:clean :radixdlt:generateDevUniverse)
 
 # Launch
-${scriptdir}/../../gradlew -p "${scriptdir}/../.." deb4docker && \
+${scriptdir}/../../../gradlew -p "${scriptdir}/../../.." deb4docker && \
   (docker kill $(docker ps -q) || true) 2>/dev/null && \
-  ${dockercompose} -f "${dockerfile}" up --build | tee docker.log
+  docker-compose -f "${dockerfile}" up --build | tee docker.log

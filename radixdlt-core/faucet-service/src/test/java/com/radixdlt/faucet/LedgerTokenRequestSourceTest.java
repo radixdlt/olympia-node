@@ -43,7 +43,7 @@ import io.reactivex.Observable;
 import io.reactivex.observers.TestObserver;
 
 public class LedgerTokenRequestSourceTest {
-	private static final byte[] EMPTY_BYTES = new byte[] { };
+	private static final byte[] EMPTY_BYTES = new byte[] {};
 
 	private Random random = new Random();
 	private TestObserver<Pair<RadixAddress, EUID>> observer;

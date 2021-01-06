@@ -8,11 +8,14 @@ all:
     FAUCET_REPO ?= $(REGISTRY)/faucet
 
 .PHONY: build
-build:
-	./gradlew deb4docker
+build-core:
+	cd radixdlt && ../../gradlew deb4docker
+
+build-faucet:
+	cd faucet-service && ../../gradlew deb4docker
 
 .PHONY: package
-package: build
+package: build-core build-faucet
 	docker-compose -f docker/node-1.yml build
 	docker tag radixdlt/radixdlt-core:develop $(CORE_REPO):$(TAG)
 	docker tag radixdlt/faucet:develop $(FAUCET_REPO):$(TAG)

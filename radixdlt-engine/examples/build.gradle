@@ -39,7 +39,8 @@ compileTestJava {
 }
 
 dependencies {
-    compile rootProject //TODO: Hack for now since in code freeze
-    testCompile group: 'junit', name: 'junit', version: '4.12'
-    testCompile 'org.hamcrest:hamcrest-library:1.3'
+    implementation project(':radixdlt-engine')
+
+    testImplementation 'junit:junit:4.13'
+    testImplementation 'org.hamcrest:hamcrest-library:1.3'
 }
