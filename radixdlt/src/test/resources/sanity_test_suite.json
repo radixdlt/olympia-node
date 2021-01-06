@@ -1,0 +1,493 @@
+{
+	"integrity": {
+		"hashOfSuite": "45648c4ad69554b49ff3df094cbd5652c8cc9c284413789df4b8759c91e312c4",
+		"implementationInfo": "Read the 'suite' object from the root of this file, and prettify it to a JSON string with recursive sorting on keys and with 4 spaces indentation, then UTF8 encode the JSON string and SHA256 has it. Compare the hex of the hash with 'hashOfSuite'."
+	},
+	"suite": {
+		"scenarios": [
+			{
+				"description": {
+					"implementationInfo": "Expected hash is a hexadecimal string you should compare with the outputted hex string of the hasher",
+					"purpose": "Verify that system correctly computes SHA-2-256 hashes which are required for signatures and encryption.",
+					"troubleshooting": "Make sure to separate between hashing bytes and hashing strings which probably require encoding, typically UTF-8. Read more in links pointing to source of vectors for more info."
+				},
+				"identifier": "hashing",
+				"name": "SHA2-256 bit hashing",
+				"tests": {
+					"source": {
+						"link": "https://github.com/python/cpython/blob/e9684fac5a158be9806304a676e619857520a4dc/Lib/test/test_hashlib.py#L527-L543",
+						"originalSourceLink": "http://csrc.nist.gov/publications/fips/fips180-2/fips180-2.pdf"
+					},
+					"vectors": [
+						{
+							"input": {
+								"stringToHash": ""
+							},
+							"expected": {
+								"hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+							}
+						},
+						{
+							"input": {
+								"stringToHash": "abc"
+							},
+							"expected": {
+								"hash": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+							}
+						},
+						{
+							"input": {
+								"stringToHash": "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"
+							},
+							"expected": {
+								"hash": "248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1"
+							}
+						}
+					]
+				}
+			},
+			{
+				"description": {
+					"implementationInfo": "Expected hash is a hexadecimal string you should compare with the outputted hex string of the hasher",
+					"purpose": "Verify that system correctly computes SHA-2-256 hashes of SHA-2-256 hashes which are required for signatures and encryption.",
+					"troubleshooting": "Make sure to separate between hashing bytes and hashing strings which probably require encoding, typically UTF-8. Make sure you are hashing the digest of the first hasher."
+				},
+				"identifier": "radix_hashing",
+				"name": "Radix hashing",
+				"tests": {
+					"source": {
+						"link": "https://en.bitcoin.it/wiki/Protocol_documentation#Hashes"
+					},
+					"vectors": [
+						{
+							"expected": {
+								"hashOfHash": "9595c9df90075148eb06860365df33584b75bff782a510c6cd4883a419833d50"
+							},
+							"input": {
+								"stringToHash": "hello"
+							}
+						}
+					]
+				}
+			},
+			{
+				"description": {
+					"implementationInfo": "All numbers are hexedecimal and all public keys are compressed (65 char hex)",
+					"purpose": "Asserting that system can perform key generation of cryptographic keys compatible with the Elliptic Curve named 'secp256k1' which is used for cryptographic signatures by the Radix system.",
+					"troubleshooting": "First discover which ECDSA library is used for the system you are working on. E.g. for Java it is most likely BouncyCastle and for JavaScript/TypeScript it might be induntny/elliptic.js, take a look at their github issue board. Many things can go wrong if ECDSA is not properly implemented and used. So start with basics. Assert that you are using the correct private key, using the correct format and that the system produces the correct public key. Understand the difference between compressed public key and uncompressed. For more information please read this intro to ECDSA... link here."
+				},
+				"identifier": "secp256k1",
+				"name": "Elliptic Curve secp256k1 key generation",
+				"tests": {
+					"source": {
+						"link": "https://github.com/bitcoin/bips/blob/master/bip-0340/test-vectors.csv"
+					},
+					"vectors": [
+						{
+							"expected": {
+								"uncompressedPublicKey": "02F9308A019258C31049344F85F89D5229B531C845836F99B08601F113BCE036F9"
+							},
+							"input": {
+								"privateKey": "0000000000000000000000000000000000000000000000000000000000000003"
+							}
+						},
+						{
+							"expected": {
+								"uncompressedPublicKey": "02DFF1D77F2A671C5F36183726DB2341BE58FEAE1DA2DECED843240F7B502BA659"
+							},
+							"input": {
+								"privateKey": "B7E151628AED2A6ABF7158809CF4F3C762E7160F38B4DA56A784D9045190CFEF"
+							}
+						},
+						{
+							"expected": {
+								"uncompressedPublicKey": "02DD308AFEC5777E13121FA72B9CC1B7CC0139715309B086C960E18FD969774EB8"
+							},
+							"input": {
+								"privateKey": "C90FDAA22168C234C4C6628B80DC1CD129024E088A67CC74020BBEA63B14E5C9"
+							}
+						},
+						{
+							"expected": {
+								"uncompressedPublicKey": "0325D1DFF95105F5253C4022F628A996AD3A0D95FBF21D468A1B33F8C160D8F517"
+							},
+							"input": {
+								"privateKey": "0B432B2677937381AEF05BB02A66ECD012773062CF3FA2549E44F58ED2401710"
+							}
+						}
+					]
+				}
+			},
+			{
+				"description": {
+					"implementationInfo": "Message is not hashed, it should be UTF-8 encoded and then hashed before signing. Signatures are on R|S format, not DER format. Signatures MUST be determinsitic otherwise this test wont succceed and must also be on canonical form ('low S', according to BIP62).",
+					"purpose": "Verify that ECDSA signatures works as expected together with the ECC curve 'secp256k1'. We want to verify that input is determinsitically signed according to RFC6979 and that signatures are in canonical form.",
+					"troubleshooting": "Assert you are signing only hashed content, and that the content might have the correct UTF-8 encoding first. Ensure that you are not double hashing. Assert that you have the correct private key, maybe by asserting that when calculating the public key from it it matches the expected public key."
+				},
+				"identifier": "ecdsa_signing",
+				"name": "ECDSA signing (deterministic)",
+				"tests": {
+					"source": {
+						"link": "https://github.com/trezor/trezor-crypto/blob/957b8129bded180c8ac3106e61ff79a1a3df8893/tests/test_check.c#L1959-L1965"
+					},
+					"vectors": [
+						{
+							"expected": {
+								"k": "2df40ca70e639d89528a6b670d9d48d9165fdc0febc0974056bdce192b8e16a3",
+								"signature": {
+									"r": "af340daf02cc15c8d5d08d7735dfe6b98a474ed373bdb5fbecf7571be52b3842",
+									"s": "5009fb27f37034a9b24b707b7c6b79ca23ddef9e25f7282e8a797efe53a8f124",
+									"der": "3045022100af340daf02cc15c8d5d08d7735dfe6b98a474ed373bdb5fbecf7571be52b384202205009fb27f37034a9b24b707b7c6b79ca23ddef9e25f7282e8a797efe53a8f124"
+								}
+							},
+							"input": {
+								"privateKey": "CCA9FBCC1B41E5A95D369EAA6DDCFF73B61A4EFAA279CFC6567E8DAA39CBAF50",
+								"messageToSign": "sample"
+							}
+						},
+						{
+							"expected": {
+								"k": "8f8a276c19f4149656b280621e358cce24f5f52542772691ee69063b74f15d15",
+								"signature": {
+									"r": "934b1ea10a4b3c1757e2b0c017d0b6143ce3c9a7e6a4a49860d7a6ab210ee3d8",
+									"s": "2442ce9d2b916064108014783e923ec36b49743e2ffa1c4496f01a512aafd9e5",
+									"der": "3045022100934b1ea10a4b3c1757e2b0c017d0b6143ce3c9a7e6a4a49860d7a6ab210ee3d802202442ce9d2b916064108014783e923ec36b49743e2ffa1c4496f01a512aafd9e5"
+								}
+							},
+							"input": {
+								"privateKey": "0000000000000000000000000000000000000000000000000000000000000001",
+								"messageToSign": "Satoshi Nakamoto"
+							}
+						},
+						{
+							"expected": {
+								"k": "33a19b60e25fb6f4435af53a3d42d493644827367e6453928554f43e49aa6f90",
+								"signature": {
+									"r": "fd567d121db66e382991534ada77a6bd3106f0a1098c231e47993447cd6af2d0",
+									"s": "6b39cd0eb1bc8603e159ef5c20a5c8ad685a45b06ce9bebed3f153d10d93bed5",
+									"der": "3045022100fd567d121db66e382991534ada77a6bd3106f0a1098c231e47993447cd6af2d002206b39cd0eb1bc8603e159ef5c20a5c8ad685a45b06ce9bebed3f153d10d93bed5"
+								}
+							},
+							"input": {
+								"privateKey": "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364140",
+								"messageToSign": "Satoshi Nakamoto"
+							}
+						},
+						{
+							"expected": {
+								"k": "525a82b70e67874398067543fd84c83d30c175fdc45fdeee082fe13b1d7cfdf1",
+								"signature": {
+									"r": "7063ae83e7f62bbb171798131b4a0564b956930092b33b07b395615d9ec7e15c",
+									"s": "58dfcc1e00a35e1572f366ffe34ba0fc47db1e7189759b9fb233c5b05ab388ea",
+									"der": "304402207063ae83e7f62bbb171798131b4a0564b956930092b33b07b395615d9ec7e15c022058dfcc1e00a35e1572f366ffe34ba0fc47db1e7189759b9fb233c5b05ab388ea"
+								}
+							},
+							"input": {
+								"privateKey": "f8b8af8ce3c7cca5e300d33939540c10d45ce001b8f252bfbc57ba0342904181",
+								"messageToSign": "Alan Turing"
+							}
+						},
+						{
+							"expected": {
+								"k": "38aa22d72376b4dbc472e06c3ba403ee0a394da63fc58d88686c611aba98d6b3",
+								"signature": {
+									"r": "8600dbd41e348fe5c9465ab92d23e3db8b98b873beecd930736488696438cb6b",
+									"s": "547fe64427496db33bf66019dacbf0039c04199abb0122918601db38a72cfc21",
+									"der": "30450221008600dbd41e348fe5c9465ab92d23e3db8b98b873beecd930736488696438cb6b0220547fe64427496db33bf66019dacbf0039c04199abb0122918601db38a72cfc21"
+								}
+							},
+							"input": {
+								"privateKey": "0000000000000000000000000000000000000000000000000000000000000001",
+								"messageToSign": "All those moments will be lost in time, like tears in rain. Time to die..."
+							}
+						},
+						{
+							"expected": {
+								"k": "1f4b84c23a86a221d233f2521be018d9318639d5b8bbd6374a8a59232d16ad3d",
+								"signature": {
+									"r": "b552edd27580141f3b2a5463048cb7cd3e047b97c9f98076c32dbdf85a68718b",
+									"s": "279fa72dd19bfae05577e06c7c0c1900c371fcd5893f7e1d56a37d30174671f6",
+									"der": "3045022100b552edd27580141f3b2a5463048cb7cd3e047b97c9f98076c32dbdf85a68718b0220279fa72dd19bfae05577e06c7c0c1900c371fcd5893f7e1d56a37d30174671f6"
+								}
+							},
+							"input": {
+								"privateKey": "e91671c46231f833a6406ccbea0e3e392c76c167bac1cb013f6f1013980455c2",
+								"messageToSign": "There is a computer disease that anybody who works with computers knows about. It's a very serious disease and it interferes completely with the work. The trouble with computers is that you 'play' with them!"
+							}
+						}
+					]
+				}
+			},
+			{
+				"description": {
+					"implementationInfo": "Message is not hashed, it should be UTF-8 encoded and then hashed before signing. Signatures are on R|S format, not DER format. Public Keys are on compressed format",
+					"purpose": "Assert correct verification of ECDSA signatures.",
+					"troubleshooting": "Assert that you are not trying to import the signature on DER format. But rather using R|S format. Ensure that you are reading the whole signature. Ensure that you're not using an incorrect constructor for the public key, should be trying to parse a compressed public key. You might want to ensure that you are not double hashing the message and that it is on the correct format, i.e. single hashed of utf8 encoding of a plain text."
+				},
+				"identifier": "ecdsa_verification",
+				"name": "ECDSA Verification",
+				"tests": {
+					"source": {
+						"link": "https://github.com/google/wycheproof/blob/4672ff74d68766e7785c2cac4c597effccef2c5c/testvectors/ecdsa_secp256k1_sha256_test.json",
+						"modifiedByTool": {
+							"tool": {
+								"name": "JSONata",
+								"link": "https://try.jsonata.org/",
+								"version": "1.8.4"
+							},
+							"expression": "(\n\t$vectors := testGroups@$G.{\n\t\t'tests': $G.tests@$T[$T.result='valid'].{\n\t\t\t'expected': {\n\t\t\t\t'isValid': $T.result='valid'\n\t\t\t},\n\t\t\t'input': {\n\t\t\t\t'comment': $T.comment,\n\t\t\t\t'wycheProofVectorId': $T.tcId,\n\t\t\t\t'msg': $T.msg,\n\t\t\t\t'publicKeyUncompressed': $G.key.uncompressed,\n\t\t\t\t'signatureDerEncoded': $T.sig\n\t\t\t}\n\t\t}\n\t}.tests;\n\n\t$distinctBasedOnComment := function($acc, $el) {\n\t\t($el.input.comment in ($map($acc, function($accEl) { $accEl.input.comment }))) ? $acc : $append($acc,$el)\n\t};\n\n\t$distinctVectors := $reduce($vectors, $distinctBasedOnComment);\n\n\t$takeFirstN := function($toTake, $acc, $el) {\n\t\t$count($acc) = $toTake ? $acc : $append($acc,$el)\n\t};\n\n\t$takeFirstTen := function($acc, $el) {\n\t\t$takeFirstN(10, $acc, $el)\n\t};\n\n\t$reduce($distinctVectors, $takeFirstTen);\n)"
+						}
+					},
+					"vectors": [
+						{
+							"expected": {
+								"isValid": true
+							},
+							"input": {
+								"comment": "signature malleability",
+								"wycheProofVectorId": 1,
+								"msg": "313233343030",
+								"publicKeyUncompressed": "04b838ff44e5bc177bf21189d0766082fc9d843226887fc9760371100b7ee20a6ff0c9d75bfba7b31a6bca1974496eeb56de357071955d83c4b1badaa0b21832e9",
+								"signatureDerEncoded": "3046022100813ef79ccefa9a56f7ba805f0e478584fe5f0dd5f567bc09b5123ccbc9832365022100900e75ad233fcc908509dbff5922647db37c21f4afd3203ae8dc4ae7794b0f87"
+							}
+						},
+						{
+							"expected": {
+								"isValid": true
+							},
+							"input": {
+								"comment": "valid",
+								"wycheProofVectorId": 3,
+								"msg": "313233343030",
+								"publicKeyUncompressed": "04b838ff44e5bc177bf21189d0766082fc9d843226887fc9760371100b7ee20a6ff0c9d75bfba7b31a6bca1974496eeb56de357071955d83c4b1badaa0b21832e9",
+								"signatureDerEncoded": "3045022100813ef79ccefa9a56f7ba805f0e478584fe5f0dd5f567bc09b5123ccbc983236502206ff18a52dcc0336f7af62400a6dd9b810732baf1ff758000d6f613a556eb31ba"
+							}
+						},
+						{
+							"expected": {
+								"isValid": true
+							},
+							"input": {
+								"comment": "Edge case for Shamir multiplication",
+								"wycheProofVectorId": 230,
+								"msg": "3235353835",
+								"publicKeyUncompressed": "04b838ff44e5bc177bf21189d0766082fc9d843226887fc9760371100b7ee20a6ff0c9d75bfba7b31a6bca1974496eeb56de357071955d83c4b1badaa0b21832e9",
+								"signatureDerEncoded": "3045022100dd1b7d09a7bd8218961034a39a87fecf5314f00c4d25eb58a07ac85e85eab516022035138c401ef8d3493d65c9002fe62b43aee568731b744548358996d9cc427e06"
+							}
+						},
+						{
+							"expected": {
+								"isValid": true
+							},
+							"input": {
+								"comment": "special case hash",
+								"wycheProofVectorId": 231,
+								"msg": "343236343739373234",
+								"publicKeyUncompressed": "04b838ff44e5bc177bf21189d0766082fc9d843226887fc9760371100b7ee20a6ff0c9d75bfba7b31a6bca1974496eeb56de357071955d83c4b1badaa0b21832e9",
+								"signatureDerEncoded": "304502210095c29267d972a043d955224546222bba343fc1d4db0fec262a33ac61305696ae02206edfe96713aed56f8a28a6653f57e0b829712e5eddc67f34682b24f0676b2640"
+							}
+						},
+						{
+							"expected": {
+								"isValid": true
+							},
+							"input": {
+								"comment": "k*G has a large x-coordinate",
+								"wycheProofVectorId": 285,
+								"msg": "313233343030",
+								"publicKeyUncompressed": "0407310f90a9eae149a08402f54194a0f7b4ac427bf8d9bd6c7681071dc47dc36226a6d37ac46d61fd600c0bf1bff87689ed117dda6b0e59318ae010a197a26ca0",
+								"signatureDerEncoded": "30360211014551231950b75fc4402da1722fc9baeb022100fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd036413e"
+							}
+						},
+						{
+							"expected": {
+								"isValid": true
+							},
+							"input": {
+								"comment": "r,s are large",
+								"wycheProofVectorId": 287,
+								"msg": "313233343030",
+								"publicKeyUncompressed": "04bc97e7585eecad48e16683bc4091708e1a930c683fc47001d4b383594f2c4e22705989cf69daeadd4e4e4b8151ed888dfec20fb01728d89d56b3f38f2ae9c8c5",
+								"signatureDerEncoded": "3046022100fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd036413f022100fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd036413e"
+							}
+						},
+						{
+							"expected": {
+								"isValid": true
+							},
+							"input": {
+								"comment": "r and s^-1 have a large Hamming weight",
+								"wycheProofVectorId": 288,
+								"msg": "313233343030",
+								"publicKeyUncompressed": "0444ad339afbc21e9abf7b602a5ca535ea378135b6d10d81310bdd8293d1df3252b63ff7d0774770f8fe1d1722fa83acd02f434e4fc110a0cc8f6dddd37d56c463",
+								"signatureDerEncoded": "304402207ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc02203e9a7582886089c62fb840cf3b83061cd1cff3ae4341808bb5bdee6191174177"
+							}
+						},
+						{
+							"expected": {
+								"isValid": true
+							},
+							"input": {
+								"comment": "small r and s",
+								"wycheProofVectorId": 290,
+								"msg": "313233343030",
+								"publicKeyUncompressed": "041877045be25d34a1d0600f9d5c00d0645a2a54379b6ceefad2e6bf5c2a3352ce821a532cc1751ee1d36d41c3d6ab4e9b143e44ec46d73478ea6a79a5c0e54159",
+								"signatureDerEncoded": "3006020101020101"
+							}
+						},
+						{
+							"expected": {
+								"isValid": true
+							},
+							"input": {
+								"comment": "small r and s^-1",
+								"wycheProofVectorId": 295,
+								"msg": "313233343030",
+								"publicKeyUncompressed": "0402ef4d6d6cfd5a94f1d7784226e3e2a6c0a436c55839619f38fb4472b5f9ee777eb4acd4eebda5cd72875ffd2a2f26229c2dc6b46500919a432c86739f3ae866",
+								"signatureDerEncoded": "302702020101022100c58b162c58b162c58b162c58b162c58a1b242973853e16db75c8a1a71da4d39d"
+							}
+						},
+						{
+							"expected": {
+								"isValid": true
+							},
+							"input": {
+								"comment": "smallish r and s^-1",
+								"wycheProofVectorId": 296,
+								"msg": "313233343030",
+								"publicKeyUncompressed": "04464f4ff715729cae5072ca3bd801d3195b67aec65e9b01aad20a2943dcbcb584b1afd29d31a39a11d570aa1597439b3b2d1971bf2f1abf15432d0207b10d1d08",
+								"signatureDerEncoded": "302c02072d9b4d347952cc022100fcbc5103d0da267477d1791461cf2aa44bf9d43198f79507bd8779d69a13108e"
+							}
+						}
+					]
+				}
+			},
+			{
+				"description": {
+					"implementationInfo": "Each test vector contains a list of key values representing the contents of a Radix model, for which will try to instantiate it. We will then serialize the model into JSON and do a verbatim string comparison against an expected JSON string.",
+					"purpose": "Verify that all Radix models properly serializes into the expected JSON.",
+					"troubleshooting": "Please bear in mind the Radix JSON value prefixes e.g. ':byt:' prefix prepended to a byte string or ':adr:' prepended to a Radix address."
+			
+				},
+				"identifier": "json_serialization_radix_models",
+				"name": "JSON serialization of Radix Models",
+				"tests": {
+					"source": {
+						"comment": "Radix employee named 'Alexander Cyon' made the first implementation of this."
+					},
+					"vectors": [
+						{
+							"expected": {
+								"jsonPrettyPrinted": "{\n  \"address\": \":adr:JEtKBRFrEbZUnY7zrtHsF7aU9eYvL74VyVukp5m5HsKogmWUW1h\",\n  \"amount\": \":u20:960000000000000000\",\n  \"destinations\": [\n    \":uid:e45e72925767ee14d7368fec2a141768\"\n  ],\n  \"granularity\": \":u20:1\",\n  \"nonce\": 12345678,\n  \"permissions\": {\n    \"burn\": \":str:all\",\n    \"mint\": \":str:token_owner_only\"\n  },\n  \"serializer\": \"radix.particles.transferrable_tokens\",\n  \"tokenDefinitionReference\": \":rri:/JH3BuQw985MrbEdrNvW9ixG7evay2rgAhVTppaUkvayJ2r1WszP/XRD\",\n  \"version\": 100\n}"
+							},
+							"input": {
+								"typeSerialization": "radix.particles.transferrable_tokens",
+								"arguments": {
+									"address": "JEtKBRFrEbZUnY7zrtHsF7aU9eYvL74VyVukp5m5HsKogmWUW1h",
+									"amount": "960000000000000000",
+									"granularity": "1",
+									"tokenDefinitionReference": "/JH3BuQw985MrbEdrNvW9ixG7evay2rgAhVTppaUkvayJ2r1WszP/XRD",
+									"nonce": "12345678",
+									"tokenPermissions": {
+										"mint": "token_owner_only",
+										"burn": "all"
+									}
+								}
+							}
+						}, 
+						{
+							"expected": {
+								"jsonPrettyPrinted": "{\n  \"bytes\": \":byt:SGVsbG8gQm9iLCB0aGlzIGlzIHlvdXIgZnJpZW5kIEFsaWNlLg==\",\n  \"destinations\": [\n    \":uid:e45e72925767ee14d7368fec2a141768\",\n    \":uid:dfd7c486570a7ad40eb948c80cb89376\"\n  ],\n  \"from\": \":adr:JEtKBRFrEbZUnY7zrtHsF7aU9eYvL74VyVukp5m5HsKogmWUW1h\",\n  \"nonce\": 156115453148799,\n  \"serializer\": \"radix.particles.message\",\n  \"to\": \":adr:JFLKeSQmBZ73YkzWiesdEr2fRT14qCB1DQUvj8KxYQC6m8UTCcF\",\n  \"version\": 100\n}"
+							},
+							"input": {
+								"typeSerialization": "radix.particles.message",
+								"arguments": {
+									"message": "Hello Bob, this is your friend Alice.",
+									"from": "JEtKBRFrEbZUnY7zrtHsF7aU9eYvL74VyVukp5m5HsKogmWUW1h",
+									"to": "JFLKeSQmBZ73YkzWiesdEr2fRT14qCB1DQUvj8KxYQC6m8UTCcF",
+									"nonce": "156115453148799"
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"description": {
+					"implementationInfo": "Each test vector contains a list of key values representing the contents of a Radix model, for which will try to instantiate a Particle. We will then serialize the particle into JSON and do a verbatim string comparison against an expected JSON string.",
+					"purpose": "Verify that all Radix models properly deserializes from JSON.",
+					"troubleshooting": "Please bear in mind the Radix JSON value prefixes e.g. ':byt:' prefix prepended to a byte string or ':adr:' prepended to a Radix address."
+
+				},
+				"identifier": "json_deserialization_radix_models",
+				"name": "JSON deserialization of Radix Models",
+				"tests": {
+					"source": {
+						"comment": "Radix employee named 'Alexander Cyon' made the first implementation of this."
+					},
+					"vectors": [
+						{
+							"expected": {
+								"arguments": {
+									"address": "JEtKBRFrEbZUnY7zrtHsF7aU9eYvL74VyVukp5m5HsKogmWUW1h",
+									"amount": "960000000000000000",
+									"granularity": "1",
+									"tokenDefinitionReference": "/JH3BuQw985MrbEdrNvW9ixG7evay2rgAhVTppaUkvayJ2r1WszP/XRD",
+									"nonce": "12345678",
+									"tokenPermissions": {
+										"mint": "token_owner_only",
+										"burn": "all"
+									}
+								}
+							},
+							"input": {
+								"typeSerialization": "radix.particles.transferrable_tokens",
+								"json": {
+									"address": ":adr:JEtKBRFrEbZUnY7zrtHsF7aU9eYvL74VyVukp5m5HsKogmWUW1h",
+									"amount": ":u20:960000000000000000",
+									"destinations": [
+										":uid:e45e72925767ee14d7368fec2a141768"
+									],
+									"granularity": ":u20:1",
+									"nonce": 12345678,
+									"permissions": {
+										"burn": ":str:all",
+										"mint": ":str:token_owner_only"
+									},
+									"serializer": "radix.particles.transferrable_tokens",
+									"tokenDefinitionReference": ":rri:/JH3BuQw985MrbEdrNvW9ixG7evay2rgAhVTppaUkvayJ2r1WszP/XRD",
+									"version": 100
+								}
+							}
+						},
+						{
+							"expected": {
+								"arguments": {
+									"message": "Hello Bob, this is your friend Alice.",
+									"from": "JEtKBRFrEbZUnY7zrtHsF7aU9eYvL74VyVukp5m5HsKogmWUW1h",
+									"to": "JFLKeSQmBZ73YkzWiesdEr2fRT14qCB1DQUvj8KxYQC6m8UTCcF",
+									"nonce": "156115453148799"
+								}
+							},
+							"input": {
+								"typeSerialization": "radix.particles.message",
+								"json": {
+									"bytes": ":byt:SGVsbG8gQm9iLCB0aGlzIGlzIHlvdXIgZnJpZW5kIEFsaWNlLg==",
+									"destinations": [
+										":uid:e45e72925767ee14d7368fec2a141768",
+										":uid:dfd7c486570a7ad40eb948c80cb89376"
+									],
+									"from": ":adr:JEtKBRFrEbZUnY7zrtHsF7aU9eYvL74VyVukp5m5HsKogmWUW1h",
+									"nonce": 156115453148799,
+									"serializer": "radix.particles.message",
+									"to": ":adr:JFLKeSQmBZ73YkzWiesdEr2fRT14qCB1DQUvj8KxYQC6m8UTCcF",
+									"version": 100
+								}
+							}
+						}
+					]
+				}
+			}
+		]
+	}
+}
