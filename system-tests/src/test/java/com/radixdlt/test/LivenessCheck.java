@@ -99,7 +99,7 @@ public class LivenessCheck implements RemoteBFTCheck {
 				.map(node -> network.queryEndpointJson(node, "api/vertices/highestqc")
 					.map(LivenessCheck::extractEpochAndView)
 					.timeout(this.timeout, this.timeoutUnit)
-					.doOnError(err -> logger.warn(
+					.doOnError(err -> logger.debug(
 						"error while querying {} for highest QC, excluding from evaluation due to: {}",
 						node, err)
 					)

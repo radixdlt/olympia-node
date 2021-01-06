@@ -18,6 +18,9 @@
 
 package utils
 
+import com.radixdlt.test.LivenessCheck
+import org.junit.Assert
+
 class Generic {
 
     public static final String pathToKeyStoreFile = "src/test/resources/keystore/test-key.json"
@@ -66,5 +69,12 @@ class Generic {
         URI uri = new URI(url);
         String domain = uri.getHost();
         return domain.startsWith("www.") ? domain.substring(4) : domain;
+    }
+
+    static void assertAssertionErrorIsLivenessError(AssertionError error) {
+        Assert.assertNotNull("No error was thrown", error);
+        Class classOfExceptionCause = error.getCause().getClass();
+        Assert.assertEquals(String.format("Got %s instead of the expected LivenessError", classOfExceptionCause),
+                classOfExceptionCause, LivenessCheck.LivenessError.class);
     }
 }
