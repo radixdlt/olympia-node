@@ -1,0 +1,248 @@
+/*
+ * (C) Copyright 2020 Radix DLT Ltd
+ *
+ * Radix DLT Ltd licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License.  You may obtain a copy of the
+ * License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied.  See the License for the specific
+ * language governing permissions and limitations under the License.
+ */
+
+package com.radixdlt.utils;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
+import java.util.function.Function;
+import java.util.function.IntFunction;
+import java.util.function.LongFunction;
+import java.util.stream.LongStream;
+import java.util.stream.Stream;
+
+import org.junit.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+public class UInt256sTest {
+	@Test
+	public void when_constructing_uint256_from_big_integer__values_compare_equal() {
+		for (int pow2 = 0; pow2 <= 255; pow2++) {
+			assertEquals(
+				UInt256s.fromBigInteger(BigInteger.valueOf(2).pow(pow2)),
+				UInt256.TWO.pow(pow2)
+			);
+		}
+	}
+
+	@Test
+	public void when_constructing_uint256_from_negative_big_integer__exception_is_thrown() {
+		assertThatThrownBy(() -> UInt256s.fromBigInteger(BigInteger.valueOf(-1L)))
+			.isInstanceOf(IllegalArgumentException.class);
+	}
+
+	@Test
+	public void when_constructing_uint256_from_too_large_biginteger__exception_is_thrown() {
+		BigInteger tooBig = BigInteger.valueOf(2).pow(256);
+		assertThatThrownBy(() -> UInt256s.fromBigInteger(tooBig))
+			.isInstanceOf(IllegalArgumentException.class);
+	}
+
+	@Test
+	public void when_constructing_uint256_from_bigdecimal__values_compare_equal() {
+		for (int pow2 = 0; pow2 <= 255; pow2++) {
+			assertEquals(
+				UInt256s.fromBigDecimal(BigDecimal.valueOf(2).pow(pow2)),
+				UInt256.TWO.pow(pow2)
+			);
+		}
+	}
+
+	@Test
+	public void when_constructing_uint256_from_negative_bigdecimal__exception_is_thrown() {
+		assertThatThrownBy(() -> UInt256s.fromBigDecimal(BigDecimal.valueOf(-1)))
+			.isInstanceOf(IllegalArgumentException.class);
+	}
+
+	@Test
+	public void when_constructing_uint256_from_too_large_bigdecimal__exception_is_thrown() {
+		BigDecimal tooBig = BigDecimal.valueOf(2).pow(256);
+		assertThatThrownBy(() -> UInt256s.fromBigDecimal(tooBig))
+			.isInstanceOf(IllegalArgumentException.class);
+	}
+
+	@Test
+	public void when_constructing_uint256_from_fractional_bigdecimal__exception_is_thrown() {
+		BigDecimal fractional = BigDecimal.valueOf(Math.PI);
+		assertThatThrownBy(() -> UInt256s.fromBigDecimal(fractional))
+			.isInstanceOf(ArithmeticException.class);
+	}
+
+	@Test
+	public void test_min_cases() {
+		assertEquals(UInt256.ZERO, UInt256s.min(UInt256.ONE, UInt256.ZERO));
+		assertEquals(UInt256.ZERO, UInt256s.min(UInt256.ZERO, UInt256.ONE));
+
+		assertEquals(UInt256.TEN, UInt256s.min(UInt256.MAX_VALUE, UInt256.TEN));
+		assertEquals(UInt256.TEN, UInt256s.min(UInt256.TEN, UInt256.MAX_VALUE));
+
+		assertEquals(UInt256.ONE, UInt256s.min(UInt256.ONE, UInt256.ONE));
+	}
+
+	@Test
+	public void test_max_cases() {
+		assertEquals(UInt256.ONE, UInt256s.max(UInt256.ONE, UInt256.ZERO));
+		assertEquals(UInt256.ONE, UInt256s.max(UInt256.ZERO, UInt256.ONE));
+
+		assertEquals(UInt256.MAX_VALUE, UInt256s.max(UInt256.MAX_VALUE, UInt256.TEN));
+		assertEquals(UInt256.MAX_VALUE, UInt256s.max(UInt256.TEN, UInt256.MAX_VALUE));
+
+		assertEquals(UInt256.ONE, UInt256s.max(UInt256.ONE, UInt256.ONE));
+	}
+
+	@Test
+	public void lcm_edgecases() {
+		// Null cap
+		assertThatThrownBy(() -> UInt256s.cappedLCM(null, UInt256.ONE, UInt256.TWO))
+			.isInstanceOf(NullPointerException.class);
+
+		// Empty varargs
+		assertThatThrownBy(() -> UInt256s.cappedLCM(UInt256.MAX_VALUE))
+			.isInstanceOf(ArrayIndexOutOfBoundsException.class);
+
+		// Exceeds cap
+		assertNull(UInt256s.cappedLCM(UInt256.ONE, UInt256.TWO, UInt256.THREE));
+
+		// Zero element
+		assertEquals(UInt256.ZERO, UInt256s.cappedLCM(UInt256.MAX_VALUE, UInt256.ONE, UInt256.ZERO));
+
+		// Overflow - lcm of two largest primes less than UInt256.MAX_VALUE
+		UInt256 largePrime1 = UInt256s.fromBigInteger(
+			new BigInteger("115792089237316195423570985008687907853269984665640564039457584007913129639747")
+		);
+		UInt256 largePrime2 = UInt256s.fromBigInteger(
+			new BigInteger("115792089237316195423570985008687907853269984665640564039457584007913129639579")
+		);
+		assertNull(UInt256s.cappedLCM(UInt256.MAX_VALUE, largePrime1, largePrime2));
+	}
+
+	private static <T> void testPrimeLCM(
+		IntFunction<T[]> arrayBuilder,
+		LongFunction<T> builder,
+		BinaryOperator<T> multiply,
+		T one,
+		T max,
+		Function<T, BigInteger> toBI,
+		BiFunction<T, T[], T> lcmFunction
+	) {
+		List<Integer> primeList = Arrays.asList(
+			2, 3, 5, 7, 11, 13, 17, 19, 23, 29,
+			31, 37, 41, 43, 47, 53, 59, 61, 67,
+			71, 73, 79, 83, 89, 97, 101, 103, 107,
+			109, 113, 127, 131, 137, 139, 149
+		);
+		IntFunction<LongStream> primeNumbers = size -> primeList.stream()
+			.mapToLong(i -> i)
+			.limit(size);
+
+		BigInteger maxBI = toBI.apply(max);
+		for (int size = 1; size < primeList.size(); size++) {
+			T[] values = primeNumbers.apply(size)
+				.mapToObj(builder)
+				.toArray(arrayBuilder);
+
+			BigInteger biExpected = primeNumbers.apply(size)
+				.mapToObj(BigInteger::valueOf)
+				.reduce(BigInteger.ONE, BigInteger::multiply);
+
+			final T expected;
+			if (biExpected.compareTo(maxBI) > 0) {
+				expected = null;
+			} else {
+				expected = primeNumbers.apply(size)
+					.mapToObj(builder)
+					.reduce(one, multiply);
+			}
+
+			assertThat(lcmFunction.apply(max, values))
+				.isEqualTo(expected);
+		}
+	}
+
+	private static <T> void testGeometricLCM(
+		IntFunction<T[]> arrayBuilder,
+		LongFunction<T> builder,
+		BinaryOperator<T> multiply,
+		BiFunction<T, Integer, T> pow,
+		T max,
+		Function<T, BigInteger> toBI,
+		BiFunction<T, T[], T> lcmFunction
+	) {
+
+		BigInteger maxBI = toBI.apply(max);
+		for (int exponent = 1; exponent < 12; exponent++) {
+			for (int base = 2; base < 1024; base++) {
+				final T baseNum = builder.apply(base);
+				final T[] values = Stream.iterate(baseNum, n -> multiply.apply(n, baseNum))
+					.limit(exponent)
+					.toArray(arrayBuilder);
+
+				final BigInteger biExpected = BigInteger.valueOf(base).pow(exponent);
+				final T expected;
+				if (biExpected.compareTo(maxBI) > 0) {
+					expected = null;
+				} else {
+					expected = pow.apply(builder.apply(base), exponent);
+				}
+
+				assertThat(lcmFunction.apply(max, values))
+					.isEqualTo(expected);
+			}
+		}
+	}
+
+	@Test
+	public void testOneAndMax256() {
+		assertThat(UInt256s.cappedLCM(UInt256.MAX_VALUE, UInt256.ONE, UInt256.MAX_VALUE))
+			.isEqualTo(UInt256.MAX_VALUE);
+	}
+
+	@Test
+	public void testPrimeLCM256() {
+		testPrimeLCM(
+			UInt256[]::new,
+			UInt256::from,
+			UInt256::multiply,
+			UInt256.ONE,
+			UInt256.MAX_VALUE,
+			i -> new BigInteger(1, i.toByteArray()),
+			UInt256s::cappedLCM
+		);
+	}
+
+	@Test
+	public void testGeometricLCM256() {
+		testGeometricLCM(
+			UInt256[]::new,
+			UInt256::from,
+			UInt256::multiply,
+			UInt256::pow,
+			UInt256.MAX_VALUE,
+			i -> new BigInteger(1, i.toByteArray()),
+			UInt256s::cappedLCM
+		);
+	}
+}
