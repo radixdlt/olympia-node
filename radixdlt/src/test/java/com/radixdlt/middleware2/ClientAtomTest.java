@@ -21,11 +21,13 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.hash.HashCode;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atommodel.message.MessageParticle;
 import com.radixdlt.consensus.Sha256Hasher;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.middleware.ParticleGroup;
@@ -41,7 +43,10 @@ public class ClientAtomTest {
 	public void equalsContract() {
 		EqualsVerifier
 			.forClass(ClientAtom.class)
-			.withIgnoredFields("metaData", "perGroupMetadata", "instructions", "signatures", "witness");
+			// Only AID is compared.
+			.withIgnoredFields("metaData", "perGroupMetadata", "instructions", "signatures", "witness")
+			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+			.verify();
 	}
 
 	private static Atom createApiAtom() {
