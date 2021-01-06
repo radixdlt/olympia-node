@@ -1,0 +1,15 @@
+.gradle
+.DS_Store
+.project
+.settings/
+.classpath
+examples/out/
+out/
+*.key
+*.ks
+build/
+bin/
+
+# IntelliJ project files
+.idea
+*.iml

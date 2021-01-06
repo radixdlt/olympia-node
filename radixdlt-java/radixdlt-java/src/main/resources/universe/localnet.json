@@ -1,0 +1,125 @@
+{
+    "magic": -1224540158,
+    "hid": ":uid:852b5d7bf8d4e2cf149269a165e25f68",
+    "creator": ":byt:Apv3kviax5wHBLCRRm5MPwvsdvWxHwZfmQUKyTM8P4OZ",
+    "signature.r": ":byt:rboI9dli053q2B/mk81PGlIAGWWQkVb1XCUZh69s6EI=",
+    "signature.s": ":byt:XxWXkja72MSDUzenYiDb3X43kUqWcqJd8Czp2FYX02c=",
+    "serializer": "radix.universe",
+    "description": ":str:The Radix development Universe",
+    "type": 2,
+    "version": 100,
+    "genesis": [{
+        "hid": ":uid:78158d12ab04080b438b2c9d24eb38b9",
+        "serializer": "radix.atom",
+        "version": 100,
+        "particleGroups": [
+            {
+                "serializer": "radix.particle_group",
+                "particles": [{
+                    "spin": 1,
+                    "serializer": "radix.spun_particle",
+                    "particle": {
+                        "hid": ":uid:9c8efc6bd57097b10b3adc1b009acdb9",
+                        "bytes": ":byt:UmFkaXguLi4ganVzdCBpbWFnaW5lIQ==",
+                        "destinations": [":uid:dfd7c486570a7ad40eb948c80cb89376"],
+                        "serializer": "radix.particles.message",
+                        "from": ":adr:JFLKeSQmBZ73YkzWiesdEr2fRT14qCB1DQUvj8KxYQC6m8UTCcF",
+                        "to": ":adr:JFLKeSQmBZ73YkzWiesdEr2fRT14qCB1DQUvj8KxYQC6m8UTCcF",
+                        "version": 100,
+                        "nonce": 156115453148799
+                    },
+                    "version": 100
+                }],
+                "version": 100
+            },
+            {
+                "serializer": "radix.particle_group",
+                "particles": [
+                    {
+                        "spin": -1,
+                        "serializer": "radix.spun_particle",
+                        "particle": {
+                            "hid": ":uid:85561567e9dc96578362806ce9e136f2",
+                            "destinations": [":uid:dfd7c486570a7ad40eb948c80cb89376"],
+                            "rri": ":rri:/JFLKeSQmBZ73YkzWiesdEr2fRT14qCB1DQUvj8KxYQC6m8UTCcF/XRD",
+                            "serializer": "radix.particles.rri",
+                            "version": 100,
+                            "nonce": 0
+                        },
+                        "version": 100
+                    },
+                    {
+                        "spin": 1,
+                        "serializer": "radix.spun_particle",
+                        "particle": {
+                            "hid": ":uid:e2f07757b562c25f9afea56acd0ebcda",
+                            "granularity": ":u20:1",
+                            "permissions": {
+                                "mint": ":str:token_owner_only",
+                                "burn": ":str:all"
+                            },
+                            "destinations": [":uid:dfd7c486570a7ad40eb948c80cb89376"],
+                            "rri": ":rri:/JFLKeSQmBZ73YkzWiesdEr2fRT14qCB1DQUvj8KxYQC6m8UTCcF/XRD",
+                            "name": ":str:Rads",
+                            "serializer": "radix.particles.mutable_supply_token_definition",
+                            "description": ":str:Radix Native Tokens",
+                            "iconUrl": ":str:https://assets.radixdlt.com/icons/icon-xrd-32x32.png",
+                            "version": 100,
+                            "url": ":str:https://www.radixdlt.com/"
+                        },
+                        "version": 100
+                    },
+                    {
+                        "spin": 1,
+                        "serializer": "radix.spun_particle",
+                        "particle": {
+                            "amount": ":u20:115792089237316195423570985008687907853269984665639564039457584007913129639935",
+                            "hid": ":uid:8e9721dc839cc1a8fc59f8a77fe57bb9",
+                            "granularity": ":u20:1",
+                            "permissions": {
+                                "mint": ":str:token_owner_only",
+                                "burn": ":str:all"
+                            },
+                            "destinations": [":uid:dfd7c486570a7ad40eb948c80cb89376"],
+                            "serializer": "radix.particles.unallocated_tokens",
+                            "version": 100,
+                            "nonce": 156115453124639,
+                            "tokenDefinitionReference": ":rri:/JFLKeSQmBZ73YkzWiesdEr2fRT14qCB1DQUvj8KxYQC6m8UTCcF/XRD"
+                        },
+                        "version": 100
+                    },
+                    {
+                        "spin": 1,
+                        "serializer": "radix.spun_particle",
+                        "particle": {
+                            "amount": ":u20:1000000000000000000000000000",
+                            "hid": ":uid:52227713314d585890049a9b242c23a5",
+                            "address": ":adr:JFLKeSQmBZ73YkzWiesdEr2fRT14qCB1DQUvj8KxYQC6m8UTCcF",
+                            "granularity": ":u20:1",
+                            "permissions": {
+                                "mint": ":str:token_owner_only",
+                                "burn": ":str:all"
+                            },
+                            "destinations": [":uid:dfd7c486570a7ad40eb948c80cb89376"],
+                            "serializer": "radix.particles.transferrable_tokens",
+                            "version": 100,
+                            "nonce": 156115453126795,
+                            "tokenDefinitionReference": ":rri:/JFLKeSQmBZ73YkzWiesdEr2fRT14qCB1DQUvj8KxYQC6m8UTCcF/XRD"
+                        },
+                        "version": 100
+                    }
+                ],
+                "version": 100
+            }
+        ],
+        "signatures": {"dfd7c486570a7ad40eb948c80cb89376": {
+            "r": ":byt:AY5N348aY4yVwFDwRPAqXvzvmCWXiSESKZ91Bg154bY=",
+            "s": ":byt:X4CYiwMpIxNQksGAwoGMaz0ozyNfhKlh5q6OIx0gl50=",
+            "serializer": "crypto.ecdsa_signature",
+            "version": 100
+        }}
+    }],
+    "port": 30000,
+    "name": ":str:Radix Devnet",
+    "timestamp": 1551225600000
+}
