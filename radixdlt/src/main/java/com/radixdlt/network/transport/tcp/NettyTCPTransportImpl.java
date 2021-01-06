@@ -220,8 +220,7 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 			if (cause == null) {
 				log.info("Established connection to {}:{}", host, port);
 			} else {
-				String msg = String.format("Connection to %s:%s failed", host, port);
-				log.warn(msg, cause);
+				log.warn("Connection to {}:{} failed: {}", host, port, cause.getMessage());
 			}
 		});
 	}
