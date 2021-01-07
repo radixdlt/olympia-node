@@ -269,21 +269,26 @@ class CmdHelper {
     }
 
     static String[] generateUniverseValidators(int numNodes){
-        String[] exportVars, error
+        String[] exportVars,error
         if (isRunningOnWindows()) {
             //exportVars = TempUniverseCreator.getHardcodedUniverse(); TODO a bit weird but this helps development on windows
             throw new RuntimeException("For these tests to run on windows, you need to find a way to provide a universe.")
-        } else {
-            (exportVars, error) = runCommand("./gradlew -P validators=${numNodes} clean generateDevUniverse", null, true, true, System.getenv("CORE_DIR"));
         }
-
-        return exportVars
+        String gradlewPath = System.getProperty("user.dir")
+        (exportVars, error) =  runCommand("${gradlewPath}/gradlew -P validators=${numNodes} clean generateDevUniverse",
+                null,false, true,"${System.getenv('CORE_DIR')}/radixdlt-core/radixdlt");
+        String[] envVars =  exportVars
                 .findAll({ it.contains("export") })
                 .collect({it.replaceAll("export","")})
+        if (envVars.size() > 0)
+            return envVars
+        else
+            throw new Exception("Universe environment variables weren't generated")
     }
 
     static void cleanCoreGradleOutput(){
-        runCommand("./gradlew clean",null,true,true,System.getenv("CORE_DIR"));
+        String gradlewPath = System.getProperty("user.dir")
+        runCommand("${gradlewPath}/gradlew clean",null,true,true,"${System.getenv('CORE_DIR')}");
     }
 
     static String getNodeValidator(String[] allEnvVariables,options){

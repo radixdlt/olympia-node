@@ -106,7 +106,6 @@ public class DockerNetwork implements Closeable, RemoteBFTNetwork {
 			String containerId = CmdHelper.runContainer(dockerCommand, dockerEnv);
 			options.put("containerId",containerId);
 		});
-		CmdHelper.checkNGenerateKey();
 
 		return Collections.unmodifiableMap(dockerOptionsPerNode);
 	}
