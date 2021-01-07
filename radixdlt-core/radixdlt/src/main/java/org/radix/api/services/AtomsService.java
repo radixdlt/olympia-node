@@ -53,6 +53,8 @@ import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
 
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -214,7 +216,7 @@ public class AtomsService {
 
 	public org.radix.api.observable.Observable<ObservedAtomEvents> getAtomEvents(AtomQuery atomQuery) {
 		return observer -> {
-			final AtomEventObserver atomEventObserver = new AtomEventObserver(atomQuery, observer, executorService, store, commandToBinaryConverter, clientAtomToBinaryConverter, hasher);
+			final AtomEventObserver atomEventObserver = createAtomObserver(atomQuery, observer);
 			atomEventObserver.start();
 			this.atomEventObservers.add(atomEventObserver);
 
@@ -223,6 +225,12 @@ public class AtomsService {
 				atomEventObserver.cancel();
 			};
 		};
+	}
+
+	private AtomEventObserver createAtomObserver(AtomQuery atomQuery, Consumer<ObservedAtomEvents> observer) {
+		return new AtomEventObserver(
+			atomQuery, observer, executorService, store, commandToBinaryConverter, clientAtomToBinaryConverter, hasher
+		);
 	}
 
 	public long getWaitingCount() {

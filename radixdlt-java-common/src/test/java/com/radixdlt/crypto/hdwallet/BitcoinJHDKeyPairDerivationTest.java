@@ -66,7 +66,8 @@ public class BitcoinJHDKeyPairDerivationTest {
 	public void when_deriving_a_hd_key_pair_with_a_large_index_then_then_the_returned_key_pair_is_correct() {
 		// Seed from BIP32 test vector: `test_vectors_bip32.json`
 		HDKeyPairDerivation hdKeyPairDerivation = DefaultHDKeyPairDerivation.fromSeed(
-				"fffcf9f6f3f0edeae7e4e1dedbd8d5d2cfccc9c6c3c0bdbab7b4b1aeaba8a5a29f9c999693908d8a8784817e7b7875726f6c696663605d5a5754514e4b484542"
+			"fffcf9f6f3f0edeae7e4e1dedbd8d5d2cfccc9c6c3c0bdbab7b4b1aeaba8a5a2"
+			+ "9f9c999693908d8a8784817e7b7875726f6c696663605d5a5754514e4b484542"
 		);
 
 		// Key from BIP32 test vector: `test_vectors_bip32.json`

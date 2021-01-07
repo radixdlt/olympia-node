@@ -39,28 +39,28 @@ import com.google.common.collect.ImmutableList;
 import static com.radixdlt.serialization.MapHelper.mapOf;
 
 @SerializerId2("api.system")
-public class RadixSystem extends BasicContainer
-{
+public class RadixSystem extends BasicContainer {
 	@Override
-	public short VERSION() { return 100; }
+	public short version() {
+		return 100;
+	}
 
-	private int  			agentVersion;
-	private int  			protocolVersion;
+	private int agentVersion;
+	private int protocolVersion;
 
-	private String 			agent;
+	private String agent;
 
 	@JsonProperty("timestamp")
 	@DsonOutput(Output.ALL)
-	private long			timestamp;
+	private long timestamp;
 
 	@JsonProperty("transports")
 	@DsonOutput(Output.ALL)
 	private ImmutableList<TransportInfo> transports;
 
-	private ECPublicKey		key;
+	private ECPublicKey key;
 
-	public RadixSystem()
-	{
+	public RadixSystem() {
 		super();
 
 		this.agent = "unknown";
@@ -72,8 +72,7 @@ public class RadixSystem extends BasicContainer
 
 	}
 
-	public RadixSystem(ECPublicKey key, String agent, int agentVersion, int protocolVersion, ImmutableList<TransportInfo> transports)
-	{
+	public RadixSystem(ECPublicKey key, String agent, int agentVersion, int protocolVersion, ImmutableList<TransportInfo> transports) {
 		this();
 
 		this.key = key;
@@ -83,23 +82,19 @@ public class RadixSystem extends BasicContainer
 		this.transports = transports;
 	}
 
-	public String getAgent()
-	{
+	public String getAgent() {
 		return this.agent;
 	}
 
-	public int getAgentVersion()
-	{
+	public int getAgentVersion() {
 		return this.agentVersion;
 	}
 
-	public int getProtocolVersion()
-	{
+	public int getProtocolVersion() {
 		return this.protocolVersion;
 	}
 
-	public long getTimestamp()
-	{
+	public long getTimestamp() {
 		return this.timestamp;
 	}
 
@@ -111,13 +106,11 @@ public class RadixSystem extends BasicContainer
 		return transports.stream();
 	}
 
-	public ECPublicKey getKey()
-	{
+	public ECPublicKey getKey() {
 		return key;
 	}
 
-	public EUID getNID()
-	{
+	public EUID getNID() {
 		return this.key == null ? EUID.ZERO : this.key.euid();
 	}
 
@@ -127,9 +120,10 @@ public class RadixSystem extends BasicContainer
 	@DsonOutput(Output.ALL)
 	Map<String, Object> getJsonAgent() {
 		return mapOf(
-				"name", this.agent,
-				"version", this.agentVersion,
-				"protocol", this.protocolVersion);
+			"name", this.agent,
+			"version", this.agentVersion,
+			"protocol", this.protocolVersion
+		);
 	}
 
 	@JsonProperty("agent")
@@ -178,11 +172,11 @@ public class RadixSystem extends BasicContainer
 		}
 		RadixSystem that = (RadixSystem) o;
 		return agentVersion == that.agentVersion
-				&& protocolVersion == that.protocolVersion
-				&& timestamp == that.timestamp
-				&& Objects.equals(agent, that.agent)
-				&& Objects.equals(transports, that.transports)
-				&& Objects.equals(key, that.key);
+			&& protocolVersion == that.protocolVersion
+			&& timestamp == that.timestamp
+			&& Objects.equals(agent, that.agent)
+			&& Objects.equals(transports, that.transports)
+			&& Objects.equals(key, that.key);
 	}
 
 	@Override

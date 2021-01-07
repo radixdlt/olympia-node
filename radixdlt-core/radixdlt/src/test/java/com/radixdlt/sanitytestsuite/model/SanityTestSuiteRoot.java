@@ -127,7 +127,10 @@ public final class SanityTestSuiteRoot {
 						this.description.troubleshooting,
 						this.description.implementationInfo,
 						this.tests.source.link,
-						this.tests.source.modifiedByTool == null ? "NO" : "YES, modified with tool (see 'expression' for how): " + this.tests.source.modifiedByTool.tool.link,
+						this.tests.source.modifiedByTool == null
+							? "NO"
+							: "YES, modified with tool (see 'expression' for how): "
+							  + this.tests.source.modifiedByTool.tool.link,
 						testAssertionError.getLocalizedMessage()
 				);
 			}

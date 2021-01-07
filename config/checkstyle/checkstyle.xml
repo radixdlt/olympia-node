@@ -72,9 +72,8 @@
 
     <!-- Checks for Size Violations.                    -->
     <!-- See http://checkstyle.sf.net/config_sizes.html -->
-    <!-- TODO: set to 150 once issues are fixed -->
     <module name="LineLength">
-        <property name="max" value="300"/>
+        <property name="max" value="150"/>
         <property name="ignorePattern" value="^*BQAA.*$"/>
     </module>
 
@@ -174,8 +173,7 @@
         <!-- See http://checkstyle.sf.net/config_design.html -->
         <!-- module name="DesignForExtension"/ -->
         <!-- module name="FinalClass"/ -->
-        <!-- TODO: enable it once issues are fixed -->
-        <!-- module name="HideUtilityClassConstructor"/ --> 
+        <module name="HideUtilityClassConstructor"/>
         <module name="InterfaceIsType"/>
         <module name="VisibilityModifier">
             <property name="packageAllowed" value="true"/>

@@ -75,7 +75,8 @@ public class CMAtomOSTest {
 	@Test
 	public void when_adding_procedure_on_particle_registered_in_another_scrypt__exception_is_thrown() {
 		CMAtomOS os = new CMAtomOS();
-		TransitionProcedure<TestParticle0, VoidUsedData, TestParticle0, VoidUsedData> procedure = mock(TransitionProcedureTestParticle00.class);
+		TransitionProcedure<TestParticle0, VoidUsedData, TestParticle0, VoidUsedData> procedure =
+			mock(TransitionProcedureTestParticle00.class);
 		os.load(syscalls -> {
 			syscalls.registerParticle(TestParticle0.class, ParticleDefinition.<TestParticle>builder()
 				.singleAddressMapper(x -> mock(RadixAddress.class))
@@ -90,7 +91,8 @@ public class CMAtomOSTest {
 				procedure
 			);
 		});
-		TransitionProcedure<TestParticle1, VoidUsedData, TestParticle0, VoidUsedData> procedure0 = mock(TransitionProcedureTestParticle10.class);
+		TransitionProcedure<TestParticle1, VoidUsedData, TestParticle0, VoidUsedData> procedure0 =
+			mock(TransitionProcedureTestParticle10.class);
 		assertThatThrownBy(() ->
 			os.load(syscalls -> {
 				syscalls.registerParticle(TestParticle1.class, ParticleDefinition.<TestParticle>builder()

@@ -322,8 +322,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 				OperationStatus status = cursor.getLast(pKey, value, LockMode.DEFAULT);
 				if (status == OperationStatus.SUCCESS) {
 					try {
-						SerializedVertexStoreState serializedVertexWithQC = serialization.fromDson(value.getData(), SerializedVertexStoreState.class);
-						return Optional.of(serializedVertexWithQC);
+						return Optional.of(serialization.fromDson(value.getData(), SerializedVertexStoreState.class));
 					} catch (DeserializeException e) {
 						throw new IllegalStateException(e);
 					}
@@ -494,7 +493,8 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 						DatabaseEntry value = new DatabaseEntry();
 						OperationStatus uqCursorStatus = uqCursor.getSearchKey(key, value, LockMode.DEFAULT);
 
-						// TODO when uqCursor fails to fetch value, which means some form of DB corruption has occurred, how should we handle it?
+						// TODO when uqCursor fails to fetch value, which means some form of DB corruption has occurred,
+						//  how should we handle it?
 						if (uqCursorStatus == OperationStatus.SUCCESS) {
 							LedgerEntry ledgerEntry = serialization.fromDson(value.getData(), LedgerEntry.class);
 							if (proofVersion == -1) {
@@ -742,12 +742,17 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 			indices.forEach(index -> secondaries.add(new DatabaseEntry(index.asKey())));
 		}
 
-		private static AtomSecondaryCreator from(Map<AID, LedgerEntryIndices> atomIndices, Function<LedgerEntryIndices, Set<StoreIndex>> indexer) {
+		private static AtomSecondaryCreator from(
+			Map<AID, LedgerEntryIndices> atomIndices,
+			Function<LedgerEntryIndices, Set<StoreIndex>> indexer
+		) {
 			return new AtomSecondaryCreator(
 				key -> {
 					LedgerEntryIndices ledgerEntryIndices = atomIndices.get(getAidFromPKey(key));
 					if (ledgerEntryIndices == null) {
-						throw new IllegalStateException("Indices for atom '" + Longs.fromByteArray(key.getData()) + "' not available");
+						throw new IllegalStateException(
+							"Indices for atom '" + Longs.fromByteArray(key.getData()) + "' not available"
+						);
 					}
 					return indexer.apply(ledgerEntryIndices);
 				}

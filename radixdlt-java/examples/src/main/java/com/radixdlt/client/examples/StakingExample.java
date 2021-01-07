@@ -38,6 +38,7 @@ import com.radixdlt.identifiers.RadixAddress;
 import java.math.BigDecimal;
 
 public class StakingExample {
+	private StakingExample() { }
 	public static void main(String[] args) {
 		RadixAddress delegate1 = RadixAddress.from("JEbhKQzBn4qJzWJFBbaPioA2GTeaQhuUjYWkanTE6N8VvvPpvM8");
 		RadixAddress delegate2 = RadixAddress.from("23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x");

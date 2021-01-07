@@ -32,7 +32,7 @@ public final class PeerWithNid extends Peer {
 	private final EUID nid;
 
 	@Override
-	public short VERSION() {
+	public short version() {
 		return 100;
 	}
 

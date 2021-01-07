@@ -109,7 +109,12 @@ public final class BFTEventVerifier implements BFTEventProcessor {
 	private Optional<BFTNode> validAuthor(ConsensusEvent event) {
 		BFTNode node = event.getAuthor();
 		if (!validatorSet.containsNode(node)) {
-			log.warn("CONSENSUS_EVENT: {} from author {} not in validator set {}", event.getClass().getSimpleName(), node, this.validatorSet);
+			log.warn(
+				"CONSENSUS_EVENT: {} from author {} not in validator set {}",
+				 event.getClass().getSimpleName(),
+				 node,
+				 this.validatorSet
+			);
 			return Optional.empty();
 		}
 		return Optional.of(node);

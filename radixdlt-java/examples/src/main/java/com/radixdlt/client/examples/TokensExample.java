@@ -38,6 +38,8 @@ import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.core.Bootstrap;
 
 public class TokensExample {
+	private TokensExample() { }
+
 	public static void main(String[] args) {
 		// Create a new public key identity
 		final RadixIdentity radixIdentity = RadixIdentities.createNew();

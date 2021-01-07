@@ -31,6 +31,7 @@ import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.utils.RadixConstants;
 
 public class MessagesExample {
+	private MessagesExample() { }
 	public static void main(String[] args) {
 		// Create a new public key identity
 		final RadixIdentity radixIdentity = RadixIdentities.createNew();

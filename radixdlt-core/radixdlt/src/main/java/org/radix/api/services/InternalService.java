@@ -69,7 +69,7 @@ public final class InternalService {
 		// This is safe, as it is just used to generate random nonces for testing
 		private final Random random = new Random();
 
-		public Spammer(ECKeyPair owner, int iterations, int batching, int rate, int nonceBits) {
+		Spammer(ECKeyPair owner, int iterations, int batching, int rate, int nonceBits) {
 			this.owner = owner;
 			this.iterations = iterations;
 			this.rate = rate;
@@ -187,7 +187,15 @@ public final class InternalService {
 		}
 
 		int nonceBits = this.properties.get("test.nullatom.junk_size", 40);
-		Thread spammerThread = new Thread(new Spammer(ECKeyPair.generateNew(), Integer.decode(iterations), batching == null ? 1 : Integer.decode(batching), Integer.decode(rate), nonceBits));
+		Spammer spammer =
+			new Spammer(
+				ECKeyPair.generateNew(),
+					Integer.decode(iterations),
+					batching == null ? 1 : Integer.decode(batching),
+					Integer.decode(rate),
+					nonceBits
+			);
+		Thread spammerThread = new Thread(spammer);
 		spammerThread.setDaemon(true);
 		spammerThread.setName("Spammer " + System.currentTimeMillis());
 		spammerThread.start();

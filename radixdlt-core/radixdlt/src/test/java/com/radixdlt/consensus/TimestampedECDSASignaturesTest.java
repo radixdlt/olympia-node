@@ -114,7 +114,11 @@ public class TimestampedECDSASignaturesTest extends  SerializeObject<Timestamped
 		ImmutableMap.Builder<BFTNode, TimestampedECDSASignature> builder = ImmutableMap.builder();
 		long index = 0L;
 		for (BFTNode pk : keys) {
-			builder.put(pk, TimestampedECDSASignature.from(timeFunction.applyAsLong(index), weightFunction.apply(index), new ECDSASignature()));
+			builder.put(pk, TimestampedECDSASignature.from(
+				timeFunction.applyAsLong(index),
+				weightFunction.apply(index),
+				new ECDSASignature()
+			));
 			index += 1;
 		}
 		return new TimestampedECDSASignatures(builder.build());

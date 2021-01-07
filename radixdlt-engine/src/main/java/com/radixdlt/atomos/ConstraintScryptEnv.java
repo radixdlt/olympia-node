@@ -151,9 +151,14 @@ final class ConstraintScryptEnv implements SysCalls {
 
 		createTransition(
 			new TransitionToken<>(RRIParticle.class, TypeToken.of(VoidUsedData.class), particleClass, TypeToken.of(VoidUsedData.class)),
-			new TransitionProcedure<RRIParticle, VoidUsedData, O, VoidUsedData>() {
+			new TransitionProcedure<>() {
 				@Override
-				public Result precondition(RRIParticle inputParticle, VoidUsedData inputUsed, O outputParticle, VoidUsedData outputUsed) {
+				public Result precondition(
+					RRIParticle inputParticle,
+					VoidUsedData inputUsed,
+					O outputParticle,
+					VoidUsedData outputUsed
+				) {
 					return Result.success();
 				}
 
@@ -167,11 +172,13 @@ final class ConstraintScryptEnv implements SysCalls {
 					return (input, inputUsed, output, outputUsed) -> Optional.empty();
 				}
 
-
 				@Override
 				public WitnessValidator<RRIParticle> inputWitnessValidator() {
 					return (rri, witnessData) -> witnessData.isSignedBy(rri.getRri().getAddress().getPublicKey())
-						? WitnessValidatorResult.success() : WitnessValidatorResult.error("Not signed by " + rri.getRri().getAddress());
+												 ? WitnessValidatorResult.success()
+												 : WitnessValidatorResult.error(
+												 	"Not signed by " + rri.getRri().getAddress()
+												 );
 				}
 
 				@Override

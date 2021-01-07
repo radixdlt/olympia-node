@@ -21,6 +21,7 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.universe.Universe;
 
 public final class UniverseValidator {
+	private UniverseValidator() { }
 
 	public static void validate(Universe universe, Hasher hasher) {
 		// Check signature

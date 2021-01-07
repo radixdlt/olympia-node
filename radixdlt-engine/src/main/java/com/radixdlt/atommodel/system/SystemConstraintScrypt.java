@@ -73,16 +73,24 @@ public final class SystemConstraintScrypt implements ConstraintScrypt {
 		);
 
 		os.createTransition(
-			new TransitionToken<>(SystemParticle.class, TypeToken.of(VoidUsedData.class), SystemParticle.class, TypeToken.of(VoidUsedData.class)),
-			new TransitionProcedure<SystemParticle, VoidUsedData, SystemParticle, VoidUsedData>() {
+			new TransitionToken<>(
+				SystemParticle.class,
+				TypeToken.of(VoidUsedData.class),
+				SystemParticle.class,
+				TypeToken.of(VoidUsedData.class)
+			),
+
+			new TransitionProcedure<>() {
 				@Override
 				public PermissionLevel requiredPermissionLevel() {
 					return PermissionLevel.SUPER_USER;
 				}
 
 				@Override
-				public Result precondition(SystemParticle inputParticle, VoidUsedData inputUsed, SystemParticle outputParticle,
-					VoidUsedData outputUsed) {
+				public Result precondition(
+					SystemParticle inputParticle, VoidUsedData inputUsed, SystemParticle outputParticle,
+					VoidUsedData outputUsed
+				) {
 
 					if (inputParticle.getEpoch() == outputParticle.getEpoch()) {
 						if (inputParticle.getView() >= outputParticle.getView()) {

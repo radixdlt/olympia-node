@@ -74,7 +74,10 @@ public class NettyTCPTransportImplTest {
 
 		try (NettyTCPTransportImpl testInstance = new NettyTCPTransportImpl(config, localMetadata, outboundFactory, controlFactory)) {
 			assertEquals("127.0.0.2", testInstance.localMetadata().get(TCPConstants.METADATA_HOST));
-			assertEquals(String.valueOf(NettyTCPTransportImpl.DEFAULT_PORT), testInstance.localMetadata().get(TCPConstants.METADATA_PORT));
+			assertEquals(
+				String.valueOf(NettyTCPTransportImpl.DEFAULT_PORT),
+				testInstance.localMetadata().get(TCPConstants.METADATA_PORT)
+			);
 		}
 	}
 

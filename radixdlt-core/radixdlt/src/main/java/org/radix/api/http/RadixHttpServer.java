@@ -153,11 +153,11 @@ public final class RadixHttpServer {
      *
      * @return The currently connected peers
      */
-    public final Set<RadixJsonRpcPeer> getPeers() {
+    public Set<RadixJsonRpcPeer> getPeers() {
         return Collections.unmodifiableSet(peers.keySet());
     }
 
-	public final void start() {
+	public void start() {
 		this.atomsService.start();
 
 		RoutingHandler handler = Handlers.routing(true); // add path params to query params with this flag
@@ -172,18 +172,21 @@ public final class RadixHttpServer {
 		handler.add(
 			Methods.GET,
 			"/rpc",
-			Handlers.websocket(new RadixHttpWebsocketHandler( this, jsonRpcServer, peers, atomsService, serialization))
+			Handlers.websocket(new RadixHttpWebsocketHandler(this, jsonRpcServer, peers, atomsService, serialization))
 		);
 
 		// add appropriate error handlers for meaningful error messages (undertow is silent by default)
-		handler.setFallbackHandler(exchange ->
-		{
+		handler.setFallbackHandler(exchange -> {
 			exchange.setStatusCode(StatusCodes.NOT_FOUND);
-			exchange.getResponseSender().send("No matching path found for " + exchange.getRequestMethod() + " " + exchange.getRequestPath());
+			exchange.getResponseSender().send(
+				"No matching path found for " + exchange.getRequestMethod() + " " + exchange.getRequestPath()
+			);
 		});
 		handler.setInvalidMethodHandler(exchange -> {
 			exchange.setStatusCode(StatusCodes.NOT_ACCEPTABLE);
-			exchange.getResponseSender().send("Invalid method, path exists for " + exchange.getRequestMethod() + " " + exchange.getRequestPath());
+			exchange.getResponseSender().send(
+				"Invalid method, path exists for " + exchange.getRequestMethod() + " " + exchange.getRequestPath()
+			);
 		});
 
 		// if we are in a development universe, add the dev only routes (e.g. for spamathons)
@@ -206,7 +209,7 @@ public final class RadixHttpServer {
 		server.start();
 	}
 
-	public final void stop() {
+	public void stop() {
 		this.atomsService.stop();
 		this.server.stop();
 	}
@@ -360,7 +363,7 @@ public final class RadixHttpServer {
 	 *
 	 * @return Json object containing disconnect information
 	 */
-	public final JSONObject disconnectAllPeers() {
+	public JSONObject disconnectAllPeers() {
 		JSONObject result = new JSONObject();
 		JSONArray closed = new JSONArray();
 		result.put("closed", closed);
@@ -446,7 +449,13 @@ public final class RadixHttpServer {
 	 * @param responseFunction The consumer that processes incoming exchanges
 	 * @param routingHandler   The routing handler to add the route to
 	 */
-	private static void addRoute(String prefixPath, String method, String contentType, ManagedHttpExchangeConsumer responseFunction, RoutingHandler routingHandler) {
+	private static void addRoute(
+		String prefixPath,
+		String method,
+		String contentType,
+		ManagedHttpExchangeConsumer responseFunction,
+		RoutingHandler routingHandler
+	) {
 		routingHandler.add(method, prefixPath, exchange -> {
 			exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, contentType);
 			responseFunction.accept(exchange);

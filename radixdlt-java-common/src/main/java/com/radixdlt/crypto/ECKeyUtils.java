@@ -194,7 +194,9 @@ public class ECKeyUtils {
 			int offset = 0;
 			while (array.length - offset > length) {
 				if (array[offset] != 0) {
-					throw new IllegalArgumentException(String.format("Array is greater than %s bytes: %s", length, Bytes.toHexString(array)));
+					throw new IllegalArgumentException(String.format(
+						"Array is greater than %s bytes: %s", length, Bytes.toHexString(array)
+					));
 				}
 				offset += 1;
 			}
