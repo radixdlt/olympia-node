@@ -278,7 +278,6 @@ class CmdHelper {
         (exportVars, error) =  runCommand("${gradlewPath}/gradlew -P validators=${numNodes} clean generateDevUniverse",
                 null,false, true,"${System.getenv('CORE_DIR')}/radixdlt-core/radixdlt");
         String[] envVars =  exportVars
-
                 .findAll({ it.contains("export") })
                 .collect({it.replaceAll("export","")})
         if (envVars.size() > 0)
