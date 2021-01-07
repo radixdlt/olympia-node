@@ -1,4 +1,4 @@
-# Contributing to radixdlt-java
+# Contributing to radixdlt
 
 ### Table of contents
 - [Code of conduct](#code-of-conduct)
