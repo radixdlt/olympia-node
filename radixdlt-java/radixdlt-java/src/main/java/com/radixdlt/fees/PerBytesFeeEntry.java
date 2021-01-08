@@ -98,6 +98,12 @@ public final class PerBytesFeeEntry implements FeeEntry {
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s bytes per unit, >%s units, %s per unit]", getClass().getSimpleName(), this.units, this.threshold, this.fee);
+		return String.format(
+			"%s[%s bytes per unit, >%s units, %s per unit]",
+			getClass().getSimpleName(),
+			this.units,
+			this.threshold,
+			this.fee
+		);
 	}
 }

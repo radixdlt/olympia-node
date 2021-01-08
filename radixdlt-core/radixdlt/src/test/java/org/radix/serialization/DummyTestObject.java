@@ -105,7 +105,7 @@ public final class DummyTestObject extends BasicContainer {
 	}
 
 	@Override
-	public short VERSION() {
+	public short version() {
 		return 100;
 	}
 
@@ -116,8 +116,9 @@ public final class DummyTestObject extends BasicContainer {
 
 	@Override
 	public boolean equals(Object obj) {
-		if (this == obj)
+		if (this == obj) {
 			return true;
+		}
 		if (obj instanceof DummyTestObject) {
 			DummyTestObject other = (DummyTestObject) obj;
 			return

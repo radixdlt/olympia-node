@@ -305,10 +305,12 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			calls.createTransition(
 				new TransitionToken<>(RegisteredValidatorParticle.class, TypeToken.of(VoidUsedData.class),
 					RegisteredValidatorParticle.class, TypeToken.of(VoidUsedData.class)),
-				new TransitionProcedure<RegisteredValidatorParticle, VoidUsedData, RegisteredValidatorParticle, VoidUsedData>() {
+				new TransitionProcedure<>() {
 					@Override
-					public Result precondition(RegisteredValidatorParticle inputParticle, VoidUsedData inputUsed,
-					                           RegisteredValidatorParticle outputParticle, VoidUsedData outputUsed) {
+					public Result precondition(
+						RegisteredValidatorParticle inputParticle, VoidUsedData inputUsed,
+						RegisteredValidatorParticle outputParticle, VoidUsedData outputUsed
+					) {
 						// check that the registered validator particle is unmodified
 						if (!inputParticle.equalsIgnoringNonce(outputParticle)) {
 							return Result.error(String.format(
@@ -328,12 +330,14 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 					}
 
 					@Override
-					public UsedCompute<RegisteredValidatorParticle, VoidUsedData, RegisteredValidatorParticle, VoidUsedData> inputUsedCompute() {
+					public UsedCompute<RegisteredValidatorParticle, VoidUsedData, RegisteredValidatorParticle, VoidUsedData>
+					inputUsedCompute() {
 						return (input, inputUsed, output, outputUsed) -> Optional.of(new ProvidedDelegate(output));
 					}
 
 					@Override
-					public UsedCompute<RegisteredValidatorParticle, VoidUsedData, RegisteredValidatorParticle, VoidUsedData> outputUsedCompute() {
+					public UsedCompute<RegisteredValidatorParticle, VoidUsedData, RegisteredValidatorParticle, VoidUsedData>
+					outputUsedCompute() {
 						return (input, inputUsed, output, outputUsed) -> Optional.empty();
 					}
 
@@ -357,15 +361,18 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			calls.createTransition(
 				new TransitionToken<>(RegisteredValidatorParticle.class, TypeToken.of(ProvidedDelegate.class),
 					StakedTokensParticle.class, TypeToken.of(VoidUsedData.class)),
-				new TransitionProcedure<RegisteredValidatorParticle, ProvidedDelegate, StakedTokensParticle, VoidUsedData>() {
+				new TransitionProcedure<>() {
 					@Override
-					public Result precondition(RegisteredValidatorParticle inputParticle, ProvidedDelegate inputUsed,
-					                           StakedTokensParticle outputParticle, VoidUsedData outputUsed) {
+					public Result precondition(
+						RegisteredValidatorParticle inputParticle, ProvidedDelegate inputUsed,
+						StakedTokensParticle outputParticle, VoidUsedData outputUsed
+					) {
 						// check that we're talking about the same validator
 						if (!inputParticle.getAddress().equals(inputUsed.getDelegate().getAddress())) {
 							return Result.error(String.format(
 								"delegate address does not match used delegate address: %s != %s",
-								inputParticle.getAddress(), inputUsed.getDelegate())
+								inputParticle.getAddress(), inputUsed.getDelegate()
+												)
 							);
 						}
 
@@ -373,7 +380,8 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 						if (!inputUsed.getDelegate().allowsDelegator(outputParticle.getAddress())) {
 							return Result.error(String.format(
 								"delegate %s does not allow delegator %s",
-								inputUsed.getDelegate(), outputParticle.getAddress())
+								inputUsed.getDelegate(), outputParticle.getAddress()
+												)
 							);
 						}
 
@@ -381,12 +389,14 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 					}
 
 					@Override
-					public UsedCompute<RegisteredValidatorParticle, ProvidedDelegate, StakedTokensParticle, VoidUsedData> inputUsedCompute() {
+					public UsedCompute<RegisteredValidatorParticle, ProvidedDelegate, StakedTokensParticle, VoidUsedData>
+					inputUsedCompute() {
 						return (inputParticle, inputUsed, outputParticle, outputUsed) -> Optional.empty();
 					}
 
 					@Override
-					public UsedCompute<RegisteredValidatorParticle, ProvidedDelegate, StakedTokensParticle, VoidUsedData> outputUsedCompute() {
+					public UsedCompute<RegisteredValidatorParticle, ProvidedDelegate, StakedTokensParticle, VoidUsedData>
+					outputUsedCompute() {
 						return (inputParticle, inputUsed, outputParticle, outputUsed)
 							-> Optional.of(new StakedAmount(outputParticle.getAmount()));
 					}
@@ -419,13 +429,16 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 					}
 
 					@Override
-					public UsedCompute<TransferrableTokensParticle, VoidUsedData, StakedTokensParticle, StakedAmount> inputUsedCompute() {
+					public UsedCompute<TransferrableTokensParticle, VoidUsedData, StakedTokensParticle, StakedAmount>
+					inputUsedCompute() {
 						return (inputParticle, inputUsed, outputParticle, outputUsed) -> {
 							final UInt256 inputAmount = inputParticle.getAmount();
 							final UInt256 remainingOutputAmount = outputUsed.getAmount();
 							int compare = inputAmount.compareTo(remainingOutputAmount);
 							if (compare > 0) {
-								return Optional.of(new CreateFungibleTransitionRoutine.UsedAmount(remainingOutputAmount));
+								return Optional.of(
+									new CreateFungibleTransitionRoutine.UsedAmount(remainingOutputAmount)
+								);
 							} else {
 								return Optional.empty();
 							}
@@ -433,14 +446,16 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 					}
 
 					@Override
-					public UsedCompute<TransferrableTokensParticle, VoidUsedData, StakedTokensParticle, StakedAmount> outputUsedCompute() {
+					public UsedCompute<TransferrableTokensParticle, VoidUsedData, StakedTokensParticle, StakedAmount>
+					outputUsedCompute() {
 						return (inputParticle, inputUsed, outputParticle, outputUsed) -> {
 							final UInt256 inputAmount = inputParticle.getAmount();
 							final UInt256 remainingOutputAmount = outputUsed.getAmount();
 							int compare = inputAmount.compareTo(remainingOutputAmount);
 							if (compare < 0) {
-								UInt256 remainingStakedAmount = UIntUtils.subtractWithUnderflow(remainingOutputAmount, inputAmount);
-								return Optional.of(new StakedAmount(remainingStakedAmount));
+								return Optional.of(new StakedAmount(
+									UIntUtils.subtractWithUnderflow(remainingOutputAmount, inputAmount)
+								));
 							} else {
 								return Optional.empty();
 							}

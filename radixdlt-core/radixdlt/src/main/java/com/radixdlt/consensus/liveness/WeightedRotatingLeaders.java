@@ -66,7 +66,11 @@ public final class WeightedRotatingLeaders implements ProposerElection {
 		private final Long lcm;
 		private View curView;
 
-		private CachingNextLeaderComputer(BFTValidatorSet validatorSet, Comparator<Entry<BFTValidator, UInt384>> weightsComparator, int cacheSize) {
+		private CachingNextLeaderComputer(
+			BFTValidatorSet validatorSet,
+			Comparator<Entry<BFTValidator, UInt384>> weightsComparator,
+			int cacheSize
+		) {
 			this.validatorSet = validatorSet;
 			this.weightsComparator = weightsComparator;
 			this.weights = new HashMap<>();

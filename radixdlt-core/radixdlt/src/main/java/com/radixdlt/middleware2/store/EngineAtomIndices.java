@@ -113,7 +113,9 @@ public class EngineAtomIndices {
 					// TODO Should probably not be using serialization for this
 					final String idForClass = serialization.getIdForClass(checkSpin.getParticle().getClass());
 					final EUID numericClassId = SerializationUtils.stringToNumericID(idForClass);
-					duplicateIndices.add(new StoreIndex(IndexType.PARTICLE_CLASS.getValue(), toByteArray(IndexType.PARTICLE_CLASS, numericClassId)));
+					duplicateIndices.add(new StoreIndex(
+						IndexType.PARTICLE_CLASS.getValue(), toByteArray(IndexType.PARTICLE_CLASS, numericClassId)
+					));
 				});
 		return new EngineAtomIndices(uniqueIndices.build(), duplicateIndices.build());
 	}

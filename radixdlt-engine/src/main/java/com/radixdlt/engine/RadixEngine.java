@@ -272,7 +272,10 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		synchronized (stateUpdateEngineLock) {
 			if (!branches.isEmpty()) {
 				throw new IllegalStateException(
-					String.format("%s transient branches still exist. Must delete branches before storing additional atoms.", branches.size())
+					String.format(
+						"%s transient branches still exist. Must delete branches before storing additional atoms.",
+						branches.size()
+					)
 				);
 			}
 

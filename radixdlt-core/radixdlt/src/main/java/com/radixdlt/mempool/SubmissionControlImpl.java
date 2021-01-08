@@ -101,7 +101,9 @@ public class SubmissionControlImpl implements SubmissionControl {
 	}
 
 	@Override
-	public void submitAtom(JSONObject atomJson, Consumer<ClientAtom> deserialisationCallback) throws MempoolFullException, MempoolDuplicateException {
+	public void submitAtom(JSONObject atomJson, Consumer<ClientAtom> deserialisationCallback)
+		throws MempoolFullException, MempoolDuplicateException {
+
 		final Atom rawAtom = this.serialization.fromJsonObject(atomJson, Atom.class);
 		final ClientAtom atom = ClientAtom.convertFromApiAtom(rawAtom, hasher);
 		deserialisationCallback.accept(atom);

@@ -53,6 +53,8 @@ import io.reactivex.schedulers.Schedulers;
  * a Radix Universe.
  */
 public class Faucet {
+	private Faucet() { }
+
 	private static final Logger log = LogManager.getLogger();
 
 	private static final String FAUCET_API_PORT_ENV_NAME     = "FAUCET_API_PORT";

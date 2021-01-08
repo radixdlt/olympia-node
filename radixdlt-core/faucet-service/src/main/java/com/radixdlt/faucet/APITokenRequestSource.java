@@ -90,9 +90,17 @@ final class APITokenRequestSource implements TokenRequestSource {
 
 		// add appropriate error handlers for meaningful error messages (undertow is silent by default)
 		handler.setFallbackHandler(exchange -> {
-			logger.debug("No matching path found for {} {} from {}", exchange.getRequestMethod(), exchange.getRequestPath(), exchange.getSourceAddress());
+			logger.debug(
+				"No matching path found for {} {} from {}",
+				exchange.getRequestMethod(),
+				exchange.getRequestPath(),
+				exchange.getSourceAddress()
+			);
+
 			exchange.setStatusCode(StatusCodes.NOT_FOUND);
-			exchange.getResponseSender().send("No matching path found for " + exchange.getRequestMethod() + " " + exchange.getRequestPath());
+			exchange.getResponseSender().send(
+				"No matching path found for " + exchange.getRequestMethod() + " " + exchange.getRequestPath()
+			);
 		});
 
 		this.server = Undertow.builder()
@@ -110,7 +118,12 @@ final class APITokenRequestSource implements TokenRequestSource {
 				.map(RadixAddress::from);
 			if (address.isPresent()) {
 				Pair<RadixAddress, EUID> result = Pair.of(address.get(), randomEuid());
-				logger.debug("Queuing request {}, address {} from {}", result.getSecond(), result.getFirst(), exchange.getSourceAddress());
+				logger.debug(
+					"Queuing request {}, address {} from {}",
+					result.getSecond(),
+					result.getFirst(),
+					exchange.getSourceAddress()
+				);
 				this.requests.onNext(result);
 				exchange.setStatusCode(StatusCodes.OK);
 				exchange.getResponseSender().send(result.getSecond().toString());

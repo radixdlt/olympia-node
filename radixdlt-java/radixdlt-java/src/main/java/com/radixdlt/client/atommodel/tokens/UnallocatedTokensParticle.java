@@ -106,7 +106,8 @@ public class UnallocatedTokensParticle extends Particle implements Accountable, 
 		if (permissions != null) {
 			this.tokenPermissions = permissions.entrySet().stream()
 				.collect(Collectors.toMap(
-					e -> TokenTransition.valueOf(e.getKey().toUpperCase()), e -> TokenPermission.valueOf(e.getValue().toUpperCase())
+					e -> TokenTransition.valueOf(e.getKey().toUpperCase()),
+					e -> TokenPermission.valueOf(e.getValue().toUpperCase())
 				));
 		} else {
 			throw new IllegalArgumentException("Permissions cannot be null.");

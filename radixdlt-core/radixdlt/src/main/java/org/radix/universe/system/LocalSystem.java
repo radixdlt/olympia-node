@@ -80,7 +80,14 @@ public final class LocalSystem extends RadixSystem {
 	}
 
 	public static LocalSystem create(BFTNode self, InfoSupplier infoSupplier, Universe universe, String host) {
-		return new LocalSystem(infoSupplier, self.getKey(), Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION, defaultTransports(universe, host));
+		return new LocalSystem(
+			infoSupplier,
+			self.getKey(),
+			Radix.AGENT,
+			Radix.AGENT_VERSION,
+			Radix.PROTOCOL_VERSION,
+			defaultTransports(universe, host)
+		);
 	}
 
 	// FIXME: *Really* need a better way of configuring this other than hardcoding here

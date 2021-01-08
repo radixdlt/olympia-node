@@ -32,7 +32,7 @@ public abstract class SignedMessage extends Message {
 	private ECDSASignature signature;
 
 	@Override
-	public short VERSION() {
+	public short version() {
 		return 100;
 	}
 

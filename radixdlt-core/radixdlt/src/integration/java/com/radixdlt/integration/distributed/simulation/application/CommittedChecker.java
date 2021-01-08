@@ -49,7 +49,8 @@ public class CommittedChecker implements TestInvariant {
 		return submittedCommands
 			.doOnNext(cmd -> log.debug("Submitted command: {}", cmd))
 			.flatMapMaybe(command ->
-				Observable.<BFTCommittedUpdate>create(emitter -> commits.addListener((n, e) -> emitter.onNext(e), BFTCommittedUpdate.class))
+				Observable.<BFTCommittedUpdate>create(
+					emitter -> commits.addListener((n, e) -> emitter.onNext(e), BFTCommittedUpdate.class))
 
 					.serialize()
 					.filter(e -> e.getCommitted().stream()

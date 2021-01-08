@@ -336,7 +336,10 @@ public final class ParticleGroup {
 
 	@Override
 	public String toString() {
-		String particlesStr = (this.particles == null) ? "null" : particles.stream().map(SpunParticle::toString).collect(Collectors.joining(","));
+		var particlesStr = (this.particles == null)
+			? "null"
+		   	: particles.stream().map(SpunParticle::toString).collect(Collectors.joining(","));
+
 		return String.format("%s[%s]", getClass().getSimpleName(), particlesStr);
 	}
 }

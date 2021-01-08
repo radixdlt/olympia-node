@@ -100,7 +100,7 @@ public class UDPTransportOutboundConnectionTest {
 
 	@Test
 	public void sendTest() throws ExecutionException, InterruptedException, IOException {
-		try (UDPTransportOutboundConnection udpTransportOutboundConnection = new UDPTransportOutboundConnection(channel, metadata, natHandler)) {
+		try (var udpTransportOutboundConnection = new UDPTransportOutboundConnection(channel, metadata, natHandler)) {
 			CompletableFuture<SendResult> completableFuture = udpTransportOutboundConnection.send(testMessage.getBytes());
 
 			channelFuture.setSuccess();
@@ -119,7 +119,7 @@ public class UDPTransportOutboundConnectionTest {
 	@Test
 	public void sendFailureTest() throws ExecutionException, InterruptedException, IOException {
 		if (exception != null) {
-			try (UDPTransportOutboundConnection udpTransportOutboundConnection = new UDPTransportOutboundConnection(channel, metadata, natHandler)) {
+			try (var udpTransportOutboundConnection = new UDPTransportOutboundConnection(channel, metadata, natHandler)) {
 				CompletableFuture<SendResult> completableFuture = udpTransportOutboundConnection.send(testMessage.getBytes());
 				channelFuture.setFailure(exception);
 				SendResult result = completableFuture.get();

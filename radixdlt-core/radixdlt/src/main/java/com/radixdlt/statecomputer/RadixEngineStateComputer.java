@@ -183,7 +183,9 @@ public final class RadixEngineStateComputer implements StateComputer {
 		try {
 			branch.checkAndStore(systemUpdate, PermissionLevel.SUPER_USER);
 		} catch (RadixEngineException e) {
-			throw new IllegalStateException(String.format("Failed to execute system update:%n%s", systemUpdate.toInstructionsString()), e);
+			throw new IllegalStateException(
+				String.format("Failed to execute system update:%n%s", systemUpdate.toInstructionsString()),	e
+			);
 		}
 		Command command = new Command(serialization.toDson(systemUpdate, Output.ALL));
 		RadixEngineCommand radixEngineCommand = new RadixEngineCommand(

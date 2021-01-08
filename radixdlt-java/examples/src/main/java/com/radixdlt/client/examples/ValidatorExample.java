@@ -29,6 +29,8 @@ import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.core.Bootstrap;
 
 public class ValidatorExample {
+	private ValidatorExample() { }
+
 	public static void main(String[] args) {
 		// Create a new public key identity
 		final RadixIdentity radixIdentity = RadixIdentities.createNew();

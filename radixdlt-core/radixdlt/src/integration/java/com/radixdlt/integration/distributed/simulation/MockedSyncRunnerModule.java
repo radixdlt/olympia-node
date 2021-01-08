@@ -44,13 +44,18 @@ public class MockedSyncRunnerModule extends AbstractModule {
 	public void configure() {
 		MapBinder.newMapBinder(binder(), String.class, ModuleRunner.class)
 			.addBinding("sync").to(Key.get(new TypeLiteral<SyncServiceRunner<LedgerUpdate>>() { }));
-		bind(new TypeLiteral<RemoteEventProcessor<DtoCommandsAndProof>>() { }).to(RemoteSyncResponseValidatorSetVerifier.class).in(Scopes.SINGLETON);
+
+		bind(new TypeLiteral<RemoteEventProcessor<DtoCommandsAndProof>>() { })
+			.to(RemoteSyncResponseValidatorSetVerifier.class).in(Scopes.SINGLETON);
+
 		bind(LocalSyncServiceAccumulatorProcessor.class).in(Scopes.SINGLETON);
 	}
 
 	@ProvidesIntoSet
 	@ProcessWithSyncRunner
-	private EventProcessor<LedgerUpdate> epochsLedgerUpdateEventProcessor(LocalSyncServiceAccumulatorProcessor localSyncServiceAccumulatorProcessor) {
+	private EventProcessor<LedgerUpdate> epochsLedgerUpdateEventProcessor(
+		LocalSyncServiceAccumulatorProcessor localSyncServiceAccumulatorProcessor
+	) {
 		return localSyncServiceAccumulatorProcessor::processLedgerUpdate;
 	}
 

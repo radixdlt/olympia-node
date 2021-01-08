@@ -24,49 +24,43 @@ import java.net.InetAddress;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class NtpService
-{
+public class NtpService {
 	private static final Logger log = LogManager.getLogger();
 
+	private String server = null;
+	private double roundTripDelay = 0;
+	private double localClockOffset = 0;
 
+	private int attempts = 0;
+	private int offset = 0;
 
-	private String 		server = null;
-	private double 		roundTripDelay = 0;
-	private	double 		localClockOffset = 0;
-
-	private int			attempts = 0;
-	private int			offset = 0;
-
-	public NtpService(String server)
-	{
+	public NtpService(String server) {
 		this.server = server;
 
 		roundTripDelay = 0;
 		localClockOffset = 0;
 
-		if (server != null)
+		if (server != null) {
 			initFromServer();
+		}
 	}
 
-	private void initFromServer()
-	{
-		if (server != null)
-		{
+	private void initFromServer() {
+		if (server != null) {
 			boolean success = false;
 
-			while (attempts < 3 && !success)
-			{
+			while (attempts < 3 && !success) {
 				try (DatagramSocket socket = new DatagramSocket()) {
 					// Send request
 					socket.setSoTimeout(5000);
 
 					InetAddress address = InetAddress.getByName(server);
 					byte[] buf = new NtpMessage().toByteArray();
-					DatagramPacket packet =	new DatagramPacket(buf, buf.length, address, 123);
+					DatagramPacket packet = new DatagramPacket(buf, buf.length, address, 123);
 
 					// Set the transmit timestamp *just* before sending the packet
 					// ToDo: Does this actually improve performance or not?
-					NtpMessage.encodeTimestamp(packet.getData(), 40, (System.currentTimeMillis()/1000.0) + 2208988800.0);
+					NtpMessage.encodeTimestamp(packet.getData(), 40, (System.currentTimeMillis() / 1000.0) + 2208988800.0);
 
 					socket.send(packet);
 
@@ -76,33 +70,38 @@ public class NtpService
 					socket.receive(packet);
 
 					// Immediately record the incoming timestamp
-					double destinationTimestamp = (System.currentTimeMillis()/1000.0) + 2208988800.0;
+					double destinationTimestamp = (System.currentTimeMillis() / 1000.0) + 2208988800.0;
 
 					// Process response
 					NtpMessage msg = new NtpMessage(packet.getData());
 
 					// Corrected, according to RFC2030 errata
-					roundTripDelay = (destinationTimestamp-msg.originateTimestamp) - (msg.transmitTimestamp-msg.receiveTimestamp);
-					localClockOffset = ((msg.receiveTimestamp - msg.originateTimestamp) + (msg.transmitTimestamp - destinationTimestamp)) / 2;
+					roundTripDelay =
+						(destinationTimestamp - msg.originateTimestamp)
+							- (msg.transmitTimestamp - msg.receiveTimestamp);
+					localClockOffset =
+						((msg.receiveTimestamp - msg.originateTimestamp)
+							 + (msg.transmitTimestamp - destinationTimestamp)) / 2;
 
 					log.info(msg.toString());
 					success = true;
 				} catch (Exception ex) {
-					if (attempts >= 3)
+					if (attempts >= 3) {
 						throw new NtpException("failed to start NTP service", ex);
+					}
 				} finally {
 					attempts++;
 				}
 			}
 
-			if (!success)
-				throw new NtpException("Unable to start NTP service using "+server);
+			if (!success) {
+				throw new NtpException("Unable to start NTP service using " + server);
+			}
 		}
 	}
 
-	public boolean isSynchronized()
-	{
-		return server == null?false:true;
+	public boolean isSynchronized() {
+		return server != null;
 	}
 
 	/**
@@ -110,8 +109,7 @@ public class NtpService
 	 *
 	 * @return
 	 */
-	public int getOffset()
-	{
+	public int getOffset() {
 		return offset;
 	}
 
@@ -120,8 +118,7 @@ public class NtpService
 	 *
 	 * @param offset
 	 */
-	public void setOffset(int offset)
-	{
+	public void setOffset(int offset) {
 		this.offset = offset;
 	}
 
@@ -130,9 +127,8 @@ public class NtpService
 	 *
 	 * @return
 	 */
-	public long getSystemTime()
-	{
-		return (long) (System.currentTimeMillis()+(localClockOffset*1000.0));
+	public long getSystemTime() {
+		return (long) (System.currentTimeMillis() + (localClockOffset * 1000.0));
 	}
 
 	/**
@@ -140,8 +136,7 @@ public class NtpService
 	 *
 	 * @return
 	 */
-	public synchronized int getUTCTimeSeconds()
-	{
+	public synchronized int getUTCTimeSeconds() {
 		return (int) (getUTCTimeMS() / 1000L);
 	}
 
@@ -150,8 +145,7 @@ public class NtpService
 	 *
 	 * @return
 	 */
-	public synchronized long getUTCTimeMS()
-	{
+	public synchronized long getUTCTimeMS() {
 		return (long) (System.currentTimeMillis() + (localClockOffset * 1000.0) + (roundTripDelay * 1000.0) + (offset * 1000L));
 	}
 }

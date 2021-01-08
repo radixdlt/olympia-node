@@ -46,6 +46,7 @@ import static com.radixdlt.examples.tictactoe.TicTacToeBaseParticle.TicTacToeSqu
  * Executable example showing how to use the Radix Engine with the TicTacToeConstraintScrypt
  */
 public class TicTacToeRunner {
+	private TicTacToeRunner() { }
 
 	private static XToMoveParticle buildIllegalInitialBoard(ECKeyPair xPlayer, ECKeyPair oPlayer) {
 		return new XToMoveParticle(

@@ -36,7 +36,13 @@ public class MockedStateComputerModule extends AbstractModule {
 	private StateComputer stateComputer(Hasher hasher) {
 		return new StateComputer() {
 			@Override
-			public StateComputerResult prepare(ImmutableList<PreparedCommand> previous, Command next, long epoch, View view, long timestamp) {
+			public StateComputerResult prepare(
+				ImmutableList<PreparedCommand> previous,
+				Command next,
+				long epoch,
+				View view,
+				long timestamp
+			) {
 				return new StateComputerResult(
 					next == null
 						? ImmutableList.of()

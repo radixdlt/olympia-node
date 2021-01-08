@@ -45,6 +45,8 @@ import java.security.Security;
 import java.util.Properties;
 
 public final class Radix {
+	private Radix() { }
+
 	private static final String SYSTEM_VERSION_DISPLAY;
 	private static final String SYSTEM_VERSION_BRANCH;
 	private static final String SYSTEM_VERSION_COMMIT;
@@ -55,7 +57,7 @@ public final class Radix {
 	public static final int 	AGENT_VERSION 			= 2710000;
 	public static final int 	MAJOR_AGENT_VERSION 	= 2709999;
 	public static final int 	REFUSE_AGENT_VERSION 	= 2709999;
-	public static final String 	AGENT 					= "/Radix:/"+AGENT_VERSION;
+	public static final String 	AGENT 					= "/Radix:/" + AGENT_VERSION;
 
 	static {
 		System.setProperty("java.net.preferIPv4Stack", "true");
