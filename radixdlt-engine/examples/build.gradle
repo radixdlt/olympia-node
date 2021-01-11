@@ -42,5 +42,4 @@ dependencies {
     implementation project(':radixdlt-engine')
 
     testImplementation 'junit:junit:4.13'
-    testImplementation 'org.hamcrest:hamcrest-library:1.3'
 }
