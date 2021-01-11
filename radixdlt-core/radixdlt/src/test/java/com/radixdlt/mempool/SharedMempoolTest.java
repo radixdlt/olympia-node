@@ -89,8 +89,9 @@ public class SharedMempoolTest {
 
 		String tostring = this.sharedMempool.toString();
 
-		assertThat(tostring).contains("1/2");
-		assertThat(tostring).contains(SharedMempool.class.getSimpleName());
+		assertThat(tostring)
+			.contains("1/2")
+			.contains(SharedMempool.class.getSimpleName());
 	}
 
 	private static HashCode makeHash(int n) {

@@ -48,8 +48,9 @@ public class PeerWithTransportTest {
 	public void testToString() {
 		String s = this.pwt.toString();
 
-		assertThat(s).contains("PeerWithTransport"); // class name
-		assertThat(s).contains(this.dummy.name()); // transport name
+		assertThat(s)
+			.contains("PeerWithTransport") // class name
+			.contains(this.dummy.name()); // transport name
 	}
 
 	@Test

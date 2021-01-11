@@ -176,8 +176,9 @@ public class TCPTransportOutboundConnectionImplTest {
 		TCPTransportOutboundConnectionImpl oci = new TCPTransportOutboundConnectionImpl(channel, metadata);
 		String s = oci.toString();
 
-		assertThat(s).contains(TCPConstants.NAME);
-		assertThat(s).contains(metadata.get(TCPConstants.METADATA_HOST));
-		assertThat(s).contains(metadata.get(TCPConstants.METADATA_PORT));
+		assertThat(s)
+			.contains(TCPConstants.NAME)
+			.contains(metadata.get(TCPConstants.METADATA_HOST))
+			.contains(metadata.get(TCPConstants.METADATA_PORT));
 	}
 }

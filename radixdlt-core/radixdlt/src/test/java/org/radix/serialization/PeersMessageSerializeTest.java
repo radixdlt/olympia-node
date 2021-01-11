@@ -56,8 +56,9 @@ public class PeersMessageSerializeTest extends SerializeMessageObject<PeersMessa
 		PeersMessage pm = new PeersMessage(1, ImmutableList.of(p));
 		String s = pm.toString();
 
-		assertThat(s).contains(PeersMessage.class.getSimpleName());
-		assertThat(s).contains(key.getPublicKey().euid().toString());
-		assertThat(s).contains("DUMMY");
+		assertThat(s)
+			.contains(PeersMessage.class.getSimpleName())
+			.contains(key.getPublicKey().euid().toString())
+			.contains("DUMMY");
 	}
 }

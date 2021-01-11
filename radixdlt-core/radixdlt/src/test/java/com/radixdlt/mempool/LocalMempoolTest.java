@@ -153,8 +153,9 @@ public class LocalMempoolTest {
 
 		String tostring = this.mempool.toString();
 
-		assertThat(tostring).contains("1/2");
-		assertThat(tostring).contains(LocalMempool.class.getSimpleName());
+		assertThat(tostring)
+			.contains("1/2")
+			.contains(LocalMempool.class.getSimpleName());
 	}
 
 	private static Command makeCommand(int n) {

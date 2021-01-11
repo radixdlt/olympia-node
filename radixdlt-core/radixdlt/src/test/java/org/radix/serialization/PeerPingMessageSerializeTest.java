@@ -66,9 +66,10 @@ public class PeerPingMessageSerializeTest extends SerializeMessageObject<PeerPin
 		when(system.getNID()).thenReturn(EUID.TWO);
 		String s = new PeerPingMessage(0, 1234L, 5678L, system).toString();
 
-		assertThat(s).contains(PeerPingMessage.class.getSimpleName());
-		assertThat(s).contains(EUID.TWO.toString());
-		assertThat(s).contains(Long.toHexString(1234));
-		assertThat(s).contains("5678");
+		assertThat(s)
+			.contains(PeerPingMessage.class.getSimpleName())
+			.contains(EUID.TWO.toString())
+			.contains(Long.toHexString(1234))
+			.contains("5678");
 	}
 }

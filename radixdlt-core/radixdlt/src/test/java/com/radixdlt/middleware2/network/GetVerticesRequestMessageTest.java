@@ -31,8 +31,9 @@ public class GetVerticesRequestMessageTest {
 		HashCode vertexId = HashUtils.random256();
 		GetVerticesRequestMessage msg1 = new GetVerticesRequestMessage(0, vertexId, 1);
 		String s1 = msg1.toString();
-		assertThat(s1).contains(GetVerticesRequestMessage.class.getSimpleName());
-		assertThat(s1).contains(vertexId.toString());
+		assertThat(s1)
+			.contains(GetVerticesRequestMessage.class.getSimpleName())
+			.contains(vertexId.toString());
 	}
 
 	@Test

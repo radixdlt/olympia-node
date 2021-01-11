@@ -152,43 +152,43 @@ public class EUIDTest {
 	 */
 	@Test
 	public void testCompareDistances() {
-		assertThat(EUID.ZERO.compareDistances(EUID.ONE, EUID.ONE)).isEqualTo(0);
+		assertThat(EUID.ZERO.compareDistances(EUID.ONE, EUID.ONE)).isZero();
 
 		// Both to right of origin
-		assertThat(EUID.ZERO.compareDistances(EUID.TWO, EUID.ONE)).isGreaterThan(0);
-		assertThat(EUID.ZERO.compareDistances(EUID.ONE, EUID.TWO)).isLessThan(0);
+		assertThat(EUID.ZERO.compareDistances(EUID.TWO, EUID.ONE)).isPositive();
+		assertThat(EUID.ZERO.compareDistances(EUID.ONE, EUID.TWO)).isNegative();
 		EUID minusOne = new EUID(-1);
 		EUID minusTwo = new EUID(-2);
 		// Both to left of origin
-		assertThat(EUID.ZERO.compareDistances(minusTwo, minusOne)).isGreaterThan(0);
-		assertThat(EUID.ZERO.compareDistances(minusOne, minusTwo)).isLessThan(0);
+		assertThat(EUID.ZERO.compareDistances(minusTwo, minusOne)).isPositive();
+		assertThat(EUID.ZERO.compareDistances(minusOne, minusTwo)).isNegative();
 
 		// Origin between values, but different in most significant bits.
-		assertThat(EUID.ZERO.compareDistances(EUID.TWO, minusOne)).isGreaterThan(0);
-		assertThat(EUID.ZERO.compareDistances(minusOne, EUID.TWO)).isLessThan(0);
-		assertThat(EUID.ZERO.compareDistances(minusTwo, EUID.ONE)).isGreaterThan(0);
-		assertThat(EUID.ZERO.compareDistances(EUID.ONE, minusTwo)).isLessThan(0);
+		assertThat(EUID.ZERO.compareDistances(EUID.TWO, minusOne)).isPositive();
+		assertThat(EUID.ZERO.compareDistances(minusOne, EUID.TWO)).isNegative();
+		assertThat(EUID.ZERO.compareDistances(minusTwo, EUID.ONE)).isPositive();
+		assertThat(EUID.ZERO.compareDistances(EUID.ONE, minusTwo)).isNegative();
 
 		// Origin between values, but only different in least significant bit
 		EUID three = new EUID(3L);
 		EUID minusThree = new EUID(-3L);
-		assertThat(EUID.ZERO.compareDistances(three, minusTwo)).isGreaterThan(0);
-		assertThat(EUID.ZERO.compareDistances(minusThree, EUID.TWO)).isGreaterThan(0);
-		assertThat(EUID.ZERO.compareDistances(minusTwo, three)).isLessThan(0);
-		assertThat(EUID.ZERO.compareDistances(EUID.TWO, minusThree)).isLessThan(0);
+		assertThat(EUID.ZERO.compareDistances(three, minusTwo)).isPositive();
+		assertThat(EUID.ZERO.compareDistances(minusThree, EUID.TWO)).isPositive();
+		assertThat(EUID.ZERO.compareDistances(minusTwo, three)).isNegative();
+		assertThat(EUID.ZERO.compareDistances(EUID.TWO, minusThree)).isNegative();
 
 		// Check that wrap / ring behaviour works
 		EUID max = new EUID(UInt128.MAX_VALUE);
 		EUID maxP2 = new EUID(UInt128.MAX_VALUE.add(UInt128.TWO));
 		EUID maxM3 = new EUID(UInt128.MAX_VALUE.subtract(UInt128.THREE));
-		assertThat(max.compareDistances(maxP2, maxM3)).isLessThan(0);
-		assertThat(max.compareDistances(maxM3, maxP2)).isGreaterThan(0);
+		assertThat(max.compareDistances(maxP2, maxM3)).isNegative();
+		assertThat(max.compareDistances(maxM3, maxP2)).isPositive();
 
 		EUID min = new EUID(UInt128.MIN_VALUE);
 		EUID minP3 = new EUID(UInt128.MIN_VALUE.add(UInt128.THREE));
 		EUID minM2 = new EUID(UInt128.MIN_VALUE.subtract(UInt128.TWO));
-		assertThat(min.compareDistances(minM2, minP3)).isLessThan(0);
-		assertThat(min.compareDistances(minP3, minM2)).isGreaterThan(0);
+		assertThat(min.compareDistances(minM2, minP3)).isNegative();
+		assertThat(min.compareDistances(minP3, minM2)).isPositive();
 	}
 
 	/**

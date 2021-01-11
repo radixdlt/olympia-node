@@ -50,7 +50,7 @@ public class MessageListenerListTest {
 
 		listenerList.addMessageListener(listener);
 		// Should not have been called yet
-		assertThat(called).isEqualTo(0);
+		assertThat(called).isZero();
 
 		listenerList.messageReceived(null, null);
 		// Should have been called because of messageReceived()
@@ -72,7 +72,7 @@ public class MessageListenerListTest {
 
 		listenerList.addMessageListener(listener);
 		// Should not have been called yet
-		assertThat(called).isEqualTo(0);
+		assertThat(called).isZero();
 
 		listenerList.messageReceived(null, null);
 		// Should have been called because of messageReceived()
@@ -95,9 +95,9 @@ public class MessageListenerListTest {
 	// Test that we can remove callbacks in a callback without deadlocking
 	@Test
 	public void testRemoveOwnCallback() {
-		assertThat(called).isEqualTo(0); // precondition
+		assertThat(called).isZero(); // precondition
 		listenerList.addMessageListener(testListener);
-		assertThat(called).isEqualTo(0); // nothing happened
+		assertThat(called).isZero(); // nothing happened
 		listenerList.messageReceived(null, null);
 		assertThat(called).isEqualTo(1); // called and removed itself
 		listenerList.messageReceived(null, null);
@@ -126,7 +126,7 @@ public class MessageListenerListTest {
 			if (message != null) {
 				cond.awaitUninterruptibly();
 				lock.unlock();
-				assertThat(called).isEqualTo(0);
+				assertThat(called).isZero();
 				listenerList.removeMessageListener(listener1);
 				assertThat(called).isEqualTo(1);
 			}

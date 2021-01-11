@@ -110,7 +110,7 @@ public class FirstMatchTransportManagerTest {
 
 	@Test
 	public void testClose() throws IOException {
-		assertThat(closed.get()).isEqualTo(0); // Precondition
+		assertThat(closed.get()).isZero(); // Precondition
 		transportManager.close(); // Close everything
 		assertThat(closed.get()).isEqualTo(1);
 	}
@@ -120,15 +120,17 @@ public class FirstMatchTransportManagerTest {
 		Set<String> transports = transportManager.transports().stream()
 			.map(Transport::name)
 			.collect(Collectors.toSet());
-		assertThat(transports).contains("DUMMY");
-		assertThat(transports).contains(UDPConstants.NAME);
+		assertThat(transports)
+			.contains("DUMMY")
+			.contains(UDPConstants.NAME);
 	}
 
 
 	@Test
 	public void testToString() {
 		String s = transportManager.toString();
-		assertThat(s).contains("DUMMY");
-		assertThat(s).contains(UDPConstants.NAME);
+		assertThat(s)
+			.contains("DUMMY")
+			.contains(UDPConstants.NAME);
 	}
 }

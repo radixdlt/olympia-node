@@ -49,11 +49,12 @@ public class OutboundMessageEventTest {
 		OutboundMessageEvent event = new OutboundMessageEvent(peer, message, nanoTimeDiff);
 
 		String s = event.toString();
-		assertThat(s).contains(OutboundMessageEvent.class.getSimpleName());
-		assertThat(s).contains(peer.toString());
-		assertThat(s).contains(message.toString());
-		assertThat(s).contains(String.valueOf(nanoTimeDiff));
-		assertThat(s).contains("priority=0");
+		assertThat(s)
+			.contains(OutboundMessageEvent.class.getSimpleName())
+			.contains(peer.toString())
+			.contains(message.toString())
+			.contains(String.valueOf(nanoTimeDiff))
+			.contains("priority=0");
 	}
 
 	@Test
@@ -64,11 +65,12 @@ public class OutboundMessageEventTest {
 		OutboundMessageEvent event = new OutboundMessageEvent(peer, message, nanoTimeDiff);
 
 		String s = event.toString();
-		assertThat(s).contains(OutboundMessageEvent.class.getSimpleName());
-		assertThat(s).contains(peer.toString());
-		assertThat(s).contains(message.toString());
-		assertThat(s).contains(String.valueOf(nanoTimeDiff));
-		assertThat(s).contains("priority=" + Integer.MIN_VALUE);
+		assertThat(s)
+			.contains(OutboundMessageEvent.class.getSimpleName())
+			.contains(peer.toString())
+			.contains(message.toString())
+			.contains(String.valueOf(nanoTimeDiff))
+			.contains("priority=" + Integer.MIN_VALUE);
 	}
 
 	@Test
@@ -79,11 +81,12 @@ public class OutboundMessageEventTest {
 		OutboundMessageEvent event = new OutboundMessageEvent(peer, message, nanoTimeDiff);
 
 		String s = event.toString();
-		assertThat(s).contains(OutboundMessageEvent.class.getSimpleName());
-		assertThat(s).contains(peer.toString());
-		assertThat(s).contains(message.toString());
-		assertThat(s).contains(String.valueOf(nanoTimeDiff));
-		assertThat(s).contains("priority=" + Integer.MIN_VALUE);
+		assertThat(s)
+			.contains(OutboundMessageEvent.class.getSimpleName())
+			.contains(peer.toString())
+			.contains(message.toString())
+			.contains(String.valueOf(nanoTimeDiff))
+			.contains("priority=" + Integer.MIN_VALUE);
 	}
 
 	@Test

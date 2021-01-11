@@ -34,8 +34,9 @@ public class GetVerticesResponseMessageTest {
 		UnverifiedVertex genesisVertex = mock(UnverifiedVertex.class);
 		GetVerticesResponseMessage msg1 = new GetVerticesResponseMessage(0, ImmutableList.of(genesisVertex));
 		String s1 = msg1.toString();
-		assertThat(s1).contains(GetVerticesResponseMessage.class.getSimpleName());
-		assertThat(s1).contains(genesisVertex.toString());
+		assertThat(s1)
+			.contains(GetVerticesResponseMessage.class.getSimpleName())
+			.contains(genesisVertex.toString());
 	}
 
 	@Test

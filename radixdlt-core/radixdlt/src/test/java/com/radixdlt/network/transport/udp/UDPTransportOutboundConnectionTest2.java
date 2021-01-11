@@ -70,8 +70,9 @@ public class UDPTransportOutboundConnectionTest2 {
 		UDPTransportOutboundConnection oci = new UDPTransportOutboundConnection(channel, metadata, natHandler);
 		String s = oci.toString();
 
-		assertThat(s).contains(UDPConstants.NAME);
-		assertThat(s).contains(metadata.get(UDPConstants.METADATA_HOST));
-		assertThat(s).contains(metadata.get(UDPConstants.METADATA_PORT));
+		assertThat(s)
+			.contains(UDPConstants.NAME)
+			.contains(metadata.get(UDPConstants.METADATA_HOST))
+			.contains(metadata.get(UDPConstants.METADATA_PORT));
 	}
 }

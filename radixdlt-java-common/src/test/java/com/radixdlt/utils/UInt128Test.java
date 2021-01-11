@@ -215,9 +215,10 @@ public class UInt128Test {
 	 */
 	@Test
 	public void testCompare() {
-		assertThat(UInt128.ZERO).isEqualByComparingTo(UInt128.ZERO);
-		assertThat(UInt128.ZERO).isLessThan(UInt128.ONE);
-		assertThat(UInt128.ZERO).isLessThan(UInt128.MAX_VALUE);
+		assertThat(UInt128.ZERO)
+			.isEqualByComparingTo(UInt128.ZERO)
+			.isLessThan(UInt128.ONE)
+			.isLessThan(UInt128.MAX_VALUE);
 		assertThat(UInt128.MAX_VALUE).isGreaterThan(UInt128.ONE);
 		assertThat(UInt128.ONE).isGreaterThan(UInt128.ZERO);
 

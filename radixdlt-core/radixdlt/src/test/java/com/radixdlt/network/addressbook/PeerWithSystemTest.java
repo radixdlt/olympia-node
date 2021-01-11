@@ -59,9 +59,10 @@ public class PeerWithSystemTest {
 	public void testToString() {
 		String s = this.pws.toString();
 
-		assertThat(s).contains("PeerWithSystem"); // class name
-		assertThat(s).contains(this.nid.toString()); // nid
-		assertThat(s).contains("{}");
+		assertThat(s)
+			.contains("PeerWithSystem") // class name
+			.contains(this.nid.toString()) // nid
+			.contains("{}");
 
 		EUID localNid = EUID.TWO;
 		TransportInfo fakeUdp = TransportInfo.of(UDPConstants.NAME,
@@ -75,10 +76,11 @@ public class PeerWithSystemTest {
 		when(localSystem.getNID()).thenReturn(localNid);
 		PeerWithSystem localPws = new PeerWithSystem(localSystem);
 		String s2 = localPws.toString();
-		assertThat(s2).contains("PeerWithSystem"); // class name
-		assertThat(s2).contains(localNid.toString()); // nid
-		assertThat(s2).contains(fakeUdp.metadata().get(UDPConstants.METADATA_HOST));
-		assertThat(s2).contains(fakeUdp.metadata().get(UDPConstants.METADATA_PORT));
+		assertThat(s2)
+			.contains("PeerWithSystem") // class name
+			.contains(localNid.toString()) // nid
+			.contains(fakeUdp.metadata().get(UDPConstants.METADATA_HOST))
+			.contains(fakeUdp.metadata().get(UDPConstants.METADATA_PORT));
 	}
 
 	@Test

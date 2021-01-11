@@ -253,9 +253,10 @@ public class UInt256Test {
 
 	@Test
 	public void when_comparing_int256_values_using_compareTo__the_correct_value_is_returned() {
-		assertThat(UInt256.ZERO).isEqualByComparingTo(UInt256.ZERO);
-		assertThat(UInt256.ZERO).isLessThan(UInt256.ONE);
-		assertThat(UInt256.ZERO).isLessThan(UInt256.MAX_VALUE);
+		assertThat(UInt256.ZERO)
+			.isEqualByComparingTo(UInt256.ZERO)
+			.isLessThan(UInt256.ONE)
+			.isLessThan(UInt256.MAX_VALUE);
 		assertThat(UInt256.ONE).isGreaterThan(UInt256.ZERO);
 		assertThat(UInt256.MAX_VALUE).isGreaterThan(UInt256.ZERO);
 

@@ -50,8 +50,9 @@ public class PeerWithNidTest {
 	public void testToString() {
 		String s = this.pwn.toString();
 
-		assertThat(s).contains("PeerWithNid"); // class name
-		assertThat(s).contains(this.nid.toString()); // nid
+		assertThat(s)
+			.contains("PeerWithNid") // class name
+			.contains(this.nid.toString()); // nid
 	}
 
 	@Test

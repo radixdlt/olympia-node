@@ -260,9 +260,10 @@ public class UInt384Test {
 
 	@Test
 	public void when_comparing_int384_values_using_compareTo__the_correct_value_is_returned() {
-		assertThat(UInt384.ZERO).isEqualByComparingTo(UInt384.ZERO);
-		assertThat(UInt384.ZERO).isLessThan(UInt384.ONE);
-		assertThat(UInt384.ZERO).isLessThan(UInt384.MAX_VALUE);
+		assertThat(UInt384.ZERO)
+			.isEqualByComparingTo(UInt384.ZERO)
+			.isLessThan(UInt384.ONE)
+			.isLessThan(UInt384.MAX_VALUE);
 		assertThat(UInt384.ONE).isGreaterThan(UInt384.ZERO);
 		assertThat(UInt384.MAX_VALUE).isGreaterThan(UInt384.ZERO);
 
