@@ -17,8 +17,7 @@
 
 package com.radixdlt.middleware2.network;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -44,7 +43,7 @@ public class GetVerticesErrorResponseMessageTest {
 		HighQC highQC = HighQC.from(qc, qc, Optional.empty());
 		GetVerticesErrorResponseMessage msg1 = new GetVerticesErrorResponseMessage(0, highQC);
 		String s1 = msg1.toString();
-		assertThat(s1, containsString(GetVerticesErrorResponseMessage.class.getSimpleName()));
+		assertThat(s1).contains(GetVerticesErrorResponseMessage.class.getSimpleName());
 	}
 
 	@Test
