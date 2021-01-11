@@ -36,9 +36,9 @@ class CmdHelper {
         def sout = new StringBuffer()
         def serr = new StringBuffer()
         def process
-        logger.info("------Executing command ${cmd}-----")
-        env?logger.info("------Environment variables ${env}-----"):""
-        workdir?logger.info("------Working dir ${workdir}-----"):""
+        logger.debug("------Executing command ${cmd}-----")
+        env?logger.debug("------Environment variables ${env}-----"):""
+        workdir?logger.debug("------Working dir ${workdir}-----"):""
         process = cmd.execute(
                 env ?: null,
                 workdir? new File(workdir):null
@@ -56,8 +56,8 @@ class CmdHelper {
         if (sout) {
             output = sout.toString().split("\n").collect({ it })
             if (logOutput) {
-                logger.info("-----------Output---------")
-                sout.each { logger.info(it) }
+                logger.debug("-----------Output---------")
+                sout.each { logger.debug(it) }
             }
         }
 
@@ -104,9 +104,21 @@ class CmdHelper {
     /**
      * Blocks tcp communication over a specific port, via iptables
      */
-    static String blockPort(String containerName, int gossipPortNumber) {
-        def iptablesCommand = "iptables -A OUTPUT -p tcp --dport ${gossipPortNumber} -j DROP"
-        def (output, error) = runCommand("docker exec ${containerName} bash -c".tokenize() << iptablesCommand, null, false, true)
+    static String blockPort(String containerName, int port) {
+        return managePort(containerName, port, true);
+    }
+
+    /**
+     * removes the iptables rule which block the tcp port
+     */
+    static String unblockPort(String containerName, int port) {
+        return managePort(containerName, port, false);
+    }
+
+    static private String managePort(String containerName, int port, boolean enableRule) {
+        def parameter = enableRule ? "-A" : "-D"
+        def iptablesCommand = "iptables ${parameter} OUTPUT -p tcp --dport ${port} -j DROP"
+        def (output, error) = runCommand("docker exec ${containerName} bash -c".tokenize() << iptablesCommand, null, true, true)
         return output;
     }
 
@@ -231,7 +243,6 @@ class CmdHelper {
         if (veth == null || veth.size() == 0) {
             throw new IllegalStateException("Could not retrieve veth. If you running on Mac, this is not supported. \n  Run the tests inside docker container as shown as example in the script run-slow-node-test.sh ")
         }
-        println(veth[0].tokenize("/").find({ it.contains("veth") }))
         return veth[0].tokenize("/").find({ it.contains("veth") })
     }
 

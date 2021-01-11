@@ -92,7 +92,6 @@ public class DockerNetwork implements Closeable, RemoteBFTNetwork {
 		CmdHelper.removeAllDockerContainers(); // TODO do we need  if yes, document it
 		String[] universeValidatorEnvVariables = CmdHelper.generateUniverseValidators(numNodes);
 		if(!CmdHelper.testRunningOnDocker() && !networkName.contains(DID_NETWORK) ){
-			System.out.println(" Network is " + networkName);
 			CmdHelper.runCommand("docker network rm " + networkName);
 			CmdHelper.runCommand("docker network create " + networkName, null, true);
 		}

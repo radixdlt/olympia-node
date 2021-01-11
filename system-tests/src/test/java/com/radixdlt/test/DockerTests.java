@@ -40,6 +40,7 @@ public class DockerTests {
     }
 
     @Parameters({"4", "5"})
+    @TestCaseName("smoke_test_for_{0}_nodes")
     @Test
     public void smoke_test(int numberOfNodes) {
         try (DockerNetwork network = DockerNetwork.builder().numNodes(numberOfNodes).testName(testMethodName).startConsensusOnBoot().build()) {
@@ -47,9 +48,11 @@ public class DockerTests {
             Conditions.waitUntilNetworkHasLiveness(network);
 
             // make all nodes slow/latent
-            network.getNodeIds().forEach(CmdHelper::runTcUsingVeth);
+            logger.info("Adding latency...");
+            network.getNodeIds().forEach(node -> CmdHelper.runTcUsingVeth(node, "delay 100ms loss 10%"));
 
             // first check
+            logger.info("First round of checks");
             RemoteBFTTest test = latentTestBuilder()
                     .network(RemoteBFTNetworkBridge.of(network))
                     .waitUntilResponsive()
@@ -57,18 +60,22 @@ public class DockerTests {
                     .build();
             test.runBlocking(CmdHelper.getTestDurationInSeconds(), TimeUnit.SECONDS);
 
+            logger.info("Stopping container...");
             String nodeToStopAndStart = network.getNodeIds().iterator().next();
             CmdHelper.stopContainer(nodeToStopAndStart);
 
             // second check, after the down is down
+            logger.info("Second round of checks");
             RemoteBFTTest testOutOfSynchronyBounds = outOfSynchronyTestBuilder(Lists.newArrayList(nodeToStopAndStart))
                     .network(RemoteBFTNetworkBridge.of(network))
                     .build();
             testOutOfSynchronyBounds.runBlocking(CmdHelper.getTestDurationInSeconds(), TimeUnit.SECONDS);
 
+            logger.info("Starting container again...");
             CmdHelper.startContainer(nodeToStopAndStart);
 
             // third check. The node that was brought back up should have liveness by itself (i.e. it should report an increasing view/epoch)
+            logger.info("Third round of checks");
             List<String> restOfTheNodes = Lists.newArrayList(network.getNodeIds());
             restOfTheNodes.remove(nodeToStopAndStart);
             Conditions.waitUntilNetworkHasLiveness(network, restOfTheNodes);
@@ -84,7 +91,7 @@ public class DockerTests {
 
             Conditions.waitUntilNetworkHasLiveness(network);
 
-            network.getNodeIds().forEach(nodeId -> CmdHelper.blockPort(nodeId, 30000)); // unfortunately a magic number, should be read from a config instead
+            network.getNodeIds().forEach(nodeId -> CmdHelper.blockPort(nodeId, 30000));
 
             RemoteBFTTest testOutOfSynchronyBounds = RemoteBFTTest.builder().assertLiveness(20)
                     .network(RemoteBFTNetworkBridge.of(network)).build();
@@ -94,6 +101,9 @@ public class DockerTests {
             );
 
             Generic.assertAssertionErrorIsLivenessError(error);
+
+            network.getNodeIds().forEach(nodeId -> CmdHelper.unblockPort(nodeId, 30000));
+            Conditions.waitUntilNetworkHasLiveness(network);
         }
     }
 
