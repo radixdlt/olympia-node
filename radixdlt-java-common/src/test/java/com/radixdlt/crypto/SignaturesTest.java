@@ -44,7 +44,7 @@ public class SignaturesTest {
 
     @Test
     public void well_formatted_tostring_of_signaturescheme() {
-        assertThat(SignatureScheme.ECDSA.toString()).isEqualTo("ecdsa");
+        assertThat(SignatureScheme.ECDSA).hasToString("ecdsa");
     }
 
     @Test
