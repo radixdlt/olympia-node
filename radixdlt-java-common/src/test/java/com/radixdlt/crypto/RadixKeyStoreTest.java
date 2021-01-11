@@ -33,19 +33,22 @@ import java.util.stream.IntStream;
 
 import javax.crypto.SecretKey;
 
-import com.radixdlt.crypto.exception.KeyStoreException;
-import com.radixdlt.crypto.exception.PrivateKeyException;
-import com.radixdlt.crypto.exception.PublicKeyException;
 import org.bouncycastle.jcajce.PKCS12Key;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.powermock.reflect.Whitebox;
 
 import com.radixdlt.TestSetupUtils;
+import com.radixdlt.crypto.exception.KeyStoreException;
+import com.radixdlt.crypto.exception.PrivateKeyException;
+import com.radixdlt.crypto.exception.PublicKeyException;
 
-import static org.junit.Assert.*;
-import static org.hamcrest.Matchers.*;
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class RadixKeyStoreTest {
 
@@ -193,8 +196,8 @@ public class RadixKeyStoreTest {
 	public void testToString() throws IOException, KeyStoreException {
 		File file = newFile(TEST_KS_FILENAME);
 		try (RadixKeyStore ks = RadixKeyStore.fromFile(file, null, true)) {
-			assertThat(ks.toString(), containsString(file.toString()));
-			assertThat(ks.toString(), containsString(RadixKeyStore.class.getSimpleName()));
+			assertThat(ks.toString()).contains(file.toString());
+			assertThat(ks.toString()).contains(RadixKeyStore.class.getSimpleName());
 		}
 	}
 

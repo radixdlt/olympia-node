@@ -32,8 +32,7 @@ import org.junit.Test;
 import org.radix.network.messages.PeerPingMessage;
 import org.radix.universe.system.RadixSystem;
 
-import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 /**
@@ -67,9 +66,9 @@ public class PeerPingMessageSerializeTest extends SerializeMessageObject<PeerPin
 		when(system.getNID()).thenReturn(EUID.TWO);
 		String s = new PeerPingMessage(0, 1234L, 5678L, system).toString();
 
-		assertThat(s, containsString(PeerPingMessage.class.getSimpleName()));
-		assertThat(s, containsString(EUID.TWO.toString()));
-		assertThat(s, containsString(Long.toHexString(1234)));
-		assertThat(s, containsString("5678"));
+		assertThat(s).contains(PeerPingMessage.class.getSimpleName());
+		assertThat(s).contains(EUID.TWO.toString());
+		assertThat(s).contains(Long.toHexString(1234));
+		assertThat(s).contains("5678");
 	}
 }

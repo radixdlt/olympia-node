@@ -19,9 +19,7 @@ package com.radixdlt.network.transport;
 
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-import static org.hamcrest.CoreMatchers.*;
-
+import static org.assertj.core.api.Assertions.assertThat;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class TransportInfoTest {
@@ -36,8 +34,8 @@ public class TransportInfoTest {
 		StaticTransportMetadata stm = StaticTransportMetadata.of("a", "b");
 		TransportInfo info = TransportInfo.of("TEST", stm);
 
-		assertThat(info.name(), equalTo("TEST"));
-		assertThat(info.metadata(), equalTo(stm));
+		assertThat(info.name()).isEqualTo("TEST");
+		assertThat(info.metadata()).isEqualTo(stm);
 	}
 
 	@Test
@@ -45,7 +43,7 @@ public class TransportInfoTest {
 		StaticTransportMetadata stm = StaticTransportMetadata.of("a", "b");
 		TransportInfo info = TransportInfo.of("TEST", stm);
 
-		assertThat(info.toString(), containsString("TEST"));
-		assertThat(info.toString(), containsString("a=b"));
+		assertThat(info.toString()).contains("TEST");
+		assertThat(info.toString()).contains("a=b");
 	}
 }

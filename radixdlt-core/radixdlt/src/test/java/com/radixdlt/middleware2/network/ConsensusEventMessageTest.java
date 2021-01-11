@@ -26,9 +26,9 @@ import org.junit.Test;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 
-import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class ConsensusEventMessageTest {
 
@@ -37,8 +37,8 @@ public class ConsensusEventMessageTest {
 		Proposal m = mock(Proposal.class);
 		ConsensusEventMessage msg1 = new ConsensusEventMessage(0, m);
 		String s1 = msg1.toString();
-		assertThat(s1, containsString(ConsensusEventMessage.class.getSimpleName()));
-		assertThat(s1, containsString(m.toString()));
+		assertThat(s1).contains(ConsensusEventMessage.class.getSimpleName());
+		assertThat(s1).contains(m.toString());
 
 		assertTrue(msg1.getConsensusMessage() instanceof Proposal);
 	}
@@ -48,8 +48,8 @@ public class ConsensusEventMessageTest {
 		Vote m = mock(Vote.class);
 		ConsensusEventMessage msg1 = new ConsensusEventMessage(0, m);
 		String s1 = msg1.toString();
-		assertThat(s1, containsString(ConsensusEventMessage.class.getSimpleName()));
-		assertThat(s1, containsString(m.toString()));
+		assertThat(s1).contains(ConsensusEventMessage.class.getSimpleName());
+		assertThat(s1).contains(m.toString());
 
 		assertTrue(msg1.getConsensusMessage() instanceof Vote);
 	}
@@ -58,8 +58,8 @@ public class ConsensusEventMessageTest {
 	public void sensibleToStringNone() {
 		ConsensusEventMessage msg1 = new ConsensusEventMessage();
 		String s1 = msg1.toString();
-		assertThat(s1, containsString(ConsensusEventMessage.class.getSimpleName()));
-		assertThat(s1, containsString("null"));
+		assertThat(s1).contains(ConsensusEventMessage.class.getSimpleName());
+		assertThat(s1).contains("null");
 	}
 
 	@Test(expected = IllegalStateException.class)

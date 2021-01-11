@@ -23,8 +23,7 @@ import org.radix.universe.system.RadixSystem;
 
 import com.radixdlt.identifiers.EUID;
 
-import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 /**
@@ -45,9 +44,9 @@ public class PeerPongMessageSerializeTest extends SerializeMessageObject<PeerPon
 		when(system.getNID()).thenReturn(EUID.TWO);
 		String s = new PeerPongMessage(0, 1234L, 5678L, system).toString();
 
-		assertThat(s, containsString(PeerPongMessage.class.getSimpleName()));
-		assertThat(s, containsString(EUID.TWO.toString()));
-		assertThat(s, containsString(Long.toHexString(1234L)));
-		assertThat(s, containsString("5678"));
+		assertThat(s).contains(PeerPongMessage.class.getSimpleName());
+		assertThat(s).contains(EUID.TWO.toString());
+		assertThat(s).contains(Long.toHexString(1234L));
+		assertThat(s).contains("5678");
 	}
 }

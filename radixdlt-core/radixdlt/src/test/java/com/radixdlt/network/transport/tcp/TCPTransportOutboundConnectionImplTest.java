@@ -27,8 +27,8 @@ import com.radixdlt.network.transport.SendResult;
 import com.radixdlt.network.transport.StaticTransportMetadata;
 import com.radixdlt.network.transport.TransportMetadata;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -176,8 +176,8 @@ public class TCPTransportOutboundConnectionImplTest {
 		TCPTransportOutboundConnectionImpl oci = new TCPTransportOutboundConnectionImpl(channel, metadata);
 		String s = oci.toString();
 
-		assertThat(s, containsString(TCPConstants.NAME));
-		assertThat(s, containsString(metadata.get(TCPConstants.METADATA_HOST)));
-		assertThat(s, containsString(metadata.get(TCPConstants.METADATA_PORT)));
+		assertThat(s).contains(TCPConstants.NAME);
+		assertThat(s).contains(metadata.get(TCPConstants.METADATA_HOST));
+		assertThat(s).contains(metadata.get(TCPConstants.METADATA_PORT));
 	}
 }

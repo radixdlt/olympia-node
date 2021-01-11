@@ -31,9 +31,9 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.transport.udp.UDPConstants;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
-import static org.hamcrest.CoreMatchers.*;
 
 public class FirstMatchTransportManagerTest {
 
@@ -110,9 +110,9 @@ public class FirstMatchTransportManagerTest {
 
 	@Test
 	public void testClose() throws IOException {
-		assertThat(closed.get(), equalTo(0)); // Precondition
+		assertThat(closed.get()).isEqualTo(0); // Precondition
 		transportManager.close(); // Close everything
-		assertThat(closed.get(), equalTo(1));
+		assertThat(closed.get()).isEqualTo(1);
 	}
 
 	@Test
@@ -120,15 +120,15 @@ public class FirstMatchTransportManagerTest {
 		Set<String> transports = transportManager.transports().stream()
 			.map(Transport::name)
 			.collect(Collectors.toSet());
-		assertThat(transports, hasItem("DUMMY"));
-		assertThat(transports, hasItem(UDPConstants.NAME));
+		assertThat(transports).contains("DUMMY");
+		assertThat(transports).contains(UDPConstants.NAME);
 	}
 
 
 	@Test
 	public void testToString() {
 		String s = transportManager.toString();
-		assertThat(s, containsString("DUMMY"));
-		assertThat(s, containsString(UDPConstants.NAME));
+		assertThat(s).contains("DUMMY");
+		assertThat(s).contains(UDPConstants.NAME);
 	}
 }

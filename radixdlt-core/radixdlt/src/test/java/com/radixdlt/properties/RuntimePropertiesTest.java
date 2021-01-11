@@ -27,8 +27,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.*;
-import static org.hamcrest.Matchers.*;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 
@@ -87,18 +87,18 @@ public class RuntimePropertiesTest {
 
 	@Test
 	public void testGet() {
-		assertThat(this.properties.get("a"), is("a"));
-		assertThat(this.properties.get("b"), is("b"));
-		assertThat(this.properties.get("c"), is(TEST_PROPERTIES));
-		assertThat(this.properties.get("ta"), is(TEST_OPTION));
-		assertThat(this.properties.get("tn"), is("1"));
-		assertThat(this.properties.get("notexist"), nullValue());
+		assertThat(this.properties.get("a")).isEqualTo("a");
+		assertThat(this.properties.get("b")).isEqualTo("b");
+		assertThat(this.properties.get("c")).isEqualTo(TEST_PROPERTIES);
+		assertThat(this.properties.get("ta")).isEqualTo(TEST_OPTION);
+		assertThat(this.properties.get("tn")).isEqualTo("1");
+		assertThat(this.properties.get("notexist")).isNull();
 	}
 
 	@Test
 	public void testToString() {
 		String result = this.properties.toString();
-		assertThat(result, containsString("[a, b]"));
-		assertThat(result, containsString("args=[]"));
+		assertThat(result).contains("[a, b]");
+		assertThat(result).contains("args=[]");
 	}
 }

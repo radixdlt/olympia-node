@@ -17,8 +17,7 @@
 
 package com.radixdlt.middleware2.network;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.HashUtils;
@@ -32,8 +31,8 @@ public class GetVerticesRequestMessageTest {
 		HashCode vertexId = HashUtils.random256();
 		GetVerticesRequestMessage msg1 = new GetVerticesRequestMessage(0, vertexId, 1);
 		String s1 = msg1.toString();
-		assertThat(s1, containsString(GetVerticesRequestMessage.class.getSimpleName()));
-		assertThat(s1, containsString(vertexId.toString()));
+		assertThat(s1).contains(GetVerticesRequestMessage.class.getSimpleName());
+		assertThat(s1).contains(vertexId.toString());
 	}
 
 	@Test
