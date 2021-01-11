@@ -25,6 +25,7 @@ import static com.radixdlt.utils.Bytes.fromHexString;
 import static org.junit.Assert.assertEquals;
 
 public final class KeyVerifyTestScenarioRunner extends SanityTestScenarioRunner<KeyVerifyTestVector> {
+	@Override
 	public String testScenarioIdentifier() {
 		return "ecdsa_verification";
 	}
@@ -34,6 +35,7 @@ public final class KeyVerifyTestScenarioRunner extends SanityTestScenarioRunner<
 		return KeyVerifyTestVector.class;
 	}
 
+	@Override
 	public void doRunTestVector(KeyVerifyTestVector testVector) throws AssertionError {
 
 		ECPublicKey publicKey = null;
