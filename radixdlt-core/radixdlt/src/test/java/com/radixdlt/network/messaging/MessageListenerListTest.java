@@ -27,9 +27,8 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 // Unit tests for MessageListenerList
 public class MessageListenerListTest {
@@ -51,20 +50,20 @@ public class MessageListenerListTest {
 
 		listenerList.addMessageListener(listener);
 		// Should not have been called yet
-		assertThat(called, equalTo(0));
+		assertThat(called).isZero();
 
 		listenerList.messageReceived(null, null);
 		// Should have been called because of messageReceived()
-		assertThat(called, equalTo(1));
+		assertThat(called).isEqualTo(1);
 
 		listenerList.messageReceived(null, null);
 		// Should have been called again because of messageReceived
-		assertThat(called, equalTo(2));
+		assertThat(called).isEqualTo(2);
 
 		listenerList.removeMessageListener(listener);
 		listenerList.messageReceived(null, null);
 		// Should not have been called -> removed
-		assertThat(called, equalTo(2));
+		assertThat(called).isEqualTo(2);
 	}
 
 	@Test
@@ -73,16 +72,16 @@ public class MessageListenerListTest {
 
 		listenerList.addMessageListener(listener);
 		// Should not have been called yet
-		assertThat(called, equalTo(0));
+		assertThat(called).isZero();
 
 		listenerList.messageReceived(null, null);
 		// Should have been called because of messageReceived()
-		assertThat(called, equalTo(1));
+		assertThat(called).isEqualTo(1);
 
 		listenerList.removeAllMessageListeners();
 		listenerList.messageReceived(null, null);
 		// Should not have been called -> removed
-		assertThat(called, equalTo(1));
+		assertThat(called).isEqualTo(1);
 	}
 
 	private final MessageListener<TestMessage> testListener = new MessageListener<>() {
@@ -96,13 +95,13 @@ public class MessageListenerListTest {
 	// Test that we can remove callbacks in a callback without deadlocking
 	@Test
 	public void testRemoveOwnCallback() {
-		assertThat(called, equalTo(0)); // precondition
+		assertThat(called).isZero(); // precondition
 		listenerList.addMessageListener(testListener);
-		assertThat(called, equalTo(0)); // nothing happened
+		assertThat(called).isZero(); // nothing happened
 		listenerList.messageReceived(null, null);
-		assertThat(called, equalTo(1)); // called and removed itself
+		assertThat(called).isEqualTo(1); // called and removed itself
 		listenerList.messageReceived(null, null);
-		assertThat(called, equalTo(1)); // was removed, so didn't happen again
+		assertThat(called).isEqualTo(1); // was removed, so didn't happen again
 	}
 
 	// Test that we can remove a callback for another thread in this thread w/o deadlock
@@ -127,9 +126,9 @@ public class MessageListenerListTest {
 			if (message != null) {
 				cond.awaitUninterruptibly();
 				lock.unlock();
-				assertThat(called, equalTo(0));
+				assertThat(called).isZero();
 				listenerList.removeMessageListener(listener1);
-				assertThat(called, equalTo(1));
+				assertThat(called).isEqualTo(1);
 			}
 		};
 		listenerList.addMessageListener(listener1);

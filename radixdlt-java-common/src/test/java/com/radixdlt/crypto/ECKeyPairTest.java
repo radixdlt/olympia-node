@@ -17,32 +17,29 @@
 
 package com.radixdlt.crypto;
 
-import com.google.common.hash.HashCode;
-import com.radixdlt.crypto.encryption.EncryptedPrivateKey;
-import com.radixdlt.TestSetupUtils;
-import com.radixdlt.crypto.exception.ECIESException;
-import com.radixdlt.crypto.exception.PrivateKeyException;
-import com.radixdlt.crypto.exception.PublicKeyException;
-import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import com.google.common.hash.HashCode;
+import com.radixdlt.TestSetupUtils;
+import com.radixdlt.crypto.encryption.EncryptedPrivateKey;
+import com.radixdlt.crypto.exception.ECIESException;
+import com.radixdlt.crypto.exception.PrivateKeyException;
+import com.radixdlt.crypto.exception.PublicKeyException;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import static org.hamcrest.core.IsEqual.equalTo;
-import static org.hamcrest.core.IsNot.not;
-import static org.junit.Assert.assertThat;
+import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class ECKeyPairTest {
 
@@ -50,9 +47,6 @@ public class ECKeyPairTest {
 	public static void beforeClass() {
 		TestSetupUtils.installBouncyCastleProvider();
 	}
-
-	@Rule
-	public ExpectedException thrown = ExpectedException.none();
 
 	@Test
 	public void equalsContract() {
@@ -73,8 +67,8 @@ public class ECKeyPairTest {
 
 			key = ECKeyPair.fromPrivateKey(priv);
 
-			Assert.assertArrayEquals(priv, key.getPrivateKey());
-			Assert.assertArrayEquals(pub, key.getPublicKey().getBytes());
+			assertArrayEquals(priv, key.getPrivateKey());
+			assertArrayEquals(pub, key.getPublicKey().getBytes());
 		}
 	}
 
@@ -109,7 +103,7 @@ public class ECKeyPairTest {
 			byte[] encrypted = key.getPublicKey().encrypt(helloWorld.getBytes(StandardCharsets.UTF_8));
 
 			ECKeyPair newkey = ECKeyPair.fromPrivateKey(priv);
-			Assert.assertArrayEquals(helloWorld.getBytes(StandardCharsets.UTF_8), newkey.decrypt(encrypted));
+			assertArrayEquals(helloWorld.getBytes(StandardCharsets.UTF_8), newkey.decrypt(encrypted));
 		}
 	}
 
@@ -147,7 +141,7 @@ public class ECKeyPairTest {
 		byte[] privateKey1 = ECKeyPair.generateNew().getPrivateKey();
 		byte[] privateKey2 = ECKeyPair.generateNew().getPrivateKey();
 
-		assertThat(privateKey1, not(equalTo(privateKey2)));
+		assertThat(privateKey1).isNotEqualTo(privateKey2);
 	}
 
 	@Test
@@ -156,7 +150,7 @@ public class ECKeyPairTest {
 		byte[] privateKey1 = ECKeyPair.fromSeed(seed).getPrivateKey();
 		byte[] privateKey2 = ECKeyPair.fromSeed(seed).getPrivateKey();
 
-		assertThat(privateKey1, equalTo(privateKey2));
+		assertThat(privateKey1).isEqualTo(privateKey2);
 	}
 
 	@Test
@@ -194,7 +188,7 @@ public class ECKeyPairTest {
 
 		var loadedKeyPair = ECKeyPair.fromFile(testKeyPair);
 
-		assertThat(sourceKeyPair.getPrivateKey(), equalTo(loadedKeyPair.getPrivateKey()));
+		assertThat(sourceKeyPair.getPrivateKey()).isEqualTo(loadedKeyPair.getPrivateKey());
 	}
 
 	@Test

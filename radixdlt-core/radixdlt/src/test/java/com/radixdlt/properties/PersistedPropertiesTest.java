@@ -26,7 +26,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
-import static org.hamcrest.Matchers.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -54,9 +54,9 @@ public class PersistedPropertiesTest {
 		assertFalse(Files.exists(Paths.get(testProperties)));
 
 		this.properties.load(testProperties); // Should load from resources
-		assertThat(this.properties.get("a"), is("a"));
-		assertThat(this.properties.get("b"), is("b"));
-		assertThat(this.properties.get("c"), nullValue());
+		assertThat(this.properties.get("a")).isEqualTo("a");
+		assertThat(this.properties.get("b")).isEqualTo("b");
+		assertThat(this.properties.get("c")).isNull();
 	}
 
 	@Test
@@ -72,9 +72,9 @@ public class PersistedPropertiesTest {
 
 		PersistedProperties newCut = new PersistedProperties();
 		newCut.load(testProperties); // Should load from file
-		assertThat(this.properties.get("a"), is("a"));
-		assertThat(this.properties.get("b"), is("b"));
-		assertThat(this.properties.get("c"), is("c"));
+		assertThat(this.properties.get("a")).isEqualTo("a");
+		assertThat(this.properties.get("b")).isEqualTo("b");
+		assertThat(this.properties.get("c")).isEqualTo("c");
 	}
 
 	@Test
@@ -137,10 +137,11 @@ public class PersistedPropertiesTest {
 	public void testToString() {
 		populateData();
 		String result = this.properties.toString();
-		assertThat(result, containsString("int.exist"));
-		assertThat(result, containsString("long.exist"));
-		assertThat(result, containsString("bool.true"));
-		assertThat(result, containsString("bool.true1"));
+		assertThat(result)
+			.contains("int.exist")
+			.contains("long.exist")
+			.contains("bool.true")
+			.contains("bool.true1");
 	}
 
 	private void populateData() {

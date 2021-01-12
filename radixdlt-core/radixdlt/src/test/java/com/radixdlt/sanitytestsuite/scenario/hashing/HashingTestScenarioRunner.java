@@ -23,6 +23,7 @@ import com.radixdlt.utils.Bytes;
 import static org.junit.Assert.assertEquals;
 
 public final class HashingTestScenarioRunner extends SanityTestScenarioRunner<HashingTestVector> {
+	@Override
 	public String testScenarioIdentifier() {
 		return "hashing";
 	}
@@ -32,6 +33,7 @@ public final class HashingTestScenarioRunner extends SanityTestScenarioRunner<Ha
 		return HashingTestVector.class;
 	}
 
+	@Override
 	public void doRunTestVector(HashingTestVector testVector) throws AssertionError {
 		var hashHex = Bytes.toHexString(sha256Hash(testVector.input.bytesToHash()));
 

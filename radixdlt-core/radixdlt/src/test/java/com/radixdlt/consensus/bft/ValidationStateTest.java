@@ -17,12 +17,13 @@
 
 package com.radixdlt.consensus.bft;
 
-import com.radixdlt.utils.UInt256;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.*;
+import com.radixdlt.utils.UInt256;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 
@@ -36,7 +37,7 @@ public class ValidationStateTest {
 	@Test
 	public void sensibleToString() {
 		String s = BFTValidatorSet.from(ImmutableList.of()).newValidationState().toString();
-		assertThat(s, containsString(ValidationState.class.getSimpleName()));
+		assertThat(s).contains(ValidationState.class.getSimpleName());
 	}
 
 	@Test

@@ -17,9 +17,8 @@
 
 package com.radixdlt.middleware2.network;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
@@ -35,7 +34,7 @@ public class GetEpochResponseMessageTest {
 		VerifiedLedgerHeaderAndProof ancestor = mock(VerifiedLedgerHeaderAndProof.class);
 		GetEpochResponseMessage msg = new GetEpochResponseMessage(mock(BFTNode.class), 12345, ancestor);
 		String s1 = msg.toString();
-		assertThat(s1, containsString(GetEpochResponseMessage.class.getSimpleName()));
+		assertThat(s1).contains(GetEpochResponseMessage.class.getSimpleName());
 	}
 
 	@Test

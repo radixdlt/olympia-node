@@ -28,7 +28,7 @@ import com.google.common.collect.Lists;
 import com.radixdlt.network.addressbook.Peer;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
-import static org.hamcrest.CoreMatchers.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
@@ -49,11 +49,12 @@ public class OutboundMessageEventTest {
 		OutboundMessageEvent event = new OutboundMessageEvent(peer, message, nanoTimeDiff);
 
 		String s = event.toString();
-		assertThat(s, containsString(OutboundMessageEvent.class.getSimpleName()));
-		assertThat(s, containsString(peer.toString()));
-		assertThat(s, containsString(message.toString()));
-		assertThat(s, containsString(String.valueOf(nanoTimeDiff)));
-		assertThat(s, containsString("priority=0"));
+		assertThat(s)
+			.contains(OutboundMessageEvent.class.getSimpleName())
+			.contains(peer.toString())
+			.contains(message.toString())
+			.contains(String.valueOf(nanoTimeDiff))
+			.contains("priority=0");
 	}
 
 	@Test
@@ -64,11 +65,12 @@ public class OutboundMessageEventTest {
 		OutboundMessageEvent event = new OutboundMessageEvent(peer, message, nanoTimeDiff);
 
 		String s = event.toString();
-		assertThat(s, containsString(OutboundMessageEvent.class.getSimpleName()));
-		assertThat(s, containsString(peer.toString()));
-		assertThat(s, containsString(message.toString()));
-		assertThat(s, containsString(String.valueOf(nanoTimeDiff)));
-		assertThat(s, containsString("priority=" + Integer.MIN_VALUE));
+		assertThat(s)
+			.contains(OutboundMessageEvent.class.getSimpleName())
+			.contains(peer.toString())
+			.contains(message.toString())
+			.contains(String.valueOf(nanoTimeDiff))
+			.contains("priority=" + Integer.MIN_VALUE);
 	}
 
 	@Test
@@ -79,11 +81,12 @@ public class OutboundMessageEventTest {
 		OutboundMessageEvent event = new OutboundMessageEvent(peer, message, nanoTimeDiff);
 
 		String s = event.toString();
-		assertThat(s, containsString(OutboundMessageEvent.class.getSimpleName()));
-		assertThat(s, containsString(peer.toString()));
-		assertThat(s, containsString(message.toString()));
-		assertThat(s, containsString(String.valueOf(nanoTimeDiff)));
-		assertThat(s, containsString("priority=" + Integer.MIN_VALUE));
+		assertThat(s)
+			.contains(OutboundMessageEvent.class.getSimpleName())
+			.contains(peer.toString())
+			.contains(message.toString())
+			.contains(String.valueOf(nanoTimeDiff))
+			.contains("priority=" + Integer.MIN_VALUE);
 	}
 
 	@Test
