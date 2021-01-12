@@ -28,7 +28,6 @@ class SlowNodeSetup {
     }
 
     void setup() {
-
         (1..numOfSlowNodes).each {
             def runnerCommand = "bash -c".tokenize() << (
                     "docker run " +
@@ -39,7 +38,6 @@ class SlowNodeSetup {
                             "--limit ${clusterName}[${it - 1}] -t setup ")
             CmdHelper.runCommand(runnerCommand)
         }
-
     }
 
     void tearDown() {
@@ -71,7 +69,6 @@ class SlowNodeSetup {
                         "${dockerRunOptions ?: ''} " +
                         "${this.image} " +
                         "system-testing.yml " +
-                        "${addtionalDockerCmdOptions ?: ''} " +
                         "--limit ${clusterName} ${tag} ${extraVariables}"
         CmdHelper.runCommand(dockerCommand)
     }
