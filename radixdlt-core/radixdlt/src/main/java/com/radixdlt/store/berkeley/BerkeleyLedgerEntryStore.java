@@ -237,6 +237,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 				DatabaseEntry value = new DatabaseEntry();
 
 				if (this.uniqueIndices.get(null, key, value, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
+					addBytesRead(value.getSize() + key.getSize());
 					return Optional.of(serialization.fromDson(value.getData(), LedgerEntry.class));
 				}
 			} catch (Exception e) {
@@ -321,6 +322,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 				DatabaseEntry value = new DatabaseEntry();
 				OperationStatus status = cursor.getLast(pKey, value, LockMode.DEFAULT);
 				if (status == OperationStatus.SUCCESS) {
+					addBytesRead(value.getSize() + pKey.getSize());
 					try {
 						SerializedVertexStoreState serializedVertexWithQC = serialization.fromDson(value.getData(), SerializedVertexStoreState.class);
 						return Optional.of(serializedVertexWithQC);
@@ -364,6 +366,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 			DatabaseEntry value = new DatabaseEntry();
 			OperationStatus status = cursor.getLast(pKey, value, LockMode.DEFAULT);
 			if (status == OperationStatus.SUCCESS) {
+				addBytesRead(value.getSize() + pKey.getSize());
 				this.pendingDatabase.delete(transaction, pKey);
 			}
 		} catch (Exception e) {
@@ -377,6 +380,8 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 		OperationStatus putStatus = this.pendingDatabase.put(transaction, vertexKey, vertexEntry);
 		if (putStatus != OperationStatus.SUCCESS) {
 			fail("Store of root vertex failed");
+		} else {
+			addBytesWrite(vertexEntry.getSize() + vertexKey.getSize());
 		}
 	}
 
@@ -397,12 +402,16 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 			OperationStatus status = this.atoms.putNoOverwrite(transaction, pKey, pData);
 			if (status != OperationStatus.SUCCESS) {
 				fail("Atom write for '" + aid + "' failed with status " + status);
+			} else {
+				addBytesWrite(ledgerEntryData.length + pKey.getSize());
 			}
 
 			DatabaseEntry indicesData = new DatabaseEntry(serialization.toDson(indices, Output.PERSIST));
 			status = this.atomIndices.putNoOverwrite(transaction, pKey, indicesData);
 			if (status != OperationStatus.SUCCESS) {
 				fail("LedgerEntry indices write for '" + aid + "' failed with status " + status);
+			} else {
+				addBytesWrite(indicesData.getSize() + pKey.getSize());
 			}
 		} catch (UniqueConstraintException e) {
 			log.error("Unique indices of ledgerEntry '" + aid + "' are in conflict, aborting transaction");
@@ -425,6 +434,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 			for (StoreIndex uniqueIndex : uniqueIndices) {
 				key.setData(uniqueIndex.asKey());
 				if (this.uniqueIndices.get(transaction, key, value, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
+					addBytesRead(value.getSize() + key.getSize());
 					LedgerEntry conflictingAtom = serialization.fromDson(value.getData(), LedgerEntry.class);
 					conflictingAtoms.put(uniqueIndex, conflictingAtom);
 				}
@@ -445,6 +455,8 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 			OperationStatus status = atomIndices.delete(transaction, pKey);
 			if (status != OperationStatus.SUCCESS) {
 				fail("Deleting indices of atom '" + aid + "' failed with status " + status);
+			} else {
+				this.systemCounters.increment(CounterType.COUNT_BDB_LEDGER_DELETES);
 			}
 			currentIndices.put(aid, indices);
 			return atoms.delete(transaction, pKey) == OperationStatus.SUCCESS;
@@ -496,6 +508,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 
 						// TODO when uqCursor fails to fetch value, which means some form of DB corruption has occurred, how should we handle it?
 						if (uqCursorStatus == OperationStatus.SUCCESS) {
+							addBytesRead(value.getSize() + key.getSize());
 							LedgerEntry ledgerEntry = serialization.fromDson(value.getData(), LedgerEntry.class);
 							if (proofVersion == -1) {
 								proofVersion = ledgerEntry.getProofVersion();
@@ -582,6 +595,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 			DatabaseEntry value = new DatabaseEntry();
 			OperationStatus status = cursor.getLast(pKey, value, LockMode.DEFAULT);
 			if (status == OperationStatus.SUCCESS) {
+				addBytesRead(value.getSize() + pKey.getSize());
 				AID atomId = getAidFromPKey(pKey);
 				return Optional.of(atomId);
 			} else {
@@ -761,5 +775,13 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore, PersistentVer
 		this.systemCounters.increment(CounterType.COUNT_BDB_LEDGER_TOTAL);
 		this.systemCounters.add(detailTime, elapsed);
 		this.systemCounters.increment(detailCounter);
+	}
+
+	private void addBytesRead(int bytesRead) {
+		this.systemCounters.add(CounterType.COUNT_BDB_LEDGER_BYTES_READ, bytesRead);
+	}
+
+	private void addBytesWrite(int bytesWrite) {
+		this.systemCounters.add(CounterType.COUNT_BDB_LEDGER_BYTES_WRITE, bytesWrite);
 	}
 }
