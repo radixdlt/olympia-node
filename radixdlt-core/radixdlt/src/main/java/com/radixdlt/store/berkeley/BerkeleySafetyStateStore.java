@@ -167,7 +167,7 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
 	private void addTime(long start) {
 		final var elapsed = (System.nanoTime() - start + 500L) / 1000L;
 		this.systemCounters.add(CounterType.ELAPSED_BDB_SAFETY_STATE, elapsed);
-		this.systemCounters.increment(CounterType.COUNT_BDB_SAFETY_STATE);
+		this.systemCounters.increment(CounterType.COUNT_BDB_SAFETY_STATE_TOTAL);
 	}
 
 	private void addBytesRead(int bytesRead) {

@@ -70,12 +70,12 @@ public interface SystemCounters {
 		COUNT_BDB_LEDGER_BYTES_WRITE("count.bdb.ledger.bytes.write"),
 		COUNT_BDB_LEDGER_DELETES("count.bdb.ledger.deletes"),
 
-		COUNT_BDB_ADDRESS_BOOK("count.bdb.address_book"),
+		COUNT_BDB_ADDRESS_BOOK_TOTAL("count.bdb.address_book.total"),
 		COUNT_BDB_ADDRESS_BOOK_BYTES_READ("count.bdb.address_book.bytes.read"),
 		COUNT_BDB_ADDRESS_BOOK_BYTES_WRITE("count.bdb.address_book.bytes.write"),
 		COUNT_BDB_ADDRESS_BOOK_DELETES("count.bdb.address_book.deletes"),
 
-		COUNT_BDB_SAFETY_STATE("count.bdb.safety_state"),
+		COUNT_BDB_SAFETY_STATE_TOTAL("count.bdb.safety_state.total"),
 		COUNT_BDB_SAFETY_STATE_BYTES_READ("count.bdb.safety_state.bytes.read"),
 		COUNT_BDB_SAFETY_STATE_BYTES_WRITE("count.bdb.safety_state.bytes.write"),
 
