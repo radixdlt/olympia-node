@@ -30,13 +30,15 @@ import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxRemoteDispatcher;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
+import com.radixdlt.mempool.MempoolAddedCommand;
 import com.radixdlt.mempool.MempoolNetworkRx;
-import com.radixdlt.mempool.MempoolNetworkTx;
 import com.radixdlt.middleware2.network.GetVerticesErrorRateLimit;
 import com.radixdlt.middleware2.network.MessageCentralBFTNetwork;
 import com.radixdlt.middleware2.network.MessageCentralLedgerSync;
@@ -54,8 +56,6 @@ public final class NetworkModule extends AbstractModule {
 		// provides (for SharedMempool)
 		bind(SimpleMempoolNetwork.class).in(Scopes.SINGLETON);
 		bind(MempoolNetworkRx.class).to(SimpleMempoolNetwork.class);
-		bind(MempoolNetworkTx.class).to(SimpleMempoolNetwork.class);
-
 
 		// Network BFT/Epoch Sync messages
 		//TODO: make rate limit it configurable
@@ -70,6 +70,12 @@ public final class NetworkModule extends AbstractModule {
 		bind(MessageCentralBFTNetwork.class).in(Scopes.SINGLETON);
 		bind(ProposalBroadcaster.class).to(MessageCentralBFTNetwork.class);
 		bind(BFTEventsRx.class).to(MessageCentralBFTNetwork.class);
+	}
+
+	@ProvidesIntoSet
+	@ProcessOnDispatch
+	private EventProcessor<MempoolAddedCommand> mempoolAddedCommandEventProcessor(SimpleMempoolNetwork network) {
+		return network.mempoolAddedCommandEventProcessor();
 	}
 
 	@ProvidesIntoSet

@@ -18,8 +18,9 @@
 package com.radixdlt.middleware2.network;
 
 import com.radixdlt.consensus.Command;
+import com.radixdlt.environment.EventProcessor;
+import com.radixdlt.mempool.MempoolAddedCommand;
 import com.radixdlt.mempool.MempoolNetworkRx;
-import com.radixdlt.mempool.MempoolNetworkTx;
 import java.util.Objects;
 
 import javax.inject.Inject;
@@ -40,7 +41,7 @@ import io.reactivex.rxjava3.subjects.PublishSubject;
 /**
  * Overly simplistic network implementation that does absolutely nothing right now.
  */
-public class SimpleMempoolNetwork implements MempoolNetworkRx, MempoolNetworkTx {
+public class SimpleMempoolNetwork implements MempoolNetworkRx {
 	private final PeerWithSystem localPeer;
 	private final int magic;
 	private final AddressBook addressBook;
@@ -66,15 +67,15 @@ public class SimpleMempoolNetwork implements MempoolNetworkRx, MempoolNetworkTx 
 		this.messageCentral.addListener(MempoolAtomAddedMessage.class, this::handleMempoolAtomMessage);
 	}
 
-
-	@Override
-	public void sendMempoolSubmission(Command command) {
-		MempoolAtomAddedMessage message = new MempoolAtomAddedMessage(this.magic, command);
-		final EUID self = this.localPeer.getNID();
-		this.addressBook.peers()
-			.filter(Peer::hasSystem) // Only peers with systems (and therefore transports)
-			.filter(p -> !self.equals(p.getNID())) // Exclude self, already sent
-			.forEach(peer -> this.messageCentral.send(peer, message));
+	public EventProcessor<MempoolAddedCommand> mempoolAddedCommandEventProcessor() {
+		return cmd -> {
+			MempoolAtomAddedMessage message = new MempoolAtomAddedMessage(this.magic, cmd.getCommand());
+			final EUID self = this.localPeer.getNID();
+			this.addressBook.peers()
+					.filter(Peer::hasSystem) // Only peers with systems (and therefore transports)
+					.filter(p -> !self.equals(p.getNID())) // Exclude self, already sent
+					.forEach(peer -> this.messageCentral.send(peer, message));
+		};
 	}
 
 	@Override

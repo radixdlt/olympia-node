@@ -20,8 +20,12 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.mempool.LocalMempool;
+import com.radixdlt.mempool.Mempool;
+import com.radixdlt.mempool.MempoolAddedCommand;
 
 public class LedgerLocalMempoolModule extends AbstractModule {
 	private final int maxSize;
@@ -32,7 +36,11 @@ public class LedgerLocalMempoolModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	LocalMempool localMempool(Hasher hasher) {
-		return new LocalMempool(maxSize, hasher);
+	Mempool localMempool(
+		Hasher hasher,
+        SystemCounters counters,
+        EventDispatcher<MempoolAddedCommand> mempoolAddedCommandEventDispatcher
+	) {
+		return new LocalMempool(maxSize, hasher, counters, mempoolAddedCommandEventDispatcher);
 	}
 }

@@ -19,11 +19,9 @@ package com.radixdlt;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.mempool.Mempool;
-import com.radixdlt.mempool.SharedMempool;
 import com.radixdlt.mempool.SubmissionControl;
 import com.radixdlt.mempool.SubmissionControlImpl;
 import com.radixdlt.mempool.SubmissionControlImpl.SubmissionControlSender;
@@ -34,12 +32,6 @@ import com.radixdlt.serialization.Serialization;
  * Module which manages synchronization of mempool atoms across of nodes
  */
 public class SyncMempoolServiceModule extends AbstractModule {
-
-	@Override
-	protected void configure() {
-		bind(Mempool.class).to(SharedMempool.class).in(Scopes.SINGLETON);
-	}
-
 	@Provides
 	@Singleton
 	SubmissionControl submissionControl(

@@ -19,7 +19,6 @@ package com.radixdlt.middleware2.network;
 
 import com.radixdlt.consensus.Command;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Stream;
 
 import org.junit.Test;
 import org.radix.universe.system.LocalSystem;
@@ -28,7 +27,6 @@ import com.radixdlt.identifiers.EUID;
 import com.radixdlt.mempool.messages.MempoolAtomAddedMessage;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
-import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageListener;
 import com.radixdlt.universe.Universe;
@@ -39,29 +37,6 @@ import static org.mockito.Mockito.*;
 import io.reactivex.rxjava3.observers.TestObserver;
 
 public class SimpleMempoolNetworkTest {
-
-	@Test
-	public void testSendMempoolSubmission() {
-		PeerWithSystem peer1 = mock(PeerWithSystem.class);
-		when(peer1.hasSystem()).thenReturn(true);
-		when(peer1.getNID()).thenReturn(EUID.ONE);
-		PeerWithSystem peer2 = mock(PeerWithSystem.class);
-		when(peer2.hasSystem()).thenReturn(true);
-		when(peer2.getNID()).thenReturn(EUID.TWO);
-		LocalSystem system = mock(LocalSystem.class);
-		when(system.getNID()).thenReturn(EUID.TWO);
-		Universe universe = mock(Universe.class);
-		AddressBook addressBook = mock(AddressBook.class);
-		when(addressBook.peers()).thenReturn(Stream.of(peer1, peer2));
-		MessageCentral messageCentral = mock(MessageCentral.class);
-		SimpleMempoolNetwork smn = new SimpleMempoolNetwork(system, universe, addressBook, messageCentral);
-
-		Command command = mock(Command.class);
-		smn.sendMempoolSubmission(command);
-
-		verify(messageCentral, times(1)).send(any(), any());
-	}
-
 	@Test
 	public void testCommandMessages() {
 		LocalSystem system = mock(LocalSystem.class);

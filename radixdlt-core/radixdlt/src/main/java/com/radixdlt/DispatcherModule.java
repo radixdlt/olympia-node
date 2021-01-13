@@ -49,6 +49,7 @@ import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.mempool.MempoolAddedCommand;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
 import java.util.Set;
@@ -103,6 +104,9 @@ public class DispatcherModule extends AbstractModule {
 
 		final var viewQuorumReachedKey = new TypeLiteral<EventProcessor<ViewQuorumReached>>() { };
 		Multibinder.newSetBinder(binder(), viewQuorumReachedKey, ProcessOnDispatch.class);
+
+		final var mempoolAddedCommandKey = new TypeLiteral<EventProcessor<MempoolAddedCommand>>() { };
+		Multibinder.newSetBinder(binder(), mempoolAddedCommandKey, ProcessOnDispatch.class);
 
 		final var voteKey = new TypeLiteral<EventProcessor<Vote>>() { };
 		Multibinder.newSetBinder(binder(), voteKey, ProcessOnDispatch.class);
@@ -372,5 +376,15 @@ public class DispatcherModule extends AbstractModule {
 		};
 	}
 
+	@Provides
+	@Singleton
+	private EventDispatcher<MempoolAddedCommand> mempoolAddedCommandEventDispatcher(
+		@ProcessOnDispatch Set<EventProcessor<MempoolAddedCommand>> processors,
+		Environment environment
+	) {
+		return cmd -> {
+			processors.forEach(e -> e.process(cmd));
+		};
+	}
 
 }
