@@ -183,27 +183,14 @@ public class AtomsService {
 		this.disposable.dispose();
 	}
 
-	public AID submitAtom(JSONObject jsonAtom, SingleAtomListener subscriber) {
-		AtomicReference<AID> aid = new AtomicReference<>();
+	public AID submitAtom(JSONObject jsonAtom) {
 		try {
-			this.submissionControl.submitAtom(jsonAtom, atom -> {
-				aid.set(atom.getAID());
-				subscribeToSubmission(subscriber, atom);
-			});
-			return aid.get();
+			final Atom rawAtom = this.serialization.fromJsonObject(jsonAtom, Atom.class);
+			final ClientAtom atom = ClientAtom.convertFromApiAtom(rawAtom, hasher);
+			this.submissionControl.submitAtom(atom);
+			return atom.getAID();
 		} catch (MempoolRejectedException e) {
-			if (subscriber != null) {
-				AID atomId = aid.get();
-				removeSingleAtomListener(atomId, subscriber);
-				subscriber.onError(atomId, e);
-			}
 			throw new IllegalStateException(e);
-		}
-	}
-
-	private void subscribeToSubmission(SingleAtomListener subscriber, ClientAtom atom) {
-		if (subscriber != null) {
-			addSingleAtomListener(atom.getAID(), subscriber);
 		}
 	}
 
@@ -261,18 +248,6 @@ public class AtomsService {
 	private ImmutableList<SingleAtomListener> getSingleAtomListeners(AID aid) {
 		synchronized (this.deleteOnEventSingleAtomObserversLock) {
 			return getListeners(this.deleteOnEventSingleAtomObserversx, aid);
-		}
-	}
-
-	private void addSingleAtomListener(AID aid, SingleAtomListener listener) {
-		synchronized (this.deleteOnEventSingleAtomObserversLock) {
-			addListener(this.deleteOnEventSingleAtomObserversx, aid, listener);
-		}
-	}
-
-	private void removeSingleAtomListener(AID aid, SingleAtomListener listener) {
-		synchronized (this.deleteOnEventSingleAtomObserversLock) {
-			removeListener(this.deleteOnEventSingleAtomObserversx, aid, listener);
 		}
 	}
 

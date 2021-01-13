@@ -234,7 +234,7 @@ public final class RadixJsonRpcServer {
 						return JsonRpcUtil.errorResponse(id, -32000, "No atom present", new JSONObject());
 					} else {
 						JSONObject jsonAtom = (JSONObject) paramsObject;
-						final AID atomId = atomsService.submitAtom(jsonAtom, null);
+						final AID atomId = atomsService.submitAtom(jsonAtom);
 						result = new JSONObject()
 							.put("status", AtomStatus.PENDING_CM_VERIFICATION)
 							.put("aid", atomId)

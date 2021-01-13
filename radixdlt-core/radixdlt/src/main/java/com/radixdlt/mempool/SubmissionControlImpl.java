@@ -18,7 +18,6 @@
 package com.radixdlt.mempool;
 
 import com.radixdlt.consensus.Command;
-import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
@@ -26,11 +25,9 @@ import com.radixdlt.middleware2.converters.AtomConversionException;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput.Output;
 import java.util.Objects;
-import java.util.function.Consumer;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.json.JSONObject;
 
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.engine.RadixEngine;
@@ -48,20 +45,17 @@ public class SubmissionControlImpl implements SubmissionControl {
 	private final RadixEngine<LedgerAtom> radixEngine;
 	private final Serialization serialization;
 	private final SubmissionControlSender submissionControlSender;
-	private final Hasher hasher;
 
 	public SubmissionControlImpl(
 		Mempool mempool,
 		RadixEngine<LedgerAtom> radixEngine,
 		Serialization serialization,
-		SubmissionControlSender submissionControlSender,
-		Hasher hasher
+		SubmissionControlSender submissionControlSender
 	) {
 		this.mempool = Objects.requireNonNull(mempool);
 		this.radixEngine = Objects.requireNonNull(radixEngine);
 		this.serialization = Objects.requireNonNull(serialization);
 		this.submissionControlSender = Objects.requireNonNull(submissionControlSender);
-		this.hasher = hasher;
 	}
 
 	@Override
@@ -98,14 +92,6 @@ public class SubmissionControlImpl implements SubmissionControl {
 			);
 			this.submissionControlSender.sendRadixEngineFailure(atom, e);
 		}
-	}
-
-	@Override
-	public void submitAtom(JSONObject atomJson, Consumer<ClientAtom> deserialisationCallback) throws MempoolFullException, MempoolDuplicateException {
-		final Atom rawAtom = this.serialization.fromJsonObject(atomJson, Atom.class);
-		final ClientAtom atom = ClientAtom.convertFromApiAtom(rawAtom, hasher);
-		deserialisationCallback.accept(atom);
-		submitAtom(atom);
 	}
 
 	@Override

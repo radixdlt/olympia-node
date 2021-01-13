@@ -21,7 +21,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
-import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.SharedMempool;
@@ -47,15 +46,13 @@ public class SyncMempoolServiceModule extends AbstractModule {
 		Mempool mempool,
 		RadixEngine<LedgerAtom> radixEngine,
 		Serialization serialization,
-		SubmissionControlSender submissionControlSender,
-		Hasher hasher
+		SubmissionControlSender submissionControlSender
 	) {
 		return new SubmissionControlImpl(
 			mempool,
 			radixEngine,
 			serialization,
-			submissionControlSender,
-			hasher
+			submissionControlSender
 		);
 	}
 }
