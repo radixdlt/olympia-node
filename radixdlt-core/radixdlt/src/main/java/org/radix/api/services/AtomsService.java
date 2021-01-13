@@ -23,6 +23,7 @@ import com.radixdlt.api.CommittedAtomsRx;
 import com.radixdlt.api.SubmissionErrorsRx;
 import com.radixdlt.api.SubmissionFailure;
 import com.radixdlt.atommodel.Atom;
+import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.engine.RadixEngineException;
@@ -31,6 +32,7 @@ import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.mempool.SubmissionControl;
 
 import com.radixdlt.middleware2.store.StoredCommittedCommand;
+import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomWithResult;
@@ -141,12 +143,6 @@ public class AtomsService {
 		getAtomStatusListeners(aid).forEach(listener -> listener.onError(e.getException()));
 	}
 
-	private void processDeserializationFailure(DeserializationFailure e) {
-		final AID aid = Atom.aidOf(e.getAtom(), this.hasher);
-		removeSingleAtomListeners(aid).forEach(listener -> listener.onError(aid, e.getException()));
-		getAtomStatusListeners(aid).forEach(listener -> listener.onError(e.getException()));
-	}
-
 	public void start() {
 		var lastStoredAtomDisposable = committedAtomsRx.committedAtoms()
 			.observeOn(Schedulers.io())
@@ -172,11 +168,6 @@ public class AtomsService {
 			.observeOn(Schedulers.io())
 			.subscribe(this::processSubmissionFailure);
 		this.disposable.add(submissionFailuresDisposable);
-
-		var deserializationFailures = submissionErrorsRx.deserializationFailures()
-			.observeOn(Schedulers.io())
-			.subscribe(this::processDeserializationFailure);
-		this.disposable.add(deserializationFailures);
 	}
 
 	public void stop() {
@@ -185,9 +176,12 @@ public class AtomsService {
 
 	public AID submitAtom(JSONObject jsonAtom) {
 		try {
+			// TODO: remove all of the conversion mess here
 			final Atom rawAtom = this.serialization.fromJsonObject(jsonAtom, Atom.class);
 			final ClientAtom atom = ClientAtom.convertFromApiAtom(rawAtom, hasher);
-			this.submissionControl.submitAtom(atom);
+			byte[] payload = serialization.toDson(atom, Output.ALL);
+			Command command = new Command(payload);
+			this.submissionControl.submitCommand(command);
 			return atom.getAID();
 		} catch (MempoolRejectedException e) {
 			throw new IllegalStateException(e);

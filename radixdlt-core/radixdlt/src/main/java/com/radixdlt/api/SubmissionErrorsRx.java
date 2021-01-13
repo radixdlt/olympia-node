@@ -26,11 +26,4 @@ public interface SubmissionErrorsRx {
 	 * @return hot observable of submission failures
 	 */
 	Observable<SubmissionFailure> submissionFailures();
-
-	/**
-	 * Retrieve a never ending stream of deserialization failures
-	 *
-	 * @return hot observable of deserialization failures
-	 */
-	Observable<DeserializationFailure> deserializationFailures();
 }

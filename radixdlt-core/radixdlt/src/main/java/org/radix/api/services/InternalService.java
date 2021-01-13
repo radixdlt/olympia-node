@@ -17,8 +17,11 @@
 
 package org.radix.api.services;
 
+import com.radixdlt.DefaultSerialization;
+import com.radixdlt.consensus.Command;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.serialization.DsonOutput.Output;
 import java.util.Random;
 
 import org.apache.logging.log4j.LogManager;
@@ -127,7 +130,9 @@ public final class InternalService {
 							atom.sign(this.owner, hasher);
 
 							ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom, hasher);
-							submissionControl.submitAtom(clientAtom);
+							byte[] payload = DefaultSerialization.getInstance().toDson(clientAtom, Output.ALL);
+							Command command = new Command(payload);
+							submissionControl.submitCommand(command);
 
 							remainingIterations--;
 							if (remainingIterations <= 0) {

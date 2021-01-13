@@ -47,7 +47,6 @@ public class AtomsServiceTest {
 	public void setUp() {
 		this.committedAtomsSubject = PublishSubject.create();
 		this.submissionErrorsRx = mock(SubmissionErrorsRx.class);
-		when(this.submissionErrorsRx.deserializationFailures()).thenReturn(Observable.never());
 		when(this.submissionErrorsRx.submissionFailures()).thenReturn(Observable.never());
 
 		this.submissionControl = mock(SubmissionControl.class);

@@ -21,15 +21,12 @@ import com.radixdlt.consensus.Command;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
-import com.radixdlt.middleware2.converters.AtomConversionException;
 import com.radixdlt.serialization.DeserializeException;
-import com.radixdlt.serialization.DsonOutput.Output;
 import java.util.Objects;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.radixdlt.atommodel.Atom;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.serialization.Serialization;
 
@@ -37,7 +34,6 @@ public class SubmissionControlImpl implements SubmissionControl {
 	private static final Logger log = LogManager.getLogger();
 
 	public interface SubmissionControlSender {
-		void sendDeserializeFailure(Atom rawAtom, AtomConversionException e);
 		void sendRadixEngineFailure(ClientAtom clientAtom, RadixEngineException e);
 	}
 
@@ -72,25 +68,19 @@ public class SubmissionControlImpl implements SubmissionControl {
 			//TODO: create dedicated MempoolBadAtomException?
 			throw new MempoolRejectedException(command, "Bad atom");
 		}
-		submitAtom(clientAtom);
-	}
 
-	@Override
-	public void submitAtom(ClientAtom atom) throws MempoolFullException, MempoolDuplicateException {
 		try {
-			this.radixEngine.staticCheck(atom);
-			byte[] payload = serialization.toDson(atom, Output.ALL);
-			Command command = new Command(payload);
+			this.radixEngine.staticCheck(clientAtom);
 			this.mempool.add(command);
 		} catch (RadixEngineException e) {
 			log.info(
 				"Rejecting atom {} with error '{}' at '{}' with message '{}'.",
-				atom,
+				clientAtom,
 				e.getErrorCode(),
 				e.getDataPointer(),
 				e.getMessage()
 			);
-			this.submissionControlSender.sendRadixEngineFailure(atom, e);
+			this.submissionControlSender.sendRadixEngineFailure(clientAtom, e);
 		}
 	}
 

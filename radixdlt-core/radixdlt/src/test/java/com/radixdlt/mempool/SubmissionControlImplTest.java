@@ -19,7 +19,6 @@ package com.radixdlt.mempool;
 
 import com.radixdlt.consensus.Command;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.SubmissionControlImpl.SubmissionControlSender;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
@@ -27,7 +26,6 @@ import com.radixdlt.serialization.DeserializeException;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.stubbing.Answer;
-import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.serialization.Serialization;
 
@@ -75,33 +73,6 @@ public class SubmissionControlImplTest {
 		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenThrow(new DeserializeException(""));
 		assertThatThrownBy(() -> submissionControl.submitCommand(command))
 			.isInstanceOf(MempoolRejectedException.class);
-	}
-
-	@Test
-	public void when_radix_engine_returns_error__then_event_is_broadcast() throws Exception {
-		RadixEngineException e = mock(RadixEngineException.class);
-		when(e.getDataPointer()).thenReturn(DataPointer.ofAtom());
-		doThrow(e).when(this.radixEngine).staticCheck(any());
-
-		ClientAtom atom = mock(ClientAtom.class);
-		this.submissionControl.submitAtom(atom);
-
-		verify(this.sender, times(1)).sendRadixEngineFailure(any(), any());
-		verify(this.mempool, never()).add(any());
-	}
-
-	@Test
-	public void when_radix_engine_returns_ok__then_atom_is_added_to_mempool() throws Exception {
-		doNothing().when(this.radixEngine).staticCheck(any());
-		doNothing().when(this.mempool).add(any());
-
-		ClientAtom atom = mock(ClientAtom.class);
-		when(this.serialization.toDson(eq(atom), any())).thenReturn(new byte[] {});
-		this.submissionControl.submitAtom(atom);
-
-		verify(this.sender, never()).sendRadixEngineFailure(any(), any());
-		verify(this.sender, never()).sendDeserializeFailure(any(), any());
-		verify(this.mempool, times(1)).add(any());
 	}
 
 	@Test

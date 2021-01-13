@@ -18,14 +18,11 @@
 package com.radixdlt;
 
 import com.google.inject.AbstractModule;
-import com.radixdlt.api.DeserializationFailure;
 import com.radixdlt.api.SubmissionErrorsRx;
 import com.radixdlt.api.SubmissionFailure;
-import com.radixdlt.atommodel.Atom;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.SubmissionControlImpl.SubmissionControlSender;
 import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.middleware2.converters.AtomConversionException;
 import com.radixdlt.utils.TwoSenderToRx;
 import io.reactivex.rxjava3.core.Observable;
 
@@ -36,16 +33,9 @@ public final class LedgerRxModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
-		TwoSenderToRx<Atom, AtomConversionException, DeserializationFailure> deserializationFailures
-			= new TwoSenderToRx<>(DeserializationFailure::new);
 		TwoSenderToRx<ClientAtom, RadixEngineException, SubmissionFailure> submissionFailures
 			= new TwoSenderToRx<>(SubmissionFailure::new);
 		SubmissionControlSender submissionControlSender = new SubmissionControlSender() {
-			@Override
-			public void sendDeserializeFailure(Atom rawAtom, AtomConversionException e) {
-				deserializationFailures.send(rawAtom, e);
-			}
-
 			@Override
 			public void sendRadixEngineFailure(ClientAtom clientAtom, RadixEngineException e) {
 				submissionFailures.send(clientAtom, e);
@@ -55,11 +45,6 @@ public final class LedgerRxModule extends AbstractModule {
 			@Override
 			public Observable<SubmissionFailure> submissionFailures() {
 				return submissionFailures.rx();
-			}
-
-			@Override
-			public Observable<DeserializationFailure> deserializationFailures() {
-				return deserializationFailures.rx();
 			}
 		};
 		bind(SubmissionControlSender.class).toInstance(submissionControlSender);
