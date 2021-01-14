@@ -651,14 +651,6 @@ public class SimulationTest {
 			} else if (ledgerType == LedgerType.LEDGER_AND_LOCALMEMPOOL) {
 				modules.add(new LedgerCommandGeneratorModule());
 				modules.add(new LedgerLocalMempoolModule(10));
-				modules.add(
-					new AbstractModule() {
-						@Override
-						protected void configure() {
-							bind(Mempool.class).to(LocalMempool.class);
-						}
-					}
-				);
 				modules.add(new MockedStateComputerModule());
 			} else if (ledgerType == LedgerType.LEDGER_AND_EPOCHS) {
 				modules.add(new LedgerCommandGeneratorModule());
@@ -686,7 +678,6 @@ public class SimulationTest {
 				modules.add(new AbstractModule() {
 					@Override
 					protected void configure() {
-						bind(Mempool.class).to(LocalMempool.class);
 						bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(epochHighView);
 						// TODO: Fix pacemaker so can Default 1 so can debug in IDE, possibly from properties at some point
 						// TODO: Specifically, simulation test with engine, epochs and mempool gets stuck on a single validator
