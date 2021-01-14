@@ -4,10 +4,10 @@ import com.radixdlt.consensus.Command;
 
 import java.util.Objects;
 
-public final class MempoolAddedCommand {
+public final class MempoolAddSuccess {
     private final Command command;
 
-    private MempoolAddedCommand(Command command) {
+    private MempoolAddSuccess(Command command) {
         this.command = command;
     }
 
@@ -15,8 +15,8 @@ public final class MempoolAddedCommand {
         return command;
     }
 
-    public static MempoolAddedCommand create(Command command) {
+    public static MempoolAddSuccess create(Command command) {
         Objects.requireNonNull(command);
-        return new MempoolAddedCommand(command);
+        return new MempoolAddSuccess(command);
     }
 }

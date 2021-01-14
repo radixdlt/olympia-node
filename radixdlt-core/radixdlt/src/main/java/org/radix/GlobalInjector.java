@@ -48,7 +48,6 @@ import com.radixdlt.RadixEngineValidatorComputersModule;
 import com.radixdlt.SyncRunnerModule;
 import com.radixdlt.SyncServiceModule;
 import com.radixdlt.SyncMempoolServiceModule;
-import com.radixdlt.LedgerRxModule;
 import com.radixdlt.LedgerModule;
 import com.radixdlt.SystemModule;
 import com.radixdlt.TokenFeeModule;
@@ -132,7 +131,6 @@ public class GlobalInjector {
 
 			// Ledger
 			new LedgerModule(),
-			new LedgerRxModule(),
 			new LedgerCommandGeneratorModule(),
 			new LedgerLocalMempoolModule(mempoolMaxSize),
 

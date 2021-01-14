@@ -49,7 +49,7 @@ public final class LocalMempool implements Mempool {
 
 	private final Hasher hasher;
 
-	private final EventDispatcher<MempoolAddedCommand> mempoolAddedCommandEventDispatcher;
+	private final EventDispatcher<MempoolAddSuccess> mempoolAddedCommandEventDispatcher;
 
 	private final SystemCounters counters;
 
@@ -57,7 +57,7 @@ public final class LocalMempool implements Mempool {
 		int maxSize,
 		Hasher hasher,
         SystemCounters counters,
-        EventDispatcher<MempoolAddedCommand> mempoolAddedCommandEventDispatcher
+        EventDispatcher<MempoolAddSuccess> mempoolAddedCommandEventDispatcher
 	) {
 		if (maxSize <= 0) {
 			throw new IllegalArgumentException("mempool.maxSize must be positive: " + maxSize);
@@ -80,7 +80,7 @@ public final class LocalMempool implements Mempool {
 		}
 
 		updateCounts();
-		mempoolAddedCommandEventDispatcher.dispatch(MempoolAddedCommand.create(command));
+		mempoolAddedCommandEventDispatcher.dispatch(MempoolAddSuccess.create(command));
 	}
 
 	@Override

@@ -37,7 +37,6 @@ import com.radixdlt.LedgerCommandGeneratorModule;
 import com.radixdlt.EpochsLedgerUpdateModule;
 import com.radixdlt.EpochsLedgerUpdateRxModule;
 import com.radixdlt.LedgerModule;
-import com.radixdlt.LedgerRxModule;
 import com.radixdlt.NoFeeModule;
 import com.radixdlt.LedgerLocalMempoolModule;
 import com.radixdlt.RadixEngineModule;
@@ -211,7 +210,6 @@ public class SimulationTest {
 					modules.add(new MockedLedgerUpdateRxModule());
 				} else {
 					modules.add(new LedgerModule());
-					modules.add(new LedgerRxModule());
 					if (!hasEpochs) {
 						modules.add(new MockedLedgerUpdateRxModule());
 						modules.add(new MockedLedgerUpdateSender());

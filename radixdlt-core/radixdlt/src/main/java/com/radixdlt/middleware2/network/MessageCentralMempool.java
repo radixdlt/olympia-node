@@ -4,7 +4,7 @@ import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
-import com.radixdlt.mempool.MempoolAddedCommand;
+import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.messages.MempoolAtomAddedMessage;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.PeerWithSystem;
@@ -38,7 +38,7 @@ public class MessageCentralMempool {
 		this.addressBook = addressBook;
 	}
 
-	public RemoteEventDispatcher<MempoolAddedCommand> commandRemoteEventDispatcher() {
+	public RemoteEventDispatcher<MempoolAddSuccess> commandRemoteEventDispatcher() {
 		return (receiver, msg) -> {
 			MempoolAtomAddedMessage message = new MempoolAtomAddedMessage(this.magic, msg.getCommand());
 			this.send(message, receiver);

@@ -19,6 +19,7 @@ package com.radixdlt.mempool;
 
 import com.radixdlt.consensus.Command;
 import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.serialization.DeserializeException;
@@ -33,29 +34,26 @@ import com.radixdlt.serialization.Serialization;
 public class SubmissionControlImpl implements SubmissionControl {
 	private static final Logger log = LogManager.getLogger();
 
-	public interface SubmissionControlSender {
-		void sendRadixEngineFailure(ClientAtom clientAtom, RadixEngineException e);
-	}
-
 	private final Mempool mempool;
 	private final RadixEngine<LedgerAtom> radixEngine;
 	private final Serialization serialization;
-	private final SubmissionControlSender submissionControlSender;
+	private final EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher;
 
 	public SubmissionControlImpl(
 		Mempool mempool,
 		RadixEngine<LedgerAtom> radixEngine,
 		Serialization serialization,
-		SubmissionControlSender submissionControlSender
+		EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher
 	) {
 		this.mempool = Objects.requireNonNull(mempool);
 		this.radixEngine = Objects.requireNonNull(radixEngine);
 		this.serialization = Objects.requireNonNull(serialization);
-		this.submissionControlSender = Objects.requireNonNull(submissionControlSender);
+
+		this.mempoolAddFailureEventDispatcher = Objects.requireNonNull(mempoolAddFailureEventDispatcher);
 	}
 
 	@Override
-	public void submitCommand(Command command) throws MempoolRejectedException, MempoolFullException, MempoolDuplicateException {
+	public void submitCommand(Command command) {
 		ClientAtom clientAtom = command.map(payload -> {
 			try {
 				return serialization.fromDson(payload, ClientAtom.class);
@@ -64,23 +62,24 @@ public class SubmissionControlImpl implements SubmissionControl {
 			}
 		});
 		if (clientAtom == null) {
-			//TODO: use of base class looks inconsistent (all other cases have dedicated exceptions)
-			//TODO: create dedicated MempoolBadAtomException?
-			throw new MempoolRejectedException(command, "Bad atom");
+			mempoolAddFailureEventDispatcher.dispatch(MempoolAddFailure.create(
+				command,
+				new MempoolRejectedException(command, "Bad atom")
+			));
+			return;
 		}
 
 		try {
 			this.radixEngine.staticCheck(clientAtom);
 			this.mempool.add(command);
-		} catch (RadixEngineException e) {
+		} catch (RadixEngineException | MempoolFullException | MempoolDuplicateException e) {
 			log.info(
-				"Rejecting atom {} with error '{}' at '{}' with message '{}'.",
+				"Rejecting atom {} with error '{}'.",
 				clientAtom,
-				e.getErrorCode(),
-				e.getDataPointer(),
 				e.getMessage()
 			);
-			this.submissionControlSender.sendRadixEngineFailure(clientAtom, e);
+
+			mempoolAddFailureEventDispatcher.dispatch(MempoolAddFailure.create(command, e));
 		}
 	}
 

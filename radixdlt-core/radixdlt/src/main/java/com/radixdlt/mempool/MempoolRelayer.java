@@ -15,11 +15,11 @@ import java.util.Objects;
 public final class MempoolRelayer {
 	private final PeerWithSystem localPeer;
 	private final AddressBook addressBook;
-	private final RemoteEventDispatcher<MempoolAddedCommand> remoteEventDispatcher;
+	private final RemoteEventDispatcher<MempoolAddSuccess> remoteEventDispatcher;
 
 	@Inject
 	public MempoolRelayer(
-		RemoteEventDispatcher<MempoolAddedCommand> remoteEventDispatcher,
+		RemoteEventDispatcher<MempoolAddSuccess> remoteEventDispatcher,
 		LocalSystem system,
 		AddressBook addressBook
 	) {
@@ -28,7 +28,7 @@ public final class MempoolRelayer {
 		this.localPeer = new PeerWithSystem(system);
 	}
 
-	public EventProcessor<MempoolAddedCommand> mempoolAddedCommandEventProcessor() {
+	public EventProcessor<MempoolAddSuccess> mempoolAddedCommandEventProcessor() {
 		return cmd -> {
 			final EUID self = this.localPeer.getNID();
 			this.addressBook.peers()

@@ -25,7 +25,7 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.mempool.LocalMempool;
 import com.radixdlt.mempool.Mempool;
-import com.radixdlt.mempool.MempoolAddedCommand;
+import com.radixdlt.mempool.MempoolAddSuccess;
 
 public class LedgerLocalMempoolModule extends AbstractModule {
 	private final int maxSize;
@@ -39,7 +39,7 @@ public class LedgerLocalMempoolModule extends AbstractModule {
 	Mempool localMempool(
 		Hasher hasher,
         SystemCounters counters,
-        EventDispatcher<MempoolAddedCommand> mempoolAddedCommandEventDispatcher
+        EventDispatcher<MempoolAddSuccess> mempoolAddedCommandEventDispatcher
 	) {
 		return new LocalMempool(maxSize, hasher, counters, mempoolAddedCommandEventDispatcher);
 	}

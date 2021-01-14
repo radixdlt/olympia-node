@@ -53,7 +53,7 @@ public final class MempoolReceiver {
 		synchronized (this.startLock) {
 			if (this.disposable == null) {
 				this.disposable = this.mempoolCommands
-					.subscribe(this::processCommand);
+					.subscribe(this.submissionControl::submitCommand);
 			}
 		}
 	}
@@ -72,14 +72,6 @@ public final class MempoolReceiver {
 	boolean running() {
 		synchronized (this.startLock) {
 			return this.disposable != null;
-		}
-	}
-
-	private void processCommand(Command command) {
-		try {
-			this.submissionControl.submitCommand(command);
-		} catch (MempoolRejectedException ex) {
-			log.info(String.format("Mempool rejected command %s: %s", command, ex.getMessage()));
 		}
 	}
 }

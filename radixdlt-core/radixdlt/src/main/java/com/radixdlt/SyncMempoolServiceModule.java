@@ -21,10 +21,11 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.mempool.Mempool;
+import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.SubmissionControl;
 import com.radixdlt.mempool.SubmissionControlImpl;
-import com.radixdlt.mempool.SubmissionControlImpl.SubmissionControlSender;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.serialization.Serialization;
 
@@ -38,7 +39,7 @@ public class SyncMempoolServiceModule extends AbstractModule {
 		Mempool mempool,
 		RadixEngine<LedgerAtom> radixEngine,
 		Serialization serialization,
-		SubmissionControlSender submissionControlSender
+		EventDispatcher<MempoolAddFailure> submissionControlSender
 	) {
 		return new SubmissionControlImpl(
 			mempool,

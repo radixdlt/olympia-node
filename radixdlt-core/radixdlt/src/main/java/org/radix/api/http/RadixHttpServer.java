@@ -22,11 +22,11 @@ import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.bft.VerifiedVertex;
+import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 import com.google.common.io.CharStreams;
 import com.radixdlt.api.CommittedAtomsRx;
-import com.radixdlt.api.SubmissionErrorsRx;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.mempool.SubmissionControl;
 import com.radixdlt.middleware2.store.CommandToBinaryConverter;
@@ -102,7 +102,7 @@ public final class RadixHttpServer {
 	@Inject
 	public RadixHttpServer(
 		InMemorySystemInfo inMemorySystemInfo,
-		SubmissionErrorsRx submissionErrorsRx,
+		Observable<MempoolAddFailure> mempoolAddFailures,
 		CommittedAtomsRx committedAtomsRx,
 		Observable<BFTCommittedUpdate> committedUpdates,
 		Map<String, ModuleRunner> moduleRunners,
@@ -125,7 +125,7 @@ public final class RadixHttpServer {
 		this.localSystem = Objects.requireNonNull(localSystem);
 		this.peers = new ConcurrentHashMap<>();
 		this.atomsService = new AtomsService(
-			submissionErrorsRx,
+			mempoolAddFailures,
 			committedAtomsRx,
 			committedUpdates,
 			store,
