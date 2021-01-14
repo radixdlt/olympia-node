@@ -11,11 +11,11 @@ This test is an amalgamation of some previous test cases which are now condensed
 
 #### Environment
 
-A network of > 3 nodes, with some latency.
+A network of 4 or 5 nodes, with some latency.
 
 #### Test Steps
-1) Set 100ms delay and 20% package loss
-2) Run the following checks:
+1) Set 100ms latency and 20% package loss
+2) Checks:
     1) Responsiveness
     2) Proposals have direct parents (PHDP)
     3) No timeouts
@@ -28,7 +28,7 @@ A network of > 3 nodes, with some latency.
     3) Safety
     4) Liveness
 5) Start the container that was stopped earlier
-6) The node that was restarted should exhibit liveness
+6) The node that was restarted should resync with the network
 
 #### Comments
 
@@ -43,7 +43,7 @@ Also, as a future addition, an Atom could be submitted and it's inclusion to the
 
 #### Description
 
-Outgoing traffic is blocked for each and every node. They should fail a liveness test. When communication resumes, consensus should resume. 
+Outgoing traffic is blocked for every node. The nodes should then fail a liveness test. When communication resumes, consensus should resume. 
 
 #### Motivation
 
@@ -51,14 +51,15 @@ This was specified in the [Drop 2 testing document](https://radixdlt.atlassian.n
 
 #### Environment
 
-A network of > 3 nodes. 
+A network of 4 or 5 nodes. 
 
 #### Test Steps
 1) After the network has started, assert liveness
-2) Block port 30000 via iptables. This is the default "gossip" port for the nodes
+2) For each node, block port 30000 via iptables
 3) A liveness test should fail
-4) The ports are unblocked and all nodes have liveness
+4) The ports are unblocked and liveness is asserted again
 
 #### Comments
-This is a somewhat destructive test. When run as a cluster test, it has brought down the network.
+
+This is a somewhat destructive test and has desynced the network in the past.
 
