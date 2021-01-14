@@ -97,8 +97,6 @@ import com.radixdlt.integration.distributed.simulation.invariants.ledger.Consens
 import com.radixdlt.integration.distributed.simulation.invariants.ledger.LedgerInOrderInvariant;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
-import com.radixdlt.mempool.LocalMempool;
-import com.radixdlt.mempool.Mempool;
 import com.radixdlt.integration.distributed.simulation.invariants.consensus.AllProposalsHaveDirectParentsInvariant;
 import com.radixdlt.integration.distributed.simulation.invariants.consensus.LivenessInvariant;
 import com.radixdlt.integration.distributed.simulation.invariants.consensus.NoTimeoutsInvariant;
