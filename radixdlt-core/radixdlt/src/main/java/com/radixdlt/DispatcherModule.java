@@ -49,7 +49,6 @@ import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolAddedCommand;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;

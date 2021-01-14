@@ -22,6 +22,7 @@ import java.util.Objects;
 
 import com.google.inject.Inject;
 
+import io.reactivex.rxjava3.core.Observable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -33,7 +34,7 @@ import io.reactivex.rxjava3.disposables.Disposable;
 public final class MempoolReceiver {
 	private static final Logger log = LogManager.getLogger();
 
-	private final MempoolNetworkRx mempoolRx;
+	private final Observable<Command> mempoolCommands;
 	private final SubmissionControl submissionControl;
 
 	private final Object startLock = new Object();
@@ -41,17 +42,17 @@ public final class MempoolReceiver {
 
 	@Inject
 	public MempoolReceiver(
-		MempoolNetworkRx mempoolRx,
+		Observable<Command> mempoolCommands,
 		SubmissionControl submissionControl
 	) {
-		this.mempoolRx = Objects.requireNonNull(mempoolRx);
+		this.mempoolCommands = Objects.requireNonNull(mempoolCommands);
 		this.submissionControl = Objects.requireNonNull(submissionControl);
 	}
 
 	public void start() {
 		synchronized (this.startLock) {
 			if (this.disposable == null) {
-				this.disposable = this.mempoolRx.commands()
+				this.disposable = this.mempoolCommands
 					.subscribe(this::processCommand);
 			}
 		}

@@ -23,6 +23,7 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.BFTEventsRx;
+import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.Vote;
@@ -36,11 +37,9 @@ import com.radixdlt.environment.rx.RxRemoteDispatcher;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.mempool.MempoolAddedCommand;
-import com.radixdlt.mempool.MempoolNetworkRx;
 import com.radixdlt.middleware2.network.GetVerticesErrorRateLimit;
 import com.radixdlt.middleware2.network.MessageCentralMempool;
 import com.radixdlt.middleware2.network.MessageCentralValidatorSync;
-import com.radixdlt.middleware2.network.SimpleMempoolNetwork;
 import com.radixdlt.middleware2.network.MessageCentralBFTNetwork;
 import com.radixdlt.middleware2.network.MessageCentralLedgerSync;
 import io.reactivex.rxjava3.core.Observable;
@@ -53,8 +52,6 @@ public final class NetworkModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		// provides (for SharedMempool)
-		bind(SimpleMempoolNetwork.class).in(Scopes.SINGLETON);
-		bind(MempoolNetworkRx.class).to(SimpleMempoolNetwork.class);
 		bind(MessageCentralMempool.class).in(Scopes.SINGLETON);
 
 		// Network BFT/Epoch Sync messages
@@ -110,5 +107,10 @@ public final class NetworkModule extends AbstractModule {
 	@Provides
 	private Observable<RemoteEvent<GetVerticesRequest>> vertexSyncRequests(MessageCentralValidatorSync validatorSync) {
 		return validatorSync.requests();
+	}
+
+	@Provides
+	private Observable<RemoteEvent<Command>> mempoolCommands(MessageCentralMempool messageCentralMempool) {
+		return messageCentralMempool.mempoolComands();
 	}
 }
