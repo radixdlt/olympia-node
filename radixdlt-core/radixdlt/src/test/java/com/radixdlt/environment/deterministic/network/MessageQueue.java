@@ -21,7 +21,6 @@ import java.io.PrintStream;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -37,7 +36,7 @@ import java.util.stream.Collectors;
  */
 public final class MessageQueue {
 
-	private final HashMap<Long, LinkedList<ControlledMessage>> messagesByTime = Maps.newHashMap();
+	private final HashMap<Long, List<ControlledMessage>> messagesByTime = Maps.newHashMap();
 	private long minimumMessageTime = Long.MAX_VALUE; // Cached minimum time
 
 	MessageQueue() {
@@ -46,7 +45,7 @@ public final class MessageQueue {
 
 	public boolean add(ControlledMessage item) {
 		long messageTime = item.arrivalTime();
-		this.messagesByTime.computeIfAbsent(messageTime, k -> Lists.newLinkedList()).add(item);
+		this.messagesByTime.computeIfAbsent(messageTime, k -> newList()).add(item);
 		if (messageTime < this.minimumMessageTime) {
 			this.minimumMessageTime = messageTime;
 		}
@@ -55,7 +54,7 @@ public final class MessageQueue {
 
 	public boolean addFirst(ControlledMessage item) {
 		long messageTime = item.arrivalTime();
-		this.messagesByTime.computeIfAbsent(messageTime, k -> Lists.newLinkedList()).addFirst(item);
+		this.messagesByTime.computeIfAbsent(messageTime, k -> newList()).add(0, item);
 		if (messageTime < this.minimumMessageTime) {
 			this.minimumMessageTime = messageTime;
 		}
@@ -64,7 +63,7 @@ public final class MessageQueue {
 
 	public boolean addBefore(ControlledMessage item, Predicate<ControlledMessage> test) {
 		var messageTime = item.arrivalTime();
-		var i = this.messagesByTime.computeIfAbsent(messageTime, k -> Lists.newLinkedList()).listIterator();
+		var i = this.messagesByTime.computeIfAbsent(messageTime, k -> newList()).listIterator();
 		var inserted = false;
 		while (i.hasNext()) {
 			if (test.test(i.next())) {
@@ -91,7 +90,7 @@ public final class MessageQueue {
 	}
 
 	void remove(ControlledMessage message) {
-		LinkedList<ControlledMessage> msgs = this.messagesByTime.get(this.minimumMessageTime);
+		List<ControlledMessage> msgs = this.messagesByTime.get(this.minimumMessageTime);
 		if (msgs == null) {
 			painfulRemove(message);
 			return;
@@ -125,7 +124,7 @@ public final class MessageQueue {
 
 	Set<ControlledMessage> allMessages() {
 		return this.messagesByTime.values().stream()
-			.flatMap(LinkedList::stream)
+			.flatMap(List::stream)
 			.collect(Collectors.toSet());
 	}
 
@@ -143,10 +142,10 @@ public final class MessageQueue {
 
 	// If not removing message of the lowest rank, then we do it the painful way
 	private void painfulRemove(ControlledMessage message) {
-		List<Map.Entry<Long, LinkedList<ControlledMessage>>> entries = Lists.newArrayList(this.messagesByTime.entrySet());
+		List<Map.Entry<Long, List<ControlledMessage>>> entries = Lists.newArrayList(this.messagesByTime.entrySet());
 		Collections.sort(entries, Map.Entry.comparingByKey());
-		for (Map.Entry<Long, LinkedList<ControlledMessage>> entry : entries) {
-			LinkedList<ControlledMessage> msgs = entry.getValue();
+		for (Map.Entry<Long, List<ControlledMessage>> entry : entries) {
+			List<ControlledMessage> msgs = entry.getValue();
 			if (msgs != null && msgs.remove(message)) {
 				if (msgs.isEmpty()) {
 					this.messagesByTime.remove(entry.getKey());
@@ -165,5 +164,9 @@ public final class MessageQueue {
 			return Long.MAX_VALUE;
 		}
 		return Collections.min(eavs);
+	}
+
+	private static <T> List<T> newList() {
+		return Lists.newLinkedList();
 	}
 }

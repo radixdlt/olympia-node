@@ -38,6 +38,7 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
+import org.assertj.core.util.Lists;
 
 /**
  * BFT Nodes treated as a single unit where one message is processed at a time.
@@ -48,6 +49,8 @@ public final class DeterministicNodes {
 	private final ImmutableList<Injector> nodeInstances;
 	private final ControlledSenderFactory senderFactory;
 	private final ImmutableBiMap<BFTNode, Integer> nodeLookup;
+	private final List<DeterministicMessageProcessor> deterministicMessageProcessors = Lists.newArrayList();
+	private final List<String> nodeNames = Lists.newArrayList();
 
 	public DeterministicNodes(
 		List<BFTNode> nodes,
@@ -88,6 +91,10 @@ public final class DeterministicNodes {
 	}
 
 	public void start() {
+		// Cache names and processors to avoid relatively expensive lookups
+		// and string concatenation in high frequency handleMessage() below
+		this.nodeNames.clear();
+		this.deterministicMessageProcessors.clear();
 		for (int index = 0; index < this.nodeInstances.size(); index++) {
 			Injector injector = nodeInstances.get(index);
 			DeterministicMessageProcessor processor = injector.getInstance(DeterministicMessageProcessor.class);
@@ -98,6 +105,8 @@ public final class DeterministicNodes {
 			} finally {
 				ThreadContext.remove("bftNode");
 			}
+			this.nodeNames.add(bftNode);
+			this.deterministicMessageProcessors.add(processor);
 		}
 	}
 
@@ -106,12 +115,10 @@ public final class DeterministicNodes {
 		int senderIndex = nextMsg.channelId().senderIndex();
 		int receiverIndex = nextMsg.channelId().receiverIndex();
 		BFTNode sender = this.nodeLookup.inverse().get(senderIndex);
-		String bftNode = " " + this.nodeLookup.inverse().get(receiverIndex);
-		ThreadContext.put("bftNode", bftNode);
+		ThreadContext.put("bftNode", this.nodeNames.get(receiverIndex));
 		try {
 			log.debug("Received message {} at {}", nextMsg, timedNextMsg.time());
-			nodeInstances.get(receiverIndex).getInstance(DeterministicMessageProcessor.class)
-				.handleMessage(sender, nextMsg.message());
+			this.deterministicMessageProcessors.get(receiverIndex).handleMessage(sender, nextMsg.message());
 		} finally {
 			ThreadContext.remove("bftNode");
 		}

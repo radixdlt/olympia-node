@@ -65,8 +65,6 @@ import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import static java.util.function.Predicate.not;
-
 /**
  * Manages keeping the VertexStore and pacemaker in sync for consensus
  */
@@ -289,21 +287,13 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 	}
 
 	private void processGetVerticesLocalTimeout(VertexRequestTimeout timeout) {
-		if (this.bftSyncing.isEmpty() || !this.bftSyncing.containsKey(timeout.getRequest())) {
-			// Request has already been satisfied
+		SyncRequestState syncRequestState = bftSyncing.remove(timeout.getRequest());
+		if (syncRequestState == null) {
 			return;
 		}
 
-		// Here we retry a random request
-		final var requests = ImmutableList.copyOf(this.bftSyncing.keySet());
-		final var request = requests.get(this.random.nextInt(requests.size()));
-		final var syncRequestState = this.bftSyncing.remove(request);
-		if (syncRequestState == null) {
-			throw new IllegalStateException("Logic error: syncRequestState cannot be null here");
-		}
-
-		final var authors = syncRequestState.authors.stream()
-			.filter(not(this.self::equals))
+		var authors = syncRequestState.authors.stream()
+			.filter(author -> !author.equals(self))
 			.collect(ImmutableList.toImmutableList());
 
 		if (authors.isEmpty()) {
@@ -327,17 +317,19 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 	}
 
 	private void sendBFTSyncRequest(HashCode vertexId, int count, ImmutableList<BFTNode> authors, HashCode syncId, int timeoutCount) {
-		GetVerticesRequest request = new GetVerticesRequest(vertexId, count);
-		SyncRequestState syncRequestState = bftSyncing.getOrDefault(request, new SyncRequestState(authors));
-		if (syncRequestState.syncIds.isEmpty()) {
-			VertexRequestTimeout scheduledTimeout = VertexRequestTimeout.create(request);
-			final long timeout = Math.min(timeoutCount + 1, MAX_TIMEOUT_BACKOFF) * this.bftSyncPatienceMillis;
-			log.debug("Scheduling sync request timeout for {}ms", timeout);
-			this.timeoutDispatcher.dispatch(scheduledTimeout, timeout);
-			this.requestSender.dispatch(authors.get(0), request);
-			this.bftSyncing.put(request, syncRequestState);
+		if (timeoutCount < MAX_TIMEOUT_BACKOFF) {
+			final var request = new GetVerticesRequest(vertexId, count);
+			final var syncRequestState = bftSyncing.getOrDefault(request, new SyncRequestState(authors));
+			if (syncRequestState.syncIds.isEmpty()) {
+				final var scheduledTimeout = VertexRequestTimeout.create(request);
+				final var timeout = Math.min(MAX_TIMEOUT_BACKOFF, timeoutCount + 1) * this.bftSyncPatienceMillis;
+				log.debug("Scheduling sync request timeout for {}ms", timeout);
+				this.timeoutDispatcher.dispatch(scheduledTimeout, timeout);
+				this.requestSender.dispatch(authors.get(0), request);
+				this.bftSyncing.put(request, syncRequestState);
+			}
+			syncRequestState.syncIds.add(syncId);
 		}
-		syncRequestState.syncIds.add(syncId);
 	}
 
 	private void rebuildAndSyncQC(SyncState syncState) {
@@ -422,13 +414,18 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 
 	@Override
 	public void processGetVerticesErrorResponse(GetVerticesErrorResponse response) {
-		// TODO: check response
-
-		log.debug("SYNC_VERTICES: Received GetVerticesErrorResponse: {} highQC: {}", response, vertexStore.highQC());
-
-		if (response.highQC().highestQC().getView().compareTo(vertexStore.highQC().highestQC().getView()) > 0) {
-			// error response indicates that the node has moved on from last sync so try and sync to a new sync
-			this.syncToQC("get vertices error response", response.highQC(), response.getSender(), 0);
+		// Avoid DoS if this is not a response to a request we made
+		if (this.bftSyncing.containsKey(response.failingRequest())) {
+			log.debug("SYNC_VERTICES: Received GetVerticesErrorResponse: {} highQC: {}", response, vertexStore.highQC());
+			if (response.highQC().highestQC().getView().compareTo(vertexStore.highQC().highestQC().getView()) > 0) {
+				// error response indicates that the node has moved on from last sync so try and sync to a new sync
+				// Remove this sync request so it doesn't retry, as we are going to add a new one
+				this.bftSyncing.remove(response.failingRequest());
+				this.syncToQC("get vertices error response", response.highQC(), response.getSender(), 0);
+			}
+		} else {
+			// Incorrect response from requestee, or we may have already synced with another node
+			log.debug("SYNC_VERTICES: Ignoring error response for {} from {}", response.failingRequest().getVertexId(), response.getSender());
 		}
 	}
 
@@ -461,6 +458,8 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 						throw new IllegalStateException("Unknown sync stage: " + syncState.syncStage);
 				}
 			}
+		} else {
+			log.debug("SYNC_VERTICES: Ignoring unknown GetVerticesResponse {} from {}", firstVertex.getId(), response.getSender());
 		}
 	}
 

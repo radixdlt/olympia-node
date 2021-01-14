@@ -33,10 +33,11 @@ public class GetVerticesErrorResponseMessageSerializeTest extends SerializeMessa
 	}
 
 	private static GetVerticesErrorResponseMessage get() {
-		LedgerHeader ledgerHeader = LedgerHeader.genesis(HashUtils.zero256(), null);
-		VerifiedVertex verifiedVertex = new VerifiedVertex(UnverifiedVertex.createGenesis(ledgerHeader), HashUtils.zero256());
-		QuorumCertificate qc = QuorumCertificate.ofGenesis(verifiedVertex, ledgerHeader);
-		HighQC highQC = HighQC.from(qc, qc, Optional.empty());
-		return new GetVerticesErrorResponseMessage(12345, highQC);
+		final var ledgerHeader = LedgerHeader.genesis(HashUtils.zero256(), null);
+		final var verifiedVertex = new VerifiedVertex(UnverifiedVertex.createGenesis(ledgerHeader), HashUtils.zero256());
+		final var qc = QuorumCertificate.ofGenesis(verifiedVertex, ledgerHeader);
+		final var highQC = HighQC.from(qc, qc, Optional.empty());
+		final var failingRequest = new GetVerticesRequestMessage(12345, HashUtils.random256(), 3);
+		return new GetVerticesErrorResponseMessage(12345, highQC, failingRequest);
 	}
 }

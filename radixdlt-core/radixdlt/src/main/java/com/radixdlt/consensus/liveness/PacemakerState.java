@@ -66,8 +66,7 @@ public class PacemakerState implements PacemakerReducer {
 		}
 	}
 
-	@Override
-	public void updateView(View nextView) {
+	private void updateView(View nextView) {
 		if (nextView.lte(this.currentView)) {
 			return;
 		}
