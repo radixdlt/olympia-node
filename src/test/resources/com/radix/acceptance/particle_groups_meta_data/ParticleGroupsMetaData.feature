@@ -20,15 +20,3 @@ Feature: Particle Groups MetaData
     Given that I have access to a suitable Radix network
     When I submit an atom with particle groups which have metadata exceeding the max allowed atom size 65536 bytes
     Then I should observe the atom being rejected
-
-  Scenario: 4: MetaData is invalid JSON
-    Given that I have access to a suitable Radix network
-    When I submit an atom with particle groups which have invalid json in the metadata field
-    Then I should get a deserialization error
-
-  Scenario: 5: MetaData is wrong type
-    Given that I have access to a suitable Radix network
-    When I submit an atom with particle groups which have the metadata field as something other than a map
-    Then I should get a deserialization error
-
-
