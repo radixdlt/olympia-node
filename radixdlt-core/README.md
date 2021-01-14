@@ -14,12 +14,12 @@ Distributed Ledger. It includes a variant implementation of the [HotStuff](https
 ## Building
 Clone the required repository:
 ```
-git clone https://github.com/radixdlt/radixdlt-core.git
+git clone https://github.com/radixdlt/radixdlt.git
 ```
 
 Checkout the required branch:
 ```
-cd radixdlt-core && git checkout release/1.0-beta.21
+cd radixdlt && git checkout release/1.0-beta.22
 ```
 
 Run tests (note that integration tests take several minutes to run):
@@ -54,21 +54,21 @@ API interface can be accessed via localhost:8080, eg:
 curl localhost:8080/api/universe
 ```
 
-See also [radixdlt-java](https://github.com/radixdlt/radixdlt-java)
+See also [radixdlt-java](../radixdlt-java)
 for a Java client library and [radixdlt-js](https://github.com/radixdlt/radixdlt-js)
 for Javascript.
 
 ## Contribute
 
-[Contributions](CONTRIBUTING.md) are welcome, we simply ask to:
+[Contributions](../CONTRIBUTING.md) are welcome, we simply ask to:
 
 * Fork the codebase
 * Make changes
 * Submit a pull request for review
 
-When contributing to this repository, we recommend discussing with the development team the change you wish to make using a [GitHub issue](https://github.com/radixdlt/radixdlt-core/issues) before making changes.
+When contributing to this repository, we recommend discussing with the development team the change you wish to make using a [GitHub issue](https://github.com/radixdlt/radixdlt/issues) before making changes.
 
-Please follow our [Code of Conduct](CODE_OF_CONDUCT.md) in all your interactions with the project.
+Please follow our [Code of Conduct](../CODE_OF_CONDUCT.md) in all your interactions with the project.
 
 ## Links
 
@@ -81,4 +81,4 @@ Please follow our [Code of Conduct](CODE_OF_CONDUCT.md) in all your interactions
 
 ## License
 
-The `radixdlt-core` code is released under the [Apache 2.0 License](LICENSE).
+The `radixdlt-core` code is released under the [Apache 2.0 License](../LICENSE).
