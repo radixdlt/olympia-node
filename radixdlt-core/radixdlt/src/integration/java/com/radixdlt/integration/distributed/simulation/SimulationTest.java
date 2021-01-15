@@ -71,6 +71,7 @@ import com.radixdlt.integration.distributed.MockedCryptoModule;
 import com.radixdlt.integration.distributed.MockedLedgerModule;
 import com.radixdlt.integration.distributed.MockedLedgerUpdateSender;
 import com.radixdlt.integration.distributed.MockedMempoolModule;
+import com.radixdlt.integration.distributed.MockedMempoolStateComputerModule;
 import com.radixdlt.integration.distributed.MockedPersistenceStoreModule;
 import com.radixdlt.integration.distributed.MockedRadixEngineStoreModule;
 import com.radixdlt.integration.distributed.MockedRecoveryModule;
@@ -647,7 +648,7 @@ public class SimulationTest {
 			} else if (ledgerType == LedgerType.LEDGER_AND_LOCALMEMPOOL) {
 				modules.add(new LedgerCommandGeneratorModule());
 				modules.add(new LedgerLocalMempoolModule(10));
-				modules.add(new MockedStateComputerModule());
+				modules.add(new MockedMempoolStateComputerModule());
 			} else if (ledgerType == LedgerType.LEDGER_AND_EPOCHS) {
 				modules.add(new LedgerCommandGeneratorModule());
 				modules.add(new MockedMempoolModule());

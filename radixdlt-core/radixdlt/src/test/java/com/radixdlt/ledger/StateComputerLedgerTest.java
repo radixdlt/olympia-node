@@ -122,7 +122,6 @@ public class StateComputerLedgerTest {
 			mock(TimeSupplier.class),
 			currentLedgerHeader,
 			headerComparator,
-			mempool,
 			stateComputer,
 			ledgerUpdateSender,
 			accumulator,
@@ -150,7 +149,6 @@ public class StateComputerLedgerTest {
 			mock(TimeSupplier.class),
 			currentLedgerHeader,
 			headerComparator,
-			mempool,
 			stateComputer,
 			ledgerUpdateSender,
 			accumulator,
@@ -158,14 +156,6 @@ public class StateComputerLedgerTest {
 			counters,
 			hasher
 		);
-	}
-
-	@Test
-	public void when_generate_proposal_with_empty_prepared__then_generate_proposal_should_return_atom() {
-		Command command = mock(Command.class);
-		when(mempool.getCommands(anyInt(), anySet())).thenReturn(Collections.singletonList(command));
-		Command nextCommand = sut.generateNextCommand(View.of(1), Collections.emptySet());
-		assertThat(command).isEqualTo(nextCommand);
 	}
 
 	@Test

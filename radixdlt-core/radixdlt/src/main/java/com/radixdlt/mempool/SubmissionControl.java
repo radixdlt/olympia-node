@@ -22,8 +22,5 @@ import com.radixdlt.consensus.Command;
  * Handle atom submission.
  */
 public interface SubmissionControl {
-	/**
-	 * TODO: This needs to be reworked and refactored
-	 */
 	void submitCommand(Command command);
 }

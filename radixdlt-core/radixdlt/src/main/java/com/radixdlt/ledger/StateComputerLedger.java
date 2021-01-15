@@ -36,12 +36,11 @@ import com.radixdlt.counters.SystemCounters.CounterType;
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.mempool.Mempool;
+import com.radixdlt.mempool.SubmissionControl;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.store.LastProof;
 import java.util.Comparator;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -49,7 +48,8 @@ import java.util.Set;
 /**
  * Synchronizes execution
  */
-public final class StateComputerLedger implements Ledger, NextCommandGenerator {
+public final class StateComputerLedger implements Ledger, NextCommandGenerator, SubmissionControl {
+
 	public interface PreparedCommand {
 		Command command();
 
@@ -89,6 +89,8 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	}
 
 	public interface StateComputer {
+		void addToMempool(Command command);
+		Command getNextCommandFromMempool(Set<HashCode> exclude);
 		StateComputerResult prepare(ImmutableList<PreparedCommand> previous, Command next, long epoch, View view, long timestamp);
 		void commit(VerifiedCommandsAndProof verifiedCommandsAndProof, VerifiedVertexStoreState vertexStoreState);
 	}
@@ -98,8 +100,6 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	}
 
 	private final Comparator<VerifiedLedgerHeaderAndProof> headerComparator;
-	private final Mempool mempool;
-
 	private final StateComputer stateComputer;
 	private final LedgerUpdateSender ledgerUpdateSender;
 	private final SystemCounters counters;
@@ -116,7 +116,6 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		TimeSupplier timeSupplier,
 		@LastProof VerifiedLedgerHeaderAndProof initialLedgerState,
 		Comparator<VerifiedLedgerHeaderAndProof> headerComparator,
-		Mempool mempool,
 		StateComputer stateComputer,
 		LedgerUpdateSender ledgerUpdateSender,
 		LedgerAccumulator accumulator,
@@ -127,7 +126,6 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		this.timeSupplier = Objects.requireNonNull(timeSupplier);
 		this.headerComparator = Objects.requireNonNull(headerComparator);
 		this.currentLedgerHeader = initialLedgerState;
-		this.mempool = Objects.requireNonNull(mempool);
 		this.stateComputer = Objects.requireNonNull(stateComputer);
 		this.ledgerUpdateSender = Objects.requireNonNull(ledgerUpdateSender);
 		this.counters = Objects.requireNonNull(counters);
@@ -137,9 +135,15 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	}
 
 	@Override
+	public void submitCommand(Command command) {
+		synchronized (lock) {
+			stateComputer.addToMempool(command);
+		}
+	}
+
+	@Override
 	public Command generateNextCommand(View view, Set<HashCode> prepared) {
-		final List<Command> commands = mempool.getCommands(1, prepared);
-		return !commands.isEmpty() ? commands.get(0) : null;
+		return stateComputer.getNextCommandFromMempool(prepared);
 	}
 
 	@Override
@@ -273,7 +277,6 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			this.currentLedgerHeader = nextHeader;
 			this.counters.set(CounterType.LEDGER_STATE_VERSION, this.currentLedgerHeader.getStateVersion());
 
-			verifiedExtension.get().forEach(cmd -> this.mempool.removeCommitted(hasher.hash(cmd)));
 			BaseLedgerUpdate ledgerUpdate = new BaseLedgerUpdate(commandsToStore);
 			ledgerUpdateSender.sendLedgerUpdate(ledgerUpdate);
 		}

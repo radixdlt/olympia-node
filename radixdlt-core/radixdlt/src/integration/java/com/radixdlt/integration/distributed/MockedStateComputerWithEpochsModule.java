@@ -19,6 +19,7 @@ package com.radixdlt.integration.distributed;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
@@ -32,6 +33,8 @@ import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
+
+import java.util.Set;
 import java.util.function.Function;
 
 public class MockedStateComputerWithEpochsModule extends AbstractModule {
@@ -50,6 +53,15 @@ public class MockedStateComputerWithEpochsModule extends AbstractModule {
 	@Singleton
 	private StateComputer stateComputer(Hasher hasher) {
 		return new StateComputer() {
+
+			@Override
+			public void addToMempool(Command command) {
+			}
+
+			@Override
+			public Command getNextCommandFromMempool(Set<HashCode> exclude) {
+				return null;
+			}
 
 			@Override
 			public StateComputerResult prepare(ImmutableList<PreparedCommand> previous, Command next, long epoch, View view, long timstamp) {

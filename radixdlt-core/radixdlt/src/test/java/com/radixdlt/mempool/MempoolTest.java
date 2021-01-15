@@ -25,7 +25,6 @@ import com.radixdlt.RadixEngineModule;
 import com.radixdlt.RadixEngineStoreModule;
 import com.radixdlt.RadixEngineValidatorComputersModule;
 import com.radixdlt.RecoveryModule;
-import com.radixdlt.SyncMempoolServiceModule;
 import com.radixdlt.SyncServiceModule;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.Vote;
@@ -109,7 +108,6 @@ public class MempoolTest {
 
 			// Mempool
 			new LedgerLocalMempoolModule(1),
-			new SyncMempoolServiceModule(),
 
 			// Sync
 			new SyncServiceModule(),

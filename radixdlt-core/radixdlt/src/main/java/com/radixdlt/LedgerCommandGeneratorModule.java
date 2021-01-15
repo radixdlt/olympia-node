@@ -20,10 +20,12 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.ledger.StateComputerLedger;
+import com.radixdlt.mempool.SubmissionControl;
 
 public class LedgerCommandGeneratorModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		bind(NextCommandGenerator.class).to(StateComputerLedger.class);
+		bind(SubmissionControl.class).to(StateComputerLedger.class);
 	}
 }
