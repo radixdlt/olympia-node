@@ -3,6 +3,8 @@ LABEL maintainer="devops@radixdlt.com"
 USER root
 
 # add jdk
+# coreutils required by java-common-0.3-r0
+RUN apk add --no-cache coreutils --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community
 RUN apk add --no-cache openjdk11 --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community
 
 # add distTar
