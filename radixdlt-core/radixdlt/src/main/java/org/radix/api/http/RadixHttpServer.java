@@ -22,13 +22,14 @@ import com.radixdlt.ModuleRunner;
 import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.bft.VerifiedVertex;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.systeminfo.InMemorySystemInfo;
 import com.google.common.io.CharStreams;
 import com.radixdlt.api.CommittedAtomsRx;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.mempool.SubmissionControl;
 import com.radixdlt.middleware2.store.CommandToBinaryConverter;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.properties.RuntimeProperties;
@@ -107,7 +108,7 @@ public final class RadixHttpServer {
 		Observable<BFTCommittedUpdate> committedUpdates,
 		Map<String, ModuleRunner> moduleRunners,
 		LedgerEntryStore store,
-		SubmissionControl submissionControl,
+		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
 		CommandToBinaryConverter commandToBinaryConverter,
 		ClientAtomToBinaryConverter clientAtomToBinaryConverter,
 		Universe universe,
@@ -129,7 +130,7 @@ public final class RadixHttpServer {
 			committedAtomsRx,
 			committedUpdates,
 			store,
-			submissionControl,
+			mempoolAddEventDispatcher,
 			commandToBinaryConverter,
 			clientAtomToBinaryConverter,
 			hasher
@@ -143,7 +144,7 @@ public final class RadixHttpServer {
 			addressBook,
 			universe
 		);
-		this.internalService = new InternalService(submissionControl, properties, universe, hasher);
+		this.internalService = new InternalService(mempoolAddEventDispatcher, properties, universe, hasher);
 		this.networkService = new NetworkService(serialization, localSystem, addressBook, hasher);
 		this.port = properties.get("cp.port", DEFAULT_PORT);
 	}

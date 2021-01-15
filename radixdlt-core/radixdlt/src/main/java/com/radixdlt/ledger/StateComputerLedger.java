@@ -36,7 +36,7 @@ import com.radixdlt.counters.SystemCounters.CounterType;
 import com.google.common.hash.HashCode;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventProcessor;
-import com.radixdlt.mempool.SubmissionControl;
+import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.store.LastProof;
 import java.util.Comparator;
@@ -48,7 +48,7 @@ import java.util.Set;
 /**
  * Synchronizes execution
  */
-public final class StateComputerLedger implements Ledger, NextCommandGenerator, SubmissionControl {
+public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 
 	public interface PreparedCommand {
 		Command command();
@@ -134,11 +134,12 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator, 
 		this.hasher = Objects.requireNonNull(hasher);
 	}
 
-	@Override
-	public void submitCommand(Command command) {
-		synchronized (lock) {
-			stateComputer.addToMempool(command);
-		}
+	public EventProcessor<MempoolAdd> mempoolAddEventProcessor() {
+		return (mempoolAdd) -> {
+			synchronized (lock) {
+				stateComputer.addToMempool(mempoolAdd.getCommand());
+			}
+		};
 	}
 
 	@Override

@@ -49,6 +49,8 @@ import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.mempool.Mempool;
+import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.sync.LocalSyncRequest;
@@ -105,6 +107,10 @@ public class DispatcherModule extends AbstractModule {
 
 		final var viewQuorumReachedKey = new TypeLiteral<EventProcessor<ViewQuorumReached>>() { };
 		Multibinder.newSetBinder(binder(), viewQuorumReachedKey, ProcessOnDispatch.class);
+
+
+		final var mempoolAddKey = new TypeLiteral<EventProcessor<MempoolAdd>>() { };
+		Multibinder.newSetBinder(binder(), mempoolAddKey, ProcessOnDispatch.class);
 
 		final var mempoolAddedCommandKey = new TypeLiteral<EventProcessor<MempoolAddSuccess>>() { };
 		Multibinder.newSetBinder(binder(), mempoolAddedCommandKey, ProcessOnDispatch.class);
@@ -374,6 +380,17 @@ public class DispatcherModule extends AbstractModule {
 			logger.log(logLevel, "NextSyncView: {}", epochViewUpdate);
 			dispatcher.dispatch(epochViewUpdate);
 			processors.forEach(e -> e.process(epochViewUpdate));
+		};
+	}
+
+	@Provides
+	@Singleton
+	private EventDispatcher<MempoolAdd> mempoolAddEventDispatcher(
+		@ProcessOnDispatch Set<EventProcessor<MempoolAdd>> processors,
+		Environment environment
+	) {
+		return cmd -> {
+			processors.forEach(e -> e.process(cmd));
 		};
 	}
 

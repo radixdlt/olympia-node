@@ -25,8 +25,9 @@ import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.PreparedVertex;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
-import com.radixdlt.mempool.SubmissionControl;
 
 import com.radixdlt.middleware2.store.StoredCommittedCommand;
 import com.radixdlt.serialization.DeserializeException;
@@ -85,12 +86,12 @@ public class AtomsService {
 
 	private final Serialization serialization = DefaultSerialization.getInstance();
 
-	private final SubmissionControl submissionControl;
 	private final CommandToBinaryConverter commandToBinaryConverter;
 	private final ClientAtomToBinaryConverter clientAtomToBinaryConverter;
 	private final LedgerEntryStore store;
 	private final CompositeDisposable disposable;
 
+	private final EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
 	private final CommittedAtomsRx committedAtomsRx;
 	private final Observable<MempoolAddFailure> mempoolAddFailures;
 	private final Observable<BFTCommittedUpdate> committedUpdates;
@@ -102,13 +103,13 @@ public class AtomsService {
 		CommittedAtomsRx committedAtomsRx,
 		Observable<BFTCommittedUpdate> committedUpdates,
 		LedgerEntryStore store,
-		SubmissionControl submissionControl,
+		EventDispatcher<MempoolAdd> mempoolAddEventDispatcher,
 		CommandToBinaryConverter commandToBinaryConverter,
 		ClientAtomToBinaryConverter clientAtomToBinaryConverter,
 		Hasher hasher
 	) {
 		this.mempoolAddFailures = Objects.requireNonNull(mempoolAddFailures);
-		this.submissionControl = Objects.requireNonNull(submissionControl);
+		this.mempoolAddEventDispatcher = mempoolAddEventDispatcher;
 		this.store = Objects.requireNonNull(store);
 		this.commandToBinaryConverter = Objects.requireNonNull(commandToBinaryConverter);
 		this.clientAtomToBinaryConverter = Objects.requireNonNull(clientAtomToBinaryConverter);
@@ -188,7 +189,7 @@ public class AtomsService {
 		final ClientAtom atom = ClientAtom.convertFromApiAtom(rawAtom, hasher);
 		byte[] payload = serialization.toDson(atom, Output.ALL);
 		Command command = new Command(payload);
-		this.submissionControl.submitCommand(command);
+		this.mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));
 		return atom.getAID();
 	}
 

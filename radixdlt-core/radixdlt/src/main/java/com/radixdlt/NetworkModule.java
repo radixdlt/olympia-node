@@ -23,7 +23,6 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.BFTEventsRx;
-import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.Vote;
@@ -110,7 +109,7 @@ public final class NetworkModule extends AbstractModule {
 	}
 
 	@Provides
-	private Observable<RemoteEvent<Command>> mempoolCommands(MessageCentralMempool messageCentralMempool) {
+	private Observable<RemoteEvent<MempoolAddSuccess>> mempoolCommands(MessageCentralMempool messageCentralMempool) {
 		return messageCentralMempool.mempoolComands();
 	}
 }

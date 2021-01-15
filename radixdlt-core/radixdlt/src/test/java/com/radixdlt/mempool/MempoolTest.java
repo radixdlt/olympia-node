@@ -10,12 +10,8 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.name.Names;
 import com.google.inject.util.Modules;
-import com.radixdlt.ConsensusModule;
 import com.radixdlt.CryptoModule;
 import com.radixdlt.DispatcherModule;
-import com.radixdlt.EpochsConsensusModule;
-import com.radixdlt.EpochsLedgerUpdateModule;
-import com.radixdlt.EpochsSyncModule;
 import com.radixdlt.LedgerCommandGeneratorModule;
 import com.radixdlt.LedgerLocalMempoolModule;
 import com.radixdlt.LedgerModule;
@@ -24,8 +20,6 @@ import com.radixdlt.PersistenceModule;
 import com.radixdlt.RadixEngineModule;
 import com.radixdlt.RadixEngineStoreModule;
 import com.radixdlt.RadixEngineValidatorComputersModule;
-import com.radixdlt.RecoveryModule;
-import com.radixdlt.SyncServiceModule;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -33,7 +27,6 @@ import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
 import com.radixdlt.consensus.bft.PacemakerTimeout;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
@@ -54,7 +47,6 @@ import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.recovery.ModuleForRecoveryTests;
-import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.MaxValidators;
 import com.radixdlt.statecomputer.MinValidators;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
@@ -100,7 +92,6 @@ public class MempoolTest {
 
 			// Consensus
 			new CryptoModule(),
-			new ConsensusModule(),
 
 			// Ledger
 			new LedgerModule(),
@@ -108,16 +99,6 @@ public class MempoolTest {
 
 			// Mempool
 			new LedgerLocalMempoolModule(1),
-
-			// Sync
-			new SyncServiceModule(),
-
-			// Epochs - Consensus
-			new EpochsConsensusModule(),
-			// Epochs - Ledger
-			new EpochsLedgerUpdateModule(),
-			// Epochs - Sync
-			new EpochsSyncModule(),
 
 			// State Computer
 			new RadixEngineModule(),
@@ -127,9 +108,7 @@ public class MempoolTest {
 			// Fees
 			new NoFeeModule(),
 
-			new PersistenceModule(),
-
-			new RecoveryModule()
+			new PersistenceModule()
 		);
 	}
 
@@ -148,7 +127,7 @@ public class MempoolTest {
 		);
 	}
 
-	private Injector createRunner(ECKeyPair ecKeyPair) {
+	private Injector getInjector(ECKeyPair ecKeyPair) {
 		final BFTNode self = BFTNode.create(ecKeyPair.getPublicKey());
 
 		return Guice.createInjector(
@@ -159,7 +138,6 @@ public class MempoolTest {
 					bind(BFTNode.class).annotatedWith(Self.class).toInstance(self);
 					bind(new TypeLiteral<List<BFTNode>>() { }).toInstance(ImmutableList.of(self));
 					bind(ControlledSenderFactory.class).toInstance(network::createSender);
-					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(View.of(1));
 
 					final RuntimeProperties runtimeProperties;
 					// TODO: this constructor/class/inheritance/dependency is horribly broken
@@ -182,7 +160,7 @@ public class MempoolTest {
 
 	@Before
 	public void setup() {
-		this.currentInjector = createRunner(ecKeyPair);
+		this.currentInjector = getInjector(ecKeyPair);
 		this.currentInjector.getInstance(DeterministicEpochsConsensusProcessor.class).start();
 	}
 

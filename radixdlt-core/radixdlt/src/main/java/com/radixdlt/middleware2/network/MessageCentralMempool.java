@@ -1,6 +1,5 @@
 package com.radixdlt.middleware2.network;
 
-import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
@@ -56,12 +55,12 @@ public class MessageCentralMempool {
 		}
 	}
 
-	public Observable<RemoteEvent<Command>> mempoolComands() {
+	public Observable<RemoteEvent<MempoolAddSuccess>> mempoolComands() {
 		return Observable.create(emitter -> {
 			MessageListener<MempoolAtomAddedMessage> listener = (src, msg) -> {
 
 				BFTNode node = BFTNode.create(src.getSystem().getKey());
-				emitter.onNext(RemoteEvent.create(node, msg.command(), Command.class));
+				emitter.onNext(RemoteEvent.create(node, MempoolAddSuccess.create(msg.command()), MempoolAddSuccess.class));
 			};
 			this.messageCentral.addListener(MempoolAtomAddedMessage.class, listener);
 			emitter.setCancellable(() -> this.messageCentral.removeListener(listener));

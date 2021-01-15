@@ -17,14 +17,13 @@
 
 package com.radixdlt.mempool;
 
-import com.radixdlt.consensus.Command;
 import java.util.Objects;
 
 import com.google.inject.Inject;
 
+import com.radixdlt.environment.RemoteEventProcessor;
+import com.radixdlt.environment.rx.RemoteEvent;
 import io.reactivex.rxjava3.core.Observable;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import io.reactivex.rxjava3.disposables.Disposable;
 
@@ -32,28 +31,26 @@ import io.reactivex.rxjava3.disposables.Disposable;
  * Network glue for SubmissionControl.
  */
 public final class MempoolReceiver {
-	private static final Logger log = LogManager.getLogger();
-
-	private final Observable<Command> mempoolCommands;
-	private final SubmissionControl submissionControl;
+	private final Observable<RemoteEvent<MempoolAddSuccess>> mempoolCommands;
+	private final RemoteEventProcessor<MempoolAddSuccess> remoteEventProcessor;
 
 	private final Object startLock = new Object();
 	private Disposable disposable;
 
 	@Inject
 	public MempoolReceiver(
-		Observable<Command> mempoolCommands,
-		SubmissionControl submissionControl
+		Observable<RemoteEvent<MempoolAddSuccess>> mempoolCommands,
+		RemoteEventProcessor<MempoolAddSuccess> remoteEventProcessor
 	) {
 		this.mempoolCommands = Objects.requireNonNull(mempoolCommands);
-		this.submissionControl = Objects.requireNonNull(submissionControl);
+		this.remoteEventProcessor = Objects.requireNonNull(remoteEventProcessor);
 	}
 
 	public void start() {
 		synchronized (this.startLock) {
 			if (this.disposable == null) {
 				this.disposable = this.mempoolCommands
-					.subscribe(this.submissionControl::submitCommand);
+					.subscribe(e -> this.remoteEventProcessor.process(e.getOrigin(), e.getEvent()));
 			}
 		}
 	}
