@@ -19,6 +19,9 @@ import com.radixdlt.mempool.MempoolFullException;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Simple Mempool state computer
+ */
 public class MockedMempoolStateComputerModule extends AbstractModule {
 	@Provides
 	@Singleton
@@ -39,12 +42,18 @@ public class MockedMempoolStateComputerModule extends AbstractModule {
 			}
 
 			@Override
-			public StateComputerLedger.StateComputerResult prepare(ImmutableList<StateComputerLedger.PreparedCommand> previous, Command next, long epoch, View view, long timestamp) {
+			public StateComputerLedger.StateComputerResult prepare(
+				ImmutableList<StateComputerLedger.PreparedCommand> previous,
+				Command next,
+				long epoch,
+				View view,
+				long timestamp
+			) {
 				return new StateComputerLedger.StateComputerResult(
-						next == null
-								? ImmutableList.of()
-								: ImmutableList.of(new MockPrepared(next, hasher.hash(next))),
-						ImmutableMap.of()
+					next == null
+						? ImmutableList.of()
+						: ImmutableList.of(new MockPrepared(next, hasher.hash(next))),
+					ImmutableMap.of()
 				);
 			}
 

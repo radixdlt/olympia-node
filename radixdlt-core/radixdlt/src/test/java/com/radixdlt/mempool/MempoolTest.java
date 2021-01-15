@@ -1,7 +1,6 @@
 package com.radixdlt.mempool;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -27,8 +26,6 @@ import com.radixdlt.RadixEngineValidatorComputersModule;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atommodel.AtomAlreadySignedException;
 import com.radixdlt.atommodel.unique.UniqueParticle;
-import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
-import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.HashSigner;
@@ -79,7 +76,6 @@ import org.junit.rules.TemporaryFolder;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class MempoolTest {
 	public static Module create() {
@@ -187,7 +183,7 @@ public class MempoolTest {
 	}
 
 	@Test
-	public void should_forward_mempool_messages() {
+	public void add_command_to_mempool() {
 		// Arrange
 		Injector injector = getInjector(ecKeyPair);
 		Hasher hasher = injector.getInstance(Hasher.class);

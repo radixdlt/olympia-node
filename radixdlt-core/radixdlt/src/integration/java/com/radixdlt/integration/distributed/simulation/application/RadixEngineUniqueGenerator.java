@@ -16,6 +16,10 @@ import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.serialization.DsonOutput;
 
+/**
+ * Generates a new unique rri consumer command. Because new addresses are used
+ * on every call, the command should never fail when executed on a radix engine.
+ */
 public class RadixEngineUniqueGenerator implements CommandGenerator {
 	private final Hasher hasher = Sha256Hasher.withDefaultSerialization();
 

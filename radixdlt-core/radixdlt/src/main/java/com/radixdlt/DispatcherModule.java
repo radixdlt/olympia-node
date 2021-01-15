@@ -49,7 +49,6 @@ import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
-import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.mempool.MempoolAddSuccess;
@@ -386,12 +385,9 @@ public class DispatcherModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private EventDispatcher<MempoolAdd> mempoolAddEventDispatcher(
-		@ProcessOnDispatch Set<EventProcessor<MempoolAdd>> processors,
-		Environment environment
+		@ProcessOnDispatch Set<EventProcessor<MempoolAdd>> processors
 	) {
-		return cmd -> {
-			processors.forEach(e -> e.process(cmd));
-		};
+		return cmd -> processors.forEach(e -> e.process(cmd));
 	}
 
 	@Provides
@@ -400,9 +396,7 @@ public class DispatcherModule extends AbstractModule {
 		@ProcessOnDispatch Set<EventProcessor<MempoolAddSuccess>> processors,
 		Environment environment
 	) {
-		return cmd -> {
-			processors.forEach(e -> e.process(cmd));
-		};
+		return cmd -> processors.forEach(e -> e.process(cmd));
 	}
 
 	@Provides

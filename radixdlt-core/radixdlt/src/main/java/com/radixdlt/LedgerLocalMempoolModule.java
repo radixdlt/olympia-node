@@ -38,8 +38,8 @@ public class LedgerLocalMempoolModule extends AbstractModule {
 	@Singleton
 	Mempool localMempool(
 		Hasher hasher,
-        SystemCounters counters,
-        EventDispatcher<MempoolAddSuccess> mempoolAddedCommandEventDispatcher
+		SystemCounters counters,
+		EventDispatcher<MempoolAddSuccess> mempoolAddedCommandEventDispatcher
 	) {
 		return new LocalMempool(maxSize, hasher, counters, mempoolAddedCommandEventDispatcher);
 	}

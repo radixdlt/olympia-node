@@ -129,6 +129,7 @@ public class EpochManagerTest {
 	private StateComputer stateComputer = new StateComputer() {
 		@Override
 		public void addToMempool(Command command) {
+			// No-op
 		}
 
 		@Override
@@ -143,6 +144,7 @@ public class EpochManagerTest {
 
 		@Override
 		public void commit(VerifiedCommandsAndProof verifiedCommandsAndProof, VerifiedVertexStoreState vertexStoreState) {
+			// No-op
 		}
 	};
 

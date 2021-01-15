@@ -17,50 +17,13 @@
 
 package com.radixdlt.integration.distributed;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.crypto.Hasher;
+import com.google.inject.Scopes;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 
-import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
-import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
-
-import java.util.Set;
-
 public class MockedStateComputerModule extends AbstractModule {
-	@Provides
-	private StateComputer stateComputer(Hasher hasher) {
-		return new StateComputer() {
-			@Override
-			public void addToMempool(Command command) {
-			}
-
-			@Override
-			public Command getNextCommandFromMempool(Set<HashCode> exclude) {
-				return null;
-			}
-
-			@Override
-			public StateComputerResult prepare(ImmutableList<PreparedCommand> previous, Command next, long epoch, View view, long timestamp) {
-				return new StateComputerResult(
-					next == null
-						? ImmutableList.of()
-						: ImmutableList.of(new MockPrepared(next, hasher.hash(next))),
-					ImmutableMap.of()
-				);
-			}
-
-			@Override
-			public void commit(VerifiedCommandsAndProof command, VerifiedVertexStoreState vertexStoreState) {
-				// No op
-			}
-		};
+	@Override
+	public void configure() {
+		bind(StateComputer.class).to(MockedStateComputer.class).in(Scopes.SINGLETON);
 	}
 }

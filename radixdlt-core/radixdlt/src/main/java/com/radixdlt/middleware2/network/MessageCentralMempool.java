@@ -18,7 +18,10 @@ import javax.inject.Inject;
 import java.util.Objects;
 import java.util.Optional;
 
-public class MessageCentralMempool {
+/**
+ * Network layer for the mempool
+ */
+public final class MessageCentralMempool {
 	private static final Logger log = LogManager.getLogger();
 
 	private final MessageCentral messageCentral;

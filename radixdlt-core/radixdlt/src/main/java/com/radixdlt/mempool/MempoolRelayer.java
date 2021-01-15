@@ -12,6 +12,9 @@ import org.radix.universe.system.LocalSystem;
 import javax.inject.Inject;
 import java.util.Objects;
 
+/**
+ * Relays messages successfully added to the mempool to node neighbors.
+ */
 public final class MempoolRelayer {
 	private final PeerWithSystem localPeer;
 	private final AddressBook addressBook;

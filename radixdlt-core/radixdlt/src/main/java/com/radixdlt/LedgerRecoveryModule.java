@@ -5,7 +5,6 @@ import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -23,7 +22,10 @@ import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 
 import java.util.Optional;
 
-public class LedgerRecoveryModule extends AbstractModule {
+/**
+ * Recovery for ledger
+ */
+public final class LedgerRecoveryModule extends AbstractModule {
 	@Provides
 	@Singleton
 	@LastProof

@@ -17,24 +17,14 @@
 
 package com.radixdlt.integration.distributed;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 
-import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
-import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
-import com.radixdlt.ledger.VerifiedCommandsAndProof;
-
-import java.util.Set;
 import java.util.function.Function;
 
 public class MockedStateComputerWithEpochsModule extends AbstractModule {
@@ -52,36 +42,6 @@ public class MockedStateComputerWithEpochsModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private StateComputer stateComputer(Hasher hasher) {
-		return new StateComputer() {
-
-			@Override
-			public void addToMempool(Command command) {
-			}
-
-			@Override
-			public Command getNextCommandFromMempool(Set<HashCode> exclude) {
-				return null;
-			}
-
-			@Override
-			public StateComputerResult prepare(ImmutableList<PreparedCommand> previous, Command next, long epoch, View view, long timstamp) {
-				if (view.compareTo(epochHighView) >= 0) {
-					return new StateComputerResult(
-						next == null ? ImmutableList.of() : ImmutableList.of(new MockPrepared(next, hasher.hash(next))),
-						ImmutableMap.of(),
-						validatorSetMapping.apply(epoch + 1)
-					);
-				} else {
-					return new StateComputerResult(
-						next == null ? ImmutableList.of() : ImmutableList.of(new MockPrepared(next, hasher.hash(next))),
-						ImmutableMap.of()
-					);
-				}
-			}
-
-			@Override
-			public void commit(VerifiedCommandsAndProof command, VerifiedVertexStoreState vertexStoreState) {
-			}
-		};
+		return new MockedStateComputerWithEpochs(hasher, validatorSetMapping, epochHighView);
 	}
 }

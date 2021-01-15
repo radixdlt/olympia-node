@@ -6,8 +6,8 @@ import com.radixdlt.mempool.MempoolAddSuccess;
 
 import javax.inject.Inject;
 
-public class DeterministicMempoolProcessor implements DeterministicMessageProcessor {
-	private RemoteEventProcessor<MempoolAddSuccess> remoteEventProcessor;
+public final class DeterministicMempoolProcessor implements DeterministicMessageProcessor {
+	private final RemoteEventProcessor<MempoolAddSuccess> remoteEventProcessor;
 
 	@Inject
 	public DeterministicMempoolProcessor(
@@ -18,6 +18,7 @@ public class DeterministicMempoolProcessor implements DeterministicMessageProces
 
 	@Override
 	public void start() {
+		// No-op
 	}
 
 	@Override

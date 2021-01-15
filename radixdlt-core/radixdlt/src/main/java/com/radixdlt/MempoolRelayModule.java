@@ -12,7 +12,10 @@ import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.mempool.MempoolRelayer;
 
-public class MempoolRelayModule extends AbstractModule {
+/**
+ * Module responsible for sending/receiving mempool messages to/from other nodes.
+ */
+public final class MempoolRelayModule extends AbstractModule {
 
 	@Override
 	public void configure() {
