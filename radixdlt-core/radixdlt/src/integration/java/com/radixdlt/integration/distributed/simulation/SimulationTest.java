@@ -81,6 +81,7 @@ import com.radixdlt.integration.distributed.MockedCommittedReaderModule;
 import com.radixdlt.integration.distributed.MockedSyncServiceModule;
 import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
 import com.radixdlt.integration.distributed.simulation.application.BFTValidatorSetNodeSelector;
+import com.radixdlt.integration.distributed.simulation.application.CommandGenerator;
 import com.radixdlt.integration.distributed.simulation.application.EpochsNodeSelector;
 import com.radixdlt.integration.distributed.simulation.application.IncrementalBytes;
 import com.radixdlt.integration.distributed.simulation.application.CommittedChecker;
@@ -422,7 +423,7 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder addMempoolSubmissionsSteadyState(String invariantName) {
+		public Builder addMempoolSubmissionsSteadyState(String invariantName, CommandGenerator commandGenerator) {
 			this.modules.add(new AbstractModule() {
 				@ProvidesIntoSet
 				@ProcessOnDispatch
@@ -431,10 +432,9 @@ public class SimulationTest {
 				}
 			});
 
-			IncrementalBytes incrementalBytes = new IncrementalBytes();
 			NodeSelector nodeSelector = this.ledgerType.hasEpochs ? new EpochsNodeSelector() : new BFTValidatorSetNodeSelector();
 			LocalMempoolPeriodicSubmitter mempoolSubmitter = new LocalMempoolPeriodicSubmitter(
-				incrementalBytes,
+				commandGenerator,
 				nodeSelector
 			);
 			CommittedChecker committedChecker = new CommittedChecker(mempoolSubmitter.issuedCommands().map(Pair::getFirst), nodeEvents);

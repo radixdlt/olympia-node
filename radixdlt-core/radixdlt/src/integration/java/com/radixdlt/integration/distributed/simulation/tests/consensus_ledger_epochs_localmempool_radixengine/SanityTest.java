@@ -26,6 +26,8 @@ import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.Builder;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.TestResults;
 import java.util.concurrent.TimeUnit;
+
+import com.radixdlt.integration.distributed.simulation.application.RadixEngineUniqueGenerator;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
@@ -43,7 +45,7 @@ public class SanityTest {
 		.checkConsensusAllProposalsHaveDirectParents("directParents")
 		.checkLedgerInOrder("ledgerInOrder")
 		.checkLedgerProcessesConsensusCommitted("consensusToLedger")
-		.addMempoolSubmissionsSteadyState("mempool");
+		.addMempoolSubmissionsSteadyState("mempool", new RadixEngineUniqueGenerator());
 
 	@Test
 	public void sanity_tests_should_pass() {
