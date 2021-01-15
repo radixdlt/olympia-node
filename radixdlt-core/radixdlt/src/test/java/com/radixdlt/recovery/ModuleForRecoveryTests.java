@@ -30,12 +30,13 @@ import com.radixdlt.EpochsLedgerUpdateModule;
 import com.radixdlt.EpochsSyncModule;
 import com.radixdlt.LedgerCommandGeneratorModule;
 import com.radixdlt.LedgerModule;
+import com.radixdlt.LedgerRecoveryModule;
 import com.radixdlt.NoFeeModule;
 import com.radixdlt.PersistenceModule;
 import com.radixdlt.RadixEngineModule;
 import com.radixdlt.RadixEngineStoreModule;
 import com.radixdlt.RadixEngineValidatorComputersModule;
-import com.radixdlt.RecoveryModule;
+import com.radixdlt.ConsensusRecoveryModule;
 import com.radixdlt.SyncServiceModule;
 import com.radixdlt.consensus.bft.PacemakerMaxExponent;
 import com.radixdlt.consensus.bft.PacemakerRate;
@@ -126,7 +127,8 @@ public final class ModuleForRecoveryTests {
 
 			new PersistenceModule(),
 
-			new RecoveryModule()
+			new ConsensusRecoveryModule(),
+			new LedgerRecoveryModule()
 		);
 	}
 }

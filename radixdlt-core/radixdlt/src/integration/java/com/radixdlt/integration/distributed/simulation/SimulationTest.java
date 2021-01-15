@@ -83,7 +83,6 @@ import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvaria
 import com.radixdlt.integration.distributed.simulation.application.BFTValidatorSetNodeSelector;
 import com.radixdlt.integration.distributed.simulation.application.CommandGenerator;
 import com.radixdlt.integration.distributed.simulation.application.EpochsNodeSelector;
-import com.radixdlt.integration.distributed.simulation.application.IncrementalBytes;
 import com.radixdlt.integration.distributed.simulation.application.CommittedChecker;
 import com.radixdlt.integration.distributed.simulation.application.NodeSelector;
 import com.radixdlt.integration.distributed.simulation.application.RadixEngineValidatorRegistrator;

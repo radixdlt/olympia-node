@@ -37,12 +37,13 @@ import com.radixdlt.LedgerCommandGeneratorModule;
 import com.radixdlt.EpochsLedgerUpdateModule;
 import com.radixdlt.EpochsLedgerUpdateRxModule;
 import com.radixdlt.LedgerLocalMempoolModule;
+import com.radixdlt.LedgerRecoveryModule;
 import com.radixdlt.MempoolRelayModule;
 import com.radixdlt.PersistenceModule;
 import com.radixdlt.RadixEngineModule;
 import com.radixdlt.RadixEngineRxModule;
 import com.radixdlt.RadixEngineStoreModule;
-import com.radixdlt.RecoveryModule;
+import com.radixdlt.ConsensusRecoveryModule;
 import com.radixdlt.RxEnvironmentModule;
 import com.radixdlt.RadixEngineValidatorComputersModule;
 import com.radixdlt.SyncRunnerModule;
@@ -164,8 +165,8 @@ public class GlobalInjector {
 			new TokenFeeModule(),
 
 			new PersistenceModule(),
-
-			new RecoveryModule(),
+			new ConsensusRecoveryModule(),
+			new LedgerRecoveryModule(),
 
 			// System Info
 			new SystemInfoModule(),
