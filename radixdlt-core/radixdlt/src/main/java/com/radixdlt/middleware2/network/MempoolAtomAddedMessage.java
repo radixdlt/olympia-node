@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.mempool.messages;
+package com.radixdlt.middleware2.network;
 
 import com.radixdlt.consensus.Command;
 import java.util.Objects;

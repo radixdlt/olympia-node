@@ -21,9 +21,7 @@ import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.integration.distributed.simulation.SimulationTest.SimulationNetworkActor;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
-import com.radixdlt.mempool.Mempool;
-import com.radixdlt.mempool.MempoolDuplicateException;
-import com.radixdlt.mempool.MempoolFullException;
+import com.radixdlt.mempool.SubmissionControl;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
@@ -49,13 +47,8 @@ public class LocalMempoolPeriodicSubmitter implements SimulationNetworkActor {
 	}
 
 	private void act(RunningNetwork network, Command command, BFTNode node) {
-		Mempool mempool = network.getMempool(node);
-		try {
-			mempool.add(command);
-		} catch (MempoolDuplicateException | MempoolFullException e) {
-			// TODO: Cleanup
-			e.printStackTrace();
-		}
+		SubmissionControl submissionControl = network.getSubmitter(node);
+		submissionControl.submitCommand(command);
 	}
 
 	public Observable<Pair<Command, BFTNode>> issuedCommands() {

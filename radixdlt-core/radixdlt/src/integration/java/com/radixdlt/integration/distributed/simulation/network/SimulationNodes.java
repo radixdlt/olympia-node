@@ -39,6 +39,7 @@ import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.consensus.bft.BFTNode;
 
+import com.radixdlt.mempool.SubmissionControl;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.List;
@@ -115,7 +116,7 @@ public class SimulationNodes {
 
 		Observable<Pair<BFTNode, BFTHighQCUpdate>> highQCs();
 
-		Mempool getMempool(BFTNode node);
+		SubmissionControl getSubmitter(BFTNode node);
 
 		SimulationNetwork getUnderlyingNetwork();
 
@@ -190,9 +191,9 @@ public class SimulationNodes {
 			}
 
 			@Override
-			public Mempool getMempool(BFTNode node) {
+			public SubmissionControl getSubmitter(BFTNode node) {
 				int index = getNodes().indexOf(node);
-				return nodeInstances.get(index).getInstance(Mempool.class);
+				return nodeInstances.get(index).getInstance(SubmissionControl.class);
 			}
 
 			@Override
