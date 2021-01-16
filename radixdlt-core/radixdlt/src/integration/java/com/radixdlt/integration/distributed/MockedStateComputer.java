@@ -3,6 +3,7 @@ package com.radixdlt.integration.distributed;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.HashCode;
+import com.google.inject.Inject;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.bft.VerifiedVertexStoreState;
 import com.radixdlt.consensus.bft.View;
@@ -17,6 +18,7 @@ import java.util.Set;
 public final class MockedStateComputer implements StateComputer {
 	private final Hasher hasher;
 
+	@Inject
 	public MockedStateComputer(Hasher hasher) {
 		this.hasher = Objects.requireNonNull(hasher);
 	}
