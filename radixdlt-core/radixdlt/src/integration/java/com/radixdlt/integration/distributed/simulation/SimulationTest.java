@@ -70,7 +70,6 @@ import com.radixdlt.integration.distributed.MockedCommandGeneratorModule;
 import com.radixdlt.integration.distributed.MockedCryptoModule;
 import com.radixdlt.integration.distributed.MockedLedgerModule;
 import com.radixdlt.integration.distributed.MockedLedgerUpdateSender;
-import com.radixdlt.integration.distributed.MockedMempoolModule;
 import com.radixdlt.integration.distributed.MockedMempoolStateComputerModule;
 import com.radixdlt.integration.distributed.MockedPersistenceStoreModule;
 import com.radixdlt.integration.distributed.MockedRadixEngineStoreModule;
@@ -176,20 +175,22 @@ public class SimulationTest {
 
 	public static class Builder {
 		private enum LedgerType {
-			MOCKED_LEDGER(false, false, false),
-			LEDGER(true, false, false),
-			LEDGER_AND_SYNC(true, false, true),
-			LEDGER_AND_LOCALMEMPOOL(true, false, false),
-			LEDGER_AND_EPOCHS(true, true, false),
-			LEDGER_AND_EPOCHS_AND_SYNC(true, true, true),
-			LEDGER_AND_LOCALMEMPOOL_AND_EPOCHS_AND_RADIXENGINE(true, true, false);
+			MOCKED_LEDGER(false, false, false, false),
+			LEDGER(true, false, false, false),
+			LEDGER_AND_SYNC(true, false, false, true),
+			LEDGER_AND_LOCALMEMPOOL(true, true, false, false),
+			LEDGER_AND_EPOCHS(true, false, true, false),
+			LEDGER_AND_EPOCHS_AND_SYNC(true, false, true, true),
+			LEDGER_AND_LOCALMEMPOOL_AND_EPOCHS_AND_RADIXENGINE(true, true, true, false);
 
 			private final boolean hasLedger;
+			private final boolean hasMempool;
 			private final boolean hasEpochs;
 			private final boolean hasSync;
 
-			LedgerType(boolean hasLedger, boolean hasEpochs, boolean hasSync) {
+			LedgerType(boolean hasLedger, boolean hasMempool, boolean hasEpochs, boolean hasSync) {
 				this.hasLedger = hasLedger;
+				this.hasMempool = hasMempool;
 				this.hasEpochs = hasEpochs;
 				this.hasSync = hasSync;
 			}
@@ -211,6 +212,14 @@ public class SimulationTest {
 					modules.add(new MockedLedgerUpdateRxModule());
 				} else {
 					modules.add(new LedgerModule());
+
+					if (!hasMempool) {
+						modules.add(new MockedCommandGeneratorModule());
+					} else {
+						modules.add(new LedgerCommandGeneratorModule());
+						modules.add(new LedgerLocalMempoolModule(10));
+					}
+
 					if (!hasEpochs) {
 						modules.add(new MockedLedgerUpdateRxModule());
 						modules.add(new MockedLedgerUpdateSender());
@@ -636,20 +645,12 @@ public class SimulationTest {
 			modules.add(ledgerType.getCoreModule());
 
 			if (ledgerType == LedgerType.LEDGER) {
-				modules.add(new MockedCommandGeneratorModule());
-				modules.add(new MockedMempoolModule());
 				modules.add(new MockedStateComputerModule());
 			} else if (ledgerType == LedgerType.LEDGER_AND_SYNC) {
-				modules.add(new MockedCommandGeneratorModule());
-				modules.add(new MockedMempoolModule());
 				modules.add(new MockedStateComputerModule());
 			} else if (ledgerType == LedgerType.LEDGER_AND_LOCALMEMPOOL) {
-				modules.add(new LedgerCommandGeneratorModule());
-				modules.add(new LedgerLocalMempoolModule(10));
 				modules.add(new MockedMempoolStateComputerModule());
 			} else if (ledgerType == LedgerType.LEDGER_AND_EPOCHS) {
-				modules.add(new LedgerCommandGeneratorModule());
-				modules.add(new MockedMempoolModule());
 				Function<Long, BFTValidatorSet> epochToValidatorSetMapping =
 					epochToNodeIndexMapper.andThen(indices -> BFTValidatorSet.from(
 						indices.mapToObj(nodes::get)
@@ -658,8 +659,6 @@ public class SimulationTest {
 							.collect(Collectors.toList())));
 				modules.add(new MockedStateComputerWithEpochsModule(epochHighView, epochToValidatorSetMapping));
 			} else if (ledgerType == LedgerType.LEDGER_AND_EPOCHS_AND_SYNC) {
-				modules.add(new MockedCommandGeneratorModule());
-				modules.add(new MockedMempoolModule());
 				Function<Long, BFTValidatorSet> epochToValidatorSetMapping =
 					epochToNodeIndexMapper.andThen(indices -> BFTValidatorSet.from(
 						indices.mapToObj(nodes::get)
@@ -668,8 +667,6 @@ public class SimulationTest {
 							.collect(Collectors.toList())));
 				modules.add(new MockedStateComputerWithEpochsModule(epochHighView, epochToValidatorSetMapping));
 			} else if (ledgerType == LedgerType.LEDGER_AND_LOCALMEMPOOL_AND_EPOCHS_AND_RADIXENGINE) {
-				modules.add(new LedgerCommandGeneratorModule());
-				modules.add(new LedgerLocalMempoolModule(10));
 				modules.add(new AbstractModule() {
 					@Override
 					protected void configure() {
