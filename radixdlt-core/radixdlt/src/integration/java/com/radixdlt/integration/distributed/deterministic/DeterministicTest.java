@@ -65,6 +65,7 @@ import com.radixdlt.integration.distributed.MockedSyncServiceModule;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.network.TimeSupplier;
+import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.utils.UInt256;
 
 import io.reactivex.rxjava3.schedulers.Timed;
@@ -118,9 +119,9 @@ public final class DeterministicTest {
 		private MessageMutator messageMutator = MessageMutator.nothing();
 		private long pacemakerTimeout = 1000L;
 		private EpochNodeWeightMapping epochNodeWeightMapping = null;
-		private View epochHighView = null;
 		private Module overrideModule = null;
 		private LedgerType ledgerType = LedgerType.MOCKED_LEDGER;
+		private ImmutableList.Builder<Module> modules = ImmutableList.builder();
 
 		private Builder() {
 			// Nothing to do here
@@ -172,7 +173,12 @@ public final class DeterministicTest {
 		public Builder epochHighView(View epochHighView) {
 			Objects.requireNonNull(epochHighView);
 			this.ledgerType = LedgerType.LEDGER_AND_EPOCHS_AND_SYNC;
-			this.epochHighView = epochHighView;
+			modules.add(new AbstractModule() {
+				@Override
+				protected void configure() {
+					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(epochHighView);
+				}
+			});
 			return this;
 		}
 
@@ -189,7 +195,6 @@ public final class DeterministicTest {
 				? epoch -> completeEqualWeightValidatorSet(this.nodes)
 				: epoch -> partialMixedWeightValidatorSet(epoch, this.nodes, this.epochNodeWeightMapping);
 
-			ImmutableList.Builder<Module> modules = ImmutableList.builder();
 			modules.add(new AbstractModule() {
 				@Override
 				public void configure() {
@@ -247,7 +252,7 @@ public final class DeterministicTest {
 				modules.add(new EpochsLedgerUpdateModule());
 				modules.add(new LedgerCommandGeneratorModule());
 				modules.add(new MockedSyncServiceModule());
-				modules.add(new MockedStateComputerWithEpochsModule(epochHighView, epochToValidatorSetMapping));
+				modules.add(new MockedStateComputerWithEpochsModule(epochToValidatorSetMapping));
 			}
 			return new DeterministicTest(
 				this.nodes,

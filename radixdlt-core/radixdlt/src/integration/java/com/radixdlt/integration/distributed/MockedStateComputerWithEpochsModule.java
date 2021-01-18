@@ -24,24 +24,25 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
+import com.radixdlt.statecomputer.EpochCeilingView;
 
 import java.util.function.Function;
 
 public class MockedStateComputerWithEpochsModule extends AbstractModule {
 	private final Function<Long, BFTValidatorSet> validatorSetMapping;
-	private final View epochHighView;
 
 	public MockedStateComputerWithEpochsModule(
-		View epochHighView,
 		Function<Long, BFTValidatorSet> validatorSetMapping
 	) {
 		this.validatorSetMapping = validatorSetMapping;
-		this.epochHighView = epochHighView;
 	}
 
 	@Provides
 	@Singleton
-	private StateComputer stateComputer(Hasher hasher) {
+	private StateComputer stateComputer(
+		@EpochCeilingView View epochHighView,
+		Hasher hasher
+	) {
 		return new MockedStateComputerWithEpochs(hasher, validatorSetMapping, epochHighView);
 	}
 }

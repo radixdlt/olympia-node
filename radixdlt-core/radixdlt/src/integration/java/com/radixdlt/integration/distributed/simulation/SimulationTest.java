@@ -251,7 +251,6 @@ public class SimulationTest {
 		private final ImmutableList.Builder<Function<List<ECKeyPair>, SimulationNetworkActor>> runnableBuilder = ImmutableList.builder();
 		private ImmutableList<ECKeyPair> nodes = ImmutableList.of(ECKeyPair.generateNew());
 		private long pacemakerTimeout = 12 * SimulationNetwork.DEFAULT_LATENCY;
-		private View epochHighView = null;
 		private Function<Long, IntStream> epochToNodeIndexMapper;
 		private LedgerType ledgerType = LedgerType.MOCKED_LEDGER;
 
@@ -372,8 +371,13 @@ public class SimulationTest {
 
 		public Builder ledgerAndEpochs(View epochHighView, Function<Long, IntStream> epochToNodeIndexMapper) {
 			this.ledgerType = LedgerType.LEDGER_AND_EPOCHS;
-			this.epochHighView = epochHighView;
 			this.epochToNodeIndexMapper = epochToNodeIndexMapper;
+			this.modules.add(new AbstractModule() {
+				@Override
+				protected void configure() {
+					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(epochHighView);
+				}
+			});
 			return this;
 		}
 
@@ -399,11 +403,11 @@ public class SimulationTest {
 			int syncPatienceMillis
 		) {
 			this.ledgerType = LedgerType.LEDGER_AND_EPOCHS_AND_SYNC;
-			this.epochHighView = epochHighView;
 			this.epochToNodeIndexMapper = epochToNodeIndexMapper;
 			modules.add(new AbstractModule() {
 				@Override
 				protected void configure() {
+					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(epochHighView);
 					bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(syncPatienceMillis);
 				}
 			});
@@ -417,7 +421,12 @@ public class SimulationTest {
 
 		public Builder ledgerAndRadixEngineWithEpochHighView(View epochHighView) {
 			this.ledgerType = LedgerType.LEDGER_AND_LOCALMEMPOOL_AND_EPOCHS_AND_RADIXENGINE;
-			this.epochHighView = epochHighView;
+			this.modules.add(new AbstractModule() {
+				@Override
+				protected void configure() {
+					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(epochHighView);
+				}
+			});
 			return this;
 		}
 
@@ -657,7 +666,7 @@ public class SimulationTest {
 							.map(node -> BFTNode.create(node.getPublicKey()))
 							.map(node -> BFTValidator.from(node, UInt256.ONE))
 							.collect(Collectors.toList())));
-				modules.add(new MockedStateComputerWithEpochsModule(epochHighView, epochToValidatorSetMapping));
+				modules.add(new MockedStateComputerWithEpochsModule(epochToValidatorSetMapping));
 			} else if (ledgerType == LedgerType.LEDGER_AND_EPOCHS_AND_SYNC) {
 				Function<Long, BFTValidatorSet> epochToValidatorSetMapping =
 					epochToNodeIndexMapper.andThen(indices -> BFTValidatorSet.from(
@@ -665,12 +674,11 @@ public class SimulationTest {
 							.map(node -> BFTNode.create(node.getPublicKey()))
 							.map(node -> BFTValidator.from(node, UInt256.ONE))
 							.collect(Collectors.toList())));
-				modules.add(new MockedStateComputerWithEpochsModule(epochHighView, epochToValidatorSetMapping));
+				modules.add(new MockedStateComputerWithEpochsModule(epochToValidatorSetMapping));
 			} else if (ledgerType == LedgerType.LEDGER_AND_LOCALMEMPOOL_AND_EPOCHS_AND_RADIXENGINE) {
 				modules.add(new AbstractModule() {
 					@Override
 					protected void configure() {
-						bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(epochHighView);
 						// TODO: Fix pacemaker so can Default 1 so can debug in IDE, possibly from properties at some point
 						// TODO: Specifically, simulation test with engine, epochs and mempool
 						//  gets stuck on a single validator
