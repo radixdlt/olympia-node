@@ -220,4 +220,20 @@ public class MempoolTest {
 		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT)).isEqualTo(1);
 	}
 
+	@Test
+	public void add_bad_command_to_mempool() {
+		// Arrange
+		Injector injector = getInjector(ecKeyPair);
+		DeterministicMempoolProcessor processor = injector.getInstance(DeterministicMempoolProcessor.class);
+
+		final Command command = new Command(new byte[0]);
+
+		// Act
+		MempoolAddSuccess mempoolAddSuccess = MempoolAddSuccess.create(command);
+		processor.handleMessage(BFTNode.random(), mempoolAddSuccess);
+
+		// Assert
+		SystemCounters systemCounters = injector.getInstance(SystemCounters.class);
+		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT)).isEqualTo(0);
+	}
 }
