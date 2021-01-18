@@ -407,7 +407,10 @@ public final class BFTSync implements BFTSyncResponseProcessor, BFTSyncer, Ledge
 			if (response.highQC().highestQC().getView().compareTo(vertexStore.highQC().highestQC().getView()) > 0) {
 				// error response indicates that the node has moved on from last sync so try and sync to a new sync
 				this.bftSyncing.remove(failedRequest);
-				log.debug("Removed failed vertex sync request for {}, current count {}", failedRequest.getVertexId(), this.bftSyncing.size());
+				log.debug(
+					"Removed failed vertex sync request for {}, current count {}",
+					failedRequest.getVertexId(), this.bftSyncing.size()
+				);
 				this.syncToQC(response.highQC(), response.getSender());
 			}
 		} else {

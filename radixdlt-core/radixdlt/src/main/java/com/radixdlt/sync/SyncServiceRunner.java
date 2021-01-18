@@ -115,23 +115,38 @@ public final class SyncServiceRunner<T extends LedgerUpdate> implements ModuleRu
 
 			Disposable d0 = remoteSyncRequests
 				.observeOn(singleThreadScheduler)
-				.subscribe(e -> remoteSyncServiceProcessor.process(e.getOrigin(), e.getEvent()), t -> logException("Remote sync request", t));
+				.subscribe(
+					e -> remoteSyncServiceProcessor.process(e.getOrigin(), e.getEvent()),
+					t -> logException("Remote sync request", t)
+				);
 
 			Disposable d1 = remoteSyncResponses
 				.observeOn(singleThreadScheduler)
-				.subscribe(e -> responseProcessor.process(e.getOrigin(), e.getEvent()), t -> logException("Remote sync response", t));
+				.subscribe(
+					e -> responseProcessor.process(e.getOrigin(), e.getEvent()),
+					t -> logException("Remote sync response", t)
+				);
 
 			Disposable d2 = localSyncRequests
 				.observeOn(singleThreadScheduler)
-				.subscribe(syncRequestEventProcessor::process, t -> logException("Local sync request", t));
+				.subscribe(
+					syncRequestEventProcessor::process,
+					t -> logException("Local sync request", t)
+				);
 
 			Disposable d3 = syncTimeouts
 				.observeOn(singleThreadScheduler)
-				.subscribe(syncTimeoutProcessor::process, t -> logException("Sync timeout", t));
+				.subscribe(
+					syncTimeoutProcessor::process,
+					t -> logException("Sync timeout", t)
+				);
 
 			Disposable d4 = ledgerUpdates
 				.observeOn(singleThreadScheduler)
-				.subscribe(u -> ledgerUpdateProcessors.forEach(e -> e.process(u)), t -> logException("Ledger update", t));
+				.subscribe(
+					u -> ledgerUpdateProcessors.forEach(e -> e.process(u)),
+					t -> logException("Ledger update", t)
+				);
 
 			compositeDisposable = new CompositeDisposable(d0, d1, d2, d3, d4);
 		}
@@ -142,6 +157,7 @@ public final class SyncServiceRunner<T extends LedgerUpdate> implements ModuleRu
 	private void logException(String what, Throwable t) {
 		log.error(what, t);
 		LogManager.shutdown(); // Flush any async logs
+		// FIXME: Handle failing better than this
 		System.exit(-1);
 	}
 
