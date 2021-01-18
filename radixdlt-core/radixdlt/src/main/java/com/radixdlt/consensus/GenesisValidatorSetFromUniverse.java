@@ -95,7 +95,9 @@ public class GenesisValidatorSetFromUniverse implements GenesisValidatorSetProvi
 		final ImmutableMap<ECPublicKey, UInt256> stakedAmounts = allParticles(universe, StakedTokensParticle.class, Spin.UP)
 			.filter(stp -> nativeToken.equals(stp.getTokDefRef()))
 			.filter(stp -> registeredValidators.contains(stp.getDelegateAddress()))
-			.collect(ImmutableMap.toImmutableMap(stp -> stp.getDelegateAddress().getPublicKey(), StakedTokensParticle::getAmount, UInt256::add));
+			.collect(ImmutableMap.toImmutableMap(
+				stp -> stp.getDelegateAddress().getPublicKey(), StakedTokensParticle::getAmount, UInt256::add
+			));
 
 		this.validatorSet = ValidatorSetBuilder.create(minValidators, maxValidators)
 			.buildValidatorSet(stakedAmounts);

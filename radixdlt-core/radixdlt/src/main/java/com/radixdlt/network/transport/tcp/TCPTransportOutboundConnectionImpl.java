@@ -58,7 +58,9 @@ final class TCPTransportOutboundConnectionImpl implements TransportOutboundConne
 
 		int dataLength = data.length;
 		if (dataLength > TCPConstants.MAX_PACKET_LENGTH) {
-			cfsr.complete(SendResult.failure(new IOException("TCP packet to " + remoteAddr + " of size " + dataLength + " is too large")));
+			cfsr.complete(
+				SendResult.failure(new IOException("TCP packet to " + remoteAddr + " of size " + dataLength + " is too large"))
+			);
 		} else {
 			ByteBuf buffer = this.channel.alloc().directBuffer(dataLength).writeBytes(data);
 

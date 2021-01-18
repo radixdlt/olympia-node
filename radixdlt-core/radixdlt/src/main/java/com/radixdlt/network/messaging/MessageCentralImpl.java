@@ -92,7 +92,10 @@ final class MessageCentralImpl implements MessageCentral {
 		HashSigner hashSigner
 	) {
 		this.counters = Objects.requireNonNull(counters);
-		this.outboundQueue = outboundEventQueueFactory.createEventQueue(config.messagingOutboundQueueMax(16384), OutboundMessageEvent.comparator());
+		this.outboundQueue = outboundEventQueueFactory.createEventQueue(
+			config.messagingOutboundQueueMax(16384),
+			OutboundMessageEvent.comparator()
+		);
 
 		this.connectionManager = Objects.requireNonNull(transportManager);
 		this.addressBook = Objects.requireNonNull(addressBook);

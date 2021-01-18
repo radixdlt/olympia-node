@@ -68,9 +68,9 @@ public class EpochChangeManagerTest {
 					Optional<EpochChange> epochChange = e.getEpochChange();
 					return epochChange.isPresent()
 						&& epochChange.get().getProof().equals(tailHeader)
-							&& epochChange.get().getBFTConfiguration().getValidatorSet().equals(validatorSet)
-							&& epochChange.get().getEpoch() == 124L
-							&& epochChange.get().getBFTConfiguration().getVertexStoreState().getRoot().getView().isGenesis();
+						&& epochChange.get().getBFTConfiguration().getValidatorSet().equals(validatorSet)
+						&& epochChange.get().getEpoch() == 124L
+						&& epochChange.get().getBFTConfiguration().getVertexStoreState().getRoot().getView().isGenesis();
 				})
 			);
 	}

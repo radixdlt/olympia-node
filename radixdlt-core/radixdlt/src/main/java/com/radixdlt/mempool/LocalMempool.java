@@ -56,7 +56,10 @@ public final class LocalMempool implements Mempool {
 	public void add(Command command) throws MempoolFullException, MempoolDuplicateException {
 		synchronized (this.lock) {
 			if (this.data.size() >= this.maxSize) {
-				throw new MempoolFullException(command, String.format("Mempool full: %s of %s items", this.data.size(), this.maxSize));
+				throw new MempoolFullException(
+					command,
+					String.format("Mempool full: %s of %s items", this.data.size(), this.maxSize)
+				);
 			}
 			if (null != this.data.put(hasher.hash(command), command)) {
 				throw new MempoolDuplicateException(command, String.format("Mempool already has command %s", hasher.hash(command)));

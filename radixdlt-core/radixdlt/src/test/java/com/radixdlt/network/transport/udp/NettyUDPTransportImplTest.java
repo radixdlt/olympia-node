@@ -50,7 +50,7 @@ public class NettyUDPTransportImplTest {
 		UDPTransportOutboundConnectionFactory connectionFactory = mock(UDPTransportOutboundConnectionFactory.class);
 		NatHandler natHandler = mock(NatHandler.class);
 
-		try (NettyUDPTransportImpl testInstance = new NettyUDPTransportImpl(counters, config, localMetadata, controlFactory, connectionFactory, natHandler)) {
+		try (var testInstance = new NettyUDPTransportImpl(counters, config, localMetadata, controlFactory, connectionFactory, natHandler)) {
 			assertEquals("127.0.0.1", testInstance.localMetadata().get(UDPConstants.METADATA_HOST));
 			assertEquals("10000", testInstance.localMetadata().get(UDPConstants.METADATA_PORT));
 		}
@@ -67,7 +67,7 @@ public class NettyUDPTransportImplTest {
 		UDPTransportOutboundConnectionFactory connectionFactory = mock(UDPTransportOutboundConnectionFactory.class);
 		NatHandler natHandler = mock(NatHandler.class);
 
-		try (NettyUDPTransportImpl testInstance = new NettyUDPTransportImpl(counters, config, localMetadata, controlFactory, connectionFactory, natHandler)) {
+		try (var testInstance = new NettyUDPTransportImpl(counters, config, localMetadata, controlFactory, connectionFactory, natHandler)) {
 			assertEquals(NettyUDPTransportImpl.DEFAULT_HOST, testInstance.localMetadata().get(UDPConstants.METADATA_HOST));
 			assertEquals("20000", testInstance.localMetadata().get(UDPConstants.METADATA_PORT));
 		}
@@ -84,9 +84,13 @@ public class NettyUDPTransportImplTest {
 		UDPTransportOutboundConnectionFactory connectionFactory = mock(UDPTransportOutboundConnectionFactory.class);
 		NatHandler natHandler = mock(NatHandler.class);
 
-		try (NettyUDPTransportImpl testInstance = new NettyUDPTransportImpl(counters, config, localMetadata, controlFactory, connectionFactory, natHandler)) {
+		try (var testInstance =
+				 new NettyUDPTransportImpl(counters, config, localMetadata, controlFactory, connectionFactory, natHandler)) {
 			assertEquals("127.0.0.2", testInstance.localMetadata().get(UDPConstants.METADATA_HOST));
-			assertEquals(String.valueOf(NettyUDPTransportImpl.DEFAULT_PORT), testInstance.localMetadata().get(UDPConstants.METADATA_PORT));
+			assertEquals(
+				String.valueOf(NettyUDPTransportImpl.DEFAULT_PORT),
+				testInstance.localMetadata().get(UDPConstants.METADATA_PORT)
+			);
 		}
 	}
 
@@ -100,7 +104,8 @@ public class NettyUDPTransportImplTest {
 		UDPTransportOutboundConnectionFactory connectionFactory = mock(UDPTransportOutboundConnectionFactory.class);
 		NatHandler natHandler = mock(NatHandler.class);
 
-		try (NettyUDPTransportImpl testInstance = new NettyUDPTransportImpl(counters, config, localMetadata, controlFactory, connectionFactory, natHandler)) {
+		try (var testInstance =
+			 	new NettyUDPTransportImpl(counters, config, localMetadata, controlFactory, connectionFactory, natHandler)) {
 			assertEquals(UDPConstants.NAME, testInstance.name());
 		}
 	}
@@ -116,7 +121,7 @@ public class NettyUDPTransportImplTest {
 		UDPTransportOutboundConnectionFactory connectionFactory = mock(UDPTransportOutboundConnectionFactory.class);
 		NatHandler natHandler = mock(NatHandler.class);
 
-		try (NettyUDPTransportImpl testInstance = new NettyUDPTransportImpl(counters, config, localMetadata, controlFactory, connectionFactory, natHandler)) {
+		try (var testInstance = new NettyUDPTransportImpl(counters, config, localMetadata, controlFactory, connectionFactory, natHandler)) {
 			// Always null until started
 			assertNull(testInstance.control());
 		}
@@ -132,7 +137,7 @@ public class NettyUDPTransportImplTest {
 		UDPTransportOutboundConnectionFactory connectionFactory = mock(UDPTransportOutboundConnectionFactory.class);
 		NatHandler natHandler = mock(NatHandler.class);
 
-		try (NettyUDPTransportImpl testInstance = new NettyUDPTransportImpl(counters, config, localMetadata, controlFactory, connectionFactory, natHandler)) {
+		try (var testInstance = new NettyUDPTransportImpl(counters, config, localMetadata, controlFactory, connectionFactory, natHandler)) {
 			byte[] max = new byte[UDPConstants.MAX_PACKET_LENGTH];
 			byte[] tooBig = new byte[UDPConstants.MAX_PACKET_LENGTH + 1];
 			assertTrue(testInstance.canHandle(null));
@@ -152,7 +157,7 @@ public class NettyUDPTransportImplTest {
 		UDPTransportOutboundConnectionFactory connectionFactory = mock(UDPTransportOutboundConnectionFactory.class);
 		NatHandler natHandler = mock(NatHandler.class);
 
-		try (NettyUDPTransportImpl testInstance = new NettyUDPTransportImpl(counters, config, localMetadata, controlFactory, connectionFactory, natHandler)) {
+		try (var testInstance = new NettyUDPTransportImpl(counters, config, localMetadata, controlFactory, connectionFactory, natHandler)) {
 			assertEquals(1234, testInstance.priority());
 		}
 	}
@@ -168,7 +173,7 @@ public class NettyUDPTransportImplTest {
 		UDPTransportOutboundConnectionFactory connectionFactory = mock(UDPTransportOutboundConnectionFactory.class);
 		NatHandler natHandler = mock(NatHandler.class);
 
-		try (NettyUDPTransportImpl testInstance = new NettyUDPTransportImpl(counters, config, localMetadata, controlFactory, connectionFactory, natHandler)) {
+		try (var testInstance = new NettyUDPTransportImpl(counters, config, localMetadata, controlFactory, connectionFactory, natHandler)) {
 			String s = testInstance.toString();
 			assertThat(s).contains(NettyUDPTransportImpl.class.getSimpleName());
 			assertThat(s).contains(NettyUDPTransportImpl.DEFAULT_HOST);

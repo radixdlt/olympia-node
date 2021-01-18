@@ -117,14 +117,17 @@ public final class DatabaseEnvironment {
 	}
 
 	public OperationStatus put(Transaction transaction, String resource, DatabaseEntry key, DatabaseEntry value) {
-		if (resource == null || resource.length() == 0)
+		if (resource == null || resource.length() == 0) {
 			throw new IllegalArgumentException("Resource can not be null or empty");
+		}
 
-		if (key == null || key.getData() == null || key.getData().length == 0)
+		if (key == null || key.getData() == null || key.getData().length == 0) {
 			throw new IllegalArgumentException("Key can not be null or empty");
+		}
 
-		if (value == null || value.getData() == null || value.getData().length == 0)
+		if (value == null || value.getData() == null || value.getData().length == 0) {
 			throw new IllegalArgumentException("Value can not be null or empty");
+		}
 
 		// Create a key specific to the database //
 		key.setData(Arrays.concatenate(resource.getBytes(RadixConstants.STANDARD_CHARSET), key.getData()));
@@ -135,8 +138,9 @@ public final class DatabaseEnvironment {
 	public byte[] get(String resource, String key) {
 		DatabaseEntry value = new DatabaseEntry();
 
-		if (this.get(resource, new DatabaseEntry(key.getBytes()), value) == OperationStatus.SUCCESS)
+		if (this.get(resource, new DatabaseEntry(key.getBytes()), value) == OperationStatus.SUCCESS) {
 			return value.getData();
+		}
 
 		return null;
 	}
@@ -146,14 +150,17 @@ public final class DatabaseEnvironment {
 	}
 
 	public OperationStatus get(String resource, DatabaseEntry key, DatabaseEntry value) {
-		if (resource == null || resource.length() == 0)
+		if (resource == null || resource.length() == 0) {
 			throw new IllegalArgumentException("Resource can not be null or empty");
+		}
 
-		if (key == null || key.getData() == null || key.getData().length == 0)
+		if (key == null || key.getData() == null || key.getData().length == 0) {
 			throw new IllegalArgumentException("Key can not be null or empty");
+		}
 
-		if (value == null)
+		if (value == null) {
 			throw new IllegalArgumentException("Value can not be null");
+		}
 
 		// Create a key specific to the database //
 		key.setData(Arrays.concatenate(resource.getBytes(RadixConstants.STANDARD_CHARSET), key.getData()));

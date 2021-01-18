@@ -155,10 +155,13 @@ public class EpochManagerTest {
 				bind(new TypeLiteral<EventDispatcher<ViewUpdate>>() { }).toInstance(rmock(EventDispatcher.class));
 				bind(new TypeLiteral<EventDispatcher<NoVote>>() { }).toInstance(rmock(EventDispatcher.class));
 				bind(new TypeLiteral<ScheduledEventDispatcher<GetVerticesRequest>>() { }).toInstance(timeoutScheduler);
-				bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledLocalTimeout>>() { }).toInstance(rmock(ScheduledEventDispatcher.class));
-				bind(new TypeLiteral<ScheduledEventDispatcher<VertexRequestTimeout>>() { }).toInstance(rmock(ScheduledEventDispatcher.class));
+				bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledLocalTimeout>>() { })
+					.toInstance(rmock(ScheduledEventDispatcher.class));
+				bind(new TypeLiteral<ScheduledEventDispatcher<VertexRequestTimeout>>() { })
+					.toInstance(rmock(ScheduledEventDispatcher.class));
 				bind(new TypeLiteral<RemoteEventDispatcher<Vote>>() { }).toInstance(voteDispatcher);
-				bind(new TypeLiteral<RemoteEventDispatcher<GetVerticesRequest>>() { }).toInstance(rmock(RemoteEventDispatcher.class));
+				bind(new TypeLiteral<RemoteEventDispatcher<GetVerticesRequest>>() { })
+					.toInstance(rmock(RemoteEventDispatcher.class));
 
 				bind(PersistentSafetyStateStore.class).toInstance(mock(PersistentSafetyStateStore.class));
 				bind(SyncEpochsRPCSender.class).toInstance(syncEpochsRPCSender);
@@ -213,7 +216,7 @@ public class EpochManagerTest {
 				);
 				VerifiedVertex verifiedVertex = new VerifiedVertex(unverifiedVertex, hasher.hash(unverifiedVertex));
 
-				QuorumCertificate qc = QuorumCertificate.ofGenesis(verifiedVertex, LedgerHeader.genesis(HashUtils.zero256(), validatorSet));
+				var qc = QuorumCertificate.ofGenesis(verifiedVertex, LedgerHeader.genesis(HashUtils.zero256(), validatorSet));
 				return new BFTConfiguration(
 					validatorSet,
 					VerifiedVertexStoreState.create(HighQC.from(qc), verifiedVertex, Optional.empty())

@@ -70,7 +70,7 @@ public class InMemoryAtomStore implements AtomStore {
 		atom.particles(Spin.UP)
 			.forEach(p -> {
 				Map<Spin, Set<Atom>> particleSpinIndex = particleIndex.get(p);
-				particleSpinIndex.getOrDefault(Spin.DOWN, Collections.emptySet())
+				particleSpinIndex.getOrDefault(Spin.DOWN, Set.of())
 					.forEach(a -> {
 						AtomObservation observation = atoms.get(a);
 						if (observation.getAtom().equals(atom)) {
@@ -97,7 +97,7 @@ public class InMemoryAtomStore implements AtomStore {
 			if (stagedAtom == null) {
 				stagedAtom = Atom.create(particleGroup);
 			} else {
-				List<ParticleGroup> groups = Stream.concat(stagedAtom.particleGroups(), Stream.of(particleGroup)).collect(Collectors.toList());
+				var groups = Stream.concat(stagedAtom.particleGroups(), Stream.of(particleGroup)).collect(Collectors.toList());
 				stagedAtom = Atom.create(groups);
 			}
 			stagedAtoms.put(uuid, stagedAtom);
@@ -153,8 +153,8 @@ public class InMemoryAtomStore implements AtomStore {
 				// stored atom must be deleted
 				if (nextUpdate.getType() == Type.STORE && !nextUpdate.isSoft()) {
 					atom.spunParticles().forEach(s -> {
-						Map<Spin, Set<Atom>> spinParticleIndex = particleIndex.getOrDefault(s.getParticle(), Collections.emptyMap());
-						spinParticleIndex.getOrDefault(s.getSpin(), Collections.emptySet())
+						var spinParticleIndex = particleIndex.getOrDefault(s.getParticle(), Map.of());
+						spinParticleIndex.getOrDefault(s.getSpin(), Set.of())
 							.forEach(a -> {
 								if (a.equals(atom)) {
 									return;
@@ -262,24 +262,25 @@ public class InMemoryAtomStore implements AtomStore {
 				.filter(e -> e.getKey().getShardables().contains(address))
 				.filter(e -> {
 					final Map<Spin, Set<Atom>> spinParticleIndex = e.getValue();
-					final boolean hasDown = spinParticleIndex.getOrDefault(Spin.DOWN, Collections.emptySet())
+					final boolean hasDown = spinParticleIndex.getOrDefault(Spin.DOWN, Set.of())
 						.stream().anyMatch(a -> atoms.get(a).isStore());
 					if (hasDown) {
 						return false;
 					}
 
-					if (stagedUuid != null && stagedParticleIndex.getOrDefault(stagedUuid, Collections.emptyMap()).get(e.getKey()) == Spin.DOWN) {
+					if (stagedUuid != null
+						&& stagedParticleIndex.getOrDefault(stagedUuid, Map.of()).get(e.getKey()) == Spin.DOWN) {
 						return false;
 					}
 
-					Set<Atom> uppingAtoms = spinParticleIndex.getOrDefault(Spin.UP, Collections.emptySet());
+					Set<Atom> uppingAtoms = spinParticleIndex.getOrDefault(Spin.UP, Set.of());
 					return uppingAtoms.stream().anyMatch(a -> atoms.get(a).isStore());
 				})
 				.map(Map.Entry::getKey)
 				.collect(Collectors.toList());
 
 			if (stagedUuid != null) {
-				stagedParticleIndex.getOrDefault(stagedUuid, Collections.emptyMap()).entrySet().stream()
+				stagedParticleIndex.getOrDefault(stagedUuid, Map.of()).entrySet().stream()
 					.filter(e -> e.getValue() == Spin.UP)
 					.map(Entry::getKey)
 					.filter(p -> p.getShardables().contains(address))

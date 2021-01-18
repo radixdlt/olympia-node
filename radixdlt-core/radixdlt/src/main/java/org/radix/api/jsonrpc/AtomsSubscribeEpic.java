@@ -107,7 +107,9 @@ public class AtomsSubscribeEpic {
 			}
 
 			if (observers.containsKey(subscriberId)) {
-				callback.accept(JsonRpcUtil.errorResponse(id, -32000, "Subscriber + " + subscriberId + " already exists.", new JSONObject()));
+				callback.accept(JsonRpcUtil.errorResponse(
+					id, -32000, "Subscriber + " + subscriberId + " already exists.", new JSONObject()
+				));
 				return;
 			} else {
 				callback.accept(JsonRpcUtil.simpleResponse(id, "success", true));

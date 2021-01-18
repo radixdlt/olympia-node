@@ -17,6 +17,8 @@
 
 package com.radixdlt.crypto;
 
+import com.radixdlt.SecurityCritical;
+import com.radixdlt.SecurityCritical.SecurityKind;
 import com.radixdlt.crypto.exception.PrivateKeyException;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import org.bouncycastle.asn1.x9.X9ECParameters;
@@ -24,16 +26,12 @@ import org.bouncycastle.crypto.digests.SHA256Digest;
 import org.bouncycastle.crypto.params.ECDomainParameters;
 import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
-import org.bouncycastle.crypto.signers.DSAKCalculator;
 import org.bouncycastle.crypto.signers.ECDSASigner;
 import org.bouncycastle.crypto.signers.HMacDSAKCalculator;
 import org.bouncycastle.crypto.signers.RandomDSAKCalculator;
 import org.bouncycastle.jce.interfaces.ECPublicKey;
 import org.bouncycastle.jce.spec.ECParameterSpec;
 import org.bouncycastle.jce.spec.ECPublicKeySpec;
-
-import com.radixdlt.SecurityCritical;
-import com.radixdlt.SecurityCritical.SecurityKind;
 
 import java.math.BigInteger;
 import java.security.KeyFactory;
@@ -54,7 +52,7 @@ final class BouncyCastleKeyHandler implements KeyHandler {
 
 	@Override
 	public ECDSASignature sign(byte[] hash, byte[] privateKey, boolean enforceLowS, boolean useDeterministicSignatures) {
-		final DSAKCalculator kCalculator = useDeterministicSignatures ? new HMacDSAKCalculator(new SHA256Digest()) : new RandomDSAKCalculator();
+		final var kCalculator = useDeterministicSignatures ? new HMacDSAKCalculator(new SHA256Digest()) : new RandomDSAKCalculator();
 		ECDSASigner signer = new ECDSASigner(kCalculator);
 		BigInteger privateKeyScalar = new BigInteger(1, privateKey);
 		ECPrivateKeyParameters privateKeyParameters = new ECPrivateKeyParameters(privateKeyScalar, domain);

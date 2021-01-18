@@ -182,6 +182,15 @@ public final class StakedTokensParticle extends Particle {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(delegateAddress, address, tokenDefinitionReference, granularity, nonce, amount, tokenPermissions, getDestinations());
+		return Objects.hash(
+			delegateAddress,
+			address,
+			tokenDefinitionReference,
+			granularity,
+			nonce,
+			amount,
+			tokenPermissions,
+			getDestinations()
+		);
 	}
 }

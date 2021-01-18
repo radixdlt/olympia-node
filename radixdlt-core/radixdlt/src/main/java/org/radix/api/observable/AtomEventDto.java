@@ -37,7 +37,7 @@ public final class AtomEventDto extends BasicContainer {
 	}
 
 	@Override
-	public short VERSION() {
+	public short version() {
 		return 100;
 	}
 
@@ -78,12 +78,16 @@ public final class AtomEventDto extends BasicContainer {
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
 		AtomEventDto that = (AtomEventDto) o;
-		return timestamp == that.timestamp &&
-				Objects.equals(atom, that.atom) &&
-				type == that.type;
+		return timestamp == that.timestamp
+			&& Objects.equals(atom, that.atom)
+			&& type == that.type;
 	}
 
 	@Override

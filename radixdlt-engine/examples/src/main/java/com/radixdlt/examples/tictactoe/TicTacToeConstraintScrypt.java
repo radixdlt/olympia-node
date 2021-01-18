@@ -35,12 +35,14 @@ import com.radixdlt.examples.tictactoe.TicTacToeBaseParticle.TicTacToeSquareValu
 import com.radixdlt.serialization.SerializerId2;
 import java.util.Optional;
 
+// CHECKSTYLE:OFF checkstyle:LineLength
 /**
  * Constraint Scrypt which describes an extended finite state machine of a Tic Tac Toe game
  * between two players (each represented by an EC Key Pair).
  *
  * <img src="https://yuml.me/diagram/scruffy/class/%5Bstart%5D-is%20empty%20board%3F%3E%5BX%20to%20Move%5D%2C%5BX%20to%20Move%7CX%20to%20move%20board%5D-valid%20move%3F%3E%5BO%20to%20Move%7CO%20to%20move%20board%5D%2C%5BO%20to%20Move%5D-valid%20move%3F%3E%5BX%20to%20Move%5D%2C%5BO%20to%20Move%5D-valid%20move%3F%3E%5BO%20wins%7C%20O%20winning%20board%5D%2C%20%5BX%20to%20Move%5D-valid%20move%3F%3E%5BX%20wins%7CX%20winning%20board%5D%2C%5BX%20to%20Move%5D-valid%20move%3F%3E%5BDraw%7CDraw%20Board%5D" width=400 />
  */
+
 public class TicTacToeConstraintScrypt implements ConstraintScrypt {
 
 	// Each of the following particle classes describe a state in the extended finite state machine
@@ -80,8 +82,7 @@ public class TicTacToeConstraintScrypt implements ConstraintScrypt {
 		}
 	}
 
-
-	private static ImmutableList<ImmutableList<Integer>> LINES = ImmutableList.of(
+	private static final ImmutableList<ImmutableList<Integer>> LINES = ImmutableList.of(
 		ImmutableList.of(0, 1, 2),
 		ImmutableList.of(3, 4, 5),
 		ImmutableList.of(6, 7, 8),
@@ -135,7 +136,9 @@ public class TicTacToeConstraintScrypt implements ConstraintScrypt {
 		}
 
 		if (gameStatus == null) {
-			gameStatus = ticTacToe.getBoard().stream().allMatch(s -> s != TicTacToeSquareValue.EMPTY) ? GameStatus.DRAW : GameStatus.IN_PROGRESS;
+			gameStatus = ticTacToe.getBoard().stream().allMatch(s -> s != TicTacToeSquareValue.EMPTY)
+						 ? GameStatus.DRAW
+						 : GameStatus.IN_PROGRESS;
 		}
 
 		// Check that the game state matches
@@ -205,13 +208,18 @@ public class TicTacToeConstraintScrypt implements ConstraintScrypt {
 
 		// Next we must define the transition guards of our extended state machine, that is
 		// under what conditions are the transitions we defined above allowed?
-		os.createTransition(newGameToken, new TransitionProcedure<VoidParticle, VoidUsedData, XToMoveParticle, VoidUsedData>() {
+		os.createTransition(newGameToken, new TransitionProcedure<>() {
 
 			/**
 			 * The precondition defines the state conditions under which the transition is allowed.
 			 */
 			@Override
-			public Result precondition(VoidParticle inputParticle, VoidUsedData inputUsed, XToMoveParticle outputParticle, VoidUsedData outputUsed) {
+			public Result precondition(
+				VoidParticle inputParticle,
+				VoidUsedData inputUsed,
+				XToMoveParticle outputParticle,
+				VoidUsedData outputUsed
+			) {
 				for (int squareIndex = 0; squareIndex < 9; squareIndex++) {
 					TicTacToeSquareValue nextSquareState = outputParticle.getBoard().get(squareIndex);
 
@@ -253,8 +261,8 @@ public class TicTacToeConstraintScrypt implements ConstraintScrypt {
 			@Override
 			public WitnessValidator<XToMoveParticle> outputWitnessValidator() {
 				return (p, w) -> w.isSignedBy(p.getXPlayer().getPublicKey()) || w.isSignedBy(p.getOPlayer().getPublicKey())
-					? WitnessValidatorResult.success()
-					: WitnessValidatorResult.error("Game must be started by either one of the players.");
+								 ? WitnessValidatorResult.success()
+								 : WitnessValidatorResult.error("Game must be started by either one of the players.");
 			}
 		});
 
@@ -266,3 +274,4 @@ public class TicTacToeConstraintScrypt implements ConstraintScrypt {
 		os.createTransition(drawsToken, TicTacToeMoveGuard.xToMove());
 	}
 }
+// CHECKSTYLE:ON checkstyle:LineLength

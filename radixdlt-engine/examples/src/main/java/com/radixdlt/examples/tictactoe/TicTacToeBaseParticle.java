@@ -84,9 +84,9 @@ abstract class TicTacToeBaseParticle extends Particle {
 			return false;
 		}
 		TicTacToeBaseParticle that = (TicTacToeBaseParticle) o;
-		return Objects.equals(xPlayer, that.xPlayer) &&
-				Objects.equals(oPlayer, that.oPlayer) &&
-				Objects.equals(board, that.board);
+		return Objects.equals(xPlayer, that.xPlayer)
+			&& Objects.equals(oPlayer, that.oPlayer)
+			&& Objects.equals(board, that.board);
 	}
 
 	@Override

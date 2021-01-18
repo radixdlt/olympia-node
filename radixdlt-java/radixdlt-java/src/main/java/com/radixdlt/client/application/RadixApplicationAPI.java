@@ -1169,7 +1169,9 @@ public class RadixApplicationAPI {
 							.errorData(errorData);
 						final Consumer<ActionExecutionExceptionReason> addReason = exceptionBuilder::addReason;
 						atomErrorMappers.stream()
-							.flatMap(errorMapper -> errorMapper.mapAtomErrorToExceptionReasons(status.getAtom(), errorData))
+							.flatMap(
+								errorMapper -> errorMapper.mapAtomErrorToExceptionReasons(status.getAtom(), errorData)
+							)
 							.forEach(addReason);
 						return Completable.error(exceptionBuilder.build());
 					}

@@ -111,7 +111,9 @@ public class LoggingHandler extends ChannelDuplexHandler {
 	}
 
 	@Override
-	public void connect(ChannelHandlerContext ctx, SocketAddress remoteAddress, SocketAddress localAddress, ChannelPromise promise) throws Exception {
+	public void connect(ChannelHandlerContext ctx, SocketAddress remoteAddress, SocketAddress localAddress, ChannelPromise promise)
+		throws Exception {
+
 		if (this.logger.isTraceEnabled()) {
 			this.logger.trace(format(ctx, "CONNECT", remoteAddress, localAddress));
 		}
@@ -307,9 +309,17 @@ public class LoggingHandler extends ChannelDuplexHandler {
 			return buf.toString();
 		} else {
 			int rows = (length + 15) / 16 + 4;
-			StringBuilder buf = new StringBuilder(chStr.length() + 1 + eventName.length() + 2 + msgStr.length() + 2 + 10 + 1 + 2 + rows * 80);
-
-			buf.append(chStr).append(' ').append(eventName).append(": ").append(msgStr).append(", ").append(length).append('B').append(NEWLINE);
+			var buf = new StringBuilder(chStr.length() + 1 + eventName.length() + 2 + msgStr.length() + 2 + 10 + 1 + 2 + rows * 80);
+			buf
+				.append(chStr)
+				.append(' ')
+				.append(eventName)
+				.append(": ")
+				.append(msgStr)
+				.append(", ")
+				.append(length)
+				.append('B')
+				.append(NEWLINE);
 			appendPrettyHexDump(buf, content);
 
 			return buf.toString();

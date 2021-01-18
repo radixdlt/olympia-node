@@ -38,7 +38,7 @@ public final class DummyTestObject2 extends BasicContainer {
 	}
 
 	@Override
-	public short VERSION() {
+	public short version() {
 		return 100;
 	}
 
@@ -49,8 +49,9 @@ public final class DummyTestObject2 extends BasicContainer {
 
 	@Override
 	public boolean equals(Object obj) {
-		if (this == obj)
+		if (this == obj) {
 			return true;
+		}
 		if (obj instanceof DummyTestObject2) {
 			DummyTestObject2 other = (DummyTestObject2) obj;
 			return Objects.equals(this.name, other.name);

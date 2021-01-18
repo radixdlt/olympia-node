@@ -94,19 +94,27 @@ public final class VerifiedVertexStoreState {
 		ImmutableMap<HashCode, VerifiedVertex> idToVertex = ImmutableMap.copyOf(seen);
 
 		if (seen.keySet().stream().noneMatch(highQC.highestCommittedQC().getProposed().getVertexId()::equals)) {
-			throw new IllegalStateException(String.format("highQC=%s highCommitted proposed missing {root=%s vertices=%s}", highQC, root, vertices));
+			throw new IllegalStateException(
+				String.format("highQC=%s highCommitted proposed missing {root=%s vertices=%s}", highQC, root, vertices)
+			);
 		}
 
 		if (seen.keySet().stream().noneMatch(highQC.highestCommittedQC().getParent().getVertexId()::equals)) {
-			throw new IllegalStateException(String.format("highQC=%s highCommitted parent does not have a corresponding vertex", highQC));
+			throw new IllegalStateException(
+				String.format("highQC=%s highCommitted parent does not have a corresponding vertex", highQC)
+			);
 		}
 
 		if (seen.keySet().stream().noneMatch(highQC.highestQC().getParent().getVertexId()::equals)) {
-			throw new IllegalStateException(String.format("highQC=%s highQC parent does not have a corresponding vertex", highQC));
+			throw new IllegalStateException(
+				String.format("highQC=%s highQC parent does not have a corresponding vertex", highQC)
+			);
 		}
 
 		if (seen.keySet().stream().noneMatch(highQC.highestQC().getProposed().getVertexId()::equals)) {
-			throw new IllegalStateException(String.format("highQC=%s highQC proposed does not have a corresponding vertex", highQC));
+			throw new IllegalStateException(
+				String.format("highQC=%s highQC proposed does not have a corresponding vertex", highQC)
+			);
 		}
 
 		return new VerifiedVertexStoreState(highQC, rootHeader, root, idToVertex, vertices, highestTC);

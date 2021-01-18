@@ -467,10 +467,9 @@ public class SimulationTest {
 			});
 
 			this.runnableBuilder.add(nodes -> {
-				RadixEngineValidatorRegistratorAndUnregistrator randomValidatorSubmitter =
-					new RadixEngineValidatorRegistratorAndUnregistrator(nodes, hasher);
-				NodeSelector nodeSelector = this.ledgerType.hasEpochs ? new EpochsNodeSelector() : new BFTValidatorSetNodeSelector();
-				LocalMempoolPeriodicSubmitter mempoolSubmitter = new LocalMempoolPeriodicSubmitter(randomValidatorSubmitter, nodeSelector);
+				var randomValidatorSubmitter = new RadixEngineValidatorRegistratorAndUnregistrator(nodes, hasher);
+				var nodeSelector = this.ledgerType.hasEpochs ? new EpochsNodeSelector() : new BFTValidatorSetNodeSelector();
+				var mempoolSubmitter = new LocalMempoolPeriodicSubmitter(randomValidatorSubmitter, nodeSelector);
 				// TODO: Fix hack, hack required due to lack of Guice
 				this.checksBuilder.put(
 					submittedInvariantName,
@@ -491,9 +490,9 @@ public class SimulationTest {
 			});
 
 			this.runnableBuilder.add(nodes -> {
-				RadixEngineValidatorRegistrator validatorRegistrator = new RadixEngineValidatorRegistrator(nodes);
-				NodeSelector nodeSelector = this.ledgerType.hasEpochs ? new EpochsNodeSelector() : new BFTValidatorSetNodeSelector();
-				LocalMempoolPeriodicSubmitter mempoolSubmitter = new LocalMempoolPeriodicSubmitter(validatorRegistrator, nodeSelector);
+				var validatorRegistrator = new RadixEngineValidatorRegistrator(nodes);
+				var nodeSelector = this.ledgerType.hasEpochs ? new EpochsNodeSelector() : new BFTValidatorSetNodeSelector();
+				var mempoolSubmitter = new LocalMempoolPeriodicSubmitter(validatorRegistrator, nodeSelector);
 				// TODO: Fix hack, hack required due to lack of Guice
 				this.checksBuilder.put(
 					submittedInvariantName,
@@ -689,7 +688,8 @@ public class SimulationTest {
 						bind(Mempool.class).to(LocalMempool.class);
 						bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(epochHighView);
 						// TODO: Fix pacemaker so can Default 1 so can debug in IDE, possibly from properties at some point
-						// TODO: Specifically, simulation test with engine, epochs and mempool gets stuck on a single validator
+						// TODO: Specifically, simulation test with engine, epochs and mempool
+						//  gets stuck on a single validator
 						bind(Integer.class).annotatedWith(MinValidators.class).toInstance(minValidators);
 						bind(Integer.class).annotatedWith(MaxValidators.class).toInstance(maxValidators);
 						bind(RRI.class).annotatedWith(NativeToken.class).toInstance(NATIVE_TOKEN);

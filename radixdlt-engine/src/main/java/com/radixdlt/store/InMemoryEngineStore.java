@@ -50,7 +50,12 @@ public final class InMemoryEngineStore<T extends RadixEngineAtom> implements Eng
 	}
 
 	@Override
-	public <U extends Particle, V> V compute(Class<U> particleClass, V initial, BiFunction<V, U, V> outputReducer, BiFunction<V, U, V> inputReducer) {
+	public <U extends Particle, V> V compute(
+		Class<U> particleClass,
+		V initial,
+		BiFunction<V, U, V> outputReducer,
+		BiFunction<V, U, V> inputReducer
+	) {
 		V v = initial;
 		synchronized (lock) {
 			for (Pair<Particle, Spin> spinParticle : inOrderParticles) {

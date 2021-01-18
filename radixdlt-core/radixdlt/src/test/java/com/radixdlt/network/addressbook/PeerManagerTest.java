@@ -318,8 +318,10 @@ public class PeerManagerTest extends RadixTest {
 				// number of responses is equal to 2 * number of requests
 				// because we are using network.peers.message.batch.size = 2
 				int expectedNumberOfPeersMessage = expectedNumberOfGetPeersMessages * 2;
-				softly.assertThat(peer1GetPeersMessages.size() + peer2GetPeersMessages.size()).isCloseTo(expectedNumberOfGetPeersMessages, offset(2));
-				softly.assertThat(peer1PeersMessage.size() + peer2PeersMessage.size()).isCloseTo(expectedNumberOfPeersMessage, offset(2 * 2));
+				softly.assertThat(peer1GetPeersMessages.size() + peer2GetPeersMessages.size())
+					.isCloseTo(expectedNumberOfGetPeersMessages, offset(2));
+				softly.assertThat(peer1PeersMessage.size() + peer2PeersMessage.size())
+					.isCloseTo(expectedNumberOfPeersMessage, offset(2 * 2));
 
 				// number of responses is equal to 2 * number of requests
 				// because we are using network.peers.message.batch.size = 2

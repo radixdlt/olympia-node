@@ -82,15 +82,26 @@ public final class SubmitAtomEpic implements RadixNetworkEpic {
 				if (notification.getType().equals(NotificationType.START)) {
 					return jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, request.getAtom().getAid())
 						.andThen(jsonRpcClient.pushAtom(request.getAtom()))
-						.andThen(Observable.<RadixNodeAction>just(SubmitAtomReceivedAction.of(request.getUuid(), request.getAtom(), node)))
+						.andThen(Observable.<RadixNodeAction>just(
+							SubmitAtomReceivedAction.of(request.getUuid(), request.getAtom(), node)
+						))
 						.onErrorResumeNext(e -> {
 							if (e instanceof SubmitAtomException) {
 								SubmitAtomException submitAtomException = (SubmitAtomException) e;
 								return Observable.<RadixNodeAction>just(
-									SubmitAtomStatusAction.fromStatusNotification(request.getUuid(), request.getAtom(), node,
-									new AtomStatusEvent(AtomStatus.EVICTED_INVALID_ATOM, submitAtomException.getData())),
-									SubmitAtomCompleteAction.of(request.getUuid(), request.getAtom(), node)
-								);
+									SubmitAtomStatusAction.fromStatusNotification(
+										request.getUuid(),
+										request.getAtom(),
+										node,
+										new AtomStatusEvent(
+											AtomStatus.EVICTED_INVALID_ATOM,
+											submitAtomException.getData()
+										)),
+									SubmitAtomCompleteAction.of(
+										request.getUuid(),
+										request.getAtom(),
+										node
+									));
 							} else {
 								return Observable.error(e);
 							}
@@ -123,7 +134,11 @@ public final class SubmitAtomEpic implements RadixNetworkEpic {
 							})
 					).subscribe();
 			})
-			.timeout(timeoutSecs, TimeUnit.SECONDS, Observable.just(SubmitAtomCompleteAction.of(request.getUuid(), request.getAtom(), node)))
+			.timeout(
+				timeoutSecs,
+				TimeUnit.SECONDS,
+				Observable.just(SubmitAtomCompleteAction.of(request.getUuid(), request.getAtom(), node))
+			)
 			.takeUntil(e -> e instanceof SubmitAtomCompleteAction)
 			.doFinally(() -> Observable.timer(DELAY_CLOSE_SECS, TimeUnit.SECONDS).subscribe(t -> ws.close()));
 	}
@@ -135,7 +150,11 @@ public final class SubmitAtomEpic implements RadixNetworkEpic {
 				.filter(a -> a.getRequest() instanceof SubmitAtomRequestAction)
 				.map(a -> {
 					final SubmitAtomRequestAction request = (SubmitAtomRequestAction) a.getRequest();
-					return SubmitAtomSendAction.of(request.getUuid(), request.getAtom(), a.getNode(), request.isCompleteOnStoreOnly());
+					return SubmitAtomSendAction.of(
+						request.getUuid(),
+						request.getAtom(),
+						a.getNode(),
+						request.isCompleteOnStoreOnly());
 				});
 
 		final Observable<RadixNodeAction> submitToNode =

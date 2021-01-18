@@ -45,7 +45,7 @@ public final class PeerWithTransport extends Peer {
 	private final TransportInfo transportInfo;
 
 	@Override
-	public short VERSION() {
+	public short version() {
 		return 100;
 	}
 

@@ -31,8 +31,7 @@ import com.radixdlt.serialization.SerializerId2;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @SerializerId2("network.message.peers")
-public final class PeersMessage extends Message
-{
+public final class PeersMessage extends Message {
 	@JsonProperty("peers")
 	@DsonOutput(Output.ALL)
 	private final ImmutableList<PeerWithSystem> peers;
@@ -64,12 +63,16 @@ public final class PeersMessage extends Message
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
 		PeersMessage that = (PeersMessage) o;
 		return Objects.equals(peers, that.peers)
-				&& Objects.equals(getTimestamp(), that.getTimestamp())
-				&& Objects.equals(getMagic(), that.getMagic());
+			&& Objects.equals(getTimestamp(), that.getTimestamp())
+			&& Objects.equals(getMagic(), that.getMagic());
 	}
 
 	@Override

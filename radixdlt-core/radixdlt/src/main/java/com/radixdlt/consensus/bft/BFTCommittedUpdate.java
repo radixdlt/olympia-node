@@ -26,11 +26,15 @@ import java.util.Objects;
  * Vertex Store update of committed vertices
  */
 public final class BFTCommittedUpdate {
-	private final ImmutableSet<HashCode> pruned;
+	private final ImmutableSet<HashCode> pruned;	//TODO: remove unused
 	private final ImmutableList<PreparedVertex> committed;
 	private final VerifiedVertexStoreState vertexStoreState;
 
-	private BFTCommittedUpdate(ImmutableSet<HashCode> pruned, ImmutableList<PreparedVertex> committed, VerifiedVertexStoreState vertexStoreState) {
+	private BFTCommittedUpdate(
+		ImmutableSet<HashCode> pruned,
+		ImmutableList<PreparedVertex> committed,
+		VerifiedVertexStoreState vertexStoreState
+	) {
 		this.pruned = Objects.requireNonNull(pruned);
 		this.committed = Objects.requireNonNull(committed);
 		this.vertexStoreState = Objects.requireNonNull(vertexStoreState);

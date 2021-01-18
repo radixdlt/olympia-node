@@ -27,6 +27,9 @@ import static org.mockito.Mockito.mock;
 
 public class MessageCentralMockProvider {
 
+    private MessageCentralMockProvider() {
+    }
+
     public static MessageCentral get() {
         final PublishProcessor<MessageFromPeer<?>> messageProcessor = PublishProcessor.create();
         final MessageCentral messageCentral = mock(MessageCentral.class);

@@ -52,7 +52,13 @@ public class MockedStateComputerWithEpochsModule extends AbstractModule {
 		return new StateComputer() {
 
 			@Override
-			public StateComputerResult prepare(ImmutableList<PreparedCommand> previous, Command next, long epoch, View view, long timstamp) {
+			public StateComputerResult prepare(
+				ImmutableList<PreparedCommand> previous,
+				Command next,
+				long epoch,
+				View view,
+				long timstamp
+			) {
 				if (view.compareTo(epochHighView) >= 0) {
 					return new StateComputerResult(
 						next == null ? ImmutableList.of() : ImmutableList.of(new MockPrepared(next, hasher.hash(next))),

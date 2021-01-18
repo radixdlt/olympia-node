@@ -59,7 +59,9 @@ final class UDPTransportOutboundConnection implements TransportOutboundConnectio
 
 		int totalSize = data.length + inetAddress.computeExtraSize(remoteAddress);
 		if (totalSize > UDPConstants.MAX_PACKET_LENGTH) {
-			cfsr.complete(SendResult.failure(new IOException("Datagram packet to " + remoteAddr + " of size " + totalSize + " is too large")));
+			cfsr.complete(SendResult.failure(
+				new IOException("Datagram packet to " + remoteAddr + " of size " + totalSize + " is too large")
+			));
 		} else {
 			ByteBuf buffer = this.channel.alloc().directBuffer(totalSize);
 			inetAddress.writeExtraData(buffer, remoteAddress);

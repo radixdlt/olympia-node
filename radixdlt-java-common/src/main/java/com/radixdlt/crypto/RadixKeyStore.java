@@ -292,8 +292,14 @@ public final class RadixKeyStore implements Closeable {
 		LocalDateTime endDate = startDate.plusYears(validityYears);
 		BigInteger certSerialNumber = BigInteger.valueOf(toDate(startDate).getTime());
 
-		JcaX509v3CertificateBuilder certBuilder =
-				new JcaX509v3CertificateBuilder(dnName, certSerialNumber, toDate(startDate), toDate(endDate), dnName, keyPair.getPublic());
+		var certBuilder = new JcaX509v3CertificateBuilder(
+			dnName,
+			certSerialNumber,
+			toDate(startDate),
+			toDate(endDate),
+			dnName,
+			keyPair.getPublic()
+		);
 		BasicConstraints basicConstraints = new BasicConstraints(true);
 		certBuilder.addExtension(OID_BASIC_CONSTRAINTS, true, basicConstraints);
 

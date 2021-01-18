@@ -95,7 +95,8 @@ public final class EpochManagerRunner implements ModuleRunner {
 			new Subscription<>(localViewUpdates, epochViewUpdateEventProcessor::process),
 			new Subscription<>(pacemakerRx.localTimeouts(), epochManager::processLocalTimeout),
 			new Subscription<>(networkRx.bftEvents(), epochManager::processConsensusEvent),
-			new Subscription<>(verticesRequests, req -> epochManager.localGetVerticesRequestRemoteEventProcessor().process(req.getOrigin(), req.getEvent())),
+			new Subscription<>(verticesRequests, req ->
+				epochManager.localGetVerticesRequestRemoteEventProcessor().process(req.getOrigin(), req.getEvent())),
 			new Subscription<>(rpcRx.responses(), epochManager::processGetVerticesResponse),
 			new Subscription<>(rpcRx.errorResponses(), epochManager::processGetVerticesErrorResponse),
 			new Subscription<>(epochsRPCRx.epochRequests(), epochManager::processGetEpochRequest),

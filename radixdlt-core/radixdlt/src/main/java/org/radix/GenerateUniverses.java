@@ -64,6 +64,8 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public final class GenerateUniverses {
+	private GenerateUniverses() { }
+
 	private static final BigDecimal SUB_UNITS_BIG_DECIMAL
 		= new BigDecimal(UInt256s.toBigInteger(TokenDefinitionUtils.SUB_UNITS));
 	private static final String DEFAULT_UNIVERSE = UniverseType.DEVELOPMENT.toString().toLowerCase();

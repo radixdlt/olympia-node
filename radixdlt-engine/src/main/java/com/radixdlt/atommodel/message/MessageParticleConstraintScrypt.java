@@ -44,11 +44,19 @@ public class MessageParticleConstraintScrypt implements ConstraintScrypt {
 		);
 
 		os.createTransition(
-			new TransitionToken<>(VoidParticle.class, TypeToken.of(VoidUsedData.class), MessageParticle.class, TypeToken.of(VoidUsedData.class)),
-			new TransitionProcedure<VoidParticle, VoidUsedData, MessageParticle, VoidUsedData>() {
+			new TransitionToken<>(
+				VoidParticle.class,
+				TypeToken.of(VoidUsedData.class),
+				MessageParticle.class,
+				TypeToken.of(VoidUsedData.class)),
+			new TransitionProcedure<>() {
 				@Override
-				public Result precondition(VoidParticle inputParticle, VoidUsedData inputUsed, MessageParticle outputParticle,
-					VoidUsedData outputUsed) {
+				public Result precondition(
+					VoidParticle inputParticle,
+					VoidUsedData inputUsed,
+					MessageParticle outputParticle,
+					VoidUsedData outputUsed
+				) {
 					return Result.success();
 				}
 
@@ -71,8 +79,8 @@ public class MessageParticleConstraintScrypt implements ConstraintScrypt {
 				public WitnessValidator<MessageParticle> outputWitnessValidator() {
 					return (msg, meta) ->
 						meta.isSignedBy(msg.getFrom().getPublicKey())
-							? WitnessValidatorResult.success()
-							: WitnessValidatorResult.error("Message particle " + msg + " not signed.");
+						? WitnessValidatorResult.success()
+						: WitnessValidatorResult.error("Message particle " + msg + " not signed.");
 				}
 			}
 		);

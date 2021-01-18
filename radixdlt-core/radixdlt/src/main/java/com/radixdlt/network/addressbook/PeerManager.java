@@ -199,10 +199,30 @@ public class PeerManager {
 				this.disposable = new CompositeDisposable(disposables);
 
 				// Tasks
-				this.executor.scheduleAtFixedRate(this::heartbeatPeers, heartbeatPeersDelayMs, heartbeatPeersIntervalMs, TimeUnit.MILLISECONDS);
-				this.executor.scheduleWithFixedDelay(this::peersHousekeeping, peersBroadcastDelayMs, peersBroadcastIntervalMs, TimeUnit.MILLISECONDS);
-				this.executor.scheduleWithFixedDelay(new ProbeTask(), peerProbeDelayMs, peerProbeIntervalMs, TimeUnit.MILLISECONDS);
-				this.executor.scheduleWithFixedDelay(this::discoverPeers, discoverPeersDelayMs, discoverPeersIntervalMs, TimeUnit.MILLISECONDS);
+				this.executor.scheduleAtFixedRate(
+					this::heartbeatPeers,
+					heartbeatPeersDelayMs,
+					heartbeatPeersIntervalMs,
+					TimeUnit.MILLISECONDS
+				);
+				this.executor.scheduleWithFixedDelay(
+					this::peersHousekeeping,
+					peersBroadcastDelayMs,
+					peersBroadcastIntervalMs,
+					TimeUnit.MILLISECONDS
+				);
+				this.executor.scheduleWithFixedDelay(
+					new ProbeTask(),
+					peerProbeDelayMs,
+					peerProbeIntervalMs,
+					TimeUnit.MILLISECONDS
+				);
+				this.executor.scheduleWithFixedDelay(
+					this::discoverPeers,
+					discoverPeersDelayMs,
+					discoverPeersIntervalMs,
+					TimeUnit.MILLISECONDS
+				);
 
 				log.info("PeerManager started");
 				this.started = true;

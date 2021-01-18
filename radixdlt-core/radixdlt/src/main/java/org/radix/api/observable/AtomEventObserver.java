@@ -25,19 +25,16 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.middleware2.store.StoredCommittedCommand;
+import com.radixdlt.middleware2.store.CommandToBinaryConverter;
+import com.radixdlt.middleware2.store.EngineAtomIndices;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.statecomputer.CommittedAtom;
+import com.radixdlt.store.LedgerEntry;
+import com.radixdlt.store.LedgerEntryStore;
+import com.radixdlt.store.LedgerSearchMode;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
 import com.radixdlt.utils.Pair;
-import com.radixdlt.store.LedgerSearchMode;
-import com.radixdlt.middleware2.store.CommandToBinaryConverter;
-import com.radixdlt.middleware2.store.EngineAtomIndices;
-
-import com.radixdlt.store.LedgerEntry;
-import com.radixdlt.store.LedgerEntryStore;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.api.AtomQuery;
@@ -137,8 +134,15 @@ public class AtomEventObserver {
 	}
 
 	private void sync() {
-		StoreIndex destinationIndex = new StoreIndex(EngineAtomIndices.IndexType.DESTINATION.getValue(), atomQuery.getDestination().toByteArray());
-		SearchCursor cursor = store.search(StoreIndex.LedgerIndexType.DUPLICATE, destinationIndex, LedgerSearchMode.EXACT);
+		StoreIndex destinationIndex =
+			new StoreIndex(
+				EngineAtomIndices.IndexType.DESTINATION.getValue(),
+				atomQuery.getDestination().toByteArray()
+			);
+
+		SearchCursor cursor =
+			store.search(StoreIndex.LedgerIndexType.DUPLICATE, destinationIndex, LedgerSearchMode.EXACT);
+
 		Set<AID> processedAtomIds = Sets.newHashSet();
 		partialSync(cursor, processedAtomIds);
 	}
@@ -163,9 +167,9 @@ public class AtomEventObserver {
 					Optional<LedgerEntry> ledgerEntry = store.get(aid);
 					ledgerEntry.ifPresent(
 						entry -> {
-							StoredCommittedCommand committedCommand = commandToBinaryConverter.toCommand(entry.getContent());
+							var committedCommand = commandToBinaryConverter.toCommand(entry.getContent());
 							long timestamp = committedCommand.getStateAndProof().timestamp();
-							ClientAtom clientAtom = committedCommand.getCommand().map(clientAtomToBinaryConverter::toAtom);
+							var clientAtom = committedCommand.getCommand().map(clientAtomToBinaryConverter::toAtom);
 							atoms.add(Pair.of(clientAtom, timestamp));
 						}
 					);
@@ -187,7 +191,11 @@ public class AtomEventObserver {
 				this.synced = true;
 				// Note that we filter here so that the filter executes with lock held
 				atomEvents = this.waitingQueue.stream()
-					.filter(aed -> !processedAtomIds.contains(Atom.aidOf(aed.getAtom(), hasher)) || aed.getType() == AtomEventType.DELETE)
+					.filter(aed -> {
+							return !processedAtomIds.contains(Atom.aidOf(aed.getAtom(), hasher))
+								|| aed.getType() == AtomEventType.DELETE;
+						}
+					)
 					.collect(Collectors.toList());
 				this.waitingQueue.clear();
 			}
@@ -201,7 +209,7 @@ public class AtomEventObserver {
 	}
 
 	private void delaySync(SearchCursor cursor, Set<AID> processedAtomIds) {
-		synchronized(this) {
+		synchronized (this) {
 			this.currentRunnable = currentRunnable.thenRunAsync(() -> {
 				// Hack to throttle back high amounts of atom reads
 				// Will fix this once an async library is used

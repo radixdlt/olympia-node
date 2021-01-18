@@ -114,7 +114,14 @@ public final class VertexStore {
 				// TODO: Cleanup and remove
 				VerifiedVertexStoreState pruned = vertexStoreState.prune();
 				if (!pruned.equals(vertexStoreState)) {
-					return create(pruned, ledger, bftUpdateDispatcher, bftRebuildDispatcher, bftHighQCUpdateDispatcher, bftCommittedDispatcher);
+					return create(
+						pruned,
+						ledger,
+						bftUpdateDispatcher,
+						bftRebuildDispatcher,
+						bftHighQCUpdateDispatcher,
+						bftCommittedDispatcher
+					);
 				}
 
 				// FIXME: If this occurs then it means that our highQC may not have an associated vertex

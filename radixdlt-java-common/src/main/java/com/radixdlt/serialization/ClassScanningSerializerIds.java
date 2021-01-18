@@ -111,8 +111,9 @@ public abstract class ClassScanningSerializerIds implements SerializerIds {
 		for (Map.Entry<String, List<Class<?>>> entry : polymorphicMap.entrySet()) {
 			String id = entry.getKey();
 			if (!idClassMap.containsKey(id)) {
-				throw new SerializerIdsException(
-						String.format("No concrete class with ID '%s' for polymorphic classes %s", entry.getKey(), entry.getValue()));
+				throw new SerializerIdsException(String.format(
+					"No concrete class with ID '%s' for polymorphic classes %s", entry.getKey(), entry.getValue()
+				));
 			}
 			EUID numericId = SerializationUtils.stringToNumericID(id);
 			String dupNumericId = idNumericMap.put(numericId, id);

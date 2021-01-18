@@ -51,7 +51,9 @@ public final class RRI {
 	public static RRI from(String s) {
 		String[] split = s.split("/", 3);
 		if (split.length != 3 || split[0].length() != 0) {
-			throw new IllegalArgumentException("RRI does not have enough components and must be of the format /:address/:name (" + s + ")");
+			throw new IllegalArgumentException(
+				"RRI does not have enough components and must be of the format /:address/:name (" + s + ")"
+			);
 		}
 
 		RadixAddress address = RadixAddress.from(split[1]);

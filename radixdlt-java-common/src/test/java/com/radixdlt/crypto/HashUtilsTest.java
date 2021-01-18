@@ -87,31 +87,36 @@ public class HashUtilsTest {
 	public void testHashValues512() {
 		assertArrayEquals(
 			Bytes.fromHexString(
-				"d6f117761cef5715fcb3fe49a3cf2ebb268acec9e9d87a1e8812a8aa811a1d02ed636b9d04694c160fd071e687772d0cc2e1c3990da4435409c7b1f7b87fa632"
+				"d6f117761cef5715fcb3fe49a3cf2ebb268acec9e9d87a1e8812a8aa811a1d02ed636b9d04694c160fd071e687772d0cc2e1"
+					+ "c3990da4435409c7b1f7b87fa632"
 			),
-				HashUtils.sha512(Longs.toByteArray(0L)).asBytes()
+			HashUtils.sha512(Longs.toByteArray(0L)).asBytes()
 		);
 		assertArrayEquals(
 			Bytes.fromHexString(
-				"ec9d8eba8da254c20b3681454bdb3425ba144b7d36421ceffa796bad78d7e66c3439c73a6bbb2d985883b0ff081cfa3ebbac90c580065bad0eb1e9bee74eb0c9"
+				"ec9d8eba8da254c20b3681454bdb3425ba144b7d36421ceffa796bad78d7e66c3439c73a6bbb2d985883b0ff081cfa3ebbac"
+					+ "90c580065bad0eb1e9bee74eb0c9"
 			),
 			HashUtils.sha512(Longs.toByteArray(1L)).asBytes()
 		);
 		assertArrayEquals(
 			Bytes.fromHexString(
-				"78a037d80204606de0f166a625d3fdc81de417da21bf0f5d7c9b756d73a4decd770c349f21fd5141329d0f2a639c143b30942cc044ff7d0d95209107c38e045c"
+				"78a037d80204606de0f166a625d3fdc81de417da21bf0f5d7c9b756d73a4decd770c349f21fd5141329d0f2a639c143b3094"
+					+ "2cc044ff7d0d95209107c38e045c"
 			),
 				HashUtils.sha512(Longs.toByteArray(10L)).asBytes()
 		);
 		assertArrayEquals(
 			Bytes.fromHexString(
-				"1cb75a3020fda027b89157eebde70134c281e719f700e84b9f12607b3ab3ae286c34c144e8b444eb0fd163948d00bcae900b2c08d263c7127fc1bf85f43c28a0"
+				"1cb75a3020fda027b89157eebde70134c281e719f700e84b9f12607b3ab3ae286c34c144e8b444eb0fd163948d00bcae900b"
+					+ "2c08d263c7127fc1bf85f43c28a0"
 			),
 				HashUtils.sha512(Longs.toByteArray(100L)).asBytes()
 		);
 		assertArrayEquals(
 			Bytes.fromHexString(
-				"66c0a8301d6a3cc9ad2151af74ad748d10ecfe83a5b1c765a5e31c72916f238f1de2006f2fcb12f634948e13200f354c6f47fc183c7208c1a022575e761c4222"
+				"66c0a8301d6a3cc9ad2151af74ad748d10ecfe83a5b1c765a5e31c72916f238f1de2006f2fcb12f634948e13200f354c6f47"
+					+ "fc183c7208c1a022575e761c4222"
 			),
 				HashUtils.sha512(Longs.toByteArray(1_000L)).asBytes()
 		);
@@ -127,8 +132,14 @@ public class HashUtilsTest {
 		// These hashes as just the result of running the sha256 once and output the values
 		// These are then used as reference for other libraries, especially Swift which
 		// lacks native Sha256 methods.
-		assertEquals("374d9dc94c1252acf828cdfb94946cf808cb112aa9760a2e6216c14b4891f934", Bytes.toHexString(singleHash));
-		assertEquals("fd6be8b4b12276857ac1b63594bf38c01327bd6e8ae0eb4b0c6e253563cc8cc7", Bytes.toHexString(doubleHash));
+		assertEquals(
+			"374d9dc94c1252acf828cdfb94946cf808cb112aa9760a2e6216c14b4891f934",
+			Bytes.toHexString(singleHash)
+		);
+		assertEquals(
+			"fd6be8b4b12276857ac1b63594bf38c01327bd6e8ae0eb4b0c6e253563cc8cc7",
+			Bytes.toHexString(doubleHash)
+		);
 	}
 
 	@Test
