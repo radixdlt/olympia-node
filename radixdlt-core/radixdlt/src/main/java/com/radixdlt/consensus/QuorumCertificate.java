@@ -71,6 +71,10 @@ public final class QuorumCertificate {
 		return new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 	}
 
+	public long getEpoch() {
+		return voteData.getProposed().getLedgerHeader().getEpoch();
+	}
+
 	public View getView() {
 		return voteData.getProposed().getView();
 	}
@@ -129,6 +133,6 @@ public final class QuorumCertificate {
 
 	@Override
 	public String toString() {
-		return String.format("QC{view=%s}", this.getView());
+		return String.format("QC{view=%s:%s}", getEpoch(), getView());
 	}
 }

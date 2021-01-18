@@ -22,19 +22,23 @@ import static org.mockito.Mockito.mock;
 
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
+import com.radixdlt.consensus.sync.GetVerticesRequest;
+
 import org.junit.Before;
 import org.junit.Test;
 
 public class GetVerticesErrorResponseTest {
-	private HighQC highQC;
-	private GetVerticesErrorResponse response;
 	private BFTNode node;
+	private HighQC highQC;
+	private GetVerticesRequest failedRequest;
+	private GetVerticesErrorResponse response;
 
 	@Before
 	public void setUp() {
 		this.highQC = mock(HighQC.class);
 		this.node = mock(BFTNode.class);
-		this.response = new GetVerticesErrorResponse(this.node, this.highQC);
+		this.failedRequest = mock(GetVerticesRequest.class);
+		this.response = new GetVerticesErrorResponse(this.node, this.highQC, this.failedRequest);
 	}
 
 	@Test

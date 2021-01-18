@@ -31,19 +31,28 @@ public final class GetVerticesErrorResponseMessage extends Message {
 	@DsonOutput(Output.ALL)
 	private HighQC highQC;
 
+	@JsonProperty("failed_request")
+	@DsonOutput(Output.ALL)
+	private GetVerticesRequestMessage failedRequest;
+
 	GetVerticesErrorResponseMessage() {
 		// Serializer only
 		super(0);
 		this.highQC = null;
 	}
 
-	GetVerticesErrorResponseMessage(int magic, HighQC highQC) {
+	GetVerticesErrorResponseMessage(int magic, HighQC highQC, GetVerticesRequestMessage failedRequest) {
 		super(magic);
 		this.highQC = Objects.requireNonNull(highQC);
+		this.failedRequest = Objects.requireNonNull(failedRequest);
 	}
 
 	public HighQC highQC() {
 		return this.highQC;
+	}
+
+	public GetVerticesRequestMessage failedRequest() {
+		return this.failedRequest;
 	}
 
 	@Override
@@ -60,13 +69,14 @@ public final class GetVerticesErrorResponseMessage extends Message {
 			return false;
 		}
 		GetVerticesErrorResponseMessage that = (GetVerticesErrorResponseMessage) o;
-		return Objects.equals(highQC, that.highQC)
+		return Objects.equals(this.highQC, that.highQC)
+				&& Objects.equals(this.failedRequest, that.failedRequest)
 				&& Objects.equals(getTimestamp(), that.getTimestamp())
 				&& Objects.equals(getMagic(), that.getMagic());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(highQC, getTimestamp(), getMagic());
+		return Objects.hash(this.highQC, this.failedRequest, getTimestamp(), getMagic());
 	}
 }

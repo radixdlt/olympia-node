@@ -31,6 +31,7 @@ import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.ProposalBroadcaster;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
+import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
@@ -163,8 +164,8 @@ public class SimulationNetwork {
 		}
 
 		@Override
-		public void sendGetVerticesErrorResponse(BFTNode node, HighQC syncInfo) {
-			GetVerticesErrorResponse vertexResponse = new GetVerticesErrorResponse(thisNode, syncInfo);
+		public void sendGetVerticesErrorResponse(BFTNode node, HighQC syncInfo, GetVerticesRequest failedRequest) {
+			GetVerticesErrorResponse vertexResponse = new GetVerticesErrorResponse(thisNode, syncInfo, failedRequest);
 			receivedMessages.onNext(MessageInTransit.newMessage(vertexResponse, thisNode, node));
 		}
 

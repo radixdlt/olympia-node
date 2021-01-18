@@ -124,8 +124,9 @@ public class MessageCentralValidatorSync implements SyncVerticesResponseSender,
 	}
 
 	@Override
-	public void sendGetVerticesErrorResponse(BFTNode node, HighQC highQC) {
-		GetVerticesErrorResponseMessage response = new GetVerticesErrorResponseMessage(this.magic, highQC);
+	public void sendGetVerticesErrorResponse(BFTNode node, HighQC highQC, GetVerticesRequest failedRequest) {
+		final var failedRequestMsg = new GetVerticesRequestMessage(this.magic, failedRequest.getVertexId(), failedRequest.getCount());
+		GetVerticesErrorResponseMessage response = new GetVerticesErrorResponseMessage(this.magic, highQC, failedRequestMsg);
 		final Optional<PeerWithSystem> peerMaybe = this.addressBook.peer(node.getKey().euid());
 		peerMaybe.ifPresentOrElse(
 			p -> this.messageCentral.send(p, response),
@@ -178,7 +179,9 @@ public class MessageCentralValidatorSync implements SyncVerticesResponseSender,
 
 				if (errorResponseRateLimiter.tryAcquire()) {
 					BFTNode node = BFTNode.create(src.getSystem().getKey());
-					return new GetVerticesErrorResponse(node, msg.highQC());
+					final var failedRequestMsg = msg.failedRequest();
+					final var failedRequest = new GetVerticesRequest(failedRequestMsg.getVertexId(), failedRequestMsg.getCount());
+					return new GetVerticesErrorResponse(node, msg.highQC(), failedRequest);
 				} else {
 					var counter = counters.increment(CounterType.NETWORKING_DROPPED_ERROR_RESPONSES);
 

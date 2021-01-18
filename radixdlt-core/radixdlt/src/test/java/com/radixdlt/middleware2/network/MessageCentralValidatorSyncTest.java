@@ -42,6 +42,7 @@ import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.network.addressbook.AddressBook;
@@ -135,8 +136,9 @@ public class MessageCentralValidatorSyncTest {
 		when(ecPublicKey.euid()).thenReturn(mock(EUID.class));
 		when(node.getKey()).thenReturn(ecPublicKey);
 		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
+		final var failedRequest = new GetVerticesRequest(HashUtils.random256(), 3);
 
-		sync.sendGetVerticesErrorResponse(node, highQC);
+		sync.sendGetVerticesErrorResponse(node, highQC, failedRequest);
 
 		verify(messageCentral, times(1)).send(eq(peer), any(GetVerticesErrorResponseMessage.class));
 	}
