@@ -77,7 +77,10 @@ class InMemoryCommittedReader implements LedgerUpdateSender, CommittedReader {
 					entry.getValue().getCommands(),
 					hasher::hash,
 					entry.getValue().getHeader().getAccumulatorState()
-				).orElseThrow(() -> new RuntimeException());
+				).orElseThrow(() -> {
+					String msg = String.format("Failed getNextCommittedCommands: start=%s, entry=%s", start, entry);
+					return new RuntimeException(msg);
+				});
 
 			return new VerifiedCommandsAndProof(cmds, entry.getValue().getHeader());
 		}

@@ -20,6 +20,8 @@ package com.radixdlt.sync;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.ModuleRunner;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.ProcessWithSyncRunner;
 import com.radixdlt.environment.RemoteEventProcessor;
@@ -28,6 +30,8 @@ import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
+import com.radixdlt.utils.ThreadFactories;
+
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
@@ -38,7 +42,6 @@ import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
-import com.radixdlt.utils.ThreadFactories;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -50,9 +53,7 @@ public final class SyncServiceRunner<T extends LedgerUpdate> implements ModuleRu
 	private static final Logger log = LogManager.getLogger();
 
 	private final Scheduler singleThreadScheduler;
-	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor(
-		ThreadFactories.daemonThreads("SyncManager")
-	);
+	private final ScheduledExecutorService executorService;
 	private final EventProcessor<LocalSyncRequest> syncRequestEventProcessor;
 
 	private final RemoteEventProcessor<DtoLedgerHeaderAndProof> remoteSyncServiceProcessor;
@@ -72,6 +73,7 @@ public final class SyncServiceRunner<T extends LedgerUpdate> implements ModuleRu
 
 	@Inject
 	public SyncServiceRunner(
+		@Self BFTNode self,
 		Observable<LocalSyncRequest> localSyncRequests,
 		EventProcessor<LocalSyncRequest> syncRequestEventProcessor,
 		Observable<SyncInProgress> syncTimeouts,
@@ -83,6 +85,8 @@ public final class SyncServiceRunner<T extends LedgerUpdate> implements ModuleRu
 		Observable<RemoteEvent<DtoCommandsAndProof>> remoteSyncResponses,
 		RemoteEventProcessor<DtoCommandsAndProof> responseProcessor
 	) {
+		this.executorService = Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("SyncManager " + self));
+
 		this.localSyncRequests = Objects.requireNonNull(localSyncRequests);
 		this.syncRequestEventProcessor = Objects.requireNonNull(syncRequestEventProcessor);
 
@@ -111,28 +115,34 @@ public final class SyncServiceRunner<T extends LedgerUpdate> implements ModuleRu
 
 			Disposable d0 = remoteSyncRequests
 				.observeOn(singleThreadScheduler)
-				.subscribe(e -> remoteSyncServiceProcessor.process(e.getOrigin(), e.getEvent()));
+				.subscribe(e -> remoteSyncServiceProcessor.process(e.getOrigin(), e.getEvent()), t -> logException("Remote sync request", t));
 
 			Disposable d1 = remoteSyncResponses
 				.observeOn(singleThreadScheduler)
-				.subscribe(e -> responseProcessor.process(e.getOrigin(), e.getEvent()));
+				.subscribe(e -> responseProcessor.process(e.getOrigin(), e.getEvent()), t -> logException("Remote sync response", t));
 
 			Disposable d2 = localSyncRequests
 				.observeOn(singleThreadScheduler)
-				.subscribe(syncRequestEventProcessor::process);
+				.subscribe(syncRequestEventProcessor::process, t -> logException("Local sync request", t));
 
 			Disposable d3 = syncTimeouts
 				.observeOn(singleThreadScheduler)
-				.subscribe(syncTimeoutProcessor::process);
+				.subscribe(syncTimeoutProcessor::process, t -> logException("Sync timeout", t));
 
 			Disposable d4 = ledgerUpdates
 				.observeOn(singleThreadScheduler)
-				.subscribe(u -> ledgerUpdateProcessors.forEach(e -> e.process(u)));
+				.subscribe(u -> ledgerUpdateProcessors.forEach(e -> e.process(u)), t -> logException("Ledger update", t));
 
 			compositeDisposable = new CompositeDisposable(d0, d1, d2, d3, d4);
 		}
 
 		log.info("Sync started");
+	}
+
+	private void logException(String what, Throwable t) {
+		log.error(what, t);
+		LogManager.shutdown(); // Flush any async logs
+		System.exit(-1);
 	}
 
 	/**
