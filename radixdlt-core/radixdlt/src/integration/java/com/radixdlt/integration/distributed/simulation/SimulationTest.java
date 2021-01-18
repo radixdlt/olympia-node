@@ -176,22 +176,24 @@ public class SimulationTest {
 
 	public static class Builder {
 		private enum LedgerType {
-			MOCKED_LEDGER(false, false, false, false),
-			LEDGER(true, false, false, false),
-			LEDGER_AND_SYNC(true, false, false, true),
-			LEDGER_AND_LOCALMEMPOOL(true, true, false, false),
-			LEDGER_AND_EPOCHS(true, false, true, false),
-			LEDGER_AND_EPOCHS_AND_SYNC(true, false, true, true),
-			LEDGER_AND_LOCALMEMPOOL_AND_EPOCHS_AND_RADIXENGINE(true, true, true, false);
+			MOCKED_LEDGER(false, false, false, false, false),
+			LEDGER(true, false, false, false, false),
+			LEDGER_AND_SYNC(true, false, false, false, true),
+			LEDGER_AND_LOCALMEMPOOL(true, true, false, false, false),
+			LEDGER_AND_EPOCHS(true, false, false, true, false),
+			LEDGER_AND_EPOCHS_AND_SYNC(true, false, false, true, true),
+			LEDGER_AND_LOCALMEMPOOL_AND_EPOCHS_AND_RADIXENGINE(true, true, true, true, false);
 
 			private final boolean hasLedger;
 			private final boolean hasMempool;
+			private final boolean hasRadixEngine;
 			private final boolean hasEpochs;
 			private final boolean hasSync;
 
-			LedgerType(boolean hasLedger, boolean hasMempool, boolean hasEpochs, boolean hasSync) {
+			LedgerType(boolean hasLedger, boolean hasMempool, boolean hasRadixEngine, boolean hasEpochs, boolean hasSync) {
 				this.hasLedger = hasLedger;
 				this.hasMempool = hasMempool;
+				this.hasRadixEngine = hasRadixEngine;
 				this.hasEpochs = hasEpochs;
 				this.hasSync = hasSync;
 			}
@@ -216,9 +218,25 @@ public class SimulationTest {
 
 					if (!hasMempool) {
 						modules.add(new MockedCommandGeneratorModule());
+
+						if (!hasEpochs) {
+							modules.add(new MockedStateComputerModule());
+						} else {
+							modules.add(new MockedStateComputerWithEpochsModule());
+						}
 					} else {
 						modules.add(new LedgerCommandGeneratorModule());
 						modules.add(new LedgerLocalMempoolModule(10));
+
+						if (!hasRadixEngine) {
+							modules.add(new MockedMempoolStateComputerModule());
+						} else {
+							modules.add(new NoFeeModule());
+							modules.add(new RadixEngineModule());
+							modules.add(new RadixEngineRxModule());
+							modules.add(new MockedRadixEngineStoreModule());
+							modules.add(new SimulationValidatorComputersModule());
+						}
 					}
 
 					if (!hasEpochs) {
@@ -442,6 +460,9 @@ public class SimulationTest {
 				@Override
 				protected void configure() {
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(epochHighView);
+					bind(Integer.class).annotatedWith(MinValidators.class).toInstance(minValidators);
+					bind(Integer.class).annotatedWith(MaxValidators.class).toInstance(maxValidators);
+					bind(RRI.class).annotatedWith(NativeToken.class).toInstance(NATIVE_TOKEN);
 				}
 			});
 			return this;
@@ -661,42 +682,12 @@ public class SimulationTest {
 				}
 			});
 			modules.add(new MockedSystemModule());
-			modules.add(new NoFeeModule());
 			modules.add(new MockedCryptoModule());
 			modules.add(new DispatcherModule());
 			modules.add(new RxEnvironmentModule());
 			modules.add(new MockedPersistenceStoreModule());
 			modules.add(new MockedRecoveryModule());
-
 			modules.add(ledgerType.getCoreModule());
-
-			if (ledgerType == LedgerType.LEDGER) {
-				modules.add(new MockedStateComputerModule());
-			} else if (ledgerType == LedgerType.LEDGER_AND_SYNC) {
-				modules.add(new MockedStateComputerModule());
-			} else if (ledgerType == LedgerType.LEDGER_AND_LOCALMEMPOOL) {
-				modules.add(new MockedMempoolStateComputerModule());
-			} else if (ledgerType == LedgerType.LEDGER_AND_EPOCHS) {
-				modules.add(new MockedStateComputerWithEpochsModule());
-			} else if (ledgerType == LedgerType.LEDGER_AND_EPOCHS_AND_SYNC) {
-				modules.add(new MockedStateComputerWithEpochsModule());
-			} else if (ledgerType == LedgerType.LEDGER_AND_LOCALMEMPOOL_AND_EPOCHS_AND_RADIXENGINE) {
-				modules.add(new AbstractModule() {
-					@Override
-					protected void configure() {
-						// TODO: Fix pacemaker so can Default 1 so can debug in IDE, possibly from properties at some point
-						// TODO: Specifically, simulation test with engine, epochs and mempool
-						//  gets stuck on a single validator
-						bind(Integer.class).annotatedWith(MinValidators.class).toInstance(minValidators);
-						bind(Integer.class).annotatedWith(MaxValidators.class).toInstance(maxValidators);
-						bind(RRI.class).annotatedWith(NativeToken.class).toInstance(NATIVE_TOKEN);
-					}
-				});
-				modules.add(new RadixEngineModule());
-				modules.add(new RadixEngineRxModule());
-				modules.add(new MockedRadixEngineStoreModule());
-				modules.add(new SimulationValidatorComputersModule());
-			}
 
 			ImmutableSet<SimulationNetworkActor> runners = this.runnableBuilder.build().stream()
 				.map(f -> f.apply(nodes))
