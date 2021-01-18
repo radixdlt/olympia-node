@@ -57,7 +57,7 @@ public class AtomTest {
 		HashCode hash = atom.getHash();
 		assertIsNotRawDSON(hash);
 		String hashHex = hash.toString();
-		assertEquals("311964d6688530d47baba551393b9a51a5e6a22504133597e3f7c2af5f83a2ce", hashHex);
+		assertEquals("b0aace23265c295eb13464b5b97cf57d1a227a02c4c7042ab7daae1df1eb6e6a", hashHex);
 		assertFalse(atom.getAid().isZero());
 	}
 
@@ -69,7 +69,7 @@ public class AtomTest {
 		HashCode hash = particle.getHash();
 		assertIsNotRawDSON(hash);
 		String hashHex = hash.toString();
-		assertEquals("a29e3505d9736f4de2a576b2fee1b6a449e56f6b3cbaa86b8388e39a1557c53a", hashHex);
+		assertEquals("6cbb92f0cb433da00f3f04f5c03b27bd1cb7f7724fe295c06eaeda15b61bb70a", hashHex);
 	}
 
 	private void assertIsNotRawDSON(HashCode hash) {

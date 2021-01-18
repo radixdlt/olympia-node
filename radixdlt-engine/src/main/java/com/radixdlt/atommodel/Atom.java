@@ -59,10 +59,6 @@ public final class Atom {
 
 	public static final String METADATA_POW_NONCE_KEY = "powNonce";
 
-	@JsonProperty("version")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final short version = 100;
-
 	/**
 	 * The particle groups and their spin
 	 */
@@ -378,14 +374,13 @@ public final class Atom {
 			return false;
 		}
 		Atom atom = (Atom) o;
-		return version == atom.version
-				&& Objects.equals(particleGroups, atom.particleGroups)
+		return Objects.equals(particleGroups, atom.particleGroups)
 				&& Objects.equals(signatures, atom.signatures)
 				&& Objects.equals(metaData, atom.metaData);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(version, particleGroups, signatures, metaData);
+		return Objects.hash(particleGroups, signatures, metaData);
 	}
 }

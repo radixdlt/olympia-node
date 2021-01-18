@@ -44,6 +44,6 @@ public class TestParticleGroupSerialization {
 
 		byte[] particleGroupBytes = serialization.toDson(pg, Output.HASH);
 
-		assertEquals(4162, particleGroupBytes.length);
+		assertEquals(4152, particleGroupBytes.length);
 	}
 }

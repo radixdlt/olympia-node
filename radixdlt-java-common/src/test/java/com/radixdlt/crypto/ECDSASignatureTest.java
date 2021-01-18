@@ -31,7 +31,6 @@ public class ECDSASignatureTest {
 	public void equalsContract() {
 		EqualsVerifier.forClass(ECDSASignature.class)
 				.suppress(Warning.NONFINAL_FIELDS) // serialization prevents us from making `r` and `s` final.
-				.withIgnoredFields("version") // only used for serialization
 				.verify();
 	}
 

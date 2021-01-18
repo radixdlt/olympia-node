@@ -11,7 +11,6 @@ public class TransferrableTokensParticleTest {
     public void equalsContract() {
         EqualsVerifier.forClass(TransferrableTokensParticle.class)
                 .suppress(Warning.NONFINAL_FIELDS)
-                .withIgnoredFields("version")
                 .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
                 .verify();
     }

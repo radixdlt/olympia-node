@@ -9,7 +9,6 @@ public class SystemParticleTest {
 	public void equalsContract() {
 		EqualsVerifier.forClass(SystemParticle.class)
 			.suppress(Warning.NONFINAL_FIELDS)
-			.withIgnoredFields("version")
 			.verify();
 	}
 }

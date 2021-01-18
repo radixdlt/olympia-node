@@ -46,10 +46,6 @@ public final class ECDSASignatures implements Signatures {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("version")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private short version = 100;
-
 	private ImmutableMap<ECPublicKey, ECDSASignature> keyToSignature;
 
 	public ECDSASignatures() {
