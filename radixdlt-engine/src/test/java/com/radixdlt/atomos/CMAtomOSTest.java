@@ -17,14 +17,17 @@
 
 package com.radixdlt.atomos;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.VoidUsedData;
 
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RadixAddress;
 import org.junit.Test;
 
@@ -36,6 +39,11 @@ import static org.mockito.Mockito.mock;
 
 public class CMAtomOSTest {
 	private static final class TestParticle extends Particle {
+		@Override
+		public Set<EUID> getDestinations() {
+			return ImmutableSet.of();
+		}
+
 		@Override
 		public String toString() {
 			return "Test";

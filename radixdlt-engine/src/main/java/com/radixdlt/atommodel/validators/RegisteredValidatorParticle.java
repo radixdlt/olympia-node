@@ -20,6 +20,7 @@ package com.radixdlt.atommodel.validators;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
@@ -58,11 +59,15 @@ public final class RegisteredValidatorParticle extends Particle {
 	}
 
 	public RegisteredValidatorParticle(RadixAddress address, ImmutableSet<RadixAddress> allowedDelegators, String url, long nonce) {
-		super(address.euid());
 		this.address = address;
 		this.allowedDelegators = allowedDelegators;
 		this.url = url;
 		this.nonce = nonce;
+	}
+
+	@Override
+	public Set<EUID> getDestinations() {
+		return ImmutableSet.of(this.address.euid());
 	}
 
 	public boolean allowsDelegator(RadixAddress delegator) {
@@ -93,7 +98,7 @@ public final class RegisteredValidatorParticle extends Particle {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.address, this.allowedDelegators, this.url, this.nonce, getDestinations());
+		return Objects.hash(this.address, this.allowedDelegators, this.url, this.nonce);
 	}
 
 	@Override
@@ -108,8 +113,7 @@ public final class RegisteredValidatorParticle extends Particle {
 		return this.nonce == that.nonce
 			&& Objects.equals(this.address, that.address)
 			&& Objects.equals(this.allowedDelegators, that.allowedDelegators)
-			&& Objects.equals(this.url, that.url)
-			&& Objects.equals(getDestinations(), that.getDestinations());
+			&& Objects.equals(this.url, that.url);
 	}
 
 	@Override
