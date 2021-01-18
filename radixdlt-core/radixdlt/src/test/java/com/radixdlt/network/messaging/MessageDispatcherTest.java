@@ -31,7 +31,6 @@ import com.radixdlt.network.transport.TransportInfo;
 import com.radixdlt.network.transport.TransportMetadata;
 import com.radixdlt.network.transport.TransportOutboundConnection;
 import com.radixdlt.serialization.Serialization;
-import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.stubbing.Answer;
@@ -44,7 +43,7 @@ import org.radix.universe.system.SystemMessage;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -104,14 +103,14 @@ public class MessageDispatcherTest extends RadixTest {
 
 		SendResult sendResult = messageDispatcher.send(transportManager, messageEvent).get();
 
-		assertThat(sendResult.getThrowable().getMessage(), Matchers.equalTo("TTL for TestMessage message to " + peer1 + " has expired"));
+		assertThat(sendResult.getThrowable().getMessage()).isEqualTo("TTL for TestMessage message to " + peer1 + " has expired");
 		verify(counters, times(1)).increment(CounterType.MESSAGES_OUTBOUND_ABORTED);
 	}
 
 	private RadixSystem makeSystem(EUID nid) {
 		RadixSystem system = mock(RadixSystem.class);
 		TransportInfo ti = TransportInfo.of("TCP", TransportMetadata.create(
-				ImmutableMap.of("nid", nid.toString())));
+			ImmutableMap.of("nid", nid.toString())));
 
 		when(system.getNID()).thenReturn(nid);
 		when(system.supportedTransports()).thenAnswer(inv -> Stream.of(ti));

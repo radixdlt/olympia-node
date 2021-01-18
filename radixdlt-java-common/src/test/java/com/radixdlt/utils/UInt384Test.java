@@ -17,22 +17,22 @@
 
 package com.radixdlt.utils;
 
-import static org.hamcrest.Matchers.comparesEqualTo;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.lessThan;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import com.google.common.math.BigIntegerMath;
 import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.util.Arrays;
-import nl.jqno.equalsverifier.EqualsVerifier;
+
 import org.junit.Test;
+
+import com.google.common.math.BigIntegerMath;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import nl.jqno.equalsverifier.EqualsVerifier;
 
 /**
  * Basic unit tests for {@link UInt384}.
@@ -260,18 +260,19 @@ public class UInt384Test {
 
 	@Test
 	public void when_comparing_int384_values_using_compareTo__the_correct_value_is_returned() {
-		assertThat(UInt384.ZERO, comparesEqualTo(UInt384.ZERO));
-		assertThat(UInt384.ZERO, lessThan(UInt384.ONE));
-		assertThat(UInt384.ZERO, lessThan(UInt384.MAX_VALUE));
-		assertThat(UInt384.ONE, greaterThan(UInt384.ZERO));
-		assertThat(UInt384.MAX_VALUE, greaterThan(UInt384.ZERO));
+		assertThat(UInt384.ZERO)
+			.isEqualByComparingTo(UInt384.ZERO)
+			.isLessThan(UInt384.ONE)
+			.isLessThan(UInt384.MAX_VALUE);
+		assertThat(UInt384.ONE).isGreaterThan(UInt384.ZERO);
+		assertThat(UInt384.MAX_VALUE).isGreaterThan(UInt384.ZERO);
 
 		UInt384 i127 = UInt384.from(UInt128.ZERO, UInt256.HIGH_BIT);
 		UInt384 i128 = i127.add(i127);
 		UInt384 i129 = i128.add(i128);
-		assertThat(i128, greaterThan(i127)); // In case something has gone horribly wrong.
-		assertThat(i128.add(i127), greaterThan(i128));
-		assertThat(i129, greaterThan(i128.add(i127)));
+		assertThat(i128).isGreaterThan(i127); // In case something has gone horribly wrong.
+		assertThat(i128.add(i127)).isGreaterThan(i128);
+		assertThat(i129).isGreaterThan(i128.add(i127));
 	}
 
 	@Test
@@ -300,9 +301,9 @@ public class UInt384Test {
 		UInt384 b0 = UInt384.ONE;
 		UInt384 b128 = UInt384.from(UInt128.ONE, UInt256.ZERO);
 		// Basic sanity checks to make sure nothing is horribly wrong
-		assertThat(b128, greaterThan(b0));
-		assertThat(b0, greaterThan(UInt384.ZERO));
-		assertThat(b128, greaterThan(UInt384.ZERO));
+		assertThat(b128).isGreaterThan(b0);
+		assertThat(b0).isGreaterThan(UInt384.ZERO);
+		assertThat(b128).isGreaterThan(UInt384.ZERO);
 
 		// Now for the real tests
 		assertEquals(b0, UInt384.ZERO.or(b0));

@@ -29,9 +29,8 @@ import com.google.common.collect.Sets;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.utils.Ints;
 
-import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
-import static org.hamcrest.Matchers.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class SharedMempoolTest {
 	private static final HashCode TEST_HASH = makeHash(1234);
@@ -90,8 +89,9 @@ public class SharedMempoolTest {
 
 		String tostring = this.sharedMempool.toString();
 
-		assertThat(tostring, containsString("1/2"));
-		assertThat(tostring, containsString(SharedMempool.class.getSimpleName()));
+		assertThat(tostring)
+			.contains("1/2")
+			.contains(SharedMempool.class.getSimpleName());
 	}
 
 	private static HashCode makeHash(int n) {

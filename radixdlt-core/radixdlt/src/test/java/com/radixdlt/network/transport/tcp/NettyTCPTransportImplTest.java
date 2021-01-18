@@ -26,9 +26,9 @@ import org.junit.Test;
 import com.radixdlt.network.transport.StaticTransportMetadata;
 import com.radixdlt.network.transport.TransportMetadata;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
-import static org.hamcrest.CoreMatchers.*;
 
 public class NettyTCPTransportImplTest {
 
@@ -167,9 +167,9 @@ public class NettyTCPTransportImplTest {
 
 		try (NettyTCPTransportImpl testInstance = new NettyTCPTransportImpl(counters, config, localMetadata, outboundFactory, controlFactory)) {
 			String s = testInstance.toString();
-			assertThat(s, containsString(NettyTCPTransportImpl.class.getSimpleName()));
-			assertThat(s, containsString(NettyTCPTransportImpl.DEFAULT_HOST));
-			assertThat(s, containsString(String.valueOf(NettyTCPTransportImpl.DEFAULT_PORT)));
+			assertThat(s).contains(NettyTCPTransportImpl.class.getSimpleName());
+			assertThat(s).contains(NettyTCPTransportImpl.DEFAULT_HOST);
+			assertThat(s).contains(String.valueOf(NettyTCPTransportImpl.DEFAULT_PORT));
 		}
 	}
 }

@@ -21,9 +21,8 @@ import com.radixdlt.TestSetupUtils;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.crypto.ECKeyPair;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
 
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
@@ -64,8 +63,9 @@ public class RRIParticleSerializationTest extends SerializeObjectEngine<RRIParti
     @Test
     public void testToString() {
     	String s = get().toString();
-    	assertThat(s, containsString(RRIParticle.class.getSimpleName()));
-    	assertThat(s, containsString(rri.toString()));
+    	assertThat(s)
+    		.contains(RRIParticle.class.getSimpleName())
+    		.contains(rri.toString());
     }
 
     private static RRIParticle get() {

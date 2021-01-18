@@ -25,8 +25,7 @@ import nl.jqno.equalsverifier.Warning;
 import org.junit.Test;
 import org.radix.serialization.SerializeMessageObject;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class PeersMessageTest extends SerializeMessageObject<PeersMessage> {
 
@@ -38,7 +37,7 @@ public class PeersMessageTest extends SerializeMessageObject<PeersMessage> {
 	public void sensibleToString() {
 		String s = new PeersMessage(1, ImmutableList.of()).toString();
 
-		assertThat(s, containsString(PeersMessage.class.getSimpleName()));
+		assertThat(s).contains(PeersMessage.class.getSimpleName());
 	}
 
 	@Test

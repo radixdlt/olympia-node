@@ -33,9 +33,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition.MINT;
-import static org.hamcrest.Matchers.containsString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 
 public class StakedTokensParticleSerializationTest extends SerializeObjectEngine<StakedTokensParticle> {
 	public static final RadixAddress DELEGATE_ADDRESS = RadixAddress.from("JEbhKQzBn4qJzWJFBbaPioA2GTeaQhuUjYWkanTE6N8VvvPpvM8");
@@ -70,9 +69,10 @@ public class StakedTokensParticleSerializationTest extends SerializeObjectEngine
 	public void testToString() {
 		StakedTokensParticle p = get();
 		String str = p.toString();
-		assertThat(str, containsString(p.getAddress().toString()));
-		assertThat(str, containsString(p.getAmount().toString()));
-		assertThat(str, containsString(p.getDelegateAddress().toString()));
+		assertThat(str)
+			.contains(p.getAddress().toString())
+			.contains(p.getAmount().toString())
+			.contains(p.getDelegateAddress().toString());
 	}
 
 	@Test

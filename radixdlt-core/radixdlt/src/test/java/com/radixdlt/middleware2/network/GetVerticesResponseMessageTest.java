@@ -17,9 +17,8 @@
 
 package com.radixdlt.middleware2.network;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
@@ -35,8 +34,9 @@ public class GetVerticesResponseMessageTest {
 		UnverifiedVertex genesisVertex = mock(UnverifiedVertex.class);
 		GetVerticesResponseMessage msg1 = new GetVerticesResponseMessage(0, ImmutableList.of(genesisVertex));
 		String s1 = msg1.toString();
-		assertThat(s1, containsString(GetVerticesResponseMessage.class.getSimpleName()));
-		assertThat(s1, containsString(genesisVertex.toString()));
+		assertThat(s1)
+			.contains(GetVerticesResponseMessage.class.getSimpleName())
+			.contains(genesisVertex.toString());
 	}
 
 	@Test

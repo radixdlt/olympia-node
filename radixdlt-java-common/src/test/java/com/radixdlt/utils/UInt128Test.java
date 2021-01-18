@@ -17,21 +17,21 @@
 
 package com.radixdlt.utils;
 
-import static org.hamcrest.Matchers.comparesEqualTo;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.lessThan;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
-import com.google.common.math.BigIntegerMath;
 import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.util.Arrays;
-import nl.jqno.equalsverifier.EqualsVerifier;
+
 import org.junit.Test;
+
+import com.google.common.math.BigIntegerMath;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
+
+import nl.jqno.equalsverifier.EqualsVerifier;
 
 /**
  * Basic unit tests for {@link UInt128}.
@@ -215,18 +215,19 @@ public class UInt128Test {
 	 */
 	@Test
 	public void testCompare() {
-		assertThat(UInt128.ZERO, comparesEqualTo(UInt128.ZERO));
-		assertThat(UInt128.ZERO, lessThan(UInt128.ONE));
-		assertThat(UInt128.ZERO, lessThan(UInt128.MAX_VALUE));
-		assertThat(UInt128.MAX_VALUE, greaterThan(UInt128.ONE));
-		assertThat(UInt128.ONE, greaterThan(UInt128.ZERO));
+		assertThat(UInt128.ZERO)
+			.isEqualByComparingTo(UInt128.ZERO)
+			.isLessThan(UInt128.ONE)
+			.isLessThan(UInt128.MAX_VALUE);
+		assertThat(UInt128.MAX_VALUE).isGreaterThan(UInt128.ONE);
+		assertThat(UInt128.ONE).isGreaterThan(UInt128.ZERO);
 
 		UInt128 i63 = UInt128.from(0x0000_0000_0000_0000L, 0x8000_0000_0000_0000L);
 		UInt128 i64 = i63.add(i63);
 		UInt128 i65 = i64.add(i64);
-		assertThat(i64, greaterThan(i63)); // In case something has gone horribly wrong.
-		assertThat(i64.add(i63), greaterThan(i64));
-		assertThat(i65, greaterThan(i64.add(i63)));
+		assertThat(i64).isGreaterThan(i63); // In case something has gone horribly wrong.
+		assertThat(i64.add(i63)).isGreaterThan(i64);
+		assertThat(i65).isGreaterThan(i64.add(i63));
 	}
 
 	/**
@@ -263,9 +264,9 @@ public class UInt128Test {
 		UInt128 b0 = UInt128.ONE;
 		UInt128 b64 = UInt128.from(0x0000_0000_0000_0001L, 0x0000_0000_0000_0000);
 		// Basic sanity checks to make sure nothing is horribly wrong
-		assertThat(b64, greaterThan(b0));
-		assertThat(b0, greaterThan(UInt128.ZERO));
-		assertThat(b64, greaterThan(UInt128.ZERO));
+		assertThat(b64).isGreaterThan(b0);
+		assertThat(b0).isGreaterThan(UInt128.ZERO);
+		assertThat(b64).isGreaterThan(UInt128.ZERO);
 
 		// Now for the real tests
 		assertEquals(b0, UInt128.ZERO.or(b0));

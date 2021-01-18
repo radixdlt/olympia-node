@@ -30,8 +30,6 @@ import com.sleepycat.je.EnvironmentConfig;
 import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.Transaction;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.bouncycastle.util.Arrays;
 
 import java.io.File;
@@ -39,8 +37,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 public final class DatabaseEnvironment {
-	private static final Logger log = LogManager.getLogger();
-
 	private final ReentrantLock lock = new ReentrantLock(true);
 	private Database metaDatabase;
 	private Environment environment = null;
