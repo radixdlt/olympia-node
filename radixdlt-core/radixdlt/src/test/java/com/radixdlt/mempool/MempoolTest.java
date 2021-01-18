@@ -238,6 +238,45 @@ public class MempoolTest {
 	}
 
 	@Test
+	public void add_same_command_to_mempool() {
+		// Arrange
+		Injector injector = getInjector(ecKeyPair);
+		Hasher hasher = injector.getInstance(Hasher.class);
+		DeterministicMempoolProcessor processor = injector.getInstance(DeterministicMempoolProcessor.class);
+
+		ECKeyPair keyPair = ECKeyPair.generateNew();
+		RadixAddress address = new RadixAddress((byte) 0, keyPair.getPublicKey());
+
+		RRI rri = RRI.of(address, "test");
+		RRIParticle rriParticle = new RRIParticle(rri, 0);
+		UniqueParticle uniqueParticle = new UniqueParticle("test", address, 1);
+		ParticleGroup particleGroup = ParticleGroup.builder()
+				.addParticle(rriParticle, Spin.DOWN)
+				.addParticle(uniqueParticle, Spin.UP)
+				.build();
+		Atom atom = new Atom();
+		atom.addParticleGroup(particleGroup);
+		final Command command;
+		try {
+			atom.sign(keyPair, hasher);
+			ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom, hasher);
+			final byte[] payload = DefaultSerialization.getInstance().toDson(clientAtom, DsonOutput.Output.ALL);
+			command = new Command(payload);
+		} catch (AtomAlreadySignedException e) {
+			throw new RuntimeException();
+		}
+		MempoolAddSuccess mempoolAddSuccess = MempoolAddSuccess.create(command);
+		processor.handleMessage(BFTNode.random(), mempoolAddSuccess);
+
+		// Act
+		processor.handleMessage(BFTNode.random(), mempoolAddSuccess);
+
+		// Assert
+		SystemCounters systemCounters = injector.getInstance(SystemCounters.class);
+		assertThat(systemCounters.get(SystemCounters.CounterType.MEMPOOL_COUNT)).isEqualTo(1);
+	}
+
+	@Test
 	public void add_bad_command_to_mempool() {
 		// Arrange
 		Injector injector = getInjector(ecKeyPair);

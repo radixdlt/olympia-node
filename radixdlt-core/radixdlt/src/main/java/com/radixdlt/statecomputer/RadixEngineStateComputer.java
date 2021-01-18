@@ -52,6 +52,8 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.Objects;
@@ -62,6 +64,7 @@ import java.util.function.Consumer;
  * Wraps the Radix Engine and emits messages based on success or failure
  */
 public final class RadixEngineStateComputer implements StateComputer {
+	private static final Logger log = LogManager.getLogger();
 
 	// TODO: Refactor committed command when commit logic is re-written
 	// TODO: as currently it's mostly loosely coupled logic
@@ -179,8 +182,11 @@ public final class RadixEngineStateComputer implements StateComputer {
 		try {
 			radixEngine.staticCheck(clientAtom);
 			mempool.add(command);
-		} catch (RadixEngineException | MempoolFullException | MempoolDuplicateException e) {
+		} catch (RadixEngineException | MempoolFullException e) {
 			mempoolAddFailureEventDispatcher.dispatch(MempoolAddFailure.create(command, e));
+		} catch (MempoolDuplicateException e) {
+			// Idempotent commands
+			log.warn("Mempool duplicate command: {}", e.getMessage());
 		}
 	}
 
