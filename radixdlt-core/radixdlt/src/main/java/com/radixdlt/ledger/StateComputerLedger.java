@@ -135,7 +135,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	}
 
 	public EventProcessor<MempoolAdd> mempoolAddEventProcessor() {
-		return (mempoolAdd) -> {
+		return mempoolAdd -> {
 			synchronized (lock) {
 				stateComputer.addToMempool(mempoolAdd.getCommand());
 			}
