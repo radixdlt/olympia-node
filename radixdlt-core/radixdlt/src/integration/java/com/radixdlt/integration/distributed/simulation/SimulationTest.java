@@ -176,21 +176,30 @@ public class SimulationTest {
 
 	public static class Builder {
 		private enum LedgerType {
-			MOCKED_LEDGER(false, false, false, false, false),
-			LEDGER(true, false, false, false, false),
-			LEDGER_AND_SYNC(true, false, false, false, true),
-			LEDGER_AND_LOCALMEMPOOL(true, true, false, false, false),
-			LEDGER_AND_EPOCHS(true, false, false, true, false),
-			LEDGER_AND_EPOCHS_AND_SYNC(true, false, false, true, true),
-			LEDGER_AND_LOCALMEMPOOL_AND_EPOCHS_AND_RADIXENGINE(true, true, true, true, false);
+			MOCKED_LEDGER(true, false, false, false, false, false),
+			LEDGER(true, true, false, false, false, false),
+			LEDGER_AND_SYNC(true, true, false, false, false, true),
+			LEDGER_AND_LOCALMEMPOOL(true, true, true, false, false, false),
+			LEDGER_AND_EPOCHS(true, true, false, false, true, false),
+			LEDGER_AND_EPOCHS_AND_SYNC(true, true, false, false, true, true),
+			LEDGER_AND_LOCALMEMPOOL_AND_EPOCHS_AND_RADIXENGINE(true, true, true, true, true, false);
 
+			private final boolean hasConsensus;
 			private final boolean hasLedger;
 			private final boolean hasMempool;
 			private final boolean hasRadixEngine;
 			private final boolean hasEpochs;
 			private final boolean hasSync;
 
-			LedgerType(boolean hasLedger, boolean hasMempool, boolean hasRadixEngine, boolean hasEpochs, boolean hasSync) {
+			LedgerType(
+				boolean hasConsensus,
+				boolean hasLedger,
+				boolean hasMempool,
+				boolean hasRadixEngine,
+				boolean hasEpochs,
+				boolean hasSync
+			) {
+				this.hasConsensus = hasConsensus;
 				this.hasLedger = hasLedger;
 				this.hasMempool = hasMempool;
 				this.hasRadixEngine = hasRadixEngine;
@@ -200,15 +209,19 @@ public class SimulationTest {
 
 			Module getCoreModule() {
 				List<Module> modules = new ArrayList<>();
+
 				// Consensus
-				modules.add(new ConsensusModule());
-				modules.add(new ConsensusRxModule());
-				if (!hasEpochs) {
-					modules.add(new MockedConsensusRunnerModule());
-				} else {
-					modules.add(new EpochsConsensusModule());
-					modules.add(new ConsensusRunnerModule());
+				if (hasConsensus) {
+					modules.add(new ConsensusModule());
+					modules.add(new ConsensusRxModule());
+					if (!hasEpochs) {
+						modules.add(new MockedConsensusRunnerModule());
+					} else {
+						modules.add(new EpochsConsensusModule());
+						modules.add(new ConsensusRunnerModule());
+					}
 				}
+
 				// Ledger
 				if (!hasLedger) {
 					modules.add(new MockedLedgerModule());
