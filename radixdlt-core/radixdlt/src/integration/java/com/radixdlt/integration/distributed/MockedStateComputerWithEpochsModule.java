@@ -29,18 +29,11 @@ import com.radixdlt.statecomputer.EpochCeilingView;
 import java.util.function.Function;
 
 public class MockedStateComputerWithEpochsModule extends AbstractModule {
-	private final Function<Long, BFTValidatorSet> validatorSetMapping;
-
-	public MockedStateComputerWithEpochsModule(
-		Function<Long, BFTValidatorSet> validatorSetMapping
-	) {
-		this.validatorSetMapping = validatorSetMapping;
-	}
-
 	@Provides
 	@Singleton
 	private StateComputer stateComputer(
 		@EpochCeilingView View epochHighView,
+		Function<Long, BFTValidatorSet> validatorSetMapping,
 		Hasher hasher
 	) {
 		return new MockedStateComputerWithEpochs(hasher, validatorSetMapping, epochHighView);

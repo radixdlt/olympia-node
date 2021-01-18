@@ -20,6 +20,7 @@ package com.radixdlt.integration.distributed.deterministic;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
+import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.util.Modules;
@@ -246,13 +247,18 @@ public final class DeterministicTest {
 						bind(new TypeLiteral<EventProcessor<EpochView>>() { }).toInstance(epochView -> { });
 						bind(new TypeLiteral<EventProcessor<EpochLocalTimeoutOccurrence>>() { }).toInstance(t -> { });
 					}
+
+					@Provides
+					public Function<Long, BFTValidatorSet> epochToNodeMapper() {
+						return epochToValidatorSetMapping;
+					}
 				});
 				modules.add(new LedgerModule());
 				modules.add(new EpochsConsensusModule());
 				modules.add(new EpochsLedgerUpdateModule());
 				modules.add(new LedgerCommandGeneratorModule());
 				modules.add(new MockedSyncServiceModule());
-				modules.add(new MockedStateComputerWithEpochsModule(epochToValidatorSetMapping));
+				modules.add(new MockedStateComputerWithEpochsModule());
 			}
 			return new DeterministicTest(
 				this.nodes,

@@ -24,6 +24,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
+import com.google.inject.Provides;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.google.inject.util.Modules;
@@ -251,7 +252,6 @@ public class SimulationTest {
 		private final ImmutableList.Builder<Function<List<ECKeyPair>, SimulationNetworkActor>> runnableBuilder = ImmutableList.builder();
 		private ImmutableList<ECKeyPair> nodes = ImmutableList.of(ECKeyPair.generateNew());
 		private long pacemakerTimeout = 12 * SimulationNetwork.DEFAULT_LATENCY;
-		private Function<Long, IntStream> epochToNodeIndexMapper;
 		private LedgerType ledgerType = LedgerType.MOCKED_LEDGER;
 
 
@@ -371,13 +371,22 @@ public class SimulationTest {
 
 		public Builder ledgerAndEpochs(View epochHighView, Function<Long, IntStream> epochToNodeIndexMapper) {
 			this.ledgerType = LedgerType.LEDGER_AND_EPOCHS;
-			this.epochToNodeIndexMapper = epochToNodeIndexMapper;
 			this.modules.add(new AbstractModule() {
 				@Override
 				protected void configure() {
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(epochHighView);
 				}
+
+				@Provides
+				public Function<Long, BFTValidatorSet> epochToNodeMapper() {
+					return epochToNodeIndexMapper.andThen(indices -> BFTValidatorSet.from(
+							indices.mapToObj(nodes::get)
+									.map(node -> BFTNode.create(node.getPublicKey()))
+									.map(node -> BFTValidator.from(node, UInt256.ONE))
+									.collect(Collectors.toList())));
+				}
 			});
+
 			return this;
 		}
 
@@ -403,12 +412,20 @@ public class SimulationTest {
 			int syncPatienceMillis
 		) {
 			this.ledgerType = LedgerType.LEDGER_AND_EPOCHS_AND_SYNC;
-			this.epochToNodeIndexMapper = epochToNodeIndexMapper;
 			modules.add(new AbstractModule() {
 				@Override
 				protected void configure() {
 					bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(epochHighView);
 					bind(Integer.class).annotatedWith(SyncPatienceMillis.class).toInstance(syncPatienceMillis);
+				}
+
+				@Provides
+				public Function<Long, BFTValidatorSet> epochToNodeMapper() {
+					return epochToNodeIndexMapper.andThen(indices -> BFTValidatorSet.from(
+						indices.mapToObj(nodes::get)
+						.map(node -> BFTNode.create(node.getPublicKey()))
+						.map(node -> BFTValidator.from(node, UInt256.ONE))
+						.collect(Collectors.toList())));
 				}
 			});
 			return this;
@@ -660,21 +677,9 @@ public class SimulationTest {
 			} else if (ledgerType == LedgerType.LEDGER_AND_LOCALMEMPOOL) {
 				modules.add(new MockedMempoolStateComputerModule());
 			} else if (ledgerType == LedgerType.LEDGER_AND_EPOCHS) {
-				Function<Long, BFTValidatorSet> epochToValidatorSetMapping =
-					epochToNodeIndexMapper.andThen(indices -> BFTValidatorSet.from(
-						indices.mapToObj(nodes::get)
-							.map(node -> BFTNode.create(node.getPublicKey()))
-							.map(node -> BFTValidator.from(node, UInt256.ONE))
-							.collect(Collectors.toList())));
-				modules.add(new MockedStateComputerWithEpochsModule(epochToValidatorSetMapping));
+				modules.add(new MockedStateComputerWithEpochsModule());
 			} else if (ledgerType == LedgerType.LEDGER_AND_EPOCHS_AND_SYNC) {
-				Function<Long, BFTValidatorSet> epochToValidatorSetMapping =
-					epochToNodeIndexMapper.andThen(indices -> BFTValidatorSet.from(
-						indices.mapToObj(nodes::get)
-							.map(node -> BFTNode.create(node.getPublicKey()))
-							.map(node -> BFTValidator.from(node, UInt256.ONE))
-							.collect(Collectors.toList())));
-				modules.add(new MockedStateComputerWithEpochsModule(epochToValidatorSetMapping));
+				modules.add(new MockedStateComputerWithEpochsModule());
 			} else if (ledgerType == LedgerType.LEDGER_AND_LOCALMEMPOOL_AND_EPOCHS_AND_RADIXENGINE) {
 				modules.add(new AbstractModule() {
 					@Override
