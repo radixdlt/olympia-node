@@ -31,16 +31,20 @@ import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.utils.ThreadFactories;
 
+import io.reactivex.rxjava3.core.BackpressureStrategy;
+import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Scheduler;
+import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.disposables.Disposable;
-import io.reactivex.rxjava3.observables.ConnectableObservable;
+import io.reactivex.rxjava3.functions.Consumer;
 import io.reactivex.rxjava3.schedulers.Schedulers;
-import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
@@ -53,11 +57,12 @@ import org.apache.logging.log4j.Logger;
  */
 public final class EpochManagerRunner implements ModuleRunner {
 	private static final Logger log = LogManager.getLogger();
-	private final ConnectableObservable<Object> events;
 	private final Object lock = new Object();
 	private final ExecutorService singleThreadExecutor;
 	private final Scheduler singleThreadScheduler;
 	private final EpochManager epochManager;
+	private final List<Subscription<?>> subscriptions;
+
 	private Disposable disposable;
 
 	@Inject
@@ -71,7 +76,7 @@ public final class EpochManagerRunner implements ModuleRunner {
 		EventProcessor<VertexRequestTimeout> vertexRequestTimeoutEventProcessor,
 		Observable<EpochViewUpdate> localViewUpdates,
 		EventProcessor<EpochViewUpdate> epochViewUpdateEventProcessor,
-		Observable<RemoteEvent<GetVerticesRequest>> verticesRequests,
+		Flowable<RemoteEvent<GetVerticesRequest>> verticesRequests,
 		BFTEventsRx networkRx,
 		PacemakerRx pacemakerRx,
 		SyncVerticesRPCRx rpcRx,
@@ -82,56 +87,20 @@ public final class EpochManagerRunner implements ModuleRunner {
 		this.singleThreadExecutor = Executors.newSingleThreadExecutor(ThreadFactories.daemonThreads("ConsensusRunner"));
 		this.singleThreadScheduler = Schedulers.from(this.singleThreadExecutor);
 
-		// It is important that all of these events are executed on the same thread
-		// as all logic is dependent on this assumption
-		final Observable<Object> eventCoordinatorEvents = Observable.merge(Arrays.asList(
-			ledgerUpdates
-				.observeOn(singleThreadScheduler)
-				.doOnNext(epochManager::processLedgerUpdate),
-			bftUpdates
-				.observeOn(singleThreadScheduler)
-				.doOnNext(bftUpdateProcessor::process),
-			bftRebuilds
-				.observeOn(singleThreadScheduler)
-				.doOnNext(bftRebuildProcessor::process),
-			bftSyncTimeouts
-				.observeOn(singleThreadScheduler)
-				.doOnNext(vertexRequestTimeoutEventProcessor::process),
-			localViewUpdates
-				.observeOn(singleThreadScheduler)
-				.doOnNext(epochViewUpdateEventProcessor::process),
-			pacemakerRx.localTimeouts()
-				.observeOn(singleThreadScheduler)
-				.doOnNext(epochManager::processLocalTimeout),
-			networkRx.bftEvents()
-				.observeOn(singleThreadScheduler)
-				.doOnNext(epochManager::processConsensusEvent),
-			verticesRequests
-				.observeOn(singleThreadScheduler)
-				.doOnNext(req -> epochManager.localGetVerticesRequestRemoteEventProcessor().process(req.getOrigin(), req.getEvent())),
-			rpcRx.responses()
-				.observeOn(singleThreadScheduler)
-				.doOnNext(epochManager::processGetVerticesResponse),
-			rpcRx.errorResponses()
-				.observeOn(singleThreadScheduler)
-				.doOnNext(epochManager::processGetVerticesErrorResponse),
-			epochsRPCRx.epochRequests()
-				.observeOn(singleThreadScheduler)
-				.doOnNext(epochManager::processGetEpochRequest),
-			epochsRPCRx.epochResponses()
-				.observeOn(singleThreadScheduler)
-				.doOnNext(epochManager::processGetEpochResponse)
-		));
-
-		this.events = eventCoordinatorEvents
-			.doOnError(e -> {
-				// TODO: Implement better error handling especially against Byzantine nodes.
-				// TODO: Exit process for now.
-				log.error("Unexpected exception occurred", e);
-				LogManager.shutdown(); // Flush any async logs
-				System.exit(-1);
-			})
-			.publish();
+		this.subscriptions = List.of(
+			new Subscription<>(ledgerUpdates, epochManager::processLedgerUpdate),
+			new Subscription<>(bftUpdates, bftUpdateProcessor::process),
+			new Subscription<>(bftRebuilds, bftRebuildProcessor::process),
+			new Subscription<>(bftSyncTimeouts, vertexRequestTimeoutEventProcessor::process),
+			new Subscription<>(localViewUpdates, epochViewUpdateEventProcessor::process),
+			new Subscription<>(pacemakerRx.localTimeouts(), epochManager::processLocalTimeout),
+			new Subscription<>(networkRx.bftEvents(), epochManager::processConsensusEvent),
+			new Subscription<>(verticesRequests, req -> epochManager.localGetVerticesRequestRemoteEventProcessor().process(req.getOrigin(), req.getEvent())),
+			new Subscription<>(rpcRx.responses(), epochManager::processGetVerticesResponse),
+			new Subscription<>(rpcRx.errorResponses(), epochManager::processGetVerticesErrorResponse),
+			new Subscription<>(epochsRPCRx.epochRequests(), epochManager::processGetEpochRequest),
+			new Subscription<>(epochsRPCRx.epochResponses(), epochManager::processGetEpochResponse)
+		);
 	}
 
 	/**
@@ -145,13 +114,36 @@ public final class EpochManagerRunner implements ModuleRunner {
 		synchronized (lock) {
 			if (disposable == null) {
 				singleThreadExecutor.submit(epochManager::start);
-				disposable = this.events.connect();
+
+				@SuppressWarnings("unchecked")
+				final var disposables = this.subscriptions.stream()
+					.map(s -> (Subscription<Object>) s) // seriously, Java?
+					.map(s -> this.subscribe(s.flowable, s.consumer))
+					.collect(Collectors.toList());
+
+				this.disposable = new CompositeDisposable(disposables);
+
 				started = true;
 			}
 		}
 		if (started) {
 			log.info("Consensus started");
 		}
+	}
+
+	private <T> Disposable subscribe(Flowable<T> flowable, Consumer<T> onNext) {
+		// It is important that all of these events are executed on the same thread
+		// as all logic is dependent on this assumption
+		return flowable.observeOn(singleThreadScheduler)
+			.doOnError(this::handleError)
+			.subscribe(onNext);
+	}
+
+	private void handleError(Throwable e) {
+		// TODO: Implement better error handling especially against Byzantine nodes.
+		// TODO: Exit process for now.
+		log.error("Unexpected exception occurred", e);
+		System.exit(-1);
 	}
 
 	/**
@@ -187,6 +179,26 @@ public final class EpochManagerRunner implements ModuleRunner {
 				// Not handling this here
 				Thread.currentThread().interrupt();
 			}
+		}
+	}
+
+	private static class Subscription<T> {
+		Flowable<T> flowable;
+		Consumer<T> consumer;
+
+		Subscription(Flowable<T> flowable, Consumer<T> consumer) {
+			this.flowable = flowable;
+			this.consumer = consumer;
+		}
+
+		Subscription(Observable<T> observable, Consumer<T> consumer) {
+			this.flowable = Flowable.fromObservable(observable, BackpressureStrategy.BUFFER)
+				.onBackpressureBuffer(
+					255,
+					false,
+					true // Using unbounded buffer as all Observables are internal messages
+				);
+			this.consumer = consumer;
 		}
 	}
 }

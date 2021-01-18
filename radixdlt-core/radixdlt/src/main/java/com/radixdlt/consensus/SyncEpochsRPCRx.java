@@ -19,7 +19,7 @@ package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
-import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.Flowable;
 
 public interface SyncEpochsRPCRx {
 
@@ -27,12 +27,12 @@ public interface SyncEpochsRPCRx {
 	 * Retrieve a never-ending stream of requests
 	 * @return a never-ending stream of requests
 	 */
-	Observable<GetEpochRequest> epochRequests();
+	Flowable<GetEpochRequest> epochRequests();
 
 	/**
 	 * Retrieve a never-ending stream of responses
 	 * @return a never-ending stream of responses
 	 */
-	Observable<GetEpochResponse> epochResponses();
+	Flowable<GetEpochResponse> epochResponses();
 
 }

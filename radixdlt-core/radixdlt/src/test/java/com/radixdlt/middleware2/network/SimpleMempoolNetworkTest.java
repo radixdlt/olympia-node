@@ -18,25 +18,22 @@
 package com.radixdlt.middleware2.network;
 
 import com.radixdlt.consensus.Command;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
+import com.radixdlt.mempool.messages.MempoolAtomAddedMessage;
+import com.radixdlt.network.addressbook.Peer;
+import com.radixdlt.network.messaging.MessageCentralMockProvider;
+import io.reactivex.rxjava3.subscribers.TestSubscriber;
 import org.junit.Test;
 import org.radix.universe.system.LocalSystem;
 
 import com.radixdlt.identifiers.EUID;
-import com.radixdlt.mempool.messages.MempoolAtomAddedMessage;
 import com.radixdlt.network.addressbook.AddressBook;
-import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.network.messaging.MessageCentral;
-import com.radixdlt.network.messaging.MessageListener;
 import com.radixdlt.universe.Universe;
 
-import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.*;
-
-import io.reactivex.rxjava3.observers.TestObserver;
 
 public class SimpleMempoolNetworkTest {
 
@@ -68,25 +65,17 @@ public class SimpleMempoolNetworkTest {
 		when(system.getNID()).thenReturn(EUID.TWO);
 		Universe universe = mock(Universe.class);
 		AddressBook addressBook = mock(AddressBook.class);
-		MessageCentral messageCentral = mock(MessageCentral.class);
-		AtomicReference<MessageListener<MempoolAtomAddedMessage>> callbackRef = new AtomicReference<>();
-		doAnswer(inv -> {
-			callbackRef.set(inv.getArgument(1));
-			return null;
-		}).when(messageCentral).addListener(eq(MempoolAtomAddedMessage.class), any());
+		MessageCentral messageCentral = MessageCentralMockProvider.get();
 
 		SimpleMempoolNetwork smn = new SimpleMempoolNetwork(system, universe, addressBook, messageCentral);
 
-		assertNotNull(callbackRef.get());
-		MessageListener<MempoolAtomAddedMessage> callback = callbackRef.get();
-
-		TestObserver<Command> obs = smn.commands().test();
+		TestSubscriber<Command> obs = smn.commands().test();
 
 		Peer peer = mock(Peer.class);
 		Command command = mock(Command.class);
 		MempoolAtomAddedMessage message = mock(MempoolAtomAddedMessage.class);
 		when(message.command()).thenReturn(command);
-		callback.handleMessage(peer, message);
+		messageCentral.send(peer, message);
 
 		obs.awaitCount(1);
 		obs.assertNoErrors();

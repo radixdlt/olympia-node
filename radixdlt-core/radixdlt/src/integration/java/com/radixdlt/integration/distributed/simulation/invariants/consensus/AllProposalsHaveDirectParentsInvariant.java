@@ -37,7 +37,7 @@ public class AllProposalsHaveDirectParentsInvariant implements TestInvariant {
 		List<Observable<UnverifiedVertex>> correctProposals = network.getNodes().stream()
 			.map(network.getUnderlyingNetwork()::getNetwork)
 			.map(BFTEventsRx::bftEvents)
-			.map(p -> p.ofType(Proposal.class).map(Proposal::getVertex))
+			.map(p -> p.ofType(Proposal.class).toObservable().map(Proposal::getVertex))
 			.collect(Collectors.toList());
 
 		return Observable.merge(correctProposals)

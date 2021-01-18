@@ -40,6 +40,10 @@ public abstract class SignedMessage extends Message {
 		super(magic);
 	}
 
+	protected SignedMessage(int magic, long timestamp) {
+		super(magic, timestamp);
+	}
+
 	// SIGNABLE //
 	public final ECDSASignature getSignature() {
 		return this.signature;

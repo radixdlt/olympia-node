@@ -42,9 +42,7 @@ import org.radix.universe.system.LocalSystem;
 import org.xerial.snappy.Snappy;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
@@ -80,21 +78,12 @@ public class MessageCentralImplTest {
 				return super.offer(e);
 			}
 		}
-
-		long offered() {
-			return this.offered.get();
-		}
-
-		boolean setFull(boolean b) {
-			return this.full.compareAndSet(!b, b);
-		}
 	}
 
 	private Serialization serialization;
 	private DummyTransportOutboundConnection toc;
 	private DummyTransport dt;
 	private MessageCentralImpl mci;
-	private TestBlockingQueue<InboundMessageEvent> inboundQueue;
 	private TestBlockingQueue<OutboundMessageEvent> outboundQueue;
 
 	@Before
@@ -119,11 +108,8 @@ public class MessageCentralImplTest {
 		@SuppressWarnings("resource")
 		TransportManager transportManager = new MessagingDummyConfigurations.DummyTransportManager(this.dt);
 
-		inboundQueue = new TestBlockingQueue<>(InboundMessageEvent.comparator());
 		outboundQueue = new TestBlockingQueue<>(OutboundMessageEvent.comparator());
-		EventQueueFactory<InboundMessageEvent> inboundQueueFactory = eventQueueFactoryMock();
 		EventQueueFactory<OutboundMessageEvent> outboundQueueFactory = eventQueueFactoryMock();
-		doReturn(inboundQueue).when(inboundQueueFactory).createEventQueue(eq(conf.messagingInboundQueueMax(0)), any());
 		doReturn(outboundQueue).when(outboundQueueFactory).createEventQueue(eq(conf.messagingOutboundQueueMax(0)), any());
 		LocalSystem localSystem = mock(LocalSystem.class);
 		SystemCounters counters = mock(SystemCounters.class);
@@ -134,7 +120,6 @@ public class MessageCentralImplTest {
 			transportManager,
 			addressBook,
 			System::currentTimeMillis,
-			inboundQueueFactory,
 			outboundQueueFactory,
 			localSystem,
 			counters,
@@ -146,12 +131,6 @@ public class MessageCentralImplTest {
 	@After
 	public void tearDown() {
 	    mci.close();
-	}
-
-	@Test
-	public void testConstruct() {
-		// Make sure start called on our transport
-		assertNotNull(dt.getMessageSink());
 	}
 
 	@Test
@@ -186,27 +165,6 @@ public class MessageCentralImplTest {
 	}
 
 	@Test
-	public void testInjectMessageDeliveredToListeners() throws InterruptedException {
-		Message msg = new TestMessage(1, System.currentTimeMillis());
-		TransportInfo transportInfo = mock(TransportInfo.class);
-
-		int numberOfRequests = 6;
-		CountDownLatch receivedFlag = new CountDownLatch(numberOfRequests);
-		List<Message> messages = new ArrayList<>();
-		mci.addListener(TestMessage.class, (source, message) -> {
-			messages.add(message);
-			receivedFlag.countDown();
-		});
-
-		for (int i = 0; i < numberOfRequests; i++) {
-			mci.inject(transportInfo, msg);
-		}
-		assertTrue(receivedFlag.await(10, TimeUnit.SECONDS));
-		assertEquals(numberOfRequests, messages.size());
-		assertEquals(numberOfRequests, inboundQueue.offered());
-	}
-
-	@Test
 	public void testInbound() throws IOException, InterruptedException {
 		Message msg = new TestMessage(1);
 		byte[] data = Snappy.compress(serialization.toDson(msg, Output.WIRE));
@@ -214,8 +172,8 @@ public class MessageCentralImplTest {
 		AtomicReference<Message> receivedMessage = new AtomicReference<>();
 		Semaphore receivedFlag = new Semaphore(0);
 
-		mci.addListener(msg.getClass(), (peer, messsage) -> {
-			receivedMessage.set(messsage);
+		mci.messagesOf(TestMessage.class).subscribe(message -> {
+			receivedMessage.set(message.getMessage());
 			receivedFlag.release();
 		});
 
@@ -228,67 +186,9 @@ public class MessageCentralImplTest {
 		assertNotNull(receivedMessage.get());
 	}
 
-	@Test(expected = IllegalArgumentException.class)
-	public void testAddNullListener() {
-		mci.addListener(TestMessage.class, null);
-	}
-
-	@Test(expected = IllegalArgumentException.class)
-	public void testAddListenerTwice() {
-		MessageListener<TestMessage> listener = (source, message) -> { };
-		mci.addListener(TestMessage.class, listener);
-		mci.addListener(TestMessage.class, listener);
-	}
-
-	@Test(expected = IllegalArgumentException.class)
-	public void testRemoveNullListener() {
-		mci.removeListener(TestMessage.class, null);
-	}
-
-	@Test
-	public void testAddRemoveListener() {
-		MessageListener<TestMessage> listener1 = (source, message) -> { };
-		MessageListener<TestMessage> listener2 = (source, message) -> { };
-
-		mci.addListener(TestMessage.class, listener1);
-		assertEquals(1, mci.listenersSize());
-
-		mci.addListener(TestMessage.class, listener2);
-		assertEquals(2, mci.listenersSize());
-
-		mci.removeListener(TestMessage.class, listener1);
-		assertEquals(1, mci.listenersSize());
-
-		mci.removeListener(TestMessage.class, listener1);
-		assertEquals(1, mci.listenersSize());
-
-		mci.removeListener(TestMessage.class, listener2);
-		assertEquals(0, mci.listenersSize());
-	}
-
-	@Test
-	public void testRemoveUnspecifiedListener() {
-		MessageListener<TestMessage> listener1 = (source, message) -> { };
-		MessageListener<TestMessage> listener2 = (source, message) -> { };
-
-		mci.addListener(TestMessage.class, listener1);
-		assertEquals(1, mci.listenersSize());
-
-		mci.addListener(TestMessage.class, listener2);
-		assertEquals(2, mci.listenersSize());
-
-		mci.removeListener(listener1);
-		assertEquals(1, mci.listenersSize());
-
-		mci.removeListener(listener1);
-		assertEquals(1, mci.listenersSize());
-
-		mci.removeListener(listener2);
-		assertEquals(0, mci.listenersSize());
-	}
-
 	@SuppressWarnings("unchecked")
 	private <T> EventQueueFactory<T> eventQueueFactoryMock() {
 		return mock(EventQueueFactory.class);
 	}
+
 }

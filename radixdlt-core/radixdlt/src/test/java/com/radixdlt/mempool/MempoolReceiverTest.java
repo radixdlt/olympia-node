@@ -21,6 +21,7 @@ import com.radixdlt.consensus.Command;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
+import io.reactivex.rxjava3.processors.PublishProcessor;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -28,18 +29,16 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
-import io.reactivex.rxjava3.subjects.PublishSubject;
-
 public class MempoolReceiverTest {
 
-	private PublishSubject<Command> commands;
+	private PublishProcessor<Command> commands;
 
 	private SubmissionControl submissionControl;
 	private MempoolReceiver mempoolReceiver;
 
 	@Before
 	public void setUp() {
-		this.commands = PublishSubject.create();
+		this.commands = PublishProcessor.create();
 		MempoolNetworkRx mempoolRx = mock(MempoolNetworkRx.class);
 		doReturn(this.commands).when(mempoolRx).commands();
 		this.submissionControl = mock(SubmissionControl.class);

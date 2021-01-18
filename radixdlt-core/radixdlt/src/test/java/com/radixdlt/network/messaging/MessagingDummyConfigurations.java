@@ -26,6 +26,8 @@ import com.radixdlt.network.transport.TransportControl;
 import com.radixdlt.network.transport.TransportMetadata;
 import com.radixdlt.network.transport.TransportOutboundConnection;
 import com.radixdlt.network.transport.tcp.TCPConstants;
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.processors.PublishProcessor;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -56,18 +58,19 @@ public class MessagingDummyConfigurations {
 	}
 
 	public static class DummyTransport implements Transport {
-		private InboundMessageConsumer messageSink = null;
 		private boolean isClosed = false;
 
 		private final TransportOutboundConnection out;
+
+		private final PublishProcessor<InboundMessage> messagePublishProcessor = PublishProcessor.create();
 
 		public DummyTransport(TransportOutboundConnection out) {
 			this.out = out;
 		}
 
 		@Override
-		public void start(InboundMessageConsumer messageSink) {
-			this.messageSink = messageSink;
+		public Flowable<InboundMessage> start() {
+			return messagePublishProcessor;
 		}
 
 		@Override
@@ -76,7 +79,7 @@ public class MessagingDummyConfigurations {
 		}
 
 		void inboundMessage(InboundMessage msg) {
-			messageSink.accept(msg);
+			messagePublishProcessor.onNext(msg);
 		}
 
 		@Override
@@ -102,10 +105,6 @@ public class MessagingDummyConfigurations {
 		@Override
 		public TransportMetadata localMetadata() {
 			return StaticTransportMetadata.empty();
-		}
-
-		public InboundMessageConsumer getMessageSink() {
-			return messageSink;
 		}
 
 		public boolean isClosed() {

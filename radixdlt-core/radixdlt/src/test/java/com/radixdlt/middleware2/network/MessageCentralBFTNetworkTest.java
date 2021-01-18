@@ -30,11 +30,13 @@ import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.network.messaging.MessageCentralMockProvider;
 import com.radixdlt.universe.Universe;
-import io.reactivex.rxjava3.observers.TestObserver;
 
 import java.util.Collections;
 import java.util.Optional;
+
+import io.reactivex.rxjava3.subscribers.TestSubscriber;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -49,13 +51,13 @@ public class MessageCentralBFTNetworkTest {
 		this.self = mock(BFTNode.class);
 		Universe universe = mock(Universe.class);
 		this.addressBook = mock(AddressBook.class);
-		this.messageCentral = mock(MessageCentral.class);
+		this.messageCentral = MessageCentralMockProvider.get();
 		this.network = new MessageCentralBFTNetwork(self, universe, addressBook, messageCentral);
 	}
 
 	@Test
 	public void when_send_vote_to_self__then_should_receive_vote_message() {
-		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
+		TestSubscriber<ConsensusEvent> testObserver = TestSubscriber.create();
 		network.bftEvents().subscribe(testObserver);
 		Vote vote = mock(Vote.class);
 		network.voteDispatcher().dispatch(self, vote);
@@ -65,7 +67,7 @@ public class MessageCentralBFTNetworkTest {
 
 	@Test
 	public void when_broadcast_proposal__then_should_receive_proposal() {
-		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
+		TestSubscriber<ConsensusEvent> testObserver = TestSubscriber.create();
 		network.bftEvents().subscribe(testObserver);
 		Proposal proposal = mock(Proposal.class);
 		network.broadcastProposal(proposal, Collections.singleton(this.self));

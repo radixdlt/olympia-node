@@ -37,7 +37,7 @@ import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.SimulatedNetworkImpl;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
-import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.Flowable;
 
 public class NodeNetworkMessagesModule extends AbstractModule {
 	private final SimulationNetwork simulationNetwork;
@@ -82,17 +82,17 @@ public class NodeNetworkMessagesModule extends AbstractModule {
 	}
 
 	@Provides
-	private Observable<RemoteEvent<GetVerticesRequest>> vertexRequests(SimulatedNetworkImpl network) {
+	private Flowable<RemoteEvent<GetVerticesRequest>> vertexRequests(SimulatedNetworkImpl network) {
 		return network.remoteEvents(GetVerticesRequest.class);
 	}
 
 	@Provides
-	private Observable<RemoteEvent<DtoLedgerHeaderAndProof>> syncRequests(SimulatedNetworkImpl network) {
+	private Flowable<RemoteEvent<DtoLedgerHeaderAndProof>> syncRequests(SimulatedNetworkImpl network) {
 		return network.remoteEvents(DtoLedgerHeaderAndProof.class);
 	}
 
 	@Provides
-	private Observable<RemoteEvent<DtoCommandsAndProof>> syncResponses(SimulatedNetworkImpl network) {
+	private Flowable<RemoteEvent<DtoCommandsAndProof>> syncResponses(SimulatedNetworkImpl network) {
 		return network.remoteEvents(DtoCommandsAndProof.class);
 	}
 }

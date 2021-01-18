@@ -24,6 +24,7 @@ import java.util.Objects;
 
 import javax.inject.Inject;
 
+import io.reactivex.rxjava3.core.Flowable;
 import org.radix.universe.system.LocalSystem;
 
 import com.radixdlt.identifiers.EUID;
@@ -34,9 +35,6 @@ import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.universe.Universe;
 
-import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.subjects.PublishSubject;
-
 /**
  * Overly simplistic network implementation that does absolutely nothing right now.
  */
@@ -45,8 +43,6 @@ public class SimpleMempoolNetwork implements MempoolNetworkRx, MempoolNetworkTx 
 	private final int magic;
 	private final AddressBook addressBook;
 	private final MessageCentral messageCentral;
-
-	private final PublishSubject<Command> commands;
 
 	@Inject
 	public SimpleMempoolNetwork(
@@ -59,13 +55,7 @@ public class SimpleMempoolNetwork implements MempoolNetworkRx, MempoolNetworkTx 
 		this.addressBook = Objects.requireNonNull(addressBook);
 		this.messageCentral = Objects.requireNonNull(messageCentral);
 		this.localPeer = new PeerWithSystem(system);
-
-		this.commands = PublishSubject.create();
-
-		// TODO: Should be handled in start()/stop() once we have lifetimes sorted out
-		this.messageCentral.addListener(MempoolAtomAddedMessage.class, this::handleMempoolAtomMessage);
 	}
-
 
 	@Override
 	public void sendMempoolSubmission(Command command) {
@@ -78,11 +68,8 @@ public class SimpleMempoolNetwork implements MempoolNetworkRx, MempoolNetworkTx 
 	}
 
 	@Override
-	public Observable<Command> commands() {
-		return this.commands;
-	}
-
-	private void handleMempoolAtomMessage(Peer source, MempoolAtomAddedMessage message) {
-		this.commands.onNext(message.command());
+	public Flowable<Command> commands() {
+		return this.messageCentral.messagesOf(MempoolAtomAddedMessage.class)
+			.map(m -> m.getMessage().command());
 	}
 }
