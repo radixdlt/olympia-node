@@ -36,6 +36,9 @@ import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.AtomChecker;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.mempool.Mempool;
+import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
 import com.radixdlt.statecomputer.EpochCeilingView;
 import com.radixdlt.statecomputer.MaxValidators;
@@ -65,18 +68,22 @@ public class RadixEngineModule extends AbstractModule {
 	private RadixEngineStateComputer radixEngineStateComputer(
 		Serialization serialization,
 		RadixEngine<LedgerAtom> radixEngine,
+		Mempool mempool,
 		RadixEngineAtomicCommitManager atomicCommitManager,
 		@EpochCeilingView View epochCeilingView,
 		ValidatorSetBuilder validatorSetBuilder,
-		Hasher hasher
+		Hasher hasher,
+		EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher
 	) {
 		return RadixEngineStateComputer.create(
 			serialization,
 			radixEngine,
+			mempool,
 			atomicCommitManager,
 			epochCeilingView,
 			validatorSetBuilder,
-			hasher
+			hasher,
+			mempoolAddFailureEventDispatcher
 		);
 	}
 

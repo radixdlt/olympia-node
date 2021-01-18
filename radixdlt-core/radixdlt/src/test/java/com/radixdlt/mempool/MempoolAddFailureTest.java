@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -17,16 +17,16 @@
 
 package com.radixdlt.mempool;
 
-import com.radixdlt.consensus.Command;
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
 
-/**
- * Interface for Mempool to send things through a network
- */
-public interface MempoolNetworkTx {
-	/**
-	 * Broadcast locally-received mempool submission to validators.
-	 *
-	 * @param command the submission to send
-	 */
-	void sendMempoolSubmission(Command command);
+public class MempoolAddFailureTest {
+    @Test
+    public void equalsVerifier() {
+        EqualsVerifier.forClass(MempoolAddFailure.class)
+                .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+                .verify();
+    }
 }
