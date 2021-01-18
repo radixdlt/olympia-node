@@ -37,7 +37,6 @@ import com.radixdlt.LedgerCommandGeneratorModule;
 import com.radixdlt.EpochsLedgerUpdateModule;
 import com.radixdlt.EpochsLedgerUpdateRxModule;
 import com.radixdlt.LedgerModule;
-import com.radixdlt.LedgerRxModule;
 import com.radixdlt.NoFeeModule;
 import com.radixdlt.LedgerLocalMempoolModule;
 import com.radixdlt.RadixEngineModule;
@@ -72,6 +71,7 @@ import com.radixdlt.integration.distributed.MockedCryptoModule;
 import com.radixdlt.integration.distributed.MockedLedgerModule;
 import com.radixdlt.integration.distributed.MockedLedgerUpdateSender;
 import com.radixdlt.integration.distributed.MockedMempoolModule;
+import com.radixdlt.integration.distributed.MockedMempoolStateComputerModule;
 import com.radixdlt.integration.distributed.MockedPersistenceStoreModule;
 import com.radixdlt.integration.distributed.MockedRadixEngineStoreModule;
 import com.radixdlt.integration.distributed.MockedRecoveryModule;
@@ -81,8 +81,8 @@ import com.radixdlt.integration.distributed.MockedCommittedReaderModule;
 import com.radixdlt.integration.distributed.MockedSyncServiceModule;
 import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
 import com.radixdlt.integration.distributed.simulation.application.BFTValidatorSetNodeSelector;
+import com.radixdlt.integration.distributed.simulation.application.CommandGenerator;
 import com.radixdlt.integration.distributed.simulation.application.EpochsNodeSelector;
-import com.radixdlt.integration.distributed.simulation.application.IncrementalBytes;
 import com.radixdlt.integration.distributed.simulation.application.CommittedChecker;
 import com.radixdlt.integration.distributed.simulation.application.NodeSelector;
 import com.radixdlt.integration.distributed.simulation.application.RadixEngineValidatorRegistrator;
@@ -97,8 +97,6 @@ import com.radixdlt.integration.distributed.simulation.invariants.ledger.Consens
 import com.radixdlt.integration.distributed.simulation.invariants.ledger.LedgerInOrderInvariant;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
-import com.radixdlt.mempool.LocalMempool;
-import com.radixdlt.mempool.Mempool;
 import com.radixdlt.integration.distributed.simulation.invariants.consensus.AllProposalsHaveDirectParentsInvariant;
 import com.radixdlt.integration.distributed.simulation.invariants.consensus.LivenessInvariant;
 import com.radixdlt.integration.distributed.simulation.invariants.consensus.NoTimeoutsInvariant;
@@ -213,7 +211,6 @@ public class SimulationTest {
 					modules.add(new MockedLedgerUpdateRxModule());
 				} else {
 					modules.add(new LedgerModule());
-					modules.add(new LedgerRxModule());
 					if (!hasEpochs) {
 						modules.add(new MockedLedgerUpdateRxModule());
 						modules.add(new MockedLedgerUpdateSender());
@@ -425,7 +422,7 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder addMempoolSubmissionsSteadyState(String invariantName) {
+		public Builder addMempoolSubmissionsSteadyState(String invariantName, CommandGenerator commandGenerator) {
 			this.modules.add(new AbstractModule() {
 				@ProvidesIntoSet
 				@ProcessOnDispatch
@@ -434,10 +431,9 @@ public class SimulationTest {
 				}
 			});
 
-			IncrementalBytes incrementalBytes = new IncrementalBytes();
 			NodeSelector nodeSelector = this.ledgerType.hasEpochs ? new EpochsNodeSelector() : new BFTValidatorSetNodeSelector();
 			LocalMempoolPeriodicSubmitter mempoolSubmitter = new LocalMempoolPeriodicSubmitter(
-				incrementalBytes,
+				commandGenerator,
 				nodeSelector
 			);
 			CommittedChecker committedChecker = new CommittedChecker(mempoolSubmitter.issuedCommands().map(Pair::getFirst), nodeEvents);
@@ -650,15 +646,7 @@ public class SimulationTest {
 			} else if (ledgerType == LedgerType.LEDGER_AND_LOCALMEMPOOL) {
 				modules.add(new LedgerCommandGeneratorModule());
 				modules.add(new LedgerLocalMempoolModule(10));
-				modules.add(
-					new AbstractModule() {
-						@Override
-						protected void configure() {
-							bind(Mempool.class).to(LocalMempool.class);
-						}
-					}
-				);
-				modules.add(new MockedStateComputerModule());
+				modules.add(new MockedMempoolStateComputerModule());
 			} else if (ledgerType == LedgerType.LEDGER_AND_EPOCHS) {
 				modules.add(new LedgerCommandGeneratorModule());
 				modules.add(new MockedMempoolModule());
@@ -685,7 +673,6 @@ public class SimulationTest {
 				modules.add(new AbstractModule() {
 					@Override
 					protected void configure() {
-						bind(Mempool.class).to(LocalMempool.class);
 						bind(View.class).annotatedWith(EpochCeilingView.class).toInstance(epochHighView);
 						// TODO: Fix pacemaker so can Default 1 so can debug in IDE, possibly from properties at some point
 						// TODO: Specifically, simulation test with engine, epochs and mempool

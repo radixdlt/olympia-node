@@ -18,6 +18,9 @@
 package com.radixdlt.statecomputer;
 
 import com.radixdlt.consensus.bft.PersistentVertexStore;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.mempool.Mempool;
+import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
 import org.junit.Test;
 
@@ -83,6 +86,10 @@ public class RadixEngineModuleTest {
 			bind(new TypeLiteral<EngineStore<LedgerAtom>>() { }).toInstance(engineStore);
 			bind(RadixEngineAtomicCommitManager.class).toInstance(mock(RadixEngineAtomicCommitManager.class));
 			bind(PersistentVertexStore.class).toInstance(mock(PersistentVertexStore.class));
+
+			bind(Mempool.class).toInstance(mock(Mempool.class));
+			bind(new TypeLiteral<EventDispatcher<MempoolAddFailure>>() { })
+				.toInstance(TypedMocks.rmock(EventDispatcher.class));
 		}
 	}
 

@@ -23,6 +23,7 @@ import static org.mockito.Mockito.mock;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.middleware2.network.MempoolAtomAddedMessage;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
 import org.junit.Before;

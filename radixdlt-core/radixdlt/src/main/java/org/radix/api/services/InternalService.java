@@ -17,8 +17,13 @@
 
 package org.radix.api.services;
 
+import com.radixdlt.DefaultSerialization;
+import com.radixdlt.consensus.Command;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.serialization.DsonOutput.Output;
 import java.util.Random;
 
 import org.apache.logging.log4j.LogManager;
@@ -33,7 +38,6 @@ import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.mempool.SubmissionControl;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Bytes;
@@ -43,15 +47,15 @@ import com.radixdlt.utils.Bytes;
  */
 public final class InternalService {
 	private static final Logger log = LogManager.getLogger();
-	private final SubmissionControl submissionControl;
+	private final EventDispatcher<MempoolAdd> mempoolAddEventDispatcher;
 	private final RuntimeProperties properties;
 	private final Universe universe;
 	private final Hasher hasher;
 
 	private static boolean spamming = false;
 
-	public InternalService(SubmissionControl submissionControl, RuntimeProperties properties, Universe universe, Hasher hasher) {
-		this.submissionControl = submissionControl;
+	public InternalService(EventDispatcher<MempoolAdd> mempoolAddEventDispatcher, RuntimeProperties properties, Universe universe, Hasher hasher) {
+		this.mempoolAddEventDispatcher = mempoolAddEventDispatcher;
 		this.properties = properties;
 		this.universe = universe;
 		this.hasher = hasher;
@@ -127,7 +131,9 @@ public final class InternalService {
 							atom.sign(this.owner, hasher);
 
 							ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom, hasher);
-							submissionControl.submitAtom(clientAtom);
+							byte[] payload = DefaultSerialization.getInstance().toDson(clientAtom, Output.ALL);
+							Command command = new Command(payload);
+							mempoolAddEventDispatcher.dispatch(MempoolAdd.create(command));
 
 							remainingIterations--;
 							if (remainingIterations <= 0) {

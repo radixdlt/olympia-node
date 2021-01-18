@@ -36,6 +36,7 @@ import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.environment.Environment;
 import com.radixdlt.environment.rx.RxEnvironment;
 import com.radixdlt.environment.rx.RxRemoteDispatcher;
+import com.radixdlt.mempool.MempoolAddFailure;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
 import com.radixdlt.utils.ThreadFactories;
@@ -76,7 +77,8 @@ public class RxEnvironmentModule extends AbstractModule {
 			EpochLocalTimeoutOccurrence.class,
 			SyncInProgress.class,
 			ViewUpdate.class,
-			EpochViewUpdate.class
+			EpochViewUpdate.class,
+			MempoolAddFailure.class
 		);
 
 		return new RxEnvironment(
@@ -84,6 +86,11 @@ public class RxEnvironmentModule extends AbstractModule {
 			ses,
 			dispatchers
 		);
+	}
+
+	@Provides
+	Observable<MempoolAddFailure> mempoolAddFailures(RxEnvironment rxEnvironment) {
+		return rxEnvironment.getObservable(MempoolAddFailure.class);
 	}
 
 	@Provides

@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,18 +15,18 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.deterministic;
+package com.radixdlt.mempool;
 
-import com.google.inject.AbstractModule;
-import com.radixdlt.mempool.LocalMempool;
-import com.radixdlt.mempool.Mempool;
+import com.google.common.hash.HashCode;
+import com.radixdlt.crypto.HashUtils;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
 
-/**
- * Just binds Mempool to LocalMempool for now.
- */
-public class DeterministicMempoolModule extends AbstractModule {
-	@Override
-	protected void configure() {
-		bind(Mempool.class).to(LocalMempool.class);
+public class MempoolAddSuccessTest {
+	@Test
+	public void equalsVerifier() {
+		EqualsVerifier.forClass(MempoolAddSuccess.class)
+			.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
+			.verify();
 	}
 }
