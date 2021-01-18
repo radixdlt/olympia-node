@@ -28,6 +28,7 @@ import static org.junit.Assert.assertEquals;
 
 public final class KeySignTestScenarioRunner extends SanityTestScenarioRunner<KeySignTestVector> {
 
+	@Override
 	public String testScenarioIdentifier() {
 		return "ecdsa_signing";
 	}
@@ -37,6 +38,7 @@ public final class KeySignTestScenarioRunner extends SanityTestScenarioRunner<Ke
 		return KeySignTestVector.class;
 	}
 
+	@Override
 	public void doRunTestVector(KeySignTestVector testVector) throws AssertionError {
 		ECKeyPair keyPair = null;
 		try {

@@ -25,9 +25,7 @@ import org.junit.Test;
 
 import com.google.common.collect.ImmutableMap;
 
-import static org.junit.Assert.*;
-import static org.hamcrest.CoreMatchers.*;
-
+import static org.assertj.core.api.Assertions.assertThat;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class DynamicTransportMetadataTest {
@@ -43,8 +41,8 @@ public class DynamicTransportMetadataTest {
 		metadata.put("a", () -> "b");
 		DynamicTransportMetadata dtm = DynamicTransportMetadata.from(metadata);
 
-		assertThat(dtm.get("a"), equalTo("b"));
-		assertThat(dtm.get("b"), nullValue());
+		assertThat(dtm.get("a")).isEqualTo("b");
+		assertThat(dtm.get("b")).isNull();
 	}
 
 	@Test
@@ -53,32 +51,32 @@ public class DynamicTransportMetadataTest {
 			ImmutableMap.of("a", () -> "b")
 		);
 
-		assertThat(dtm.get("a"), equalTo("b"));
-		assertThat(dtm.get("b"), nullValue());
+		assertThat(dtm.get("a")).isEqualTo("b");
+		assertThat(dtm.get("b")).isNull();
 	}
 
 	@Test
 	public void testOfTwoArgs() {
 		DynamicTransportMetadata dtm = DynamicTransportMetadata.of("a", () -> "b");
 
-		assertThat(dtm.get("a"), equalTo("b"));
-		assertThat(dtm.get("b"), nullValue());
+		assertThat(dtm.get("a")).isEqualTo("b");
+		assertThat(dtm.get("b")).isNull();
 	}
 
 	@Test
 	public void testOfFourArgs() {
 		DynamicTransportMetadata dtm = DynamicTransportMetadata.of("a", () -> "b", "c", () -> "d");
 
-		assertThat(dtm.get("a"), equalTo("b"));
-		assertThat(dtm.get("c"), equalTo("d"));
-		assertThat(dtm.get("e"), nullValue());
+		assertThat(dtm.get("a")).isEqualTo("b");
+		assertThat(dtm.get("c")).isEqualTo("d");
+		assertThat(dtm.get("e")).isNull();
 	}
 
 	@Test
 	public void testToString() {
 		DynamicTransportMetadata dtm = DynamicTransportMetadata.of("a", () -> "b", "c", () -> "d");
 
-		assertThat(dtm.toString(), containsString("a=b"));
-		assertThat(dtm.toString(), containsString("c=d"));
+		assertThat(dtm.toString()).contains("a=b");
+		assertThat(dtm.toString()).contains("c=d");
 	}
 }

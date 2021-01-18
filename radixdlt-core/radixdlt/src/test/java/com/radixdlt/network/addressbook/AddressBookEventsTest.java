@@ -23,9 +23,9 @@ import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 
-import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Basic tests for implementors of {@link AddressBookEvent}.
@@ -56,7 +56,7 @@ public class AddressBookEventsTest {
 		assertSame(mockedPeer, nonEmptyEvent.peers().get(0));
 
 		String s = nonEmptyEvent.toString();
-		assertThat(s, startsWith(cls.getSimpleName() + "["));
-		assertThat(s, containsString(mockedPeer.toString()));
+		assertThat(s).startsWith(cls.getSimpleName() + "[");
+		assertThat(s).contains(mockedPeer.toString());
 	}
 }

@@ -17,9 +17,8 @@
 
 package com.radixdlt.middleware2.network;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -33,7 +32,7 @@ public class GetEpochRequestMessageTest {
 	public void sensibleToString() {
 		GetEpochRequestMessage msg = new GetEpochRequestMessage(mock(BFTNode.class), 12345, 1);
 		String s1 = msg.toString();
-		assertThat(s1, containsString(GetEpochRequestMessage.class.getSimpleName()));
+		assertThat(s1).contains(GetEpochRequestMessage.class.getSimpleName());
 	}
 
 	@Test

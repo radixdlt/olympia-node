@@ -25,6 +25,7 @@ import static com.radixdlt.utils.Bytes.fromHexString;
 import static junit.framework.TestCase.assertEquals;
 
 public final class KeyGenTestScenarioRunner extends SanityTestScenarioRunner<KeyGenTestVector> {
+	@Override
 	public String testScenarioIdentifier() {
 		return "secp256k1";
 	}
@@ -34,6 +35,7 @@ public final class KeyGenTestScenarioRunner extends SanityTestScenarioRunner<Key
 		return KeyGenTestVector.class;
 	}
 
+	@Override
 	public void doRunTestVector(KeyGenTestVector testVector) throws AssertionError {
 		try {
 			var	publicKey =

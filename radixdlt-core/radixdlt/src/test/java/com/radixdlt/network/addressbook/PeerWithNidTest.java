@@ -32,7 +32,7 @@ import com.radixdlt.network.transport.TransportException;
 import com.radixdlt.network.transport.TransportInfo;
 
 import static org.junit.Assert.*;
-import static org.hamcrest.Matchers.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 // Retaining these tests, even though PeerWithNid has moved into tests
 public class PeerWithNidTest {
@@ -50,29 +50,30 @@ public class PeerWithNidTest {
 	public void testToString() {
 		String s = this.pwn.toString();
 
-		assertThat(s, containsString("PeerWithNid")); // class name
-		assertThat(s, containsString(this.nid.toString())); // nid
+		assertThat(s)
+			.contains("PeerWithNid") // class name
+			.contains(this.nid.toString()); // nid
 	}
 
 	@Test
 	public void testGetNID() {
-		assertThat(this.pwn.getNID(), is(this.nid));
+		assertThat(this.pwn.getNID()).isEqualTo(this.nid);
 	}
 
 	@Test
 	public void testHasNID() {
-		assertThat(this.pwn.hasNID(), is(true));
+		assertThat(this.pwn.hasNID()).isTrue();
 	}
 
 	@Test
 	public void testSupportsTransport() {
-		assertThat(this.pwn.supportsTransport("ANY"), is(false));
+		assertThat(this.pwn.supportsTransport("ANY")).isFalse();
 	}
 
 	@Test
 	public void testSupportedTransports() {
 		ImmutableList<TransportInfo> tis = this.pwn.supportedTransports().collect(ImmutableList.toImmutableList());
-		assertThat(tis, empty());
+		assertThat(tis).isEmpty();
 	}
 
 	@Test(expected = TransportException.class)
@@ -83,28 +84,28 @@ public class PeerWithNidTest {
 
 	@Test
 	public void testHasSystem() {
-		assertThat(this.pwn.hasSystem(), is(false));
+		assertThat(this.pwn.hasSystem()).isFalse();
 	}
 
 	@Test
 	public void testGetSystem() {
-		assertThat(this.pwn.getSystem(), nullValue());
+		assertThat(this.pwn.getSystem()).isNull();
 	}
 
 	@Test
 	public void testBan() {
 		long now = Time.currentTimestamp();
 		this.pwn.ban("Reason for ban");
-		assertThat(this.pwn.getTimestamp(Timestamps.BANNED), greaterThanOrEqualTo(now));
-		assertThat(this.pwn.getBanReason(), is("Reason for ban"));
+		assertThat(this.pwn.getTimestamp(Timestamps.BANNED)).isGreaterThanOrEqualTo(now);
+		assertThat(this.pwn.getBanReason()).isEqualTo("Reason for ban");
 	}
 
 	@Test
 	public void testBanCopy() {
 		long now = Time.currentTimestamp();
 		this.pwn.setBan("Reason for ban", now);
-		assertThat(this.pwn.getTimestamp(Timestamps.BANNED), is(now));
-		assertThat(this.pwn.getBanReason(), is("Reason for ban"));
+		assertThat(this.pwn.getTimestamp(Timestamps.BANNED)).isEqualTo(now);
+		assertThat(this.pwn.getBanReason()).isEqualTo("Reason for ban");
 	}
 
 	@Test

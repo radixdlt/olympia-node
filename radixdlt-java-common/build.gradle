@@ -41,7 +41,6 @@ dependencies {
     testImplementation 'org.powermock:powermock-module-junit4'
     testImplementation 'org.powermock:powermock-api-mockito2'
     testImplementation 'nl.jqno.equalsverifier:equalsverifier'
-    testImplementation 'org.hamcrest:hamcrest-library'
     testImplementation 'org.assertj:assertj-core'
     testImplementation 'com.flipkart.zjsonpatch:zjsonpatch'
     testImplementation 'org.apache.logging.log4j:log4j-slf4j-impl'

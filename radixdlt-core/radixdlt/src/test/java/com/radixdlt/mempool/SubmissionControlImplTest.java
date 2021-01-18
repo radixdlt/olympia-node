@@ -40,9 +40,9 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.serialization.Serialization;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
-import static org.hamcrest.Matchers.*;
 
 public class SubmissionControlImplTest {
 
@@ -123,7 +123,7 @@ public class SubmissionControlImplTest {
 			this.submissionControl.submitAtom(mock(JSONObject.class, illegalStateAnswer()), a -> called.set(true));
 			fail();
 		} catch (IllegalArgumentException e) {
-			assertThat(called.get(), is(false));
+			assertThat(called.get()).isFalse();
 			verify(this.sender, never()).sendDeserializeFailure(any(), any());
 			verify(this.sender, never()).sendRadixEngineFailure(any(), any());
 			verify(this.mempool, never()).add(any());
@@ -157,7 +157,7 @@ public class SubmissionControlImplTest {
 	@Test
 	public void sensible_tostring() {
 		String tostring = this.submissionControl.toString();
-		assertThat(tostring, containsString(this.submissionControl.getClass().getSimpleName()));
+		assertThat(tostring).contains(this.submissionControl.getClass().getSimpleName());
 	}
 
     private static <T> T throwingMock(Class<T> classToMock) {

@@ -8,9 +8,7 @@ import java.math.BigInteger;
 import java.util.Random;
 import java.util.function.Supplier;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -46,7 +44,7 @@ public class SignaturesTest {
 
     @Test
     public void well_formatted_tostring_of_signaturescheme() {
-        assertThat(SignatureScheme.ECDSA.toString(), is("ecdsa"));
+        assertThat(SignatureScheme.ECDSA).hasToString("ecdsa");
     }
 
     @Test
@@ -134,8 +132,9 @@ public class SignaturesTest {
         Signatures signatures = DefaultSignatures.single(publicKey(), dummySignature);
         String tostring = signatures.toString();
 
-        assertThat(tostring, containsString(ECDSASignature.class.getSimpleName()));
-        assertThat(tostring, containsString(dummySignature.toString()));
+        assertThat(tostring)
+        	.contains(ECDSASignature.class.getSimpleName())
+        	.contains(dummySignature.toString());
     }
 
     private void test_that_we_can_bulk_verify_signatures(

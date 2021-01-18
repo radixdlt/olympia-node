@@ -24,9 +24,9 @@ import org.junit.Test;
 import com.radixdlt.network.transport.StaticTransportMetadata;
 import com.radixdlt.network.transport.TransportMetadata;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
-import static org.hamcrest.CoreMatchers.*;
 
 public class NettyUDPTransportImplTest {
 
@@ -164,9 +164,9 @@ public class NettyUDPTransportImplTest {
 
 		try (var testInstance = new NettyUDPTransportImpl(config, localMetadata, controlFactory, connectionFactory, natHandler)) {
 			String s = testInstance.toString();
-			assertThat(s, containsString(NettyUDPTransportImpl.class.getSimpleName()));
-			assertThat(s, containsString(NettyUDPTransportImpl.DEFAULT_HOST));
-			assertThat(s, containsString(String.valueOf(NettyUDPTransportImpl.DEFAULT_PORT)));
+			assertThat(s).contains(NettyUDPTransportImpl.class.getSimpleName());
+			assertThat(s).contains(NettyUDPTransportImpl.DEFAULT_HOST);
+			assertThat(s).contains(String.valueOf(NettyUDPTransportImpl.DEFAULT_PORT));
 		}
 	}
 }

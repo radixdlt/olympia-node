@@ -28,8 +28,7 @@ import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.network.transport.StaticTransportMetadata;
 import com.radixdlt.network.transport.TransportInfo;
 
-import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Check serialization of PeersMessage
@@ -57,8 +56,9 @@ public class PeersMessageSerializeTest extends SerializeMessageObject<PeersMessa
 		PeersMessage pm = new PeersMessage(1, ImmutableList.of(p));
 		String s = pm.toString();
 
-		assertThat(s, containsString(PeersMessage.class.getSimpleName()));
-		assertThat(s, containsString(key.getPublicKey().euid().toString()));
-		assertThat(s, containsString("DUMMY"));
+		assertThat(s)
+			.contains(PeersMessage.class.getSimpleName())
+			.contains(key.getPublicKey().euid().toString())
+			.contains("DUMMY");
 	}
 }

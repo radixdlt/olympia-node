@@ -29,9 +29,6 @@ import com.radixdlt.sanitytestsuite.utility.ArgumentsExtractor;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -41,11 +38,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public final class JsonDeserializationTestScenarioRunner extends SanityTestScenarioRunner<JsonDeserializationTestVector> {
-	private static final Logger LOG = LogManager.getLogger();
-
 	private final Serialization serialization = DefaultSerialization.getInstance();
 	private final ObjectMapper mapper = new ObjectMapper();
 
+	@Override
 	public String testScenarioIdentifier() {
 		return "json_deserialization_radix_models";
 	}
@@ -124,6 +120,7 @@ public final class JsonDeserializationTestScenarioRunner extends SanityTestScena
 		"radix.particles.message", JsonDeserializationTestScenarioRunner::assertEqualModelMessageParticle
 	);
 
+	@Override
 	public void doRunTestVector(JsonDeserializationTestVector testVector) throws AssertionError {
 
 		var assertEqualModel = ofNullable(

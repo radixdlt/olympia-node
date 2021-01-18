@@ -23,8 +23,7 @@ import org.junit.Test;
 import com.radixdlt.network.transport.StaticTransportMetadata;
 import com.radixdlt.network.transport.TransportInfo;
 
-import static org.junit.Assert.*;
-import static org.hamcrest.CoreMatchers.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 
@@ -48,17 +47,17 @@ public class InboundMessageTest {
 
 	@Test
 	public void testSource() {
-		assertThat(inboundMessage.source(), equalTo(transportInfo));
+		assertThat(inboundMessage.source()).isEqualTo(transportInfo);
 	}
 
 	@Test
 	public void testMessage() {
-		assertThat(inboundMessage.message(), equalTo(message));
+		assertThat(inboundMessage.message()).isEqualTo(message);
 	}
 
 	@Test
 	public void testToString() {
-		assertThat(inboundMessage.toString(), containsString("TEST")); // Transport name
-		assertThat(inboundMessage.toString(), containsString("000102030405060708090a")); // Message data in hex
+		assertThat(inboundMessage.toString()).contains("TEST"); // Transport name
+		assertThat(inboundMessage.toString()).contains("000102030405060708090a"); // Message data in hex
 	}
 }

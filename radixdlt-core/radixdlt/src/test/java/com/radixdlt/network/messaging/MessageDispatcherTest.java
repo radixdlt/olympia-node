@@ -33,7 +33,6 @@ import com.radixdlt.network.transport.TransportInfo;
 import com.radixdlt.network.transport.TransportMetadata;
 import com.radixdlt.network.transport.TransportOutboundConnection;
 import com.radixdlt.serialization.Serialization;
-import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.stubbing.Answer;
@@ -54,7 +53,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
@@ -181,7 +180,7 @@ public class MessageDispatcherTest extends RadixTest {
 
 		SendResult sendResult = messageDispatcher.send(transportManager, messageEvent).get();
 
-		assertThat(sendResult.getThrowable().getMessage(), Matchers.equalTo("TTL for TestMessage message to " + peer1 + " has expired"));
+		assertThat(sendResult.getThrowable().getMessage()).isEqualTo("TTL for TestMessage message to " + peer1 + " has expired");
 		verify(counters, times(1)).increment(CounterType.MESSAGES_OUTBOUND_ABORTED);
 	}
 
@@ -209,7 +208,7 @@ public class MessageDispatcherTest extends RadixTest {
 		messageDispatcher.receive(messageListenerList, messageEvent);
 
 		assertTrue(receivedFlag.tryAcquire(10, TimeUnit.SECONDS));
-		assertThat(messages.get(0), Matchers.equalTo(testMessage));
+		assertThat(messages.get(0)).isEqualTo(testMessage);
 	}
 
 	@Test

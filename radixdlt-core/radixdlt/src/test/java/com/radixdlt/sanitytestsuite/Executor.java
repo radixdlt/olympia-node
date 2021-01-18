@@ -91,7 +91,7 @@ public final class Executor {
 			.collect(
 				toMap(
 					SanityTestScenarioRunner::testScenarioIdentifier,
-					s -> s::executeTest
+					s -> scenario -> s.executeTest(scenario)
 				)
 			);
 	}

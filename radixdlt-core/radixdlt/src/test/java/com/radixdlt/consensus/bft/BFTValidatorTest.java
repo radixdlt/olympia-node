@@ -22,10 +22,9 @@ import org.junit.Test;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 
-import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class BFTValidatorTest {
 	@Test
@@ -37,7 +36,7 @@ public class BFTValidatorTest {
 	@Test
 	public void sensibleToString() {
 		String s = create().toString();
-		assertThat(s, containsString(BFTValidator.class.getSimpleName()));
+		assertThat(s).contains(BFTValidator.class.getSimpleName());
 	}
 
 	@Test

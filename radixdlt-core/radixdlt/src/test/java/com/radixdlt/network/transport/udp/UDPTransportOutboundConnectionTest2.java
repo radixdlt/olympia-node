@@ -30,8 +30,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.*;
 
 public class UDPTransportOutboundConnectionTest2 {
@@ -72,8 +70,9 @@ public class UDPTransportOutboundConnectionTest2 {
 		UDPTransportOutboundConnection oci = new UDPTransportOutboundConnection(channel, metadata, natHandler);
 		String s = oci.toString();
 
-		assertThat(s, containsString(UDPConstants.NAME));
-		assertThat(s, containsString(metadata.get(UDPConstants.METADATA_HOST)));
-		assertThat(s, containsString(metadata.get(UDPConstants.METADATA_PORT)));
+		assertThat(s)
+			.contains(UDPConstants.NAME)
+			.contains(metadata.get(UDPConstants.METADATA_HOST))
+			.contains(metadata.get(UDPConstants.METADATA_PORT));
 	}
 }
