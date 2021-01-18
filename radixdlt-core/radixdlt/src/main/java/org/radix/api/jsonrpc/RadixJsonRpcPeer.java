@@ -40,11 +40,6 @@ public class RadixJsonRpcPeer {
 	private final BiConsumer<RadixJsonRpcPeer, String> callback;
 
 	/**
-	 * Epic for managing atom submission requests
-	 */
-	private final SubmitAtomAndSubscribeEpic submitAtomAndSubscribeEpic;
-
-	/**
 	 * Epic for managing atom subscriptions
 	 */
 	private final AtomsSubscribeEpic atomsSubscribeEpic;
@@ -63,8 +58,6 @@ public class RadixJsonRpcPeer {
 		this.callback = callback;
 
 		this.atomStatusEpic = new AtomStatusEpic(atomsService, json -> callback.accept(this, json.toString()));
-		this.submitAtomAndSubscribeEpic = new SubmitAtomAndSubscribeEpic(atomsService,
-			atomJson -> callback.accept(this, atomJson.toString()));
 		this.atomsSubscribeEpic = new AtomsSubscribeEpic(
 			atomsService,
 			serialization,
@@ -121,9 +114,6 @@ public class RadixJsonRpcPeer {
 				}
 
 				atomsSubscribeEpic.action(jsonRpcRequest);
-				break;
-			case "Universe.submitAtomAndSubscribe":
-				submitAtomAndSubscribeEpic.action(jsonRpcRequest);
 				break;
 			case "Atoms.getAtomStatusNotifications":
 			case "Atoms.closeAtomStatusNotifications":

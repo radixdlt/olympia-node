@@ -49,6 +49,9 @@ import com.radixdlt.environment.ProcessOnDispatch;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
+import com.radixdlt.mempool.MempoolAdd;
+import com.radixdlt.mempool.MempoolAddFailure;
+import com.radixdlt.mempool.MempoolAddSuccess;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.LocalSyncServiceAccumulatorProcessor.SyncInProgress;
 import java.util.Set;
@@ -103,6 +106,13 @@ public class DispatcherModule extends AbstractModule {
 
 		final var viewQuorumReachedKey = new TypeLiteral<EventProcessor<ViewQuorumReached>>() { };
 		Multibinder.newSetBinder(binder(), viewQuorumReachedKey, ProcessOnDispatch.class);
+
+
+		final var mempoolAddKey = new TypeLiteral<EventProcessor<MempoolAdd>>() { };
+		Multibinder.newSetBinder(binder(), mempoolAddKey, ProcessOnDispatch.class);
+
+		final var mempoolAddedCommandKey = new TypeLiteral<EventProcessor<MempoolAddSuccess>>() { };
+		Multibinder.newSetBinder(binder(), mempoolAddedCommandKey, ProcessOnDispatch.class);
 
 		final var voteKey = new TypeLiteral<EventProcessor<Vote>>() { };
 		Multibinder.newSetBinder(binder(), voteKey, ProcessOnDispatch.class);
@@ -372,5 +382,35 @@ public class DispatcherModule extends AbstractModule {
 		};
 	}
 
+	@Provides
+	@Singleton
+	private EventDispatcher<MempoolAdd> mempoolAddEventDispatcher(
+		@ProcessOnDispatch Set<EventProcessor<MempoolAdd>> processors
+	) {
+		return cmd -> processors.forEach(e -> e.process(cmd));
+	}
 
+	@Provides
+	@Singleton
+	private EventDispatcher<MempoolAddSuccess> mempoolAddedCommandEventDispatcher(
+		@ProcessOnDispatch Set<EventProcessor<MempoolAddSuccess>> processors,
+		Environment environment
+	) {
+		return cmd -> processors.forEach(e -> e.process(cmd));
+	}
+
+	@Provides
+	@Singleton
+	private EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher(
+		Environment environment
+	) {
+		return environment.getDispatcher(MempoolAddFailure.class);
+	}
+
+	@Provides
+	private RemoteEventDispatcher<MempoolAddSuccess> mempoolAddedRemoteEventDispatcher(
+		Environment environment
+	) {
+		return environment.getRemoteDispatcher(MempoolAddSuccess.class);
+	}
 }

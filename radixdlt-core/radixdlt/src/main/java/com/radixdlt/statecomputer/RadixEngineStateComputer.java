@@ -34,10 +34,16 @@ import com.radixdlt.crypto.Hasher;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngine.RadixEngineBranch;
 import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.ledger.ByzantineQuorumException;
 import com.radixdlt.ledger.StateComputerLedger.StateComputerResult;
 import com.radixdlt.ledger.StateComputerLedger.PreparedCommand;
+import com.radixdlt.mempool.Mempool;
+import com.radixdlt.mempool.MempoolAddFailure;
+import com.radixdlt.mempool.MempoolDuplicateException;
+import com.radixdlt.mempool.MempoolFullException;
+import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.store.RadixEngineAtomicCommitManager;
 import com.radixdlt.serialization.DeserializeException;
@@ -46,13 +52,19 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.ledger.VerifiedCommandsAndProof;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Consumer;
 
 /**
  * Wraps the Radix Engine and emits messages based on success or failure
  */
 public final class RadixEngineStateComputer implements StateComputer {
+	private static final Logger log = LogManager.getLogger();
 
 	// TODO: Refactor committed command when commit logic is re-written
 	// TODO: as currently it's mostly loosely coupled logic
@@ -66,20 +78,24 @@ public final class RadixEngineStateComputer implements StateComputer {
 		void sendCommittedAtom(CommittedAtomWithResult committedAtomWithResult);
 	}
 
+	private final Mempool mempool;
 	private final Serialization serialization;
 	private final RadixEngine<LedgerAtom> radixEngine;
 	private final View epochCeilingView;
 	private final ValidatorSetBuilder validatorSetBuilder;
 	private final Hasher hasher;
 	private final RadixEngineAtomicCommitManager atomicCommitManager;
+	private final EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher;
 
 	private RadixEngineStateComputer(
 		Serialization serialization,
 		RadixEngine<LedgerAtom> radixEngine,
+		Mempool mempool,
 		RadixEngineAtomicCommitManager atomicCommitManager,
 		View epochCeilingView,
 		ValidatorSetBuilder validatorSetBuilder,
-		Hasher hasher
+		Hasher hasher,
+		EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher
 	) {
 		this.serialization = Objects.requireNonNull(serialization);
 		this.radixEngine = Objects.requireNonNull(radixEngine);
@@ -87,15 +103,19 @@ public final class RadixEngineStateComputer implements StateComputer {
 		this.validatorSetBuilder = Objects.requireNonNull(validatorSetBuilder);
 		this.hasher = Objects.requireNonNull(hasher);
 		this.atomicCommitManager = Objects.requireNonNull(atomicCommitManager);
+		this.mempool = Objects.requireNonNull(mempool);
+		this.mempoolAddFailureEventDispatcher = Objects.requireNonNull(mempoolAddFailureEventDispatcher);
 	}
 
 	public static RadixEngineStateComputer create(
 		Serialization serialization,
 		RadixEngine<LedgerAtom> radixEngine,
+		Mempool mempool,
 		RadixEngineAtomicCommitManager atomicCommitManager,
 		@EpochCeilingView View epochCeilingView,
 		ValidatorSetBuilder validatorSetBuilder,
-		Hasher hasher
+		Hasher hasher,
+		EventDispatcher<MempoolAddFailure> mempoolAddFailureEventDispatcher
 	) {
 		if (epochCeilingView.isGenesis()) {
 			throw new IllegalArgumentException("Epoch change view must not be genesis.");
@@ -104,10 +124,12 @@ public final class RadixEngineStateComputer implements StateComputer {
 		return new RadixEngineStateComputer(
 			serialization,
 			radixEngine,
+			mempool,
 			atomicCommitManager,
 			epochCeilingView,
 			validatorSetBuilder,
-			hasher
+			hasher,
+			mempoolAddFailureEventDispatcher
 		);
 	}
 
@@ -138,6 +160,40 @@ public final class RadixEngineStateComputer implements StateComputer {
 		public HashCode hash() {
 			return hash;
 		}
+	}
+
+	@Override
+	public void addToMempool(Command command) {
+		ClientAtom clientAtom = command.map(payload -> {
+			try {
+				return serialization.fromDson(payload, ClientAtom.class);
+			} catch (DeserializeException e) {
+				return null;
+			}
+		});
+		if (clientAtom == null) {
+			mempoolAddFailureEventDispatcher.dispatch(MempoolAddFailure.create(
+				command,
+				new MempoolRejectedException(command, "Bad atom")
+			));
+			return;
+		}
+
+		try {
+			radixEngine.staticCheck(clientAtom);
+			mempool.add(command);
+		} catch (RadixEngineException | MempoolFullException e) {
+			mempoolAddFailureEventDispatcher.dispatch(MempoolAddFailure.create(command, e));
+		} catch (MempoolDuplicateException e) {
+			// Idempotent commands
+			log.warn("Mempool duplicate command: {}", e.getMessage());
+		}
+	}
+
+	@Override
+	public Command getNextCommandFromMempool(Set<HashCode> exclude) {
+		final List<Command> commands = mempool.getCommands(1, exclude);
+		return !commands.isEmpty() ? commands.get(0) : null;
 	}
 
 	private BFTValidatorSet executeSystemUpdate(
@@ -220,6 +276,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			successBuilder.add(radixEngineCommand);
 		}
 	}
+
 
 	@Override
 	public StateComputerResult prepare(ImmutableList<PreparedCommand> previous, Command next, long epoch, View view, long timestamp) {
@@ -328,5 +385,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			atomicCommitManager.save(vertexStoreState);
 		}
 		atomicCommitManager.commitTransaction();
+
+		verifiedCommandsAndProof.getCommands().forEach(cmd -> this.mempool.removeCommitted(hasher.hash(cmd)));
 	}
 }

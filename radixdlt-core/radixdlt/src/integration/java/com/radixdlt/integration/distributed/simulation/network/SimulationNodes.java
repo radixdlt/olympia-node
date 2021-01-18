@@ -33,12 +33,13 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.epochs.EpochsLedgerUpdate;
 import com.radixdlt.integration.distributed.simulation.NodeNetworkMessagesModule;
 import com.radixdlt.ledger.LedgerUpdate;
-import com.radixdlt.mempool.Mempool;
 import com.radixdlt.consensus.bft.BFTNode;
 
+import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.List;
@@ -115,7 +116,7 @@ public class SimulationNodes {
 
 		Observable<Pair<BFTNode, BFTHighQCUpdate>> highQCs();
 
-		Mempool getMempool(BFTNode node);
+		EventDispatcher<MempoolAdd> getDispatcher(BFTNode node);
 
 		SimulationNetwork getUnderlyingNetwork();
 
@@ -190,9 +191,10 @@ public class SimulationNodes {
 			}
 
 			@Override
-			public Mempool getMempool(BFTNode node) {
+			public EventDispatcher<MempoolAdd> getDispatcher(BFTNode node) {
 				int index = getNodes().indexOf(node);
-				return nodeInstances.get(index).getInstance(Mempool.class);
+				var literal = new TypeLiteral<EventDispatcher<MempoolAdd>>() { };
+				return nodeInstances.get(index).getInstance(Key.get(literal));
 			}
 
 			@Override

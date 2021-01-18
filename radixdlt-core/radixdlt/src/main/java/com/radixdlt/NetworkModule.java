@@ -34,12 +34,11 @@ import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.environment.rx.RxRemoteDispatcher;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
-import com.radixdlt.mempool.MempoolNetworkRx;
-import com.radixdlt.mempool.MempoolNetworkTx;
+import com.radixdlt.mempool.MempoolAddSuccess;
+import com.radixdlt.middleware2.network.MessageCentralMempool;
+import com.radixdlt.middleware2.network.MessageCentralValidatorSync;
 import com.radixdlt.middleware2.network.MessageCentralBFTNetwork;
 import com.radixdlt.middleware2.network.MessageCentralLedgerSync;
-import com.radixdlt.middleware2.network.MessageCentralValidatorSync;
-import com.radixdlt.middleware2.network.SimpleMempoolNetwork;
 import io.reactivex.rxjava3.core.Flowable;
 
 /**
@@ -50,11 +49,10 @@ public final class NetworkModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		// provides (for SharedMempool)
-		bind(SimpleMempoolNetwork.class).in(Scopes.SINGLETON);
-		bind(MempoolNetworkRx.class).to(SimpleMempoolNetwork.class);
-		bind(MempoolNetworkTx.class).to(SimpleMempoolNetwork.class);
+		bind(MessageCentralMempool.class).in(Scopes.SINGLETON);
 
 		// Network BFT/Epoch Sync messages
+		//TODO: make rate limit it configurable
 		bind(MessageCentralValidatorSync.class).in(Scopes.SINGLETON);
 		bind(SyncVerticesResponseSender.class).to(MessageCentralValidatorSync.class);
 		bind(SyncEpochsRPCSender.class).to(MessageCentralValidatorSync.class);
@@ -65,6 +63,11 @@ public final class NetworkModule extends AbstractModule {
 		bind(MessageCentralBFTNetwork.class).in(Scopes.SINGLETON);
 		bind(ProposalBroadcaster.class).to(MessageCentralBFTNetwork.class);
 		bind(BFTEventsRx.class).to(MessageCentralBFTNetwork.class);
+	}
+
+	@ProvidesIntoSet
+	private RxRemoteDispatcher<?> mempoolAddedDispatcher(MessageCentralMempool messageCentralMempool) {
+		return RxRemoteDispatcher.create(MempoolAddSuccess.class, messageCentralMempool.commandRemoteEventDispatcher());
 	}
 
 	@ProvidesIntoSet
@@ -102,4 +105,8 @@ public final class NetworkModule extends AbstractModule {
 		return validatorSync.requests();
 	}
 
+	@Provides
+	private Flowable<RemoteEvent<MempoolAddSuccess>> mempoolCommands(MessageCentralMempool messageCentralMempool) {
+		return messageCentralMempool.mempoolComands();
+	}
 }

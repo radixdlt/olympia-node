@@ -29,6 +29,7 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.hash.HashCode;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -100,6 +101,7 @@ import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.utils.UInt256;
 
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.junit.Before;
@@ -126,12 +128,23 @@ public class EpochManagerTest {
 	private Mempool mempool = mock(Mempool.class);
 	private StateComputer stateComputer = new StateComputer() {
 		@Override
+		public void addToMempool(Command command) {
+			// No-op
+		}
+
+		@Override
+		public Command getNextCommandFromMempool(Set<HashCode> exclude) {
+			return null;
+		}
+
+		@Override
 		public StateComputerResult prepare(ImmutableList<PreparedCommand> previous, Command next, long epoch, View view, long timestamp) {
 			return new StateComputerResult(ImmutableList.of(), ImmutableMap.of());
 		}
 
 		@Override
 		public void commit(VerifiedCommandsAndProof verifiedCommandsAndProof, VerifiedVertexStoreState vertexStoreState) {
+			// No-op
 		}
 	};
 
