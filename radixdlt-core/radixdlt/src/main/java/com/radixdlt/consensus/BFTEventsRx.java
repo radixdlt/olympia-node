@@ -17,16 +17,16 @@
 
 package com.radixdlt.consensus;
 
-import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.Flowable;
 
 /**
  * Network accessor for the EventCoordinator
  */
 public interface BFTEventsRx {
-	/**
-	 * Accessor to the stream of consensus message events as they are received
-	 * from the network.
-	 * @return observable of consensus message events
-	 */
-	Observable<ConsensusEvent> bftEvents();
+    /**
+     * Accessor to the stream of consensus message events as they are received
+     * from the network.
+     * @return observable of consensus message events
+     */
+    Flowable<ConsensusEvent> bftEvents();
 }

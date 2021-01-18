@@ -18,7 +18,6 @@
 package com.radixdlt.middleware2.network;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
@@ -27,15 +26,13 @@ import com.radixdlt.consensus.VerifiedLedgerHeaderAndProof;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.bft.VerifiedVertex;
+import com.radixdlt.consensus.sync.GetVerticesRequest;
+import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
-import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
-import com.radixdlt.consensus.sync.VertexStoreBFTSyncRequestProcessor.SyncVerticesResponseSender;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
@@ -43,9 +40,8 @@ import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.network.messaging.MessageCentral;
-import com.radixdlt.network.messaging.MessageListener;
 import com.radixdlt.universe.Universe;
-import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.Flowable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.network.messaging.Message;
@@ -66,8 +62,6 @@ public class MessageCentralValidatorSync implements SyncVerticesResponseSender,
 	private final AddressBook addressBook;
 	private final MessageCentral messageCentral;
 	private final Hasher hasher;
-	private final SystemCounters counters;
-	private final RateLimiter errorResponseRateLimiter;
 
 	@Inject
 	public MessageCentralValidatorSync(
@@ -75,17 +69,13 @@ public class MessageCentralValidatorSync implements SyncVerticesResponseSender,
 		Universe universe,
 		AddressBook addressBook,
 		MessageCentral messageCentral,
-		Hasher hasher,
-		SystemCounters counters,
-		@GetVerticesErrorRateLimit RateLimiter errorResponseRateLimiter
+		Hasher hasher
 	) {
 		this.magic = universe.getMagic();
 		this.self = Objects.requireNonNull(self);
 		this.addressBook = Objects.requireNonNull(addressBook);
 		this.messageCentral = Objects.requireNonNull(messageCentral);
 		this.hasher = Objects.requireNonNull(hasher);
-		this.counters = counters;
-		this.errorResponseRateLimiter = errorResponseRateLimiter;
 	}
 
 	public RemoteEventDispatcher<GetVerticesRequest> verticesRequestDispatcher() {
@@ -132,8 +122,8 @@ public class MessageCentralValidatorSync implements SyncVerticesResponseSender,
 		);
 	}
 
-	public Observable<RemoteEvent<GetVerticesRequest>> requests() {
-		return this.createObservable(
+	public Flowable<RemoteEvent<GetVerticesRequest>> requests() {
+		return this.createFlowable(
 			GetVerticesRequestMessage.class,
 			(peer, msg) -> {
 				if (!peer.hasSystem()) {
@@ -147,8 +137,8 @@ public class MessageCentralValidatorSync implements SyncVerticesResponseSender,
 	}
 
 	@Override
-	public Observable<GetVerticesResponse> responses() {
-		return this.createObservable(
+	public Flowable<GetVerticesResponse> responses() {
+		return this.createFlowable(
 			GetVerticesResponseMessage.class,
 			(src, msg) -> {
 				if (!src.hasSystem()) {
@@ -167,25 +157,16 @@ public class MessageCentralValidatorSync implements SyncVerticesResponseSender,
 	}
 
 	@Override
-	public Observable<GetVerticesErrorResponse> errorResponses() {
-		return this.createObservable(
+	public Flowable<GetVerticesErrorResponse> errorResponses() {
+		return this.createFlowable(
 			GetVerticesErrorResponseMessage.class,
 			(src, msg) -> {
 				if (!src.hasSystem()) {
 					return null;
 				}
 
-				if (errorResponseRateLimiter.tryAcquire()) {
-					BFTNode node = BFTNode.create(src.getSystem().getKey());
-					return new GetVerticesErrorResponse(node, msg.highQC());
-				} else {
-					var counter = counters.increment(CounterType.NETWORKING_DROPPED_ERROR_RESPONSES);
-
-					if (counter == 1 || counter % 1000 == 0) {
-						log.warn("Exceeded error response rate, total {} messages dropped", counter);
-					}
-					return null;
-				}
+				final var node = BFTNode.create(src.getSystem().getKey());
+				return new GetVerticesErrorResponse(node, msg.highQC());
 			}
 		);
 	}
@@ -211,31 +192,23 @@ public class MessageCentralValidatorSync implements SyncVerticesResponseSender,
 	}
 
 	@Override
-	public Observable<GetEpochRequest> epochRequests() {
-		return this.createObservable(
+	public Flowable<GetEpochRequest> epochRequests() {
+		return this.createFlowable(
 			GetEpochRequestMessage.class,
 			(peer, msg) -> new GetEpochRequest(msg.getAuthor(), msg.getEpoch())
 		);
 	}
 
 	@Override
-	public Observable<GetEpochResponse> epochResponses() {
-		return this.createObservable(
+	public Flowable<GetEpochResponse> epochResponses() {
+		return this.createFlowable(
 			GetEpochResponseMessage.class,
 			(peer, msg) -> new GetEpochResponse(msg.getAuthor(), msg.getAncestor())
 		);
 	}
 
-	private <T extends Message, U> Observable<U> createObservable(Class<T> c, BiFunction<Peer, T, U> mapper) {
-		return Observable.create(emitter -> {
-			MessageListener<T> listener = (src, msg) -> {
-				U u = mapper.apply(src, msg);
-				if (u != null) {
-					emitter.onNext(u);
-				}
-			};
-			this.messageCentral.addListener(c, listener);
-			emitter.setCancellable(() -> this.messageCentral.removeListener(listener));
-		});
+	private <T extends Message, U> Flowable<U> createFlowable(Class<T> c, BiFunction<Peer, T, U> mapper) {
+		return this.messageCentral.messagesOf(c)
+			.map(m -> mapper.apply(m.getPeer(), m.getMessage()));
 	}
 }

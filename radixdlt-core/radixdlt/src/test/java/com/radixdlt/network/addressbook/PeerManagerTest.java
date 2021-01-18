@@ -23,7 +23,7 @@ import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.network.messaging.MessageCentral;
-import com.radixdlt.network.messaging.MessageListener;
+import com.radixdlt.network.messaging.MessageCentralMockProvider;
 import com.radixdlt.network.transport.TransportInfo;
 import com.radixdlt.network.transport.TransportMetadata;
 import com.radixdlt.network.transport.udp.UDPConstants;
@@ -34,7 +34,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 import org.radix.network.discovery.BootstrapDiscovery;
 import org.radix.network.messages.GetPeersMessage;
@@ -49,9 +48,7 @@ import org.radix.universe.system.RadixSystem;
 import org.radix.universe.system.SystemMessage;
 
 import java.security.SecureRandom;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -61,11 +58,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.assertj.core.data.Offset.offset;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
@@ -110,24 +105,11 @@ public class PeerManagerTest extends RadixTest {
 
 		PeerManagerConfiguration config = PeerManagerConfiguration.fromRuntimeProperties(properties);
 		peerMessageMultimap = LinkedListMultimap.create();
-		MessageCentral messageCentral = mock(MessageCentral.class);
+		final MessageCentral messageCentral = MessageCentralMockProvider.get();
 		SecureRandom rng = mock(SecureRandom.class);
 
-		Map<Class<Message>, MessageListener<Message>> messageListenerRegistry = new HashMap<>();
-		doAnswer(invocation -> {
-			messageListenerRegistry.put(invocation.getArgument(0), invocation.getArgument(1));
-			return null;
-		}).when(messageCentral).addListener(any(), any());
-
-		ArgumentCaptor<Peer> peerArgumentCaptor = ArgumentCaptor.forClass(Peer.class);
-		ArgumentCaptor<Message> messageArgumentCaptor = ArgumentCaptor.forClass(Message.class);
-		doAnswer(invocation -> {
-			peerMessageMultimap.put(invocation.getArgument(0), invocation.getArgument(1));
-			MessageListener<Message> messageListener = messageListenerRegistry.get(invocation.getArgument(1).getClass());
-			messageListener.handleMessage(invocation.getArgument(0), invocation.getArgument(1));
-			return null;
-		}).when(messageCentral).send(peerArgumentCaptor.capture(), messageArgumentCaptor.capture());
-
+		messageCentral.messagesOf(Message.class)
+			.subscribe(msg -> peerMessageMultimap.put(msg.getPeer(), msg.getMessage()));
 
 		TransportMetadata transportMetadata1 = TransportMetadata.create(ImmutableMap.of("host", "192.168.0.1"));
 		TransportInfo transportInfo1 = TransportInfo.of(UDPConstants.NAME, transportMetadata1);

@@ -32,11 +32,13 @@ import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.consensus.sync.BFTSync;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.utils.ThreadFactories;
+import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.disposables.Disposable;
@@ -65,6 +67,7 @@ public class BFTRunner implements ModuleRunner {
 	private final Scheduler singleThreadScheduler;
 	private final BFTEventProcessor bftEventProcessor;
 	private final BFTNode self;
+	private final SystemCounters counters;
 	private Disposable disposable;
 
 	@Inject
@@ -80,18 +83,20 @@ public class BFTRunner implements ModuleRunner {
 		Set<EventProcessor<ViewUpdate>> viewUpdateProcessors,
 		Observable<ScheduledLocalTimeout> timeouts,
 		Set<EventProcessor<ScheduledLocalTimeout>> timeoutProcessors,
-		Observable<RemoteEvent<GetVerticesRequest>> verticesRequests,
+		Flowable<RemoteEvent<GetVerticesRequest>> verticesRequests,
 		Set<RemoteEventProcessor<GetVerticesRequest>> requestProcessors,
 		BFTEventsRx networkRx,
 		SyncVerticesRPCRx rpcRx,
 		BFTEventProcessor bftEventProcessor,
 		BFTSync vertexStoreSync,
-		@Self BFTNode self
+		@Self BFTNode self,
+		SystemCounters counters
 	) {
 		this.bftEventProcessor = Objects.requireNonNull(bftEventProcessor);
 		this.singleThreadExecutor = Executors.newSingleThreadExecutor(ThreadFactories.daemonThreads("ConsensusRunner " + self));
 		this.singleThreadScheduler = Schedulers.from(this.singleThreadExecutor);
-		this.self = self;
+		this.self = Objects.requireNonNull(self);
+		this.counters = Objects.requireNonNull(counters);
 
 		// It is important that all of these events are executed on the same thread
 		// as all logic is dependent on this assumption
@@ -102,7 +107,7 @@ public class BFTRunner implements ModuleRunner {
 			viewUpdates
 				.observeOn(singleThreadScheduler)
 				.doOnNext(v -> viewUpdateProcessors.forEach(p -> p.process(v))),
-			networkRx.bftEvents()
+			networkRx.bftEvents().toObservable()
 				.observeOn(singleThreadScheduler)
 				.doOnNext(e -> {
 					if (e instanceof Proposal) {
@@ -113,13 +118,13 @@ public class BFTRunner implements ModuleRunner {
 						throw new IllegalStateException(self + ": Unknown consensus event: " + e);
 					}
 				}),
-			verticesRequests
+			verticesRequests.toObservable()
 				.observeOn(singleThreadScheduler)
 				.doOnNext(r -> requestProcessors.forEach(p -> p.process(r.getOrigin(), r.getEvent()))),
-			rpcRx.responses()
+			rpcRx.responses().toObservable()
 				.observeOn(singleThreadScheduler)
 				.doOnNext(resp -> vertexStoreSync.responseProcessor().process(resp)),
-			rpcRx.errorResponses()
+			rpcRx.errorResponses().toObservable()
 				.observeOn(singleThreadScheduler)
 				.doOnNext(vertexStoreSync::processGetVerticesErrorResponse),
 			bftUpdates

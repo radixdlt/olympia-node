@@ -21,15 +21,19 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.network.messaging.InboundMessage;
+import com.radixdlt.utils.streams.RoundRobinBackpressuredProcessor;
+import io.reactivex.rxjava3.core.Flowable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
-import com.radixdlt.network.messaging.InboundMessageConsumer;
 import com.radixdlt.network.transport.StaticTransportMetadata;
 import com.radixdlt.network.transport.TransportControl;
 import com.radixdlt.network.transport.TransportMetadata;
@@ -75,24 +79,31 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 
 	private final TransportMetadata localMetadata;
 
+	private final SystemCounters counters;
+
 	private final int priority;
+	private final int messageBufferSize;
 	private final AtomicInteger threadCounter = new AtomicInteger(0);
 	private final InetSocketAddress bindAddress;
 	private final Object channelLock = new Object();
+	private final RoundRobinBackpressuredProcessor<InboundMessage> inboundMessageSink =
+		new RoundRobinBackpressuredProcessor<>();
 
 	private final TCPTransportControl control;
 
 	private Channel channel;
 	private Bootstrap outboundBootstrap;
 
-
 	@Inject
 	NettyTCPTransportImpl(
+		SystemCounters counters,
 		TCPConfiguration config,
 		@Named("local") TransportMetadata localMetadata,
 		TCPTransportOutboundConnectionFactory outboundFactory,
 		TCPTransportControlFactory controlFactory
 	) {
+		this.counters = Objects.requireNonNull(counters);
+
 		String providedHost = localMetadata.get(TCPConstants.METADATA_HOST);
 		if (providedHost == null) {
 			providedHost = config.networkAddress(DEFAULT_HOST);
@@ -109,6 +120,7 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 			TCPConstants.METADATA_PORT, String.valueOf(port)
 		);
 		this.priority = config.priority(0);
+		this.messageBufferSize = config.messageBufferSize(255);
 		this.debugData = config.debugData(false);
 		this.control = controlFactory.create(config, outboundFactory, this);
 		this.bindAddress = new InetSocketAddress(providedHost, port);
@@ -140,7 +152,7 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 	}
 
 	@Override
-	public void start(InboundMessageConsumer messageSink) {
+	public Flowable<InboundMessage> start() {
 		if (log.isInfoEnabled()) {
 			log.info("TCP transport {}", localAddress());
 		}
@@ -155,8 +167,8 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 			.option(ChannelOption.SO_KEEPALIVE, true)
 			.handler(new ChannelInitializer<SocketChannel>() {
 				@Override
-				public void initChannel(SocketChannel ch) throws Exception {
-					setupChannel(ch, messageSink, true, CLI_RCV_BUF_SIZE, CLI_SND_BUF_SIZE);
+				public void initChannel(SocketChannel ch) {
+					setupChannel(ch, true, CLI_RCV_BUF_SIZE, CLI_SND_BUF_SIZE);
 				}
 			});
 
@@ -168,9 +180,9 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 			.childOption(ChannelOption.SO_KEEPALIVE, true)
 			.childHandler(new ChannelInitializer<SocketChannel>() {
 				@Override
-				public void initChannel(SocketChannel ch) throws Exception {
+				public void initChannel(SocketChannel ch) {
 					log.info("Connection from {}:{}", ch.remoteAddress().getHostString(), ch.remoteAddress().getPort());
-					setupChannel(ch, messageSink, false, SRV_RCV_BUF_SIZE, SRV_SND_BUF_SIZE);
+					setupChannel(ch, false, SRV_RCV_BUF_SIZE, SRV_SND_BUF_SIZE);
 				}
 			});
 		if (log.isDebugEnabled() || log.isTraceEnabled()) {
@@ -187,9 +199,11 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 		} catch (IOException e) {
 			throw new UncheckedIOException("Error while opening channel", e);
 		}
+
+		return Flowable.fromPublisher(inboundMessageSink);
 	}
 
-	private void setupChannel(SocketChannel ch, InboundMessageConsumer messageSink, boolean isOutbound, int rcvBufSize, int sndBufSize) {
+	private void setupChannel(SocketChannel ch, boolean isOutbound, int rcvBufSize, int sndBufSize) {
 		final int packetLength = TCPConstants.MAX_PACKET_LENGTH + TCPConstants.LENGTH_HEADER;
 		final int headerLength = TCPConstants.LENGTH_HEADER;
 		ch.config()
@@ -204,11 +218,17 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 			ch.pipeline()
 				.addLast("connections", control.handler());
 		}
+
+		final var messageHandler = new TCPNettyMessageHandler(this.counters, this.messageBufferSize);
+		this.inboundMessageSink.subscribeTo(messageHandler.inboundMessageRx());
+
 		ch.pipeline()
 			.addLast("unpack", new LengthFieldBasedFrameDecoder(packetLength, 0, headerLength, 0, headerLength))
-			.addLast("onboard", new TCPNettyMessageHandler(messageSink));
+			.addLast("onboard", messageHandler);
 		ch.pipeline()
 			.addLast("pack", new LengthFieldPrepender(headerLength));
+		ch.closeFuture()
+			.addListener(f -> messageHandler.shutdownRx());
 	}
 
 	@Override

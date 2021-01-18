@@ -23,10 +23,9 @@ import com.radixdlt.environment.rx.RemoteEvent;
 import com.radixdlt.ledger.DtoLedgerHeaderAndProof;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.messaging.MessageCentral;
-import com.radixdlt.network.messaging.MessageListener;
 import com.radixdlt.ledger.DtoCommandsAndProof;
 import com.radixdlt.universe.Universe;
-import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.Flowable;
 import java.util.Objects;
 import javax.inject.Inject;
 
@@ -49,32 +48,29 @@ public final class MessageCentralLedgerSync {
 		this.messageCentral = Objects.requireNonNull(messageCentral);
 	}
 
-	public Observable<RemoteEvent<DtoCommandsAndProof>> syncResponses() {
-		return Observable.create(emitter -> {
-			MessageListener<SyncResponseMessage> listener = (src, msg) -> {
-				if (src.hasSystem()) {
-					BFTNode node = BFTNode.create(src.getSystem().getKey());
-					emitter.onNext(RemoteEvent.create(node, msg.getCommands(), DtoCommandsAndProof.class));
+	public Flowable<RemoteEvent<DtoCommandsAndProof>> syncResponses() {
+		return this.messageCentral.messagesOf(SyncResponseMessage.class)
+			.map(m -> {
+				if (m.getPeer().hasSystem()) {
+					final var node = BFTNode.create(m.getPeer().getSystem().getKey());
+					return RemoteEvent.create(node, m.getMessage().getCommands(), DtoCommandsAndProof.class);
+				} else {
+					return null;
 				}
-			};
-			this.messageCentral.addListener(SyncResponseMessage.class, listener);
-			emitter.setCancellable(() -> this.messageCentral.removeListener(listener));
-		});
+			});
 	}
 
-	public Observable<RemoteEvent<DtoLedgerHeaderAndProof>> syncRequests() {
-		return Observable.create(emitter -> {
-			MessageListener<SyncRequestMessage> listener = (src, msg) -> {
-				if (src.hasSystem()) {
-					BFTNode node = BFTNode.create(src.getSystem().getKey());
-					emitter.onNext(RemoteEvent.create(node, msg.getCurrentHeader(), DtoLedgerHeaderAndProof.class));
+	public Flowable<RemoteEvent<DtoLedgerHeaderAndProof>> syncRequests() {
+		return this.messageCentral.messagesOf(SyncRequestMessage.class)
+			.map(m -> {
+				if (m.getPeer().hasSystem()) {
+					final var node = BFTNode.create(m.getPeer().getSystem().getKey());
+					return RemoteEvent.create(node, m.getMessage().getCurrentHeader(), DtoLedgerHeaderAndProof.class);
+				} else {
+					return null;
 				}
-			};
-			this.messageCentral.addListener(SyncRequestMessage.class, listener);
-			emitter.setCancellable(() -> this.messageCentral.removeListener(listener));
-		});
+			});
 	}
-
 
 	public RemoteEventDispatcher<DtoLedgerHeaderAndProof> syncRequestDispatcher() {
 		return this::sendSyncRequest;

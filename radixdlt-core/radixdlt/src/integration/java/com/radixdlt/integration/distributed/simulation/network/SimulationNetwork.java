@@ -38,6 +38,8 @@ import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.rx.RemoteEvent;
+import io.reactivex.rxjava3.core.BackpressureStrategy;
+import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Observable;
 
 import io.reactivex.rxjava3.subjects.ReplaySubject;
@@ -130,13 +132,13 @@ public class SimulationNetwork {
 	public class SimulatedNetworkImpl implements
 		ProposalBroadcaster, SyncVerticesResponseSender, SyncEpochsRPCSender, BFTEventsRx,
 		SyncVerticesRPCRx, SyncEpochsRPCRx {
-		private final Observable<Object> myMessages;
+		private final Flowable<Object> myMessages;
 		private final BFTNode thisNode;
 
 		private SimulatedNetworkImpl(BFTNode node) {
 			this.thisNode = node;
 			// filter only relevant messages (appropriate target and if receiving is allowed)
-			this.myMessages = receivedMessages
+			this.myMessages = Flowable.fromObservable(receivedMessages
 				.filter(msg -> msg.receiver.equals(node))
 				.groupBy(MessageInTransit::getSender)
 				.serialize()
@@ -146,7 +148,8 @@ public class SimulationNetwork {
 						.map(MessageInTransit::getContent)
 				)
 				.publish()
-				.refCount();
+				.refCount(), BackpressureStrategy.BUFFER)
+			.onBackpressureBuffer(255, false, true);
 		}
 
 		@Override
@@ -181,34 +184,34 @@ public class SimulationNetwork {
 		}
 
 		@Override
-		public Observable<ConsensusEvent> bftEvents() {
-			return Observable.merge(
+		public Flowable<ConsensusEvent> bftEvents() {
+			return Flowable.merge(
 				myMessages.ofType(ConsensusEvent.class),
 				remoteEvents(Vote.class).map(RemoteEvent::getEvent)
 			);
 		}
 
 		@Override
-		public Observable<GetVerticesResponse> responses() {
+		public Flowable<GetVerticesResponse> responses() {
 			return myMessages.ofType(GetVerticesResponse.class);
 		}
 
 		@Override
-		public Observable<GetVerticesErrorResponse> errorResponses() {
+		public Flowable<GetVerticesErrorResponse> errorResponses() {
 			return myMessages.ofType(GetVerticesErrorResponse.class);
 		}
 
 		@Override
-		public Observable<GetEpochRequest> epochRequests() {
+		public Flowable<GetEpochRequest> epochRequests() {
 			return myMessages.ofType(GetEpochRequest.class);
 		}
 
 		@Override
-		public Observable<GetEpochResponse> epochResponses() {
+		public Flowable<GetEpochResponse> epochResponses() {
 			return myMessages.ofType(GetEpochResponse.class);
 		}
 
-		public <T> Observable<RemoteEvent<T>> remoteEvents(Class<T> eventClass) {
+		public <T> Flowable<RemoteEvent<T>> remoteEvents(Class<T> eventClass) {
 			return myMessages.ofType(RemoteEvent.class)
 				.flatMapMaybe(e -> RemoteEvent.ofEventType(e, eventClass));
 		}

@@ -113,7 +113,6 @@ public interface SystemCounters {
 
 		MESSAGES_INBOUND_BADSIGNATURE("messages.inbound.badsignature"),
 		MESSAGES_INBOUND_DISCARDED("messages.inbound.discarded"),
-		MESSAGES_INBOUND_PENDING("messages.inbound.pending"),
 		MESSAGES_INBOUND_PROCESSED("messages.inbound.processed"),
 		MESSAGES_INBOUND_RECEIVED("messages.inbound.received"),
 		MESSAGES_OUTBOUND_ABORTED("messages.outbound.aborted"),
@@ -121,12 +120,12 @@ public interface SystemCounters {
 		MESSAGES_OUTBOUND_PROCESSED("messages.outbound.processed"),
 		MESSAGES_OUTBOUND_SENT("messages.outbound.sent"),
 
+		NETWORKING_UDP_DROPPED_MESSAGES("networking.udp.dropped_messages"),
+		NETWORKING_TCP_DROPPED_MESSAGES("networking.tcp.dropped_messages"),
 		NETWORKING_TCP_OPENED("networking.tcp.opened"),
 		NETWORKING_TCP_CLOSED("networking.tcp.closed"),
 		NETWORKING_SENT_BYTES("networking.sent_bytes"),
 		NETWORKING_RECEIVED_BYTES("networking.received_bytes"),
-
-		NETWORKING_DROPPED_ERROR_RESPONSES("networking.dropped_error_responses"),
 
 		SIGNATURES_SIGNED("signatures.signed"),
 		SIGNATURES_VERIFIED("signatures.verified");

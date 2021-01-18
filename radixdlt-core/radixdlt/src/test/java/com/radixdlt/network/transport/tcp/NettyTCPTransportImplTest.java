@@ -19,6 +19,8 @@ package com.radixdlt.network.transport.tcp;
 
 import java.io.IOException;
 
+import com.radixdlt.counters.SystemCounters;
+import org.junit.Before;
 import org.junit.Test;
 
 import com.radixdlt.network.transport.StaticTransportMetadata;
@@ -30,6 +32,13 @@ import static org.mockito.Mockito.*;
 
 public class NettyTCPTransportImplTest {
 
+	private SystemCounters counters;
+
+	@Before
+	public void setup() {
+		this.counters = mock(SystemCounters.class);
+	}
+
 	@Test
 	public void testConstruction() throws IOException {
 		TCPConfiguration config = mock(TCPConfiguration.class);
@@ -40,7 +49,8 @@ public class NettyTCPTransportImplTest {
 		TCPTransportOutboundConnectionFactory outboundFactory = mock(TCPTransportOutboundConnectionFactory.class);
 		TCPTransportControlFactory controlFactory = mock(TCPTransportControlFactory.class);
 
-		try (NettyTCPTransportImpl testInstance = new NettyTCPTransportImpl(config, localMetadata, outboundFactory, controlFactory)) {
+		try (NettyTCPTransportImpl testInstance =
+				 new NettyTCPTransportImpl(counters, config, localMetadata, outboundFactory, controlFactory)) {
 			assertEquals("127.0.0.1", testInstance.localMetadata().get(TCPConstants.METADATA_HOST));
 			assertEquals("10000", testInstance.localMetadata().get(TCPConstants.METADATA_PORT));
 		}
@@ -56,7 +66,8 @@ public class NettyTCPTransportImplTest {
 		TCPTransportOutboundConnectionFactory outboundFactory = mock(TCPTransportOutboundConnectionFactory.class);
 		TCPTransportControlFactory controlFactory = mock(TCPTransportControlFactory.class);
 
-		try (NettyTCPTransportImpl testInstance = new NettyTCPTransportImpl(config, localMetadata, outboundFactory, controlFactory)) {
+		try (NettyTCPTransportImpl testInstance =
+				 new NettyTCPTransportImpl(counters, config, localMetadata, outboundFactory, controlFactory)) {
 			assertEquals(NettyTCPTransportImpl.DEFAULT_HOST, testInstance.localMetadata().get(TCPConstants.METADATA_HOST));
 			assertEquals("20000", testInstance.localMetadata().get(TCPConstants.METADATA_PORT));
 		}
@@ -72,7 +83,8 @@ public class NettyTCPTransportImplTest {
 		TCPTransportOutboundConnectionFactory outboundFactory = mock(TCPTransportOutboundConnectionFactory.class);
 		TCPTransportControlFactory controlFactory = mock(TCPTransportControlFactory.class);
 
-		try (NettyTCPTransportImpl testInstance = new NettyTCPTransportImpl(config, localMetadata, outboundFactory, controlFactory)) {
+		try (NettyTCPTransportImpl testInstance =
+				 new NettyTCPTransportImpl(counters, config, localMetadata, outboundFactory, controlFactory)) {
 			assertEquals("127.0.0.2", testInstance.localMetadata().get(TCPConstants.METADATA_HOST));
 			assertEquals(
 				String.valueOf(NettyTCPTransportImpl.DEFAULT_PORT),
@@ -90,7 +102,8 @@ public class NettyTCPTransportImplTest {
 		TCPTransportOutboundConnectionFactory outboundFactory = mock(TCPTransportOutboundConnectionFactory.class);
 		TCPTransportControlFactory controlFactory = mock(TCPTransportControlFactory.class);
 
-		try (NettyTCPTransportImpl testInstance = new NettyTCPTransportImpl(config, localMetadata, outboundFactory, controlFactory)) {
+		try (NettyTCPTransportImpl testInstance =
+				 new NettyTCPTransportImpl(counters, config, localMetadata, outboundFactory, controlFactory)) {
 			assertEquals(TCPConstants.NAME, testInstance.name());
 		}
 	}
@@ -108,7 +121,8 @@ public class NettyTCPTransportImplTest {
 		TCPTransportControlFactory controlFactory = mock(TCPTransportControlFactory.class);
 		when(controlFactory.create(any(), any(), any())).thenReturn(control);
 
-		try (NettyTCPTransportImpl testInstance = new NettyTCPTransportImpl(config, localMetadata, outboundFactory, controlFactory)) {
+		try (NettyTCPTransportImpl testInstance =
+				 new NettyTCPTransportImpl(counters, config, localMetadata, outboundFactory, controlFactory)) {
 			assertSame(control, testInstance.control());
 		}
 	}
@@ -126,7 +140,8 @@ public class NettyTCPTransportImplTest {
 		TCPTransportControlFactory controlFactory = mock(TCPTransportControlFactory.class);
 		when(controlFactory.create(any(), any(), any())).thenReturn(control);
 
-		try (NettyTCPTransportImpl testInstance = new NettyTCPTransportImpl(config, localMetadata, outboundFactory, controlFactory)) {
+		try (NettyTCPTransportImpl testInstance =
+				 new NettyTCPTransportImpl(counters, config, localMetadata, outboundFactory, controlFactory)) {
 			byte[] max = new byte[TCPConstants.MAX_PACKET_LENGTH];
 			byte[] tooBig = new byte[TCPConstants.MAX_PACKET_LENGTH + 1];
 			assertTrue(testInstance.canHandle(null));
@@ -145,7 +160,8 @@ public class NettyTCPTransportImplTest {
 		TCPTransportOutboundConnectionFactory outboundFactory = mock(TCPTransportOutboundConnectionFactory.class);
 		TCPTransportControlFactory controlFactory = mock(TCPTransportControlFactory.class);
 
-		try (NettyTCPTransportImpl testInstance = new NettyTCPTransportImpl(config, localMetadata, outboundFactory, controlFactory)) {
+		try (NettyTCPTransportImpl testInstance =
+				 new NettyTCPTransportImpl(counters, config, localMetadata, outboundFactory, controlFactory)) {
 			assertEquals(1234, testInstance.priority());
 		}
 	}
@@ -159,7 +175,8 @@ public class NettyTCPTransportImplTest {
 		TCPTransportOutboundConnectionFactory outboundFactory = mock(TCPTransportOutboundConnectionFactory.class);
 		TCPTransportControlFactory controlFactory = mock(TCPTransportControlFactory.class);
 
-		try (NettyTCPTransportImpl testInstance = new NettyTCPTransportImpl(config, localMetadata, outboundFactory, controlFactory)) {
+		try (NettyTCPTransportImpl testInstance =
+				 new NettyTCPTransportImpl(counters, config, localMetadata, outboundFactory, controlFactory)) {
 			String s = testInstance.toString();
 			assertThat(s).contains(NettyTCPTransportImpl.class.getSimpleName());
 			assertThat(s).contains(NettyTCPTransportImpl.DEFAULT_HOST);
