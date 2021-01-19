@@ -38,6 +38,7 @@ import com.radixdlt.LedgerCommandGeneratorModule;
 import com.radixdlt.EpochsLedgerUpdateModule;
 import com.radixdlt.EpochsLedgerUpdateRxModule;
 import com.radixdlt.LedgerModule;
+import com.radixdlt.MempoolReceiverModule;
 import com.radixdlt.NoFeeModule;
 import com.radixdlt.LedgerLocalMempoolModule;
 import com.radixdlt.RadixEngineModule;
@@ -176,22 +177,27 @@ public class SimulationTest {
 
 	public static class Builder {
 		private enum LedgerType {
-			MOCKED_LEDGER(true, false, false, false, false, false),
-			LEDGER(true, true, false, false, false, false),
-			LEDGER_AND_SYNC(true, true, false, false, false, true),
-			LEDGER_AND_LOCALMEMPOOL(true, true, true, false, false, false),
-			LEDGER_AND_EPOCHS(true, true, false, false, true, false),
-			LEDGER_AND_EPOCHS_AND_SYNC(true, true, false, false, true, true),
-			LEDGER_AND_LOCALMEMPOOL_AND_EPOCHS_AND_RADIXENGINE(true, true, true, true, true, false);
+			MOCKED_LEDGER(false, true, false, false, false, false, false),
+			LEDGER(false, true, true, false, false, false, false),
+			LEDGER_AND_SYNC(false, true, true, false, false, false, true),
+			LEDGER_AND_LOCALMEMPOOL(false, true, true, true, false, false, false),
+			LEDGER_AND_EPOCHS(false, true, true, false, false, true, false),
+			LEDGER_AND_EPOCHS_AND_SYNC(false, true, true, false, false, true, true),
+			LEDGER_AND_LOCALMEMPOOL_AND_EPOCHS_AND_RADIXENGINE(false, true, true, true, true, true, false);
 
+			private final boolean hasSharedMempool;
 			private final boolean hasConsensus;
+			private final boolean hasSync;
+
+			// State manager
 			private final boolean hasLedger;
 			private final boolean hasMempool;
 			private final boolean hasRadixEngine;
+
 			private final boolean hasEpochs;
-			private final boolean hasSync;
 
 			LedgerType(
+				boolean hasSharedMempool,
 				boolean hasConsensus,
 				boolean hasLedger,
 				boolean hasMempool,
@@ -199,6 +205,7 @@ public class SimulationTest {
 				boolean hasEpochs,
 				boolean hasSync
 			) {
+			    this.hasSharedMempool = hasSharedMempool;
 				this.hasConsensus = hasConsensus;
 				this.hasLedger = hasLedger;
 				this.hasMempool = hasMempool;
@@ -209,6 +216,11 @@ public class SimulationTest {
 
 			Module getCoreModule() {
 				List<Module> modules = new ArrayList<>();
+
+				// Shared Mempool
+				if (hasSharedMempool) {
+					modules.add(new MempoolReceiverModule());
+				}
 
 				// Consensus
 				if (hasConsensus) {
@@ -222,7 +234,23 @@ public class SimulationTest {
 					}
 				}
 
-				// Ledger
+				// Sync
+				if (hasLedger) {
+					if (!hasSync) {
+						modules.add(new MockedSyncServiceModule());
+					} else {
+						modules.add(new SyncServiceModule());
+						modules.add(new MockedCommittedReaderModule());
+						if (!hasEpochs) {
+							modules.add(new MockedSyncRunnerModule());
+						} else {
+							modules.add(new EpochsSyncModule());
+							modules.add(new SyncRunnerModule());
+						}
+					}
+				}
+
+				// State Manager
 				if (!hasLedger) {
 					modules.add(new MockedLedgerModule());
 					modules.add(new MockedLedgerUpdateRxModule());
@@ -260,21 +288,7 @@ public class SimulationTest {
 						modules.add(new EpochsLedgerUpdateRxModule());
 					}
 				}
-				// Sync
-				if (hasLedger) {
-					if (!hasSync) {
-						modules.add(new MockedSyncServiceModule());
-					} else {
-						modules.add(new SyncServiceModule());
-						modules.add(new MockedCommittedReaderModule());
-						if (!hasEpochs) {
-							modules.add(new MockedSyncRunnerModule());
-						} else {
-							modules.add(new EpochsSyncModule());
-							modules.add(new SyncRunnerModule());
-						}
-					}
-				}
+
 				return Modules.combine(modules);
 			}
 		}
