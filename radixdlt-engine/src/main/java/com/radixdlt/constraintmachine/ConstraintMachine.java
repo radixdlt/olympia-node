@@ -279,7 +279,7 @@ public final class ConstraintMachine {
 			);
 		}
 
-		Optional<UsedData> prevUsedData = null;
+		Optional<UsedData> prevUsedData = Optional.empty();
 		for (boolean testInput : truefalse) {
 
 			UsedCompute<Particle, UsedData, Particle, UsedData> usedCompute
@@ -288,7 +288,7 @@ public final class ConstraintMachine {
 			try {
 				final Optional<UsedData> usedData = usedCompute.compute(inputParticle, inputUsed, outputParticle, outputUsed);
 				if (usedData.isPresent()) {
-					if (prevUsedData != null && prevUsedData.isPresent()) {
+					if (prevUsedData.isPresent()) {
 						return Optional.of(
 							new CMError(
 								dp,
@@ -321,7 +321,7 @@ public final class ConstraintMachine {
 						);
 					}
 
-					if (prevUsedData != null && !prevUsedData.isPresent()) {
+					if (prevUsedData.isEmpty()) {
 						validationState.pop();
 					}
 				}
