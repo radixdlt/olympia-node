@@ -76,7 +76,7 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 			return Result.error("atom has no instructions");
 		}
 
-		final boolean magic = Objects.equals(atom.getMetaData().get("magic"), "0xdeadbeef");
+		final boolean magic = Objects.equals(atom.getMessage(), "magic:0xdeadbeef");
 		if (magic) {
 			return Result.success();
 		}
@@ -120,10 +120,6 @@ public class TokenFeeLedgerAtomChecker implements AtomChecker<LedgerAtom> {
 	}
 
 	private boolean isFeeGroup(ParticleGroup pg) {
-		// No free storage in metadata
-		if (!pg.getMetaData().isEmpty()) {
-			return false;
-		}
 		Map<Class<? extends Particle>, List<SpunParticle>> grouping = pg.getParticles().stream()
 			.collect(Collectors.groupingBy(sp -> sp.getParticle().getClass()));
 		List<SpunParticle> spunTransferableTokens = Optional.ofNullable(grouping.remove(TransferrableTokensParticle.class))
