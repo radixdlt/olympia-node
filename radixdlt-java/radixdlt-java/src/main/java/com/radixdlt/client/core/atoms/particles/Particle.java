@@ -53,10 +53,6 @@ public abstract class Particle {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("version")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private short version = 100;
-
 	@JsonProperty("destinations")
 	@DsonOutput(Output.ALL)
 	private ImmutableSet<EUID> destinations;

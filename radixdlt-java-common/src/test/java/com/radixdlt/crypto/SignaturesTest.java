@@ -26,7 +26,6 @@ public class SignaturesTest {
     @Test
     public void equalsContract() {
         EqualsVerifier.forClass(ECDSASignatures.class)
-                .withIgnoredFields("version")
                 .verify();
     }
 
