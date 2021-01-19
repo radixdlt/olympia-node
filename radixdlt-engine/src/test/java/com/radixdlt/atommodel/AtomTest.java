@@ -59,7 +59,6 @@ public class AtomTest {
 	@Test
 	public void equalsContract() {
 		EqualsVerifier.forClass(Atom.class)
-				.withIgnoredFields("version")
 				.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 				.verify();
 	}

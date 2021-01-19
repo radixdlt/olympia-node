@@ -32,7 +32,6 @@ public class SystemParticleTest {
         EqualsVerifier.forClass(SystemParticle.class)
                 .withRedefinedSuperclass()
                 .suppress(Warning.NONFINAL_FIELDS)
-                .withIgnoredFields("version")
                 .verify();
     }
 }

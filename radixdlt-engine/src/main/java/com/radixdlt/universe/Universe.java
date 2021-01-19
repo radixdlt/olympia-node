@@ -202,10 +202,6 @@ public class Universe {
 	@DsonOutput(Output.ALL)
 	private SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("version")
-	@DsonOutput(Output.ALL)
-	private short version = 100;
-
 	public enum UniverseType {
 		PRODUCTION,
 		TEST,

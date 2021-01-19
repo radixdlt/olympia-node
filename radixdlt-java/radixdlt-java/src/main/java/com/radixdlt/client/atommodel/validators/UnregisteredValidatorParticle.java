@@ -27,6 +27,7 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.client.atommodel.Accountable;
 import com.radixdlt.client.atommodel.Ownable;
 import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
@@ -51,9 +52,13 @@ public final class UnregisteredValidatorParticle extends Particle implements Acc
 	}
 
 	public UnregisteredValidatorParticle(RadixAddress address, long nonce) {
-		super(address.euid());
 		this.address = Objects.requireNonNull(address, "address");
 		this.nonce = nonce;
+	}
+
+	@Override
+	public Set<EUID> getDestinations() {
+		return ImmutableSet.of(this.address.euid());
 	}
 
 	@Override

@@ -63,10 +63,6 @@ public final class ParticleGroup {
 	@DsonOutput(Output.ALL)
 	private SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("version")
-	@DsonOutput(Output.ALL)
-	private short version = 100;
-
 	private ParticleGroup() {
 		this.particles = ImmutableList.of();
 		this.indexByParticle = ImmutableMap.of();
@@ -282,14 +278,13 @@ public final class ParticleGroup {
 			return false;
 		}
 		ParticleGroup that = (ParticleGroup) o;
-		return version == that.version
-				&& Objects.equals(particles, that.particles)
+		return Objects.equals(particles, that.particles)
 				&& Objects.equals(metaData, that.metaData);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(particles, metaData, version);
+		return Objects.hash(particles, metaData);
 	}
 
 	/**

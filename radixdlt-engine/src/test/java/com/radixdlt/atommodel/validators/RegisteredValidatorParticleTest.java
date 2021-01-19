@@ -26,7 +26,6 @@ public class RegisteredValidatorParticleTest {
     public void equalsContract() {
         EqualsVerifier.forClass(RegisteredValidatorParticle.class)
             .suppress(Warning.NONFINAL_FIELDS)
-            .withIgnoredFields("version")
             .verify();
     }
 }

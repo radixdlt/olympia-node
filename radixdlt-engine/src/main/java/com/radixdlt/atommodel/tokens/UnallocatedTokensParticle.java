@@ -19,7 +19,9 @@ package com.radixdlt.atommodel.tokens;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.constraintmachine.Particle;
@@ -29,6 +31,7 @@ import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.utils.UInt256;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -65,13 +68,16 @@ public final class UnallocatedTokensParticle extends Particle {
 		RRI tokenDefinitionReference,
 		Map<TokenTransition, TokenPermission> tokenPermissions
 	) {
-		super(tokenDefinitionReference.getAddress().euid());
-
 		this.granularity = Objects.requireNonNull(granularity);
 		this.tokenDefinitionReference = Objects.requireNonNull(tokenDefinitionReference);
 		this.nonce = System.nanoTime();
 		this.amount = Objects.requireNonNull(amount);
 		this.tokenPermissions = ImmutableMap.copyOf(tokenPermissions);
+	}
+
+	@Override
+	public Set<EUID> getDestinations() {
+		return ImmutableSet.of(this.tokenDefinitionReference.getAddress().euid());
 	}
 
 	public RadixAddress getAddress() {
@@ -152,12 +158,11 @@ public final class UnallocatedTokensParticle extends Particle {
 				&& Objects.equals(tokenDefinitionReference, that.tokenDefinitionReference)
 				&& Objects.equals(granularity, that.granularity)
 				&& Objects.equals(amount, that.amount)
-				&& Objects.equals(tokenPermissions, that.tokenPermissions)
-				&& Objects.equals(getDestinations(), that.getDestinations());
+				&& Objects.equals(tokenPermissions, that.tokenPermissions);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(tokenDefinitionReference, granularity, nonce, amount, tokenPermissions, getDestinations());
+		return Objects.hash(tokenDefinitionReference, granularity, nonce, amount, tokenPermissions);
 	}
 }

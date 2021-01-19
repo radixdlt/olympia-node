@@ -37,10 +37,6 @@ public class SpunParticle {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("version")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private short version = 100;
-
 	@JsonProperty("particle")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final Particle particle;

@@ -44,7 +44,6 @@ public class MessageParticleTest {
 	public void equalsContract() {
 		EqualsVerifier.forClass(MessageParticle.class)
 				.suppress(Warning.NONFINAL_FIELDS)
-				.withIgnoredFields("version")
 				.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 				.verify();
 	}
