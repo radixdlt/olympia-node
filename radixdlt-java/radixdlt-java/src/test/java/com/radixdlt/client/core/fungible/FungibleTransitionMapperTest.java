@@ -5,10 +5,14 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.utils.UInt256;
 import java.util.List;
+import java.util.Set;
+
 import org.junit.Before;
 import org.junit.Test;
 
@@ -18,6 +22,11 @@ public class FungibleTransitionMapperTest {
 
 		TestParticle(UInt256 amt) {
 			this.amt = amt;
+		}
+
+		@Override
+		public Set<EUID> getDestinations() {
+			return ImmutableSet.of();
 		}
 
 		UInt256 getAmt() {

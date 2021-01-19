@@ -18,12 +18,15 @@
 package com.radixdlt.atommodel.unique;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableSet;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
+import java.util.Set;
 
 @SerializerId2("radix.particles.unique")
 public final class UniqueParticle extends Particle {
@@ -45,10 +48,14 @@ public final class UniqueParticle extends Particle {
 	}
 
 	public UniqueParticle(String name, RadixAddress address, long nonce) {
-		super(address.euid());
 		this.name = Objects.requireNonNull(name);
 		this.address = address;
 		this.nonce = nonce;
+	}
+
+	@Override
+	public Set<EUID> getDestinations() {
+		return ImmutableSet.of(this.address.euid());
 	}
 
 	public RRI getRRI() {
@@ -61,7 +68,7 @@ public final class UniqueParticle extends Particle {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.name, this.address, this.nonce, getDestinations());
+		return Objects.hash(this.name, this.address, this.nonce);
 	}
 
 	@Override
@@ -72,8 +79,7 @@ public final class UniqueParticle extends Particle {
 		final var that = (UniqueParticle) obj;
 		return this.nonce == that.nonce
 			&& Objects.equals(this.name, that.name)
-			&& Objects.equals(this.address, that.address)
-			&& Objects.equals(this.getDestinations(), that.getDestinations());
+			&& Objects.equals(this.address, that.address);
 	}
 
 	@Override
