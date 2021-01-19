@@ -23,7 +23,7 @@ import com.google.inject.Inject;
 
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.environment.rx.RemoteEvent;
-import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.Flowable;
 
 import io.reactivex.rxjava3.disposables.Disposable;
 
@@ -31,7 +31,7 @@ import io.reactivex.rxjava3.disposables.Disposable;
  * Network glue for SubmissionControl.
  */
 public final class MempoolReceiver {
-	private final Observable<RemoteEvent<MempoolAddSuccess>> mempoolCommands;
+	private final Flowable<RemoteEvent<MempoolAddSuccess>> mempoolCommands;
 	private final RemoteEventProcessor<MempoolAddSuccess> remoteEventProcessor;
 
 	private final Object startLock = new Object();
@@ -39,7 +39,7 @@ public final class MempoolReceiver {
 
 	@Inject
 	public MempoolReceiver(
-		Observable<RemoteEvent<MempoolAddSuccess>> mempoolCommands,
+		Flowable<RemoteEvent<MempoolAddSuccess>> mempoolCommands,
 		RemoteEventProcessor<MempoolAddSuccess> remoteEventProcessor
 	) {
 		this.mempoolCommands = Objects.requireNonNull(mempoolCommands);
