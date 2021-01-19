@@ -11,7 +11,6 @@ public class SpunParticleTest {
 	public void equalsContract() {
 		EqualsVerifier.forClass(SpunParticle.class)
 				.suppress(Warning.NONFINAL_FIELDS) // "spin" can't be final due to @JsonProperty setter
-				.withIgnoredFields("version") // only used for serialization
 				.withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
 				.verify();
 	}

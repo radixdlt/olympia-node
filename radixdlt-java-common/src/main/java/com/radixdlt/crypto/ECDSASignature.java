@@ -44,10 +44,6 @@ public final class ECDSASignature implements Signature {
 	@DsonOutput(Output.ALL)
 	private SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("version")
-	@DsonOutput(Output.ALL)
-	private short version = 100;
-
 	/* The two components of the signature. */
 	private BigInteger r;
 	private BigInteger s;

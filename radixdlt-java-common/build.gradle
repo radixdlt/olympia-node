@@ -18,6 +18,11 @@
 
 apply plugin: 'java-library'
 
+tasks.withType(GenerateModuleMetadata) {
+    enabled = false
+}
+
+
 dependencies {
     api 'org.apache.logging.log4j:log4j-api'
     api 'org.apache.logging.log4j:log4j-core'
