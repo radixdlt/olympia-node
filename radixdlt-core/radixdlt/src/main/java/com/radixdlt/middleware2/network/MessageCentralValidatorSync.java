@@ -40,8 +40,10 @@ import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.network.messaging.MessageCentral;
+import com.radixdlt.network.messaging.MessageFromPeer;
 import com.radixdlt.universe.Universe;
 import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.functions.Predicate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.network.messaging.Message;
@@ -125,11 +127,8 @@ public class MessageCentralValidatorSync implements SyncVerticesResponseSender,
 	public Flowable<RemoteEvent<GetVerticesRequest>> requests() {
 		return this.createFlowable(
 			GetVerticesRequestMessage.class,
+			m -> m.getPeer().hasSystem(),
 			(peer, msg) -> {
-				if (!peer.hasSystem()) {
-					return null;
-				}
-
 				final BFTNode node = BFTNode.create(peer.getSystem().getKey());
 				return RemoteEvent.create(node, new GetVerticesRequest(msg.getVertexId(), msg.getCount()), GetVerticesRequest.class);
 			}
@@ -140,11 +139,8 @@ public class MessageCentralValidatorSync implements SyncVerticesResponseSender,
 	public Flowable<GetVerticesResponse> responses() {
 		return this.createFlowable(
 			GetVerticesResponseMessage.class,
+			m -> m.getPeer().hasSystem(),
 			(src, msg) -> {
-				if (!src.hasSystem()) {
-					return null;
-				}
-
 				BFTNode node = BFTNode.create(src.getSystem().getKey());
 				// TODO: Move hasher to a more appropriate place
 				ImmutableList<VerifiedVertex> hashedVertices = msg.getVertices().stream()
@@ -160,11 +156,8 @@ public class MessageCentralValidatorSync implements SyncVerticesResponseSender,
 	public Flowable<GetVerticesErrorResponse> errorResponses() {
 		return this.createFlowable(
 			GetVerticesErrorResponseMessage.class,
+			m -> m.getPeer().hasSystem(),
 			(src, msg) -> {
-				if (!src.hasSystem()) {
-					return null;
-				}
-
 				final var node = BFTNode.create(src.getSystem().getKey());
 				return new GetVerticesErrorResponse(node, msg.highQC());
 			}
@@ -209,6 +202,16 @@ public class MessageCentralValidatorSync implements SyncVerticesResponseSender,
 
 	private <T extends Message, U> Flowable<U> createFlowable(Class<T> c, BiFunction<Peer, T, U> mapper) {
 		return this.messageCentral.messagesOf(c)
+			.map(m -> mapper.apply(m.getPeer(), m.getMessage()));
+	}
+
+	private <T extends Message, U> Flowable<U> createFlowable(
+		Class<T> c,
+		Predicate<MessageFromPeer<?>> filter,
+		BiFunction<Peer, T, U> mapper
+	) {
+		return this.messageCentral.messagesOf(c)
+			.filter(filter)
 			.map(m -> mapper.apply(m.getPeer(), m.getMessage()));
 	}
 }

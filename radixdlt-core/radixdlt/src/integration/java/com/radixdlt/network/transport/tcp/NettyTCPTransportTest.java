@@ -40,7 +40,8 @@ import com.radixdlt.network.transport.TransportControl;
 import com.radixdlt.network.transport.TransportOutboundConnection;
 import com.radixdlt.universe.Universe;
 import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 
 public class NettyTCPTransportTest {
 	private static final int TEST_SECONDS =

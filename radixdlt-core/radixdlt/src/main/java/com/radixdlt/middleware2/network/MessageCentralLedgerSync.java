@@ -50,25 +50,19 @@ public final class MessageCentralLedgerSync {
 
 	public Flowable<RemoteEvent<DtoCommandsAndProof>> syncResponses() {
 		return this.messageCentral.messagesOf(SyncResponseMessage.class)
+			.filter(m -> m.getPeer().hasSystem())
 			.map(m -> {
-				if (m.getPeer().hasSystem()) {
-					final var node = BFTNode.create(m.getPeer().getSystem().getKey());
-					return RemoteEvent.create(node, m.getMessage().getCommands(), DtoCommandsAndProof.class);
-				} else {
-					return null;
-				}
+				final var node = BFTNode.create(m.getPeer().getSystem().getKey());
+				return RemoteEvent.create(node, m.getMessage().getCommands(), DtoCommandsAndProof.class);
 			});
 	}
 
 	public Flowable<RemoteEvent<DtoLedgerHeaderAndProof>> syncRequests() {
 		return this.messageCentral.messagesOf(SyncRequestMessage.class)
+			.filter(m -> m.getPeer().hasSystem())
 			.map(m -> {
-				if (m.getPeer().hasSystem()) {
-					final var node = BFTNode.create(m.getPeer().getSystem().getKey());
-					return RemoteEvent.create(node, m.getMessage().getCurrentHeader(), DtoLedgerHeaderAndProof.class);
-				} else {
-					return null;
-				}
+				final var node = BFTNode.create(m.getPeer().getSystem().getKey());
+				return RemoteEvent.create(node, m.getMessage().getCurrentHeader(), DtoLedgerHeaderAndProof.class);
 			});
 	}
 

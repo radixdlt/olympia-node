@@ -78,7 +78,7 @@ public final class MessageCentralBFTNetwork implements ProposalBroadcaster, BFTE
 			.map(MessageFromPeer::getMessage)
 			.map(ConsensusEventMessage::getConsensusMessage));
 
-		messageProcessor.subscribeTo(localMessages.onBackpressureBuffer(255, false, true));
+		messageProcessor.subscribeTo(localMessages.onBackpressureBuffer(255, false, true /* unbounded */));
 	}
 
 	@Override

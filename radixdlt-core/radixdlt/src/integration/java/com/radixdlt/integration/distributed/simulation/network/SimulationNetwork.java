@@ -149,7 +149,7 @@ public class SimulationNetwork {
 				)
 				.publish()
 				.refCount(), BackpressureStrategy.BUFFER)
-			.onBackpressureBuffer(255, false, true);
+			.onBackpressureBuffer(255, false, true /* unbounded */);
 		}
 
 		@Override
