@@ -1,7 +1,6 @@
 package com.radix.regression;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
@@ -30,9 +29,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class AtomKernelTest {
 	private RadixUniverse universe = RadixUniverse.create(RadixEnv.getBootstrapConfig());
@@ -68,7 +65,7 @@ public class AtomKernelTest {
 
 	@Test
 	public void testAtomTooBig() {
-		TestObserver<?> observer = submitAtom(ImmutableMap.of(), true, System.currentTimeMillis() + "", SpunParticle.up(new MessageParticle.MessageParticleBuilder()
+		TestObserver<?> observer = submitAtom(null, true, SpunParticle.up(new MessageParticle.MessageParticleBuilder()
 			.payload(new byte[1 << 20])
 			.metaData("application", "message")
 			.from(universe.getAddressFrom(this.identity.getPublicKey()))
@@ -82,7 +79,7 @@ public class AtomKernelTest {
 
 	@Test
 	public void testAtomNoFee() {
-		TestObserver<AtomStatusEvent> observer = submitAtomAndObserve(ImmutableMap.of(), false, System.currentTimeMillis() + "", SpunParticle.up(new MessageParticle.MessageParticleBuilder()
+		TestObserver<AtomStatusEvent> observer = submitAtomAndObserve(null, false, SpunParticle.up(new MessageParticle.MessageParticleBuilder()
 			.payload(new byte[10])
 			.metaData("application", "message")
 			.from(universe.getAddressFrom(this.identity.getPublicKey()))
@@ -94,73 +91,27 @@ public class AtomKernelTest {
 	}
 
 	@Test
-	public void testAtomBadPowFee() {
-		TestObserver<AtomStatusEvent> observer = submitAtomAndObserve(ImmutableMap.of(
-			Atom.METADATA_POW_NONCE_KEY, "1337"
-		), false, System.currentTimeMillis() + "", SpunParticle.up(new MessageParticle.MessageParticleBuilder()
-			.payload(new byte[10])
-			.metaData("application", "message")
-			.from(universe.getAddressFrom(this.identity.getPublicKey()))
-			.to(universe.getAddressFrom(this.identity.getPublicKey()))
-			.build()));
-		observer.awaitCount(1, TestWaitStrategy.SLEEP_10MS, 10000);
-		observer.assertValue(n -> n.getAtomStatus() == AtomStatus.EVICTED_FAILED_CM_VERIFICATION);
-		observer.dispose();
-	}
-
-	@Test
-	public void testAtomInvalidTimestamp() {
-		TestObserver<AtomStatusEvent> observer = submitAtomAndObserve(ImmutableMap.of(), false, "invalid", SpunParticle.up(new MessageParticle.MessageParticleBuilder()
-			.payload(new byte[10])
-			.metaData("application", "message")
-			.from(universe.getAddressFrom(this.identity.getPublicKey()))
-			.to(universe.getAddressFrom(this.identity.getPublicKey()))
-			.build()));
-		observer.awaitCount(1, TestWaitStrategy.SLEEP_10MS, 10000);
-		observer.assertValue(n -> n.getAtomStatus() == AtomStatus.EVICTED_FAILED_CM_VERIFICATION);
-		observer.dispose();
-	}
-
-	@Test
-	public void testAtomOldTimestamp() {
-		TestObserver<AtomStatusEvent> observer = submitAtomAndObserve(ImmutableMap.of(), false, "100", SpunParticle.up(new MessageParticle.MessageParticleBuilder()
-			.payload(new byte[10])
-			.metaData("application", "message")
-			.from(universe.getAddressFrom(this.identity.getPublicKey()))
-			.to(universe.getAddressFrom(this.identity.getPublicKey()))
-			.build()));
-		observer.awaitCount(1, TestWaitStrategy.SLEEP_10MS, 5000);
-		observer.assertValue(n -> n.getAtomStatus() == AtomStatus.EVICTED_FAILED_CM_VERIFICATION);
-		observer.dispose();
-	}
-
-	@Test
 	public void testAtomEmpty() {
-		TestObserver<AtomStatusEvent> observer = submitAtomAndObserve(ImmutableMap.of(), false, System.currentTimeMillis() + "");
+		TestObserver<AtomStatusEvent> observer = submitAtomAndObserve(null, false);
 		observer.awaitCount(1, TestWaitStrategy.SLEEP_10MS, 5000);
 		observer.assertValue(n -> n.getAtomStatus() == AtomStatus.EVICTED_FAILED_CM_VERIFICATION);
 		observer.dispose();
 	}
 
 	private TestObserver<AtomStatusEvent> submitAtomAndObserve(
-		Map<String, String> metaData,
+		String message,
 		boolean addFee,
-		String timestamp,
 		SpunParticle... spunParticles
 	) {
 		List<ParticleGroup> particleGroups = new ArrayList<>();
-		particleGroups.add(ParticleGroup.of(ImmutableList.copyOf(spunParticles), metaData));
-
-		Map<String, String> atomMetaData = new HashMap<>();
-		atomMetaData.putAll(metaData);
-		atomMetaData.put("timestamp", timestamp);
+		particleGroups.add(ParticleGroup.of(ImmutableList.copyOf(spunParticles)));
 
 		if (addFee) {
 			// FIXME: not really a fee
-			atomMetaData.put("magic", "0xdeadbeef");
+			message = "magic:0xdeadbeef";
 		}
 
-		Atom unsignedAtom = Atom.create(particleGroups, atomMetaData);
+		Atom unsignedAtom = Atom.create(particleGroups, message);
 		// Sign and submit
 		Atom signedAtom = this.identity.addSignature(unsignedAtom).blockingGet();
 
@@ -182,24 +133,19 @@ public class AtomKernelTest {
 	}
 
 	private TestObserver<?> submitAtom(
-		Map<String, String> metaData,
+		String message,
 		boolean addFee,
-		String timestamp,
 		SpunParticle... spunParticles
 	) {
 		List<ParticleGroup> particleGroups = new ArrayList<>();
-		particleGroups.add(ParticleGroup.of(ImmutableList.copyOf(spunParticles), metaData));
-
-		Map<String, String> atomMetaData = new HashMap<>();
-		atomMetaData.putAll(metaData);
-		atomMetaData.put("timestamp", timestamp);
+		particleGroups.add(ParticleGroup.of(ImmutableList.copyOf(spunParticles)));
 
 		if (addFee) {
 			// FIXME: not really a fee
-			atomMetaData.put("magic", "0xdeadbeef");
+			message = "magic:0xdeadbeef";
 		}
 
-		Atom unsignedAtom = Atom.create(particleGroups, atomMetaData);
+		Atom unsignedAtom = Atom.create(particleGroups, message);
 		// Sign and submit
 		Atom signedAtom = this.identity.addSignature(unsignedAtom).blockingGet();
 

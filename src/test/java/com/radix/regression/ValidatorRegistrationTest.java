@@ -2,7 +2,6 @@
 package com.radix.regression;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.gson.JsonObject;
 import com.radix.test.utils.TokenUtilities;
@@ -36,9 +35,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 public class ValidatorRegistrationTest {
@@ -146,28 +143,23 @@ public class ValidatorRegistrationTest {
 	}
 
 	private TestObserver<AtomStatusEvent> submitAtom(SpunParticle... spunParticles) {
-		return submitAtom(ImmutableMap.of(), true, Long.toString(System.currentTimeMillis()), spunParticles);
+		return submitAtom(true, spunParticles);
 	}
 
 	private TestObserver<AtomStatusEvent> submitAtom(
-		Map<String, String> metaData,
 		boolean addFee,
-		String timestamp,
 		SpunParticle... spunParticles
 	) {
 		List<ParticleGroup> particleGroups = new ArrayList<>();
-		particleGroups.add(ParticleGroup.of(ImmutableList.copyOf(spunParticles), metaData));
+		particleGroups.add(ParticleGroup.of(ImmutableList.copyOf(spunParticles)));
 
-		Map<String, String> atomMetaData = new HashMap<>();
-		atomMetaData.putAll(metaData);
-		atomMetaData.put("timestamp", timestamp);
-
+		String message = null;
 		if (addFee) {
-			// FIXME: not really a fee
-			atomMetaData.put("magic", "0xdeadbeef");
+			// Warning: fake fee
+			message = "magic:0xdeadbeef";
 		}
 
-		Atom unsignedAtom = Atom.create(particleGroups, atomMetaData);
+		Atom unsignedAtom = Atom.create(particleGroups, message);
 		// Sign and submit
 		Atom signedAtom = this.identity.addSignature(unsignedAtom).blockingGet();
 
