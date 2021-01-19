@@ -110,7 +110,7 @@ public class MessageDispatcherTest extends RadixTest {
 	private RadixSystem makeSystem(EUID nid) {
 		RadixSystem system = mock(RadixSystem.class);
 		TransportInfo ti = TransportInfo.of("TCP", TransportMetadata.create(
-				ImmutableMap.of("nid", nid.toString())));
+			ImmutableMap.of("nid", nid.toString())));
 
 		when(system.getNID()).thenReturn(nid);
 		when(system.supportedTransports()).thenAnswer(inv -> Stream.of(ti));

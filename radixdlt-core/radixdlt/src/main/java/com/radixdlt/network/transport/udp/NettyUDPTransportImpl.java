@@ -84,7 +84,7 @@ final class NettyUDPTransportImpl implements Transport {
 	private TransportControl control;
 
 	private final RoundRobinBackpressuredProcessor<InboundMessage> inboundMessageSink =
-			new RoundRobinBackpressuredProcessor<>();
+		new RoundRobinBackpressuredProcessor<>();
 
 	@Inject
 	NettyUDPTransportImpl(
@@ -153,11 +153,11 @@ final class NettyUDPTransportImpl implements Transport {
 		MultithreadEventLoopGroup group = new NioEventLoopGroup(1, this::createThread);
 
 		Bootstrap b = new Bootstrap();
-	    b.group(group)
-	        .channel(NioDatagramChannel.class)
-	        .handler(new ChannelInitializer<NioDatagramChannel>() {
-	            @Override
-	            public void initChannel(NioDatagramChannel ch) throws Exception {
+		b.group(group)
+			.channel(NioDatagramChannel.class)
+			.handler(new ChannelInitializer<NioDatagramChannel>() {
+				@Override
+				public void initChannel(NioDatagramChannel ch) {
 					final var messageHandler = new UDPNettyMessageHandler(counters, messageBufferSize, natHandler);
 					inboundMessageSink.subscribeTo(messageHandler.inboundMessageRx());
 
@@ -165,15 +165,15 @@ final class NettyUDPTransportImpl implements Transport {
 						.setReceiveBufferSize(RCV_BUF_SIZE)
 						.setSendBufferSize(SND_BUF_SIZE)
 						.setOption(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(MAX_DATAGRAM_SIZE));
-	        		if (log.isDebugEnabled()) {
-	        			ch.pipeline()
-	        				.addLast(new LoggingHandler(LogSink.using(log), DEBUG_DATA));
-	        		}
-	                ch.pipeline()
-	                	.addLast("onboard", messageHandler);
+					if (log.isDebugEnabled()) {
+						ch.pipeline()
+							.addLast(new LoggingHandler(LogSink.using(log), DEBUG_DATA));
+					}
+					ch.pipeline()
+						.addLast("onboard", messageHandler);
 					ch.closeFuture()
 						.addListener(f -> messageHandler.shutdownRx());
-	            }
+				}
 	        });
 	    try {
 	    	synchronized (channelLock) {

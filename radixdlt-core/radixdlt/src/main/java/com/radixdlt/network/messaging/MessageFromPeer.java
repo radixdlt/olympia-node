@@ -21,7 +21,7 @@ import com.radixdlt.network.addressbook.Peer;
 
 import java.util.Objects;
 
-public class MessageFromPeer<T> {
+public final class MessageFromPeer<T> {
 
     private final Peer peer;
 

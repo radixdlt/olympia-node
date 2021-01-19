@@ -54,7 +54,7 @@ public class RoundRobinBackpressuredProcessor<T> implements Publisher<T> {
 
     private final Map<Integer, T> buffer = new HashMap<>();
 
-    private int lastUsedSubscriptionId = 0;
+    private int lastUsedSubscriptionId = -1;
 
     public void subscribeTo(Publisher<T> publisher) {
         final int subscriptionId = upstreamSubscriptionIdCounter.getAndIncrement();
