@@ -142,18 +142,17 @@ public final class Radix {
 		final PeerManager peerManager = globalInjector.getInjector().getInstance(PeerManager.class);
 		peerManager.start();
 
-		// Start mempool receiver
-		final MempoolReceiver mempoolReceiver = globalInjector.getInjector().getInstance(MempoolReceiver.class);
-		mempoolReceiver.start();
-
 		final SystemInfoRunner infoStateRunner = globalInjector.getInjector().getInstance(SystemInfoRunner.class);
 		infoStateRunner.start();
 
 		final Map<String, ModuleRunner> moduleRunners = globalInjector.getInjector()
 			.getInstance(Key.get(new TypeLiteral<Map<String, ModuleRunner>>() { }));
-		final ModuleRunner consensusRunner = moduleRunners.get("consensus");
+
 		final ModuleRunner syncRunner = moduleRunners.get("sync");
 		syncRunner.start();
+
+		final ModuleRunner mempoolReceiverRunner = moduleRunners.get("mempool");
+		mempoolReceiverRunner.start();
 
 		// start API services
 		final RadixHttpServer httpServer = globalInjector.getInjector().getInstance(RadixHttpServer.class);
@@ -161,6 +160,7 @@ public final class Radix {
 
 		final BFTNode self = globalInjector.getInjector().getInstance(Key.get(BFTNode.class, Self.class));
 		if (properties.get("consensus.start_on_boot", true)) {
+			final ModuleRunner consensusRunner = moduleRunners.get("consensus");
 			consensusRunner.start();
 			log.info("Node '{}' started successfully", self);
 		} else {
