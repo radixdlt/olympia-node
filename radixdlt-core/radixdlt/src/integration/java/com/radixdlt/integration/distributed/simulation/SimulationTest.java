@@ -527,12 +527,6 @@ public class SimulationTest {
 						nodeSelector
 					);
 				}
-
-				@ProvidesIntoMap
-				@StringMapKey("mempool_committed")
-				TestInvariant mempoolCommitted(LocalMempoolPeriodicSubmitter mempoolSubmitter, NodeEvents nodeEvents) {
-					return new CommittedChecker(mempoolSubmitter.issuedCommands().map(Pair::getFirst), nodeEvents);
-				}
 			});
 
 			return this;
@@ -540,24 +534,6 @@ public class SimulationTest {
 
 		public Builder addRadixEngineValidatorRegisterUnregisterMempoolSubmissions() {
 			NodeSelector nodeSelector = this.ledgerType.hasEpochs ? new EpochsNodeSelector() : new BFTValidatorSetNodeSelector();
-			this.testModules.add(new AbstractModule() {
-
-				@ProvidesIntoSet
-				SimulationNetworkActor mempoolSubmittor(List<ECKeyPair> nodes) {
-					RadixEngineValidatorRegistratorAndUnregistrator randomValidatorSubmitter =
-							new RadixEngineValidatorRegistratorAndUnregistrator(nodes, hasher);
-					return new LocalMempoolPeriodicSubmitter(
-						randomValidatorSubmitter,
-						nodeSelector
-					);
-				}
-			});
-
-			return this;
-		}
-
-		public Builder addRadixEngineValidatorRegisterUnregisterMempoolSubmissionsAndCommitCheck() {
-			var nodeSelector = this.ledgerType.hasEpochs ? new EpochsNodeSelector() : new BFTValidatorSetNodeSelector();
 			this.testModules.add(new AbstractModule() {
 				@Override
 				public void configure() {
@@ -574,7 +550,13 @@ public class SimulationTest {
 							nodeSelector
 					);
 				}
+			});
 
+			return this;
+		}
+
+		public Builder addMempoolCommittedChecker() {
+			this.testModules.add(new AbstractModule() {
 				@ProvidesIntoMap
 				@StringMapKey("mempool_committed")
 				TestInvariant mempoolCommitted(LocalMempoolPeriodicSubmitter mempoolSubmitter, NodeEvents nodeEvents) {
@@ -605,12 +587,6 @@ public class SimulationTest {
 						validatorRegistrator,
 						nodeSelector
 					);
-				}
-
-				@ProvidesIntoMap
-				@StringMapKey("mempool_committed")
-				TestInvariant mempoolCommitted(LocalMempoolPeriodicSubmitter mempoolSubmitter, NodeEvents nodeEvents) {
-					return new CommittedChecker(mempoolSubmitter.issuedCommands().map(Pair::getFirst), nodeEvents);
 				}
 
 				@ProvidesIntoMap

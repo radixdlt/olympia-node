@@ -45,7 +45,8 @@ public class SanityTest {
 		.checkConsensusAllProposalsHaveDirectParents()
 		.checkLedgerInOrder()
 		.checkLedgerProcessesConsensusCommitted()
-		.addMempoolSubmissionsSteadyState(new RadixEngineUniqueGenerator());
+		.addMempoolSubmissionsSteadyState(new RadixEngineUniqueGenerator())
+		.addMempoolCommittedChecker();
 
 	@Test
 	public void sanity_tests_should_pass() {

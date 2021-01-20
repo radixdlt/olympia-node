@@ -45,7 +45,8 @@ public class IncreasingValidatorsTest {
 		.checkConsensusAllProposalsHaveDirectParents()
 		.checkLedgerInOrder()
 		.checkLedgerProcessesConsensusCommitted()
-		.addRadixEngineValidatorRegisterMempoolSubmissions();
+		.addRadixEngineValidatorRegisterMempoolSubmissions()
+		.addMempoolCommittedChecker();
 
 	@Test
 	public void when_increasing_validators__then_they_should_be_getting_registered() {

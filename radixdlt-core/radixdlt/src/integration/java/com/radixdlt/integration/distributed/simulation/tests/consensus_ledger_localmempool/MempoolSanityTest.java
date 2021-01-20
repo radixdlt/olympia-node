@@ -49,7 +49,8 @@ public class MempoolSanityTest {
 		.checkConsensusAllProposalsHaveDirectParents()
 		.checkLedgerInOrder()
 		.checkLedgerProcessesConsensusCommitted()
-		.addMempoolSubmissionsSteadyState(new IncrementalBytes());
+		.addMempoolSubmissionsSteadyState(new IncrementalBytes())
+		.addMempoolCommittedChecker();
 
 	/**
 	 * TODO: This is more of a test for mempoolSubmissionSteadyState, should move somewhere else

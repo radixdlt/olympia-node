@@ -46,7 +46,8 @@ public class RandomValidatorsTest {
 		.checkConsensusAllProposalsHaveDirectParents()
 		.checkLedgerInOrder()
 		.checkLedgerProcessesConsensusCommitted()
-		.addRadixEngineValidatorRegisterUnregisterMempoolSubmissionsAndCommitCheck();
+		.addRadixEngineValidatorRegisterMempoolSubmissions()
+		.addMempoolCommittedChecker();
 
 	@Test
 	public void when_random_validators__then_sanity_checks_should_pass() {
