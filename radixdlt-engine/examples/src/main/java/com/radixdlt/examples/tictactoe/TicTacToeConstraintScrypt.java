@@ -158,13 +158,13 @@ public class TicTacToeConstraintScrypt implements ConstraintScrypt {
 			.build()
 		);
 
-		os.registerParticle(OToMoveParticle.class, ParticleDefinition.<XToMoveParticle>builder()
+		os.registerParticle(OToMoveParticle.class, ParticleDefinition.<OToMoveParticle>builder()
 			.addressMapper(TicTacToeBaseParticle::getPlayers)
 			.staticValidation(ttt -> staticCheck(ttt, GameStatus.IN_PROGRESS))
 			.build()
 		);
 
-		os.registerParticle(XWinsParticle.class, ParticleDefinition.<XToMoveParticle>builder()
+		os.registerParticle(XWinsParticle.class, ParticleDefinition.<XWinsParticle>builder()
 			.addressMapper(TicTacToeBaseParticle::getPlayers)
 			.staticValidation(ttt -> staticCheck(ttt, GameStatus.X_WINS))
 			.build()
