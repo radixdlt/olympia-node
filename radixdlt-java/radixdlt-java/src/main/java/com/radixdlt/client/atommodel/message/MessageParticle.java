@@ -128,19 +128,6 @@ public final class MessageParticle extends Particle implements Accountable {
 	}
 
 	private MessageParticle(RadixAddress from, RadixAddress to, byte[] bytes, MetadataMap metaData, long nonce) {
-		this(from, to, bytes, metaData, nonce, ImmutableSet.of(from.euid(), to.euid()));
-	}
-
-	public MessageParticle(
-		RadixAddress from,
-		RadixAddress to,
-		byte[] bytes,
-		MetadataMap metaData,
-		long nonce,
-		ImmutableSet<EUID> destinations
-	) {
-		super(destinations);
-
 		this.from = Objects.requireNonNull(from, "from is required");
 		this.to = Objects.requireNonNull(to, "to is required");
 		this.bytes = Arrays.copyOf(bytes, bytes.length);
@@ -148,6 +135,11 @@ public final class MessageParticle extends Particle implements Accountable {
 			this.metaData.putAll(metaData);
 		}
 		this.nonce = nonce;
+	}
+
+	@Override
+	public Set<EUID> getDestinations() {
+		return ImmutableSet.of(this.from.euid(), this.to.euid());
 	}
 
 	@Override

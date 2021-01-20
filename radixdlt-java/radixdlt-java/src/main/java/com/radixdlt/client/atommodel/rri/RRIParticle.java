@@ -23,9 +23,11 @@
 package com.radixdlt.client.atommodel.rri;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.client.atommodel.Accountable;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RRI;
 import java.util.Collections;
 import java.util.Objects;
@@ -50,10 +52,13 @@ public final class RRIParticle extends Particle implements Accountable {
 	}
 
 	public RRIParticle(RRI rri) {
-		super(rri.getAddress().euid());
-
 		this.rri = Objects.requireNonNull(rri);
 		this.nonce = 0;
+	}
+
+	@Override
+	public Set<EUID> getDestinations() {
+		return ImmutableSet.of(this.rri.getAddress().euid());
 	}
 
 	public RRI getRRI() {

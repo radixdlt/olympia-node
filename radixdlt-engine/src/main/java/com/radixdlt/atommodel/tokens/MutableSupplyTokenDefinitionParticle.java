@@ -19,6 +19,8 @@ package com.radixdlt.atommodel.tokens;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.serialization.DsonOutput;
@@ -27,6 +29,7 @@ import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.utils.UInt256;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -80,8 +83,6 @@ public final class MutableSupplyTokenDefinitionParticle extends Particle {
 		String url,
 		Map<TokenTransition, TokenPermission> tokenPermissions
 	) {
-		super(rri.getAddress().euid());
-
 		this.rri = rri;
 		this.name = name;
 		this.description = description;
@@ -93,6 +94,11 @@ public final class MutableSupplyTokenDefinitionParticle extends Particle {
 		if (this.tokenPermissions.keySet().size() != TokenTransition.values().length) {
 		    throw new IllegalArgumentException("tokenPermissions must be set for all token instance types.");
 		}
+	}
+
+	@Override
+	public Set<EUID> getDestinations() {
+		return ImmutableSet.of(this.rri.getAddress().euid());
 	}
 
 	public RRI getRRI() {
@@ -181,12 +187,11 @@ public final class MutableSupplyTokenDefinitionParticle extends Particle {
 				&& Objects.equals(granularity, that.granularity)
 				&& Objects.equals(iconUrl, that.iconUrl)
 				&& Objects.equals(url, that.url)
-				&& Objects.equals(tokenPermissions, that.tokenPermissions)
-				&& Objects.equals(getDestinations(), that.getDestinations());
+				&& Objects.equals(tokenPermissions, that.tokenPermissions);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(rri, name, description, granularity, iconUrl, url, tokenPermissions, getDestinations());
+		return Objects.hash(rri, name, description, granularity, iconUrl, url, tokenPermissions);
 	}
 }

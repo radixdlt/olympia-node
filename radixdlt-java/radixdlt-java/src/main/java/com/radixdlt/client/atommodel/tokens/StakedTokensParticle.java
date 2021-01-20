@@ -29,6 +29,7 @@ import com.radixdlt.client.atommodel.Accountable;
 import com.radixdlt.client.atommodel.Ownable;
 import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DsonOutput;
@@ -86,8 +87,6 @@ public final class StakedTokensParticle extends Particle implements Accountable,
 		RRI tokenDefinitionReference,
 		Map<TokenTransition, TokenPermission> tokenPermissions
 	) {
-		super(ImmutableSet.of(address.euid(), delegateAddress.euid()));
-
 		// Redundant null check added for completeness
 		Objects.requireNonNull(amount, "amount is required");
 		if (amount.isZero()) {
@@ -101,6 +100,11 @@ public final class StakedTokensParticle extends Particle implements Accountable,
 		this.nonce = nonce;
 		this.amount = amount;
 		this.tokenPermissions = ImmutableMap.copyOf(tokenPermissions);
+	}
+
+	@Override
+	public Set<EUID> getDestinations() {
+		return ImmutableSet.of(this.address.euid(), this.delegateAddress.euid());
 	}
 
 	public Map<TokenTransition, TokenPermission> getTokenPermissions() {

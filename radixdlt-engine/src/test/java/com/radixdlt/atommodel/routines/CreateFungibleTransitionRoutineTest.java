@@ -20,15 +20,18 @@ package com.radixdlt.atommodel.routines;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 import java.util.Objects;
+import java.util.Set;
 
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atommodel.routines.CreateFungibleTransitionRoutine.UsedAmount;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.VoidUsedData;
 import com.radixdlt.constraintmachine.WitnessValidator;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.utils.UInt256;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.mock;
@@ -39,6 +42,11 @@ public class CreateFungibleTransitionRoutineTest {
 		private final UInt256 amount;
 		Fungible(UInt256 amount) {
 			this.amount = amount;
+		}
+
+		@Override
+		public Set<EUID> getDestinations() {
+			return ImmutableSet.of();
 		}
 
 		UInt256 getAmount() {
