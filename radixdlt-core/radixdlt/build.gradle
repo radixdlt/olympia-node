@@ -198,6 +198,24 @@ task generateDevUniverse(type: Exec) {
         "--issue-default-tokens"
 }
 
+task generateJsonUniverse(type: Exec) {
+    dependsOn compileJava
+
+    //Alternative solution (slower, but does not require manual maintenance):
+    //dependsOn tasks.withType(Jar)
+    dependsOn ':radixdlt-java-common:jar'
+    dependsOn ':radixdlt-engine:jar'
+
+    group = "Execution"
+    description = "Generate development universe"
+    commandLine "java", "-classpath", sourceSets.main.runtimeClasspath.getAsPath(),
+        "org.radix.GenerateUniverses",
+        "--universe-type=development",
+        "--validator-count=${validators}",
+        "--no-cbor-output",
+        "--issue-default-tokens"
+}
+
 task createGenerateUniversesScripts(type: CreateStartScripts) {
   mainClassName = 'org.radix.GenerateUniverses'
   applicationName = 'generate_universes'

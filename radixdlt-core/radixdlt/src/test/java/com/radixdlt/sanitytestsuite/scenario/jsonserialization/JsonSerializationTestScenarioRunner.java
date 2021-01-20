@@ -19,14 +19,12 @@ package com.radixdlt.sanitytestsuite.scenario.jsonserialization;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.atommodel.message.MessageParticle;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.sanitytestsuite.scenario.SanityTestScenarioRunner;
 import com.radixdlt.sanitytestsuite.utility.ArgumentsExtractor;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.JSONFormatter;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -64,24 +62,8 @@ public final class JsonSerializationTestScenarioRunner extends SanityTestScenari
 		return ttp;
 	}
 
-	private static MessageParticle makeMessageParticle(final Map<String, Object> arguments) {
-		var argsExtractor = ArgumentsExtractor.from(arguments);
-
-		var particle = new MessageParticle(
-			argsExtractor.asRadixAddress("from"),
-			argsExtractor.asRadixAddress("to"),
-			argsExtractor.asString("message").getBytes(StandardCharsets.UTF_8),
-			argsExtractor.asLong("nonce")
-		);
-
-		assertTrue(argsExtractor.isFinished());
-
-		return particle;
-	}
-
 	private static final Map<String, Function<Map<String, Object>, Object>> constructorMap = ImmutableMap.of(
-		"radix.particles.transferrable_tokens", JsonSerializationTestScenarioRunner::makeTransferrableTokensParticle,
-		"radix.particles.message", JsonSerializationTestScenarioRunner::makeMessageParticle
+		"radix.particles.transferrable_tokens", JsonSerializationTestScenarioRunner::makeTransferrableTokensParticle
 	);
 
 	@Override
@@ -90,7 +72,7 @@ public final class JsonSerializationTestScenarioRunner extends SanityTestScenari
 			.map(constructor -> constructor.apply(testVector.input.arguments))
 			.map(model -> serialization.toJson(model, DsonOutput.Output.HASH))
 			.map(JSONFormatter::sortPrettyPrintJSONString)
-			.orElseThrow(() -> new IllegalStateException("Cant find constructor"));
+			.orElseThrow(() -> new IllegalStateException("Cant find constructor for " + testVector.input.typeSerialization));
 
 		String expected = JSONFormatter.sortPrettyPrintJSONString(testVector.expected.jsonPrettyPrinted);
 

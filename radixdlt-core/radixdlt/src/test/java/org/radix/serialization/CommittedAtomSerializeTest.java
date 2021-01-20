@@ -18,11 +18,12 @@
 package org.radix.serialization;
 
 import com.radixdlt.atommodel.Atom;
-import com.radixdlt.atommodel.message.MessageParticle;
+import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.consensus.*;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.statecomputer.CommittedAtom;
@@ -36,10 +37,12 @@ public class CommittedAtomSerializeTest extends SerializeObject<CommittedAtom> {
 	}
 
 	private static Atom createApiAtom() {
-		RadixAddress address = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
-		Atom atom = new Atom();
+		final var address = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
+		final var rri = RRI.of(address, "test");
+
+		final var atom = new Atom();
 		// add a particle to ensure atom is valid and has at least one shard
-		atom.addParticleGroupWith(new MessageParticle(address, address, "Hello".getBytes()), Spin.UP);
+		atom.addParticleGroupWith(new RRIParticle(rri), Spin.DOWN);
 		return atom;
 	}
 

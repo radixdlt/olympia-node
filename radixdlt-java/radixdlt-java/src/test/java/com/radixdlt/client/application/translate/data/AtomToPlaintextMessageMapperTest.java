@@ -26,24 +26,46 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.crypto.ECKeyPair;
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.client.application.identity.RadixIdentity;
+import com.radixdlt.client.core.atoms.Atom;
 import org.junit.Test;
-import com.radixdlt.identifiers.EUID;
 
-public class SendDecryptedMessageToParticleGroupsMapperTest {
+import com.radixdlt.identifiers.AID;
+
+public class AtomToPlaintextMessageMapperTest {
 	@Test
-	public void testNoEncryption() {
-		RadixAddress address = mock(RadixAddress.class);
-		when(address.euid()).thenReturn(mock(EUID.class), mock(EUID.class));
+	public void testNoMessage() {
+		final var mapper = new AtomToPlaintextMessageMapper();
+		final var identity = mock(RadixIdentity.class);
+		final var atom = mock(Atom.class);
+		final var aid = mock(AID.class);
+		when(atom.getAid()).thenReturn(aid);
+		when(atom.getMessage()).thenReturn(null);
 
-		SendMessageToParticleGroupsMapper sendMessageToParticleGroupsMapper =
-			new SendMessageToParticleGroupsMapper(() -> mock(ECKeyPair.class));
-		SendMessageAction sendMessageAction = mock(SendMessageAction.class);
-		when(sendMessageAction.getData()).thenReturn(new byte[] {});
-		when(sendMessageAction.getFrom()).thenReturn(address);
-		when(sendMessageAction.getTo()).thenReturn(address);
-		when(sendMessageAction.encrypt()).thenReturn(false);
-		assertThat(sendMessageToParticleGroupsMapper.mapToParticleGroups(sendMessageAction)).hasSize(1);
+		final var result = mapper.map(atom, identity);
+
+		final var resultsList = ImmutableList.copyOf(result.blockingIterable());
+		assertThat(resultsList).isEmpty();
+	}
+
+	@Test
+	public void testWithMessage() {
+		final var message = "test message";
+		final var mapper = new AtomToPlaintextMessageMapper();
+		final var identity = mock(RadixIdentity.class);
+		final var atom = mock(Atom.class);
+		final var aid = mock(AID.class);
+		when(atom.getAid()).thenReturn(aid);
+		when(atom.getMessage()).thenReturn(message);
+
+		final var result = mapper.map(atom, identity);
+
+		final var resultsList = ImmutableList.copyOf(result.blockingIterable());
+		assertThat(resultsList)
+			.hasSize(1)
+			.element(0)
+			.matches(ptm -> ptm.getAtomId().equals(aid))
+			.matches(ptm -> ptm.getMessage().equals(message));
 	}
 }

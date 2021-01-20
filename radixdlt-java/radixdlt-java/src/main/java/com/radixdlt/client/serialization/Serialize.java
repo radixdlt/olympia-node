@@ -34,7 +34,6 @@ import java.util.Collection;
 import com.radixdlt.client.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 
-import com.radixdlt.client.atommodel.message.MessageParticle;
 import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.client.atommodel.unique.UniqueParticle;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
@@ -72,7 +71,6 @@ public final class Serialize {
 				Particle.class,
 				RRIParticle.class,
 				SpunParticle.class,
-				MessageParticle.class,
 				MutableSupplyTokenDefinitionParticle.class,
 				FixedSupplyTokenDefinitionParticle.class,
 				UnallocatedTokensParticle.class,

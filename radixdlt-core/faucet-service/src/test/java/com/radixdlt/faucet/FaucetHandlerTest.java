@@ -34,7 +34,6 @@ import com.google.common.util.concurrent.RateLimiter;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
-import com.radixdlt.client.application.translate.data.SendMessageAction;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.application.translate.unique.PutUniqueIdAction;
 import com.radixdlt.crypto.ECKeyPair;
@@ -100,8 +99,8 @@ public class FaucetHandlerTest {
 		this.handler.run(Observable.just(Pair.of(this.to, this.actionId)));
 
 	    InOrder order = inOrder(this.transaction);
+	    order.verify(this.transaction, times(1)).setMessage(any());
 	    order.verify(this.transaction, times(1)).stage(any(TransferTokensAction.class));
-	    order.verify(this.transaction, times(1)).stage(any(SendMessageAction.class));
 	    order.verify(this.transaction, times(1)).stage(any(PutUniqueIdAction.class));
 	    order.verify(this.transaction, times(1)).commitAndPush();
 		verifyNoMoreInteractions(this.transaction);
@@ -114,7 +113,7 @@ public class FaucetHandlerTest {
 		this.handler.run(Observable.just(Pair.of(this.to, this.actionId)));
 
 	    InOrder order = inOrder(this.transaction);
-		order.verify(this.transaction, times(1)).stage(any(SendMessageAction.class));
+	    order.verify(this.transaction, times(1)).setMessage(any());
 		order.verify(this.transaction, times(1)).stage(any(PutUniqueIdAction.class));
 		order.verify(this.transaction, times(1)).commitAndPush();
 		verifyNoMoreInteractions(this.transaction);
@@ -128,11 +127,11 @@ public class FaucetHandlerTest {
 		this.handler.run(Observable.just(Pair.of(this.to, this.actionId)));
 
 	    InOrder order = inOrder(this.transaction);
+	    order.verify(this.transaction, times(1)).setMessage(any());
 	    order.verify(this.transaction, times(1)).stage(any(TransferTokensAction.class));
-	    order.verify(this.transaction, times(1)).stage(any(SendMessageAction.class));
 	    order.verify(this.transaction, times(1)).stage(any(PutUniqueIdAction.class));
 	    order.verify(this.transaction, times(1)).commitAndPush();
-	    order.verify(this.transaction, times(1)).stage(any(SendMessageAction.class)); // The error message
+	    order.verify(this.transaction, times(1)).setMessage(any());
 	    order.verify(this.transaction, times(1)).stage(any(PutUniqueIdAction.class));
 	    order.verify(this.transaction, times(1)).commitAndPush();
 		verifyNoMoreInteractions(this.transaction);
