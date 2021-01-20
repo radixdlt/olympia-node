@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.integration.distributed.MockedRecoveryModule;
+import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.Monitor;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
@@ -71,7 +72,7 @@ public class OneByzantineGenesisTest {
 		SimulationTest bftTest = bftTestBuilder
 			.numNodes(4)
 			.addSingleByzantineModule(new MockedRecoveryModule(HashUtils.random256()))
-			.checkConsensusLiveness(5, TimeUnit.SECONDS)
+			.testModules(ConsensusMonitors.liveness(5, TimeUnit.SECONDS))
 			.build();
 
 		TestResults results = bftTest.run();

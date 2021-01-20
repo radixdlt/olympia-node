@@ -23,6 +23,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.environment.RemoteEventProcessor;
+import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
@@ -54,12 +55,14 @@ public class RandomValidatorsTest {
 		.numNodes(numNodes, 2)
 		.checkEpochsHighViewCorrect(View.of(100))
 		.checkConsensusSafety()
-		.checkConsensusLiveness(5000, TimeUnit.MILLISECONDS)
 		.checkConsensusNoTimeouts()
 		.checkConsensusAllProposalsHaveDirectParents()
 		.checkLedgerInOrder()
 		.checkLedgerProcessesConsensusCommitted()
-		.checkVertexRequestRate(50); // Conservative check
+		.testModules(
+			ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
+			ConsensusMonitors.vertexRequestRate(50) // Conservative check
+		);
 
 	private static Function<Long, IntStream> randomEpochToNodesMapper(Function<Long, Random> randomSupplier) {
 		return epoch -> {

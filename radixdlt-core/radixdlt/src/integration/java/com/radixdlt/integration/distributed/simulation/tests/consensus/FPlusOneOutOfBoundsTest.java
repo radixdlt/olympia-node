@@ -19,6 +19,7 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
+import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.Monitor;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
@@ -36,7 +37,7 @@ public class FPlusOneOutOfBoundsTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.pacemakerTimeout(synchronousTimeout)
 		.checkConsensusSafety()
-		.checkConsensusLiveness(synchronousTimeout, TimeUnit.MILLISECONDS);
+		.testModules(ConsensusMonitors.liveness(synchronousTimeout, TimeUnit.MILLISECONDS));
 
 	/**
 	 * Tests a configuration of 0 out of 3 nodes out of synchrony bounds

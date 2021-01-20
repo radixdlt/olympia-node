@@ -1,0 +1,54 @@
+package com.radixdlt.integration.distributed.simulation;
+
+import com.google.inject.AbstractModule;
+import com.google.inject.Module;
+import com.google.inject.multibindings.ProvidesIntoMap;
+import com.radixdlt.integration.distributed.simulation.application.TimestampChecker;
+import com.radixdlt.integration.distributed.simulation.invariants.consensus.LivenessInvariant;
+import com.radixdlt.integration.distributed.simulation.invariants.consensus.NodeEvents;
+import com.radixdlt.integration.distributed.simulation.invariants.consensus.VertexRequestRateInvariant;
+import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
+
+import java.time.Duration;
+import java.util.concurrent.TimeUnit;
+
+public final class ConsensusMonitors {
+
+    public static Module timestampChecker() {
+        return timestampChecker(Duration.ofSeconds(1));
+    }
+
+    public static Module timestampChecker(Duration maxDelay) {
+        return new AbstractModule() {
+            @ProvidesIntoMap
+            @MonitorKey(Monitor.TIMESTAMP_CHECK)
+            public TestInvariant timestampsInvariant() {
+                return new TimestampChecker(maxDelay);
+            }
+        };
+    }
+
+    public static Module vertexRequestRate(int permitsPerSecond) {
+        return new AbstractModule() {
+            @ProvidesIntoMap
+            @MonitorKey(Monitor.VERTEX_REQUEST_RATE)
+            TestInvariant vertexRequestRateInvariant(NodeEvents nodeEvents) {
+                return new VertexRequestRateInvariant(nodeEvents, permitsPerSecond);
+            }
+        };
+    }
+
+    public static Module liveness() {
+        return liveness(8 * SimulationNetwork.DEFAULT_LATENCY, TimeUnit.MILLISECONDS);
+    }
+
+    public static Module liveness(long duration, TimeUnit timeUnit) {
+        return new AbstractModule() {
+            @ProvidesIntoMap
+            @MonitorKey(Monitor.LIVENESS)
+            TestInvariant livenessInvariant(NodeEvents nodeEvents) {
+                return new LivenessInvariant(nodeEvents, duration, timeUnit);
+            }
+        };
+    }
+}

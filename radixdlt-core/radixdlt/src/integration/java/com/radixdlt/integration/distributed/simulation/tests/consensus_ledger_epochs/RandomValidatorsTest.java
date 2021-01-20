@@ -20,6 +20,7 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_e
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
@@ -48,12 +49,14 @@ public class RandomValidatorsTest {
 		.numNodes(numNodes, 2)
 		.checkEpochsHighViewCorrect(View.of(100))
 		.checkConsensusSafety()
-		.checkConsensusLiveness(5000, TimeUnit.MILLISECONDS)
 		.checkConsensusNoTimeouts()
 		.checkConsensusAllProposalsHaveDirectParents()
 		.checkLedgerInOrder()
 		.checkLedgerProcessesConsensusCommitted()
-		.addTimestampChecker();
+		.testModules(
+			ConsensusMonitors.liveness(5000, TimeUnit.MILLISECONDS),
+			ConsensusMonitors.timestampChecker()
+		);
 
 	private static Function<Long, IntStream> randomEpochToNodesMapper(Function<Long, Random> randomSupplier) {
 		return epoch -> {

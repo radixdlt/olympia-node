@@ -20,6 +20,7 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger_e
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
@@ -52,9 +53,11 @@ public class MovingWindowValidatorsTest {
 			.numNodes(4, 2)
 			.ledgerAndEpochs(View.of(100), windowedEpochToNodesMapper(1, 4))
 			.pacemakerTimeout(5000)
-			.checkConsensusLiveness(5000, TimeUnit.MILLISECONDS)
 			.checkEpochsHighViewCorrect(View.of(100))
-			.addTimestampChecker()
+			.testModules(
+				ConsensusMonitors.liveness(5, TimeUnit.SECONDS),
+				ConsensusMonitors.timestampChecker()
+			)
 			.build();
 		TestResults results = bftTest.run();
 		assertThat(results.getCheckResults()).allSatisfy((name, err) -> assertThat(err).isEmpty());
@@ -66,9 +69,11 @@ public class MovingWindowValidatorsTest {
 			.numNodes(4, 2)
 			.ledgerAndEpochs(View.of(100), windowedEpochToNodesMapper(3, 4))
 			.pacemakerTimeout(1000)
-			.checkConsensusLiveness(1000, TimeUnit.MILLISECONDS)
 			.checkEpochsHighViewCorrect(View.of(100))
-			.addTimestampChecker()
+			.testModules(
+				ConsensusMonitors.liveness(1, TimeUnit.SECONDS),
+				ConsensusMonitors.timestampChecker()
+			)
 			.build();
 		TestResults results = bftTest.run();
 		assertThat(results.getCheckResults()).allSatisfy((name, err) -> assertThat(err).isEmpty());
@@ -80,9 +85,11 @@ public class MovingWindowValidatorsTest {
 			.numNodes(100, 2)
 			.ledgerAndEpochs(View.of(100), windowedEpochToNodesMapper(25, 50))
 			.pacemakerTimeout(5000)
-			.checkConsensusLiveness(5000, TimeUnit.MILLISECONDS) // High timeout to make Travis happy
 			.checkEpochsHighViewCorrect(View.of(100))
-			.addTimestampChecker()
+			.testModules(
+				ConsensusMonitors.liveness(5, TimeUnit.SECONDS), // High timeout to make Travis happy
+				ConsensusMonitors.timestampChecker()
+			)
 			.build();
 
 		TestResults results = bftTest.run();
@@ -95,7 +102,9 @@ public class MovingWindowValidatorsTest {
 			.numNodes(100, 2)
 			.ledgerAndEpochs(View.of(1), windowedEpochToNodesMapper(25, 50))
 			.pacemakerTimeout(5000)
-			.checkConsensusLiveness(5000, TimeUnit.MILLISECONDS) // High timeout to make Travis happy
+			.testModules(
+				ConsensusMonitors.liveness(5, TimeUnit.SECONDS) // High timeout to make Travis happy
+			)
 			.checkEpochsHighViewCorrect(View.of(1))
 			.build();
 

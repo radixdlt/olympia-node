@@ -19,6 +19,7 @@ package com.radixdlt.integration.distributed.simulation.tests.consensus_ledger;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
+import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
 import com.radixdlt.integration.distributed.simulation.NetworkOrdering;
 import com.radixdlt.integration.distributed.simulation.SimulationTest;
@@ -43,7 +44,7 @@ public class OneOutOfBoundsTest {
 		)
 		.ledger()
 		.pacemakerTimeout(1000)
-		.checkConsensusLiveness(4 * 1000, TimeUnit.MILLISECONDS)
+		.testModules(ConsensusMonitors.liveness(4, TimeUnit.SECONDS))
 		.checkConsensusSafety()
 		.checkLedgerInOrder()
 		.checkLedgerProcessesConsensusCommitted();

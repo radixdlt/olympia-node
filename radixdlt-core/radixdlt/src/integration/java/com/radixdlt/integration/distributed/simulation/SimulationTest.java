@@ -494,18 +494,8 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder addTimestampChecker() {
-			return addTimestampChecker(Duration.ofSeconds(1));
-		}
-
-		public Builder addTimestampChecker(Duration maxDelay) {
-			this.testModules.add(new AbstractModule() {
-				@ProvidesIntoMap
-                @MonitorKey(Monitor.TIMESTAMP_CHECK)
-				public TestInvariant timestampsInvariant() {
-					return new TimestampChecker(maxDelay);
-				}
-			});
+		public Builder testModules(Module... modules) {
+			this.testModules.add(modules);
 			return this;
 		}
 
@@ -595,41 +585,6 @@ public class SimulationTest {
 				}
 			});
 
-			return this;
-		}
-
-		public Builder checkVertexRequestRate(int permitsPerSecond) {
-			this.testModules.add(new AbstractModule() {
-				@ProvidesIntoMap
-				@MonitorKey(Monitor.VERTEX_REQUEST_RATE)
-				TestInvariant vertexRequestRateInvariant(NodeEvents nodeEvents) {
-					return new VertexRequestRateInvariant(nodeEvents, permitsPerSecond);
-				}
-			});
-
-			return this;
-		}
-
-		public Builder checkConsensusLiveness() {
-			this.testModules.add(new AbstractModule() {
-				@ProvidesIntoMap
-				@MonitorKey(Monitor.LIVENESS)
-				TestInvariant livenessInvariant(NodeEvents nodeEvents) {
-					return new LivenessInvariant(nodeEvents, 8 * SimulationNetwork.DEFAULT_LATENCY, TimeUnit.MILLISECONDS);
-				}
-			});
-
-			return this;
-		}
-
-		public Builder checkConsensusLiveness(long duration, TimeUnit timeUnit) {
-			this.testModules.add(new AbstractModule() {
-				@ProvidesIntoMap
-				@MonitorKey(Monitor.LIVENESS)
-				TestInvariant livenessInvariant(NodeEvents nodeEvents) {
-					return new LivenessInvariant(nodeEvents, duration, timeUnit);
-				}
-			});
 			return this;
 		}
 

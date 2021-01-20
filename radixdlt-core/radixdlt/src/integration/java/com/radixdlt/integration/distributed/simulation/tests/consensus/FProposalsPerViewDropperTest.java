@@ -25,6 +25,7 @@ import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.VertexRequestTimeout;
 import com.radixdlt.environment.RemoteEventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
+import com.radixdlt.integration.distributed.simulation.ConsensusMonitors;
 import com.radixdlt.integration.distributed.simulation.Monitor;
 import com.radixdlt.integration.distributed.simulation.NetworkDroppers;
 import com.radixdlt.integration.distributed.simulation.NetworkLatencies;
@@ -68,7 +69,7 @@ public class FProposalsPerViewDropperTest {
 			.pacemakerTimeout(5000)
 			.checkConsensusSafety()
 			.checkConsensusNoTimeouts()
-			.checkVertexRequestRate(50); // Conservative check
+			.testModules(ConsensusMonitors.vertexRequestRate(50)); // Conservative check
 	}
 
 	/**
